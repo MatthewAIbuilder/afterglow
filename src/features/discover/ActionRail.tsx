@@ -10,11 +10,13 @@ type Props = {
   onLike: () => void;
   onSave: () => void;
   onSkip: () => void;
+  /** Row sits under a video instead of floating beside the stage. */
+  horizontal?: boolean;
 };
 
-export function ActionRail({ liked, saved, onLike, onSave, onSkip }: Props) {
+export function ActionRail({ liked, saved, onLike, onSave, onSkip, horizontal }: Props) {
   return (
-    <View style={styles.rail}>
+    <View style={[styles.rail, horizontal && styles.row]}>
       <RailButton label={liked ? 'Liked' : 'Like'} active={liked} onPress={onLike}>
         <HeartIcon color={liked ? color.glow : color.moon} filled={liked} />
       </RailButton>
@@ -67,6 +69,7 @@ function RailButton({
 
 const styles = StyleSheet.create({
   rail: { alignItems: 'center', gap: space.xl },
+  row: { flexDirection: 'row', justifyContent: 'center', gap: space.xxxl },
   button: { alignItems: 'center' },
   icon: {
     width: 50,

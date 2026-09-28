@@ -61,6 +61,7 @@ export function DiscoverFeed() {
             width={width}
             height={height}
             isActive={index === activeIndex}
+            isNear={Math.abs(index - activeIndex) <= 1}
             bottomSpace={tabSpace}
             onSkip={() => skipFrom(index)}
           />
