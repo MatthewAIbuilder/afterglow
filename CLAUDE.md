@@ -7,7 +7,7 @@ Expo / React Native / TypeScript. Also read @AGENTS.md (Expo's own agent rules: 
 ## Current state
 
 Milestone 5 is built (awaiting on-device testing). Built so far:
-- **Discover**: full-screen vertical feed, one clip per page; tap to pause, double-tap to like, Like/Save/Skip rail, progress bar, haptics. Clips are placeholder "stage scenes" drawn in code (beams, beat-synced glow, crowd); `Clip.videoUrl` is the slot for real footage.
+- **Discover**: full-screen vertical feed, one clip per page; tap to pause, double-tap to like, Like/Save/Skip rail, progress bar, haptics. Clips with a `Clip.source` play a section of an official YouTube upload in YouTube's own embedded player (`react-native-webview`), with the video on top and the clip info and Like/Save/Skip below it, never over the player. Clips without one, or whose video can't play, show the placeholder "stage scene" drawn in code (beams, beat-synced glow, crowd).
 - **My Sound**: bubble map. Top match pinned at centre, others placed by sound direction and distance by match, label-aware collision (no overlaps), pan with momentum, pinch zoom, double-tap recenter, bubbles trail and wobble when panned, reshape animation when taste changes, glass artist sheet.
 - **Festivals** tab, festival pages (lineup sorted For you / Billing, set times when published, optional lineup poster with full-screen zoom viewer).
 - **Artist** pages: match, sound tags, where they play, clips (open in Discover), similar artists.
@@ -38,7 +38,7 @@ src/
     festival/[id].tsx         Festival page (stack push)
     poster/[id].tsx           Lineup poster viewer (full-screen modal)
   components/                 Shared UI: NightSky, GlassTabBar, GlassCircleButton, ArtistAvatar, ArtistRow, TabIcons
-  features/discover/          DiscoverFeed, ClipCard, StageScene, ActionRail, icons
+  features/discover/          DiscoverFeed, ClipCard, StageScene, ActionRail, icons, YouTubePlayer, youtube.ts (pure: source checks, player page)
   features/sound-map/         layout.ts (pure layout engine), SoundMap, ArtistBubble, ArtistSheet
   features/taste/engine.ts    Pure taste engine: reactions -> TasteProfile (+ which scores rest on real signal)
   features/plan/              plan.ts (pure: tiers, schedule, clash verdicts), mustSees.ts (pure per-festival stars), copy.ts, YourFestival, MustSeeList, Timetable, MustSeeToggle
@@ -51,7 +51,7 @@ src/
   config/app.ts               App name
 ```
 
-Key data models (`src/data/types.ts`): `Artist` (id, name, optional imageUrl, `sound` weights per `SoundTag`), `TasteProfile` (artistId -> 0..1), `Clip` (artist, festival, title, duration, bpm, optional videoUrl), `Festival` (lineup in billing order, days, stages, optional `sets` and `posterImageUrl`), `SetTime` (artist, day, stage, start/end 24h). Reactions: `{ liked, saved, skipped }` per clip id.
+Key data models (`src/data/types.ts`): `Artist` (id, name, optional imageUrl, `sound` weights per `SoundTag`), `TasteProfile` (artistId -> 0..1), `Clip` (artist, festival, title, duration, bpm, optional `source`: YouTube video id, start/end seconds, channel), `Festival` (lineup in billing order, days, stages, optional `sets` and `posterImageUrl`), `SetTime` (artist, day, stage, start/end 24h). Reactions: `{ liked, saved, skipped }` per clip id.
 
 Pure logic (layout, taste engine) stays free of React so it can be tested and later moved server-side.
 

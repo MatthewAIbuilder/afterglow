@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -13,6 +13,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { artistById } from '../../data/artists';
 import { describeSet, festivalById, setFor } from '../../data/festivals';
@@ -20,24 +21,32 @@ import type { Clip } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
-import { color, motion, space, type } from '../../theme/tokens';
+import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
 import { HeartIcon, PlayIcon } from './icons';
 import { StageScene } from './StageScene';
+import { playableSource, watchUrl } from './youtube';
+import { YouTubePlayer } from './YouTubePlayer';
 
 type Props = {
   clip: Clip;
   width: number;
   height: number;
   isActive: boolean;
+  /** On screen or next to it: real footage loads ahead so a swipe lands on a ready player. */
+  isNear: boolean;
   /** Space reserved at the bottom for the floating tab bar. */
   bottomSpace: number;
   onSkip: () => void;
 };
 
 const BURST = 110;
+/** YouTube's embedded player must be at least 200 by 200. */
+const MIN_PLAYER = 200;
+/** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
+const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, width, height, isActive, bottomSpace, onSkip }: Props) {
+function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSkip }: Props) {
   const artist = artistById(clip.artistId);
   const reduceMotion = useReducedMotion();
   const { get, setLiked, toggleSaved, markSkipped } = useReactions();
@@ -45,6 +54,16 @@ function ClipCardBase({ clip, width, height, isActive, bottomSpace, onSkip }: Pr
   const { taste } = useTaste();
   const [paused, setPaused] = useState(false);
   const playing = isActive && !paused;
+  const insets = useSafeAreaInsets();
+
+  // Real footage when the clip has a playable source; the stage when it doesn't or the video fails.
+  const source = playableSource(clip);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const showVideo = !!source && !videoFailed;
+  const failVideo = useCallback(() => setVideoFailed(true), []);
+  const syncPlaying = useCallback((isPlaying: boolean) => setPaused(!isPlaying), []);
+  const videoProgress = useSharedValue(0);
+  const videoProgressStyle = useAnimatedStyle(() => ({ width: `${videoProgress.value * 100}%` }));
 
   // One clock drives the light show and the progress bar, so pausing freezes both.
   const clock = useSharedValue(0);
@@ -119,11 +138,116 @@ function ClipCardBase({ clip, width, height, isActive, bottomSpace, onSkip }: Pr
   const set = festival && setFor(festival, artist.id);
   const meta = festival && set ? describeSet(festival, set) : (festival?.name ?? '');
 
+  const artistButton = (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        router.push(`/artist/${artist.id}`);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${artist.name}`}
+      hitSlop={8}
+      style={({ pressed }) => [styles.artistRow, pressed && { opacity: 0.7 }]}
+    >
+      <ArtistAvatar artist={artist} size={40} />
+      <View style={styles.artistText}>
+        <Text style={styles.name} numberOfLines={1}>
+          {artist.name}
+        </Text>
+        <Text style={styles.match}>{pct}% match</Text>
+      </View>
+    </Pressable>
+  );
+
+  const actions = (horizontal: boolean) => (
+    <ActionRail
+      horizontal={horizontal}
+      liked={reaction.liked}
+      saved={reaction.saved}
+      onLike={() => {
+        const next = !reaction.liked;
+        next ? haptic.tap() : haptic.select();
+        setLiked(clip.id, next);
+      }}
+      onSave={() => {
+        reaction.saved ? haptic.select() : haptic.tap();
+        toggleSaved(clip.id);
+      }}
+      onSkip={() => {
+        haptic.soft();
+        markSkipped(clip.id);
+        onSkip();
+      }}
+    />
+  );
+
+  const burst = (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.burst, { left: burstAt.x - BURST / 2, top: burstAt.y - BURST / 2 }, burstStyle]}
+    >
+      <HeartIcon color={color.glow} size={BURST} filled />
+    </Animated.View>
+  );
+
+  if (source && showVideo) {
+    const playerWidth = width - space.lg * 2;
+    const playerHeight = Math.max(MIN_PLAYER, Math.round((playerWidth * 9) / 16));
+    return (
+      <View style={{ width, height }}>
+        {/* The stage keeps glowing behind the video. Taps here pause, double-taps like; the player takes its own touches. */}
+        <GestureDetector gesture={Gesture.Exclusive(doubleTap, singleTap)}>
+          <View style={StyleSheet.absoluteFill}>
+            <StageScene
+              artistId={artist.id}
+              bpm={clip.bpm}
+              width={width}
+              height={height}
+              clock={clock}
+              reduceMotion={reduceMotion}
+            />
+            <View style={[StyleSheet.absoluteFill, styles.dim]} pointerEvents="none" />
+            {burst}
+          </View>
+        </GestureDetector>
+
+        <View
+          style={[styles.stack, { top: insets.top + HEADER_CLEARANCE, bottom: bottomSpace + space.lg }]}
+          pointerEvents="box-none"
+        >
+          <View style={[styles.player, { width: playerWidth, height: playerHeight }]}>
+            {isNear && (
+              <YouTubePlayer
+                source={source}
+                active={isActive}
+                paused={paused}
+                progress={videoProgress}
+                onPlayingChange={syncPlaying}
+                onFail={failVideo}
+              />
+            )}
+          </View>
+          <View style={[styles.videoTrack, { width: playerWidth }]} pointerEvents="none">
+            <Animated.View style={[styles.progress, videoProgressStyle]} />
+          </View>
+
+          <View style={styles.videoInfo} pointerEvents="box-none">
+            {artistButton}
+            <Text style={styles.title}>{clip.title}</Text>
+            <Text style={styles.meta}>{meta}</Text>
+            <Text style={styles.credit}>{source.channel} on YouTube</Text>
+          </View>
+
+          <View style={styles.videoActions}>{actions(true)}</View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ width, height }}>
       <GestureDetector gesture={Gesture.Exclusive(doubleTap, singleTap)}>
         <View style={StyleSheet.absoluteFill}>
-          {/* Real footage plugs in here once clip.videoUrl exists. */}
           <StageScene
             artistId={artist.id}
             bpm={clip.bpm}
@@ -144,58 +268,28 @@ function ClipCardBase({ clip, width, height, isActive, bottomSpace, onSkip }: Pr
             </View>
           </Animated.View>
 
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.burst, { left: burstAt.x - BURST / 2, top: burstAt.y - BURST / 2 }, burstStyle]}
-          >
-            <HeartIcon color={color.glow} size={BURST} filled />
-          </Animated.View>
+          {burst}
         </View>
       </GestureDetector>
 
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
-        <Pressable
-          onPress={() => {
-            haptic.select();
-            router.push(`/artist/${artist.id}`);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${artist.name}`}
-          hitSlop={8}
-          style={({ pressed }) => [styles.artistRow, pressed && { opacity: 0.7 }]}
-        >
-          <ArtistAvatar artist={artist} size={40} />
-          <View style={styles.artistText}>
-            <Text style={styles.name} numberOfLines={1}>
-              {artist.name}
-            </Text>
-            <Text style={styles.match}>{pct}% match</Text>
-          </View>
-        </Pressable>
+        {artistButton}
         <Text style={styles.title}>{clip.title}</Text>
         <Text style={styles.meta}>{meta}</Text>
+        {source && videoFailed && (
+          <Pressable
+            onPress={() => Linking.openURL(watchUrl(source)).catch(() => {})}
+            accessibilityRole="link"
+            accessibilityLabel="Video unavailable here. Watch on YouTube"
+            hitSlop={8}
+            style={({ pressed }) => [styles.notice, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.noticeText}>Video unavailable here. Watch on YouTube</Text>
+          </Pressable>
+        )}
       </View>
 
-      <View style={[styles.rail, { bottom: bottomSpace + space.lg }]}>
-        <ActionRail
-          liked={reaction.liked}
-          saved={reaction.saved}
-          onLike={() => {
-            const next = !reaction.liked;
-            next ? haptic.tap() : haptic.select();
-            setLiked(clip.id, next);
-          }}
-          onSave={() => {
-            reaction.saved ? haptic.select() : haptic.tap();
-            toggleSaved(clip.id);
-          }}
-          onSkip={() => {
-            haptic.soft();
-            markSkipped(clip.id);
-            onSkip();
-          }}
-        />
-      </View>
+      <View style={[styles.rail, { bottom: bottomSpace + space.lg }]}>{actions(false)}</View>
 
       <View style={[styles.track, { bottom: bottomSpace - 2 }]} pointerEvents="none">
         <Animated.View style={[styles.progress, progressStyle]} />
@@ -239,4 +333,27 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progress: { height: 2, backgroundColor: color.moon },
+  notice: { alignSelf: 'flex-start', marginTop: space.sm },
+  noticeText: { ...type.label, color: color.glow, ...shadow },
+
+  // Real footage: video, then the clip, then the actions, stacked and centred between header and tab bar.
+  dim: { backgroundColor: 'rgba(6,5,16,0.62)' },
+  stack: { position: 'absolute', left: 0, right: 0, alignItems: 'center', justifyContent: 'center' },
+  player: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  videoTrack: {
+    height: 2,
+    borderRadius: 1,
+    marginTop: space.sm,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    overflow: 'hidden',
+  },
+  videoInfo: { alignSelf: 'stretch', paddingHorizontal: space.xl, marginTop: space.xl },
+  credit: { ...type.caption, color: color.moonFaint, marginTop: space.sm },
+  videoActions: { marginTop: space.xxl },
 });

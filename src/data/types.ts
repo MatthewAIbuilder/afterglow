@@ -49,14 +49,31 @@ export type Festival = {
   sets?: SetTime[];
 };
 
+/**
+ * Real footage for a clip: a section of an official upload, played in the
+ * platform's own embedded player. We only point at the video; nothing is
+ * downloaded or re-hosted, and if the owner removes it the clip falls back.
+ */
+export type ClipSource = {
+  provider: 'youtube';
+  /** The 11-character id from the watch link (youtube.com/watch?v=<id>). */
+  videoId: string;
+  /** Seconds into the video where the clip starts and stops. */
+  start: number;
+  end: number;
+  /** Who uploaded it, credited on the clip. Only official artist, festival, label or event channels. */
+  channel: string;
+};
+
 export type Clip = {
   id: string;
   artistId: string;
   festivalId: string;
   title: string;
+  /** Clip length in seconds. For real footage this is end minus start. */
   durationSec: number;
   /** Tempo of the set, drives the placeholder light show. */
   bpm: number;
-  /** Real footage later. Leave undefined to show the placeholder stage. */
-  videoUrl?: string;
+  /** Real footage. Leave undefined to show the placeholder stage. */
+  source?: ClipSource;
 };
