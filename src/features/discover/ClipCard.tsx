@@ -34,6 +34,8 @@ import { MIN_PLAYER, tallLayout } from './videoLayout';
 
 type Props = {
   clip: Clip;
+  /** Why this clip is in your feed, in a few words (from the recommendation layer). Strong matches have none. */
+  note?: string;
   width: number;
   height: number;
   isActive: boolean;
@@ -52,7 +54,7 @@ const BURST = 110;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
+function ClipCardBase({ clip, note, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
   const artist = artistById(clip.artistId);
   const reduceMotion = useReducedMotion();
   const { get, setLiked, toggleSaved, markSkipped, recordWatch } = useReactions();
@@ -176,7 +178,7 @@ function ClipCardBase({ clip, width, height, isActive, live, isNear, bottomSpace
         router.push(`/artist/${artist.id}`);
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Open ${artist.name}`}
+      accessibilityLabel={`Open ${artist.name}, ${pct} percent match${note ? `, ${note}` : ''}`}
       hitSlop={8}
       style={({ pressed }) => [styles.artistRow, pressed && { opacity: 0.7 }]}
     >
@@ -185,7 +187,10 @@ function ClipCardBase({ clip, width, height, isActive, live, isNear, bottomSpace
         <Text style={styles.name} numberOfLines={1}>
           {artist.name}
         </Text>
-        <Text style={styles.match}>{pct}% match</Text>
+        <Text style={styles.match} numberOfLines={1}>
+          {pct}% match
+          {note ? <Text style={styles.note}>{`  ·  ${note}`}</Text> : null}
+        </Text>
       </View>
     </Pressable>
   );
@@ -393,6 +398,7 @@ const styles = StyleSheet.create({
   artistText: { marginLeft: space.md, flex: 1 },
   name: { ...type.headline, color: color.moon, ...shadow },
   match: { ...type.label, color: color.glow, fontVariant: ['tabular-nums'], marginTop: 1, ...shadow },
+  note: { color: color.moonDim, fontWeight: '500' },
   title: { ...type.title, fontSize: 22, lineHeight: 27, color: color.moon, marginTop: space.lg, ...shadow },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs, ...shadow },
   rail: { position: 'absolute', right: space.lg },

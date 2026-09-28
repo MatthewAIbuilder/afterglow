@@ -11,29 +11,42 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
-import { CLIPS } from '../../data/clips';
+import { artistById } from '../../data/artists';
 import { FESTIVALS } from '../../data/festivals';
-import type { Clip } from '../../data/types';
 import { haptic } from '../../lib/haptics';
+import { useSeen } from '../../state/seen';
 import { color, space, type } from '../../theme/tokens';
 import { ClipCard } from './ClipCard';
 import type { FeedPager } from './feedPager';
+import { reasonNote } from '../recommend/copy';
+import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
 import { useFeedLive } from './useFeedLive';
+import { useRankedFeed } from './useRankedFeed';
 
 /**
  * Full-screen vertical feed. One clip per page. Only the clip on screen plays,
- * and only while Discover is visible and the app is in the foreground.
+ * and only while Discover is visible and the app is in the foreground. The
+ * order comes from the recommendation layer (features/recommend/feed).
  */
 export function DiscoverFeed() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const festival = FESTIVALS[0];
-  const listRef = useAnimatedRef<FlatList<Clip>>();
+  const listRef = useAnimatedRef<FlatList<FeedItem>>();
   const [activeIndex, setActiveIndex] = useState(0);
   const activeRef = useRef(0);
   const feedLive = useFeedLive();
+  const feed = useRankedFeed(activeIndex);
+  const count = feed?.length ?? 0;
+
+  // What you've had on screen, so the feed can hold it back next time.
+  const { markSeen } = useSeen();
+  const activeId = feed?.[activeIndex]?.clip.id;
+  useEffect(() => {
+    if (activeId && feedLive) markSeen(activeId);
+  }, [activeId, feedLive, markSeen]);
 
   // The feed's position and whether its own scrolling has the finger, read by swipes that start on a video.
   const offsetY = useSharedValue(0);
@@ -50,8 +63,8 @@ export function DiscoverFeed() {
     },
   });
   const pager = useMemo<FeedPager>(
-    () => ({ listRef, offsetY, nativeDrag, pageHeight: height, count: CLIPS.length }),
-    [listRef, offsetY, nativeDrag, height],
+    () => ({ listRef, offsetY, nativeDrag, pageHeight: height, count }),
+    [listRef, offsetY, nativeDrag, height, count],
   );
 
   const scrollToPage = useCallback(
@@ -74,37 +87,40 @@ export function DiscoverFeed() {
 
   // Opened from an artist page with a specific clip: jump straight to it.
   const { clip: requested } = useLocalSearchParams<{ clip?: string }>();
+  const ready = feed != null;
   useEffect(() => {
-    if (!requested) return;
-    const index = CLIPS.findIndex((c) => c.id === requested);
+    if (!requested || !feed) return;
+    const index = feed.findIndex((it) => it.clip.id === requested);
     if (index >= 0) {
       activeRef.current = index;
       setActiveIndex(index);
       requestAnimationFrame(() => scrollToPage(index, false));
     }
     router.setParams({ clip: '' });
+    // Only a new request (or the feed first becoming ready) should jump.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requested]);
+  }, [requested, ready]);
 
   const skipFrom = useCallback(
     (index: number) => {
-      if (index + 1 < CLIPS.length) scrollToPage(index + 1, true);
+      if (index + 1 < count) scrollToPage(index + 1, true);
     },
-    [scrollToPage],
+    [scrollToPage, count],
   );
 
   return (
     <View style={styles.root}>
       <Animated.FlatList
         ref={listRef}
-        data={CLIPS}
-        keyExtractor={(c) => c.id}
+        data={feed ?? []}
+        keyExtractor={(it: FeedItem) => it.clip.id}
         extraData={`${activeIndex}:${feedLive}`}
-        renderItem={({ item, index }) => {
+        renderItem={({ item, index }: { item: FeedItem; index: number }) => {
           const playback = clipPlayback(index, activeIndex, feedLive);
           return (
             <ClipCard
-              clip={item}
+              clip={item.clip}
+              note={reasonNote(item.reason, artistById)}
               width={width}
               height={height}
               isActive={playback.active}
