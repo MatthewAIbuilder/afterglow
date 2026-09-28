@@ -63,6 +63,8 @@ export type ClipSource = {
   end: number;
   /** Who uploaded it, credited on the clip. Only official artist, festival, label or event channels. */
   channel: string;
+  /** Shot vertically (an official Short). Gets a tall player; everything else is shown 16:9. */
+  vertical?: boolean;
 };
 
 export type Clip = {

@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -23,45 +23,51 @@ import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
+import { ClipPlayer } from './ClipPlayer';
+import { type FeedPager, usePlayerSwipe } from './feedPager';
 import { HeartIcon, PlayIcon } from './icons';
+import { clipMedia } from './media';
+import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
-import { playableSource, watchUrl } from './youtube';
-import { YouTubePlayer } from './YouTubePlayer';
+import { MIN_PLAYER, tallLayout } from './videoLayout';
 
 type Props = {
   clip: Clip;
   width: number;
   height: number;
   isActive: boolean;
+  /** Active, Discover visible and the app in the foreground. Nothing plays unless this is true. */
+  live: boolean;
   /** On screen or next to it: real footage loads ahead so a swipe lands on a ready player. */
   isNear: boolean;
   /** Space reserved at the bottom for the floating tab bar. */
   bottomSpace: number;
+  /** Lets a vertical swipe on the video move the feed. */
+  pager: FeedPager;
   onSkip: () => void;
 };
 
 const BURST = 110;
-/** YouTube's embedded player must be at least 200 by 200. */
-const MIN_PLAYER = 200;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSkip }: Props) {
+function ClipCardBase({ clip, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
   const artist = artistById(clip.artistId);
   const reduceMotion = useReducedMotion();
   const { get, setLiked, toggleSaved, markSkipped } = useReactions();
   const reaction = get(clip.id);
   const { taste } = useTaste();
   const [paused, setPaused] = useState(false);
-  const playing = isActive && !paused;
+  // Plays only while on screen, with Discover visible and the app in the foreground.
+  const playing = shouldPlay({ active: isActive, live }, paused);
   const insets = useSafeAreaInsets();
 
-  // Real footage when the clip has a playable source; the stage when it doesn't or the video fails.
-  const source = playableSource(clip);
+  // Real footage when the clip has playable media; the stage when it doesn't or the video fails.
+  const media = useMemo(() => clipMedia(clip), [clip]);
   const [videoFailed, setVideoFailed] = useState(false);
-  const showVideo = !!source && !videoFailed;
+  const showVideo = !!media && !videoFailed;
   const failVideo = useCallback(() => setVideoFailed(true), []);
-  const syncPlaying = useCallback((isPlaying: boolean) => setPaused(!isPlaying), []);
+  const playerSwipe = usePlayerSwipe(pager);
   const videoProgress = useSharedValue(0);
   const videoProgressStyle = useAnimatedStyle(() => ({ width: `${videoProgress.value * 100}%` }));
 
@@ -190,9 +196,52 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
     </Animated.View>
   );
 
-  if (source && showVideo) {
-    const playerWidth = width - space.lg * 2;
-    const playerHeight = Math.max(MIN_PLAYER, Math.round((playerWidth * 9) / 16));
+  if (media && showVideo) {
+    const top = insets.top + HEADER_CLEARANCE;
+    const bottom = bottomSpace + space.lg;
+    const tall = media.vertical ? tallLayout({ width, height, top, bottom }) : undefined;
+    const stackedWidth = width - space.lg * 2;
+    const frame = tall
+      ? tall.player
+      : { w: stackedWidth, h: Math.max(MIN_PLAYER, Math.round((stackedWidth * 9) / 16)) };
+
+    // The player takes its own taps; a vertical swipe on it still moves the feed.
+    const player = (
+      <GestureDetector gesture={playerSwipe}>
+        <View style={[styles.player, { width: frame.w, height: frame.h }]}>
+          <ClipPlayer
+            media={media}
+            load={isNear}
+            active={isActive}
+            live={live}
+            paused={paused}
+            progress={videoProgress}
+            onPausedChange={setPaused}
+            onFail={failVideo}
+          />
+        </View>
+      </GestureDetector>
+    );
+    const track = (
+      <View style={[styles.videoTrack, { width: frame.w }]} pointerEvents="none">
+        <Animated.View style={[styles.progress, videoProgressStyle]} />
+      </View>
+    );
+    const info = (
+      <>
+        {artistButton}
+        <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
+          {clip.title}
+        </Text>
+        <Text style={styles.meta} numberOfLines={tall ? 1 : undefined}>
+          {meta}
+        </Text>
+        <Text style={styles.credit} numberOfLines={1}>
+          {media.credit}
+        </Text>
+      </>
+    );
+
     return (
       <View style={{ width, height }}>
         {/* The stage keeps glowing behind the video. Taps here pause, double-taps like; the player takes its own touches. */}
@@ -211,35 +260,33 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
           </View>
         </GestureDetector>
 
-        <View
-          style={[styles.stack, { top: insets.top + HEADER_CLEARANCE, bottom: bottomSpace + space.lg }]}
-          pointerEvents="box-none"
-        >
-          <View style={[styles.player, { width: playerWidth, height: playerHeight }]}>
-            {isNear && (
-              <YouTubePlayer
-                source={source}
-                active={isActive}
-                paused={paused}
-                progress={videoProgress}
-                onPlayingChange={syncPlaying}
-                onFail={failVideo}
-              />
-            )}
+        {tall ? (
+          // Vertical footage: tall player with the rail beside it and the clip below. Nothing of ours overlaps it.
+          <>
+            <View style={[styles.abs, { left: tall.player.x, top: tall.player.y }]}>
+              {player}
+              {track}
+            </View>
+            <View style={[styles.abs, styles.railBox, { left: tall.rail.x, top: tall.rail.y, width: tall.rail.w }]}>
+              {actions(false)}
+            </View>
+            <View
+              style={[styles.abs, { left: tall.info.x, top: tall.info.y + space.sm, width: tall.info.w }]}
+              pointerEvents="box-none"
+            >
+              {info}
+            </View>
+          </>
+        ) : (
+          <View style={[styles.stack, { top, bottom }]} pointerEvents="box-none">
+            {player}
+            {track}
+            <View style={styles.videoInfo} pointerEvents="box-none">
+              {info}
+            </View>
+            <View style={styles.videoActions}>{actions(true)}</View>
           </View>
-          <View style={[styles.videoTrack, { width: playerWidth }]} pointerEvents="none">
-            <Animated.View style={[styles.progress, videoProgressStyle]} />
-          </View>
-
-          <View style={styles.videoInfo} pointerEvents="box-none">
-            {artistButton}
-            <Text style={styles.title}>{clip.title}</Text>
-            <Text style={styles.meta}>{meta}</Text>
-            <Text style={styles.credit}>{source.channel} on YouTube</Text>
-          </View>
-
-          <View style={styles.videoActions}>{actions(true)}</View>
-        </View>
+        )}
       </View>
     );
   }
@@ -276,9 +323,9 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
         {artistButton}
         <Text style={styles.title}>{clip.title}</Text>
         <Text style={styles.meta}>{meta}</Text>
-        {source && videoFailed && (
+        {media && videoFailed && (
           <Pressable
-            onPress={() => Linking.openURL(watchUrl(source)).catch(() => {})}
+            onPress={() => Linking.openURL(media.externalUrl).catch(() => {})}
             accessibilityRole="link"
             accessibilityLabel="Video unavailable here. Watch on YouTube"
             hitSlop={8}
@@ -346,6 +393,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
+  abs: { position: 'absolute' },
+  railBox: { alignItems: 'center' },
   videoTrack: {
     height: 2,
     borderRadius: 1,

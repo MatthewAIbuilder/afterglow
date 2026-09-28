@@ -1,7 +1,14 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
+import Animated, {
+  runOnUI,
+  scrollTo,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { CLIPS } from '../../data/clips';
@@ -10,16 +17,52 @@ import type { Clip } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { color, space, type } from '../../theme/tokens';
 import { ClipCard } from './ClipCard';
+import type { FeedPager } from './feedPager';
+import { clipPlayback } from './playback';
+import { useFeedLive } from './useFeedLive';
 
-/** Full-screen vertical feed. One clip per page, only the visible one plays. */
+/**
+ * Full-screen vertical feed. One clip per page. Only the clip on screen plays,
+ * and only while Discover is visible and the app is in the foreground.
+ */
 export function DiscoverFeed() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const festival = FESTIVALS[0];
-  const listRef = useRef<FlatList<Clip>>(null);
+  const listRef = useAnimatedRef<FlatList<Clip>>();
   const [activeIndex, setActiveIndex] = useState(0);
   const activeRef = useRef(0);
+  const feedLive = useFeedLive();
+
+  // The feed's position and whether its own scrolling has the finger, read by swipes that start on a video.
+  const offsetY = useSharedValue(0);
+  const nativeDrag = useSharedValue(false);
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      offsetY.value = e.contentOffset.y;
+    },
+    onBeginDrag: () => {
+      nativeDrag.value = true;
+    },
+    onEndDrag: () => {
+      nativeDrag.value = false;
+    },
+  });
+  const pager = useMemo<FeedPager>(
+    () => ({ listRef, offsetY, nativeDrag, pageHeight: height, count: CLIPS.length }),
+    [listRef, offsetY, nativeDrag, height],
+  );
+
+  const scrollToPage = useCallback(
+    (index: number, animated: boolean) => {
+      runOnUI((y: number, a: boolean) => {
+        'worklet';
+        scrollTo(listRef, 0, y, a);
+      })(index * height, animated);
+    },
+    [listRef, height],
+  );
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const index = viewableItems[0]?.index;
@@ -37,35 +80,42 @@ export function DiscoverFeed() {
     if (index >= 0) {
       activeRef.current = index;
       setActiveIndex(index);
-      requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, animated: false }));
+      requestAnimationFrame(() => scrollToPage(index, false));
     }
     router.setParams({ clip: '' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requested]);
 
   const skipFrom = useCallback(
     (index: number) => {
-      if (index + 1 < CLIPS.length) listRef.current?.scrollToIndex({ index: index + 1, animated: true });
+      if (index + 1 < CLIPS.length) scrollToPage(index + 1, true);
     },
-    [],
+    [scrollToPage],
   );
 
   return (
     <View style={styles.root}>
-      <FlatList
+      <Animated.FlatList
         ref={listRef}
         data={CLIPS}
         keyExtractor={(c) => c.id}
-        renderItem={({ item, index }) => (
-          <ClipCard
-            clip={item}
-            width={width}
-            height={height}
-            isActive={index === activeIndex}
-            isNear={Math.abs(index - activeIndex) <= 1}
-            bottomSpace={tabSpace}
-            onSkip={() => skipFrom(index)}
-          />
-        )}
+        extraData={`${activeIndex}:${feedLive}`}
+        renderItem={({ item, index }) => {
+          const playback = clipPlayback(index, activeIndex, feedLive);
+          return (
+            <ClipCard
+              clip={item}
+              width={width}
+              height={height}
+              isActive={playback.active}
+              live={playback.live}
+              isNear={Math.abs(index - activeIndex) <= 1}
+              bottomSpace={tabSpace}
+              pager={pager}
+              onSkip={() => skipFrom(index)}
+            />
+          );
+        }}
         getItemLayout={(_d, index) => ({ length: height, offset: height * index, index })}
         pagingEnabled
         snapToInterval={height}
@@ -73,6 +123,8 @@ export function DiscoverFeed() {
         decelerationRate="fast"
         disableIntervalMomentum
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
         windowSize={3}
