@@ -64,7 +64,7 @@ function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, 
     if (!m) return;
     if (m.type === 'ready') setReady(true);
     else if (m.type === 'error') onFail();
-    else if (m.type === 'time') progress.set(clipProgress(m.time, source));
+    else if (m.type === 'time') progress.set(clipProgress(m.time, source, m.duration));
     else if (m.type === 'state' && active) {
       if (m.state === PLAYER_STATE.playing) onPlayingChange(true);
       else if (m.state === PLAYER_STATE.paused) onPlayingChange(false);

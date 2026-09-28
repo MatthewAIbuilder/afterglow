@@ -12,11 +12,22 @@ type Props = {
   onSkip: () => void;
   /** Row sits under a video instead of floating beside the stage. */
   horizontal?: boolean;
+  /** Where the footage comes from, shown above Like. Tapping opens the original. */
+  source?: { name: string; onPress: () => void };
+  /** Closer spacing, for the rail beside real footage. */
+  tight?: boolean;
 };
 
-export function ActionRail({ liked, saved, onLike, onSave, onSkip, horizontal }: Props) {
+export function ActionRail({ liked, saved, onLike, onSave, onSkip, horizontal, source, tight }: Props) {
   return (
-    <View style={[styles.rail, horizontal && styles.row]}>
+    <View style={[styles.rail, horizontal && styles.row, tight && !horizontal && styles.tight]}>
+      {source && (
+        <RailButton label="Watch" accessibilityLabel={`Watch on ${source.name}`} active={false} onPress={source.onPress}>
+          <Text style={styles.badge} numberOfLines={1} adjustsFontSizeToFit>
+            {source.name}
+          </Text>
+        </RailButton>
+      )}
       <RailButton label={liked ? 'Liked' : 'Like'} active={liked} onPress={onLike}>
         <HeartIcon color={liked ? color.glow : color.moon} filled={liked} />
       </RailButton>
@@ -32,11 +43,13 @@ export function ActionRail({ liked, saved, onLike, onSave, onSkip, horizontal }:
 
 function RailButton({
   label,
+  accessibilityLabel,
   active,
   onPress,
   children,
 }: {
   label: string;
+  accessibilityLabel?: string;
   active: boolean;
   onPress: () => void;
   children: React.ReactNode;
@@ -56,7 +69,7 @@ function RailButton({
       onPressIn={() => (s.value = withSpring(0.86, motion.snappy))}
       onPressOut={() => (s.value = withSpring(1, motion.snappy))}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected: active }}
       hitSlop={8}
       style={styles.button}
@@ -69,7 +82,8 @@ function RailButton({
 
 const styles = StyleSheet.create({
   rail: { alignItems: 'center', gap: space.xl },
-  row: { flexDirection: 'row', justifyContent: 'center', gap: space.xxxl },
+  row: { flexDirection: 'row', justifyContent: 'center', gap: space.xxl },
+  tight: { gap: space.lg },
   button: { alignItems: 'center' },
   icon: {
     width: 50,
@@ -81,5 +95,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
+  badge: { ...type.caption, fontSize: 10, fontWeight: '700', letterSpacing: -0.2, color: color.moon, paddingHorizontal: 4 },
   label: { ...type.caption, color: color.moon, marginTop: 5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 6 },
 });

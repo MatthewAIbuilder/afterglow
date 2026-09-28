@@ -38,15 +38,8 @@ export const CLIPS: Clip[] = [
     bpm: 145,
     source: { provider: 'youtube', videoId: 'EIQlDpgAY5Y', start: 1800, end: 1845, channel: 'Boiler Room' },
   },
-  {
-    id: 'c4',
-    artistId: 'levity',
-    festivalId: F,
-    title: 'Live at Lost Lands 2024',
-    durationSec: 45,
-    bpm: 150,
-    source: { provider: 'youtube', videoId: 'lqqCNpZzYM4', start: 1380, end: 1425, channel: 'Lost Lands' },
-  },
+  // Levity's Lost Lands 2024 upload (lqqCNpZzYM4) was removed: it would not play in the app.
+  { id: 'c4', artistId: 'levity', festivalId: F, title: 'The first drop', durationSec: 20, bpm: 150 },
   {
     id: 'c5',
     artistId: 'john-summit',

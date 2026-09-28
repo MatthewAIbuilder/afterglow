@@ -16,9 +16,10 @@ export function playableSource(clip: Clip): ClipSource | undefined {
   return s;
 }
 
-/** How far through the clip a playback time is, 0 to 1. */
-export function clipProgress(time: number, source: ClipSource) {
-  const p = (time - source.start) / (source.end - source.start);
+/** How far through the clip a playback time is, 0 to 1. A video shorter than the section ends early. */
+export function clipProgress(time: number, source: ClipSource, duration?: number) {
+  const end = duration && duration > source.start ? Math.min(source.end, duration) : source.end;
+  const p = (time - source.start) / (end - source.start);
   return Math.min(1, Math.max(0, p));
 }
 
@@ -31,7 +32,7 @@ export function watchUrl(source: ClipSource) {
 export type PlayerMessage =
   | { type: 'ready' }
   | { type: 'state'; state: number }
-  | { type: 'time'; time: number }
+  | { type: 'time'; time: number; duration?: number }
   | { type: 'error'; code: number };
 
 /** YouTube player states we react to. */
@@ -42,7 +43,8 @@ export function parsePlayerMessage(raw: string): PlayerMessage | undefined {
     const m = JSON.parse(raw);
     if (m?.type === 'ready') return { type: 'ready' };
     if (m?.type === 'state' && typeof m.state === 'number') return { type: 'state', state: m.state };
-    if (m?.type === 'time' && typeof m.time === 'number') return { type: 'time', time: m.time };
+    if (m?.type === 'time' && typeof m.time === 'number')
+      return { type: 'time', time: m.time, duration: typeof m.duration === 'number' ? m.duration : undefined };
     if (m?.type === 'error' && typeof m.code === 'number') return { type: 'error', code: m.code };
   } catch {}
   return undefined;
@@ -74,7 +76,7 @@ function tick() {
   if (!player || !player.getCurrentTime) return;
   var t = player.getCurrentTime();
   if (t >= C.end - 0.25 || t < C.start - 1) { player.seekTo(C.start, true); t = C.start; }
-  send({ type: 'time', time: t });
+  send({ type: 'time', time: t, duration: player.getDuration ? player.getDuration() : undefined });
 }
 function onYouTubeIframeAPIReady() {
   player = new YT.Player('player', {

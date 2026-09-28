@@ -101,3 +101,12 @@ describe('feed clips', () => {
     expect(new Set(CLIPS.map((c) => c.id)).size).toBe(CLIPS.length);
   });
 });
+
+describe('clipProgress with a short video', () => {
+  it('ends the progress line when a video is shorter than the section', () => {
+    const short: ClipSource = { ...source, start: 0, end: 45 };
+    expect(clipProgress(15, short, 30)).toBe(0.5);
+    expect(clipProgress(30, short, 30)).toBe(1);
+    expect(clipProgress(15, short)).toBeCloseTo(1 / 3);
+  });
+});

@@ -25,6 +25,8 @@ import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
 import { HeartIcon, PlayIcon } from './icons';
 import { StageScene } from './StageScene';
+import { PlayerGlow } from './PlayerGlow';
+import { videoLayout } from './videoLayout';
 import { playableSource, watchUrl } from './youtube';
 import { YouTubePlayer } from './YouTubePlayer';
 
@@ -41,8 +43,6 @@ type Props = {
 };
 
 const BURST = 110;
-/** YouTube's embedded player must be at least 200 by 200. */
-const MIN_PLAYER = 200;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
@@ -159,9 +159,11 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
     </Pressable>
   );
 
-  const actions = (horizontal: boolean) => (
+  const actions = (horizontal: boolean, source?: { name: string; onPress: () => void }) => (
     <ActionRail
       horizontal={horizontal}
+      source={source}
+      tight={!!source}
       liked={reaction.liked}
       saved={reaction.saved}
       onLike={() => {
@@ -191,8 +193,29 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
   );
 
   if (source && showVideo) {
-    const playerWidth = width - space.lg * 2;
-    const playerHeight = Math.max(MIN_PLAYER, Math.round((playerWidth * 9) / 16));
+    const layout = videoLayout({
+      width,
+      height,
+      top: insets.top + HEADER_CLEARANCE,
+      bottom: bottomSpace + space.lg,
+      vertical: !!source.vertical,
+    });
+    const { player } = layout;
+    const openSource = { name: 'YouTube', onPress: () => Linking.openURL(watchUrl(source)).catch(() => {}) };
+    const info = (
+      <>
+        {artistButton}
+        <Text style={styles.title} numberOfLines={1}>
+          {clip.title}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
+        <Text style={styles.credit} numberOfLines={1}>
+          {source.channel} on YouTube
+        </Text>
+      </>
+    );
     return (
       <View style={{ width, height }}>
         {/* The stage keeps glowing behind the video. Taps here pause, double-taps like; the player takes its own touches. */}
@@ -207,39 +230,55 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
               reduceMotion={reduceMotion}
             />
             <View style={[StyleSheet.absoluteFill, styles.dim]} pointerEvents="none" />
+            <PlayerGlow artistId={artist.id} bpm={clip.bpm} frame={player} clock={clock} reduceMotion={reduceMotion} />
             {burst}
           </View>
         </GestureDetector>
 
-        <View
-          style={[styles.stack, { top: insets.top + HEADER_CLEARANCE, bottom: bottomSpace + space.lg }]}
-          pointerEvents="box-none"
-        >
-          <View style={[styles.player, { width: playerWidth, height: playerHeight }]}>
-            {isNear && (
-              <YouTubePlayer
-                source={source}
-                active={isActive}
-                paused={paused}
-                progress={videoProgress}
-                onPlayingChange={syncPlaying}
-                onFail={failVideo}
-              />
-            )}
-          </View>
-          <View style={[styles.videoTrack, { width: playerWidth }]} pointerEvents="none">
-            <Animated.View style={[styles.progress, videoProgressStyle]} />
-          </View>
-
-          <View style={styles.videoInfo} pointerEvents="box-none">
-            {artistButton}
-            <Text style={styles.title}>{clip.title}</Text>
-            <Text style={styles.meta}>{meta}</Text>
-            <Text style={styles.credit}>{source.channel} on YouTube</Text>
-          </View>
-
-          <View style={styles.videoActions}>{actions(true)}</View>
+        {/* The player and everything of ours sit side by side; nothing is ever drawn on top of it. */}
+        <View style={[styles.player, { left: player.x, top: player.y, width: player.w, height: player.h }]}>
+          {isNear && (
+            <YouTubePlayer
+              source={source}
+              active={isActive}
+              paused={paused}
+              progress={videoProgress}
+              onPlayingChange={syncPlaying}
+              onFail={failVideo}
+            />
+          )}
         </View>
+        <View
+          style={[styles.videoTrack, { left: player.x, top: player.y + player.h + space.xs + 2, width: player.w }]}
+          pointerEvents="none"
+        >
+          <Animated.View style={[styles.progress, videoProgressStyle]} />
+        </View>
+
+        {layout.mode === 'stacked' ? (
+          <View style={[styles.stackedBelow, { top: player.y + player.h + space.xl }]} pointerEvents="box-none">
+            <View style={styles.videoInfo} pointerEvents="box-none">
+              {info}
+            </View>
+            <View style={styles.videoActions}>{actions(true, openSource)}</View>
+          </View>
+        ) : (
+          <>
+            <View
+              style={[
+                styles.videoInfoBox,
+                { left: layout.info.x, width: layout.info.w, top: layout.info.y, height: layout.info.h },
+                layout.mode === 'centered' && styles.infoToBottom,
+              ]}
+              pointerEvents="box-none"
+            >
+              {info}
+            </View>
+            <View style={[styles.railBox, { left: layout.rail.x, top: layout.rail.y, width: layout.rail.w }]}>
+              {actions(false, openSource)}
+            </View>
+          </>
+        )}
       </View>
     );
   }
@@ -337,9 +376,9 @@ const styles = StyleSheet.create({
   noticeText: { ...type.label, color: color.glow, ...shadow },
 
   // Real footage: video, then the clip, then the actions, stacked and centred between header and tab bar.
-  dim: { backgroundColor: 'rgba(6,5,16,0.62)' },
-  stack: { position: 'absolute', left: 0, right: 0, alignItems: 'center', justifyContent: 'center' },
+  dim: { backgroundColor: 'rgba(6,5,16,0.5)' },
   player: {
+    position: 'absolute',
     borderRadius: radius.md,
     overflow: 'hidden',
     backgroundColor: '#000',
@@ -347,13 +386,17 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   videoTrack: {
+    position: 'absolute',
     height: 2,
     borderRadius: 1,
-    marginTop: space.sm,
     backgroundColor: 'rgba(255,255,255,0.14)',
     overflow: 'hidden',
   },
-  videoInfo: { alignSelf: 'stretch', paddingHorizontal: space.xl, marginTop: space.xl },
+  videoInfo: { alignSelf: 'stretch', paddingHorizontal: space.xl },
+  videoInfoBox: { position: 'absolute' },
+  infoToBottom: { justifyContent: 'flex-end' },
+  railBox: { position: 'absolute', alignItems: 'center' },
+  stackedBelow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   credit: { ...type.caption, color: color.moonFaint, marginTop: space.sm },
   videoActions: { marginTop: space.xxl },
 });
