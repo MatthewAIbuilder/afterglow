@@ -34,4 +34,32 @@ describe('taste engine', () => {
     expect(informed.levity).toBe(true); // via spill-over
     expect(informed['john-summit']).toBe(false);
   });
+
+  it('nudges an artist up when you watch a clip through, less than a like', () => {
+    const id = clipOf('john-summit');
+    const watched = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [id]: { ...none, watched: 'through' } });
+    const liked = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [id]: { ...none, liked: true } });
+    expect(watched.taste['john-summit']).toBeGreaterThan(MOCK_TASTE['john-summit']);
+    expect(watched.taste['john-summit']).toBeLessThan(liked.taste['john-summit']);
+    expect(watched.summary.watched).toBe(1);
+  });
+
+  it('nudges an artist down on a quick swipe, less than a skip', () => {
+    const id = clipOf('sara-landry');
+    const quick = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [id]: { ...none, watched: 'quick' } });
+    const skipped = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [id]: { ...none, skipped: true } });
+    expect(quick.taste['sara-landry']).toBeLessThan(MOCK_TASTE['sara-landry']);
+    expect(quick.taste['sara-landry']).toBeGreaterThan(skipped.taste['sara-landry']);
+  });
+
+  it('lets what you tap win over how you watched', () => {
+    const id = clipOf('sara-landry');
+    const likedThenSwiped = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [id]: { ...none, liked: true, watched: 'quick' } });
+    const liked = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [id]: { ...none, liked: true } });
+    expect(likedThenSwiped.taste['sara-landry']).toBeCloseTo(liked.taste['sara-landry']);
+
+    const skippedAfterWatching = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [id]: { ...none, skipped: true, watched: 'through' } });
+    const skipped = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [id]: { ...none, skipped: true } });
+    expect(skippedAfterWatching.taste['sara-landry']).toBeCloseTo(skipped.taste['sara-landry']);
+  });
 });

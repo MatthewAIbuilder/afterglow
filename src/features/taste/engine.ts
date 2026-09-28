@@ -10,18 +10,22 @@ import { soundSimilarity } from '../sound-map/layout';
  *   the match up, skips push it down.
  * - Part of that signal spills over to artists with a similar sound, which is
  *   how the map learns about artists you have not seen yet.
+ * - How you watch is a quieter signal: watching a clip to the end or letting
+ *   it replay nudges the artist up, swiping away in the first seconds nudges
+ *   them down. What you tap always wins over how you watched.
  * - Changes shrink near the edges: a 98% match barely moves on another like,
  *   a 42% match moves a lot.
  */
 
-const WEIGHT = { like: 1, save: 1.3, skip: -0.8 };
+const WEIGHT = { like: 1, save: 1.3, skip: -0.8, through: 0.35, replayed: 0.6, quick: -0.25 };
 const STEP = 0.11; // how much one signal moves a mid-range match
 const SPILL = 0.45; // share of a signal that reaches similar artists
 const SPILL_MIN_SIMILARITY = 0.3;
 const FLOOR = 0.05;
 const CEILING = 0.99;
 
-export type TasteSummary = { likes: number; saves: number; skips: number };
+/** watched: clips you watched to the end or replayed. */
+export type TasteSummary = { likes: number; saves: number; skips: number; watched: number };
 
 export function computeTaste(
   base: TasteProfile,
@@ -31,7 +35,7 @@ export function computeTaste(
 ): { taste: TasteProfile; summary: TasteSummary; informed: Record<string, boolean> } {
   const clipById = new Map(clips.map((c) => [c.id, c]));
   const direct: Record<string, number> = {};
-  const summary: TasteSummary = { likes: 0, saves: 0, skips: 0 };
+  const summary: TasteSummary = { likes: 0, saves: 0, skips: 0, watched: 0 };
 
   for (const [clipId, r] of Object.entries(reactions)) {
     const clip = clipById.get(clipId);
@@ -49,6 +53,12 @@ export function computeTaste(
       s += WEIGHT.skip;
       summary.skips++;
     }
+    // A skip already said no; a like or save already said yes.
+    if (!r.skipped && (r.watched === 'through' || r.watched === 'replayed')) {
+      s += WEIGHT[r.watched];
+      summary.watched++;
+    }
+    if (r.watched === 'quick' && !r.skipped && !r.liked && !r.saved) s += WEIGHT.quick;
     direct[clip.artistId] = (direct[clip.artistId] ?? 0) + s;
   }
 

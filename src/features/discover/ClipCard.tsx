@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -21,6 +21,7 @@ import type { Clip } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
+import { watchFrom } from '../taste/watch';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
 import { HeartIcon, PlayIcon } from './icons';
@@ -49,7 +50,7 @@ const HEADER_CLEARANCE = 100;
 function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSkip }: Props) {
   const artist = artistById(clip.artistId);
   const reduceMotion = useReducedMotion();
-  const { get, setLiked, toggleSaved, markSkipped } = useReactions();
+  const { get, setLiked, toggleSaved, markSkipped, recordWatch } = useReactions();
   const reaction = get(clip.id);
   const { taste } = useTaste();
   const [paused, setPaused] = useState(false);
@@ -64,6 +65,11 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
   const syncPlaying = useCallback((isPlaying: boolean) => setPaused(!isPlaying), []);
   const videoProgress = useSharedValue(0);
   const videoProgressStyle = useAnimatedStyle(() => ({ width: `${videoProgress.value * 100}%` }));
+  // Real footage counts what YouTube actually played, so loading time is never mistaken for watching.
+  const videoPlayed = useRef(0);
+  const addVideoPlayed = useCallback((seconds: number) => {
+    videoPlayed.current += seconds;
+  }, []);
 
   // One clock drives the light show and the progress bar, so pausing freezes both.
   const clock = useSharedValue(0);
@@ -76,13 +82,25 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing]);
 
-  // Every time a clip comes into view it starts from the top.
+  // Every time a clip comes into view it starts from the top. When it leaves,
+  // how long it played becomes a quiet taste signal.
+  const wasActive = useRef(isActive);
   useEffect(() => {
+    if (wasActive.current && !isActive) {
+      const played = showVideo && source ? videoPlayed.current : clock.value / 1000;
+      const length = showVideo && source ? source.end - source.start : clip.durationSec;
+      const watch = watchFrom(played, length);
+      if (watch) recordWatch(clip.id, watch);
+    }
+    wasActive.current = isActive;
     if (isActive) {
       clock.value = 0;
+      videoPlayed.current = 0;
       setPaused(false);
     }
-  }, [isActive, clock]);
+    // Only a change of the on-screen clip matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
 
   const progressStyle = useAnimatedStyle(() => ({
     width: `${((clock.value / (clip.durationSec * 1000)) % 1) * 100}%`,
@@ -223,6 +241,7 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
                 paused={paused}
                 progress={videoProgress}
                 onPlayingChange={syncPlaying}
+                onPlayed={addVideoPlayed}
                 onFail={failVideo}
               />
             )}

@@ -17,19 +17,24 @@ type Props = {
   progress: SharedValue<number>;
   /** The player itself was played or paused (its own controls, or autoplay). */
   onPlayingChange: (playing: boolean) => void;
+  /** Seconds of the clip that actually played, reported as it goes. Loops count again; seeking back doesn't. */
+  onPlayed?: (seconds: number) => void;
   /** The video can't play here: removed, private, embedding off, or the player never loaded. */
   onFail: () => void;
 };
 
 /** Give up if the player hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
+/** A gap between time reports bigger than this is a seek, not playback. */
+const MAX_TICK = 1.5;
 
 /**
  * YouTube's official embedded player, in a web view sized by the parent.
  * Nothing is drawn over it: our controls live outside its frame.
  */
-function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, onFail }: Props) {
+function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, onPlayed, onFail }: Props) {
   const web = useRef<WebView>(null);
+  const lastTime = useRef<number | null>(null);
   const [ready, setReady] = useState(false);
   const html = useMemo(() => playerHtml(source, APP_ORIGIN), [source]);
 
@@ -46,6 +51,7 @@ function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, 
   // Coming into view starts the clip from the top, like the stage clips.
   useEffect(() => {
     if (!ready) return;
+    lastTime.current = null;
     if (active) {
       progress.set(0);
       command('restart');
@@ -64,7 +70,14 @@ function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, 
     if (!m) return;
     if (m.type === 'ready') setReady(true);
     else if (m.type === 'error') onFail();
-    else if (m.type === 'time') progress.set(clipProgress(m.time, source));
+    else if (m.type === 'time') {
+      progress.set(clipProgress(m.time, source));
+      if (active && lastTime.current != null) {
+        const played = m.time - lastTime.current;
+        if (played > 0 && played <= MAX_TICK) onPlayed?.(played);
+      }
+      lastTime.current = m.time;
+    }
     else if (m.type === 'state' && active) {
       if (m.state === PLAYER_STATE.playing) onPlayingChange(true);
       else if (m.state === PLAYER_STATE.paused) onPlayingChange(false);

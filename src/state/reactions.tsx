@@ -1,11 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { strongerWatch, type Watch } from '../features/taste/watch';
 
 /**
  * What the user did with each clip. This is the raw signal the taste engine
  * learns from. Saved on the device, so your taste survives restarts.
  */
-export type Reaction = { liked: boolean; saved: boolean; skipped: boolean };
+export type Reaction = {
+  liked: boolean;
+  saved: boolean;
+  skipped: boolean;
+  /** How you watched it, when that said something. Missing on reactions saved before watch time counted. */
+  watched?: Watch;
+};
 
 const EMPTY: Reaction = { liked: false, saved: false, skipped: false };
 
@@ -15,6 +22,7 @@ type Ctx = {
   setLiked: (clipId: string, liked: boolean) => void;
   toggleSaved: (clipId: string) => void;
   markSkipped: (clipId: string) => void;
+  recordWatch: (clipId: string, watch: Watch) => void;
 };
 
 const STORAGE_KEY = 'reactions.v1';
@@ -42,7 +50,11 @@ export function ReactionsProvider({ children }: { children: ReactNode }) {
   }, [reactions]);
 
   const update = useCallback((clipId: string, fn: (r: Reaction) => Reaction) => {
-    setReactions((all) => ({ ...all, [clipId]: fn(all[clipId] ?? EMPTY) }));
+    setReactions((all) => {
+      const prev = all[clipId] ?? EMPTY;
+      const next = fn(prev);
+      return next === prev ? all : { ...all, [clipId]: next };
+    });
   }, []);
 
   const value = useMemo<Ctx>(
@@ -52,6 +64,11 @@ export function ReactionsProvider({ children }: { children: ReactNode }) {
       setLiked: (id, liked) => update(id, (r) => ({ ...r, liked, skipped: liked ? false : r.skipped })),
       toggleSaved: (id) => update(id, (r) => ({ ...r, saved: !r.saved })),
       markSkipped: (id) => update(id, (r) => ({ ...r, skipped: true, liked: false })),
+      recordWatch: (id, watch) =>
+        update(id, (r) => {
+          const watched = strongerWatch(r.watched, watch);
+          return watched === r.watched ? r : { ...r, watched };
+        }),
     }),
     [reactions, update],
   );
