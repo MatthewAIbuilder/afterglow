@@ -1,0 +1,21 @@
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ReactionsProvider } from '../state/reactions';
+import { color } from '../theme/tokens';
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.night }}>
+      <ReactionsProvider>
+      <StatusBar style="light" />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="artist/[id]" />
+        <Stack.Screen name="festival/[id]" />
+        <Stack.Screen name="poster/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+      </Stack>
+      </ReactionsProvider>
+    </GestureHandlerRootView>
+  );
+}
