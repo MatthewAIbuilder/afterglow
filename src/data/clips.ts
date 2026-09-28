@@ -9,6 +9,10 @@ const F = 'solstice-26';
  * player. Only add videos from the artist's, festival's, label's or event's
  * official channel, and only if the video allows embedding. Clips without a
  * source show the drawn stage.
+ *
+ * All sources below were checked on 2026-09-28: public, on the listed
+ * official channel, right artist at the start time, and playing embedded in
+ * the app. Check any new source the same way before adding it.
  */
 export const CLIPS: Clip[] = [
   {
