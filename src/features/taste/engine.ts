@@ -28,7 +28,7 @@ export function computeTaste(
   artists: Artist[],
   clips: Clip[],
   reactions: Record<string, Reaction>,
-): { taste: TasteProfile; summary: TasteSummary } {
+): { taste: TasteProfile; summary: TasteSummary; informed: Record<string, boolean> } {
   const clipById = new Map(clips.map((c) => [c.id, c]));
   const direct: Record<string, number> = {};
   const summary: TasteSummary = { likes: 0, saves: 0, skips: 0 };
@@ -65,7 +65,10 @@ export function computeTaste(
   }
 
   const taste: TasteProfile = {};
+  // Whether a match rests on anything real (a starting prediction or your reactions), or is only the default guess.
+  const informed: Record<string, boolean> = {};
   for (const a of artists) {
+    informed[a.id] = a.id in base || signal[a.id] !== 0;
     const start = base[a.id] ?? 0.5;
     const s = signal[a.id];
     // Room to move shrinks as you approach 0% or 100%.
@@ -73,5 +76,5 @@ export function computeTaste(
     const next = start + Math.tanh(s * STEP * 2) * room * 0.9;
     taste[a.id] = Math.min(CEILING, Math.max(FLOOR, next));
   }
-  return { taste, summary };
+  return { taste, summary, informed };
 }
