@@ -22,14 +22,16 @@ export const FESTIVALS: Festival[] = [
       { id: 'bass', name: 'Bass Tent' },
       { id: 'warehouse', name: 'The Warehouse' },
     ],
+    // Friday has a close call between two headliners, Saturday a clear winner,
+    // Sunday a free evening for something new.
     sets: [
-      { artistId: 'john-summit', day: 'Friday', stageId: 'main', start: '20:45', end: '22:00' },
-      { artistId: 'tape-b', day: 'Friday', stageId: 'bass', start: '22:30', end: '23:30' },
+      { artistId: 'tape-b', day: 'Friday', stageId: 'bass', start: '22:00', end: '23:00' },
+      { artistId: 'sara-landry', day: 'Friday', stageId: 'warehouse', start: '22:15', end: '23:30' },
+      { artistId: 'illenium', day: 'Friday', stageId: 'main', start: '23:40', end: '01:10' },
       { artistId: 'subtronics', day: 'Friday', stageId: 'bass', start: '00:15', end: '01:30' },
-      { artistId: 'levity', day: 'Saturday', stageId: 'bass', start: '21:30', end: '22:45' },
-      { artistId: 'illenium', day: 'Saturday', stageId: 'main', start: '23:40', end: '01:10' },
-      { artistId: 'excision', day: 'Sunday', stageId: 'bass', start: '23:00', end: '00:30' },
-      { artistId: 'sara-landry', day: 'Sunday', stageId: 'warehouse', start: '02:00', end: '03:30' },
+      { artistId: 'levity', day: 'Saturday', stageId: 'bass', start: '22:30', end: '23:45' },
+      { artistId: 'excision', day: 'Saturday', stageId: 'main', start: '23:00', end: '00:30' },
+      { artistId: 'john-summit', day: 'Sunday', stageId: 'main', start: '20:30', end: '22:00' },
     ],
   },
   {

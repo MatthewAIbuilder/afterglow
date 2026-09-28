@@ -12,8 +12,10 @@ import { CLIPS } from '../../data/clips';
 import { describeSet, festivalById, festivalsFor, setFor } from '../../data/festivals';
 import { SOUND_LABEL, type SoundTag } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
+import { StarIcon } from '../../features/plan/icons';
 import { soundSimilarity } from '../../features/sound-map/layout';
 import { haptic } from '../../lib/haptics';
+import { usePlan } from '../../state/plan';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -25,7 +27,9 @@ export default function ArtistScreen() {
   const artist = artistById(id);
   const insets = useSafeAreaInsets();
   const { taste } = useTaste();
+  const { isMustSee, toggleMustSee } = usePlan();
   if (!artist) return null;
+  const mustSee = isMustSee(artist.id);
 
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
   const tags = (Object.entries(artist.sound) as [SoundTag, number][]).sort((a, b) => b[1] - a[1]);
@@ -66,6 +70,24 @@ export default function ArtistScreen() {
               </View>
             ))}
           </View>
+          {festivals.length > 0 && (
+            <Pressable
+              onPress={() => {
+                if (mustSee) haptic.select();
+                else haptic.tap();
+                toggleMustSee(artist.id);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: mustSee }}
+              accessibilityLabel={mustSee ? 'Remove from your must sees' : 'Mark as a must see'}
+              style={({ pressed }) => [styles.mustSee, mustSee && styles.mustSeeOn, pressed && { opacity: 0.7 }]}
+            >
+              <StarIcon color={mustSee ? color.glow : color.moonDim} filled={mustSee} size={16} />
+              <Text style={[styles.mustSeeText, mustSee && { color: color.moon }]}>
+                {mustSee ? 'On your must-see list' : 'Mark as must see'}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {festivals.length > 0 && (
@@ -181,6 +203,19 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   tagText: { ...type.caption, color: color.moon },
+  mustSee: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: space.lg,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  mustSeeOn: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.4)' },
+  mustSeeText: { ...type.label, color: color.moonDim },
   section: { marginTop: space.xxl, paddingHorizontal: space.xl },
   sectionTitle: { ...type.title, fontSize: 22, color: color.moon, marginBottom: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md, gap: space.md },

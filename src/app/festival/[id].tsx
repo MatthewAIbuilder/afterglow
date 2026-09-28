@@ -10,6 +10,7 @@ import { ChevronIcon } from '../../components/TabIcons';
 import { artistById } from '../../data/artists';
 import { describeSet, festivalById, setFor } from '../../data/festivals';
 import type { Artist } from '../../data/types';
+import { YourFestival } from '../../features/plan/YourFestival';
 import { haptic } from '../../lib/haptics';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -68,21 +69,23 @@ export default function FestivalScreen() {
           {timesOut ? (
             <>
               <Text style={styles.noteTitle}>Set times are out</Text>
-              <Text style={styles.noteBody}>Each artist shows when and where they play.</Text>
+              <Text style={styles.noteBody}>Your plan below is laid out day by day, with any clashes called out.</Text>
             </>
           ) : (
             <>
-              <Text style={styles.noteTitle}>Set times aren't out yet</Text>
+              <Text style={styles.noteTitle}>Set times aren’t out yet</Text>
               <Text style={styles.noteBody}>
-                Festivals usually publish them a week or two before the gates open. Until then, here is the full
-                lineup ranked by your match.
+                Festivals usually publish them a week or two before the gates open. Until then, here’s who to put
+                first.
               </Text>
             </>
           )}
         </View>
 
+        <YourFestival festival={festival} />
+
         <View style={[styles.pad, styles.lineupHead]}>
-          <Text style={styles.section}>Lineup</Text>
+          <Text style={styles.section}>Full lineup</Text>
           <Segmented value={order} onChange={setOrder} />
         </View>
 
