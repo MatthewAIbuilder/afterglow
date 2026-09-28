@@ -21,7 +21,7 @@ export default function MySoundScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // The map shows the taste you last saw, then reshapes a beat after you
-  // arrive, so you can watch what your likes and skips changed.
+  // arrive, so you can watch what your likes, skips and viewing changed.
   const live = useTaste();
   const liveRef = useRef(live);
   liveRef.current = live;
@@ -70,12 +70,13 @@ export default function MySoundScreen() {
   );
 }
 
-function subtitle({ likes, saves, skips }: TasteSummary) {
-  if (likes + saves + skips === 0) return 'Bigger means a closer match. Similar sounds sit together.';
+function subtitle({ likes, saves, skips, watched }: TasteSummary) {
+  if (likes + saves + skips + watched === 0) return 'Bigger means a closer match. Similar sounds sit together.';
   const parts = [
     likes && `${likes} ${likes === 1 ? 'like' : 'likes'}`,
     saves && `${saves} ${saves === 1 ? 'save' : 'saves'}`,
     skips && `${skips} ${skips === 1 ? 'skip' : 'skips'}`,
+    watched && `${watched} watched ${watched === 1 ? 'clip' : 'clips'}`,
   ].filter(Boolean) as string[];
   const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
   return `Shaped by your ${list}. Bigger means a closer match.`;

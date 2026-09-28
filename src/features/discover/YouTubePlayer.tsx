@@ -3,7 +3,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { APP_ORIGIN } from '../../config/app';
 import type { EngineProps } from './ClipPlayer';
-import { canCountWatch, playedBetween, readPlayerReport, shouldPlay } from './playback';
+import { canCountWatch, playedSpan, readPlayerReport, shouldPlay } from './playback';
 import { clipProgress, parsePlayerMessage, PLAYER_STATE, playerHtml } from './youtube';
 
 /** Give up if the player hasn't loaded after this long, and show the stage instead. */
@@ -73,9 +73,9 @@ function YouTubePlayerBase({
     else if (m.type === 'time') {
       progress.set(clipProgress(m.time, source, m.duration));
       // Only time that played while this clip was live and actually playing counts as watching.
-      const played = playedBetween(lastTime.current, m.time, canCountWatch({ active, live }, isPlaying.current));
+      const span = playedSpan(lastTime.current, m.time, canCountWatch({ active, live }, isPlaying.current), source.start);
       lastTime.current = m.time;
-      if (played > 0) onPlayed?.(played);
+      if (span) onPlayed?.(span.from, span.to);
     } else if (m.type === 'state') {
       isPlaying.current = m.state === PLAYER_STATE.playing;
       if (isPlaying.current) onStarted();

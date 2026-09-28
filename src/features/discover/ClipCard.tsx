@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -21,6 +21,7 @@ import type { Clip } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
+import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
 import { ClipPlayer } from './ClipPlayer';
@@ -54,7 +55,7 @@ const HEADER_CLEARANCE = 100;
 function ClipCardBase({ clip, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
   const artist = artistById(clip.artistId);
   const reduceMotion = useReducedMotion();
-  const { get, setLiked, toggleSaved, markSkipped } = useReactions();
+  const { get, setLiked, toggleSaved, markSkipped, recordWatch } = useReactions();
   const reaction = get(clip.id);
   const { taste } = useTaste();
   const [paused, setPaused] = useState(false);
@@ -70,6 +71,28 @@ function ClipCardBase({ clip, width, height, isActive, live, isNear, bottomSpace
   const playerSwipe = usePlayerSwipe(pager);
   const videoProgress = useSharedValue(0);
   const videoProgressStyle = useAnimatedStyle(() => ({ width: `${videoProgress.value * 100}%` }));
+
+  // How this visit to the clip is being watched. Only real footage counts, and
+  // only what the player reports as played while live; see features/taste/watch.
+  const watch = useRef<WatchSession | null>(null);
+  const onPlayed = useCallback((from: number, to: number) => {
+    if (watch.current) watch.current = addPlayed(watch.current, from, to);
+  }, []);
+  const wasActive = useRef(false);
+  useEffect(() => {
+    if (isActive && !wasActive.current) watch.current = media ? startWatch(media.lengthSec) : null;
+    if (!isActive && wasActive.current && watch.current) {
+      // Swiped away (or skipped): the visit is over, and how it went is a quiet signal.
+      const w = watchOf(watch.current);
+      if (w) recordWatch(clip.id, w);
+      watch.current = null;
+    }
+    wasActive.current = isActive;
+  }, [isActive, media, clip.id, recordWatch]);
+  // Leaving Discover mid-clip isn't passing on it.
+  useEffect(() => {
+    if (isActive && !live && watch.current && watch.current.playedSec > 0) watch.current = excuseWatch(watch.current);
+  }, [isActive, live]);
 
   // One clock drives the light show and the progress bar, so pausing freezes both.
   const clock = useSharedValue(0);
@@ -148,6 +171,8 @@ function ClipCardBase({ clip, width, height, isActive, live, isNear, bottomSpace
     <Pressable
       onPress={() => {
         haptic.select();
+        // Curious enough to look them up: a short watch isn't passing on it.
+        if (watch.current) watch.current = excuseWatch(watch.current);
         router.push(`/artist/${artist.id}`);
       }}
       accessibilityRole="button"
@@ -217,6 +242,7 @@ function ClipCardBase({ clip, width, height, isActive, live, isNear, bottomSpace
             paused={paused}
             progress={videoProgress}
             onPausedChange={setPaused}
+            onPlayed={onPlayed}
             onFail={failVideo}
           />
         </View>

@@ -6,22 +6,23 @@ Expo / React Native / TypeScript. Also read @AGENTS.md (Expo's own agent rules: 
 
 ## Current state
 
-Milestones 5, 5.1 and 6 are merged. Milestone 6.5 (Discover playback polish) is built and awaiting on-device testing. Built so far:
+Milestones 5, 5.1 and 6 are merged. Milestone 6.5 (Discover playback polish, PR #7) and Milestone 7 (taste from watch behaviour) are built and awaiting on-device testing. Built so far:
 - **Discover**: full-screen vertical feed, one clip per page; tap to pause, double-tap to like, Like/Save/Skip rail, progress bar, haptics. Clips with a `Clip.source` play a section of an official YouTube upload in YouTube's own embedded player (`react-native-webview`), with the video on top and the clip info and Like/Save/Skip below it, never over the player. Clips without one, or whose video can't play, show the placeholder "stage scene" drawn in code (beams, beat-synced glow, crowd). The 10 YouTube sources in `data/clips.ts` were verified by the user on 2026-09-28 (public, official channel, right artist, plays embedded).
-- **Discover playback (Milestone 6.5)**: only the on-screen clip plays, and only while Discover is the visible screen and the app is in the foreground (another tab, a pushed page, or a backgrounded app pauses video and stage alike; coming back resumes unless you paused). Rules are pure in `features/discover/playback.ts` and tested. The feed only talks to `ClipPlayer` (still from the video while loading, fades into the player once it plays; picks the player per provider); YouTube details stay in `YouTubePlayer`/`youtube.ts`/`media.ts`, so a native video source can slot in later. A vertical swipe that starts on the video moves the feed (`feedPager.ts`). Optional vertical footage: `source.vertical: true` (official Shorts) gets a tall 9:16 player with the rail beside it (`videoLayout.ts`); no Shorts are in the feed yet. `ClipPlayer.onPlayed` reports only live, actually-playing seconds: any watch-time signal (Milestone 7, PR #6, not merged) must use it and nothing else.
+- **Discover playback (Milestone 6.5)**: only the on-screen clip plays, and only while Discover is the visible screen and the app is in the foreground (another tab, a pushed page, or a backgrounded app pauses video and stage alike; coming back resumes unless you paused). Rules are pure in `features/discover/playback.ts` and tested. The feed only talks to `ClipPlayer` (still from the video while loading, fades into the player once it plays; picks the player per provider); YouTube details stay in `YouTubePlayer`/`youtube.ts`/`media.ts`, so a native video source can slot in later. A vertical swipe that starts on the video moves the feed (`feedPager.ts`). Optional vertical footage: `source.vertical: true` (official Shorts) gets a tall 9:16 player with the rail beside it (`videoLayout.ts`); no Shorts are in the feed yet. `ClipPlayer.onPlayed` reports only live, actually-playing seconds: any watch-time signal must use it and nothing else.
 - **My Sound**: bubble map. Top match pinned at centre, others placed by sound direction and distance by match, label-aware collision (no overlaps), pan with momentum, pinch zoom, double-tap recenter, bubbles trail and wobble when panned, reshape animation when taste changes, glass artist sheet.
 - **Festivals** tab, festival pages (lineup sorted For you / Billing, set times when published, optional lineup poster with full-screen zoom viewer).
 - **Artist** pages: match, sound tags, where they play, clips (open in Discover), similar artists.
 - **Taste engine** v1 and **persistent reactions** (AsyncStorage).
+- **Watch behaviour (Milestone 7)**: how a real clip was watched is a quiet, passive taste signal. `features/taste/watch.ts` (pure) keeps one session per visit to a clip, fed only by `ClipPlayer.onPlayed` spans, and tracks *coverage* (merged parts of the clip), so repeated reports or seeking back never count the same seconds twice. On leaving the clip: ~all of it covered = `through`, a full pass plus half again = `replayed`, 1 to 4s played then swiped away = `quick`. Loading, hidden, background or stage-placeholder playback gives nothing; leaving Discover or opening the artist mid-clip excuses a short watch. Per clip the strongest watch is kept (through twice on separate visits = replayed; never beyond). Engine weights: through 0.3, replayed 0.5, quick -0.2 (like 1, save 1.3, skip -0.8); a skip cancels the watch on that clip, a like/save cancels a quick swipe, and all passive signal per artist is capped to [-0.3, 0.6], below one like or skip. Watches spill over to similar sounds like likes. My Sound's subtitle counts watched clips.
 - **Your festival** (Milestone 5) on each festival page. Before set times: lineup ranked into Must see / Strong match / Explore from the live match. After set times: day-by-day timeline, clashes grouped with a suggestion (clear winner, close call, or your starred pick, plus how much of the other set you can still catch), explore picks as discoveries when you're free or as a quiet alternative. A star marks a personal must-see at that festival only (festivalId + artistId); it's a planning preference stored apart from reactions and never changes the match. Artist pages opened from a festival get a `festival` route param and star for that festival; opened elsewhere they show no star.
 
-Do not start Milestone 7 (watch time as a taste signal) unless asked.
+Do not start the next milestone unless asked.
 
 ## Product principles
 
 - **Visual standard is non-negotiable**: Apple-level polish, dark-first, minimal and premium, excellent typography and spacing, smooth purposeful motion, tasteful blur/glass, strong but meaningful haptics. No generic dashboard look, no cheap neon "EDM app" look. The accent is one restrained purple glow ("festival light at night"). Artist imagery should eventually drive per-artist color.
 - **The bubble map is the core differentiator.** Bubble size = predicted affinity. Similar sounds cluster naturally. It should feel like a living musical universe, not a chart.
-- **Recommendations are behavior-driven.** Scores come from what the user does: today likes, saves and skips (with spill-over to similar sounds); later watch time, replays, follows and other meaningful signals. Never replace this with arbitrary static scores. `data/tasteProfile.ts` is only the starting prior.
+- **Recommendations are behavior-driven.** Scores come from what the user does: likes, saves and skips, plus quieter watch behaviour (watched through, replayed, quick swipe away), all with spill-over to similar sounds; later follows and other meaningful signals. Passive signals must never outweigh explicit ones. Never replace this with arbitrary static scores. `data/tasteProfile.ts` is only the starting prior.
 - **Festivals have two phases.** Lineups are known months ahead; set times arrive a week or two before. Every schedule feature must work gracefully in both.
 - Copy is plain, sentence case, user-facing (no developer language in the UI).
 
@@ -42,8 +43,9 @@ src/
   features/discover/          DiscoverFeed, ClipCard, StageScene, ActionRail, icons, ClipPlayer (the one video surface), YouTubePlayer, useFeedLive, feedPager; pure: playback.ts (lifecycle, watch eligibility), media.ts (provider-neutral clip media), videoLayout.ts, youtube.ts (source checks, player page)
   features/sound-map/         layout.ts (pure layout engine), SoundMap, ArtistBubble, ArtistSheet
   features/taste/engine.ts    Pure taste engine: reactions -> TasteProfile (+ which scores rest on real signal)
+  features/taste/watch.ts     Pure watch sessions: played spans -> quick / through / replayed, coverage-based, bounded
   features/plan/              plan.ts (pure: tiers, schedule, clash verdicts), mustSees.ts (pure per-festival stars), copy.ts, YourFestival, MustSeeList, Timetable, MustSeeToggle
-  state/reactions.tsx         Likes/saves/skips context, persisted to AsyncStorage
+  state/reactions.tsx         Likes/saves/skips/watched context, persisted to AsyncStorage
   state/taste.ts              useTaste(): live profile + summary
   state/plan.tsx              Starred must-sees per festival, persisted to AsyncStorage (planning only, never fed to the taste engine)
   data/                       Types and mock data: artists, clips, festivals, tasteProfile
@@ -52,7 +54,7 @@ src/
   config/app.ts               App name
 ```
 
-Key data models (`src/data/types.ts`): `Artist` (id, name, optional imageUrl, `sound` weights per `SoundTag`), `TasteProfile` (artistId -> 0..1), `Clip` (artist, festival, title, duration, bpm, optional `source`: YouTube video id, start/end seconds, channel, optional `vertical`), `Festival` (lineup in billing order, days, stages, optional `sets` and `posterImageUrl`), `SetTime` (artist, day, stage, start/end 24h). Reactions: `{ liked, saved, skipped }` per clip id.
+Key data models (`src/data/types.ts`): `Artist` (id, name, optional imageUrl, `sound` weights per `SoundTag`), `TasteProfile` (artistId -> 0..1), `Clip` (artist, festival, title, duration, bpm, optional `source`: YouTube video id, start/end seconds, channel, optional `vertical`), `Festival` (lineup in billing order, days, stages, optional `sets` and `posterImageUrl`), `SetTime` (artist, day, stage, start/end 24h). Reactions: `{ liked, saved, skipped, watched? }` per clip id (`watched`: `quick` | `through` | `replayed`).
 
 Pure logic (layout, taste engine) stays free of React so it can be tested and later moved server-side.
 

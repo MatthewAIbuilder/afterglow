@@ -27,11 +27,11 @@ type Common = {
   /** You paused or played with the player's own controls. */
   onPausedChange: (paused: boolean) => void;
   /**
-   * Seconds that actually played while live, reported as they happen. The
-   * only source for any future watch-time signal: hidden, backgrounded or
-   * paused playback never reaches it.
+   * A stretch of the clip that actually played while live, in seconds into
+   * the clip, reported as it happens. The only source for watch-time
+   * signals: hidden, backgrounded or paused playback never reaches it.
    */
-  onPlayed?: (seconds: number) => void;
+  onPlayed?: (from: number, to: number) => void;
   /** The footage can't play here: the card falls back to the stage. */
   onFail: () => void;
 };

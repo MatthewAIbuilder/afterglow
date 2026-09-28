@@ -1,6 +1,7 @@
 import type { Artist, Clip, TasteProfile } from '../../data/types';
 import type { Reaction } from '../../state/reactions';
 import { soundSimilarity } from '../sound-map/layout';
+import { isWatch, type Watch } from './watch';
 
 /**
  * Taste engine, version one. Pure and deterministic, so it is easy to reason
@@ -8,20 +9,30 @@ import { soundSimilarity } from '../sound-map/layout';
  *
  * - Every reaction is a signal for that clip's artist: likes and saves push
  *   the match up, skips push it down.
+ * - How you watch is a quieter, passive signal: watching a clip through or
+ *   replaying it nudges the artist up, swiping away in the first seconds
+ *   nudges them down. A skip cancels the watch on that clip, and a like or
+ *   save cancels a quick swipe. Passive signal per artist is capped below a
+ *   single like or skip, so watching can never outweigh what you tap.
  * - Part of that signal spills over to artists with a similar sound, which is
  *   how the map learns about artists you have not seen yet.
  * - Changes shrink near the edges: a 98% match barely moves on another like,
  *   a 42% match moves a lot.
  */
 
-const WEIGHT = { like: 1, save: 1.3, skip: -0.8 };
+export const WEIGHT = { like: 1, save: 1.3, skip: -0.8 };
+/** Passive watch signals, one per clip at most. */
+export const WATCH_WEIGHT: Record<Watch, number> = { through: 0.3, replayed: 0.5, quick: -0.2 };
+/** Bounds on all passive signal for one artist, however many clips you watch. */
+export const WATCH_CAP = { up: 0.6, down: -0.3 };
 const STEP = 0.11; // how much one signal moves a mid-range match
 const SPILL = 0.45; // share of a signal that reaches similar artists
 const SPILL_MIN_SIMILARITY = 0.3;
 const FLOOR = 0.05;
 const CEILING = 0.99;
 
-export type TasteSummary = { likes: number; saves: number; skips: number };
+/** watched: clips you watched through or replayed (and didn't skip). */
+export type TasteSummary = { likes: number; saves: number; skips: number; watched: number };
 
 export function computeTaste(
   base: TasteProfile,
@@ -31,7 +42,8 @@ export function computeTaste(
 ): { taste: TasteProfile; summary: TasteSummary; informed: Record<string, boolean> } {
   const clipById = new Map(clips.map((c) => [c.id, c]));
   const direct: Record<string, number> = {};
-  const summary: TasteSummary = { likes: 0, saves: 0, skips: 0 };
+  const passive: Record<string, number> = {};
+  const summary: TasteSummary = { likes: 0, saves: 0, skips: 0, watched: 0 };
 
   for (const [clipId, r] of Object.entries(reactions)) {
     const clip = clipById.get(clipId);
@@ -50,6 +62,16 @@ export function computeTaste(
       summary.skips++;
     }
     direct[clip.artistId] = (direct[clip.artistId] ?? 0) + s;
+
+    const w = isWatch(r.watched) ? r.watched : undefined;
+    // A skip already said no; a like or save outweighs a quick swipe.
+    if (w && !r.skipped && !(w === 'quick' && (r.liked || r.saved))) {
+      passive[clip.artistId] = (passive[clip.artistId] ?? 0) + WATCH_WEIGHT[w];
+      if (w !== 'quick') summary.watched++;
+    }
+  }
+  for (const [id, p] of Object.entries(passive)) {
+    direct[id] = (direct[id] ?? 0) + Math.min(WATCH_CAP.up, Math.max(WATCH_CAP.down, p));
   }
 
   // Direct signal plus spill-over from similar artists.
