@@ -27,8 +27,8 @@ function StageSceneBase({ artistId, bpm, width, height, clock, reduceMotion }: P
 
   // Deterministic beam layout per artist.
   const beams = useMemo(() => {
-    let seed = [...artistId].reduce((h, c) => (h * 33 + c.charCodeAt(0)) % 10007, 17);
-    const rand = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    const rng = { seed: [...artistId].reduce((h, c) => (h * 33 + c.charCodeAt(0)) % 10007, 17) };
+    const rand = () => ((rng.seed = (rng.seed * 9301 + 49297) % 233280) / 233280);
     return Array.from({ length: 5 }, (_, i) => ({
       x: width * (0.12 + (i / 4) * 0.76),
       speed: 0.00035 + rand() * 0.0004,

@@ -43,7 +43,7 @@ function RailButton({
 
   // A small pop whenever the button turns on.
   useEffect(() => {
-    if (active) s.value = withSequence(withTiming(1.25, { duration: 110 }), withSpring(1, motion.snappy));
+    if (active) s.set(withSequence(withTiming(1.25, { duration: 110 }), withSpring(1, motion.snappy)));
   }, [active, s]);
 
   const style = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
@@ -51,8 +51,8 @@ function RailButton({
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={() => (s.value = withSpring(0.86, motion.snappy))}
-      onPressOut={() => (s.value = withSpring(1, motion.snappy))}
+      onPressIn={() => s.set(withSpring(0.86, motion.snappy))}
+      onPressOut={() => s.set(withSpring(1, motion.snappy))}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}

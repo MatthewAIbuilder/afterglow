@@ -65,14 +65,16 @@ Pure logic (layout, taste engine) stays free of React so it can be tested and la
 
 ```
 npm install                                   # .npmrc sets legacy-peer-deps (needed for SDK 57)
-npx tsc --noEmit                              # type-check
+npm run lint                                  # ESLint via `expo lint` (eslint-config-expo, eslint.config.js)
+npm run typecheck                             # tsc --noEmit
+npm test                                      # Jest (jest-expo preset); tests live next to the code as *.test.ts
 npx expo export --platform ios --output-dir /tmp/exp-ios          # build check
 npx expo export --platform android --output-dir /tmp/exp-android  # build check
 npx expo-doctor                               # dependency/config health
 npx expo start                                # run in Expo Go (user tests on device)
 ```
 
-After any significant change: type-check, run both export build checks and expo-doctor, and fix everything before finishing. Cloud sessions can't run the app on a phone, so summarize exactly what the user should test in Expo Go.
+After any significant change: run lint, typecheck and tests, both export build checks and expo-doctor, and fix everything before finishing. Pure logic (layout engine, taste engine) should keep its unit tests up to date. Test files must stay outside `src/app/` (every file there is a route). Cloud sessions can't run the app on a phone, so summarize exactly what the user should test in Expo Go.
 
 ## User context
 

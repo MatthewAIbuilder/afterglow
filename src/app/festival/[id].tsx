@@ -72,7 +72,7 @@ export default function FestivalScreen() {
             </>
           ) : (
             <>
-              <Text style={styles.noteTitle}>Set times aren't out yet</Text>
+              <Text style={styles.noteTitle}>{"Set times aren't out yet"}</Text>
               <Text style={styles.noteBody}>
                 Festivals usually publish them a week or two before the gates open. Until then, here is the full
                 lineup ranked by your match.

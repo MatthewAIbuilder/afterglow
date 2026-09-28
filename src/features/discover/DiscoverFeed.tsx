@@ -21,13 +21,14 @@ export function DiscoverFeed() {
   const [activeIndex, setActiveIndex] = useState(0);
   const activeRef = useRef(0);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+  // FlatList needs this callback to stay the same for the list's lifetime.
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const index = viewableItems[0]?.index;
     if (index == null || index === activeRef.current) return;
     activeRef.current = index;
     haptic.select();
     setActiveIndex(index);
-  }).current;
+  }, []);
 
   // Opened from an artist page with a specific clip: jump straight to it.
   const { clip: requested } = useLocalSearchParams<{ clip?: string }>();
@@ -36,6 +37,8 @@ export function DiscoverFeed() {
     const index = CLIPS.findIndex((c) => c.id === requested);
     if (index >= 0) {
       activeRef.current = index;
+      // Syncing with the route param, which is outside React.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveIndex(index);
       requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, animated: false }));
     }

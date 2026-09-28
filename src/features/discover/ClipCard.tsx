@@ -58,11 +58,13 @@ function ClipCardBase({ clip, width, height, isActive, bottomSpace, onSkip }: Pr
   }, [playing]);
 
   // Every time a clip comes into view it starts from the top.
+  const [wasActive, setWasActive] = useState(isActive);
+  if (isActive !== wasActive) {
+    setWasActive(isActive);
+    if (isActive) setPaused(false);
+  }
   useEffect(() => {
-    if (isActive) {
-      clock.value = 0;
-      setPaused(false);
-    }
+    if (isActive) clock.set(0);
   }, [isActive, clock]);
 
   const progressStyle = useAnimatedStyle(() => ({
@@ -80,8 +82,8 @@ function ClipCardBase({ clip, width, height, isActive, bottomSpace, onSkip }: Pr
 
   const likeFromDoubleTap = (x: number, y: number) => {
     setBurstAt({ x, y });
-    burstScale.value = withSequence(withTiming(0, { duration: 0 }), withSpring(1, motion.bloom));
-    burstOpacity.value = withSequence(withTiming(1, { duration: 60 }), withDelay(420, withTiming(0, { duration: 260 })));
+    burstScale.set(withSequence(withTiming(0, { duration: 0 }), withSpring(1, motion.bloom)));
+    burstOpacity.set(withSequence(withTiming(1, { duration: 60 }), withDelay(420, withTiming(0, { duration: 260 }))));
     haptic.tap();
     if (!reaction.liked) setLiked(clip.id, true);
   };
@@ -182,11 +184,13 @@ function ClipCardBase({ clip, width, height, isActive, bottomSpace, onSkip }: Pr
           saved={reaction.saved}
           onLike={() => {
             const next = !reaction.liked;
-            next ? haptic.tap() : haptic.select();
+            if (next) haptic.tap();
+            else haptic.select();
             setLiked(clip.id, next);
           }}
           onSave={() => {
-            reaction.saved ? haptic.select() : haptic.tap();
+            if (reaction.saved) haptic.select();
+            else haptic.tap();
             toggleSaved(clip.id);
           }}
           onSkip={() => {

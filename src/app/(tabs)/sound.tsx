@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -24,10 +24,12 @@ export default function MySoundScreen() {
   // arrive, so you can watch what your likes and skips changed.
   const live = useTaste();
   const liveRef = useRef(live);
-  liveRef.current = live;
   const [shown, setShown] = useState(live);
   const shownRef = useRef(shown);
-  shownRef.current = shown;
+  useEffect(() => {
+    liveRef.current = live;
+    shownRef.current = shown;
+  });
 
   useFocusEffect(
     useCallback(() => {

@@ -64,7 +64,7 @@ type Part = { dx: number; dy: number; r: number };
 type Node = PlacedArtist & { hx: number; hy: number; pinned: boolean; parts: Part[] };
 
 /** A bubble plus two circles covering its label: a cheap but honest footprint. */
-function footprint(name: string, r: number): Part[] {
+export function footprint(name: string, r: number): Part[] {
   const w = labelWidth(name, r);
   const ly = r + LABEL_OFFSET + LABEL_H / 2;
   const lr = Math.max(LABEL_H / 2, w / 4);
