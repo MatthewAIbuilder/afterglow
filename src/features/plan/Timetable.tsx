@@ -45,7 +45,7 @@ export function Timetable({ festival, schedule }: { festival: Festival; schedule
         <View style={styles.unscheduled}>
           <Text style={styles.subhead}>No set time yet</Text>
           {schedule.unscheduled.map((p) => (
-            <PickRow key={p.artist.id} pick={p} note={TIER_LABEL[p.tier]} />
+            <PickRow key={p.artist.id} festivalId={festival.id} pick={p} note={TIER_LABEL[p.tier]} />
           ))}
         </View>
       )}
@@ -115,9 +115,9 @@ function TimelineRow({ item, last, children }: { item: ScheduleItem; last: boole
 const where = (festival: Festival, p: TimedPick) =>
   `${stageName(festival, p.set.stageId)}, until ${formatTime(p.set.end)}`;
 
-const openArtist = (id: string) => {
+const openArtist = (festival: Festival, id: string) => {
   haptic.select();
-  router.push(`/artist/${id}`);
+  router.push({ pathname: '/artist/[id]', params: { id, festival: festival.id } });
 };
 
 /** Compact artist line used inside cards. */
@@ -137,7 +137,7 @@ function ArtistLine({
   const match = matchLabel(pick);
   return (
     <Pressable
-      onPress={() => openArtist(pick.artist.id)}
+      onPress={() => openArtist(festival, pick.artist.id)}
       accessibilityRole="button"
       accessibilityLabel={`${label ? `${label}. ` : ''}${pick.artist.name}, ${pick.known ? `${match} match` : 'new to you'}, ${formatTime(pick.set.start)}, ${where(festival, pick)}`}
       style={({ pressed }) => [styles.aLine, dim && { opacity: 0.6 }, pressed && { opacity: 0.5 }]}
@@ -154,7 +154,7 @@ function ArtistLine({
       </View>
       <View style={styles.side}>
         <Text style={[styles.match, pick.tier === 'must-see' && pick.known && { color: color.glow }]}>{match}</Text>
-        <MustSeeToggle artist={pick.artist} size={18} />
+        <MustSeeToggle artist={pick.artist} festivalId={festival.id} size={18} />
       </View>
     </Pressable>
   );
@@ -169,7 +169,7 @@ function Alternatives({ festival, picks }: { festival: Festival; picks: TimedPic
       {picks.map((p) => (
         <Pressable
           key={p.artist.id}
-          onPress={() => openArtist(p.artist.id)}
+          onPress={() => openArtist(festival, p.artist.id)}
           accessibilityRole="button"
           accessibilityLabel={`${p.artist.name}, ${p.known ? `${matchLabel(p)} match` : 'new to you'}, ${where(festival, p)}`}
           style={({ pressed }) => [styles.altRow, pressed && { opacity: 0.6 }]}

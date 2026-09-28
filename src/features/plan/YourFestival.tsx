@@ -15,11 +15,11 @@ import { Timetable } from './Timetable';
  */
 export function YourFestival({ festival }: { festival: Festival }) {
   const { taste, informed } = useTaste();
-  const { mustSees } = usePlan();
+  const { mustSeesAt } = usePlan();
 
   const picks = useMemo(
-    () => rankLineup({ festival, artists: ARTISTS, taste, informed, pinned: mustSees }),
-    [festival, taste, informed, mustSees],
+    () => rankLineup({ festival, artists: ARTISTS, taste, informed, pinned: mustSeesAt(festival.id) }),
+    [festival, taste, informed, mustSeesAt],
   );
   const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
 
@@ -38,7 +38,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
       ) : schedule ? (
         <Timetable festival={festival} schedule={schedule} />
       ) : (
-        <MustSeeList picks={picks} />
+        <MustSeeList festivalId={festival.id} picks={picks} />
       )}
     </View>
   );

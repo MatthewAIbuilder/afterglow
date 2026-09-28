@@ -12,7 +12,7 @@ import { exploreReason, TIER_AT, type Pick, type Tier } from './plan';
 const TIERS: Tier[] = ['must-see', 'strong', 'explore'];
 
 /** Before set times: your lineup as a ranked plan in three tiers. */
-export function MustSeeList({ picks }: { picks: Pick[] }) {
+export function MustSeeList({ festivalId, picks }: { festivalId: string; picks: Pick[] }) {
   const reduceMotion = useReducedMotion();
   const groups = TIERS.map((tier) => ({ tier, picks: picks.filter((p) => p.tier === tier) })).filter(
     (g) => g.picks.length,
@@ -38,6 +38,7 @@ export function MustSeeList({ picks }: { picks: Pick[] }) {
               layout={reduceMotion ? undefined : LinearTransition.duration(260)}
             >
               <PickRow
+                festivalId={festivalId}
                 pick={p}
                 rank={picks.indexOf(p) + 1}
                 note={
@@ -57,14 +58,24 @@ export function MustSeeList({ picks }: { picks: Pick[] }) {
 }
 
 /** One pick: rank, avatar, name, a short note, match and the must-see star. Opens the artist. */
-export function PickRow({ pick, rank, note }: { pick: Pick; rank?: number; note?: string }) {
+export function PickRow({
+  festivalId,
+  pick,
+  rank,
+  note,
+}: {
+  festivalId: string;
+  pick: Pick;
+  rank?: number;
+  note?: string;
+}) {
   const { artist } = pick;
   const match = matchLabel(pick);
   return (
     <Pressable
       onPress={() => {
         haptic.select();
-        router.push(`/artist/${artist.id}`);
+        router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festivalId } });
       }}
       accessibilityRole="button"
       accessibilityLabel={`${rank ? `Number ${rank}, ` : ''}${artist.name}, ${
@@ -85,7 +96,7 @@ export function PickRow({ pick, rank, note }: { pick: Pick; rank?: number; note?
         ) : null}
       </View>
       <Text style={[styles.match, pick.tier === 'must-see' && pick.known && { color: color.glow }]}>{match}</Text>
-      <MustSeeToggle artist={artist} />
+      <MustSeeToggle artist={artist} festivalId={festivalId} />
     </Pressable>
   );
 }
