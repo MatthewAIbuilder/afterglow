@@ -16,12 +16,13 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { ChevronIcon } from '../../components/TabIcons';
-import { artistById } from '../../data/artists';
-import { describeSet, festivalById, setFor } from '../../data/festivals';
+import { setFor } from '../../data/festival';
 import type { Clip, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
+import { describeSet } from '../festivals/format';
 import { festivalLine } from '../festivals/links';
 import { StarIcon } from '../plan/icons';
 import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
@@ -62,7 +63,8 @@ const BURST = 110;
 const HEADER_CLEARANCE = 100;
 
 function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
-  const artist = artistById(clip.artistId);
+  const catalog = useCatalog();
+  const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
   const { get, setLiked, toggleSaved, markSkipped, recordWatch } = useReactions();
   const reaction = get(clip.id);
@@ -175,7 +177,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   // The artist's place at the festival you're discovering; without a focus, the clip's own festival.
   const line = festival ? festivalLine(festival, artist.id) : undefined;
   const context = line ? festival : undefined;
-  const own = festivalById(clip.festivalId);
+  const own = catalog.festival(clip.festivalId);
   const ownSet = own && setFor(own, artist.id);
   const meta = line ?? (own && ownSet ? describeSet(own, ownSet) : (own?.name ?? ''));
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import { ARTISTS } from '../../../data/artists';
-import { CLIPS } from '../../../data/clips';
-import { MOCK_TASTE } from '../../../data/tasteProfile';
+import { ARTISTS } from '../../../data/mock/artists';
+import { CLIPS } from '../../../data/mock/clips';
+import { MOCK_TASTE } from '../../../data/mock/tasteProfile';
 import type { Clip } from '../../../data/types';
 import { computeTaste, WATCH_CAP, WATCH_WEIGHT, WEIGHT } from '../engine';
 

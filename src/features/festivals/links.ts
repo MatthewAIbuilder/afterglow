@@ -1,4 +1,5 @@
-import { describeSet, setFor } from '../../data/festivals';
+import { setFor } from '../../data/festival';
+import { describeSet } from './format';
 import type { Clip, Festival } from '../../data/types';
 
 /**

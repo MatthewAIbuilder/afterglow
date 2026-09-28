@@ -7,14 +7,14 @@ import { ArtistRow } from '../../components/ArtistRow';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
-import { artistById } from '../../data/artists';
-import { CLIPS } from '../../data/clips';
-import { describeSet, festivalById, setFor } from '../../data/festivals';
+import { setFor } from '../../data/festival';
 import type { Artist } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
+import { describeSet } from '../../features/festivals/format';
 import { lineupReach } from '../../features/festivals/links';
 import { YourFestival } from '../../features/plan/YourFestival';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -22,20 +22,21 @@ type Order = 'match' | 'billing';
 
 export default function FestivalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const festival = festivalById(id);
+  const catalog = useCatalog();
+  const festival = catalog.festival(id);
   const insets = useSafeAreaInsets();
   const { taste } = useTaste();
   const [order, setOrder] = useState<Order>('match');
 
   const lineup = useMemo(() => {
     if (!festival) return [];
-    const list = festival.lineup.map((a) => artistById(a)).filter((a): a is Artist => !!a);
+    const list = festival.lineup.map((a) => catalog.artist(a)).filter((a): a is Artist => !!a);
     return order === 'match' ? [...list].sort((a, b) => (taste[b.id] ?? 0) - (taste[a.id] ?? 0)) : list;
-  }, [festival, order, taste]);
+  }, [catalog, festival, order, taste]);
 
   if (!festival) return null;
   const timesOut = !!festival.sets?.length;
-  const reach = lineupReach(festival, CLIPS);
+  const reach = lineupReach(festival, catalog.clips);
 
   return (
     <View style={styles.root}>

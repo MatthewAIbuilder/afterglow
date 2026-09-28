@@ -1,14 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
-import { ARTISTS } from '../artists';
-import { CLIPS } from '../clips';
-import { FESTIVALS } from '../festivals';
-import { MOCK_TASTE } from '../tasteProfile';
+import { MOCK_CATALOG, MOCK_TASTE } from '../mock';
 import { computeLayout } from '../../features/sound-map/layout';
 import { computeTaste } from '../../features/taste/engine';
 import { rankFeed } from '../../features/recommend/feed';
 import { buildSchedule, rankLineup } from '../../features/plan/plan';
 import { festivalLine, lineupClips } from '../../features/festivals/links';
 import type { Reaction } from '../../state/reactions';
+
+// What the app reads: the mock data, checked and indexed by the data layer.
+const { artists: ARTISTS, clips: CLIPS, festivals: FESTIVALS } = MOCK_CATALOG;
 
 /**
  * Golden outputs for the mock data. Recorded before the data layer was
