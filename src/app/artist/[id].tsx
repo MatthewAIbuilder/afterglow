@@ -131,7 +131,8 @@ export default function ArtistScreen() {
                 key={c.id}
                 onPress={() => {
                   haptic.select();
-                  router.navigate({ pathname: '/', params: { clip: c.id } });
+                  // Opened from a festival: keep discovering that lineup.
+                  router.navigate({ pathname: '/', params: starFestival ? { clip: c.id, festival: starFestival.id } : { clip: c.id } });
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Play ${c.title}`}

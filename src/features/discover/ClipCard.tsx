@@ -15,12 +15,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
+import { ChevronIcon } from '../../components/TabIcons';
 import { artistById } from '../../data/artists';
 import { describeSet, festivalById, setFor } from '../../data/festivals';
-import type { Clip } from '../../data/types';
+import type { Clip, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
+import { festivalLine } from '../festivals/links';
+import { StarIcon } from '../plan/icons';
 import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
@@ -36,6 +39,10 @@ type Props = {
   clip: Clip;
   /** Why this clip is in your feed, in a few words (from the recommendation layer). Strong matches have none. */
   note?: string;
+  /** The festival Discover is focused on. The clip shows the artist's place there and links to it. */
+  festival?: Festival;
+  /** You starred this artist as a must-see at that festival. */
+  mustSee?: boolean;
   width: number;
   height: number;
   isActive: boolean;
@@ -54,7 +61,7 @@ const BURST = 110;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, note, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
+function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
   const artist = artistById(clip.artistId);
   const reduceMotion = useReducedMotion();
   const { get, setLiked, toggleSaved, markSkipped, recordWatch } = useReactions();
@@ -165,9 +172,12 @@ function ClipCardBase({ clip, note, width, height, isActive, live, isNear, botto
 
   if (!artist) return null;
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
-  const festival = festivalById(clip.festivalId);
-  const set = festival && setFor(festival, artist.id);
-  const meta = festival && set ? describeSet(festival, set) : (festival?.name ?? '');
+  // The artist's place at the festival you're discovering; without a focus, the clip's own festival.
+  const line = festival ? festivalLine(festival, artist.id) : undefined;
+  const context = line ? festival : undefined;
+  const own = festivalById(clip.festivalId);
+  const ownSet = own && setFor(own, artist.id);
+  const meta = line ?? (own && ownSet ? describeSet(own, ownSet) : (own?.name ?? ''));
 
   const artistButton = (
     <Pressable
@@ -175,7 +185,8 @@ function ClipCardBase({ clip, note, width, height, isActive, live, isNear, botto
         haptic.select();
         // Curious enough to look them up: a short watch isn't passing on it.
         if (watch.current) watch.current = excuseWatch(watch.current);
-        router.push(`/artist/${artist.id}`);
+        // In the festival's context, so you can star them as a must-see there.
+        router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: context?.id } });
       }}
       accessibilityRole="button"
       accessibilityLabel={`Open ${artist.name}, ${pct} percent match${note ? `, ${note}` : ''}`}
@@ -194,6 +205,31 @@ function ClipCardBase({ clip, note, width, height, isActive, live, isNear, botto
       </View>
     </Pressable>
   );
+
+  // Where they play: opens the festival, with its lineup and your plan.
+  const metaLine = (singleLine: boolean) =>
+    context ? (
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          router.push(`/festival/${context.id}`);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${meta} at ${context.name}${mustSee ? ', one of your must sees' : ''}. Opens the festival.`}
+        hitSlop={6}
+        style={({ pressed }) => [styles.metaRow, pressed && { opacity: 0.7 }]}
+      >
+        {mustSee && <StarIcon color={color.glow} filled size={13} />}
+        <Text style={[styles.meta, styles.metaInRow]} numberOfLines={singleLine ? 1 : undefined}>
+          {meta}
+        </Text>
+        <ChevronIcon color={color.moonFaint} size={11} />
+      </Pressable>
+    ) : (
+      <Text style={styles.meta} numberOfLines={singleLine ? 1 : undefined}>
+        {meta}
+      </Text>
+    );
 
   const actions = (horizontal: boolean) => (
     <ActionRail
@@ -264,9 +300,7 @@ function ClipCardBase({ clip, note, width, height, isActive, live, isNear, botto
         <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
           {clip.title}
         </Text>
-        <Text style={styles.meta} numberOfLines={tall ? 1 : undefined}>
-          {meta}
-        </Text>
+        {metaLine(!!tall)}
         <Text style={styles.credit} numberOfLines={1}>
           {media.credit}
         </Text>
@@ -353,7 +387,7 @@ function ClipCardBase({ clip, note, width, height, isActive, live, isNear, botto
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {artistButton}
         <Text style={styles.title}>{clip.title}</Text>
-        <Text style={styles.meta}>{meta}</Text>
+        {metaLine(false)}
         {media && videoFailed && (
           <Pressable
             onPress={() => Linking.openURL(media.externalUrl).catch(() => {})}
@@ -401,6 +435,8 @@ const styles = StyleSheet.create({
   note: { color: color.moonDim, fontWeight: '500' },
   title: { ...type.title, fontSize: 22, lineHeight: 27, color: color.moon, marginTop: space.lg, ...shadow },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs, ...shadow },
+  metaRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, marginTop: space.xs, maxWidth: '100%' },
+  metaInRow: { marginTop: 0, flexShrink: 1 },
   rail: { position: 'absolute', right: space.lg },
   track: {
     position: 'absolute',
