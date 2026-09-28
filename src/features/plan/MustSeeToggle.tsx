@@ -14,10 +14,18 @@ import { usePlan } from '../../state/plan';
 import { color, motion } from '../../theme/tokens';
 import { StarIcon } from './icons';
 
-/** Star to mark an artist as a personal must-see. Planning only, never changes the match. */
-export function MustSeeToggle({ artist, size = 20 }: { artist: Artist; size?: number }) {
+/** Star to mark an artist as a must-see at one festival. Planning only, never changes the match. */
+export function MustSeeToggle({
+  artist,
+  festivalId,
+  size = 20,
+}: {
+  artist: Artist;
+  festivalId: string;
+  size?: number;
+}) {
   const { isMustSee, toggleMustSee } = usePlan();
-  const on = isMustSee(artist.id);
+  const on = isMustSee(festivalId, artist.id);
   const reduceMotion = useReducedMotion();
   const s = useSharedValue(1);
   const first = useRef(true);
@@ -37,7 +45,7 @@ export function MustSeeToggle({ artist, size = 20 }: { artist: Artist; size?: nu
       onPress={() => {
         if (on) haptic.select();
         else haptic.tap();
-        toggleMustSee(artist.id);
+        toggleMustSee(festivalId, artist.id);
       }}
       hitSlop={10}
       accessibilityRole="button"

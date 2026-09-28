@@ -1,29 +1,33 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { isMustSee, mustSeesAt, toggleMustSee, type MustSees } from '../features/plan/mustSees';
 
 /**
- * Artists you have marked as a must-see. A planning preference only: it puts
- * them first in your festival plan and wins clashes, but it is kept apart from
- * reactions so it never teaches the taste engine anything.
+ * Artists you have starred as a must-see, per festival. A planning preference
+ * only: it puts them first in that festival's plan and wins clashes there, but
+ * it is kept apart from reactions so it never teaches the taste engine anything.
  */
 type Ctx = {
-  mustSees: ReadonlySet<string>;
-  isMustSee: (artistId: string) => boolean;
-  toggleMustSee: (artistId: string) => void;
+  mustSeesAt: (festivalId: string) => ReadonlySet<string>;
+  isMustSee: (festivalId: string, artistId: string) => boolean;
+  toggleMustSee: (festivalId: string, artistId: string) => void;
 };
 
-const STORAGE_KEY = 'mustSees.v1';
+// v1 stored stars per artist for every festival. Those can't be assigned to a festival, so they are dropped.
+const STORAGE_KEY = 'mustSees.v2';
+const OLD_KEY = 'mustSees.v1';
 
 const PlanContext = createContext<Ctx | null>(null);
 
 export function PlanProvider({ children }: { children: ReactNode }) {
-  const [ids, setIds] = useState<string[]>([]);
+  const [all, setAll] = useState<MustSees>({});
   const loaded = useRef(false);
 
   useEffect(() => {
+    AsyncStorage.removeItem(OLD_KEY).catch(() => {});
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
-        if (raw) setIds((current) => [...new Set([...JSON.parse(raw), ...current])]);
+        if (raw) setAll((current) => ({ ...JSON.parse(raw), ...current }));
       })
       .catch(() => {})
       .finally(() => {
@@ -33,17 +37,21 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loaded.current) return;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(ids)).catch(() => {});
-  }, [ids]);
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(all)).catch(() => {});
+  }, [all]);
 
-  const toggleMustSee = useCallback((id: string) => {
-    setIds((all) => (all.includes(id) ? all.filter((x) => x !== id) : [...all, id]));
+  const toggle = useCallback((festivalId: string, artistId: string) => {
+    setAll((current) => toggleMustSee(current, festivalId, artistId));
   }, []);
 
-  const value = useMemo<Ctx>(() => {
-    const mustSees = new Set(ids);
-    return { mustSees, isMustSee: (id) => mustSees.has(id), toggleMustSee };
-  }, [ids, toggleMustSee]);
+  const value = useMemo<Ctx>(
+    () => ({
+      mustSeesAt: (festivalId) => mustSeesAt(all, festivalId),
+      isMustSee: (festivalId, artistId) => isMustSee(all, festivalId, artistId),
+      toggleMustSee: toggle,
+    }),
+    [all, toggle],
+  );
 
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;
 }

@@ -23,13 +23,16 @@ const HERO = 132;
 const HALO = HERO * 2;
 
 export default function ArtistScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `festival` is set when opened from a festival page; must-see stars apply to that festival only.
+  const { id, festival: festivalId } = useLocalSearchParams<{ id: string; festival?: string }>();
   const artist = artistById(id);
   const insets = useSafeAreaInsets();
   const { taste } = useTaste();
   const { isMustSee, toggleMustSee } = usePlan();
   if (!artist) return null;
-  const mustSee = isMustSee(artist.id);
+  const context = festivalId ? festivalById(festivalId) : undefined;
+  const starFestival = context?.lineup.includes(artist.id) ? context : undefined;
+  const mustSee = !!starFestival && isMustSee(starFestival.id, artist.id);
 
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
   const tags = (Object.entries(artist.sound) as [SoundTag, number][]).sort((a, b) => b[1] - a[1]);
@@ -70,16 +73,20 @@ export default function ArtistScreen() {
               </View>
             ))}
           </View>
-          {festivals.length > 0 && (
+          {starFestival && (
             <Pressable
               onPress={() => {
                 if (mustSee) haptic.select();
                 else haptic.tap();
-                toggleMustSee(artist.id);
+                toggleMustSee(starFestival.id, artist.id);
               }}
               accessibilityRole="button"
               accessibilityState={{ selected: mustSee }}
-              accessibilityLabel={mustSee ? 'Remove from your must sees' : 'Mark as a must see'}
+              accessibilityLabel={
+                mustSee
+                  ? `Remove from your must sees at ${starFestival.name}`
+                  : `Mark as a must see at ${starFestival.name}`
+              }
               style={({ pressed }) => [styles.mustSee, mustSee && styles.mustSeeOn, pressed && { opacity: 0.7 }]}
             >
               <StarIcon color={mustSee ? color.glow : color.moonDim} filled={mustSee} size={16} />
@@ -106,7 +113,9 @@ export default function ArtistScreen() {
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowTitle}>{f.name}</Text>
-                    <Text style={styles.rowMeta}>{set ? describeSet(f, set) : `${f.dates}, set time not announced yet`}</Text>
+                    <Text style={styles.rowMeta}>
+                      {set ? describeSet(f, set) : `${f.dates}, set time not announced yet`}
+                    </Text>
                   </View>
                   <ChevronIcon color={color.moonFaint} size={14} />
                 </Pressable>

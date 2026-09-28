@@ -12,7 +12,7 @@ Milestone 5 is built (awaiting on-device testing). Built so far:
 - **Festivals** tab, festival pages (lineup sorted For you / Billing, set times when published, optional lineup poster with full-screen zoom viewer).
 - **Artist** pages: match, sound tags, where they play, clips (open in Discover), similar artists.
 - **Taste engine** v1 and **persistent reactions** (AsyncStorage).
-- **Your festival** (Milestone 5) on each festival page. Before set times: lineup ranked into Must see / Strong match / Explore from the live match. After set times: day-by-day timeline, clashes grouped with a suggestion (clear winner, close call, or your starred pick, plus how much of the other set you can still catch), explore picks as discoveries when you're free or as a quiet alternative. A star marks a personal must-see; it's a planning preference stored apart from reactions and never changes the match.
+- **Your festival** (Milestone 5) on each festival page. Before set times: lineup ranked into Must see / Strong match / Explore from the live match. After set times: day-by-day timeline, clashes grouped with a suggestion (clear winner, close call, or your starred pick, plus how much of the other set you can still catch), explore picks as discoveries when you're free or as a quiet alternative. A star marks a personal must-see at that festival only (festivalId + artistId); it's a planning preference stored apart from reactions and never changes the match. Artist pages opened from a festival get a `festival` route param and star for that festival; opened elsewhere they show no star.
 
 Do not start Milestone 6 unless asked.
 
@@ -41,10 +41,10 @@ src/
   features/discover/          DiscoverFeed, ClipCard, StageScene, ActionRail, icons
   features/sound-map/         layout.ts (pure layout engine), SoundMap, ArtistBubble, ArtistSheet
   features/taste/engine.ts    Pure taste engine: reactions -> TasteProfile (+ which scores rest on real signal)
-  features/plan/              plan.ts (pure: tiers, schedule, clash verdicts), copy.ts, YourFestival, MustSeeList, Timetable, MustSeeToggle
+  features/plan/              plan.ts (pure: tiers, schedule, clash verdicts), mustSees.ts (pure per-festival stars), copy.ts, YourFestival, MustSeeList, Timetable, MustSeeToggle
   state/reactions.tsx         Likes/saves/skips context, persisted to AsyncStorage
   state/taste.ts              useTaste(): live profile + summary
-  state/plan.tsx              Starred must-sees, persisted to AsyncStorage (planning only, never fed to the taste engine)
+  state/plan.tsx              Starred must-sees per festival, persisted to AsyncStorage (planning only, never fed to the taste engine)
   data/                       Types and mock data: artists, clips, festivals, tasteProfile
   theme/tokens.ts             Color, type, spacing, radius, motion springs. Use these, never ad-hoc values.
   lib/haptics.ts              Haptic vocabulary (select, tap, soft, settle)

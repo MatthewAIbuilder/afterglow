@@ -6,16 +6,17 @@ import { color, space, type } from '../theme/tokens';
 import { ArtistAvatar } from './ArtistAvatar';
 import { ChevronIcon } from './TabIcons';
 
-type Props = { artist: Artist; affinity: number; detail?: string };
+/** `festivalId` opens the artist in that festival's context, so must-see stars apply there. */
+type Props = { artist: Artist; affinity: number; detail?: string; festivalId?: string };
 
 /** A lineup row: avatar, name, optional detail line, match. Opens the artist. */
-export function ArtistRow({ artist, affinity, detail }: Props) {
+export function ArtistRow({ artist, affinity, detail, festivalId }: Props) {
   const pct = Math.round(affinity * 100);
   return (
     <Pressable
       onPress={() => {
         haptic.select();
-        router.push(`/artist/${artist.id}`);
+        router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festivalId } });
       }}
       accessibilityRole="button"
       accessibilityLabel={`${artist.name}, ${pct} percent match${detail ? `, ${detail}` : ''}`}

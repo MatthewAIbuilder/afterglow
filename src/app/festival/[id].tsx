@@ -93,7 +93,7 @@ export default function FestivalScreen() {
           {lineup.map((a) => {
             const set = setFor(festival, a.id);
             return (
-              <ArtistRow key={a.id} artist={a} affinity={taste[a.id] ?? 0} detail={set ? describeSet(festival, set) : undefined} />
+              <ArtistRow key={a.id} festivalId={festival.id} artist={a} affinity={taste[a.id] ?? 0} detail={set ? describeSet(festival, set) : undefined} />
             );
           })}
         </View>
