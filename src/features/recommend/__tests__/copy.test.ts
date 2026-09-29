@@ -1,6 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
-import { artistById } from '../../../data/artists';
+import { MOCK_CATALOG } from '../../../data/mock';
 import { reasonNote } from '../copy';
+
+const artistById = MOCK_CATALOG.artist;
 
 describe('why a clip is in your feed', () => {
   it('says nothing for a strong match', () => {

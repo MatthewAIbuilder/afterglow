@@ -1,0 +1,36 @@
+import type { Artist, ArtistSimilarity, SoundTag } from '../../data/models';
+
+/** How alike two artists are, 0 to 1. Everything that asks "similar sound?" goes through one of these. */
+export type Similarity = (a: Artist, b: Artist) => number;
+
+/** Cosine similarity of two artists' sound tags. The default, and the fallback for pairs a source says nothing about. */
+export function soundSimilarity(a: Artist, b: Artist) {
+  const tags = new Set([...Object.keys(a.sound), ...Object.keys(b.sound)]) as Set<SoundTag>;
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (const t of tags) {
+    const x = a.sound[t] ?? 0;
+    const y = b.sound[t] ?? 0;
+    dot += x * y;
+    na += x * x;
+    nb += y * y;
+  }
+  return na && nb ? dot / Math.sqrt(na * nb) : 0;
+}
+
+const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+/**
+ * Similarity that prefers what a source knows (e.g. listening data) and falls
+ * back to sound tags. With nothing provided it is exactly soundSimilarity.
+ */
+export function similarityWith(provided: readonly ArtistSimilarity[] = []): Similarity {
+  if (provided.length === 0) return soundSimilarity;
+  const known = new Map<string, number>();
+  for (const s of provided) {
+    if (s.artistId === s.otherId || !Number.isFinite(s.score)) continue;
+    known.set(pairKey(s.artistId, s.otherId), Math.min(1, Math.max(0, s.score)));
+  }
+  return (a, b) => known.get(pairKey(a.id, b.id)) ?? soundSimilarity(a, b);
+}

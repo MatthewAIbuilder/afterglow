@@ -7,11 +7,14 @@ import { ArtistRow } from '../../components/ArtistRow';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
-import { artistById } from '../../data/artists';
-import { describeSet, festivalById, setFor } from '../../data/festivals';
+import { setFor } from '../../data/festival';
 import type { Artist } from '../../data/types';
+import { PlayIcon } from '../../features/discover/icons';
+import { describeSet } from '../../features/festivals/format';
+import { lineupReach } from '../../features/festivals/links';
 import { YourFestival } from '../../features/plan/YourFestival';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -19,19 +22,21 @@ type Order = 'match' | 'billing';
 
 export default function FestivalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const festival = festivalById(id);
+  const catalog = useCatalog();
+  const festival = catalog.festival(id);
   const insets = useSafeAreaInsets();
   const { taste } = useTaste();
   const [order, setOrder] = useState<Order>('match');
 
   const lineup = useMemo(() => {
     if (!festival) return [];
-    const list = festival.lineup.map((a) => artistById(a)).filter((a): a is Artist => !!a);
+    const list = festival.lineup.map((a) => catalog.artist(a)).filter((a): a is Artist => !!a);
     return order === 'match' ? [...list].sort((a, b) => (taste[b.id] ?? 0) - (taste[a.id] ?? 0)) : list;
-  }, [festival, order, taste]);
+  }, [catalog, festival, order, taste]);
 
   if (!festival) return null;
   const timesOut = !!festival.sets?.length;
+  const reach = lineupReach(festival, catalog.clips);
 
   return (
     <View style={styles.root}>
@@ -45,6 +50,23 @@ export default function FestivalScreen() {
           <Text style={styles.meta}>
             {festival.dates}, {festival.location}
           </Text>
+          {reach.clips > 0 && (
+            <Pressable
+              onPress={() => {
+                haptic.tap();
+                router.navigate({ pathname: '/', params: { festival: festival.id } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Discover the lineup. ${reach.clips} live clips from ${reach.artists} artists playing ${festival.name}.`}
+              style={({ pressed }) => [styles.discover, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+            >
+              <PlayIcon color={color.moon} size={14} />
+              <Text style={styles.discoverText}>Discover the lineup</Text>
+              <Text style={styles.discoverCount}>
+                {reach.clips} {reach.clips === 1 ? 'clip' : 'clips'}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {festival.posterImageUrl ? (
@@ -143,6 +165,22 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  discover: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: space.sm,
+    marginTop: space.lg,
+    paddingLeft: space.md,
+    paddingRight: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(169,124,255,0.18)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(169,124,255,0.4)',
+  },
+  discoverText: { ...type.label, color: color.moon },
+  discoverCount: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   posterWrap: {
     marginHorizontal: space.lg,
     marginTop: space.xl,

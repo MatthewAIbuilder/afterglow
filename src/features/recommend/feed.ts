@@ -1,6 +1,6 @@
 import type { Artist, Clip, TasteProfile } from '../../data/types';
 import type { Reaction } from '../../state/reactions';
-import { soundSimilarity } from '../sound-map/layout';
+import { type Similarity, soundSimilarity } from '../taste/similarity';
 
 /**
  * Discover's running order. Pure and deterministic: the same taste, reactions
@@ -98,6 +98,8 @@ export type FeedInput = {
   now: number;
   /** Clip ids already laid out (on screen or next up). Kept as they are, in order; the rest follows. */
   keep?: readonly string[];
+  /** How alike two artists are. Sound tags by default. */
+  similarity?: Similarity;
 };
 
 /** Your top artists by match, strong matches only. What "related" is measured against. */
@@ -118,12 +120,13 @@ export function laneOf(
   taste: TasteProfile,
   anchors: Artist[],
   informed?: Record<string, boolean>,
+  similarity: Similarity = soundSimilarity,
 ): { lane: Lane; reason: Reason; nearness: number } {
   let nearness = 0;
   let nearTo: Artist | undefined;
   for (const a of anchors) {
     if (a.id === artist.id) continue;
-    const s = soundSimilarity(artist, a);
+    const s = similarity(artist, a);
     if (s > nearness) {
       nearness = s;
       nearTo = a;
@@ -140,7 +143,7 @@ export function laneOf(
 }
 
 /** Every clip, scored and placed in a lane. Not yet in feed order. */
-export function scoreClips({ clips, artists, taste, informed, reactions, seen, now }: FeedInput): FeedItem[] {
+export function scoreClips({ clips, artists, taste, informed, reactions, seen, now, similarity }: FeedInput): FeedItem[] {
   const byId = new Map(artists.map((a) => [a.id, a]));
   const anchors = anchorsOf(artists, taste, informed);
   const touched = new Set<string>();
@@ -156,7 +159,7 @@ export function scoreClips({ clips, artists, taste, informed, reactions, seen, n
   for (const clip of clips) {
     const artist = byId.get(clip.artistId);
     if (!artist) continue;
-    const { lane, reason, nearness } = laneOf(artist, taste, anchors, informed);
+    const { lane, reason, nearness } = laneOf(artist, taste, anchors, informed, similarity);
     const r = reactions[clip.id];
     let score = taste[artist.id] ?? 0;
     if (lane === 'explore') score += nearness * NEAR_WEIGHT;
