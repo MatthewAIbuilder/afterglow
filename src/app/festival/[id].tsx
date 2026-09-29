@@ -196,7 +196,14 @@ export default function FestivalScreen() {
           {shown.map((a) => {
             const set = setFor(festival, a.id);
             return (
-              <ArtistRow key={a.id} festivalId={festival.id} artist={a} affinity={taste[a.id] ?? 0} detail={setLine(set && describeSet(festival, set), festival.notes?.[a.id])} />
+              <ArtistRow
+                key={a.id}
+                festivalId={festival.id}
+                artist={a}
+                affinity={taste[a.id] ?? 0}
+                detail={setLine(set && describeSet(festival, set), festival.notes?.[a.id])}
+                rating={ratings[a.id]}
+              />
             );
           })}
         </View>

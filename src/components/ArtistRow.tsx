@@ -1,17 +1,25 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Artist } from '../data/types';
+import { HeartIcon } from '../features/discover/icons';
+import type { Rating } from '../features/taste/ratings';
 import { haptic } from '../lib/haptics';
 import { color, space, type } from '../theme/tokens';
 import { ArtistAvatar } from './ArtistAvatar';
 import { ChevronIcon } from './TabIcons';
 
-/** `festivalId` opens the artist in that festival's context, so must-see stars apply there. */
-type Props = { artist: Artist; affinity: number; detail?: string; festivalId?: string };
+/**
+ * `festivalId` opens the artist in that festival's context, so must-see stars apply there.
+ * `rating` shows how you rated them: a heart for love, dimmed for "not for me".
+ */
+type Props = { artist: Artist; affinity: number; detail?: string; festivalId?: string; rating?: Rating };
 
 /** A lineup row: avatar, name, optional detail line, match. Opens the artist. */
-export function ArtistRow({ artist, affinity, detail, festivalId }: Props) {
+export function ArtistRow({ artist, affinity, detail, festivalId, rating }: Props) {
   const pct = Math.round(affinity * 100);
+  const passed = rating === 'pass';
+  const line = passed ? [detail, 'Not for you'].filter(Boolean).join(' · ') : detail;
+  const said = rating === 'love' ? ', you love their sound' : '';
   return (
     <Pressable
       onPress={() => {
@@ -19,17 +27,20 @@ export function ArtistRow({ artist, affinity, detail, festivalId }: Props) {
         router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festivalId } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${artist.name}, ${pct} percent match${detail ? `, ${detail}` : ''}`}
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
+      accessibilityLabel={`${artist.name}, ${pct} percent match${said}${line ? `, ${line}` : ''}`}
+      style={({ pressed }) => [styles.row, passed && styles.passed, pressed && { opacity: 0.6 }]}
     >
       <ArtistAvatar artist={artist} size={48} />
       <View style={styles.text}>
-        <Text style={styles.name} numberOfLines={1}>
-          {artist.name}
-        </Text>
-        {detail ? (
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {artist.name}
+          </Text>
+          {rating === 'love' ? <HeartIcon color={color.glow} filled size={13} /> : null}
+        </View>
+        {line ? (
           <Text style={styles.detail} numberOfLines={1}>
-            {detail}
+            {line}
           </Text>
         ) : null}
       </View>
@@ -42,7 +53,9 @@ export function ArtistRow({ artist, affinity, detail, festivalId }: Props) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md, gap: space.md },
   text: { flex: 1 },
-  name: { ...type.headline, color: color.moon },
+  passed: { opacity: 0.5 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  name: { ...type.headline, color: color.moon, flexShrink: 1 },
   detail: { ...type.caption, color: color.moonDim, marginTop: 2 },
   pct: { ...type.label, color: color.moonDim, fontVariant: ['tabular-nums'] },
 });
