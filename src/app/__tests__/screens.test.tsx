@@ -208,6 +208,18 @@ describe('Festivals', () => {
     expect(JSON.parse((await AsyncStorage.getItem('weekends.v1')) ?? '{}')).toEqual({ 'acl-26': 2 });
   });
 
+  it('lays out your picks day by day before set times, when the poster says who plays when', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ lorde: 'love', skrillex: 'love' }));
+    const app = await renderApp('/festival/acl-26');
+    await settle();
+    expect(app.getByLabelText('Your picks by day').props.accessibilityState).toEqual({ selected: true });
+    expect(app.getAllByText(/^\d+ for you$/).length).toBeGreaterThan(0);
+    expect(app.getByLabelText(/^LORDE, \d+% match/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Your picks ranked by match'));
+    await settle();
+    expect(app.queryAllByText(/^\d+ for you$/)).toHaveLength(0);
+  });
+
   it('filters a big lineup by day', async () => {
     const app = await renderApp('/festival/acl-26');
     await settle();

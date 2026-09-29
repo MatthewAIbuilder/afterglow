@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { ShareIcon } from '../../components/TabIcons';
 import { APP_NAME } from '../../config/app';
@@ -8,10 +8,12 @@ import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
 import { useTaste } from '../../state/taste';
 import { useToday } from '../../lib/useToday';
+import { lineupDays } from '../festivals/days';
 import { daysUntil } from '../festivals/when';
-import { color, space, type } from '../../theme/tokens';
+import { color, radius, space, type } from '../../theme/tokens';
 import { festivalNight } from './live';
 import { LiveNow } from './LiveNow';
+import { ByDayList } from './ByDayList';
 import { MustSeeList } from './MustSeeList';
 import { buildSchedule, rankLineup } from './plan';
 import { festivalRoute } from './route';
@@ -48,6 +50,9 @@ export function YourFestival({ festival }: { festival: Festival }) {
   const maybeLive = !!schedule && until !== undefined && until <= 0 && until >= -festival.days.length;
   // During the festival the timetable opens on tonight.
   const tonight = maybeLive ? festivalNight(festival, today)?.day : undefined;
+  // Before set times, when the poster says who plays which day: your picks by day, or ranked.
+  const byDayPossible = !schedule && lineupDays(festival).length > 0;
+  const [byDay, setByDay] = useState(true);
 
   return (
     <View style={styles.root}>
@@ -82,6 +87,11 @@ export function YourFestival({ festival }: { festival: Festival }) {
           {maybeLive && <LiveNow festival={festival} schedule={schedule} route={route} />}
           <Timetable festival={festival} schedule={schedule} route={route} initialDay={tonight} />
         </>
+      ) : byDayPossible ? (
+        <>
+          <Toggle byDay={byDay} onChange={setByDay} />
+          {byDay ? <ByDayList festival={festival} picks={picks} /> : <MustSeeList festivalId={festival.id} picks={picks} />}
+        </>
       ) : (
         <MustSeeList festivalId={festival.id} picks={picks} />
       )}
@@ -89,7 +99,45 @@ export function YourFestival({ festival }: { festival: Festival }) {
   );
 }
 
+/** By day (from the poster) or ranked by match. */
+function Toggle({ byDay, onChange }: { byDay: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <View style={styles.toggle} accessibilityRole="tablist">
+      {[
+        { on: byDay, label: 'By day', value: true },
+        { on: !byDay, label: 'Ranked', value: false },
+      ].map((o) => (
+        <Pressable
+          key={o.label}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: o.on }}
+          accessibilityLabel={o.value ? 'Your picks by day' : 'Your picks ranked by match'}
+          onPress={() => {
+            if (o.on) return;
+            haptic.select();
+            onChange(o.value);
+          }}
+          style={[styles.toggleItem, o.on && styles.toggleOn]}
+        >
+          <Text style={[styles.toggleText, o.on && { color: color.moon }]}>{o.label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  toggle: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    padding: 3,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    marginTop: space.lg,
+  },
+  toggleItem: { paddingHorizontal: space.lg, paddingVertical: 6, borderRadius: radius.pill },
+  toggleOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  toggleText: { ...type.label, color: color.moonDim },
   root: { marginTop: space.xxl, marginHorizontal: space.lg },
   head: { paddingHorizontal: space.sm },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
