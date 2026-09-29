@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
-import { ARTISTS } from '../../../data/artists';
-import { CLIPS } from '../../../data/clips';
-import { FESTIVALS, festivalById } from '../../../data/festivals';
+import { MOCK_CATALOG } from '../../../data/mock';
 import type { Clip, Festival } from '../../../data/types';
 import { defaultFocus, festivalLine, festivalsOf, focusForClip, lineupClips, lineupReach, nextFocus, playsAt } from '../links';
+
+const { artists: ARTISTS, clips: CLIPS, festivals: FESTIVALS, festival: festivalById } = MOCK_CATALOG;
 
 const solstice = festivalById('solstice-26')!;
 const horizon = festivalById('horizon-27')!;

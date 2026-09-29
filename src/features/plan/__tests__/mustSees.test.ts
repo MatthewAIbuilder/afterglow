@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
-import { ARTISTS } from '../../../data/artists';
-import { CLIPS } from '../../../data/clips';
-import { FESTIVALS } from '../../../data/festivals';
-import { MOCK_TASTE } from '../../../data/tasteProfile';
+import { ARTISTS } from '../../../data/mock/artists';
+import { CLIPS } from '../../../data/mock/clips';
+import { FESTIVALS } from '../../../data/mock/festivals';
+import { MOCK_TASTE } from '../../../data/mock/tasteProfile';
 import { computeTaste } from '../../taste/engine';
 import { isMustSee, mustSeesAt, toggleMustSee, type MustSees } from '../mustSees';
 import { buildSchedule, rankLineup } from '../plan';

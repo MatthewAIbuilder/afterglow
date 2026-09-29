@@ -7,14 +7,13 @@ import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
-import { ARTISTS, artistById } from '../../data/artists';
-import { CLIPS } from '../../data/clips';
-import { describeSet, festivalById, festivalsFor, setFor } from '../../data/festivals';
+import { setFor } from '../../data/festival';
 import { SOUND_LABEL, type SoundTag } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
 import { StarIcon } from '../../features/plan/icons';
-import { soundSimilarity } from '../../features/sound-map/layout';
+import { describeSet } from '../../features/festivals/format';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -25,25 +24,27 @@ const HALO = HERO * 2;
 export default function ArtistScreen() {
   // `festival` is set when opened from a festival page; must-see stars apply to that festival only.
   const { id, festival: festivalId } = useLocalSearchParams<{ id: string; festival?: string }>();
-  const artist = artistById(id);
+  const catalog = useCatalog();
+  const artist = catalog.artist(id);
   const insets = useSafeAreaInsets();
-  const { taste } = useTaste();
+  const { taste, similarity } = useTaste();
   const { isMustSee, toggleMustSee } = usePlan();
   if (!artist) return null;
-  const context = festivalId ? festivalById(festivalId) : undefined;
+  const context = festivalId ? catalog.festival(festivalId) : undefined;
   const starFestival = context?.lineup.includes(artist.id) ? context : undefined;
   const mustSee = !!starFestival && isMustSee(starFestival.id, artist.id);
 
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
   const tags = (Object.entries(artist.sound) as [SoundTag, number][]).sort((a, b) => b[1] - a[1]);
-  const similar = ARTISTS.filter((a) => a.id !== artist.id)
-    .map((a) => ({ a, s: soundSimilarity(artist, a) }))
+  const similar = catalog.artists
+    .filter((a) => a.id !== artist.id)
+    .map((a) => ({ a, s: similarity(artist, a) }))
     .filter((x) => x.s > 0.3)
     .sort((p, q) => q.s - p.s)
     .slice(0, 3)
     .map((x) => x.a);
-  const festivals = festivalsFor(artist.id);
-  const clips = CLIPS.filter((c) => c.artistId === artist.id);
+  const festivals = catalog.festivalsOf(artist.id);
+  const clips = catalog.clipsOf(artist.id);
   const [deep, bright] = artistColors(artist.id);
 
   return (
@@ -144,7 +145,7 @@ export default function ArtistScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>{c.title}</Text>
                   <Text style={styles.rowMeta}>
-                    {festivalById(c.festivalId)?.name}, 0:{String(c.durationSec).padStart(2, '0')}
+                    {catalog.festival(c.festivalId)?.name}, 0:{String(c.durationSec).padStart(2, '0')}
                   </Text>
                 </View>
               </Pressable>

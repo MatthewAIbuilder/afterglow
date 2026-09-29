@@ -6,13 +6,13 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { CloseIcon } from '../../components/TabIcons';
-import { festivalById } from '../../data/festivals';
+import { useCatalog } from '../../state/catalog';
 import { color, motion, space } from '../../theme/tokens';
 
 /** Full-screen lineup poster. Pinch to zoom, drag to read, double-tap to zoom in or out. */
 export default function PosterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const festival = festivalById(id);
+  const festival = useCatalog().festival(id);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { CLIPS } from '../../../data/clips';
+import { CLIPS } from '../../../data/mock/clips';
 import type { Clip } from '../../../data/types';
 import { clipMedia } from '../media';
 

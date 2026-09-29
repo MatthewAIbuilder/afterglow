@@ -12,10 +12,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon } from '../../components/TabIcons';
-import { artistById } from '../../data/artists';
-import { CLIPS } from '../../data/clips';
-import { FESTIVALS, festivalById } from '../../data/festivals';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
 import { useSeen } from '../../state/seen';
 import { color, space, type } from '../../theme/tokens';
@@ -49,18 +47,19 @@ export function DiscoverFeed() {
 
   // Which festival's lineup you're discovering. Changes start the feed from the top.
   const { clip: requested, festival: focusParam } = useLocalSearchParams<{ clip?: string; festival?: string }>();
-  const [focusId, setFocusId] = useState(() => defaultFocus(FESTIVALS, CLIPS)?.id);
-  const requestedClip = requested ? CLIPS.find((c) => c.id === requested) : undefined;
+  const catalog = useCatalog();
+  const [focusId, setFocusId] = useState(() => defaultFocus(catalog.festivals, catalog.clips)?.id);
+  const requestedClip = requested ? catalog.clip(requested) : undefined;
   const target = nextFocus(
-    focusId ? festivalById(focusId) : undefined,
-    { festival: focusParam ? festivalById(focusParam) : undefined, clip: requestedClip },
-    FESTIVALS,
+    focusId ? catalog.festival(focusId) : undefined,
+    { festival: focusParam ? catalog.festival(focusParam) : undefined, clip: requestedClip },
+    catalog.festivals,
   )?.id;
   if (target !== focusId) {
     setFocusId(target);
     setActiveIndex(0);
   }
-  const festival = focusId ? festivalById(focusId) : undefined;
+  const festival = focusId ? catalog.festival(focusId) : undefined;
   useEffect(() => {
     if (focusParam) router.setParams({ festival: '' });
   }, [focusParam]);
@@ -155,7 +154,7 @@ export function DiscoverFeed() {
           return (
             <ClipCard
               clip={item.clip}
-              note={reasonNote(item.reason, artistById)}
+              note={reasonNote(item.reason, catalog.artist)}
               festival={festival}
               mustSee={!!starred?.has(item.clip.artistId)}
               width={width}

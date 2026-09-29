@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, LayoutAnimationConfig, LinearTransition, useReducedMotion } from 'react-native-reanimated';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { haptic } from '../../lib/haptics';
+import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 import { exploreLine, matchLabel, TIER_HINT, TIER_LABEL } from './copy';
 import { MustSeeToggle } from './MustSeeToggle';
@@ -14,6 +15,7 @@ const TIERS: Tier[] = ['must-see', 'strong', 'explore'];
 /** Before set times: your lineup as a ranked plan in three tiers. */
 export function MustSeeList({ festivalId, picks }: { festivalId: string; picks: Pick[] }) {
   const reduceMotion = useReducedMotion();
+  const { similarity } = useTaste();
   const groups = TIERS.map((tier) => ({ tier, picks: picks.filter((p) => p.tier === tier) })).filter(
     (g) => g.picks.length,
   );
@@ -43,7 +45,7 @@ export function MustSeeList({ festivalId, picks }: { festivalId: string; picks: 
                 rank={picks.indexOf(p) + 1}
                 note={
                   p.tier === 'explore'
-                    ? exploreLine(exploreReason(p, picks))
+                    ? exploreLine(exploreReason(p, picks, similarity))
                     : p.pinned && p.match < TIER_AT.mustSee
                       ? 'You starred this one.'
                       : undefined
