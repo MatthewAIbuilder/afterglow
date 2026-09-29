@@ -11,6 +11,8 @@ import { ChevronIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
+import { PlayIcon } from '../../features/discover/icons';
+import { lineupReach } from '../../features/festivals/links';
 import { searchArtists } from '../../features/festivals/search';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
@@ -99,7 +101,12 @@ export default function FestivalsScreen() {
 }
 
 function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<string, number> }) {
-  const { artist: artistById } = useCatalog();
+  const { artist: artistById, clips } = useCatalog();
+  const reach = lineupReach(festival, clips);
+  const discover = () => {
+    haptic.tap();
+    router.navigate({ pathname: '/', params: { festival: festival.id } });
+  };
   const ranked = festival.lineup
     .map((id) => artistById(id))
     .filter((a): a is Artist => !!a)
@@ -117,6 +124,11 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
       }}
       accessibilityRole="button"
       accessibilityLabel={`${festival.name}, ${festival.dates}`}
+      // The clips button sits inside the card, so screen readers get it as an action on the card.
+      accessibilityActions={reach.clips > 0 ? [{ name: 'discover', label: 'Discover the lineup' }] : undefined}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'discover') discover();
+      }}
       style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.985 }], opacity: 0.9 }]}
     >
       <View style={styles.cardTop}>
@@ -146,6 +158,18 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
             {timesOut ? 'Set times are out' : 'Set times not announced yet'}
           </Text>
         </View>
+        {reach.clips > 0 && (
+          <Pressable
+            onPress={discover}
+            accessibilityRole="button"
+            accessibilityLabel={`Discover the lineup, ${reach.clips} ${reach.clips === 1 ? 'clip' : 'clips'}`}
+            hitSlop={8}
+            style={({ pressed }) => [styles.clips, pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] }]}
+          >
+            <PlayIcon color={color.moon} size={12} />
+            <Text style={styles.clipsText}>{reach.clips}</Text>
+          </Pressable>
+        )}
       </View>
     </Pressable>
   );
@@ -158,6 +182,19 @@ const styles = StyleSheet.create({
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginTop: space.lg },
   results: { paddingHorizontal: space.xl },
+  clips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingLeft: space.sm,
+    paddingRight: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(169,124,255,0.18)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(169,124,255,0.4)',
+  },
+  clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
   section: {
     ...type.label,

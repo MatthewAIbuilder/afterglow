@@ -62,6 +62,15 @@ describe('Festivals', () => {
     expect(app.getByText('Horizon 2027')).toBeTruthy();
   });
 
+  it('jumps from a festival card straight into its clips', async () => {
+    const app = await renderApp('/festivals');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Discover the lineup, 2 clips'));
+    await settle();
+    await settle();
+    expect(app.getByLabelText(/^EDC Orlando 2026, live sets from the lineup/)).toBeTruthy();
+  });
+
   it('finds an artist at any festival from the Festivals tab', async () => {
     const app = await renderApp('/festivals');
     await settle();
