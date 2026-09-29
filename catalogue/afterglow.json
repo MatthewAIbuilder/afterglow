@@ -688,6 +688,568 @@
         "house": 0.7,
         "melodic-bass": 0.4
       }
+    },
+    {
+      "id": "charli-xcx",
+      "name": "CHARLI XCX"
+    },
+    {
+      "id": "skrillex",
+      "name": "SKRILLEX",
+      "sound": {
+        "dubstep": 0.7,
+        "house": 0.4
+      }
+    },
+    {
+      "id": "kings-of-leon",
+      "name": "KINGS OF LEON"
+    },
+    {
+      "id": "turnstile",
+      "name": "TURNSTILE"
+    },
+    {
+      "id": "labrinth",
+      "name": "LABRINTH"
+    },
+    {
+      "id": "the-chainsmokers",
+      "name": "THE CHAINSMOKERS",
+      "sound": {
+        "house": 0.6,
+        "melodic-bass": 0.4
+      }
+    },
+    {
+      "id": "leon-thomas",
+      "name": "LEON THOMAS"
+    },
+    {
+      "id": "brandon-flowers",
+      "name": "BRANDON FLOWERS"
+    },
+    {
+      "id": "amyl-and-the-sniffers",
+      "name": "AMYL AND THE SNIFFERS"
+    },
+    {
+      "id": "sienna-spiro",
+      "name": "SIENNA SPIRO"
+    },
+    {
+      "id": "live",
+      "name": "LIVE"
+    },
+    {
+      "id": "jesse-welles",
+      "name": "JESSE WELLES"
+    },
+    {
+      "id": "bunt",
+      "name": "BUNT."
+    },
+    {
+      "id": "bella-kay",
+      "name": "BELLA KAY"
+    },
+    {
+      "id": "paris-paloma",
+      "name": "PARIS PALOMA"
+    },
+    {
+      "id": "lp",
+      "name": "LP"
+    },
+    {
+      "id": "rusowsky",
+      "name": "RUSOWSKY"
+    },
+    {
+      "id": "natasha-bedingfield",
+      "name": "NATASHA BEDINGFIELD"
+    },
+    {
+      "id": "marlon-funaki",
+      "name": "MARLON FUNAKI"
+    },
+    {
+      "id": "cmat",
+      "name": "CMAT"
+    },
+    {
+      "id": "rebecca-black",
+      "name": "REBECCA BLACK"
+    },
+    {
+      "id": "bo-staloch",
+      "name": "BO STALOCH"
+    },
+    {
+      "id": "molly-santana",
+      "name": "MOLLY SANTANA"
+    },
+    {
+      "id": "radio-free-alice",
+      "name": "RADIO FREE ALICE"
+    },
+    {
+      "id": "world-famous-pets",
+      "name": "WORLD FAMOUS PETS"
+    },
+    {
+      "id": "faouzia",
+      "name": "FAOUZIA"
+    },
+    {
+      "id": "hunx-and-his-punx",
+      "name": "HUNX AND HIS PUNX"
+    },
+    {
+      "id": "new-constellations",
+      "name": "NEW CONSTELLATIONS"
+    },
+    {
+      "id": "asleep-at-the-wheel",
+      "name": "ASLEEP AT THE WHEEL"
+    },
+    {
+      "id": "s-g-goodman",
+      "name": "S.G. GOODMAN"
+    },
+    {
+      "id": "cassandra-coleman",
+      "name": "CASSANDRA COLEMAN"
+    },
+    {
+      "id": "dallas-wax",
+      "name": "DALLAS WAX"
+    },
+    {
+      "id": "brigitte-calls-me-baby",
+      "name": "BRIGITTE CALLS ME BABY"
+    },
+    {
+      "id": "night-traveler",
+      "name": "NIGHT TRAVELER"
+    },
+    {
+      "id": "grocery-bag",
+      "name": "GROCERY BAG"
+    },
+    {
+      "id": "joe-jordan",
+      "name": "JOE JORDAN"
+    },
+    {
+      "id": "happy-landing",
+      "name": "HAPPY LANDING"
+    },
+    {
+      "id": "girlfriend",
+      "name": "GIRLFRIEND"
+    },
+    {
+      "id": "elle-coves",
+      "name": "ELLE COVES"
+    },
+    {
+      "id": "elijah-delgado",
+      "name": "ELIJAH DELGADO"
+    },
+    {
+      "id": "izzy-escobar",
+      "name": "IZZY ESCOBAR"
+    },
+    {
+      "id": "almost-heaven",
+      "name": "ALMOST HEAVEN"
+    },
+    {
+      "id": "solomon-hicks",
+      "name": "SOLOMON HICKS"
+    },
+    {
+      "id": "leon-knight",
+      "name": "LEON KNIGHT"
+    },
+    {
+      "id": "the-4411",
+      "name": "THE 4411"
+    },
+    {
+      "id": "wild-child",
+      "name": "WILD CHILD"
+    },
+    {
+      "id": "q-brothers",
+      "name": "Q BROTHERS"
+    },
+    {
+      "id": "pierce-freelon",
+      "name": "PIERCE FREELON"
+    },
+    {
+      "id": "sonia-de-los-santos",
+      "name": "SONIA DE LOS SANTOS"
+    },
+    {
+      "id": "school-of-rock",
+      "name": "SCHOOL OF ROCK"
+    },
+    {
+      "id": "rufus-du-sol",
+      "name": "RÜFÜS DU SOL",
+      "sound": {
+        "house": 0.8,
+        "techno": 0.3
+      }
+    },
+    {
+      "id": "lorde",
+      "name": "LORDE"
+    },
+    {
+      "id": "lola-young",
+      "name": "LOLA YOUNG"
+    },
+    {
+      "id": "young-miko",
+      "name": "YOUNG MIKO"
+    },
+    {
+      "id": "bleachers",
+      "name": "BLEACHERS"
+    },
+    {
+      "id": "lykke-li",
+      "name": "LYKKE LI"
+    },
+    {
+      "id": "suki-waterhouse",
+      "name": "SUKI WATERHOUSE"
+    },
+    {
+      "id": "snow-strippers",
+      "name": "SNOW STRIPPERS"
+    },
+    {
+      "id": "it-s-murph",
+      "name": "IT'S MURPH"
+    },
+    {
+      "id": "fakemink",
+      "name": "FAKEMINK"
+    },
+    {
+      "id": "palace",
+      "name": "PALACE"
+    },
+    {
+      "id": "yousuke-yuk1matsu",
+      "name": "¥ØU$UK€ ¥UK1MAT$U"
+    },
+    {
+      "id": "skye-newman",
+      "name": "SKYE NEWMAN"
+    },
+    {
+      "id": "rodrigo-y-gabriela",
+      "name": "RODRIGO Y GABRIELA"
+    },
+    {
+      "id": "laszewo",
+      "name": "ŁASZEWO"
+    },
+    {
+      "id": "balu-brigada",
+      "name": "BALU BRIGADA"
+    },
+    {
+      "id": "rochelle-jordan",
+      "name": "ROCHELLE JORDAN"
+    },
+    {
+      "id": "arcy-drive",
+      "name": "ARCY DRIVE"
+    },
+    {
+      "id": "finn-wolfhard",
+      "name": "FINN WOLFHARD"
+    },
+    {
+      "id": "ryan-beatty",
+      "name": "RYAN BEATTY"
+    },
+    {
+      "id": "don-west",
+      "name": "DON WEST"
+    },
+    {
+      "id": "temper-city",
+      "name": "TEMPER CITY"
+    },
+    {
+      "id": "gabriel-jacoby",
+      "name": "GABRIEL JACOBY"
+    },
+    {
+      "id": "annie-dirusso",
+      "name": "ANNIE DIRUSSO"
+    },
+    {
+      "id": "night-tapes",
+      "name": "NIGHT TAPES"
+    },
+    {
+      "id": "dj-cassandra",
+      "name": "DJ CASSANDRA"
+    },
+    {
+      "id": "cure-for-paranoia",
+      "name": "CURE FOR PARANOIA"
+    },
+    {
+      "id": "chloe-qisha",
+      "name": "CHLOE QISHA"
+    },
+    {
+      "id": "fai-laci",
+      "name": "FAI LACI"
+    },
+    {
+      "id": "emma-ogier",
+      "name": "EMMA OGIER"
+    },
+    {
+      "id": "common-people",
+      "name": "COMMON PEOPLE"
+    },
+    {
+      "id": "coleman-jennings",
+      "name": "COLEMAN JENNINGS"
+    },
+    {
+      "id": "damaris-bojor",
+      "name": "DAMARIS BOJOR"
+    },
+    {
+      "id": "fightmaster",
+      "name": "FIGHTMASTER"
+    },
+    {
+      "id": "lluvii",
+      "name": "LLUVII"
+    },
+    {
+      "id": "montclair",
+      "name": "MONTCLAIR"
+    },
+    {
+      "id": "left-lucid",
+      "name": "LEFT LUCID"
+    },
+    {
+      "id": "macy-todd",
+      "name": "MACY TODD"
+    },
+    {
+      "id": "mega-ran",
+      "name": "MEGA RAN"
+    },
+    {
+      "id": "flor-bromley",
+      "name": "FLOR BROMLEY"
+    },
+    {
+      "id": "the-barton-hills-choir",
+      "name": "THE BARTON HILLS CHOIR"
+    },
+    {
+      "id": "twenty-one-pilots",
+      "name": "TWENTY ONE PILOTS"
+    },
+    {
+      "id": "the-xx",
+      "name": "THE XX"
+    },
+    {
+      "id": "geese",
+      "name": "GEESE"
+    },
+    {
+      "id": "sofi-tukker",
+      "name": "SOFI TUKKER",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "parcels",
+      "name": "PARCELS"
+    },
+    {
+      "id": "the-war-on-drugs",
+      "name": "THE WAR ON DRUGS"
+    },
+    {
+      "id": "blood-orange",
+      "name": "BLOOD ORANGE"
+    },
+    {
+      "id": "max-mcnown",
+      "name": "MAX MCNOWN"
+    },
+    {
+      "id": "cannons",
+      "name": "CANNONS"
+    },
+    {
+      "id": "audrey-hobert",
+      "name": "AUDREY HOBERT"
+    },
+    {
+      "id": "saint-motel",
+      "name": "SAINT MOTEL"
+    },
+    {
+      "id": "houndmouth",
+      "name": "HOUNDMOUTH"
+    },
+    {
+      "id": "fcukers",
+      "name": "FCUKERS",
+      "sound": {
+        "house": 0.8
+      }
+    },
+    {
+      "id": "stella-lefty",
+      "name": "STELLA LEFTY"
+    },
+    {
+      "id": "underscores",
+      "name": "UNDERSCORES"
+    },
+    {
+      "id": "claire-rosinkranz",
+      "name": "CLAIRE ROSINKRANZ"
+    },
+    {
+      "id": "noga-erez",
+      "name": "NOGA EREZ"
+    },
+    {
+      "id": "dexter-and-the-moonrocks",
+      "name": "DEXTER AND THE MOONROCKS"
+    },
+    {
+      "id": "joshua-jensen",
+      "name": "JOSHUA JENSEN"
+    },
+    {
+      "id": "grace-ives",
+      "name": "GRACE IVES"
+    },
+    {
+      "id": "rio-kosta",
+      "name": "RIO KOSTA"
+    },
+    {
+      "id": "ethan-regan",
+      "name": "ETHAN REGAN"
+    },
+    {
+      "id": "bad-nerves",
+      "name": "BAD NERVES"
+    },
+    {
+      "id": "girlsweetvoiced",
+      "name": "GIRLSWEETVOICED"
+    },
+    {
+      "id": "charlotte-lawrence",
+      "name": "CHARLOTTE LAWRENCE"
+    },
+    {
+      "id": "sunday-1994",
+      "name": "SUNDAY (1994)"
+    },
+    {
+      "id": "rum-jungle",
+      "name": "RUM JUNGLE"
+    },
+    {
+      "id": "calder-allen",
+      "name": "CALDER ALLEN"
+    },
+    {
+      "id": "fancy-hagood",
+      "name": "FANCY HAGOOD"
+    },
+    {
+      "id": "britton",
+      "name": "BRITTON"
+    },
+    {
+      "id": "solya",
+      "name": "SOLYA"
+    },
+    {
+      "id": "villanelle",
+      "name": "VILLANELLE"
+    },
+    {
+      "id": "jess-williamson",
+      "name": "JESS WILLIAMSON"
+    },
+    {
+      "id": "flight-by-nothing",
+      "name": "FLIGHT BY NOTHING"
+    },
+    {
+      "id": "kevin-atwater",
+      "name": "KEVIN ATWATER"
+    },
+    {
+      "id": "thomas-day",
+      "name": "THOMAS DAY"
+    },
+    {
+      "id": "aaron-rowe",
+      "name": "AARON ROWE"
+    },
+    {
+      "id": "lauren-sanderson",
+      "name": "LAUREN SANDERSON"
+    },
+    {
+      "id": "vwillz",
+      "name": "VWILLZ"
+    },
+    {
+      "id": "jason-scott-and-the-high-heat",
+      "name": "JASON SCOTT & THE HIGH HEAT"
+    },
+    {
+      "id": "vinny",
+      "name": "VINNY"
+    },
+    {
+      "id": "marzz",
+      "name": "MARZZ"
+    },
+    {
+      "id": "chelsea-jordan",
+      "name": "CHELSEA JORDAN"
+    },
+    {
+      "id": "the-moriah-sisters",
+      "name": "THE MORIAH SISTERS"
+    },
+    {
+      "id": "the-huston-tillotson-university-jazz-collective",
+      "name": "THE HUSTON-TILLOTSON UNIVERSITY JAZZ COLLECTIVE"
     }
   ],
   "festivals": [
@@ -845,6 +1407,568 @@
         "whethan",
         "wooli",
         "zack-martino"
+      ]
+    },
+    {
+      "id": "acl-26",
+      "name": "Austin City Limits 2026",
+      "dates": "Oct 2 to 4 and Oct 9 to 11",
+      "start": "2026-10-02",
+      "end": "2026-10-11",
+      "location": "Austin, Texas",
+      "lineup": [
+        {
+          "artist": "charli-xcx",
+          "note": "Friday"
+        },
+        {
+          "artist": "skrillex",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "kings-of-leon",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "turnstile",
+          "note": "Friday"
+        },
+        {
+          "artist": "labrinth",
+          "note": "Friday"
+        },
+        {
+          "artist": "the-chainsmokers",
+          "note": "Friday"
+        },
+        {
+          "artist": "leon-thomas",
+          "note": "Friday"
+        },
+        {
+          "artist": "brandon-flowers",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "amyl-and-the-sniffers",
+          "note": "Friday"
+        },
+        {
+          "artist": "sienna-spiro",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "live",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "steve-aoki",
+          "note": "Friday"
+        },
+        {
+          "artist": "jesse-welles",
+          "note": "Friday"
+        },
+        {
+          "artist": "bunt",
+          "note": "Friday"
+        },
+        {
+          "artist": "bella-kay",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "paris-paloma",
+          "note": "Friday"
+        },
+        {
+          "artist": "lp",
+          "note": "Friday"
+        },
+        {
+          "artist": "rusowsky",
+          "note": "Friday"
+        },
+        {
+          "artist": "natasha-bedingfield",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "marlon-funaki",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "cmat",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "rebecca-black",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "bo-staloch",
+          "note": "Friday"
+        },
+        {
+          "artist": "molly-santana",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "radio-free-alice",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "world-famous-pets",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "faouzia",
+          "note": "Friday"
+        },
+        {
+          "artist": "hunx-and-his-punx",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "new-constellations",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "asleep-at-the-wheel",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "s-g-goodman",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "cassandra-coleman",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "dallas-wax",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "brigitte-calls-me-baby",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "night-traveler",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "grocery-bag",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "joe-jordan",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "happy-landing",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "girlfriend",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "elle-coves",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "elijah-delgado",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "izzy-escobar",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "almost-heaven",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "solomon-hicks",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "leon-knight",
+          "note": "Friday, weekend 2 only"
+        },
+        {
+          "artist": "the-4411",
+          "note": "Friday, weekend 1 only"
+        },
+        {
+          "artist": "wild-child",
+          "note": "Friday and Sunday, weekend 1 only"
+        },
+        {
+          "artist": "q-brothers",
+          "note": "Friday (weekend 2) and Saturday (weekend 1)"
+        },
+        {
+          "artist": "pierce-freelon",
+          "note": "Friday and Saturday, weekend 2 only"
+        },
+        {
+          "artist": "sonia-de-los-santos",
+          "note": "Friday and Saturday, weekend 1 only"
+        },
+        {
+          "artist": "school-of-rock",
+          "note": "Friday and Sunday"
+        },
+        {
+          "artist": "rufus-du-sol",
+          "note": "Saturday"
+        },
+        {
+          "artist": "lorde",
+          "note": "Saturday"
+        },
+        {
+          "artist": "lola-young",
+          "note": "Saturday"
+        },
+        {
+          "artist": "young-miko",
+          "note": "Saturday"
+        },
+        {
+          "artist": "bleachers",
+          "note": "Saturday"
+        },
+        {
+          "artist": "lykke-li",
+          "note": "Saturday"
+        },
+        {
+          "artist": "levity",
+          "note": "Saturday"
+        },
+        {
+          "artist": "suki-waterhouse",
+          "note": "Saturday"
+        },
+        {
+          "artist": "snow-strippers",
+          "note": "Saturday"
+        },
+        {
+          "artist": "it-s-murph",
+          "note": "Saturday"
+        },
+        {
+          "artist": "fakemink",
+          "note": "Saturday"
+        },
+        {
+          "artist": "palace",
+          "note": "Saturday, weekend 1 only"
+        },
+        {
+          "artist": "yousuke-yuk1matsu",
+          "note": "Saturday"
+        },
+        {
+          "artist": "skye-newman",
+          "note": "Saturday"
+        },
+        {
+          "artist": "rodrigo-y-gabriela",
+          "note": "Saturday"
+        },
+        {
+          "artist": "laszewo",
+          "note": "Saturday, weekend 2 only"
+        },
+        {
+          "artist": "balu-brigada",
+          "note": "Saturday"
+        },
+        {
+          "artist": "rochelle-jordan",
+          "note": "Saturday, weekend 1 only"
+        },
+        {
+          "artist": "arcy-drive",
+          "note": "Saturday"
+        },
+        {
+          "artist": "finn-wolfhard",
+          "note": "Saturday"
+        },
+        {
+          "artist": "ryan-beatty",
+          "note": "Saturday"
+        },
+        {
+          "artist": "don-west",
+          "note": "Saturday"
+        },
+        {
+          "artist": "temper-city",
+          "note": "Saturday"
+        },
+        {
+          "artist": "gabriel-jacoby",
+          "note": "Saturday, weekend 2 only"
+        },
+        {
+          "artist": "annie-dirusso",
+          "note": "Saturday"
+        },
+        {
+          "artist": "night-tapes",
+          "note": "Saturday"
+        },
+        {
+          "artist": "dj-cassandra",
+          "note": "Saturday"
+        },
+        {
+          "artist": "cure-for-paranoia",
+          "note": "Saturday, weekend 1 only"
+        },
+        {
+          "artist": "chloe-qisha",
+          "note": "Saturday, weekend 2 only"
+        },
+        {
+          "artist": "fai-laci",
+          "note": "Saturday, weekend 1 only"
+        },
+        {
+          "artist": "emma-ogier",
+          "note": "Saturday, weekend 1 only"
+        },
+        {
+          "artist": "common-people",
+          "note": "Saturday, weekend 2 only"
+        },
+        {
+          "artist": "coleman-jennings",
+          "note": "Saturday, weekend 1 only"
+        },
+        {
+          "artist": "damaris-bojor",
+          "note": "Saturday, weekend 2 only"
+        },
+        {
+          "artist": "fightmaster",
+          "note": "Saturday, weekend 1 only"
+        },
+        {
+          "artist": "lluvii",
+          "note": "Saturday, weekend 2 only"
+        },
+        {
+          "artist": "montclair",
+          "note": "Saturday, weekend 2 only"
+        },
+        {
+          "artist": "left-lucid",
+          "note": "Saturday, weekend 1 only"
+        },
+        {
+          "artist": "macy-todd",
+          "note": "Saturday, weekend 2 only"
+        },
+        {
+          "artist": "mega-ran",
+          "note": "Saturday and Sunday"
+        },
+        {
+          "artist": "flor-bromley",
+          "note": "Saturday and Sunday, weekend 2 only"
+        },
+        {
+          "artist": "the-barton-hills-choir",
+          "note": "Saturday"
+        },
+        {
+          "artist": "twenty-one-pilots",
+          "note": "Sunday"
+        },
+        {
+          "artist": "the-xx",
+          "note": "Sunday"
+        },
+        {
+          "artist": "geese",
+          "note": "Sunday"
+        },
+        {
+          "artist": "sofi-tukker",
+          "note": "Sunday"
+        },
+        {
+          "artist": "parcels",
+          "note": "Sunday"
+        },
+        {
+          "artist": "the-war-on-drugs",
+          "note": "Sunday"
+        },
+        {
+          "artist": "blood-orange",
+          "note": "Sunday"
+        },
+        {
+          "artist": "max-mcnown",
+          "note": "Sunday"
+        },
+        {
+          "artist": "cannons",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "audrey-hobert",
+          "note": "Sunday"
+        },
+        {
+          "artist": "saint-motel",
+          "note": "Sunday"
+        },
+        {
+          "artist": "houndmouth",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "fcukers",
+          "note": "Sunday"
+        },
+        {
+          "artist": "stella-lefty",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "underscores",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "claire-rosinkranz",
+          "note": "Sunday"
+        },
+        {
+          "artist": "noga-erez",
+          "note": "Sunday"
+        },
+        {
+          "artist": "dexter-and-the-moonrocks",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "joshua-jensen",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "grace-ives",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "rio-kosta",
+          "note": "Sunday"
+        },
+        {
+          "artist": "ethan-regan",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "bad-nerves",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "girlsweetvoiced",
+          "note": "Sunday"
+        },
+        {
+          "artist": "charlotte-lawrence",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "sunday-1994",
+          "note": "Sunday"
+        },
+        {
+          "artist": "rum-jungle",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "calder-allen",
+          "note": "Sunday"
+        },
+        {
+          "artist": "fancy-hagood",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "britton",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "solya",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "villanelle",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "jess-williamson",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "flight-by-nothing",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "kevin-atwater",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "thomas-day",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "aaron-rowe",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "lauren-sanderson",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "vwillz",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "jason-scott-and-the-high-heat",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "vinny",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "marzz",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "chelsea-jordan",
+          "note": "Sunday, weekend 2 only"
+        },
+        {
+          "artist": "the-moriah-sisters",
+          "note": "Sunday, weekend 1 only"
+        },
+        {
+          "artist": "the-huston-tillotson-university-jazz-collective",
+          "note": "Sunday, weekend 2 only"
+        }
       ]
     }
   ],

@@ -183,7 +183,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
           <Pressable
             onPress={discover}
             accessibilityRole="button"
-            accessibilityLabel={`Discover the lineup, ${reach.clips} ${reach.clips === 1 ? 'clip' : 'clips'}`}
+            accessibilityLabel={`Discover the ${festival.name} lineup, ${reach.clips} ${reach.clips === 1 ? 'clip' : 'clips'}`}
             hitSlop={8}
             style={({ pressed }) => [styles.clips, pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] }]}
           >

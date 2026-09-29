@@ -139,7 +139,7 @@ describe('Festivals', () => {
   it('jumps from a festival card straight into its clips', async () => {
     const app = await renderApp('/festivals');
     await settle();
-    await fireEvent.press(app.getByLabelText('Discover the lineup, 2 clips'));
+    await fireEvent.press(app.getByLabelText('Discover the EDC Orlando 2026 lineup, 2 clips'));
     await settle();
     await settle();
     expect(app.getByLabelText(/^EDC Orlando 2026, live sets from the lineup/)).toBeTruthy();
@@ -175,6 +175,16 @@ describe('Festivals', () => {
     expect(app.getAllByText('Sunset set').length).toBeGreaterThan(0);
   });
 
+  it('opens Austin City Limits with the poster’s day and weekend for each act', async () => {
+    const app = await renderApp('/festival/acl-26');
+    await settle();
+    expect(app.getByText('Austin City Limits 2026')).toBeTruthy();
+    expect(app.getByText('138 to rate')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Find an artist on the Austin City Limits 2026 lineup'), 'skrillex');
+    await settle();
+    expect(app.getAllByText(/Friday, weekend 1 only/).length).toBeGreaterThan(0);
+  });
+
   it('marks a festival you are going to, and lists it first under Going', async () => {
     const page = await renderApp('/festival/horizon-27');
     await settle();
@@ -185,13 +195,13 @@ describe('Festivals', () => {
     const list = await renderApp('/festivals');
     await settle();
     const titles = () =>
-      list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
+      list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Austin City Limits 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
     // The rest wait behind "More festivals" until you open it.
     expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
-    await fireEvent.press(list.getByLabelText('More festivals, 2. Show them'));
+    await fireEvent.press(list.getByLabelText('More festivals, 3. Show them'));
     await settle();
-    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Solstice 2026']);
-    await fireEvent.press(list.getByLabelText('More festivals, 2. Hide them'));
+    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Austin City Limits 2026', 'Solstice 2026']);
+    await fireEvent.press(list.getByLabelText('More festivals, 3. Hide them'));
     await settle();
     expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
   });
