@@ -8,11 +8,12 @@ import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { CheckIcon, ChevronIcon, CloseIcon, SearchIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
+import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Artist, Festival } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../../features/discover/icons';
 import { describeSet } from '../../features/festivals/format';
 import { lineupReach } from '../../features/festivals/links';
-import { matchesName, SEARCH_FROM } from '../../features/festivals/search';
+import { filterLineup, lineupSounds, SEARCH_FROM } from '../../features/festivals/search';
 import { countdown, setLine } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { leftToRate } from '../../features/festivals/tune';
@@ -42,7 +43,11 @@ export default function FestivalScreen() {
     const list = festival.lineup.map((a) => catalog.artist(a)).filter((a): a is Artist => !!a);
     return order === 'match' ? [...list].sort((a, b) => (taste[b.id] ?? 0) - (taste[a.id] ?? 0)) : list;
   }, [catalog, festival, order, taste]);
-  const shown = useMemo(() => lineup.filter((a) => matchesName(a.name, query)), [lineup, query]);
+  const [picked, setPicked] = useState<SoundTag | undefined>();
+  const sounds = useMemo(() => (lineup.length > SEARCH_FROM ? lineupSounds(lineup) : []), [lineup]);
+  // Only filter by a sound this lineup actually offers.
+  const sound = sounds.length > 1 && sounds.some((s) => s.tag === picked) ? picked : undefined;
+  const shown = useMemo(() => filterLineup(lineup, query, sound), [lineup, query, sound]);
 
   if (!festival) return null;
   const timesOut = !!festival.sets?.length;
@@ -176,9 +181,17 @@ export default function FestivalScreen() {
           </View>
         )}
 
+        {sounds.length > 1 && (
+          <SoundChips festivalName={festival.name} sounds={sounds} value={sound} onChange={setPicked} />
+        )}
+
         <View style={styles.pad}>
           {query && shown.length === 0 ? (
-            <Text style={styles.noMatch}>No one on the lineup matches “{query.trim()}”.</Text>
+            <Text style={styles.noMatch}>
+              {sound
+                ? `No ${SOUND_LABEL[sound].toLowerCase()} artist on the lineup matches “${query.trim()}”.`
+                : `No one on the lineup matches “${query.trim()}”.`}
+            </Text>
           ) : null}
           {shown.map((a) => {
             const set = setFor(festival, a.id);
@@ -221,6 +234,55 @@ function GoingPill({ festival }: { festival: Festival }) {
       <CheckIcon color={going ? color.moon : color.moonDim} size={14} />
       <Text style={[styles.discoverText, !going && { color: color.moonDim }]}>{going ? 'Going' : 'I’m going'}</Text>
     </Pressable>
+  );
+}
+
+/** Narrow a big lineup to one sound. Tapping the chosen sound again shows everyone. */
+function SoundChips({
+  festivalName,
+  sounds,
+  value,
+  onChange,
+}: {
+  festivalName: string;
+  sounds: { tag: SoundTag; count: number }[];
+  value: SoundTag | undefined;
+  onChange: (tag: SoundTag | undefined) => void;
+}) {
+  const chips: { tag: SoundTag | undefined; label: string; count?: number }[] = [
+    { tag: undefined, label: 'All sounds' },
+    ...sounds.map((s) => ({ tag: s.tag, label: SOUND_LABEL[s.tag], count: s.count })),
+  ];
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.chips}
+      style={styles.chipsWrap}
+      keyboardShouldPersistTaps="handled"
+    >
+      {chips.map((c) => {
+        const on = c.tag === value;
+        return (
+          <Pressable
+            key={c.tag ?? 'all'}
+            onPress={() => {
+              haptic.select();
+              onChange(on ? undefined : c.tag);
+            }}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={
+              c.tag ? `${c.label}, ${c.count} artists on the ${festivalName} lineup` : `All sounds on the ${festivalName} lineup`
+            }
+            style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={[styles.chipText, on && { color: color.moon }]}>{c.label}</Text>
+            {c.count !== undefined ? <Text style={styles.chipCount}>{c.count}</Text> : null}
+          </Pressable>
+        );
+      })}
+    </ScrollView>
   );
 }
 
@@ -316,6 +378,22 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   searchInput: { ...type.body, flex: 1, color: color.moon, paddingVertical: 0 },
+  chipsWrap: { marginBottom: space.sm, flexGrow: 0 },
+  chips: { paddingHorizontal: space.xl, gap: space.sm },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  chipText: { ...type.caption, color: color.moonDim },
+  chipCount: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
   lineupHead: { marginTop: space.xxl, marginBottom: space.sm, flexDirection: 'row', alignItems: 'center' },
   section: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
