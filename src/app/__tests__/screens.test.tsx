@@ -20,6 +20,7 @@ import LineupScreen from '../(tabs)/lineup';
 import ProfileScreen from '../(tabs)/profile';
 import NotificationsScreen from '../notifications';
 import YourSoundScreen from '../your-sound';
+import RequestScreen from '../request';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -45,6 +46,7 @@ function renderApp(initialUrl: string) {
       '(tabs)/profile': ProfileScreen,
       notifications: NotificationsScreen,
       'your-sound': YourSoundScreen,
+      request: RequestScreen,
     },
     { initialUrl },
   );
@@ -149,16 +151,54 @@ describe('Festivals', () => {
   it('finds an artist at any festival from the Festivals tab', async () => {
     const app = await renderApp('/festivals');
     await settle();
-    await fireEvent.changeText(app.getByLabelText('Find an artist at any festival'), 'wool');
+    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'wool');
     await settle();
     expect(app.getByLabelText(/^WOOLI, \d+ percent match, Plays EDC Orlando 2026$/)).toBeTruthy();
     expect(app.queryByText('Solstice 2026')).toBeNull();
-    await fireEvent.changeText(app.getByLabelText('Find an artist at any festival'), 'zzz');
+    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'zzz');
     await settle();
-    expect(app.getByText('No artist matches “zzz”.')).toBeTruthy();
+    expect(app.getByText('No festival or artist matches “zzz”.')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Clear the search'));
     await settle();
     expect(app.getByText('Solstice 2026')).toBeTruthy();
+  });
+
+  it('finds festivals by name or place, and offers to request one that is missing', async () => {
+    const app = await renderApp('/festivals');
+    await settle();
+    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'orlando');
+    await settle();
+    expect(app.getByLabelText(/^EDC Orlando 2026, Nov 6 to 8, Tinker Field, Orlando/)).toBeTruthy();
+    expect(app.getByLabelText(/^Eternal NYE 2026, /)).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'Lost Lands');
+    await settle();
+    await fireEvent.press(app.getByLabelText("Can't find it? Request Lost Lands"));
+    await settle();
+    expect(app.getByText('Request a festival')).toBeTruthy();
+    expect(app.getByLabelText('Festival name').props.value).toBe('Lost Lands');
+  });
+
+  it('sends a festival request through the share sheet, and says thanks', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const app = await renderApp('/request');
+    await settle();
+    await fireEvent.changeText(app.getByLabelText('Festival name'), 'Lost Lands 2027');
+    await fireEvent.press(app.getByLabelText('Send request for Lost Lands 2027'));
+    await settle();
+    expect((share.mock.calls[0][0] as { message: string }).message).toContain('Please add Lost Lands 2027 to Afterglow.');
+    expect(app.getByText('Thanks for asking')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('festivalRequests.v1')) ?? '[]')[0].name).toBe('Lost Lands 2027');
+    share.mockRestore();
+  });
+
+  it('switches to square tiles, and remembers it', async () => {
+    const app = await renderApp('/festivals');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Show festivals as tiles'));
+    await settle();
+    expect(app.getByLabelText('Show festivals as cards')).toBeTruthy();
+    expect(app.getByLabelText(/^EDC Orlando 2026, Nov 6 to 8, /)).toBeTruthy();
+    expect(await AsyncStorage.getItem('festivalsView.v1')).toBe('grid');
   });
 
   it('opens EDC Orlando with its plan, a short explore list and the full lineup', async () => {

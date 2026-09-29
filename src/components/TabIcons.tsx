@@ -84,6 +84,28 @@ export function BarsIcon({ color, size = 14 }: P) {
   );
 }
 
+/** A two-by-two grid of rounded squares: the tile view. */
+export function GridIcon({ color, size = 18 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x="4" y="4" width="7" height="7" rx="2" stroke={color} strokeWidth={1.8} />
+      <Rect x="13" y="4" width="7" height="7" rx="2" stroke={color} strokeWidth={1.8} />
+      <Rect x="4" y="13" width="7" height="7" rx="2" stroke={color} strokeWidth={1.8} />
+      <Rect x="13" y="13" width="7" height="7" rx="2" stroke={color} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
+/** Stacked wide cards: the list view. */
+export function ListIcon({ color, size = 18 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x="4" y="4.5" width="16" height="6" rx="2" stroke={color} strokeWidth={1.8} />
+      <Rect x="4" y="13.5" width="16" height="6" rx="2" stroke={color} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
 const CHEVRON = { right: 'M9 5l7 7-7 7', left: 'M15 5l-7 7 7 7', up: 'M5 15l7-7 7 7', down: 'M5 9l7 7 7-7' } as const;
 
 export function ChevronIcon({ color, size = 16, direction = 'right' }: P & { direction?: keyof typeof CHEVRON }) {

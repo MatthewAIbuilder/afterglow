@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import type { Artist } from '../../../data/models';
-import { carriesSound, filterLineup, lineupSounds, matchesName, normalize, searchArtists } from '../search';
+import type { Artist, Festival } from '../../../data/models';
+import { carriesSound, filterLineup, lineupSounds, matchesName, normalize, searchArtists, searchFestivals } from '../search';
 
 describe('finding an artist on a lineup', () => {
   it('ignores case, accents and punctuation', () => {
@@ -77,5 +77,24 @@ describe('searching every artist', () => {
   it('finds nothing for an empty search, and stops at the limit', () => {
     expect(searchArtists(all, '  ')).toEqual([]);
     expect(searchArtists(all, 'i', 2)).toHaveLength(2);
+  });
+});
+
+describe('finding a festival', () => {
+  const fest = (id: string, name: string, location: string): Festival => ({ id, name, location, dates: '', lineup: [], days: [], stages: [] });
+  const festivals = [
+    fest('acl', 'Austin City Limits 2026', 'Austin, Texas'),
+    fest('edc', 'EDC Orlando 2026', 'Tinker Field, Orlando'),
+    fest('eternal', 'Eternal NYE 2026', 'Orlando Amphitheater, Orlando'),
+    fest('countdown', 'Countdown NYE 2026', 'NOS Events Center, San Bernardino'),
+  ];
+  const ids = (list: Festival[]) => list.map((f) => f.id);
+
+  it('matches names first, then places', () => {
+    expect(ids(searchFestivals(festivals, 'orlando'))).toEqual(['edc', 'eternal']);
+    expect(ids(searchFestivals(festivals, 'nye'))).toEqual(['eternal', 'countdown']);
+    expect(ids(searchFestivals(festivals, 'e'))).toEqual(['edc', 'eternal', 'countdown', 'acl']);
+    expect(ids(searchFestivals(festivals, 'texas'))).toEqual(['acl']);
+    expect(searchFestivals(festivals, '  ')).toEqual([]);
   });
 });
