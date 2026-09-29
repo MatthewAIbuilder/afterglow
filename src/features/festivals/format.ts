@@ -15,3 +15,9 @@ export function formatTime(t: string) {
 export function describeSet(festival: Festival, set: SetTime) {
   return `${set.day} ${formatTime(set.start)}, ${stageName(festival, set.stageId)}`;
 }
+
+/** Clip length: 45 -> "0:45", 75 -> "1:15", 125 -> "2:05". */
+export function formatDuration(seconds: number) {
+  const s = Math.max(0, Math.round(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}

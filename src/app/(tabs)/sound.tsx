@@ -1,10 +1,12 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
+import { SaveIcon } from '../../features/discover/icons';
+import { savedClips } from '../../features/discover/saved';
 import { artistsOnMap } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
@@ -72,7 +74,10 @@ export default function MySoundScreen() {
           <Text style={styles.title} pointerEvents="none">
             My Sound
           </Text>
-          {hasSignal(live.summary, live.rated) && <StartOver onCleared={reshapeSoon} />}
+          <View style={styles.actions} pointerEvents="box-none">
+            <SavedPill />
+            {hasSignal(live.summary, live.rated) && <StartOver onCleared={reshapeSoon} />}
+          </View>
         </View>
         <Text style={styles.subtitle} pointerEvents="none">
           {subtitle(shown.summary, shown.rated)}
@@ -81,6 +86,29 @@ export default function MySoundScreen() {
 
       <ArtistSheet artistId={selectedId} taste={shown.taste} bottomInset={tabSpace} onClose={close} />
     </View>
+  );
+}
+
+/** Opens your saved clips. Only there once you've saved one. */
+function SavedPill() {
+  const { clips } = useCatalog();
+  const { reactions } = useReactions();
+  const count = savedClips(clips, reactions).length;
+  if (count === 0) return null;
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        router.push('/saved');
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`Saved clips, ${count}`}
+      hitSlop={10}
+      style={({ pressed }) => [styles.pill, styles.savedPill, pressed && { opacity: 0.7 }]}
+    >
+      <SaveIcon color={color.glow} filled size={13} />
+      <Text style={styles.savedCount}>{count}</Text>
+    </Pressable>
   );
 }
 
@@ -122,7 +150,7 @@ function StartOver({ onCleared }: { onCleared: () => void }) {
       accessibilityRole="button"
       accessibilityLabel="Start your sound over"
       hitSlop={10}
-      style={({ pressed }) => [styles.startOver, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}
     >
       <Text style={styles.startOverText}>Start over</Text>
     </Pressable>
@@ -148,7 +176,8 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: space.xl },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.largeTitle, color: color.moon },
-  startOver: {
+  actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  pill: {
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
@@ -157,5 +186,7 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   startOverText: { ...type.caption, color: color.moonDim },
+  savedPill: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  savedCount: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
 });

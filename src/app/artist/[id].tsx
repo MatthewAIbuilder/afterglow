@@ -12,7 +12,7 @@ import { SOUND_LABEL, type SoundTag } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
 import { StarIcon } from '../../features/plan/icons';
 import { RateArtist } from '../../features/taste/RateArtist';
-import { describeSet } from '../../features/festivals/format';
+import { describeSet, formatDuration } from '../../features/festivals/format';
 import { setLine } from '../../features/festivals/when';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
@@ -148,7 +148,7 @@ export default function ArtistScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>{c.title}</Text>
                   <Text style={styles.rowMeta}>
-                    {catalog.festival(c.festivalId)?.name}, 0:{String(c.durationSec).padStart(2, '0')}
+                    {catalog.festival(c.festivalId)?.name}, {formatDuration(c.durationSec)}
                   </Text>
                 </View>
               </Pressable>
