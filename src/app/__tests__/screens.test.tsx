@@ -88,6 +88,23 @@ describe('Festivals', () => {
     expect(titles).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Solstice 2026']);
   });
 
+  it('finds an artist on a big lineup', async () => {
+    const app = await renderApp('/festival/edc-orlando-26');
+    await settle();
+    const row = (name: string) => app.queryByLabelText(new RegExp(`^${name}, \\d+ percent match`));
+    expect(row('ALESSO')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Find an artist on the EDC Orlando 2026 lineup'), 'wool');
+    await settle();
+    expect(row('WOOLI')).toBeTruthy();
+    expect(row('ALESSO')).toBeNull();
+    await fireEvent.changeText(app.getByLabelText('Find an artist on the EDC Orlando 2026 lineup'), 'zzz');
+    await settle();
+    expect(app.getByText('No one on the lineup matches “zzz”.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Clear the search'));
+    await settle();
+    expect(row('ALESSO')).toBeTruthy();
+  });
+
   it('shares your plan from the share sheet', async () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
     const app = await renderApp('/festival/solstice-26');
