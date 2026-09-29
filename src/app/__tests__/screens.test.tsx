@@ -62,6 +62,21 @@ describe('Festivals', () => {
     expect(app.getByText('Horizon 2027')).toBeTruthy();
   });
 
+  it('finds an artist at any festival from the Festivals tab', async () => {
+    const app = await renderApp('/festivals');
+    await settle();
+    await fireEvent.changeText(app.getByLabelText('Find an artist at any festival'), 'wool');
+    await settle();
+    expect(app.getByLabelText(/^WOOLI, \d+ percent match, Plays EDC Orlando 2026$/)).toBeTruthy();
+    expect(app.queryByText('Solstice 2026')).toBeNull();
+    await fireEvent.changeText(app.getByLabelText('Find an artist at any festival'), 'zzz');
+    await settle();
+    expect(app.getByText('No artist matches “zzz”.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Clear the search'));
+    await settle();
+    expect(app.getByText('Solstice 2026')).toBeTruthy();
+  });
+
   it('opens EDC Orlando with its plan, a short explore list and the full lineup', async () => {
     const app = await renderApp('/festival/edc-orlando-26');
     await settle();

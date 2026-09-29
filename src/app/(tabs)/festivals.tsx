@@ -1,17 +1,22 @@
 import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
+import { ArtistRow } from '../../components/ArtistRow';
+import { SearchField } from '../../components/SearchField';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
+import { searchArtists } from '../../features/festivals/search';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
+import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -21,30 +26,73 @@ export default function FestivalsScreen() {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const { taste } = useTaste();
-  const { festivals } = useCatalog();
+  const catalog = useCatalog();
+  const { festivals } = catalog;
   const { going } = useGoing();
+  const { ratings } = useRatings();
   const today = useToday();
   const groups = groupFestivals(festivals, going, today);
+  // Find any artist across every lineup.
+  const [query, setQuery] = useState('');
+  const found = useMemo(() => searchArtists(catalog.artists, query), [catalog.artists, query]);
+  const searching = query.trim().length > 0;
 
   return (
     <View style={styles.root}>
       <NightSky />
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + space.lg, paddingBottom: tabSpace + space.xl }}
+        contentContainerStyle={{
+          paddingTop: insets.top + space.lg,
+          paddingBottom: tabSpace + space.xl,
+        }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         <View style={styles.header}>
           <Text style={styles.title}>Festivals</Text>
           <Text style={styles.subtitle}>Lineups ranked by your sound.</Text>
+          <View style={styles.searchWrap}>
+            <SearchField
+              value={query}
+              onChange={setQuery}
+              placeholder="Find an artist"
+              label="Find an artist at any festival"
+            />
+          </View>
         </View>
-        {groups.going.length > 0 && <Text style={styles.section}>Going</Text>}
-        {groups.going.map((f) => (
-          <FestivalCard key={f.id} festival={f} taste={taste} />
-        ))}
-        {groups.going.length > 0 && groups.others.length > 0 && <Text style={styles.section}>More festivals</Text>}
-        {groups.others.map((f) => (
-          <FestivalCard key={f.id} festival={f} taste={taste} />
-        ))}
+        {searching ? (
+          <View style={styles.results}>
+            {found.length === 0 ? (
+              <Text style={styles.noMatch}>No artist matches “{query.trim()}”.</Text>
+            ) : (
+              found.map((a) => {
+                const at = catalog.festivalsOf(a.id);
+                return (
+                  <ArtistRow
+                    key={a.id}
+                    artist={a}
+                    affinity={taste[a.id] ?? 0}
+                    festivalId={at.length === 1 ? at[0].id : undefined}
+                    detail={at.length ? `Plays ${at.map((f) => f.name).join(', ')}` : undefined}
+                    rating={ratings[a.id]}
+                  />
+                );
+              })
+            )}
+          </View>
+        ) : (
+          <>
+            {groups.going.length > 0 && <Text style={styles.section}>Going</Text>}
+            {groups.going.map((f) => (
+              <FestivalCard key={f.id} festival={f} taste={taste} />
+            ))}
+            {groups.going.length > 0 && groups.others.length > 0 && <Text style={styles.section}>More festivals</Text>}
+            {groups.others.map((f) => (
+              <FestivalCard key={f.id} festival={f} taste={taste} />
+            ))}
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -108,7 +156,17 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: space.xl, marginBottom: space.xl },
   title: { ...type.largeTitle, color: color.moon },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
-  section: { ...type.label, color: color.moonFaint, paddingHorizontal: space.xl, marginBottom: space.md, textTransform: 'uppercase', letterSpacing: 0.8 },
+  searchWrap: { marginTop: space.lg },
+  results: { paddingHorizontal: space.xl },
+  noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
+  section: {
+    ...type.label,
+    color: color.moonFaint,
+    paddingHorizontal: space.xl,
+    marginBottom: space.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
   card: {
     marginHorizontal: space.lg,
     marginBottom: space.lg,
@@ -121,7 +179,12 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center' },
   name: { ...type.title, color: color.moon },
   meta: { ...type.body, color: color.moonDim, marginTop: 2 },
-  cardBottom: { flexDirection: 'row', alignItems: 'center', marginTop: space.xl, gap: space.lg },
+  cardBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: space.xl,
+    gap: space.lg,
+  },
   faces: { flexDirection: 'row' },
   face: { borderRadius: 20, borderWidth: 2, borderColor: color.night },
   loved: { ...type.label, color: color.moon },

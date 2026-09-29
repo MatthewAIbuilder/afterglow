@@ -1,12 +1,13 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistRow } from '../../components/ArtistRow';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
-import { CheckIcon, ChevronIcon, CloseIcon, SearchIcon } from '../../components/TabIcons';
+import { SearchField } from '../../components/SearchField';
+import { CheckIcon, ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Artist, Festival } from '../../data/types';
@@ -151,33 +152,12 @@ export default function FestivalScreen() {
 
         {lineup.length > SEARCH_FROM && (
           <View style={[styles.pad, styles.searchWrap]}>
-            <View style={styles.search}>
-              <SearchIcon color={color.moonFaint} />
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Find an artist"
-                placeholderTextColor={color.moonFaint}
-                style={styles.searchInput}
-                autoCorrect={false}
-                autoCapitalize="none"
-                returnKeyType="search"
-                clearButtonMode="never"
-                keyboardAppearance="dark"
-                selectionColor={color.glow}
-                accessibilityLabel={`Find an artist on the ${festival.name} lineup`}
-              />
-              {query ? (
-                <Pressable
-                  onPress={() => setQuery('')}
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear the search"
-                  hitSlop={10}
-                >
-                  <CloseIcon color={color.moonDim} size={14} />
-                </Pressable>
-              ) : null}
-            </View>
+            <SearchField
+              value={query}
+              onChange={setQuery}
+              placeholder="Find an artist"
+              label={`Find an artist on the ${festival.name} lineup`}
+            />
           </View>
         )}
 
@@ -373,18 +353,6 @@ const styles = StyleSheet.create({
   noteTitle: { ...type.headline, color: color.moon },
   noteBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginBottom: space.sm },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingHorizontal: space.md,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: color.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
-  },
-  searchInput: { ...type.body, flex: 1, color: color.moon, paddingVertical: 0 },
   chipsWrap: { marginBottom: space.sm, flexGrow: 0 },
   chips: { paddingHorizontal: space.xl, gap: space.sm },
   chip: {

@@ -51,3 +51,25 @@ export function lineupSounds(artists: Artist[], min = 3): { tag: SoundTag; count
 export function filterLineup(artists: Artist[], query: string, sound?: SoundTag) {
   return artists.filter((a) => matchesName(a.name, query) && (!sound || carriesSound(a, sound)));
 }
+
+/**
+ * Artists whose name matches what was typed, best first: names that start
+ * with it, then words that start with it, then anywhere. Catalogue order
+ * within each. Nothing for an empty search.
+ */
+export function searchArtists(artists: Artist[], query: string, max = 30): Artist[] {
+  const q = normalize(query);
+  if (!q) return [];
+  const rank = (a: Artist) => {
+    const n = normalize(a.name);
+    if (n.startsWith(q) || n.replace(/ /g, '').startsWith(q.replace(/ /g, ''))) return 0;
+    if (n.split(' ').some((w) => w.startsWith(q))) return 1;
+    return 2;
+  };
+  return artists
+    .filter((a) => matchesName(a.name, query))
+    .map((a, i) => ({ a, i, r: rank(a) }))
+    .sort((x, y) => x.r - y.r || x.i - y.i)
+    .slice(0, max)
+    .map((x) => x.a);
+}
