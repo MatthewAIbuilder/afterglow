@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { CatalogProvider } from '../state/catalog';
+import { GoingProvider } from '../state/going';
 import { PlanProvider } from '../state/plan';
 import { RatingsProvider } from '../state/ratings';
 import { ReactionsProvider } from '../state/reactions';
@@ -15,6 +16,7 @@ export default function RootLayout() {
       <ReactionsProvider>
       <RatingsProvider>
       <PlanProvider>
+      <GoingProvider>
       <SeenProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
@@ -25,6 +27,7 @@ export default function RootLayout() {
         <Stack.Screen name="poster/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
       </Stack>
       </SeenProvider>
+      </GoingProvider>
       </PlanProvider>
       </RatingsProvider>
       </ReactionsProvider>
