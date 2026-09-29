@@ -73,5 +73,13 @@ describe('Austin City Limits 2026', () => {
       { start: '2026-10-09', end: '2026-10-11' },
     ]);
     expect(acl).toMatchObject({ startDate: '2026-10-02', endDate: '2026-10-11' });
+    // Each act's day from the poster, with the weekend as a note.
+    expect(acl.artistDays?.skrillex).toEqual(['Friday']);
+    expect(acl.notes?.skrillex).toBe('Weekend 1 only');
+    expect(acl.artistDays?.['mega-ran']).toEqual(['Saturday', 'Sunday']);
+    expect(Object.keys(acl.artistDays ?? {})).toHaveLength(138);
+    const cyclops = BUILT_IN.catalog.festival('cyclops-cove-4')!;
+    expect(cyclops.artistDays?.subtronics).toEqual(['Saturday', 'Sunday']);
+    expect(cyclops.notes).toBeUndefined();
   });
 });

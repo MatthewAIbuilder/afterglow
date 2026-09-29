@@ -62,6 +62,7 @@ describe('architecture', () => {
       'features/notifications/reminders.ts',
       'features/plan/route.ts',
       'features/festivals/request.ts',
+      'features/festivals/days.ts',
     ];
     for (const p of pure) {
       const f = all.find((x) => x.path === p);

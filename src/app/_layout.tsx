@@ -31,6 +31,16 @@ export default function RootLayout() {
         <Stack.Screen name="notifications" />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
+          name="sound-scope"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.6, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: color.nightRaised },
+          }}
+        />
+        <Stack.Screen
           name="request"
           options={{
             presentation: 'formSheet',

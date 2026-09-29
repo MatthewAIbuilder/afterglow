@@ -163,6 +163,24 @@ describe('catalogue files', () => {
     expect(built.catalog.festival('f')?.notes).toEqual({ a: 'Sunset set' });
   });
 
+  it('reads the day each act plays from the lineup, and checks it', () => {
+    const parsed = parseCatalogFile({
+      version: 1,
+      artists: [
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B' },
+      ],
+      festivals: [
+        { id: 'f', name: 'F', dates: 'Oct', days: ['Friday', 'Saturday'], lineup: [{ artist: 'a', days: ['Friday'] }, { artist: 'b', days: ['Monday', 'Saturday'] }, { artist: 'a', days: 'Friday' }] },
+      ],
+      clips: [],
+    });
+    expect(parsed.problems.some((p) => /should be a list like \["Friday"\]/.test(p))).toBe(true);
+    const built = buildCatalog(MOCK_SNAPSHOT, parsed);
+    expect(built.catalog.festival('f')?.artistDays).toEqual({ a: ['Friday'], b: ['Saturday'] });
+    expect(built.problems.some((p) => /a day was left out/.test(p))).toBe(true);
+  });
+
   it('reads the weekends of a festival run over two, and checks them', () => {
     const weekend = (start: string, end: string) => ({ start, end });
     const parsed = parseCatalogFile({

@@ -17,6 +17,7 @@ import { SoundBreakdown } from '../../features/taste/SoundBreakdown';
 import { mostSimilar } from '../../features/taste/similarity';
 import { listenLinks } from '../../features/taste/listen';
 import { artistSignals, whyLine } from '../../features/taste/why';
+import { dayList, daysOf } from '../../features/festivals/days';
 import { describeSet, formatDuration } from '../../features/festivals/format';
 import { setLine } from '../../features/festivals/when';
 import { haptic } from '../../lib/haptics';
@@ -134,7 +135,10 @@ export default function ArtistScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowTitle}>{f.name}</Text>
                     <Text style={styles.rowMeta}>
-                      {setLine(set ? describeSet(f, set) : `${f.dates}, set time not announced yet`, f.notes?.[artist.id])}
+                      {setLine(
+                        set ? describeSet(f, set) : `${dayList(daysOf(f, artist.id)) ?? f.dates}, set time not announced yet`,
+                        f.notes?.[artist.id],
+                      )}
                     </Text>
                   </View>
                   <ChevronIcon color={color.moonFaint} size={14} />

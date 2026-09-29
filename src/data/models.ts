@@ -93,6 +93,12 @@ export type Festival = {
   weekends?: { start: string; end: string }[];
   /** What the lineup says about a particular set, by artist id: "Sunset set", "Wholesome riddim set". */
   notes?: Record<string, string>;
+  /**
+   * Which of the festival's `days` each artist plays, by artist id, when the
+   * poster says so before set times are out ("Friday", or two days for
+   * someone playing twice). Set times, once out, say it too.
+   */
+  artistDays?: Record<string, string[]>;
 };
 
 /**

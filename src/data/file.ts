@@ -19,7 +19,7 @@ import { SOUND_TAGS } from './models';
  *   "mode": "add",                      // "add" to the demo data, or "replace" it
  *   "artists":   [{ "id", "name", "sound": { "house": 1 }, "image"? }],
  *   "festivals": [{ "id", "name", "dates", "location", "start"?: "2026-11-06", "end"?: "2026-11-08",
- *                   "lineup": [artist ids, or { "artist", "note": "Sunset set" }],
+ *                   "lineup": [artist ids, or { "artist", "note": "Sunset set", "days": ["Friday"] }],
  *                   "weekends"?: [{ "start", "end" }, ...],   // festivals run over separate weekends
  *                   "days"?, "stages"?: [{ "id", "name" }], "poster"?,
  *                   "sets"?: [{ "artist", "day", "stage", "start": "23:40", "end": "01:10" }] }],
@@ -135,6 +135,7 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
 
   // A lineup entry is an artist id, or { "artist", "note" } for a set the poster says something about.
   const notes: Record<string, string> = {};
+  const artistDays: Record<string, string[]> = {};
   const lineup = list(raw.lineup).flatMap((a) => {
     const artistId = id(isObj(a) ? a.artist : a);
     if (!artistId) {
@@ -145,6 +146,12 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
       const note = text(a.note);
       if (note) notes[artistId] = note;
       else problems.push(`Festival "${festivalId}": the note for "${artistId}" should be a short line of text.`);
+    }
+    // The day(s) the poster lists them under, before set times are out.
+    if (isObj(a) && a.days !== undefined) {
+      const ds = list(a.days).flatMap((d) => (text(d) ? [text(d)!] : []));
+      if (ds.length) artistDays[artistId] = ds;
+      else problems.push(`Festival "${festivalId}": the days for "${artistId}" should be a list like ["Friday"].`);
     }
     return [artistId];
   });
@@ -159,6 +166,7 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
 
   const festival: Festival = { id: festivalId, name, dates, location, lineup, days, stages };
   if (Object.keys(notes).length) festival.notes = notes;
+  if (Object.keys(artistDays).length) festival.artistDays = artistDays;
   for (const [key, field] of [['start', 'startDate'], ['end', 'endDate']] as const) {
     if (raw[key] === undefined) continue;
     const day = isoDay(raw[key]);

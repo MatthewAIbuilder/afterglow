@@ -21,6 +21,7 @@ import ProfileScreen from '../(tabs)/profile';
 import NotificationsScreen from '../notifications';
 import YourSoundScreen from '../your-sound';
 import RequestScreen from '../request';
+import SoundScopeScreen from '../sound-scope';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -47,6 +48,7 @@ function renderApp(initialUrl: string) {
       notifications: NotificationsScreen,
       'your-sound': YourSoundScreen,
       request: RequestScreen,
+      'sound-scope': SoundScopeScreen,
     },
     { initialUrl },
   );
@@ -191,6 +193,15 @@ describe('Festivals', () => {
     share.mockRestore();
   });
 
+  it('filters a big lineup by day', async () => {
+    const app = await renderApp('/festival/acl-26');
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Sunday, \d+ artists$/));
+    await settle();
+    expect(app.getAllByText(/^Sunday/).length).toBeGreaterThan(0);
+    expect(app.queryByText('Friday · Weekend 1 only')).toBeNull();
+  });
+
   it('switches to square tiles, and remembers it', async () => {
     const app = await renderApp('/festivals');
     await settle();
@@ -227,7 +238,7 @@ describe('Festivals', () => {
     expect(app.getByLabelText(/^Rock, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
     await fireEvent.changeText(app.getByLabelText('Find an artist on the Austin City Limits 2026 lineup'), 'skrillex');
     await settle();
-    expect(app.getAllByText(/Friday, weekend 1 only/).length).toBeGreaterThan(0);
+    expect(app.getAllByText('Friday · Weekend 1 only').length).toBeGreaterThan(0);
   });
 
   it('marks a festival you are going to, and lists it first under Going', async () => {
@@ -463,10 +474,16 @@ describe('My Sound', () => {
   it('narrows the map to one festival, and offers to rate a sparse lineup', async () => {
     const app = await renderApp('/sound');
     await settle();
-    expect(app.getByLabelText('Your sound across every artist').props.accessibilityState).toEqual({ selected: true });
+    expect(app.getByLabelText('Your sound across every artist. Choose a festival')).toBeTruthy();
     expect(app.queryByText(/on your map (yet|so far)/)).toBeNull();
+    await fireEvent.press(app.getByLabelText('Your sound across every artist. Choose a festival'));
+    await settle();
+    expect(app.getByText('Show my sound for')).toBeTruthy();
+    expect(app.getByLabelText('Your sound across every artist').props.accessibilityState).toEqual({ selected: true });
     await fireEvent.press(app.getByLabelText('Your sound at EDC Orlando 2026'));
     await settle();
+    await settle();
+    expect(app.getByLabelText('Your sound at EDC Orlando 2026. Choose a festival')).toBeTruthy();
     expect(app.getByText(/of EDC Orlando 2026’s 110 artists (is|are) on your map so far\. Rate the lineup/)).toBeTruthy();
     await fireEvent.press(app.getByLabelText(/^Tune your lineup\. Rate 110 artists/));
     await settle();
@@ -476,7 +493,16 @@ describe('My Sound', () => {
   it('opens on a festival from a link', async () => {
     const app = await renderApp('/sound?festival=edc-orlando-26');
     await settle();
-    expect(app.getByLabelText('Your sound at EDC Orlando 2026').props.accessibilityState).toEqual({ selected: true });
+    expect(app.getByLabelText('Your sound at EDC Orlando 2026. Choose a festival')).toBeTruthy();
+  });
+
+  it('narrows a festival map to one day, when the poster says who plays when', async () => {
+    const app = await renderApp('/sound?festival=acl-26');
+    await settle();
+    expect(app.getByLabelText('Every day at Austin City Limits 2026').props.accessibilityState).toEqual({ selected: true });
+    await fireEvent.press(app.getByLabelText('Only Saturday at Austin City Limits 2026'));
+    await settle();
+    expect(app.getByLabelText('Only Saturday at Austin City Limits 2026').props.accessibilityState).toEqual({ selected: true });
   });
 
   it('starts your sound over, keeping your plans', async () => {

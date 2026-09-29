@@ -10,6 +10,8 @@ import { setFor } from '../../data/festival';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Artist, Festival } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../discover/icons';
+import { FilterChips } from '../../components/FilterChips';
+import { dayList, daysOf, lineupDays, playsOn } from './days';
 import { describeSet, whereWhen } from './format';
 import { lineupReach } from './links';
 import { filterLineup, lineupSounds, SEARCH_FROM } from './search';
@@ -56,7 +58,14 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
   const sounds = useMemo(() => (lineup.length > SEARCH_FROM ? lineupSounds(lineup) : []), [lineup]);
   // Only filter by a sound this lineup actually offers.
   const sound = sounds.length > 1 && sounds.some((s) => s.tag === picked) ? picked : undefined;
-  const shown = useMemo(() => filterLineup(lineup, query, sound), [lineup, query, sound]);
+  // Day by day, when the poster (or the set times) say who plays when.
+  const days = useMemo(() => lineupDays(festival), [festival]);
+  const [pickedDay, setPickedDay] = useState<string | undefined>();
+  const day = days.includes(pickedDay ?? '') ? pickedDay : undefined;
+  const shown = useMemo(
+    () => filterLineup(lineup, query, sound).filter((a) => playsOn(festival, a.id, day)),
+    [lineup, query, sound, festival, day],
+  );
 
   const timesOut = !!festival.sets?.length;
   const soon = countdown(festival, today);
@@ -169,16 +178,36 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
           </View>
         )}
 
+        {days.length > 0 && (
+          <View style={styles.dayChips}>
+            <FilterChips
+              chips={[
+                { key: undefined, label: 'All days', accessibilityLabel: `Every day at ${festival.name}` },
+                ...days.map((d) => ({
+                  key: d,
+                  label: d,
+                  count: lineup.filter((a) => playsOn(festival, a.id, d)).length,
+                  accessibilityLabel: `${d}, ${lineup.filter((a) => playsOn(festival, a.id, d)).length} artists`,
+                })),
+              ]}
+              value={day}
+              onChange={setPickedDay}
+            />
+          </View>
+        )}
+
         {sounds.length > 1 && (
           <SoundChips festivalName={festival.name} sounds={sounds} value={sound} onChange={setPicked} />
         )}
 
         <View style={styles.pad}>
-          {query && shown.length === 0 ? (
+          {(query || day) && shown.length === 0 ? (
             <Text style={styles.noMatch}>
               {sound
                 ? `No ${SOUND_LABEL[sound].toLowerCase()} artist on the lineup matches “${query.trim()}”.`
-                : `No one on the lineup matches “${query.trim()}”.`}
+                : query
+                  ? `No one on the lineup matches “${query.trim()}”.`
+                  : `No one with that sound plays ${day}.`}
             </Text>
           ) : null}
           {shown.map((a) => {
@@ -189,7 +218,7 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
                 festivalId={festival.id}
                 artist={a}
                 affinity={taste[a.id] ?? 0}
-                detail={setLine(set && describeSet(festival, set), festival.notes?.[a.id])}
+                detail={setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id])}
                 rating={ratings[a.id]}
               />
             );
@@ -354,6 +383,7 @@ const styles = StyleSheet.create({
   noteTitle: { ...type.headline, color: color.moon },
   noteBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginBottom: space.sm },
+  dayChips: { marginBottom: space.sm },
   chipsWrap: { marginBottom: space.sm, flexGrow: 0 },
   chips: { paddingHorizontal: space.xl, gap: space.sm },
   chip: {
