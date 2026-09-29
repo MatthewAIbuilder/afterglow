@@ -39,6 +39,25 @@ describe('festival countdown', () => {
     expect(countdown({ ...edc, startDate: undefined, endDate: undefined }, day(2026, 9, 29))).toBeUndefined();
   });
 
+  it('knows the weekends of a festival run over two', () => {
+    const acl: Festival = {
+      ...edc,
+      startDate: '2026-10-02',
+      endDate: '2026-10-11',
+      weekends: [
+        { start: '2026-10-02', end: '2026-10-04' },
+        { start: '2026-10-09', end: '2026-10-11' },
+      ],
+    };
+    expect(countdown(acl, day(2026, 9, 29))).toBe('In 3 days');
+    expect(countdown(acl, day(2026, 10, 3))).toBe('Happening now');
+    // The week between the weekends isn't "happening now".
+    expect(countdown(acl, day(2026, 10, 5))).toBe('Weekend 2 in 4 days');
+    expect(countdown(acl, day(2026, 10, 8))).toBe('Weekend 2 tomorrow');
+    expect(countdown(acl, day(2026, 10, 10))).toBe('Happening now');
+    expect(countdown(acl, day(2026, 10, 12))).toBe('Over');
+  });
+
   it('joins a set time and a note', () => {
     expect(setLine('Friday 9:00 PM, Main Stage', 'Sunset set')).toBe('Friday 9:00 PM, Main Stage · Sunset set');
     expect(setLine(undefined, 'Sunset set')).toBe('Sunset set');

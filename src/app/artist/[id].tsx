@@ -8,10 +8,12 @@ import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
-import { SOUND_LABEL, type Artist, type SoundTag } from '../../data/types';
+import type { Artist } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
 import { StarIcon } from '../../features/plan/icons';
+import { artistMix } from '../../features/taste/lean';
 import { RateArtist } from '../../features/taste/RateArtist';
+import { SoundBreakdown } from '../../features/taste/SoundBreakdown';
 import { mostSimilar } from '../../features/taste/similarity';
 import { listenLinks } from '../../features/taste/listen';
 import { artistSignals, whyLine } from '../../features/taste/why';
@@ -44,7 +46,7 @@ export default function ArtistScreen() {
   const mustSee = !!starFestival && isMustSee(starFestival.id, artist.id);
 
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
-  const tags = (Object.entries(artist.sound) as [SoundTag, number][]).sort((a, b) => b[1] - a[1]);
+  const mix = artistMix(artist);
   // Opened from a festival: who sounds like them on that lineup, so you can plan around it.
   // Otherwise (or if no one there does), the closest across everything we know.
   const lineupArtists = starFestival
@@ -81,13 +83,6 @@ export default function ArtistScreen() {
           <Text style={styles.why}>
             {whyLine(artistSignals(artist.id, catalog.clips, reactions, ratings), !!informed[artist.id])}
           </Text>
-          <View style={styles.tags}>
-            {tags.map(([tag]) => (
-              <View key={tag} style={styles.tag}>
-                <Text style={styles.tagText}>{SOUND_LABEL[tag]}</Text>
-              </View>
-            ))}
-          </View>
           <RateArtist artist={artist} />
           {starFestival && (
             <Pressable
@@ -112,6 +107,15 @@ export default function ArtistScreen() {
             </Pressable>
           )}
         </View>
+
+        {/* Their sound as a mix, e.g. 80% melodic bass, 20% dubstep. */}
+        {mix.length > 0 && (
+          <Section title="Their sound">
+            <View style={styles.mix}>
+              <SoundBreakdown shares={mix} />
+            </View>
+          </Section>
+        )}
 
         {festivals.length > 0 && (
           <Section title="Playing">
@@ -242,16 +246,7 @@ const styles = StyleSheet.create({
   name: { ...type.largeTitle, color: color.moon, marginTop: space.xl, textAlign: 'center' },
   match: { ...type.headline, color: color.glow, fontVariant: ['tabular-nums'], marginTop: space.xs },
   why: { ...type.caption, color: color.moonDim, marginTop: 4, textAlign: 'center', paddingHorizontal: space.xl },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.lg },
-  tag: {
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    backgroundColor: color.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
-  },
-  tagText: { ...type.caption, color: color.moon },
+  mix: { marginTop: space.sm },
   mustSee: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -9,8 +9,10 @@ export default function TabLayout() {
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: color.night } }}
     >
       <Tabs.Screen name="index" options={{ title: 'Discover' }} />
+      <Tabs.Screen name="lineup" options={{ title: 'Lineup' }} />
       <Tabs.Screen name="sound" options={{ title: 'My Sound' }} />
       <Tabs.Screen name="festivals" options={{ title: 'Festivals' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }

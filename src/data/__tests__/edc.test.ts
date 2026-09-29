@@ -42,7 +42,9 @@ describe('EDC Orlando 2026', () => {
     const onMap = artistsOnMap(catalog.artists, taste, informed);
     expect(onMap.length).toBeGreaterThan(Object.keys(MOCK_TASTE).length);
     expect(onMap.length).toBeLessThanOrEqual(MAP_MAX);
-    expect(onMap.map((a) => a.id)).toEqual(expect.arrayContaining(['jkyl-and-hyde', 'wooli']));
+    // Close EDC sounds join (the map's limit may go to even closer artists from other festivals).
+    const edcLineup = catalog.festival('edc-orlando-26')!.lineup;
+    expect(onMap.filter((a) => edcLineup.includes(a.id) && !(a.id in MOCK_TASTE)).length).toBeGreaterThan(0);
     // Artists with no sound yet never join through similarity alone.
     const noSound = catalog.artists.filter((a) => Object.keys(a.sound).length === 0).map((a) => a.id);
     expect(noSound.length).toBeGreaterThan(0);
@@ -59,5 +61,17 @@ describe('EDC Orlando 2026', () => {
     expect(picks[0].artist.id).toBe('levity');
     const explore = picks.filter((p) => p.tier === 'explore');
     expect(explore.length).toBeGreaterThan(EXPLORE_SHOWN);
+  });
+});
+
+describe('Austin City Limits 2026', () => {
+  it('is in the app over its two weekends', () => {
+    const acl = BUILT_IN.catalog.festival('acl-26')!;
+    expect(acl.lineup).toHaveLength(138);
+    expect(acl.weekends).toEqual([
+      { start: '2026-10-02', end: '2026-10-04' },
+      { start: '2026-10-09', end: '2026-10-11' },
+    ]);
+    expect(acl).toMatchObject({ startDate: '2026-10-02', endDate: '2026-10-11' });
   });
 });

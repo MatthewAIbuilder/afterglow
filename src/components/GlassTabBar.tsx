@@ -4,9 +4,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../lib/haptics';
 import { color, radius, space, type } from '../theme/tokens';
-import { DiscoverIcon, FestivalsIcon, SoundIcon } from './TabIcons';
+import { DiscoverIcon, FestivalsIcon, LineupIcon, ProfileIcon, SoundIcon } from './TabIcons';
 
-const ICONS: Record<string, typeof DiscoverIcon> = { index: DiscoverIcon, sound: SoundIcon, festivals: FestivalsIcon };
+const ICONS: Record<string, typeof DiscoverIcon> = {
+  index: DiscoverIcon,
+  lineup: LineupIcon,
+  sound: SoundIcon,
+  festivals: FestivalsIcon,
+  profile: ProfileIcon,
+};
 
 export const TAB_BAR_HEIGHT = 64;
 
@@ -47,7 +53,9 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
             >
               {focused && <View style={styles.activeBg} />}
               <Icon color={focused ? color.glow : tint} />
-              <Text style={[styles.label, { color: tint }]}>{label}</Text>
+              <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
+                {label}
+              </Text>
             </Pressable>
           );
         })}
@@ -57,9 +65,11 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  wrap: { position: 'absolute', left: space.md, right: space.md, alignItems: 'center' },
   pill: {
     flexDirection: 'row',
+    alignSelf: 'stretch',
+    maxWidth: 480,
     height: TAB_BAR_HEIGHT,
     padding: 6,
     borderRadius: radius.pill,
@@ -69,7 +79,7 @@ const styles = StyleSheet.create({
   },
   tint: { backgroundColor: 'rgba(18,16,38,0.45)' },
   item: {
-    width: 96,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.pill,

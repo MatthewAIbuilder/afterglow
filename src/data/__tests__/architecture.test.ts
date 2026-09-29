@@ -57,6 +57,8 @@ describe('architecture', () => {
       'features/festivals/links.ts',
       'features/festivals/format.ts',
       'features/discover/playback.ts',
+      'features/discover/focus.ts',
+      'features/notifications/inbox.ts',
     ];
     for (const p of pure) {
       const f = all.find((x) => x.path === p);

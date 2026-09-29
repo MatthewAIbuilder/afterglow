@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { act, fireEvent } from '@testing-library/react-native';
 import { Alert, Linking, Share } from 'react-native';
 import { renderRouter } from 'expo-router/testing-library';
+import * as Notifications from 'expo-notifications';
 import RootLayout from '../_layout';
 import TabsLayout from '../(tabs)/_layout';
 import DiscoverScreen from '../(tabs)/index';
@@ -14,6 +15,11 @@ import PosterScreen from '../poster/[id]';
 import SavedScreen from '../saved';
 import WelcomeScreen from '../welcome';
 import TuneScreen from '../tune/[id]';
+import DiscoverFocusScreen from '../discover-focus';
+import LineupScreen from '../(tabs)/lineup';
+import ProfileScreen from '../(tabs)/profile';
+import NotificationsScreen from '../notifications';
+import YourSoundScreen from '../your-sound';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -34,6 +40,11 @@ function renderApp(initialUrl: string) {
       saved: SavedScreen,
       welcome: WelcomeScreen,
       'tune/[id]': TuneScreen,
+      'discover-focus': DiscoverFocusScreen,
+      '(tabs)/lineup': LineupScreen,
+      '(tabs)/profile': ProfileScreen,
+      notifications: NotificationsScreen,
+      'your-sound': YourSoundScreen,
     },
     { initialUrl },
   );
@@ -129,7 +140,7 @@ describe('Festivals', () => {
   it('jumps from a festival card straight into its clips', async () => {
     const app = await renderApp('/festivals');
     await settle();
-    await fireEvent.press(app.getByLabelText('Discover the lineup, 2 clips'));
+    await fireEvent.press(app.getByLabelText('Discover the EDC Orlando 2026 lineup, 2 clips'));
     await settle();
     await settle();
     expect(app.getByLabelText(/^EDC Orlando 2026, live sets from the lineup/)).toBeTruthy();
@@ -165,6 +176,20 @@ describe('Festivals', () => {
     expect(app.getAllByText('Sunset set').length).toBeGreaterThan(0);
   });
 
+  it('opens Austin City Limits with the poster’s day and weekend for each act', async () => {
+    const app = await renderApp('/festival/acl-26');
+    await settle();
+    expect(app.getByText('Austin City Limits 2026')).toBeTruthy();
+    expect(app.getByText('138 to rate')).toBeTruthy();
+    // Its pop, indie and rock acts can be picked out with the sound filter.
+    expect(app.getByLabelText(/^Pop, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
+    expect(app.getByLabelText(/^Indie, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
+    expect(app.getByLabelText(/^Rock, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Find an artist on the Austin City Limits 2026 lineup'), 'skrillex');
+    await settle();
+    expect(app.getAllByText(/Friday, weekend 1 only/).length).toBeGreaterThan(0);
+  });
+
   it('marks a festival you are going to, and lists it first under Going', async () => {
     const page = await renderApp('/festival/horizon-27');
     await settle();
@@ -174,8 +199,16 @@ describe('Festivals', () => {
 
     const list = await renderApp('/festivals');
     await settle();
-    const titles = list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
-    expect(titles).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Solstice 2026']);
+    const titles = () =>
+      list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Austin City Limits 2026|Cyclops Cove 4|Eternal NYE 2026|Countdown NYE 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
+    // The rest wait behind "More festivals" until you open it.
+    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
+    await fireEvent.press(list.getByLabelText('More festivals, 6. Show them'));
+    await settle();
+    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Austin City Limits 2026', 'Cyclops Cove 4', 'Eternal NYE 2026', 'Countdown NYE 2026', 'Solstice 2026']);
+    await fireEvent.press(list.getByLabelText('More festivals, 6. Hide them'));
+    await settle();
+    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
   });
 
   it('finds an artist on a big lineup', async () => {
@@ -550,10 +583,141 @@ describe('Discover', () => {
     expect(app.getByLabelText('Watch again from the top')).toBeTruthy();
   });
 
+  it('picks what to discover from the header, including your mix, and remembers it', async () => {
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Solstice 2026, live sets from the lineup\. Choose what to discover\.$/));
+    await settle();
+    expect(app.getByText('What to discover')).toBeTruthy();
+    expect(app.getByLabelText(/^EDC Orlando 2026, 2 clips/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Your mix, A bit of everything, from every lineup'));
+    await settle();
+    await settle();
+    expect(app.getByText('Your mix')).toBeTruthy();
+    expect(app.getByText('A bit of everything, from every lineup')).toBeTruthy();
+    expect(await AsyncStorage.getItem('discoverFocus.v1')).toBe('mix');
+  });
+
+  it('opens where you left it', async () => {
+    await AsyncStorage.setItem('discoverFocus.v1', 'mix');
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    expect(app.getByText('Your mix')).toBeTruthy();
+  });
+
+  it('opens on a festival you are going to', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['horizon-27']));
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    expect(app.getByText('Horizon 2027')).toBeTruthy();
+  });
+
   it('refocuses on a festival from its page', async () => {
     const app = await renderApp('/?festival=horizon-27');
     await settle();
     await settle();
     expect(app.getByText('Horizon 2027')).toBeTruthy();
+  });
+});
+
+describe('Lineup tab', () => {
+  it('shows every lineup with a nudge until you pick a festival', async () => {
+    const app = await renderApp('/lineup');
+    await settle();
+    expect(app.getByText('Lineups')).toBeTruthy();
+    expect(app.getByText(/Tap “I’m going” on a festival/)).toBeTruthy();
+    expect(app.getByText('Full lineup')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Show the Horizon 2027 lineup'));
+    await settle();
+    expect(app.getAllByText('Horizon 2027').length).toBeGreaterThan(1);
+  });
+
+  it('becomes your lineup for the festival you are going to', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
+    const app = await renderApp('/lineup');
+    await settle();
+    expect(app.getByText('Your lineup')).toBeTruthy();
+    expect(app.getByText('EDC Orlando 2026')).toBeTruthy();
+    expect(app.queryByLabelText(/^Show the /)).toBeNull();
+  });
+});
+
+describe('Profile tab', () => {
+  it('shows what you have built so far and what is coming', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
+    const app = await renderApp('/profile');
+    await settle();
+    expect(app.getByLabelText('1 festival')).toBeTruthy();
+    expect(app.getByLabelText('0 artists rated')).toBeTruthy();
+    expect(app.getByText('Your festival profile')).toBeTruthy();
+  });
+});
+
+describe('Notifications', () => {
+  it('rings for set times at a festival you are going to, and clears once read', async () => {
+    // Solstice's demo lineup has set times.
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['solstice-26']));
+    const app = await renderApp('/festivals');
+    await settle();
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Notifications, \d+ new$/));
+    await settle();
+    expect(app.getByText('Set times are out for Solstice 2026')).toBeTruthy();
+    await settle();
+    expect(JSON.parse((await AsyncStorage.getItem('noticesRead.v1')) ?? '[]')).toContain('sets:solstice-26');
+  });
+
+  it('schedules phone reminders when you are going, and removes them when you are not', async () => {
+    const scheduled = (Notifications as unknown as { __scheduled: Map<string, { content: { title: string } }> }).__scheduled;
+    scheduled.clear();
+    // A fixed "today", more than a week before EDC.
+    jest.useFakeTimers({ now: new Date(2026, 8, 29, 12) });
+    const page = await renderApp('/festival/edc-orlando-26');
+    await settle();
+    await fireEvent.press(page.getByLabelText("I'm going to EDC Orlando 2026"));
+    await settle();
+    await settle();
+    expect([...scheduled.values()].map((r) => r.content.title)).toEqual(['EDC Orlando 2026 is a week away', 'EDC Orlando 2026 is tomorrow']);
+    await fireEvent.press(page.getByLabelText("You're going to EDC Orlando 2026. Tap to undo."));
+    await settle();
+    await settle();
+    expect(scheduled.size).toBe(0);
+  });
+
+  it('explains what will show when there is nothing yet', async () => {
+    const app = await renderApp('/festivals');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Notifications'));
+    await settle();
+    expect(app.getByText(/Nothing new/)).toBeTruthy();
+  });
+});
+
+describe('Sound breakdowns', () => {
+  it('shows an artist’s sound as a mix', async () => {
+    const app = await renderApp('/artist/illenium');
+    await settle();
+    expect(app.getByText('Their sound')).toBeTruthy();
+    expect(app.getByLabelText('Melodic bass, 80 percent')).toBeTruthy();
+    expect(app.getByLabelText('Dubstep, 20 percent')).toBeTruthy();
+  });
+
+  it('breaks your sound down from My Sound, for everyone or one festival', async () => {
+    const app = await renderApp('/sound');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Your sound, as a breakdown'));
+    await settle();
+    expect(app.getByText('Your sound')).toBeTruthy();
+    expect(app.getByText(/A first guess/)).toBeTruthy();
+    expect(app.getAllByLabelText(/, \d+ percent$/).length).toBeGreaterThan(1);
+  });
+
+  it('breaks down your sound at one festival', async () => {
+    const app = await renderApp('/your-sound?festival=solstice-26');
+    await settle();
+    expect(app.getByText('Your sound at Solstice 2026')).toBeTruthy();
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { cleanGoing, groupFestivals, toggleGoing } from '../going';
+import { cleanGoing, groupFestivals, lineupChoices, toggleGoing } from '../going';
 
 const fest = (id: string, startDate?: string, endDate?: string): Festival => ({
   id,
@@ -47,5 +47,11 @@ describe('festivals you are going to', () => {
   it('leaves everything in catalogue order when you are going to nothing', () => {
     const all = [fest('b'), fest('a')];
     expect(groupFestivals(all, [], today)).toEqual({ going: [], others: all });
+  });
+
+  it('offers the lineups you are going to, or every festival until you pick one', () => {
+    const all = [fest('a', '2027-01-01'), fest('b', '2026-11-01'), fest('c')];
+    expect(lineupChoices(all, ['a', 'b'], today)).toEqual({ festivals: [all[1], all[0]], yours: true });
+    expect(lineupChoices(all, [], today)).toEqual({ festivals: all, yours: false });
   });
 });

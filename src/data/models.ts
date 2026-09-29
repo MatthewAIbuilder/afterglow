@@ -13,9 +13,10 @@
  */
 
 /** Sound regions used to place artists on the map. Extend freely. */
-export type SoundTag = 'melodic-bass' | 'dubstep' | 'riddim' | 'trap' | 'techno' | 'house';
+export type SoundTag = 'melodic-bass' | 'dubstep' | 'riddim' | 'trap' | 'techno' | 'house' | 'pop' | 'indie' | 'rock' | 'hip-hop';
 
-export const SOUND_TAGS: readonly SoundTag[] = ['melodic-bass', 'dubstep', 'riddim', 'trap', 'techno', 'house'];
+// Electronic sounds first, then the sounds of the wider festivals (ACL and the like). New sounds go at the end.
+export const SOUND_TAGS: readonly SoundTag[] = ['melodic-bass', 'dubstep', 'riddim', 'trap', 'techno', 'house', 'pop', 'indie', 'rock', 'hip-hop'];
 
 export const SOUND_LABEL: Record<SoundTag, string> = {
   'melodic-bass': 'Melodic bass',
@@ -24,6 +25,10 @@ export const SOUND_LABEL: Record<SoundTag, string> = {
   trap: 'Trap',
   techno: 'Techno',
   house: 'House',
+  pop: 'Pop',
+  indie: 'Indie',
+  rock: 'Rock',
+  'hip-hop': 'Hip-hop',
 };
 
 export type Artist = {
@@ -81,6 +86,11 @@ export type Festival = {
   /** First and last day, "YYYY-MM-DD", for the countdown. `dates` stays the text people read. */
   startDate?: string;
   endDate?: string;
+  /**
+   * For a festival run over separate weekends (ACL, Coachella): each weekend's
+   * first and last day, in order. `startDate`/`endDate` then span them all.
+   */
+  weekends?: { start: string; end: string }[];
   /** What the lineup says about a particular set, by artist id: "Sunset set", "Wholesome riddim set". */
   notes?: Record<string, string>;
 };

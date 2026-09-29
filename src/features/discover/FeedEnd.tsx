@@ -9,10 +9,12 @@ import { useRatings } from '../../state/ratings';
 import { color, radius, space, type } from '../../theme/tokens';
 import { otherFestivalsWithClips } from '../festivals/links';
 import { leftToRate } from '../festivals/tune';
+import { MIX } from './focus';
 import { HeartIcon, PlayIcon } from './icons';
 
 type Props = {
-  festival: Festival;
+  /** The lineup you were discovering; none when it was your mix. */
+  festival?: Festival;
   width: number;
   height: number;
   /** Space reserved at the bottom for the floating tab bar. */
@@ -21,16 +23,17 @@ type Props = {
 };
 
 /**
- * The last page of the feed: you've seen every clip from this lineup. Offers
- * the next step instead of a dead end: rate the rest of the lineup, see your
- * plan, discover another festival, or start again.
+ * The last page of the feed: you've seen every clip from this lineup (or, in
+ * your mix, every clip there is). Offers the next step instead of a dead end:
+ * rate the rest of the lineup, see your plan, discover another festival or
+ * your mix, or start again.
  */
 export function FeedEnd({ festival, width, height, bottomSpace, onRestart }: Props) {
   const catalog = useCatalog();
   const { ratings } = useRatings();
   const insets = useSafeAreaInsets();
-  const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
-  const others = otherFestivalsWithClips(catalog.festivals, catalog.clips, festival.id);
+  const toRate = festival ? leftToRate(festival, ratings, (a) => !!catalog.artist(a)) : 0;
+  const others = otherFestivalsWithClips(catalog.festivals, catalog.clips, festival?.id);
 
   const row = (label: string, detail: string | undefined, onPress: () => void, icon?: React.ReactNode, primary = false) => (
     <Pressable
@@ -53,21 +56,26 @@ export function FeedEnd({ festival, width, height, bottomSpace, onRestart }: Pro
 
   return (
     <View style={[styles.page, { width, height, paddingTop: insets.top + 100, paddingBottom: bottomSpace + space.xl }]}>
-      <Text style={styles.kicker}>That’s the lineup</Text>
-      <Text style={styles.title}>You’ve seen every clip from {festival.name}</Text>
+      <Text style={styles.kicker}>{festival ? 'That’s the lineup' : 'That’s your mix'}</Text>
+      <Text style={styles.title}>{festival ? `You’ve seen every clip from ${festival.name}` : 'You’ve seen every clip'}</Text>
       <Text style={styles.body}>
-        {toRate > 0
-          ? 'Rate the rest of the lineup to shape your plan, or keep discovering.'
-          : 'Your plan is up to date. Keep discovering, or watch again.'}
+        {!festival
+          ? 'Focus on a festival to shape your plan, or watch again.'
+          : toRate > 0
+            ? 'Rate the rest of the lineup to shape your plan, or keep discovering.'
+            : 'Your plan is up to date. Keep discovering, or watch again.'}
       </Text>
 
       <View style={styles.actions}>
-        {toRate > 0 &&
+        {festival &&
+          toRate > 0 &&
           row('Tune your lineup', `${toRate} to rate`, () => router.push(`/tune/${festival.id}`), <HeartIcon color={color.moon} size={16} />, true)}
-        {row('See your festival', undefined, () => router.push(`/festival/${festival.id}`))}
+        {festival && row('See your festival', undefined, () => router.push(`/festival/${festival.id}`))}
         {others.map((f) =>
           row(`Discover ${f.name}`, undefined, () => router.navigate({ pathname: '/', params: { festival: f.id } }), <PlayIcon color={color.moonDim} size={14} />),
         )}
+        {festival &&
+          row('Try your mix', 'a bit of everything', () => router.navigate({ pathname: '/', params: { festival: MIX } }), <PlayIcon color={color.moonDim} size={14} />)}
         {row('Watch again from the top', undefined, onRestart)}
       </View>
     </View>

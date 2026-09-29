@@ -52,3 +52,22 @@ jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
   return { WebView: View };
 });
+
+// Local notifications: an in-memory schedule the tests can read, with permission granted.
+jest.mock('expo-notifications', () => {
+  const scheduled = new Map<string, unknown>();
+  return {
+    __scheduled: scheduled,
+    SchedulableTriggerInputTypes: { DATE: 'date' },
+    setNotificationHandler: jest.fn(),
+    getPermissionsAsync: jest.fn(async () => ({ status: 'granted', canAskAgain: true })),
+    requestPermissionsAsync: jest.fn(async () => ({ status: 'granted', canAskAgain: true })),
+    getAllScheduledNotificationsAsync: jest.fn(async () => [...scheduled.keys()].map((identifier) => ({ identifier }))),
+    cancelScheduledNotificationAsync: jest.fn(async (id: string) => void scheduled.delete(id)),
+    scheduleNotificationAsync: jest.fn(async (req: { identifier: string }) => {
+      scheduled.set(req.identifier, req);
+      return req.identifier;
+    }),
+    useLastNotificationResponse: () => undefined,
+  };
+});

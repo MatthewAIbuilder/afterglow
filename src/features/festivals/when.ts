@@ -19,14 +19,43 @@ export function daysUntil(festival: Festival, today: Date): number | undefined {
   return fromIso(festival.startDate) - fromDate(today);
 }
 
-/** "In 38 days", "Tomorrow", "Happening now", "Over". Undefined when the festival has no dates. */
+/** One stretch of festival days: a weekend, or the whole festival when it runs in one go. */
+export type Run = { start: string; end: string };
+
+/** The festival's runs in order: its weekends, or one run from start to end. None without dates. */
+export function runsOf(festival: Festival): Run[] {
+  if (festival.weekends?.length) return festival.weekends;
+  if (!festival.startDate) return [];
+  return [{ start: festival.startDate, end: festival.endDate ?? festival.startDate }];
+}
+
+/**
+ * The run that's on now or comes next: which one (0-based), out of how many,
+ * and whole days until it starts (0 or less while it's on). Undefined once
+ * the last one is over, or without dates.
+ */
+export function nextRun(festival: Festival, today: Date) {
+  const runs = runsOf(festival);
+  const t = fromDate(today);
+  const index = runs.findIndex((r) => fromIso(r.end) >= t);
+  if (index < 0) return undefined;
+  return { run: runs[index], index, count: runs.length, until: fromIso(runs[index].start) - t };
+}
+
+/**
+ * "In 38 days", "Tomorrow", "Happening now", "Over". Between the weekends of a
+ * festival run over several: "Weekend 2 in 4 days", "Weekend 2 tomorrow".
+ * Undefined when the festival has no dates.
+ */
 export function countdown(festival: Festival, today: Date): string | undefined {
-  const until = daysUntil(festival, today);
-  if (until === undefined) return undefined;
+  if (!runsOf(festival).length) return undefined;
+  const next = nextRun(festival, today);
+  if (!next) return 'Over';
+  const { until, index } = next;
+  if (until <= 0) return 'Happening now';
+  if (index > 0) return `Weekend ${index + 1} ${until === 1 ? 'tomorrow' : `in ${until} days`}`;
   if (until > 1) return until < 60 ? `In ${until} days` : `In ${Math.round(until / 30.4)} months`;
-  if (until === 1) return 'Tomorrow';
-  const end = fromIso(festival.endDate ?? festival.startDate!);
-  return fromDate(today) <= end ? 'Happening now' : 'Over';
+  return 'Tomorrow';
 }
 
 /** The line under an artist at a festival: their set time and/or what the lineup says about their set. */

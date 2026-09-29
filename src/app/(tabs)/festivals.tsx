@@ -7,6 +7,7 @@ import { ArtistRow } from '../../components/ArtistRow';
 import { SearchField } from '../../components/SearchField';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
+import { NoticeBell } from '../../components/NoticeBell';
 import { ChevronIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
@@ -14,6 +15,7 @@ import { groupFestivals } from '../../features/festivals/going';
 import { PlayIcon } from '../../features/discover/icons';
 import { lineupReach } from '../../features/festivals/links';
 import { searchArtists } from '../../features/festivals/search';
+import { whereWhen } from '../../features/festivals/format';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
@@ -38,6 +40,7 @@ export default function FestivalsScreen() {
   const [query, setQuery] = useState('');
   const found = useMemo(() => searchArtists(catalog.artists, query), [catalog.artists, query]);
   const searching = query.trim().length > 0;
+  const [showMore, setShowMore] = useState(false);
 
   return (
     <View style={styles.root}>
@@ -52,7 +55,10 @@ export default function FestivalsScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Festivals</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>Festivals</Text>
+            <NoticeBell />
+          </View>
           <Text style={styles.subtitle}>Lineups ranked by your sound.</Text>
           <View style={styles.searchWrap}>
             <SearchField
@@ -89,10 +95,26 @@ export default function FestivalsScreen() {
             {groups.going.map((f) => (
               <FestivalCard key={f.id} festival={f} taste={taste} />
             ))}
-            {groups.going.length > 0 && groups.others.length > 0 && <Text style={styles.section}>More festivals</Text>}
-            {groups.others.map((f) => (
-              <FestivalCard key={f.id} festival={f} taste={taste} />
-            ))}
+            {/* Once you're going somewhere, the rest wait behind "More festivals" so they stay out of the way. */}
+            {groups.going.length > 0 && groups.others.length > 0 && (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  setShowMore((v) => !v);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showMore }}
+                accessibilityLabel={`More festivals, ${groups.others.length}. ${showMore ? 'Hide them' : 'Show them'}`}
+                hitSlop={6}
+                style={({ pressed }) => [styles.moreRow, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={[styles.section, styles.moreText]}>More festivals</Text>
+                <Text style={styles.moreCount}>{groups.others.length}</Text>
+                <ChevronIcon color={color.moonFaint} size={12} direction={showMore ? 'up' : 'down'} />
+              </Pressable>
+            )}
+            {(groups.going.length === 0 || showMore) &&
+              groups.others.map((f) => <FestivalCard key={f.id} festival={f} taste={taste} />)}
           </>
         )}
       </ScrollView>
@@ -135,7 +157,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{festival.name}</Text>
           <Text style={styles.meta}>
-            {festival.dates}, {festival.location}
+            {whereWhen(festival)}
           </Text>
         </View>
         <ChevronIcon color={color.moonFaint} />
@@ -162,7 +184,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
           <Pressable
             onPress={discover}
             accessibilityRole="button"
-            accessibilityLabel={`Discover the lineup, ${reach.clips} ${reach.clips === 1 ? 'clip' : 'clips'}`}
+            accessibilityLabel={`Discover the ${festival.name} lineup, ${reach.clips} ${reach.clips === 1 ? 'clip' : 'clips'}`}
             hitSlop={8}
             style={({ pressed }) => [styles.clips, pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] }]}
           >
@@ -178,6 +200,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl, marginBottom: space.xl },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.largeTitle, color: color.moon },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginTop: space.lg },
@@ -196,6 +219,9 @@ const styles = StyleSheet.create({
   },
   clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
+  moreRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingRight: space.xl, marginTop: space.sm },
+  moreText: { marginBottom: 0, paddingRight: 0 },
+  moreCount: { ...type.label, color: color.moonFaint, flex: 1, fontVariant: ['tabular-nums'] },
   section: {
     ...type.label,
     color: color.moonFaint,
