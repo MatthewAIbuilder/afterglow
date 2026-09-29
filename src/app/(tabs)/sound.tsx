@@ -1,10 +1,11 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
+import { artistsOnMap } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
@@ -41,6 +42,9 @@ export default function MySoundScreen() {
     }, []),
   );
 
+  // Who's on the map: artists the app knows something about, best matches first (see artistsOnMap).
+  const onMap = useMemo(() => artistsOnMap(artists, shown.taste, shown.informed), [artists, shown]);
+
   const close = useCallback(() => setSelectedId(null), []);
   const mapTop = insets.top + HEADER_H;
   const mapHeight = height - mapTop - tabSpace;
@@ -51,7 +55,7 @@ export default function MySoundScreen() {
 
       <View style={{ position: 'absolute', top: mapTop, left: 0 }}>
         <SoundMap
-          artists={artists}
+          artists={onMap}
           taste={shown.taste}
           width={width}
           height={mapHeight}

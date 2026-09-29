@@ -76,6 +76,28 @@ function footprint(name: string, r: number): Part[] {
   ];
 }
 
+/** Most bubbles on the map at once: enough to feel like a universe, few enough to stay calm and fast. */
+export const MAP_MAX = 40;
+
+/**
+ * Who is on the map: artists the app knows something about (a starting
+ * prediction, or signal from what you did, including spill-over from similar
+ * sounds), best matches first, at most MAP_MAX. Everyone on a big lineup the
+ * app knows nothing about yet stays off until your reactions reach them, so
+ * the map grows as it learns. Pure.
+ */
+export function artistsOnMap(
+  artists: Artist[],
+  taste: TasteProfile,
+  informed: Record<string, boolean>,
+  max = MAP_MAX,
+): Artist[] {
+  return artists
+    .filter((a) => informed[a.id])
+    .sort((a, b) => (taste[b.id] ?? 0) - (taste[a.id] ?? 0))
+    .slice(0, max);
+}
+
 export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout {
   const ranked = [...artists]
     .map((artist) => ({ artist, affinity: taste[artist.id] ?? 0 }))

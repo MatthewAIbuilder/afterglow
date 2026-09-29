@@ -23,8 +23,9 @@ describe('a catalogue file, end to end', () => {
     expect(taste['aurora-drift']).toBeGreaterThan(0.5);
   });
 
-  it('opens Discover on the new festival and ranks its lineup', () => {
-    expect(defaultFocus(catalog.festivals, catalog.clips)?.id).toBe('nightfall-27');
+  it('ranks the new festival’s lineup in Discover', () => {
+    // Discover opens on the festival with the most clips (the demo one here); Nightfall is one tap away.
+    expect(defaultFocus(catalog.festivals, catalog.clips)?.id).toBe('solstice-26');
     const feed = rankFeed({ clips: lineupClips(nightfall, catalog.clips), artists: catalog.artists, taste, informed, reactions: {}, seen: {}, now: 0, similarity });
     // Every clip of an artist on the lineup, the file's own and the demo ones, and nobody else.
     expect(feed.map((it) => it.clip.id)).toEqual(expect.arrayContaining(['nightfall-aurora-1', 'nightfall-illenium-1', 'c1', 'c4']));

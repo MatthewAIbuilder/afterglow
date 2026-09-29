@@ -26,6 +26,9 @@ export const TIER_HINT: Record<Tier, string> = {
   explore: 'Outside your usual, worth a listen.',
 };
 
+/** Under a shortened explore list. */
+export const moreToExplore = (n: number) => `${n} more to explore in the full lineup below.`;
+
 export function exploreLine(reason: ExploreReason, free = false) {
   switch (reason.kind) {
     case 'unknown':

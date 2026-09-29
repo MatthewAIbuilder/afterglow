@@ -103,7 +103,7 @@ function parseArtist(raw: unknown, i: number, problems: string[]): Artist | unde
       else problems.push(`Artist "${artistId}": sound "${tag}" was ignored (use one of ${SOUND_TAGS.join(', ')}, with a number from 0 to 1).`);
     }
   }
-  if (Object.keys(sound).length === 0) problems.push(`Artist "${artistId}" has no sound, so they'll sit at the edge of My Sound until you add one.`);
+  // No sound is fine: the artist shows as new to you until you react to their clips.
   const artist: Artist = { id: artistId, name, sound };
   if (raw.image !== undefined) {
     const imageUrl = safeImageUrl(raw.image);
