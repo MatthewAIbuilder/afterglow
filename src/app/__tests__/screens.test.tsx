@@ -107,6 +107,14 @@ describe('Festivals', () => {
     expect(row('ALESSO')).toBeTruthy();
   });
 
+  it('shows your ratings in the lineup', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ wooli: 'love', alesso: 'pass' }));
+    const app = await renderApp('/festival/edc-orlando-26');
+    await settle();
+    expect(app.getByLabelText(/^WOOLI, \d+ percent match, you love their sound/)).toBeTruthy();
+    expect(app.getByLabelText(/^ALESSO, \d+ percent match, .*Not for you$/)).toBeTruthy();
+  });
+
   it('narrows a big lineup to one sound', async () => {
     const app = await renderApp('/festival/edc-orlando-26');
     await settle();
