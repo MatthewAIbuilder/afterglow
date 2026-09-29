@@ -17,6 +17,7 @@ import { SoundBreakdown } from '../../features/taste/SoundBreakdown';
 import { mostSimilar } from '../../features/taste/similarity';
 import { listenLinks } from '../../features/taste/listen';
 import { artistSignals, whyLine } from '../../features/taste/why';
+import { PROVIDER_NAME } from '../../features/music/models';
 import { dayList, daysOf } from '../../features/festivals/days';
 import { describeSet, formatDuration } from '../../features/festivals/format';
 import { setLine } from '../../features/festivals/when';
@@ -37,7 +38,7 @@ export default function ArtistScreen() {
   const catalog = useCatalog();
   const artist = catalog.artist(id);
   const insets = useSafeAreaInsets();
-  const { taste, informed, similarity } = useTaste();
+  const { taste, informed, similarity, importedFrom } = useTaste();
   const { isMustSee, toggleMustSee } = usePlan();
   const { reactions } = useReactions();
   const { ratings } = useRatings();
@@ -82,7 +83,10 @@ export default function ArtistScreen() {
           <Text style={styles.match}>{pct}% match</Text>
           {/* What the match rests on, so it never feels arbitrary. */}
           <Text style={styles.why}>
-            {whyLine(artistSignals(artist.id, catalog.clips, reactions, ratings), !!informed[artist.id])}
+            {whyLine(
+              artistSignals(artist.id, catalog.clips, reactions, ratings, (importedFrom[artist.id] ?? []).map((p) => PROVIDER_NAME[p])),
+              !!informed[artist.id],
+            )}
           </Text>
           <RateArtist artist={artist} />
           {starFestival && (

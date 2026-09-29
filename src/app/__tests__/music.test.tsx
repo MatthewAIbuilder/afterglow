@@ -1,0 +1,270 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, fireEvent } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { renderRouter } from 'expo-router/testing-library';
+import type { MusicLibrarySnapshot, MusicProviderId } from '../../features/music/models';
+import { MusicServiceError, type MusicAvailability, type MusicService } from '../../features/music/service';
+import RootLayout from '../_layout';
+import TabsLayout from '../(tabs)/_layout';
+import DiscoverScreen from '../(tabs)/index';
+import FestivalsScreen from '../(tabs)/festivals';
+import LineupScreen from '../(tabs)/lineup';
+import SoundScreen from '../(tabs)/sound';
+import ProfileScreen from '../(tabs)/profile';
+import ArtistScreen from '../artist/[id]';
+import FestivalScreen from '../festival/[id]';
+import PosterScreen from '../poster/[id]';
+import SavedScreen from '../saved';
+import WelcomeScreen from '../welcome';
+import TuneScreen from '../tune/[id]';
+import DiscoverFocusScreen from '../discover-focus';
+import NotificationsScreen from '../notifications';
+import YourSoundScreen from '../your-sound';
+import RequestScreen from '../request';
+import SoundScopeScreen from '../sound-scope';
+import PlanCardScreen from '../plan-card/[id]';
+import MusicScreen from '../music';
+import MusicAuthReturn from '../music-auth';
+
+/**
+ * Music connections, through the real routes and providers. The services are
+ * test doubles: nothing here signs in to or calls Spotify or Apple Music, and
+ * no real account or credential is involved.
+ */
+const mockServices: Partial<Record<MusicProviderId, MusicService>> = {};
+jest.mock('../../features/music/services', () => ({ defaultMusicServices: () => mockServices }));
+
+const snapshot = (provider: MusicProviderId, names: string[]): MusicLibrarySnapshot => ({
+  version: 1,
+  provider,
+  syncedAt: new Date().toISOString(),
+  artists: names.map((name, i) => ({
+    provider,
+    name,
+    key: name.toLowerCase(),
+    savedTracks: 6 - i,
+    savedAlbums: 1,
+    followed: i === 0 ? true : undefined,
+    genres: [],
+    sources: ['saved'],
+  })),
+  savedTracksRead: 10,
+  gaps: [],
+});
+
+function service(provider: MusicProviderId, over: Partial<MusicService> = {}): MusicService & Record<string, any> {
+  return {
+    provider,
+    availability: (): MusicAvailability => ({ ok: true }),
+    connect: jest.fn(async () => ({ ok: true as const })),
+    fetchLibrary: jest.fn(async () => snapshot(provider, ['Subtronics', 'Levity', 'Nobody On A Lineup'])),
+    disconnect: jest.fn(async () => {}),
+    ...over,
+  };
+}
+
+function renderApp(initialUrl: string) {
+  return renderRouter(
+    {
+      _layout: RootLayout,
+      '(tabs)/_layout': TabsLayout,
+      '(tabs)/index': DiscoverScreen,
+      '(tabs)/sound': SoundScreen,
+      '(tabs)/festivals': FestivalsScreen,
+      '(tabs)/lineup': LineupScreen,
+      '(tabs)/profile': ProfileScreen,
+      'artist/[id]': ArtistScreen,
+      'festival/[id]': FestivalScreen,
+      'poster/[id]': PosterScreen,
+      saved: SavedScreen,
+      welcome: WelcomeScreen,
+      'tune/[id]': TuneScreen,
+      'discover-focus': DiscoverFocusScreen,
+      notifications: NotificationsScreen,
+      'your-sound': YourSoundScreen,
+      request: RequestScreen,
+      'sound-scope': SoundScopeScreen,
+      'plan-card/[id]': PlanCardScreen,
+      music: MusicScreen,
+      'music-auth': MusicAuthReturn,
+    },
+    { initialUrl },
+  );
+}
+
+const settle = () =>
+  act(async () => {
+    jest.advanceTimersByTime(50);
+    await Promise.resolve();
+  });
+
+/** A Spotify library already connected and synced on this phone. */
+const storeConnected = () =>
+  AsyncStorage.setItem(
+    'musicLibrary.v1',
+    JSON.stringify({ spotify: { provider: 'spotify', connected: true, syncing: false, snapshot: snapshot('spotify', ['Subtronics', 'Levity']) } }),
+  );
+
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  await AsyncStorage.setItem('welcomed.v1', 'true');
+  mockServices.spotify = service('spotify');
+  mockServices['apple-music'] = service('apple-music', { availability: () => ({ ok: false, reason: 'needs-full-app' }) });
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+  jest.useRealTimers();
+});
+
+describe('Music connections', () => {
+  it('opens from Profile and shows the disconnected state, explained plainly', async () => {
+    const app = await renderApp('/profile');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Music connections, none connected'));
+    await settle();
+    expect(app.getByText('Connect your music library to help Afterglow understand your taste.')).toBeTruthy();
+    expect(app.getByText(/uses your music library to understand which artists and sounds you already love/)).toBeTruthy();
+    expect(app.getByLabelText('Spotify. Not connected')).toBeTruthy();
+    expect(app.getByLabelText('Connect, Spotify')).toBeTruthy();
+    // Apple Music can't connect in this build: it says so, with no Connect button.
+    expect(app.getByText('Needs the full version of Afterglow. It can’t connect in this preview.')).toBeTruthy();
+    expect(app.queryByLabelText('Connect, Apple Music')).toBeNull();
+  });
+
+  it('a service that isn’t set up offers nothing to press', async () => {
+    mockServices.spotify = service('spotify', { availability: () => ({ ok: false, reason: 'not-set-up' }) });
+    const app = await renderApp('/music');
+    await settle();
+    expect(app.getByText('Not available in this version of Afterglow yet.')).toBeTruthy();
+    expect(app.queryByLabelText('Connect, Spotify')).toBeNull();
+  });
+
+  it('connecting reads the library, shows the connected state, and My Sound starts from it', async () => {
+    const app = await renderApp('/music');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Connect, Spotify'));
+    await settle();
+    expect(mockServices.spotify!.connect).toHaveBeenCalledTimes(1);
+    expect(mockServices.spotify!.fetchLibrary).toHaveBeenCalledTimes(1);
+    expect(app.getByText('Connected · 3 artists · 2 on Afterglow · synced just now')).toBeTruthy();
+    const saved = JSON.parse((await AsyncStorage.getItem('musicLibrary.v1')) ?? '{}');
+    expect(saved.spotify.snapshot.artists).toHaveLength(3);
+    // No credentials in normal storage.
+    expect(JSON.stringify(saved)).not.toMatch(/token/i);
+
+    const sound = await renderApp('/sound');
+    await settle();
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    expect(sound.getByText(/^Shaped by your Spotify library\. Leaning [a-z ]+\.$/)).toBeTruthy();
+  });
+
+  it('shows the syncing state while the library is being read', async () => {
+    let finish: (s: MusicLibrarySnapshot) => void = () => {};
+    mockServices.spotify = service('spotify', {
+      fetchLibrary: jest.fn(() => new Promise<MusicLibrarySnapshot>((resolve) => (finish = resolve))),
+    });
+    const app = await renderApp('/music');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Connect, Spotify'));
+    await settle();
+    expect(app.getByText('Reading your library…')).toBeTruthy();
+    expect(app.getByLabelText('Syncing')).toBeTruthy();
+    await act(async () => finish(snapshot('spotify', ['Subtronics'])));
+    await settle();
+    expect(app.getByText(/^Connected · 1 artist · /)).toBeTruthy();
+  });
+
+  it('a failed sync says so and keeps the last import', async () => {
+    await storeConnected();
+    mockServices.spotify = service('spotify', {
+      fetchLibrary: jest.fn(async () => {
+        throw new MusicServiceError('network');
+      }),
+    });
+    const app = await renderApp('/music');
+    await settle();
+    expect(app.getByText(/^Connected · 2 artists · /)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Sync now, Spotify'));
+    await settle();
+    expect(app.getByText('Couldn’t sync just now. Your last import is still used.')).toBeTruthy();
+    expect(app.getByLabelText('Try again, Spotify')).toBeTruthy();
+    const saved = JSON.parse((await AsyncStorage.getItem('musicLibrary.v1')) ?? '{}');
+    expect(saved.spotify.snapshot.artists.map((a: { name: string }) => a.name)).toEqual(['Subtronics', 'Levity']);
+  });
+
+  it('an expired sign-in asks you to connect again', async () => {
+    await storeConnected();
+    mockServices.spotify = service('spotify', {
+      fetchLibrary: jest.fn(async () => {
+        throw new MusicServiceError('expired');
+      }),
+    });
+    const app = await renderApp('/music');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Sync now, Spotify'));
+    await settle();
+    expect(app.getByText('Sign-in expired. Connect again to keep it up to date. Your last import is still used.')).toBeTruthy();
+    expect(app.getByLabelText('Connect again, Spotify')).toBeTruthy();
+  });
+
+  it('disconnecting removes the imported music and forgets the sign-in', async () => {
+    await storeConnected();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.style === 'destructive')?.onPress?.();
+    });
+    const app = await renderApp('/music');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Disconnect Spotify and remove imported music data'));
+    await settle();
+    expect(alert).toHaveBeenCalledWith('Disconnect Spotify?', expect.stringMatching(/removes everything Afterglow imported/), expect.any(Array));
+    expect(mockServices.spotify!.disconnect).toHaveBeenCalledTimes(1);
+    expect(app.getByLabelText('Spotify. Not connected')).toBeTruthy();
+    expect(await AsyncStorage.getItem('musicLibrary.v1')).toBeNull();
+  });
+});
+
+describe('My Sound with connected music', () => {
+  it('offers to connect when you have nothing yet', async () => {
+    const app = await renderApp('/sound');
+    await settle();
+    expect(app.getByText('Connect Spotify to start your map from what you already play.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Connect your music'));
+    await settle();
+    expect(app.getByText('Music connections')).toBeTruthy();
+  });
+
+  it('says so when few of your artists are on Afterglow, without filling the map', async () => {
+    await AsyncStorage.setItem(
+      'musicLibrary.v1',
+      JSON.stringify({ spotify: { provider: 'spotify', connected: true, syncing: false, snapshot: snapshot('spotify', ['Subtronics', 'Nobody On A Lineup']) } }),
+    );
+    const app = await renderApp('/sound');
+    await settle();
+    expect(app.getByText('Only 1 of your Spotify artists plays Afterglow’s lineups so far. React to clips to place more.')).toBeTruthy();
+  });
+
+  it('an artist from your library says where the match comes from', async () => {
+    await storeConnected();
+    const app = await renderApp('/artist/subtronics');
+    await settle();
+    expect(app.getByText('From your Spotify library')).toBeTruthy();
+  });
+
+  it('starting over keeps connected music, and says so', async () => {
+    await storeConnected();
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ levity: 'love' }));
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.style === 'destructive')?.onPress?.();
+    });
+    const app = await renderApp('/sound');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Start your sound over'));
+    await settle();
+    expect(alert).toHaveBeenCalledWith(expect.any(String), expect.stringMatching(/Your Spotify library stays connected/), expect.any(Array));
+    expect(JSON.parse((await AsyncStorage.getItem('musicLibrary.v1')) ?? '{}').spotify.snapshot.artists).toHaveLength(2);
+  });
+});

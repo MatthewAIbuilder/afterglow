@@ -9,6 +9,8 @@ import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
+import { useMusic } from '../../state/music';
+import { PROVIDER_NAME } from '../../features/music/models';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { SOUND_LABEL } from '../../data/models';
@@ -43,6 +45,9 @@ export default function ProfileScreen() {
   const { forYou, weekendOf } = useWeekends();
   const today = useToday();
   const mine = groupFestivals(catalog.festivals.map(forYou), going, today).going;
+  // Connected music services, for the Music connections row.
+  const { state: music } = useMusic();
+  const connectedMusic = (Object.keys(music) as (keyof typeof music)[]).map((p) => PROVIDER_NAME[p]).join(', ');
 
   const stats = [
     { n: festivals, label: festivals === 1 ? 'festival' : 'festivals' },
@@ -140,6 +145,22 @@ export default function ProfileScreen() {
             <ChevronIcon color={color.moonFaint} size={12} />
           </Pressable>
 
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push('/music');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Music connections${connectedMusic ? `, ${connectedMusic}` : ', none connected'}`}
+            style={({ pressed }) => [styles.row, styles.rowGap, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={styles.rowText}>Music connections</Text>
+            <Text style={styles.rowCount} numberOfLines={1}>
+              {connectedMusic || 'Not connected'}
+            </Text>
+            <ChevronIcon color={color.moonFaint} size={12} />
+          </Pressable>
+
           <View style={styles.soon}>
             <Text style={styles.soonKicker}>Coming soon</Text>
             <Text style={styles.soonTitle}>Your festival profile</Text>
@@ -204,6 +225,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
+  rowGap: { marginTop: space.sm },
   rowText: { ...type.headline, color: color.moon, flex: 1 },
   rowCount: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   soon: {

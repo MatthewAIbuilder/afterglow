@@ -27,6 +27,9 @@ import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Festival } from '../../data/types';
 import type { TasteSummary } from '../../features/taste/engine';
 import { soundLean } from '../../features/taste/lean';
+import { musicNote, type MusicNote } from '../../features/music/copy';
+import { PROVIDER_NAME, type MusicProviderId } from '../../features/music/models';
+import { useMusic } from '../../state/music';
 
 const HEADER_H = 96;
 /** The row of festival chips under the subtitle. */
@@ -118,6 +121,19 @@ export default function MySoundScreen() {
     setSelectedId(null);
     setDay(d);
   }, []);
+  // Connected music: reading, failed, a small library, or an offer to connect. Your own signal here quiets the offer.
+  const music = useMusic();
+  const note = useMemo(
+    () =>
+      musicNote({
+        state: music.state,
+        availability: music.availability,
+        matched: music.imported.matched,
+        ownSignal: hasSignal(live.summary, live.rated),
+      }),
+    [music.state, music.availability, music.imported.matched, live.summary, live.rated],
+  );
+  const sparse = !search && !!scope && onMap.length < SPARSE_MAP;
   const hasScopes = festivals.length > 0;
   const mapTop = insets.top + HEADER_H + (hasScopes ? SCOPE_H : 0);
   const mapHeight = height - mapTop - tabSpace;
@@ -144,7 +160,8 @@ export default function MySoundScreen() {
       {search ? (
         <SearchNote search={search} query={query} extra={extra.length} bottom={tabSpace + space.lg} />
       ) : null}
-      {!search && scope && onMap.length < SPARSE_MAP && <SparseNote festival={scope} shown={onMap.length} bottom={tabSpace + space.lg} />}
+      {sparse && scope && <SparseNote festival={scope} shown={onMap.length} bottom={tabSpace + space.lg} />}
+      {!search && !sparse && note && <MusicNoteView note={note} bottom={tabSpace + space.lg} />}
 
       <View style={[styles.header, { paddingTop: insets.top + space.lg }]} pointerEvents="box-none">
         <View style={styles.titleRow} pointerEvents="box-none">
@@ -157,7 +174,7 @@ export default function MySoundScreen() {
           </View>
         </View>
         <Text style={styles.subtitle} pointerEvents="none">
-          {subtitle(shown.summary, shown.rated, lean)}
+          {subtitle(shown.summary, shown.rated, lean, shown.importing)}
         </Text>
         {searchOpen ? (
           <View style={styles.searchRow}>
@@ -316,6 +333,28 @@ function SparseNote({ festival, shown, bottom }: { festival: Festival; shown: nu
   );
 }
 
+/** Connected music on the map: what's happening with it, and the way to Music connections when that helps. */
+function MusicNoteView({ note, bottom }: { note: MusicNote; bottom: number }) {
+  return (
+    <View style={[styles.sparse, { bottom }]} pointerEvents="box-none" accessibilityLiveRegion="polite">
+      <Text style={styles.sparseText}>{note.text}</Text>
+      {note.action && (
+        <Pressable
+          onPress={() => {
+            haptic.tap();
+            router.push('/music');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={note.action === 'connect' ? 'Connect your music' : 'Open music connections'}
+          style={({ pressed }) => [styles.sparseButton, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+        >
+          <Text style={styles.sparseButtonText}>{note.action === 'connect' ? 'Connect music' : 'Music connections'}</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
 /** Opens your clips (saved and liked). Only there once you have one. */
 function SavedPill() {
   const { clips } = useCatalog();
@@ -351,13 +390,18 @@ function StartOver({ onCleared }: { onCleared: () => void }) {
   const reactions = useReactions();
   const ratings = useRatings();
   const seen = useSeen();
+  // Connected music is a connection, not something you did here: it stays, and says where to remove it.
+  const { importing } = useMusic();
+  const music = importing.length
+    ? ` Your ${importing.map((p) => PROVIDER_NAME[p]).join(' and ')} library stays connected (remove it in Music connections).`
+    : '';
   return (
     <Pressable
       onPress={() => {
         haptic.select();
         Alert.alert(
           'Start your sound over?',
-          'This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.',
+          `This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.${music}`,
           [
             { text: 'Cancel', style: 'cancel' },
             {
@@ -384,10 +428,11 @@ function StartOver({ onCleared }: { onCleared: () => void }) {
   );
 }
 
-function subtitle(summary: TasteSummary, rated: number, lean: SoundTag[]) {
+function subtitle(summary: TasteSummary, rated: number, lean: SoundTag[], importing: MusicProviderId[]) {
   const { likes, saves, skips, watched } = summary;
-  if (!hasSignal(summary, rated)) return 'Bigger means a closer match. Similar sounds sit together.';
+  if (!hasSignal(summary, rated) && !importing.length) return 'Bigger means a closer match. Similar sounds sit together.';
   const parts = [
+    importing.length > 0 && `${importing.map((p) => PROVIDER_NAME[p]).join(' and ')} ${importing.length === 1 ? 'library' : 'libraries'}`,
     likes && `${likes} ${likes === 1 ? 'like' : 'likes'}`,
     saves && `${saves} ${saves === 1 ? 'save' : 'saves'}`,
     skips && `${skips} ${skips === 1 ? 'skip' : 'skips'}`,
