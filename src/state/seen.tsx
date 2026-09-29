@@ -12,6 +12,8 @@ type Ctx = {
   /** Saved history has loaded (or failed to), so the feed can be laid out once. */
   hydrated: boolean;
   markSeen: (clipId: string) => void;
+  /** Forget the history (starting your sound over), so the feed feels new again. */
+  clear: () => void;
 };
 
 const STORAGE_KEY = 'seen.v1';
@@ -47,7 +49,7 @@ export function SeenProvider({ children }: { children: ReactNode }) {
 
   const mark = useCallback((clipId: string) => setSeen((h) => markSeen(h, clipId, Date.now())), []);
 
-  const value = useMemo<Ctx>(() => ({ seen, hydrated, markSeen: mark }), [seen, hydrated, mark]);
+  const value = useMemo<Ctx>(() => ({ seen, hydrated, markSeen: mark, clear: () => setSeen({}) }), [seen, hydrated, mark]);
   return <SeenContext.Provider value={value}>{children}</SeenContext.Provider>;
 }
 
