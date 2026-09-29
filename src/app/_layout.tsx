@@ -6,6 +6,7 @@ import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
 import { GoingProvider } from '../state/going';
 import { NoticesProvider } from '../state/notices';
+import { WeekendsProvider } from '../state/weekends';
 import { PlanProvider } from '../state/plan';
 import { RatingsProvider } from '../state/ratings';
 import { ReactionsProvider } from '../state/reactions';
@@ -21,6 +22,7 @@ export default function RootLayout() {
       <PlanProvider>
       <GoingProvider>
       <SeenProvider>
+      <WeekendsProvider>
       <NoticesProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
@@ -76,6 +78,7 @@ export default function RootLayout() {
       <FirstRun />
       <ReminderSync />
       </NoticesProvider>
+      </WeekendsProvider>
       </SeenProvider>
       </GoingProvider>
       </PlanProvider>

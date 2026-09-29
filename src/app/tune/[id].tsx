@@ -24,6 +24,7 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
+import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
 
 type Answer = Rating | 'unsure';
@@ -38,7 +39,10 @@ export default function TuneScreen() {
   // `then=festival`: opened from the welcome, so the festival page isn't underneath to go back to.
   const { id, then: after } = useLocalSearchParams<{ id: string; then?: string }>();
   const catalog = useCatalog();
-  const festival = catalog.festival(id);
+  // Your weekend of a two-weekend festival: only the acts playing it.
+  const { forYou } = useWeekends();
+  const whole = catalog.festival(id);
+  const festival = whole && forYou(whole);
   const { ratings, rate } = useRatings();
   const { taste, informed, similarity } = useTaste();
   const insets = useSafeAreaInsets();

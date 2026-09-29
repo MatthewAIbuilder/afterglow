@@ -12,6 +12,8 @@ import type { Artist, Festival } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../discover/icons';
 import { FilterChips } from '../../components/FilterChips';
 import { dayList, daysOf, lineupDays, playsOn } from './days';
+import { runLabel, validWeekend } from './weekend';
+import { useWeekends } from '../../state/weekends';
 import { describeSet, whereWhen } from './format';
 import { lineupReach } from './links';
 import { filterLineup, lineupSounds, SEARCH_FROM } from './search';
@@ -42,8 +44,11 @@ type Props = {
  * festival plan and the full lineup with search and sound filter. Used by the
  * festival route and the Lineup tab.
  */
-export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) {
+export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: Props) {
   const catalog = useCatalog();
+  // The festival as it is for you: for one run over several weekends, the weekend you're going to.
+  const { forYou } = useWeekends();
+  const festival = useMemo(() => forYou(whole), [forYou, whole]);
   const { taste } = useTaste();
   const [order, setOrder] = useState<Order>('match');
   const [query, setQuery] = useState('');
@@ -89,7 +94,7 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
           </Text>
           {soon ? <Text style={styles.soon}>{soon}</Text> : null}
           <View style={styles.pills}>
-            <GoingPill festival={festival} />
+            <GoingPill festival={whole} />
             {reach.clips > 0 && (
               <Pressable
                 onPress={() => {
@@ -124,6 +129,8 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
             )}
           </View>
         </View>
+
+        {whole.weekends && whole.weekends.length > 1 ? <WeekendPicker festival={whole} shown={festival.lineup.length} /> : null}
 
         {festival.posterImageUrl ? (
           <Pressable
@@ -225,6 +232,38 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
           })}
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+/**
+ * For a festival run over several weekends: which one you're going to. The
+ * plan, lineup, countdown and reminders follow it.
+ */
+function WeekendPicker({ festival, shown }: { festival: Festival; shown: number }) {
+  const { weekendOf, choose } = useWeekends();
+  const chosen = validWeekend(festival, weekendOf(festival.id));
+  const runs = festival.weekends ?? [];
+  return (
+    <View style={styles.weekends}>
+      <Text style={styles.weekendsHead}>Your weekend</Text>
+      <FilterChips
+        chips={[
+          { key: undefined, label: 'Every weekend', accessibilityLabel: `Every weekend of ${festival.name}` },
+          ...runs.map((r, i) => ({
+            key: String(i + 1),
+            label: `Weekend ${i + 1} · ${runLabel(r)}`,
+            accessibilityLabel: `Weekend ${i + 1}, ${runLabel(r)}`,
+          })),
+        ]}
+        value={chosen ? String(chosen) : undefined}
+        onChange={(k) => choose(festival.id, k ? Number(k) : undefined)}
+      />
+      {chosen ? (
+        <Text style={styles.weekendsNote}>
+          Your plan and the lineup show weekend {chosen}: {shown} of {festival.lineup.length} acts.
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -384,6 +423,9 @@ const styles = StyleSheet.create({
   noteBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginBottom: space.sm },
   dayChips: { marginBottom: space.sm },
+  weekends: { marginTop: space.xl },
+  weekendsHead: { ...type.label, color: color.moonDim, paddingHorizontal: space.xl, marginBottom: space.sm },
+  weekendsNote: { ...type.caption, color: color.moonDim, paddingHorizontal: space.xl, marginTop: space.sm },
   chipsWrap: { marginBottom: space.sm, flexGrow: 0 },
   chips: { paddingHorizontal: space.xl, gap: space.sm },
   chip: {

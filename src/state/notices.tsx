@@ -4,6 +4,7 @@ import { cleanRead, notices, type Notice } from '../features/notifications/inbox
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
 import { useGoing } from './going';
+import { useWeekends } from './weekends';
 
 /** The bell's notices, worked out from your festivals, and which ones you've read (saved on the device). */
 type Ctx = {
@@ -47,7 +48,10 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
     setRead((current) => (ids.every((id) => current.has(id)) ? current : new Set([...current, ...ids])));
   }, []);
 
-  const list = useMemo(() => notices(festivals, going, today), [festivals, going, today]);
+  // Festivals as they are for you: a two-weekend festival follows the weekend you're going to.
+  const { forYou } = useWeekends();
+  const mine = useMemo(() => festivals.map(forYou), [festivals, forYou]);
+  const list = useMemo(() => notices(mine, going, today), [mine, going, today]);
   const value = useMemo<Ctx>(() => ({ list, read, markRead, hydrated }), [list, read, markRead, hydrated]);
   return <NoticesContext.Provider value={value}>{children}</NoticesContext.Provider>;
 }

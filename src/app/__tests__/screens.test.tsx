@@ -193,6 +193,21 @@ describe('Festivals', () => {
     share.mockRestore();
   });
 
+  it('narrows a two-weekend festival to the weekend you are going to', async () => {
+    const app = await renderApp('/festival/acl-26');
+    await settle();
+    expect(app.getByText('Your weekend')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Find an artist on the Austin City Limits 2026 lineup'), 'skrillex');
+    await settle();
+    expect(app.getAllByText('SKRILLEX').length).toBeGreaterThan(0);
+    await fireEvent.press(app.getByLabelText('Weekend 2, Oct 9 to 11'));
+    await settle();
+    // SKRILLEX only plays weekend 1.
+    expect(app.queryAllByText('SKRILLEX')).toHaveLength(0);
+    expect(app.getByText(/Your plan and the lineup show weekend 2: \d+ of 138 acts\./)).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('weekends.v1')) ?? '{}')).toEqual({ 'acl-26': 2 });
+  });
+
   it('filters a big lineup by day', async () => {
     const app = await renderApp('/festival/acl-26');
     await settle();

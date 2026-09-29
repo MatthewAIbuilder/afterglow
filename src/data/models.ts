@@ -99,6 +99,11 @@ export type Festival = {
    * someone playing twice). Set times, once out, say it too.
    */
   artistDays?: Record<string, string[]>;
+  /**
+   * For a festival run over several `weekends`: the one weekend (1, 2, …) an
+   * artist plays, by artist id. Artists not listed play every weekend.
+   */
+  artistWeekends?: Record<string, number>;
 };
 
 /**

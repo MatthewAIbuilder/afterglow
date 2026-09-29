@@ -22,6 +22,7 @@ import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { type FestivalsView, useFestivalsView } from '../../state/festivalsView';
 import { useGoing } from '../../state/going';
+import { useWeekends } from '../../state/weekends';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -33,7 +34,9 @@ export default function FestivalsScreen() {
   const tabSpace = useTabBarSpace();
   const { taste } = useTaste();
   const catalog = useCatalog();
-  const { festivals } = catalog;
+  // Festivals as they are for you: a two-weekend festival counts down to the weekend you're going to.
+  const { forYou } = useWeekends();
+  const festivals = useMemo(() => catalog.festivals.map(forYou), [catalog.festivals, forYou]);
   const { going } = useGoing();
   const { ratings } = useRatings();
   const today = useToday();

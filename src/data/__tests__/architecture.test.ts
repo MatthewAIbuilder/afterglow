@@ -63,6 +63,7 @@ describe('architecture', () => {
       'features/plan/route.ts',
       'features/festivals/request.ts',
       'features/festivals/days.ts',
+      'features/festivals/weekend.ts',
     ];
     for (const p of pure) {
       const f = all.find((x) => x.path === p);
