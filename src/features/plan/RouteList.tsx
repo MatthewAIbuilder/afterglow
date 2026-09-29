@@ -103,6 +103,31 @@ function StopCard({ festival, stop, walkFrom }: { festival: Festival; stop: Rout
           <MustSeeToggle artist={stop.artist} festivalId={festival.id} size={18} />
         </View>
       </View>
+      {/* What you're trading off: others you'd enjoy on at the same time. Star one to switch. */}
+      {stop.alsoOn?.length ? (
+        <View style={styles.also}>
+          {stop.alsoOn.map((o) => (
+            <Pressable
+              key={o.artist.id}
+              onPress={() => {
+                haptic.select();
+                router.push({ pathname: '/artist/[id]', params: { id: o.artist.id, festival: festival.id } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Also on: ${o.artist.name} at ${stageName(festival, o.set.stageId)}${o.known ? `, ${Math.round(o.match * 100)} percent match` : ''}. Opens the artist, where you can star them.`}
+              hitSlop={4}
+              style={({ pressed }) => [styles.alsoRow, pressed && { opacity: 0.6 }]}
+            >
+              <Text style={styles.alsoText} numberOfLines={1}>
+                <Text style={styles.alsoLabel}>Also on  </Text>
+                {o.artist.name}
+                <Text style={styles.alsoLabel}>{`  ${stageName(festival, o.set.stageId)}`}</Text>
+              </Text>
+              {o.known ? <Text style={styles.alsoPct}>{Math.round(o.match * 100)}%</Text> : null}
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -149,4 +174,14 @@ const styles = StyleSheet.create({
   meta: { ...type.caption, color: color.moonDim, marginTop: 2 },
   side: { alignItems: 'center', marginRight: -6 },
   match: { ...type.label, color: color.moonDim, fontVariant: ['tabular-nums'] },
+  also: {
+    marginTop: space.sm,
+    paddingTop: space.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.hairline,
+  },
+  alsoRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 4 },
+  alsoText: { ...type.caption, color: color.moon, flex: 1 },
+  alsoLabel: { color: color.moonFaint },
+  alsoPct: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
 });

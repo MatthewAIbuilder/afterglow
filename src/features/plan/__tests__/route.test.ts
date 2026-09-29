@@ -98,4 +98,16 @@ describe('the full-day route', () => {
     );
     expect(summary(route.stops)).toEqual(['warm 1200-1250', 'star 1260-1320']);
   });
+
+  it('says what else you would enjoy that is on at the same time', () => {
+    const f = festival([set('top', '21:00', '22:00'), set('close', '21:00', '22:00', 'tent'), set('meh', '21:00', '22:00', 'tent'), set('later', '22:00', '23:00')]);
+    const route = dayRoute(
+      { festival: f, artists: everyone(f), taste: { top: 0.95, close: 0.9, meh: 0.3, later: 0.8 }, informed: { top: true, close: true, meh: true, later: true } },
+      'Friday',
+    );
+    const first = route.stops[0] as RouteStop;
+    expect(first.artist.id).toBe('top');
+    expect(first.alsoOn?.map((a) => a.artist.id)).toEqual(['close']);
+    expect((route.stops[1] as RouteStop).alsoOn).toBeUndefined();
+  });
 });

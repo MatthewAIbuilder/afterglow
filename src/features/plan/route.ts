@@ -47,7 +47,15 @@ export type RouteStop = {
   known: boolean;
   /** Minutes of walking from the stage before, when you change stages. */
   walk?: number;
+  /** Other sets on while you're here that you'd enjoy too, best first: what you're trading off. */
+  alsoOn?: AlsoOn[];
 };
+
+export type AlsoOn = { artist: Artist; set: SetTime; match: number; known: boolean };
+
+/** How many other sets to mention per stop, and how good they must be. */
+export const ALSO_ON_MAX = 2;
+export const ALSO_ON_MIN = 0.5;
 
 export type RouteBreak = { kind: 'break'; from: number; to: number };
 
@@ -150,6 +158,16 @@ export function dayRoute(input: RouteInput, day: string): DayRoute {
     stops.push(st < 0 ? { kind: 'break', from, to } : stopFor(sets[st], from, to));
   });
   stops = walks(tidy(stops));
+  // What else is on while you're at each stop, that you'd enjoy too.
+  for (const stop of stops) {
+    if (stop.kind !== 'set') continue;
+    const others = sets
+      .filter((t) => t.set !== stop.set && t.start < stop.to && stop.from < t.end && (t.pinned || (t.known && t.match >= ALSO_ON_MIN)))
+      .sort((a, b) => b.value - a.value || a.rank - b.rank)
+      .slice(0, ALSO_ON_MAX)
+      .map((t) => ({ artist: t.artist, set: t.set, match: t.match, known: t.known }));
+    if (others.length) stop.alsoOn = others;
+  }
   return { day, stops };
 }
 
