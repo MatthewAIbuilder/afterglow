@@ -7,14 +7,9 @@ import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { MustSeeToggle } from './MustSeeToggle';
-import { type DayRoute, type RouteStop, stintLabel } from './route';
+import { clockTime, type DayRoute, type RouteStop, stintLabel } from './route';
 
-/** Minutes on the festival clock -> "23:40" (after midnight wraps back round). */
-const clock = (min: number) => {
-  const m = ((min % 1440) + 1440) % 1440;
-  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-};
-const at = (min: number) => formatTime(clock(min));
+const at = (min: number) => formatTime(clockTime(min));
 /** A gap this short is just a breather between sets. */
 const SHORT_BREAK = 20;
 

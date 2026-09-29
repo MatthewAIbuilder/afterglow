@@ -205,6 +205,12 @@ function tidy(stops: (RouteStop | RouteBreak)[]): (RouteStop | RouteBreak)[] {
   return merged;
 }
 
+/** Minutes on the festival clock -> "23:40" (after midnight wraps back round). */
+export function clockTime(min: number) {
+  const m = ((min % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+}
+
 /** How much of the set a stop covers, in words: "Whole set", "First 45 min", "Last 30 min", "40 min". */
 export function stintLabel(stop: RouteStop) {
   const whole = stop.from <= stop.setStart && stop.to >= stop.setEnd;

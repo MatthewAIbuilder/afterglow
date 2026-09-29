@@ -2,7 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 import { MOCK_CATALOG, MOCK_TASTE } from '../../../data/mock';
 import { computeTaste } from '../../taste/engine';
 import { buildSchedule, rankLineup } from '../plan';
-import { planText } from '../share';
+import { festivalRoute } from '../route';
+import { planText, routeText } from '../share';
 
 const { artists, clips, festival } = MOCK_CATALOG;
 const { taste, informed } = computeTaste(MOCK_TASTE, artists, clips, {});
@@ -38,5 +39,17 @@ describe('sharing your plan', () => {
   it('has nothing to send when nothing on the lineup is for you yet', () => {
     const f = festival('horizon-27')!;
     expect(planText(f, [], null, 'Afterglow')).toBeUndefined();
+  });
+
+  it('shares the whole route set to set once set times are out', () => {
+    const f = festival('solstice-26')!;
+    const route = festivalRoute({ festival: f, artists, taste, informed, pinned: new Set(['illenium']) });
+    const text = routeText(f, route, 'Afterglow')!;
+    expect(text.startsWith('My Solstice 2026, set to set\n')).toBe(true);
+    expect(text).toContain('Friday\n10:00 PM  TAPE B, Bass Tent (whole set)');
+    expect(text).toContain('11:40 PM  ★ ILLENIUM, Main Stage (whole set)');
+    expect(text).not.toMatch(/break/i);
+    expect(text.endsWith('Made with Afterglow')).toBe(true);
+    expect(routeText(f, [], 'Afterglow')).toBeUndefined();
   });
 });

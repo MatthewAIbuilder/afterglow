@@ -2,6 +2,7 @@ import { stageName } from '../../data/festival';
 import type { Festival } from '../../data/models';
 import { formatTime } from '../festivals/format';
 import type { Pick, Schedule, ScheduleItem, TimedPick } from './plan';
+import { clockTime, type DayRoute, stintLabel } from './route';
 
 /**
  * Your festival plan as plain text, for sending to friends from the share
@@ -42,4 +43,26 @@ export function planText(festival: Festival, picks: Pick[], schedule: Schedule |
   const rest = later.length ? ['Set time to come', ...later.map(name)].join('\n') : undefined;
   if (days.length === 0 && !rest) return undefined;
   return [head.join('\n'), ...days, rest, foot].filter(Boolean).join('\n\n');
+}
+
+/**
+ * Your full-day route as plain text, day by day: when to arrive, who, where
+ * and how much of the set ("Friday / 10:00 PM  TAPE B, Bass Tent (whole
+ * set)"). Breaks are left out; a star marks your must-sees. Undefined when no
+ * day has anything on.
+ */
+export function routeText(festival: Festival, route: DayRoute[], appName: string): string | undefined {
+  const days = route
+    .map((d) => {
+      const lines = d.stops.flatMap((s) =>
+        s.kind === 'set'
+          ? [`${formatTime(clockTime(s.from))}  ${s.pinned ? '★ ' : ''}${s.artist.name}, ${stageName(festival, s.set.stageId)} (${stintLabel(s).toLowerCase()})`]
+          : [],
+      );
+      return lines.length ? [d.day, ...lines].join('\n') : undefined;
+    })
+    .filter(Boolean);
+  if (!days.length) return undefined;
+  const head = [`My ${festival.name}, set to set`, [festival.dates, festival.location].filter(Boolean).join(', ')];
+  return [head.join('\n'), ...days, `Made with ${appName}`].join('\n\n');
 }

@@ -15,7 +15,7 @@ import { LiveNow } from './LiveNow';
 import { MustSeeList } from './MustSeeList';
 import { buildSchedule, rankLineup } from './plan';
 import { festivalRoute } from './route';
-import { planText } from './share';
+import { planText, routeText } from './share';
 import { Timetable } from './Timetable';
 
 /**
@@ -37,7 +37,11 @@ export function YourFestival({ festival }: { festival: Festival }) {
     () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id) }) : undefined),
     [festival, artists, taste, informed, mustSeesAt],
   );
-  const text = useMemo(() => planText(festival, picks, schedule, APP_NAME), [festival, picks, schedule]);
+  // Once set times are out, you share the whole route; before, your ranked picks.
+  const text = useMemo(
+    () => (route && routeText(festival, route, APP_NAME)) ?? planText(festival, picks, schedule, APP_NAME),
+    [festival, route, picks, schedule],
+  );
   // Only during the festival's days (and the morning after) is there anything live to show.
   const today = useToday();
   const until = daysUntil(festival, today);
