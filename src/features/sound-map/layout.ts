@@ -1,4 +1,5 @@
 import type { Artist, SoundTag, TasteProfile } from '../../data/types';
+import { soundSimilarity } from '../taste/similarity';
 
 /**
  * Pure layout for the My Sound map. No React, so it is easy to test and
@@ -196,18 +197,5 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
   return { bubbles, regions, bounds: { minX, maxX, minY, maxY } };
 }
 
-/** Cosine similarity of sound profiles, used for "closest to" in the sheet. */
-export function soundSimilarity(a: Artist, b: Artist) {
-  const tags = new Set([...Object.keys(a.sound), ...Object.keys(b.sound)]) as Set<SoundTag>;
-  let dot = 0;
-  let na = 0;
-  let nb = 0;
-  for (const t of tags) {
-    const x = a.sound[t] ?? 0;
-    const y = b.sound[t] ?? 0;
-    dot += x * y;
-    na += x * x;
-    nb += y * y;
-  }
-  return na && nb ? dot / Math.sqrt(na * nb) : 0;
-}
+/** Cosine similarity of sound profiles. Lives in taste/similarity; re-exported so existing imports keep working. */
+export { soundSimilarity };

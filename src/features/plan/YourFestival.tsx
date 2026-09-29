@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { ARTISTS } from '../../data/artists';
 import type { Festival } from '../../data/types';
+import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
 import { useTaste } from '../../state/taste';
 import { color, space, type } from '../../theme/tokens';
@@ -15,11 +15,12 @@ import { Timetable } from './Timetable';
  */
 export function YourFestival({ festival }: { festival: Festival }) {
   const { taste, informed } = useTaste();
+  const { artists } = useCatalog();
   const { mustSeesAt } = usePlan();
 
   const picks = useMemo(
-    () => rankLineup({ festival, artists: ARTISTS, taste, informed, pinned: mustSeesAt(festival.id) }),
-    [festival, taste, informed, mustSeesAt],
+    () => rankLineup({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id) }),
+    [festival, artists, taste, informed, mustSeesAt],
   );
   const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
 

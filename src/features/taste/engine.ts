@@ -1,6 +1,6 @@
 import type { Artist, Clip, TasteProfile } from '../../data/types';
 import type { Reaction } from '../../state/reactions';
-import { soundSimilarity } from '../sound-map/layout';
+import { type Similarity, soundSimilarity } from './similarity';
 import { isWatch, type Watch } from './watch';
 
 /**
@@ -39,6 +39,8 @@ export function computeTaste(
   artists: Artist[],
   clips: Clip[],
   reactions: Record<string, Reaction>,
+  /** How alike two artists are. Sound tags by default; a catalogue can supply better. */
+  similarity: Similarity = soundSimilarity,
 ): { taste: TasteProfile; summary: TasteSummary; informed: Record<string, boolean> } {
   const clipById = new Map(clips.map((c) => [c.id, c]));
   const direct: Record<string, number> = {};
@@ -80,7 +82,7 @@ export function computeTaste(
     let s = direct[a.id] ?? 0;
     for (const b of artists) {
       if (b.id === a.id || !direct[b.id]) continue;
-      const sim = soundSimilarity(a, b);
+      const sim = similarity(a, b);
       if (sim >= SPILL_MIN_SIMILARITY) s += direct[b.id] * sim * SPILL;
     }
     signal[a.id] = s;

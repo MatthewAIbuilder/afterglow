@@ -4,10 +4,10 @@ import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
-import { ARTISTS } from '../../data/artists';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { color, space, type } from '../../theme/tokens';
 import type { TasteSummary } from '../../features/taste/engine';
@@ -22,6 +22,7 @@ export default function MySoundScreen() {
 
   // The map shows the taste you last saw, then reshapes a beat after you
   // arrive, so you can watch what your likes, skips and viewing changed.
+  const { artists } = useCatalog();
   const live = useTaste();
   const liveRef = useRef(live);
   liveRef.current = live;
@@ -50,7 +51,7 @@ export default function MySoundScreen() {
 
       <View style={{ position: 'absolute', top: mapTop, left: 0 }}>
         <SoundMap
-          artists={ARTISTS}
+          artists={artists}
           taste={shown.taste}
           width={width}
           height={mapHeight}

@@ -1,5 +1,5 @@
 import type { Artist, Festival, SetTime, SoundTag, TasteProfile } from '../../data/types';
-import { soundSimilarity } from '../sound-map/layout';
+import { type Similarity, soundSimilarity } from '../taste/similarity';
 
 /**
  * Personal festival plan. Pure, so it is easy to test and later to move
@@ -88,12 +88,12 @@ export function rankLineup({ festival, artists, taste, pinned, informed }: PlanI
 }
 
 /** Why an explore pick is interesting, relative to the artists you already love. */
-export function exploreReason(pick: Pick, picks: Pick[]): ExploreReason {
+export function exploreReason(pick: Pick, picks: Pick[], similarity: Similarity = soundSimilarity): ExploreReason {
   if (!pick.known) return { kind: 'unknown' };
   let best: { to: Artist; s: number } | null = null;
   for (const p of picks) {
     if (p.tier === 'explore' || p.artist.id === pick.artist.id) continue;
-    const s = soundSimilarity(pick.artist, p.artist);
+    const s = similarity(pick.artist, p.artist);
     if (s >= NEAR_SOUND && (!best || s > best.s)) best = { to: p.artist, s };
   }
   if (best) return { kind: 'near', to: best.to };

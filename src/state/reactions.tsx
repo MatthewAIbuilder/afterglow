@@ -18,6 +18,8 @@ const EMPTY: Reaction = { liked: false, saved: false, skipped: false };
 
 type Ctx = {
   reactions: Record<string, Reaction>;
+  /** Saved reactions have loaded (or failed to). */
+  hydrated: boolean;
   get: (clipId: string) => Reaction;
   setLiked: (clipId: string, liked: boolean) => void;
   toggleSaved: (clipId: string) => void;
@@ -32,6 +34,7 @@ const ReactionsContext = createContext<Ctx | null>(null);
 
 export function ReactionsProvider({ children }: { children: ReactNode }) {
   const [reactions, setReactions] = useState<Record<string, Reaction>>({});
+  const [hydrated, setHydrated] = useState(false);
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -42,6 +45,7 @@ export function ReactionsProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
       .finally(() => {
         loaded.current = true;
+        setHydrated(true);
       });
   }, []);
 
@@ -62,6 +66,7 @@ export function ReactionsProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       reactions,
+      hydrated,
       get: (id) => reactions[id] ?? EMPTY,
       setLiked: (id, liked) => update(id, (r) => ({ ...r, liked, skipped: liked ? false : r.skipped })),
       toggleSaved: (id) => update(id, (r) => ({ ...r, saved: !r.saved })),
@@ -72,7 +77,7 @@ export function ReactionsProvider({ children }: { children: ReactNode }) {
           return watched === r.watched ? r : { ...r, watched };
         }),
     }),
-    [reactions, update],
+    [reactions, hydrated, update],
   );
 
   return <ReactionsContext.Provider value={value}>{children}</ReactionsContext.Provider>;
