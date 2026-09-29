@@ -84,3 +84,14 @@ export function lineupReach(festival: Festival, clips: Clip[]) {
   const shown = lineupClips(festival, clips);
   return { clips: shown.length, artists: new Set(shown.map((c) => c.artistId)).size };
 }
+
+/** Other festivals worth discovering next: ones with clips to show, most clips first. */
+export function otherFestivalsWithClips(festivals: Festival[], clips: Clip[], currentId: string | undefined, max = 2) {
+  return festivals
+    .filter((f) => f.id !== currentId)
+    .map((f, i) => ({ f, i, n: lineupClips(f, clips).length }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n || a.i - b.i)
+    .slice(0, max)
+    .map((x) => x.f);
+}

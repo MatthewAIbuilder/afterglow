@@ -205,6 +205,17 @@ describe('Discover', () => {
     expect(next.getByText('Solstice 2026')).toBeTruthy();
   });
 
+  it('ends the feed with where to go next', async () => {
+    // EDC has only LEVITY's two demo clips, so the end of its feed is in view.
+    const app = await renderApp('/?festival=edc-orlando-26');
+    await settle();
+    expect(app.getByText('You’ve seen every clip from EDC Orlando 2026')).toBeTruthy();
+    expect(app.getByLabelText('Tune your lineup, 110 to rate')).toBeTruthy();
+    expect(app.getByLabelText('See your festival')).toBeTruthy();
+    expect(app.getByLabelText('Discover Solstice 2026')).toBeTruthy();
+    expect(app.getByLabelText('Watch again from the top')).toBeTruthy();
+  });
+
   it('refocuses on a festival from its page', async () => {
     const app = await renderApp('/?festival=horizon-27');
     await settle();

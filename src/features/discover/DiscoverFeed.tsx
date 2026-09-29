@@ -3,6 +3,7 @@ import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
 import Animated, {
+  runOnJS,
   runOnUI,
   scrollTo,
   useAnimatedRef,
@@ -18,6 +19,7 @@ import { usePlan } from '../../state/plan';
 import { useSeen } from '../../state/seen';
 import { color, space, type } from '../../theme/tokens';
 import { ClipCard } from './ClipCard';
+import { FeedEnd } from './FeedEnd';
 import type { FeedPager } from './feedPager';
 import { defaultFocus, nextFocus } from '../festivals/links';
 import { reasonNote } from '../recommend/copy';
@@ -72,6 +74,9 @@ export function DiscoverFeed() {
   const { mustSeesAt } = usePlan();
   const starred = festival ? mustSeesAt(festival.id) : undefined;
   const count = feed?.length ?? 0;
+  // After the last clip comes one more page: the end of the lineup, with where to go next.
+  const hasEnd = !!festival && count > 0;
+  const pages = hasEnd ? count + 1 : count;
 
   // What you've had on screen, so the feed can hold it back next time.
   const { markSeen } = useSeen();
@@ -83,9 +88,25 @@ export function DiscoverFeed() {
   // The feed's position and whether its own scrolling has the finger, read by swipes that start on a video.
   const offsetY = useSharedValue(0);
   const nativeDrag = useSharedValue(false);
+  // The end page counts as reached only once it's fully on screen, which can't happen mid-swipe;
+  // leaving it is picked up by the last clip coming back into view.
+  const endY = useSharedValue(Number.POSITIVE_INFINITY);
+  const atEnd = useSharedValue(false);
+  useEffect(() => {
+    endY.value = hasEnd ? count * height : Number.POSITIVE_INFINITY;
+  }, [hasEnd, count, height, endY]);
+  const reachEnd = useCallback(() => {
+    if (activeRef.current === count) return;
+    activeRef.current = count;
+    haptic.select();
+    setActiveIndex(count);
+  }, [count]);
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
       offsetY.value = e.contentOffset.y;
+      const end = e.contentOffset.y >= endY.value - 2;
+      if (end && !atEnd.value) runOnJS(reachEnd)();
+      atEnd.value = end;
     },
     onBeginDrag: () => {
       nativeDrag.value = true;
@@ -95,8 +116,8 @@ export function DiscoverFeed() {
     },
   });
   const pager = useMemo<FeedPager>(
-    () => ({ listRef, offsetY, nativeDrag, pageHeight: height, count }),
-    [listRef, offsetY, nativeDrag, height, count],
+    () => ({ listRef, offsetY, nativeDrag, pageHeight: height, count: pages }),
+    [listRef, offsetY, nativeDrag, height, pages],
   );
 
   const scrollToPage = useCallback(
@@ -141,9 +162,9 @@ export function DiscoverFeed() {
 
   const skipFrom = useCallback(
     (index: number) => {
-      if (index + 1 < count) scrollToPage(index + 1, true);
+      if (index + 1 < pages) scrollToPage(index + 1, true);
     },
-    [scrollToPage, count],
+    [scrollToPage, pages],
   );
 
   return (
@@ -172,6 +193,11 @@ export function DiscoverFeed() {
             />
           );
         }}
+        ListFooterComponent={
+          hasEnd && festival ? (
+            <FeedEnd festival={festival} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
+          ) : null
+        }
         getItemLayout={(_d, index) => ({ length: height, offset: height * index, index })}
         pagingEnabled
         snapToInterval={height}

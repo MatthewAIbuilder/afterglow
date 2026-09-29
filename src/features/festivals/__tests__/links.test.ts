@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { MOCK_CATALOG } from '../../../data/mock';
 import type { Clip, Festival } from '../../../data/types';
-import { defaultFocus, festivalLine, festivalsOf, focusForClip, lineupClips, lineupReach, nextFocus, playsAt } from '../links';
+import { defaultFocus, festivalLine, festivalsOf, focusForClip, lineupClips, lineupReach, nextFocus, otherFestivalsWithClips, playsAt } from '../links';
 
 const { artists: ARTISTS, clips: CLIPS, festivals: FESTIVALS, festival: festivalById } = MOCK_CATALOG;
 
@@ -79,5 +79,12 @@ describe('festival and artist relationships', () => {
         expect(festivalLine(f, c.artistId)).toBeDefined();
         expect(festivalsOf(FESTIVALS, c.artistId)).toContain(f);
       }
+  });
+
+  it('suggests other festivals to discover next, most clips first', () => {
+    expect(otherFestivalsWithClips(FESTIVALS, CLIPS, 'horizon-27').map((f) => f.id)).toEqual(['solstice-26']);
+    expect(otherFestivalsWithClips(FESTIVALS, CLIPS, 'solstice-26').map((f) => f.id)).toEqual(['horizon-27']);
+    const empty: Festival = { ...horizon, id: 'empty', lineup: ['nobody'] };
+    expect(otherFestivalsWithClips([empty, ...FESTIVALS], CLIPS, undefined, 5).map((f) => f.id)).toEqual(['solstice-26', 'horizon-27']);
   });
 });
