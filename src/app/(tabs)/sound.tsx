@@ -17,8 +17,10 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
+import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Festival } from '../../data/types';
 import type { TasteSummary } from '../../features/taste/engine';
+import { soundLean } from '../../features/taste/lean';
 
 const HEADER_H = 96;
 /** The row of festival chips under the subtitle. */
@@ -68,6 +70,9 @@ export default function MySoundScreen() {
   );
 
   // Closing the sheet lets the map catch up with anything you rated in it.
+  // Which sounds you lean towards, across everyone (not just the festival in view).
+  const lean = useMemo(() => soundLean(artists, shown.taste, shown.informed), [artists, shown]);
+
   const close = useCallback(() => {
     setSelectedId(null);
     reshapeSoon();
@@ -111,7 +116,7 @@ export default function MySoundScreen() {
           </View>
         </View>
         <Text style={styles.subtitle} pointerEvents="none">
-          {subtitle(shown.summary, shown.rated)}
+          {subtitle(shown.summary, shown.rated, lean)}
         </Text>
         {hasScopes && <ScopeChips festivals={festivals} value={scope?.id} onChange={pickScope} />}
       </View>
@@ -262,7 +267,7 @@ function StartOver({ onCleared }: { onCleared: () => void }) {
   );
 }
 
-function subtitle(summary: TasteSummary, rated: number) {
+function subtitle(summary: TasteSummary, rated: number, lean: SoundTag[]) {
   const { likes, saves, skips, watched } = summary;
   if (!hasSignal(summary, rated)) return 'Bigger means a closer match. Similar sounds sit together.';
   const parts = [
@@ -273,7 +278,8 @@ function subtitle(summary: TasteSummary, rated: number) {
     rated && `${rated} rated ${rated === 1 ? 'artist' : 'artists'}`,
   ].filter(Boolean) as string[];
   const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
-  return `Shaped by your ${list}. Bigger means a closer match.`;
+  const leaning = lean.map((t) => SOUND_LABEL[t].toLowerCase()).join(' and ');
+  return `Shaped by your ${list}. ${leaning ? `Leaning ${leaning}.` : 'Bigger means a closer match.'}`;
 }
 
 const styles = StyleSheet.create({
