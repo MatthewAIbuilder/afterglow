@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, render } from '@testing-library/react-native';
 import type { MusicLibrarySnapshot, MusicProviderId } from '../../features/music/models';
-import { MusicServiceError, type ConnectResult, type MusicService } from '../../features/music/service';
+import { MusicServiceError, type ConnectResult, type MusicAvailability, type MusicService } from '../../features/music/service';
 import type { MusicServices } from '../../features/music/services';
 import { CatalogProvider } from '../catalog';
 import { MUSIC_STORAGE_KEY, MusicConnectionsProvider, useMusic } from '../music';
@@ -33,14 +33,14 @@ function deferred<T>() {
 }
 
 function fake(over: Partial<MusicService> = {}) {
-  return {
+  const d = {
     provider: 'spotify' as MusicProviderId,
-    availability: () => ({ ok: true as const }),
+    availability: (): MusicAvailability => ({ ok: true }),
     connect: jest.fn(async (): Promise<ConnectResult> => ({ ok: true })),
-    fetchLibrary: jest.fn(async () => snap(['Subtronics', 'Levity'])),
+    fetchLibrary: jest.fn(async (_now: Date) => snap(['Subtronics', 'Levity'])),
     disconnect: jest.fn(async () => {}),
-    ...over,
   };
+  return Object.assign(d, over) as typeof d;
 }
 
 let ctx: ReturnType<typeof useMusic>;

@@ -73,6 +73,7 @@ describe('architecture', () => {
       'features/music/store.ts',
       'features/music/privacy.ts',
       'features/music/copy.ts',
+      'features/music/reach.ts',
       'features/music/service.ts',
       'features/music/http.ts',
       'features/music/spotify/normalize.ts',
