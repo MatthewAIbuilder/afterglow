@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
 import Animated, {
@@ -47,6 +47,9 @@ export function DiscoverFeed() {
 
   // Which festival's lineup you're discovering. Changes start the feed from the top.
   const { clip: requested, festival: focusParam } = useLocalSearchParams<{ clip?: string; festival?: string }>();
+  // Clearing a handled param goes through this screen's own navigation: it works from the first render,
+  // even when the app starts on a link (the global router isn't ready yet then).
+  const navigation = useNavigation();
   const catalog = useCatalog();
   const [focusId, setFocusId] = useState(() => defaultFocus(catalog.festivals, catalog.clips)?.id);
   const requestedClip = requested ? catalog.clip(requested) : undefined;
@@ -62,8 +65,8 @@ export function DiscoverFeed() {
   // If the catalogue changes under us (a hosted file arrived) and the festival is gone, open the first one with clips.
   const festival = (focusId ? catalog.festival(focusId) : undefined) ?? defaultFocus(catalog.festivals, catalog.clips);
   useEffect(() => {
-    if (focusParam) router.setParams({ festival: '' });
-  }, [focusParam]);
+    if (focusParam) navigation.setParams({ festival: '' } as never);
+  }, [focusParam, navigation]);
 
   const feed = useRankedFeed(activeIndex, festival);
   const { mustSeesAt } = usePlan();
@@ -131,7 +134,7 @@ export function DiscoverFeed() {
       setActiveIndex(index);
       requestAnimationFrame(() => scrollToPage(index, false));
     }
-    router.setParams({ clip: '' });
+    navigation.setParams({ clip: '' } as never);
     // Only a new request, or a new feed while one is waiting, should jump.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requested, feed]);

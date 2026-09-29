@@ -1,0 +1,162 @@
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { act, fireEvent } from '@testing-library/react-native';
+import { renderRouter } from 'expo-router/testing-library';
+import RootLayout from '../_layout';
+import TabsLayout from '../(tabs)/_layout';
+import DiscoverScreen from '../(tabs)/index';
+import FestivalsScreen from '../(tabs)/festivals';
+import SoundScreen from '../(tabs)/sound';
+import ArtistScreen from '../artist/[id]';
+import FestivalScreen from '../festival/[id]';
+import PosterScreen from '../poster/[id]';
+import TuneScreen from '../tune/[id]';
+
+/**
+ * Smoke tests for every screen: rendered with the real catalogue through the
+ * real routes and providers, the way Expo Router does it on the phone. They
+ * catch a screen that crashes or shows nothing before anyone opens the app.
+ */
+function renderApp(initialUrl: string) {
+  return renderRouter(
+    {
+      _layout: RootLayout,
+      '(tabs)/_layout': TabsLayout,
+      '(tabs)/index': DiscoverScreen,
+      '(tabs)/sound': SoundScreen,
+      '(tabs)/festivals': FestivalsScreen,
+      'artist/[id]': ArtistScreen,
+      'festival/[id]': FestivalScreen,
+      'poster/[id]': PosterScreen,
+      'tune/[id]': TuneScreen,
+    },
+    { initialUrl },
+  );
+}
+
+/** Let effects, storage reads and the next animation frame run. */
+const settle = () =>
+  act(async () => {
+    jest.advanceTimersByTime(50);
+    await Promise.resolve();
+  });
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+describe('Festivals', () => {
+  it('lists EDC Orlando first, with every festival', async () => {
+    const app = await renderApp('/festivals');
+    await settle();
+    expect(app.getByText('EDC Orlando 2026')).toBeTruthy();
+    expect(app.getByText('Solstice 2026')).toBeTruthy();
+    expect(app.getByText('Horizon 2027')).toBeTruthy();
+  });
+
+  it('opens EDC Orlando with its plan, a short explore list and the full lineup', async () => {
+    const app = await renderApp('/festival/edc-orlando-26');
+    await settle();
+    expect(app.getByText('EDC Orlando 2026')).toBeTruthy();
+    expect(app.getByText('Tune your lineup')).toBeTruthy();
+    expect(app.getByText('110 to rate')).toBeTruthy();
+    expect(app.getByText('Your festival')).toBeTruthy();
+    expect(app.getByText(/more to explore in the full lineup below/)).toBeTruthy();
+    expect(app.getByText('Full lineup')).toBeTruthy();
+    expect(app.getAllByText('WOOLI').length).toBeGreaterThan(0);
+  });
+
+  it('shows the day-by-day plan for a festival with set times', async () => {
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    expect(app.getByText('Solstice 2026')).toBeTruthy();
+    expect(app.getByText('Set times are out')).toBeTruthy();
+    expect(app.getAllByText(/Friday/).length).toBeGreaterThan(0);
+  });
+});
+
+describe('Tune your lineup', () => {
+  it('goes through the lineup, rates, undoes and skips', async () => {
+    const app = await renderApp('/tune/edc-orlando-26');
+    await settle();
+    expect(app.getByText('A LITTLE SOUND')).toBeTruthy();
+    expect(app.getByText(/1 of 110/)).toBeTruthy();
+
+    await fireEvent.press(app.getByLabelText("Love A LITTLE SOUND's sound"));
+    await settle();
+    expect(app.getByText('AARON HIBELL')).toBeTruthy();
+    expect(app.getByText(/2 of 110/)).toBeTruthy();
+
+    await fireEvent.press(app.getByLabelText('Undo the last answer'));
+    await settle();
+    expect(app.getByText('A LITTLE SOUND')).toBeTruthy();
+
+    await fireEvent.press(app.getByLabelText("I don't know A LITTLE SOUND. Skip without rating."));
+    await settle();
+    await fireEvent.press(app.getByLabelText('AARON HIBELL is not for me'));
+    await settle();
+    expect(app.getByText('AAT')).toBeTruthy();
+    expect(app.getByText(/3 of 110/)).toBeTruthy();
+  });
+});
+
+describe('Artist', () => {
+  it('rates an artist from their page, in a festival’s context', async () => {
+    const app = await renderApp('/artist/wooli?festival=edc-orlando-26');
+    await settle();
+    expect(app.getByText('WOOLI')).toBeTruthy();
+    expect(app.getByText('Mark as must see')).toBeTruthy();
+    await fireEvent.press(app.getByText('Love their sound'));
+    await settle();
+    expect(app.getByText('You love their sound')).toBeTruthy();
+    await fireEvent.press(app.getByText('You love their sound'));
+    await settle();
+    expect(app.getByText('Love their sound')).toBeTruthy();
+  });
+
+  it('shows a demo artist with clips and similar sounds', async () => {
+    const app = await renderApp('/artist/levity');
+    await settle();
+    expect(app.getByText('LEVITY')).toBeTruthy();
+    expect(app.getByText('Live clips')).toBeTruthy();
+    expect(app.getByText('Similar sound')).toBeTruthy();
+    expect(app.getByText('Playing')).toBeTruthy();
+  });
+});
+
+describe('My Sound', () => {
+  it('draws the map', async () => {
+    const app = await renderApp('/sound');
+    await settle();
+    // The title, and the tab bar's label.
+    expect(app.getAllByText('My Sound').length).toBeGreaterThan(0);
+    expect(app.getByText(/Bigger means a closer match/)).toBeTruthy();
+  });
+});
+
+describe('Discover', () => {
+  it('opens on the festival with the most clips and shows the first clip', async () => {
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    expect(app.getByText('Solstice 2026')).toBeTruthy();
+    expect(app.getByText(/Live sets from the lineup/)).toBeTruthy();
+    expect(app.getAllByText('ILLENIUM').length).toBeGreaterThan(0);
+  });
+
+  it('moves to a festival the artist plays when a clip needs it', async () => {
+    // ILLENIUM doesn't play Horizon, so asking for their clip there moves Discover to Solstice.
+    const app = await renderApp('/?festival=horizon-27');
+    await settle();
+    expect(app.getByText('Horizon 2027')).toBeTruthy();
+    const next = await renderApp('/?clip=c1');
+    await settle();
+    expect(next.getByText('Solstice 2026')).toBeTruthy();
+  });
+
+  it('refocuses on a festival from its page', async () => {
+    const app = await renderApp('/?festival=horizon-27');
+    await settle();
+    await settle();
+    expect(app.getByText('Horizon 2027')).toBeTruthy();
+  });
+});
