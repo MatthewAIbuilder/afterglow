@@ -52,4 +52,14 @@ describe('sharing your plan', () => {
     expect(text.endsWith('Made with Afterglow')).toBe(true);
     expect(routeText(f, [], 'Afterglow')).toBeUndefined();
   });
+
+  it('lists your picks day by day before set times, when the poster gives days', () => {
+    const f = { ...festival('horizon-27')!, days: ['Friday', 'Saturday'] };
+    const picks = rankLineup({ festival: f, artists, taste, informed, pinned: new Set(['john-summit']) });
+    const withDays = { ...f, artistDays: Object.fromEntries(f.lineup.map((id, i) => [id, [i % 2 ? 'Saturday' : 'Friday']])) };
+    const text = planText(withDays, picks, null, 'Afterglow')!;
+    expect(text).toMatch(/\n\nFriday\n/);
+    expect(text).toContain('★ JOHN SUMMIT');
+    expect(text).not.toContain('Must see');
+  });
 });

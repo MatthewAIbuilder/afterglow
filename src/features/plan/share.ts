@@ -3,6 +3,8 @@ import type { Festival } from '../../data/models';
 import { formatTime } from '../festivals/format';
 import type { Pick, Schedule, ScheduleItem, TimedPick } from './plan';
 import { clockTime, type DayRoute, stintLabel } from './route';
+import { picksByDay } from './byDay';
+import { lineupDays } from '../festivals/days';
 
 /**
  * Your festival plan as plain text, for sending to friends from the share
@@ -16,6 +18,16 @@ export function planText(festival: Festival, picks: Pick[], schedule: Schedule |
   const name = (p: Pick) => `${p.pinned ? '★ ' : ''}${p.artist.name}`;
   const head = [`My ${festival.name}`, [festival.dates, festival.location].filter(Boolean).join(', ')];
   const foot = `Made with ${appName}`;
+
+  // Before set times, when the poster says who plays which day: day by day.
+  if (!schedule && lineupDays(festival).length) {
+    const { days, noDay } = picksByDay(festival, picks);
+    const blocks = [
+      ...days.map((d) => (d.planned.length ? [d.day, ...d.planned.map(name)].join('\n') : undefined)),
+      noDay.length ? ['Day to come', ...noDay.map(name)].join('\n') : undefined,
+    ].filter(Boolean);
+    return [head.join('\n'), ...blocks, foot].join('\n\n');
+  }
 
   if (!schedule) {
     const group = (tier: Pick['tier'], label: string) => {
