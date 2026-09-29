@@ -15,6 +15,9 @@ import SavedScreen from '../saved';
 import WelcomeScreen from '../welcome';
 import TuneScreen from '../tune/[id]';
 import DiscoverFocusScreen from '../discover-focus';
+import LineupScreen from '../(tabs)/lineup';
+import ProfileScreen from '../(tabs)/profile';
+import NotificationsScreen from '../notifications';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -36,6 +39,9 @@ function renderApp(initialUrl: string) {
       welcome: WelcomeScreen,
       'tune/[id]': TuneScreen,
       'discover-focus': DiscoverFocusScreen,
+      '(tabs)/lineup': LineupScreen,
+      '(tabs)/profile': ProfileScreen,
+      notifications: NotificationsScreen,
     },
     { initialUrl },
   );
@@ -589,5 +595,61 @@ describe('Discover', () => {
     await settle();
     await settle();
     expect(app.getByText('Horizon 2027')).toBeTruthy();
+  });
+});
+
+describe('Lineup tab', () => {
+  it('shows every lineup with a nudge until you pick a festival', async () => {
+    const app = await renderApp('/lineup');
+    await settle();
+    expect(app.getByText('Lineups')).toBeTruthy();
+    expect(app.getByText(/Tap “I’m going” on a festival/)).toBeTruthy();
+    expect(app.getByText('Full lineup')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Show the Horizon 2027 lineup'));
+    await settle();
+    expect(app.getAllByText('Horizon 2027').length).toBeGreaterThan(1);
+  });
+
+  it('becomes your lineup for the festival you are going to', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
+    const app = await renderApp('/lineup');
+    await settle();
+    expect(app.getByText('Your lineup')).toBeTruthy();
+    expect(app.getByText('EDC Orlando 2026')).toBeTruthy();
+    expect(app.queryByLabelText(/^Show the /)).toBeNull();
+  });
+});
+
+describe('Profile tab', () => {
+  it('shows what you have built so far and what is coming', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
+    const app = await renderApp('/profile');
+    await settle();
+    expect(app.getByLabelText('1 festival')).toBeTruthy();
+    expect(app.getByLabelText('0 artists rated')).toBeTruthy();
+    expect(app.getByText('Your festival profile')).toBeTruthy();
+  });
+});
+
+describe('Notifications', () => {
+  it('rings for set times at a festival you are going to, and clears once read', async () => {
+    // Solstice's demo lineup has set times.
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['solstice-26']));
+    const app = await renderApp('/festivals');
+    await settle();
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Notifications, \d+ new$/));
+    await settle();
+    expect(app.getByText('Set times are out for Solstice 2026')).toBeTruthy();
+    await settle();
+    expect(JSON.parse((await AsyncStorage.getItem('noticesRead.v1')) ?? '[]')).toContain('sets:solstice-26');
+  });
+
+  it('explains what will show when there is nothing yet', async () => {
+    const app = await renderApp('/festivals');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Notifications'));
+    await settle();
+    expect(app.getByText(/Nothing new/)).toBeTruthy();
   });
 });

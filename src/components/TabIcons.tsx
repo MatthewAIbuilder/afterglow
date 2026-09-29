@@ -40,6 +40,41 @@ export function FestivalsIcon({ color, size = 24 }: P) {
   );
 }
 
+/** Lineup: a short running order, one line bolder. */
+export function LineupIcon({ color, size = 24 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 6h14" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+      <Path d="M7 11h10M8.5 15.5h7M10 20h4" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Profile: a head and shoulders. */
+export function ProfileIcon({ color, size = 24 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="8.5" r="3.8" stroke={color} strokeWidth={1.7} />
+      <Path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Notifications: a bell. */
+export function BellIcon({ color, size = 20 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Path d="M10 20.5a2 2 0 0 0 4 0" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 const CHEVRON = { right: 'M9 5l7 7-7 7', left: 'M15 5l-7 7 7 7', up: 'M5 15l7-7 7 7', down: 'M5 9l7 7 7-7' } as const;
 
 export function ChevronIcon({ color, size = 16, direction = 'right' }: P & { direction?: keyof typeof CHEVRON }) {

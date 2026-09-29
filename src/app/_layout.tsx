@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
 import { GoingProvider } from '../state/going';
+import { NoticesProvider } from '../state/notices';
 import { PlanProvider } from '../state/plan';
 import { RatingsProvider } from '../state/ratings';
 import { ReactionsProvider } from '../state/reactions';
@@ -19,12 +20,14 @@ export default function RootLayout() {
       <PlanProvider>
       <GoingProvider>
       <SeenProvider>
+      <NoticesProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="artist/[id]" />
         <Stack.Screen name="festival/[id]" />
         <Stack.Screen name="saved" />
+        <Stack.Screen name="notifications" />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="discover-focus"
@@ -40,6 +43,7 @@ export default function RootLayout() {
         <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }} />
       </Stack>
       <FirstRun />
+      </NoticesProvider>
       </SeenProvider>
       </GoingProvider>
       </PlanProvider>

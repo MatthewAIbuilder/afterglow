@@ -36,3 +36,12 @@ export function groupFestivals(festivals: Festival[], going: Going, today: Date)
     .map(({ f }) => f);
   return { going: mine, others: festivals.filter((f) => !going.includes(f.id)) };
 }
+
+/**
+ * The festivals the Lineup tab switches between: the ones you're going to,
+ * soonest first; every festival when you haven't picked any yet.
+ */
+export function lineupChoices(festivals: Festival[], going: Going, today: Date) {
+  const mine = groupFestivals(festivals, going, today).going;
+  return { festivals: mine.length ? mine : festivals, yours: mine.length > 0 };
+}

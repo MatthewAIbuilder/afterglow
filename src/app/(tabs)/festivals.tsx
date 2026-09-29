@@ -7,6 +7,7 @@ import { ArtistRow } from '../../components/ArtistRow';
 import { SearchField } from '../../components/SearchField';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
+import { NoticeBell } from '../../components/NoticeBell';
 import { ChevronIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
@@ -52,7 +53,10 @@ export default function FestivalsScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Festivals</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>Festivals</Text>
+            <NoticeBell />
+          </View>
           <Text style={styles.subtitle}>Lineups ranked by your sound.</Text>
           <View style={styles.searchWrap}>
             <SearchField
@@ -178,6 +182,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl, marginBottom: space.xl },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.largeTitle, color: color.moon },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginTop: space.lg },
