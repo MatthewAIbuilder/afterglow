@@ -88,9 +88,8 @@ jest.mock('expo-secure-store', () => {
   };
 });
 // Sign-in pages never open in tests: tests that connect a service pass their own services.
-jest.mock('expo-auth-session', () => ({
-  AuthRequest: jest.fn(),
-  makeRedirectUri: () => 'afterglow://music-auth',
-  ResponseType: { Code: 'code' },
+jest.mock('expo-web-browser', () => ({
+  WebBrowserResultType: { CANCEL: 'cancel', DISMISS: 'dismiss' },
+  maybeCompleteAuthSession: () => ({ type: 'failed' }),
+  openAuthSessionAsync: jest.fn(async () => ({ type: 'cancel' })),
 }));
-jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: () => ({ type: 'failed' }) }));

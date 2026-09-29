@@ -25,5 +25,14 @@ export const APPLE_MUSIC_TOKEN_URL: string = process.env.EXPO_PUBLIC_APPLE_MUSIC
 /** Where a service sends you back after signing in: afterglow://music-auth (the app's scheme in app.json). */
 export const MUSIC_REDIRECT = { scheme: 'afterglow', path: 'music-auth' } as const;
 
+/**
+ * Spotify's redirect address, only when it isn't the default
+ * afterglow://music-auth. It must match the Spotify dashboard exactly. If
+ * the dashboard refuses a custom scheme for a new app, set
+ * EXPO_PUBLIC_SPOTIFY_REDIRECT_URI to an https universal link on a domain
+ * you control (see docs/spotify-setup.md). A malformed value is ignored.
+ */
+export const SPOTIFY_REDIRECT_SETTING: string = process.env.EXPO_PUBLIC_SPOTIFY_REDIRECT_URI ?? '';
+
 /** A connected library is read again when the app opens, once it's older than this. */
 export const MUSIC_RESYNC_MS = 24 * 60 * 60 * 1000;

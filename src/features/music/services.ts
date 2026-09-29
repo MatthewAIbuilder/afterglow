@@ -1,3 +1,4 @@
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import { APPLE_MUSIC_TOKEN_URL, SPOTIFY_CLIENT_ID } from '../../config/music';
 import { noMusicKit } from './apple/musicKit';
@@ -25,6 +26,8 @@ export function defaultMusicServices(): MusicServices {
       fetch: fetchFn,
       signIn: spotifySignIn,
       secureStorage: Platform.OS !== 'web',
+      // Expo Go's return address (exp://<computer>/--/…) changes with the network and Spotify won't accept it.
+      needsOwnApp: Constants.executionEnvironment === ExecutionEnvironment.StoreClient,
     }),
     'apple-music': appleMusicService({
       authorizer: noMusicKit,

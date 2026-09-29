@@ -77,6 +77,7 @@ describe('architecture', () => {
       'features/music/http.ts',
       'features/music/spotify/normalize.ts',
       'features/music/spotify/tokens.ts',
+      'features/music/spotify/auth.ts',
       'features/music/spotify/api.ts',
       'features/music/apple/normalize.ts',
       'features/music/apple/api.ts',

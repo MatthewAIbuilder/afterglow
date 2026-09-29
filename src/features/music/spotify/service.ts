@@ -18,6 +18,8 @@ export function spotifyService(opts: {
   signIn: SpotifySignIn;
   /** False on platforms without a secure store (web). */
   secureStorage: boolean;
+  /** True in Expo Go, whose sign-in return address Spotify can't accept: a development build is needed. */
+  needsOwnApp?: boolean;
   now?: () => number;
 }): MusicService {
   const now = opts.now ?? Date.now;
@@ -41,6 +43,7 @@ export function spotifyService(opts: {
     availability() {
       if (!opts.secureStorage) return { ok: false, reason: 'not-on-this-device' };
       if (!opts.clientId) return { ok: false, reason: 'not-set-up' };
+      if (opts.needsOwnApp) return { ok: false, reason: 'needs-full-app' };
       return { ok: true };
     },
     async connect() {
