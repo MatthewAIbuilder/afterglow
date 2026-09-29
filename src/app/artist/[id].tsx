@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
@@ -13,6 +13,7 @@ import { PlayIcon } from '../../features/discover/icons';
 import { StarIcon } from '../../features/plan/icons';
 import { RateArtist } from '../../features/taste/RateArtist';
 import { mostSimilar } from '../../features/taste/similarity';
+import { listenLinks } from '../../features/taste/listen';
 import { artistSignals, whyLine } from '../../features/taste/why';
 import { describeSet, formatDuration } from '../../features/festivals/format';
 import { setLine } from '../../features/festivals/when';
@@ -167,6 +168,27 @@ export default function ArtistScreen() {
           </Section>
         )}
 
+        {/* Somewhere to hear them before you rate them. Plain links out to the services' own search. */}
+        <Section title="Listen">
+          <View style={styles.listen}>
+            {listenLinks(artist.name).map((l) => (
+              <Pressable
+                key={l.service}
+                onPress={() => {
+                  haptic.select();
+                  Linking.openURL(l.url).catch(() => {});
+                }}
+                accessibilityRole="link"
+                accessibilityLabel={`Listen to ${artist.name} on ${l.service}`}
+                style={({ pressed }) => [styles.listenPill, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={styles.listenText}>{l.service}</Text>
+                <ChevronIcon color={color.moonFaint} size={11} />
+              </Pressable>
+            ))}
+          </View>
+        </Section>
+
         {similar.length > 0 && (
           <Section title={similarAt ? `Similar sound at ${similarAt.name}` : 'Similar sound'}>
             <View style={styles.similar}>
@@ -243,6 +265,19 @@ const styles = StyleSheet.create({
   },
   mustSeeOn: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.4)' },
   mustSeeText: { ...type.label, color: color.moonDim },
+  listen: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
+  listenPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  listenText: { ...type.label, color: color.moon },
   section: { marginTop: space.xxl, paddingHorizontal: space.xl },
   sectionTitle: { ...type.title, fontSize: 22, color: color.moon, marginBottom: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md, gap: space.md },

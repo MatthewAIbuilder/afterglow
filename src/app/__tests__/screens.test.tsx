@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { Alert, Share } from 'react-native';
+import { Alert, Linking, Share } from 'react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import RootLayout from '../_layout';
 import TabsLayout from '../(tabs)/_layout';
@@ -265,6 +265,17 @@ describe('Tune your lineup', () => {
     expect(app.getByText(/3 of 110/)).toBeTruthy();
   });
 
+  it('offers to listen on YouTube before answering', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const app = await renderApp('/tune/edc-orlando-26');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Listen to A LITTLE SOUND on YouTube'));
+    expect(open).toHaveBeenCalledWith('https://www.youtube.com/results?search_query=A%20LITTLE%20SOUND%20live%20set');
+    // Still on the same card, nothing answered.
+    expect(app.getByText(/1 of 110/)).toBeTruthy();
+    open.mockRestore();
+  });
+
   it('says who an artist sounds like among ones you love', async () => {
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ alesso: 'love' }));
     const app = await renderApp('/tune/edc-orlando-26');
@@ -317,6 +328,15 @@ describe('Artist', () => {
     const app = await renderApp('/artist/illenium');
     await settle();
     expect(app.getByText('From your rating and 1 like')).toBeTruthy();
+  });
+
+  it('links out to listen to an artist', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const app = await renderApp('/artist/wooli');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Listen to WOOLI on Spotify'));
+    expect(open).toHaveBeenCalledWith('https://open.spotify.com/search/WOOLI');
+    open.mockRestore();
   });
 
   it('shows a demo artist with clips and similar sounds', async () => {
