@@ -7,6 +7,7 @@ import { NightSky } from '../components/NightSky';
 import { CheckIcon } from '../components/TabIcons';
 import { APP_NAME } from '../config/app';
 import type { Festival } from '../data/types';
+import { whereWhen } from '../features/festivals/format';
 import { countdown } from '../features/festivals/when';
 import { watchFestival, welcomeFestival } from '../features/welcome/firstRun';
 import { haptic } from '../lib/haptics';
@@ -92,13 +93,13 @@ export default function WelcomeScreen() {
                     }}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: on }}
-                    accessibilityLabel={`${f.name}, ${f.dates}, ${f.location}`}
+                    accessibilityLabel={`${f.name}, ${whereWhen(f)}`}
                     style={({ pressed }) => [styles.festival, on && styles.festivalOn, pressed && { opacity: 0.8 }]}
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={styles.festivalName}>{f.name}</Text>
                       <Text style={styles.festivalMeta}>
-                        {f.dates}, {f.location}
+                        {whereWhen(f)}
                         {soon ? ` · ${soon}` : ''}
                       </Text>
                     </View>

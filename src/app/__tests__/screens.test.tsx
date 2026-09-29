@@ -195,13 +195,13 @@ describe('Festivals', () => {
     const list = await renderApp('/festivals');
     await settle();
     const titles = () =>
-      list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Austin City Limits 2026|Cyclops Cove 4|Eternal NYE 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
+      list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Austin City Limits 2026|Cyclops Cove 4|Eternal NYE 2026|Countdown NYE 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
     // The rest wait behind "More festivals" until you open it.
     expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
-    await fireEvent.press(list.getByLabelText('More festivals, 5. Show them'));
+    await fireEvent.press(list.getByLabelText('More festivals, 6. Show them'));
     await settle();
-    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Austin City Limits 2026', 'Cyclops Cove 4', 'Eternal NYE 2026', 'Solstice 2026']);
-    await fireEvent.press(list.getByLabelText('More festivals, 5. Hide them'));
+    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Austin City Limits 2026', 'Cyclops Cove 4', 'Eternal NYE 2026', 'Countdown NYE 2026', 'Solstice 2026']);
+    await fireEvent.press(list.getByLabelText('More festivals, 6. Hide them'));
     await settle();
     expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
   });

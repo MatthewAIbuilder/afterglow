@@ -1677,6 +1677,271 @@
     {
       "id": "treble-tina",
       "name": "TREBLE TINA"
+    },
+    {
+      "id": "33-below",
+      "name": "33 BELOW"
+    },
+    {
+      "id": "acraze",
+      "name": "ACRAZE"
+    },
+    {
+      "id": "ahee",
+      "name": "AHEE"
+    },
+    {
+      "id": "archie-hamilton",
+      "name": "ARCHIE HAMILTON",
+      "sound": {
+        "house": 0.8
+      }
+    },
+    {
+      "id": "arlo",
+      "name": "ARLO"
+    },
+    {
+      "id": "aych",
+      "name": "AYCH"
+    },
+    {
+      "id": "blaise-bracic",
+      "name": "BLAISE BRACIC"
+    },
+    {
+      "id": "borne",
+      "name": "BORNE"
+    },
+    {
+      "id": "brandon",
+      "name": "BRANDON"
+    },
+    {
+      "id": "bushbaby",
+      "name": "BUSHBABY"
+    },
+    {
+      "id": "chozen",
+      "name": "CHOZEN"
+    },
+    {
+      "id": "crumb-pit",
+      "name": "CRUMB PIT"
+    },
+    {
+      "id": "deathpact",
+      "name": "DEATHPACT"
+    },
+    {
+      "id": "dj-diesel",
+      "name": "DJ DIESEL"
+    },
+    {
+      "id": "dj-guestlist",
+      "name": "DJ GUESTLIST"
+    },
+    {
+      "id": "dj-snake",
+      "name": "DJ SNAKE",
+      "sound": {
+        "trap": 0.6,
+        "house": 0.4
+      }
+    },
+    {
+      "id": "domina",
+      "name": "DØMINA"
+    },
+    {
+      "id": "ecchi-mp4",
+      "name": "ECCHI.MP4"
+    },
+    {
+      "id": "flosstradamus",
+      "name": "FLOSSTRADAMUS",
+      "sound": {
+        "trap": 0.8
+      }
+    },
+    {
+      "id": "ghengar",
+      "name": "GHENGAR"
+    },
+    {
+      "id": "gordo",
+      "name": "GORDO"
+    },
+    {
+      "id": "gorillat",
+      "name": "GORILLAT"
+    },
+    {
+      "id": "gravedgr",
+      "name": "GRAVEDGR"
+    },
+    {
+      "id": "green-matter",
+      "name": "GREEN MATTER"
+    },
+    {
+      "id": "heyz-b2b-tynan",
+      "name": "HEYZ B2B TYNAN",
+      "sound": {
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "hills",
+      "name": "HILLS"
+    },
+    {
+      "id": "hol",
+      "name": "HOL!"
+    },
+    {
+      "id": "jaden-bojsen",
+      "name": "JADEN BOJSEN"
+    },
+    {
+      "id": "james-hype",
+      "name": "JAMES HYPE",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "jev",
+      "name": "JEV"
+    },
+    {
+      "id": "kelland",
+      "name": "KELLAND"
+    },
+    {
+      "id": "khrome",
+      "name": "KHROME"
+    },
+    {
+      "id": "kloud",
+      "name": "KLOUD"
+    },
+    {
+      "id": "lavern",
+      "name": "LAVERN"
+    },
+    {
+      "id": "loud-luxury",
+      "name": "LOUD LUXURY",
+      "sound": {
+        "house": 0.9
+      }
+    },
+    {
+      "id": "lucky",
+      "name": "LUCKY"
+    },
+    {
+      "id": "lyny-b2b-peekaboo",
+      "name": "LYNY B2B PEEKABOO",
+      "sound": {
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "marshmello",
+      "name": "MARSHMELLO",
+      "sound": {
+        "melodic-bass": 0.5,
+        "house": 0.5
+      }
+    },
+    {
+      "id": "matroda",
+      "name": "MATRODA"
+    },
+    {
+      "id": "mija-b2b-simone",
+      "name": "MIJA B2B SIMONE"
+    },
+    {
+      "id": "noise-mafia",
+      "name": "NOISE MAFIA"
+    },
+    {
+      "id": "oliver-heldens",
+      "name": "OLIVER HELDENS",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "r3hab",
+      "name": "R3HAB",
+      "sound": {
+        "house": 0.9
+      }
+    },
+    {
+      "id": "ranger-trucco",
+      "name": "RANGER TRUCCO"
+    },
+    {
+      "id": "rinzen",
+      "name": "RINZEN"
+    },
+    {
+      "id": "roz",
+      "name": "RØZ"
+    },
+    {
+      "id": "s-y-n-sudden-death-yum3-nimda",
+      "name": "S.Y.N (SUDDEN DEATH, YUM3, NIMDA)",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.6
+      }
+    },
+    {
+      "id": "sincera",
+      "name": "SINCERA"
+    },
+    {
+      "id": "skilah",
+      "name": "SKILAH"
+    },
+    {
+      "id": "tchami",
+      "name": "TCHAMI",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "tobehonest",
+      "name": "TOBEHONEST"
+    },
+    {
+      "id": "tokimonsta",
+      "name": "TOKIMONSTA"
+    },
+    {
+      "id": "walker-and-royce",
+      "name": "WALKER & ROYCE",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "wax-motif",
+      "name": "WAX MOTIF",
+      "sound": {
+        "house": 0.9
+      }
+    },
+    {
+      "id": "zingara",
+      "name": "ZINGARA"
     }
   ],
   "festivals": [
@@ -2670,6 +2935,85 @@
         "novembr",
         "scum-wubz-b2b-lizrd",
         "treble-tina"
+      ]
+    },
+    {
+      "id": "countdown-nye-26",
+      "name": "Countdown NYE 2026",
+      "dates": "Dates to come",
+      "location": "",
+      "lineup": [
+        "33-below",
+        "acraze",
+        "ahee",
+        "alesso",
+        "archie-hamilton",
+        "arlo",
+        "aych",
+        "bassrush-experience",
+        "blaise-bracic",
+        "borne",
+        "brandon",
+        "bunt",
+        "bushbaby",
+        "chozen",
+        "crumb-pit",
+        "deathpact",
+        "discovery-project",
+        "dj-diesel",
+        "dj-guestlist",
+        "dj-snake",
+        "domina",
+        "ecchi-mp4",
+        "esse",
+        "flosstradamus",
+        "ghengar",
+        "gordo",
+        "gorillat",
+        "gravedgr",
+        "green-matter",
+        "heyz-b2b-tynan",
+        "hills",
+        "hol",
+        "insomniac-records-takeover",
+        "jaden-bojsen",
+        "james-hype",
+        "jessica-audiffred",
+        "jev",
+        "joshwa",
+        "kelland",
+        "khrome",
+        "kloud",
+        "lavern",
+        "loud-luxury",
+        "lucky",
+        "lyny-b2b-peekaboo",
+        "madvktm",
+        "marshmello",
+        "matroda",
+        "mija-b2b-simone",
+        "nghtmre",
+        "noise-mafia",
+        "oliver-heldens",
+        "r3hab",
+        "ranger-trucco",
+        "rinzen",
+        "roz",
+        "s-y-n-sudden-death-yum3-nimda",
+        "seven-lions",
+        "sincera",
+        "skilah",
+        "smoakland",
+        "space-laces",
+        "subtronics",
+        "taiki-nulight",
+        "tchami",
+        "tobehonest",
+        "tokimonsta",
+        "troyboi",
+        "walker-and-royce",
+        "wax-motif",
+        "zingara"
       ]
     }
   ],

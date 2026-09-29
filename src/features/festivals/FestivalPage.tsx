@@ -10,7 +10,7 @@ import { setFor } from '../../data/festival';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Artist, Festival } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../discover/icons';
-import { describeSet } from './format';
+import { describeSet, whereWhen } from './format';
 import { lineupReach } from './links';
 import { filterLineup, lineupSounds, SEARCH_FROM } from './search';
 import { countdown, setLine } from './when';
@@ -76,7 +76,7 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
         <View style={styles.pad}>
           <Text style={styles.title}>{festival.name}</Text>
           <Text style={styles.meta}>
-            {festival.dates}, {festival.location}
+            {whereWhen(festival)}
           </Text>
           {soon ? <Text style={styles.soon}>{soon}</Text> : null}
           <View style={styles.pills}>

@@ -15,6 +15,7 @@ import { groupFestivals } from '../../features/festivals/going';
 import { PlayIcon } from '../../features/discover/icons';
 import { lineupReach } from '../../features/festivals/links';
 import { searchArtists } from '../../features/festivals/search';
+import { whereWhen } from '../../features/festivals/format';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
@@ -156,7 +157,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{festival.name}</Text>
           <Text style={styles.meta}>
-            {festival.dates}, {festival.location}
+            {whereWhen(festival)}
           </Text>
         </View>
         <ChevronIcon color={color.moonFaint} />

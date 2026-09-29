@@ -21,3 +21,7 @@ export function formatDuration(seconds: number) {
   const s = Math.max(0, Math.round(seconds));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
+
+/** "Nov 6 to 8, Tinker Field, Orlando", or just the dates when the place isn't known yet. */
+export const whereWhen = (festival: Pick<Festival, 'dates' | 'location'>) =>
+  [festival.dates, festival.location].filter(Boolean).join(', ');

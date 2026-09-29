@@ -42,7 +42,9 @@ describe('EDC Orlando 2026', () => {
     const onMap = artistsOnMap(catalog.artists, taste, informed);
     expect(onMap.length).toBeGreaterThan(Object.keys(MOCK_TASTE).length);
     expect(onMap.length).toBeLessThanOrEqual(MAP_MAX);
-    expect(onMap.map((a) => a.id)).toEqual(expect.arrayContaining(['jkyl-and-hyde', 'wooli']));
+    // Close EDC sounds join (the map's limit may go to even closer artists from other festivals).
+    const edcLineup = catalog.festival('edc-orlando-26')!.lineup;
+    expect(onMap.filter((a) => edcLineup.includes(a.id) && !(a.id in MOCK_TASTE)).length).toBeGreaterThan(0);
     // Artists with no sound yet never join through similarity alone.
     const noSound = catalog.artists.filter((a) => Object.keys(a.sound).length === 0).map((a) => a.id);
     expect(noSound.length).toBeGreaterThan(0);
