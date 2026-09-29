@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { act, fireEvent } from '@testing-library/react-native';
 import { Alert, Linking, Share } from 'react-native';
 import { renderRouter } from 'expo-router/testing-library';
+import * as Notifications from 'expo-notifications';
 import RootLayout from '../_layout';
 import TabsLayout from '../(tabs)/_layout';
 import DiscoverScreen from '../(tabs)/index';
@@ -667,6 +668,23 @@ describe('Notifications', () => {
     expect(app.getByText('Set times are out for Solstice 2026')).toBeTruthy();
     await settle();
     expect(JSON.parse((await AsyncStorage.getItem('noticesRead.v1')) ?? '[]')).toContain('sets:solstice-26');
+  });
+
+  it('schedules phone reminders when you are going, and removes them when you are not', async () => {
+    const scheduled = (Notifications as unknown as { __scheduled: Map<string, { content: { title: string } }> }).__scheduled;
+    scheduled.clear();
+    // A fixed "today", more than a week before EDC.
+    jest.useFakeTimers({ now: new Date(2026, 8, 29, 12) });
+    const page = await renderApp('/festival/edc-orlando-26');
+    await settle();
+    await fireEvent.press(page.getByLabelText("I'm going to EDC Orlando 2026"));
+    await settle();
+    await settle();
+    expect([...scheduled.values()].map((r) => r.content.title)).toEqual(['EDC Orlando 2026 is a week away', 'EDC Orlando 2026 is tomorrow']);
+    await fireEvent.press(page.getByLabelText("You're going to EDC Orlando 2026. Tap to undo."));
+    await settle();
+    await settle();
+    expect(scheduled.size).toBe(0);
   });
 
   it('explains what will show when there is nothing yet', async () => {
