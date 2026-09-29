@@ -107,24 +107,27 @@ function StopCard({ festival, stop, walkFrom }: { festival: Festival; stop: Rout
       {stop.alsoOn?.length ? (
         <View style={styles.also}>
           {stop.alsoOn.map((o) => (
-            <Pressable
-              key={o.artist.id}
-              onPress={() => {
-                haptic.select();
-                router.push({ pathname: '/artist/[id]', params: { id: o.artist.id, festival: festival.id } });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`Also on: ${o.artist.name} at ${stageName(festival, o.set.stageId)}${o.known ? `, ${Math.round(o.match * 100)} percent match` : ''}. Opens the artist, where you can star them.`}
-              hitSlop={4}
-              style={({ pressed }) => [styles.alsoRow, pressed && { opacity: 0.6 }]}
-            >
-              <Text style={styles.alsoText} numberOfLines={1}>
-                <Text style={styles.alsoLabel}>Also on  </Text>
-                {o.artist.name}
-                <Text style={styles.alsoLabel}>{`  ${stageName(festival, o.set.stageId)}`}</Text>
-              </Text>
-              {o.known ? <Text style={styles.alsoPct}>{Math.round(o.match * 100)}%</Text> : null}
-            </Pressable>
+            <View key={o.artist.id} style={styles.alsoRow}>
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push({ pathname: '/artist/[id]', params: { id: o.artist.id, festival: festival.id } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Also on: ${o.artist.name} at ${stageName(festival, o.set.stageId)}${o.known ? `, ${Math.round(o.match * 100)} percent match` : ''}. Opens the artist.`}
+                hitSlop={4}
+                style={({ pressed }) => [styles.alsoMain, pressed && { opacity: 0.6 }]}
+              >
+                <Text style={styles.alsoText} numberOfLines={1}>
+                  <Text style={styles.alsoLabel}>Also on  </Text>
+                  {o.artist.name}
+                  <Text style={styles.alsoLabel}>{`  ${stageName(festival, o.set.stageId)}`}</Text>
+                </Text>
+                {o.known ? <Text style={styles.alsoPct}>{Math.round(o.match * 100)}%</Text> : null}
+              </Pressable>
+              {/* Star them here to have the route switch to them. */}
+              <MustSeeToggle artist={o.artist} festivalId={festival.id} size={14} />
+            </View>
           ))}
         </View>
       ) : null}
@@ -180,7 +183,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: color.hairline,
   },
-  alsoRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 4 },
+  alsoRow: { flexDirection: 'row', alignItems: 'center', marginRight: -6 },
+  alsoMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 4 },
   alsoText: { ...type.caption, color: color.moon, flex: 1 },
   alsoLabel: { color: color.moonFaint },
   alsoPct: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
