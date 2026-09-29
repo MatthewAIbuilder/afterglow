@@ -13,11 +13,14 @@ import { PlayIcon } from '../../features/discover/icons';
 import { StarIcon } from '../../features/plan/icons';
 import { RateArtist } from '../../features/taste/RateArtist';
 import { mostSimilar } from '../../features/taste/similarity';
+import { artistSignals, whyLine } from '../../features/taste/why';
 import { describeSet, formatDuration } from '../../features/festivals/format';
 import { setLine } from '../../features/festivals/when';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
+import { useRatings } from '../../state/ratings';
+import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -30,8 +33,10 @@ export default function ArtistScreen() {
   const catalog = useCatalog();
   const artist = catalog.artist(id);
   const insets = useSafeAreaInsets();
-  const { taste, similarity } = useTaste();
+  const { taste, informed, similarity } = useTaste();
   const { isMustSee, toggleMustSee } = usePlan();
+  const { reactions } = useReactions();
+  const { ratings } = useRatings();
   if (!artist) return null;
   const context = festivalId ? catalog.festival(festivalId) : undefined;
   const starFestival = context?.lineup.includes(artist.id) ? context : undefined;
@@ -71,6 +76,10 @@ export default function ArtistScreen() {
           <ArtistAvatar artist={artist} size={HERO} />
           <Text style={styles.name}>{artist.name}</Text>
           <Text style={styles.match}>{pct}% match</Text>
+          {/* What the match rests on, so it never feels arbitrary. */}
+          <Text style={styles.why}>
+            {whyLine(artistSignals(artist.id, catalog.clips, reactions, ratings), !!informed[artist.id])}
+          </Text>
           <View style={styles.tags}>
             {tags.map(([tag]) => (
               <View key={tag} style={styles.tag}>
@@ -210,6 +219,7 @@ const styles = StyleSheet.create({
   halo: { position: 'absolute', top: HERO / 2 - HALO / 2 },
   name: { ...type.largeTitle, color: color.moon, marginTop: space.xl, textAlign: 'center' },
   match: { ...type.headline, color: color.glow, fontVariant: ['tabular-nums'], marginTop: space.xs },
+  why: { ...type.caption, color: color.moonDim, marginTop: 4, textAlign: 'center', paddingHorizontal: space.xl },
   tags: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.lg },
   tag: {
     paddingHorizontal: space.md,

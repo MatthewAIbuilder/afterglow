@@ -242,6 +242,19 @@ describe('Artist', () => {
     expect(app.getAllByText('Similar sound at EDC Orlando 2026').length).toBeGreaterThan(0);
   });
 
+  it('says what a match rests on', async () => {
+    const fresh = await renderApp('/artist/wooli');
+    await settle();
+    expect(fresh.getByText(/^(From sounds you like|A first guess)/)).toBeTruthy();
+    fresh.unmount();
+
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love' }));
+    await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: true, saved: false, skipped: false } }));
+    const app = await renderApp('/artist/illenium');
+    await settle();
+    expect(app.getByText('From your rating and 1 like')).toBeTruthy();
+  });
+
   it('shows a demo artist with clips and similar sounds', async () => {
     const app = await renderApp('/artist/levity');
     await settle();
