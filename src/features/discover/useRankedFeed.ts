@@ -6,6 +6,7 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { lineupClips } from '../festivals/links';
+import { MIX } from './focus';
 import { type FeedItem, rankFeed } from '../recommend/feed';
 
 /**
@@ -13,20 +14,23 @@ import { type FeedItem, rankFeed } from '../recommend/feed';
  * on screen and the clip after it (already loading) stay put; everything
  * further down is re-ranked as you like, save, skip and watch, so what comes
  * next follows what you just did. Only artists on the focused festival's
- * lineup are in it; a new focus starts a fresh feed. Null until saved
- * reactions and history have loaded, so the first clip is chosen once, with
- * everything known.
+ * lineup are in it (your mix has every clip); a new focus starts a fresh
+ * feed. Null until saved reactions and history have loaded and the focus is
+ * known, so the first clip is chosen once, with everything known.
  */
-export function useRankedFeed(activeIndex: number, festival: Festival | undefined): FeedItem[] | null {
+export function useRankedFeed(activeIndex: number, focus: Festival | typeof MIX | undefined): FeedItem[] | null {
   const { reactions, hydrated: reactionsReady } = useReactions();
   const { seen, hydrated: seenReady } = useSeen();
   const { taste, informed, similarity } = useTaste();
   const catalog = useCatalog();
   const { ratings } = useRatings();
-  const ready = reactionsReady && seenReady;
+  const ready = reactionsReady && seenReady && !!focus;
   // "Now" for recency: when this session started, or your latest view if that's later.
   const [sessionStart] = useState(() => Date.now());
-  const clips = useMemo(() => (festival ? lineupClips(festival, catalog.clips) : catalog.clips), [festival, catalog]);
+  const clips = useMemo(
+    () => (focus === MIX ? catalog.clips : focus ? lineupClips(focus, catalog.clips) : []),
+    [focus, catalog],
+  );
 
   // Re-rank when an input changes, during render (no extra pass through an effect).
   const [state, setState] = useState<{ feed: FeedItem[] | null; inputs: readonly unknown[] }>({ feed: null, inputs: [] });

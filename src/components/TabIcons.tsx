@@ -40,7 +40,7 @@ export function FestivalsIcon({ color, size = 24 }: P) {
   );
 }
 
-const CHEVRON = { right: 'M9 5l7 7-7 7', left: 'M15 5l-7 7 7 7', up: 'M5 15l7-7 7 7' } as const;
+const CHEVRON = { right: 'M9 5l7 7-7 7', left: 'M15 5l-7 7 7 7', up: 'M5 15l7-7 7 7', down: 'M5 9l7 7 7-7' } as const;
 
 export function ChevronIcon({ color, size = 16, direction = 'right' }: P & { direction?: keyof typeof CHEVRON }) {
   return (

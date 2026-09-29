@@ -14,6 +14,7 @@ import PosterScreen from '../poster/[id]';
 import SavedScreen from '../saved';
 import WelcomeScreen from '../welcome';
 import TuneScreen from '../tune/[id]';
+import DiscoverFocusScreen from '../discover-focus';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -34,6 +35,7 @@ function renderApp(initialUrl: string) {
       saved: SavedScreen,
       welcome: WelcomeScreen,
       'tune/[id]': TuneScreen,
+      'discover-focus': DiscoverFocusScreen,
     },
     { initialUrl },
   );
@@ -548,6 +550,38 @@ describe('Discover', () => {
     expect(app.getByLabelText('See your festival')).toBeTruthy();
     expect(app.getByLabelText('Discover Solstice 2026')).toBeTruthy();
     expect(app.getByLabelText('Watch again from the top')).toBeTruthy();
+  });
+
+  it('picks what to discover from the header, including your mix, and remembers it', async () => {
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Solstice 2026, live sets from the lineup\. Choose what to discover\.$/));
+    await settle();
+    expect(app.getByText('What to discover')).toBeTruthy();
+    expect(app.getByLabelText(/^EDC Orlando 2026, 2 clips/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Your mix, A bit of everything, from every lineup'));
+    await settle();
+    await settle();
+    expect(app.getByText('Your mix')).toBeTruthy();
+    expect(app.getByText('A bit of everything, from every lineup')).toBeTruthy();
+    expect(await AsyncStorage.getItem('discoverFocus.v1')).toBe('mix');
+  });
+
+  it('opens where you left it', async () => {
+    await AsyncStorage.setItem('discoverFocus.v1', 'mix');
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    expect(app.getByText('Your mix')).toBeTruthy();
+  });
+
+  it('opens on a festival you are going to', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['horizon-27']));
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    expect(app.getByText('Horizon 2027')).toBeTruthy();
   });
 
   it('refocuses on a festival from its page', async () => {

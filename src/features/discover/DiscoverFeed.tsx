@@ -15,6 +15,8 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useStoredFocus } from '../../state/discoverFocus';
+import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
 import { useHints } from '../../state/hints';
 import { useReactions } from '../../state/reactions';
@@ -25,7 +27,8 @@ import { FeedEnd } from './FeedEnd';
 import { FeedHint } from './FeedHint';
 import { alreadyKnown, currentHint } from './hints';
 import type { FeedPager } from './feedPager';
-import { defaultFocus, nextFocus } from '../festivals/links';
+import { defaultFocus } from '../festivals/links';
+import { type Focus, MIX, mixContext, nextDiscoverFocus, startFocus } from './focus';
 import { reasonNote } from '../recommend/copy';
 import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
@@ -37,10 +40,11 @@ import { useRankedFeed } from './useRankedFeed';
  * and only while Discover is visible and the app is in the foreground. The
  * order comes from the recommendation layer (features/recommend/feed).
  *
- * Discover is focused on one festival and shows only artists on its lineup.
- * A festival page can open it focused on that festival (`festival` param);
- * jumping to a clip (`clip` param) moves the focus if that artist doesn't
- * play the current one.
+ * Discover is focused on one festival and shows only artists on its lineup,
+ * or on your mix: every clip, from every lineup. The header opens a picker.
+ * A festival page can open it focused on that festival (`festival` param,
+ * `mix` for the mix); jumping to a clip (`clip` param) moves the focus if
+ * that artist doesn't play the current festival. It opens where you left it.
  */
 export function DiscoverFeed() {
   const { width, height } = useWindowDimensions();
@@ -57,29 +61,40 @@ export function DiscoverFeed() {
   // even when the app starts on a link (the global router isn't ready yet then).
   const navigation = useNavigation();
   const catalog = useCatalog();
-  const [focusId, setFocusId] = useState(() => defaultFocus(catalog.festivals, catalog.clips)?.id);
+  const { going, hydrated: goingLoaded } = useGoing();
+  const { stored, save: saveFocus } = useStoredFocus();
+  // Undecided until the saved focus and your festivals have loaded; then what you picked last, or where you're going.
+  const [focusId, setFocusId] = useState<Focus | undefined>();
+  const [decided, setDecided] = useState(false);
   const requestedClip = requested ? catalog.clip(requested) : undefined;
-  const target = nextFocus(
-    focusId ? catalog.festival(focusId) : undefined,
-    { festival: focusParam ? catalog.festival(focusParam) : undefined, clip: requestedClip },
-    catalog.festivals,
-  )?.id;
-  if (target !== focusId) {
-    setFocusId(target);
-    setActiveIndex(0);
+  if (stored !== undefined && goingLoaded) {
+    const base = decided ? focusId : startFocus(catalog.festivals, catalog.clips, going, stored);
+    const target = nextDiscoverFocus(base, { festival: focusParam || undefined, clip: requestedClip }, catalog.festivals);
+    if (!decided || target !== focusId) {
+      setDecided(true);
+      setFocusId(target);
+      setActiveIndex(0);
+    }
   }
-  // If the catalogue changes under us (a hosted file arrived) and the festival is gone, open the first one with clips.
-  const festival = (focusId ? catalog.festival(focusId) : undefined) ?? defaultFocus(catalog.festivals, catalog.clips);
   useEffect(() => {
-    if (focusParam) navigation.setParams({ festival: '' } as never);
-  }, [focusParam, navigation]);
+    if (decided && focusId) saveFocus(focusId);
+  }, [decided, focusId, saveFocus]);
+  const mix = focusId === MIX;
+  // If the catalogue changes under us (a hosted file arrived) and the festival is gone, open the first one with clips.
+  const festival =
+    !decided || mix
+      ? undefined
+      : ((focusId ? catalog.festival(focusId) : undefined) ?? defaultFocus(catalog.festivals, catalog.clips));
+  // Cleared once handled, which waits for the focus to be decided.
+  useEffect(() => {
+    if (focusParam && decided) navigation.setParams({ festival: '' } as never);
+  }, [focusParam, decided, navigation]);
 
-  const feed = useRankedFeed(activeIndex, festival);
+  const feed = useRankedFeed(activeIndex, mix ? MIX : festival);
   const { mustSeesAt } = usePlan();
-  const starred = festival ? mustSeesAt(festival.id) : undefined;
   const count = feed?.length ?? 0;
-  // After the last clip comes one more page: the end of the lineup, with where to go next.
-  const hasEnd = !!festival && count > 0;
+  // After the last clip comes one more page: the end of the lineup (or of everything), with where to go next.
+  const hasEnd = (mix || !!festival) && count > 0;
   const pages = hasEnd ? count + 1 : count;
 
   // What you've had on screen, so the feed can hold it back next time.
@@ -200,15 +215,17 @@ export function DiscoverFeed() {
         ref={listRef}
         data={feed ?? []}
         keyExtractor={(it: FeedItem) => it.clip.id}
-        extraData={`${activeIndex}:${feedLive}`}
+        extraData={`${activeIndex}:${feedLive}:${going.join()}`}
         renderItem={({ item, index }: { item: FeedItem; index: number }) => {
           const playback = clipPlayback(index, activeIndex, feedLive);
+          // In your mix, each clip is shown against a festival you're going to where the artist plays, if any.
+          const context = mix ? mixContext(item.clip, catalog.festivals, going) : festival;
           return (
             <ClipCard
               clip={item.clip}
               note={reasonNote(item.reason, catalog.artist)}
-              festival={festival}
-              mustSee={!!starred?.has(item.clip.artistId)}
+              festival={context}
+              mustSee={!!context && mustSeesAt(context.id).has(item.clip.artistId)}
               width={width}
               height={height}
               isActive={playback.active}
@@ -221,7 +238,7 @@ export function DiscoverFeed() {
           );
         }}
         ListFooterComponent={
-          hasEnd && festival ? (
+          hasEnd ? (
             <FeedEnd festival={festival} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
           ) : null
         }
@@ -247,24 +264,24 @@ export function DiscoverFeed() {
         style={[styles.topScrim, { height: insets.top + 90 }]}
         pointerEvents="none"
       />
-      {festival && (
+      {(festival || mix) && (
         <View style={[styles.header, { top: insets.top + space.sm }]} pointerEvents="box-none">
           <Pressable
             onPress={() => {
               haptic.select();
-              router.push(`/festival/${festival.id}`);
+              router.push({ pathname: '/discover-focus', params: { current: focusId } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${festival.name}, live sets from the lineup. Opens the festival and your plan.`}
+            accessibilityLabel={`${festival ? `${festival.name}, live sets from the lineup` : 'Your mix, a bit of everything'}. Choose what to discover.`}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.headerTitle}>
-              <Text style={styles.festival} numberOfLines={1}>{festival.name}</Text>
-              <ChevronIcon color={color.moonDim} size={13} />
+              <Text style={styles.festival} numberOfLines={1}>{festival ? festival.name : 'Your mix'}</Text>
+              <ChevronIcon color={color.moonDim} size={13} direction="down" />
             </View>
             <Text style={styles.dates} numberOfLines={1}>
-              Live sets from the lineup · {festival.dates}
+              {festival ? `Live sets from the lineup · ${festival.dates}` : 'A bit of everything, from every lineup'}
             </Text>
           </Pressable>
           {hint ? <FeedHint hint={hint} /> : null}

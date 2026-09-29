@@ -26,6 +26,16 @@ export default function RootLayout() {
         <Stack.Screen name="festival/[id]" />
         <Stack.Screen name="saved" />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="discover-focus"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.6, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: color.nightRaised },
+          }}
+        />
         <Stack.Screen name="poster/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }} />
       </Stack>
