@@ -1,4 +1,4 @@
-import type { Festival, SetTime } from './types';
+import type { Festival } from '../models';
 
 /**
  * Fictional festivals for the prototype, one in each phase:
@@ -45,26 +45,3 @@ export const FESTIVALS: Festival[] = [
     stages: [],
   },
 ];
-
-export const festivalById = (id: string) => FESTIVALS.find((f) => f.id === id);
-
-export const stageName = (festival: Festival, stageId: string) =>
-  festival.stages.find((s) => s.id === stageId)?.name ?? '';
-
-export const setFor = (festival: Festival, artistId: string): SetTime | undefined =>
-  festival.sets?.find((s) => s.artistId === artistId);
-
-export const festivalsFor = (artistId: string) => FESTIVALS.filter((f) => f.lineup.includes(artistId));
-
-/** "23:40" -> "11:40 PM" */
-export function formatTime(t: string) {
-  const [h, m] = t.split(':').map(Number);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
-}
-
-/** "Saturday 11:40 PM, Main Stage" */
-export function describeSet(festival: Festival, set: SetTime) {
-  return `${set.day} ${formatTime(set.start)}, ${stageName(festival, set.stageId)}`;
-}

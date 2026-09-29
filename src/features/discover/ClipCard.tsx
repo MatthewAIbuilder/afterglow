@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -15,55 +15,95 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
-import { artistById } from '../../data/artists';
-import { describeSet, festivalById, setFor } from '../../data/festivals';
-import type { Clip } from '../../data/types';
+import { ChevronIcon } from '../../components/TabIcons';
+import { setFor } from '../../data/festival';
+import type { Clip, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
+import { describeSet } from '../festivals/format';
+import { festivalLine } from '../festivals/links';
+import { StarIcon } from '../plan/icons';
+import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
+import { ClipPlayer } from './ClipPlayer';
+import { type FeedPager, usePlayerSwipe } from './feedPager';
 import { HeartIcon, PlayIcon } from './icons';
+import { clipMedia } from './media';
+import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
-import { playableSource, watchUrl } from './youtube';
-import { YouTubePlayer } from './YouTubePlayer';
+import { MIN_PLAYER, tallLayout } from './videoLayout';
 
 type Props = {
   clip: Clip;
+  /** Why this clip is in your feed, in a few words (from the recommendation layer). Strong matches have none. */
+  note?: string;
+  /** The festival Discover is focused on. The clip shows the artist's place there and links to it. */
+  festival?: Festival;
+  /** You starred this artist as a must-see at that festival. */
+  mustSee?: boolean;
   width: number;
   height: number;
   isActive: boolean;
+  /** Active, Discover visible and the app in the foreground. Nothing plays unless this is true. */
+  live: boolean;
   /** On screen or next to it: real footage loads ahead so a swipe lands on a ready player. */
   isNear: boolean;
   /** Space reserved at the bottom for the floating tab bar. */
   bottomSpace: number;
+  /** Lets a vertical swipe on the video move the feed. */
+  pager: FeedPager;
   onSkip: () => void;
 };
 
 const BURST = 110;
-/** YouTube's embedded player must be at least 200 by 200. */
-const MIN_PLAYER = 200;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSkip }: Props) {
-  const artist = artistById(clip.artistId);
+function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
+  const catalog = useCatalog();
+  const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
-  const { get, setLiked, toggleSaved, markSkipped } = useReactions();
+  const { get, setLiked, toggleSaved, markSkipped, recordWatch } = useReactions();
   const reaction = get(clip.id);
   const { taste } = useTaste();
   const [paused, setPaused] = useState(false);
-  const playing = isActive && !paused;
+  // Plays only while on screen, with Discover visible and the app in the foreground.
+  const playing = shouldPlay({ active: isActive, live }, paused);
   const insets = useSafeAreaInsets();
 
-  // Real footage when the clip has a playable source; the stage when it doesn't or the video fails.
-  const source = playableSource(clip);
+  // Real footage when the clip has playable media; the stage when it doesn't or the video fails.
+  const media = useMemo(() => clipMedia(clip), [clip]);
   const [videoFailed, setVideoFailed] = useState(false);
-  const showVideo = !!source && !videoFailed;
+  const showVideo = !!media && !videoFailed;
   const failVideo = useCallback(() => setVideoFailed(true), []);
-  const syncPlaying = useCallback((isPlaying: boolean) => setPaused(!isPlaying), []);
+  const playerSwipe = usePlayerSwipe(pager);
   const videoProgress = useSharedValue(0);
   const videoProgressStyle = useAnimatedStyle(() => ({ width: `${videoProgress.value * 100}%` }));
+
+  // How this visit to the clip is being watched. Only real footage counts, and
+  // only what the player reports as played while live; see features/taste/watch.
+  const watch = useRef<WatchSession | null>(null);
+  const onPlayed = useCallback((from: number, to: number) => {
+    if (watch.current) watch.current = addPlayed(watch.current, from, to);
+  }, []);
+  const wasActive = useRef(false);
+  useEffect(() => {
+    if (isActive && !wasActive.current) watch.current = media ? startWatch(media.lengthSec) : null;
+    if (!isActive && wasActive.current && watch.current) {
+      // Swiped away (or skipped): the visit is over, and how it went is a quiet signal.
+      const w = watchOf(watch.current);
+      if (w) recordWatch(clip.id, w);
+      watch.current = null;
+    }
+    wasActive.current = isActive;
+  }, [isActive, media, clip.id, recordWatch]);
+  // Leaving Discover mid-clip isn't passing on it.
+  useEffect(() => {
+    if (isActive && !live && watch.current && watch.current.playedSec > 0) watch.current = excuseWatch(watch.current);
+  }, [isActive, live]);
 
   // One clock drives the light show and the progress bar, so pausing freezes both.
   const clock = useSharedValue(0);
@@ -134,18 +174,24 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
 
   if (!artist) return null;
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
-  const festival = festivalById(clip.festivalId);
-  const set = festival && setFor(festival, artist.id);
-  const meta = festival && set ? describeSet(festival, set) : (festival?.name ?? '');
+  // The artist's place at the festival you're discovering; without a focus, the clip's own festival.
+  const line = festival ? festivalLine(festival, artist.id) : undefined;
+  const context = line ? festival : undefined;
+  const own = catalog.festival(clip.festivalId);
+  const ownSet = own && setFor(own, artist.id);
+  const meta = line ?? (own && ownSet ? describeSet(own, ownSet) : (own?.name ?? ''));
 
   const artistButton = (
     <Pressable
       onPress={() => {
         haptic.select();
-        router.push(`/artist/${artist.id}`);
+        // Curious enough to look them up: a short watch isn't passing on it.
+        if (watch.current) watch.current = excuseWatch(watch.current);
+        // In the festival's context, so you can star them as a must-see there.
+        router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: context?.id } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Open ${artist.name}`}
+      accessibilityLabel={`Open ${artist.name}, ${pct} percent match${note ? `, ${note}` : ''}`}
       hitSlop={8}
       style={({ pressed }) => [styles.artistRow, pressed && { opacity: 0.7 }]}
     >
@@ -154,10 +200,38 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
         <Text style={styles.name} numberOfLines={1}>
           {artist.name}
         </Text>
-        <Text style={styles.match}>{pct}% match</Text>
+        <Text style={styles.match} numberOfLines={1}>
+          {pct}% match
+          {note ? <Text style={styles.note}>{`  ·  ${note}`}</Text> : null}
+        </Text>
       </View>
     </Pressable>
   );
+
+  // Where they play: opens the festival, with its lineup and your plan.
+  const metaLine = (singleLine: boolean) =>
+    context ? (
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          router.push(`/festival/${context.id}`);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${meta} at ${context.name}${mustSee ? ', one of your must sees' : ''}. Opens the festival.`}
+        hitSlop={6}
+        style={({ pressed }) => [styles.metaRow, pressed && { opacity: 0.7 }]}
+      >
+        {mustSee && <StarIcon color={color.glow} filled size={13} />}
+        <Text style={[styles.meta, styles.metaInRow]} numberOfLines={singleLine ? 1 : undefined}>
+          {meta}
+        </Text>
+        <ChevronIcon color={color.moonFaint} size={11} />
+      </Pressable>
+    ) : (
+      <Text style={styles.meta} numberOfLines={singleLine ? 1 : undefined}>
+        {meta}
+      </Text>
+    );
 
   const actions = (horizontal: boolean) => (
     <ActionRail
@@ -190,9 +264,51 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
     </Animated.View>
   );
 
-  if (source && showVideo) {
-    const playerWidth = width - space.lg * 2;
-    const playerHeight = Math.max(MIN_PLAYER, Math.round((playerWidth * 9) / 16));
+  if (media && showVideo) {
+    const top = insets.top + HEADER_CLEARANCE;
+    const bottom = bottomSpace + space.lg;
+    const tall = media.vertical ? tallLayout({ width, height, top, bottom }) : undefined;
+    const stackedWidth = width - space.lg * 2;
+    const frame = tall
+      ? tall.player
+      : { w: stackedWidth, h: Math.max(MIN_PLAYER, Math.round((stackedWidth * 9) / 16)) };
+
+    // The player takes its own taps; a vertical swipe on it still moves the feed.
+    const player = (
+      <GestureDetector gesture={playerSwipe}>
+        <View style={[styles.player, { width: frame.w, height: frame.h }]}>
+          <ClipPlayer
+            media={media}
+            load={isNear}
+            active={isActive}
+            live={live}
+            paused={paused}
+            progress={videoProgress}
+            onPausedChange={setPaused}
+            onPlayed={onPlayed}
+            onFail={failVideo}
+          />
+        </View>
+      </GestureDetector>
+    );
+    const track = (
+      <View style={[styles.videoTrack, { width: frame.w }]} pointerEvents="none">
+        <Animated.View style={[styles.progress, videoProgressStyle]} />
+      </View>
+    );
+    const info = (
+      <>
+        {artistButton}
+        <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
+          {clip.title}
+        </Text>
+        {metaLine(!!tall)}
+        <Text style={styles.credit} numberOfLines={1}>
+          {media.credit}
+        </Text>
+      </>
+    );
+
     return (
       <View style={{ width, height }}>
         {/* The stage keeps glowing behind the video. Taps here pause, double-taps like; the player takes its own touches. */}
@@ -211,35 +327,33 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
           </View>
         </GestureDetector>
 
-        <View
-          style={[styles.stack, { top: insets.top + HEADER_CLEARANCE, bottom: bottomSpace + space.lg }]}
-          pointerEvents="box-none"
-        >
-          <View style={[styles.player, { width: playerWidth, height: playerHeight }]}>
-            {isNear && (
-              <YouTubePlayer
-                source={source}
-                active={isActive}
-                paused={paused}
-                progress={videoProgress}
-                onPlayingChange={syncPlaying}
-                onFail={failVideo}
-              />
-            )}
+        {tall ? (
+          // Vertical footage: tall player with the rail beside it and the clip below. Nothing of ours overlaps it.
+          <>
+            <View style={[styles.abs, { left: tall.player.x, top: tall.player.y }]}>
+              {player}
+              {track}
+            </View>
+            <View style={[styles.abs, styles.railBox, { left: tall.rail.x, top: tall.rail.y, width: tall.rail.w }]}>
+              {actions(false)}
+            </View>
+            <View
+              style={[styles.abs, { left: tall.info.x, top: tall.info.y + space.sm, width: tall.info.w }]}
+              pointerEvents="box-none"
+            >
+              {info}
+            </View>
+          </>
+        ) : (
+          <View style={[styles.stack, { top, bottom }]} pointerEvents="box-none">
+            {player}
+            {track}
+            <View style={styles.videoInfo} pointerEvents="box-none">
+              {info}
+            </View>
+            <View style={styles.videoActions}>{actions(true)}</View>
           </View>
-          <View style={[styles.videoTrack, { width: playerWidth }]} pointerEvents="none">
-            <Animated.View style={[styles.progress, videoProgressStyle]} />
-          </View>
-
-          <View style={styles.videoInfo} pointerEvents="box-none">
-            {artistButton}
-            <Text style={styles.title}>{clip.title}</Text>
-            <Text style={styles.meta}>{meta}</Text>
-            <Text style={styles.credit}>{source.channel} on YouTube</Text>
-          </View>
-
-          <View style={styles.videoActions}>{actions(true)}</View>
-        </View>
+        )}
       </View>
     );
   }
@@ -275,10 +389,10 @@ function ClipCardBase({ clip, width, height, isActive, isNear, bottomSpace, onSk
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {artistButton}
         <Text style={styles.title}>{clip.title}</Text>
-        <Text style={styles.meta}>{meta}</Text>
-        {source && videoFailed && (
+        {metaLine(false)}
+        {media && videoFailed && (
           <Pressable
-            onPress={() => Linking.openURL(watchUrl(source)).catch(() => {})}
+            onPress={() => Linking.openURL(media.externalUrl).catch(() => {})}
             accessibilityRole="link"
             accessibilityLabel="Video unavailable here. Watch on YouTube"
             hitSlop={8}
@@ -320,8 +434,11 @@ const styles = StyleSheet.create({
   artistText: { marginLeft: space.md, flex: 1 },
   name: { ...type.headline, color: color.moon, ...shadow },
   match: { ...type.label, color: color.glow, fontVariant: ['tabular-nums'], marginTop: 1, ...shadow },
+  note: { color: color.moonDim, fontWeight: '500' },
   title: { ...type.title, fontSize: 22, lineHeight: 27, color: color.moon, marginTop: space.lg, ...shadow },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs, ...shadow },
+  metaRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, marginTop: space.xs, maxWidth: '100%' },
+  metaInRow: { marginTop: 0, flexShrink: 1 },
   rail: { position: 'absolute', right: space.lg },
   track: {
     position: 'absolute',
@@ -346,6 +463,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
+  abs: { position: 'absolute' },
+  railBox: { alignItems: 'center' },
   videoTrack: {
     height: 2,
     borderRadius: 1,

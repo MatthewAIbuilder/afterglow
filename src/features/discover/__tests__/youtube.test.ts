@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
-import { artistById } from '../../../data/artists';
-import { CLIPS } from '../../../data/clips';
+import { MOCK_CATALOG } from '../../../data/mock';
+import { CLIPS } from '../../../data/mock/clips';
 import type { Clip, ClipSource } from '../../../data/types';
-import { clipProgress, parsePlayerMessage, playableSource, playerHtml, watchUrl } from '../youtube';
+import { clipProgress, parsePlayerMessage, playableSource, playerHtml, posterUrl, watchUrl } from '../youtube';
+
+const artistById = MOCK_CATALOG.artist;
 
 const source: ClipSource = { provider: 'youtube', videoId: 'abcDEF12_-x', start: 60, end: 100, channel: 'Official' };
 const clip = (s?: Partial<ClipSource> | null): Clip => ({
@@ -44,6 +46,20 @@ describe('clipProgress', () => {
     expect(clipProgress(30, source)).toBe(0);
     expect(clipProgress(140, source)).toBe(1);
   });
+
+  it('ends early when the video is shorter than the section', () => {
+    expect(clipProgress(80, source, 80)).toBe(1);
+    expect(clipProgress(70, source, 80)).toBe(0.5);
+    // A missing or nonsense duration is ignored.
+    expect(clipProgress(80, source, 0)).toBe(0.5);
+    expect(clipProgress(80, source, 30)).toBe(0.5);
+  });
+});
+
+describe('posterUrl', () => {
+  it("uses the video's own still", () => {
+    expect(posterUrl(source)).toBe('https://i.ytimg.com/vi/abcDEF12_-x/hqdefault.jpg');
+  });
 });
 
 describe('watchUrl', () => {
@@ -57,6 +73,11 @@ describe('parsePlayerMessage', () => {
     expect(parsePlayerMessage('{"type":"ready"}')).toEqual({ type: 'ready' });
     expect(parsePlayerMessage('{"type":"error","code":150}')).toEqual({ type: 'error', code: 150 });
     expect(parsePlayerMessage('{"type":"time","time":61.5}')).toEqual({ type: 'time', time: 61.5 });
+    expect(parsePlayerMessage('{"type":"time","time":61.5,"duration":3600}')).toEqual({
+      type: 'time',
+      time: 61.5,
+      duration: 3600,
+    });
   });
 
   it('ignores anything else', () => {
@@ -75,6 +96,12 @@ describe('playerHtml', () => {
     expect(html).toContain('"videoId":"abcDEF12_-x"');
     expect(html).toContain('"start":60');
     expect(html).toContain('"end":100');
+  });
+
+  it('restarts the section playing or paused, as asked', () => {
+    const html = playerHtml(source, 'https://example.test');
+    expect(html).toMatch(/restart: function \(play\)/);
+    expect(html).toContain('if (play) player.playVideo(); else player.pauseVideo();');
   });
 });
 

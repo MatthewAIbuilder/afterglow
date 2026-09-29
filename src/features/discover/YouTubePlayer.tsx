@@ -1,37 +1,41 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
-import type { SharedValue } from 'react-native-reanimated';
+import { Linking, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { APP_ORIGIN } from '../../config/app';
-import type { ClipSource } from '../../data/types';
-import { color } from '../../theme/tokens';
+import type { EngineProps } from './ClipPlayer';
+import { canCountWatch, playedSpan, readPlayerReport, shouldPlay } from './playback';
 import { clipProgress, parsePlayerMessage, PLAYER_STATE, playerHtml } from './youtube';
-
-type Props = {
-  source: ClipSource;
-  /** This clip is the one on screen. Only the active player ever plays. */
-  active: boolean;
-  /** Paused by a tap outside the player. */
-  paused: boolean;
-  /** 0 to 1 through the clip, for the progress line under the player. */
-  progress: SharedValue<number>;
-  /** The player itself was played or paused (its own controls, or autoplay). */
-  onPlayingChange: (playing: boolean) => void;
-  /** The video can't play here: removed, private, embedding off, or the player never loaded. */
-  onFail: () => void;
-};
 
 /** Give up if the player hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
 
 /**
- * YouTube's official embedded player, in a web view sized by the parent.
- * Nothing is drawn over it: our controls live outside its frame.
+ * YouTube's official embedded player, in a web view sized by ClipPlayer.
+ * Nothing is drawn over it once it shows: our controls live outside its frame.
+ * Only ClipPlayer uses this; Discover never talks to YouTube directly.
  */
-function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, onFail }: Props) {
+function YouTubePlayerBase({
+  media,
+  active,
+  live,
+  paused,
+  progress,
+  onPausedChange,
+  onPlayed,
+  onReady,
+  onStarted,
+  onFail,
+}: EngineProps) {
+  const { source } = media;
   const web = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
   const html = useMemo(() => playerHtml(source, APP_ORIGIN), [source]);
+  const wantPlaying = shouldPlay({ active, live }, paused);
+
+  const lastCommandAt = useRef(0);
+  const wasActive = useRef(false);
+  const isPlaying = useRef(false);
+  const lastTime = useRef<number | null>(null);
 
   useEffect(() => {
     if (ready) return;
@@ -39,41 +43,57 @@ function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, 
     return () => clearTimeout(t);
   }, [ready, onFail]);
 
-  const command = useCallback((name: 'play' | 'pause' | 'restart') => {
-    web.current?.injectJavaScript(`window.afterglow && window.afterglow.${name}(); true;`);
+  const command = useCallback((js: string) => {
+    lastCommandAt.current = Date.now();
+    web.current?.injectJavaScript(`window.afterglow && window.afterglow.${js}; true;`);
   }, []);
 
-  // Coming into view starts the clip from the top, like the stage clips.
+  // One place decides what the player does: coming on screen starts the clip
+  // from the top; otherwise it plays only while live and not paused by you.
   useEffect(() => {
     if (!ready) return;
-    if (active) {
+    const cameActive = active && !wasActive.current;
+    wasActive.current = active;
+    lastTime.current = null;
+    if (cameActive) {
       progress.set(0);
-      command('restart');
+      command(`restart(${wantPlaying})`);
     } else {
-      command('pause');
+      command(wantPlaying ? 'play()' : 'pause()');
     }
-  }, [active, ready, progress, command]);
-
-  useEffect(() => {
-    if (!ready || !active) return;
-    command(paused ? 'pause' : 'play');
-  }, [paused, ready, active, command]);
+  }, [ready, active, wantPlaying, progress, command]);
 
   const onMessage = (e: WebViewMessageEvent) => {
     const m = parsePlayerMessage(e.nativeEvent.data);
     if (!m) return;
-    if (m.type === 'ready') setReady(true);
-    else if (m.type === 'error') onFail();
-    else if (m.type === 'time') progress.set(clipProgress(m.time, source));
-    else if (m.type === 'state' && active) {
-      if (m.state === PLAYER_STATE.playing) onPlayingChange(true);
-      else if (m.state === PLAYER_STATE.paused) onPlayingChange(false);
+    if (m.type === 'ready') {
+      setReady(true);
+      onReady();
+    } else if (m.type === 'error') onFail();
+    else if (m.type === 'time') {
+      progress.set(clipProgress(m.time, source, m.duration));
+      // Only time that played while this clip was live and actually playing counts as watching.
+      const span = playedSpan(lastTime.current, m.time, canCountWatch({ active, live }, isPlaying.current), source.start);
+      lastTime.current = m.time;
+      if (span) onPlayed?.(span.from, span.to);
+    } else if (m.type === 'state') {
+      isPlaying.current = m.state === PLAYER_STATE.playing;
+      if (isPlaying.current) onStarted();
+      const report = m.state === PLAYER_STATE.playing ? 'playing' : m.state === PLAYER_STATE.paused ? 'paused' : undefined;
+      if (!report) return;
+      const action = readPlayerReport(report, {
+        live,
+        wantPlaying,
+        msSinceCommand: Date.now() - lastCommandAt.current,
+      });
+      if (action === 'force-pause') command('pause()');
+      else if (action === 'user-paused') onPausedChange(true);
+      else if (action === 'user-played') onPausedChange(false);
     }
   };
 
   return (
     <View style={styles.frame}>
-      {!ready && <ActivityIndicator style={StyleSheet.absoluteFill} color={color.moonDim} />}
       <WebView
         ref={web}
         source={{ html, baseUrl: APP_ORIGIN }}
@@ -103,7 +123,13 @@ function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, 
           if (e.nativeEvent.url.startsWith(APP_ORIGIN)) return;
           if (e.nativeEvent.url.includes('iframe_api')) onFail();
         }}
-        onContentProcessDidTerminate={() => web.current?.reload()}
+        onContentProcessDidTerminate={() => {
+          // iOS dropped the page (memory pressure). Reload and set it up again once it's ready.
+          setReady(false);
+          wasActive.current = false;
+          isPlaying.current = false;
+          web.current?.reload();
+        }}
         onRenderProcessGone={() => onFail()}
         accessibilityLabel="Live set video"
       />
@@ -114,6 +140,6 @@ function YouTubePlayerBase({ source, active, paused, progress, onPlayingChange, 
 export const YouTubePlayer = memo(YouTubePlayerBase);
 
 const styles = StyleSheet.create({
-  frame: { flex: 1, backgroundColor: '#000' },
-  web: { flex: 1, backgroundColor: '#000' },
+  frame: { flex: 1 },
+  web: { flex: 1, backgroundColor: 'transparent' },
 });

@@ -1,4 +1,4 @@
-import type { Artist } from './types';
+import type { Artist } from '../models';
 
 /**
  * Mock lineup.
@@ -16,5 +16,3 @@ export const ARTISTS: Artist[] = [
   { id: 'sara-landry', name: 'SARA LANDRY', imageUrl: undefined, sound: { techno: 1 } },
   { id: 'john-summit', name: 'JOHN SUMMIT', imageUrl: undefined, sound: { house: 1 } },
 ];
-
-export const artistById = (id: string) => ARTISTS.find((a) => a.id === id);

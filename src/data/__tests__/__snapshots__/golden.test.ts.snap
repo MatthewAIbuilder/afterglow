@@ -1,0 +1,888 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`golden outputs from the mock data computes the same taste, feed, plans and map (fresh) 1`] = `
+{
+  "feed": [
+    [
+      "c1:personal:match",
+      "c11:personal:match",
+      "c4:personal:match",
+      "c7:personal:match",
+      "c6:personal:match",
+      "c3:discover:new-sound",
+      "c8:personal:match",
+      "c9:personal:match",
+      "c13:personal:match",
+      "c14:personal:match",
+      "c5:discover:new-sound",
+      "c10:discover:new-sound",
+      "c12:discover:new-sound",
+      "c2:personal:match",
+    ],
+    [
+      "c11:personal:match",
+      "c4:personal:match",
+      "c7:personal:match",
+      "c3:discover:new-sound",
+      "c9:personal:match",
+      "c5:discover:new-sound",
+      "c13:personal:match",
+      "c10:discover:new-sound",
+      "c12:discover:new-sound",
+      "c2:personal:match",
+    ],
+  ],
+  "informed": {
+    "excision": true,
+    "illenium": true,
+    "john-summit": true,
+    "levity": true,
+    "sara-landry": true,
+    "subtronics": true,
+    "tape-b": true,
+  },
+  "lines": [
+    [
+      "Friday 11:40 PM, Main Stage",
+      "Friday 12:15 AM, Bass Tent",
+      "Saturday 10:30 PM, Bass Tent",
+      "Friday 10:00 PM, Bass Tent",
+      "Saturday 11:00 PM, Main Stage",
+      "Friday 10:15 PM, The Warehouse",
+      "Sunday 8:30 PM, Main Stage",
+    ],
+    [
+      "-",
+      "On the lineup, set time to come",
+      "On the lineup, set time to come",
+      "On the lineup, set time to come",
+      "-",
+      "On the lineup, set time to come",
+      "On the lineup, set time to come",
+    ],
+  ],
+  "map": {
+    "bounds": {
+      "maxX": 249.209,
+      "maxY": 321.608,
+      "minX": -252.616,
+      "minY": -278.531,
+    },
+    "bubbles": [
+      {
+        "affinity": 0.98,
+        "artist": {
+          "id": "illenium",
+          "name": "ILLENIUM",
+          "sound": {
+            "dubstep": 0.25,
+            "melodic-bass": 1,
+          },
+        },
+        "r": 75.825,
+        "x": 0,
+        "y": 0,
+      },
+      {
+        "affinity": 0.96,
+        "artist": {
+          "id": "subtronics",
+          "name": "SUBTRONICS",
+          "sound": {
+            "dubstep": 0.7,
+            "riddim": 0.9,
+          },
+        },
+        "r": 73.687,
+        "x": 61.093,
+        "y": 200.421,
+      },
+      {
+        "affinity": 0.91,
+        "artist": {
+          "id": "levity",
+          "name": "LEVITY",
+          "sound": {
+            "dubstep": 0.8,
+            "riddim": 0.6,
+          },
+        },
+        "r": 68.513,
+        "x": 180.695,
+        "y": 92.1,
+      },
+      {
+        "affinity": 0.87,
+        "artist": {
+          "id": "tape-b",
+          "name": "TAPE B",
+          "sound": {
+            "dubstep": 0.5,
+            "trap": 0.7,
+          },
+        },
+        "r": 64.553,
+        "x": -118.241,
+        "y": 153.782,
+      },
+      {
+        "affinity": 0.82,
+        "artist": {
+          "id": "excision",
+          "name": "EXCISION",
+          "sound": {
+            "dubstep": 1,
+            "riddim": 0.3,
+          },
+        },
+        "r": 59.833,
+        "x": 180.454,
+        "y": -93.781,
+      },
+      {
+        "affinity": 0.7,
+        "artist": {
+          "id": "sara-landry",
+          "name": "SARA LANDRY",
+          "sound": {
+            "techno": 1,
+          },
+        },
+        "r": 49.606,
+        "x": -201.416,
+        "y": -67.513,
+      },
+      {
+        "affinity": 0.42,
+        "artist": {
+          "id": "john-summit",
+          "name": "JOHN SUMMIT",
+          "sound": {
+            "house": 1,
+          },
+        },
+        "r": 32.856,
+        "x": -49.846,
+        "y": -245.675,
+      },
+    ],
+    "regions": [
+      {
+        "tag": "riddim",
+        "x": 103.621,
+        "y": 339.936,
+      },
+      {
+        "tag": "dubstep",
+        "x": 355.376,
+        "y": -1.404,
+      },
+      {
+        "tag": "trap",
+        "x": -216.617,
+        "y": 281.728,
+      },
+      {
+        "tag": "techno",
+        "x": -336.953,
+        "y": -112.944,
+      },
+      {
+        "tag": "house",
+        "x": -70.665,
+        "y": -348.282,
+      },
+    ],
+  },
+  "plans": [
+    {
+      "picks": [
+        "illenium:must-see:false",
+        "subtronics:must-see:false",
+        "levity:must-see:true",
+        "tape-b:strong:false",
+        "excision:strong:false",
+        "sara-landry:explore:false",
+        "john-summit:explore:false",
+      ],
+      "schedule": [
+        {
+          "clashes": 1,
+          "day": "Friday",
+          "items": [
+            "{"kind":"set","start":1320,"pick":{"artist":"tape-b","match":0.87,"tier":"strong","pinned":false,"known":true,"set":{"artistId":"tape-b","day":"Friday","stageId":"bass","start":"22:00","end":"23:00"},"start":1320,"end":1380},"alternatives":[{"artist":"sara-landry","match":0.7,"tier":"explore","pinned":false,"known":true,"set":{"artistId":"sara-landry","day":"Friday","stageId":"warehouse","start":"22:15","end":"23:30"},"start":1335,"end":1410}]}",
+            "{"kind":"clash","start":1420,"picks":[{"artist":"illenium","match":0.98,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"illenium","day":"Friday","stageId":"main","start":"23:40","end":"01:10"},"start":1420,"end":1510},{"artist":"subtronics","match":0.96,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"subtronics","day":"Friday","stageId":"bass","start":"00:15","end":"01:30"},"start":1455,"end":1530}],"verdict":{"kind":"close","a":{"artist":"illenium","match":0.98,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"illenium","day":"Friday","stageId":"main","start":"23:40","end":"01:10"},"start":1420,"end":1510},"b":{"artist":"subtronics","match":0.96,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"subtronics","day":"Friday","stageId":"bass","start":"00:15","end":"01:30"},"start":1455,"end":1530},"catch":{"pick":{"artist":"subtronics","match":0.96,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"subtronics","day":"Friday","stageId":"bass","start":"00:15","end":"01:30"},"start":1455,"end":1530},"minutes":20,"when":"after"}},"alternatives":[]}",
+          ],
+        },
+        {
+          "clashes": 1,
+          "day": "Saturday",
+          "items": [
+            "{"kind":"clash","start":1350,"picks":[{"artist":"levity","match":0.91,"tier":"must-see","pinned":true,"known":true,"set":{"artistId":"levity","day":"Saturday","stageId":"bass","start":"22:30","end":"23:45"},"start":1350,"end":1425},{"artist":"excision","match":0.82,"tier":"strong","pinned":false,"known":true,"set":{"artistId":"excision","day":"Saturday","stageId":"main","start":"23:00","end":"00:30"},"start":1380,"end":1470}],"verdict":{"kind":"pinned","pick":{"artist":"levity","match":0.91,"tier":"must-see","pinned":true,"known":true,"set":{"artistId":"levity","day":"Saturday","stageId":"bass","start":"22:30","end":"23:45"},"start":1350,"end":1425},"other":{"artist":"excision","match":0.82,"tier":"strong","pinned":false,"known":true,"set":{"artistId":"excision","day":"Saturday","stageId":"main","start":"23:00","end":"00:30"},"start":1380,"end":1470},"catch":{"pick":{"artist":"excision","match":0.82,"tier":"strong","pinned":false,"known":true,"set":{"artistId":"excision","day":"Saturday","stageId":"main","start":"23:00","end":"00:30"},"start":1380,"end":1470},"minutes":45,"when":"after"}},"alternatives":[]}",
+          ],
+        },
+        {
+          "clashes": 0,
+          "day": "Sunday",
+          "items": [
+            "{"kind":"discover","start":1230,"pick":{"artist":"john-summit","match":0.42,"tier":"explore","pinned":false,"known":true,"set":{"artistId":"john-summit","day":"Sunday","stageId":"main","start":"20:30","end":"22:00"},"start":1230,"end":1320},"reason":{"kind":"new-sound","sound":"house"}}",
+          ],
+        },
+      ],
+    },
+    {
+      "picks": [
+        "subtronics:must-see:false",
+        "levity:must-see:true",
+        "tape-b:strong:false",
+        "sara-landry:explore:false",
+        "john-summit:explore:false",
+      ],
+      "schedule": undefined,
+    },
+  ],
+  "summary": {
+    "likes": 0,
+    "saves": 0,
+    "skips": 0,
+    "watched": 0,
+  },
+  "taste": {
+    "excision": 0.82,
+    "illenium": 0.98,
+    "john-summit": 0.42,
+    "levity": 0.91,
+    "sara-landry": 0.7,
+    "subtronics": 0.96,
+    "tape-b": 0.87,
+  },
+}
+`;
+
+exports[`golden outputs from the mock data computes the same taste, feed, plans and map (mixed) 1`] = `
+{
+  "feed": [
+    [
+      "c8:personal:match",
+      "c11:personal:match",
+      "c4:personal:match",
+      "c7:personal:match",
+      "c6:personal:match",
+      "c12:discover:new-sound",
+      "c9:personal:match",
+      "c1:personal:match",
+      "c13:personal:match",
+      "c14:personal:match",
+      "c5:discover:new-sound",
+      "c10:discover:new-sound",
+      "c2:personal:match",
+      "c3:discover:new-sound",
+    ],
+    [
+      "c11:personal:match",
+      "c4:personal:match",
+      "c7:personal:match",
+      "c12:discover:new-sound",
+      "c9:personal:match",
+      "c13:personal:match",
+      "c5:discover:new-sound",
+      "c10:discover:new-sound",
+      "c2:personal:match",
+      "c3:discover:new-sound",
+    ],
+  ],
+  "informed": {
+    "excision": true,
+    "illenium": true,
+    "john-summit": true,
+    "levity": true,
+    "sara-landry": true,
+    "subtronics": true,
+    "tape-b": true,
+  },
+  "lines": [
+    [
+      "Friday 11:40 PM, Main Stage",
+      "Friday 12:15 AM, Bass Tent",
+      "Saturday 10:30 PM, Bass Tent",
+      "Friday 10:00 PM, Bass Tent",
+      "Saturday 11:00 PM, Main Stage",
+      "Friday 10:15 PM, The Warehouse",
+      "Sunday 8:30 PM, Main Stage",
+    ],
+    [
+      "-",
+      "On the lineup, set time to come",
+      "On the lineup, set time to come",
+      "On the lineup, set time to come",
+      "-",
+      "On the lineup, set time to come",
+      "On the lineup, set time to come",
+    ],
+  ],
+  "map": {
+    "bounds": {
+      "maxX": 253.798,
+      "maxY": 321.27,
+      "minX": -297.702,
+      "minY": -295.619,
+    },
+    "bubbles": [
+      {
+        "affinity": 0.984,
+        "artist": {
+          "id": "illenium",
+          "name": "ILLENIUM",
+          "sound": {
+            "dubstep": 0.25,
+            "melodic-bass": 1,
+          },
+        },
+        "r": 76.246,
+        "x": 0,
+        "y": 0,
+      },
+      {
+        "affinity": 0.961,
+        "artist": {
+          "id": "subtronics",
+          "name": "SUBTRONICS",
+          "sound": {
+            "dubstep": 0.7,
+            "riddim": 0.9,
+          },
+        },
+        "r": 73.814,
+        "x": 63.517,
+        "y": 199.956,
+      },
+      {
+        "affinity": 0.913,
+        "artist": {
+          "id": "levity",
+          "name": "LEVITY",
+          "sound": {
+            "dubstep": 0.8,
+            "riddim": 0.6,
+          },
+        },
+        "r": 68.819,
+        "x": 183.496,
+        "y": 93.213,
+      },
+      {
+        "affinity": 0.857,
+        "artist": {
+          "id": "tape-b",
+          "name": "TAPE B",
+          "sound": {
+            "dubstep": 0.5,
+            "trap": 0.7,
+          },
+        },
+        "r": 63.313,
+        "x": -126.164,
+        "y": 164.087,
+      },
+      {
+        "affinity": 0.836,
+        "artist": {
+          "id": "excision",
+          "name": "EXCISION",
+          "sound": {
+            "dubstep": 1,
+            "riddim": 0.3,
+          },
+        },
+        "r": 61.313,
+        "x": 192.485,
+        "y": -95.706,
+      },
+      {
+        "affinity": 0.597,
+        "artist": {
+          "id": "john-summit",
+          "name": "JOHN SUMMIT",
+          "sound": {
+            "house": 1,
+          },
+        },
+        "r": 42.144,
+        "x": -51.429,
+        "y": -253.475,
+      },
+      {
+        "affinity": 0.59,
+        "artist": {
+          "id": "sara-landry",
+          "name": "SARA LANDRY",
+          "sound": {
+            "techno": 1,
+          },
+        },
+        "r": 41.736,
+        "x": -246.502,
+        "y": -82.625,
+      },
+    ],
+    "regions": [
+      {
+        "tag": "riddim",
+        "x": 107.695,
+        "y": 339.03,
+      },
+      {
+        "tag": "dubstep",
+        "x": 355.721,
+        "y": 1.529,
+      },
+      {
+        "tag": "trap",
+        "x": -216.828,
+        "y": 282.002,
+      },
+      {
+        "tag": "house",
+        "x": -70.733,
+        "y": -348.621,
+      },
+      {
+        "tag": "techno",
+        "x": -337.281,
+        "y": -113.053,
+      },
+    ],
+  },
+  "plans": [
+    {
+      "picks": [
+        "illenium:must-see:false",
+        "subtronics:must-see:false",
+        "levity:must-see:true",
+        "tape-b:strong:false",
+        "excision:strong:false",
+        "john-summit:explore:false",
+        "sara-landry:explore:false",
+      ],
+      "schedule": [
+        {
+          "clashes": 1,
+          "day": "Friday",
+          "items": [
+            "{"kind":"set","start":1320,"pick":{"artist":"tape-b","match":0.857127,"tier":"strong","pinned":false,"known":true,"set":{"artistId":"tape-b","day":"Friday","stageId":"bass","start":"22:00","end":"23:00"},"start":1320,"end":1380},"alternatives":[{"artist":"sara-landry","match":0.590251,"tier":"explore","pinned":false,"known":true,"set":{"artistId":"sara-landry","day":"Friday","stageId":"warehouse","start":"22:15","end":"23:30"},"start":1335,"end":1410}]}",
+            "{"kind":"clash","start":1420,"picks":[{"artist":"illenium","match":0.983897,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"illenium","day":"Friday","stageId":"main","start":"23:40","end":"01:10"},"start":1420,"end":1510},{"artist":"subtronics","match":0.961197,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"subtronics","day":"Friday","stageId":"bass","start":"00:15","end":"01:30"},"start":1455,"end":1530}],"verdict":{"kind":"close","a":{"artist":"illenium","match":0.983897,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"illenium","day":"Friday","stageId":"main","start":"23:40","end":"01:10"},"start":1420,"end":1510},"b":{"artist":"subtronics","match":0.961197,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"subtronics","day":"Friday","stageId":"bass","start":"00:15","end":"01:30"},"start":1455,"end":1530},"catch":{"pick":{"artist":"subtronics","match":0.961197,"tier":"must-see","pinned":false,"known":true,"set":{"artistId":"subtronics","day":"Friday","stageId":"bass","start":"00:15","end":"01:30"},"start":1455,"end":1530},"minutes":20,"when":"after"}},"alternatives":[]}",
+          ],
+        },
+        {
+          "clashes": 1,
+          "day": "Saturday",
+          "items": [
+            "{"kind":"clash","start":1350,"picks":[{"artist":"levity","match":0.913016,"tier":"must-see","pinned":true,"known":true,"set":{"artistId":"levity","day":"Saturday","stageId":"bass","start":"22:30","end":"23:45"},"start":1350,"end":1425},{"artist":"excision","match":0.835982,"tier":"strong","pinned":false,"known":true,"set":{"artistId":"excision","day":"Saturday","stageId":"main","start":"23:00","end":"00:30"},"start":1380,"end":1470}],"verdict":{"kind":"pinned","pick":{"artist":"levity","match":0.913016,"tier":"must-see","pinned":true,"known":true,"set":{"artistId":"levity","day":"Saturday","stageId":"bass","start":"22:30","end":"23:45"},"start":1350,"end":1425},"other":{"artist":"excision","match":0.835982,"tier":"strong","pinned":false,"known":true,"set":{"artistId":"excision","day":"Saturday","stageId":"main","start":"23:00","end":"00:30"},"start":1380,"end":1470},"catch":{"pick":{"artist":"excision","match":0.835982,"tier":"strong","pinned":false,"known":true,"set":{"artistId":"excision","day":"Saturday","stageId":"main","start":"23:00","end":"00:30"},"start":1380,"end":1470},"minutes":45,"when":"after"}},"alternatives":[]}",
+          ],
+        },
+        {
+          "clashes": 0,
+          "day": "Sunday",
+          "items": [
+            "{"kind":"discover","start":1230,"pick":{"artist":"john-summit","match":0.596513,"tier":"explore","pinned":false,"known":true,"set":{"artistId":"john-summit","day":"Sunday","stageId":"main","start":"20:30","end":"22:00"},"start":1230,"end":1320},"reason":{"kind":"new-sound","sound":"house"}}",
+          ],
+        },
+      ],
+    },
+    {
+      "picks": [
+        "subtronics:must-see:false",
+        "levity:must-see:true",
+        "tape-b:strong:false",
+        "john-summit:explore:false",
+        "sara-landry:explore:false",
+      ],
+      "schedule": undefined,
+    },
+  ],
+  "summary": {
+    "likes": 1,
+    "saves": 1,
+    "skips": 1,
+    "watched": 2,
+  },
+  "taste": {
+    "excision": 0.835982,
+    "illenium": 0.983897,
+    "john-summit": 0.596513,
+    "levity": 0.913016,
+    "sara-landry": 0.590251,
+    "subtronics": 0.961197,
+    "tape-b": 0.857127,
+  },
+}
+`;
+
+exports[`golden outputs from the mock data keeps the mock catalogue itself unchanged 1`] = `
+{
+  "artists": [
+    {
+      "id": "illenium",
+      "imageUrl": undefined,
+      "name": "ILLENIUM",
+      "sound": {
+        "dubstep": 0.25,
+        "melodic-bass": 1,
+      },
+    },
+    {
+      "id": "subtronics",
+      "imageUrl": undefined,
+      "name": "SUBTRONICS",
+      "sound": {
+        "dubstep": 0.7,
+        "riddim": 0.9,
+      },
+    },
+    {
+      "id": "levity",
+      "imageUrl": undefined,
+      "name": "LEVITY",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.6,
+      },
+    },
+    {
+      "id": "tape-b",
+      "imageUrl": undefined,
+      "name": "TAPE B",
+      "sound": {
+        "dubstep": 0.5,
+        "trap": 0.7,
+      },
+    },
+    {
+      "id": "excision",
+      "imageUrl": undefined,
+      "name": "EXCISION",
+      "sound": {
+        "dubstep": 1,
+        "riddim": 0.3,
+      },
+    },
+    {
+      "id": "sara-landry",
+      "imageUrl": undefined,
+      "name": "SARA LANDRY",
+      "sound": {
+        "techno": 1,
+      },
+    },
+    {
+      "id": "john-summit",
+      "imageUrl": undefined,
+      "name": "JOHN SUMMIT",
+      "sound": {
+        "house": 1,
+      },
+    },
+  ],
+  "clips": [
+    {
+      "artistId": "illenium",
+      "bpm": 150,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c1",
+      "source": {
+        "channel": "Lost Lands",
+        "end": 1545,
+        "provider": "youtube",
+        "start": 1500,
+        "videoId": "JssDaUK0_GQ",
+      },
+      "title": "Live at Lost Lands 2025",
+    },
+    {
+      "artistId": "subtronics",
+      "bpm": 150,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c2",
+      "source": {
+        "channel": "Insomniac",
+        "end": 1365,
+        "provider": "youtube",
+        "start": 1320,
+        "videoId": "-A-XIBMDgj0",
+      },
+      "title": "Live at EDC Las Vegas 2026",
+    },
+    {
+      "artistId": "sara-landry",
+      "bpm": 145,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c3",
+      "source": {
+        "channel": "Boiler Room",
+        "end": 1845,
+        "provider": "youtube",
+        "start": 1800,
+        "videoId": "EIQlDpgAY5Y",
+      },
+      "title": "Boiler Room x Teletech 2023",
+    },
+    {
+      "artistId": "levity",
+      "bpm": 150,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c4",
+      "source": {
+        "channel": "Lost Lands",
+        "end": 1425,
+        "provider": "youtube",
+        "start": 1380,
+        "videoId": "lqqCNpZzYM4",
+      },
+      "title": "Live at Lost Lands 2024",
+    },
+    {
+      "artistId": "john-summit",
+      "bpm": 126,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c5",
+      "source": {
+        "channel": "Tomorrowland",
+        "end": 1305,
+        "provider": "youtube",
+        "start": 1260,
+        "videoId": "ADCiMBYOyHw",
+      },
+      "title": "Tomorrowland 2026, Mainstage",
+    },
+    {
+      "artistId": "excision",
+      "bpm": 150,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c6",
+      "source": {
+        "channel": "Lost Lands",
+        "end": 2445,
+        "provider": "youtube",
+        "start": 2400,
+        "videoId": "b29GV8RODIc",
+      },
+      "title": "Two-hour set, Lost Lands 2025",
+    },
+    {
+      "artistId": "tape-b",
+      "bpm": 150,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c7",
+      "source": {
+        "channel": "Lost Lands",
+        "end": 1245,
+        "provider": "youtube",
+        "start": 1200,
+        "videoId": "x-fYL7jm7eg",
+      },
+      "title": "Live at Lost Lands 2025",
+    },
+    {
+      "artistId": "illenium",
+      "bpm": 150,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c8",
+      "source": {
+        "channel": "ILLENIUM",
+        "end": 2745,
+        "provider": "youtube",
+        "start": 2700,
+        "videoId": "M49c9LhxWWM",
+      },
+      "title": "Live at Red Rocks 2025",
+    },
+    {
+      "artistId": "levity",
+      "bpm": 150,
+      "durationSec": 21,
+      "festivalId": "solstice-26",
+      "id": "c9",
+      "title": "Closing minutes",
+    },
+    {
+      "artistId": "sara-landry",
+      "bpm": 145,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c10",
+      "source": {
+        "channel": "Awakenings",
+        "end": 1545,
+        "provider": "youtube",
+        "start": 1500,
+        "videoId": "b-PupDxC-ik",
+      },
+      "title": "Awakenings Festival 2025",
+    },
+    {
+      "artistId": "subtronics",
+      "bpm": 150,
+      "durationSec": 19,
+      "festivalId": "solstice-26",
+      "id": "c11",
+      "title": "Back to back",
+    },
+    {
+      "artistId": "john-summit",
+      "bpm": 126,
+      "durationSec": 23,
+      "festivalId": "solstice-26",
+      "id": "c12",
+      "title": "Singalong",
+    },
+    {
+      "artistId": "tape-b",
+      "bpm": 150,
+      "durationSec": 17,
+      "festivalId": "solstice-26",
+      "id": "c13",
+      "title": "Last track",
+    },
+    {
+      "artistId": "excision",
+      "bpm": 150,
+      "durationSec": 45,
+      "festivalId": "solstice-26",
+      "id": "c14",
+      "source": {
+        "channel": "Lost Lands",
+        "end": 3045,
+        "provider": "youtube",
+        "start": 3000,
+        "videoId": "K54gC7k-Ugo",
+      },
+      "title": "Two-hour set, Lost Lands 2026",
+    },
+  ],
+  "festivals": [
+    {
+      "dates": "Jun 19 to 21",
+      "days": [
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ],
+      "id": "solstice-26",
+      "lineup": [
+        "illenium",
+        "excision",
+        "john-summit",
+        "subtronics",
+        "levity",
+        "sara-landry",
+        "tape-b",
+      ],
+      "location": "Lakeside Grounds",
+      "name": "Solstice 2026",
+      "posterImageUrl": undefined,
+      "sets": [
+        {
+          "artistId": "tape-b",
+          "day": "Friday",
+          "end": "23:00",
+          "stageId": "bass",
+          "start": "22:00",
+        },
+        {
+          "artistId": "sara-landry",
+          "day": "Friday",
+          "end": "23:30",
+          "stageId": "warehouse",
+          "start": "22:15",
+        },
+        {
+          "artistId": "illenium",
+          "day": "Friday",
+          "end": "01:10",
+          "stageId": "main",
+          "start": "23:40",
+        },
+        {
+          "artistId": "subtronics",
+          "day": "Friday",
+          "end": "01:30",
+          "stageId": "bass",
+          "start": "00:15",
+        },
+        {
+          "artistId": "levity",
+          "day": "Saturday",
+          "end": "23:45",
+          "stageId": "bass",
+          "start": "22:30",
+        },
+        {
+          "artistId": "excision",
+          "day": "Saturday",
+          "end": "00:30",
+          "stageId": "main",
+          "start": "23:00",
+        },
+        {
+          "artistId": "john-summit",
+          "day": "Sunday",
+          "end": "22:00",
+          "stageId": "main",
+          "start": "20:30",
+        },
+      ],
+      "stages": [
+        {
+          "id": "main",
+          "name": "Main Stage",
+        },
+        {
+          "id": "bass",
+          "name": "Bass Tent",
+        },
+        {
+          "id": "warehouse",
+          "name": "The Warehouse",
+        },
+      ],
+    },
+    {
+      "dates": "Mar 12 to 14",
+      "days": [
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ],
+      "id": "horizon-27",
+      "lineup": [
+        "subtronics",
+        "sara-landry",
+        "levity",
+        "john-summit",
+        "tape-b",
+      ],
+      "location": "Desert Valley",
+      "name": "Horizon 2027",
+      "posterImageUrl": undefined,
+      "stages": [],
+    },
+  ],
+  "prior": {
+    "excision": 0.82,
+    "illenium": 0.98,
+    "john-summit": 0.42,
+    "levity": 0.91,
+    "sara-landry": 0.7,
+    "subtronics": 0.96,
+    "tape-b": 0.87,
+  },
+}
+`;

@@ -1,12 +1,21 @@
 import { useMemo } from 'react';
-import { ARTISTS } from '../data/artists';
-import { CLIPS } from '../data/clips';
-import { MOCK_TASTE } from '../data/tasteProfile';
+import { MOCK_TASTE } from '../data/mock';
 import { computeTaste } from '../features/taste/engine';
+import { similarityWith } from '../features/taste/similarity';
+import { useCatalog } from './catalog';
 import { useReactions } from './reactions';
 
-/** Live taste profile: the starting profile, reshaped by everything you have reacted to. */
+/**
+ * Live taste profile: the starting profile, reshaped by everything you have
+ * reacted to. Also hands out the similarity it used, so everything else that
+ * asks "similar sound?" agrees with the engine.
+ */
 export function useTaste() {
   const { reactions } = useReactions();
-  return useMemo(() => computeTaste(MOCK_TASTE, ARTISTS, CLIPS, reactions), [reactions]);
+  const { artists, clips, similarities } = useCatalog();
+  const similarity = useMemo(() => similarityWith(similarities), [similarities]);
+  return useMemo(
+    () => ({ ...computeTaste(MOCK_TASTE, artists, clips, reactions, similarity), similarity }),
+    [artists, clips, reactions, similarity],
+  );
 }

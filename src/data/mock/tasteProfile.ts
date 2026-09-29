@@ -1,4 +1,4 @@
-import type { TasteProfile } from './types';
+import type { TasteProfile } from '../models';
 
 /** Mock predictions. Milestone 3 replaces this with scores learned from the feed. */
 export const MOCK_TASTE: TasteProfile = {
