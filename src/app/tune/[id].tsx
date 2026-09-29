@@ -16,7 +16,8 @@ import { NightSky } from '../../components/NightSky';
 import { CloseIcon } from '../../components/TabIcons';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import { HeartIcon } from '../../features/discover/icons';
-import { tuneQueue } from '../../features/festivals/tune';
+import { soundsLike, tuneQueue } from '../../features/festivals/tune';
+import { TIER_AT } from '../../features/plan/plan';
 import type { Rating } from '../../features/taste/ratings';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
@@ -37,7 +38,7 @@ export default function TuneScreen() {
   const catalog = useCatalog();
   const festival = catalog.festival(id);
   const { ratings, rate } = useRatings();
-  const { taste, informed } = useTaste();
+  const { taste, informed, similarity } = useTaste();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
 
@@ -90,6 +91,16 @@ export default function TuneScreen() {
         : FadeOut.duration(160);
   const tags = artist ? (Object.entries(artist.sound) as [SoundTag, number][]).sort((a, b) => b[1] - a[1]) : [];
   const match = artist && informed[artist.id] ? `${Math.round((taste[artist.id] ?? 0) * 100)}% match` : 'New to you';
+  // A hint for artists you don't know: who they sound like among ones you love or strongly match (your answers here count too).
+  const like = artist
+    ? soundsLike(
+        artist,
+        catalog.artists,
+        (a) => ratings[a.id] === 'love' || (!!informed[a.id] && (taste[a.id] ?? 0) >= TIER_AT.strong),
+        similarity,
+      )
+    : [];
+  const likeLine = like.length ? `Sounds like ${like.map((a) => a.name).join(' and ')}` : undefined;
 
   return (
     <View style={styles.root}>
@@ -127,13 +138,18 @@ export default function TuneScreen() {
             exiting={exiting}
             style={styles.card}
             accessible
-            accessibilityLabel={`${artist.name}. ${tags.map(([t]) => SOUND_LABEL[t]).join(', ') || 'Sound not known yet'}. ${match}.`}
+            accessibilityLabel={`${artist.name}. ${tags.map(([t]) => SOUND_LABEL[t]).join(', ') || 'Sound not known yet'}. ${match}.${likeLine ? ` ${likeLine}.` : ''}`}
           >
             <ArtistAvatar artist={artist} size={148} />
             <Text style={styles.name} numberOfLines={2}>
               {artist.name}
             </Text>
             <Text style={styles.match}>{match}</Text>
+            {likeLine ? (
+              <Text style={styles.like} numberOfLines={2}>
+                {likeLine}
+              </Text>
+            ) : null}
             {tags.length > 0 && (
               <View style={styles.tags}>
                 {tags.map(([tag]) => (
@@ -232,6 +248,7 @@ const styles = StyleSheet.create({
   card: { alignItems: 'center', width: '100%' },
   name: { ...type.largeTitle, color: color.moon, marginTop: space.xl, textAlign: 'center' },
   match: { ...type.headline, color: color.glow, marginTop: space.xs, fontVariant: ['tabular-nums'] },
+  like: { ...type.body, color: color.moonDim, marginTop: space.xs, textAlign: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.lg },
   tag: {
     paddingHorizontal: space.md,
