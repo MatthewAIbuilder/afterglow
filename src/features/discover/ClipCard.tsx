@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -15,7 +15,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
-import { ChevronIcon } from '../../components/TabIcons';
+import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
+import { APP_NAME } from '../../config/app';
 import { setFor } from '../../data/festival';
 import type { Clip, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
@@ -32,6 +33,7 @@ import { ClipPlayer } from './ClipPlayer';
 import { type FeedPager, usePlayerSwipe } from './feedPager';
 import { HeartIcon, PlayIcon } from './icons';
 import { clipMedia } from './media';
+import { clipShareText } from './share';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
 import { MIN_PLAYER, tallLayout } from './videoLayout';
@@ -303,9 +305,25 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
           {clip.title}
         </Text>
         {metaLine(!!tall)}
-        <Text style={styles.credit} numberOfLines={1}>
-          {media.credit}
-        </Text>
+        <View style={styles.creditRow}>
+          <Text style={[styles.credit, styles.creditText]} numberOfLines={1}>
+            {media.credit}
+          </Text>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              Share.share({ message: clipShareText(artist.name, clip.title, media.externalUrl, context, APP_NAME) }).catch(
+                () => {},
+              );
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Share this clip of ${artist.name}`}
+            hitSlop={12}
+            style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+          >
+            <ShareIcon color={color.moonDim} size={15} />
+          </Pressable>
+        </View>
       </>
     );
 
@@ -474,5 +492,8 @@ const styles = StyleSheet.create({
   },
   videoInfo: { alignSelf: 'stretch', paddingHorizontal: space.xl, marginTop: space.xl },
   credit: { ...type.caption, color: color.moonFaint, marginTop: space.sm },
+  creditRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  creditText: { flex: 1 },
+  share: { marginTop: space.sm, paddingHorizontal: space.xs },
   videoActions: { marginTop: space.xxl },
 });

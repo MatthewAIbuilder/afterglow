@@ -278,6 +278,21 @@ describe('Discover', () => {
     expect(app.getAllByText('ILLENIUM').length).toBeGreaterThan(0);
   });
 
+  it('shares a clip with a link to that moment on YouTube', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    await fireEvent.press(app.getAllByLabelText('Share this clip of ILLENIUM')[0]);
+    expect(share).toHaveBeenCalledTimes(1);
+    const { message } = share.mock.calls[0][0] as { message: string };
+    expect(message).toMatch(/^ILLENIUM, /);
+    expect(message).toMatch(/https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}&t=\d+s/);
+    expect(message).toContain('Playing Solstice 2026');
+    expect(message).toContain('Found on Afterglow');
+    share.mockRestore();
+  });
+
   it('shows a first-time tip, and none to someone who already uses the app', async () => {
     const fresh = await renderApp('/');
     await settle();
