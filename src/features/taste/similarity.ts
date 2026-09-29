@@ -34,3 +34,23 @@ export function similarityWith(provided: readonly ArtistSimilarity[] = []): Simi
   }
   return (a, b) => known.get(pairKey(a.id, b.id)) ?? soundSimilarity(a, b);
 }
+
+/**
+ * The artists who sound most like `artist`, closest first: at most `max`,
+ * each at least `min` alike. `candidates` decides where to look (the whole
+ * catalogue, or one festival's lineup); the artist themselves is left out.
+ */
+export function mostSimilar(
+  artist: Artist,
+  candidates: readonly Artist[],
+  similarity: Similarity,
+  { max = 3, min = 0.3 }: { max?: number; min?: number } = {},
+): Artist[] {
+  return candidates
+    .filter((a) => a.id !== artist.id)
+    .map((a) => ({ a, s: similarity(artist, a) }))
+    .filter((x) => x.s > min)
+    .sort((p, q) => q.s - p.s)
+    .slice(0, max)
+    .map((x) => x.a);
+}

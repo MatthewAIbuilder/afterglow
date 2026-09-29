@@ -184,6 +184,18 @@ describe('Artist', () => {
     expect(app.getByText('Love their sound')).toBeTruthy();
   });
 
+  it('suggests similar artists from the same lineup, keeping the festival', async () => {
+    const app = await renderApp('/artist/wooli?festival=edc-orlando-26');
+    await settle();
+    expect(app.getByText('Similar sound at EDC Orlando 2026')).toBeTruthy();
+    const [first] = app.getAllByLabelText(/, \d+ percent match$/);
+    await fireEvent.press(first);
+    await settle();
+    // Still in EDC's context: the must-see star is there.
+    expect(app.getAllByText('Mark as must see').length).toBeGreaterThan(0);
+    expect(app.getAllByText('Similar sound at EDC Orlando 2026').length).toBeGreaterThan(0);
+  });
+
   it('shows a demo artist with clips and similar sounds', async () => {
     const app = await renderApp('/artist/levity');
     await settle();
