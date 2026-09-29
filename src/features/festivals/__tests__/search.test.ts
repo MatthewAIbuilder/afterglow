@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Artist } from '../../../data/models';
-import { carriesSound, filterLineup, lineupSounds, matchesName, normalize } from '../search';
+import { carriesSound, filterLineup, lineupSounds, matchesName, normalize, searchArtists } from '../search';
 
 describe('finding an artist on a lineup', () => {
   it('ignores case, accents and punctuation', () => {
@@ -58,5 +58,24 @@ describe('filtering a lineup by sound', () => {
     expect(ids(filterLineup(lineup, 'tw', 'dubstep'))).toEqual(['two']);
     expect(ids(filterLineup(lineup, 'three', 'dubstep'))).toEqual([]);
     expect(ids(filterLineup(lineup, ''))).toEqual(['one', 'two', 'three', 'four', 'five']);
+  });
+});
+
+describe('searching every artist', () => {
+  const a = (name: string): Artist => ({ id: name.toLowerCase().replace(/\W+/g, '-'), name, sound: {} });
+  const all = [a('SUBTRONICS'), a('ILLENIUM'), a('MARLON HOFFSTADT'), a('SUB FOCUS'), a('LEVITY'), a('TAPE B')];
+  const names = (list: Artist[]) => list.map((x) => x.name);
+
+  it('puts names that start with the search first, then word starts, then anywhere', () => {
+    expect(names(searchArtists(all, 'sub'))).toEqual(['SUBTRONICS', 'SUB FOCUS']);
+    // TAPE B has a word starting with B; the others only contain one.
+    expect(names(searchArtists(all, 'b'))).toEqual(['TAPE B', 'SUBTRONICS', 'SUB FOCUS']);
+    expect(names(searchArtists(all, 'hoff'))).toEqual(['MARLON HOFFSTADT']);
+    expect(names(searchArtists(all, 'on'))).toEqual(['SUBTRONICS', 'MARLON HOFFSTADT']);
+  });
+
+  it('finds nothing for an empty search, and stops at the limit', () => {
+    expect(searchArtists(all, '  ')).toEqual([]);
+    expect(searchArtists(all, 'i', 2)).toHaveLength(2);
   });
 });

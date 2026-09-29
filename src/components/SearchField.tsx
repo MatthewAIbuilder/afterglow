@@ -1,0 +1,56 @@
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { color, radius, space, type } from '../theme/tokens';
+import { CloseIcon, SearchIcon } from './TabIcons';
+
+/** A glass search field with a clear button. `label` is what screen readers hear. */
+export function SearchField({
+  value,
+  onChange,
+  placeholder,
+  label,
+}: {
+  value: string;
+  onChange: (text: string) => void;
+  placeholder: string;
+  label: string;
+}) {
+  return (
+    <View style={styles.search}>
+      <SearchIcon color={color.moonFaint} />
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={color.moonFaint}
+        style={styles.input}
+        autoCorrect={false}
+        autoCapitalize="none"
+        returnKeyType="search"
+        clearButtonMode="never"
+        keyboardAppearance="dark"
+        selectionColor={color.glow}
+        accessibilityLabel={label}
+      />
+      {value ? (
+        <Pressable onPress={() => onChange('')} accessibilityRole="button" accessibilityLabel="Clear the search" hitSlop={10}>
+          <CloseIcon color={color.moonDim} size={14} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  input: { ...type.body, flex: 1, color: color.moon, paddingVertical: 0 },
+});
