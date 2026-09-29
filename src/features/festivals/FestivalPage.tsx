@@ -116,7 +116,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               <Pressable
                 onPress={() => {
                   haptic.tap();
-                  router.push(`/tune/${festival.id}`);
+                  // Narrowed to a day in the lineup below? Tune that day.
+                  router.push(day ? { pathname: '/tune/[id]', params: { id: festival.id, day } } : `/tune/${festival.id}`);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Tune your lineup. Rate ${toRate} artists one at a time.`}

@@ -399,6 +399,19 @@ describe('Tune your lineup', () => {
     expect(app.getByText(/3 of 110/)).toBeTruthy();
   });
 
+  it('tunes one day of a big lineup at a time', async () => {
+    const app = await renderApp('/tune/acl-26');
+    await settle();
+    expect(app.getByText(/1 of 138/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText(/^Tune only Sunday, \d+ to rate$/));
+    await settle();
+    expect(app.getByText(/Austin City Limits 2026 · Sunday · 1 of \d+/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText(/^Love .+'s sound$/));
+    await settle();
+    // Once you've started, the day is set.
+    expect(app.queryByLabelText(/^Tune only /)).toBeNull();
+  });
+
   it('offers to listen on YouTube before answering', async () => {
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     const app = await renderApp('/tune/edc-orlando-26');
