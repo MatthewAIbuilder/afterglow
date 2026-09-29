@@ -216,6 +216,22 @@ describe('My Sound', () => {
     expect(app.queryByLabelText('Start your sound over')).toBeNull();
   });
 
+  it('rates an artist from the map, which reshapes when the sheet closes', async () => {
+    const app = await renderApp('/sound');
+    await settle();
+    await fireEvent(app.getByLabelText(/^ILLENIUM, \d+ percent match$/), 'accessibilityTap');
+    await settle();
+    await fireEvent.press(app.getByLabelText("Love ILLENIUM's sound"));
+    await settle();
+    expect(app.getByLabelText("You love ILLENIUM's sound. Tap to undo.")).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('artistRatings.v1')) ?? '{}')).toEqual({ illenium: 'love' });
+    await fireEvent.press(app.getByLabelText('Close artist details'));
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    expect(app.getByText('Shaped by your 1 rated artist. Bigger means a closer match.')).toBeTruthy();
+  });
+
   it('narrows the map to one festival, and offers to rate a sparse lineup', async () => {
     const app = await renderApp('/sound');
     await settle();
