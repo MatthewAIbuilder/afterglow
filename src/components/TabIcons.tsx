@@ -79,3 +79,11 @@ export function ShareIcon({ color, size = 18 }: P) {
     </Svg>
   );
 }
+
+export function SearchIcon({ color, size = 16 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5L20 20" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}

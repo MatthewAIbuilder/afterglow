@@ -1,17 +1,18 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistRow } from '../../components/ArtistRow';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
-import { CheckIcon, ChevronIcon } from '../../components/TabIcons';
+import { CheckIcon, ChevronIcon, CloseIcon, SearchIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
 import type { Artist, Festival } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../../features/discover/icons';
 import { describeSet } from '../../features/festivals/format';
 import { lineupReach } from '../../features/festivals/links';
+import { matchesName, SEARCH_FROM } from '../../features/festivals/search';
 import { countdown, setLine } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { leftToRate } from '../../features/festivals/tune';
@@ -32,6 +33,7 @@ export default function FestivalScreen() {
   const insets = useSafeAreaInsets();
   const { taste } = useTaste();
   const [order, setOrder] = useState<Order>('match');
+  const [query, setQuery] = useState('');
   const { ratings } = useRatings();
   const today = useToday();
 
@@ -40,6 +42,7 @@ export default function FestivalScreen() {
     const list = festival.lineup.map((a) => catalog.artist(a)).filter((a): a is Artist => !!a);
     return order === 'match' ? [...list].sort((a, b) => (taste[b.id] ?? 0) - (taste[a.id] ?? 0)) : list;
   }, [catalog, festival, order, taste]);
+  const shown = useMemo(() => lineup.filter((a) => matchesName(a.name, query)), [lineup, query]);
 
   if (!festival) return null;
   const timesOut = !!festival.sets?.length;
@@ -53,6 +56,8 @@ export default function FestivalScreen() {
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         <View style={styles.pad}>
           <Text style={styles.title}>{festival.name}</Text>
@@ -139,8 +144,43 @@ export default function FestivalScreen() {
           <Segmented value={order} onChange={setOrder} />
         </View>
 
+        {lineup.length > SEARCH_FROM && (
+          <View style={[styles.pad, styles.searchWrap]}>
+            <View style={styles.search}>
+              <SearchIcon color={color.moonFaint} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Find an artist"
+                placeholderTextColor={color.moonFaint}
+                style={styles.searchInput}
+                autoCorrect={false}
+                autoCapitalize="none"
+                returnKeyType="search"
+                clearButtonMode="never"
+                keyboardAppearance="dark"
+                selectionColor={color.glow}
+                accessibilityLabel={`Find an artist on the ${festival.name} lineup`}
+              />
+              {query ? (
+                <Pressable
+                  onPress={() => setQuery('')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear the search"
+                  hitSlop={10}
+                >
+                  <CloseIcon color={color.moonDim} size={14} />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        )}
+
         <View style={styles.pad}>
-          {lineup.map((a) => {
+          {query && shown.length === 0 ? (
+            <Text style={styles.noMatch}>No one on the lineup matches “{query.trim()}”.</Text>
+          ) : null}
+          {shown.map((a) => {
             const set = setFor(festival, a.id);
             return (
               <ArtistRow key={a.id} festivalId={festival.id} artist={a} affinity={taste[a.id] ?? 0} detail={setLine(set && describeSet(festival, set), festival.notes?.[a.id])} />
@@ -263,6 +303,20 @@ const styles = StyleSheet.create({
   note: { marginTop: space.xl },
   noteTitle: { ...type.headline, color: color.moon },
   noteBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  searchWrap: { marginBottom: space.sm },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  searchInput: { ...type.body, flex: 1, color: color.moon, paddingVertical: 0 },
+  noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
   lineupHead: { marginTop: space.xxl, marginBottom: space.sm, flexDirection: 'row', alignItems: 'center' },
   section: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
   segment: { flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: color.glass },
