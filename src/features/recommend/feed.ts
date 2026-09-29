@@ -1,5 +1,6 @@
 import type { Artist, Clip, TasteProfile } from '../../data/types';
 import type { Reaction } from '../../state/reactions';
+import type { Ratings } from '../taste/ratings';
 import { type Similarity, soundSimilarity } from '../taste/similarity';
 
 /**
@@ -21,7 +22,8 @@ import { type Similarity, soundSimilarity } from '../taste/similarity';
  * regular exploring, the occasional new direction), never plays the same
  * artist twice in a row when it can avoid it, and gives each artist one clip
  * before anyone gets a second. Order of blocks: fresh clips, then clips of
- * artists you've turned down (more skips than likes and saves), then clips
+ * artists you've turned down (more skips and "not for me" than likes, saves
+ * and loves), then clips
  * you saw lately, then the clips you skipped.
  */
 
@@ -100,6 +102,8 @@ export type FeedInput = {
   keep?: readonly string[];
   /** How alike two artists are. Sound tags by default. */
   similarity?: Similarity;
+  /** Artists rated directly: "not for me" turns an artist down like a skip; "love" raises them through the match. */
+  ratings?: Ratings;
 };
 
 /** Your top artists by match, strong matches only. What "related" is measured against. */
@@ -143,7 +147,7 @@ export function laneOf(
 }
 
 /** Every clip, scored and placed in a lane. Not yet in feed order. */
-export function scoreClips({ clips, artists, taste, informed, reactions, seen, now, similarity }: FeedInput): FeedItem[] {
+export function scoreClips({ clips, artists, taste, informed, reactions, seen, now, similarity, ratings = {} }: FeedInput): FeedItem[] {
   const byId = new Map(artists.map((a) => [a.id, a]));
   const anchors = anchorsOf(artists, taste, informed);
   const touched = new Set<string>();
@@ -153,6 +157,11 @@ export function scoreClips({ clips, artists, taste, informed, reactions, seen, n
     if (!r) continue;
     if (r.liked || r.saved || r.skipped || r.watched) touched.add(c.artistId);
     net[c.artistId] = (net[c.artistId] ?? 0) + (r.liked ? 1 : 0) + (r.saved ? 1 : 0) - (r.skipped ? 1 : 0);
+  }
+  for (const [id, rating] of Object.entries(ratings)) {
+    // Loving an artist must never cost them the "new to you" nudge; only turning them down does.
+    if (rating === 'pass') touched.add(id);
+    net[id] = (net[id] ?? 0) + (rating === 'love' ? 1 : -1);
   }
 
   const items: FeedItem[] = [];

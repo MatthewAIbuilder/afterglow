@@ -67,7 +67,7 @@ export default function MySoundScreen() {
 
       <View style={[styles.header, { paddingTop: insets.top + space.lg }]} pointerEvents="none">
         <Text style={styles.title}>My Sound</Text>
-        <Text style={styles.subtitle}>{subtitle(shown.summary)}</Text>
+        <Text style={styles.subtitle}>{subtitle(shown.summary, shown.rated)}</Text>
       </View>
 
       <ArtistSheet artistId={selectedId} taste={shown.taste} bottomInset={tabSpace} onClose={close} />
@@ -75,13 +75,14 @@ export default function MySoundScreen() {
   );
 }
 
-function subtitle({ likes, saves, skips, watched }: TasteSummary) {
-  if (likes + saves + skips + watched === 0) return 'Bigger means a closer match. Similar sounds sit together.';
+function subtitle({ likes, saves, skips, watched }: TasteSummary, rated: number) {
+  if (likes + saves + skips + watched + rated === 0) return 'Bigger means a closer match. Similar sounds sit together.';
   const parts = [
     likes && `${likes} ${likes === 1 ? 'like' : 'likes'}`,
     saves && `${saves} ${saves === 1 ? 'save' : 'saves'}`,
     skips && `${skips} ${skips === 1 ? 'skip' : 'skips'}`,
     watched && `${watched} watched ${watched === 1 ? 'clip' : 'clips'}`,
+    rated && `${rated} rated ${rated === 1 ? 'artist' : 'artists'}`,
   ].filter(Boolean) as string[];
   const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
   return `Shaped by your ${list}. Bigger means a closer match.`;
