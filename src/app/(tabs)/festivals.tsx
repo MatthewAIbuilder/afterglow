@@ -39,6 +39,7 @@ export default function FestivalsScreen() {
   const [query, setQuery] = useState('');
   const found = useMemo(() => searchArtists(catalog.artists, query), [catalog.artists, query]);
   const searching = query.trim().length > 0;
+  const [showMore, setShowMore] = useState(false);
 
   return (
     <View style={styles.root}>
@@ -93,10 +94,26 @@ export default function FestivalsScreen() {
             {groups.going.map((f) => (
               <FestivalCard key={f.id} festival={f} taste={taste} />
             ))}
-            {groups.going.length > 0 && groups.others.length > 0 && <Text style={styles.section}>More festivals</Text>}
-            {groups.others.map((f) => (
-              <FestivalCard key={f.id} festival={f} taste={taste} />
-            ))}
+            {/* Once you're going somewhere, the rest wait behind "More festivals" so they stay out of the way. */}
+            {groups.going.length > 0 && groups.others.length > 0 && (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  setShowMore((v) => !v);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showMore }}
+                accessibilityLabel={`More festivals, ${groups.others.length}. ${showMore ? 'Hide them' : 'Show them'}`}
+                hitSlop={6}
+                style={({ pressed }) => [styles.moreRow, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={[styles.section, styles.moreText]}>More festivals</Text>
+                <Text style={styles.moreCount}>{groups.others.length}</Text>
+                <ChevronIcon color={color.moonFaint} size={12} direction={showMore ? 'up' : 'down'} />
+              </Pressable>
+            )}
+            {(groups.going.length === 0 || showMore) &&
+              groups.others.map((f) => <FestivalCard key={f.id} festival={f} taste={taste} />)}
           </>
         )}
       </ScrollView>
@@ -201,6 +218,9 @@ const styles = StyleSheet.create({
   },
   clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
+  moreRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingRight: space.xl, marginTop: space.sm },
+  moreText: { marginBottom: 0 },
+  moreCount: { ...type.label, color: color.moonFaint, flex: 1, fontVariant: ['tabular-nums'] },
   section: {
     ...type.label,
     color: color.moonFaint,

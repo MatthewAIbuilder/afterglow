@@ -184,8 +184,16 @@ describe('Festivals', () => {
 
     const list = await renderApp('/festivals');
     await settle();
-    const titles = list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
-    expect(titles).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Solstice 2026']);
+    const titles = () =>
+      list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
+    // The rest wait behind "More festivals" until you open it.
+    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
+    await fireEvent.press(list.getByLabelText('More festivals, 2. Show them'));
+    await settle();
+    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Solstice 2026']);
+    await fireEvent.press(list.getByLabelText('More festivals, 2. Hide them'));
+    await settle();
+    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
   });
 
   it('finds an artist on a big lineup', async () => {

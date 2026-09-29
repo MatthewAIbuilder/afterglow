@@ -8,11 +8,14 @@ import { BarsIcon } from '../../components/TabIcons';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
 import { SaveIcon } from '../../features/discover/icons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
+import { groupFestivals } from '../../features/festivals/going';
 import { leftToRate } from '../../features/festivals/tune';
 import { artistsOnMap, mapCandidates, SPARSE_MAP } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
+import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
+import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
@@ -83,6 +86,13 @@ export default function MySoundScreen() {
     setScopeId(id);
   }, []);
   const hasScopes = festivals.length > 0;
+  // Festivals you're going to first, the rest after.
+  const { going } = useGoing();
+  const today = useToday();
+  const scopeOrder = useMemo(() => {
+    const g = groupFestivals(festivals, going, today);
+    return [...g.going, ...g.others];
+  }, [festivals, going, today]);
   const mapTop = insets.top + HEADER_H + (hasScopes ? SCOPE_H : 0);
   const mapHeight = height - mapTop - tabSpace;
 
@@ -119,7 +129,7 @@ export default function MySoundScreen() {
         <Text style={styles.subtitle} pointerEvents="none">
           {subtitle(shown.summary, shown.rated, lean)}
         </Text>
-        {hasScopes && <ScopeChips festivals={festivals} value={scope?.id} onChange={pickScope} />}
+        {hasScopes && <ScopeChips festivals={scopeOrder} value={scope?.id} onChange={pickScope} />}
       </View>
 
       {/* The sheet shows the live match, so a rating there shows its effect straight away. */}
