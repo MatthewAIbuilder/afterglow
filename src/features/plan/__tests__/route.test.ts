@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Artist, Festival, SetTime } from '../../../data/types';
-import { dayRoute, festivalRoute, type RouteStop, stintLabel } from '../route';
+import { dayRoute, festivalRoute, type RouteStop, stintLabel, WALK_MINUTES } from '../route';
 
 const artist = (id: string): Artist => ({ id, name: id.toUpperCase(), sound: {} });
 const set = (artistId: string, start: string, end: string, stageId = 'main', day = 'Friday'): SetTime => ({ artistId, day, stageId, start, end });
@@ -31,15 +31,18 @@ describe('the full-day route', () => {
       set('d', '22:00', '23:30', 'tent'),
     ]);
     const route = dayRoute({ festival: f, artists: everyone(f), taste: { a: 0.8, b: 0.9, c: 0.5, d: 0.7 }, informed: { a: true, b: true, c: true, d: true } }, 'Friday');
-    expect(summary(route.stops)).toEqual(['a 1200-1260', 'b 1260-1320', 'd 1320-1410']);
+    // D is on another stage: the walk over means arriving 10 minutes in.
+    expect(summary(route.stops)).toEqual(['a 1200-1260', 'b 1260-1320', 'd 1330-1410']);
+    expect((route.stops[2] as RouteStop).walk).toBe(WALK_MINUTES);
     expect(stintLabel(route.stops[0] as RouteStop)).toBe('Whole set');
   });
 
   it('leaves one set early to catch more of a much better one', () => {
     const f = festival([set('ok', '20:00', '22:00'), set('love', '21:00', '22:30', 'tent')]);
     const route = dayRoute({ festival: f, artists: everyone(f), taste: { ok: 0.5, love: 0.95 }, informed: { ok: true, love: true } }, 'Friday');
-    expect(summary(route.stops)).toEqual(['ok 1200-1260', 'love 1260-1350']);
-    expect(stintLabel(route.stops[0] as RouteStop)).toBe('First 60 min');
+    // Leaving early anyway: leave 10 minutes sooner, so you're there when it matters.
+    expect(summary(route.stops)).toEqual(['ok 1200-1250', 'love 1260-1350']);
+    expect(stintLabel(route.stops[0] as RouteStop)).toBe('First 50 min');
   });
 
   it('never skips a must-see it can reach, even over a better match', () => {
@@ -75,5 +78,24 @@ describe('the full-day route', () => {
     expect(summary(fri.stops)).toEqual(['late 1410-1500']);
     expect(summary(sat.stops)).toEqual(['sat 1320-1380']);
     expect(dayRoute(input, 'Sunday').stops).toEqual([]);
+  });
+
+  it('never cuts a must-see short for the walk; a sliver after it goes instead', () => {
+    const f = festival([set('star', '21:00', '22:00'), set('after', '21:45', '22:15', 'tent')]);
+    const route = dayRoute(
+      { festival: f, artists: everyone(f), taste: { star: 0.5, after: 0.99 }, informed: { star: true, after: true }, pinned: new Set(['star']) },
+      'Friday',
+    );
+    // The star plays to its end; 'after' has only 15 minutes left, minus the walk: not worth it.
+    expect(summary(route.stops)).toEqual(['star 1260-1320']);
+  });
+
+  it('leaves a set early to be there for the start of a must-see on another stage', () => {
+    const f = festival([set('warm', '20:00', '21:30'), set('star', '21:00', '22:00', 'tent')]);
+    const route = dayRoute(
+      { festival: f, artists: everyone(f), taste: { warm: 0.9, star: 0.4 }, informed: { warm: true, star: true }, pinned: new Set(['star']) },
+      'Friday',
+    );
+    expect(summary(route.stops)).toEqual(['warm 1200-1250', 'star 1260-1320']);
   });
 });

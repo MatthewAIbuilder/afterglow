@@ -28,6 +28,8 @@ export const MIN_VALUE = 0.15;
 export const SWITCH_COST = 12;
 /** Shortest stint the route suggests (unless it's all that's left of the day). */
 export const MIN_STINT = 15;
+/** Time to walk from one stage to another. Without a festival map, one fair guess for all. */
+export const WALK_MINUTES = 10;
 
 export type RouteStop = {
   kind: 'set';
@@ -43,6 +45,8 @@ export type RouteStop = {
   pinned: boolean;
   /** The app has real signal for this artist; otherwise it's a discovery. */
   known: boolean;
+  /** Minutes of walking from the stage before, when you change stages. */
+  walk?: number;
 };
 
 export type RouteBreak = { kind: 'break'; from: number; to: number };
@@ -145,7 +149,7 @@ export function dayRoute(input: RouteInput, day: string): DayRoute {
     }
     stops.push(st < 0 ? { kind: 'break', from, to } : stopFor(sets[st], from, to));
   });
-  stops = tidy(stops);
+  stops = walks(tidy(stops));
   return { day, stops };
 }
 
@@ -209,6 +213,38 @@ function tidy(stops: (RouteStop | RouteBreak)[]): (RouteStop | RouteBreak)[] {
 export function clockTime(min: number) {
   const m = ((min % 1440) + 1440) % 1440;
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+}
+
+/**
+ * Changing stages takes a walk. Leaving a set early anyway? Leave a little
+ * earlier still, so you're there when you meant to be. Otherwise (the set
+ * before ran to its end) you arrive a little into the next one. Either way the
+ * stop after says how long the walk is.
+ */
+function walks(stops: (RouteStop | RouteBreak)[]): (RouteStop | RouteBreak)[] {
+  const out = [...stops];
+  for (let i = 1; i < out.length; i++) {
+    const prev = out[i - 1];
+    const cur = out[i];
+    if (prev.kind !== 'set' || cur.kind !== 'set' || prev.set.stageId === cur.set.stageId) continue;
+    cur.walk = WALK_MINUTES;
+    if (prev.to !== cur.from) continue; // a break in between leaves time to walk
+    const canLeaveEarly = prev.to - prev.from - WALK_MINUTES >= MIN_STINT;
+    const canArriveLate = cur.to - cur.from - WALK_MINUTES >= MIN_STINT;
+    if (prev.pinned && !cur.pinned) {
+      // Never cut a must-see short for a walk: the next set gives way, or goes if only a sliver is left.
+      if (canArriveLate) cur.from += WALK_MINUTES;
+      else out[i] = { kind: 'break', from: cur.from, to: cur.to };
+    } else if (cur.pinned && !prev.pinned && canLeaveEarly) {
+      // Be there for the start of a must-see.
+      prev.to -= WALK_MINUTES;
+    } else if (prev.to < prev.setEnd && canLeaveEarly) prev.to -= WALK_MINUTES;
+    else if (canArriveLate) cur.from += WALK_MINUTES;
+    else if (canLeaveEarly) prev.to -= WALK_MINUTES;
+  }
+  // A dropped sliver at the end of the night isn't a break worth showing.
+  while (out[out.length - 1]?.kind === 'break') out.pop();
+  return out;
 }
 
 /** How much of the set a stop covers, in words: "Whole set", "First 45 min", "Last 30 min", "40 min". */

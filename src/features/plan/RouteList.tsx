@@ -83,7 +83,7 @@ function StopCard({ festival, stop, walkFrom }: { festival: Festival; stop: Rout
       }${stop.pinned ? ', one of your must sees' : ''}${walkFrom ? `. Walk over from ${stageName(festival, walkFrom.set.stageId)}` : ''}`}
       style={({ pressed }) => [styles.card, !stop.known && styles.discovery, stop.pinned && styles.mustSee, pressed && { opacity: 0.7 }]}
     >
-      {walkFrom ? <Text style={styles.walk}>Head to {stage}</Text> : null}
+      {walkFrom ? <Text style={styles.walk}>Head to {stage}{stop.walk ? ` · ${stop.walk} min walk` : ''}</Text> : null}
       <View style={styles.line1}>
         <ArtistAvatar artist={stop.artist} size={36} />
         <View style={styles.text}>
@@ -95,7 +95,7 @@ function StopCard({ festival, stop, walkFrom }: { festival: Festival; stop: Rout
             {stage}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
-            {stint}, until {at(stop.to)}
+            {stint}, {stop.to < stop.setEnd ? 'leave at' : 'until'} {at(stop.to)}
           </Text>
         </View>
         <View style={styles.side}>
