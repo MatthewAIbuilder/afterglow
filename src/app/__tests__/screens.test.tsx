@@ -12,6 +12,7 @@ import ArtistScreen from '../artist/[id]';
 import FestivalScreen from '../festival/[id]';
 import PosterScreen from '../poster/[id]';
 import SavedScreen from '../saved';
+import WelcomeScreen from '../welcome';
 import TuneScreen from '../tune/[id]';
 
 /**
@@ -31,6 +32,7 @@ function renderApp(initialUrl: string) {
       'festival/[id]': FestivalScreen,
       'poster/[id]': PosterScreen,
       saved: SavedScreen,
+      welcome: WelcomeScreen,
       'tune/[id]': TuneScreen,
     },
     { initialUrl },
@@ -45,12 +47,74 @@ const settle = () =>
   });
 
 beforeEach(async () => {
-  // Every test starts as a fresh install: nothing liked, rated or planned.
+  // Every test starts as a fresh install: nothing liked, rated or planned. Past the welcome, except where it's tested.
   await AsyncStorage.clear();
+  await AsyncStorage.setItem('welcomed.v1', 'true');
 });
 
 afterEach(() => {
   jest.useRealTimers();
+});
+
+describe('Welcome', () => {
+  const firstRun = async (url = '/') => {
+    await AsyncStorage.removeItem('welcomed.v1');
+    const app = await renderApp(url);
+    await settle();
+    await settle();
+    return app;
+  };
+
+  it('walks a newcomer from hello to their festival, then into Tune', async () => {
+    const app = await firstRun();
+    expect(app.getByText('Get started')).toBeTruthy();
+    await fireEvent.press(app.getByText('Get started'));
+    await settle();
+    expect(app.getByText('Where are you going?')).toBeTruthy();
+    expect(app.getByText('Not sure yet')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText(/^EDC Orlando 2026, /));
+    await settle();
+    await fireEvent.press(app.getByText('Continue'));
+    await settle();
+    expect(app.getByText('Tell us what you love')).toBeTruthy();
+    await fireEvent.press(app.getByText('Tune your lineup'));
+    await settle();
+    expect(app.getByText(/1 of 110/)).toBeTruthy();
+    expect(await AsyncStorage.getItem('welcomed.v1')).toBe('true');
+    expect(JSON.parse((await AsyncStorage.getItem('going.v1')) ?? '[]')).toEqual(['edc-orlando-26']);
+  });
+
+  it('can be skipped, and is remembered', async () => {
+    const app = await firstRun();
+    await fireEvent.press(app.getByLabelText('Skip the welcome'));
+    await settle();
+    expect(app.queryByText('Get started')).toBeNull();
+    // Remembered, so the next launch goes straight in (see the test for people who've used the app).
+    expect(await AsyncStorage.getItem('welcomed.v1')).toBe('true');
+  });
+
+  it('starts watching without a festival picked', async () => {
+    const app = await firstRun();
+    await fireEvent.press(app.getByText('Get started'));
+    await settle();
+    await fireEvent.press(app.getByText('Not sure yet'));
+    await settle();
+    expect(app.getByText('Start with the sets')).toBeTruthy();
+    await fireEvent.press(app.getByText('Start watching'));
+    await settle();
+    expect(app.queryByText('Start with the sets')).toBeNull();
+    expect(app.getByText(/Live sets from the lineup/)).toBeTruthy();
+  });
+
+  it('is never shown to someone who has used the app', async () => {
+    await AsyncStorage.removeItem('welcomed.v1');
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ wooli: 'love' }));
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    expect(app.queryByText('Get started')).toBeNull();
+    expect(await AsyncStorage.getItem('welcomed.v1')).toBe('true');
+  });
 });
 
 describe('Festivals', () => {

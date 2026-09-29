@@ -11,6 +11,8 @@ type Ctx = {
   rate: (artistId: string, rating: Rating | undefined) => void;
   /** Forget every rating (starting your sound over). */
   clear: () => void;
+  /** Saved ratings have loaded (or failed to). */
+  hydrated: boolean;
 };
 
 const STORAGE_KEY = 'artistRatings.v1';
@@ -19,6 +21,7 @@ const RatingsContext = createContext<Ctx | null>(null);
 
 export function RatingsProvider({ children }: { children: ReactNode }) {
   const [ratings, setRatings] = useState<Ratings>({});
+  const [hydrated, setHydrated] = useState(false);
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -29,6 +32,7 @@ export function RatingsProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
       .finally(() => {
         loaded.current = true;
+        setHydrated(true);
       });
   }, []);
 
@@ -41,7 +45,7 @@ export function RatingsProvider({ children }: { children: ReactNode }) {
     setRatings((all) => rate(all, artistId, rating));
   }, []);
 
-  const value = useMemo<Ctx>(() => ({ ratings, rate: set, clear: () => setRatings({}) }), [ratings, set]);
+  const value = useMemo<Ctx>(() => ({ ratings, rate: set, clear: () => setRatings({}), hydrated }), [ratings, set, hydrated]);
   return <RatingsContext.Provider value={value}>{children}</RatingsContext.Provider>;
 }
 

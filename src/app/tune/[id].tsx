@@ -34,7 +34,8 @@ type Step = { id: string; answer: Answer };
  * festival plan and My Sound; "don't know" changes nothing.
  */
 export default function TuneScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `then=festival`: opened from the welcome, so the festival page isn't underneath to go back to.
+  const { id, then: after } = useLocalSearchParams<{ id: string; then?: string }>();
   const catalog = useCatalog();
   const festival = catalog.festival(id);
   const { ratings, rate } = useRatings();
@@ -210,7 +211,7 @@ export default function TuneScreen() {
         ) : (
           <>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => (after === 'festival' ? router.replace(`/festival/${festival.id}`) : router.back())}
               accessibilityRole="button"
               style={({ pressed }) => [styles.choice, styles.love, styles.wide, pressed && styles.pressed]}
             >
