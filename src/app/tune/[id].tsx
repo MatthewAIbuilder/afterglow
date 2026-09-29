@@ -192,13 +192,27 @@ export default function TuneScreen() {
             </Pressable>
           </>
         ) : (
-          <Pressable
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.choice, styles.love, styles.wide, pressed && styles.pressed]}
-          >
-            <Text style={[styles.choiceText, { color: color.moon }]}>See your festival</Text>
-          </Pressable>
+          <>
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.choice, styles.love, styles.wide, pressed && styles.pressed]}
+            >
+              <Text style={[styles.choiceText, { color: color.moon }]}>See your festival</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.navigate({ pathname: '/sound', params: { festival: festival.id } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`See your sound at ${festival.name} on My Sound`}
+              hitSlop={10}
+              style={({ pressed }) => [styles.unsure, pressed && styles.pressed]}
+            >
+              <Text style={styles.unsureText}>See it on My Sound</Text>
+            </Pressable>
+          </>
         )}
       </View>
     </View>

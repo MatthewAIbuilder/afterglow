@@ -221,3 +221,16 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
 
 /** Cosine similarity of sound profiles. Lives in taste/similarity; re-exported so existing imports keep working. */
 export { soundSimilarity };
+
+/**
+ * Who the map can draw from: everyone, or one festival's lineup (in the
+ * catalogue's artist order; the map ranks them itself).
+ */
+export function mapCandidates(artists: Artist[], lineup?: readonly string[]): Artist[] {
+  if (!lineup) return artists;
+  const on = new Set(lineup);
+  return artists.filter((a) => on.has(a.id));
+}
+
+/** Below this many artists, a festival's map is too sparse to say much, so the screen offers a way to add more. */
+export const SPARSE_MAP = 5;
