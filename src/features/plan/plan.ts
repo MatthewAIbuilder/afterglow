@@ -17,6 +17,8 @@ import { type Similarity, soundSimilarity } from '../taste/similarity';
 
 /** Match thresholds for each tier. Artists below EXPLORE are left out of the plan. */
 export const TIER_AT = { mustSee: 0.9, strong: 0.75, explore: 0.35 } as const;
+/** A big lineup can have a hundred artists to explore; the plan shows the best few and points to the full lineup. */
+export const EXPLORE_SHOWN = 8;
 /** Two matches closer than this are a genuine choice, not a clear winner. */
 export const CLOSE_CALL = 0.05;
 /** Similarity needed to call one artist's sound "close to" another's. */

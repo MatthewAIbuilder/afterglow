@@ -45,6 +45,9 @@ describe('festival and artist relationships', () => {
     expect(defaultFocus(FESTIVALS, CLIPS)?.id).toBe('solstice-26');
     const empty: Festival = { ...horizon, id: 'empty', lineup: ['nobody'] };
     expect(defaultFocus([empty, horizon], CLIPS)?.id).toBe('horizon-27');
+    // The festival with the most clips wins, even if it isn't first.
+    expect(defaultFocus([horizon, solstice], CLIPS)?.id).toBe('solstice-26');
+    expect(defaultFocus([empty], CLIPS)?.id).toBe('empty');
   });
 
   it('keeps the focus when a requested clip plays there, and moves it when it does not', () => {

@@ -21,9 +21,22 @@ export const festivalsOf = (festivals: Festival[], artistId: string) => festival
 /** Clips of artists on the festival's lineup, in catalogue order. */
 export const lineupClips = (festival: Festival, clips: Clip[]) => clips.filter((c) => playsAt(festival, c.artistId));
 
-/** The festival Discover opens on: the first with any clips to show. */
+/**
+ * The festival Discover opens on: the one with the most clips to show (the
+ * first of them on a tie), so a festival with only a clip or two doesn't
+ * greet you with a near-empty feed. Its own "Discover the lineup" still works.
+ */
 export function defaultFocus(festivals: Festival[], clips: Clip[]): Festival | undefined {
-  return festivals.find((f) => lineupClips(f, clips).length > 0) ?? festivals[0];
+  let best: Festival | undefined;
+  let most = 0;
+  for (const f of festivals) {
+    const n = lineupClips(f, clips).length;
+    if (n > most) {
+      best = f;
+      most = n;
+    }
+  }
+  return best ?? festivals[0];
 }
 
 /**

@@ -1,8 +1,814 @@
 {
   "version": 1,
   "mode": "add",
-  "updated": "",
-  "artists": [],
-  "festivals": [],
+  "updated": "2026-09-29",
+  "artists": [
+    {
+      "id": "a-little-sound",
+      "name": "A LITTLE SOUND"
+    },
+    {
+      "id": "aaron-hibell",
+      "name": "AARON HIBELL",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "aat",
+      "name": "AAT"
+    },
+    {
+      "id": "acraze-b2b-cid",
+      "name": "ACRAZE B2B CID",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "adrian-mills",
+      "name": "ADRIÁN MILLS"
+    },
+    {
+      "id": "adventure-club",
+      "name": "ADVENTURE CLUB",
+      "sound": {
+        "melodic-bass": 0.9,
+        "dubstep": 0.5
+      }
+    },
+    {
+      "id": "afrojack",
+      "name": "AFROJACK",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "alan-walker",
+      "name": "ALAN WALKER",
+      "sound": {
+        "melodic-bass": 0.6,
+        "house": 0.4
+      }
+    },
+    {
+      "id": "alesso",
+      "name": "ALESSO",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "alison-wonderland",
+      "name": "ALISON WONDERLAND",
+      "sound": {
+        "melodic-bass": 0.6,
+        "trap": 0.6
+      }
+    },
+    {
+      "id": "alleycvt",
+      "name": "ALLEYCVT",
+      "sound": {
+        "dubstep": 0.7,
+        "house": 0.3
+      }
+    },
+    {
+      "id": "alok",
+      "name": "ALOK",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "alves",
+      "name": "ALVES"
+    },
+    {
+      "id": "ar-co",
+      "name": "AR/CO",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "atliens",
+      "name": "ATLIENS",
+      "sound": {
+        "trap": 0.7,
+        "dubstep": 0.6
+      }
+    },
+    {
+      "id": "avello",
+      "name": "AVELLO"
+    },
+    {
+      "id": "ayybo",
+      "name": "AYYBO",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "azzecca",
+      "name": "AZZECCA",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "bassrush-experience",
+      "name": "BASSRUSH EXPERIENCE",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.4
+      }
+    },
+    {
+      "id": "benda-b2b-vastive",
+      "name": "BENDA B2B VASTIVE",
+      "sound": {
+        "riddim": 0.9,
+        "dubstep": 0.7
+      }
+    },
+    {
+      "id": "big-florida",
+      "name": "BIG FLORIDA"
+    },
+    {
+      "id": "boogie-t",
+      "name": "BOOGIE T",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.6
+      }
+    },
+    {
+      "id": "bou-b2b-kanine",
+      "name": "BOU B2B KANINE"
+    },
+    {
+      "id": "boys-noize-b2b-brutalismus-3000",
+      "name": "BOYS NOIZE B2B BRUTALISMUS 3000",
+      "sound": {
+        "techno": 1
+      }
+    },
+    {
+      "id": "brunello",
+      "name": "BRUNELLO"
+    },
+    {
+      "id": "bullet-tooth-b2b-sidney-charles",
+      "name": "BULLET TOOTH B2B SIDNEY CHARLES",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "chasewest",
+      "name": "CHASEWEST",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "chef-boyarbeatz",
+      "name": "CHEF BOYARBEATZ",
+      "sound": {
+        "dubstep": 0.8,
+        "trap": 0.4
+      }
+    },
+    {
+      "id": "chris-lorenzo",
+      "name": "CHRIS LORENZO",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "contra",
+      "name": "CØNTRA"
+    },
+    {
+      "id": "david-guetta",
+      "name": "DAVID GUETTA",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "dennis-cruz",
+      "name": "DENNIS CRUZ",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "deorro-b2b-diesel",
+      "name": "DEORRO B2B DIESEL",
+      "sound": {
+        "house": 0.8,
+        "dubstep": 0.4
+      }
+    },
+    {
+      "id": "devault",
+      "name": "DEVAULT",
+      "sound": {
+        "melodic-bass": 0.6,
+        "house": 0.5
+      }
+    },
+    {
+      "id": "discip",
+      "name": "DISCIP"
+    },
+    {
+      "id": "disco-lines",
+      "name": "DISCO LINES",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "discovery-project",
+      "name": "DISCOVERY PROJECT"
+    },
+    {
+      "id": "esse",
+      "name": "ESSE"
+    },
+    {
+      "id": "factory-93-presents",
+      "name": "FACTORY 93 PRESENTS",
+      "sound": {
+        "techno": 1
+      }
+    },
+    {
+      "id": "fallon",
+      "name": "FALLON"
+    },
+    {
+      "id": "franky-rizardo",
+      "name": "FRANKY RIZARDO",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "fury-with-mc-dino",
+      "name": "FURY WITH MC DINO"
+    },
+    {
+      "id": "gabbs",
+      "name": "GABBS"
+    },
+    {
+      "id": "greg-99",
+      "name": "GREG 99"
+    },
+    {
+      "id": "hardwell",
+      "name": "HARDWELL",
+      "sound": {
+        "house": 0.8,
+        "techno": 0.4
+      }
+    },
+    {
+      "id": "hayla",
+      "name": "HAYLA"
+    },
+    {
+      "id": "holy-priest",
+      "name": "HOLY PRIEST",
+      "sound": {
+        "dubstep": 1
+      }
+    },
+    {
+      "id": "i-hate-models",
+      "name": "I HATE MODELS",
+      "sound": {
+        "techno": 1
+      }
+    },
+    {
+      "id": "ian-asher",
+      "name": "IAN ASHER",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "idemi",
+      "name": "IDEMI"
+    },
+    {
+      "id": "inbal",
+      "name": "INBAL"
+    },
+    {
+      "id": "insomniac-records-takeover",
+      "name": "INSOMNIAC RECORDS TAKEOVER",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "interplanetary-criminal",
+      "name": "INTERPLANETARY CRIMINAL",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "jessica-audiffred",
+      "name": "JESSICA AUDIFFRED",
+      "sound": {
+        "dubstep": 0.9,
+        "riddim": 0.4
+      }
+    },
+    {
+      "id": "jkyl-and-hyde",
+      "name": "JKYL & HYDE",
+      "sound": {
+        "dubstep": 1
+      }
+    },
+    {
+      "id": "joa",
+      "name": "JOA"
+    },
+    {
+      "id": "josh-baker",
+      "name": "JOSH BAKER",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "joshwa",
+      "name": "JOSHWA",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "kaivon",
+      "name": "KAIVON",
+      "sound": {
+        "melodic-bass": 1,
+        "dubstep": 0.3
+      }
+    },
+    {
+      "id": "kaskade",
+      "name": "KASKADE",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "ki-ki",
+      "name": "KI/KI",
+      "sound": {
+        "techno": 1
+      }
+    },
+    {
+      "id": "kinahau",
+      "name": "KINAHAU"
+    },
+    {
+      "id": "klangkuenstler",
+      "name": "KLANGKUENSTLER",
+      "sound": {
+        "techno": 1
+      }
+    },
+    {
+      "id": "know-good",
+      "name": "KNOW GOOD"
+    },
+    {
+      "id": "kompany",
+      "name": "KOMPANY",
+      "sound": {
+        "dubstep": 1,
+        "riddim": 0.3
+      }
+    },
+    {
+      "id": "kream",
+      "name": "KREAM",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "layz",
+      "name": "LAYZ",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.5
+      }
+    },
+    {
+      "id": "level-up",
+      "name": "LEVEL UP",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.6
+      }
+    },
+    {
+      "id": "luke-dean-b2b-max-dean",
+      "name": "LUKE DEAN B2B MAX DEAN",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "m81",
+      "name": "M81!"
+    },
+    {
+      "id": "maddix",
+      "name": "MADDIX",
+      "sound": {
+        "techno": 0.7,
+        "house": 0.4
+      }
+    },
+    {
+      "id": "madvktm",
+      "name": "MADVKTM"
+    },
+    {
+      "id": "mai-iachetti",
+      "name": "MAI IACHETTI",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "malugi",
+      "name": "MALUGI",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "marlon-hoffstadt",
+      "name": "MARLON HOFFSTADT",
+      "sound": {
+        "house": 0.7,
+        "techno": 0.5
+      }
+    },
+    {
+      "id": "martin-garrix",
+      "name": "MARTIN GARRIX",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "matthias",
+      "name": "MATTHIAS"
+    },
+    {
+      "id": "mau-p",
+      "name": "MAU P",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "me-n-u",
+      "name": "ME N Ü"
+    },
+    {
+      "id": "meduza",
+      "name": "MEDUZA",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "miguelle-and-tons",
+      "name": "MIGUELLE & TONS",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "monoky",
+      "name": "MONOKY"
+    },
+    {
+      "id": "mph",
+      "name": "MPH",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "nico-moreno",
+      "name": "NICO MORENO",
+      "sound": {
+        "techno": 1
+      }
+    },
+    {
+      "id": "of-the-trees",
+      "name": "OF THE TREES",
+      "sound": {
+        "melodic-bass": 0.7,
+        "dubstep": 0.6
+      }
+    },
+    {
+      "id": "omar",
+      "name": "OMAR+"
+    },
+    {
+      "id": "pegassi",
+      "name": "PEGASSI",
+      "sound": {
+        "techno": 1
+      }
+    },
+    {
+      "id": "phrva",
+      "name": "PHRVA"
+    },
+    {
+      "id": "prospa",
+      "name": "PROSPA",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "raje",
+      "name": "RAJE"
+    },
+    {
+      "id": "ravenscoon",
+      "name": "RAVENSCOON",
+      "sound": {
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "ray-volpe",
+      "name": "RAY VOLPE",
+      "sound": {
+        "dubstep": 1,
+        "riddim": 0.4
+      }
+    },
+    {
+      "id": "roddy-lima",
+      "name": "RODDY LIMA",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "rossi",
+      "name": "ROSSI.",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "san-holo",
+      "name": "SAN HOLO",
+      "sound": {
+        "melodic-bass": 0.8,
+        "riddim": 0.4
+      }
+    },
+    {
+      "id": "shdw",
+      "name": "SHDW"
+    },
+    {
+      "id": "sippy",
+      "name": "SIPPY",
+      "sound": {
+        "dubstep": 1,
+        "riddim": 0.4
+      }
+    },
+    {
+      "id": "skull-machine",
+      "name": "SKULL MACHINE",
+      "sound": {
+        "dubstep": 1
+      }
+    },
+    {
+      "id": "slander",
+      "name": "SLANDER",
+      "sound": {
+        "melodic-bass": 0.8,
+        "dubstep": 0.6
+      }
+    },
+    {
+      "id": "sloth",
+      "name": "SLOTH"
+    },
+    {
+      "id": "steve-aoki",
+      "name": "STEVE AOKI",
+      "sound": {
+        "house": 0.7,
+        "trap": 0.4
+      }
+    },
+    {
+      "id": "subsonic",
+      "name": "SUBSONIC"
+    },
+    {
+      "id": "taiki-nulight",
+      "name": "TAIKI NULIGHT",
+      "sound": {
+        "house": 1
+      }
+    },
+    {
+      "id": "troyboi",
+      "name": "TROYBOI",
+      "sound": {
+        "trap": 1
+      }
+    },
+    {
+      "id": "twinsick",
+      "name": "TWINSICK"
+    },
+    {
+      "id": "ultrathem",
+      "name": "ULTRATHEM"
+    },
+    {
+      "id": "whethan",
+      "name": "WHETHAN",
+      "sound": {
+        "melodic-bass": 0.8,
+        "trap": 0.3
+      }
+    },
+    {
+      "id": "wooli",
+      "name": "WOOLI",
+      "sound": {
+        "dubstep": 1,
+        "melodic-bass": 0.3
+      }
+    },
+    {
+      "id": "zack-martino",
+      "name": "ZACK MARTINO",
+      "sound": {
+        "house": 0.7,
+        "melodic-bass": 0.4
+      }
+    }
+  ],
+  "festivals": [
+    {
+      "id": "edc-orlando-26",
+      "name": "EDC Orlando 2026",
+      "dates": "Nov 6 to 8",
+      "location": "Tinker Field, Orlando",
+      "lineup": [
+        "a-little-sound",
+        "aaron-hibell",
+        "aat",
+        "acraze-b2b-cid",
+        "adrian-mills",
+        "adventure-club",
+        "afrojack",
+        "alan-walker",
+        "alesso",
+        "alison-wonderland",
+        "alleycvt",
+        "alok",
+        "alves",
+        "ar-co",
+        "atliens",
+        "avello",
+        "ayybo",
+        "azzecca",
+        "bassrush-experience",
+        "benda-b2b-vastive",
+        "big-florida",
+        "boogie-t",
+        "bou-b2b-kanine",
+        "boys-noize-b2b-brutalismus-3000",
+        "brunello",
+        "bullet-tooth-b2b-sidney-charles",
+        "chasewest",
+        "chef-boyarbeatz",
+        "chris-lorenzo",
+        "contra",
+        "david-guetta",
+        "dennis-cruz",
+        "deorro-b2b-diesel",
+        "devault",
+        "discip",
+        "disco-lines",
+        "discovery-project",
+        "esse",
+        "factory-93-presents",
+        "fallon",
+        "franky-rizardo",
+        "fury-with-mc-dino",
+        "gabbs",
+        "greg-99",
+        "hardwell",
+        "hayla",
+        "holy-priest",
+        "i-hate-models",
+        "ian-asher",
+        "idemi",
+        "inbal",
+        "insomniac-records-takeover",
+        "interplanetary-criminal",
+        "jessica-audiffred",
+        "jkyl-and-hyde",
+        "joa",
+        "josh-baker",
+        "joshwa",
+        "kaivon",
+        "kaskade",
+        "ki-ki",
+        "kinahau",
+        "klangkuenstler",
+        "know-good",
+        "kompany",
+        "kream",
+        "layz",
+        "level-up",
+        "levity",
+        "luke-dean-b2b-max-dean",
+        "m81",
+        "maddix",
+        "madvktm",
+        "mai-iachetti",
+        "malugi",
+        "marlon-hoffstadt",
+        "martin-garrix",
+        "matthias",
+        "mau-p",
+        "me-n-u",
+        "meduza",
+        "miguelle-and-tons",
+        "monoky",
+        "mph",
+        "nico-moreno",
+        "of-the-trees",
+        "omar",
+        "pegassi",
+        "phrva",
+        "prospa",
+        "raje",
+        "ravenscoon",
+        "ray-volpe",
+        "roddy-lima",
+        "rossi",
+        "san-holo",
+        "shdw",
+        "sippy",
+        "skull-machine",
+        "slander",
+        "sloth",
+        "steve-aoki",
+        "subsonic",
+        "taiki-nulight",
+        "troyboi",
+        "twinsick",
+        "ultrathem",
+        "whethan",
+        "wooli",
+        "zack-martino"
+      ]
+    }
+  ],
   "clips": []
 }

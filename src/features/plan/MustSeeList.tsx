@@ -6,19 +6,22 @@ import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { haptic } from '../../lib/haptics';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
-import { exploreLine, matchLabel, TIER_HINT, TIER_LABEL } from './copy';
+import { exploreLine, matchLabel, moreToExplore, TIER_HINT, TIER_LABEL } from './copy';
 import { MustSeeToggle } from './MustSeeToggle';
-import { exploreReason, TIER_AT, type Pick, type Tier } from './plan';
+import { EXPLORE_SHOWN, exploreReason, TIER_AT, type Pick, type Tier } from './plan';
 
 const TIERS: Tier[] = ['must-see', 'strong', 'explore'];
+
 
 /** Before set times: your lineup as a ranked plan in three tiers. */
 export function MustSeeList({ festivalId, picks }: { festivalId: string; picks: Pick[] }) {
   const reduceMotion = useReducedMotion();
   const { similarity } = useTaste();
-  const groups = TIERS.map((tier) => ({ tier, picks: picks.filter((p) => p.tier === tier) })).filter(
-    (g) => g.picks.length,
-  );
+  const groups = TIERS.map((tier) => {
+    const all = picks.filter((p) => p.tier === tier);
+    const shown = tier === 'explore' ? all.slice(0, EXPLORE_SHOWN) : all;
+    return { tier, picks: shown, more: all.length - shown.length };
+  }).filter((g) => g.picks.length);
 
   return (
     <LayoutAnimationConfig skipEntering>
@@ -53,6 +56,7 @@ export function MustSeeList({ festivalId, picks }: { festivalId: string; picks: 
               />
             </Animated.View>
           ))}
+          {g.more > 0 && <Text style={styles.more}>{moreToExplore(g.more)}</Text>}
         </View>
       ))}
     </LayoutAnimationConfig>
@@ -119,5 +123,6 @@ const styles = StyleSheet.create({
   text: { flex: 1 },
   name: { ...type.headline, color: color.moon },
   note: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  more: { ...type.caption, color: color.moonFaint, paddingTop: space.xs, paddingBottom: space.md },
   match: { ...type.label, color: color.moonDim, fontVariant: ['tabular-nums'] },
 });
