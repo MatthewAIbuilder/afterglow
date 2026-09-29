@@ -19,6 +19,7 @@ import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
+import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Festival } from '../../data/types';
@@ -75,7 +76,10 @@ export default function MySoundScreen() {
   useEffect(() => {
     if (festivalParam) navigation.setParams({ festival: '' } as never);
   }, [festivalParam, navigation]);
-  const scope = scopeId ? catalog.festival(scopeId) : undefined;
+  // The festival as it is for you: for one run over several weekends, only your weekend's acts.
+  const { forYou } = useWeekends();
+  const scopeWhole = scopeId ? catalog.festival(scopeId) : undefined;
+  const scope = useMemo(() => scopeWhole && forYou(scopeWhole), [scopeWhole, forYou]);
   const scopeDays = useMemo(() => (scope ? lineupDays(scope) : []), [scope]);
   const dayOn = scope && day && scopeDays.includes(day) ? day : undefined;
 

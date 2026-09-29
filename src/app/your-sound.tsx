@@ -8,6 +8,7 @@ import { tasteMix } from '../features/taste/lean';
 import { SoundBreakdown } from '../features/taste/SoundBreakdown';
 import { useCatalog } from '../state/catalog';
 import { useTaste } from '../state/taste';
+import { useWeekends } from '../state/weekends';
 import { color, space, type } from '../theme/tokens';
 
 /**
@@ -18,7 +19,9 @@ import { color, space, type } from '../theme/tokens';
 export default function YourSoundScreen() {
   const { festival: festivalId } = useLocalSearchParams<{ festival?: string }>();
   const catalog = useCatalog();
-  const festival = festivalId ? catalog.festival(festivalId) : undefined;
+  const { forYou } = useWeekends();
+  const whole = festivalId ? catalog.festival(festivalId) : undefined;
+  const festival = whole && forYou(whole);
   const { taste, informed, summary, rated } = useTaste();
   const insets = useSafeAreaInsets();
   const mix = useMemo(
