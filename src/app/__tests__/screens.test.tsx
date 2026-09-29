@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { Share } from 'react-native';
+import { Alert, Share } from 'react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import RootLayout from '../_layout';
 import TabsLayout from '../(tabs)/_layout';
@@ -199,6 +199,34 @@ describe('My Sound', () => {
     // The title, and the tab bar's label.
     expect(app.getAllByText('My Sound').length).toBeGreaterThan(0);
     expect(app.getByText(/Bigger means a closer match/)).toBeTruthy();
+    expect(app.queryByLabelText('Start your sound over')).toBeNull();
+  });
+
+  it('starts your sound over, keeping your plans', async () => {
+    await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: true, saved: false, skipped: false } }));
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ wooli: 'love' }));
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.find((b) => b.style === 'destructive')?.onPress?.();
+    });
+    const app = await renderApp('/sound');
+    await settle();
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    expect(app.getByText('Shaped by your 1 like and 1 rated artist. Bigger means a closer match.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Start your sound over'));
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(app.getByText(/^Bigger means a closer match/)).toBeTruthy();
+    expect(app.queryByLabelText('Start your sound over')).toBeNull();
+    await settle();
+    expect(JSON.parse((await AsyncStorage.getItem('reactions.v1')) ?? 'null')).toEqual({});
+    expect(JSON.parse((await AsyncStorage.getItem('artistRatings.v1')) ?? 'null')).toEqual({});
+    expect(JSON.parse((await AsyncStorage.getItem('going.v1')) ?? 'null')).toEqual(['edc-orlando-26']);
+    alert.mockRestore();
   });
 });
 

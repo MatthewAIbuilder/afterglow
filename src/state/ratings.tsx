@@ -9,6 +9,8 @@ import { cleanRatings, rate, type Rating, type Ratings } from '../features/taste
 type Ctx = {
   ratings: Ratings;
   rate: (artistId: string, rating: Rating | undefined) => void;
+  /** Forget every rating (starting your sound over). */
+  clear: () => void;
 };
 
 const STORAGE_KEY = 'artistRatings.v1';
@@ -39,7 +41,7 @@ export function RatingsProvider({ children }: { children: ReactNode }) {
     setRatings((all) => rate(all, artistId, rating));
   }, []);
 
-  const value = useMemo<Ctx>(() => ({ ratings, rate: set }), [ratings, set]);
+  const value = useMemo<Ctx>(() => ({ ratings, rate: set, clear: () => setRatings({}) }), [ratings, set]);
   return <RatingsContext.Provider value={value}>{children}</RatingsContext.Provider>;
 }
 

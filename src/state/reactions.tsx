@@ -26,6 +26,8 @@ type Ctx = {
   markSkipped: (clipId: string) => void;
   /** A finished watch of a clip. Folded into what the clip already has, never stacked. */
   recordWatch: (clipId: string, watch: Watch) => void;
+  /** Forget every reaction (starting your sound over). */
+  clear: () => void;
 };
 
 const STORAGE_KEY = 'reactions.v1';
@@ -71,6 +73,7 @@ export function ReactionsProvider({ children }: { children: ReactNode }) {
       setLiked: (id, liked) => update(id, (r) => ({ ...r, liked, skipped: liked ? false : r.skipped })),
       toggleSaved: (id) => update(id, (r) => ({ ...r, saved: !r.saved })),
       markSkipped: (id) => update(id, (r) => ({ ...r, skipped: true, liked: false })),
+      clear: () => setReactions({}),
       recordWatch: (id, watch) =>
         update(id, (r) => {
           const watched = mergeWatch(r.watched, watch);

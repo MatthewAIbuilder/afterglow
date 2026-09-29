@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
@@ -9,8 +9,11 @@ import { artistsOnMap } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useRatings } from '../../state/ratings';
+import { useReactions } from '../../state/reactions';
+import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
-import { color, space, type } from '../../theme/tokens';
+import { color, radius, space, type } from '../../theme/tokens';
 import type { TasteSummary } from '../../features/taste/engine';
 
 const HEADER_H = 96;
@@ -31,16 +34,15 @@ export default function MySoundScreen() {
   const shownRef = useRef(shown);
   shownRef.current = shown;
 
-  useFocusEffect(
-    useCallback(() => {
-      const t = setTimeout(() => {
-        if (shownRef.current.taste === liveRef.current.taste) return;
-        haptic.settle();
-        setShown(liveRef.current);
-      }, 450);
-      return () => clearTimeout(t);
-    }, []),
-  );
+  const reshapeSoon = useCallback(() => {
+    const t = setTimeout(() => {
+      if (shownRef.current.taste === liveRef.current.taste) return;
+      haptic.settle();
+      setShown(liveRef.current);
+    }, 450);
+    return () => clearTimeout(t);
+  }, []);
+  useFocusEffect(reshapeSoon);
 
   // Who's on the map: artists the app knows something about, best matches first (see artistsOnMap).
   const onMap = useMemo(() => artistsOnMap(artists, shown.taste, shown.informed), [artists, shown]);
@@ -65,9 +67,16 @@ export default function MySoundScreen() {
         />
       </View>
 
-      <View style={[styles.header, { paddingTop: insets.top + space.lg }]} pointerEvents="none">
-        <Text style={styles.title}>My Sound</Text>
-        <Text style={styles.subtitle}>{subtitle(shown.summary, shown.rated)}</Text>
+      <View style={[styles.header, { paddingTop: insets.top + space.lg }]} pointerEvents="box-none">
+        <View style={styles.titleRow} pointerEvents="box-none">
+          <Text style={styles.title} pointerEvents="none">
+            My Sound
+          </Text>
+          {hasSignal(live.summary, live.rated) && <StartOver onCleared={reshapeSoon} />}
+        </View>
+        <Text style={styles.subtitle} pointerEvents="none">
+          {subtitle(shown.summary, shown.rated)}
+        </Text>
       </View>
 
       <ArtistSheet artistId={selectedId} taste={shown.taste} bottomInset={tabSpace} onClose={close} />
@@ -75,8 +84,54 @@ export default function MySoundScreen() {
   );
 }
 
-function subtitle({ likes, saves, skips, watched }: TasteSummary, rated: number) {
-  if (likes + saves + skips + watched + rated === 0) return 'Bigger means a closer match. Similar sounds sit together.';
+const hasSignal = ({ likes, saves, skips, watched }: TasteSummary, rated: number) =>
+  likes + saves + skips + watched + rated > 0;
+
+/**
+ * Clear everything your sound has learned (likes, saves, skips, watching,
+ * ratings) and the feed's viewing history. Plans stay: festivals you're going
+ * to and starred sets are yours, not your taste.
+ */
+function StartOver({ onCleared }: { onCleared: () => void }) {
+  const reactions = useReactions();
+  const ratings = useRatings();
+  const seen = useSeen();
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        Alert.alert(
+          'Start your sound over?',
+          'This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Start over',
+              style: 'destructive',
+              onPress: () => {
+                reactions.clear();
+                ratings.clear();
+                seen.clear();
+                // The map reshapes to the starting sound a beat later, as when you come back to it.
+                onCleared();
+              },
+            },
+          ],
+        );
+      }}
+      accessibilityRole="button"
+      accessibilityLabel="Start your sound over"
+      hitSlop={10}
+      style={({ pressed }) => [styles.startOver, pressed && { opacity: 0.7 }]}
+    >
+      <Text style={styles.startOverText}>Start over</Text>
+    </Pressable>
+  );
+}
+
+function subtitle(summary: TasteSummary, rated: number) {
+  const { likes, saves, skips, watched } = summary;
+  if (!hasSignal(summary, rated)) return 'Bigger means a closer match. Similar sounds sit together.';
   const parts = [
     likes && `${likes} ${likes === 1 ? 'like' : 'likes'}`,
     saves && `${saves} ${saves === 1 ? 'save' : 'saves'}`,
@@ -91,6 +146,16 @@ function subtitle({ likes, saves, skips, watched }: TasteSummary, rated: number)
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.largeTitle, color: color.moon },
+  startOver: {
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  startOverText: { ...type.caption, color: color.moonDim },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
 });
