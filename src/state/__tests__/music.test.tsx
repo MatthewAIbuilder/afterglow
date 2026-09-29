@@ -200,6 +200,34 @@ describe('music connections provider', () => {
     expect(await AsyncStorage.getItem(MUSIC_STORAGE_KEY)).toBeNull();
   });
 
+  it('a read that refreshes the sign-in after you disconnected doesn’t leave it behind', async () => {
+    // A real keychain: disconnect clears it, then the running read's token refresh writes it back.
+    const keychain = new Map<string, string>();
+    const hold = deferred<MusicLibrarySnapshot>();
+    const s = fake({
+      connect: jest.fn(async (): Promise<ConnectResult> => {
+        keychain.set('spotify', 'session-1');
+        return { ok: true };
+      }),
+      disconnect: jest.fn(async () => void keychain.delete('spotify')),
+    });
+    await mount(s);
+    await act(async () => void (await ctxOf().connect('spotify')));
+    s.fetchLibrary.mockImplementationOnce(() => hold.promise.then((snapshot) => (keychain.set('spotify', 'session-2'), snapshot)));
+    let read!: Promise<void>;
+    await act(async () => {
+      read = ctxOf().sync('spotify');
+    });
+    await act(async () => void (await ctxOf().disconnect('spotify')));
+    expect(keychain.size).toBe(0);
+    await act(async () => {
+      hold.resolve(snap(['Excision']));
+      await read;
+    });
+    expect(keychain.size).toBe(0);
+    expect(ctxOf().state.spotify).toBeUndefined();
+  });
+
   it('disconnecting while a reconnect’s sign-in is open forgets what that sign-in stored', async () => {
     const s = fake();
     await mount(s);

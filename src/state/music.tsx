@@ -100,6 +100,9 @@ export function MusicConnectionsProvider({ children, services: given }: { childr
         } catch (e) {
           if ((generation.current[provider] ?? 0) === gen) setState((s) => syncFailed(s, provider, errorKind(e)));
         }
+        // Disconnected while reading: the read may have refreshed and re-saved the sign-in after
+        // disconnect cleared it, so forget it again.
+        if ((generation.current[provider] ?? 0) !== gen) await services[provider].disconnect().catch(() => {});
       })();
       const run = read.finally(() => {
         if (inflight.current.get(provider) === run) inflight.current.delete(provider);

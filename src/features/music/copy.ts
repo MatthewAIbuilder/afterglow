@@ -222,7 +222,7 @@ export function musicNote(input: {
     const kept = failed.snapshot ? ' Your map still uses your last import.' : '';
     const text =
       failed.error === 'expired' || failed.error === 'denied'
-        ? `${name} needs you to connect again.${kept}`
+        ? `${name} needs you to sign in again.${kept}`
         : `Couldn’t sync ${name}.${kept || ' Try again from Music connections.'}`;
     return { text, action: 'open' };
   }
