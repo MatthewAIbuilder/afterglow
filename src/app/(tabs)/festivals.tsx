@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
   moreRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingRight: space.xl, marginTop: space.sm },
-  moreText: { marginBottom: 0 },
+  moreText: { marginBottom: 0, paddingRight: 0 },
   moreCount: { ...type.label, color: color.moonFaint, flex: 1, fontVariant: ['tabular-nums'] },
   section: {
     ...type.label,
