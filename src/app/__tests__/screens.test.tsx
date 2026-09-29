@@ -815,6 +815,15 @@ describe('Profile tab', () => {
     expect(app.getByLabelText('0 artists rated')).toBeTruthy();
     expect(app.getByText('Your festival profile')).toBeTruthy();
   });
+
+  it('shows your sound in three bars and the festivals you are going to, with your weekend', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['acl-26']));
+    await AsyncStorage.setItem('weekends.v1', JSON.stringify({ 'acl-26': 2 }));
+    const app = await renderApp('/profile');
+    await settle();
+    expect(app.getByLabelText(/^Your sound: .+ percent/)).toBeTruthy();
+    expect(app.getByLabelText(/^Austin City Limits 2026, weekend 2, /)).toBeTruthy();
+  });
 });
 
 describe('Notifications', () => {
