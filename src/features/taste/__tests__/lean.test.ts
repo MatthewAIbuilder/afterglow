@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Artist } from '../../../data/models';
-import { soundLean } from '../lean';
+import { artistMix, soundLean, tasteMix, toShares } from '../lean';
 
 const a = (id: string, sound: Artist['sound']): Artist => ({ id, name: id, sound });
 const artists = [
@@ -22,5 +22,32 @@ describe('which sounds your taste leans towards', () => {
     expect(soundLean(artists, { h1: 0.9, d1: 0.9 }, { d1: true })).toEqual(['dubstep']);
     expect(soundLean(artists, { m1: 0.4 }, all)).toEqual([]);
     expect(soundLean([], {}, {})).toEqual([]);
+  });
+});
+
+describe('sound mixes', () => {
+  it('shares weights out as whole percentages that add up to 100, largest first', () => {
+    expect(toShares({ 'melodic-bass': 1, dubstep: 0.25 }).map((s) => [s.tag, s.percent])).toEqual([
+      ['melodic-bass', 80],
+      ['dubstep', 20],
+    ]);
+    const thirds = toShares({ house: 1, techno: 1, trap: 1 });
+    expect(thirds.map((s) => s.percent).reduce((x, y) => x + y, 0)).toBe(100);
+    expect(thirds.map((s) => s.tag)).toEqual(['trap', 'techno', 'house']);
+    expect(thirds.map((s) => s.percent)).toEqual([34, 33, 33]);
+  });
+
+  it('leaves out sounds that round to nothing, and has nothing for no sound', () => {
+    expect(toShares({ dubstep: 1, house: 0.001 }).map((s) => s.tag)).toEqual(['dubstep']);
+    expect(toShares({})).toEqual([]);
+    expect(artistMix(a('new', {}))).toEqual([]);
+  });
+
+  it('mixes your taste from the same pull as your lean', () => {
+    const mix = tasteMix(artists, { m1: 0.9, m2: 0.8, d1: 0.7, h1: 0.3 }, all);
+    expect(mix[0].tag).toBe(soundLean(artists, { m1: 0.9, m2: 0.8, d1: 0.7, h1: 0.3 }, all)[0]);
+    expect(mix.reduce((x, s) => x + s.percent, 0)).toBe(100);
+    expect(mix.some((s) => s.tag === 'house')).toBe(false);
+    expect(tasteMix(artists, {}, all)).toEqual([]);
   });
 });

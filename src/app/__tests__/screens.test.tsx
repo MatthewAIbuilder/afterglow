@@ -18,6 +18,7 @@ import DiscoverFocusScreen from '../discover-focus';
 import LineupScreen from '../(tabs)/lineup';
 import ProfileScreen from '../(tabs)/profile';
 import NotificationsScreen from '../notifications';
+import YourSoundScreen from '../your-sound';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -42,6 +43,7 @@ function renderApp(initialUrl: string) {
       '(tabs)/lineup': LineupScreen,
       '(tabs)/profile': ProfileScreen,
       notifications: NotificationsScreen,
+      'your-sound': YourSoundScreen,
     },
     { initialUrl },
   );
@@ -651,5 +653,31 @@ describe('Notifications', () => {
     await fireEvent.press(app.getByLabelText('Notifications'));
     await settle();
     expect(app.getByText(/Nothing new/)).toBeTruthy();
+  });
+});
+
+describe('Sound breakdowns', () => {
+  it('shows an artist’s sound as a mix', async () => {
+    const app = await renderApp('/artist/illenium');
+    await settle();
+    expect(app.getByText('Their sound')).toBeTruthy();
+    expect(app.getByLabelText('Melodic bass, 80 percent')).toBeTruthy();
+    expect(app.getByLabelText('Dubstep, 20 percent')).toBeTruthy();
+  });
+
+  it('breaks your sound down from My Sound, for everyone or one festival', async () => {
+    const app = await renderApp('/sound');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Your sound, as a breakdown'));
+    await settle();
+    expect(app.getByText('Your sound')).toBeTruthy();
+    expect(app.getByText(/A first guess/)).toBeTruthy();
+    expect(app.getAllByLabelText(/, \d+ percent$/).length).toBeGreaterThan(1);
+  });
+
+  it('breaks down your sound at one festival', async () => {
+    const app = await renderApp('/your-sound?festival=solstice-26');
+    await settle();
+    expect(app.getByText('Your sound at Solstice 2026')).toBeTruthy();
   });
 });

@@ -75,6 +75,15 @@ export function BellIcon({ color, size = 20 }: P) {
   );
 }
 
+/** A sound breakdown: three ranked bars. */
+export function BarsIcon({ color, size = 14 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 6h16M4 12h11M4 18h6" stroke={color} strokeWidth={2.4} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 const CHEVRON = { right: 'M9 5l7 7-7 7', left: 'M15 5l-7 7 7 7', up: 'M5 15l7-7 7 7', down: 'M5 9l7 7 7-7' } as const;
 
 export function ChevronIcon({ color, size = 16, direction = 'right' }: P & { direction?: keyof typeof CHEVRON }) {

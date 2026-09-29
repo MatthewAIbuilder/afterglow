@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, Vi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
+import { BarsIcon } from '../../components/TabIcons';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
 import { SaveIcon } from '../../features/discover/icons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
@@ -145,6 +146,21 @@ function ScopeChips({
       style={styles.chipsWrap}
       contentContainerStyle={styles.chips}
     >
+      {/* Your sound (in this scope) as a breakdown of sounds. */}
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          router.push({ pathname: '/your-sound', params: value ? { festival: value } : {} });
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={
+          value ? `Your sound at ${festivals.find((f) => f.id === value)?.name}, as a breakdown` : 'Your sound, as a breakdown'
+        }
+        style={({ pressed }) => [styles.chip, styles.breakdown, pressed && { opacity: 0.75 }]}
+      >
+        <BarsIcon color={color.glow} size={12} />
+        <Text style={[styles.chipText, { color: color.moon }]}>Breakdown</Text>
+      </Pressable>
       {chips.map((c) => {
         const on = c.id === value;
         return (
@@ -296,6 +312,7 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  breakdown: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: 'rgba(169,124,255,0.45)', marginRight: space.sm },
   chipText: { ...type.caption, color: color.moonDim },
   sparse: {
     position: 'absolute',
