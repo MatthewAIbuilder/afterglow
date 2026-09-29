@@ -200,6 +200,20 @@ describe('Tune your lineup', () => {
     expect(app.getByText('AAT')).toBeTruthy();
     expect(app.getByText(/3 of 110/)).toBeTruthy();
   });
+
+  it('says who an artist sounds like among ones you love', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ alesso: 'love' }));
+    const app = await renderApp('/tune/edc-orlando-26');
+    await settle();
+    // No sound known for A LITTLE SOUND, so no hint.
+    expect(app.getByText('A LITTLE SOUND')).toBeTruthy();
+    expect(app.queryByText(/^Sounds like /)).toBeNull();
+    await fireEvent.press(app.getByLabelText("I don't know A LITTLE SOUND. Skip without rating."));
+    await settle();
+    // AARON HIBELL is house, like ALESSO.
+    expect(app.getByText('AARON HIBELL')).toBeTruthy();
+    expect(app.getByText(/^Sounds like .*ALESSO/)).toBeTruthy();
+  });
 });
 
 describe('Artist', () => {
