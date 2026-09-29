@@ -14,6 +14,7 @@ import { festivalNight } from './live';
 import { LiveNow } from './LiveNow';
 import { MustSeeList } from './MustSeeList';
 import { buildSchedule, rankLineup } from './plan';
+import { festivalRoute } from './route';
 import { planText } from './share';
 import { Timetable } from './Timetable';
 
@@ -31,6 +32,11 @@ export function YourFestival({ festival }: { festival: Festival }) {
     [festival, artists, taste, informed, mustSeesAt],
   );
   const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
+  // Every day set to set, from the same live taste and must-sees.
+  const route = useMemo(
+    () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id) }) : undefined),
+    [festival, artists, taste, informed, mustSeesAt],
+  );
   const text = useMemo(() => planText(festival, picks, schedule, APP_NAME), [festival, picks, schedule]);
   // Only during the festival's days (and the morning after) is there anything live to show.
   const today = useToday();
@@ -70,7 +76,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
       ) : schedule ? (
         <>
           {maybeLive && <LiveNow festival={festival} schedule={schedule} />}
-          <Timetable festival={festival} schedule={schedule} initialDay={tonight} />
+          <Timetable festival={festival} schedule={schedule} route={route} initialDay={tonight} />
         </>
       ) : (
         <MustSeeList festivalId={festival.id} picks={picks} />

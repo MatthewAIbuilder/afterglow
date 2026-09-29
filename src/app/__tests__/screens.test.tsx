@@ -272,6 +272,18 @@ describe('Festivals', () => {
     expect(app.getByText('Set times are out')).toBeTruthy();
     expect(app.getAllByText(/Friday/).length).toBeGreaterThan(0);
   });
+
+  it('lays out the full day set to set, with your picks one tap away', async () => {
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    // The full day comes first: a summary, and every stop says where and for how long.
+    expect(app.getByLabelText('Full day, set to set').props.accessibilityState.selected).toBe(true);
+    expect(app.getByText(/Where to be all day\.$/)).toBeTruthy();
+    expect(app.getAllByLabelText(/^\d{1,2}:\d{2} [AP]M to \d{1,2}:\d{2} [AP]M, .+ at .+, (whole set|first \d+ min|last \d+ min|\d+ min)/).length).toBeGreaterThan(1);
+    await fireEvent.press(app.getByLabelText('Your picks and clashes'));
+    await settle();
+    expect(app.queryByText(/Where to be all day/)).toBeNull();
+  });
 });
 
 describe('Tune your lineup', () => {

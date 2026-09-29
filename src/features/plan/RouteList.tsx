@@ -1,0 +1,157 @@
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ArtistAvatar } from '../../components/ArtistAvatar';
+import { stageName } from '../../data/festival';
+import type { Festival } from '../../data/types';
+import { haptic } from '../../lib/haptics';
+import { color, radius, space, type } from '../../theme/tokens';
+import { formatTime } from '../festivals/format';
+import { MustSeeToggle } from './MustSeeToggle';
+import { type DayRoute, type RouteStop, stintLabel } from './route';
+
+/** Minutes on the festival clock -> "23:40" (after midnight wraps back round). */
+const clock = (min: number) => {
+  const m = ((min % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+};
+const at = (min: number) => formatTime(clock(min));
+/** A gap this short is just a breather between sets. */
+const SHORT_BREAK = 20;
+
+/**
+ * The full-day route: where to be from the first set to the last, set to
+ * set, with when to leave and where to walk. Must-sees glow; discoveries are
+ * dashed; breaks are quiet.
+ */
+export function RouteList({ festival, route }: { festival: Festival; route: DayRoute }) {
+  if (!route.stops.length) return <Text style={styles.summary}>Nothing on this day.</Text>;
+  const sets = route.stops.filter((s): s is RouteStop => s.kind === 'set');
+  const first = route.stops[0];
+  const last = route.stops[route.stops.length - 1];
+  return (
+    <View>
+      <Text style={styles.summary}>
+        {sets.length} {sets.length === 1 ? 'set' : 'sets'}, {at(first.from)} to {at(last.to)}. Where to be all day.
+      </Text>
+      {route.stops.map((stop, i) => {
+        const prev = [...route.stops.slice(0, i)].reverse().find((s): s is RouteStop => s.kind === 'set');
+        const isLast = i === route.stops.length - 1;
+        return (
+          <View key={`${stop.from}-${stop.kind === 'set' ? stop.artist.id : 'break'}`} style={styles.row}>
+            <View style={styles.timeCol}>
+              <Text style={styles.time}>{at(stop.from).split(' ')[0]}</Text>
+              <Text style={styles.ampm}>{at(stop.from).split(' ')[1]}</Text>
+            </View>
+            <View style={styles.rail}>
+              <View
+                style={[
+                  styles.dot,
+                  stop.kind === 'break' && styles.dotBreak,
+                  stop.kind === 'set' && stop.pinned && styles.dotStrong,
+                  stop.kind === 'set' && !stop.known && styles.dotHollow,
+                ]}
+              />
+              {!isLast && <View style={styles.line} />}
+            </View>
+            <View style={styles.body}>
+              {stop.kind === 'break' ? (
+                <Text style={styles.breakText}>
+                  {stop.to - stop.from <= SHORT_BREAK
+                    ? `${stop.to - stop.from} min break`
+                    : `Break until ${at(stop.to)}. Nothing on for you.`}
+                </Text>
+              ) : (
+                <StopCard festival={festival} stop={stop} walkFrom={prev && prev.set.stageId !== stop.set.stageId ? prev : undefined} />
+              )}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function StopCard({ festival, stop, walkFrom }: { festival: Festival; stop: RouteStop; walkFrom?: RouteStop }) {
+  const stage = stageName(festival, stop.set.stageId);
+  const pct = `${Math.round(stop.match * 100)}%`;
+  const stint = stintLabel(stop);
+  const label = stop.pinned ? 'Must see' : stop.known ? undefined : 'New to you';
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        router.push({ pathname: '/artist/[id]', params: { id: stop.artist.id, festival: festival.id } });
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`${at(stop.from)} to ${at(stop.to)}, ${stop.artist.name} at ${stage}, ${stint.toLowerCase()}${
+        stop.known ? `, ${pct} match` : ', new to you'
+      }${stop.pinned ? ', one of your must sees' : ''}${walkFrom ? `. Walk over from ${stageName(festival, walkFrom.set.stageId)}` : ''}`}
+      style={({ pressed }) => [styles.card, !stop.known && styles.discovery, stop.pinned && styles.mustSee, pressed && { opacity: 0.7 }]}
+    >
+      {walkFrom ? <Text style={styles.walk}>Head to {stage}</Text> : null}
+      <View style={styles.line1}>
+        <ArtistAvatar artist={stop.artist} size={36} />
+        <View style={styles.text}>
+          {label ? <Text style={[styles.label, stop.pinned && { color: color.glow }]}>{label}</Text> : null}
+          <Text style={styles.name} numberOfLines={1}>
+            {stop.artist.name}
+          </Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {stage}
+          </Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {stint}, until {at(stop.to)}
+          </Text>
+        </View>
+        <View style={styles.side}>
+          {stop.known ? <Text style={[styles.match, stop.match >= 0.9 && { color: color.glow }]}>{pct}</Text> : null}
+          <MustSeeToggle artist={stop.artist} festivalId={festival.id} size={18} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  summary: { ...type.caption, color: color.moonDim, marginTop: space.lg, marginBottom: space.md },
+  row: { flexDirection: 'row' },
+  timeCol: { width: 50, paddingTop: space.md, alignItems: 'flex-end' },
+  time: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
+  ampm: { ...type.caption, fontSize: 10, color: color.moonFaint, marginTop: 1 },
+  rail: { width: 20, alignItems: 'center', marginHorizontal: space.xs },
+  dot: { width: 7, height: 7, borderRadius: 4, marginTop: space.md + 5, backgroundColor: color.moonDim },
+  dotStrong: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    marginTop: space.md + 4,
+    backgroundColor: color.glow,
+    shadowColor: color.glow,
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  dotHollow: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color.moonFaint },
+  dotBreak: { backgroundColor: color.hairline },
+  line: { flex: 1, width: StyleSheet.hairlineWidth * 2, backgroundColor: color.hairline, marginTop: space.xs },
+  body: { flex: 1, paddingBottom: space.md },
+  breakText: { ...type.caption, color: color.moonFaint, paddingTop: space.md + 1 },
+  card: {
+    borderRadius: radius.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  mustSee: { borderColor: 'rgba(169,124,255,0.45)', backgroundColor: 'rgba(169,124,255,0.10)' },
+  discovery: { backgroundColor: 'transparent', borderStyle: 'dashed', borderWidth: 1 },
+  walk: { ...type.caption, color: color.glow, marginBottom: space.xs },
+  line1: { flexDirection: 'row', alignItems: 'center', gap: space.sm + 2 },
+  text: { flex: 1 },
+  label: { ...type.caption, color: color.moonDim, marginBottom: 1 },
+  name: { ...type.headline, color: color.moon },
+  meta: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  side: { alignItems: 'center', marginRight: -6 },
+  match: { ...type.label, color: color.moonDim, fontVariant: ['tabular-nums'] },
+});
