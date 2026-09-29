@@ -244,14 +244,15 @@ describe('My Sound', () => {
   });
 });
 
-describe('Saved', () => {
-  it('opens your saved clips from My Sound, and unsaves with an undo', async () => {
+describe('Your clips', () => {
+  it('opens your clips from My Sound, and unsaves with an undo', async () => {
     await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: false, saved: true, skipped: false } }));
     const app = await renderApp('/sound');
     await settle();
-    await fireEvent.press(app.getByLabelText('Saved clips, 1'));
+    await fireEvent.press(app.getByLabelText('Your clips, 1'));
     await settle();
-    expect(app.getByText('Clips you saved to watch again.')).toBeTruthy();
+    expect(app.getByText('What you saved to watch again, and what you liked.')).toBeTruthy();
+    expect(app.queryByText('Liked')).toBeNull();
     expect(app.getByLabelText(/^Play ILLENIUM, /)).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Remove ILLENIUM from saved'));
     await settle();
@@ -261,10 +262,35 @@ describe('Saved', () => {
     expect(app.getByLabelText('Remove ILLENIUM from saved')).toBeTruthy();
   });
 
-  it('explains how to save when nothing is saved', async () => {
+  it('lists liked clips under Liked, and unlikes with an undo', async () => {
+    await AsyncStorage.setItem(
+      'reactions.v1',
+      JSON.stringify({
+        c1: { liked: true, saved: true, skipped: false },
+        c2: { liked: true, saved: false, skipped: false },
+      }),
+    );
+    const app = await renderApp('/sound');
+    await settle();
+    // Saved and liked counts once.
+    await fireEvent.press(app.getByLabelText('Your clips, 2'));
+    await settle();
+    expect(app.getByText('Saved')).toBeTruthy();
+    expect(app.getByText('Liked')).toBeTruthy();
+    expect(app.getByLabelText('Remove ILLENIUM from saved')).toBeTruthy();
+    const unlike = app.getByLabelText(/^Unlike /);
+    const name = String(unlike.props.accessibilityLabel).replace('Unlike ', '');
+    await fireEvent.press(unlike);
+    await settle();
+    await fireEvent.press(app.getByLabelText(`Like ${name} again`));
+    await settle();
+    expect(app.getByLabelText(`Unlike ${name}`)).toBeTruthy();
+  });
+
+  it('explains how to fill it when there is nothing yet', async () => {
     const app = await renderApp('/saved');
     await settle();
-    expect(app.getByText(/Nothing saved yet/)).toBeTruthy();
+    expect(app.getByText(/Nothing here yet/)).toBeTruthy();
   });
 });
 
