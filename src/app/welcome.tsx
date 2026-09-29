@@ -14,6 +14,9 @@ import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
+import { useWeekends } from '../state/weekends';
+import { FilterChips } from '../components/FilterChips';
+import { runLabel } from '../features/festivals/weekend';
 import { useWelcomed } from '../state/welcome';
 import { color, radius, space, type } from '../theme/tokens';
 
@@ -30,6 +33,7 @@ export default function WelcomeScreen() {
   const reduceMotion = useReducedMotion();
   const catalog = useCatalog();
   const { going, isGoing, toggle } = useGoing();
+  const { weekendOf, choose } = useWeekends();
   const { markWelcomed } = useWelcomed();
   const today = useToday();
   const [step, setStep] = useState<Step>('hello');
@@ -84,29 +88,48 @@ export default function WelcomeScreen() {
                 const on = isGoing(f.id);
                 const soon = countdown(f, today);
                 return (
-                  <Pressable
-                    key={f.id}
-                    onPress={() => {
-                      if (on) haptic.select();
-                      else haptic.tap();
-                      toggle(f.id);
-                    }}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: on }}
-                    accessibilityLabel={`${f.name}, ${whereWhen(f)}`}
-                    style={({ pressed }) => [styles.festival, on && styles.festivalOn, pressed && { opacity: 0.8 }]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.festivalName}>{f.name}</Text>
-                      <Text style={styles.festivalMeta}>
-                        {whereWhen(f)}
-                        {soon ? ` · ${soon}` : ''}
-                      </Text>
-                    </View>
-                    <View style={[styles.check, on && styles.checkOn]}>
-                      {on ? <CheckIcon color={color.moon} size={14} /> : null}
-                    </View>
-                  </Pressable>
+                  <View key={f.id}>
+                    <Pressable
+                      onPress={() => {
+                        if (on) haptic.select();
+                        else haptic.tap();
+                        toggle(f.id);
+                      }}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: on }}
+                      accessibilityLabel={`${f.name}, ${whereWhen(f)}`}
+                      style={({ pressed }) => [styles.festival, on && styles.festivalOn, pressed && { opacity: 0.8 }]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.festivalName}>{f.name}</Text>
+                        <Text style={styles.festivalMeta}>
+                          {whereWhen(f)}
+                          {soon ? ` · ${soon}` : ''}
+                        </Text>
+                      </View>
+                      <View style={[styles.check, on && styles.checkOn]}>
+                        {on ? <CheckIcon color={color.moon} size={14} /> : null}
+                      </View>
+                    </Pressable>
+                    {/* Two weekends: which one, so the plan and reminders follow it from the start. */}
+                    {on && f.weekends && f.weekends.length > 1 ? (
+                      <View style={styles.weekend}>
+                        <FilterChips
+                          inset={0}
+                          chips={[
+                            { key: undefined, label: 'Every weekend', accessibilityLabel: `Every weekend of ${f.name}` },
+                            ...f.weekends.map((r, i) => ({
+                              key: String(i + 1),
+                              label: `Weekend ${i + 1} · ${runLabel(r)}`,
+                              accessibilityLabel: `Weekend ${i + 1} of ${f.name}, ${runLabel(r)}`,
+                            })),
+                          ]}
+                          value={weekendOf(f.id) ? String(weekendOf(f.id)) : undefined}
+                          onChange={(k) => choose(f.id, k ? Number(k) : undefined)}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
                 );
               })}
             </View>
@@ -223,4 +246,5 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.sm },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(243,240,255,0.2)' },
   dotOn: { backgroundColor: color.glow, width: 18 },
+  weekend: { marginTop: space.sm, marginBottom: space.xs },
 });

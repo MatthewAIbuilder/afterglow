@@ -80,6 +80,17 @@ describe('Welcome', () => {
     return app;
   };
 
+  it('asks which weekend when you pick a two-weekend festival', async () => {
+    const app = await firstRun();
+    await fireEvent.press(app.getByText('Get started'));
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Austin City Limits 2026, /));
+    await settle();
+    await fireEvent.press(app.getByLabelText('Weekend 1 of Austin City Limits 2026, Oct 2 to 4'));
+    await settle();
+    expect(JSON.parse((await AsyncStorage.getItem('weekends.v1')) ?? '{}')).toEqual({ 'acl-26': 1 });
+  });
+
   it('walks a newcomer from hello to their festival, then into Tune', async () => {
     const app = await firstRun();
     expect(app.getByText('Get started')).toBeTruthy();
