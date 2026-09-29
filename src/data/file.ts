@@ -20,6 +20,7 @@ import { SOUND_TAGS } from './models';
  *   "artists":   [{ "id", "name", "sound": { "house": 1 }, "image"? }],
  *   "festivals": [{ "id", "name", "dates", "location", "start"?: "2026-11-06", "end"?: "2026-11-08",
  *                   "lineup": [artist ids, or { "artist", "note": "Sunset set" }],
+ *                   "weekends"?: [{ "start", "end" }, ...],   // festivals run over separate weekends
  *                   "days"?, "stages"?: [{ "id", "name" }], "poster"?,
  *                   "sets"?: [{ "artist", "day", "stage", "start": "23:40", "end": "01:10" }] }],
  *   "clips":     [{ "id", "artist", "festival", "title",
@@ -168,6 +169,23 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
     problems.push(`Festival "${festivalId}": it ends before it starts, so the dates were left out.`);
     delete festival.startDate;
     delete festival.endDate;
+  }
+  // A festival run over separate weekends: each one's first and last day, in order.
+  if (raw.weekends !== undefined) {
+    const runs = list(raw.weekends).map((w) => (isObj(w) ? { start: isoDay(w.start), end: isoDay(w.end) } : undefined));
+    const ok =
+      runs.length > 1 &&
+      runs.every((r) => r?.start && r.end && r.end >= r.start) &&
+      runs.every((r, j) => j === 0 || r!.start! > runs[j - 1]!.end!);
+    if (ok) {
+      festival.weekends = runs.map((r) => ({ start: r!.start!, end: r!.end! }));
+      festival.startDate = festival.weekends[0].start;
+      festival.endDate = festival.weekends[festival.weekends.length - 1].end;
+    } else {
+      problems.push(
+        `Festival "${festivalId}": "weekends" should list two or more weekends in order, each like { "start": "2026-10-02", "end": "2026-10-04" }, so it was left out.`,
+      );
+    }
   }
   if (raw.poster !== undefined) {
     const posterImageUrl = safeImageUrl(raw.poster);

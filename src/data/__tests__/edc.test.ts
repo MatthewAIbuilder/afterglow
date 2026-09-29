@@ -63,3 +63,15 @@ describe('EDC Orlando 2026', () => {
     expect(explore.length).toBeGreaterThan(EXPLORE_SHOWN);
   });
 });
+
+describe('Austin City Limits 2026', () => {
+  it('is in the app over its two weekends', () => {
+    const acl = BUILT_IN.catalog.festival('acl-26')!;
+    expect(acl.lineup).toHaveLength(138);
+    expect(acl.weekends).toEqual([
+      { start: '2026-10-02', end: '2026-10-04' },
+      { start: '2026-10-09', end: '2026-10-11' },
+    ]);
+    expect(acl).toMatchObject({ startDate: '2026-10-02', endDate: '2026-10-11' });
+  });
+});

@@ -86,6 +86,11 @@ export type Festival = {
   /** First and last day, "YYYY-MM-DD", for the countdown. `dates` stays the text people read. */
   startDate?: string;
   endDate?: string;
+  /**
+   * For a festival run over separate weekends (ACL, Coachella): each weekend's
+   * first and last day, in order. `startDate`/`endDate` then span them all.
+   */
+  weekends?: { start: string; end: string }[];
   /** What the lineup says about a particular set, by artist id: "Sunset set", "Wholesome riddim set". */
   notes?: Record<string, string>;
 };

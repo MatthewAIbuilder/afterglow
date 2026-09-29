@@ -1,6 +1,6 @@
 import type { Festival } from '../../data/models';
 import { groupFestivals, type Going } from '../festivals/going';
-import { countdown, daysUntil } from '../festivals/when';
+import { countdown, nextRun } from '../festivals/when';
 
 /**
  * What the bell has for you, worked out from the catalogue and your plans:
@@ -25,16 +25,19 @@ export function notices(festivals: Festival[], going: Going, today: Date): Notic
   const soon: Notice[] = [];
   const times: Notice[] = [];
   for (const f of groupFestivals(festivals, going, today).going) {
-    const until = daysUntil(f, today);
+    // The weekend that's on or next (the whole festival, for most).
+    const next = nextRun(f, today);
     const when = countdown(f, today);
-    if (when === 'Happening now') {
-      now.push({ id: `now:${f.id}:${f.startDate}`, festivalId: f.id, kind: 'now', title: `${f.name} is happening now`, body: 'See who your plan says to catch next.' });
-    } else if (until !== undefined && until >= 1 && until <= SOON_DAYS) {
+    const until = next?.until;
+    const which = next && next.index > 0 ? ` weekend ${next.index + 1}` : '';
+    if (next && next.until <= 0) {
+      now.push({ id: `now:${f.id}:${next.run.start}`, festivalId: f.id, kind: 'now', title: `${f.name} is happening now`, body: 'See who your plan says to catch next.' });
+    } else if (next && until !== undefined && until >= 1 && until <= SOON_DAYS) {
       soon.push({
-        id: `soon:${f.id}:${f.startDate}`,
+        id: `soon:${f.id}:${next.run.start}`,
         festivalId: f.id,
         kind: 'soon',
-        title: `${f.name} starts ${until === 1 ? 'tomorrow' : `in ${until} days`}`,
+        title: `${f.name}${which} starts ${until === 1 ? 'tomorrow' : `in ${until} days`}`,
         body: f.sets?.length ? 'Your day-by-day plan is ready.' : 'Set times aren’t out yet. Your must sees are ready.',
       });
     }

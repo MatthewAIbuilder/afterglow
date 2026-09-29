@@ -43,6 +43,18 @@ describe('the notifications bell', () => {
     expect(notices([fest('done', '2026-06-01', '2026-06-03', true)], ['done'], today)).toEqual([]);
   });
 
+  it('knows the week between two weekends is not happening now, and says when weekend 2 is close', () => {
+    const acl: Festival = {
+      ...fest('acl', '2026-10-02', '2026-10-11'),
+      weekends: [
+        { start: '2026-10-02', end: '2026-10-04' },
+        { start: '2026-10-09', end: '2026-10-11' },
+      ],
+    };
+    expect(notices([acl], ['acl'], new Date(2026, 9, 3, 12)).map((n) => n.title)).toEqual(['ACL is happening now']);
+    expect(notices([acl], ['acl'], new Date(2026, 9, 6, 12)).map((n) => n.title)).toEqual(['ACL weekend 2 starts in 3 days']);
+  });
+
   it('counts what you have not read', () => {
     const list = notices([fest('a', '2026-10-01', undefined, true)], ['a'], today);
     expect(unreadCount(list, new Set())).toBe(2);

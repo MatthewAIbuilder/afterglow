@@ -163,6 +163,24 @@ describe('catalogue files', () => {
     expect(built.catalog.festival('f')?.notes).toEqual({ a: 'Sunset set' });
   });
 
+  it('reads the weekends of a festival run over two, and checks them', () => {
+    const weekend = (start: string, end: string) => ({ start, end });
+    const parsed = parseCatalogFile({
+      version: 1,
+      festivals: [
+        { id: 'acl', name: 'ACL', dates: 'Oct', lineup: [], weekends: [weekend('2026-10-02', '2026-10-04'), weekend('2026-10-09', '2026-10-11')] },
+        { id: 'one', name: 'One', dates: 'Oct', lineup: [], weekends: [weekend('2026-10-02', '2026-10-04')] },
+        { id: 'order', name: 'Order', dates: 'Oct', lineup: [], weekends: [weekend('2026-10-09', '2026-10-11'), weekend('2026-10-02', '2026-10-04')] },
+        { id: 'bad', name: 'Bad', dates: 'Oct', lineup: [], weekends: [weekend('2026-10-02', 'soon'), weekend('2026-10-09', '2026-10-11')] },
+      ],
+    });
+    const [acl, one, order, bad] = parsed.snapshot!.festivals;
+    expect(acl).toMatchObject({ startDate: '2026-10-02', endDate: '2026-10-11' });
+    expect(acl.weekends).toHaveLength(2);
+    for (const f of [one, order, bad]) expect(f.weekends).toBeUndefined();
+    expect(parsed.problems.filter((p) => /"weekends" should list/.test(p))).toHaveLength(3);
+  });
+
   it('marks YouTube Shorts as vertical', () => {
     const parsed = parseCatalogFile({
       version: 1,

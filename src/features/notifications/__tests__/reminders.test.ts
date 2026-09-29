@@ -35,6 +35,19 @@ describe('festival reminders', () => {
     expect(list[1].at).toEqual(new Date(2026, 11, 31, REMINDER_HOUR));
   });
 
+  it('reminds the day before each weekend of a festival run over two', () => {
+    const acl: Festival = {
+      ...fest('acl', '2026-10-02'),
+      endDate: '2026-10-11',
+      weekends: [
+        { start: '2026-10-02', end: '2026-10-04' },
+        { start: '2026-10-09', end: '2026-10-11' },
+      ],
+    };
+    expect(festivalReminders([acl], ['acl'], now).map((r) => r.title)).toEqual(['ACL is tomorrow', 'ACL weekend 2 is tomorrow']);
+    expect(festivalReminders([acl], ['acl'], new Date(2026, 9, 5, 12)).map((r) => r.title)).toEqual(['ACL weekend 2 is tomorrow']);
+  });
+
   it('changes its wording, and so its id, once set times are out', () => {
     const before = festivalReminders([fest('a', '2026-11-06')], ['a'], now);
     const after = festivalReminders([fest('a', '2026-11-06', true)], ['a'], now);
