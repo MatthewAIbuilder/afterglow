@@ -26,7 +26,7 @@ const NEAR_SOUND = 0.3;
 /** Shortest part of a clashing set worth suggesting you catch. */
 const MIN_CATCH = 20;
 /** Times before noon belong to the night before. */
-const DAY_BREAK = 12 * 60;
+export const DAY_BREAK = 12 * 60;
 
 export type Tier = 'must-see' | 'strong' | 'explore';
 

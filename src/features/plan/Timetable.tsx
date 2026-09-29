@@ -16,9 +16,23 @@ import { PickRow } from './MustSeeList';
 import type { ClashVerdict, Schedule, ScheduleDay, ScheduleItem, TimedPick } from './plan';
 
 /** After set times: your picks as a day-by-day timeline, with clashes called out. */
-export function Timetable({ festival, schedule }: { festival: Festival; schedule: Schedule }) {
+export function Timetable({
+  festival,
+  schedule,
+  initialDay,
+}: {
+  festival: Festival;
+  schedule: Schedule;
+  /** Open on this day (tonight, during the festival) instead of the first day with something on. */
+  initialDay?: string;
+}) {
   const reduceMotion = useReducedMotion();
-  const [day, setDay] = useState(() => (schedule.days.find((d) => d.items.length) ?? schedule.days[0])?.day);
+  const [day, setDay] = useState(
+    () =>
+      (initialDay && schedule.days.some((d) => d.day === initialDay)
+        ? initialDay
+        : (schedule.days.find((d) => d.items.length) ?? schedule.days[0])?.day),
+  );
   const current = schedule.days.find((d) => d.day === day) ?? schedule.days[0];
   if (!current) return null;
 
