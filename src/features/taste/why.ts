@@ -9,15 +9,23 @@ import type { Ratings } from './ratings';
  */
 type Reaction = { liked: boolean; saved: boolean; skipped: boolean; watched?: string };
 
-export type ArtistSignals = { likes: number; saves: number; skips: number; watched: number; rating?: 'love' | 'pass' };
+export type ArtistSignals = {
+  likes: number;
+  saves: number;
+  skips: number;
+  watched: number;
+  rating?: 'love' | 'pass';
+  following?: boolean;
+};
 
 export function artistSignals(
   artistId: string,
   clips: Clip[],
   reactions: Record<string, Reaction | undefined>,
   ratings: Ratings,
+  following = false,
 ): ArtistSignals {
-  const s: ArtistSignals = { likes: 0, saves: 0, skips: 0, watched: 0, rating: ratings[artistId] };
+  const s: ArtistSignals = { likes: 0, saves: 0, skips: 0, watched: 0, rating: ratings[artistId], ...(following ? { following } : {}) };
   for (const c of clips) {
     if (c.artistId !== artistId) continue;
     const r = reactions[c.id];
@@ -35,6 +43,7 @@ const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? o
 /**
  * "From your 2 likes and 1 save", "From your rating and 1 like". The rating
  * itself is shown right beside this on the artist page, so it's only named.
+ * Following them is added at the end: "From your 2 likes, and you follow them".
  * `informed` says whether anything real is behind the match.
  */
 export function whyLine(s: ArtistSignals, informed: boolean): string {
@@ -47,7 +56,8 @@ export function whyLine(s: ArtistSignals, informed: boolean): string {
   ].filter((p): p is string => !!p);
   if (parts.length) {
     const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
-    return `From your ${list}`;
+    return s.following ? `From your ${list}, and you follow them` : `From your ${list}`;
   }
+  if (s.following) return 'From following them';
   return informed ? 'From sounds you like' : 'A first guess. Rate them or react to their clips to sharpen it.';
 }

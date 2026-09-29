@@ -806,6 +806,49 @@ describe('Lineup tab', () => {
   });
 });
 
+describe('Following', () => {
+  it('follows an artist from their page', async () => {
+    const app = await renderApp('/artist/illenium');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Follow ILLENIUM'));
+    await settle();
+    expect(app.getByText('Following')).toBeTruthy();
+    expect(app.getByText(/and you follow them$|^From following them$/)).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('follows.v1')) ?? '{}')).toHaveProperty('illenium');
+    await fireEvent.press(app.getByLabelText('Following ILLENIUM. Tap to unfollow.'));
+    await settle();
+    expect(app.getByLabelText('Follow ILLENIUM')).toBeTruthy();
+  });
+
+  it('lists who you follow on Profile, with where to catch them next', async () => {
+    await AsyncStorage.setItem('follows.v1', JSON.stringify({ illenium: ['plays:solstice-26'] }));
+    const app = await renderApp('/profile');
+    await settle();
+    expect(app.getByLabelText('ILLENIUM, next at Solstice 2026')).toBeTruthy();
+  });
+
+  it('says who you follow on festival cards', async () => {
+    await AsyncStorage.setItem('follows.v1', JSON.stringify({ illenium: ['plays:solstice-26'] }));
+    const app = await renderApp('/festivals');
+    await settle();
+    expect(app.getAllByText('ILLENIUM, who you follow').length).toBeGreaterThan(0);
+  });
+
+  it('rings the bell with news of an artist you follow, and opens them at that festival', async () => {
+    // Followed before anything about them was known, so Solstice and its set time are news.
+    await AsyncStorage.setItem('follows.v1', JSON.stringify({ illenium: [] }));
+    const app = await renderApp('/notifications');
+    await settle();
+    await settle();
+    expect(app.getByText('ILLENIUM joins Solstice 2026')).toBeTruthy();
+    expect(app.getByText('Set time for ILLENIUM at Solstice 2026')).toBeTruthy();
+    await fireEvent.press(app.getByText('Set time for ILLENIUM at Solstice 2026'));
+    await settle();
+    // In Solstice's context: the must-see star is there.
+    expect(app.getByText('Mark as must see')).toBeTruthy();
+  });
+});
+
 describe('Profile tab', () => {
   it('shows what you have built so far and what is coming', async () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));

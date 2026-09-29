@@ -21,6 +21,8 @@ import { isWatch, type Watch } from './watch';
  *   is at least a strong match (`RATED.love`), someone you pass on is left
  *   out of your plan (`RATED.pass`). It's how a lineup with no clips gets
  *   learned.
+ * - Following an artist is a standing "I'm into them": a little less than a
+ *   like (`FOLLOW_WEIGHT`), spilling over like one.
  * - Part of that signal spills over to artists with a similar sound, which is
  *   how the map learns about artists you have not seen yet.
  * - Changes shrink near the edges: a 98% match barely moves on another like,
@@ -32,6 +34,8 @@ export const WEIGHT = { like: 1, save: 1.3, skip: -0.8 };
 export const RATING_WEIGHT = { love: 1.3, pass: -0.8 } as const;
 /** What a direct rating says about the artist themselves: love is at least this, pass at most this. */
 export const RATED = { love: 0.8, pass: 0.3 } as const;
+/** Following an artist: a little less than a like, since you might follow someone just for news of them. */
+export const FOLLOW_WEIGHT = 0.6;
 /** Passive watch signals, one per clip at most. */
 export const WATCH_WEIGHT: Record<Watch, number> = { through: 0.3, replayed: 0.5, quick: -0.2 };
 /** Bounds on all passive signal for one artist, however many clips you watch. */
@@ -54,6 +58,8 @@ export function computeTaste(
   similarity: Similarity = soundSimilarity,
   /** Artists rated directly, without a clip. */
   ratings: Ratings = {},
+  /** Artists you follow. */
+  follows: readonly string[] = [],
 ): { taste: TasteProfile; summary: TasteSummary; informed: Record<string, boolean> } {
   const clipById = new Map(clips.map((c) => [c.id, c]));
   const direct: Record<string, number> = {};
@@ -88,6 +94,9 @@ export function computeTaste(
   const known = new Set(artists.map((a) => a.id));
   for (const [id, r] of Object.entries(ratings)) {
     if (known.has(id) && isRating(r)) direct[id] = (direct[id] ?? 0) + RATING_WEIGHT[r];
+  }
+  for (const id of new Set(follows)) {
+    if (known.has(id)) direct[id] = (direct[id] ?? 0) + FOLLOW_WEIGHT;
   }
   for (const [id, p] of Object.entries(passive)) {
     direct[id] = (direct[id] ?? 0) + Math.min(WATCH_CAP.up, Math.max(WATCH_CAP.down, p));

@@ -20,6 +20,8 @@ import { whereWhen } from '../../features/festivals/format';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
+import { useFollows } from '../../state/follows';
+import { followingLine } from '../../features/follow/follows';
 import { type FestivalsView, useFestivalsView } from '../../state/festivalsView';
 import { useGoing } from '../../state/going';
 import { useWeekends } from '../../state/weekends';
@@ -309,6 +311,8 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
   const timesOut = !!festival.sets?.length;
   const today = useToday();
   const soon = countdown(festival, today);
+  const { followed } = useFollows();
+  const follows = followingLine(festival, followed, (id) => artistById(id)?.name);
 
   return (
     <Pressable
@@ -317,7 +321,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
         router.push(`/festival/${festival.id}`);
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${festival.name}, ${festival.dates}`}
+      accessibilityLabel={`${festival.name}, ${festival.dates}${follows ? `. ${follows}` : ''}`}
       // The clips button sits inside the card, so screen readers get it as an action on the card.
       accessibilityActions={reach.clips > 0 ? [{ name: 'discover', label: 'Discover the lineup' }] : undefined}
       onAccessibilityAction={(e) => {
@@ -331,6 +335,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
           <Text style={styles.meta}>
             {whereWhen(festival)}
           </Text>
+          {follows ? <Text style={styles.follows} numberOfLines={1}>{follows}</Text> : null}
         </View>
         <ChevronIcon color={color.moonFaint} />
       </View>
@@ -415,6 +420,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(169,124,255,0.4)',
   },
+  follows: { ...type.caption, color: color.glow, marginTop: space.xs },
   title: { ...type.largeTitle, color: color.moon },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginTop: space.lg },

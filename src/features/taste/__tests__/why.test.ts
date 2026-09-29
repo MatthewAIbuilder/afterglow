@@ -39,4 +39,10 @@ describe('why a match is what it is', () => {
     expect(whyLine(none, true)).toBe('From sounds you like');
     expect(whyLine(none, false)).toMatch(/^A first guess/);
   });
+  it('adds that you follow them', () => {
+    expect(whyLine({ ...artistSignals('a', clips, { a2: r(true, false, false) }, {}, true) }, true)).toBe(
+      'From your 1 like, and you follow them',
+    );
+    expect(whyLine(artistSignals('a', clips, {}, {}, true), true)).toBe('From following them');
+  });
 });

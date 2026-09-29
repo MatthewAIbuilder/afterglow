@@ -10,6 +10,7 @@ import { ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
 import type { Artist } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
+import { FollowButton } from '../../features/follow/FollowButton';
 import { StarIcon } from '../../features/plan/icons';
 import { artistMix } from '../../features/taste/lean';
 import { RateArtist } from '../../features/taste/RateArtist';
@@ -22,6 +23,7 @@ import { describeSet, formatDuration } from '../../features/festivals/format';
 import { setLine } from '../../features/festivals/when';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useFollows } from '../../state/follows';
 import { usePlan } from '../../state/plan';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
@@ -41,6 +43,7 @@ export default function ArtistScreen() {
   const { isMustSee, toggleMustSee } = usePlan();
   const { reactions } = useReactions();
   const { ratings } = useRatings();
+  const { isFollowing } = useFollows();
   if (!artist) return null;
   const context = festivalId ? catalog.festival(festivalId) : undefined;
   const starFestival = context?.lineup.includes(artist.id) ? context : undefined;
@@ -82,7 +85,7 @@ export default function ArtistScreen() {
           <Text style={styles.match}>{pct}% match</Text>
           {/* What the match rests on, so it never feels arbitrary. */}
           <Text style={styles.why}>
-            {whyLine(artistSignals(artist.id, catalog.clips, reactions, ratings), !!informed[artist.id])}
+            {whyLine(artistSignals(artist.id, catalog.clips, reactions, ratings, isFollowing(artist.id)), !!informed[artist.id])}
           </Text>
           <RateArtist artist={artist} />
           {starFestival && (
@@ -229,6 +232,9 @@ export default function ArtistScreen() {
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
+      <View style={[styles.follow, { top: insets.top + space.sm }]}>
+        <FollowButton artist={artist} />
+      </View>
     </View>
   );
 }
@@ -245,6 +251,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   back: { position: 'absolute', left: space.lg },
+  follow: { position: 'absolute', right: space.lg },
   hero: { alignItems: 'center', paddingHorizontal: space.xl },
   halo: { position: 'absolute', top: HERO / 2 - HALO / 2 },
   name: { ...type.largeTitle, color: color.moon, marginTop: space.xl, textAlign: 'center' },

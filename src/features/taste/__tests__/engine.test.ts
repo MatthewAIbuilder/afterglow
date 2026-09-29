@@ -4,6 +4,7 @@ import { CLIPS } from '../../../data/mock/clips';
 import { MOCK_TASTE } from '../../../data/mock/tasteProfile';
 import type { Clip } from '../../../data/types';
 import { computeTaste, WATCH_CAP, WATCH_WEIGHT, WEIGHT } from '../engine';
+import { soundSimilarity } from '../similarity';
 
 const clipOf = (artistId: string) => CLIPS.find((c) => c.artistId === artistId)!.id;
 const none = { liked: false, saved: false, skipped: false };
@@ -27,6 +28,18 @@ describe('taste engine', () => {
     const { taste } = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [clipOf('excision')]: { ...none, liked: true } });
     expect(taste.levity).toBeGreaterThan(MOCK_TASTE.levity);
     expect(taste['john-summit']).toBeCloseTo(MOCK_TASTE['john-summit']);
+  });
+
+  it('counts following an artist as a little less than a like, spilling over the same way', () => {
+    const followed = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, {}, soundSimilarity, {}, ['excision']).taste;
+    const liked = computeTaste(MOCK_TASTE, ARTISTS, CLIPS, { [clipOf('excision')]: { ...none, liked: true } }).taste;
+    expect(followed.excision).toBeGreaterThan(MOCK_TASTE.excision);
+    expect(followed.excision).toBeLessThan(liked.excision);
+    expect(followed.levity).toBeGreaterThan(MOCK_TASTE.levity);
+    // Following no one changes nothing; following someone unknown neither.
+    expect(computeTaste(MOCK_TASTE, ARTISTS, CLIPS, {}, soundSimilarity, {}, ['nobody']).taste).toEqual(
+      computeTaste(MOCK_TASTE, ARTISTS, CLIPS, {}).taste,
+    );
   });
 
   it('marks artists with no prior and no signal as uninformed', () => {

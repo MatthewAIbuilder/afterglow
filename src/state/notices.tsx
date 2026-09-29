@@ -2,7 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
 import { useToday } from '../lib/useToday';
+import { followNotices } from '../features/follow/follows';
 import { useCatalog } from './catalog';
+import { useFollows } from './follows';
 import { useGoing } from './going';
 import { useWeekends } from './weekends';
 
@@ -20,7 +22,8 @@ const STORAGE_KEY = 'noticesRead.v1';
 const NoticesContext = createContext<Ctx | null>(null);
 
 export function NoticesProvider({ children }: { children: ReactNode }) {
-  const { festivals } = useCatalog();
+  const { festivals, artists } = useCatalog();
+  const { follows } = useFollows();
   const { going } = useGoing();
   const today = useToday();
   const [read, setRead] = useState<ReadonlySet<string>>(new Set());
@@ -51,7 +54,11 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   // Festivals as they are for you: a two-weekend festival follows the weekend you're going to.
   const { forYou } = useWeekends();
   const mine = useMemo(() => festivals.map(forYou), [festivals, forYou]);
-  const list = useMemo(() => notices(mine, going, today), [mine, going, today]);
+  // Festival news first, then news of artists you follow (whatever festival it's at: that's the point of following).
+  const list = useMemo(
+    () => [...notices(mine, going, today), ...followNotices(follows, artists, festivals, today)],
+    [mine, going, today, follows, artists, festivals],
+  );
   const value = useMemo<Ctx>(() => ({ list, read, markRead, hydrated }), [list, read, markRead, hydrated]);
   return <NoticesContext.Provider value={value}>{children}</NoticesContext.Provider>;
 }

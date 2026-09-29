@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
+import { FollowsProvider } from '../state/follows';
 import { GoingProvider } from '../state/going';
 import { NoticesProvider } from '../state/notices';
 import { WeekendsProvider } from '../state/weekends';
@@ -19,6 +20,7 @@ export default function RootLayout() {
       <CatalogProvider>
       <ReactionsProvider>
       <RatingsProvider>
+      <FollowsProvider>
       <PlanProvider>
       <GoingProvider>
       <SeenProvider>
@@ -83,6 +85,7 @@ export default function RootLayout() {
       </SeenProvider>
       </GoingProvider>
       </PlanProvider>
+      </FollowsProvider>
       </RatingsProvider>
       </ReactionsProvider>
       </CatalogProvider>

@@ -5,14 +5,16 @@ import { countdown, nextRun } from '../festivals/when';
 /**
  * What the bell has for you, worked out from the catalogue and your plans:
  * set times coming out for a festival you're going to, and the festival
- * getting close or starting. Pure: nothing is sent anywhere. Later, likes and
- * followers can join the same list.
+ * getting close or starting. Pure: nothing is sent anywhere. News about
+ * artists you follow joins the same list (`features/follow/follows.ts`).
  */
 export type Notice = {
   /** Stable, so a notice you've read stays read; changes when the news does (e.g. new dates). */
   id: string;
   festivalId: string;
-  kind: 'now' | 'soon' | 'setTimes';
+  /** Set for news about an artist you follow: opening it shows the artist at that festival. */
+  artistId?: string;
+  kind: 'now' | 'soon' | 'setTimes' | 'followJoined' | 'followSet';
   title: string;
   body: string;
 };

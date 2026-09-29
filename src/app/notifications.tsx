@@ -9,7 +9,7 @@ import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
 import { color, radius, space, type } from '../theme/tokens';
 
-/** Notifications: news about the festivals you're going to. Opening it marks everything read. */
+/** Notifications: news about the festivals you're going to and the artists you follow. Opening it marks everything read. */
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const { list, read, markRead, hydrated } = useNotices();
@@ -29,13 +29,13 @@ export default function NotificationsScreen() {
       >
         <View style={styles.pad}>
           <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.meta}>News about the festivals you’re going to.</Text>
+          <Text style={styles.meta}>News about the festivals you’re going to and the artists you follow.</Text>
         </View>
         <View style={[styles.pad, styles.list]}>
           {list.length === 0 ? (
             <Text style={styles.empty}>
               Nothing new. Tap “I’m going” on a festival and you’ll hear here when its set times come out and when
-              it’s nearly time.
+              it’s nearly time. Follow an artist to hear when they join a lineup.
             </Text>
           ) : null}
           {list.map((n) => {
@@ -45,7 +45,9 @@ export default function NotificationsScreen() {
                 key={n.id}
                 onPress={() => {
                   haptic.select();
-                  router.push(`/festival/${n.festivalId}`);
+                  // News of an artist you follow opens them at that festival (their set, the must-see star).
+                  if (n.artistId) router.push({ pathname: '/artist/[id]', params: { id: n.artistId, festival: n.festivalId } });
+                  else router.push(`/festival/${n.festivalId}`);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`${isNew ? 'New. ' : ''}${n.title}. ${n.body}`}

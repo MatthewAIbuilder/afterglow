@@ -345,7 +345,7 @@ const hasSignal = ({ likes, saves, skips, watched }: TasteSummary, rated: number
 /**
  * Clear everything your sound has learned (likes, saves, skips, watching,
  * ratings) and the feed's viewing history. Plans stay: festivals you're going
- * to and starred sets are yours, not your taste.
+ * to, starred sets and artists you follow are yours, not what was learned.
  */
 function StartOver({ onCleared }: { onCleared: () => void }) {
   const reactions = useReactions();
@@ -357,7 +357,7 @@ function StartOver({ onCleared }: { onCleared: () => void }) {
         haptic.select();
         Alert.alert(
           'Start your sound over?',
-          'This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.',
+          'This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to, your starred sets and the artists you follow stay.',
           [
             { text: 'Cancel', style: 'cancel' },
             {

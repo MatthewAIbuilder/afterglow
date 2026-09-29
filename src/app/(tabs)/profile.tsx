@@ -8,6 +8,9 @@ import { ChevronIcon, ProfileIcon } from '../../components/TabIcons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useFollows } from '../../state/follows';
+import { ArtistAvatar } from '../../components/ArtistAvatar';
+import { nextFestival } from '../../features/follow/follows';
 import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
@@ -43,6 +46,12 @@ export default function ProfileScreen() {
   const { forYou, weekendOf } = useWeekends();
   const today = useToday();
   const mine = groupFestivals(catalog.festivals.map(forYou), going, today).going;
+  // Artists you follow, with where to catch them next.
+  const { followed } = useFollows();
+  const following = followed
+    .map((id) => catalog.artist(id))
+    .filter((a): a is NonNullable<typeof a> => !!a)
+    .map((artist) => ({ artist, next: nextFestival(artist.id, catalog.festivals, today) }));
 
   const stats = [
     { n: festivals, label: festivals === 1 ? 'festival' : 'festivals' },
@@ -126,6 +135,42 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          <View style={styles.block}>
+            <Text style={[styles.blockTitle, styles.blockTitleAlone]}>Following</Text>
+            {following.length === 0 ? (
+              <Text style={styles.blockBody}>
+                Tap Follow on an artist’s page and you’ll hear when they join a lineup or their set time is out.
+              </Text>
+            ) : (
+              following.map(({ artist, next }) => {
+                const when = next ? `${next.name} · ${countdown(next, today) ?? next.dates}` : 'No festival announced yet';
+                return (
+                  <Pressable
+                    key={artist.id}
+                    onPress={() => {
+                      haptic.select();
+                      router.push({ pathname: '/artist/[id]', params: next ? { id: artist.id, festival: next.id } : { id: artist.id } });
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${artist.name}, ${next ? `next at ${next.name}` : 'no festival announced yet'}`}
+                    style={({ pressed }) => [styles.goingRow, pressed && { opacity: 0.7 }]}
+                  >
+                    <ArtistAvatar artist={artist} size={36} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.goingName} numberOfLines={1}>
+                        {artist.name}
+                      </Text>
+                      <Text style={styles.goingMeta} numberOfLines={1}>
+                        {when}
+                      </Text>
+                    </View>
+                    <ChevronIcon color={color.moonFaint} size={12} />
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+
           <Pressable
             onPress={() => {
               haptic.select();
@@ -144,7 +189,7 @@ export default function ProfileScreen() {
             <Text style={styles.soonKicker}>Coming soon</Text>
             <Text style={styles.soonTitle}>Your festival profile</Text>
             <Text style={styles.soonBody}>
-              Share your plan and the sets you love, follow friends, and see who else is going.
+              Share your plan and the sets you love, add friends, and see who else is going.
             </Text>
           </View>
         </View>
@@ -165,6 +210,7 @@ const styles = StyleSheet.create({
   blockHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.md },
   blockTitle: { ...type.headline, color: color.moon },
   blockTitleAlone: { marginBottom: space.xs },
+  blockBody: { ...type.caption, color: color.moonDim },
   goingRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.sm },
   goingName: { ...type.label, color: color.moon },
   goingMeta: { ...type.caption, color: color.moonDim, marginTop: 2, fontVariant: ['tabular-nums'] },
