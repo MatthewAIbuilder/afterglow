@@ -1,13 +1,14 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
 import { SaveIcon } from '../../features/discover/icons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
-import { artistsOnMap } from '../../features/sound-map/layout';
+import { leftToRate } from '../../features/festivals/tune';
+import { artistsOnMap, mapCandidates, SPARSE_MAP } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
@@ -16,9 +17,12 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
+import type { Festival } from '../../data/types';
 import type { TasteSummary } from '../../features/taste/engine';
 
 const HEADER_H = 96;
+/** The row of festival chips under the subtitle. */
+const SCOPE_H = 44;
 
 export default function MySoundScreen() {
   const insets = useSafeAreaInsets();
@@ -28,7 +32,8 @@ export default function MySoundScreen() {
 
   // The map shows the taste you last saw, then reshapes a beat after you
   // arrive, so you can watch what your likes, skips and viewing changed.
-  const { artists } = useCatalog();
+  const catalog = useCatalog();
+  const { artists, festivals } = catalog;
   const live = useTaste();
   const liveRef = useRef(live);
   liveRef.current = live;
@@ -46,11 +51,29 @@ export default function MySoundScreen() {
   }, []);
   useFocusEffect(reshapeSoon);
 
+  // Everyone, or one festival's lineup: your sound at that festival. A festival page can open it (`festival` param).
+  const [scopeId, setScopeId] = useState<string | undefined>();
+  const { festival: festivalParam } = useLocalSearchParams<{ festival?: string }>();
+  const navigation = useNavigation();
+  if (festivalParam && festivalParam !== scopeId && catalog.festival(festivalParam)) setScopeId(festivalParam);
+  useEffect(() => {
+    if (festivalParam) navigation.setParams({ festival: '' } as never);
+  }, [festivalParam, navigation]);
+  const scope = scopeId ? catalog.festival(scopeId) : undefined;
+
   // Who's on the map: artists the app knows something about, best matches first (see artistsOnMap).
-  const onMap = useMemo(() => artistsOnMap(artists, shown.taste, shown.informed), [artists, shown]);
+  const onMap = useMemo(
+    () => artistsOnMap(mapCandidates(artists, scope?.lineup), shown.taste, shown.informed),
+    [artists, scope, shown],
+  );
 
   const close = useCallback(() => setSelectedId(null), []);
-  const mapTop = insets.top + HEADER_H;
+  const pickScope = useCallback((id: string | undefined) => {
+    setSelectedId(null);
+    setScopeId(id);
+  }, []);
+  const hasScopes = festivals.length > 0;
+  const mapTop = insets.top + HEADER_H + (hasScopes ? SCOPE_H : 0);
   const mapHeight = height - mapTop - tabSpace;
 
   return (
@@ -58,7 +81,9 @@ export default function MySoundScreen() {
       <NightSky />
 
       <View style={{ position: 'absolute', top: mapTop, left: 0 }}>
+        {/* A new scope draws a fresh map: fitted and centred, its bubbles blooming in. */}
         <SoundMap
+          key={scope?.id ?? 'everyone'}
           artists={onMap}
           taste={shown.taste}
           width={width}
@@ -68,6 +93,8 @@ export default function MySoundScreen() {
           onBackgroundTap={close}
         />
       </View>
+
+      {scope && onMap.length < SPARSE_MAP && <SparseNote festival={scope} shown={onMap.length} bottom={tabSpace + space.lg} />}
 
       <View style={[styles.header, { paddingTop: insets.top + space.lg }]} pointerEvents="box-none">
         <View style={styles.titleRow} pointerEvents="box-none">
@@ -82,9 +109,82 @@ export default function MySoundScreen() {
         <Text style={styles.subtitle} pointerEvents="none">
           {subtitle(shown.summary, shown.rated)}
         </Text>
+        {hasScopes && <ScopeChips festivals={festivals} value={scope?.id} onChange={pickScope} />}
       </View>
 
       <ArtistSheet artistId={selectedId} taste={shown.taste} bottomInset={tabSpace} onClose={close} />
+    </View>
+  );
+}
+
+/** Everyone, or one festival's lineup. */
+function ScopeChips({
+  festivals,
+  value,
+  onChange,
+}: {
+  festivals: Festival[];
+  value: string | undefined;
+  onChange: (id: string | undefined) => void;
+}) {
+  const chips = [{ id: undefined, label: 'Everyone' }, ...festivals.map((f) => ({ id: f.id, label: f.name }))];
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.chipsWrap}
+      contentContainerStyle={styles.chips}
+    >
+      {chips.map((c) => {
+        const on = c.id === value;
+        return (
+          <Pressable
+            key={c.id ?? 'everyone'}
+            onPress={() => {
+              if (on) return;
+              haptic.select();
+              onChange(c.id);
+            }}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={c.id ? `Your sound at ${c.label}` : 'Your sound across every artist'}
+            style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={[styles.chipText, on && { color: color.moon }]}>{c.label}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+/** A festival's map with only a few artists on it so far: say so, and offer the quickest way to add more. */
+function SparseNote({ festival, shown, bottom }: { festival: Festival; shown: number; bottom: number }) {
+  const catalog = useCatalog();
+  const { ratings } = useRatings();
+  const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
+  const total = festival.lineup.filter((a) => catalog.artist(a)).length;
+  return (
+    <View style={[styles.sparse, { bottom }]} pointerEvents="box-none">
+      <Text style={styles.sparseText}>
+        {shown === 0
+          ? `None of ${festival.name}’s ${total} artists are on your map yet.`
+          : `Only ${shown} of ${festival.name}’s ${total} artists ${shown === 1 ? 'is' : 'are'} on your map so far.`}{' '}
+        {toRate > 0 ? 'Rate the lineup to place the rest.' : 'React to clips from the lineup to place more.'}
+      </Text>
+      {toRate > 0 && (
+        <Pressable
+          onPress={() => {
+            haptic.tap();
+            router.push(`/tune/${festival.id}`);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Tune your lineup. Rate ${toRate} artists one at a time.`}
+          style={({ pressed }) => [styles.sparseButton, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+        >
+          <Text style={styles.sparseButtonText}>Tune your lineup</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -174,6 +274,40 @@ function subtitle(summary: TasteSummary, rated: number) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl },
+  chipsWrap: { marginTop: space.md, marginHorizontal: -space.xl, flexGrow: 0 },
+  chips: { paddingHorizontal: space.xl, gap: space.sm },
+  chip: {
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  chipText: { ...type.caption, color: color.moonDim },
+  sparse: {
+    position: 'absolute',
+    left: space.lg,
+    right: space.lg,
+    padding: space.lg,
+    gap: space.md,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(18,16,38,0.82)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  sparseText: { ...type.body, color: color.moonDim },
+  sparseButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(169,124,255,0.18)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(169,124,255,0.4)',
+  },
+  sparseButtonText: { ...type.label, color: color.moon },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.largeTitle, color: color.moon },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },

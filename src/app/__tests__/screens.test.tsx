@@ -216,6 +216,25 @@ describe('My Sound', () => {
     expect(app.queryByLabelText('Start your sound over')).toBeNull();
   });
 
+  it('narrows the map to one festival, and offers to rate a sparse lineup', async () => {
+    const app = await renderApp('/sound');
+    await settle();
+    expect(app.getByLabelText('Your sound across every artist').props.accessibilityState).toEqual({ selected: true });
+    expect(app.queryByText(/on your map (yet|so far)/)).toBeNull();
+    await fireEvent.press(app.getByLabelText('Your sound at EDC Orlando 2026'));
+    await settle();
+    expect(app.getByText(/of EDC Orlando 2026’s 110 artists (is|are) on your map so far\. Rate the lineup/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText(/^Tune your lineup\. Rate 110 artists/));
+    await settle();
+    expect(app.getByText('Tune your lineup')).toBeTruthy();
+  });
+
+  it('opens on a festival from a link', async () => {
+    const app = await renderApp('/sound?festival=edc-orlando-26');
+    await settle();
+    expect(app.getByLabelText('Your sound at EDC Orlando 2026').props.accessibilityState).toEqual({ selected: true });
+  });
+
   it('starts your sound over, keeping your plans', async () => {
     await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: true, saved: false, skipped: false } }));
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ wooli: 'love' }));
