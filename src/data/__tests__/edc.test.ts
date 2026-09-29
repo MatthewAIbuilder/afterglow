@@ -24,6 +24,11 @@ describe('EDC Orlando 2026', () => {
     // Set times aren't out yet: it's a lineup-phase festival.
     expect(catalog.phaseOf('edc-orlando-26')).toBe('lineup');
     expect(catalog.festivals[0].id).toBe('edc-orlando-26');
+    // Dates and set notes from the poster.
+    expect(edc).toMatchObject({ startDate: '2026-11-06', endDate: '2026-11-08' });
+    expect(Object.values(edc.notes ?? {}).filter((n) => n === 'Sunset set')).toHaveLength(10);
+    expect(edc.notes?.['san-holo']).toBe('Wholesome riddim set');
+    expect(edc.notes?.['skull-machine']).toBe('Black Tiger Sex Machine x Kai Wachi');
   });
 
   it('keeps My Sound as it was for someone who hasn’t reacted to anything', () => {

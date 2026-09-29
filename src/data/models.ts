@@ -78,6 +78,11 @@ export type Festival = {
   stages: Stage[];
   /** Set times. Usually published a week or two before the festival. */
   sets?: SetTime[];
+  /** First and last day, "YYYY-MM-DD", for the countdown. `dates` stays the text people read. */
+  startDate?: string;
+  endDate?: string;
+  /** What the lineup says about a particular set, by artist id: "Sunset set", "Wholesome riddim set". */
+  notes?: Record<string, string>;
 };
 
 /**

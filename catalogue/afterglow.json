@@ -695,6 +695,8 @@
       "id": "edc-orlando-26",
       "name": "EDC Orlando 2026",
       "dates": "Nov 6 to 8",
+      "start": "2026-11-06",
+      "end": "2026-11-08",
       "location": "Tinker Field, Orlando",
       "lineup": [
         "a-little-sound",
@@ -702,10 +704,19 @@
         "aat",
         "acraze-b2b-cid",
         "adrian-mills",
-        "adventure-club",
+        {
+          "artist": "adventure-club",
+          "note": "Sunset set"
+        },
         "afrojack",
-        "alan-walker",
-        "alesso",
+        {
+          "artist": "alan-walker",
+          "note": "Sunset set"
+        },
+        {
+          "artist": "alesso",
+          "note": "Sunset set"
+        },
         "alison-wonderland",
         "alleycvt",
         "alok",
@@ -721,7 +732,10 @@
         "boogie-t",
         "bou-b2b-kanine",
         "boys-noize-b2b-brutalismus-3000",
-        "brunello",
+        {
+          "artist": "brunello",
+          "note": "Sunset set"
+        },
         "bullet-tooth-b2b-sidney-charles",
         "chasewest",
         "chef-boyarbeatz",
@@ -730,7 +744,10 @@
         "david-guetta",
         "dennis-cruz",
         "deorro-b2b-diesel",
-        "devault",
+        {
+          "artist": "devault",
+          "note": "Sunset set"
+        },
         "discip",
         "disco-lines",
         "discovery-project",
@@ -771,8 +788,14 @@
         "maddix",
         "madvktm",
         "mai-iachetti",
-        "malugi",
-        "marlon-hoffstadt",
+        {
+          "artist": "malugi",
+          "note": "Sunset set"
+        },
+        {
+          "artist": "marlon-hoffstadt",
+          "note": "Sunset set"
+        },
         "martin-garrix",
         "matthias",
         "mau-p",
@@ -782,7 +805,10 @@
         "monoky",
         "mph",
         "nico-moreno",
-        "of-the-trees",
+        {
+          "artist": "of-the-trees",
+          "note": "Sunset set"
+        },
         "omar",
         "pegassi",
         "phrva",
@@ -791,12 +817,24 @@
         "ravenscoon",
         "ray-volpe",
         "roddy-lima",
-        "rossi",
-        "san-holo",
+        {
+          "artist": "rossi",
+          "note": "Sunset set"
+        },
+        {
+          "artist": "san-holo",
+          "note": "Wholesome riddim set"
+        },
         "shdw",
         "sippy",
-        "skull-machine",
-        "slander",
+        {
+          "artist": "skull-machine",
+          "note": "Black Tiger Sex Machine x Kai Wachi"
+        },
+        {
+          "artist": "slander",
+          "note": "Sunset set"
+        },
         "sloth",
         "steve-aoki",
         "subsonic",

@@ -63,6 +63,9 @@ describe('Festivals', () => {
     expect(app.getByText(/more to explore in the full lineup below/)).toBeTruthy();
     expect(app.getByText('Full lineup')).toBeTruthy();
     expect(app.getAllByText('WOOLI').length).toBeGreaterThan(0);
+    // The countdown and the poster's set notes.
+    expect(app.getByText(/^(In \d+ (days|months)|Tomorrow|Happening now|Over)$/)).toBeTruthy();
+    expect(app.getAllByText('Sunset set').length).toBeGreaterThan(0);
   });
 
   it('shows the day-by-day plan for a festival with set times', async () => {

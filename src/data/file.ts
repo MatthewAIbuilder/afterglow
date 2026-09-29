@@ -18,7 +18,8 @@ import { SOUND_TAGS } from './models';
  *   "version": 1,
  *   "mode": "add",                      // "add" to the demo data, or "replace" it
  *   "artists":   [{ "id", "name", "sound": { "house": 1 }, "image"? }],
- *   "festivals": [{ "id", "name", "dates", "location", "lineup": [artist ids],
+ *   "festivals": [{ "id", "name", "dates", "location", "start"?: "2026-11-06", "end"?: "2026-11-08",
+ *                   "lineup": [artist ids, or { "artist", "note": "Sunset set" }],
  *                   "days"?, "stages"?: [{ "id", "name" }], "poster"?,
  *                   "sets"?: [{ "artist", "day", "stage", "start": "23:40", "end": "01:10" }] }],
  *   "clips":     [{ "id", "artist", "festival", "title",
@@ -61,6 +62,14 @@ const label = (v: unknown, fallback: string) => (typeof v === 'string' && v ? `"
 export function safeImageUrl(v: unknown): string | undefined {
   if (typeof v !== 'string' || v.length > 2000) return undefined;
   return /^https:\/\/[^\s]+$/i.test(v) ? v : undefined;
+}
+
+/** "2026-11-06" if it's a real calendar day, otherwise undefined. */
+export function isoDay(v: unknown): string | undefined {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return undefined;
+  const [y, m, d] = v.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? v : undefined;
 }
 
 /** "25:00", "1:02:30", "1500" or 1500 -> seconds. */
@@ -123,10 +132,20 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
   const location = text(raw.location) ?? '';
   if (!name || !dates) return void problems.push(`Festival "${festivalId}" needs a name and dates.`);
 
-  const lineup = list(raw.lineup).filter((a): a is string => {
-    const ok = !!id(a);
-    if (!ok) problems.push(`Festival "${festivalId}": a lineup entry isn't an artist id, so it was left out.`);
-    return ok;
+  // A lineup entry is an artist id, or { "artist", "note" } for a set the poster says something about.
+  const notes: Record<string, string> = {};
+  const lineup = list(raw.lineup).flatMap((a) => {
+    const artistId = id(isObj(a) ? a.artist : a);
+    if (!artistId) {
+      problems.push(`Festival "${festivalId}": a lineup entry isn't an artist id, so it was left out.`);
+      return [];
+    }
+    if (isObj(a) && a.note !== undefined) {
+      const note = text(a.note);
+      if (note) notes[artistId] = note;
+      else problems.push(`Festival "${festivalId}": the note for "${artistId}" should be a short line of text.`);
+    }
+    return [artistId];
   });
   const stages: Stage[] = list(raw.stages).flatMap((s) => {
     const stageId = isObj(s) ? id(s.id) : undefined;
@@ -138,6 +157,18 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
   const days = list(raw.days).flatMap((d) => (text(d) ? [text(d)!] : []));
 
   const festival: Festival = { id: festivalId, name, dates, location, lineup, days, stages };
+  if (Object.keys(notes).length) festival.notes = notes;
+  for (const [key, field] of [['start', 'startDate'], ['end', 'endDate']] as const) {
+    if (raw[key] === undefined) continue;
+    const day = isoDay(raw[key]);
+    if (day) festival[field] = day;
+    else problems.push(`Festival "${festivalId}": "${key}" should be a date like "2026-11-06".`);
+  }
+  if (festival.startDate && festival.endDate && festival.endDate < festival.startDate) {
+    problems.push(`Festival "${festivalId}": it ends before it starts, so the dates were left out.`);
+    delete festival.startDate;
+    delete festival.endDate;
+  }
   if (raw.poster !== undefined) {
     const posterImageUrl = safeImageUrl(raw.poster);
     if (posterImageUrl) festival.posterImageUrl = posterImageUrl;
