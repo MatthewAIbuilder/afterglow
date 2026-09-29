@@ -112,9 +112,9 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     searchedOnce.current = true;
     const hits = matchIds ? layout.bubbles.filter((b) => matchIds.has(b.artist.id)) : [];
     if (!hits.length) {
-      scale.value = withSpring(fitScale, motion.gentle);
-      tx.value = withSpring(0, motion.gentle);
-      ty.value = withSpring(0, motion.gentle);
+      scale.set(withSpring(fitScale, motion.gentle));
+      tx.set(withSpring(0, motion.gentle));
+      ty.set(withSpring(0, motion.gentle));
       return;
     }
     const minX = Math.min(...hits.map((b) => b.x - b.r));
@@ -122,9 +122,9 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     const minY = Math.min(...hits.map((b) => b.y - b.r));
     const maxY = Math.max(...hits.map((b) => b.y + b.r + 36));
     const s = Math.min(MAX_ZOOM, Math.max(fitScale, Math.min((width - 48) / (maxX - minX), (height - 48) / (maxY - minY))));
-    scale.value = withSpring(s, motion.gentle);
-    tx.value = withSpring(-((minX + maxX) / 2) * s, motion.gentle);
-    ty.value = withSpring(-((minY + maxY) / 2) * s, motion.gentle);
+    scale.set(withSpring(s, motion.gentle));
+    tx.set(withSpring(-((minX + maxX) / 2) * s, motion.gentle));
+    ty.set(withSpring(-((minY + maxY) / 2) * s, motion.gentle));
     // Only a new set of matches should move the camera (a reshape of your taste leaves it be).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchKey]);
@@ -149,9 +149,9 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     const target = Math.max(s, fitScale * 1.15);
     const bx = ox + hit.x - width / 2;
     const by = oy + hit.y - height / 2;
-    scale.value = withSpring(target, motion.gentle);
-    tx.value = withSpring(-bx * target, motion.gentle);
-    ty.value = withSpring(height * 0.3 - height / 2 - by * target, motion.gentle);
+    scale.set(withSpring(target, motion.gentle));
+    tx.set(withSpring(-bx * target, motion.gentle));
+    ty.set(withSpring(height * 0.3 - height / 2 - by * target, motion.gentle));
   };
 
   const singleTap = Gesture.Tap()
