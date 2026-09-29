@@ -51,6 +51,7 @@ describe('architecture', () => {
       'features/recommend/copy.ts',
       'features/plan/plan.ts',
       'features/plan/mustSees.ts',
+      'features/plan/share.ts',
       'features/sound-map/layout.ts',
       'features/festivals/links.ts',
       'features/festivals/format.ts',

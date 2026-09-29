@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { Share } from 'react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import RootLayout from '../_layout';
 import TabsLayout from '../(tabs)/_layout';
@@ -85,6 +86,18 @@ describe('Festivals', () => {
     await settle();
     const titles = list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
     expect(titles).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Solstice 2026']);
+  });
+
+  it('shares your plan from the share sheet', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Share your plan for Solstice 2026'));
+    expect(share).toHaveBeenCalledTimes(1);
+    const { message } = share.mock.calls[0][0] as { message: string };
+    expect(message.startsWith('My Solstice 2026')).toBe(true);
+    expect(message).toContain('ILLENIUM');
+    share.mockRestore();
   });
 
   it('shows the day-by-day plan for a festival with set times', async () => {
