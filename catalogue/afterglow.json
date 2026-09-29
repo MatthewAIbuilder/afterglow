@@ -2940,8 +2940,10 @@
     {
       "id": "countdown-nye-26",
       "name": "Countdown NYE 2026",
-      "dates": "Dates to come",
-      "location": "",
+      "dates": "Dec 31 and Jan 1",
+      "start": "2026-12-31",
+      "end": "2027-01-01",
+      "location": "NOS Events Center, San Bernardino",
       "lineup": [
         "33-below",
         "acraze",
