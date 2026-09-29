@@ -4,6 +4,7 @@ import { act, fireEvent } from '@testing-library/react-native';
 import { Alert, Linking, Share } from 'react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import * as Notifications from 'expo-notifications';
+import * as Sharing from 'expo-sharing';
 import RootLayout from '../_layout';
 import TabsLayout from '../(tabs)/_layout';
 import DiscoverScreen from '../(tabs)/index';
@@ -22,6 +23,7 @@ import NotificationsScreen from '../notifications';
 import YourSoundScreen from '../your-sound';
 import RequestScreen from '../request';
 import SoundScopeScreen from '../sound-scope';
+import PlanCardScreen from '../plan-card/[id]';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -49,6 +51,7 @@ function renderApp(initialUrl: string) {
       'your-sound': YourSoundScreen,
       request: RequestScreen,
       'sound-scope': SoundScopeScreen,
+      'plan-card/[id]': PlanCardScreen,
     },
     { initialUrl },
   );
@@ -347,6 +350,14 @@ describe('Festivals', () => {
     const app = await renderApp('/festival/solstice-26');
     await settle();
     await fireEvent.press(app.getByLabelText('Share your plan for Solstice 2026'));
+    await settle();
+    // A picture of the plan first, with the text one tap away.
+    expect(app.getByText('Share your plan')).toBeTruthy();
+    expect(app.getByLabelText('Your plan for Solstice 2026')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Share your plan as an image'));
+    await settle();
+    expect(Sharing.shareAsync).toHaveBeenCalledWith('file:///tmp/plan.png', expect.objectContaining({ mimeType: 'image/png' }));
+    await fireEvent.press(app.getByLabelText('Share your plan as text'));
     expect(share).toHaveBeenCalledTimes(1);
     const { message } = share.mock.calls[0][0] as { message: string };
     expect(message.startsWith('My Solstice 2026')).toBe(true);

@@ -71,3 +71,7 @@ jest.mock('expo-notifications', () => {
     useLastNotificationResponse: () => undefined,
   };
 });
+
+// Sharing a picture: capture and the share sheet, recorded for the tests.
+jest.mock('react-native-view-shot', () => ({ captureRef: jest.fn(async () => 'file:///tmp/plan.png') }));
+jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(async () => true), shareAsync: jest.fn(async () => {}) }));

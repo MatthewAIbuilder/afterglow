@@ -78,3 +78,53 @@ export function routeText(festival: Festival, route: DayRoute[], appName: string
   const head = [`My ${festival.name}, set to set`, [festival.dates, festival.location].filter(Boolean).join(', ')];
   return [head.join('\n'), ...days, `Made with ${appName}`].join('\n\n');
 }
+
+/** One line on the shareable plan card. */
+export type CardLine = { time?: string; name: string; where?: string; star: boolean };
+export type CardSection = { heading: string; lines: CardLine[]; more: number };
+export type PlanCard = { title: string; subtitle: string; sections: CardSection[] };
+
+/** Lines per section on the card, so it fits on one image. */
+export const CARD_LINES = 7;
+
+const section = (heading: string, lines: CardLine[]): CardSection => ({
+  heading,
+  lines: lines.slice(0, CARD_LINES),
+  more: Math.max(0, lines.length - CARD_LINES),
+});
+
+/**
+ * Your plan as a picture to share: the route day by day once set times are
+ * out, otherwise your picks by day (when the poster gives days) or by tier.
+ * Undefined when there's nothing for you on it yet. Pure.
+ */
+export function planCard(festival: Festival, picks: Pick[], route: DayRoute[] | undefined): PlanCard | undefined {
+  const subtitle = [festival.dates, festival.location].filter(Boolean).join(' · ');
+  const title = festival.name;
+  if (route?.some((d) => d.stops.length)) {
+    const sections = route.flatMap((d) => {
+      const lines = d.stops.flatMap((s): CardLine[] =>
+        s.kind === 'set'
+          ? [{ time: formatTime(clockTime(s.from)), name: s.artist.name, where: stageName(festival, s.set.stageId), star: s.pinned }]
+          : [],
+      );
+      return lines.length ? [section(d.day, lines)] : [];
+    });
+    return { title, subtitle, sections };
+  }
+  const line = (p: Pick): CardLine => ({ name: p.artist.name, star: p.pinned });
+  if (lineupDays(festival).length) {
+    const { days, noDay } = picksByDay(festival, picks);
+    const sections = [
+      ...days.flatMap((d) => (d.planned.length ? [section(d.day, d.planned.map(line))] : [])),
+      ...(noDay.length ? [section('Day to come', noDay.map(line))] : []),
+    ];
+    return sections.length ? { title, subtitle, sections } : undefined;
+  }
+  const tier = (t: Pick['tier'], heading: string) => {
+    const list = picks.filter((p) => p.tier === t);
+    return list.length ? [section(heading, list.map(line))] : [];
+  };
+  const sections = [...tier('must-see', 'Must see'), ...tier('strong', 'Strong match')];
+  return sections.length ? { title, subtitle, sections } : undefined;
+}

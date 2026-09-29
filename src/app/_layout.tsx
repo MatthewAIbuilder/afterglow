@@ -32,6 +32,7 @@ export default function RootLayout() {
         <Stack.Screen name="saved" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
           options={{

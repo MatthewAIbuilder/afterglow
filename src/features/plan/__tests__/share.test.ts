@@ -3,7 +3,7 @@ import { MOCK_CATALOG, MOCK_TASTE } from '../../../data/mock';
 import { computeTaste } from '../../taste/engine';
 import { buildSchedule, rankLineup } from '../plan';
 import { festivalRoute } from '../route';
-import { planText, routeText } from '../share';
+import { CARD_LINES, planCard, planText, routeText } from '../share';
 
 const { artists, clips, festival } = MOCK_CATALOG;
 const { taste, informed } = computeTaste(MOCK_TASTE, artists, clips, {});
@@ -61,5 +61,25 @@ describe('sharing your plan', () => {
     expect(text).toMatch(/\n\nFriday\n/);
     expect(text).toContain('★ JOHN SUMMIT');
     expect(text).not.toContain('Must see');
+  });
+
+  it('makes a picture of the route, day by day, once set times are out', () => {
+    const f = festival('solstice-26')!;
+    const picks = rankLineup({ festival: f, artists, taste, informed, pinned: new Set(['illenium']) });
+    const route = festivalRoute({ festival: f, artists, taste, informed, pinned: new Set(['illenium']) });
+    const card = planCard(f, picks, route)!;
+    expect(card.title).toBe('Solstice 2026');
+    expect(card.sections[0].heading).toBe('Friday');
+    expect(card.sections[0].lines[0]).toEqual({ time: '10:00 PM', name: 'TAPE B', where: 'Bass Tent', star: false });
+    expect(card.sections[0].lines.some((l) => l.name === 'ILLENIUM' && l.star)).toBe(true);
+  });
+
+  it('makes a picture of your picks by tier before set times, capped per section', () => {
+    const f = festival('horizon-27')!;
+    const picks = rankLineup({ festival: f, artists, taste, informed });
+    const card = planCard(f, picks, undefined)!;
+    expect(card.sections.map((s) => s.heading)).toEqual(['Must see', 'Strong match']);
+    for (const s of card.sections) expect(s.lines.length).toBeLessThanOrEqual(CARD_LINES);
+    expect(planCard(f, [], undefined)).toBeUndefined();
   });
 });

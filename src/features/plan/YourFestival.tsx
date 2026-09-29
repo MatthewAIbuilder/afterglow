@@ -1,12 +1,9 @@
-import { useMemo, useState } from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ShareIcon } from '../../components/TabIcons';
-import { APP_NAME } from '../../config/app';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { useCatalog } from '../../state/catalog';
-import { usePlan } from '../../state/plan';
-import { useTaste } from '../../state/taste';
 import { useToday } from '../../lib/useToday';
 import { lineupDays } from '../festivals/days';
 import { daysUntil } from '../festivals/when';
@@ -15,35 +12,15 @@ import { festivalNight } from './live';
 import { LiveNow } from './LiveNow';
 import { ByDayList } from './ByDayList';
 import { MustSeeList } from './MustSeeList';
-import { buildSchedule, rankLineup } from './plan';
-import { festivalRoute } from './route';
-import { planText, routeText } from './share';
 import { Timetable } from './Timetable';
+import { useFestivalPlan } from './useFestivalPlan';
 
 /**
  * "Your festival": who to see, from your live taste. Before set times it is a
  * ranked must-see list; once they are out it becomes a day-by-day plan.
  */
 export function YourFestival({ festival }: { festival: Festival }) {
-  const { taste, informed } = useTaste();
-  const { artists } = useCatalog();
-  const { mustSeesAt } = usePlan();
-
-  const picks = useMemo(
-    () => rankLineup({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id) }),
-    [festival, artists, taste, informed, mustSeesAt],
-  );
-  const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
-  // Every day set to set, from the same live taste and must-sees.
-  const route = useMemo(
-    () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id) }) : undefined),
-    [festival, artists, taste, informed, mustSeesAt],
-  );
-  // Once set times are out, you share the whole route; before, your ranked picks.
-  const text = useMemo(
-    () => (route && routeText(festival, route, APP_NAME)) ?? planText(festival, picks, schedule, APP_NAME),
-    [festival, route, picks, schedule],
-  );
+  const { picks, schedule, route, text } = useFestivalPlan(festival);
   // Only during the festival's days (and the morning after) is there anything live to show.
   const today = useToday();
   const until = daysUntil(festival, today);
@@ -63,7 +40,8 @@ export function YourFestival({ festival }: { festival: Festival }) {
             <Pressable
               onPress={() => {
                 haptic.select();
-                Share.share({ message: text }).catch(() => {});
+                // A picture of your plan to share, or the plain text.
+                router.push(`/plan-card/${festival.id}`);
               }}
               accessibilityRole="button"
               accessibilityLabel={`Share your plan for ${festival.name}`}
