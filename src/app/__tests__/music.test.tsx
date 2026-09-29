@@ -306,6 +306,10 @@ describe('My Sound with connected music', () => {
     const app = await renderApp('/artist/subtronics');
     await settle();
     expect(app.getByText('From your Spotify library')).toBeTruthy();
+    // EXCISION isn't in the library, but sounds like it.
+    const near = await renderApp('/artist/excision');
+    await settle();
+    expect(near.getByText('Close to artists in your Spotify library')).toBeTruthy();
   });
 
   it('starting over keeps connected music, and says so', async () => {

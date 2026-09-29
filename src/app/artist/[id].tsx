@@ -38,7 +38,7 @@ export default function ArtistScreen() {
   const catalog = useCatalog();
   const artist = catalog.artist(id);
   const insets = useSafeAreaInsets();
-  const { taste, informed, similarity, importedFrom } = useTaste();
+  const { taste, informed, similarity, importedFrom, imported, importing } = useTaste();
   const { isMustSee, toggleMustSee } = usePlan();
   const { reactions } = useReactions();
   const { ratings } = useRatings();
@@ -86,6 +86,8 @@ export default function ArtistScreen() {
             {whyLine(
               artistSignals(artist.id, catalog.clips, reactions, ratings, (importedFrom[artist.id] ?? []).map((p) => PROVIDER_NAME[p])),
               !!informed[artist.id],
+              // Lifted only because they sound like your library: say which.
+              !importedFrom[artist.id] && (imported[artist.id] ?? 0) > 0 ? importing.map((p) => PROVIDER_NAME[p]) : [],
             )}
           </Text>
           <RateArtist artist={artist} />

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { MOCK_TASTE } from '../data/mock';
-import { computeTaste } from '../features/taste/engine';
+import { computeTaste, startingPrior } from '../features/taste/engine';
 import { similarityWith } from '../features/taste/similarity';
 import { useCatalog } from './catalog';
 import { useMusic } from './music';
@@ -21,7 +21,7 @@ export function useTaste() {
   const similarity = useMemo(() => similarityWith(similarities), [similarities]);
   return useMemo(
     () => ({
-      ...computeTaste(MOCK_TASTE, artists, clips, reactions, similarity, ratings, imported),
+      ...computeTaste(startingPrior(MOCK_TASTE, imported), artists, clips, reactions, similarity, ratings, imported),
       similarity,
       /** Artists you've rated directly. */
       rated: artists.filter((a) => ratings[a.id]).length,

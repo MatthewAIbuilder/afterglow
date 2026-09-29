@@ -8,6 +8,7 @@ import {
   type MusicProviderId,
   type MusicState,
 } from './models';
+import { PRIOR_YIELDS_AT } from '../taste/engine';
 import type { MusicAvailability } from './service';
 
 /**
@@ -193,8 +194,8 @@ export function connectionView(
   }
 }
 
-/** A library with fewer Afterglow artists than this gets a note on My Sound. */
-export const LITTLE_LIBRARY = 3;
+/** A library with fewer Afterglow artists than this gets a note on My Sound (and doesn't yet replace the starting guess). */
+export const LITTLE_LIBRARY = PRIOR_YIELDS_AT;
 
 export type MusicNote = { text: string; action?: 'connect' | 'open' };
 

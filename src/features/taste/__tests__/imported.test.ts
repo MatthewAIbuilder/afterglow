@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { ARTISTS } from '../../../data/mock/artists';
 import { CLIPS } from '../../../data/mock/clips';
 import { MOCK_TASTE } from '../../../data/mock/tasteProfile';
-import { computeTaste, IMPORT_CAP, IMPORT_SOUND_CAP, type ImportedTaste } from '../engine';
+import { computeTaste, IMPORT_CAP, IMPORT_SOUND_CAP, IMPORT_SPILL_CAP, type ImportedTaste } from '../engine';
 
 /**
  * The imported music layer: a connected library gives a new listener a head
@@ -76,6 +76,15 @@ describe('imported music in the taste engine', () => {
     expect(taste['sara-landry']).toBeGreaterThan(0.5);
     expect(imported['sara-landry']).toBeCloseTo(IMPORT_SOUND_CAP);
     expect(informed.illenium).toBe(false);
+  });
+
+  it('an artist who only sounds like your library never matches one in it, and a stronger library artist stays ahead', () => {
+    // Subtronics and Excision are both in the library; LEVITY (dubstep too) only sounds like them.
+    const { imported, taste } = run(lib({ subtronics: 1, excision: 0.5 }));
+    expect(imported.levity).toBeLessThanOrEqual(IMPORT_SPILL_CAP + 1e-9);
+    expect(imported.excision).toBeGreaterThan(imported.levity);
+    expect(imported.subtronics).toBeGreaterThan(imported.excision);
+    expect(taste.subtronics).toBeGreaterThan(taste.levity);
   });
 
   it('ignores library artists that aren’t in the catalogue', () => {
