@@ -7,6 +7,7 @@ import {
   MAX_TICK_SEC,
   pageAfterDrag,
   playedBetween,
+  playedSpan,
   readPlayerReport,
   shouldPlay,
   showPoster,
@@ -176,5 +177,18 @@ describe('pageAfterDrag', () => {
   it('stays within the feed', () => {
     expect(pageAfterDrag(0, 10, 300, 0, H)).toBe(0);
     expect(pageAfterDrag(9, 10, -300, 0, H)).toBe(9);
+  });
+});
+
+describe('played spans', () => {
+  it('reports which part of the clip played, in seconds into the clip', () => {
+    expect(playedSpan(1510, 1510.25, true, 1500)).toEqual({ from: 10, to: 10.25 });
+  });
+
+  it('reports nothing when it must not count', () => {
+    expect(playedSpan(1510, 1510.25, false, 1500)).toBeUndefined(); // hidden or background
+    expect(playedSpan(null, 1510, true, 1500)).toBeUndefined(); // first report
+    expect(playedSpan(1544, 1500, true, 1500)).toBeUndefined(); // loop back to the top
+    expect(playedSpan(1510, 1530, true, 1500)).toBeUndefined(); // seek ahead
   });
 });

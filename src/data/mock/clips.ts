@@ -1,4 +1,4 @@
-import type { Clip } from './types';
+import type { Clip } from '../models';
 
 const F = 'solstice-26';
 

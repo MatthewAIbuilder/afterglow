@@ -5,10 +5,9 @@ import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
-import { artistById } from '../../data/artists';
-import { FESTIVALS } from '../../data/festivals';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -18,6 +17,7 @@ export default function FestivalsScreen() {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const { taste } = useTaste();
+  const { festivals } = useCatalog();
 
   return (
     <View style={styles.root}>
@@ -30,7 +30,7 @@ export default function FestivalsScreen() {
           <Text style={styles.title}>Festivals</Text>
           <Text style={styles.subtitle}>Lineups ranked by your sound.</Text>
         </View>
-        {FESTIVALS.map((f) => (
+        {festivals.map((f) => (
           <FestivalCard key={f.id} festival={f} taste={taste} />
         ))}
       </ScrollView>
@@ -39,6 +39,7 @@ export default function FestivalsScreen() {
 }
 
 function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<string, number> }) {
+  const { artist: artistById } = useCatalog();
   const ranked = festival.lineup
     .map((id) => artistById(id))
     .filter((a): a is Artist => !!a)

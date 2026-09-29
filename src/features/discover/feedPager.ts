@@ -2,12 +2,12 @@ import { useMemo } from 'react';
 import type { FlatList } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import { type AnimatedRef, scrollTo, type SharedValue, useSharedValue } from 'react-native-reanimated';
-import type { Clip } from '../../data/types';
+import type { FeedItem } from '../recommend/feed';
 import { pageAfterDrag } from './playback';
 
 /** What a card needs to move the feed itself, shared by DiscoverFeed. */
 export type FeedPager = {
-  listRef: AnimatedRef<FlatList<Clip>>;
+  listRef: AnimatedRef<FlatList<FeedItem>>;
   /** The feed's scroll position, kept on the UI thread. */
   offsetY: SharedValue<number>;
   /** The feed's own scrolling has the finger. */

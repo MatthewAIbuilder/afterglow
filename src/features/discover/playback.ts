@@ -54,6 +54,17 @@ export function playedBetween(prevTime: number | null, time: number, eligible: b
   return d > 0 && d <= MAX_TICK_SEC ? d : 0;
 }
 
+/**
+ * The stretch of the clip that played between two position reports, in
+ * seconds into the clip, or undefined when it must not count (same rules as
+ * playedBetween). Watch-time signals use this so the same seconds can't be
+ * counted twice.
+ */
+export function playedSpan(prevTime: number | null, time: number, eligible: boolean, clipStart: number) {
+  if (playedBetween(prevTime, time, eligible) === 0 || prevTime == null) return undefined;
+  return { from: prevTime - clipStart, to: time - clipStart };
+}
+
 /** After we tell a player to play or pause, its reports may lag. Ignore contrary reports for this long. */
 export const COMMAND_GRACE_MS = 1000;
 

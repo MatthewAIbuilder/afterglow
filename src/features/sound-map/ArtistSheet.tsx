@@ -5,11 +5,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
-import { ARTISTS } from '../../data/artists';
 import { SOUND_LABEL, type SoundTag, type TasteProfile } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { color, motion, radius, space, type } from '../../theme/tokens';
-import { soundSimilarity } from './layout';
+import { useCatalog } from '../../state/catalog';
+import { useTaste } from '../../state/taste';
 
 type Props = {
   artistId: string | null;
@@ -35,17 +35,20 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
     }
   }, [artistId, offset]);
 
-  const artist = ARTISTS.find((a) => a.id === shownId);
+  const { artists } = useCatalog();
+  const { similarity } = useTaste();
+  const artist = artists.find((a) => a.id === shownId);
 
   const closest = useMemo(() => {
     if (!artist) return [];
-    return ARTISTS.filter((a) => a.id !== artist.id)
-      .map((a) => ({ a, s: soundSimilarity(artist, a) }))
+    return artists
+      .filter((a) => a.id !== artist.id)
+      .map((a) => ({ a, s: similarity(artist, a) }))
       .filter((x) => x.s > 0.3)
       .sort((p, q) => q.s - p.s)
       .slice(0, 2)
       .map((x) => x.a.name);
-  }, [artist]);
+  }, [artist, artists, similarity]);
 
   const drag = Gesture.Pan()
     .activeOffsetY(8)

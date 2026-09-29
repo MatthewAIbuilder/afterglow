@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
-import { artistById } from '../../../data/artists';
-import { CLIPS } from '../../../data/clips';
+import { MOCK_CATALOG } from '../../../data/mock';
+import { CLIPS } from '../../../data/mock/clips';
 import type { Clip, ClipSource } from '../../../data/types';
 import { clipProgress, parsePlayerMessage, playableSource, playerHtml, posterUrl, watchUrl } from '../youtube';
+
+const artistById = MOCK_CATALOG.artist;
 
 const source: ClipSource = { provider: 'youtube', videoId: 'abcDEF12_-x', start: 60, end: 100, channel: 'Official' };
 const clip = (s?: Partial<ClipSource> | null): Clip => ({
