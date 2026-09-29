@@ -9,12 +9,14 @@ import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
 import type { Artist } from '../../data/types';
-import { PlayIcon } from '../../features/discover/icons';
+import { HeartIcon, PlayIcon } from '../../features/discover/icons';
 import { describeSet } from '../../features/festivals/format';
 import { lineupReach } from '../../features/festivals/links';
+import { leftToRate } from '../../features/festivals/tune';
 import { YourFestival } from '../../features/plan/YourFestival';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -27,6 +29,7 @@ export default function FestivalScreen() {
   const insets = useSafeAreaInsets();
   const { taste } = useTaste();
   const [order, setOrder] = useState<Order>('match');
+  const { ratings } = useRatings();
 
   const lineup = useMemo(() => {
     if (!festival) return [];
@@ -37,6 +40,7 @@ export default function FestivalScreen() {
   if (!festival) return null;
   const timesOut = !!festival.sets?.length;
   const reach = lineupReach(festival, catalog.clips);
+  const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
 
   return (
     <View style={styles.root}>
@@ -50,23 +54,40 @@ export default function FestivalScreen() {
           <Text style={styles.meta}>
             {festival.dates}, {festival.location}
           </Text>
-          {reach.clips > 0 && (
-            <Pressable
-              onPress={() => {
-                haptic.tap();
-                router.navigate({ pathname: '/', params: { festival: festival.id } });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`Discover the lineup. ${reach.clips} live clips from ${reach.artists} artists playing ${festival.name}.`}
-              style={({ pressed }) => [styles.discover, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
-            >
-              <PlayIcon color={color.moon} size={14} />
-              <Text style={styles.discoverText}>Discover the lineup</Text>
-              <Text style={styles.discoverCount}>
-                {reach.clips} {reach.clips === 1 ? 'clip' : 'clips'}
-              </Text>
-            </Pressable>
-          )}
+          <View style={styles.pills}>
+            {reach.clips > 0 && (
+              <Pressable
+                onPress={() => {
+                  haptic.tap();
+                  router.navigate({ pathname: '/', params: { festival: festival.id } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Discover the lineup. ${reach.clips} live clips from ${reach.artists} artists playing ${festival.name}.`}
+                style={({ pressed }) => [styles.discover, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+              >
+                <PlayIcon color={color.moon} size={14} />
+                <Text style={styles.discoverText}>Discover the lineup</Text>
+                <Text style={styles.discoverCount}>
+                  {reach.clips} {reach.clips === 1 ? 'clip' : 'clips'}
+                </Text>
+              </Pressable>
+            )}
+            {toRate > 0 && (
+              <Pressable
+                onPress={() => {
+                  haptic.tap();
+                  router.push(`/tune/${festival.id}`);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Tune your lineup. Rate ${toRate} artists one at a time.`}
+                style={({ pressed }) => [styles.discover, styles.tune, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+              >
+                <HeartIcon color={color.moon} size={14} />
+                <Text style={styles.discoverText}>Tune your lineup</Text>
+                <Text style={styles.discoverCount}>{toRate} to rate</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {festival.posterImageUrl ? (
@@ -165,12 +186,12 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.lg },
   discover: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: space.sm,
-    marginTop: space.lg,
     paddingLeft: space.md,
     paddingRight: space.lg,
     paddingVertical: space.sm,
@@ -179,6 +200,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(169,124,255,0.4)',
   },
+  tune: { backgroundColor: color.glass, borderColor: color.hairline },
   discoverText: { ...type.label, color: color.moon },
   discoverCount: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   posterWrap: {

@@ -1,6 +1,7 @@
 import type { Artist, Clip, TasteProfile } from '../../data/types';
 import type { Reaction } from '../../state/reactions';
 import { type Similarity, soundSimilarity } from './similarity';
+import { isRating, type Ratings } from './ratings';
 import { isWatch, type Watch } from './watch';
 
 /**
@@ -14,6 +15,9 @@ import { isWatch, type Watch } from './watch';
  *   nudges them down. A skip cancels the watch on that clip, and a like or
  *   save cancels a quick swipe. Passive signal per artist is capped below a
  *   single like or skip, so watching can never outweigh what you tap.
+ * - Rating an artist directly ("love their sound", "not for me") counts like
+ *   a save or a skip on one of their clips. It's how a lineup with no clips
+ *   gets learned.
  * - Part of that signal spills over to artists with a similar sound, which is
  *   how the map learns about artists you have not seen yet.
  * - Changes shrink near the edges: a 98% match barely moves on another like,
@@ -21,6 +25,8 @@ import { isWatch, type Watch } from './watch';
  */
 
 export const WEIGHT = { like: 1, save: 1.3, skip: -0.8 };
+/** Rating an artist directly: as strong as saving or skipping one of their clips. */
+export const RATING_WEIGHT = { love: 1.3, pass: -0.8 } as const;
 /** Passive watch signals, one per clip at most. */
 export const WATCH_WEIGHT: Record<Watch, number> = { through: 0.3, replayed: 0.5, quick: -0.2 };
 /** Bounds on all passive signal for one artist, however many clips you watch. */
@@ -41,6 +47,8 @@ export function computeTaste(
   reactions: Record<string, Reaction>,
   /** How alike two artists are. Sound tags by default; a catalogue can supply better. */
   similarity: Similarity = soundSimilarity,
+  /** Artists rated directly, without a clip. */
+  ratings: Ratings = {},
 ): { taste: TasteProfile; summary: TasteSummary; informed: Record<string, boolean> } {
   const clipById = new Map(clips.map((c) => [c.id, c]));
   const direct: Record<string, number> = {};
@@ -71,6 +79,10 @@ export function computeTaste(
       passive[clip.artistId] = (passive[clip.artistId] ?? 0) + WATCH_WEIGHT[w];
       if (w !== 'quick') summary.watched++;
     }
+  }
+  const known = new Set(artists.map((a) => a.id));
+  for (const [id, r] of Object.entries(ratings)) {
+    if (known.has(id) && isRating(r)) direct[id] = (direct[id] ?? 0) + RATING_WEIGHT[r];
   }
   for (const [id, p] of Object.entries(passive)) {
     direct[id] = (direct[id] ?? 0) + Math.min(WATCH_CAP.up, Math.max(WATCH_CAP.down, p));

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Festival } from '../../data/models';
 import { useCatalog } from '../../state/catalog';
+import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
@@ -21,6 +22,7 @@ export function useRankedFeed(activeIndex: number, festival: Festival | undefine
   const { seen, hydrated: seenReady } = useSeen();
   const { taste, informed, similarity } = useTaste();
   const catalog = useCatalog();
+  const { ratings } = useRatings();
   const ready = reactionsReady && seenReady;
   // "Now" for recency: when this session started, or your latest view if that's later.
   const [sessionStart] = useState(() => Date.now());
@@ -28,12 +30,13 @@ export function useRankedFeed(activeIndex: number, festival: Festival | undefine
 
   // Re-rank when an input changes, during render (no extra pass through an effect).
   const [state, setState] = useState<{ feed: FeedItem[] | null; inputs: readonly unknown[] }>({ feed: null, inputs: [] });
-  const inputs = [ready, taste, informed, reactions, seen, activeIndex, clips, catalog.artists, similarity] as const;
+  const inputs = [ready, taste, informed, reactions, seen, activeIndex, clips, catalog.artists, similarity, ratings] as const;
   if (ready && inputs.some((v, i) => v !== state.inputs[i])) {
     const feed = rankFeed({
       clips,
       artists: catalog.artists,
       similarity,
+      ratings,
       taste,
       informed,
       reactions,

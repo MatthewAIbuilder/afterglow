@@ -30,8 +30,8 @@ export function YourFestival({ festival }: { festival: Festival }) {
         <Text style={styles.title}>Your festival</Text>
         <Text style={styles.sub}>
           {schedule
-            ? 'Your night, built from what you like, save and skip. Star anyone you won’t miss.'
-            : 'Who to see, ranked by what you like, save and skip. When set times are out, this becomes your schedule.'}
+            ? 'Your night, built from what you like, save, skip and rate. Star anyone you won’t miss.'
+            : 'Who to see, ranked by what you like, save, skip and rate. When set times are out, this becomes your schedule.'}
         </Text>
       </View>
       {picks.length === 0 ? (

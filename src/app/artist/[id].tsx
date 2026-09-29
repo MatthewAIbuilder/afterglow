@@ -11,6 +11,7 @@ import { setFor } from '../../data/festival';
 import { SOUND_LABEL, type SoundTag } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
 import { StarIcon } from '../../features/plan/icons';
+import { RateArtist } from '../../features/taste/RateArtist';
 import { describeSet } from '../../features/festivals/format';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
@@ -74,6 +75,7 @@ export default function ArtistScreen() {
               </View>
             ))}
           </View>
+          <RateArtist artist={artist} />
           {starFestival && (
             <Pressable
               onPress={() => {
