@@ -288,7 +288,7 @@ describe('My Sound', () => {
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
-    expect(app.getByText('Shaped by your 1 rated artist. Bigger means a closer match.')).toBeTruthy();
+    expect(app.getByText(/^Shaped by your 1 rated artist\. Leaning [a-z ]+\.$/)).toBeTruthy();
   });
 
   it('narrows the map to one festival, and offers to rate a sparse lineup', async () => {
@@ -322,7 +322,7 @@ describe('My Sound', () => {
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
-    expect(app.getByText('Shaped by your 1 like and 1 rated artist. Bigger means a closer match.')).toBeTruthy();
+    expect(app.getByText(/^Shaped by your 1 like and 1 rated artist\. Leaning [a-z ]+\.$/)).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Start your sound over'));
     await act(async () => {
       jest.advanceTimersByTime(500);
