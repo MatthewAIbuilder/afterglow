@@ -16,8 +16,11 @@ import { isWatch, type Watch } from './watch';
  *   save cancels a quick swipe. Passive signal per artist is capped below a
  *   single like or skip, so watching can never outweigh what you tap.
  * - Rating an artist directly ("love their sound", "not for me") counts like
- *   a save or a skip on one of their clips. It's how a lineup with no clips
- *   gets learned.
+ *   a save or a skip on one of their clips for the similar sounds it spills
+ *   over to. For the artist themselves it's a clear answer: someone you love
+ *   is at least a strong match (`RATED.love`), someone you pass on is left
+ *   out of your plan (`RATED.pass`). It's how a lineup with no clips gets
+ *   learned.
  * - Part of that signal spills over to artists with a similar sound, which is
  *   how the map learns about artists you have not seen yet.
  * - Changes shrink near the edges: a 98% match barely moves on another like,
@@ -27,6 +30,8 @@ import { isWatch, type Watch } from './watch';
 export const WEIGHT = { like: 1, save: 1.3, skip: -0.8 };
 /** Rating an artist directly: as strong as saving or skipping one of their clips. */
 export const RATING_WEIGHT = { love: 1.3, pass: -0.8 } as const;
+/** What a direct rating says about the artist themselves: love is at least this, pass at most this. */
+export const RATED = { love: 0.8, pass: 0.3 } as const;
 /** Passive watch signals, one per clip at most. */
 export const WATCH_WEIGHT: Record<Watch, number> = { through: 0.3, replayed: 0.5, quick: -0.2 };
 /** Bounds on all passive signal for one artist, however many clips you watch. */
@@ -111,6 +116,10 @@ export function computeTaste(
     const room = s >= 0 ? 1 - start : start;
     const next = start + Math.tanh(s * STEP * 2) * room * 0.9;
     taste[a.id] = Math.min(CEILING, Math.max(FLOOR, next));
+    // You said so yourself: a love is never below a strong match, a pass never above "not for you".
+    const rated = ratings[a.id];
+    if (rated === 'love') taste[a.id] = Math.max(taste[a.id], RATED.love);
+    else if (rated === 'pass') taste[a.id] = Math.min(taste[a.id], RATED.pass);
   }
   return { taste, summary, informed };
 }

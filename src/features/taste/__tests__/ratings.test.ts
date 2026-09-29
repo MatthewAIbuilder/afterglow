@@ -6,7 +6,7 @@ import { tuneQueue, leftToRate } from '../../festivals/tune';
 import { rankLineup } from '../../plan/plan';
 import { rankFeed } from '../../recommend/feed';
 import { artistsOnMap } from '../../sound-map/layout';
-import { computeTaste, RATING_WEIGHT, WEIGHT } from '../engine';
+import { computeTaste, RATING_WEIGHT, WEIGHT, RATED } from '../engine';
 import { cleanRatings, rate } from '../ratings';
 
 const { artists, clips } = MOCK_CATALOG;
@@ -30,14 +30,24 @@ describe('artist ratings', () => {
 });
 
 describe('ratings in the taste engine', () => {
-  it('counts a love like saving one of their clips, and a pass like skipping one', () => {
+  it('counts a love like saving one of their clips, and a pass like skipping one, for similar sounds', () => {
     expect(RATING_WEIGHT.love).toBe(WEIGHT.save);
     expect(RATING_WEIGHT.pass).toBe(WEIGHT.skip);
     const loved = computeTaste(MOCK_TASTE, artists, clips, {}, undefined, { 'john-summit': 'love' });
     const saved = computeTaste(MOCK_TASTE, artists, clips, { [clipOf('john-summit')]: { ...none, saved: true } });
-    expect(loved.taste['john-summit']).toBeCloseTo(saved.taste['john-summit']);
+    // The spill-over to everyone else is the same as a save.
+    for (const a of artists) if (a.id !== 'john-summit') expect(loved.taste[a.id]).toBeCloseTo(saved.taste[a.id]);
     const passed = computeTaste(MOCK_TASTE, artists, clips, {}, undefined, { 'sara-landry': 'pass' });
     expect(passed.taste['sara-landry']).toBeLessThan(MOCK_TASTE['sara-landry']);
+  });
+
+  it('takes a rating at its word for the artist: love is at least a strong match, pass leaves your plan', () => {
+    const { taste } = computeTaste({}, artists, clips, {}, undefined, { 'john-summit': 'love', illenium: 'pass' });
+    expect(taste['john-summit']).toBeGreaterThanOrEqual(RATED.love);
+    expect(taste.illenium).toBeLessThanOrEqual(RATED.pass);
+    // Already higher (or lower) stays where it is.
+    const high = computeTaste(MOCK_TASTE, artists, clips, {}, undefined, { illenium: 'love' });
+    expect(high.taste.illenium).toBeGreaterThan(MOCK_TASTE.illenium - 0.001);
   });
 
   it('spills over to similar sounds and teaches it about artists with no prior', () => {
