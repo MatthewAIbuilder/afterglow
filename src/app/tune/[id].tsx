@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -18,6 +18,7 @@ import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import { HeartIcon } from '../../features/discover/icons';
 import { soundsLike, tuneQueue } from '../../features/festivals/tune';
 import { TIER_AT } from '../../features/plan/plan';
+import { listenLinks } from '../../features/taste/listen';
 import type { Rating } from '../../features/taste/ratings';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
@@ -198,15 +199,31 @@ export default function TuneScreen() {
                 <Text style={[styles.choiceText, { color: color.moon }]}>Love</Text>
               </Pressable>
             </View>
-            <Pressable
-              onPress={() => answer('unsure')}
-              accessibilityRole="button"
-              accessibilityLabel={`I don't know ${artist.name}. Skip without rating.`}
-              hitSlop={10}
-              style={({ pressed }) => [styles.unsure, pressed && styles.pressed]}
-            >
-              <Text style={styles.unsureText}>Don’t know them</Text>
-            </Pressable>
+            <View style={styles.lower}>
+              <Pressable
+                onPress={() => answer('unsure')}
+                accessibilityRole="button"
+                accessibilityLabel={`I don't know ${artist.name}. Skip without rating.`}
+                hitSlop={10}
+                style={({ pressed }) => [styles.unsure, pressed && styles.pressed]}
+              >
+                <Text style={styles.unsureText}>Don’t know them</Text>
+              </Pressable>
+              {/* Hear them first: opens YouTube, and this card is still here when you come back. */}
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  const yt = listenLinks(artist.name)[0];
+                  if (yt) Linking.openURL(yt.url).catch(() => {});
+                }}
+                accessibilityRole="link"
+                accessibilityLabel={`Listen to ${artist.name} on YouTube`}
+                hitSlop={10}
+                style={({ pressed }) => [styles.unsure, pressed && styles.pressed]}
+              >
+                <Text style={[styles.unsureText, styles.listen]}>Listen on YouTube</Text>
+              </Pressable>
+            </View>
           </>
         ) : (
           <>
@@ -280,4 +297,6 @@ const styles = StyleSheet.create({
   choiceText: { ...type.headline, color: color.moonDim },
   unsure: { marginTop: space.lg, paddingVertical: space.sm },
   unsureText: { ...type.label, color: color.moonFaint },
+  lower: { flexDirection: 'row', justifyContent: 'center', gap: space.xl },
+  listen: { color: color.moonDim },
 });
