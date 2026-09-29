@@ -79,7 +79,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
         <Text style={[styles.sub, styles.head]}>Like a few clips in Discover and your picks will show up here.</Text>
       ) : schedule ? (
         <>
-          {maybeLive && <LiveNow festival={festival} schedule={schedule} />}
+          {maybeLive && <LiveNow festival={festival} schedule={schedule} route={route} />}
           <Timetable festival={festival} schedule={schedule} route={route} initialDay={tonight} />
         </>
       ) : (

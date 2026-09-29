@@ -3,6 +3,7 @@ import { render } from '@testing-library/react-native';
 import type { Festival } from '../../../data/models';
 import { LiveNow } from '../LiveNow';
 import { buildSchedule, type Pick } from '../plan';
+import { festivalRoute } from '../route';
 
 const festival: Festival = {
   id: 'f',
@@ -54,5 +55,16 @@ describe('live now card', () => {
     jest.useFakeTimers({ now: new Date(2026, 9, 1, 22, 0) });
     const app = await render(<LiveNow festival={festival} schedule={schedule} />);
     expect(app.toJSON()).toBeNull();
+  });
+
+  it('follows the full-day route when there is one, saying when to leave', async () => {
+    // 'b' starts at 00:15, while 'a' is still on: the route leaves 'a' for 'b' only if 'b' is better.
+    const taste = { a: 0.6, b: 0.95 };
+    const route = festivalRoute({ festival, artists: [pick('a').artist, pick('b').artist], taste, informed: { a: true, b: true } });
+    jest.useFakeTimers({ now: new Date(2026, 10, 6, 22, 30) });
+    const app = await render(<LiveNow festival={festival} schedule={schedule} route={route} />);
+    expect(app.getByText('A')).toBeTruthy();
+    expect(app.getByText(/^Main Stage, (until|leave at) /)).toBeTruthy();
+    expect(app.getByText(/B, Main Stage/)).toBeTruthy();
   });
 });
