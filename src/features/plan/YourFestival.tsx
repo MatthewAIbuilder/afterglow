@@ -7,7 +7,11 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
 import { useTaste } from '../../state/taste';
+import { useToday } from '../../lib/useToday';
+import { daysUntil } from '../festivals/when';
 import { color, space, type } from '../../theme/tokens';
+import { festivalNight } from './live';
+import { LiveNow } from './LiveNow';
 import { MustSeeList } from './MustSeeList';
 import { buildSchedule, rankLineup } from './plan';
 import { planText } from './share';
@@ -28,6 +32,12 @@ export function YourFestival({ festival }: { festival: Festival }) {
   );
   const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
   const text = useMemo(() => planText(festival, picks, schedule, APP_NAME), [festival, picks, schedule]);
+  // Only during the festival's days (and the morning after) is there anything live to show.
+  const today = useToday();
+  const until = daysUntil(festival, today);
+  const maybeLive = !!schedule && until !== undefined && until <= 0 && until >= -festival.days.length;
+  // During the festival the timetable opens on tonight.
+  const tonight = maybeLive ? festivalNight(festival, today)?.day : undefined;
 
   return (
     <View style={styles.root}>
@@ -58,7 +68,10 @@ export function YourFestival({ festival }: { festival: Festival }) {
       {picks.length === 0 ? (
         <Text style={[styles.sub, styles.head]}>Like a few clips in Discover and your picks will show up here.</Text>
       ) : schedule ? (
-        <Timetable festival={festival} schedule={schedule} />
+        <>
+          {maybeLive && <LiveNow festival={festival} schedule={schedule} />}
+          <Timetable festival={festival} schedule={schedule} initialDay={tonight} />
+        </>
       ) : (
         <MustSeeList festivalId={festival.id} picks={picks} />
       )}
