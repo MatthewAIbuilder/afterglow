@@ -29,6 +29,7 @@ import { StarIcon } from '../plan/icons';
 import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
+import { AmbientBackdrop } from './AmbientBackdrop';
 import { ClipPlayer } from './ClipPlayer';
 import { type FeedPager, usePlayerSwipe } from './feedPager';
 import { HeartIcon, PlayIcon } from './icons';
@@ -329,18 +330,10 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
 
     return (
       <View style={{ width, height }}>
-        {/* The stage keeps glowing behind the video. Taps here pause, double-taps like; the player takes its own touches. */}
+        {/* The video's own colours glow out to the edges. Taps here pause, double-taps like; the player takes its own touches. */}
         <GestureDetector gesture={Gesture.Exclusive(doubleTap, singleTap)}>
           <View style={StyleSheet.absoluteFill}>
-            <StageScene
-              artistId={artist.id}
-              bpm={clip.bpm}
-              width={width}
-              height={height}
-              clock={clock}
-              reduceMotion={reduceMotion}
-            />
-            <View style={[StyleSheet.absoluteFill, styles.dim]} pointerEvents="none" />
+            <AmbientBackdrop uri={media.posterUrl} playing={playing} reduceMotion={reduceMotion} />
             {burst}
           </View>
         </GestureDetector>
@@ -472,7 +465,6 @@ const styles = StyleSheet.create({
   noticeText: { ...type.label, color: color.glow, ...shadow },
 
   // Real footage: video, then the clip, then the actions, stacked and centred between header and tab bar.
-  dim: { backgroundColor: 'rgba(6,5,16,0.62)' },
   stack: { position: 'absolute', left: 0, right: 0, alignItems: 'center', justifyContent: 'center' },
   player: {
     borderRadius: radius.md,
