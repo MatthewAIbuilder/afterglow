@@ -6,9 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistRow } from '../../components/ArtistRow';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
-import { ChevronIcon } from '../../components/TabIcons';
+import { CheckIcon, ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
-import type { Artist } from '../../data/types';
+import type { Artist, Festival } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../../features/discover/icons';
 import { describeSet } from '../../features/festivals/format';
 import { lineupReach } from '../../features/festivals/links';
@@ -18,6 +18,7 @@ import { leftToRate } from '../../features/festivals/tune';
 import { YourFestival } from '../../features/plan/YourFestival';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -60,6 +61,7 @@ export default function FestivalScreen() {
           </Text>
           {soon ? <Text style={styles.soon}>{soon}</Text> : null}
           <View style={styles.pills}>
+            <GoingPill festival={festival} />
             {reach.clips > 0 && (
               <Pressable
                 onPress={() => {
@@ -156,6 +158,32 @@ export default function FestivalScreen() {
   );
 }
 
+/** "I'm going" / "Going": puts the festival at the top of your Festivals tab. */
+function GoingPill({ festival }: { festival: Festival }) {
+  const { isGoing, toggle } = useGoing();
+  const going = isGoing(festival.id);
+  return (
+    <Pressable
+      onPress={() => {
+        if (going) haptic.select();
+        else haptic.tap();
+        toggle(festival.id);
+      }}
+      accessibilityRole="button"
+      accessibilityState={{ selected: going }}
+      accessibilityLabel={going ? `You're going to ${festival.name}. Tap to undo.` : `I'm going to ${festival.name}`}
+      style={({ pressed }) => [
+        styles.discover,
+        going ? styles.goingOn : styles.tune,
+        pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
+      ]}
+    >
+      <CheckIcon color={going ? color.moon : color.moonDim} size={14} />
+      <Text style={[styles.discoverText, !going && { color: color.moonDim }]}>{going ? 'Going' : 'I’m going'}</Text>
+    </Pressable>
+  );
+}
+
 function Segmented({ value, onChange }: { value: Order; onChange: (o: Order) => void }) {
   const options: { key: Order; label: string }[] = [
     { key: 'match', label: 'For you' },
@@ -207,6 +235,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(169,124,255,0.4)',
   },
   tune: { backgroundColor: color.glass, borderColor: color.hairline },
+  goingOn: { backgroundColor: 'rgba(169,124,255,0.32)', borderColor: 'rgba(169,124,255,0.55)' },
   discoverText: { ...type.label, color: color.moon },
   discoverCount: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   posterWrap: {

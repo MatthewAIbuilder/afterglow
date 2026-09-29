@@ -7,9 +7,11 @@ import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
+import { groupFestivals } from '../../features/festivals/going';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
+import { useGoing } from '../../state/going';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -20,6 +22,9 @@ export default function FestivalsScreen() {
   const tabSpace = useTabBarSpace();
   const { taste } = useTaste();
   const { festivals } = useCatalog();
+  const { going } = useGoing();
+  const today = useToday();
+  const groups = groupFestivals(festivals, going, today);
 
   return (
     <View style={styles.root}>
@@ -32,7 +37,12 @@ export default function FestivalsScreen() {
           <Text style={styles.title}>Festivals</Text>
           <Text style={styles.subtitle}>Lineups ranked by your sound.</Text>
         </View>
-        {festivals.map((f) => (
+        {groups.going.length > 0 && <Text style={styles.section}>Going</Text>}
+        {groups.going.map((f) => (
+          <FestivalCard key={f.id} festival={f} taste={taste} />
+        ))}
+        {groups.going.length > 0 && groups.others.length > 0 && <Text style={styles.section}>More festivals</Text>}
+        {groups.others.map((f) => (
           <FestivalCard key={f.id} festival={f} taste={taste} />
         ))}
       </ScrollView>
@@ -98,6 +108,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: space.xl, marginBottom: space.xl },
   title: { ...type.largeTitle, color: color.moon },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  section: { ...type.label, color: color.moonFaint, paddingHorizontal: space.xl, marginBottom: space.md, textTransform: 'uppercase', letterSpacing: 0.8 },
   card: {
     marginHorizontal: space.lg,
     marginBottom: space.lg,

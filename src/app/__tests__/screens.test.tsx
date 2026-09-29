@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import RootLayout from '../_layout';
@@ -40,6 +41,11 @@ const settle = () =>
     await Promise.resolve();
   });
 
+beforeEach(async () => {
+  // Every test starts as a fresh install: nothing liked, rated or planned.
+  await AsyncStorage.clear();
+});
+
 afterEach(() => {
   jest.useRealTimers();
 });
@@ -66,6 +72,19 @@ describe('Festivals', () => {
     // The countdown and the poster's set notes.
     expect(app.getByText(/^(In \d+ (days|months)|Tomorrow|Happening now|Over)$/)).toBeTruthy();
     expect(app.getAllByText('Sunset set').length).toBeGreaterThan(0);
+  });
+
+  it('marks a festival you are going to, and lists it first under Going', async () => {
+    const page = await renderApp('/festival/horizon-27');
+    await settle();
+    await fireEvent.press(page.getByLabelText("I'm going to Horizon 2027"));
+    await settle();
+    expect(page.getByText('Going')).toBeTruthy();
+
+    const list = await renderApp('/festivals');
+    await settle();
+    const titles = list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
+    expect(titles).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Solstice 2026']);
   });
 
   it('shows the day-by-day plan for a festival with set times', async () => {
