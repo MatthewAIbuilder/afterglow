@@ -40,11 +40,13 @@ export function FestivalsIcon({ color, size = 24 }: P) {
   );
 }
 
-export function ChevronIcon({ color, size = 16, direction = 'right' }: P & { direction?: 'left' | 'right' }) {
+const CHEVRON = { right: 'M9 5l7 7-7 7', left: 'M15 5l-7 7 7 7', up: 'M5 15l7-7 7 7' } as const;
+
+export function ChevronIcon({ color, size = 16, direction = 'right' }: P & { direction?: keyof typeof CHEVRON }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d={direction === 'right' ? 'M9 5l7 7-7 7' : 'M15 5l-7 7 7 7'}
+        d={CHEVRON[direction]}
         stroke={color}
         strokeWidth={2.2}
         strokeLinecap="round"

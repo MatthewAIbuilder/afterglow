@@ -266,6 +266,30 @@ describe('Discover', () => {
     expect(app.getAllByText('ILLENIUM').length).toBeGreaterThan(0);
   });
 
+  it('shows a first-time tip, and none to someone who already uses the app', async () => {
+    const fresh = await renderApp('/');
+    await settle();
+    await settle();
+    expect(fresh.getByLabelText('Tip: Swipe up for the next clip')).toBeTruthy();
+    fresh.unmount();
+
+    await AsyncStorage.setItem('seen.v1', JSON.stringify({ c1: 1, c2: 2 }));
+    await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: true, saved: false, skipped: false } }));
+    const regular = await renderApp('/');
+    await settle();
+    await settle();
+    expect(regular.queryByLabelText(/^Tip: /)).toBeNull();
+    expect(JSON.parse((await AsyncStorage.getItem('hints.v1')) ?? '[]')).toEqual(['swipe', 'like']);
+  });
+
+  it('moves on to the next tip once you have swiped', async () => {
+    await AsyncStorage.setItem('seen.v1', JSON.stringify({ c1: 1, c2: 2 }));
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    expect(app.getByLabelText('Tip: Double-tap a clip to like it')).toBeTruthy();
+  });
+
   it('moves to a festival the artist plays when a clip needs it', async () => {
     // ILLENIUM doesn't play Horizon, so asking for their clip there moves Discover to Solstice.
     const app = await renderApp('/?festival=horizon-27');
