@@ -7,6 +7,8 @@ import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
+import { countdown } from '../../features/festivals/when';
+import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -46,6 +48,8 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
     .sort((a, b) => (taste[b.id] ?? 0) - (taste[a.id] ?? 0));
   const loved = ranked.filter((a) => (taste[a.id] ?? 0) >= LOVE).length;
   const timesOut = !!festival.sets?.length;
+  const today = useToday();
+  const soon = countdown(festival, today);
 
   return (
     <Pressable
@@ -80,6 +84,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
             {loved > 0 ? `${loved} of ${ranked.length} artists you'll love` : `${ranked.length} artists`}
           </Text>
           <Text style={[styles.status, timesOut && { color: color.glow }]}>
+            {soon ? `${soon} · ` : ''}
             {timesOut ? 'Set times are out' : 'Set times not announced yet'}
           </Text>
         </View>

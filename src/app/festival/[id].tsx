@@ -12,6 +12,8 @@ import type { Artist } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../../features/discover/icons';
 import { describeSet } from '../../features/festivals/format';
 import { lineupReach } from '../../features/festivals/links';
+import { countdown, setLine } from '../../features/festivals/when';
+import { useToday } from '../../lib/useToday';
 import { leftToRate } from '../../features/festivals/tune';
 import { YourFestival } from '../../features/plan/YourFestival';
 import { haptic } from '../../lib/haptics';
@@ -30,6 +32,7 @@ export default function FestivalScreen() {
   const { taste } = useTaste();
   const [order, setOrder] = useState<Order>('match');
   const { ratings } = useRatings();
+  const today = useToday();
 
   const lineup = useMemo(() => {
     if (!festival) return [];
@@ -39,6 +42,7 @@ export default function FestivalScreen() {
 
   if (!festival) return null;
   const timesOut = !!festival.sets?.length;
+  const soon = countdown(festival, today);
   const reach = lineupReach(festival, catalog.clips);
   const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
 
@@ -54,6 +58,7 @@ export default function FestivalScreen() {
           <Text style={styles.meta}>
             {festival.dates}, {festival.location}
           </Text>
+          {soon ? <Text style={styles.soon}>{soon}</Text> : null}
           <View style={styles.pills}>
             {reach.clips > 0 && (
               <Pressable
@@ -136,7 +141,7 @@ export default function FestivalScreen() {
           {lineup.map((a) => {
             const set = setFor(festival, a.id);
             return (
-              <ArtistRow key={a.id} festivalId={festival.id} artist={a} affinity={taste[a.id] ?? 0} detail={set ? describeSet(festival, set) : undefined} />
+              <ArtistRow key={a.id} festivalId={festival.id} artist={a} affinity={taste[a.id] ?? 0} detail={setLine(set && describeSet(festival, set), festival.notes?.[a.id])} />
             );
           })}
         </View>
@@ -186,6 +191,7 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  soon: { ...type.label, color: color.glow, marginTop: space.xs, fontVariant: ['tabular-nums'] },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.lg },
   discover: {
     flexDirection: 'row',

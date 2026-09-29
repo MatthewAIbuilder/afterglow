@@ -71,8 +71,10 @@ The demo artists already exist, and you can use them in your lineups without add
   "id": "nightfall-27",
   "name": "Nightfall 2027",
   "dates": "Aug 6 to 8",
+  "start": "2027-08-06",
+  "end": "2027-08-08",
   "location": "Riverside Park",
-  "lineup": ["illenium", "aurora-drift", "levity"],
+  "lineup": ["illenium", { "artist": "aurora-drift", "note": "Sunset set" }, "levity"],
   "days": ["Friday", "Saturday"],
   "stages": [{ "id": "main", "name": "Main Stage" }],
   "sets": [
@@ -81,7 +83,8 @@ The demo artists already exist, and you can use them in your lineups without add
 }
 ```
 
-- **`lineup`** is artist ids in billing order, headliners first.
+- **`lineup`** is artist ids in billing order, headliners first. When the poster says something about a set, like "(sunset set)" or who's in a collaboration, write that entry as `{ "artist": "…", "note": "Sunset set" }`. The note shows under the artist in the lineup and on their page.
+- **`start`** and **`end`** (optional) are the first and last day, written as year-month-day, like `"2026-11-06"`. With them, the app shows a countdown: "In 38 days", "Tomorrow", "Happening now". `dates` is still the text people read, like "Nov 6 to 8".
 - **`sets`** can wait: leave them out until the festival publishes set times. The festival page shows "set times aren't out yet" until then.
   - Times use the 24-hour clock.
   - A set that runs past midnight belongs to the night it starts. For example, `"day": "Friday"` with `"start": "23:30"` and `"end": "01:00"`.

@@ -133,6 +133,36 @@ describe('catalogue files', () => {
     for (const p of parsed.problems) expect(p).not.toMatch(/undefined|\[object/);
   });
 
+  it('reads set notes and real dates, and checks them', () => {
+    const parsed = parseCatalogFile({
+      version: 1,
+      artists: [
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B' },
+      ],
+      festivals: [
+        { id: 'f', name: 'F', dates: 'Nov 6 to 8', start: '2026-11-06', end: '2026-11-08', lineup: [{ artist: 'a', note: 'Sunset set' }, 'b', { artist: 'b', note: 7 }, { note: 'x' }] },
+        { id: 'g', name: 'G', dates: 'Feb', start: '2026-02-30', lineup: [] },
+        { id: 'h', name: 'H', dates: 'Soon', start: '2026-05-02', end: '2026-05-01', lineup: [] },
+      ],
+      clips: [],
+    });
+    const [f, g, h] = parsed.snapshot!.festivals;
+    expect(f).toMatchObject({ startDate: '2026-11-06', endDate: '2026-11-08', notes: { a: 'Sunset set' } });
+    expect(f.lineup).toEqual(['a', 'b', 'b']);
+    expect(g.startDate).toBeUndefined();
+    expect(h.startDate).toBeUndefined();
+    expect(parsed.problems.some((p) => /note for "b"/.test(p))).toBe(true);
+    expect(parsed.problems.some((p) => /date like/.test(p))).toBe(true);
+    expect(parsed.problems.some((p) => /ends before it starts/.test(p))).toBe(true);
+    // A note for someone who isn't on the lineup is dropped when checked.
+    const built = buildCatalog(MOCK_SNAPSHOT, {
+      ...parsed,
+      snapshot: { ...parsed.snapshot!, festivals: [{ ...f, lineup: ['a'], notes: { a: 'Sunset set', b: 'Closing set' } }] },
+    });
+    expect(built.catalog.festival('f')?.notes).toEqual({ a: 'Sunset set' });
+  });
+
   it('marks YouTube Shorts as vertical', () => {
     const parsed = parseCatalogFile({
       version: 1,

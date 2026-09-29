@@ -65,13 +65,21 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
     });
     const stageIds = new Set(f.stages.map((s) => s.id));
     const inLineup = new Set(lineup);
-    if (!f.sets) return { ...f, lineup };
+    const base: Festival = { ...f, lineup };
+    if (f.notes) {
+      const notes = Object.fromEntries(Object.entries(f.notes).filter(([id]) => inLineup.has(id)));
+      if (Object.keys(notes).length < Object.keys(f.notes).length)
+        problems.push(`Festival "${f.id}": a set note was left out because that artist isn't on the lineup.`);
+      if (Object.keys(notes).length) base.notes = notes;
+      else delete base.notes;
+    }
+    if (!f.sets) return base;
     const sets = f.sets.filter((s) => {
       const ok = validSet(s, inLineup, f.days, stageIds);
       if (!ok) problems.push(`Festival "${f.id}": the set for "${s.artistId}" was left out. Check they're on the lineup, and that the day and stage exist.`);
       return ok;
     });
-    return { ...f, lineup, sets };
+    return { ...base, sets };
   });
   const festivalIds = new Set(festivals.map((f) => f.id));
 
