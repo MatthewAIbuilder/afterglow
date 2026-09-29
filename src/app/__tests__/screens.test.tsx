@@ -180,6 +180,10 @@ describe('Festivals', () => {
     await settle();
     expect(app.getByText('Austin City Limits 2026')).toBeTruthy();
     expect(app.getByText('138 to rate')).toBeTruthy();
+    // Its pop, indie and rock acts can be picked out with the sound filter.
+    expect(app.getByLabelText(/^Pop, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
+    expect(app.getByLabelText(/^Indie, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
+    expect(app.getByLabelText(/^Rock, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
     await fireEvent.changeText(app.getByLabelText('Find an artist on the Austin City Limits 2026 lineup'), 'skrillex');
     await settle();
     expect(app.getAllByText(/Friday, weekend 1 only/).length).toBeGreaterThan(0);

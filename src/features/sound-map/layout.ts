@@ -14,7 +14,24 @@ import { soundSimilarity } from '../taste/similarity';
  *    plus its name label, so nothing overlaps.
  */
 
-const RING_ORDER: SoundTag[] = ['melodic-bass', 'dubstep', 'riddim', 'trap', 'techno', 'house'];
+/**
+ * Where each sound sits around the ring, in sixths of a turn from the top.
+ * The six electronic sounds keep their original evenly spaced places; the
+ * wider sounds sit in the gaps next to their closest neighbours (pop between
+ * house and melodic bass, with indie and rock either side; hip-hop by trap).
+ */
+const RING_PLACE: Record<SoundTag, number> = {
+  'melodic-bass': 0,
+  rock: 0.5,
+  dubstep: 1,
+  riddim: 2,
+  trap: 3,
+  'hip-hop': 3.5,
+  techno: 4,
+  indie: 4.5,
+  house: 5,
+  pop: 5.5,
+};
 const MIN_R = 30;
 export const MAX_R = 78;
 const GAP = 16;
@@ -39,7 +56,7 @@ export type MapLayout = {
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 };
 
-const angleOf = (tag: SoundTag) => (RING_ORDER.indexOf(tag) / RING_ORDER.length) * Math.PI * 2 - Math.PI / 2;
+const angleOf = (tag: SoundTag) => (RING_PLACE[tag] / 6) * Math.PI * 2 - Math.PI / 2;
 
 export const bubbleRadius = (affinity: number) => {
   const t = Math.min(1, Math.max(0, (affinity - 0.3) / 0.7));

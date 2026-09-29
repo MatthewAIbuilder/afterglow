@@ -59,7 +59,7 @@ The demo artists already exist, and you can use them in your lineups without add
 { "id": "aurora-drift", "name": "AURORA DRIFT", "sound": { "melodic-bass": 0.8, "house": 0.3 } }
 ```
 
-- **`sound`** places the artist on the My Sound map. Use any of `melodic-bass`, `dubstep`, `riddim`, `trap`, `techno` and `house`, each with a number from 0 to 1 for how much of that sound they carry.
+- **`sound`** places the artist on the My Sound map. Use any of `melodic-bass`, `dubstep`, `riddim`, `trap`, `techno`, `house`, `pop`, `indie`, `rock` and `hip-hop`, each with a number from 0 to 1 for how much of that sound they carry.
   - If you're not sure, leave `sound` out. The artist shows as "New" until you react to their clips.
   - With a sound, the app can work out who's similar to artists you like. My Sound shows up to 40 artists the app knows something about, and new ones join as your likes reach them.
 - **`image`** (optional) is a photo link starting with `https://`. Only use images you have the rights to.

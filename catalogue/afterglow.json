@@ -691,7 +691,11 @@
     },
     {
       "id": "charli-xcx",
-      "name": "CHARLI XCX"
+      "name": "CHARLI XCX",
+      "sound": {
+        "pop": 0.9,
+        "house": 0.2
+      }
     },
     {
       "id": "skrillex",
@@ -703,15 +707,24 @@
     },
     {
       "id": "kings-of-leon",
-      "name": "KINGS OF LEON"
+      "name": "KINGS OF LEON",
+      "sound": {
+        "rock": 1
+      }
     },
     {
       "id": "turnstile",
-      "name": "TURNSTILE"
+      "name": "TURNSTILE",
+      "sound": {
+        "rock": 1
+      }
     },
     {
       "id": "labrinth",
-      "name": "LABRINTH"
+      "name": "LABRINTH",
+      "sound": {
+        "pop": 0.7
+      }
     },
     {
       "id": "the-chainsmokers",
@@ -723,31 +736,55 @@
     },
     {
       "id": "leon-thomas",
-      "name": "LEON THOMAS"
+      "name": "LEON THOMAS",
+      "sound": {
+        "pop": 0.5,
+        "hip-hop": 0.4
+      }
     },
     {
       "id": "brandon-flowers",
-      "name": "BRANDON FLOWERS"
+      "name": "BRANDON FLOWERS",
+      "sound": {
+        "rock": 0.8,
+        "pop": 0.3
+      }
     },
     {
       "id": "amyl-and-the-sniffers",
-      "name": "AMYL AND THE SNIFFERS"
+      "name": "AMYL AND THE SNIFFERS",
+      "sound": {
+        "rock": 1
+      }
     },
     {
       "id": "sienna-spiro",
-      "name": "SIENNA SPIRO"
+      "name": "SIENNA SPIRO",
+      "sound": {
+        "pop": 0.8
+      }
     },
     {
       "id": "live",
-      "name": "LIVE"
+      "name": "LIVE",
+      "sound": {
+        "rock": 1
+      }
     },
     {
       "id": "jesse-welles",
-      "name": "JESSE WELLES"
+      "name": "JESSE WELLES",
+      "sound": {
+        "indie": 0.7
+      }
     },
     {
       "id": "bunt",
-      "name": "BUNT."
+      "name": "BUNT.",
+      "sound": {
+        "house": 0.6,
+        "pop": 0.4
+      }
     },
     {
       "id": "bella-kay",
@@ -755,11 +792,18 @@
     },
     {
       "id": "paris-paloma",
-      "name": "PARIS PALOMA"
+      "name": "PARIS PALOMA",
+      "sound": {
+        "indie": 0.8
+      }
     },
     {
       "id": "lp",
-      "name": "LP"
+      "name": "LP",
+      "sound": {
+        "pop": 0.6,
+        "rock": 0.4
+      }
     },
     {
       "id": "rusowsky",
@@ -767,7 +811,10 @@
     },
     {
       "id": "natasha-bedingfield",
-      "name": "NATASHA BEDINGFIELD"
+      "name": "NATASHA BEDINGFIELD",
+      "sound": {
+        "pop": 1
+      }
     },
     {
       "id": "marlon-funaki",
@@ -775,11 +822,18 @@
     },
     {
       "id": "cmat",
-      "name": "CMAT"
+      "name": "CMAT",
+      "sound": {
+        "pop": 0.6,
+        "indie": 0.5
+      }
     },
     {
       "id": "rebecca-black",
-      "name": "REBECCA BLACK"
+      "name": "REBECCA BLACK",
+      "sound": {
+        "pop": 0.9
+      }
     },
     {
       "id": "bo-staloch",
@@ -799,11 +853,17 @@
     },
     {
       "id": "faouzia",
-      "name": "FAOUZIA"
+      "name": "FAOUZIA",
+      "sound": {
+        "pop": 0.9
+      }
     },
     {
       "id": "hunx-and-his-punx",
-      "name": "HUNX AND HIS PUNX"
+      "name": "HUNX AND HIS PUNX",
+      "sound": {
+        "rock": 0.9
+      }
     },
     {
       "id": "new-constellations",
@@ -827,7 +887,11 @@
     },
     {
       "id": "brigitte-calls-me-baby",
-      "name": "BRIGITTE CALLS ME BABY"
+      "name": "BRIGITTE CALLS ME BABY",
+      "sound": {
+        "indie": 0.7,
+        "rock": 0.5
+      }
     },
     {
       "id": "night-traveler",
@@ -907,31 +971,59 @@
     },
     {
       "id": "lorde",
-      "name": "LORDE"
+      "name": "LORDE",
+      "sound": {
+        "pop": 0.9,
+        "indie": 0.3
+      }
     },
     {
       "id": "lola-young",
-      "name": "LOLA YOUNG"
+      "name": "LOLA YOUNG",
+      "sound": {
+        "pop": 0.8,
+        "indie": 0.3
+      }
     },
     {
       "id": "young-miko",
-      "name": "YOUNG MIKO"
+      "name": "YOUNG MIKO",
+      "sound": {
+        "hip-hop": 0.7,
+        "pop": 0.4
+      }
     },
     {
       "id": "bleachers",
-      "name": "BLEACHERS"
+      "name": "BLEACHERS",
+      "sound": {
+        "indie": 0.6,
+        "rock": 0.5,
+        "pop": 0.3
+      }
     },
     {
       "id": "lykke-li",
-      "name": "LYKKE LI"
+      "name": "LYKKE LI",
+      "sound": {
+        "indie": 0.7,
+        "pop": 0.5
+      }
     },
     {
       "id": "suki-waterhouse",
-      "name": "SUKI WATERHOUSE"
+      "name": "SUKI WATERHOUSE",
+      "sound": {
+        "indie": 0.8
+      }
     },
     {
       "id": "snow-strippers",
-      "name": "SNOW STRIPPERS"
+      "name": "SNOW STRIPPERS",
+      "sound": {
+        "pop": 0.5,
+        "techno": 0.5
+      }
     },
     {
       "id": "it-s-murph",
@@ -939,19 +1031,31 @@
     },
     {
       "id": "fakemink",
-      "name": "FAKEMINK"
+      "name": "FAKEMINK",
+      "sound": {
+        "hip-hop": 0.9
+      }
     },
     {
       "id": "palace",
-      "name": "PALACE"
+      "name": "PALACE",
+      "sound": {
+        "indie": 0.9
+      }
     },
     {
       "id": "yousuke-yuk1matsu",
-      "name": "¥ØU$UK€ ¥UK1MAT$U"
+      "name": "¥ØU$UK€ ¥UK1MAT$U",
+      "sound": {
+        "hip-hop": 0.8
+      }
     },
     {
       "id": "skye-newman",
-      "name": "SKYE NEWMAN"
+      "name": "SKYE NEWMAN",
+      "sound": {
+        "pop": 0.8
+      }
     },
     {
       "id": "rodrigo-y-gabriela",
@@ -963,23 +1067,43 @@
     },
     {
       "id": "balu-brigada",
-      "name": "BALU BRIGADA"
+      "name": "BALU BRIGADA",
+      "sound": {
+        "indie": 0.7,
+        "pop": 0.4
+      }
     },
     {
       "id": "rochelle-jordan",
-      "name": "ROCHELLE JORDAN"
+      "name": "ROCHELLE JORDAN",
+      "sound": {
+        "house": 0.6,
+        "pop": 0.5
+      }
     },
     {
       "id": "arcy-drive",
-      "name": "ARCY DRIVE"
+      "name": "ARCY DRIVE",
+      "sound": {
+        "rock": 0.6,
+        "indie": 0.6
+      }
     },
     {
       "id": "finn-wolfhard",
-      "name": "FINN WOLFHARD"
+      "name": "FINN WOLFHARD",
+      "sound": {
+        "indie": 0.7,
+        "rock": 0.5
+      }
     },
     {
       "id": "ryan-beatty",
-      "name": "RYAN BEATTY"
+      "name": "RYAN BEATTY",
+      "sound": {
+        "indie": 0.7,
+        "pop": 0.3
+      }
     },
     {
       "id": "don-west",
@@ -995,11 +1119,17 @@
     },
     {
       "id": "annie-dirusso",
-      "name": "ANNIE DIRUSSO"
+      "name": "ANNIE DIRUSSO",
+      "sound": {
+        "indie": 0.9
+      }
     },
     {
       "id": "night-tapes",
-      "name": "NIGHT TAPES"
+      "name": "NIGHT TAPES",
+      "sound": {
+        "indie": 0.8
+      }
     },
     {
       "id": "dj-cassandra",
@@ -1067,15 +1197,27 @@
     },
     {
       "id": "twenty-one-pilots",
-      "name": "TWENTY ONE PILOTS"
+      "name": "TWENTY ONE PILOTS",
+      "sound": {
+        "rock": 0.6,
+        "pop": 0.5,
+        "hip-hop": 0.3
+      }
     },
     {
       "id": "the-xx",
-      "name": "THE XX"
+      "name": "THE XX",
+      "sound": {
+        "indie": 0.9
+      }
     },
     {
       "id": "geese",
-      "name": "GEESE"
+      "name": "GEESE",
+      "sound": {
+        "rock": 0.8,
+        "indie": 0.6
+      }
     },
     {
       "id": "sofi-tukker",
@@ -1086,15 +1228,28 @@
     },
     {
       "id": "parcels",
-      "name": "PARCELS"
+      "name": "PARCELS",
+      "sound": {
+        "indie": 0.6,
+        "pop": 0.5,
+        "house": 0.2
+      }
     },
     {
       "id": "the-war-on-drugs",
-      "name": "THE WAR ON DRUGS"
+      "name": "THE WAR ON DRUGS",
+      "sound": {
+        "rock": 0.8,
+        "indie": 0.6
+      }
     },
     {
       "id": "blood-orange",
-      "name": "BLOOD ORANGE"
+      "name": "BLOOD ORANGE",
+      "sound": {
+        "indie": 0.6,
+        "pop": 0.5
+      }
     },
     {
       "id": "max-mcnown",
@@ -1102,19 +1257,34 @@
     },
     {
       "id": "cannons",
-      "name": "CANNONS"
+      "name": "CANNONS",
+      "sound": {
+        "indie": 0.7,
+        "pop": 0.5
+      }
     },
     {
       "id": "audrey-hobert",
-      "name": "AUDREY HOBERT"
+      "name": "AUDREY HOBERT",
+      "sound": {
+        "pop": 0.9
+      }
     },
     {
       "id": "saint-motel",
-      "name": "SAINT MOTEL"
+      "name": "SAINT MOTEL",
+      "sound": {
+        "indie": 0.7,
+        "pop": 0.5
+      }
     },
     {
       "id": "houndmouth",
-      "name": "HOUNDMOUTH"
+      "name": "HOUNDMOUTH",
+      "sound": {
+        "rock": 0.7,
+        "indie": 0.5
+      }
     },
     {
       "id": "fcukers",
@@ -1129,15 +1299,27 @@
     },
     {
       "id": "underscores",
-      "name": "UNDERSCORES"
+      "name": "UNDERSCORES",
+      "sound": {
+        "pop": 0.8,
+        "indie": 0.3
+      }
     },
     {
       "id": "claire-rosinkranz",
-      "name": "CLAIRE ROSINKRANZ"
+      "name": "CLAIRE ROSINKRANZ",
+      "sound": {
+        "pop": 0.7,
+        "indie": 0.4
+      }
     },
     {
       "id": "noga-erez",
-      "name": "NOGA EREZ"
+      "name": "NOGA EREZ",
+      "sound": {
+        "pop": 0.6,
+        "hip-hop": 0.5
+      }
     },
     {
       "id": "dexter-and-the-moonrocks",
@@ -1149,7 +1331,11 @@
     },
     {
       "id": "grace-ives",
-      "name": "GRACE IVES"
+      "name": "GRACE IVES",
+      "sound": {
+        "pop": 0.7,
+        "indie": 0.5
+      }
     },
     {
       "id": "rio-kosta",
@@ -1161,7 +1347,10 @@
     },
     {
       "id": "bad-nerves",
-      "name": "BAD NERVES"
+      "name": "BAD NERVES",
+      "sound": {
+        "rock": 1
+      }
     },
     {
       "id": "girlsweetvoiced",
@@ -1169,11 +1358,17 @@
     },
     {
       "id": "charlotte-lawrence",
-      "name": "CHARLOTTE LAWRENCE"
+      "name": "CHARLOTTE LAWRENCE",
+      "sound": {
+        "pop": 0.9
+      }
     },
     {
       "id": "sunday-1994",
-      "name": "SUNDAY (1994)"
+      "name": "SUNDAY (1994)",
+      "sound": {
+        "indie": 0.8
+      }
     },
     {
       "id": "rum-jungle",
@@ -1201,7 +1396,10 @@
     },
     {
       "id": "jess-williamson",
-      "name": "JESS WILLIAMSON"
+      "name": "JESS WILLIAMSON",
+      "sound": {
+        "indie": 0.8
+      }
     },
     {
       "id": "flight-by-nothing",
