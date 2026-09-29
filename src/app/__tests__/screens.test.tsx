@@ -534,6 +534,27 @@ describe('My Sound', () => {
     expect(app.getByLabelText('Your sound at EDC Orlando 2026. Choose a festival')).toBeTruthy();
   });
 
+  it('searches the map for a sound or an artist, bringing matches onto it', async () => {
+    const app = await renderApp('/sound');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Search your map for an artist or a sound'));
+    await settle();
+    await fireEvent.changeText(app.getByLabelText('Search your map for an artist or a sound'), 'dubstep');
+    await settle();
+    expect(app.getByText(/^\d+ dubstep artists(, \d+ new to your map)?\. Tap one to see more\.$/)).toBeTruthy();
+    // An artist not on the map yet joins it.
+    await fireEvent.changeText(app.getByLabelText('Search your map for an artist or a sound'), 'wooli');
+    await settle();
+    expect(app.getByText('1 artist, 1 new to your map. Tap one to see more.')).toBeTruthy();
+    expect(app.getByLabelText(/^WOOLI, \d+ percent match$/)).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Search your map for an artist or a sound'), 'zzz');
+    await settle();
+    expect(app.getByText('No artist or sound matches “zzz”.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Done searching'));
+    await settle();
+    expect(app.queryByText(/No artist or sound matches/)).toBeNull();
+  });
+
   it('narrows a festival map to one day, when the poster says who plays when', async () => {
     const app = await renderApp('/sound?festival=acl-26');
     await settle();

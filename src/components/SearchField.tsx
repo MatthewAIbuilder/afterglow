@@ -8,11 +8,13 @@ export function SearchField({
   onChange,
   placeholder,
   label,
+  autoFocus,
 }: {
   value: string;
   onChange: (text: string) => void;
   placeholder: string;
   label: string;
+  autoFocus?: boolean;
 }) {
   return (
     <View style={styles.search}>
@@ -30,6 +32,7 @@ export function SearchField({
         keyboardAppearance="dark"
         selectionColor={color.glow}
         accessibilityLabel={label}
+        autoFocus={autoFocus}
       />
       {value ? (
         <Pressable onPress={() => onChange('')} accessibilityRole="button" accessibilityLabel="Clear the search" hitSlop={10}>

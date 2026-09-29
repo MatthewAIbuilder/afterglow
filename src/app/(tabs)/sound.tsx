@@ -4,7 +4,9 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, Vi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
-import { BarsIcon, ChevronIcon } from '../../components/TabIcons';
+import { BarsIcon, ChevronIcon, SearchIcon } from '../../components/TabIcons';
+import { SearchField } from '../../components/SearchField';
+import { extraMatches, type MapSearch, mapSearch } from '../../features/sound-map/search';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
 import { SaveIcon } from '../../features/discover/icons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
@@ -84,15 +86,25 @@ export default function MySoundScreen() {
   const dayOn = scope && day && scopeDays.includes(day) ? day : undefined;
 
   // Who's on the map: artists the app knows something about, best matches first (see artistsOnMap).
-  const onMap = useMemo(
-    () =>
-      artistsOnMap(
-        mapCandidates(artists, scope ? scope.lineup.filter((id) => playsOn(scope, id, dayOn)) : undefined),
-        shown.taste,
-        shown.informed,
-      ),
-    [artists, scope, dayOn, shown],
+  const candidates = useMemo(
+    () => mapCandidates(artists, scope ? scope.lineup.filter((id) => playsOn(scope, id, dayOn)) : undefined),
+    [artists, scope, dayOn],
   );
+  const known = useMemo(() => artistsOnMap(candidates, shown.taste, shown.informed), [candidates, shown]);
+
+  // Searching the map: an artist or a sound. Matches pop; ones not on the map yet join it.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const search = useMemo(() => (searchOpen ? mapSearch(candidates, query) : undefined), [searchOpen, candidates, query]);
+  const extra = useMemo(
+    () => (search ? extraMatches(candidates, known, search, shown.taste) : []),
+    [search, candidates, known, shown],
+  );
+  const onMap = useMemo(() => (extra.length ? [...known, ...extra] : known), [known, extra]);
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setQuery('');
+  }, []);
 
   // Closing the sheet lets the map catch up with anything you rated in it.
   // Which sounds you lean towards, across everyone (not just the festival in view).
@@ -125,10 +137,14 @@ export default function MySoundScreen() {
           selectedId={selectedId}
           onSelect={setSelectedId}
           onBackgroundTap={close}
+          matchIds={search?.ids}
         />
       </View>
 
-      {scope && onMap.length < SPARSE_MAP && <SparseNote festival={scope} shown={onMap.length} bottom={tabSpace + space.lg} />}
+      {search ? (
+        <SearchNote search={search} query={query} extra={extra.length} bottom={tabSpace + space.lg} />
+      ) : null}
+      {!search && scope && onMap.length < SPARSE_MAP && <SparseNote festival={scope} shown={onMap.length} bottom={tabSpace + space.lg} />}
 
       <View style={[styles.header, { paddingTop: insets.top + space.lg }]} pointerEvents="box-none">
         <View style={styles.titleRow} pointerEvents="box-none">
@@ -143,7 +159,24 @@ export default function MySoundScreen() {
         <Text style={styles.subtitle} pointerEvents="none">
           {subtitle(shown.summary, shown.rated, lean)}
         </Text>
-        {hasScopes && <ScopeRow scope={scope} days={scopeDays} day={dayOn} onDay={pickDay} />}
+        {searchOpen ? (
+          <View style={styles.searchRow}>
+            <View style={{ flex: 1 }}>
+              <SearchField
+                value={query}
+                onChange={setQuery}
+                placeholder="Artist or sound, like dubstep"
+                label="Search your map for an artist or a sound"
+                autoFocus
+              />
+            </View>
+            <Pressable onPress={closeSearch} accessibilityRole="button" accessibilityLabel="Done searching" hitSlop={8}>
+              <Text style={styles.done}>Done</Text>
+            </Pressable>
+          </View>
+        ) : hasScopes ? (
+          <ScopeRow scope={scope} days={scopeDays} day={dayOn} onDay={pickDay} onSearch={() => setSearchOpen(true)} />
+        ) : null}
       </View>
 
       {/* The sheet shows the live match, so a rating there shows its effect straight away. */}
@@ -161,14 +194,27 @@ function ScopeRow({
   days,
   day,
   onDay,
+  onSearch,
 }: {
   scope: Festival | undefined;
   days: string[];
   day: string | undefined;
   onDay: (d: string | undefined) => void;
+  onSearch: () => void;
 }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsWrap} contentContainerStyle={styles.chips}>
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          onSearch();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Search your map for an artist or a sound"
+        style={({ pressed }) => [styles.chip, styles.searchChip, pressed && { opacity: 0.75 }]}
+      >
+        <SearchIcon color={color.moon} size={13} />
+      </Pressable>
       {/* Your sound (in this scope) as a breakdown of sounds. */}
       <Pressable
         onPress={() => {
@@ -221,6 +267,21 @@ function ScopeRow({
         </>
       )}
     </ScrollView>
+  );
+}
+
+/** While searching: what lit up, in a quiet glass note above the tab bar. */
+function SearchNote({ search, query, extra, bottom }: { search: MapSearch; query: string; extra: number; bottom: number }) {
+  const n = search.ids.size;
+  const sound = search.sounds.length === 1 ? SOUND_LABEL[search.sounds[0]].toLowerCase() : undefined;
+  const text =
+    n === 0
+      ? `No artist or sound matches “${query.trim()}”.`
+      : `${n} ${sound ? `${sound} ` : ''}${n === 1 ? 'artist' : 'artists'}${extra ? `, ${extra} new to your map` : ''}. Tap one to see more.`;
+  return (
+    <View style={[styles.sparse, { bottom }]} pointerEvents="none" accessibilityLiveRegion="polite">
+      <Text style={styles.sparseText}>{text}</Text>
+    </View>
   );
 }
 
@@ -352,6 +413,9 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xs },
+  done: { ...type.headline, color: color.glow },
+  searchChip: { paddingHorizontal: space.md, justifyContent: 'center' },
   scopePill: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 220 },
   chipDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', marginVertical: 6, backgroundColor: color.hairline },
   breakdown: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: 'rgba(169,124,255,0.45)', marginRight: space.sm },
