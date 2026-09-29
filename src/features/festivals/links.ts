@@ -1,5 +1,6 @@
 import { setFor } from '../../data/festival';
 import { describeSet } from './format';
+import { dayList, daysOf } from './days';
 import { setLine } from './when';
 import type { Clip, Festival } from '../../data/types';
 
@@ -76,7 +77,9 @@ export function nextFocus(
 export function festivalLine(festival: Festival, artistId: string): string | undefined {
   if (!playsAt(festival, artistId)) return undefined;
   const set = setFor(festival, artistId);
-  return setLine(set ? describeSet(festival, set) : 'On the lineup, set time to come', festival.notes?.[artistId]);
+  const day = dayList(daysOf(festival, artistId));
+  const when = set ? describeSet(festival, set) : day ? `${day}, set time to come` : 'On the lineup, set time to come';
+  return setLine(when, festival.notes?.[artistId]);
 }
 
 /** How many clips and artists Discover has for a festival's lineup. */

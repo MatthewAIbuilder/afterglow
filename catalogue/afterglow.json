@@ -2316,558 +2316,1007 @@
         }
       ],
       "location": "Austin, Texas",
+      "days": [
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
       "lineup": [
         {
           "artist": "charli-xcx",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "skrillex",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "kings-of-leon",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "turnstile",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "labrinth",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "the-chainsmokers",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "leon-thomas",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "brandon-flowers",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "amyl-and-the-sniffers",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "sienna-spiro",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "live",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "steve-aoki",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "jesse-welles",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "bunt",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "bella-kay",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "paris-paloma",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "lp",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "rusowsky",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "natasha-bedingfield",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "marlon-funaki",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "cmat",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "rebecca-black",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "bo-staloch",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "molly-santana",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "radio-free-alice",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "world-famous-pets",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "faouzia",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "hunx-and-his-punx",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "new-constellations",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "asleep-at-the-wheel",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "s-g-goodman",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "cassandra-coleman",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "dallas-wax",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "brigitte-calls-me-baby",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "night-traveler",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "grocery-bag",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "joe-jordan",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "happy-landing",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "girlfriend",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "elle-coves",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "elijah-delgado",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "izzy-escobar",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "almost-heaven",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "solomon-hicks",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "leon-knight",
-          "note": "Friday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "the-4411",
-          "note": "Friday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "wild-child",
-          "note": "Friday and Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday",
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "q-brothers",
-          "note": "Friday (weekend 2) and Saturday (weekend 1)"
+          "note": "Friday weekend 2, Saturday weekend 1",
+          "days": [
+            "Friday",
+            "Saturday"
+          ]
         },
         {
           "artist": "pierce-freelon",
-          "note": "Friday and Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Friday",
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "sonia-de-los-santos",
-          "note": "Friday and Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Friday",
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "school-of-rock",
-          "note": "Friday and Sunday"
+          "days": [
+            "Friday",
+            "Sunday"
+          ]
         },
         {
           "artist": "rufus-du-sol",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "lorde",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "lola-young",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "young-miko",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "bleachers",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "lykke-li",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "levity",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "suki-waterhouse",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "snow-strippers",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "it-s-murph",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "fakemink",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "palace",
-          "note": "Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "yousuke-yuk1matsu",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "skye-newman",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "rodrigo-y-gabriela",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "laszewo",
-          "note": "Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "balu-brigada",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "rochelle-jordan",
-          "note": "Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "arcy-drive",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "finn-wolfhard",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "ryan-beatty",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "don-west",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "temper-city",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "gabriel-jacoby",
-          "note": "Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "annie-dirusso",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "night-tapes",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "dj-cassandra",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "cure-for-paranoia",
-          "note": "Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "chloe-qisha",
-          "note": "Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "fai-laci",
-          "note": "Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "emma-ogier",
-          "note": "Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "common-people",
-          "note": "Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "coleman-jennings",
-          "note": "Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "damaris-bojor",
-          "note": "Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "fightmaster",
-          "note": "Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "lluvii",
-          "note": "Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "montclair",
-          "note": "Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "left-lucid",
-          "note": "Saturday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "macy-todd",
-          "note": "Saturday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "mega-ran",
-          "note": "Saturday and Sunday"
+          "days": [
+            "Saturday",
+            "Sunday"
+          ]
         },
         {
           "artist": "flor-bromley",
-          "note": "Saturday and Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Saturday",
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "the-barton-hills-choir",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "twenty-one-pilots",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "the-xx",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "geese",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "sofi-tukker",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "parcels",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "the-war-on-drugs",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "blood-orange",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "max-mcnown",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "cannons",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "audrey-hobert",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "saint-motel",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "houndmouth",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "fcukers",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "stella-lefty",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "underscores",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "claire-rosinkranz",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "noga-erez",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "dexter-and-the-moonrocks",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "joshua-jensen",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "grace-ives",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "rio-kosta",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "ethan-regan",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "bad-nerves",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "girlsweetvoiced",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "charlotte-lawrence",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "sunday-1994",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "rum-jungle",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "calder-allen",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "fancy-hagood",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "britton",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "solya",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "villanelle",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "jess-williamson",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "flight-by-nothing",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "kevin-atwater",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "thomas-day",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "aaron-rowe",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "lauren-sanderson",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "vwillz",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "jason-scott-and-the-high-heat",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "vinny",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "marzz",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "chelsea-jordan",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         },
         {
           "artist": "the-moriah-sisters",
-          "note": "Sunday, weekend 1 only"
+          "note": "Weekend 1 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 1
         },
         {
           "artist": "the-huston-tillotson-university-jazz-collective",
-          "note": "Sunday, weekend 2 only"
+          "note": "Weekend 2 only",
+          "days": [
+            "Sunday"
+          ],
+          "weekend": 2
         }
       ]
     },
@@ -2878,214 +3327,324 @@
       "start": "2026-12-04",
       "end": "2026-12-06",
       "location": "Sunset Cove Amphitheater, Boca Raton",
+      "days": [
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
       "lineup": [
         {
           "artist": "a-hundred-drums-b2b-zen-selekta",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "alleycut-b2b-level-up",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "hedex",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "hol-b2b-infekt",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "hvdes",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "izzy-vadim",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "lizzy-jane",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "modal-nodes",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "nimda-b2b-prosecute",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "ravenscoon",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "seeing-dubble",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "sisto",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "subtronics-b2b-crankdat",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "taiki-nulight",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "tynan",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "warlord",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "cyclops-recordings-stage-takeover",
-          "note": "Friday"
+          "days": [
+            "Friday"
+          ]
         },
         {
           "artist": "avello",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "blurrd-vzn",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "costa",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "doctor-p-b2b-funtcase",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "don-jamal",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "lucas-larvenz",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "osyris",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "peekaboo",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "reaper",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "rl-grime",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "r2rkt-b2b-vastive",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "sfam",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "shosh",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "slang-dogs",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "subtronics",
-          "note": "Saturday and Sunday"
+          "days": [
+            "Saturday",
+            "Sunday"
+          ]
         },
         {
           "artist": "troyboi",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "vicky-b",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "bassrush-records-stage-takeover",
-          "note": "Saturday"
+          "days": [
+            "Saturday"
+          ]
         },
         {
           "artist": "blossom",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "daggz",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "galactic-effect",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "gardella",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "getter",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "kompany",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "lumasi",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "mlotik",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "mocha",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "seven-lions",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "smoakland",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "steller",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "sumthin-sumthin",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "vyhara",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "witching-hour-jeanie-b2b-vampa",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "z3lla",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         },
         {
           "artist": "morflo-records-stage-takeover",
-          "note": "Sunday"
+          "days": [
+            "Sunday"
+          ]
         }
       ]
     },
@@ -3096,14 +3655,23 @@
       "start": "2026-12-30",
       "end": "2026-12-31",
       "location": "Orlando Amphitheater, Orlando",
+      "days": [
+        "Dec 30",
+        "Dec 31"
+      ],
       "lineup": [
         {
           "artist": "knock2",
-          "note": "Dec 30"
+          "days": [
+            "Dec 30"
+          ]
         },
         {
           "artist": "zeds-dead",
-          "note": "Dec 31 · Last festival set before hiatus"
+          "note": "Last festival set before hiatus",
+          "days": [
+            "Dec 31"
+          ]
         },
         "rl-grime",
         "lsdream",

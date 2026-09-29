@@ -24,6 +24,9 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
+import { useWeekends } from '../../state/weekends';
+import { FilterChips } from '../../components/FilterChips';
+import { lineupDays, playsOn } from '../../features/festivals/days';
 import { color, radius, space, type } from '../../theme/tokens';
 
 type Answer = Rating | 'unsure';
@@ -36,16 +39,28 @@ type Step = { id: string; answer: Answer };
  */
 export default function TuneScreen() {
   // `then=festival`: opened from the welcome, so the festival page isn't underneath to go back to.
-  const { id, then: after } = useLocalSearchParams<{ id: string; then?: string }>();
+  const { id, then: after, day: dayParam } = useLocalSearchParams<{ id: string; then?: string; day?: string }>();
   const catalog = useCatalog();
-  const festival = catalog.festival(id);
+  // Your weekend of a two-weekend festival: only the acts playing it.
+  const { forYou } = useWeekends();
+  const whole = catalog.festival(id);
+  const festival = whole && forYou(whole);
   const { ratings, rate } = useRatings();
   const { taste, informed, similarity } = useTaste();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
 
-  // Worked out once, so the order doesn't shift as your answers reshape the matches.
-  const [queue] = useState(() => (festival ? tuneQueue(festival, ratings, (a) => !!catalog.artist(a)) : []));
+  // Worked out once, so the order doesn't shift as your answers reshape the matches. On a big lineup
+  // with days, you can tune one day at a time (chosen before the first answer).
+  const days = festival ? lineupDays(festival) : [];
+  const queueFor = (d: string | undefined) =>
+    festival ? tuneQueue(festival, ratings, (a) => !!catalog.artist(a)).filter((a) => playsOn(festival, a, d)) : [];
+  const [day, setDay] = useState(() => (dayParam && days.includes(dayParam) ? dayParam : undefined));
+  const [queue, setQueue] = useState(() => queueFor(day));
+  const pickDay = (d: string | undefined) => {
+    setDay(d);
+    setQueue(queueFor(d));
+  };
   const [steps, setSteps] = useState<Step[]>([]);
   const [lastAnswer, setLastAnswer] = useState<Answer>('unsure');
   // A card leaves with the animation it had on its last render, so the direction is set first and the next
@@ -125,8 +140,27 @@ export default function TuneScreen() {
         <Text style={styles.title}>Tune your lineup</Text>
         <Text style={styles.sub}>
           {festival.name}
+          {day ? ` · ${day}` : ''}
           {!done && queue.length > 0 ? ` · ${steps.length + 1} of ${queue.length}` : ''}
         </Text>
+        {days.length > 0 && steps.length === 0 && (
+          <View style={styles.dayChips}>
+            <FilterChips
+              inset={0}
+              chips={[
+                { key: undefined, label: 'All days', count: queueFor(undefined).length, accessibilityLabel: 'Tune every day' },
+                ...days.map((d) => ({
+                  key: d,
+                  label: d,
+                  count: queueFor(d).length,
+                  accessibilityLabel: `Tune only ${d}, ${queueFor(d).length} to rate`,
+                })),
+              ]}
+              value={day}
+              onChange={pickDay}
+            />
+          </View>
+        )}
         <View style={styles.track} accessible={false}>
           <View style={[styles.fill, { width: `${queue.length ? (steps.length / queue.length) * 100 : 100}%` }]} />
         </View>
@@ -168,7 +202,9 @@ export default function TuneScreen() {
             <Text style={styles.name}>{queue.length === 0 ? 'All rated' : 'That’s everyone'}</Text>
             <Text style={styles.doneText}>
               {queue.length === 0
-                ? `You’ve rated everyone on the ${festival.name} lineup.`
+                ? day
+                  ? `You’ve rated everyone playing ${day} at ${festival.name}.`
+                  : `You’ve rated everyone on the ${festival.name} lineup.`
                 : loved > 0
                   ? `You love ${loved} ${loved === 1 ? 'artist' : 'artists'} here. Your festival plan and My Sound have been updated.`
                   : 'Your festival plan and My Sound have been updated.'}
@@ -299,4 +335,5 @@ const styles = StyleSheet.create({
   unsureText: { ...type.label, color: color.moonFaint },
   lower: { flexDirection: 'row', justifyContent: 'center', gap: space.xl },
   listen: { color: color.moonDim },
+  dayChips: { marginTop: space.md },
 });

@@ -1,9 +1,10 @@
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
+import { useWeekends } from '../../state/weekends';
 import { festivalReminders, reminderChanges } from './reminders';
 
 // While the app is open, a reminder still shows as a banner (quietly). Phones only.
@@ -29,15 +30,18 @@ export function ReminderSync() {
 }
 
 function PhoneReminders() {
-  const { festivals } = useCatalog();
+  const { festivals: all } = useCatalog();
   const { going, hydrated } = useGoing();
+  // Your weekend of a two-weekend festival: reminders for that one only.
+  const { forYou, hydrated: weekendsLoaded } = useWeekends();
+  const festivals = useMemo(() => all.map(forYou), [all, forYou]);
   const syncing = useRef(Promise.resolve());
   // The sync when the app opens never asks for permission out of the blue; only a change you make
   // (tapping "I'm going") does.
   const opened = useRef(true);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !weekendsLoaded) return;
     const mayAsk = !opened.current;
     opened.current = false;
     // One sync at a time, in order, so quick taps never double-schedule.
@@ -65,7 +69,7 @@ function PhoneReminders() {
         // Reminders are a nicety: never let them get in the way.
       }
     });
-  }, [festivals, going, hydrated]);
+  }, [festivals, going, hydrated, weekendsLoaded]);
 
   // Opened from a reminder: go to that festival (once per reminder).
   const response = Notifications.useLastNotificationResponse();

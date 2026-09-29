@@ -38,6 +38,8 @@ const GAP = 16;
 const SPREAD = 110; // extra distance for the weakest match
 const EVENNESS = 0.75; // 0 = true sound angles, 1 = perfectly even ring
 export const LABEL_OFFSET = 8; // space between bubble and name
+/** Two sound names closer than this (across, down) would print over each other. */
+const REGION_GAP = { x: 72, y: 22 };
 const LABEL_H = 32; // name + percentage
 
 export type PlacedArtist = {
@@ -228,10 +230,20 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
     const g = groups.get(tag) ?? { x: 0, y: 0 };
     groups.set(tag, { x: g.x + dir.x, y: g.y + dir.y });
   }
-  const regions = [...groups.entries()].map(([tag, g]) => {
-    const a = Math.atan2(g.y, g.x);
-    return { tag, x: Math.cos(a) * (reach + 22), y: Math.sin(a) * (reach + 22) };
-  });
+  // Strongest regions first (most artists pulling that way); a label that would sit on top of a
+  // stronger one is left out, so neighbouring sounds never print over each other.
+  const placed = [...groups.entries()]
+    .map(([tag, g]) => ({ tag, a: Math.atan2(g.y, g.x), weight: Math.hypot(g.x, g.y) }))
+    .sort((p, q) => q.weight - p.weight);
+  const kept: RegionLabel[] = [];
+  for (const { tag, a } of placed) {
+    const x = Math.cos(a) * (reach + 22);
+    const y = Math.sin(a) * (reach + 22);
+    if (kept.some((r) => Math.abs(r.x - x) < REGION_GAP.x && Math.abs(r.y - y) < REGION_GAP.y)) continue;
+    kept.push({ tag, x, y });
+  }
+  // In the order the map meets them, as before.
+  const regions = [...groups.keys()].flatMap((tag) => kept.filter((r) => r.tag === tag));
 
   return { bubbles, regions, bounds: { minX, maxX, minY, maxY } };
 }

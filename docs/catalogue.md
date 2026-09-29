@@ -84,6 +84,8 @@ The demo artists already exist, and you can use them in your lineups without add
 ```
 
 - **`lineup`** is artist ids in billing order, headliners first. When the poster says something about a set, like "(sunset set)" or who's in a collaboration, write that entry as `{ "artist": "…", "note": "Sunset set" }`. The note shows under the artist in the lineup and on their page.
+  - For a festival with `weekends`, an act that plays only one of them gets `"weekend": 1` (or 2, …). Leave it out for acts on every weekend. People going to one weekend then see only its acts.
+  - When the poster lists acts by day, add the day too: `{ "artist": "…", "days": ["Friday"] }` (two days for someone playing twice). Each day must be in the festival's `days`. The lineup and My Sound can then be filtered day by day before set times are out.
 - **`start`** and **`end`** (optional) are the first and last day, written as year-month-day, like `"2026-11-06"`. With them, the app shows a countdown: "In 38 days", "Tomorrow", "Happening now". `dates` is still the text people read, like "Nov 6 to 8".
 - **`sets`** can wait: leave them out until the festival publishes set times. The festival page shows "set times aren't out yet" until then.
   - Times use the 24-hour clock.

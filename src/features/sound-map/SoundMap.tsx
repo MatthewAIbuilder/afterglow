@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -23,12 +23,14 @@ type Props = {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onBackgroundTap: () => void;
+  /** While searching: who matches. Matches pop and the map glides to show them. */
+  matchIds?: ReadonlySet<string>;
 };
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.4;
 
-export function SoundMap({ artists, taste, width, height, selectedId, onSelect, onBackgroundTap }: Props) {
+export function SoundMap({ artists, taste, width, height, selectedId, onSelect, onBackgroundTap, matchIds }: Props) {
   const layout = useMemo(() => computeLayout(artists, taste), [artists, taste]);
   // Strongest matches bloom first.
   const bloomOrder = useMemo(
@@ -102,6 +104,31 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
       runOnJS(haptic.settle)();
     });
 
+  // A search glides the map to its matches (or back to everyone when it ends).
+  const matchKey = matchIds ? [...matchIds].sort().join('|') : '';
+  const searchedOnce = useRef(false);
+  useEffect(() => {
+    if (!searchedOnce.current && !matchIds) return;
+    searchedOnce.current = true;
+    const hits = matchIds ? layout.bubbles.filter((b) => matchIds.has(b.artist.id)) : [];
+    if (!hits.length) {
+      scale.set(withSpring(fitScale, motion.gentle));
+      tx.set(withSpring(0, motion.gentle));
+      ty.set(withSpring(0, motion.gentle));
+      return;
+    }
+    const minX = Math.min(...hits.map((b) => b.x - b.r));
+    const maxX = Math.max(...hits.map((b) => b.x + b.r));
+    const minY = Math.min(...hits.map((b) => b.y - b.r));
+    const maxY = Math.max(...hits.map((b) => b.y + b.r + 36));
+    const s = Math.min(MAX_ZOOM, Math.max(fitScale, Math.min((width - 48) / (maxX - minX), (height - 48) / (maxY - minY))));
+    scale.set(withSpring(s, motion.gentle));
+    tx.set(withSpring(-((minX + maxX) / 2) * s, motion.gentle));
+    ty.set(withSpring(-((minY + maxY) / 2) * s, motion.gentle));
+    // Only a new set of matches should move the camera (a reshape of your taste leaves it be).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchKey]);
+
   // World origin sits at the centre of the map area, offset so the cluster is centred.
   const ox = width / 2 - cx;
   const oy = height / 2 - cy;
@@ -122,9 +149,9 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     const target = Math.max(s, fitScale * 1.15);
     const bx = ox + hit.x - width / 2;
     const by = oy + hit.y - height / 2;
-    scale.value = withSpring(target, motion.gentle);
-    tx.value = withSpring(-bx * target, motion.gentle);
-    ty.value = withSpring(height * 0.3 - height / 2 - by * target, motion.gentle);
+    scale.set(withSpring(target, motion.gentle));
+    tx.set(withSpring(-bx * target, motion.gentle));
+    ty.set(withSpring(height * 0.3 - height / 2 - by * target, motion.gentle));
   };
 
   const singleTap = Gesture.Tap()
@@ -161,6 +188,8 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
                 index={bloomOrder.indexOf(b.artist.id)}
                 selectedId={selectedId}
                 onSelect={onSelect}
+                searching={!!matchIds}
+                matched={!!matchIds?.has(b.artist.id)}
                 velX={velX}
                 velY={velY}
               />

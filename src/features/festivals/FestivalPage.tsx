@@ -10,6 +10,10 @@ import { setFor } from '../../data/festival';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Artist, Festival } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../discover/icons';
+import { FilterChips } from '../../components/FilterChips';
+import { dayList, daysOf, lineupDays, playsOn } from './days';
+import { runLabel, validWeekend } from './weekend';
+import { useWeekends } from '../../state/weekends';
 import { describeSet, whereWhen } from './format';
 import { lineupReach } from './links';
 import { filterLineup, lineupSounds, SEARCH_FROM } from './search';
@@ -40,8 +44,11 @@ type Props = {
  * festival plan and the full lineup with search and sound filter. Used by the
  * festival route and the Lineup tab.
  */
-export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) {
+export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: Props) {
   const catalog = useCatalog();
+  // The festival as it is for you: for one run over several weekends, the weekend you're going to.
+  const { forYou } = useWeekends();
+  const festival = useMemo(() => forYou(whole), [forYou, whole]);
   const { taste } = useTaste();
   const [order, setOrder] = useState<Order>('match');
   const [query, setQuery] = useState('');
@@ -56,7 +63,14 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
   const sounds = useMemo(() => (lineup.length > SEARCH_FROM ? lineupSounds(lineup) : []), [lineup]);
   // Only filter by a sound this lineup actually offers.
   const sound = sounds.length > 1 && sounds.some((s) => s.tag === picked) ? picked : undefined;
-  const shown = useMemo(() => filterLineup(lineup, query, sound), [lineup, query, sound]);
+  // Day by day, when the poster (or the set times) say who plays when.
+  const days = useMemo(() => lineupDays(festival), [festival]);
+  const [pickedDay, setPickedDay] = useState<string | undefined>();
+  const day = days.includes(pickedDay ?? '') ? pickedDay : undefined;
+  const shown = useMemo(
+    () => filterLineup(lineup, query, sound).filter((a) => playsOn(festival, a.id, day)),
+    [lineup, query, sound, festival, day],
+  );
 
   const timesOut = !!festival.sets?.length;
   const soon = countdown(festival, today);
@@ -80,7 +94,7 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
           </Text>
           {soon ? <Text style={styles.soon}>{soon}</Text> : null}
           <View style={styles.pills}>
-            <GoingPill festival={festival} />
+            <GoingPill festival={whole} />
             {reach.clips > 0 && (
               <Pressable
                 onPress={() => {
@@ -102,7 +116,8 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
               <Pressable
                 onPress={() => {
                   haptic.tap();
-                  router.push(`/tune/${festival.id}`);
+                  // Narrowed to a day in the lineup below? Tune that day.
+                  router.push(day ? { pathname: '/tune/[id]', params: { id: festival.id, day } } : `/tune/${festival.id}`);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Tune your lineup. Rate ${toRate} artists one at a time.`}
@@ -115,6 +130,8 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
             )}
           </View>
         </View>
+
+        {whole.weekends && whole.weekends.length > 1 ? <WeekendPicker festival={whole} shown={festival.lineup.length} /> : null}
 
         {festival.posterImageUrl ? (
           <Pressable
@@ -169,16 +186,36 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
           </View>
         )}
 
+        {days.length > 0 && (
+          <View style={styles.dayChips}>
+            <FilterChips
+              chips={[
+                { key: undefined, label: 'All days', accessibilityLabel: `Every day at ${festival.name}` },
+                ...days.map((d) => ({
+                  key: d,
+                  label: d,
+                  count: lineup.filter((a) => playsOn(festival, a.id, d)).length,
+                  accessibilityLabel: `${d}, ${lineup.filter((a) => playsOn(festival, a.id, d)).length} artists`,
+                })),
+              ]}
+              value={day}
+              onChange={setPickedDay}
+            />
+          </View>
+        )}
+
         {sounds.length > 1 && (
           <SoundChips festivalName={festival.name} sounds={sounds} value={sound} onChange={setPicked} />
         )}
 
         <View style={styles.pad}>
-          {query && shown.length === 0 ? (
+          {(query || day) && shown.length === 0 ? (
             <Text style={styles.noMatch}>
               {sound
                 ? `No ${SOUND_LABEL[sound].toLowerCase()} artist on the lineup matches “${query.trim()}”.`
-                : `No one on the lineup matches “${query.trim()}”.`}
+                : query
+                  ? `No one on the lineup matches “${query.trim()}”.`
+                  : `No one with that sound plays ${day}.`}
             </Text>
           ) : null}
           {shown.map((a) => {
@@ -189,13 +226,45 @@ export function FestivalPage({ festival, topSpace, bottomSpace, above }: Props) 
                 festivalId={festival.id}
                 artist={a}
                 affinity={taste[a.id] ?? 0}
-                detail={setLine(set && describeSet(festival, set), festival.notes?.[a.id])}
+                detail={setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id])}
                 rating={ratings[a.id]}
               />
             );
           })}
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+/**
+ * For a festival run over several weekends: which one you're going to. The
+ * plan, lineup, countdown and reminders follow it.
+ */
+function WeekendPicker({ festival, shown }: { festival: Festival; shown: number }) {
+  const { weekendOf, choose } = useWeekends();
+  const chosen = validWeekend(festival, weekendOf(festival.id));
+  const runs = festival.weekends ?? [];
+  return (
+    <View style={styles.weekends}>
+      <Text style={styles.weekendsHead}>Your weekend</Text>
+      <FilterChips
+        chips={[
+          { key: undefined, label: 'Every weekend', accessibilityLabel: `Every weekend of ${festival.name}` },
+          ...runs.map((r, i) => ({
+            key: String(i + 1),
+            label: `Weekend ${i + 1} · ${runLabel(r)}`,
+            accessibilityLabel: `Weekend ${i + 1}, ${runLabel(r)}`,
+          })),
+        ]}
+        value={chosen ? String(chosen) : undefined}
+        onChange={(k) => choose(festival.id, k ? Number(k) : undefined)}
+      />
+      {chosen ? (
+        <Text style={styles.weekendsNote}>
+          Your plan and the lineup show weekend {chosen}: {shown} of {festival.lineup.length} acts.
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -354,6 +423,10 @@ const styles = StyleSheet.create({
   noteTitle: { ...type.headline, color: color.moon },
   noteBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginBottom: space.sm },
+  dayChips: { marginBottom: space.sm },
+  weekends: { marginTop: space.xl },
+  weekendsHead: { ...type.label, color: color.moonDim, paddingHorizontal: space.xl, marginBottom: space.sm },
+  weekendsNote: { ...type.caption, color: color.moonDim, paddingHorizontal: space.xl, marginTop: space.sm },
   chipsWrap: { marginBottom: space.sm, flexGrow: 0 },
   chips: { paddingHorizontal: space.xl, gap: space.sm },
   chip: {

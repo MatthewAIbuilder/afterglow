@@ -23,7 +23,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-image"
+      "expo-image",
+      "expo-sharing"
     ],
     "scheme": "afterglow",
     "backgroundColor": "#0A0918",

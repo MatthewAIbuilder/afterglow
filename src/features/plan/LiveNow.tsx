@@ -4,15 +4,17 @@ import type { Festival } from '../../data/types';
 import { useNow } from '../../lib/useNow';
 import { color, radius, space, type } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
-import { liveNow } from './live';
+import { liveNow, liveRoute } from './live';
 import type { Schedule, TimedPick } from './plan';
+import { clockTime, type DayRoute, type RouteStop } from './route';
 
 /**
  * During the festival, above your plan: what to watch right now and what's
  * next. Nothing outside the festival's nights.
  */
-export function LiveNow({ festival, schedule }: { festival: Festival; schedule: Schedule }) {
+export function LiveNow({ festival, schedule, route }: { festival: Festival; schedule: Schedule; route?: DayRoute[] }) {
   const now = useNow();
+  if (route) return <RouteNow festival={festival} route={route} now={now} />;
   const live = liveNow(festival, schedule, now);
   if (!live) return null;
 
@@ -48,6 +50,52 @@ export function LiveNow({ festival, schedule }: { festival: Festival; schedule: 
         </>
       ) : (
         <Text style={styles.quiet}>Nothing on your plan right now.</Text>
+      )}
+      <View style={styles.divider} />
+      <Text style={styles.nextLabel}>Next</Text>
+      <Text style={styles.next}>{nextLine}</Text>
+    </View>
+  );
+}
+
+/** Live from the full-day route: the set to be at now (and when to leave), and where to go next. */
+function RouteNow({ festival, route, now }: { festival: Festival; route: DayRoute[]; now: Date }) {
+  const live = liveRoute(festival, route, now);
+  if (!live) return null;
+  const at = (min: number) => formatTime(clockTime(min));
+  const where = (s: RouteStop) => stageName(festival, s.set.stageId);
+  const cur = live.now;
+  const next = live.next;
+  // Leaving before the set ends is worth saying out loud.
+  const nowLine = cur
+    ? `${cur.known ? '' : 'Something new · '}${where(cur)}, ${cur.to < cur.setEnd ? `leave at ${at(cur.to)}` : `until ${at(cur.to)}`}`
+    : undefined;
+  const move = next && cur && next.set.stageId !== cur.set.stageId ? ' (head over)' : '';
+  const nextLine = next
+    ? `${at(next.from)}  ${next.artist.name}, ${where(next)}${move}${next.known ? '' : '  ·  something new'}`
+    : 'That’s everything on your plan tonight.';
+
+  return (
+    <View
+      style={styles.card}
+      accessible
+      accessibilityLabel={[
+        `${live.night.day} night.`,
+        cur ? `On now: ${cur.artist.name}. ${nowLine}.` : 'A break right now.',
+        next ? `Next: ${nextLine.replace(/ {2}/g, ', ')}.` : nextLine,
+      ].join(' ')}
+    >
+      <View style={styles.head}>
+        <View style={styles.dot} />
+        <Text style={styles.label}>{`Now · ${live.night.day}`}</Text>
+      </View>
+      {cur ? (
+        <>
+          <Text style={styles.name}>{cur.artist.name}</Text>
+          <Text style={styles.meta}>{nowLine}</Text>
+        </>
+      ) : (
+        <Text style={styles.quiet}>A break right now.</Text>
       )}
       <View style={styles.divider} />
       <Text style={styles.nextLabel}>Next</Text>

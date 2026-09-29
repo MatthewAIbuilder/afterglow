@@ -1,4 +1,4 @@
-import { SOUND_TAGS, type Artist, type SoundTag } from '../../data/models';
+import { SOUND_TAGS, type Artist, type Festival, type SoundTag } from '../../data/models';
 
 /**
  * Finding an artist on a lineup by typing part of their name. Pure.
@@ -57,19 +57,35 @@ export function filterLineup(artists: Artist[], query: string, sound?: SoundTag)
  * with it, then words that start with it, then anywhere. Catalogue order
  * within each. Nothing for an empty search.
  */
+/** How well a name matches: starts with the search (0), a word starts with it (1), contains it (2). */
+function nameRank(name: string, q: string) {
+  const n = normalize(name);
+  if (n.startsWith(q) || n.replace(/ /g, '').startsWith(q.replace(/ /g, ''))) return 0;
+  if (n.split(' ').some((w) => w.startsWith(q))) return 1;
+  return 2;
+}
+
 export function searchArtists(artists: Artist[], query: string, max = 30): Artist[] {
   const q = normalize(query);
   if (!q) return [];
-  const rank = (a: Artist) => {
-    const n = normalize(a.name);
-    if (n.startsWith(q) || n.replace(/ /g, '').startsWith(q.replace(/ /g, ''))) return 0;
-    if (n.split(' ').some((w) => w.startsWith(q))) return 1;
-    return 2;
-  };
   return artists
     .filter((a) => matchesName(a.name, query))
-    .map((a, i) => ({ a, i, r: rank(a) }))
+    .map((a, i) => ({ a, i, r: nameRank(a.name, q) }))
     .sort((x, y) => x.r - y.r || x.i - y.i)
     .slice(0, max)
     .map((x) => x.a);
+}
+
+/**
+ * Festivals whose name or place matches what was typed: name matches first
+ * (in the same order as artists), then place matches, each in the order given.
+ */
+export function searchFestivals(festivals: Festival[], query: string): Festival[] {
+  const q = normalize(query);
+  if (!q) return [];
+  return festivals
+    .map((f, i) => ({ f, i, r: matchesName(f.name, query) ? nameRank(f.name, q) : matchesName(f.location, query) ? 3 : -1 }))
+    .filter((x) => x.r >= 0)
+    .sort((x, y) => x.r - y.r || x.i - y.i)
+    .map((x) => x.f);
 }

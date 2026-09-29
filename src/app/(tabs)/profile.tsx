@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -10,11 +11,20 @@ import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
+import { SOUND_LABEL } from '../../data/models';
+import { groupFestivals } from '../../features/festivals/going';
+import { countdown } from '../../features/festivals/when';
+import { tasteMix } from '../../features/taste/lean';
+import { SoundBreakdown } from '../../features/taste/SoundBreakdown';
+import { useToday } from '../../lib/useToday';
+import { useTaste } from '../../state/taste';
+import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
 
 /**
- * Profile: a placeholder for now. Shows what you've built so far (festivals,
- * ratings, clips) and what's coming: a profile to share, friends and followers.
+ * Profile: what you've built so far (festivals, ratings, clips), your sound
+ * in three bars and the festivals you're going to, and what's coming: a
+ * profile to share, friends and followers.
  */
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -26,6 +36,13 @@ export default function ProfileScreen() {
   const clips = yourClipCount(yourClips(catalog.clips, reactions));
   const rated = Object.keys(ratings).length;
   const festivals = going.filter((id) => catalog.festival(id)).length;
+  // Your sound in three bars, from the live taste.
+  const { taste, informed } = useTaste();
+  const mix = useMemo(() => tasteMix(catalog.artists, taste, informed).slice(0, 3), [catalog.artists, taste, informed]);
+  // The festivals you're going to, soonest first, as they are for you (your weekend).
+  const { forYou, weekendOf } = useWeekends();
+  const today = useToday();
+  const mine = groupFestivals(catalog.festivals.map(forYou), going, today).going;
 
   const stats = [
     { n: festivals, label: festivals === 1 ? 'festival' : 'festivals' },
@@ -58,6 +75,57 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.pad}>
+          {mix.length > 0 && (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push('/your-sound');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Your sound: ${mix.map((m) => `${SOUND_LABEL[m.tag]} ${m.percent} percent`).join(', ')}. Opens the full breakdown.`}
+              style={({ pressed }) => [styles.block, pressed && { opacity: 0.8 }]}
+            >
+              <View style={styles.blockHead}>
+                <Text style={styles.blockTitle}>Your sound</Text>
+                <ChevronIcon color={color.moonFaint} size={12} />
+              </View>
+              <SoundBreakdown shares={mix} animate={false} />
+            </Pressable>
+          )}
+
+          {mine.length > 0 && (
+            <View style={styles.block}>
+              <Text style={[styles.blockTitle, styles.blockTitleAlone]}>Going</Text>
+              {mine.map((f) => {
+                const w = weekendOf(f.id);
+                const when = countdown(f, today) ?? f.dates;
+                return (
+                  <Pressable
+                    key={f.id}
+                    onPress={() => {
+                      haptic.select();
+                      router.push(`/festival/${f.id}`);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${f.name}${w ? `, weekend ${w}` : ''}, ${when}`}
+                    style={({ pressed }) => [styles.goingRow, pressed && { opacity: 0.7 }]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.goingName} numberOfLines={1}>
+                        {f.name}
+                      </Text>
+                      <Text style={styles.goingMeta} numberOfLines={1}>
+                        {w ? `Weekend ${w} · ` : ''}
+                        {when}
+                      </Text>
+                    </View>
+                    <ChevronIcon color={color.moonFaint} size={12} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
           <Pressable
             onPress={() => {
               haptic.select();
@@ -86,6 +154,20 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  block: {
+    padding: space.lg,
+    marginBottom: space.md,
+    borderRadius: radius.lg,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  blockHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.md },
+  blockTitle: { ...type.headline, color: color.moon },
+  blockTitleAlone: { marginBottom: space.xs },
+  goingRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.sm },
+  goingName: { ...type.label, color: color.moon },
+  goingMeta: { ...type.caption, color: color.moonDim, marginTop: 2, fontVariant: ['tabular-nums'] },
   root: { flex: 1, backgroundColor: color.night },
   pad: { paddingHorizontal: space.xl },
   center: { alignItems: 'center', paddingHorizontal: space.xl },

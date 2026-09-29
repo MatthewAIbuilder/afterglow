@@ -6,3 +6,11 @@ export const APP_NAME = 'Afterglow';
  * Replace with the real bundle identifier or website once the app has one.
  */
 export const APP_ORIGIN = 'https://afterglow.app.local';
+
+/**
+ * Where "Request a festival" sends requests: an email address the team reads.
+ * Empty means the request goes out through the phone's share sheet instead
+ * (Messages, Mail, Notes…), so nothing is sent anywhere without the person
+ * choosing where.
+ */
+export const REQUEST_EMAIL = '';

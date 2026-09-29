@@ -4,22 +4,24 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, Vi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
-import { BarsIcon } from '../../components/TabIcons';
+import { BarsIcon, ChevronIcon, SearchIcon } from '../../components/TabIcons';
+import { SearchField } from '../../components/SearchField';
+import { extraMatches, type MapSearch, mapSearch } from '../../features/sound-map/search';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
 import { SaveIcon } from '../../features/discover/icons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
-import { groupFestivals } from '../../features/festivals/going';
+import { EVERYONE } from '../../features/sound-map/scope';
+import { lineupDays, playsOn } from '../../features/festivals/days';
 import { leftToRate } from '../../features/festivals/tune';
 import { artistsOnMap, mapCandidates, SPARSE_MAP } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
-import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
-import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
+import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Festival } from '../../data/types';
@@ -59,19 +61,50 @@ export default function MySoundScreen() {
 
   // Everyone, or one festival's lineup: your sound at that festival. A festival page can open it (`festival` param).
   const [scopeId, setScopeId] = useState<string | undefined>();
+  // One day of that festival's lineup, when the poster or set times say who plays when.
+  const [day, setDay] = useState<string | undefined>();
   const { festival: festivalParam } = useLocalSearchParams<{ festival?: string }>();
   const navigation = useNavigation();
-  if (festivalParam && festivalParam !== scopeId && catalog.festival(festivalParam)) setScopeId(festivalParam);
+  // `everyone` (from the scope picker) goes back to the whole map; a festival id narrows it.
+  const asked = festivalParam === EVERYONE ? EVERYONE : festivalParam && catalog.festival(festivalParam) ? festivalParam : undefined;
+  const [lastAsked, setLastAsked] = useState<string | undefined>();
+  if (asked && asked !== lastAsked) {
+    setLastAsked(asked);
+    setScopeId(asked === EVERYONE ? undefined : asked);
+    setDay(undefined);
+    setSelectedId(null);
+  }
+  if (!festivalParam && lastAsked) setLastAsked(undefined);
   useEffect(() => {
     if (festivalParam) navigation.setParams({ festival: '' } as never);
   }, [festivalParam, navigation]);
-  const scope = scopeId ? catalog.festival(scopeId) : undefined;
+  // The festival as it is for you: for one run over several weekends, only your weekend's acts.
+  const { forYou } = useWeekends();
+  const scopeWhole = scopeId ? catalog.festival(scopeId) : undefined;
+  const scope = useMemo(() => scopeWhole && forYou(scopeWhole), [scopeWhole, forYou]);
+  const scopeDays = useMemo(() => (scope ? lineupDays(scope) : []), [scope]);
+  const dayOn = scope && day && scopeDays.includes(day) ? day : undefined;
 
   // Who's on the map: artists the app knows something about, best matches first (see artistsOnMap).
-  const onMap = useMemo(
-    () => artistsOnMap(mapCandidates(artists, scope?.lineup), shown.taste, shown.informed),
-    [artists, scope, shown],
+  const candidates = useMemo(
+    () => mapCandidates(artists, scope ? scope.lineup.filter((id) => playsOn(scope, id, dayOn)) : undefined),
+    [artists, scope, dayOn],
   );
+  const known = useMemo(() => artistsOnMap(candidates, shown.taste, shown.informed), [candidates, shown]);
+
+  // Searching the map: an artist or a sound. Matches pop; ones not on the map yet join it.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const search = useMemo(() => (searchOpen ? mapSearch(candidates, query) : undefined), [searchOpen, candidates, query]);
+  const extra = useMemo(
+    () => (search ? extraMatches(candidates, known, search, shown.taste) : []),
+    [search, candidates, known, shown],
+  );
+  const onMap = useMemo(() => (extra.length ? [...known, ...extra] : known), [known, extra]);
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setQuery('');
+  }, []);
 
   // Closing the sheet lets the map catch up with anything you rated in it.
   // Which sounds you lean towards, across everyone (not just the festival in view).
@@ -81,18 +114,11 @@ export default function MySoundScreen() {
     setSelectedId(null);
     reshapeSoon();
   }, [reshapeSoon]);
-  const pickScope = useCallback((id: string | undefined) => {
+  const pickDay = useCallback((d: string | undefined) => {
     setSelectedId(null);
-    setScopeId(id);
+    setDay(d);
   }, []);
   const hasScopes = festivals.length > 0;
-  // Festivals you're going to first, the rest after.
-  const { going } = useGoing();
-  const today = useToday();
-  const scopeOrder = useMemo(() => {
-    const g = groupFestivals(festivals, going, today);
-    return [...g.going, ...g.others];
-  }, [festivals, going, today]);
   const mapTop = insets.top + HEADER_H + (hasScopes ? SCOPE_H : 0);
   const mapHeight = height - mapTop - tabSpace;
 
@@ -103,7 +129,7 @@ export default function MySoundScreen() {
       <View style={{ position: 'absolute', top: mapTop, left: 0 }}>
         {/* A new scope draws a fresh map: fitted and centred, its bubbles blooming in. */}
         <SoundMap
-          key={scope?.id ?? 'everyone'}
+          key={`${scope?.id ?? 'everyone'}:${dayOn ?? 'all'}`}
           artists={onMap}
           taste={shown.taste}
           width={width}
@@ -111,10 +137,14 @@ export default function MySoundScreen() {
           selectedId={selectedId}
           onSelect={setSelectedId}
           onBackgroundTap={close}
+          matchIds={search?.ids}
         />
       </View>
 
-      {scope && onMap.length < SPARSE_MAP && <SparseNote festival={scope} shown={onMap.length} bottom={tabSpace + space.lg} />}
+      {search ? (
+        <SearchNote search={search} query={query} extra={extra.length} bottom={tabSpace + space.lg} />
+      ) : null}
+      {!search && scope && onMap.length < SPARSE_MAP && <SparseNote festival={scope} shown={onMap.length} bottom={tabSpace + space.lg} />}
 
       <View style={[styles.header, { paddingTop: insets.top + space.lg }]} pointerEvents="box-none">
         <View style={styles.titleRow} pointerEvents="box-none">
@@ -129,7 +159,24 @@ export default function MySoundScreen() {
         <Text style={styles.subtitle} pointerEvents="none">
           {subtitle(shown.summary, shown.rated, lean)}
         </Text>
-        {hasScopes && <ScopeChips festivals={scopeOrder} value={scope?.id} onChange={pickScope} />}
+        {searchOpen ? (
+          <View style={styles.searchRow}>
+            <View style={{ flex: 1 }}>
+              <SearchField
+                value={query}
+                onChange={setQuery}
+                placeholder="Artist or sound, like dubstep"
+                label="Search your map for an artist or a sound"
+                autoFocus
+              />
+            </View>
+            <Pressable onPress={closeSearch} accessibilityRole="button" accessibilityLabel="Done searching" hitSlop={8}>
+              <Text style={styles.done}>Done</Text>
+            </Pressable>
+          </View>
+        ) : hasScopes ? (
+          <ScopeRow scope={scope} days={scopeDays} day={dayOn} onDay={pickDay} onSearch={() => setSearchOpen(true)} />
+        ) : null}
       </View>
 
       {/* The sheet shows the live match, so a rating there shows its effect straight away. */}
@@ -138,59 +185,103 @@ export default function MySoundScreen() {
   );
 }
 
-/** Everyone, or one festival's lineup. */
-function ScopeChips({
-  festivals,
-  value,
-  onChange,
+/**
+ * Under the subtitle: your sound as a breakdown, which lineup the map shows
+ * (everyone, or one festival; opens a picker), and that festival's days.
+ */
+function ScopeRow({
+  scope,
+  days,
+  day,
+  onDay,
+  onSearch,
 }: {
-  festivals: Festival[];
-  value: string | undefined;
-  onChange: (id: string | undefined) => void;
+  scope: Festival | undefined;
+  days: string[];
+  day: string | undefined;
+  onDay: (d: string | undefined) => void;
+  onSearch: () => void;
 }) {
-  const chips = [{ id: undefined, label: 'Everyone' }, ...festivals.map((f) => ({ id: f.id, label: f.name }))];
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.chipsWrap}
-      contentContainerStyle={styles.chips}
-    >
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsWrap} contentContainerStyle={styles.chips}>
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          onSearch();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Search your map for an artist or a sound"
+        style={({ pressed }) => [styles.chip, styles.searchChip, pressed && { opacity: 0.75 }]}
+      >
+        <SearchIcon color={color.moon} size={13} />
+      </Pressable>
       {/* Your sound (in this scope) as a breakdown of sounds. */}
       <Pressable
         onPress={() => {
           haptic.select();
-          router.push({ pathname: '/your-sound', params: value ? { festival: value } : {} });
+          router.push({ pathname: '/your-sound', params: scope ? { festival: scope.id } : {} });
         }}
         accessibilityRole="button"
-        accessibilityLabel={
-          value ? `Your sound at ${festivals.find((f) => f.id === value)?.name}, as a breakdown` : 'Your sound, as a breakdown'
-        }
+        accessibilityLabel={scope ? `Your sound at ${scope.name}, as a breakdown` : 'Your sound, as a breakdown'}
         style={({ pressed }) => [styles.chip, styles.breakdown, pressed && { opacity: 0.75 }]}
       >
         <BarsIcon color={color.glow} size={12} />
         <Text style={[styles.chipText, { color: color.moon }]}>Breakdown</Text>
       </Pressable>
-      {chips.map((c) => {
-        const on = c.id === value;
-        return (
-          <Pressable
-            key={c.id ?? 'everyone'}
-            onPress={() => {
-              if (on) return;
-              haptic.select();
-              onChange(c.id);
-            }}
-            accessibilityRole="button"
-            accessibilityState={{ selected: on }}
-            accessibilityLabel={c.id ? `Your sound at ${c.label}` : 'Your sound across every artist'}
-            style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
-          >
-            <Text style={[styles.chipText, on && { color: color.moon }]}>{c.label}</Text>
-          </Pressable>
-        );
-      })}
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          router.push({ pathname: '/sound-scope', params: scope ? { current: scope.id } : {} });
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${scope ? `Your sound at ${scope.name}` : 'Your sound across every artist'}. Choose a festival`}
+        style={({ pressed }) => [styles.chip, styles.chipOn, styles.scopePill, pressed && { opacity: 0.75 }]}
+      >
+        <Text style={[styles.chipText, { color: color.moon }]} numberOfLines={1}>
+          {scope ? scope.name : 'Everyone'}
+        </Text>
+        <ChevronIcon color={color.moonDim} size={11} direction="down" />
+      </Pressable>
+      {days.length > 0 && scope && (
+        <>
+          <View style={styles.chipDivider} />
+          {[undefined, ...days].map((d) => {
+            const on = d === day;
+            return (
+              <Pressable
+                key={d ?? 'all'}
+                onPress={() => {
+                  if (on) return;
+                  haptic.select();
+                  onDay(d);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={d ? `Only ${d} at ${scope.name}` : `Every day at ${scope.name}`}
+                style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
+              >
+                <Text style={[styles.chipText, on && { color: color.moon }]}>{d ?? 'All days'}</Text>
+              </Pressable>
+            );
+          })}
+        </>
+      )}
     </ScrollView>
+  );
+}
+
+/** While searching: what lit up, in a quiet glass note above the tab bar. */
+function SearchNote({ search, query, extra, bottom }: { search: MapSearch; query: string; extra: number; bottom: number }) {
+  const n = search.ids.size;
+  const sound = search.sounds.length === 1 ? SOUND_LABEL[search.sounds[0]].toLowerCase() : undefined;
+  const text =
+    n === 0
+      ? `No artist or sound matches “${query.trim()}”.`
+      : `${n} ${sound ? `${sound} ` : ''}${n === 1 ? 'artist' : 'artists'}${extra ? `, ${extra} new to your map` : ''}. Tap one to see more.`;
+  return (
+    <View style={[styles.sparse, { bottom }]} pointerEvents="none" accessibilityLiveRegion="polite">
+      <Text style={styles.sparseText}>{text}</Text>
+    </View>
   );
 }
 
@@ -322,6 +413,11 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xs },
+  done: { ...type.headline, color: color.glow },
+  searchChip: { paddingHorizontal: space.md, justifyContent: 'center' },
+  scopePill: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 220 },
+  chipDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', marginVertical: 6, backgroundColor: color.hairline },
   breakdown: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: 'rgba(169,124,255,0.45)', marginRight: space.sm },
   chipText: { ...type.caption, color: color.moonDim },
   sparse: {

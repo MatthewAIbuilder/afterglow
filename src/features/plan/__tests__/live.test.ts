@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Artist, Festival, SetTime } from '../../../data/models';
-import { festivalNight, liveNow } from '../live';
+import { festivalNight, liveNow, liveRoute } from '../live';
+import { festivalRoute } from '../route';
 import { buildSchedule, type Pick } from '../plan';
 
 const artist = (id: string): Artist => ({ id, name: id.toUpperCase(), sound: { dubstep: 1 } });
@@ -98,5 +99,27 @@ describe('now and next on your plan', () => {
     expect(saturday.now).toEqual([]);
     expect(saturday.next).toBeUndefined();
     expect(liveNow(festival, schedule, at(1, 20))).toBeUndefined();
+  });
+});
+
+describe('live from the full-day route', () => {
+  const taste = { early: 0.8, headliner: 0.95, late: 0.8, rival: 0.79, newbie: 0.4, sunday: 0.8 };
+  const informed = Object.fromEntries(Object.keys(taste).map((k) => [k, true]));
+  const route = festivalRoute({ festival, artists: festival.lineup.map(artist), taste, informed });
+
+  it('says where the route has you now, and where next', () => {
+    const early = liveRoute(festival, route, at(6, 20, 30))!;
+    expect(early.now?.artist.id).toBe('early');
+    expect(early.next?.artist.id).toBe('newbie');
+    const late = liveRoute(festival, route, at(7, 0, 10))!;
+    expect(late.now?.artist.id).toBe('headliner');
+    expect(late.next?.artist.id).toBe('late');
+  });
+
+  it('has nothing on in a gap, and nothing outside the festival', () => {
+    const gap = liveRoute(festival, route, at(6, 22, 40))!;
+    expect(gap.now).toBeUndefined();
+    expect(gap.next?.artist.id).toBe('headliner');
+    expect(liveRoute(festival, route, at(5, 20))).toBeUndefined();
   });
 });

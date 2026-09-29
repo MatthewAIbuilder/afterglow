@@ -14,19 +14,28 @@ import { BoltIcon } from './icons';
 import { MustSeeToggle } from './MustSeeToggle';
 import { PickRow } from './MustSeeList';
 import type { ClashVerdict, Schedule, ScheduleDay, ScheduleItem, TimedPick } from './plan';
+import type { DayRoute } from './route';
+import { RouteList } from './RouteList';
+
+type Mode = 'route' | 'picks';
 
 /** After set times: your picks as a day-by-day timeline, with clashes called out. */
 export function Timetable({
   festival,
   schedule,
+  route,
   initialDay,
 }: {
   festival: Festival;
   schedule: Schedule;
+  /** Each day's full set-to-set route (same days as the schedule). */
+  route?: DayRoute[];
   /** Open on this day (tonight, during the festival) instead of the first day with something on. */
   initialDay?: string;
 }) {
   const reduceMotion = useReducedMotion();
+  // The full day, set to set, first; your picks and clashes one tap away.
+  const [mode, setMode] = useState<Mode>(route ? 'route' : 'picks');
   const [day, setDay] = useState(
     () =>
       (initialDay && schedule.days.some((d) => d.day === initialDay)
@@ -35,24 +44,32 @@ export function Timetable({
   );
   const current = schedule.days.find((d) => d.day === day) ?? schedule.days[0];
   if (!current) return null;
+  const dayRoute = route?.find((r) => r.day === current.day);
 
   return (
     <View>
+      {route ? <ModePicker value={mode} onChange={setMode} /> : null}
       <DayPicker days={schedule.days} value={current.day} onChange={setDay} />
       <LayoutAnimationConfig skipEntering>
-        <Animated.View key={current.day} entering={reduceMotion ? undefined : FadeIn.duration(220)}>
-          <Text style={styles.summary}>{daySummary(current)}</Text>
-          {current.items.map((item, i) => (
-            <TimelineRow key={itemKey(item)} item={item} last={i === current.items.length - 1}>
-              {item.kind === 'set' ? (
-                <SetCard festival={festival} item={item} />
-              ) : item.kind === 'clash' ? (
-                <ClashCard festival={festival} item={item} />
-              ) : (
-                <DiscoverCard festival={festival} item={item} />
-              )}
-            </TimelineRow>
-          ))}
+        <Animated.View key={`${mode}:${current.day}`} entering={reduceMotion ? undefined : FadeIn.duration(220)}>
+          {mode === 'route' && dayRoute ? (
+            <RouteList festival={festival} route={dayRoute} />
+          ) : (
+            <>
+              <Text style={styles.summary}>{daySummary(current)}</Text>
+              {current.items.map((item, i) => (
+                <TimelineRow key={itemKey(item)} item={item} last={i === current.items.length - 1}>
+                  {item.kind === 'set' ? (
+                    <SetCard festival={festival} item={item} />
+                  ) : item.kind === 'clash' ? (
+                    <ClashCard festival={festival} item={item} />
+                  ) : (
+                    <DiscoverCard festival={festival} item={item} />
+                  )}
+                </TimelineRow>
+              ))}
+            </>
+          )}
         </Animated.View>
       </LayoutAnimationConfig>
 
@@ -78,6 +95,37 @@ function daySummary(d: ScheduleDay) {
   const sets = `${planned} ${planned === 1 ? 'set' : 'sets'} for you`;
   if (!d.clashes) return `${sets}, no clashes.`;
   return `${sets}, ${d.clashes} ${d.clashes === 1 ? 'clash' : 'clashes'} to decide.`;
+}
+
+/** Full day (the set-to-set route) or your picks (with clashes called out). */
+function ModePicker({ value, onChange }: { value: Mode; onChange: (m: Mode) => void }) {
+  const options: { key: Mode; label: string }[] = [
+    { key: 'route', label: 'Full day' },
+    { key: 'picks', label: 'Your picks' },
+  ];
+  return (
+    <View style={styles.modes} accessibilityRole="tablist">
+      {options.map((o) => {
+        const on = o.key === value;
+        return (
+          <Pressable
+            key={o.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={o.key === 'route' ? 'Full day, set to set' : 'Your picks and clashes'}
+            onPress={() => {
+              if (on) return;
+              haptic.select();
+              onChange(o.key);
+            }}
+            style={[styles.modeItem, on && styles.modeOn]}
+          >
+            <Text style={[styles.dayText, on && { color: color.moon }]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 }
 
 function DayPicker({ days, value, onChange }: { days: ScheduleDay[]; value: string; onChange: (d: string) => void }) {
@@ -282,6 +330,16 @@ const RAIL = 20;
 const AVATAR = 36;
 
 const styles = StyleSheet.create({
+  modes: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    padding: 3,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    marginTop: space.lg,
+  },
+  modeItem: { paddingHorizontal: space.lg, paddingVertical: 6, borderRadius: radius.pill },
+  modeOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
   days: {
     flexDirection: 'row',
     padding: 3,

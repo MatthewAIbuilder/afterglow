@@ -1,13 +1,12 @@
 import { SOUND_LABEL, type Artist } from '../../data/types';
 import type { Catch, ClashVerdict, ExploreReason, Pick, Tier } from './plan';
 
-/** "TAPE B" -> "Tape B", for names inside sentences. */
-export const plainName = (a: Artist) =>
-  a.name
-    .toLowerCase()
-    .split(' ')
-    .map((w) => (w.length <= 1 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1)))
-    .join(' ');
+/**
+ * An artist's name inside a sentence: exactly as the lineup writes it.
+ * Guessing capitals from an all-caps poster name goes wrong too often
+ * ("The Xx", "Dj Snake", "Lp"), so names stay as the artist styles them.
+ */
+export const plainName = (a: Artist) => a.name;
 
 export const pct = (match: number) => `${Math.round(match * 100)}%`;
 

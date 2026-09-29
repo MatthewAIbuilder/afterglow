@@ -73,6 +73,26 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
       if (Object.keys(notes).length) base.notes = notes;
       else delete base.notes;
     }
+    if (f.artistDays) {
+      const days = new Set(f.days);
+      const kept = Object.entries(f.artistDays).flatMap(([id, ds]) => {
+        const valid = ds.filter((d) => days.has(d));
+        return inLineup.has(id) && valid.length ? [[id, valid] as const] : [];
+      });
+      const total = Object.values(f.artistDays).reduce((n, ds) => n + ds.length, 0);
+      if (kept.reduce((n, [, ds]) => n + ds.length, 0) < total)
+        problems.push(`Festival "${f.id}": a day was left out because that artist isn't on the lineup or the day isn't one of the festival's days.`);
+      if (kept.length) base.artistDays = Object.fromEntries(kept);
+      else delete base.artistDays;
+    }
+    if (f.artistWeekends) {
+      const count = f.weekends?.length ?? 0;
+      const kept = Object.entries(f.artistWeekends).filter(([id, w]) => inLineup.has(id) && w >= 1 && w <= count);
+      if (kept.length < Object.keys(f.artistWeekends).length)
+        problems.push(`Festival "${f.id}": a weekend was left out because that artist isn't on the lineup or the festival doesn't have that weekend.`);
+      if (kept.length) base.artistWeekends = Object.fromEntries(kept);
+      else delete base.artistWeekends;
+    }
     if (!f.sets) return base;
     const sets = f.sets.filter((s) => {
       const ok = validSet(s, inLineup, f.days, stageIds);

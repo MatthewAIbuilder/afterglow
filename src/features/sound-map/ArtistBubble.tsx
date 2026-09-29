@@ -23,6 +23,9 @@ type Props = {
   /** null when nothing is selected */
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** A search is on: matches pop out, everyone else fades back. */
+  searching?: boolean;
+  matched?: boolean;
   /** Pan velocity of the map, px/s. */
   velX: SharedValue<number>;
   velY: SharedValue<number>;
@@ -35,10 +38,13 @@ const LABEL_W = 150;
 const D = MAX_R * 2; // bubbles render at full size and scale down, so size can animate
 const GLOW = MAX_R * 2.5;
 
+/** Focus of a search match: bigger than selected (2), so it pops. */
+const MATCH = 2.8;
+
 // How the map reshapes when your taste changes: unhurried, one soft overshoot.
 const reshape = { damping: 16, stiffness: 70, mass: 1.1 };
 
-function ArtistBubbleBase({ placed, index, selectedId, onSelect, velX, velY }: Props) {
+function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matched, velX, velY }: Props) {
   const { artist, affinity, x, y, r } = placed;
   const reduceMotion = useReducedMotion();
 
@@ -90,9 +96,14 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, velX, velY }: P
 
   useEffect(() => {
     const isSelected = selectedId === artist.id;
-    const dimmed = selectedId !== null && !isSelected;
-    focus.value = withSpring(dimmed ? 0 : isSelected ? 2 : 1, motion.snappy);
-  }, [selectedId, artist.id, focus]);
+    if (selectedId !== null) {
+      focus.value = withSpring(isSelected ? 2 : 0, motion.snappy);
+      return;
+    }
+    // A search match pops: a springy grow past the selected size, with its own glow.
+    if (searching) focus.value = matched ? (reduceMotion ? MATCH : withSpring(MATCH, motion.bloom)) : withSpring(0, motion.snappy);
+    else focus.value = withSpring(1, motion.snappy);
+  }, [selectedId, artist.id, focus, searching, matched, reduceMotion]);
 
   const anchorStyle = useAnimatedStyle(() => {
     const p = bloom.value;
@@ -110,6 +121,12 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, velX, velY }: P
     const f = focus.value;
     const s = (pr.value / MAX_R) * bloom.value * (f > 1 ? 1 + 0.07 * (f - 1) : 1);
     return { transform: [{ scale: s }] };
+  });
+
+  // The extra glow of a search match.
+  const matchGlowStyle = useAnimatedStyle(() => {
+    const f = focus.value;
+    return { opacity: f > 2 ? Math.min(1, (f - 2) / (MATCH - 2)) : 0 };
   });
 
   const labelStyle = useAnimatedStyle(() => ({
@@ -136,6 +153,18 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, velX, velY }: P
             </RadialGradient>
           </Defs>
           <Circle cx={GLOW / 2} cy={GLOW / 2} r={GLOW / 2} fill={`url(#${gid})`} />
+        </Svg>
+      </Animated.View>
+
+      <Animated.View style={[styles.glow, bodyStyle, matchGlowStyle]} pointerEvents="none">
+        <Svg width={GLOW} height={GLOW}>
+          <Defs>
+            <RadialGradient id={`${gid}-m`} cx="50%" cy="50%" r="50%">
+              <Stop offset="0.3" stopColor={color.glow} stopOpacity={0.7} />
+              <Stop offset="1" stopColor={color.glowDeep} stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Circle cx={GLOW / 2} cy={GLOW / 2} r={GLOW / 2} fill={`url(#${gid}-m)`} />
         </Svg>
       </Animated.View>
 
