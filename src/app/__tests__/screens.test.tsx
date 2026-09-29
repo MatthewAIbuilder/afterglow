@@ -11,6 +11,7 @@ import SoundScreen from '../(tabs)/sound';
 import ArtistScreen from '../artist/[id]';
 import FestivalScreen from '../festival/[id]';
 import PosterScreen from '../poster/[id]';
+import SavedScreen from '../saved';
 import TuneScreen from '../tune/[id]';
 
 /**
@@ -29,6 +30,7 @@ function renderApp(initialUrl: string) {
       'artist/[id]': ArtistScreen,
       'festival/[id]': FestivalScreen,
       'poster/[id]': PosterScreen,
+      saved: SavedScreen,
       'tune/[id]': TuneScreen,
     },
     { initialUrl },
@@ -227,6 +229,30 @@ describe('My Sound', () => {
     expect(JSON.parse((await AsyncStorage.getItem('artistRatings.v1')) ?? 'null')).toEqual({});
     expect(JSON.parse((await AsyncStorage.getItem('going.v1')) ?? 'null')).toEqual(['edc-orlando-26']);
     alert.mockRestore();
+  });
+});
+
+describe('Saved', () => {
+  it('opens your saved clips from My Sound, and unsaves with an undo', async () => {
+    await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: false, saved: true, skipped: false } }));
+    const app = await renderApp('/sound');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Saved clips, 1'));
+    await settle();
+    expect(app.getByText('Clips you saved to watch again.')).toBeTruthy();
+    expect(app.getByLabelText(/^Play ILLENIUM, /)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Remove ILLENIUM from saved'));
+    await settle();
+    // Still listed, so the slip can be undone.
+    await fireEvent.press(app.getByLabelText('Save ILLENIUM again'));
+    await settle();
+    expect(app.getByLabelText('Remove ILLENIUM from saved')).toBeTruthy();
+  });
+
+  it('explains how to save when nothing is saved', async () => {
+    const app = await renderApp('/saved');
+    await settle();
+    expect(app.getByText(/Nothing saved yet/)).toBeTruthy();
   });
 });
 

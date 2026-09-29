@@ -23,6 +23,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="artist/[id]" />
         <Stack.Screen name="festival/[id]" />
+        <Stack.Screen name="saved" />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="poster/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
       </Stack>
