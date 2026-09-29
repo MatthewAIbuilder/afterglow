@@ -40,7 +40,7 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
     list.filter((x) => {
       const key = `${kind}:${x.id}`;
       if (!x.id || seenIds.has(key)) {
-        problems.push(`${kind} ${x.id || '(no id)'}: duplicate or missing id`);
+        problems.push(`Two ${kind}s share the id "${x.id}" (or one has none). Only the first was kept.`);
         return false;
       }
       seenIds.add(key);
@@ -51,7 +51,7 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
     const sound: Partial<Record<SoundTag, number>> = {};
     for (const [tag, w] of Object.entries(a.sound ?? {})) {
       if ((SOUND_TAGS as readonly string[]).includes(tag) && typeof w === 'number' && w >= 0 && w <= 1) sound[tag as SoundTag] = w;
-      else problems.push(`artist ${a.id}: dropped sound ${tag}`);
+      else problems.push(`Artist "${a.id}": sound "${tag}" was ignored.`);
     }
     return { ...a, sound };
   });
@@ -60,7 +60,7 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
   const festivals: Festival[] = unique('festival', input.festivals).map((f) => {
     const lineup = f.lineup.filter((id, i) => {
       const ok = artistIds.has(id) && f.lineup.indexOf(id) === i;
-      if (!ok) problems.push(`festival ${f.id}: dropped lineup entry ${id}`);
+      if (!ok) problems.push(`Festival "${f.id}": "${id}" is on the lineup but isn't in the artist list (or is listed twice), so it was left out.`);
       return ok;
     });
     const stageIds = new Set(f.stages.map((s) => s.id));
@@ -68,7 +68,7 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
     if (!f.sets) return { ...f, lineup };
     const sets = f.sets.filter((s) => {
       const ok = validSet(s, inLineup, f.days, stageIds);
-      if (!ok) problems.push(`festival ${f.id}: dropped set for ${s.artistId}`);
+      if (!ok) problems.push(`Festival "${f.id}": the set for "${s.artistId}" was left out. Check they're on the lineup, and that the day and stage exist.`);
       return ok;
     });
     return { ...f, lineup, sets };
@@ -78,12 +78,12 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
   const clips: Clip[] = unique('clip', input.clips)
     .filter((c) => {
       const ok = artistIds.has(c.artistId) && festivalIds.has(c.festivalId) && c.durationSec > 0;
-      if (!ok) problems.push(`clip ${c.id}: unknown artist or festival, or no length`);
+      if (!ok) problems.push(`Clip "${c.id}" was left out: its artist or festival isn't in the file, or it has no length.`);
       return ok;
     })
     .map((c) => {
       if (validSource(c.source)) return c;
-      problems.push(`clip ${c.id}: footage link doesn't look right, showing the stage instead`);
+      problems.push(`Clip "${c.id}": the video doesn't look right, so it shows the stage instead.`);
       const { source: _dropped, ...rest } = c;
       return rest;
     });
@@ -91,13 +91,13 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
   const lineups: FestivalLineup[] | undefined = input.lineups
     ?.filter((l) => {
       const ok = festivalIds.has(l.festivalId);
-      if (!ok) problems.push(`lineup for ${l.festivalId}: unknown festival`);
+      if (!ok) problems.push(`A lineup for "${l.festivalId}" was left out: there's no festival with that id.`);
       return ok;
     })
     .map((l) => {
       const artistIdsInLineup = l.artistIds.filter((id, i) => {
         const ok = artistIds.has(id) && l.artistIds.indexOf(id) === i;
-        if (!ok) problems.push(`lineup for ${l.festivalId}: dropped ${id}`);
+        if (!ok) problems.push(`Lineup for "${l.festivalId}": "${id}" isn't in the artist list (or is listed twice), so it was left out.`);
         return ok;
       });
       if (!l.sets) return { ...l, artistIds: artistIdsInLineup };
@@ -107,7 +107,7 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
       const inLineup = new Set(artistIdsInLineup);
       const sets = l.sets.filter((s) => {
         const ok = validSet(s, inLineup, days, stages);
-        if (!ok) problems.push(`lineup for ${l.festivalId}: dropped set for ${s.artistId}`);
+        if (!ok) problems.push(`Lineup for "${l.festivalId}": the set for "${s.artistId}" was left out. Check they're on the lineup, and that the day and stage exist.`);
         return ok;
       });
       return { ...l, artistIds: artistIdsInLineup, sets };
@@ -115,7 +115,7 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
 
   const similarities = input.similarities?.filter((s) => {
     const ok = artistIds.has(s.artistId) && artistIds.has(s.otherId) && s.artistId !== s.otherId && s.score >= 0 && s.score <= 1;
-    if (!ok) problems.push(`similarity ${s.artistId}/${s.otherId}: dropped`);
+    if (!ok) problems.push(`The similarity between "${s.artistId}" and "${s.otherId}" was left out: both must be artists in the file, and the score from 0 to 1.`);
     return ok;
   });
 

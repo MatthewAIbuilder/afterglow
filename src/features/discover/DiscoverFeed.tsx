@@ -59,7 +59,8 @@ export function DiscoverFeed() {
     setFocusId(target);
     setActiveIndex(0);
   }
-  const festival = focusId ? catalog.festival(focusId) : undefined;
+  // If the catalogue changes under us (a hosted file arrived) and the festival is gone, open the first one with clips.
+  const festival = (focusId ? catalog.festival(focusId) : undefined) ?? defaultFocus(catalog.festivals, catalog.clips);
   useEffect(() => {
     if (focusParam) router.setParams({ festival: '' });
   }, [focusParam]);

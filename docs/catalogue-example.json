@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "mode": "add",
+  "updated": "2026-09-29",
+  "artists": [
+    {
+      "id": "aurora-drift",
+      "name": "AURORA DRIFT",
+      "sound": { "melodic-bass": 0.8, "house": 0.3 }
+    }
+  ],
+  "festivals": [
+    {
+      "id": "nightfall-27",
+      "name": "Nightfall 2027",
+      "dates": "Aug 6 to 8",
+      "location": "Riverside Park",
+      "lineup": ["illenium", "aurora-drift", "levity", "sara-landry"],
+      "days": ["Friday", "Saturday"],
+      "stages": [
+        { "id": "main", "name": "Main Stage" },
+        { "id": "grove", "name": "The Grove" }
+      ],
+      "sets": [
+        { "artist": "aurora-drift", "day": "Friday", "stage": "grove", "start": "21:00", "end": "22:00" },
+        { "artist": "illenium", "day": "Friday", "stage": "main", "start": "23:30", "end": "01:00" },
+        { "artist": "levity", "day": "Saturday", "stage": "grove", "start": "22:15", "end": "23:30" },
+        { "artist": "sara-landry", "day": "Saturday", "stage": "main", "start": "23:00", "end": "00:30" }
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "id": "nightfall-illenium-1",
+      "artist": "illenium",
+      "festival": "nightfall-27",
+      "title": "Live at Lost Lands 2025",
+      "video": {
+        "link": "https://www.youtube.com/watch?v=JssDaUK0_GQ",
+        "from": "25:00",
+        "to": "25:45",
+        "channel": "Lost Lands"
+      },
+      "bpm": 150
+    },
+    {
+      "id": "nightfall-aurora-1",
+      "artist": "aurora-drift",
+      "festival": "nightfall-27",
+      "title": "Sunset set",
+      "seconds": 30,
+      "bpm": 124
+    }
+  ],
+  "similar": [{ "artist": "aurora-drift", "other": "illenium", "score": 0.7 }]
+}
