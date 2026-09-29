@@ -93,12 +93,21 @@ export function DiscoverFeed() {
   const { reactions, hydrated: reactionsLoaded } = useReactions();
   const { done: hintsDone, markDone } = useHints();
   const ready = !!hintsDone && seenLoaded && reactionsLoaded;
+  // What you'd done before this visit (before the tips existed, say), checked once everything has loaded.
+  // Only history from before now counts: jumping straight to a clip marks it seen without any swiping.
+  const [openedAt] = useState(() => Date.now());
+  const checkedHistory = useRef(false);
   useEffect(() => {
-    if (!ready) return;
-    const known = alreadyKnown(Object.keys(seen).length, reactions);
-    if (activeIndex > 0) known.push('swipe');
+    if (!ready || checkedHistory.current) return;
+    checkedHistory.current = true;
+    const before = Object.values(seen).filter((at) => at < openedAt).length;
+    const known = alreadyKnown(before, reactions);
     if (known.length) markDone(known);
-  }, [ready, seen, reactions, activeIndex, markDone]);
+  }, [ready, seen, reactions, openedAt, markDone]);
+  // A like or save (by double-tap or the rail) is the second tip done.
+  useEffect(() => {
+    if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
+  }, [ready, reactions, markDone]);
   const hint = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
 
   // The feed's position and whether its own scrolling has the finger, read by swipes that start on a video.
@@ -158,6 +167,8 @@ export function DiscoverFeed() {
     activeRef.current = index;
     haptic.select();
     setActiveIndex(index);
+    // You moved the feed yourself (a swipe, or Skip): the swipe tip is done.
+    markDone(['swipe']);
   }).current;
 
   // Opened from an artist page with a specific clip: jump straight to it,

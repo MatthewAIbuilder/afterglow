@@ -402,6 +402,14 @@ describe('Discover', () => {
     expect(JSON.parse((await AsyncStorage.getItem('hints.v1')) ?? '[]')).toEqual(['swipe', 'like']);
   });
 
+  it('keeps the swipe tip when Discover opens straight on a clip', async () => {
+    const app = await renderApp('/?clip=c2');
+    await settle();
+    await settle();
+    expect(app.getByLabelText('Tip: Swipe up for the next clip')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('hints.v1')) ?? '[]')).toEqual([]);
+  });
+
   it('moves on to the next tip once you have swiped', async () => {
     await AsyncStorage.setItem('seen.v1', JSON.stringify({ c1: 1, c2: 2 }));
     const app = await renderApp('/');
