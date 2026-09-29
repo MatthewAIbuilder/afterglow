@@ -9,8 +9,8 @@ import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
 import { ChevronIcon } from '../components/TabIcons';
 import type { Clip } from '../data/types';
-import { PlayIcon, SaveIcon } from '../features/discover/icons';
-import { listedClips, savedClips } from '../features/discover/saved';
+import { HeartIcon, PlayIcon, SaveIcon } from '../features/discover/icons';
+import { listedClips, openedWith, yourClips } from '../features/discover/saved';
 import { playableSource, posterUrl } from '../features/discover/youtube';
 import { formatDuration } from '../features/festivals/format';
 import { haptic } from '../lib/haptics';
@@ -18,14 +18,17 @@ import { useCatalog } from '../state/catalog';
 import { useReactions } from '../state/reactions';
 import { color, radius, space, type } from '../theme/tokens';
 
-/** Clips you saved in Discover, to watch again. Tap one to play it in Discover. */
-export default function SavedScreen() {
+type Shelf = 'saved' | 'liked';
+
+/** Your clips: saved to watch again, and liked. Tap one to play it in Discover. */
+export default function YourClipsScreen() {
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
   const { reactions } = useReactions();
-  // What was saved when you arrived stays listed, so unsaving here can be undone.
-  const [openedWith] = useState(() => new Set(savedClips(catalog.clips, reactions).map((c) => c.id)));
-  const listed = useMemo(() => listedClips(catalog.clips, openedWith, reactions), [catalog.clips, openedWith, reactions]);
+  // What was here when you arrived stays listed, so unsaving or unliking can be undone.
+  const [opened] = useState(() => openedWith(yourClips(catalog.clips, reactions)));
+  const listed = useMemo(() => listedClips(catalog.clips, opened, reactions), [catalog.clips, opened, reactions]);
+  const empty = listed.saved.length + listed.liked.length === 0;
 
   return (
     <View style={styles.root}>
@@ -35,16 +38,26 @@ export default function SavedScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.pad}>
-          <Text style={styles.title}>Saved</Text>
-          <Text style={styles.meta}>Clips you saved to watch again.</Text>
+          <Text style={styles.title}>Your clips</Text>
+          <Text style={styles.meta}>What you saved to watch again, and what you liked.</Text>
         </View>
 
         <View style={[styles.pad, styles.list]}>
-          {listed.length === 0 ? (
-            <Text style={styles.empty}>Nothing saved yet. Tap Save on a clip in Discover and it will wait for you here.</Text>
-          ) : (
-            listed.map((c) => <SavedRow key={c.id} clip={c} />)
+          {empty ? (
+            <Text style={styles.empty}>
+              Nothing here yet. Tap Save or Like on a clip in Discover and it will wait for you here.
+            </Text>
+          ) : null}
+          {listed.saved.length > 0 && <Text style={styles.section}>Saved</Text>}
+          {listed.saved.map((c) => (
+            <ClipRow key={c.id} clip={c} shelf="saved" />
+          ))}
+          {listed.liked.length > 0 && (
+            <Text style={[styles.section, listed.saved.length > 0 && styles.sectionGap]}>Liked</Text>
           )}
+          {listed.liked.map((c) => (
+            <ClipRow key={c.id} clip={c} shelf="liked" />
+          ))}
         </View>
       </ScrollView>
 
@@ -57,10 +70,11 @@ export default function SavedScreen() {
   );
 }
 
-function SavedRow({ clip }: { clip: Clip }) {
+function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
   const catalog = useCatalog();
-  const { get, toggleSaved } = useReactions();
-  const saved = get(clip.id).saved;
+  const { get, toggleSaved, setLiked } = useReactions();
+  const reaction = get(clip.id);
+  const on = shelf === 'saved' ? reaction.saved : reaction.liked;
   const artist = catalog.artist(clip.artistId);
   const festival = catalog.festival(clip.festivalId);
   const source = playableSource(clip);
@@ -100,17 +114,30 @@ function SavedRow({ clip }: { clip: Clip }) {
       </Pressable>
       <Pressable
         onPress={() => {
-          if (saved) haptic.select();
+          if (on) haptic.select();
           else haptic.tap();
-          toggleSaved(clip.id);
+          if (shelf === 'saved') toggleSaved(clip.id);
+          else setLiked(clip.id, !on);
         }}
         accessibilityRole="button"
-        accessibilityState={{ selected: saved }}
-        accessibilityLabel={saved ? `Remove ${name} from saved` : `Save ${name} again`}
+        accessibilityState={{ selected: on }}
+        accessibilityLabel={
+          shelf === 'saved'
+            ? on
+              ? `Remove ${name} from saved`
+              : `Save ${name} again`
+            : on
+              ? `Unlike ${name}`
+              : `Like ${name} again`
+        }
         hitSlop={10}
         style={({ pressed }) => [styles.toggle, pressed && { transform: [{ scale: 0.9 }] }]}
       >
-        <SaveIcon color={saved ? color.glow : color.moonDim} filled={saved} size={22} />
+        {shelf === 'saved' ? (
+          <SaveIcon color={on ? color.glow : color.moonDim} filled={on} size={22} />
+        ) : (
+          <HeartIcon color={on ? color.glow : color.moonDim} filled={on} size={22} />
+        )}
       </Pressable>
     </View>
   );
@@ -124,6 +151,14 @@ const styles = StyleSheet.create({
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs },
   list: { marginTop: space.xl },
   empty: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
+  section: {
+    ...type.label,
+    color: color.moonFaint,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: space.xs,
+  },
+  sectionGap: { marginTop: space.xl },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   open: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
   thumb: {

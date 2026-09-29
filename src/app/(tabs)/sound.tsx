@@ -6,7 +6,7 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
 import { SaveIcon } from '../../features/discover/icons';
-import { savedClips } from '../../features/discover/saved';
+import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { artistsOnMap } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
@@ -89,11 +89,11 @@ export default function MySoundScreen() {
   );
 }
 
-/** Opens your saved clips. Only there once you've saved one. */
+/** Opens your clips (saved and liked). Only there once you have one. */
 function SavedPill() {
   const { clips } = useCatalog();
   const { reactions } = useReactions();
-  const count = savedClips(clips, reactions).length;
+  const count = yourClipCount(yourClips(clips, reactions));
   if (count === 0) return null;
   return (
     <Pressable
@@ -102,7 +102,7 @@ function SavedPill() {
         router.push('/saved');
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Saved clips, ${count}`}
+      accessibilityLabel={`Your clips, ${count}`}
       hitSlop={10}
       style={({ pressed }) => [styles.pill, styles.savedPill, pressed && { opacity: 0.7 }]}
     >
