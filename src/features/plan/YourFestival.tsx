@@ -1,12 +1,16 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { ShareIcon } from '../../components/TabIcons';
+import { APP_NAME } from '../../config/app';
 import type { Festival } from '../../data/types';
+import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
 import { useTaste } from '../../state/taste';
 import { color, space, type } from '../../theme/tokens';
 import { MustSeeList } from './MustSeeList';
 import { buildSchedule, rankLineup } from './plan';
+import { planText } from './share';
 import { Timetable } from './Timetable';
 
 /**
@@ -23,11 +27,28 @@ export function YourFestival({ festival }: { festival: Festival }) {
     [festival, artists, taste, informed, mustSeesAt],
   );
   const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
+  const text = useMemo(() => planText(festival, picks, schedule, APP_NAME), [festival, picks, schedule]);
 
   return (
     <View style={styles.root}>
       <View style={styles.head}>
-        <Text style={styles.title}>Your festival</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Your festival</Text>
+          {text ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                Share.share({ message: text }).catch(() => {});
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Share your plan for ${festival.name}`}
+              hitSlop={10}
+              style={({ pressed }) => [styles.share, pressed && { opacity: 0.6 }]}
+            >
+              <ShareIcon color={color.moonDim} />
+            </Pressable>
+          ) : null}
+        </View>
         <Text style={styles.sub}>
           {schedule
             ? 'Your night, built from what you like, save, skip and rate. Star anyone you won’t miss.'
@@ -48,6 +69,8 @@ export function YourFestival({ festival }: { festival: Festival }) {
 const styles = StyleSheet.create({
   root: { marginTop: space.xxl, marginHorizontal: space.lg },
   head: { paddingHorizontal: space.sm },
-  title: { ...type.title, fontSize: 22, color: color.moon },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  title: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
+  share: { padding: space.xs },
   sub: { ...type.body, color: color.moonDim, marginTop: space.xs },
 });
