@@ -8,10 +8,11 @@ import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
-import { SOUND_LABEL, type SoundTag } from '../../data/types';
+import { SOUND_LABEL, type Artist, type SoundTag } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
 import { StarIcon } from '../../features/plan/icons';
 import { RateArtist } from '../../features/taste/RateArtist';
+import { mostSimilar } from '../../features/taste/similarity';
 import { describeSet, formatDuration } from '../../features/festivals/format';
 import { setLine } from '../../features/festivals/when';
 import { haptic } from '../../lib/haptics';
@@ -38,13 +39,14 @@ export default function ArtistScreen() {
 
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
   const tags = (Object.entries(artist.sound) as [SoundTag, number][]).sort((a, b) => b[1] - a[1]);
-  const similar = catalog.artists
-    .filter((a) => a.id !== artist.id)
-    .map((a) => ({ a, s: similarity(artist, a) }))
-    .filter((x) => x.s > 0.3)
-    .sort((p, q) => q.s - p.s)
-    .slice(0, 3)
-    .map((x) => x.a);
+  // Opened from a festival: who sounds like them on that lineup, so you can plan around it.
+  // Otherwise (or if no one there does), the closest across everything we know.
+  const lineupArtists = starFestival
+    ? starFestival.lineup.map((a) => catalog.artist(a)).filter((a): a is Artist => !!a)
+    : [];
+  const similarThere = starFestival ? mostSimilar(artist, lineupArtists, similarity) : [];
+  const similar = similarThere.length ? similarThere : mostSimilar(artist, catalog.artists, similarity);
+  const similarAt = similarThere.length ? starFestival : undefined;
   const festivals = catalog.festivalsOf(artist.id);
   const clips = catalog.clipsOf(artist.id);
   const [deep, bright] = artistColors(artist.id);
@@ -157,17 +159,18 @@ export default function ArtistScreen() {
         )}
 
         {similar.length > 0 && (
-          <Section title="Similar sound">
+          <Section title={similarAt ? `Similar sound at ${similarAt.name}` : 'Similar sound'}>
             <View style={styles.similar}>
               {similar.map((a) => (
                 <Pressable
                   key={a.id}
                   onPress={() => {
                     haptic.select();
-                    router.push(`/artist/${a.id}`);
+                    // Stay in the festival's context, so their set and must-see star show.
+                    router.push({ pathname: '/artist/[id]', params: { id: a.id, festival: similarAt?.id } });
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={a.name}
+                  accessibilityLabel={`${a.name}, ${Math.round((taste[a.id] ?? 0) * 100)} percent match`}
                   style={({ pressed }) => [styles.similarItem, pressed && { opacity: 0.6 }]}
                 >
                   <ArtistAvatar artist={a} size={64} />
