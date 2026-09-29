@@ -7,6 +7,8 @@ type Ctx = {
   going: readonly string[];
   isGoing: (festivalId: string) => boolean;
   toggle: (festivalId: string) => void;
+  /** Saved festivals have loaded (or failed to). */
+  hydrated: boolean;
 };
 
 const STORAGE_KEY = 'going.v1';
@@ -15,6 +17,7 @@ const GoingContext = createContext<Ctx | null>(null);
 
 export function GoingProvider({ children }: { children: ReactNode }) {
   const [going, setGoing] = useState<string[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -25,6 +28,7 @@ export function GoingProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
       .finally(() => {
         loaded.current = true;
+        setHydrated(true);
       });
   }, []);
 
@@ -34,7 +38,7 @@ export function GoingProvider({ children }: { children: ReactNode }) {
   }, [going]);
 
   const toggle = useCallback((festivalId: string) => setGoing((g) => toggleGoing(g, festivalId)), []);
-  const value = useMemo<Ctx>(() => ({ going, isGoing: (id) => going.includes(id), toggle }), [going, toggle]);
+  const value = useMemo<Ctx>(() => ({ going, isGoing: (id) => going.includes(id), toggle, hydrated }), [going, toggle, hydrated]);
   return <GoingContext.Provider value={value}>{children}</GoingContext.Provider>;
 }
 
