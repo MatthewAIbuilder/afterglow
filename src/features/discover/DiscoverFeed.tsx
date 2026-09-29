@@ -16,10 +16,14 @@ import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
+import { useHints } from '../../state/hints';
+import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { color, space, type } from '../../theme/tokens';
 import { ClipCard } from './ClipCard';
 import { FeedEnd } from './FeedEnd';
+import { FeedHint } from './FeedHint';
+import { alreadyKnown, currentHint } from './hints';
 import type { FeedPager } from './feedPager';
 import { defaultFocus, nextFocus } from '../festivals/links';
 import { reasonNote } from '../recommend/copy';
@@ -79,11 +83,23 @@ export function DiscoverFeed() {
   const pages = hasEnd ? count + 1 : count;
 
   // What you've had on screen, so the feed can hold it back next time.
-  const { markSeen } = useSeen();
+  const { seen, markSeen, hydrated: seenLoaded } = useSeen();
   const activeId = feed?.[activeIndex]?.clip.id;
   useEffect(() => {
     if (activeId && feedLive) markSeen(activeId);
   }, [activeId, feedLive, markSeen]);
+
+  // First-time tips, one at a time, each gone once you've done it (or had already, before tips existed).
+  const { reactions, hydrated: reactionsLoaded } = useReactions();
+  const { done: hintsDone, markDone } = useHints();
+  const ready = !!hintsDone && seenLoaded && reactionsLoaded;
+  useEffect(() => {
+    if (!ready) return;
+    const known = alreadyKnown(Object.keys(seen).length, reactions);
+    if (activeIndex > 0) known.push('swipe');
+    if (known.length) markDone(known);
+  }, [ready, seen, reactions, activeIndex, markDone]);
+  const hint = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
 
   // The feed's position and whether its own scrolling has the finger, read by swipes that start on a video.
   const offsetY = useSharedValue(0);
@@ -233,11 +249,14 @@ export function DiscoverFeed() {
             style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.headerTitle}>
-              <Text style={styles.festival}>{festival.name}</Text>
+              <Text style={styles.festival} numberOfLines={1}>{festival.name}</Text>
               <ChevronIcon color={color.moonDim} size={13} />
             </View>
-            <Text style={styles.dates}>Live sets from the lineup · {festival.dates}</Text>
+            <Text style={styles.dates} numberOfLines={1}>
+              Live sets from the lineup · {festival.dates}
+            </Text>
           </Pressable>
+          {hint ? <FeedHint hint={hint} /> : null}
         </View>
       )}
     </View>
@@ -247,9 +266,17 @@ export function DiscoverFeed() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   topScrim: { position: 'absolute', top: 0, left: 0, right: 0 },
-  header: { position: 'absolute', left: space.xl, right: space.xl },
-  headerButton: { alignSelf: 'flex-start' },
-  headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  header: {
+    position: 'absolute',
+    left: space.xl,
+    right: space.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  headerButton: { alignSelf: 'flex-start', flexShrink: 1 },
+  headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   festival: { ...type.headline, color: color.moon },
   dates: { ...type.caption, color: color.moonDim, marginTop: 1 },
 });
