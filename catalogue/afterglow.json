@@ -1250,6 +1250,433 @@
     {
       "id": "the-huston-tillotson-university-jazz-collective",
       "name": "THE HUSTON-TILLOTSON UNIVERSITY JAZZ COLLECTIVE"
+    },
+    {
+      "id": "a-hundred-drums-b2b-zen-selekta",
+      "name": "A HUNDRED DRUMS B2B ZEN SELEKTA",
+      "sound": {
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "alleycut-b2b-level-up",
+      "name": "ALLEYCUT B2B LEVEL UP",
+      "sound": {
+        "dubstep": 0.7,
+        "riddim": 0.6
+      }
+    },
+    {
+      "id": "hedex",
+      "name": "HEDEX"
+    },
+    {
+      "id": "hol-b2b-infekt",
+      "name": "HOL! B2B INFEKT",
+      "sound": {
+        "riddim": 0.8,
+        "dubstep": 0.6
+      }
+    },
+    {
+      "id": "hvdes",
+      "name": "HVDES",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.4
+      }
+    },
+    {
+      "id": "izzy-vadim",
+      "name": "IZZY VADIM"
+    },
+    {
+      "id": "lizzy-jane",
+      "name": "LIZZY JANE"
+    },
+    {
+      "id": "modal-nodes",
+      "name": "MODAL NODES"
+    },
+    {
+      "id": "nimda-b2b-prosecute",
+      "name": "NIMDA B2B PROSECUTE",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.5
+      }
+    },
+    {
+      "id": "seeing-dubble",
+      "name": "SEEING DUBBLE"
+    },
+    {
+      "id": "sisto",
+      "name": "SISTO"
+    },
+    {
+      "id": "subtronics-b2b-crankdat",
+      "name": "SUBTRONICS B2B CRANKDAT",
+      "sound": {
+        "riddim": 0.8,
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "tynan",
+      "name": "TYNAN",
+      "sound": {
+        "dubstep": 0.8,
+        "trap": 0.3
+      }
+    },
+    {
+      "id": "warlord",
+      "name": "WARLORD"
+    },
+    {
+      "id": "cyclops-recordings-stage-takeover",
+      "name": "CYCLOPS RECORDINGS STAGE TAKEOVER"
+    },
+    {
+      "id": "blurrd-vzn",
+      "name": "BLURRD VZN",
+      "sound": {
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "costa",
+      "name": "COSTA"
+    },
+    {
+      "id": "doctor-p-b2b-funtcase",
+      "name": "DOCTOR P B2B FUNTCASE",
+      "sound": {
+        "dubstep": 1
+      }
+    },
+    {
+      "id": "don-jamal",
+      "name": "DON JAMAL"
+    },
+    {
+      "id": "lucas-larvenz",
+      "name": "LUCAS LARVENZ"
+    },
+    {
+      "id": "osyris",
+      "name": "OSYRIS"
+    },
+    {
+      "id": "peekaboo",
+      "name": "PEEKABOO",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.4
+      }
+    },
+    {
+      "id": "reaper",
+      "name": "REAPER"
+    },
+    {
+      "id": "rl-grime",
+      "name": "RL GRIME",
+      "sound": {
+        "trap": 0.9
+      }
+    },
+    {
+      "id": "r2rkt-b2b-vastive",
+      "name": "R2RKT B2B VASTIVE"
+    },
+    {
+      "id": "sfam",
+      "name": "SFAM",
+      "sound": {
+        "riddim": 0.7,
+        "dubstep": 0.5
+      }
+    },
+    {
+      "id": "shosh",
+      "name": "SHOSH"
+    },
+    {
+      "id": "slang-dogs",
+      "name": "SLANG DOGS"
+    },
+    {
+      "id": "vicky-b",
+      "name": "VICKY B"
+    },
+    {
+      "id": "bassrush-records-stage-takeover",
+      "name": "BASSRUSH RECORDS STAGE TAKEOVER"
+    },
+    {
+      "id": "blossom",
+      "name": "BLOSSOM"
+    },
+    {
+      "id": "daggz",
+      "name": "DAGGZ"
+    },
+    {
+      "id": "galactic-effect",
+      "name": "GALACTIC EFFECT"
+    },
+    {
+      "id": "gardella",
+      "name": "GARDELLA"
+    },
+    {
+      "id": "getter",
+      "name": "GETTER",
+      "sound": {
+        "dubstep": 0.7,
+        "trap": 0.4
+      }
+    },
+    {
+      "id": "lumasi",
+      "name": "LUMASI"
+    },
+    {
+      "id": "mlotik",
+      "name": "MLOTIK"
+    },
+    {
+      "id": "mocha",
+      "name": "MOCHA"
+    },
+    {
+      "id": "seven-lions",
+      "name": "SEVEN LIONS",
+      "sound": {
+        "melodic-bass": 1,
+        "dubstep": 0.3
+      }
+    },
+    {
+      "id": "smoakland",
+      "name": "SMOAKLAND",
+      "sound": {
+        "dubstep": 0.6,
+        "trap": 0.5
+      }
+    },
+    {
+      "id": "steller",
+      "name": "STELLER"
+    },
+    {
+      "id": "sumthin-sumthin",
+      "name": "SUMTHIN SUMTHIN",
+      "sound": {
+        "dubstep": 0.7
+      }
+    },
+    {
+      "id": "vyhara",
+      "name": "VYHARA"
+    },
+    {
+      "id": "witching-hour-jeanie-b2b-vampa",
+      "name": "WITCHING HOUR (JEANIE B2B VAMPA)",
+      "sound": {
+        "dubstep": 0.8,
+        "riddim": 0.5
+      }
+    },
+    {
+      "id": "z3lla",
+      "name": "Z3LLA",
+      "sound": {
+        "dubstep": 0.7
+      }
+    },
+    {
+      "id": "morflo-records-stage-takeover",
+      "name": "MORFLO RECORDS STAGE TAKEOVER"
+    },
+    {
+      "id": "knock2",
+      "name": "KNOCK2",
+      "sound": {
+        "house": 0.6,
+        "trap": 0.4
+      }
+    },
+    {
+      "id": "zeds-dead",
+      "name": "ZEDS DEAD",
+      "sound": {
+        "dubstep": 0.7,
+        "melodic-bass": 0.3
+      }
+    },
+    {
+      "id": "lsdream",
+      "name": "LSDREAM",
+      "sound": {
+        "dubstep": 0.7,
+        "melodic-bass": 0.4
+      }
+    },
+    {
+      "id": "bolo",
+      "name": "BOLO"
+    },
+    {
+      "id": "caspa-b2b-the-widdler",
+      "name": "CASPA B2B THE WIDDLER",
+      "sound": {
+        "dubstep": 0.9
+      }
+    },
+    {
+      "id": "detox-unit",
+      "name": "DETOX UNIT"
+    },
+    {
+      "id": "dr-fresch",
+      "name": "DR. FRESCH",
+      "sound": {
+        "house": 0.9
+      }
+    },
+    {
+      "id": "eprom",
+      "name": "EPROM",
+      "sound": {
+        "trap": 0.5,
+        "dubstep": 0.5
+      }
+    },
+    {
+      "id": "habstrakt",
+      "name": "HABSTRAKT",
+      "sound": {
+        "house": 0.9
+      }
+    },
+    {
+      "id": "nghtmre",
+      "name": "NGHTMRE",
+      "sound": {
+        "dubstep": 0.6,
+        "trap": 0.5
+      }
+    },
+    {
+      "id": "space-laces",
+      "name": "SPACE LACES",
+      "sound": {
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "zomboy",
+      "name": "ZOMBOY",
+      "sound": {
+        "dubstep": 0.9
+      }
+    },
+    {
+      "id": "austeria",
+      "name": "AUSTERIA"
+    },
+    {
+      "id": "elohim",
+      "name": "ELOHIM"
+    },
+    {
+      "id": "hydraulix-b2b-shanghai-doom",
+      "name": "HYDRAULIX B2B SHANGHAI DOOM",
+      "sound": {
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "jantsen-b2b-hairitage",
+      "name": "JANTSEN B2B HAIRITAGE",
+      "sound": {
+        "dubstep": 0.7,
+        "riddim": 0.5
+      }
+    },
+    {
+      "id": "medicine-place-b2b-salty",
+      "name": "MEDICINE PLACE B2B SALTY"
+    },
+    {
+      "id": "neotek",
+      "name": "NEOTEK"
+    },
+    {
+      "id": "no-signal-frosttop-b2b-remk",
+      "name": "NO SIGNAL (FROSTTOP B2B REMK)"
+    },
+    {
+      "id": "shima",
+      "name": "SHIMA"
+    },
+    {
+      "id": "shockface",
+      "name": "SHÖCKFACE"
+    },
+    {
+      "id": "subdocta-b2b-shlump",
+      "name": "SUBDOCTA B2B SHLUMP",
+      "sound": {
+        "dubstep": 0.8
+      }
+    },
+    {
+      "id": "super-future",
+      "name": "SUPER FUTURE"
+    },
+    {
+      "id": "vincent-antone",
+      "name": "VINCENT ANTONE"
+    },
+    {
+      "id": "whipped-cream",
+      "name": "WHIPPED CREAM"
+    },
+    {
+      "id": "blaow",
+      "name": "BLAOW!"
+    },
+    {
+      "id": "drkr",
+      "name": "DRKR"
+    },
+    {
+      "id": "fractal-bloom-b2b-valleria",
+      "name": "FRACTAL BLOOM B2B VALLERIA"
+    },
+    {
+      "id": "kyliente",
+      "name": "KYLIENTE"
+    },
+    {
+      "id": "lotus-tape-b2b-brohaun",
+      "name": "LOTUS TAPE B2B BROHAUN"
+    },
+    {
+      "id": "novembr",
+      "name": "NOVEMBR"
+    },
+    {
+      "id": "scum-wubz-b2b-lizrd",
+      "name": "SCUM WUBZ B2B LIZRD"
+    },
+    {
+      "id": "treble-tina",
+      "name": "TREBLE TINA"
     }
   ],
   "festivals": [
@@ -1969,6 +2396,280 @@
           "artist": "the-huston-tillotson-university-jazz-collective",
           "note": "Sunday, weekend 2 only"
         }
+      ]
+    },
+    {
+      "id": "cyclops-cove-4",
+      "name": "Cyclops Cove 4",
+      "dates": "Dec 4 to 6",
+      "start": "2026-12-04",
+      "end": "2026-12-06",
+      "location": "Sunset Cove Amphitheater, Boca Raton",
+      "lineup": [
+        {
+          "artist": "a-hundred-drums-b2b-zen-selekta",
+          "note": "Friday"
+        },
+        {
+          "artist": "alleycut-b2b-level-up",
+          "note": "Friday"
+        },
+        {
+          "artist": "hedex",
+          "note": "Friday"
+        },
+        {
+          "artist": "hol-b2b-infekt",
+          "note": "Friday"
+        },
+        {
+          "artist": "hvdes",
+          "note": "Friday"
+        },
+        {
+          "artist": "izzy-vadim",
+          "note": "Friday"
+        },
+        {
+          "artist": "lizzy-jane",
+          "note": "Friday"
+        },
+        {
+          "artist": "modal-nodes",
+          "note": "Friday"
+        },
+        {
+          "artist": "nimda-b2b-prosecute",
+          "note": "Friday"
+        },
+        {
+          "artist": "ravenscoon",
+          "note": "Friday"
+        },
+        {
+          "artist": "seeing-dubble",
+          "note": "Friday"
+        },
+        {
+          "artist": "sisto",
+          "note": "Friday"
+        },
+        {
+          "artist": "subtronics-b2b-crankdat",
+          "note": "Friday"
+        },
+        {
+          "artist": "taiki-nulight",
+          "note": "Friday"
+        },
+        {
+          "artist": "tynan",
+          "note": "Friday"
+        },
+        {
+          "artist": "warlord",
+          "note": "Friday"
+        },
+        {
+          "artist": "cyclops-recordings-stage-takeover",
+          "note": "Friday"
+        },
+        {
+          "artist": "avello",
+          "note": "Saturday"
+        },
+        {
+          "artist": "blurrd-vzn",
+          "note": "Saturday"
+        },
+        {
+          "artist": "costa",
+          "note": "Saturday"
+        },
+        {
+          "artist": "doctor-p-b2b-funtcase",
+          "note": "Saturday"
+        },
+        {
+          "artist": "don-jamal",
+          "note": "Saturday"
+        },
+        {
+          "artist": "lucas-larvenz",
+          "note": "Saturday"
+        },
+        {
+          "artist": "osyris",
+          "note": "Saturday"
+        },
+        {
+          "artist": "peekaboo",
+          "note": "Saturday"
+        },
+        {
+          "artist": "reaper",
+          "note": "Saturday"
+        },
+        {
+          "artist": "rl-grime",
+          "note": "Saturday"
+        },
+        {
+          "artist": "r2rkt-b2b-vastive",
+          "note": "Saturday"
+        },
+        {
+          "artist": "sfam",
+          "note": "Saturday"
+        },
+        {
+          "artist": "shosh",
+          "note": "Saturday"
+        },
+        {
+          "artist": "slang-dogs",
+          "note": "Saturday"
+        },
+        {
+          "artist": "subtronics",
+          "note": "Saturday and Sunday"
+        },
+        {
+          "artist": "troyboi",
+          "note": "Saturday"
+        },
+        {
+          "artist": "vicky-b",
+          "note": "Saturday"
+        },
+        {
+          "artist": "bassrush-records-stage-takeover",
+          "note": "Saturday"
+        },
+        {
+          "artist": "blossom",
+          "note": "Sunday"
+        },
+        {
+          "artist": "daggz",
+          "note": "Sunday"
+        },
+        {
+          "artist": "galactic-effect",
+          "note": "Sunday"
+        },
+        {
+          "artist": "gardella",
+          "note": "Sunday"
+        },
+        {
+          "artist": "getter",
+          "note": "Sunday"
+        },
+        {
+          "artist": "kompany",
+          "note": "Sunday"
+        },
+        {
+          "artist": "lumasi",
+          "note": "Sunday"
+        },
+        {
+          "artist": "mlotik",
+          "note": "Sunday"
+        },
+        {
+          "artist": "mocha",
+          "note": "Sunday"
+        },
+        {
+          "artist": "seven-lions",
+          "note": "Sunday"
+        },
+        {
+          "artist": "smoakland",
+          "note": "Sunday"
+        },
+        {
+          "artist": "steller",
+          "note": "Sunday"
+        },
+        {
+          "artist": "sumthin-sumthin",
+          "note": "Sunday"
+        },
+        {
+          "artist": "vyhara",
+          "note": "Sunday"
+        },
+        {
+          "artist": "witching-hour-jeanie-b2b-vampa",
+          "note": "Sunday"
+        },
+        {
+          "artist": "z3lla",
+          "note": "Sunday"
+        },
+        {
+          "artist": "morflo-records-stage-takeover",
+          "note": "Sunday"
+        }
+      ]
+    },
+    {
+      "id": "eternal-nye-26",
+      "name": "Eternal NYE 2026",
+      "dates": "Dec 30 and 31",
+      "start": "2026-12-30",
+      "end": "2026-12-31",
+      "location": "Orlando Amphitheater, Orlando",
+      "lineup": [
+        {
+          "artist": "knock2",
+          "note": "Dec 30"
+        },
+        {
+          "artist": "zeds-dead",
+          "note": "Dec 31 · Last festival set before hiatus"
+        },
+        "rl-grime",
+        "lsdream",
+        "bolo",
+        "caspa-b2b-the-widdler",
+        {
+          "artist": "detox-unit",
+          "note": "B2B with a surprise guest"
+        },
+        "dr-fresch",
+        {
+          "artist": "eprom",
+          "note": "B2B with a surprise guest"
+        },
+        "habstrakt",
+        "nghtmre",
+        "space-laces",
+        "zomboy",
+        "austeria",
+        "elohim",
+        "hydraulix-b2b-shanghai-doom",
+        "jantsen-b2b-hairitage",
+        "medicine-place-b2b-salty",
+        "neotek",
+        "no-signal-frosttop-b2b-remk",
+        "shima",
+        "shockface",
+        "subdocta-b2b-shlump",
+        "super-future",
+        "vincent-antone",
+        "whipped-cream",
+        "blaow",
+        "drkr",
+        "fractal-bloom-b2b-valleria",
+        "kyliente",
+        "lotus-tape-b2b-brohaun",
+        "novembr",
+        "scum-wubz-b2b-lizrd",
+        "treble-tina"
       ]
     }
   ],
