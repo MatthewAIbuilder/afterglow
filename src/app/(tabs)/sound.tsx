@@ -67,7 +67,11 @@ export default function MySoundScreen() {
     [artists, scope, shown],
   );
 
-  const close = useCallback(() => setSelectedId(null), []);
+  // Closing the sheet lets the map catch up with anything you rated in it.
+  const close = useCallback(() => {
+    setSelectedId(null);
+    reshapeSoon();
+  }, [reshapeSoon]);
   const pickScope = useCallback((id: string | undefined) => {
     setSelectedId(null);
     setScopeId(id);
@@ -112,7 +116,8 @@ export default function MySoundScreen() {
         {hasScopes && <ScopeChips festivals={festivals} value={scope?.id} onChange={pickScope} />}
       </View>
 
-      <ArtistSheet artistId={selectedId} taste={shown.taste} bottomInset={tabSpace} onClose={close} />
+      {/* The sheet shows the live match, so a rating there shows its effect straight away. */}
+      <ArtistSheet artistId={selectedId} taste={live.taste} bottomInset={tabSpace} onClose={close} />
     </View>
   );
 }

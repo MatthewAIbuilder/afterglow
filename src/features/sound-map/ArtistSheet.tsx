@@ -10,6 +10,7 @@ import { haptic } from '../../lib/haptics';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
+import { RateArtist } from '../taste/RateArtist';
 
 type Props = {
   artistId: string | null;
@@ -108,6 +109,8 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
           {closest.length > 0 && (
             <Text style={styles.body}>Sounds closest to {closest.join(' and ')}.</Text>
           )}
+
+          <RateArtist artist={artist} />
 
           <Pressable
             onPress={() => {
