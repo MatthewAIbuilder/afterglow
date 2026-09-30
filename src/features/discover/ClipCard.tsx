@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -41,6 +41,7 @@ import { communityMenu } from '../community/menu';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
 import { MIN_PLAYER, tallLayout } from './videoLayout';
+import { shareMessage } from '../../lib/share';
 
 type Props = {
   clip: Clip;
@@ -379,9 +380,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
           <Pressable
             onPress={() => {
               haptic.select();
-              Share.share({ message: clipShareText(artist.name, clip.title, media.externalUrl, context, APP_NAME) }).catch(
-                () => {},
-              );
+              void shareMessage(clipShareText(artist.name, clip.title, media.externalUrl, context, APP_NAME));
             }}
             accessibilityRole="button"
             accessibilityLabel={`Share this clip of ${artist.name}`}

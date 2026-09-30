@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
@@ -31,6 +31,7 @@ import { soundLean } from '../../features/taste/lean';
 import { musicNote, type MusicNote } from '../../features/music/copy';
 import { PROVIDER_NAME, type MusicProviderId } from '../../features/music/models';
 import { useMusic } from '../../state/music';
+import { showAlert } from '../../lib/dialog';
 
 const HEADER_H = 96;
 /** The row of festival chips under the subtitle. */
@@ -400,7 +401,7 @@ function StartOver({ onCleared }: { onCleared: () => void }) {
     <Pressable
       onPress={() => {
         haptic.select();
-        Alert.alert(
+        showAlert(
           'Start your sound over?',
           `This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.${music}`,
           [

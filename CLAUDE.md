@@ -106,6 +106,16 @@ Milestones 5 to 10 are merged into `main`. Milestones 6.5 (Discover playback), 7
   - *UI*: `shared/[id].tsx` has a heart with the count for others' videos (adjusted for your own like) and, on yours, "N likes" opening `likes/[id].tsx` (modal: Liked by, PersonRows with Follow, blocked hidden). `likesLabel` in `social/copy.ts`.
   - *Bell*: `Notice` now has `href` (festival notices link to the festival) and kinds `follow` / `like`; `features/notifications/activity.ts` (pure `activityNotices`: follow notices, likes grouped per video "@a and 2 others liked your video of HEDEX", blocked and deleted accounts left out, newest first). `NoticesProvider` moved inside `SocialProvider`; reads `activity(30)` plus profiles and your shared videos on sign-in, foreground and `refresh()` (the notifications screen calls it); the list is festival notices then activity. No push notifications.
   - *Tests*: `features/community/__tests__/likes.test.ts`, `features/notifications/__tests__/activity.test.ts`, likes in `features/social/__tests__/follow.test.ts`, `src/app/__tests__/likes.test.tsx`.
+- **Web Beta (Milestone 49, branch `claude/web-beta`, stacked on Milestone 48's branch, awaiting review, a first deploy and testing in a browser)**. Guide for the user: `docs/web-deploy.md` (Firebase Hosting, GitHub secrets, afterglowmusic.app). The same app runs in a browser (`react-dom`, `react-native-web`; `npm run build:web` → `dist/`).
+  - *Starting on web*: `metro.config.js` points `obscenity` at its CommonJS build on web (its ES module wrapper crashed the web bundle). `features/memories/device.web.ts` replaces the phone layer (no expo-media-library / file system on web): `pickVideo` returns `app-only` and `useAddMemory` says adding videos is in the iPhone app; no files. The Firebase adapter uses `getAuth` (browser persistence) on web, React Native persistence on phones. Spotify already reports `not-on-this-device` without a secure store; reminders render nothing on web.
+  - *Dialogs*: React Native's `Alert` does nothing in a browser, so every alert and action sheet goes through `lib/dialog.ts`: `showAlert` (same arguments as Alert.alert; on phones it calls Alert.alert with exactly those arguments) and `showActionSheet` (ActionSheetIOS on iPhone, Alert on Android, the app's sheet on web). `components/DialogHost.tsx` (root layout, last) shows web dialogs one at a time as an overlay (glass card, Cancel on the left of two buttons, last in lists; backdrop and Escape cancel). Always use these, never Alert/ActionSheetIOS directly.
+  - *Sharing*: `lib/share.ts` `shareMessage(message, title?)` → `shared` / `copied` / `dismissed` / `failed`: the share sheet on phones; on web `navigator.share`, else copied to the clipboard with a "Copied" dialog. Used by clip, profile, plan-text and request sharing. Profile links are now `https://afterglowmusic.app/u/<handle>` (`WEB_URL` in `config/app.ts`). The plan card hides "Share image" on web (capturing needs the phone) and keeps a phone width (at most 420).
+  - *YouTube on web*: `features/discover/YouTubePlayer.web.tsx` hosts the same `playerHtml` page in a same-origin `srcdoc` iframe, with a shim for `window.ReactNativeWebView.postMessage` (messages to the parent, filtered by frame), commands through `contentWindow.afterglow`, and the same playback/watch rules (`shouldPlay`, `playedSpan`, `readPlayerReport`). If a play hasn't started after `AUTOPLAY_GRACE_MS` 1.5 s (browsers need a tap before sound), it mutes and plays. Not verifiable from the cloud session (its proxy blocks YouTube): test on a real browser.
+  - *Layout*: Discover is one column at most `FEED_MAX_WIDTH` 520 wide, centred (unchanged on phones); the tab bar is `width: 100%` up to 480, centred; GlassCircleButton and NoticeBell put their icon in its own View (the positioned blur painted over it in browsers). The hold tip isn't shown on web.
+  - *Version*: `lib/version.ts` `versionLine` / `VERSION_LINE` ("Afterglow 1.0.0 · build 3f2a9c1", from `expoConfig.version` and `EXPO_PUBLIC_BUILD_ID`) at the bottom of Profile. The Profile "Coming soon" card now says Festival crews.
+  - *Deploy*: `firebase.json` `hosting` (public `dist`, every path → `/index.html`, `/_expo/static/**` and `/assets/**` cached a year, HTML `no-cache`). `.github/workflows/website.yml`: on pull requests and pushes to main: `npm ci`, tsc, `jest --ci`, `npm run build:web` (Firebase config from repository variables, `EXPO_PUBLIC_BUILD_ID` = the commit), then `FirebaseExtended/action-hosting-deploy` (live from main, a 7-day preview per PR) only when the `FIREBASE_SERVICE_ACCOUNT` secret exists.
+  - *Checked in a real browser* (Chromium via Playwright against the exported site, in the scratchpad, not committed): every tab and page renders with no errors at phone and desktop sizes, mouse-wheel paging, browser back/forward, the web dialog (Escape cancels, confirm works), the version line.
+  - *Tests*: `src/lib/__tests__/web.test.tsx` (dialogs on phone and web, DialogHost, sharing fallback, version line, web Memories). With @testing-library/react-native 14 `unmount()` is async too: await it.
 - **Your festival** (Milestone 5) on each festival page. Before set times: lineup ranked into Must see / Strong match / Explore from the live match. After set times: day-by-day timeline, clashes grouped with a suggestion (clear winner, close call, or your starred pick, plus how much of the other set you can still catch), explore picks as discoveries when you're free or as a quiet alternative. A star marks a personal must-see at that festival only (festivalId + artistId); it's a planning preference stored apart from reactions and never changes the match. Artist pages opened from a festival get a `festival` route param and star for that festival; opened elsewhere they show no star.
 
 Do not start the next milestone unless asked.
@@ -179,6 +189,9 @@ src/
   state/catalog.tsx           CatalogProvider + useCatalog(): the only way screens reach catalogue data
   theme/tokens.ts             Color, type, spacing, radius, motion springs. Use these, never ad-hoc values.
   lib/haptics.ts              Haptic vocabulary (select, tap, soft, settle)
+  lib/dialog.ts               showAlert / showActionSheet (system on phones, DialogHost on web); lib/share.ts shareMessage; lib/version.ts
+  metro.config.js             Metro defaults plus the web fix for obscenity
+  .github/workflows/website.yml  Check, build and deploy the website (docs/web-deploy.md)
   config/app.ts               App name
 catalogue/afterglow.json      The bundled catalogue file (real data goes here)
 docs/catalogue.md             Plain-language guide to the catalogue file, with catalogue-example.json
@@ -199,6 +212,7 @@ Pure logic (layout, taste engine) stays free of React so it can be tested and la
 - Add dependencies only with `npx expo install` and only if they run in Expo Go. The one exception is `expo-dev-client` (Milestone 44), which exists to make a development build; it doesn't change what runs in Expo Go. Because of `app.config.ts`, a package whose config plugin `npx expo install` would add must be added to `app.json`'s `plugins` by hand.
 - Real data comes from the user, through the catalogue file (`catalogue/afterglow.json` or their hosted file). Never invent lineups, set times or video sources; enter only what the user provides, from official sources. Don't add artist photos or festival posters yourself (the user supplies links they have rights to). `npm test` must stay clean for `catalogue/afterglow.json`.
 - Respect reduced motion (`useReducedMotion`) and accessibility labels.
+- Everything must also work in a browser (the website): alerts and sheets only through `lib/dialog.ts`, sharing through `lib/share.ts`, and anything phone-only (files, Photos, secure store, notifications) behind a `.web.ts` file or a `Platform.OS === 'web'` check that says it's in the app.
 
 ## Commands
 
@@ -209,6 +223,7 @@ npm test                                      # Jest (jest-expo): pure logic and
 npm run lint                                  # expo lint (some pre-existing Reanimated findings in older files)
 npx expo export --platform ios --output-dir /tmp/exp-ios          # build check
 npx expo export --platform android --output-dir /tmp/exp-android  # build check
+npx expo export --platform web --output-dir /tmp/exp-web          # build check (the website; `npm run build:web` writes dist/)
 npx expo-doctor                               # dependency/config health
 npx expo start --go                           # run in Expo Go (user tests on device); `npm run go`
 npx expo start --dev-client                   # run in the development build (Spotify sign-in); `npm run dev`
@@ -218,7 +233,7 @@ npx eas-cli@latest build --profile development --platform ios        # the user'
 
 Cloud sessions can't reach docs.expo.dev, developer.spotify.com or Apple sign-in, and can't run a real Spotify or Apple Music sign-in: music tests use fixtures and test doubles only. Add native packages offline with `EXPO_OFFLINE=1 npx expo install <pkg>`. expo-doctor's schema and React Native Directory checks fail here only because their hosts are blocked.
 
-After any significant change: type-check, run both export build checks and expo-doctor, and fix everything before finishing. Cloud sessions can't run the app on a phone, so summarize exactly what the user should test in Expo Go.
+After any significant change: type-check, run the three export build checks (iOS, Android, web) and expo-doctor, and fix everything before finishing. Cloud sessions can't run the app on a phone, so summarize exactly what the user should test in Expo Go.
 
 ## User context
 

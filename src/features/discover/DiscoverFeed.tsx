@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
 import Animated, {
   runOnJS,
   runOnUI,
@@ -54,7 +54,10 @@ import { useRankedFeed } from './useRankedFeed';
  * that artist doesn't play the current festival. It opens where you left it.
  */
 export function DiscoverFeed() {
-  const { width, height } = useWindowDimensions();
+  // One phone-shaped column, even on a wide screen (a browser on a computer); phones are never wider than this.
+  const screen = useWindowDimensions();
+  const width = Math.min(screen.width, FEED_MAX_WIDTH);
+  const height = screen.height;
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const listRef = useAnimatedRef<FlatList<FeedItem>>();
@@ -155,7 +158,9 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
   }, [ready, reactions, markDone]);
-  const hint = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
+  const next = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
+  // Adding your own videos is in the phone app, so the website doesn't teach the hold.
+  const hint = next === 'hold' && Platform.OS === 'web' ? undefined : next;
   // Press and hold a clip to add your own video: the third tip is done the first time you do.
   const addMemory = useAddMemory();
   const onHold = useCallback(() => {
@@ -249,7 +254,7 @@ export function DiscoverFeed() {
   );
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { width, alignSelf: 'center' }]}>
       <Animated.FlatList
         ref={listRef}
         data={feed ?? []}
@@ -338,6 +343,9 @@ export function DiscoverFeed() {
     </View>
   );
 }
+
+/** The feed's widest: about a large phone. */
+const FEED_MAX_WIDTH = 520;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },

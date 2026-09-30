@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from './service';
+import { showAlert } from '../../lib/dialog';
 
 /**
  * Follow / Following for someone else's profile. Changes straight away and
@@ -18,7 +19,7 @@ export function FollowButton({ uid, handle, compact = false, onChange }: { uid: 
   const press = () => {
     if (!social.profile) {
       haptic.select();
-      Alert.alert('Create your profile first', 'People can see who follows them, so you need a profile to follow someone.', [
+      showAlert('Create your profile first', 'People can see who follows them, so you need a profile to follow someone.', [
         { text: 'Not now', style: 'cancel' },
         { text: 'Create profile', onPress: () => router.push('/profile-edit') },
       ]);
@@ -29,7 +30,7 @@ export function FollowButton({ uid, handle, compact = false, onChange }: { uid: 
     onChange?.(!on);
     social.setFollowing(uid, !on).catch((e) => {
       onChange?.(on);
-      Alert.alert(on ? 'Couldn’t unfollow' : 'Couldn’t follow', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(on ? 'Couldn’t unfollow' : 'Couldn’t follow', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     });
   };
 

@@ -2,7 +2,7 @@ import * as Sharing from 'expo-sharing';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
@@ -16,12 +16,16 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
+import { shareMessage } from '../../lib/share';
 
 /**
  * Share your plan: a poster-like card of it (the route once set times are
  * out, your picks before), as an image or as plain text. A modal over the
  * festival page.
  */
+/** The card keeps a phone's proportions on a wide screen. */
+const CARD_MAX_WIDTH = 420;
+
 export default function PlanCardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const catalog = useCatalog();
@@ -66,13 +70,14 @@ function PlanCardView({ festival }: { festival: Festival }) {
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
         {card ? (
-          <View ref={cardRef} collapsable={false} style={{ width: width - space.xl * 2 }}>
+          <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
             <Card card={card} />
           </View>
         ) : (
           <Text style={styles.empty}>Like a few clips or rate some artists and your plan will be ready to share.</Text>
         )}
-        {card ? (
+        {/* A picture needs the phone (the card is captured natively); the website shares the text. */}
+        {card && Platform.OS !== 'web' ? (
           <Pressable
             onPress={shareImage}
             disabled={busy}
@@ -87,7 +92,7 @@ function PlanCardView({ festival }: { festival: Festival }) {
           <Pressable
             onPress={() => {
               haptic.select();
-              Share.share({ message: text }).catch(() => {});
+              void shareMessage(text);
             }}
             accessibilityRole="button"
             accessibilityLabel="Share your plan as text"

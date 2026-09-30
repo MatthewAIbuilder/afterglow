@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
@@ -13,10 +13,13 @@ import { FollowButton } from '../../features/social/FollowButton';
 import type { Profile, SharedMemory } from '../../features/social/models';
 import { askBlock, askReport } from '../../features/social/moderation';
 import { SOCIAL_ERROR_COPY, socialErrorKind, type FollowCounts } from '../../features/social/service';
+import { WEB_URL } from '../../config/app';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { showActionSheet } from '../../lib/dialog';
+import { shareMessage } from '../../lib/share';
 
 /**
  * Someone's festival profile (or yours, as others see it): photo, name,
@@ -78,21 +81,14 @@ export default function PublicProfileScreen() {
     haptic.select();
     const report = () => askReport({ kind: 'profile', id: profile.uid, ownerUid: profile.uid }, social.report);
     const block = () => askBlock(profile.handle, blocked, (on) => social.setBlocked(profile.uid, on));
-    const options = ['Report', blocked ? 'Unblock' : 'Block', 'Cancel'];
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions({ options, destructiveButtonIndex: 1, cancelButtonIndex: 2, userInterfaceStyle: 'dark' }, (i) => (i === 0 ? report() : i === 1 ? block() : undefined));
-    } else {
-      Alert.alert(`@${profile.handle}`, undefined, [
-        { text: 'Report', onPress: report },
-        { text: options[1], style: 'destructive', onPress: block },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    }
+    showActionSheet({ title: `@${profile.handle}`, options: ['Report', blocked ? 'Unblock' : 'Block', 'Cancel'], destructiveButtonIndex: 1, cancelButtonIndex: 2 }, (i) =>
+      i === 0 ? report() : i === 1 ? block() : undefined,
+    );
   };
   const share = () => {
     if (!profile) return;
     haptic.select();
-    Share.share({ message: `@${profile.handle} on Afterglow: afterglow://u/${profile.handle}` }).catch(() => {});
+    void shareMessage(`@${profile.handle} on Afterglow: ${WEB_URL}/u/${profile.handle}`);
   };
 
   const cols = 3;

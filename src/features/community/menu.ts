@@ -1,5 +1,5 @@
-import { ActionSheetIOS, Alert, Platform } from 'react-native';
 import type { CommunityClipSource } from '../../data/models';
+import { showActionSheet } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { askBlock, askReport } from '../social/moderation';
 import type { ReportReason } from '../social/models';
@@ -29,18 +29,8 @@ export function communityMenu(
     haptic.settle();
   };
   const block = () => askBlock(source.handle, false, (on) => act.block(source.uid, on));
-  const options = ['Report this video', 'Hide this video', `Block @${source.handle}`, 'Cancel'];
-  if (Platform.OS === 'ios') {
-    ActionSheetIOS.showActionSheetWithOptions(
-      { options, destructiveButtonIndex: 2, cancelButtonIndex: 3, userInterfaceStyle: 'dark' },
-      (i) => (i === 0 ? report() : i === 1 ? hide() : i === 2 ? block() : undefined),
-    );
-  } else {
-    Alert.alert(`Video from @${source.handle}`, undefined, [
-      { text: options[0], onPress: report },
-      { text: options[1], onPress: hide },
-      { text: options[2], style: 'destructive', onPress: block },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  }
+  showActionSheet(
+    { title: `Video from @${source.handle}`, options: ['Report this video', 'Hide this video', `Block @${source.handle}`, 'Cancel'], destructiveButtonIndex: 2, cancelButtonIndex: 3 },
+    (i) => (i === 0 ? report() : i === 1 ? hide() : i === 2 ? block() : undefined),
+  );
 }

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../components/ArtistAvatar';
 import { SearchField } from '../components/SearchField';
@@ -19,6 +19,7 @@ import { useMemories } from '../state/memories';
 import { usePlan } from '../state/plan';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
+import { showAlert } from '../lib/dialog';
 
 /** Guesses shown as big rows before "Someone else". */
 const TOP_GUESSES = 3;
@@ -126,7 +127,7 @@ export default function MemoryTagScreen() {
     }
     const kept = await mem.keepDraft(tag);
     if (!kept) {
-      Alert.alert('Couldn’t save this video', 'There may not be enough space on your phone. Try again.');
+      showAlert('Couldn’t save this video', 'There may not be enough space on your phone. Try again.');
       return;
     }
     haptic.settle();
@@ -135,7 +136,7 @@ export default function MemoryTagScreen() {
 
   const cancel = () => {
     if (draft?.source === 'camera') {
-      Alert.alert('Discard this video?', 'You just recorded it, and it isn’t saved anywhere else.', [
+      showAlert('Discard this video?', 'You just recorded it, and it isn’t saved anywhere else.', [
         { text: 'Keep editing', style: 'cancel' },
         {
           text: 'Discard',

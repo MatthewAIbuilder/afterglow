@@ -68,7 +68,8 @@ const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: space.md, right: space.md, alignItems: 'center' },
   pill: {
     flexDirection: 'row',
-    alignSelf: 'stretch',
+    // Full width on a phone; centred, at most 480, on a wide screen.
+    width: '100%',
     maxWidth: 480,
     height: TAB_BAR_HEIGHT,
     padding: 6,

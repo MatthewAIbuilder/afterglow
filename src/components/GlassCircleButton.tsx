@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { haptic } from '../lib/haptics';
 import { color } from '../theme/tokens';
 
@@ -18,12 +18,16 @@ export function GlassCircleButton({ onPress, label, children }: { onPress: () =>
       style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
     >
       <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-      {children}
+      {/* Its own layer, so the blur (positioned) never paints over the icon in a browser. */}
+      <View style={styles.content} pointerEvents="none">
+        {children}
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  content: { alignItems: 'center', justifyContent: 'center' },
   button: {
     width: 40,
     height: 40,

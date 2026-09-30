@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckIcon } from '../components/TabIcons';
 import { contactLine, GUIDELINES } from '../features/social/copy';
@@ -9,6 +9,7 @@ import { EMAIL_RE, PASSWORD_MIN } from '../features/social/validate';
 import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { showAlert } from '../lib/dialog';
 
 /**
  * Create your Afterglow profile, or sign back in. Email and password (kept
@@ -60,7 +61,7 @@ export default function AccountScreen() {
     }
     try {
       await social.service.sendPasswordReset(email);
-      Alert.alert('Check your email', `If there’s an account for ${email.trim()}, a link to choose a new password is on its way.`);
+      showAlert('Check your email', `If there’s an account for ${email.trim()}, a link to choose a new password is on its way.`);
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     }

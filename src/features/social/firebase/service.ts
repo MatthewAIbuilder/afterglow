@@ -32,6 +32,7 @@ import {
   writeBatch,
   type Firestore,
 } from 'firebase/firestore';
+import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
@@ -73,11 +74,16 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     if (h) return h;
     const app = getApps().length ? getApp() : initializeApp(config);
     let auth: Auth;
-    try {
-      auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
-    } catch {
-      // Already initialised (a fast refresh in development).
+    if (Platform.OS === 'web') {
+      // In a browser Firebase keeps the sign-in itself (IndexedDB).
       auth = getAuth(app);
+    } else {
+      try {
+        auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
+      } catch {
+        // Already initialised (a fast refresh in development).
+        auth = getAuth(app);
+      }
     }
     h = { app, auth, db: initializeFirestore(app, {}), storage: getStorage(app) };
     return h;

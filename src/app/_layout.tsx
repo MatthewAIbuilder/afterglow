@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { DialogHost } from '../components/DialogHost';
 import { LikeSync } from '../features/community/LikeSync';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
@@ -100,6 +101,7 @@ export default function RootLayout() {
       <FirstRun />
       <ReminderSync />
       <LikeSync />
+      <DialogHost />
       </NoticesProvider>
       </SocialProvider>
       </WeekendsProvider>

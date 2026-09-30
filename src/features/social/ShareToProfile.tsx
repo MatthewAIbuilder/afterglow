@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Alert } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import type { Memory } from '../memories/models';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from './service';
+import { showAlert } from '../../lib/dialog';
 
 /**
  * The "Share to profile" action for one memory, drawn by the caller. Says
@@ -22,12 +22,12 @@ export function ShareToProfile({ memory, render }: { memory: Memory; render: (la
   if (mine) {
     return render('On your profile', () => {
       haptic.select();
-      Alert.alert('Remove from your profile?', 'It stays in your Memories on this phone.', [
+      showAlert('Remove from your profile?', 'It stays in your Memories on this phone.', [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => void social.unshare(memory).catch((e) => Alert.alert('Couldn’t remove it', SOCIAL_ERROR_COPY[socialErrorKind(e)])),
+          onPress: () => void social.unshare(memory).catch((e) => showAlert('Couldn’t remove it', SOCIAL_ERROR_COPY[socialErrorKind(e)])),
         },
       ]);
     });
@@ -43,7 +43,7 @@ export function ShareToProfile({ memory, render }: { memory: Memory; render: (la
       router.push('/profile-edit');
       return;
     }
-    Alert.alert(
+    showAlert(
       'Share to your profile?',
       `Anyone on Afterglow can watch it on @${social.profile.handle}, with who was playing and the festival. Afterglow doesn’t add where you filmed it, but some videos carry their location inside the file. Only share videos you filmed yourself.`,
       [
@@ -54,7 +54,7 @@ export function ShareToProfile({ memory, render }: { memory: Memory; render: (la
             void social
               .share(memory)
               .then(() => haptic.settle())
-              .catch((e) => Alert.alert('Couldn’t share it', SOCIAL_ERROR_COPY[socialErrorKind(e)])),
+              .catch((e) => showAlert('Couldn’t share it', SOCIAL_ERROR_COPY[socialErrorKind(e)])),
         },
       ],
     );

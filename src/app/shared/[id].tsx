@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { CloseIcon } from '../../components/TabIcons';
@@ -19,6 +19,7 @@ import { useReactions } from '../../state/reactions';
 import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { showAlert } from '../../lib/dialog';
 
 /**
  * A memory someone shared on their profile, full screen. Like it (the same
@@ -93,7 +94,7 @@ export default function SharedMemoryScreen() {
 
   const remove = () => {
     if (!m) return;
-    Alert.alert('Remove from your profile?', 'If it’s in your Memories, it stays there.', [
+    showAlert('Remove from your profile?', 'If it’s in your Memories, it stays there.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -106,7 +107,7 @@ export default function SharedMemoryScreen() {
             haptic.settle();
             router.back();
           } catch (e) {
-            Alert.alert('Couldn’t remove it', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+            showAlert('Couldn’t remove it', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
           }
         },
       },

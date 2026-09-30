@@ -23,7 +23,10 @@ export function NoticeBell() {
       style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
     >
       <BlurView intensity={40} tint="dark" style={[StyleSheet.absoluteFill, styles.round]} />
-      <BellIcon color={unread ? color.moon : color.moonDim} />
+      {/* Its own layer, so the blur never paints over the bell in a browser. */}
+      <View pointerEvents="none">
+        <BellIcon color={unread ? color.moon : color.moonDim} />
+      </View>
       {unread > 0 && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text>
