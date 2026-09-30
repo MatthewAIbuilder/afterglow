@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { PageTitle } from '../components/PageTitle';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -81,6 +82,7 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title={'Search'} />
       <NightSky />
       <View style={[styles.bar, { paddingTop: insets.top + space.sm }]}>
         <View style={{ flex: 1 }}>

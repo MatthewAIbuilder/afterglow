@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
+import { PageTitle } from '../../components/PageTitle';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Missing } from '../../components/Missing';
@@ -20,6 +21,7 @@ export default function FestivalScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title={festival.name} />
       <FestivalPage festival={festival} topSpace={insets.top + 64} bottomSpace={insets.bottom + space.xxxl} />
       <PageActions
         shareLabel={`Share ${festival.name}`}

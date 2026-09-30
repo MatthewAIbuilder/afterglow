@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageTitle } from '../../components/PageTitle';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -29,6 +30,7 @@ export default function LineupScreen() {
   if (!festival) {
     return (
       <View style={styles.root}>
+        <PageTitle title="Lineup" />
         <NightSky />
       </View>
     );
@@ -68,6 +70,7 @@ export default function LineupScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title="Lineup" />
       <FestivalPage
         key={festival.id}
         festival={festival}
