@@ -4,6 +4,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckIcon } from '../components/TabIcons';
 import { contactLine, GUIDELINES } from '../features/social/copy';
+import { LegalLinks } from '../components/LegalLinks';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { EMAIL_RE, PASSWORD_MIN } from '../features/social/validate';
 import { haptic } from '../lib/haptics';
@@ -149,8 +150,9 @@ export default function AccountScreen() {
               style={styles.agree}
             >
               <View style={[styles.box, agreed && styles.boxOn]}>{agreed ? <CheckIcon color={color.night} size={14} /> : null}</View>
-              <Text style={styles.agreeText}>I agree to the community guidelines</Text>
+              <Text style={styles.agreeText}>I’m 13 or older and agree to the community guidelines, Terms and Privacy Policy</Text>
             </Pressable>
+            <LegalLinks docs={['terms', 'privacy']} />
           </View>
         ) : null}
 
