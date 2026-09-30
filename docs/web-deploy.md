@@ -33,7 +33,7 @@ Firebase console → your project → **Build → Hosting** → **Get started**.
 
 ### 3. Tell the build your Firebase settings
 
-Same page → **Variables** tab → **New repository variable**, six times, with the same values as your `.env` file:
+Same page → **Variables** tab → **New repository variable**, six times, with the same values as your `.env` file (saving them as secrets works too):
 
 | Name | Value |
 |---|---|
@@ -79,6 +79,7 @@ Firebase console → **Authentication** → **Settings** → **Authorized domain
 | The Actions run is red at "Type-check" or "Tests" | Something in the code needs fixing: tell Claude which step failed. |
 | Green, but "Deploy" was skipped | The `FIREBASE_SERVICE_ACCOUNT` secret is missing or misspelled (step 2). |
 | Deploy fails with "permission denied" | The key is for a different project, or `EXPO_PUBLIC_FIREBASE_PROJECT_ID` is wrong. |
+| Deploy fails with "No currently active project" | Fixed: the project (`afterglowmusic`) is now in `.firebaserc` and the workflow. |
 | The site says profiles aren't available | A variable from step 3 is missing; re-run the latest Actions run after adding it. |
 | Signing in fails on the website only | Add the domain to Authorized domains (step 6). |
 | The domain still shows an old page | DNS hasn't updated yet, or an old `A` record is still there (step 5.3). |
