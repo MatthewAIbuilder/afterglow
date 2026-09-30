@@ -38,6 +38,9 @@ const LABEL_W = 150;
 const D = MAX_R * 2; // bubbles render at full size and scale down, so size can animate
 const GLOW = MAX_R * 2.5;
 
+/** Only this many of the strongest matches get a full label; the rest a smaller, dimmer name and no percentage. */
+const FULL_LABELS = 12;
+
 /** Focus of a search match: bigger than selected (2), so it pops. */
 const MATCH = 2.8;
 
@@ -136,6 +139,8 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
   const glowStrength = Math.pow(affinity, 3) * 0.75;
   const gid = `g-${artist.id}`;
   const pct = Math.round(affinity * 100);
+  // index is the bloom order: strongest match first.
+  const prominent = index < FULL_LABELS;
 
   return (
     <Animated.View
@@ -173,10 +178,11 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
       </Animated.View>
 
       <Animated.View style={[styles.label, labelStyle]} pointerEvents="none">
-        <Text style={[styles.name, r < 40 && styles.nameSmall]} numberOfLines={1}>
+        {/* Quieter labels for smaller bubbles, so the strongest matches lead; the match is still read out, and shown once selected. */}
+        <Text style={[styles.name, !prominent && styles.nameSmall]} numberOfLines={1}>
           {artist.name}
         </Text>
-        <Text style={styles.pct}>{pct}%</Text>
+        {prominent || selectedId === artist.id || matched ? <Text style={styles.pct}>{pct}%</Text> : null}
       </Animated.View>
     </Animated.View>
   );
@@ -190,6 +196,6 @@ const styles = StyleSheet.create({
   body: { position: 'absolute', left: -D / 2, top: -D / 2, width: D, height: D },
   label: { position: 'absolute', left: -LABEL_W / 2, top: 0, width: LABEL_W, alignItems: 'center' },
   name: { ...type.label, color: color.moon, textAlign: 'center' },
-  nameSmall: { fontSize: 11, lineHeight: 14 },
+  nameSmall: { fontSize: 11, lineHeight: 14, color: color.moonDim, fontWeight: '500' },
   pct: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'], marginTop: 1 },
 });

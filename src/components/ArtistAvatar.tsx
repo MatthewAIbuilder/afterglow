@@ -19,23 +19,26 @@ export const artistColors = (id: string) => PAIRS[hash(id) % PAIRS.length];
 
 export function ArtistAvatar({ artist, size }: { artist: Artist; size: number }) {
   const ring = { width: size, height: size, borderRadius: size / 2 };
-  if (artist.imageUrl) {
-    return (
-      <View style={[ring, styles.frame]}>
-        <Image source={{ uri: artist.imageUrl }} style={ring} contentFit="cover" transition={250} />
-      </View>
-    );
-  }
   const [from, to] = artistColors(artist.id);
   const initials = artist.name
     .split(' ')
     .map((w) => w[0])
     .join('')
     .slice(0, 2);
-  return (
-    <LinearGradient colors={[to, from]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={[ring, styles.frame, styles.center]}>
+  // The monogram is always there, so a photo that's loading, offline or broken never leaves an empty circle.
+  const monogram = (
+    <LinearGradient colors={[to, from]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={[ring, styles.center, StyleSheet.absoluteFill]}>
       <Text style={[styles.initials, { fontSize: size * 0.3 }]}>{initials}</Text>
     </LinearGradient>
+  );
+  if (!artist.imageUrl) return <View style={[ring, styles.frame]}>{monogram}</View>;
+  return (
+    <View style={[ring, styles.frame]}>
+      {monogram}
+      <Image source={{ uri: artist.imageUrl }} style={[ring, StyleSheet.absoluteFill]} contentFit="cover" transition={250} />
+      {/* A touch of night at the bottom, so bright photos sit in the dark theme. */}
+      <LinearGradient colors={['rgba(10,9,24,0)', 'rgba(10,9,24,0.32)']} start={{ x: 0.5, y: 0.45 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
+    </View>
   );
 }
 

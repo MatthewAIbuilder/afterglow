@@ -202,7 +202,8 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
 }
 
 const styles = StyleSheet.create({
-  viewport: { overflow: 'hidden' },
+  // Not clipped: bubbles drift softly under the header's scrim instead of being cut off at an edge.
+  viewport: { overflow: 'visible' },
   region: {
     position: 'absolute',
     width: 120,
