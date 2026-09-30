@@ -112,3 +112,29 @@ export function festivalsAround(
   }
   return out.slice(0, Math.max(max, first.length));
 }
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/**
+ * Festivals (already in date order) under month headings: "November",
+ * "January 2027" (the year only when it isn't this year), then "Date to
+ * come" and "Finished".
+ */
+export function byMonth(festivals: readonly Festival[], today: Date): { label: string; festivals: Festival[] }[] {
+  const groups: { label: string; festivals: Festival[] }[] = [];
+  for (const f of festivals) {
+    const label = isOver(f, today)
+      ? 'Finished'
+      : !f.startDate
+        ? 'Date to come'
+        : (() => {
+            const y = Number(f.startDate.slice(0, 4));
+            const m = MONTH_NAMES[Number(f.startDate.slice(5, 7)) - 1];
+            return y === today.getFullYear() ? m : `${m} ${y}`;
+          })();
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.festivals.push(f);
+    else groups.push({ label, festivals: [f] });
+  }
+  return groups;
+}

@@ -15,7 +15,7 @@ import { ChevronIcon, GridIcon, ListIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
-import { bySoonest, festivalShelf, isMany } from '../../features/festivals/shelves';
+import { byMonth, bySoonest, festivalShelf, isMany } from '../../features/festivals/shelves';
 import { useLoves } from '../../state/useLoves';
 import { PlayIcon } from '../../features/discover/icons';
 import { lineupReach } from '../../features/festivals/links';
@@ -154,7 +154,12 @@ export default function FestivalsScreen() {
             {shelf ? (
               showMore && (
                 <>
-                  {list(rest.slice(0, restShown))}
+                  {byMonth(rest.slice(0, restShown), today).map((g) => (
+                    <View key={g.label}>
+                      <Text style={[styles.section, styles.month]}>{g.label}</Text>
+                      {list(g.festivals)}
+                    </View>
+                  ))}
                   {rest.length > restShown && (
                     <Pressable
                       onPress={() => {
@@ -399,6 +404,7 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   resultsHead: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.md, marginBottom: space.xs },
+  month: { marginTop: space.lg },
   showMore: {
     alignSelf: 'center',
     marginTop: space.md,

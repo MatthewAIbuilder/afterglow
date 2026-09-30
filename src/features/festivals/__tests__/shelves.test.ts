@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { bySoonest, festivalShelf, festivalsAround, isMany, pickerList, SHOW_ALL_UP_TO } from '../shelves';
+import { byMonth, bySoonest, festivalShelf, festivalsAround, isMany, pickerList, SHOW_ALL_UP_TO } from '../shelves';
 
 const fest = (id: string, lineup: string[], startDate?: string, endDate?: string, name = id): Festival => ({
   id,
@@ -54,5 +54,16 @@ describe('festival shelves', () => {
     expect(around.map((f) => f.id)).toEqual(['later', 'soon', 'mid']);
     expect(festivalsAround(all, { first: [], when: new Date(2026, 9, 12), days: 5 }).map((f) => f.id)).toEqual(['soon']);
     expect(festivalsAround(all, { first: [mid] })).toEqual([mid]);
+  });
+
+  it('groups festivals by month, then undated, then finished', () => {
+    const groups = byMonth(bySoonest([past, soon, later, mid, undated, fest('soon2', [], '2026-10-20')], today), today);
+    expect(groups.map((g) => [g.label, g.festivals.map((f) => f.id)])).toEqual([
+      ['October', ['soon', 'soon2']],
+      ['November', ['mid']],
+      ['March 2027', ['later']],
+      ['Date to come', ['undated']],
+      ['Finished', ['past']],
+    ]);
   });
 });
