@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -72,12 +73,23 @@ export default function ArtistScreen() {
   const similarAt = similarThere.length ? starFestival : undefined;
   const festivals = catalog.festivalsOf(artist.id);
   const clips = catalog.clipsOf(artist.id);
-  const [deep, bright] = artistColors(artist.id);
+  const [deep, bright] = artistColors(artist.id, artist.color);
 
   return (
     <View style={styles.root}>
       <PageTitle title={artist.name} />
       <NightSky />
+      {/* Their photo as a soft light behind the top of the page, fading into the night. */}
+      {artist.imageUrl ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Image source={{ uri: artist.imageUrl }} style={[styles.photoGlow, { height: insets.top + 56 + HERO + 260 }]} contentFit="cover" blurRadius={45} transition={400} />
+          <LinearGradient
+            colors={['rgba(10,9,24,0.3)', 'rgba(10,9,24,0.72)', 'rgba(10,9,24,0.95)', 'rgba(10,9,24,0.97)']}
+            locations={[0, 0.2, 0.42, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      ) : null}
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom + space.xxxl }}
         showsVerticalScrollIndicator={false}
@@ -86,7 +98,7 @@ export default function ArtistScreen() {
           <Svg width={HALO} height={HALO} style={styles.halo}>
             <Defs>
               <RadialGradient id="halo" cx="50%" cy="50%" r="50%">
-                <Stop offset="0.35" stopColor={color.glow} stopOpacity={0.55 * (taste[artist.id] ?? 0)} />
+                <Stop offset="0.35" stopColor={artist.color ? bright : color.glow} stopOpacity={0.55 * (taste[artist.id] ?? 0)} />
                 <Stop offset="1" stopColor={color.glowDeep} stopOpacity="0" />
               </RadialGradient>
             </Defs>
@@ -291,6 +303,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', paddingHorizontal: space.xl },
   credit: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.xxl },
   halo: { position: 'absolute', top: HERO / 2 - HALO / 2 },
+  photoGlow: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0.9 },
   name: { ...type.largeTitle, color: color.moon, marginTop: space.xl, textAlign: 'center' },
   match: { ...type.headline, color: color.glow, fontVariant: ['tabular-nums'], marginTop: space.xs },
   why: { ...type.caption, color: color.moonDim, marginTop: 4, textAlign: 'center', paddingHorizontal: space.xl },

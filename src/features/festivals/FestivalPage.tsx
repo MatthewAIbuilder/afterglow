@@ -10,6 +10,7 @@ import { setFor } from '../../data/festival';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Artist, Festival } from '../../data/types';
 import { HeartIcon, PlayIcon } from '../discover/icons';
+import { StarIcon } from '../plan/icons';
 import { FilterChips } from '../../components/FilterChips';
 import { dayList, daysOf, lineupDays, playsOn } from './days';
 import { runLabel, validWeekend } from './weekend';
@@ -27,6 +28,7 @@ import { CrewCard } from '../crews/CrewCard';
 import { starsShort } from '../crews/together';
 import { useCrews } from '../../state/crews';
 import { OfficialLinks } from './OfficialLinks';
+import { useRecap } from '../recap/useRecap';
 import { CalendarPill } from '../calendar/CalendarPill';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
@@ -87,6 +89,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const { isGoing } = useGoing();
   const reach = lineupReach(festival, catalog.clips);
   const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
+  const recap = useRecap(whole);
 
   return (
     <View style={styles.root}>
@@ -106,6 +109,21 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           {soon ? <Text style={styles.soon}>{soon}</Text> : null}
           <View style={styles.pills}>
             <GoingPill festival={whole} />
+            {/* Over, and you were part of it: your recap. */}
+            {recap ? (
+              <Pressable
+                onPress={() => {
+                  haptic.tap();
+                  router.push({ pathname: '/recap/[id]', params: { id: whole.id } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`See your recap of ${whole.name}`}
+                style={({ pressed }) => [styles.discover, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+              >
+                <StarIcon color={color.glow} size={13} filled />
+                <Text style={styles.discoverText}>See your recap</Text>
+              </Pressable>
+            ) : null}
             {/* Once you're going: the days (your weekend) into your calendar. */}
             {isGoing(whole.id) && soon !== 'Over' ? <CalendarPill festival={festival} /> : null}
             {reach.clips > 0 && (

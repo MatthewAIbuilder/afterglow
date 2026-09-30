@@ -46,6 +46,8 @@ export type ParsedFile = {
   photos?: Record<string, string>;
   /** Where those photos are from ("Deezer"), credited on artist pages. */
   photoCredit?: string;
+  /** Artist id -> colour ("#8E6BFF") taken from their photo (filled in by the nightly colour job). */
+  colors?: Record<string, string>;
 };
 
 const ID = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -342,6 +344,12 @@ export function parseCatalogFile(input: unknown): ParsedFile {
       if (bad) problems.push(`${bad} ${bad === 1 ? 'photo was' : 'photos were'} left out: each needs an artist id and an https link.`);
       if (Object.keys(photos).length) parsed.photos = photos;
     }
+  }
+  // Colours for artists, from their photos: { "artist-id": "#8E6BFF" }. Bad entries are quietly left out.
+  if (isObj(raw.colors)) {
+    const colors: Record<string, string> = {};
+    for (const [key, value] of Object.entries(raw.colors)) if (id(key) && typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)) colors[key] = value.toUpperCase();
+    if (Object.keys(colors).length) parsed.colors = colors;
   }
   const credit = text(raw.photoCredit);
   if (credit) parsed.photoCredit = credit.slice(0, 40);

@@ -258,7 +258,7 @@ function FestivalTile({ festival, taste }: { festival: Festival; taste: Record<s
   const loved = ranked.filter((a) => (taste[a.id] ?? 0) >= LOVE).length;
   const timesOut = !!festival.sets?.length;
   // The colour of your best match there tints the tile.
-  const [, bright] = artistColors(ranked[0]?.id ?? festival.id);
+  const [, bright] = artistColors(ranked[0]?.id ?? festival.id, ranked[0]?.color);
   const discover = () => {
     haptic.tap();
     router.navigate({ pathname: '/', params: { festival: festival.id } });

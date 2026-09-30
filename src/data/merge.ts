@@ -33,14 +33,23 @@ export function mergeSnapshots(base: CatalogSnapshot, top: CatalogSnapshot): Cat
  * A file's photo list applied to the artists that have no photo of their
  * own (a photo set in the catalogue always wins). Pure.
  */
-export function applyPhotos(snapshot: CatalogSnapshot, photos: Record<string, string> | undefined, credit?: string): CatalogSnapshot {
-  if (!photos) return snapshot;
+export function applyPhotos(
+  snapshot: CatalogSnapshot,
+  photos: Record<string, string> | undefined,
+  credit?: string,
+  colors?: Record<string, string>,
+): CatalogSnapshot {
+  if (!photos && !colors) return snapshot;
   let changed = false;
   const artists = snapshot.artists.map((a) => {
-    const url = photos[a.id];
-    if (a.imageUrl || !url) return a;
-    changed = true;
-    return credit ? { ...a, imageUrl: url, imageCredit: credit } : { ...a, imageUrl: url };
+    let next = a;
+    const url = photos?.[a.id];
+    if (!a.imageUrl && url) next = credit ? { ...next, imageUrl: url, imageCredit: credit } : { ...next, imageUrl: url };
+    // A colour belongs with the photo it came from: only for artists showing a photo, and never over one set in the catalogue.
+    const c = colors?.[a.id];
+    if (c && !a.color && next.imageUrl) next = { ...next, color: c };
+    if (next !== a) changed = true;
+    return next;
   });
   return changed ? { ...snapshot, artists } : snapshot;
 }
@@ -59,7 +68,7 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
     return { catalog: createCatalog(snapshot), snapshot };
   };
   if (!file?.snapshot) return { ...fallback(), problems: file?.problems ?? [], usedFile: false };
-  const combined = applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit);
+  const combined = applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit, file.colors);
   const { snapshot, problems } = validateSnapshot(combined);
   const all = [...file.problems, ...problems];
   if (snapshot.festivals.length === 0 || snapshot.clips.length === 0) {

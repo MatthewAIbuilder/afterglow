@@ -193,7 +193,23 @@ export default function MySoundScreen() {
           </Text>
           <View style={styles.actions} pointerEvents="box-none">
             <SavedPill />
-            {hasSignal(live.summary, live.rated) && <StartOver onCleared={reshapeSoon} />}
+            {hasSignal(live.summary, live.rated) ? (
+              <StartOver onCleared={reshapeSoon} />
+            ) : (
+              // Nothing of yours yet: the quickest way to a real map.
+              <Pressable
+                onPress={() => {
+                  haptic.tap();
+                  router.push(scope ? { pathname: '/pick-artists', params: { festivals: scope.id } } : '/pick-artists');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Pick artists you know"
+                hitSlop={10}
+                style={({ pressed }) => [styles.pill, styles.pickPill, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={[styles.startOverText, { color: color.moon }]}>Pick artists</Text>
+              </Pressable>
+            )}
           </View>
         </View>
         <Text style={styles.subtitle} pointerEvents="none">
@@ -471,6 +487,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl },
   scrim: { position: 'absolute', top: 0, left: 0, right: 0 },
+  pickPill: { borderColor: 'rgba(169,124,255,0.45)', backgroundColor: 'rgba(169,124,255,0.14)' },
   bottomScrim: { position: 'absolute', bottom: 0, left: 0, right: 0 },
   chipsWrap: { marginTop: space.md, marginHorizontal: -space.xl, flexGrow: 0 },
   chips: { paddingHorizontal: space.xl, gap: space.sm },

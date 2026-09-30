@@ -60,6 +60,12 @@ export default function WelcomeScreen() {
     const f = watchFestival(picked, catalog.clips);
     router.dismissTo(f ? { pathname: '/', params: { festival: f.id } } : '/');
   };
+  // A grid of faces from the festivals you picked (or every festival), then Discover.
+  const pickArtists = () => {
+    haptic.tap();
+    markWelcomed();
+    router.replace({ pathname: '/pick-artists', params: { festivals: going.join(','), then: 'discover' } });
+  };
   const tune = (f: Festival) => {
     haptic.tap();
     markWelcomed();
@@ -160,15 +166,15 @@ export default function WelcomeScreen() {
           <View style={styles.center}>
             <Text style={styles.title}>Tell us what you love</Text>
             <Text style={[styles.sub, styles.centerText]}>
-              Go through the {picked.name} lineup one artist at a time: anywhere from love to not for me, or don’t know
-              them. It takes a few minutes and shapes your whole plan.
+              Tap the artists you love from {going.length > 1 ? 'your festivals' : picked.name}. It takes seconds and shapes
+              your whole plan. Or go through the lineup one artist at a time.
             </Text>
           </View>
         ) : (
           <View style={styles.center}>
-            <Text style={styles.title}>Start with the sets</Text>
+            <Text style={styles.title}>Tell us what you love</Text>
             <Text style={[styles.sub, styles.centerText]}>
-              Like, save or skip clips and {APP_NAME} learns your sound. Double-tap a clip you love.
+              Tap the artists you love and {APP_NAME} learns your sound. Or start with the sets: like, save or skip clips.
             </Text>
           </View>
         )}
@@ -181,11 +187,14 @@ export default function WelcomeScreen() {
           <Primary label={going.length ? 'Continue' : 'Not sure yet'} onPress={() => next('taste')} />
         ) : picked ? (
           <>
-            <Primary label="Tune your lineup" onPress={() => tune(picked)} />
-            <Secondary label="Start watching instead" onPress={startWatching} />
+            <Primary label="Pick artists you know" onPress={pickArtists} />
+            <Secondary label="Rate the lineup one by one" onPress={() => tune(picked)} />
           </>
         ) : (
-          <Primary label="Start watching" onPress={startWatching} />
+          <>
+            <Primary label="Pick artists you know" onPress={pickArtists} />
+            <Secondary label="Start watching instead" onPress={startWatching} />
+          </>
         )}
         <View style={styles.dots} accessibilityLabel={`Step ${STEPS.indexOf(step) + 1} of ${STEPS.length}`}>
           {STEPS.map((s) => (

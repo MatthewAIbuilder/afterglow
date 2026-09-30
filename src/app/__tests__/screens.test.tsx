@@ -61,11 +61,34 @@ describe('Welcome', () => {
     await fireEvent.press(app.getByText('Continue'));
     await settle();
     expect(app.getByText('Tell us what you love')).toBeTruthy();
-    await fireEvent.press(app.getByText('Tune your lineup'));
+    await fireEvent.press(app.getByText('Rate the lineup one by one'));
     await settle();
     expect(app.getByText(/1 of 110/)).toBeTruthy();
     expect(await AsyncStorage.getItem('welcomed.v1')).toBe('true');
     expect(JSON.parse((await AsyncStorage.getItem('going.v1')) ?? '[]')).toEqual(['edc-orlando-26']);
+  });
+
+  it('picks the artists you know from your festival, as loves', async () => {
+    const app = await firstRun();
+    await fireEvent.press(app.getByText('Get started'));
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Cyclops Cove 4, /));
+    await settle();
+    await fireEvent.press(app.getByText('Continue'));
+    await settle();
+    await fireEvent.press(app.getByText('Pick artists you know'));
+    await settle();
+    expect(app.getByText('Tap the artists you love')).toBeTruthy();
+    expect(app.getByText('Skip for now')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText("Love HEDEX's sound"));
+    await fireEvent.press(app.getByLabelText("Love HVDES's sound"));
+    await fireEvent.press(app.getByLabelText('HVDES, you love their sound'));
+    await settle();
+    expect(app.getByText('Done · 1 picked')).toBeTruthy();
+    await fireEvent.press(app.getByText('Done · 1 picked'));
+    await settle();
+    expect(JSON.parse((await AsyncStorage.getItem('artistRatings.v1')) ?? '{}')).toEqual({ hedex: 'love' });
+    expect(await AsyncStorage.getItem('welcomed.v1')).toBe('true');
   });
 
   it('can be skipped, and is remembered', async () => {
@@ -83,10 +106,10 @@ describe('Welcome', () => {
     await settle();
     await fireEvent.press(app.getByText('Not sure yet'));
     await settle();
-    expect(app.getByText('Start with the sets')).toBeTruthy();
-    await fireEvent.press(app.getByText('Start watching'));
+    expect(app.getByText('Pick artists you know')).toBeTruthy();
+    await fireEvent.press(app.getByText('Start watching instead'));
     await settle();
-    expect(app.queryByText('Start with the sets')).toBeNull();
+    expect(app.queryByText('Pick artists you know')).toBeNull();
     expect(app.getByText(/Live sets from the lineup/)).toBeTruthy();
   });
 

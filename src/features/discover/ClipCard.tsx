@@ -441,6 +441,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         <View style={StyleSheet.absoluteFill}>
           <StageScene
             artistId={artist.id}
+            artistColor={artist.color}
             bpm={clip.bpm}
             width={width}
             height={height}

@@ -4,6 +4,8 @@ import { AppState } from 'react-native';
 import { activityNotices } from '../features/notifications/activity';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
 import { lineupNotices } from '../features/notifications/lineupNews';
+import { recapNotices } from '../features/recap/recap';
+import { useRecapFestivals } from '../features/recap/useRecap';
 import type { Activity, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
@@ -131,7 +133,10 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
         : [],
     [activity, uid, social.blocked],
   );
-  const all = useMemo(() => [...list, ...lineupList, ...activityList], [list, lineupList, activityList]);
+  // Festivals that ended lately with a recap for you.
+  const recapFestivals = useRecapFestivals();
+  const recapList = useMemo(() => recapNotices(recapFestivals, today), [recapFestivals, today]);
+  const all = useMemo(() => [...recapList, ...list, ...lineupList, ...activityList], [recapList, list, lineupList, activityList]);
 
   const value = useMemo<Ctx>(() => ({ list: all, refresh, read, markRead, hydrated }), [all, refresh, read, markRead, hydrated]);
   return <NoticesContext.Provider value={value}>{children}</NoticesContext.Provider>;

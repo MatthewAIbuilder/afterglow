@@ -13,7 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
-import { ArtistAvatar } from '../../components/ArtistAvatar';
+import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { color, motion, type } from '../../theme/tokens';
 import { FULL_LABELS, LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
 
@@ -134,6 +134,8 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
   }));
 
   const glowStrength = Math.pow(affinity, 3) * 0.75;
+  // Their own light when their photo gives them a colour, else the app's glow.
+  const glowColor = artist.color ? artistColors(artist.id, artist.color)[1] : color.glow;
   const gid = `g-${artist.id}`;
   const pct = Math.round(affinity * 100);
   // index is the bloom order: strongest match first. Only the strongest get a full label; the rest a smaller, dimmer name.
@@ -150,7 +152,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
         <Svg width={GLOW} height={GLOW}>
           <Defs>
             <RadialGradient id={gid} cx="50%" cy="50%" r="50%">
-              <Stop offset="0.3" stopColor={color.glow} stopOpacity={glowStrength} />
+              <Stop offset="0.3" stopColor={glowColor} stopOpacity={glowStrength} />
               <Stop offset="1" stopColor={color.glowDeep} stopOpacity="0" />
             </RadialGradient>
           </Defs>

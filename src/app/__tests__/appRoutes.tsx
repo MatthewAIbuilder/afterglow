@@ -22,6 +22,8 @@ import LikesScreen from '../likes/[id]';
 import GoingScreen from '../going/[id]';
 import CrewScreen from '../crew/[id]';
 import PlanCardScreen from '../plan-card/[id]';
+import RecapScreen from '../recap/[id]';
+import PickArtistsScreen from '../pick-artists';
 import PosterScreen from '../poster/[id]';
 import ProfileEditScreen from '../profile-edit';
 import RequestScreen from '../request';
@@ -56,6 +58,8 @@ export const APP_ROUTES = {
   request: RequestScreen,
   'sound-scope': SoundScopeScreen,
   'plan-card/[id]': PlanCardScreen,
+  'recap/[id]': RecapScreen,
+  'pick-artists': PickArtistsScreen,
   music: MusicScreen,
   'music-auth': MusicAuthReturn,
   'memory-tag': MemoryTagScreen,
