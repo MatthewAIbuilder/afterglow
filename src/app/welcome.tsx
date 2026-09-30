@@ -138,7 +138,7 @@ export default function WelcomeScreen() {
           <View style={styles.center}>
             <Text style={styles.title}>Tell us what you love</Text>
             <Text style={[styles.sub, styles.centerText]}>
-              Go through the {picked.name} lineup one artist at a time: love their sound, not for me, or don’t know
+              Go through the {picked.name} lineup one artist at a time: anywhere from love to not for me, or don’t know
               them. It takes a few minutes and shapes your whole plan.
             </Text>
           </View>

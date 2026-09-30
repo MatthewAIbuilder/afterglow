@@ -426,12 +426,20 @@ describe('Artist', () => {
     await settle();
     expect(app.getByText('WOOLI')).toBeTruthy();
     expect(app.getByText('Mark as must see')).toBeTruthy();
-    await fireEvent.press(app.getByText('Love their sound'));
+    await fireEvent.press(app.getByLabelText("Love WOOLI's sound"));
     await settle();
-    expect(app.getByText('You love their sound')).toBeTruthy();
-    await fireEvent.press(app.getByText('You love their sound'));
+    expect(app.getByLabelText("You love WOOLI's sound. Tap to undo.")).toBeTruthy();
+    await fireEvent.press(app.getByLabelText("You love WOOLI's sound. Tap to undo."));
     await settle();
-    expect(app.getByText('Love their sound')).toBeTruthy();
+    expect(app.getByLabelText("Love WOOLI's sound")).toBeTruthy();
+    // The in-between answers, one at a time.
+    await fireEvent.press(app.getByLabelText('WOOLI is not really for me'));
+    await settle();
+    expect(app.getByLabelText('WOOLI is not really for you. Tap to undo.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Like WOOLI'));
+    await settle();
+    expect(app.getByLabelText('You like WOOLI. Tap to undo.')).toBeTruthy();
+    expect(app.queryByLabelText('WOOLI is not really for you. Tap to undo.')).toBeNull();
   });
 
   it('suggests similar artists from the same lineup, keeping the festival', async () => {

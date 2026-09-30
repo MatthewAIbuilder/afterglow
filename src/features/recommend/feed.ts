@@ -1,7 +1,10 @@
 import type { Artist, Clip, TasteProfile } from '../../data/types';
 import type { Reaction } from '../../state/reactions';
-import type { Ratings } from '../taste/ratings';
+import { isCold, type Rating, type Ratings } from '../taste/ratings';
 import { type Similarity, soundSimilarity } from '../taste/similarity';
+
+/** A direct rating in the feed's tally of likes and skips per artist. */
+const RATING_NET: Record<Rating, number> = { love: 1, like: 0.6, ok: 0, meh: -0.5, pass: -1 };
 
 /**
  * Discover's running order. Pure and deterministic: the same taste, reactions
@@ -102,7 +105,7 @@ export type FeedInput = {
   keep?: readonly string[];
   /** How alike two artists are. Sound tags by default. */
   similarity?: Similarity;
-  /** Artists rated directly: "not for me" turns an artist down like a skip; "love" raises them through the match. */
+  /** Artists rated directly: "not for me" turns an artist down like a skip ("not really" half as much); "love" and "like" raise them through the match. */
   ratings?: Ratings;
 };
 
@@ -160,8 +163,8 @@ export function scoreClips({ clips, artists, taste, informed, reactions, seen, n
   }
   for (const [id, rating] of Object.entries(ratings)) {
     // Loving an artist must never cost them the "new to you" nudge; only turning them down does.
-    if (rating === 'pass') touched.add(id);
-    net[id] = (net[id] ?? 0) + (rating === 'love' ? 1 : -1);
+    if (isCold(rating)) touched.add(id);
+    net[id] = (net[id] ?? 0) + RATING_NET[rating];
   }
 
   const items: FeedItem[] = [];
