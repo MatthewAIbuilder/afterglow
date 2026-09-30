@@ -32,7 +32,7 @@ export default function YearScreen() {
     <View style={styles.root}>
       <PageTitle title={`Your ${year}`} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.heading}>Your {year}</Text>
+        <Text style={styles.heading}>Your year</Text>
         <GlassCircleButton label="Close" onPress={() => router.back()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
