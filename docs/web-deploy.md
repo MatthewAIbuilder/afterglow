@@ -84,3 +84,16 @@ Firebase console → **Authentication** → **Settings** → **Authorized domain
 | Signing in fails on the website only | Add the domain to Authorized domains (step 6). |
 | The domain still shows an old page | DNS hasn't updated yet, or an old `A` record is still there (step 5.3). |
 | A clip never plays and shows the stage | That YouTube video doesn't allow embedding on websites, or YouTube is blocked on that network. |
+
+## Link previews for festival and artist pages
+
+The website is one page that draws everything in the browser, so a shared
+link used to preview as plain "Afterglow". After each build,
+`scripts/page-previews.ts` (a step in the Website workflow) writes a copy of
+that page for every festival and artist, `dist/festival/<id>.html` and
+`dist/artist/<id>.html`, with its own title and description (for example
+"EDC Orlando 2026 · Afterglow" and "Nov 6 to 8, Tinker Field, Orlando · 110
+acts on the lineup."). Firebase Hosting serves them for `/festival/<id>` and
+`/artist/<id>`. The app inside is exactly the same. Festivals from the
+nightly EDMTrain import get previews too. Profiles and crew invites still
+preview as Afterglow.

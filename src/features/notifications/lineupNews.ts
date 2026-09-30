@@ -34,9 +34,11 @@ export const EMPTY_LINEUP_MEMORY: LineupMemory = { seen: {}, news: [] };
 /** News is kept this long. */
 export const NEWS_DAYS = 30;
 /** At most this many news items are kept. */
-export const NEWS_MAX = 50;
+export const NEWS_MAX = 200;
 /** An act counts as just added on the lineup for this long. */
 export const JUST_ADDED_DAYS = 14;
+/** More new festivals than this arriving together (the nightly feed) become one notice. */
+export const NEW_FESTIVALS_GROUP_AT = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -84,8 +86,33 @@ export function lineupNotices(
   opts: { festivals: Festival[]; loves: (artistId: string) => boolean; nameOf: (artistId: string) => string | undefined; going: ReadonlySet<string>; today: Date },
 ): Notice[] {
   const byId = new Map(opts.festivals.map((f) => [f.id, f]));
+  // New festivals that arrived together with acts you'd love: one notice when there are many.
+  const newAt = new Map<number, { festival: Festival; loved: string[] }[]>();
+  for (const n of news) {
+    const f = byId.get(n.festivalId);
+    if (!n.newFestival || !f || countdown(f, opts.today) === 'Over') continue;
+    const onLineup = new Set(f.lineup);
+    const loved = n.artists.filter((a) => onLineup.has(a) && opts.loves(a)).map(opts.nameOf).filter((x): x is string => !!x);
+    if (loved.length) newAt.set(n.at, [...(newAt.get(n.at) ?? []), { festival: f, loved }]);
+  }
+  const grouped = new Set([...newAt].filter(([, fs]) => fs.length > NEW_FESTIVALS_GROUP_AT).map(([at]) => at));
   const out: Notice[] = [];
+  const done = new Set<number>();
   for (const n of [...news].reverse()) {
+    if (n.newFestival && grouped.has(n.at)) {
+      if (done.has(n.at)) continue;
+      done.add(n.at);
+      const fs = newAt.get(n.at)!;
+      const acts = [...new Set(fs.flatMap((x) => x.loved))];
+      out.push({
+        id: `lineup:new:${n.at}`,
+        kind: 'lineup',
+        href: '/festivals',
+        title: `${fs.length} new festivals with artists you’d love`,
+        body: `${names(acts)} ${acts.length === 1 ? 'plays' : 'play'}. See them on Festivals.`,
+      });
+      continue;
+    }
     const f = byId.get(n.festivalId);
     if (!f || countdown(f, opts.today) === 'Over') continue;
     const onLineup = new Set(f.lineup);
