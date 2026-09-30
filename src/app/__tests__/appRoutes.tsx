@@ -27,6 +27,7 @@ import ProfileEditScreen from '../profile-edit';
 import RequestScreen from '../request';
 import SavedScreen from '../saved';
 import SearchScreen from '../search';
+import LegalScreen from '../legal/[doc]';
 import SharedMemoryScreen from '../shared/[id]';
 import SoundScopeScreen from '../sound-scope';
 import TuneScreen from '../tune/[id]';
@@ -66,6 +67,7 @@ export const APP_ROUTES = {
   'u/[handle]': PublicProfileScreen,
   people: PeopleScreen,
   search: SearchScreen,
+  'legal/[doc]': LegalScreen,
   'follows/[handle]': FollowsScreen,
   'likes/[id]': LikesScreen,
   'going/[id]': GoingScreen,

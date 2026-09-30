@@ -59,6 +59,7 @@ export default function RootLayout() {
         <Stack.Screen name="u/[handle]" />
         <Stack.Screen name="people" />
         <Stack.Screen name="search" options={{ animation: 'fade' }} />
+        <Stack.Screen name="legal/[doc]" />
         <Stack.Screen name="follows/[handle]" />
         <Stack.Screen name="going/[id]" />
         <Stack.Screen name="crew/[id]" />
