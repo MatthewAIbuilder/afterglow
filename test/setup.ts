@@ -75,3 +75,22 @@ jest.mock('expo-notifications', () => {
 // Sharing a picture: capture and the share sheet, recorded for the tests.
 jest.mock('react-native-view-shot', () => ({ captureRef: jest.fn(async () => 'file:///tmp/plan.png') }));
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(async () => true), shareAsync: jest.fn(async () => {}) }));
+
+// The secure store: an in-memory keychain the tests can read (`__items`).
+jest.mock('expo-secure-store', () => {
+  const items = new Map<string, string>();
+  return {
+    __items: items,
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
+    getItemAsync: jest.fn(async (k: string) => items.get(k) ?? null),
+    setItemAsync: jest.fn(async (k: string, v: string) => void items.set(k, v)),
+    deleteItemAsync: jest.fn(async (k: string) => void items.delete(k)),
+  };
+});
+// Sign-in pages never open in tests: tests that connect a service pass their own services.
+jest.mock('expo-auth-session', () => ({
+  AuthRequest: jest.fn(),
+  makeRedirectUri: () => 'afterglow://music-auth',
+  ResponseType: { Code: 'code' },
+}));
+jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: () => ({ type: 'failed' }) }));

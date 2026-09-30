@@ -64,6 +64,23 @@ describe('architecture', () => {
       'features/festivals/request.ts',
       'features/festivals/days.ts',
       'features/festivals/weekend.ts',
+      'features/music/models.ts',
+      'features/music/tally.ts',
+      'features/music/strength.ts',
+      'features/music/genres.ts',
+      'features/music/library.ts',
+      'features/music/imported.ts',
+      'features/music/store.ts',
+      'features/music/privacy.ts',
+      'features/music/copy.ts',
+      'features/music/service.ts',
+      'features/music/http.ts',
+      'features/music/spotify/normalize.ts',
+      'features/music/spotify/tokens.ts',
+      'features/music/spotify/api.ts',
+      'features/music/apple/normalize.ts',
+      'features/music/apple/api.ts',
+      'features/music/apple/musicKit.ts',
     ];
     for (const p of pure) {
       const f = all.find((x) => x.path === p);
@@ -71,5 +88,31 @@ describe('architecture', () => {
       const bad = imports(f!.text).filter((i) => i === 'react' || i.startsWith('react-native') || i.includes('async-storage') || i.startsWith('expo'));
       expect({ file: p, imports: bad }).toEqual({ file: p, imports: [] });
     }
+  });
+
+  it('keeps each music service inside its adapter', () => {
+    // Only the music layer's own wiring knows Spotify or Apple Music exist.
+    const offenders = all
+      .filter((f) => !f.path.startsWith('features/music/'))
+      .filter((f) => imports(f.text).some((i) => /music\/(spotify|apple)\//.test(i)))
+      .map((f) => f.path);
+    expect(offenders).toEqual([]);
+    // And neither adapter reaches into the other.
+    const crossed = all
+      .filter((f) => /^features\/music\/(spotify|apple)\//.test(f.path))
+      .filter((f) => imports(f.text).some((i) => (f.path.includes('/spotify/') ? /\/apple\//.test(i) : /\/spotify\//.test(i))))
+      .map((f) => f.path);
+    expect(crossed).toEqual([]);
+  });
+
+  it('keeps music credentials out of normal storage', () => {
+    // The secure store is used by the adapters' wiring only; anything that writes AsyncStorage never touches it.
+    const secure = all.filter((f) => imports(f.text).some((i) => i === 'expo-secure-store')).map((f) => f.path);
+    expect(secure).toEqual(['features/music/secrets.ts']);
+    const both = all
+      .filter((f) => imports(f.text).some((i) => i.includes('async-storage')))
+      .filter((f) => imports(f.text).some((i) => /music\/(secrets|spotify|apple)/.test(i)))
+      .map((f) => f.path);
+    expect(both).toEqual([]);
   });
 });

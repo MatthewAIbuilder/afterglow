@@ -24,7 +24,9 @@
     "plugins": [
       "expo-router",
       "expo-image",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "scheme": "afterglow",
     "backgroundColor": "#0A0918",

@@ -9,15 +9,25 @@ import type { Ratings } from './ratings';
  */
 type Reaction = { liked: boolean; saved: boolean; skipped: boolean; watched?: string };
 
-export type ArtistSignals = { likes: number; saves: number; skips: number; watched: number; rating?: 'love' | 'pass' };
+export type ArtistSignals = {
+  likes: number;
+  saves: number;
+  skips: number;
+  watched: number;
+  rating?: 'love' | 'pass';
+  /** Music services whose library has them ("Spotify"), from the imported layer. */
+  library?: string[];
+};
 
 export function artistSignals(
   artistId: string,
   clips: Clip[],
   reactions: Record<string, Reaction | undefined>,
   ratings: Ratings,
+  /** Names of the music services whose library has this artist. */
+  library: string[] = [],
 ): ArtistSignals {
-  const s: ArtistSignals = { likes: 0, saves: 0, skips: 0, watched: 0, rating: ratings[artistId] };
+  const s: ArtistSignals = { likes: 0, saves: 0, skips: 0, watched: 0, rating: ratings[artistId], library: library.length ? library : undefined };
   for (const c of clips) {
     if (c.artistId !== artistId) continue;
     const r = reactions[c.id];
@@ -33,12 +43,14 @@ export function artistSignals(
 const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? one : many}` : undefined);
 
 /**
- * "From your 2 likes and 1 save", "From your rating and 1 like". The rating
+ * "From your 2 likes and 1 save", "From your Spotify library and 1 like",
+ * "From your rating and 1 like". The rating
  * itself is shown right beside this on the artist page, so it's only named.
  * `informed` says whether anything real is behind the match.
  */
 export function whyLine(s: ArtistSignals, informed: boolean): string {
   const parts = [
+    s.library?.length ? `${s.library.join(' and ')} ${s.library.length === 1 ? 'library' : 'libraries'}` : undefined,
     s.rating ? 'rating' : undefined,
     count(s.likes, 'like', 'likes'),
     count(s.saves, 'save', 'saves'),

@@ -5,6 +5,7 @@ import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
 import { GoingProvider } from '../state/going';
+import { MusicConnectionsProvider } from '../state/music';
 import { NoticesProvider } from '../state/notices';
 import { WeekendsProvider } from '../state/weekends';
 import { PlanProvider } from '../state/plan';
@@ -17,6 +18,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.night }}>
       <CatalogProvider>
+      <MusicConnectionsProvider>
       <ReactionsProvider>
       <RatingsProvider>
       <PlanProvider>
@@ -31,6 +33,8 @@ export default function RootLayout() {
         <Stack.Screen name="festival/[id]" />
         <Stack.Screen name="saved" />
         <Stack.Screen name="notifications" />
+        <Stack.Screen name="music" />
+        <Stack.Screen name="music-auth" options={{ animation: 'none' }} />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
@@ -85,6 +89,7 @@ export default function RootLayout() {
       </PlanProvider>
       </RatingsProvider>
       </ReactionsProvider>
+      </MusicConnectionsProvider>
       </CatalogProvider>
     </GestureHandlerRootView>
   );

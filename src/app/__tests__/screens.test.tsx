@@ -24,6 +24,8 @@ import YourSoundScreen from '../your-sound';
 import RequestScreen from '../request';
 import SoundScopeScreen from '../sound-scope';
 import PlanCardScreen from '../plan-card/[id]';
+import MusicScreen from '../music';
+import MusicAuthReturn from '../music-auth';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -52,6 +54,8 @@ function renderApp(initialUrl: string) {
       request: RequestScreen,
       'sound-scope': SoundScopeScreen,
       'plan-card/[id]': PlanCardScreen,
+      music: MusicScreen,
+      'music-auth': MusicAuthReturn,
     },
     { initialUrl },
   );
