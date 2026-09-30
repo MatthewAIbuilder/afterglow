@@ -43,6 +43,7 @@ async function mount(files: MemoryFiles) {
 
 const VIDEO: PickedVideo = {
   uri: 'file:///cache/ImagePicker/ABC.MOV',
+  source: 'library',
   durationSec: 42,
   width: 1080,
   height: 1920,

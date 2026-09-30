@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { deviceMemoryFiles, type MemoryFiles, type PickedVideo } from '../features/memories/device';
 import type { Memory, MemoryTagInput } from '../features/memories/models';
-import { addMemory, cleanMemories, markShared, newMemoryId, removeMemory, tagMemory } from '../features/memories/store';
+import { addMemory, cleanMemories, forgetSharesBy, markShared, newMemoryId, removeMemory, tagMemory } from '../features/memories/store';
 
 /**
  * Your memories: the list (AsyncStorage `memories.v1`) and the video files
@@ -21,7 +21,9 @@ type Ctx = {
   /** Keep the draft as a memory with this tag. Resolves with the new memory, or undefined if the file couldn't be kept. */
   keepDraft: (tag: MemoryTagInput) => Promise<Memory | undefined>;
   tag: (id: string, tag: MemoryTagInput) => void;
-  setShared: (id: string, sharedId: string | undefined) => void;
+  setShared: (id: string, shared: { id: string; by: string } | undefined) => void;
+  /** An account was deleted: its shares no longer exist. */
+  forgetShares: (uid: string) => void;
   /** Delete a memory and its files from this phone. */
   remove: (id: string) => Promise<void>;
   uriOf: (name: string) => string;
@@ -102,7 +104,8 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
   );
 
   const tag = useCallback((id: string, t: MemoryTagInput) => setMemories((l) => tagMemory(l, id, t)), []);
-  const setShared = useCallback((id: string, sharedId: string | undefined) => setMemories((l) => markShared(l, id, sharedId)), []);
+  const setShared = useCallback((id: string, shared: { id: string; by: string } | undefined) => setMemories((l) => markShared(l, id, shared)), []);
+  const forgetShares = useCallback((uid: string) => setMemories((l) => forgetSharesBy(l, uid)), []);
   const memoriesRef = useRef(memories);
   useEffect(() => {
     memoriesRef.current = memories;
@@ -124,8 +127,8 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
   );
 
   const value = useMemo<Ctx>(
-    () => ({ memories, hydrated, draft, setDraft, keepDraft, tag, setShared, remove, uriOf: files.uriOf, saveToPhotos }),
-    [memories, hydrated, draft, keepDraft, tag, setShared, remove, files, saveToPhotos],
+    () => ({ memories, hydrated, draft, setDraft, keepDraft, tag, setShared, forgetShares, remove, uriOf: files.uriOf, saveToPhotos }),
+    [memories, hydrated, draft, keepDraft, tag, setShared, forgetShares, remove, files, saveToPhotos],
   );
   return <MemoriesContext.Provider value={value}>{children}</MemoriesContext.Provider>;
 }

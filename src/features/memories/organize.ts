@@ -98,3 +98,26 @@ export function memoryLine(m: Memory, lookup: { festival: (id: string) => Festiv
   const parts = [m.artistId ? lookup.artist(m.artistId)?.name : undefined, m.night, m.festivalId ? lookup.festival(m.festivalId)?.name : undefined];
   return parts.filter(Boolean).join(' · ') || 'Not tagged yet';
 }
+
+const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Sat, Jun 20 · 11:48 PM · Orlando": when and where a video was filmed, in the phone's time. */
+export function momentLine(when: Date | undefined, place?: { city?: string; region?: string }): string {
+  const parts: string[] = [];
+  if (when && Number.isFinite(when.getTime())) {
+    const h = when.getHours();
+    parts.push(`${DAY[when.getDay()]}, ${MONTH[when.getMonth()]} ${when.getDate()}`);
+    parts.push(`${h % 12 === 0 ? 12 : h % 12}:${String(when.getMinutes()).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`);
+  }
+  const where = place?.city ?? place?.region;
+  if (where) parts.push(where);
+  return parts.join(' · ');
+}
+
+/** "0:42", "2:05". */
+export function clipLength(sec: number | undefined): string | undefined {
+  if (!sec || !Number.isFinite(sec)) return undefined;
+  const s = Math.round(sec);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}

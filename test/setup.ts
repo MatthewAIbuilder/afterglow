@@ -160,3 +160,9 @@ jest.mock('expo-video', () => {
     useVideoPlayer: () => ({ play: jest.fn(), pause: jest.fn(), loop: false, muted: false, replace: jest.fn() }),
   };
 });
+
+// Social profiles: never Firebase in tests. Screens get an in-memory backend that isn't set up;
+// the social tests replace it with their own (fakeSocial) where profiles are available.
+jest.mock('../src/features/social/services', () => ({
+  defaultSocialService: () => jest.requireActual<typeof import('../src/features/social/__tests__/fakeSocial')>('../src/features/social/__tests__/fakeSocial').fakeSocial({ available: false }).service,
+}));

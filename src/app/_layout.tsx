@@ -13,6 +13,7 @@ import { PlanProvider } from '../state/plan';
 import { RatingsProvider } from '../state/ratings';
 import { ReactionsProvider } from '../state/reactions';
 import { SeenProvider } from '../state/seen';
+import { SocialProvider } from '../state/social';
 import { color } from '../theme/tokens';
 
 export default function RootLayout() {
@@ -28,6 +29,7 @@ export default function RootLayout() {
       <SeenProvider>
       <WeekendsProvider>
       <NoticesProvider>
+      <SocialProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -38,6 +40,14 @@ export default function RootLayout() {
         <Stack.Screen name="music" />
         <Stack.Screen name="music-auth" options={{ animation: 'none' }} />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="memory-tag" options={{ presentation: 'modal', gestureEnabled: false }} />
+        <Stack.Screen name="memories" />
+        <Stack.Screen name="memory/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="shared/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="account" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="profile-edit" />
+        <Stack.Screen name="u/[handle]" />
+        <Stack.Screen name="people" />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
@@ -84,6 +94,7 @@ export default function RootLayout() {
       </Stack>
       <FirstRun />
       <ReminderSync />
+      </SocialProvider>
       </NoticesProvider>
       </WeekendsProvider>
       </SeenProvider>

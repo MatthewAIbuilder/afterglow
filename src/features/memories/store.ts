@@ -13,8 +13,13 @@ export function tagMemory(list: Memory[], id: string, tag: MemoryTagInput): Memo
   return list.map((m) => (m.id === id ? { ...m, festivalId: tag.festivalId, night: tag.festivalId ? tag.night : undefined, artistId: tag.artistId } : m));
 }
 
-export function markShared(list: Memory[], id: string, sharedId: string | undefined): Memory[] {
-  return list.map((m) => (m.id === id ? { ...m, sharedId } : m));
+export function markShared(list: Memory[], id: string, shared: { id: string; by: string } | undefined): Memory[] {
+  return list.map((m) => (m.id === id ? { ...m, sharedId: shared?.id, sharedBy: shared?.by } : m));
+}
+
+/** Forget every share made from one account (it was deleted). */
+export function forgetSharesBy(list: Memory[], uid: string): Memory[] {
+  return list.map((m) => (m.sharedBy === uid ? { ...m, sharedId: undefined, sharedBy: undefined } : m));
 }
 
 export function removeMemory(list: Memory[], id: string): Memory[] {
@@ -53,7 +58,8 @@ export function cleanMemories(raw: unknown): Memory[] {
       festivalId: str(o.festivalId),
       night: str(o.night),
       artistId: str(o.artistId),
-      sharedId: str(o.sharedId),
+      sharedId: str(o.sharedId) && str(o.sharedBy) ? str(o.sharedId) : undefined,
+      sharedBy: str(o.sharedId) && str(o.sharedBy) ? str(o.sharedBy) : undefined,
     });
   }
   return out;

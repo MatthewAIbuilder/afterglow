@@ -21,6 +21,8 @@ export const MAX_CLIP_SECONDS = 180;
 
 export type PickedVideo = {
   uri: string;
+  /** Just recorded (so it exists nowhere else yet), or chosen from the library. */
+  source: 'camera' | 'library';
   durationSec?: number;
   width?: number;
   height?: number;
@@ -49,7 +51,7 @@ export async function pickVideo(source: 'camera' | 'library'): Promise<PickResul
     const durationSec = a.duration ? Math.round(a.duration / 1000) : undefined;
     if (durationSec && durationSec > MAX_CLIP_SECONDS + 1) return { ok: false, reason: 'too-long' };
     const moment = source === 'camera' ? await momentNow() : await momentOf(a.assetId ?? undefined);
-    return { ok: true, video: { uri: a.uri, durationSec, width: a.width || undefined, height: a.height || undefined, moment } };
+    return { ok: true, video: { uri: a.uri, source, durationSec, width: a.width || undefined, height: a.height || undefined, moment } };
   } catch {
     return { ok: false, reason: 'failed' };
   }

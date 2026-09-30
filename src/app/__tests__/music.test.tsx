@@ -2,30 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { Alert } from 'react-native';
-import { renderRouter } from 'expo-router/testing-library';
 import type { MusicLibrarySnapshot, MusicProviderId } from '../../features/music/models';
 import { MusicServiceError, type MusicAvailability, type MusicService } from '../../features/music/service';
-import RootLayout from '../_layout';
-import TabsLayout from '../(tabs)/_layout';
-import DiscoverScreen from '../(tabs)/index';
-import FestivalsScreen from '../(tabs)/festivals';
-import LineupScreen from '../(tabs)/lineup';
-import SoundScreen from '../(tabs)/sound';
-import ProfileScreen from '../(tabs)/profile';
-import ArtistScreen from '../artist/[id]';
-import FestivalScreen from '../festival/[id]';
-import PosterScreen from '../poster/[id]';
-import SavedScreen from '../saved';
-import WelcomeScreen from '../welcome';
-import TuneScreen from '../tune/[id]';
-import DiscoverFocusScreen from '../discover-focus';
-import NotificationsScreen from '../notifications';
-import YourSoundScreen from '../your-sound';
-import RequestScreen from '../request';
-import SoundScopeScreen from '../sound-scope';
-import PlanCardScreen from '../plan-card/[id]';
-import MusicScreen from '../music';
-import MusicAuthReturn from '../music-auth';
+import { renderApp } from './appRoutes';
 
 /**
  * Music connections, through the real routes and providers. The services are
@@ -64,34 +43,6 @@ function service(provider: MusicProviderId, over: Partial<MusicService> = {}): M
   };
 }
 
-function renderApp(initialUrl: string) {
-  return renderRouter(
-    {
-      _layout: RootLayout,
-      '(tabs)/_layout': TabsLayout,
-      '(tabs)/index': DiscoverScreen,
-      '(tabs)/sound': SoundScreen,
-      '(tabs)/festivals': FestivalsScreen,
-      '(tabs)/lineup': LineupScreen,
-      '(tabs)/profile': ProfileScreen,
-      'artist/[id]': ArtistScreen,
-      'festival/[id]': FestivalScreen,
-      'poster/[id]': PosterScreen,
-      saved: SavedScreen,
-      welcome: WelcomeScreen,
-      'tune/[id]': TuneScreen,
-      'discover-focus': DiscoverFocusScreen,
-      notifications: NotificationsScreen,
-      'your-sound': YourSoundScreen,
-      request: RequestScreen,
-      'sound-scope': SoundScopeScreen,
-      'plan-card/[id]': PlanCardScreen,
-      music: MusicScreen,
-      'music-auth': MusicAuthReturn,
-    },
-    { initialUrl },
-  );
-}
 
 const settle = () =>
   act(async () => {

@@ -1,0 +1,213 @@
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassCircleButton } from '../../components/GlassCircleButton';
+import { NightSky } from '../../components/NightSky';
+import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
+import { SOUND_LABEL } from '../../data/models';
+import { clipLength } from '../../features/memories/organize';
+import { goingLine } from '../../features/social/copy';
+import type { Profile, SharedMemory } from '../../features/social/models';
+import { askBlock, askReport } from '../../features/social/moderation';
+import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/service';
+import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
+import { useSocial } from '../../state/social';
+import { color, radius, space, type } from '../../theme/tokens';
+
+/**
+ * Someone's festival profile (or yours, as others see it): photo, name,
+ * @handle and bio, where they're going and their sound if they show them,
+ * and the memories they've shared. Report and Block from the menu.
+ */
+export default function PublicProfileScreen() {
+  const { handle } = useLocalSearchParams<{ handle: string }>();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const social = useSocial();
+  const catalog = useCatalog();
+  const [profile, setProfile] = useState<Profile | null | undefined>();
+  const [memories, setMemories] = useState<SharedMemory[]>([]);
+  const [problem, setProblem] = useState<string | undefined>();
+
+  const signedIn = !!social.user;
+  useEffect(() => {
+    if (!signedIn) return;
+    let live = true;
+    (async () => {
+      try {
+        const p = await social.service.profileByHandle(handle ?? '');
+        const ms = p ? await social.service.memoriesOf(p.uid) : [];
+        if (!live) return;
+        setProfile(p);
+        setMemories(ms);
+      } catch (e) {
+        if (!live) return;
+        setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+        setProfile(null);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [handle, signedIn, social.service]);
+
+  const mine = !!profile && profile.uid === social.user?.uid;
+  const blocked = !!profile && social.blocked.has(profile.uid);
+
+  const menu = () => {
+    if (!profile) return;
+    haptic.select();
+    const report = () => askReport({ kind: 'profile', id: profile.uid, ownerUid: profile.uid }, social.report);
+    const block = () => askBlock(profile.handle, blocked, (on) => social.setBlocked(profile.uid, on));
+    const options = ['Report', blocked ? 'Unblock' : 'Block', 'Cancel'];
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions({ options, destructiveButtonIndex: 1, cancelButtonIndex: 2, userInterfaceStyle: 'dark' }, (i) => (i === 0 ? report() : i === 1 ? block() : undefined));
+    } else {
+      Alert.alert(`@${profile.handle}`, undefined, [
+        { text: 'Report', onPress: report },
+        { text: options[1], style: 'destructive', onPress: block },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  };
+  const share = () => {
+    if (!profile) return;
+    haptic.select();
+    Share.share({ message: `@${profile.handle} on Afterglow: afterglow://u/${profile.handle}` }).catch(() => {});
+  };
+
+  const cols = 3;
+  const gap = space.xs;
+  const tileW = Math.floor((width - space.xl * 2 - gap * (cols - 1)) / cols);
+  const going = profile?.festivals.map((id) => catalog.festival(id)?.name).filter((n): n is string => !!n) ?? [];
+
+  let body: React.ReactNode;
+  if (!social.availability.ok || !social.user) {
+    body = <Text style={styles.body}>{social.availability.ok ? 'Sign in to see profiles.' : SOCIAL_ERROR_COPY.unavailable}</Text>;
+  } else if (profile === undefined) {
+    body = <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
+  } else if (!profile) {
+    body = <Text style={styles.body}>{problem ?? `No one is called @${handle} on Afterglow.`}</Text>;
+  } else if (blocked) {
+    body = (
+      <View style={styles.center}>
+        <Text style={styles.body}>You blocked @{profile.handle}.</Text>
+        <Pressable onPress={() => askBlock(profile.handle, true, (on) => social.setBlocked(profile.uid, on))} accessibilityRole="button">
+          <Text style={styles.link}>Unblock</Text>
+        </Pressable>
+      </View>
+    );
+  } else {
+    body = (
+      <>
+        <View style={styles.head}>
+          <View style={styles.avatar}>
+            {profile.avatarUrl ? <Image source={{ uri: profile.avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.initial}>{profile.displayName.slice(0, 1).toUpperCase()}</Text>}
+          </View>
+          <Text style={styles.name}>{profile.displayName}</Text>
+          <Text style={styles.handle}>@{profile.handle}</Text>
+          {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
+          {goingLine(going) ? <Text style={styles.meta}>{goingLine(going)}</Text> : null}
+          {profile.sounds.length ? (
+            <View style={styles.chips}>
+              {profile.sounds.map((s) => (
+                <View key={s} style={styles.chip}>
+                  <Text style={styles.chipText}>{SOUND_LABEL[s]}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {mine ? (
+            <Pressable onPress={() => router.push('/profile-edit')} accessibilityRole="button" style={styles.edit}>
+              <Text style={styles.link}>Edit profile</Text>
+            </Pressable>
+          ) : null}
+        </View>
+        <Text style={styles.section}>{memories.length ? `Memories · ${memories.length}` : 'Memories'}</Text>
+        {memories.length ? (
+          <View style={[styles.grid, { gap }]}>
+            {memories.map((m) => {
+              const artist = m.artistId ? catalog.artist(m.artistId) : undefined;
+              return (
+                <Pressable
+                  key={m.id}
+                  onPress={() => router.push({ pathname: '/shared/[id]', params: { id: m.id } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Video${artist ? ` of ${artist.name}` : ''}`}
+                  style={({ pressed }) => [styles.tile, { width: tileW, height: Math.round((tileW * 16) / 9) }, pressed && styles.pressed]}
+                >
+                  {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
+                  <View style={styles.tileInfo}>
+                    {artist ? (
+                      <Text style={styles.tileName} numberOfLines={1}>
+                        {artist.name}
+                      </Text>
+                    ) : null}
+                    {clipLength(m.durationSec) ? <Text style={styles.tileLen}>{clipLength(m.durationSec)}</Text> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <Text style={styles.body}>{mine ? 'Share a memory from Memories and it shows up here.' : 'Nothing shared yet.'}</Text>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <View style={styles.root}>
+      <NightSky />
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>{body}</ScrollView>
+      <View style={[styles.back, { top: insets.top + space.sm }]}>
+        <GlassCircleButton label="Back" onPress={() => router.back()}>
+          <ChevronIcon color={color.moon} direction="left" size={18} />
+        </GlassCircleButton>
+      </View>
+      {profile ? (
+        <View style={[styles.actions, { top: insets.top + space.sm }]}>
+          <GlassCircleButton label="Share profile" onPress={share}>
+            <ShareIcon color={color.moon} size={16} />
+          </GlassCircleButton>
+          {!mine ? (
+            <GlassCircleButton label="More: report or block" onPress={menu}>
+              <Text style={styles.more}>•••</Text>
+            </GlassCircleButton>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: color.night },
+  back: { position: 'absolute', left: space.lg },
+  actions: { position: 'absolute', right: space.lg, flexDirection: 'row', gap: space.sm },
+  more: { ...type.caption, color: color.moon, letterSpacing: 1 },
+  head: { alignItems: 'center', gap: space.xs },
+  avatar: { width: 96, height: 96, borderRadius: 48, overflow: 'hidden', backgroundColor: color.haze, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
+  initial: { ...type.largeTitle, color: color.moon },
+  name: { ...type.title, color: color.moon, textAlign: 'center' },
+  handle: { ...type.body, color: color.moonDim },
+  bio: { ...type.body, color: color.moon, textAlign: 'center', marginTop: space.sm },
+  meta: { ...type.caption, color: color.moonDim, marginTop: space.xs, textAlign: 'center' },
+  chips: { flexDirection: 'row', gap: space.xs, marginTop: space.sm, flexWrap: 'wrap', justifyContent: 'center' },
+  chip: { paddingHorizontal: space.md, paddingVertical: 5, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.16)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.4)' },
+  chipText: { ...type.caption, color: color.moon },
+  edit: { marginTop: space.md },
+  section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.xxl, marginBottom: space.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  tile: { borderRadius: radius.sm, overflow: 'hidden', backgroundColor: color.nightRaised },
+  tileInfo: { position: 'absolute', left: space.xs, right: space.xs, bottom: space.xs },
+  tileName: { ...type.caption, color: color.moon, fontWeight: '700' },
+  tileLen: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
+  body: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.lg },
+  center: { alignItems: 'center', gap: space.md },
+  link: { ...type.label, color: color.glow },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
+});

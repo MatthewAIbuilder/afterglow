@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { BUILT_IN } from '../../../data/bundled';
 import type { Memory } from '../models';
-import { clipCount, memoryLine, organizeMemories, UNTAGGED } from '../organize';
-import { addMemory, cleanMemories, markShared, newMemoryId, removeMemory, safeFileName, tagMemory } from '../store';
+import { clipCount, clipLength, memoryLine, momentLine, organizeMemories, UNTAGGED } from '../organize';
+import { addMemory, cleanMemories, forgetSharesBy, markShared, newMemoryId, removeMemory, safeFileName, tagMemory } from '../store';
 
 /** Memories arranged festival → night → artist, and the list's rules. */
 const catalog = BUILT_IN.catalog;
@@ -63,8 +63,10 @@ describe('the memories list', () => {
     expect(l[1]).toMatchObject({ festivalId: 'solstice-26', night: 'Friday', artistId: 'illenium', file: 'a.mp4' });
     // Clearing the festival clears the night with it.
     expect(tagMemory(l, 'a', { festivalId: undefined, night: 'Friday', artistId: undefined })[1].night).toBeUndefined();
-    l = markShared(l, 'a', 'shared-1');
-    expect(l[1].sharedId).toBe('shared-1');
+    l = markShared(l, 'a', { id: 'shared-1', by: 'uid-1' });
+    expect(l[1]).toMatchObject({ sharedId: 'shared-1', sharedBy: 'uid-1' });
+    expect(forgetSharesBy(l, 'uid-1')[1].sharedId).toBeUndefined();
+    expect(forgetSharesBy(l, 'someone-else')[1].sharedId).toBe('shared-1');
     expect(removeMemory(l, 'a').map((m) => m.id)).toEqual(['b']);
   });
 
@@ -96,5 +98,17 @@ describe('the memories list', () => {
     expect(safeFileName(`${a}.mp4`)).toBe(`${a}.mp4`);
     expect(safeFileName('.hidden')).toBeUndefined();
     expect(safeFileName('a/b.mp4')).toBeUndefined();
+  });
+});
+
+describe('lines under a memory', () => {
+  it('says when and where it was filmed', () => {
+    expect(momentLine(new Date(2026, 5, 20, 23, 48), { city: 'Orlando', region: 'Florida' })).toBe('Sat, Jun 20 · 11:48 PM · Orlando');
+    expect(momentLine(new Date(2026, 5, 21, 0, 5))).toBe('Sun, Jun 21 · 12:05 AM');
+    expect(momentLine(undefined, { region: 'Texas' })).toBe('Texas');
+    expect(momentLine(undefined)).toBe('');
+    expect(clipLength(42)).toBe('0:42');
+    expect(clipLength(125)).toBe('2:05');
+    expect(clipLength(undefined)).toBeUndefined();
   });
 });

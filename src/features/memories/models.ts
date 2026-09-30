@@ -27,8 +27,9 @@ export type Memory = {
   /** The festival day ("Friday"), when known. */
   night?: string;
   artistId?: string;
-  /** Once shared to your profile: the shared copy's id. */
+  /** Once shared to your profile: the shared copy's id, and whose profile it's on. */
   sharedId?: string;
+  sharedBy?: string;
 };
 
 /** What the tagging sheet saves onto a memory. */
