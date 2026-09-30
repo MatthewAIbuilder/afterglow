@@ -16,11 +16,11 @@ export const WEB_URL = 'https://afterglowmusic.app';
  * (Messages, Mail, Notes…), so nothing is sent anywhere without the person
  * choosing where.
  */
-export const REQUEST_EMAIL = '';
+export const REQUEST_EMAIL = 'afterglowmusic.support@gmail.com';
 
 /**
  * Where people can reach the team about a profile or a shared video (shown
  * on reports and in the community guidelines). The App Store asks apps with
  * shared content to publish a contact. Empty until the user sets one.
  */
-export const SUPPORT_EMAIL = '';
+export const SUPPORT_EMAIL = 'afterglowmusic.support@gmail.com';

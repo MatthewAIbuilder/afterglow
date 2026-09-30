@@ -14,7 +14,7 @@ The words are in `src/features/legal/documents.ts`, so the app and the website a
 
 These were written by Claude from what the app actually does. They are a solid, honest starting point, not legal advice. Before launching widely:
 
-1. **Add a contact email.** Set `SUPPORT_EMAIL` in `src/config/app.ts` (Claude can do it: just give the address). It then appears on all three pages and on the sign-up screen.
+1. ~~Add a contact email.~~ Done: afterglowmusic.support@gmail.com (`SUPPORT_EMAIL` in `src/config/app.ts`) appears on all three pages and on the sign-up screen.
 2. **Add who runs Afterglow.** Your name or company and where you're based. Terms usually also say which law applies and where disputes are handled. These are left out because they depend on you.
 3. **Have someone qualified read them**, especially if you'll have users in the EU or UK (GDPR), California (CCPA), or anyone under 18.
 
