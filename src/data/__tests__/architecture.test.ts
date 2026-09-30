@@ -74,6 +74,13 @@ describe('architecture', () => {
       'features/music/privacy.ts',
       'features/music/copy.ts',
       'features/music/reach.ts',
+      'features/memories/guess.ts',
+      'features/memories/organize.ts',
+      'features/memories/store.ts',
+      'features/memories/models.ts',
+      'features/social/models.ts',
+      'features/social/publish.ts',
+      'features/social/firebase/mapping.ts',
       'features/music/service.ts',
       'features/music/http.ts',
       'features/music/spotify/normalize.ts',
@@ -105,6 +112,17 @@ describe('architecture', () => {
       .filter((f) => imports(f.text).some((i) => (f.path.includes('/spotify/') ? /\/apple\//.test(i) : /\/spotify\//.test(i))))
       .map((f) => f.path);
     expect(crossed).toEqual([]);
+  });
+
+  it('keeps Firebase inside the social adapter', () => {
+    // Only features/social/firebase/ talks to Firebase, and only features/social/services.ts wires it in.
+    const firebase = all.filter((f) => imports(f.text).some((i) => i === 'firebase' || i.startsWith('firebase/'))).map((f) => f.path);
+    expect(firebase.every((p) => p.startsWith('features/social/firebase/'))).toBe(true);
+    const adapter = all
+      .filter((f) => f.path !== 'features/social/services.ts' && !f.path.startsWith('features/social/firebase/'))
+      .filter((f) => imports(f.text).some((i) => /social\/firebase\//.test(i)))
+      .map((f) => f.path);
+    expect(adapter).toEqual([]);
   });
 
   it('keeps music credentials out of normal storage', () => {

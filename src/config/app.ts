@@ -14,3 +14,10 @@ export const APP_ORIGIN = 'https://afterglow.app.local';
  * choosing where.
  */
 export const REQUEST_EMAIL = '';
+
+/**
+ * Where people can reach the team about a profile or a shared video (shown
+ * on reports and in the community guidelines). The App Store asks apps with
+ * shared content to publish a contact. Empty until the user sets one.
+ */
+export const SUPPORT_EMAIL = '';

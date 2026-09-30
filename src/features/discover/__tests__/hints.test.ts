@@ -6,7 +6,8 @@ describe('first-time tips', () => {
     expect(currentHint(new Set<Hint>())).toBe('swipe');
     expect(currentHint(new Set<Hint>(['swipe']))).toBe('like');
     expect(currentHint(new Set<Hint>(['like']))).toBe('swipe');
-    expect(currentHint(new Set<Hint>(['swipe', 'like']))).toBeUndefined();
+    expect(currentHint(new Set<Hint>(['swipe', 'like']))).toBe('hold');
+    expect(currentHint(new Set<Hint>(['swipe', 'like', 'hold']))).toBeUndefined();
   });
 
   it('skips tips for people who already use the app', () => {
@@ -15,6 +16,7 @@ describe('first-time tips', () => {
     expect(alreadyKnown(3, {})).toEqual(['swipe']);
     expect(alreadyKnown(0, { c1: { liked: false, saved: true } })).toEqual(['like']);
     expect(alreadyKnown(0, { c1: { liked: false, saved: false } })).toEqual([]);
+    expect(alreadyKnown(0, {}, 2)).toEqual(['hold']);
   });
 
   it('reads back only real tips', () => {

@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,7 +10,9 @@ import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
+import { useMemories } from '../../state/memories';
 import { useMusic } from '../../state/music';
+import { useSocial } from '../../state/social';
 import { PROVIDER_NAME } from '../../features/music/models';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
@@ -24,9 +27,9 @@ import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
 
 /**
- * Profile: what you've built so far (festivals, ratings, clips), your sound
- * in three bars and the festivals you're going to, and what's coming: a
- * profile to share, friends and followers.
+ * Profile: your festival profile (once you've made one), what you've built
+ * so far (festivals, ratings, clips), your sound in three bars, the festivals
+ * you're going to, your Memories, finding people, and what's coming.
  */
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -48,6 +51,15 @@ export default function ProfileScreen() {
   // Connected music services, for the Music connections row.
   const { state: music } = useMusic();
   const connectedMusic = (Object.keys(music) as (keyof typeof music)[]).map((p) => PROVIDER_NAME[p]).join(', ');
+  const { memories } = useMemories();
+  const social = useSocial();
+  const me = social.profile;
+  const openSelf = () => {
+    haptic.select();
+    if (!social.user) router.push('/account');
+    else if (!me) router.push('/profile-edit');
+    else router.push({ pathname: '/u/[handle]', params: { handle: me.handle } });
+  };
 
   const stats = [
     { n: festivals, label: festivals === 1 ? 'festival' : 'festivals' },
@@ -62,13 +74,37 @@ export default function ProfileScreen() {
         contentContainerStyle={{ paddingTop: insets.top + space.xxl, paddingBottom: tabSpace + space.xl }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.center}>
+        <Pressable
+          style={styles.center}
+          onPress={social.availability.ok ? openSelf : undefined}
+          disabled={!social.availability.ok}
+          accessibilityRole={social.availability.ok ? 'button' : 'header'}
+          accessibilityLabel={me ? `${me.displayName}, @${me.handle}. Opens your profile.` : undefined}
+        >
           <View style={styles.avatar}>
-            <ProfileIcon color={color.moonDim} size={40} />
+            {me?.avatarUrl ? (
+              <Image source={{ uri: me.avatarUrl }} style={styles.avatarImage} contentFit="cover" />
+            ) : me ? (
+              <Text style={styles.initial}>{me.displayName.slice(0, 1).toUpperCase()}</Text>
+            ) : (
+              <ProfileIcon color={color.moonDim} size={40} />
+            )}
           </View>
-          <Text style={styles.title}>You</Text>
-          <Text style={styles.meta}>Your festivals and your sound, in one place.</Text>
-        </View>
+          <Text style={styles.title}>{me?.displayName ?? 'You'}</Text>
+          <Text style={styles.meta}>{me ? `@${me.handle}` : 'Your festivals and your sound, in one place.'}</Text>
+        </Pressable>
+        {social.availability.ok && social.ready ? (
+          <View style={styles.profileActions}>
+            {me ? (
+              <>
+                <SmallButton label="Edit profile" onPress={() => router.push('/profile-edit')} />
+                <SmallButton label="Find people" onPress={() => router.push('/people')} />
+              </>
+            ) : (
+              <SmallButton label={social.user ? 'Finish your profile' : 'Create your profile'} onPress={openSelf} glow />
+            )}
+          </View>
+        ) : null}
 
         <View style={styles.stats} accessibilityRole="summary">
           {stats.map((s) => (
@@ -134,11 +170,25 @@ export default function ProfileScreen() {
           <Pressable
             onPress={() => {
               haptic.select();
+              router.push('/memories');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Memories, ${memories.length}`}
+            style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={styles.rowText}>Memories</Text>
+            <Text style={styles.rowCount}>{memories.length || 'Add your videos'}</Text>
+            <ChevronIcon color={color.moonFaint} size={12} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              haptic.select();
               router.push('/saved');
             }}
             accessibilityRole="button"
             accessibilityLabel={`Your clips, ${clips}`}
-            style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
+            style={({ pressed }) => [styles.row, styles.rowGap, pressed && { opacity: 0.75 }]}
           >
             <Text style={styles.rowText}>Your clips</Text>
             <Text style={styles.rowCount}>{clips}</Text>
@@ -163,9 +213,11 @@ export default function ProfileScreen() {
 
           <View style={styles.soon}>
             <Text style={styles.soonKicker}>Coming soon</Text>
-            <Text style={styles.soonTitle}>Your festival profile</Text>
+            <Text style={styles.soonTitle}>Friends</Text>
             <Text style={styles.soonBody}>
-              Share your plan and the sets you love, follow friends, and see who else is going.
+              {social.availability.ok
+                ? 'Follow friends, see who else is going, and plan sets together.'
+                : 'Your festival profile, friends, and seeing who else is going.'}
             </Text>
           </View>
         </View>
@@ -174,7 +226,35 @@ export default function ProfileScreen() {
   );
 }
 
+function SmallButton({ label, onPress, glow }: { label: string; onPress: () => void; glow?: boolean }) {
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.small, glow && styles.smallGlow, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+    >
+      <Text style={styles.smallText}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  profileActions: { flexDirection: 'row', justifyContent: 'center', gap: space.sm, marginTop: space.lg },
+  small: {
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  smallGlow: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.45)' },
+  smallText: { ...type.label, color: color.moon },
+  avatarImage: { width: 88, height: 88, borderRadius: 44 },
+  initial: { ...type.largeTitle, color: color.moon },
   block: {
     padding: space.lg,
     marginBottom: space.md,
@@ -196,6 +276,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.glass,

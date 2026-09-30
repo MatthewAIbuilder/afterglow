@@ -2,64 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { Alert, Linking, Share } from 'react-native';
-import { renderRouter } from 'expo-router/testing-library';
 import * as Notifications from 'expo-notifications';
 import * as Sharing from 'expo-sharing';
-import RootLayout from '../_layout';
-import TabsLayout from '../(tabs)/_layout';
-import DiscoverScreen from '../(tabs)/index';
-import FestivalsScreen from '../(tabs)/festivals';
-import SoundScreen from '../(tabs)/sound';
-import ArtistScreen from '../artist/[id]';
-import FestivalScreen from '../festival/[id]';
-import PosterScreen from '../poster/[id]';
-import SavedScreen from '../saved';
-import WelcomeScreen from '../welcome';
-import TuneScreen from '../tune/[id]';
-import DiscoverFocusScreen from '../discover-focus';
-import LineupScreen from '../(tabs)/lineup';
-import ProfileScreen from '../(tabs)/profile';
-import NotificationsScreen from '../notifications';
-import YourSoundScreen from '../your-sound';
-import RequestScreen from '../request';
-import SoundScopeScreen from '../sound-scope';
-import PlanCardScreen from '../plan-card/[id]';
-import MusicScreen from '../music';
-import MusicAuthReturn from '../music-auth';
+import { renderApp } from './appRoutes';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
  * real routes and providers, the way Expo Router does it on the phone. They
  * catch a screen that crashes or shows nothing before anyone opens the app.
  */
-function renderApp(initialUrl: string) {
-  return renderRouter(
-    {
-      _layout: RootLayout,
-      '(tabs)/_layout': TabsLayout,
-      '(tabs)/index': DiscoverScreen,
-      '(tabs)/sound': SoundScreen,
-      '(tabs)/festivals': FestivalsScreen,
-      'artist/[id]': ArtistScreen,
-      'festival/[id]': FestivalScreen,
-      'poster/[id]': PosterScreen,
-      saved: SavedScreen,
-      welcome: WelcomeScreen,
-      'tune/[id]': TuneScreen,
-      'discover-focus': DiscoverFocusScreen,
-      '(tabs)/lineup': LineupScreen,
-      '(tabs)/profile': ProfileScreen,
-      notifications: NotificationsScreen,
-      'your-sound': YourSoundScreen,
-      request: RequestScreen,
-      'sound-scope': SoundScopeScreen,
-      'plan-card/[id]': PlanCardScreen,
-      music: MusicScreen,
-      'music-auth': MusicAuthReturn,
-    },
-    { initialUrl },
-  );
-}
 
 /** Let effects, storage reads and the next animation frame run. */
 const settle = () =>
@@ -707,7 +658,10 @@ describe('Discover', () => {
     const regular = await renderApp('/');
     await settle();
     await settle();
-    expect(regular.queryByLabelText(/^Tip: /)).toBeNull();
+    // They know swiping and liking; the only tip left is the new one, adding your own video.
+    expect(regular.queryByLabelText('Tip: Swipe up for the next clip')).toBeNull();
+    expect(regular.queryByLabelText('Tip: Double-tap a clip to like it')).toBeNull();
+    expect(regular.getByLabelText('Tip: Press and hold around a clip to add your own video to Memories')).toBeTruthy();
     expect(JSON.parse((await AsyncStorage.getItem('hints.v1')) ?? '[]')).toEqual(['swipe', 'like']);
   });
 
@@ -817,7 +771,10 @@ describe('Profile tab', () => {
     await settle();
     expect(app.getByLabelText('1 festival')).toBeTruthy();
     expect(app.getByLabelText('0 artists rated')).toBeTruthy();
-    expect(app.getByText('Your festival profile')).toBeTruthy();
+    // What's still to come; profiles themselves say plainly they aren't set up in this build.
+    expect(app.getByText('Friends')).toBeTruthy();
+    expect(app.getByText('Your festival profile, friends, and seeing who else is going.')).toBeTruthy();
+    expect(app.getByLabelText('Memories, 0')).toBeTruthy();
   });
 
   it('shows your sound in three bars and the festivals you are going to, with your weekend', async () => {

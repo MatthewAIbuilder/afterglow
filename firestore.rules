@@ -1,0 +1,93 @@
+rules_version = '2';
+
+// Afterglow social profiles. The app is never trusted: these rules decide who
+// may read and write what, with the same limits as src/features/social/validate.ts.
+// Deploy with: npx firebase-tools deploy --only firestore  (see docs/firebase-setup.md)
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function reserved(h) {
+      return h in ['afterglow', 'admin', 'administrator', 'support', 'help', 'official', 'staff', 'moderator', 'mod', 'team', 'root', 'system', 'me', 'you', 'null', 'undefined']
+        || h.matches('^afterglow.*');
+    }
+    // 3 to 20 characters: letters, numbers, dots and underscores; starts and ends with a letter or number; no two dots/underscores in a row.
+    function validHandle(h) {
+      return h is string && h.matches('^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$') && !h.matches('.*[._][._].*') && !reserved(h);
+    }
+    function path(coll, id) { return /databases/$(database)/documents/$(coll)/$(id); }
+    // An optional short text field: absent, or a string of at most `max` characters.
+    function shortOrAbsent(data, field, max) { return !(field in data) || (data[field] is string && data[field].size() <= max); }
+
+    // Profiles: anyone signed in can read; only you can write yours, and only
+    // with a handle you own (claimed in the same transaction).
+    match /profiles/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['handle', 'displayName', 'nameLower', 'bio', 'avatarUrl', 'festivals', 'sounds', 'showFestivals', 'showSound', 'createdAt', 'updatedAt'])
+        && validHandle(request.resource.data.handle)
+        && request.resource.data.displayName is string && request.resource.data.displayName.size() > 0 && request.resource.data.displayName.size() <= 40
+        && request.resource.data.nameLower == request.resource.data.displayName.lower()
+        && request.resource.data.bio is string && request.resource.data.bio.size() <= 160
+        && request.resource.data.festivals is list && request.resource.data.festivals.size() <= 50
+        && request.resource.data.createdAt.size() <= 40 && request.resource.data.updatedAt.size() <= 40
+        && request.resource.data.sounds is list && request.resource.data.sounds.size() <= 3
+        && request.resource.data.showFestivals is bool && request.resource.data.showSound is bool
+        && (!('avatarUrl' in request.resource.data) || (request.resource.data.avatarUrl is string && request.resource.data.avatarUrl.matches('^https://.*')))
+        && request.resource.data.createdAt is string && request.resource.data.updatedAt is string
+        && getAfter(path('handles', request.resource.data.handle)).data.uid == uid;
+      allow delete: if signedIn() && me() == uid;
+    }
+
+    // Handles: one owner each. Claimed only together with your profile; never reassigned.
+    match /handles/{handle} {
+      allow read: if signedIn();
+      allow create: if signedIn() && validHandle(handle)
+        && request.resource.data.keys().hasOnly(['uid']) && request.resource.data.uid == me()
+        && getAfter(path('profiles', me())).data.handle == handle;
+      allow update: if false;
+      // Only when you're moving to another handle or deleting your profile, so a profile never points at a handle it doesn't own.
+      allow delete: if signedIn() && resource.data.uid == me()
+        && (!existsAfter(path('profiles', me())) || getAfter(path('profiles', me())).data.handle != handle);
+    }
+
+    // Shared memories: readable by anyone signed in; created only by their owner,
+    // pointing at the owner's own files; never edited; deleted only by the owner.
+    match /memories/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == me()
+        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'capturedAt', 'durationSec', 'createdAt'])
+        && request.resource.data.handle == get(path('profiles', me())).data.handle
+        && request.resource.data.videoPath.matches('^memories/' + me() + '/' + id + '[.](mp4|mov|m4v)$')
+        && request.resource.data.videoUrl is string && request.resource.data.videoUrl.matches('^https://.*')
+        && (!('thumbPath' in request.resource.data) || request.resource.data.thumbPath == 'memories/' + me() + '/' + id + '.jpg')
+        && (!('thumbUrl' in request.resource.data) || (request.resource.data.thumbUrl is string && request.resource.data.thumbUrl.matches('^https://.*')))
+        && shortOrAbsent(request.resource.data, 'festivalId', 100) && shortOrAbsent(request.resource.data, 'artistId', 100)
+        && shortOrAbsent(request.resource.data, 'night', 40) && shortOrAbsent(request.resource.data, 'memoryId', 60)
+        && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
+        && request.resource.data.capturedAt is string && request.resource.data.capturedAt.size() <= 40
+        && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.uid == me();
+    }
+
+    // Blocks: private to you.
+    match /blocks/{uid} {
+      allow read, delete: if signedIn() && me() == uid;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['uids']) && request.resource.data.uids is list && request.resource.data.uids.size() <= 1000;
+    }
+
+    // Reports: anyone signed in can file one; only the project owner reads them (in the Firebase console).
+    match /reports/{id} {
+      allow create: if signedIn() && request.resource.data.by == me()
+        && request.resource.data.keys().hasOnly(['by', 'kind', 'targetId', 'ownerUid', 'reason', 'note', 'createdAt'])
+        && request.resource.data.kind in ['profile', 'memory']
+        && request.resource.data.targetId is string && request.resource.data.targetId.size() <= 128
+        && request.resource.data.ownerUid is string && request.resource.data.ownerUid.size() <= 128
+        && request.resource.data.reason in ['offensive', 'harassment', 'spam', 'not-theirs', 'other']
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500;
+      allow read, update, delete: if false;
+    }
+  }
+}

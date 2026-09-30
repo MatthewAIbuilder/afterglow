@@ -25,6 +25,8 @@ import { color, space, type } from '../../theme/tokens';
 import { ClipCard } from './ClipCard';
 import { FeedEnd } from './FeedEnd';
 import { FeedHint } from './FeedHint';
+import { useAddMemory } from '../memories/useAddMemory';
+import { useMemories } from '../../state/memories';
 import { alreadyKnown, currentHint } from './hints';
 import type { FeedPager } from './feedPager';
 import { defaultFocus } from '../festivals/links';
@@ -107,7 +109,8 @@ export function DiscoverFeed() {
   // First-time tips, one at a time, each gone once you've done it (or had already, before tips existed).
   const { reactions, hydrated: reactionsLoaded } = useReactions();
   const { done: hintsDone, markDone } = useHints();
-  const ready = !!hintsDone && seenLoaded && reactionsLoaded;
+  const { memories, hydrated: memoriesLoaded } = useMemories();
+  const ready = !!hintsDone && seenLoaded && reactionsLoaded && memoriesLoaded;
   // What you'd done before this visit (before the tips existed, say), checked once everything has loaded.
   // Only history from before now counts: jumping straight to a clip marks it seen without any swiping.
   const [openedAt] = useState(() => Date.now());
@@ -116,14 +119,20 @@ export function DiscoverFeed() {
     if (!ready || checkedHistory.current) return;
     checkedHistory.current = true;
     const before = Object.values(seen).filter((at) => at < openedAt).length;
-    const known = alreadyKnown(before, reactions);
+    const known = alreadyKnown(before, reactions, memories.length);
     if (known.length) markDone(known);
-  }, [ready, seen, reactions, openedAt, markDone]);
+  }, [ready, seen, reactions, memories.length, openedAt, markDone]);
   // A like or save (by double-tap or the rail) is the second tip done.
   useEffect(() => {
     if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
   }, [ready, reactions, markDone]);
   const hint = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
+  // Press and hold a clip to add your own video: the third tip is done the first time you do.
+  const addMemory = useAddMemory();
+  const onHold = useCallback(() => {
+    markDone(['hold']);
+    addMemory();
+  }, [markDone, addMemory]);
 
   // The feed's position and whether its own scrolling has the finger, read by swipes that start on a video.
   const offsetY = useSharedValue(0);
@@ -234,6 +243,7 @@ export function DiscoverFeed() {
               bottomSpace={tabSpace}
               pager={pager}
               onSkip={() => skipFrom(index)}
+              onHold={onHold}
             />
           );
         }}

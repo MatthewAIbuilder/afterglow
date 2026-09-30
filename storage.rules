@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Afterglow shared videos and profile photos. Only you can add or remove your
+// own files; anyone signed in can watch shared ones. Sizes are capped here.
+// Deploy with: npx firebase-tools deploy --only storage  (see docs/firebase-setup.md)
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /memories/{uid}/{file} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && file.matches('^[A-Za-z0-9]+[.](mp4|mov|m4v|jpg)$')
+        && (
+          (file.matches('.*[.]jpg$') && request.resource.contentType == 'image/jpeg' && request.resource.size < 5 * 1024 * 1024)
+          || (file.matches('.*[.](mp4|mov|m4v)$') && request.resource.contentType.matches('video/.*') && request.resource.size < 150 * 1024 * 1024)
+        );
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    match /avatars/{file} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && file == request.auth.uid + '.jpg'
+        && (request.resource == null || (request.resource.contentType == 'image/jpeg' && request.resource.size < 5 * 1024 * 1024));
+    }
+  }
+}

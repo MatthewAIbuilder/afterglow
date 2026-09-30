@@ -5,6 +5,7 @@ import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
 import { GoingProvider } from '../state/going';
+import { MemoriesProvider } from '../state/memories';
 import { MusicConnectionsProvider } from '../state/music';
 import { NoticesProvider } from '../state/notices';
 import { WeekendsProvider } from '../state/weekends';
@@ -12,6 +13,7 @@ import { PlanProvider } from '../state/plan';
 import { RatingsProvider } from '../state/ratings';
 import { ReactionsProvider } from '../state/reactions';
 import { SeenProvider } from '../state/seen';
+import { SocialProvider } from '../state/social';
 import { color } from '../theme/tokens';
 
 export default function RootLayout() {
@@ -19,6 +21,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.night }}>
       <CatalogProvider>
       <MusicConnectionsProvider>
+      <MemoriesProvider>
       <ReactionsProvider>
       <RatingsProvider>
       <PlanProvider>
@@ -26,6 +29,7 @@ export default function RootLayout() {
       <SeenProvider>
       <WeekendsProvider>
       <NoticesProvider>
+      <SocialProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -36,6 +40,14 @@ export default function RootLayout() {
         <Stack.Screen name="music" />
         <Stack.Screen name="music-auth" options={{ animation: 'none' }} />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="memory-tag" options={{ presentation: 'modal', gestureEnabled: false }} />
+        <Stack.Screen name="memories" />
+        <Stack.Screen name="memory/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="shared/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="account" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="profile-edit" />
+        <Stack.Screen name="u/[handle]" />
+        <Stack.Screen name="people" />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
@@ -82,6 +94,7 @@ export default function RootLayout() {
       </Stack>
       <FirstRun />
       <ReminderSync />
+      </SocialProvider>
       </NoticesProvider>
       </WeekendsProvider>
       </SeenProvider>
@@ -89,6 +102,7 @@ export default function RootLayout() {
       </PlanProvider>
       </RatingsProvider>
       </ReactionsProvider>
+      </MemoriesProvider>
       </MusicConnectionsProvider>
       </CatalogProvider>
     </GestureHandlerRootView>

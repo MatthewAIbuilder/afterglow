@@ -59,13 +59,17 @@ type Props = {
   /** Lets a vertical swipe on the video move the feed. */
   pager: FeedPager;
   onSkip: () => void;
+  /** Press and hold: add your own video. */
+  onHold?: () => void;
 };
 
 const BURST = 110;
+/** How long to hold before adding a video starts. */
+const HOLD_MS = 450;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip }: Props) {
+function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip, onHold }: Props) {
   const catalog = useCatalog();
   const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
@@ -165,6 +169,20 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       haptic.select();
       setPaused((p) => !p);
     });
+
+  // Press and hold anywhere around the clip to add your own video. It races the taps, so a tap never waits for it.
+  const hold = Gesture.LongPress()
+    .minDuration(HOLD_MS)
+    .maxDistance(12)
+    .enabled(!!onHold)
+    .withTestId(`hold-${clip.id}`)
+    .runOnJS(true)
+    .onStart(() => {
+      haptic.tap();
+      setPaused(true);
+      onHold?.();
+    });
+  const surface = Gesture.Race(hold, Gesture.Exclusive(doubleTap, singleTap));
 
   const pauseOpacity = useSharedValue(0);
   useEffect(() => {
@@ -331,7 +349,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
     return (
       <View style={{ width, height }}>
         {/* The video's own colours glow out to the edges. Taps here pause, double-taps like; the player takes its own touches. */}
-        <GestureDetector gesture={Gesture.Exclusive(doubleTap, singleTap)}>
+        <GestureDetector gesture={surface}>
           <View style={StyleSheet.absoluteFill}>
             <AmbientBackdrop uri={media.posterUrl} playing={playing} reduceMotion={reduceMotion} />
             {burst}
@@ -371,7 +389,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
 
   return (
     <View style={{ width, height }}>
-      <GestureDetector gesture={Gesture.Exclusive(doubleTap, singleTap)}>
+      <GestureDetector gesture={surface}>
         <View style={StyleSheet.absoluteFill}>
           <StageScene
             artistId={artist.id}
