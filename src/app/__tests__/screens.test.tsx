@@ -149,7 +149,23 @@ describe('Festivals', () => {
     expect(app.getByLabelText('Festival name').props.value).toBe('Lost Lands');
   });
 
-  it('sends a festival request through the share sheet, and says thanks', async () => {
+  it('sends a festival request by email to the team, and says thanks', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const app = await renderApp('/request');
+    await settle();
+    await fireEvent.changeText(app.getByLabelText('Festival name'), 'Lost Lands 2027');
+    await fireEvent.press(app.getByLabelText('Send request for Lost Lands 2027'));
+    await settle();
+    const url = open.mock.calls[0][0] as string;
+    expect(url.startsWith('mailto:afterglowmusic.support@gmail.com?')).toBe(true);
+    expect(decodeURIComponent(url)).toContain('Please add Lost Lands 2027 to Afterglow.');
+    expect(app.getByText('Thanks for asking')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('festivalRequests.v1')) ?? '[]')[0].name).toBe('Lost Lands 2027');
+    open.mockRestore();
+  });
+
+  it('without a mail app, a request goes through the share sheet instead', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('no mail app'));
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
     const app = await renderApp('/request');
     await settle();
@@ -158,7 +174,7 @@ describe('Festivals', () => {
     await settle();
     expect((share.mock.calls[0][0] as { message: string }).message).toContain('Please add Lost Lands 2027 to Afterglow.');
     expect(app.getByText('Thanks for asking')).toBeTruthy();
-    expect(JSON.parse((await AsyncStorage.getItem('festivalRequests.v1')) ?? '[]')[0].name).toBe('Lost Lands 2027');
+    open.mockRestore();
     share.mockRestore();
   });
 
@@ -410,12 +426,20 @@ describe('Artist', () => {
     await settle();
     expect(app.getByText('WOOLI')).toBeTruthy();
     expect(app.getByText('Mark as must see')).toBeTruthy();
-    await fireEvent.press(app.getByText('Love their sound'));
+    await fireEvent.press(app.getByLabelText("Love WOOLI's sound"));
     await settle();
-    expect(app.getByText('You love their sound')).toBeTruthy();
-    await fireEvent.press(app.getByText('You love their sound'));
+    expect(app.getByLabelText("You love WOOLI's sound. Tap to undo.")).toBeTruthy();
+    await fireEvent.press(app.getByLabelText("You love WOOLI's sound. Tap to undo."));
     await settle();
-    expect(app.getByText('Love their sound')).toBeTruthy();
+    expect(app.getByLabelText("Love WOOLI's sound")).toBeTruthy();
+    // The in-between answers, one at a time.
+    await fireEvent.press(app.getByLabelText('WOOLI is not really for me'));
+    await settle();
+    expect(app.getByLabelText('WOOLI is not really for you. Tap to undo.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Like WOOLI'));
+    await settle();
+    expect(app.getByLabelText('You like WOOLI. Tap to undo.')).toBeTruthy();
+    expect(app.queryByLabelText('WOOLI is not really for you. Tap to undo.')).toBeNull();
   });
 
   it('suggests similar artists from the same lineup, keeping the festival', async () => {

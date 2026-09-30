@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { picksChanged } from '../features/crews/together';
-import type { Crew } from '../features/social/models';
+import { crewStars, firstName, picksChanged, type CrewStars } from '../features/crews/together';
+import type { Crew, CrewPicks, Profile } from '../features/social/models';
 import { usePlan } from './plan';
 import { useSocial } from './social';
 
@@ -23,6 +23,8 @@ type Ctx = {
   rename: (id: string, name: string) => Promise<Crew>;
   remove: (id: string, uid: string) => Promise<Crew>;
   refresh: () => Promise<void>;
+  /** First names of crewmates who starred this set at this festival (never you). */
+  crewStarsFor: (festivalId: string, artistId: string) => string[];
 };
 
 /** Your stars reach your crews this long after they settle. */
@@ -140,6 +142,36 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [crews, plan, service]);
 
+  // Your crewmates' stars, for showing across the app: read whenever your crews are (sign-in, coming
+  // back to the app, joining or leaving), with their names (profiles read once per session).
+  const profiles = useRef(new Map<string, Profile | null>());
+  const [crewData, setCrewData] = useState<{ uid?: string; list: { crew: Crew; picks: CrewPicks[] }[]; names: Record<string, string> }>({ list: [], names: {} });
+  useEffect(() => {
+    if (!active || !uid || !crews.length) return;
+    let live = true;
+    (async () => {
+      const list = await Promise.all(
+        crews.map(async (crew) => ({ crew, picks: await service.crewPicks(crew.id).catch(() => [] as CrewPicks[]) })),
+      );
+      const missing = [...new Set(crews.flatMap((c) => c.members))].filter((m) => m !== uid && !profiles.current.has(m));
+      await Promise.all(missing.map(async (m) => profiles.current.set(m, await service.profileOf(m).catch(() => null))));
+      const names: Record<string, string> = {};
+      for (const [m, p] of profiles.current) if (p) names[m] = firstName(p.displayName);
+      if (live) setCrewData({ uid, list, names });
+    })();
+    return () => {
+      live = false;
+    };
+  }, [active, uid, crews, service]);
+  const stars = useMemo<CrewStars>(() => {
+    if (!active || crewData.uid !== uid) return {};
+    return crewStars(crewData.list, {
+      me: uid,
+      blocked: social.blocked,
+      nameOf: (m) => crewData.names[m],
+    });
+  }, [active, crewData, uid, social.blocked]);
+
   const value = useMemo<Ctx>(
     () => ({
       crews,
@@ -151,8 +183,9 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       rename,
       remove,
       refresh,
+      crewStarsFor: (festivalId, artistId) => stars[festivalId]?.[artistId] ?? [],
     }),
-    [crews, loaded, create, join, leave, rename, remove, refresh],
+    [crews, loaded, create, join, leave, rename, remove, refresh, stars],
   );
   return <CrewsContext.Provider value={value}>{children}</CrewsContext.Provider>;
 }

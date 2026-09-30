@@ -19,7 +19,8 @@ import { HeartIcon } from '../../features/discover/icons';
 import { soundsLike, tuneQueue } from '../../features/festivals/tune';
 import { TIER_AT } from '../../features/plan/plan';
 import { listenLinks } from '../../features/taste/listen';
-import type { Rating } from '../../features/taste/ratings';
+import { isCold, isWarm, RATING_LABEL, type Rating } from '../../features/taste/ratings';
+import { ratingA11y } from '../../features/taste/RateArtist';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useRatings } from '../../state/ratings';
@@ -30,6 +31,20 @@ import { lineupDays, playsOn } from '../../features/festivals/days';
 import { color, radius, space, type } from '../../theme/tokens';
 
 type Answer = Rating | 'unsure';
+
+/** The five answers: warm ones on top, OK in the middle, cold ones below. */
+const ANSWER_ROWS: Rating[][] = [
+  ['love', 'like'],
+  ['ok'],
+  ['meh', 'pass'],
+];
+
+/** "You love 2 and like 5 artists here." */
+function favouritesLine(loved: number, liked: number): string {
+  const artists = (n: number) => `${n} ${n === 1 ? 'artist' : 'artists'}`;
+  if (loved && liked) return `You love ${loved} and like ${liked} ${loved + liked === 1 ? 'artist' : 'artists'} here.`;
+  return loved ? `You love ${artists(loved)} here.` : `You like ${artists(liked)} here.`;
+}
 type Step = { id: string; answer: Answer };
 
 /**
@@ -81,8 +96,8 @@ export default function TuneScreen() {
 
   const answer = (a: Answer) => {
     if (!artist || moving.current) return;
-    if (a === 'love') haptic.tap();
-    else if (a === 'pass') haptic.soft();
+    if (isWarm(a === 'unsure' ? undefined : a)) haptic.tap();
+    else if (isCold(a === 'unsure' ? undefined : a)) haptic.soft();
     else haptic.select();
     if (a !== 'unsure') rate(artist.id, a);
     const finished = steps.length + 1 >= queue.length;
@@ -99,11 +114,13 @@ export default function TuneScreen() {
   };
 
   const loved = steps.filter((s) => s.answer === 'love').length;
+  const liked = steps.filter((s) => s.answer === 'like').length;
+  // Warm answers leave to the right, cold ones to the left, "They're OK" and "Don't know" fade.
   const exiting = reduceMotion
     ? undefined
-    : lastAnswer === 'love'
+    : lastAnswer === 'love' || lastAnswer === 'like'
       ? SlideOutRight.duration(260)
-      : lastAnswer === 'pass'
+      : lastAnswer === 'pass' || lastAnswer === 'meh'
         ? SlideOutLeft.duration(260)
         : FadeOut.duration(160);
   const tags = artist ? (Object.entries(artist.sound) as [SoundTag, number][]).sort((a, b) => b[1] - a[1]) : [];
@@ -113,7 +130,7 @@ export default function TuneScreen() {
     ? soundsLike(
         artist,
         catalog.artists,
-        (a) => ratings[a.id] === 'love' || (!!informed[a.id] && (taste[a.id] ?? 0) >= TIER_AT.strong),
+        (a) => isWarm(ratings[a.id]) || (!isCold(ratings[a.id]) && !!informed[a.id] && (taste[a.id] ?? 0) >= TIER_AT.strong),
         similarity,
       )
     : [];
@@ -205,8 +222,8 @@ export default function TuneScreen() {
                 ? day
                   ? `You’ve rated everyone playing ${day} at ${festival.name}.`
                   : `You’ve rated everyone on the ${festival.name} lineup.`
-                : loved > 0
-                  ? `You love ${loved} ${loved === 1 ? 'artist' : 'artists'} here. Your festival plan and My Sound have been updated.`
+                : loved + liked > 0
+                  ? `${favouritesLine(loved, liked)} Your festival plan and My Sound have been updated.`
                   : 'Your festival plan and My Sound have been updated.'}
             </Text>
           </Animated.View>
@@ -217,23 +234,27 @@ export default function TuneScreen() {
         {artist ? (
           <>
             <View style={styles.choices}>
-              <Pressable
-                onPress={() => answer('pass')}
-                accessibilityRole="button"
-                accessibilityLabel={`${artist.name} is not for me`}
-                style={({ pressed }) => [styles.choice, styles.pass, pressed && styles.pressed]}
-              >
-                <Text style={styles.choiceText}>Not for me</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => answer('love')}
-                accessibilityRole="button"
-                accessibilityLabel={`Love ${artist.name}'s sound`}
-                style={({ pressed }) => [styles.choice, styles.love, pressed && styles.pressed]}
-              >
-                <HeartIcon color={color.moon} filled size={18} />
-                <Text style={[styles.choiceText, { color: color.moon }]}>Love</Text>
-              </Pressable>
+              {ANSWER_ROWS.map((row) => (
+                <View key={row.join()} style={styles.choiceRow}>
+                  {row.map((r) => {
+                    const warm = isWarm(r);
+                    return (
+                      <Pressable
+                        key={r}
+                        onPress={() => answer(r)}
+                        accessibilityRole="button"
+                        accessibilityLabel={ratingA11y(r, artist.name, false)}
+                        style={({ pressed }) => [styles.choice, warm ? styles.love : styles.pass, r === 'love' && styles.loveStrong, pressed && styles.pressed]}
+                      >
+                        {r === 'love' ? <HeartIcon color={color.moon} filled size={16} /> : null}
+                        <Text style={[styles.choiceText, warm && { color: color.moon }]} numberOfLines={1}>
+                          {RATING_LABEL[r]}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
             </View>
             <View style={styles.lower}>
               <Pressable
@@ -315,19 +336,22 @@ const styles = StyleSheet.create({
   tagText: { ...type.caption, color: color.moon },
   doneText: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center' },
   actions: { paddingHorizontal: space.xl, alignItems: 'center' },
-  choices: { flexDirection: 'row', gap: space.md, alignSelf: 'stretch' },
+  choices: { gap: space.sm, alignSelf: 'stretch' },
+  choiceRow: { flexDirection: 'row', gap: space.sm },
   choice: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
-    height: 56,
+    height: 44,
+    paddingHorizontal: space.sm,
     borderRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
   },
   pass: { backgroundColor: color.glass, borderColor: color.hairline },
-  love: { backgroundColor: 'rgba(169,124,255,0.32)', borderColor: 'rgba(169,124,255,0.55)' },
+  love: { backgroundColor: 'rgba(169,124,255,0.2)', borderColor: 'rgba(169,124,255,0.45)' },
+  loveStrong: { backgroundColor: 'rgba(169,124,255,0.34)', borderColor: 'rgba(169,124,255,0.6)' },
   wide: { flex: 0, alignSelf: 'stretch' },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   choiceText: { ...type.headline, color: color.moonDim },

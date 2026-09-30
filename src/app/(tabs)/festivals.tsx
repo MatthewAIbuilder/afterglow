@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { PageTitle } from '../../components/PageTitle';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -54,6 +55,7 @@ export default function FestivalsScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title="Festivals" />
       <NightSky />
       <ScrollView
         contentContainerStyle={{

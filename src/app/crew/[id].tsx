@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -66,6 +67,7 @@ export default function CrewScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title={'Festival crew'} />
       <NightSky />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView

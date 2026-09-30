@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,8 +8,10 @@ import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { Missing } from '../../components/Missing';
 import { PageActions } from '../../components/PageActions';
 import { WEB_URL } from '../../config/app';
+import { starsLine } from '../../features/crews/together';
 import { artistShareText } from '../../features/share/pages';
 import { shareMessage } from '../../lib/share';
+import { useCrews } from '../../state/crews';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
@@ -49,11 +52,13 @@ export default function ArtistScreen() {
   const { isMustSee, toggleMustSee } = usePlan();
   const { reactions } = useReactions();
   const { ratings } = useRatings();
+  const { crewStarsFor } = useCrews();
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
   const yours = memories.filter((m) => m.artistId === artist.id);
   const context = festivalId ? catalog.festival(festivalId) : undefined;
   const starFestival = context?.lineup.includes(artist.id) ? context : undefined;
   const mustSee = !!starFestival && isMustSee(starFestival.id, artist.id);
+  const crewLine = starFestival ? starsLine(crewStarsFor(starFestival.id, artist.id)) : undefined;
 
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
   const mix = artistMix(artist);
@@ -71,6 +76,7 @@ export default function ArtistScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title={artist.name} />
       <NightSky />
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom + space.xxxl }}
@@ -121,6 +127,13 @@ export default function ArtistScreen() {
               </Text>
             </Pressable>
           )}
+          {/* Crewmates who starred them at this festival. */}
+          {starFestival && crewLine ? (
+            <Text style={styles.crewLine}>
+              <Text style={{ color: color.glow }}>★ </Text>
+              {crewLine}
+            </Text>
+          ) : null}
         </View>
 
         {/* Their sound as a mix, e.g. 80% melodic bass, 20% dubstep. */}
@@ -272,6 +285,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
+  crewLine: { ...type.label, color: color.moonDim, marginTop: space.md, textAlign: 'center' },
   hero: { alignItems: 'center', paddingHorizontal: space.xl },
   halo: { position: 'absolute', top: HERO / 2 - HALO / 2 },
   name: { ...type.largeTitle, color: color.moon, marginTop: space.xl, textAlign: 'center' },

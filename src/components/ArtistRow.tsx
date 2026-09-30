@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Artist } from '../data/types';
 import { HeartIcon } from '../features/discover/icons';
-import type { Rating } from '../features/taste/ratings';
+import { RATING_SAID, type Rating } from '../features/taste/ratings';
 import { haptic } from '../lib/haptics';
 import { color, space, type } from '../theme/tokens';
 import { ArtistAvatar } from './ArtistAvatar';
@@ -10,7 +10,8 @@ import { ChevronIcon } from './TabIcons';
 
 /**
  * `festivalId` opens the artist in that festival's context, so must-see stars apply there.
- * `rating` shows how you rated them: a heart for love, dimmed for "not for me".
+ * `rating` shows how you rated them: a glowing heart for love, an outline for like, "Not really for you"
+ * in the detail line, dimmed with "Not for you" for not for me (and said in full to screen readers).
  */
 type Props = { artist: Artist; affinity: number; detail?: string; festivalId?: string; rating?: Rating; /** Runs before the artist opens (e.g. to remember a search). */ onOpen?: () => void };
 
@@ -18,8 +19,9 @@ type Props = { artist: Artist; affinity: number; detail?: string; festivalId?: s
 export function ArtistRow({ artist, affinity, detail, festivalId, rating, onOpen }: Props) {
   const pct = Math.round(affinity * 100);
   const passed = rating === 'pass';
-  const line = passed ? [detail, 'Not for you'].filter(Boolean).join(' · ') : detail;
-  const said = rating === 'love' ? ', you love their sound' : '';
+  const cold = rating === 'pass' ? 'Not for you' : rating === 'meh' ? 'Not really for you' : undefined;
+  const line = cold ? [detail, cold].filter(Boolean).join(' · ') : detail;
+  const said = rating === 'love' || rating === 'like' || rating === 'ok' ? `, ${RATING_SAID[rating]}` : '';
   return (
     <Pressable
       onPress={() => {
@@ -37,7 +39,7 @@ export function ArtistRow({ artist, affinity, detail, festivalId, rating, onOpen
           <Text style={styles.name} numberOfLines={1}>
             {artist.name}
           </Text>
-          {rating === 'love' ? <HeartIcon color={color.glow} filled size={13} /> : null}
+          {rating === 'love' ? <HeartIcon color={color.glow} filled size={13} /> : rating === 'like' ? <HeartIcon color={color.moonDim} size={13} /> : null}
         </View>
         {line ? (
           <Text style={styles.detail} numberOfLines={1}>

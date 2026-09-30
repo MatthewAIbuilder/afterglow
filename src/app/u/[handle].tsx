@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -201,6 +202,7 @@ export default function PublicProfileScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title={handle ? `@${handle}` : undefined} />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>{body}</ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>

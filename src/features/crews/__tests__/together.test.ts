@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Crew } from '../../social/models';
-import { crewMembersLine, crewTogether, firstName, picksChanged, sharedCountLine, whoLine } from '../together';
+import { crewMembersLine, crewStars, crewTogether, firstName, picksChanged, sharedCountLine, starsLine, starsShort, whoLine } from '../together';
 
 const lineup = ['a', 'b', 'c', 'd'];
 const pick = (uid: string, artists: string[]) => ({ uid, artists, updatedAt: '' });
@@ -46,5 +46,31 @@ describe('crew picks together', () => {
     expect(picksChanged(['a', 'b'], ['b', 'a'])).toBe(false);
     expect(picksChanged(['a'], ['a', 'b'])).toBe(true);
     expect(picksChanged([], [])).toBe(false);
+  });
+});
+
+
+describe('crewmates’ stars across the app', () => {
+  const crew = (id: string, festivalId: string, members: string[]) => ({ id, festivalId, name: id, owner: members[0], members, createdAt: '' });
+  const names: Record<string, string> = { me: 'Me', maya: 'Maya', sam: 'Sam', jo: 'Jo' };
+  it('per festival and artist: never you, blocked people or people who left; each name once', () => {
+    const stars = crewStars(
+      [
+        { crew: crew('c1', 'f', ['me', 'maya', 'sam']), picks: [pick('me', ['a']), pick('maya', ['a', 'b']), pick('sam', ['a']), pick('gone', ['a'])] },
+        { crew: crew('c2', 'f', ['me', 'maya', 'jo']), picks: [pick('maya', ['a']), pick('jo', ['b'])] },
+        { crew: crew('c3', 'g', ['me', 'sam']), picks: [pick('sam', ['z'])] },
+      ],
+      { me: 'me', blocked: new Set(['jo']), nameOf: (u) => names[u] },
+    );
+    expect(stars).toEqual({ f: { a: ['Maya', 'Sam'], b: ['Maya'] }, g: { z: ['Sam'] } });
+  });
+
+  it('says it briefly on a row, fully on a page', () => {
+    expect(starsShort([])).toBeUndefined();
+    expect(starsShort(['Maya'])).toBe('★ Maya');
+    expect(starsShort(['Maya', 'Sam'])).toBe('★ Maya and Sam');
+    expect(starsShort(['Maya', 'Sam', 'Jo', 'Al'])).toBe('★ Maya, Sam +2');
+    expect(starsLine(['Maya'])).toBe('Maya starred this in your crew');
+    expect(starsLine(['Maya', 'Sam', 'Jo'])).toBe('Maya, Sam and 1 other starred this in your crew');
   });
 });

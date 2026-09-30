@@ -1,4 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { PageTitle } from '../../components/PageTitle';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -142,6 +143,7 @@ export default function MySoundScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title="My Sound" />
       <NightSky />
 
       <View style={{ position: 'absolute', top: mapTop, left: 0 }}>

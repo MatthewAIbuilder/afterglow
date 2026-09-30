@@ -76,3 +76,48 @@ export function picksChanged(next: readonly string[], last: readonly string[] | 
   const had = new Set(last);
   return next.some((a) => !had.has(a));
 }
+
+/** Festival id -> artist id -> the first names of crewmates who starred that set (never you). */
+export type CrewStars = Record<string, Record<string, string[]>>;
+
+/**
+ * Your crewmates' stars, festival by festival, for showing across the app
+ * ("★ Maya and Sam" on a lineup row). Only people still in the crew, never
+ * you or anyone you blocked; a name appears once per artist even if you share
+ * two crews; in each crew's member order.
+ */
+export function crewStars(
+  crews: { crew: Crew; picks: CrewPicks[] }[],
+  opts: { me?: string; blocked: ReadonlySet<string>; nameOf: (uid: string) => string | undefined },
+): CrewStars {
+  const out: CrewStars = {};
+  for (const { crew, picks } of crews) {
+    const byUid = new Map(picks.map((p) => [p.uid, p]));
+    const here = (out[crew.festivalId] ??= {});
+    for (const uid of crew.members) {
+      if (uid === opts.me || opts.blocked.has(uid)) continue;
+      const name = opts.nameOf(uid);
+      const p = byUid.get(uid);
+      if (!name || !p) continue;
+      for (const a of new Set(p.artists)) {
+        const list = (here[a] ??= []);
+        if (!list.includes(name)) list.push(name);
+      }
+    }
+  }
+  return out;
+}
+
+/** "★ Maya", "★ Maya and Sam", "★ Maya, Sam +2" (short, for a lineup row). */
+export function starsShort(names: string[]): string | undefined {
+  if (!names.length) return undefined;
+  if (names.length <= 2) return `★ ${names.join(' and ')}`;
+  return `★ ${names.slice(0, 2).join(', ')} +${names.length - 2}`;
+}
+
+/** "Maya starred this in your crew", "Maya and Sam starred this…", "Maya, Sam and 2 others starred this…". */
+export function starsLine(names: string[]): string | undefined {
+  if (!names.length) return undefined;
+  const who = names.length === 1 ? names[0] : names.length === 2 ? `${names[0]} and ${names[1]}` : `${names[0]}, ${names[1]} and ${names.length - 2} ${names.length === 3 ? 'other' : 'others'}`;
+  return `${who} starred this in your crew`;
+}

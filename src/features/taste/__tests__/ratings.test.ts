@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
-import { MOCK_CATALOG, MOCK_TASTE } from '../../../data/mock';
+import { MOCK_CATALOG, MOCK_SNAPSHOT, MOCK_TASTE } from '../../../data/mock';
 import type { Reaction } from '../../../state/reactions';
 import { BUILT_IN } from '../../../data/bundled';
 import { tuneQueue, leftToRate } from '../../festivals/tune';
 import { rankLineup } from '../../plan/plan';
 import { rankFeed } from '../../recommend/feed';
 import { artistsOnMap } from '../../sound-map/layout';
-import { computeTaste, RATING_WEIGHT, WEIGHT, RATED } from '../engine';
+import { computeTaste, RATED, RATED_RANGE, RATING_WEIGHT, WEIGHT } from '../engine';
 import { cleanRatings, rate } from '../ratings';
 
 const { artists, clips } = MOCK_CATALOG;
@@ -23,7 +23,7 @@ describe('artist ratings', () => {
   });
 
   it('keeps only well-formed ratings from storage', () => {
-    expect(cleanRatings({ a: 'love', b: 'pass', c: 'meh', d: 1 })).toEqual({ a: 'love', b: 'pass' });
+    expect(cleanRatings({ a: 'love', b: 'pass', c: 'meh', d: 1, e: 'meh-ish' })).toEqual({ a: 'love', b: 'pass', c: 'meh' });
     expect(cleanRatings(null)).toEqual({});
     expect(cleanRatings([1])).toEqual({});
   });
@@ -111,5 +111,35 @@ describe('tune your lineup', () => {
     expect(picks.find((p) => p.artist.id === 'i-hate-models')?.tier ?? 'left out').not.toBe('must-see');
     const onMap = artistsOnMap(catalog.artists, taste, informed).map((a) => a.id);
     expect(onMap).toEqual(expect.arrayContaining(['wooli', 'ray-volpe']));
+  });
+});
+
+
+describe('five-step ratings in the taste engine', () => {
+  const run = (ratings: Record<string, 'love' | 'like' | 'ok' | 'meh' | 'pass'>) => computeTaste(MOCK_TASTE, MOCK_SNAPSHOT.artists, MOCK_SNAPSHOT.clips, {}, undefined, ratings);
+  const id = MOCK_SNAPSHOT.artists[0].id;
+
+  it('each answer keeps the artist in its range', () => {
+    for (const r of ['love', 'like', 'ok', 'meh', 'pass'] as const) {
+      const t = run({ [id]: r }).taste[id];
+      const [lo, hi] = RATED_RANGE[r];
+      expect(t).toBeGreaterThanOrEqual(lo);
+      expect(t).toBeLessThanOrEqual(hi);
+    }
+  });
+
+  it('warmer answers never rank an artist lower, and spill over in order', () => {
+    const order = (['pass', 'meh', 'ok', 'like', 'love'] as const).map((r) => run({ [id]: r }).taste[id]);
+    for (let i = 1; i < order.length; i++) expect(order[i]).toBeGreaterThanOrEqual(order[i - 1]);
+    expect(RATING_WEIGHT.love).toBeGreaterThan(RATING_WEIGHT.like);
+    expect(RATING_WEIGHT.ok).toBe(0);
+    expect(RATING_WEIGHT.meh).toBeGreaterThan(RATING_WEIGHT.pass);
+  });
+
+  it('"They’re OK" says nothing about anyone else, but the artist is no longer a guess', () => {
+    const before = run({});
+    const after = run({ [id]: 'ok' });
+    for (const a of MOCK_SNAPSHOT.artists.slice(1)) expect(after.taste[a.id]).toBeCloseTo(before.taste[a.id], 10);
+    expect(after.informed[id]).toBe(true);
   });
 });

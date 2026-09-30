@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { PageTitle } from '../../components/PageTitle';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -97,6 +98,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title="Profile" />
       <NightSky />
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + space.xxl, paddingBottom: tabSpace + space.xl }}

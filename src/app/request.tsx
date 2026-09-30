@@ -28,17 +28,23 @@ export default function RequestScreen() {
     if (!request) return;
     haptic.tap();
     let done = false;
-    try {
-      if (REQUEST_EMAIL) {
+    // By email to the team; without a mail app (or an address), through the share sheet instead.
+    if (REQUEST_EMAIL) {
+      try {
         await Linking.openURL(requestMailto(REQUEST_EMAIL, request, APP_NAME));
         done = true;
-      } else {
+      } catch {
+        done = false;
+      }
+    }
+    if (!done) {
+      try {
         const { subject, body } = requestText(request, APP_NAME);
         const outcome = await shareMessage(body, subject);
         done = outcome === 'shared' || outcome === 'copied';
+      } catch {
+        done = false;
       }
-    } catch {
-      done = false;
     }
     if (!done) return;
     add(request.name);

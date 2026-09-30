@@ -1,5 +1,5 @@
 import type { Clip } from '../../data/models';
-import type { Ratings } from './ratings';
+import type { Rating, Ratings } from './ratings';
 
 /**
  * What an artist's match rests on, in plain words, so a score never feels
@@ -14,7 +14,7 @@ export type ArtistSignals = {
   saves: number;
   skips: number;
   watched: number;
-  rating?: 'love' | 'pass';
+  rating?: Rating;
   /** Music services whose library has them ("Spotify"), from the imported layer. */
   library?: string[];
 };

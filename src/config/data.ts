@@ -9,8 +9,12 @@
  *   it starts, keeps the last good copy for when you're offline, and never
  *   lets a broken file replace good data. Must start with https://.
  *   Leave it empty to use only the bundled file.
+ *
+ * It points at the website's catalogue.json, which the website's nightly
+ * build fills with festivals from EDMTrain (docs/events-import.md). Festivals
+ * in catalogue/afterglow.json always win over it.
  */
-export const CATALOG_URL: string = '';
+export const CATALOG_URL: string = 'https://afterglowmusic.web.app/catalogue.json';
 
 /** Give up on the hosted file after this long and keep what the app has. */
 export const CATALOG_TIMEOUT_MS = 8000;

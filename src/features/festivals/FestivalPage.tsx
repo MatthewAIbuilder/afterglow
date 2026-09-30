@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArtistRow } from '../../components/ArtistRow';
 import { NightSky } from '../../components/NightSky';
 import { SearchField } from '../../components/SearchField';
@@ -24,6 +24,9 @@ import { YourFestival } from '../plan/YourFestival';
 import { haptic } from '../../lib/haptics';
 import { FriendsGoing } from '../social/FriendsGoing';
 import { CrewCard } from '../crews/CrewCard';
+import { starsShort } from '../crews/together';
+import { useCrews } from '../../state/crews';
+import { OfficialLinks } from './OfficialLinks';
 import { CalendarPill } from '../calendar/CalendarPill';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
@@ -59,6 +62,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const { ratings } = useRatings();
   // Acts added to this lineup lately (a catalogue update), marked "Just added".
   const added = useLineupNews().justAdded(festival.id);
+  const { crewStarsFor } = useCrews();
   const today = useToday();
 
   const lineup = useMemo(() => {
@@ -138,6 +142,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               </Pressable>
             )}
           </View>
+          {/* Tickets and the festival's own site, when the catalogue has them. */}
+          <OfficialLinks festival={whole} over={soon === 'Over'} />
           {/* People you follow (and others) who show this festival on their profile. */}
           <FriendsGoing festivalId={whole.id} />
           {/* Your crews for this festival, or start one. */}
@@ -234,18 +240,32 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           {shown.map((a) => {
             const set = setFor(festival, a.id);
             const line = setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id]);
+            // "Just added", your crewmates' stars, then when they play.
+            const detail = [added.has(a.id) ? 'Just added' : undefined, starsShort(crewStarsFor(festival.id, a.id)), line].filter(Boolean).join(' · ') || undefined;
             return (
               <ArtistRow
                 key={a.id}
                 festivalId={festival.id}
                 artist={a}
                 affinity={taste[a.id] ?? 0}
-                detail={added.has(a.id) ? (line ? `Just added · ${line}` : 'Just added') : line}
+                detail={detail}
                 rating={ratings[a.id]}
               />
             );
           })}
         </View>
+
+        {/* Festivals from the nightly EDMTrain feed credit it, as its terms ask. */}
+        {festival.source ? (
+          <Pressable
+            onPress={() => void Linking.openURL(festival.source!.url).catch(() => {})}
+            accessibilityRole="link"
+            accessibilityLabel={`Event info from ${festival.source.name}. Opens their page.`}
+            style={({ pressed }) => [styles.pad, styles.source, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={styles.sourceText}>Event info from {festival.source.name} ↗</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -434,6 +454,8 @@ const styles = StyleSheet.create({
   },
   posterHintText: { ...type.caption, color: color.moon },
   note: { marginTop: space.xl },
+  source: { marginTop: space.xl, paddingVertical: space.sm, alignSelf: 'flex-start' },
+  sourceText: { ...type.caption, color: color.moonDim },
   noteTitle: { ...type.headline, color: color.moon },
   noteBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginBottom: space.sm },

@@ -1,5 +1,11 @@
+import { PageTitle } from '../../components/PageTitle';
 import { DiscoverFeed } from '../../features/discover/DiscoverFeed';
 
 export default function DiscoverScreen() {
-  return <DiscoverFeed />;
+  return (
+    <>
+      <PageTitle title="Discover" />
+      <DiscoverFeed />
+    </>
+  );
 }
