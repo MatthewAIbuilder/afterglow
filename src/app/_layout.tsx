@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DialogHost } from '../components/DialogHost';
 import { LikeSync } from '../features/community/LikeSync';
+import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
@@ -111,6 +112,7 @@ export default function RootLayout() {
       <FirstRun />
       <ReminderSync />
       <LikeSync />
+      <OfflineNotice />
       <DialogHost />
       </CrewsProvider>
       </NoticesProvider>

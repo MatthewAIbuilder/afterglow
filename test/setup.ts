@@ -177,3 +177,17 @@ jest.mock('expo-video', () => {
 jest.mock('../src/features/social/services', () => ({
   defaultSocialService: () => jest.requireActual<typeof import('../src/features/social/__tests__/fakeSocial')>('../src/features/social/__tests__/fakeSocial').fakeSocial({ available: false }).service,
 }));
+
+// The network: online unless a test says otherwise (`require('expo-network').__setState({ isConnected: false })`).
+jest.mock('expo-network', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  let state: { isConnected?: boolean; isInternetReachable?: boolean } = { isConnected: true, isInternetReachable: true };
+  const listeners = new Set<() => void>();
+  return {
+    useNetworkState: () => React.useSyncExternalStore((l: () => void) => (listeners.add(l), () => listeners.delete(l)), () => state),
+    __setState: (next: typeof state) => {
+      state = next;
+      listeners.forEach((l) => l());
+    },
+  };
+});
