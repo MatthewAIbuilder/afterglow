@@ -20,3 +20,8 @@ export function goingLine(names: string[]): string | undefined {
   if (names.length > 3) return `Going to ${names.length} festivals`;
   return `Going to ${names.length < 2 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`}`;
 }
+
+/** "1 follower", "12 followers". */
+export const followersLabel = (n: number) => `${n} ${n === 1 ? 'follower' : 'followers'}`;
+/** "3 following". */
+export const followingLabel = (n: number) => `${n} following`;

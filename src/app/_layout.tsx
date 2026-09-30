@@ -50,6 +50,7 @@ export default function RootLayout() {
         <Stack.Screen name="profile-edit" />
         <Stack.Screen name="u/[handle]" />
         <Stack.Screen name="people" />
+        <Stack.Screen name="follows/[handle]" />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"

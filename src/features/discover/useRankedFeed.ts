@@ -6,7 +6,7 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { lineupClips } from '../festivals/links';
-import { MIX } from './focus';
+import { FOLLOWING, MIX } from './focus';
 import { type FeedItem, rankFeed } from '../recommend/feed';
 
 const NO_CLIPS: Clip[] = [];
@@ -16,13 +16,14 @@ const NO_CLIPS: Clip[] = [];
  * on screen and the clip after it (already loading) stay put; everything
  * further down is re-ranked as you like, save, skip and watch, so what comes
  * next follows what you just did. Only artists on the focused festival's
- * lineup are in it (your mix has every clip); a new focus starts a fresh
+ * lineup are in it (your mix has every clip; Following has only the videos
+ * people you follow shared); a new focus starts a fresh
  * feed. Null until saved reactions and history have loaded and the focus is
  * known, so the first clip is chosen once, with everything known.
  */
 export function useRankedFeed(
   activeIndex: number,
-  focus: Festival | typeof MIX | undefined,
+  focus: Festival | typeof MIX | typeof FOLLOWING | undefined,
   /** Clips people shared for this focus (community clips), ranked alongside the official ones. */
   community: Clip[] = NO_CLIPS,
 ): FeedItem[] | null {
@@ -35,7 +36,8 @@ export function useRankedFeed(
   // "Now" for recency: when this session started, or your latest view if that's later.
   const [sessionStart] = useState(() => Date.now());
   const clips = useMemo(() => {
-    const official = focus === MIX ? catalog.clips : focus ? lineupClips(focus, catalog.clips) : [];
+    // Following is only videos from people you follow; the mix is every clip.
+    const official = focus === MIX ? catalog.clips : focus === FOLLOWING ? [] : focus ? lineupClips(focus, catalog.clips) : [];
     return community.length ? [...official, ...community] : official;
   }, [focus, catalog, community]);
 

@@ -80,6 +80,21 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uids']) && request.resource.data.uids is list && request.resource.data.uids.size() <= 1000;
     }
 
+    // Follows: `from` follows `to`. Anyone signed in can see who follows whom. You can only follow as
+    // yourself, someone else with a profile, and not someone who blocked you; either of you can end it.
+    match /follows/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.from == me()
+        && request.resource.data.keys().hasOnly(['from', 'to', 'createdAt'])
+        && request.resource.data.to is string && request.resource.data.to != me()
+        && id == me() + '_' + request.resource.data.to
+        && exists(path('profiles', me())) && exists(path('profiles', request.resource.data.to))
+        && !(exists(path('blocks', request.resource.data.to)) && me() in get(path('blocks', request.resource.data.to)).data.uids)
+        && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
+      allow update: if false;
+      allow delete: if signedIn() && (resource.data.from == me() || resource.data.to == me());
+    }
+
     // Reports: anyone signed in can file one; only the project owner reads them (in the Firebase console).
     match /reports/{id} {
       allow create: if signedIn() && request.resource.data.by == me()

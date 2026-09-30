@@ -23,6 +23,8 @@ export type ShareInput = {
   height?: number;
 };
 
+export type FollowCounts = { followers: number; following: number };
+
 export type ReportTarget = { kind: 'profile' | 'memory'; id: string; ownerUid: string };
 
 export interface SocialService {
@@ -53,6 +55,18 @@ export interface SocialService {
   /** The newest shared memories from every festival (community clips in your mix). */
   recentMemories(max: number): Promise<SharedMemory[]>;
   sharedMemory(id: string): Promise<SharedMemory | null>;
+
+  /** Follow someone (not yourself). Following twice is the same as once. */
+  follow(uid: string): Promise<void>;
+  unfollow(uid: string): Promise<void>;
+  /** Stop someone following you (used when you block them). */
+  removeFollower(uid: string): Promise<void>;
+  /** Who this person follows / who follows them, newest first, at most `max`. */
+  following(uid: string, max: number): Promise<string[]>;
+  followers(uid: string, max: number): Promise<string[]>;
+  followCounts(uid: string): Promise<FollowCounts>;
+  /** Shared memories from these people, newest first (Following in Discover). */
+  memoriesBy(uids: string[], max: number): Promise<SharedMemory[]>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;

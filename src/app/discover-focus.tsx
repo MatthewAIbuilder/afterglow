@@ -1,8 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CheckIcon, ChevronIcon } from '../components/TabIcons';
-import { focusChoices, MIX, type FocusChoice } from '../features/discover/focus';
+import { CheckIcon, ChevronIcon, ProfileIcon } from '../components/TabIcons';
+import { focusChoices, FOLLOWING, isWide, MIX, type FocusChoice } from '../features/discover/focus';
 import { PlayIcon } from '../features/discover/icons';
 import { countdown } from '../features/festivals/when';
 import { haptic } from '../lib/haptics';
@@ -27,7 +27,7 @@ export default function DiscoverFocusScreen() {
   const social = useSocial();
   const community = useCommunity();
   const choices = focusChoices(catalog.festivals, catalog.clips, going, today);
-  const currentFestival = current && current !== MIX ? catalog.festival(current) : undefined;
+  const currentFestival = current && !isWide(current) ? catalog.festival(current) : undefined;
 
   const pick = (focus: string) => {
     haptic.select();
@@ -74,6 +74,21 @@ export default function DiscoverFocusScreen() {
             <PlayIcon color={color.moon} size={14} />
           </View>
         ))}
+        {social.availability.ok &&
+          row(
+            FOLLOWING,
+            'Following',
+            !social.user
+              ? 'Sign in to follow people and see their videos'
+              : social.following.size
+                ? `Videos from the ${social.following.size === 1 ? 'person' : `${social.following.size} people`} you follow`
+                : 'Follow people to see their videos here',
+            current === FOLLOWING,
+            () => pick(FOLLOWING),
+            <View style={styles.mixIcon}>
+              <ProfileIcon color={color.moon} size={15} />
+            </View>,
+          )}
       </View>
 
       {choices.going.length > 0 && (

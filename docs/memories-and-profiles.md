@@ -78,6 +78,15 @@ useRankedFeed(activeIndex, focus, community) → ClipCard → ClipPlayer → Nat
 - **Your choice**: the What to discover sheet has a **Videos from the crowd** switch (on by default, shown when profiles are set up). `community.v1` also keeps hidden videos. Nothing in it leaves the phone.
 - **Rules and index**: memories may carry the video's `width`/`height` (numbers up to 20000, used to tell upright from landscape); reads need a signed-in user; index `festivalId ASC, createdAt DESC`. Catalogue files can't add community clips (`validate.ts` accepts only YouTube sources).
 
+## Following
+
+- **Follow** on someone's profile (and beside each person in Find people and the follower lists). It changes at once and goes back if the write fails (`setFollowing` in `state/social.tsx`). You need your own profile first, because people can see who follows them.
+- **Counts and lists**: profiles show "12 followers" and "3 following"; each opens `follows/[handle].tsx` (Followers / Following, newest 100, people you blocked left out). The Profile tab shows your own counts.
+- **Following in Discover**: What to discover has a **Following** row under Your mix (`FOLLOWING` in `features/discover/focus.ts`, remembered like the mix). It shows only videos from the people you follow (`memoriesBy`, the 300 you followed most recently, in groups of 30 because of Firestore's `in` limit), ranked by the same feed, and works even when Videos from the crowd is switched off. Unfollowing takes their videos out at once. With nothing to show it explains why (signed out, following no one, nothing shared yet) and offers Find people or your mix; the end of the feed offers Find people.
+- **Blocking** someone ends follows both ways (your follow of them and theirs of you), and someone who blocked you can't follow you (the rules check it).
+- **Public**: who follows whom is visible to anyone signed in, like profiles. Deleting your account removes your follows both ways.
+- Not yet: notifications for new followers.
+
 ### Data and rules
 
 | Firestore | Who can read | Who can write |
@@ -86,16 +95,18 @@ useRankedFeed(activeIndex, focus, community) → ClipCard → ClipPlayer → Nat
 | `handles/{handle}` | signed in | created with your profile; released only when your profile moves off it; never reassigned |
 | `memories/{id}` | signed in | created by you, pointing at your own files; never edited; deleted by you |
 | `blocks/{uid}` | you | you |
+| `follows/{from}_{to}` | signed in | created by `from` (both have profiles, not yourself, not someone who blocked you); never edited; deleted by either |
 | `reports/{id}` | nobody (console only) | anyone signed in, as themselves |
 
 Storage: `memories/{uid}/{id}.(mp4|mov|m4v)` (video, under 150 MB) and `.jpg` stills (under 5 MB), `avatars/{uid}.jpg`; written only by that uid, read by anyone signed in. Shared files are served through Firebase download links, which work for anyone who has the link; removing a memory from your profile deletes the file, so the link stops working.
 
-`scripts/firebase-rules.test.mjs` checks both rule files against the Firebase emulator (31 checks, all passing on 2026-09-30).
+`scripts/firebase-rules.test.mjs` checks both rule files against the Firebase emulator (38 checks, all passing on 2026-09-30).
 
 ## Tests
 
 - `features/memories/__tests__/guess.test.ts`, `organize.test.ts`; `state/__tests__/memories.test.tsx`.
 - `features/social/__tests__/social.test.ts` (validation, reading documents defensively, error kinds, publishing).
 - `src/app/__tests__/memories.test.tsx`: the whole flow through the real routes, with the in-memory backend.
+- `features/social/__tests__/follow.test.ts` (follow rules in the in-memory backend); `src/app/__tests__/follow.test.tsx` (Follow on a profile, lists, Find people, Profile counts, blocking, Following in Discover).
 - `features/community/__tests__/clips.test.ts` (filtering, remembering artists, taste after a clip is gone); `src/app/__tests__/community.test.tsx` (Discover shows a shared video; credit, Report, Hide, Block, the switch, signed out, likes remembered).
 - Not covered by `npm test`: the real picker, camera and media library, Firebase itself (the adapter), and the emulator rules check.

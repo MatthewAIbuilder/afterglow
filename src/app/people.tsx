@@ -1,13 +1,13 @@
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
 import { SearchField } from '../components/SearchField';
 import { ChevronIcon } from '../components/TabIcons';
 import type { Profile } from '../features/social/models';
+import { PersonRow } from '../features/social/PersonRow';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { useSocial } from '../state/social';
 import { color, space, type } from '../theme/tokens';
@@ -54,22 +54,7 @@ export default function PeopleScreen() {
         {searchable && !current ? <ActivityIndicator color={color.glow} /> : null}
         {results && !shown.length ? <Text style={styles.quiet}>No one matches “{query.trim()}”.</Text> : null}
         {shown.map((p) => (
-          <Pressable
-            key={p.uid}
-            onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: p.handle } })}
-            accessibilityRole="button"
-            accessibilityLabel={`${p.displayName}, @${p.handle}`}
-            style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
-          >
-            <View style={styles.avatar}>
-              {p.avatarUrl ? <Image source={{ uri: p.avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.initial}>{p.displayName.slice(0, 1).toUpperCase()}</Text>}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{p.displayName}</Text>
-              <Text style={styles.handle}>@{p.handle}</Text>
-            </View>
-            <ChevronIcon color={color.moonFaint} size={12} />
-          </Pressable>
+          <PersonRow key={p.uid} profile={p} follow />
         ))}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
@@ -86,9 +71,4 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   quiet: { ...type.body, color: color.moonDim },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
-  avatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: color.haze, alignItems: 'center', justifyContent: 'center' },
-  initial: { ...type.headline, color: color.moon },
-  name: { ...type.headline, color: color.moon },
-  handle: { ...type.caption, color: color.moonDim },
 });

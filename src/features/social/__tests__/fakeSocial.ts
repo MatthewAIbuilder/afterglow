@@ -14,6 +14,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const handles = new Map<string, string>();
   const memories = new Map<string, SharedMemory & { memoryId: string }>();
   const blocks = new Map<string, string[]>();
+  /** Follows as `from>to`, in the order made. */
+  const follows = new Map<string, { from: string; to: string; createdAt: string }>();
   const reports: { by: string; target: ReportTarget; reason: ReportReason; note?: string }[] = [];
   const listeners = new Set<(u: SocialUser | null) => void>();
   let current: SocialUser | null = null;
@@ -63,6 +65,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (p) handles.delete(p.handle);
       profiles.delete(u.uid);
       blocks.delete(u.uid);
+      for (const [k, f] of follows) if (f.from === u.uid || f.to === u.uid) follows.delete(k);
       accounts.delete(u.email ?? '');
       current = null;
       emit();
@@ -165,6 +168,33 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async sharedMemory(id) {
       return memories.get(id) ?? null;
     },
+    async follow(uid) {
+      const u = me();
+      if (uid === u.uid || !profiles.has(uid) || !profiles.has(u.uid)) throw new SocialError('unknown');
+      if ((blocks.get(uid) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      const k = `${u.uid}>${uid}`;
+      if (!follows.has(k)) follows.set(k, { from: u.uid, to: uid, createdAt: `${now()}#${++n}` });
+    },
+    async unfollow(uid) {
+      follows.delete(`${me().uid}>${uid}`);
+    },
+    async removeFollower(uid) {
+      follows.delete(`${uid}>${me().uid}`);
+    },
+    async following(uid, max) {
+      return [...follows.values()].filter((f) => f.from === uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max).map((f) => f.to);
+    },
+    async followers(uid, max) {
+      return [...follows.values()].filter((f) => f.to === uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max).map((f) => f.from);
+    },
+    async followCounts(uid) {
+      const all = [...follows.values()];
+      return { followers: all.filter((f) => f.to === uid).length, following: all.filter((f) => f.from === uid).length };
+    },
+    async memoriesBy(uids, max) {
+      const who = new Set(uids);
+      return [...memories.values()].filter((m) => who.has(m.uid)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
     async report(target, reason, note) {
       reports.push({ by: me().uid, target, reason, note });
     },
@@ -177,5 +207,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, reports, currentUser: () => current };
 }

@@ -129,19 +129,36 @@ export function useClipPool(): { clips: Clip[]; find: (id: string) => Clip | und
 /** Fetched clips are fresh for this long; after that, coming back to the app or the focus fetches again. */
 export const COMMUNITY_FRESH_MS = 5 * 60_000;
 const MIX_KEY = '__mix__';
+/** A failed first fetch is tried again after this long (on the next focus or return to the app). */
+const RETRY_MS = 30_000;
+/** Following reads videos from at most this many of the people you follow (each 30 is one more query). */
+export const FOLLOWING_FEED_MAX = 300;
+
+/** A short fingerprint of who you follow, so a change of follows fetches afresh. */
+function followKey(uids: ReadonlySet<string>) {
+  let h = 5381;
+  for (const u of [...uids].sort()) for (let i = 0; i < u.length; i++) h = ((h * 33) ^ u.charCodeAt(i)) >>> 0;
+  return `__following__:${uids.size}:${h.toString(36)}`;
+}
+
+export type CommunityFocus = Festival | 'mix' | 'following' | undefined;
 
 /**
- * Community clips for Discover's focus (a festival, or `'mix'` for every
- * festival), ready for the feed. Empty when profiles aren't set up, you're
- * signed out, or you switched them off. Fetches once per focus, again when
- * stale, never twice at the same time; a failed fetch keeps what was there.
+ * Community clips for Discover's focus, ready for the feed: a festival's,
+ * everyone's (`'mix'`), or those of the people you follow (`'following'`).
+ * Empty when profiles aren't set up or you're signed out; festival and mix
+ * clips also need Videos from the crowd switched on (Following is what you
+ * chose to see). Fetches once per focus, again when stale, never twice at the
+ * same time; a failed fetch keeps what was there. `loaded` is true once
+ * there's an answer (or nothing to fetch).
  */
-export function useCommunityClips(focus: Festival | 'mix' | undefined): Clip[] {
+export function useCommunityFeed(focus: CommunityFocus): { clips: Clip[]; loaded: boolean } {
   const social = useSocial();
   const { enabled, hidden } = useCommunity();
   const { artists } = useCatalog();
-  const key = focus === 'mix' ? MIX_KEY : focus?.id;
-  const active = social.availability.ok && !!social.user && enabled && !!key;
+  const following = focus === 'following';
+  const key = focus === 'mix' ? MIX_KEY : following ? followKey(social.following) : focus?.id;
+  const active = social.availability.ok && !!social.user && (enabled || following) && !!key && (!following || social.following.size > 0);
   const [cache, setCache] = useState<Record<string, { at: number; memories: SharedMemory[] }>>({});
   const inflight = useRef<Set<string>>(new Set());
   const [tick, setTick] = useState(0);
@@ -158,18 +175,33 @@ export function useCommunityClips(focus: Festival | 'mix' | undefined): Clip[] {
     const had = cache[key];
     if (had && Date.now() - had.at < COMMUNITY_FRESH_MS) return;
     inflight.current.add(key);
-    const load = key === MIX_KEY ? social.service.recentMemories(COMMUNITY_MAX * 2) : social.service.festivalMemories(key, COMMUNITY_MAX * 2);
+    const load =
+      key === MIX_KEY
+        ? social.service.recentMemories(COMMUNITY_MAX * 2)
+        : following
+          ? social.service.memoriesBy([...social.following].slice(0, FOLLOWING_FEED_MAX), COMMUNITY_MAX * 2)
+          : social.service.festivalMemories(key, COMMUNITY_MAX * 2);
     load
       .then((memories) => setCache((c) => ({ ...c, [key]: { at: Date.now(), memories } })))
-      .catch(() => {})
+      // A first fetch that fails shows as empty (so the screen can say so) and may be tried again in half a minute.
+      .catch(() => setCache((c) => (c[key] ? c : { ...c, [key]: { at: Date.now() - COMMUNITY_FRESH_MS + RETRY_MS, memories: [] } })))
       .finally(() => inflight.current.delete(key));
-  }, [active, key, cache, social.service, tick, uid]);
+  }, [active, key, following, cache, social.service, social.following, tick, uid]);
 
   const memories = key ? cache[key]?.memories : undefined;
   const artistIds = useMemo(() => new Set(artists.map((a) => a.id)), [artists]);
-  return useMemo(() => {
+  const clips = useMemo(() => {
     if (!active || !memories) return EMPTY;
-    return communityClips(memories, { artists: artistIds, blocked: social.blocked, hidden, me: uid, festival: focus === 'mix' ? undefined : focus });
-  }, [active, memories, artistIds, social.blocked, hidden, uid, focus]);
+    const festival = focus === 'mix' || following ? undefined : focus;
+    // Following shows only people you still follow (an unfollow takes effect at once).
+    const list = following ? memories.filter((m) => social.following.has(m.uid)) : memories;
+    return communityClips(list, { artists: artistIds, blocked: social.blocked, hidden, me: uid, festival });
+  }, [active, memories, artistIds, social.blocked, social.following, hidden, uid, focus, following]);
+  return { clips, loaded: !active || !!memories };
+}
+
+/** Community clips for Discover's focus (see useCommunityFeed). */
+export function useCommunityClips(focus: CommunityFocus): Clip[] {
+  return useCommunityFeed(focus).clips;
 }
 const EMPTY: Clip[] = [];

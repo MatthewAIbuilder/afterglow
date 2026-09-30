@@ -19,6 +19,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   initializeFirestore,
@@ -55,6 +56,7 @@ import { asSocialError, memoryFromDoc, prefixEnd, profileFromDoc, videoType } fr
  *   handles/{handle}    { uid }: one owner per handle
  *   memories/{id}       uid, handle, videoPath, videoUrl, thumbPath, thumbUrl, festivalId, night, artistId, capturedAt, durationSec, width, height, createdAt
  *   blocks/{uid}        { uids: [...] }: only you can read or write yours
+ *   follows/{from}_{to} from, to, createdAt: made by `from`, removed by either
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
  * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg
  */
@@ -142,6 +144,16 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await deleteDoc(d.ref);
         }
         await removeFile(`avatars/${user.uid}.jpg`);
+        // Follows either way.
+        const [out, inn] = await Promise.all([
+          getDocs(query(collection(db, 'follows'), where('from', '==', user.uid))),
+          getDocs(query(collection(db, 'follows'), where('to', '==', user.uid))),
+        ]);
+        for (let i = 0; i < out.docs.length + inn.docs.length; i += 400) {
+          const b = writeBatch(db);
+          for (const d of [...out.docs, ...inn.docs].slice(i, i + 400)) b.delete(d.ref);
+          await b.commit();
+        }
         const profile = await getDoc(doc(db, 'profiles', user.uid));
         const batch = writeBatch(db);
         const handle = profile.exists() ? (profile.data() as { handle?: string }).handle : undefined;
@@ -298,6 +310,48 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         return snap.docs.map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
       }),
     sharedMemory: (id) => guard(async () => memoryFromDoc(id, (await getDoc(doc(fb().db, 'memories', id))).data())),
+
+    follow: (uid) =>
+      guard(async () => {
+        const user = me();
+        if (uid === user.uid) throw new SocialError('unknown');
+        await setDoc(doc(fb().db, 'follows', `${user.uid}_${uid}`), { from: user.uid, to: uid, createdAt: now() });
+      }),
+    unfollow: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${me().uid}_${uid}`))),
+    removeFollower: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${uid}_${me().uid}`))),
+    following: (uid, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'follows'), where('from', '==', uid), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => (d.data() as { to?: unknown }).to).filter((x): x is string => typeof x === 'string');
+      }),
+    followers: (uid, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'follows'), where('to', '==', uid), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => (d.data() as { from?: unknown }).from).filter((x): x is string => typeof x === 'string');
+      }),
+    followCounts: (uid) =>
+      guard(async () => {
+        const follows = collection(fb().db, 'follows');
+        const [followers, following] = await Promise.all([
+          getCountFromServer(query(follows, where('to', '==', uid))),
+          getCountFromServer(query(follows, where('from', '==', uid))),
+        ]);
+        return { followers: followers.data().count, following: following.data().count };
+      }),
+    memoriesBy: (uids, max) =>
+      guard(async () => {
+        // Firestore takes at most 30 values in one `in`; ask in groups and merge, newest first.
+        const groups: string[][] = [];
+        for (let i = 0; i < uids.length; i += 30) groups.push(uids.slice(i, i + 30));
+        const snaps = await Promise.all(
+          groups.map((g) => getDocs(query(collection(fb().db, 'memories'), where('uid', 'in', g), orderBy('createdAt', 'desc'), limit(max)))),
+        );
+        return snaps
+          .flatMap((snap) => snap.docs.map((d) => memoryFromDoc(d.id, d.data())))
+          .filter((m): m is NonNullable<typeof m> => !!m)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, max);
+      }),
 
     report: (target, reason, note) =>
       guard(async () => {

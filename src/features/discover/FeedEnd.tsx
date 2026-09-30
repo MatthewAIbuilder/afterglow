@@ -13,8 +13,10 @@ import { MIX } from './focus';
 import { HeartIcon, PlayIcon } from './icons';
 
 type Props = {
-  /** The lineup you were discovering; none when it was your mix. */
+  /** The lineup you were discovering; none when it was your mix or Following. */
   festival?: Festival;
+  /** You were watching videos from the people you follow. */
+  following?: boolean;
   width: number;
   height: number;
   /** Space reserved at the bottom for the floating tab bar. */
@@ -24,11 +26,12 @@ type Props = {
 
 /**
  * The last page of the feed: you've seen every clip from this lineup (or, in
- * your mix, every clip there is). Offers the next step instead of a dead end:
+ * your mix, every clip there is; in Following, every video from the people
+ * you follow). Offers the next step instead of a dead end:
  * rate the rest of the lineup, see your plan, discover another festival or
  * your mix, or start again.
  */
-export function FeedEnd({ festival, width, height, bottomSpace, onRestart }: Props) {
+export function FeedEnd({ festival, following = false, width, height, bottomSpace, onRestart }: Props) {
   const catalog = useCatalog();
   const { ratings } = useRatings();
   const insets = useSafeAreaInsets();
@@ -56,10 +59,14 @@ export function FeedEnd({ festival, width, height, bottomSpace, onRestart }: Pro
 
   return (
     <View style={[styles.page, { width, height, paddingTop: insets.top + 100, paddingBottom: bottomSpace + space.xl }]}>
-      <Text style={styles.kicker}>{festival ? 'That’s the lineup' : 'That’s your mix'}</Text>
-      <Text style={styles.title}>{festival ? `You’ve seen every clip from ${festival.name}` : 'You’ve seen every clip'}</Text>
+      <Text style={styles.kicker}>{festival ? 'That’s the lineup' : following ? 'That’s everyone you follow' : 'That’s your mix'}</Text>
+      <Text style={styles.title}>
+        {festival ? `You’ve seen every clip from ${festival.name}` : following ? 'You’ve seen every video from people you follow' : 'You’ve seen every clip'}
+      </Text>
       <Text style={styles.body}>
-        {!festival
+        {following
+          ? 'Find more people to follow, try your mix, or watch again.'
+          : !festival
           ? 'Focus on a festival to shape your plan, or watch again.'
           : toRate > 0
             ? 'Rate the rest of the lineup to shape your plan, or keep discovering.'
@@ -74,7 +81,8 @@ export function FeedEnd({ festival, width, height, bottomSpace, onRestart }: Pro
         {others.map((f) =>
           row(`Discover ${f.name}`, undefined, () => router.navigate({ pathname: '/', params: { festival: f.id } }), <PlayIcon color={color.moonDim} size={14} />),
         )}
-        {festival &&
+        {following && row('Find people', undefined, () => router.push('/people'), undefined, true)}
+        {(festival || following) &&
           row('Try your mix', 'a bit of everything', () => router.navigate({ pathname: '/', params: { festival: MIX } }), <PlayIcon color={color.moonDim} size={14} />)}
         {row('Watch again from the top', undefined, onRestart)}
       </View>

@@ -17,6 +17,7 @@ import MusicScreen from '../music';
 import MusicAuthReturn from '../music-auth';
 import NotificationsScreen from '../notifications';
 import PeopleScreen from '../people';
+import FollowsScreen from '../follows/[handle]';
 import PlanCardScreen from '../plan-card/[id]';
 import PosterScreen from '../poster/[id]';
 import ProfileEditScreen from '../profile-edit';
@@ -60,6 +61,7 @@ export const APP_ROUTES = {
   'profile-edit': ProfileEditScreen,
   'u/[handle]': PublicProfileScreen,
   people: PeopleScreen,
+  'follows/[handle]': FollowsScreen,
 };
 
 export const renderApp = (initialUrl: string) => renderRouter(APP_ROUTES, { initialUrl });
