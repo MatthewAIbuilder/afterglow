@@ -5,6 +5,7 @@ import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
 import { GoingProvider } from '../state/going';
+import { MemoriesProvider } from '../state/memories';
 import { MusicConnectionsProvider } from '../state/music';
 import { NoticesProvider } from '../state/notices';
 import { WeekendsProvider } from '../state/weekends';
@@ -19,6 +20,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.night }}>
       <CatalogProvider>
       <MusicConnectionsProvider>
+      <MemoriesProvider>
       <ReactionsProvider>
       <RatingsProvider>
       <PlanProvider>
@@ -89,6 +91,7 @@ export default function RootLayout() {
       </PlanProvider>
       </RatingsProvider>
       </ReactionsProvider>
+      </MemoriesProvider>
       </MusicConnectionsProvider>
       </CatalogProvider>
     </GestureHandlerRootView>

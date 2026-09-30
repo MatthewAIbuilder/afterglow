@@ -26,7 +26,39 @@
       "expo-image",
       "expo-sharing",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Afterglow opens your videos so you can keep festival moments in Memories.",
+          "cameraPermission": "Afterglow uses the camera to record festival moments for your Memories.",
+          "microphonePermission": "Afterglow records sound with your festival videos."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Afterglow reads when and where a video was filmed to guess who was playing.",
+          "savePhotosPermission": "Afterglow saves your memories to Photos when you ask.",
+          "isAccessMediaLocationEnabled": true,
+          "granularPermissions": [
+            "video"
+          ]
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Afterglow uses where you are when you record to work out which festival you're at."
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": false,
+          "supportsPictureInPicture": false
+        }
+      ]
     ],
     "scheme": "afterglow",
     "backgroundColor": "#0A0918",
