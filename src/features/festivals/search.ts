@@ -58,7 +58,7 @@ export function filterLineup(artists: Artist[], query: string, sound?: SoundTag)
  * within each. Nothing for an empty search.
  */
 /** How well a name matches: starts with the search (0), a word starts with it (1), contains it (2). */
-function nameRank(name: string, q: string) {
+export function nameRank(name: string, q: string) {
   const n = normalize(name);
   if (n.startsWith(q) || n.replace(/ /g, '').startsWith(q.replace(/ /g, ''))) return 0;
   if (n.split(' ').some((w) => w.startsWith(q))) return 1;

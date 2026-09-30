@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { ArtistRow } from '../../components/ArtistRow';
+import { FestivalRow } from '../../components/FestivalRow';
 import { SearchField } from '../../components/SearchField';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
@@ -166,34 +167,6 @@ function FestivalList({ festivals, taste, view }: { festivals: Festival[]; taste
         <FestivalTile key={f.id} festival={f} taste={taste} />
       ))}
     </View>
-  );
-}
-
-/** A festival in search results: name and when/where, opening its page. */
-function FestivalRow({ festival }: { festival: Festival }) {
-  const today = useToday();
-  const soon = countdown(festival, today);
-  return (
-    <Pressable
-      onPress={() => {
-        haptic.select();
-        router.push(`/festival/${festival.id}`);
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={`${festival.name}, ${whereWhen(festival)}${soon ? `, ${soon}` : ''}`}
-      style={({ pressed }) => [styles.fRow, pressed && { opacity: 0.7 }]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={styles.fRowName} numberOfLines={1}>
-          {festival.name}
-        </Text>
-        <Text style={styles.status} numberOfLines={1}>
-          {soon ? `${soon} · ` : ''}
-          {whereWhen(festival)}
-        </Text>
-      </View>
-      <ChevronIcon color={color.moonFaint} size={12} />
-    </Pressable>
   );
 }
 
@@ -385,8 +358,6 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   resultsHead: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.md, marginBottom: space.xs },
-  fRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
-  fRowName: { ...type.headline, color: color.moon },
   request: { alignSelf: 'center', paddingVertical: space.lg, paddingHorizontal: space.xl },
   requestInline: { alignSelf: 'flex-start', paddingHorizontal: 0 },
   requestText: { ...type.label, color: color.moonDim },

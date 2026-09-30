@@ -8,6 +8,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # "Run workflow" on the Actions tab republishes main by hand.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,7 +24,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      CAN_DEPLOY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) }}
+      CAN_DEPLOY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,4 +59,4 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID }}
-          channelId: ${{ github.event_name == 'push' && 'live' || '' }}
+          channelId: ${{ github.event_name != 'pull_request' && 'live' || '' }}

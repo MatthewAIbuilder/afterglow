@@ -7,11 +7,14 @@ import { FollowButton } from './FollowButton';
 import type { Profile } from './models';
 
 /** A person in a list (search, followers, following): photo, name and @handle, opening their profile, with Follow beside it. */
-export function PersonRow({ profile: p, follow = false }: { profile: Profile; follow?: boolean }) {
+export function PersonRow({ profile: p, follow = false, onOpen }: { profile: Profile; follow?: boolean; onOpen?: () => void }) {
   return (
     <View style={styles.row}>
       <Pressable
-        onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: p.handle } })}
+        onPress={() => {
+          onOpen?.();
+          router.push({ pathname: '/u/[handle]', params: { handle: p.handle } });
+        }}
         accessibilityRole="button"
         accessibilityLabel={`${p.displayName}, @${p.handle}`}
         style={({ pressed }) => [styles.open, pressed && { opacity: 0.75 }]}
