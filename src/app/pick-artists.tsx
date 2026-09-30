@@ -113,7 +113,7 @@ export default function PickArtistsScreen() {
             <Text style={styles.moreText}>Show more</Text>
           </Pressable>
         ) : null}
-        {candidates.length === 0 ? <Text style={styles.sub}>You've rated everyone here already.</Text> : null}
+        {candidates.length === 0 ? <Text style={styles.sub}>You’ve rated everyone here already.</Text> : null}
       </ScrollView>
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.lg }]}>
         <Pressable
