@@ -51,6 +51,9 @@ export type SharedMemory = {
   artistId?: string;
   capturedAt: string;
   durationSec?: number;
+  /** The video's size, so upright clips get a tall player. */
+  width?: number;
+  height?: number;
   createdAt: string;
 };
 

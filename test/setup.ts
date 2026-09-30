@@ -157,7 +157,18 @@ jest.mock('expo-video', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
     VideoView: (props: object) => jest.requireActual<typeof import('react')>('react').createElement(View, { ...props, testID: 'video-view' }),
-    useVideoPlayer: () => ({ play: jest.fn(), pause: jest.fn(), loop: false, muted: false, replace: jest.fn() }),
+    useVideoPlayer: () => ({
+      play: jest.fn(),
+      pause: jest.fn(),
+      loop: false,
+      muted: false,
+      currentTime: 0,
+      duration: 0,
+      timeUpdateEventInterval: 0,
+      replay: jest.fn(),
+      replace: jest.fn(),
+      addListener: () => ({ remove: () => {} }),
+    }),
   };
 });
 

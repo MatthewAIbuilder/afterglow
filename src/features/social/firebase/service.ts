@@ -53,7 +53,7 @@ import { asSocialError, memoryFromDoc, prefixEnd, profileFromDoc, videoType } fr
  * Layout:
  *   profiles/{uid}      handle, displayName, nameLower, bio, avatarUrl, festivals, sounds, createdAt, updatedAt
  *   handles/{handle}    { uid }: one owner per handle
- *   memories/{id}       uid, handle, videoPath, videoUrl, thumbPath, thumbUrl, festivalId, night, artistId, capturedAt, durationSec, createdAt
+ *   memories/{id}       uid, handle, videoPath, videoUrl, thumbPath, thumbUrl, festivalId, night, artistId, capturedAt, durationSec, width, height, createdAt
  *   blocks/{uid}        { uids: [...] }: only you can read or write yours
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
  * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg
@@ -257,6 +257,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             ...(input.artistId ? { artistId: input.artistId } : {}),
             capturedAt: input.capturedAt,
             ...(input.durationSec ? { durationSec: input.durationSec } : {}),
+            ...(input.width && input.height ? { width: input.width, height: input.height } : {}),
             createdAt: now(),
           };
           await setDoc(memRef, shared);
@@ -284,6 +285,16 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     memoriesOf: (uid) =>
       guard(async () => {
         const snap = await getDocs(query(collection(fb().db, 'memories'), where('uid', '==', uid), orderBy('capturedAt', 'desc'), limit(60)));
+        return snap.docs.map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
+      }),
+    festivalMemories: (festivalId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'memories'), where('festivalId', '==', festivalId), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
+      }),
+    recentMemories: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'memories'), orderBy('createdAt', 'desc'), limit(max)));
         return snap.docs.map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
       }),
     sharedMemory: (id) => guard(async () => memoryFromDoc(id, (await getDoc(doc(fb().db, 'memories', id))).data())),

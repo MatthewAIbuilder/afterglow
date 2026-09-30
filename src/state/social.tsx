@@ -146,6 +146,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
             artistId: m.artistId,
             capturedAt: m.capturedAt,
             durationSec: m.durationSec,
+            width: m.width,
+            height: m.height,
           },
           (p) => setSharing((s) => (m.id in s ? { ...s, [m.id]: p } : s)),
         );

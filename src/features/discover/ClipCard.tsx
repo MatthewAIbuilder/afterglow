@@ -21,7 +21,9 @@ import { setFor } from '../../data/festival';
 import type { Clip, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useCommunity } from '../../state/community';
 import { useReactions } from '../../state/reactions';
+import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
 import { describeSet } from '../festivals/format';
 import { festivalLine } from '../festivals/links';
@@ -35,6 +37,7 @@ import { type FeedPager, usePlayerSwipe } from './feedPager';
 import { HeartIcon, PlayIcon } from './icons';
 import { clipMedia } from './media';
 import { clipShareText } from './share';
+import { communityMenu } from '../community/menu';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
 import { MIN_PLAYER, tallLayout } from './videoLayout';
@@ -83,6 +86,16 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
 
   // Real footage when the clip has playable media; the stage when it doesn't or the video fails.
   const media = useMemo(() => clipMedia(clip), [clip]);
+  // A community clip (someone's shared video): credited to them, with Report / Hide / Block.
+  const community = media?.provider === 'video' ? media.community : undefined;
+  const communityState = useCommunity();
+  const social = useSocial();
+  const { remember } = communityState;
+  // So your reactions keep counting for the artist after this clip leaves the feed.
+  const reacted = reaction.liked || reaction.skipped || !!reaction.watched;
+  useEffect(() => {
+    if (community && (isActive || reacted)) remember(clip);
+  }, [isActive, reacted, community, clip, remember]);
   const [videoFailed, setVideoFailed] = useState(false);
   const showVideo = !!media && !videoFailed;
   const failVideo = useCallback(() => setVideoFailed(true), []);
@@ -264,10 +277,14 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         next ? haptic.tap() : haptic.select();
         setLiked(clip.id, next);
       }}
-      onSave={() => {
-        reaction.saved ? haptic.select() : haptic.tap();
-        toggleSaved(clip.id);
-      }}
+      onSave={
+        community
+          ? undefined
+          : () => {
+              reaction.saved ? haptic.select() : haptic.tap();
+              toggleSaved(clip.id);
+            }
+      }
       onSkip={() => {
         haptic.soft();
         markSkipped(clip.id);
@@ -324,6 +341,36 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
           {clip.title}
         </Text>
         {metaLine(!!tall)}
+        {community ? (
+          <View style={styles.creditRow}>
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                if (watch.current) watch.current = excuseWatch(watch.current);
+                router.push({ pathname: '/u/[handle]', params: { handle: community.handle } });
+              }}
+              accessibilityRole="link"
+              accessibilityLabel={`${media.credit}. Opens their profile.`}
+              hitSlop={6}
+              style={({ pressed }) => [styles.creditText, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.credit} numberOfLines={1}>
+                {media.credit}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
+                communityMenu(community, { report: social.report, hide: communityState.hide, block: social.setBlocked })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`More: report, hide or block @${community.handle}`}
+              hitSlop={12}
+              style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+            >
+              <Text style={styles.more}>•••</Text>
+            </Pressable>
+          </View>
+        ) : media.provider === 'youtube' ? (
         <View style={styles.creditRow}>
           <Text style={[styles.credit, styles.creditText]} numberOfLines={1}>
             {media.credit}
@@ -343,6 +390,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
             <ShareIcon color={color.moonDim} size={15} />
           </Pressable>
         </View>
+        ) : null}
       </>
     );
 
@@ -419,7 +467,8 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         {artistButton}
         <Text style={styles.title}>{clip.title}</Text>
         {metaLine(false)}
-        {media && videoFailed && (
+        {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>This video isn’t available right now.</Text>}
+        {media?.provider === 'youtube' && videoFailed && (
           <Pressable
             onPress={() => Linking.openURL(media.externalUrl).catch(() => {})}
             accessibilityRole="link"
@@ -505,5 +554,6 @@ const styles = StyleSheet.create({
   creditRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   creditText: { flex: 1 },
   share: { marginTop: space.sm, paddingHorizontal: space.xs },
+  more: { ...type.caption, color: color.moonDim, letterSpacing: 1 },
   videoActions: { marginTop: space.xxl },
 });

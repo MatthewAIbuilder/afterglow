@@ -15,6 +15,7 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useCommunityClips } from '../../state/community';
 import { useStoredFocus } from '../../state/discoverFocus';
 import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
@@ -92,7 +93,9 @@ export function DiscoverFeed() {
     if (focusParam && decided) navigation.setParams({ festival: '' } as never);
   }, [focusParam, decided, navigation]);
 
-  const feed = useRankedFeed(activeIndex, mix ? MIX : festival);
+  // Clips people at the festival shared to their profiles, beside the official ones (none when signed out or switched off).
+  const community = useCommunityClips(mix ? 'mix' : festival);
+  const feed = useRankedFeed(activeIndex, mix ? MIX : festival, community);
   const { mustSeesAt } = usePlan();
   const count = feed?.length ?? 0;
   // After the last clip comes one more page: the end of the lineup (or of everything), with where to go next.

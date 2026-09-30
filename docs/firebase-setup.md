@@ -59,7 +59,7 @@ npx firebase-tools@latest use --add
 npx firebase-tools@latest deploy --only firestore,storage
 ```
 
-It should end with "Deploy complete!" (this also creates the one index Afterglow needs). If you'd rather not use the command line, paste the contents of `firestore.rules` into Firebase console → Firestore → **Rules** → Publish, and `storage.rules` into Storage → **Rules** → Publish, then add the index by hand: Firestore → **Indexes** → Composite → Create index → collection `memories`, fields `uid` Ascending and `capturedAt` Descending, query scope Collection. It takes a few minutes to build.
+It should end with "Deploy complete!" (this also creates the two indexes Afterglow needs). If you'd rather not use the command line, paste the contents of `firestore.rules` into Firebase console → Firestore → **Rules** → Publish, and `storage.rules` into Storage → **Rules** → Publish, then add the two indexes by hand: Firestore → **Indexes** → Composite → Create index → collection `memories`, fields `uid` Ascending and `capturedAt` Descending, query scope Collection; then another with `festivalId` Ascending and `createdAt` Descending. They take a few minutes to build.
 
 ## 6. Try it (in Expo Go)
 
@@ -72,7 +72,8 @@ Restart the app with the new `.env`: `npx expo start --go --clear`, and open it 
 5. **A second person** (a second phone with Expo Go, or sign out and create another account): Profile → **Find people** → type `@` and your first handle → open the profile → **•••** → **Report** (choose a reason; it appears in Firestore → `reports`) and **Block** (the profile then says "You blocked @…", and search no longer shows it).
 6. **Going to**: with "Show festivals I'm going to" on, tap **I'm going** on a festival; a few seconds later your profile shows it.
 7. **Remove from profile**: in the memory → **On your profile** → Remove. It's gone from the profile (and from Storage), still in your Memories.
-8. **Delete account**: Profile → Edit profile → **Delete account** → your password → **Delete account forever**. Your profile, handle, shared videos and the account are removed; your Memories stay on the phone.
+8. **Videos from the crowd in Discover**: with the second account signed in, open Discover on the festival your first account's memory is tagged with (it needs an artist from that lineup). After a clip or two, the shared video plays in the feed with **Filmed by @yourhandle** under it; tap that to open the profile. The **•••** beside it offers Report, Hide and Block, and each makes it disappear straight away. **What to discover** (tap the festival name at the top) has a **Videos from the crowd** switch to turn them off.
+9. **Delete account**: Profile → Edit profile → **Delete account** → your password → **Delete account forever**. Your profile, handle, shared videos and the account are removed; your Memories stay on the phone.
 
 ## Troubleshooting
 
@@ -82,4 +83,5 @@ Restart the app with the new `.env`: `npx expo start --go --clear`, and open it 
 | "Couldn't reach Afterglow" when saving or sharing | Rules not deployed yet (step 5), Firestore/Storage not created, or no internet. |
 | Sharing fails straight away | Storage isn't set up, or the project isn't on Blaze (step 2.3). |
 | A profile opens but says "Couldn't load memories just now" | The index isn't there yet: deploy with the command in step 5, or add it by hand, and wait a few minutes for it to build. |
+| No videos from the crowd in Discover | You're signed out, the switch in What to discover is off, the second index isn't built yet (step 5), or the shared memory isn't tagged with an artist on that festival's lineup. Your own shared videos never show in your own feed. |
 | "That video is too big to share" | Shared videos are capped at 150 MB. Trim it when choosing (iPhone), or share a shorter clip. |

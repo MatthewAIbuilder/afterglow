@@ -10,7 +10,7 @@
  */
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'fs';
-import { doc, getDoc, setDoc, deleteDoc, writeBatch, updateDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, updateDoc, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 const env = await initializeTestEnvironment({
@@ -69,6 +69,17 @@ await t('over-long fields and unknown fields refused', async () => {
   await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem5'), mem('mem5', 'uidA', { festivalId: 'x'.repeat(101) })));
   await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem6'), mem('mem6', 'uidA', { place: 'Austin' })));
   await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem7'), mem('mem7', 'uidA', { thumbUrl: 'http://x' })));
+});
+await t('a memory may record the video’s size, as numbers', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'mem8'), mem('mem8', 'uidA', { festivalId: 'acl-26', width: 1080, height: 1920 })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem9'), mem('mem9', 'uidA', { width: '1080' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem10'), mem('mem10', 'uidA', { height: 50000 })));
+});
+await t('Discover can list a festival’s shared memories, newest first, when signed in', async () => {
+  const q = (fs) => query(collection(fs, 'memories'), where('festivalId', '==', 'acl-26'), orderBy('createdAt', 'desc'), limit(80));
+  await assertSucceeds(getDocs(q(B.firestore())));
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'memories'), orderBy('createdAt', 'desc'), limit(80))));
+  await assertFails(getDocs(q(anon.firestore())));
 });
 await t('memories are never edited', () => assertFails(updateDoc(doc(A.firestore(), 'memories', 'mem1'), { artistId: 'x' })));
 await t('B can read but not delete A’s memory', async () => {

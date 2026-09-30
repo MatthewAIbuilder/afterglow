@@ -19,6 +19,8 @@ export type ShareInput = {
   artistId?: string;
   capturedAt: string;
   durationSec?: number;
+  width?: number;
+  height?: number;
 };
 
 export type ReportTarget = { kind: 'profile' | 'memory'; id: string; ownerUid: string };
@@ -46,6 +48,10 @@ export interface SocialService {
   shareMemory(input: ShareInput, onProgress?: (share: number) => void): Promise<SharedMemory>;
   unshareMemory(sharedId: string): Promise<void>;
   memoriesOf(uid: string): Promise<SharedMemory[]>;
+  /** Shared memories tagged with this festival, newest first (community clips in Discover). */
+  festivalMemories(festivalId: string, max: number): Promise<SharedMemory[]>;
+  /** The newest shared memories from every festival (community clips in your mix). */
+  recentMemories(max: number): Promise<SharedMemory[]>;
   sharedMemory(id: string): Promise<SharedMemory | null>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;

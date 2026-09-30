@@ -55,6 +55,28 @@ SocialService (features/social/service.ts) ── firebase/service.ts (Auth + Fi
 - **Moderation**: `obscenity` filters handles, names and bios (`validate.ts`); sign-up requires agreeing to the community guidelines (`copy.ts`); every profile and shared video can be reported (Firestore `reports`, read in the console) and people can be blocked (private `blocks/{uid}`; blocked people disappear from search, profiles and shared videos). A contact for the App Store goes in `SUPPORT_EMAIL` (`config/app.ts`).
 - **Account deletion** (in the app, as the App Store requires): re-enter your password; shared memories and their files, your photo, handle, profile and blocks are deleted, then the account. Reports you filed are kept for moderation. Your Memories stay on the phone, no longer marked shared.
 
+## Community clips in Discover
+
+Shared memories tagged with a festival and an artist Afterglow knows appear in Discover beside the official clips, ranked by the same taste engine (lanes, one clip per artist before anyone's second, never the same artist twice in a row).
+
+```
+SocialService.festivalMemories(festival, 80) / recentMemories(80)   (your mix)
+        │  useCommunityClips (state/community.tsx): signed in, switch on; per focus, fresh 5 min, again on foreground
+        ▼
+features/community/clips.ts (pure): communityClips → Clip { id: community:<sharedId>, source: { provider: 'community', … } }
+        │  newest first, at most 40; blocked people, hidden/reported videos and your own left out;
+        │  for a festival, only its videos of artists on its lineup
+        ▼
+useRankedFeed(activeIndex, focus, community) → ClipCard → ClipPlayer → NativeVideoPlayer (expo-video)
+```
+
+- **Playback** follows the same rules as YouTube clips (`shouldPlay`, `canCountWatch`, `playedSpan`): only the live clip plays, from the top, looping; only real playing seconds count as watch time. A video that fails or doesn't load in 15 s says "This video isn't available right now."
+- **The card**: "Filmed by @handle" (opens their profile) and a ••• with **Report this video** (reasons as for profiles; hidden for you at once), **Hide this video**, **Block @handle** (asks first). No Save (the video isn't Afterglow's to keep) and no share link. Like, Skip and watching shape your taste like any clip.
+- **Taste after the clip is gone**: the engine finds a clip's artist through the clip list, so the artist of every community clip you reacted to is remembered (`community.v1`, `artistOf`, bounded to 500) and `useTaste` adds stand-in clips (`rememberedClips`) for reactions whose clip isn't loaded.
+- **Late arrivals**: community clips load after the feed starts; the clip on screen and the next one stay put (the feed's keep is tied to the focus, not the clip list), so they join from the third clip on.
+- **Your choice**: the What to discover sheet has a **Videos from the crowd** switch (on by default, shown when profiles are set up). `community.v1` also keeps hidden videos. Nothing in it leaves the phone.
+- **Rules and index**: memories may carry the video's `width`/`height` (numbers up to 20000, used to tell upright from landscape); reads need a signed-in user; index `festivalId ASC, createdAt DESC`. Catalogue files can't add community clips (`validate.ts` accepts only YouTube sources).
+
 ### Data and rules
 
 | Firestore | Who can read | Who can write |
@@ -67,11 +89,12 @@ SocialService (features/social/service.ts) ── firebase/service.ts (Auth + Fi
 
 Storage: `memories/{uid}/{id}.(mp4|mov|m4v)` (video, under 150 MB) and `.jpg` stills (under 5 MB), `avatars/{uid}.jpg`; written only by that uid, read by anyone signed in. Shared files are served through Firebase download links, which work for anyone who has the link; removing a memory from your profile deletes the file, so the link stops working.
 
-`scripts/firebase-rules.test.mjs` checks both rule files against the Firebase emulator (29 checks, all passing on 2026-09-30).
+`scripts/firebase-rules.test.mjs` checks both rule files against the Firebase emulator (31 checks, all passing on 2026-09-30).
 
 ## Tests
 
 - `features/memories/__tests__/guess.test.ts`, `organize.test.ts`; `state/__tests__/memories.test.tsx`.
 - `features/social/__tests__/social.test.ts` (validation, reading documents defensively, error kinds, publishing).
 - `src/app/__tests__/memories.test.tsx`: the whole flow through the real routes, with the in-memory backend.
+- `features/community/__tests__/clips.test.ts` (filtering, remembering artists, taste after a clip is gone); `src/app/__tests__/community.test.tsx` (Discover shows a shared video; credit, Report, Hide, Block, the switch, signed out, likes remembered).
 - Not covered by `npm test`: the real picker, camera and media library, Firebase itself (the adapter), and the emulator rules check.

@@ -1,0 +1,151 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, fireEvent } from '@testing-library/react-native';
+import { router } from 'expo-router';
+import { ActionSheetIOS, Alert, type AlertButton } from 'react-native';
+import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
+import { renderApp } from './appRoutes';
+
+/**
+ * Community clips in Discover through the real routes: a video someone
+ * shared from Cyclops Cove 4 shows in its feed (a festival with no official
+ * clips yet), credited to them, and goes away when reported, hidden, blocked
+ * or switched off. The social backend is the in-memory one.
+ */
+let mockSocial = fakeSocial();
+jest.mock('../../features/social/services', () => ({ defaultSocialService: () => mockSocial.service }));
+
+const settle = (ms = 50) =>
+  act(async () => {
+    jest.advanceTimersByTime(ms);
+    await Promise.resolve();
+  });
+const flush = async () => {
+  for (let i = 0; i < 8; i++) await settle();
+};
+
+/** Maya shares a video of HEDEX at Cyclops Cove 4 (no official clips of them, so it comes early); then you sign in (or stay out). */
+async function mayaShares(viewer: 'signed-in' | 'signed-out' = 'signed-in') {
+  const s = mockSocial.service;
+  await s.signUp('maya@example.com', 'password123');
+  await s.saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+  await s.shareMemory({ memoryId: 'm1', videoUri: 'file:///m1.mov', thumbUri: 'file:///m1.jpg', festivalId: 'cyclops-cove-4', night: 'Friday', artistId: 'hedex', capturedAt: '2026-12-04T22:30:00.000Z', durationSec: 42, width: 1080, height: 1920 });
+  await s.signOut();
+  if (viewer === 'signed-in') await s.signUp('sam@example.com', 'password123');
+}
+
+const CREDIT = 'Filmed by @maya. Opens their profile.';
+/**
+ * Open Discover on Cyclops Cove 4. Shared videos arrive after the feed has
+ * started, and the clip on screen and the next one stay put (tests only
+ * render the top of the feed), so switch away and back: the feed starts
+ * over with them in it.
+ */
+async function openFeed() {
+  const app = await renderApp('/?festival=cyclops-cove-4');
+  await flush();
+  await act(async () => router.setParams({ festival: 'solstice-26' }));
+  await flush();
+  await act(async () => router.setParams({ festival: 'cyclops-cove-4' }));
+  await flush();
+  return app;
+}
+const openMenu = async (app: Awaited<ReturnType<typeof renderApp>>, choose: number) => {
+  jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(choose));
+  await fireEvent.press(app.getByLabelText('More: report, hide or block @maya'));
+  await flush();
+};
+
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  await AsyncStorage.setItem('welcomed.v1', 'true');
+  mockSocial = fakeSocial();
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe('community clips in Discover', () => {
+  it('shows a shared video from the lineup, credited to who filmed it, with no Save', async () => {
+    await mayaShares();
+    const app = await openFeed();
+    expect(app.getByLabelText(CREDIT)).toBeTruthy();
+    expect(app.getByText('From the crowd')).toBeTruthy();
+    expect(app.getByTestId('video-view')).toBeTruthy();
+    // Every clip can be liked; community clips can't be saved (they aren't Afterglow's to keep).
+    expect(app.queryAllByLabelText('Save')).toHaveLength(app.getAllByLabelText('Like').length - 1);
+  });
+
+  it('the credit opens their profile', async () => {
+    await mayaShares();
+    const app = await openFeed();
+    await fireEvent.press(app.getByLabelText(CREDIT));
+    await flush();
+    expect(app.getByText('@maya')).toBeTruthy();
+  });
+
+  it('none when you’re signed out', async () => {
+    await mayaShares('signed-out');
+    const app = await openFeed();
+    expect(app.queryByLabelText(CREDIT)).toBeNull();
+  });
+
+  it('report: sent, and hidden for you straight away', async () => {
+    await mayaShares();
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const app = await openFeed();
+    // Report this video, then the first reason.
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(0)).mockImplementationOnce((_o, cb) => cb(0));
+    await fireEvent.press(app.getByLabelText('More: report, hide or block @maya'));
+    await flush();
+    expect(mockSocial.reports).toHaveLength(1);
+    expect(mockSocial.reports[0].target).toMatchObject({ kind: 'memory', ownerUid: 'uid-1' });
+    expect(app.queryByLabelText(CREDIT)).toBeNull();
+    expect(JSON.parse((await AsyncStorage.getItem('community.v1')) ?? '{}').hidden).toHaveLength(1);
+  });
+
+  it('hide: gone, and stays gone', async () => {
+    await mayaShares();
+    const app = await openFeed();
+    await openMenu(app, 1);
+    expect(app.queryByLabelText(CREDIT)).toBeNull();
+    expect(mockSocial.reports).toHaveLength(0);
+  });
+
+  it('block: asks first, then nothing from them', async () => {
+    await mayaShares();
+    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons?: AlertButton[]) => buttons?.find((b) => b.text === 'Block')?.onPress?.());
+    const app = await openFeed();
+    await openMenu(app, 2);
+    expect(mockSocial.blocks.get(mockSocial.currentUser()!.uid)).toEqual(['uid-1']);
+    expect(app.queryByLabelText(CREDIT)).toBeNull();
+  });
+
+  it('switched off in What to discover: only official clips', async () => {
+    await mayaShares();
+    const app = await openFeed();
+    expect(app.getByLabelText(CREDIT)).toBeTruthy();
+    await act(async () => router.push('/discover-focus?current=cyclops-cove-4' as never));
+    await flush();
+    expect(app.getByText('Videos from the crowd')).toBeTruthy();
+    await fireEvent(app.getByTestId('community-switch'), 'valueChange', false);
+    await flush();
+    expect(app.getByText('Only official clips.')).toBeTruthy();
+    await act(async () => router.back());
+    await flush();
+    expect(app.queryByLabelText(CREDIT)).toBeNull();
+    expect(JSON.parse((await AsyncStorage.getItem('community.v1')) ?? '{}').enabled).toBe(false);
+  });
+
+  it('a like counts for the artist and is remembered after the clip has gone', async () => {
+    await mayaShares();
+    const app = await openFeed();
+    for (const like of app.getAllByLabelText('Like')) await fireEvent.press(like);
+    await flush();
+    const reactions = JSON.parse((await AsyncStorage.getItem('reactions.v1')) ?? '{}');
+    const id = Object.keys(reactions).find((k) => k.startsWith('community:'));
+    expect(id).toBeDefined();
+    expect(JSON.parse((await AsyncStorage.getItem('community.v1')) ?? '{}').artistOf[id!]).toBe('hedex');
+  });
+});

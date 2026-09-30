@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 import { MOCK_CATALOG } from '../../../data/mock';
 import { CLIPS } from '../../../data/mock/clips';
-import type { Clip, ClipSource } from '../../../data/types';
+import type { Clip, YouTubeClipSource } from '../../../data/models';
 import { clipProgress, parsePlayerMessage, playableSource, playerHtml, posterUrl, watchUrl } from '../youtube';
 
 const artistById = MOCK_CATALOG.artist;
 
-const source: ClipSource = { provider: 'youtube', videoId: 'abcDEF12_-x', start: 60, end: 100, channel: 'Official' };
-const clip = (s?: Partial<ClipSource> | null): Clip => ({
+const source: YouTubeClipSource = { provider: 'youtube', videoId: 'abcDEF12_-x', start: 60, end: 100, channel: 'Official' };
+const clip = (s?: Partial<YouTubeClipSource> | null): Clip => ({
   id: 'x',
   artistId: 'illenium',
   festivalId: 'solstice-26',
@@ -111,14 +111,14 @@ describe('feed clips', () => {
   it('every real clip is playable, credited and belongs to a known artist', () => {
     for (const c of sourced) {
       expect(playableSource(c)).toBeDefined();
-      expect(c.source?.channel.trim()).not.toBe('');
+      expect((c.source as YouTubeClipSource).channel.trim()).not.toBe('');
       expect(artistById(c.artistId)).toBeDefined();
     }
   });
 
   it('real clip lengths match their section and stay under a minute', () => {
     for (const c of sourced) {
-      const s = c.source!;
+      const s = c.source as YouTubeClipSource;
       expect(c.durationSec).toBe(s.end - s.start);
       expect(c.durationSec).toBeLessThan(60);
     }

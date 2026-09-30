@@ -1,4 +1,4 @@
-import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, ClipSource, Festival, SetTime, SoundTag, Stage } from './models';
+import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, SetTime, SoundTag, Stage, YouTubeClipSource } from './models';
 import { SOUND_TAGS } from './models';
 
 /**
@@ -246,7 +246,7 @@ function parseClip(raw: unknown, i: number, problems: string[]): Clip | undefine
   if (!artistId || !festivalId || !title) return void problems.push(`Clip "${clipId}" needs an artist, a festival and a title.`);
   const bpm = typeof raw.bpm === 'number' && raw.bpm >= 60 && raw.bpm <= 200 ? raw.bpm : DEFAULT_BPM;
 
-  let source: ClipSource | undefined;
+  let source: YouTubeClipSource | undefined;
   if (raw.video !== undefined) {
     const v = isObj(raw.video) ? raw.video : {};
     const link = parseYouTubeLink(v.link);

@@ -138,6 +138,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         artistId: input.artistId,
         capturedAt: input.capturedAt,
         durationSec: input.durationSec,
+        width: input.width,
+        height: input.height,
         createdAt: now(),
       };
       memories.set(id, m);
@@ -153,6 +155,12 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async memoriesOf(uid) {
       return [...memories.values()].filter((m) => m.uid === uid).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+    },
+    async festivalMemories(festivalId, max) {
+      return [...memories.values()].filter((m) => m.festivalId === festivalId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async recentMemories(max) {
+      return [...memories.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
     async sharedMemory(id) {
       return memories.get(id) ?? null;

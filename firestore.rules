@@ -56,7 +56,7 @@ service cloud.firestore {
     match /memories/{id} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == me()
-        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'capturedAt', 'durationSec', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
         && request.resource.data.handle == get(path('profiles', me())).data.handle
         && request.resource.data.videoPath.matches('^memories/' + me() + '/' + id + '[.](mp4|mov|m4v)$')
         && request.resource.data.videoUrl is string && request.resource.data.videoUrl.matches('^https://.*')
@@ -65,6 +65,8 @@ service cloud.firestore {
         && shortOrAbsent(request.resource.data, 'festivalId', 100) && shortOrAbsent(request.resource.data, 'artistId', 100)
         && shortOrAbsent(request.resource.data, 'night', 40) && shortOrAbsent(request.resource.data, 'memoryId', 60)
         && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
+        && (!('width' in request.resource.data) || (request.resource.data.width is number && request.resource.data.width <= 20000))
+        && (!('height' in request.resource.data) || (request.resource.data.height is number && request.resource.data.height <= 20000))
         && request.resource.data.capturedAt is string && request.resource.data.capturedAt.size() <= 40
         && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
       allow update: if false;
