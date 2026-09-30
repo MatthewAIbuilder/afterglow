@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import type { Clip, Festival } from '../../../data/models';
-import { focusChoices, FOLLOWING, isWide, MIX, mixContext, nextDiscoverFocus, startFocus } from '../focus';
+import type { Artist, Clip, Festival } from '../../../data/models';
+import { focusChoices, FOLLOWING, inSound, isWide, MIX, mixContext, nextDiscoverFocus, soundChoices, soundFocus, soundOf, startFocus } from '../focus';
 
 const fest = (id: string, lineup: string[], startDate?: string): Festival => ({
   id,
@@ -80,5 +80,34 @@ describe('Discover focus', () => {
       ['c', 0],
     ]);
     expect(mine.others).toEqual([]);
+  });
+
+  it('focuses on one sound from every lineup', () => {
+    expect(soundFocus('dubstep')).toBe('sound:dubstep');
+    expect(soundOf('sound:dubstep')).toBe('dubstep');
+    expect(soundOf('sound:polka')).toBeUndefined();
+    expect(soundOf(MIX)).toBeUndefined();
+    expect(isWide('sound:house')).toBe(true);
+    expect(startFocus(festivals, clips, [], 'sound:house')).toBe('sound:house');
+    expect(startFocus(festivals, clips, [], 'sound:polka')).not.toBe('sound:polka');
+    expect(nextDiscoverFocus('a', { festival: 'sound:trap' }, festivals)).toBe('sound:trap');
+    // A clip link from a sound goes to the mix, which has every clip.
+    expect(nextDiscoverFocus('sound:trap', { clip: clips[0] }, festivals)).toBe(MIX);
+  });
+
+  it('offers sounds that have enough clips, most first', () => {
+    const artists: Record<string, Artist> = {
+      x: { id: 'x', name: 'X', sound: { dubstep: 0.9 } },
+      y: { id: 'y', name: 'Y', sound: { dubstep: 0.6, house: 0.5 } },
+      z: { id: 'z', name: 'Z', sound: { house: 0.4 } },
+    };
+    const artist = (id: string) => artists[id];
+    expect(inSound(clips[0], 'dubstep', artist)).toBe(true);
+    expect(inSound(clips[2], 'house', artist)).toBe(false);
+    expect(soundChoices(clips, artist, 1)).toEqual([
+      { tag: 'dubstep', clips: 2 },
+      { tag: 'house', clips: 1 },
+    ]);
+    expect(soundChoices(clips, artist)).toEqual([]);
   });
 });

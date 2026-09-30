@@ -378,6 +378,20 @@ describe('Festivals', () => {
     await settle();
     expect(app.queryByText(/Where to be all day/)).toBeNull();
   });
+
+  it('shows every set of the day as a timetable', async () => {
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    await fireEvent.press(app.getByLabelText('All sets, as a timetable'));
+    await settle();
+    expect(app.getByText('Bass Tent')).toBeTruthy();
+    expect(app.getByText('The Warehouse')).toBeTruthy();
+    const block = app.getByLabelText(/^ILLENIUM, 11:40 PM to 1:10 AM, Main Stage, /);
+    expect(app.getByText('10 PM', { includeHiddenElements: true })).toBeTruthy();
+    await fireEvent.press(block);
+    await settle();
+    expect(app.getAllByText('ILLENIUM').length).toBeGreaterThan(0);
+  });
 });
 
 describe('Tune your lineup', () => {
@@ -763,6 +777,23 @@ describe('Discover', () => {
     expect(app.getByText('Your mix')).toBeTruthy();
     expect(app.getByText('A bit of everything, from every lineup')).toBeTruthy();
     expect(await AsyncStorage.getItem('discoverFocus.v1')).toBe('mix');
+  });
+
+  it('focuses Discover on one sound from every lineup', async () => {
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Solstice 2026, live sets from the lineup\. Choose what to discover\.$/));
+    await settle();
+    expect(app.getByText('By sound')).toBeTruthy();
+    const chip = app.getAllByLabelText(/^[A-Z][a-z ]+, \d+ clips from every lineup$/)[0];
+    const label = chip.props.accessibilityLabel.split(',')[0] as string;
+    await fireEvent.press(chip);
+    await settle();
+    await settle();
+    expect(app.getByText(label)).toBeTruthy();
+    expect(app.getByText(`${label} from every lineup`)).toBeTruthy();
+    expect(await AsyncStorage.getItem('discoverFocus.v1')).toMatch(/^sound:/);
   });
 
   it('opens where you left it', async () => {

@@ -21,6 +21,8 @@ jest.mock('../../state/catalog', () => {
     stages: [],
     startDate: `2031-0${1 + (i % 9)}-1${i % 10}`,
     endDate: `2031-0${1 + (i % 9)}-1${i % 10}`,
+    // The first three are around Tampa, the fourth in Los Angeles.
+    ...(i < 3 ? { place: { lat: 27.95 + i / 10, lon: -82.46 } } : i === 3 ? { place: { lat: 34.05, lon: -118.24 } } : {}),
   }));
   const big = createCatalog({ artists: base.artists, festivals: [...base.festivals, ...extra], clips: base.clips });
   return { ...actual, builtInCatalog: big, useCatalog: () => big };
@@ -54,6 +56,40 @@ describe('many festivals', () => {
     await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'Feed Fest 24');
     await flush();
     expect(app.getAllByText('Feed Fest 24').length).toBeGreaterThan(0);
+  });
+
+  it('shows festivals near you once you allow your location, and forgets it when you turn it off', async () => {
+    const Location = jest.requireMock<typeof import('expo-location')>('expo-location') as unknown as Record<string, jest.Mock>;
+    Location.requestForegroundPermissionsAsync.mockImplementationOnce(async () => ({ granted: true }));
+    Location.getCurrentPositionAsync.mockImplementationOnce(async () => ({ coords: { latitude: 28.5383, longitude: -81.3792 } }));
+    Location.reverseGeocodeAsync.mockImplementationOnce(async () => [{ city: 'Orlando' }]);
+    const app = await renderApp('/festivals');
+    await flush();
+    expect(app.queryByText('Near you')).toBeNull();
+    await fireEvent.press(app.getByLabelText('Use my location'));
+    await flush();
+    expect(app.getByText('Near you')).toBeTruthy();
+    expect(app.getByText(/^Within \d+ (mi|km) of Orlando$/)).toBeTruthy();
+    // Nearest first, with how far; Los Angeles is out of reach.
+    expect(app.getByText('Feed Fest 0')).toBeTruthy();
+    expect(app.getAllByText(/ (mi|km) away$/).length).toBeGreaterThanOrEqual(3);
+    expect(app.queryByText('Feed Fest 3')).toBeNull();
+    // Kept on the phone, rounded.
+    expect(JSON.parse((await AsyncStorage.getItem('nearYou.v1'))!)).toMatchObject({ lat: 28.54, lon: -81.38, label: 'Orlando' });
+    await fireEvent.press(app.getByLabelText('Stop showing festivals near you'));
+    await flush();
+    expect(app.queryByText('Near you')).toBeNull();
+    expect(app.getByLabelText('Use my location')).toBeTruthy();
+    expect(await AsyncStorage.getItem('nearYou.v1')).toBeNull();
+  });
+
+  it('says so when location is refused', async () => {
+    const app = await renderApp('/festivals');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Use my location'));
+    await flush();
+    expect(app.getByText(/Location is off for Afterglow/)).toBeTruthy();
+    expect(app.getByLabelText('Open Settings')).toBeTruthy();
   });
 
   it('the welcome finds your festival by name', async () => {

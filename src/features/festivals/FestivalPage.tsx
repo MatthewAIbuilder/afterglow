@@ -16,6 +16,8 @@ import { dayList, daysOf, lineupDays, playsOn } from './days';
 import { runLabel, validWeekend } from './weekend';
 import { useWeekends } from '../../state/weekends';
 import { describeSet, whereWhen } from './format';
+import { distanceLabel } from './near';
+import { useNearby } from '../../state/nearby';
 import { lineupReach } from './links';
 import { filterLineup, lineupSounds, SEARCH_FROM } from './search';
 import { countdown, setLine } from './when';
@@ -90,6 +92,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const reach = lineupReach(festival, catalog.clips);
   const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
   const recap = useRecap(whole);
+  const { distanceTo, units } = useNearby();
+  const away = distanceTo(whole);
 
   return (
     <View style={styles.root}>
@@ -105,6 +109,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           <Text style={styles.title}>{festival.name}</Text>
           <Text style={styles.meta}>
             {whereWhen(festival)}
+            {away !== undefined ? ` · ${distanceLabel(away, units)}` : ''}
           </Text>
           {soon ? <Text style={styles.soon}>{soon}</Text> : null}
           <View style={styles.pills}>

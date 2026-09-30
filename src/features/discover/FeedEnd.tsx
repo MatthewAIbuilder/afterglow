@@ -17,6 +17,8 @@ type Props = {
   festival?: Festival;
   /** You were watching videos from the people you follow. */
   following?: boolean;
+  /** You were watching one sound from every lineup ("Dubstep"). */
+  soundLabel?: string;
   width: number;
   height: number;
   /** Space reserved at the bottom for the floating tab bar. */
@@ -31,7 +33,7 @@ type Props = {
  * rate the rest of the lineup, see your plan, discover another festival or
  * your mix, or start again.
  */
-export function FeedEnd({ festival, following = false, width, height, bottomSpace, onRestart }: Props) {
+export function FeedEnd({ festival, following = false, soundLabel, width, height, bottomSpace, onRestart }: Props) {
   const catalog = useCatalog();
   const { ratings } = useRatings();
   const insets = useSafeAreaInsets();
@@ -59,9 +61,15 @@ export function FeedEnd({ festival, following = false, width, height, bottomSpac
 
   return (
     <View style={[styles.page, { width, height, paddingTop: insets.top + 100, paddingBottom: bottomSpace + space.xl }]}>
-      <Text style={styles.kicker}>{festival ? 'That’s the lineup' : following ? 'That’s everyone you follow' : 'That’s your mix'}</Text>
+      <Text style={styles.kicker}>{festival ? 'That’s the lineup' : following ? 'That’s everyone you follow' : soundLabel ? `That’s ${soundLabel.toLowerCase()}` : 'That’s your mix'}</Text>
       <Text style={styles.title}>
-        {festival ? `You’ve seen every clip from ${festival.name}` : following ? 'You’ve seen every video from people you follow' : 'You’ve seen every clip'}
+        {festival
+          ? `You’ve seen every clip from ${festival.name}`
+          : following
+            ? 'You’ve seen every video from people you follow'
+            : soundLabel
+              ? `You’ve seen every ${soundLabel.toLowerCase()} clip`
+              : 'You’ve seen every clip'}
       </Text>
       <Text style={styles.body}>
         {following
@@ -82,7 +90,7 @@ export function FeedEnd({ festival, following = false, width, height, bottomSpac
           row(`Discover ${f.name}`, undefined, () => router.navigate({ pathname: '/', params: { festival: f.id } }), <PlayIcon color={color.moonDim} size={14} />),
         )}
         {following && row('Find people', undefined, () => router.push('/people'), undefined, true)}
-        {(festival || following) &&
+        {(festival || following || soundLabel) &&
           row('Try your mix', 'a bit of everything', () => router.navigate({ pathname: '/', params: { festival: MIX } }), <PlayIcon color={color.moonDim} size={14} />)}
         {row('Watch again from the top', undefined, onRestart)}
       </View>

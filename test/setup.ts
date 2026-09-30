@@ -141,6 +141,8 @@ jest.mock('expo-image-picker', () => ({
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },
   requestForegroundPermissionsAsync: jest.fn(async () => ({ granted: false })),
+  getForegroundPermissionsAsync: jest.fn(async () => ({ granted: false })),
+  geocodeAsync: jest.fn(async () => []),
   getLastKnownPositionAsync: jest.fn(async () => null),
   getCurrentPositionAsync: jest.fn(async () => ({ coords: { latitude: 0, longitude: 0 } })),
   reverseGeocodeAsync: jest.fn(async () => []),

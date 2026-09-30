@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
@@ -10,6 +10,13 @@ import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
 import { SOUND_LABEL } from '../../data/models';
 import { clipLength } from '../../features/memories/organize';
 import { followersLabel, followingLabel, goingLine } from '../../features/social/copy';
+import { inCommon } from '../../features/social/common';
+import { isOver } from '../../features/festivals/shelves';
+import { tasteMix } from '../../features/taste/lean';
+import { useToday } from '../../lib/useToday';
+import { useGoing } from '../../state/going';
+import { useTaste } from '../../state/taste';
+import { useLoves } from '../../state/useLoves';
 import { FollowButton } from '../../features/social/FollowButton';
 import type { Profile, SharedMemory } from '../../features/social/models';
 import { askBlock, askReport } from '../../features/social/moderation';
@@ -76,6 +83,28 @@ export default function PublicProfileScreen() {
 
   const mine = !!profile && profile.uid === social.user?.uid;
   const blocked = !!profile && social.blocked.has(profile.uid);
+
+  // What you have in common: from what they show and what your phone knows (nothing of yours is sent).
+  const { going: myGoing } = useGoing();
+  const { taste, informed } = useTaste();
+  const loves = useLoves();
+  const today = useToday();
+  const mySounds = useMemo(() => tasteMix(catalog.artists, taste, informed).slice(0, 3).map((s) => s.tag), [catalog.artists, taste, informed]);
+  const common = useMemo(
+    () =>
+      profile && !mine
+        ? inCommon({
+            theirs: { festivals: profile.festivals, sounds: profile.sounds, filmed: memories.flatMap((m) => (m.artistId ? [m.artistId] : [])) },
+            mine: { going: myGoing, sounds: mySounds, loves },
+            festivalName: (id) => {
+              const f = catalog.festival(id);
+              return f && !isOver(f, today) ? f.name : undefined;
+            },
+            artistName: (id) => catalog.artist(id)?.name,
+          })
+        : [],
+    [profile, mine, memories, myGoing, mySounds, loves, catalog, today],
+  );
 
   const menu = () => {
     if (!profile) return;
@@ -165,6 +194,17 @@ export default function PublicProfileScreen() {
             </View>
           )}
         </View>
+        {common.length > 0 && (
+          <View style={styles.common} accessible accessibilityLabel={`In common. ${common.map((l) => l.text).join('. ')}.`}>
+            <Text style={styles.commonHead}>In common</Text>
+            {common.map((l) => (
+              <View key={l.kind} style={styles.commonRow}>
+                <View style={styles.commonDot} />
+                <Text style={styles.commonText}>{l.text}</Text>
+              </View>
+            ))}
+          </View>
+        )}
         <Text style={styles.section}>{memories.length ? `Memories · ${memories.length}` : 'Memories'}</Text>
         {memories.length ? (
           <View style={[styles.grid, { gap }]}>
@@ -245,6 +285,19 @@ const styles = StyleSheet.create({
   counts: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
   count: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.xxl, marginBottom: space.md },
+  common: {
+    marginTop: space.xl,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(169,124,255,0.35)',
+    gap: space.sm,
+  },
+  commonHead: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 1 },
+  commonRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  commonDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: color.glow, marginTop: 8 },
+  commonText: { ...type.body, color: color.moon, flex: 1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   tile: { borderRadius: radius.sm, overflow: 'hidden', backgroundColor: color.nightRaised },
   tileInfo: { position: 'absolute', left: space.xs, right: space.xs, bottom: space.xs },

@@ -2,7 +2,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckIcon, ChevronIcon, ProfileIcon } from '../components/TabIcons';
-import { focusChoices, FOLLOWING, isWide, MIX, type FocusChoice } from '../features/discover/focus';
+import { SOUND_LABEL } from '../data/models';
+import { focusChoices, FOLLOWING, isWide, MIX, soundChoices, soundFocus, type FocusChoice } from '../features/discover/focus';
 import { PlayIcon } from '../features/discover/icons';
 import { countdown } from '../features/festivals/when';
 import { haptic } from '../lib/haptics';
@@ -14,8 +15,8 @@ import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 
 /**
- * What Discover shows: your mix (a bit of everything), or one festival's
- * lineup. Festivals you're going to come first; others appear only when
+ * What Discover shows: your mix (a bit of everything), one sound from every
+ * lineup, or one festival's lineup. Festivals you're going to come first; others appear only when
  * they have clips to watch. A sheet over Discover.
  */
 export default function DiscoverFocusScreen() {
@@ -28,6 +29,8 @@ export default function DiscoverFocusScreen() {
   const community = useCommunity();
   const choices = focusChoices(catalog.festivals, catalog.clips, going, today);
   const currentFestival = current && !isWide(current) ? catalog.festival(current) : undefined;
+  // One sound from every lineup, for the sounds with enough clips.
+  const sounds = soundChoices(catalog.clips, catalog.artist);
 
   const pick = (focus: string) => {
     haptic.select();
@@ -90,6 +93,30 @@ export default function DiscoverFocusScreen() {
             </View>,
           )}
       </View>
+
+      {sounds.length > 1 && (
+        <>
+          <Text style={styles.section}>By sound</Text>
+          <View style={styles.sounds}>
+            {sounds.map(({ tag, clips }) => {
+              const on = current === soundFocus(tag);
+              return (
+                <Pressable
+                  key={tag}
+                  onPress={() => pick(soundFocus(tag))}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${SOUND_LABEL[tag]}, ${clips} clips from every lineup`}
+                  accessibilityState={{ selected: on }}
+                  style={({ pressed }) => [styles.sound, on && styles.soundOn, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.soundText, on && { color: color.moon }]}>{SOUND_LABEL[tag]}</Text>
+                  <Text style={styles.soundCount}>{clips}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       {choices.going.length > 0 && (
         <>
@@ -158,6 +185,21 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: color.moonDim, marginTop: space.xs },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xl },
   list: { gap: space.sm, marginTop: space.md },
+  sounds: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
+  sound: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs + 2,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md + 2,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  soundOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  soundText: { ...type.label, color: color.moonDim },
+  soundCount: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

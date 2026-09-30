@@ -13,6 +13,7 @@ import { GoingProvider } from '../state/going';
 import { LineupNewsProvider } from '../state/lineupNews';
 import { MemoriesProvider } from '../state/memories';
 import { MusicConnectionsProvider } from '../state/music';
+import { NearbyProvider } from '../state/nearby';
 import { NoticesProvider } from '../state/notices';
 import { WeekendsProvider } from '../state/weekends';
 import { PlanProvider } from '../state/plan';
@@ -27,6 +28,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.night }}>
       <CatalogProvider>
+      <NearbyProvider>
       <MusicConnectionsProvider>
       <MemoriesProvider>
       <ReactionsProvider>
@@ -130,6 +132,7 @@ export default function RootLayout() {
       </ReactionsProvider>
       </MemoriesProvider>
       </MusicConnectionsProvider>
+      </NearbyProvider>
       </CatalogProvider>
     </GestureHandlerRootView>
   );

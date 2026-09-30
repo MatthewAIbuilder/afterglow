@@ -93,6 +93,7 @@ The demo artists already exist, and you can use them in your lineups without add
   - Every set's day must be in `days`, and its stage in `stages`.
 - **`poster`** (optional) is a link to the official lineup poster, starting with `https://`. Only use a poster you have the rights to.
 - **`tickets`** and **`website`** (optional) are the festival's official ticket page and its own site, each starting with `https://`. They show as "Get tickets" (until the festival is over) and "Official site" on the festival page, and open the festival's own pages. Use only official links.
+- **`place`** (optional) is where the venue is on the map, written as `{ "lat": 28.44, "lon": -81.47 }` (latitude and longitude, which you can copy from a map app). It lets "Near you" on the Festivals tab include the festival. Without it, the phone looks the place up from `location` (not on the website).
 - **`weekends`** (optional) is for a festival that runs over separate weekends, like ACL or Coachella. List each weekend's first and last day, in order:
   `"weekends": [{ "start": "2026-10-02", "end": "2026-10-04" }, { "start": "2026-10-09", "end": "2026-10-11" }]`.
   - The countdown then says "Weekend 2 in 4 days" in the week between, instead of "Happening now".

@@ -52,6 +52,22 @@ afterEach(() => {
 });
 
 describe('following people', () => {
+  it('a profile says what you have in common', async () => {
+    const maya = await s().signUp('maya@example.com', 'password123');
+    await s().saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: true, showSound: false }, { festivals: ['cyclops-cove-4'], sounds: [] });
+    await s().shareMemory({ memoryId: 'm1', videoUri: 'file:///m1.mov', festivalId: 'cyclops-cove-4', night: 'Friday', artistId: 'hedex', capturedAt: '2026-12-04T22:30:00.000Z', durationSec: 42, width: 1080, height: 1920 });
+    await s().signOut();
+    await person('sam');
+    expect(maya.uid).toBeTruthy();
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ hedex: 'love' }));
+    const app = await renderApp('/u/maya');
+    await flush();
+    expect(app.getByText('In common')).toBeTruthy();
+    expect(app.getByText('You’re both going to Cyclops Cove 4')).toBeTruthy();
+    expect(app.getByText('They filmed HEDEX, who you love')).toBeTruthy();
+  });
+
   it('Follow on a profile: counts change, and the lists show who follows whom', async () => {
     const { maya, sam } = await mayaAndSam();
     const app = await renderApp('/u/maya');

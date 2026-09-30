@@ -148,6 +148,19 @@ describe('edmtrainCatalogue', () => {
     expect(f.artistDays?.echo).toEqual(['Saturday']);
   });
 
+  it('keeps the venue on the map when EDMTrain gives coordinates', () => {
+    const at = { ...venue, latitude: 27.94249, longitude: -82.45132 };
+    const withPlace = edmtrainCatalogue([day('2026-11-13', ['A', 'B', 'C', 'D', 'E'], { venue: at })], curated, TODAY).file.festivals[0];
+    expect(withPlace.place).toEqual({ lat: 27.942, lon: -82.451 });
+    expect(parseCatalogFile(JSON.stringify({ version: 1, artists: [], festivals: [{ ...withPlace, lineup: [] }] })).snapshot!.festivals[0].place).toEqual({ lat: 27.942, lon: -82.451 });
+    // No coordinates, or nonsense ones: no place.
+    const none = edmtrainCatalogue([day('2026-11-13', ['A', 'B', 'C', 'D', 'E'], { venue: { ...venue, latitude: 0, longitude: 0 } })], curated, TODAY);
+    expect(none.file.festivals[0].place).toBeUndefined();
+    const bad = parseCatalogFile(JSON.stringify({ version: 1, artists: [], festivals: [{ id: 'x', name: 'X', dates: 'Soon', lineup: [], place: { lat: 200, lon: 1 } }] }));
+    expect(bad.snapshot!.festivals[0].place).toBeUndefined();
+    expect(bad.problems.join(' ')).toContain('"place"');
+  });
+
   it('adds to the built-in catalogue without touching curated festivals', () => {
     const events = [day('2026-11-13', ['Subtronics', 'Levity', 'Alpha']), day('2026-11-14', ['Delta', 'Echo'])];
     const curatedNow = {

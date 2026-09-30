@@ -6,7 +6,7 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { lineupClips } from '../festivals/links';
-import { FOLLOWING, MIX } from './focus';
+import { FOLLOWING, inSound, MIX, soundOf } from './focus';
 import { type FeedItem, rankFeed } from '../recommend/feed';
 
 const NO_CLIPS: Clip[] = [];
@@ -23,7 +23,8 @@ const NO_CLIPS: Clip[] = [];
  */
 export function useRankedFeed(
   activeIndex: number,
-  focus: Festival | typeof MIX | typeof FOLLOWING | undefined,
+  /** A festival, the mix, Following, or a sound ("sound:dubstep") from every lineup. */
+  focus: Festival | string | undefined,
   /** Clips people shared for this focus (community clips), ranked alongside the official ones. */
   community: Clip[] = NO_CLIPS,
 ): FeedItem[] | null {
@@ -37,7 +38,10 @@ export function useRankedFeed(
   const [sessionStart] = useState(() => Date.now());
   const clips = useMemo(() => {
     // Following is only videos from people you follow; the mix is every clip.
-    const official = focus === MIX ? catalog.clips : focus === FOLLOWING ? [] : focus ? lineupClips(focus, catalog.clips) : [];
+    const tag = typeof focus === 'string' ? soundOf(focus) : undefined;
+    if (tag) return [...catalog.clips, ...community].filter((c) => inSound(c, tag, catalog.artist));
+    const official =
+      focus === MIX ? catalog.clips : focus === FOLLOWING || typeof focus === 'string' ? [] : focus ? lineupClips(focus, catalog.clips) : [];
     return community.length ? [...official, ...community] : official;
   }, [focus, catalog, community]);
 
