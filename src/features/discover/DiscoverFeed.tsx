@@ -12,7 +12,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
-import { ChevronIcon } from '../../components/TabIcons';
+import { ChevronIcon, SearchIcon } from '../../components/TabIcons';
+import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { haptic } from '../../lib/haptics';
 import type { Clip } from '../../data/models';
 import { isCommunityClip } from '../community/clips';
@@ -337,7 +338,13 @@ export function DiscoverFeed() {
               {festival ? `Live sets from the lineup · ${festival.dates}` : followingFocus ? 'Videos from people you follow' : 'A bit of everything, from every lineup'}
             </Text>
           </Pressable>
-          {hint ? <FeedHint hint={hint} /> : null}
+          <View style={styles.headerEnd}>
+            {hint ? <FeedHint hint={hint} /> : null}
+            {/* Search everything: people, artists, festivals. */}
+            <GlassCircleButton label="Search artists, festivals and people" onPress={() => router.push('/search')}>
+              <SearchIcon color={color.moon} size={17} />
+            </GlassCircleButton>
+          </View>
         </View>
       )}
     </View>
@@ -360,6 +367,7 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   headerButton: { alignSelf: 'flex-start', flexShrink: 1 },
+  headerEnd: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   festival: { ...type.headline, color: color.moon },
   dates: { ...type.caption, color: color.moonDim, marginTop: 1 },

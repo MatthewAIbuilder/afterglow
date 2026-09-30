@@ -12,10 +12,10 @@ import { ChevronIcon } from './TabIcons';
  * `festivalId` opens the artist in that festival's context, so must-see stars apply there.
  * `rating` shows how you rated them: a heart for love, dimmed for "not for me".
  */
-type Props = { artist: Artist; affinity: number; detail?: string; festivalId?: string; rating?: Rating };
+type Props = { artist: Artist; affinity: number; detail?: string; festivalId?: string; rating?: Rating; /** Runs before the artist opens (e.g. to remember a search). */ onOpen?: () => void };
 
 /** A lineup row: avatar, name, optional detail line, match. Opens the artist. */
-export function ArtistRow({ artist, affinity, detail, festivalId, rating }: Props) {
+export function ArtistRow({ artist, affinity, detail, festivalId, rating, onOpen }: Props) {
   const pct = Math.round(affinity * 100);
   const passed = rating === 'pass';
   const line = passed ? [detail, 'Not for you'].filter(Boolean).join(' · ') : detail;
@@ -24,6 +24,7 @@ export function ArtistRow({ artist, affinity, detail, festivalId, rating }: Prop
     <Pressable
       onPress={() => {
         haptic.select();
+        onOpen?.();
         router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festivalId } });
       }}
       accessibilityRole="button"
