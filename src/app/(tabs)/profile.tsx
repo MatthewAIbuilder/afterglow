@@ -9,6 +9,7 @@ import { ChevronIcon, ProfileIcon } from '../../components/TabIcons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useClipPool } from '../../state/community';
 import { useGoing } from '../../state/going';
 import { useMemories } from '../../state/memories';
 import { useMusic } from '../../state/music';
@@ -38,7 +39,8 @@ export default function ProfileScreen() {
   const { going } = useGoing();
   const { ratings } = useRatings();
   const { reactions } = useReactions();
-  const clips = yourClipCount(yourClips(catalog.clips, reactions));
+  const pool = useClipPool();
+  const clips = yourClipCount(yourClips(pool.clips, reactions));
   const rated = Object.keys(ratings).length;
   const festivals = going.filter((id) => catalog.festival(id)).length;
   // Your sound in three bars, from the live taste.

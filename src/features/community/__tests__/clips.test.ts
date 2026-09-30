@@ -3,7 +3,7 @@ import { computeTaste } from '../../taste/engine';
 import { CLIPS } from '../../../data/mock/clips';
 import { MOCK_CATALOG, MOCK_TASTE } from '../../../data/mock';
 import type { SharedMemory } from '../../social/models';
-import { ARTIST_MEMORY_MAX, COMMUNITY_MAX, communityClip, communityClipId, communityClips, isCommunityClip, rememberArtist, rememberedClips } from '../clips';
+import { ARTIST_MEMORY_MAX, cleanKept, COMMUNITY_MAX, keepClip, KEPT_MAX, keptClips, communityClip, communityClipId, communityClips, isCommunityClip, rememberArtist, rememberedClips } from '../clips';
 
 const ARTISTS = new Set(['illenium', 'subtronics', 'seven-lions']);
 const NONE = new Set<string>();
@@ -111,5 +111,32 @@ describe('remembering who a community clip was of', () => {
     const gone = computeTaste(MOCK_TASTE, MOCK_CATALOG.artists, [...CLIPS, ...rememberedClips(Object.keys(reactions), { [clip.id]: 'subtronics' }, new Set(CLIPS.map((c) => c.id)))], reactions);
     expect(withClip.taste.subtronics).toBeGreaterThan(base.taste.subtronics);
     expect(gone.taste.subtronics).toBeCloseTo(withClip.taste.subtronics);
+  });
+});
+
+describe('keeping liked community clips for Your clips', () => {
+  const clip = (id: string, over: Partial<SharedMemory> = {}) => communityClip(memory({ id, ...over }), ARTISTS)!;
+
+  it('keeps community clips only, newest last, bounded', () => {
+    let kept = {};
+    for (let i = 0; i < KEPT_MAX + 3; i++) kept = keepClip(kept, clip(`k${i}`));
+    expect(Object.keys(kept)).toHaveLength(KEPT_MAX);
+    expect(Object.keys(kept).at(-1)).toBe(`community:k${KEPT_MAX + 2}`);
+    expect(keepClip(kept, CLIPS[0])).toBe(kept);
+  });
+
+  it('reads back only well-formed clips from storage', () => {
+    const good = clip('a');
+    const stored = JSON.parse(JSON.stringify({ [good.id]: good, 'community:b': { ...good, id: 'community:b', source: { ...good.source, videoUrl: 'http://x' } }, c1: CLIPS[0], 'community:c': 'nonsense' }));
+    expect(Object.keys(cleanKept(stored))).toEqual([good.id]);
+    expect(cleanKept(stored)[good.id]).toEqual(good);
+    expect(cleanKept(null)).toEqual({});
+  });
+
+  it('leaves out anyone you blocked, anything you hid, and artists Afterglow no longer has', () => {
+    const kept = { ...keepClip({}, clip('a')), ...keepClip({}, clip('b', { uid: 'u2' })), ...keepClip({}, clip('c')) };
+    const shown = keptClips(kept, { artists: ARTISTS, blocked: new Set(['u2']), hidden: new Set(['c']) }).map((c) => c.id);
+    expect(shown).toEqual(['community:a']);
+    expect(keptClips(kept, { artists: new Set(), blocked: NONE, hidden: NONE })).toEqual([]);
   });
 });

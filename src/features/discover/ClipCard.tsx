@@ -93,9 +93,10 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const { remember } = communityState;
   // So your reactions keep counting for the artist after this clip leaves the feed.
   const reacted = reaction.liked || reaction.skipped || !!reaction.watched;
+  // A liked one is also kept whole, so Your clips can list and play it later.
   useEffect(() => {
-    if (community && (isActive || reacted)) remember(clip);
-  }, [isActive, reacted, community, clip, remember]);
+    if (community && (isActive || reacted)) remember(clip, reaction.liked);
+  }, [isActive, reacted, reaction.liked, community, clip, remember]);
   const [videoFailed, setVideoFailed] = useState(false);
   const showVideo = !!media && !videoFailed;
   const failVideo = useCallback(() => setVideoFailed(true), []);

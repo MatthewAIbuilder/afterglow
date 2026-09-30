@@ -14,8 +14,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
+import type { Clip } from '../../data/models';
+import { isCommunityClip } from '../community/clips';
 import { useCatalog } from '../../state/catalog';
-import { useCommunityClips } from '../../state/community';
+import { useClipPool, useCommunityClips } from '../../state/community';
 import { useStoredFocus } from '../../state/discoverFocus';
 import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
@@ -69,7 +71,9 @@ export function DiscoverFeed() {
   // Undecided until the saved focus and your festivals have loaded; then what you picked last, or where you're going.
   const [focusId, setFocusId] = useState<Focus | undefined>();
   const [decided, setDecided] = useState(false);
-  const requestedClip = requested ? catalog.clip(requested) : undefined;
+  // A clip from the catalogue, or a video from the crowd you liked (opened from Your clips).
+  const pool = useClipPool();
+  const requestedClip = requested ? pool.find(requested) : undefined;
   if (stored !== undefined && goingLoaded) {
     const base = decided ? focusId : startFocus(catalog.festivals, catalog.clips, going, stored);
     const target = nextDiscoverFocus(base, { festival: focusParam || undefined, clip: requestedClip }, catalog.festivals);
@@ -94,7 +98,22 @@ export function DiscoverFeed() {
   }, [focusParam, decided, navigation]);
 
   // Clips people at the festival shared to their profiles, beside the official ones (none when signed out or switched off).
-  const community = useCommunityClips(mix ? 'mix' : festival);
+  const fetched = useCommunityClips(mix ? 'mix' : festival);
+  // Videos from the crowd you opened from Your clips stay in the feed while you're on this focus
+  // (unless you hide them or block who filmed them).
+  const [opened, setOpened] = useState<{ focus: Focus | undefined; clips: Clip[] }>({ focus: undefined, clips: [] });
+  if (requestedClip && isCommunityClip(requestedClip) && decided) {
+    const same = opened.focus === focusId;
+    if (!same || !opened.clips.some((c) => c.id === requestedClip.id)) setOpened({ focus: focusId, clips: [...(same ? opened.clips : []), requestedClip] });
+  }
+  // The one being asked for counts straight away, so it's ranked in with the first feed rather than after it.
+  const asked = requestedClip && isCommunityClip(requestedClip) ? requestedClip : undefined;
+  const community = useMemo(() => {
+    const wanted = opened.focus === focusId ? [...opened.clips] : [];
+    if (asked && !wanted.some((c) => c.id === asked.id)) wanted.push(asked);
+    const extra = wanted.filter((c) => pool.find(c.id) && !fetched.some((f) => f.id === c.id));
+    return extra.length ? [...fetched, ...extra] : fetched;
+  }, [opened, focusId, asked, pool, fetched]);
   const feed = useRankedFeed(activeIndex, mix ? MIX : festival, community);
   const { mustSeesAt } = usePlan();
   const count = feed?.length ?? 0;
@@ -203,7 +222,8 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (!requested || !feed) return;
     const index = feed.findIndex((it) => it.clip.id === requested);
-    if (index < 0 && requestedClip && festival && festival.lineup.includes(requestedClip.artistId)) return;
+    // Still waiting for the clip to join the feed (its festival's feed, or a video from the crowd being added).
+    if (index < 0 && requestedClip && ((festival && festival.lineup.includes(requestedClip.artistId)) || (mix && isCommunityClip(requestedClip)))) return;
     if (index >= 0) {
       activeRef.current = index;
       setActiveIndex(index);

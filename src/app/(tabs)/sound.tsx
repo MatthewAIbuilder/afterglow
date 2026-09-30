@@ -17,6 +17,7 @@ import { artistsOnMap, mapCandidates, SPARSE_MAP } from '../../features/sound-ma
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useClipPool } from '../../state/community';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
@@ -357,7 +358,7 @@ function MusicNoteView({ note, bottom }: { note: MusicNote; bottom: number }) {
 
 /** Opens your clips (saved and liked). Only there once you have one. */
 function SavedPill() {
-  const { clips } = useCatalog();
+  const { clips } = useClipPool();
   const { reactions } = useReactions();
   const count = yourClipCount(yourClips(clips, reactions));
   if (count === 0) return null;

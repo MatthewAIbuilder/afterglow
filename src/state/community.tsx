@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import type { Clip, Festival } from '../data/models';
-import { COMMUNITY_MAX, communityClips, rememberArtist } from '../features/community/clips';
+import { cleanKept, COMMUNITY_MAX, communityClips, keepClip, keptClips, rememberArtist } from '../features/community/clips';
 import type { SharedMemory } from '../features/social/models';
 import { useCatalog } from './catalog';
 import { useSocial } from './social';
@@ -22,14 +22,17 @@ type Ctx = {
   hide: (sharedId: string) => void;
   /** Community clip id -> artist, for clips you've seen. */
   artistOf: Record<string, string>;
-  remember: (clip: Clip) => void;
+  /** Community clips you liked, kept whole for Your clips. */
+  kept: Record<string, Clip>;
+  /** Remember a community clip's artist; `liked` also keeps the whole clip for Your clips. */
+  remember: (clip: Clip, liked?: boolean) => void;
 };
 
 export const COMMUNITY_STORAGE_KEY = 'community.v1';
 
 const CommunityContext = createContext<Ctx | null>(null);
 
-type Saved = { enabled: boolean; hidden: string[]; artistOf: Record<string, string> };
+type Saved = { enabled: boolean; hidden: string[]; artistOf: Record<string, string>; kept: Record<string, Clip> };
 
 function clean(raw: unknown): Saved {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -41,11 +44,12 @@ function clean(raw: unknown): Saved {
     enabled: o.enabled !== false,
     hidden: Array.isArray(o.hidden) ? o.hidden.filter((x): x is string => typeof x === 'string').slice(-2000) : [],
     artistOf,
+    kept: cleanKept(o.kept),
   };
 }
 
 export function CommunityProvider({ children }: { children: ReactNode }) {
-  const [saved, setSaved] = useState<Saved>({ enabled: true, hidden: [], artistOf: {} });
+  const [saved, setSaved] = useState<Saved>({ enabled: true, hidden: [], artistOf: {}, kept: {} });
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -57,6 +61,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
           enabled: s.enabled && cur.enabled,
           hidden: [...new Set([...s.hidden, ...cur.hidden])],
           artistOf: { ...s.artistOf, ...cur.artistOf },
+          kept: { ...s.kept, ...cur.kept },
         }));
       })
       .catch(() => {})
@@ -73,18 +78,19 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
   const setEnabled = useCallback((on: boolean) => setSaved((s) => (s.enabled === on ? s : { ...s, enabled: on })), []);
   const hide = useCallback((id: string) => setSaved((s) => (s.hidden.includes(id) ? s : { ...s, hidden: [...s.hidden, id] })), []);
   const remember = useCallback(
-    (clip: Clip) =>
+    (clip: Clip, liked = false) =>
       setSaved((s) => {
-        const next = rememberArtist(s.artistOf, clip.id, clip.artistId);
-        return next === s.artistOf ? s : { ...s, artistOf: next };
+        const artistOf = rememberArtist(s.artistOf, clip.id, clip.artistId);
+        const kept = liked && !s.kept[clip.id] ? keepClip(s.kept, clip) : s.kept;
+        return artistOf === s.artistOf && kept === s.kept ? s : { ...s, artistOf, kept };
       }),
     [],
   );
   const hidden = useMemo(() => new Set(saved.hidden), [saved.hidden]);
 
   const value = useMemo<Ctx>(
-    () => ({ enabled: saved.enabled, setEnabled, hidden, hide, artistOf: saved.artistOf, remember }),
-    [saved.enabled, setEnabled, hidden, hide, saved.artistOf, remember],
+    () => ({ enabled: saved.enabled, setEnabled, hidden, hide, artistOf: saved.artistOf, kept: saved.kept, remember }),
+    [saved.enabled, setEnabled, hidden, hide, saved.artistOf, saved.kept, remember],
   );
   return <CommunityContext.Provider value={value}>{children}</CommunityContext.Provider>;
 }
@@ -100,6 +106,25 @@ export function useCommunityArtists(): Record<string, string> {
   return useContext(CommunityContext)?.artistOf ?? NONE;
 }
 const NONE: Record<string, string> = {};
+
+/**
+ * Every clip that can be yours in Your clips: the catalogue's, then the
+ * community clips you liked (while you're signed in, and not from anyone
+ * you blocked or anything you hid). `find` looks one up by id.
+ */
+export function useClipPool(): { clips: Clip[]; find: (id: string) => Clip | undefined } {
+  const catalog = useCatalog();
+  const social = useSocial();
+  const { kept, hidden } = useCommunity();
+  const artistIds = useMemo(() => new Set(catalog.artists.map((a) => a.id)), [catalog.artists]);
+  return useMemo(() => {
+    // Only while signed in: that's when the people you blocked are known.
+    const extra = social.availability.ok && social.user ? keptClips(kept, { artists: artistIds, blocked: social.blocked, hidden }) : [];
+    const clips = extra.length ? [...catalog.clips, ...extra] : catalog.clips;
+    const byId = new Map(extra.map((c) => [c.id, c]));
+    return { clips, find: (id: string) => catalog.clip(id) ?? byId.get(id) };
+  }, [catalog, social.availability.ok, social.user, social.blocked, kept, hidden, artistIds]);
+}
 
 /** Fetched clips are fresh for this long; after that, coming back to the app or the focus fetches again. */
 export const COMMUNITY_FRESH_MS = 5 * 60_000;

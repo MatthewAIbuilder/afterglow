@@ -152,4 +152,37 @@ describe('community clips in Discover', () => {
     await flush();
     expect(app.getByText('From your 1 like')).toBeTruthy();
   });
+
+  it('a liked video waits in Your clips and plays from there', async () => {
+    await mayaShares();
+    const app = await openFeed();
+    for (const like of app.getAllByLabelText('Like')) await fireEvent.press(like);
+    await flush();
+    const id = Object.keys(JSON.parse((await AsyncStorage.getItem('community.v1')) ?? '{}').kept ?? {})[0];
+    expect(id).toMatch(/^community:/);
+    // Somewhere else, so the feed starts over without it; then Your clips.
+    await act(async () => router.setParams({ festival: 'solstice-26' }));
+    await flush();
+    expect(app.queryByLabelText(CREDIT)).toBeNull();
+    await act(async () => router.push('/saved' as never));
+    await flush();
+    expect(app.getByText('From the crowd · @maya')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Play HEDEX, From the crowd'));
+    await flush();
+    expect(app.getByLabelText(CREDIT)).toBeTruthy();
+    expect(app.getByText('Cyclops Cove 4')).toBeTruthy();
+    // Back in the Discover that was already open, not a second copy stacked on top.
+    expect(router.canGoBack()).toBe(false);
+  });
+
+  it('hiding a video takes it out of Your clips too', async () => {
+    await mayaShares();
+    const app = await openFeed();
+    for (const like of app.getAllByLabelText('Like')) await fireEvent.press(like);
+    await flush();
+    await openMenu(app, 1);
+    await act(async () => router.push('/saved' as never));
+    await flush();
+    expect(app.queryByText('From the crowd · @maya')).toBeNull();
+  });
 });

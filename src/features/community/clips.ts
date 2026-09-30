@@ -1,4 +1,4 @@
-import type { Clip, Festival } from '../../data/models';
+import type { Clip, CommunityClipSource, Festival } from '../../data/models';
 import type { SharedMemory } from '../social/models';
 
 /**
@@ -103,4 +103,60 @@ export function rememberArtist(artistOf: Record<string, string>, clipId: string,
   const keys = Object.keys(next);
   for (const k of keys.slice(0, Math.max(0, keys.length - ARTIST_MEMORY_MAX))) delete next[k];
   return next;
+}
+
+/**
+ * Community clips you liked, kept whole on the phone so Your clips can list
+ * and play them after they've left the feed. Newest last, at most KEPT_MAX.
+ */
+export const KEPT_MAX = 200;
+export function keepClip(kept: Record<string, Clip>, clip: Clip): Record<string, Clip> {
+  if (!isCommunityClip(clip) || kept[clip.id] === clip) return kept;
+  const next = { ...kept };
+  delete next[clip.id];
+  next[clip.id] = clip;
+  const keys = Object.keys(next);
+  for (const k of keys.slice(0, Math.max(0, keys.length - KEPT_MAX))) delete next[k];
+  return next;
+}
+
+/** Kept clips read back from storage: anything that isn't a well-formed community clip is dropped. */
+export function cleanKept(raw: unknown): Record<string, Clip> {
+  const out: Record<string, Clip> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  const str = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    const c = v as Partial<Clip> | null;
+    const s = c?.source as Partial<CommunityClipSource> | undefined;
+    if (!c || !id.startsWith(COMMUNITY_PREFIX) || c.id !== id || !str(c.artistId) || !str(c.festivalId)) continue;
+    if (!s || s.provider !== 'community' || !str(s.videoUrl) || !HTTPS.test(s.videoUrl) || !str(s.handle) || !str(s.uid) || !str(s.sharedId)) continue;
+    const sec = typeof c.durationSec === 'number' && c.durationSec > 0 ? Math.min(180, c.durationSec) : DEFAULT_SEC;
+    out[id] = {
+      id,
+      artistId: c.artistId,
+      festivalId: c.festivalId,
+      title: str(c.title) ? c.title : 'From the crowd',
+      durationSec: sec,
+      bpm: 0,
+      source: {
+        provider: 'community',
+        videoUrl: s.videoUrl,
+        thumbUrl: str(s.thumbUrl) && HTTPS.test(s.thumbUrl) ? s.thumbUrl : undefined,
+        handle: s.handle,
+        uid: s.uid,
+        sharedId: s.sharedId,
+        capturedAt: str(s.capturedAt) ? s.capturedAt : '',
+        vertical: s.vertical !== false,
+      },
+    };
+  }
+  return out;
+}
+
+/** Kept clips that may still show: an artist Afterglow knows, nobody you blocked, nothing you hid. */
+export function keptClips(kept: Record<string, Clip>, f: Pick<CommunityFilter, 'artists' | 'blocked' | 'hidden'>): Clip[] {
+  return Object.values(kept).filter((c) => {
+    const s = c.source;
+    return s?.provider === 'community' && f.artists.has(c.artistId) && !f.blocked.has(s.uid) && !f.hidden.has(s.sharedId);
+  });
 }
