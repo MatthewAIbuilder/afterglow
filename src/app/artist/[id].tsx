@@ -40,7 +40,7 @@ export default function ArtistScreen() {
   const catalog = useCatalog();
   const artist = catalog.artist(id);
   const insets = useSafeAreaInsets();
-  const { taste, informed, similarity, importedFrom, imported, importing } = useTaste();
+  const { taste, informed, similarity, importedFrom, imported, importing, tasteClips } = useTaste();
   const { memories, uriOf } = useMemories();
   const { isMustSee, toggleMustSee } = usePlan();
   const { reactions } = useReactions();
@@ -88,7 +88,7 @@ export default function ArtistScreen() {
           {/* What the match rests on, so it never feels arbitrary. */}
           <Text style={styles.why}>
             {whyLine(
-              artistSignals(artist.id, catalog.clips, reactions, ratings, (importedFrom[artist.id] ?? []).map((p) => PROVIDER_NAME[p])),
+              artistSignals(artist.id, tasteClips, reactions, ratings, (importedFrom[artist.id] ?? []).map((p) => PROVIDER_NAME[p])),
               !!informed[artist.id],
               // Lifted only because they sound like your library: say which.
               !importedFrom[artist.id] && (imported[artist.id] ?? 0) > 0 ? importing.map((p) => PROVIDER_NAME[p]) : [],

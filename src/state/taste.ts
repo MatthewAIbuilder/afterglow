@@ -31,6 +31,8 @@ export function useTaste() {
     () => ({
       ...computeTaste(startingPrior(MOCK_TASTE, imported), artists, allClips, reactions, similarity, ratings, imported),
       similarity,
+      /** Every clip the taste rests on: the catalogue's plus community clips you reacted to. */
+      tasteClips: allClips,
       /** Artists you've rated directly. */
       rated: artists.filter((a) => ratings[a.id]).length,
       /** Services whose library shapes the taste, and which of their artists Afterglow has. */

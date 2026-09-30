@@ -147,5 +147,9 @@ describe('community clips in Discover', () => {
     const id = Object.keys(reactions).find((k) => k.startsWith('community:'));
     expect(id).toBeDefined();
     expect(JSON.parse((await AsyncStorage.getItem('community.v1')) ?? '{}').artistOf[id!]).toBe('hedex');
+    // Their page says what the match rests on, counting the like on the shared video.
+    await act(async () => router.push('/artist/hedex' as never));
+    await flush();
+    expect(app.getByText('From your 1 like')).toBeTruthy();
   });
 });
