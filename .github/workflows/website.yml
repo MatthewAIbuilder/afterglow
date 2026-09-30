@@ -58,6 +58,11 @@ jobs:
             curl -fsS https://afterglowmusic.web.app/catalogue.json -o /tmp/live.json && node -e "JSON.parse(require('fs').readFileSync('/tmp/live.json','utf8'))" && cp /tmp/live.json public/catalogue.json || true
           fi
 
+      # Who sounds alike, learned from shared lineups, so likes reach artists without sound tags (docs/events-import.md).
+      - name: Sounds alike from lineups
+        if: github.event_name != 'pull_request'
+        run: npx --yes tsx@4 scripts/lineup-similar.ts || echo "::warning::Sounds alike was skipped tonight."
+
       # Artist photos from Deezer's public search, reusing the ones already published (docs/events-import.md).
       - name: Artist photos
         if: github.event_name != 'pull_request'

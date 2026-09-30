@@ -15,6 +15,7 @@ import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
 import { useCrews } from '../../state/crews';
 import { useGoing } from '../../state/going';
+import { useRecapFestivals } from '../../features/recap/useRecap';
 import { useMemories } from '../../state/memories';
 import { useMusic } from '../../state/music';
 import { useSocial } from '../../state/social';
@@ -42,6 +43,8 @@ export default function ProfileScreen() {
   const tabSpace = useTabBarSpace();
   const catalog = useCatalog();
   const { going } = useGoing();
+  // Festivals that are over and you were part of: a recap each.
+  const recaps = useRecapFestivals();
   const { ratings } = useRatings();
   const { reactions } = useReactions();
   const pool = useClipPool();
@@ -204,6 +207,34 @@ export default function ProfileScreen() {
                   </Pressable>
                 );
               })}
+            </View>
+          )}
+
+          {recaps.length > 0 && (
+            <View style={styles.block}>
+              <Text style={[styles.blockTitle, styles.blockTitleAlone]}>Your recaps</Text>
+              {recaps.map((f) => (
+                <Pressable
+                  key={f.id}
+                  onPress={() => {
+                    haptic.select();
+                    router.push({ pathname: '/recap/[id]', params: { id: f.id } });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Your recap of ${f.name}`}
+                  style={({ pressed }) => [styles.goingRow, pressed && { opacity: 0.7 }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.goingName} numberOfLines={1}>
+                      {f.name}
+                    </Text>
+                    <Text style={styles.goingMeta} numberOfLines={1}>
+                      {f.dates} · Recap ready
+                    </Text>
+                  </View>
+                  <ChevronIcon color={color.moonFaint} size={12} />
+                </Pressable>
+              ))}
             </View>
           )}
 

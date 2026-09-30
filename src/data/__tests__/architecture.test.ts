@@ -47,6 +47,7 @@ describe('architecture', () => {
       'features/festivals/tune.ts',
       'features/festivals/going.ts',
       'features/festivals/shelves.ts',
+      'features/recap/recap.ts',
       'features/festivals/search.ts',
       'features/festivals/when.ts',
       'features/recommend/feed.ts',

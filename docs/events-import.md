@@ -141,3 +141,19 @@ or a file in the project**: it only goes into GitHub's secret settings.
 
 There's no cost: the key stays within YouTube's free daily allowance, and
 Google doesn't charge for it unless you add billing yourself.
+
+## Who sounds alike, from lineups (automatic)
+
+Artists from EDMTrain arrive without sound tags, so nothing you like could
+reach them. Every night `scripts/lineup-similar.ts` works out which artists
+keep sharing bills (and days) and publishes those pairs in `catalogue.json`
+as `similar`. A like or a love then spills over to artists who keep playing
+alongside them, like it does for artists who sound alike.
+
+- Only pairs where at least one artist has no sound tags (tags stay the
+  judge between tagged artists), after at least two festivals together.
+- A small bass weekend counts for more than a 140-act city festival, and a
+  shared day counts extra. A pair is never more than 70% alike, so a guess
+  from lineups never counts as much as a real match of sound.
+- Each artist keeps their six closest. Tagging an artist's sound in
+  `catalogue/afterglow.json` replaces these guesses for them.
