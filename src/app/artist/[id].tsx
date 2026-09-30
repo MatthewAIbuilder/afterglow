@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
+import { starsLine } from '../../features/crews/together';
+import { useCrews } from '../../state/crews';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
@@ -45,11 +47,13 @@ export default function ArtistScreen() {
   const { isMustSee, toggleMustSee } = usePlan();
   const { reactions } = useReactions();
   const { ratings } = useRatings();
+  const { crewStarsFor } = useCrews();
   if (!artist) return null;
   const yours = memories.filter((m) => m.artistId === artist.id);
   const context = festivalId ? catalog.festival(festivalId) : undefined;
   const starFestival = context?.lineup.includes(artist.id) ? context : undefined;
   const mustSee = !!starFestival && isMustSee(starFestival.id, artist.id);
+  const crewLine = starFestival ? starsLine(crewStarsFor(starFestival.id, artist.id)) : undefined;
 
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
   const mix = artistMix(artist);
@@ -117,6 +121,13 @@ export default function ArtistScreen() {
               </Text>
             </Pressable>
           )}
+          {/* Crewmates who starred them at this festival. */}
+          {starFestival && crewLine ? (
+            <Text style={styles.crewLine}>
+              <Text style={{ color: color.glow }}>★ </Text>
+              {crewLine}
+            </Text>
+          ) : null}
         </View>
 
         {/* Their sound as a mix, e.g. 80% melodic bass, 20% dubstep. */}
@@ -272,6 +283,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
+  crewLine: { ...type.label, color: color.moonDim, marginTop: space.md, textAlign: 'center' },
   back: { position: 'absolute', left: space.lg },
   hero: { alignItems: 'center', paddingHorizontal: space.xl },
   halo: { position: 'absolute', top: HERO / 2 - HALO / 2 },

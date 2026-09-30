@@ -24,6 +24,8 @@ import { YourFestival } from '../plan/YourFestival';
 import { haptic } from '../../lib/haptics';
 import { FriendsGoing } from '../social/FriendsGoing';
 import { CrewCard } from '../crews/CrewCard';
+import { starsShort } from '../crews/together';
+import { useCrews } from '../../state/crews';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
 import { useLineupNews } from '../../state/lineupNews';
@@ -58,6 +60,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const { ratings } = useRatings();
   // Acts added to this lineup lately (a catalogue update), marked "Just added".
   const added = useLineupNews().justAdded(festival.id);
+  const { crewStarsFor } = useCrews();
   const today = useToday();
 
   const lineup = useMemo(() => {
@@ -230,13 +233,15 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           {shown.map((a) => {
             const set = setFor(festival, a.id);
             const line = setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id]);
+            // "Just added", your crewmates' stars, then when they play.
+            const detail = [added.has(a.id) ? 'Just added' : undefined, starsShort(crewStarsFor(festival.id, a.id)), line].filter(Boolean).join(' · ') || undefined;
             return (
               <ArtistRow
                 key={a.id}
                 festivalId={festival.id}
                 artist={a}
                 affinity={taste[a.id] ?? 0}
-                detail={added.has(a.id) ? (line ? `Just added · ${line}` : 'Just added') : line}
+                detail={detail}
                 rating={ratings[a.id]}
               />
             );

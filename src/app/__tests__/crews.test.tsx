@@ -129,4 +129,18 @@ describe('festival crews', () => {
     await flush();
     expect(app.getByText('This crew has ended')).toBeTruthy();
   });
+
+  it('your crewmates’ stars show on the lineup and the artist page', async () => {
+    await person('maya', 'Maya Chen');
+    const crew = await s().createCrew('edc-orlando-26', 'Crew');
+    await s().setCrewPicks(crew.id, ['steve-aoki']);
+    await person('sam', 'Sam');
+    await s().joinCrew(crew.id);
+    const app = await renderApp('/festival/edc-orlando-26');
+    await flush();
+    expect(app.getAllByLabelText(/^STEVE AOKI, \d+ percent match, ★ Maya/).length).toBeGreaterThan(0);
+    await act(async () => router.push({ pathname: '/artist/[id]', params: { id: 'steve-aoki', festival: 'edc-orlando-26' } }));
+    await flush();
+    expect(app.getByText(/Maya starred this in your crew/)).toBeTruthy();
+  });
 });
