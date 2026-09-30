@@ -92,6 +92,7 @@ The demo artists already exist, and you can use them in your lineups without add
   - A set that runs past midnight belongs to the night it starts. For example, `"day": "Friday"` with `"start": "23:30"` and `"end": "01:00"`.
   - Every set's day must be in `days`, and its stage in `stages`.
 - **`poster`** (optional) is a link to the official lineup poster, starting with `https://`. Only use a poster you have the rights to.
+- **`tickets`** and **`website`** (optional) are the festival's official ticket page and its own site, each starting with `https://`. They show as "Get tickets" (until the festival is over) and "Official site" on the festival page, and open the festival's own pages. Use only official links.
 - **`weekends`** (optional) is for a festival that runs over separate weekends, like ACL or Coachella. List each weekend's first and last day, in order:
   `"weekends": [{ "start": "2026-10-02", "end": "2026-10-04" }, { "start": "2026-10-09", "end": "2026-10-11" }]`.
   - The countdown then says "Weekend 2 in 4 days" in the week between, instead of "Happening now".

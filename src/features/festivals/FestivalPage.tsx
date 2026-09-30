@@ -26,6 +26,7 @@ import { FriendsGoing } from '../social/FriendsGoing';
 import { CrewCard } from '../crews/CrewCard';
 import { starsShort } from '../crews/together';
 import { useCrews } from '../../state/crews';
+import { OfficialLinks } from './OfficialLinks';
 import { CalendarPill } from '../calendar/CalendarPill';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
@@ -141,6 +142,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               </Pressable>
             )}
           </View>
+          {/* Tickets and the festival's own site, when the catalogue has them. */}
+          <OfficialLinks festival={whole} over={soon === 'Over'} />
           {/* People you follow (and others) who show this festival on their profile. */}
           <FriendsGoing festivalId={whole.id} />
           {/* Your crews for this festival, or start one. */}
