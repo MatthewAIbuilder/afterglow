@@ -9,7 +9,7 @@ import { whereWhen } from '../festivals/format';
  * artist with its own title and description; the app itself is unchanged.
  * Pure.
  */
-export type PagePreview = { path: string; title: string; description: string; url: string };
+export type PagePreview = { path: string; title: string; description: string; url: string; image?: string };
 
 const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
 
@@ -36,6 +36,7 @@ export function artistPreview(artist: Artist, festivals: Festival[], webUrl: str
     title: `${artist.name} · Afterglow`,
     description: cut(`${playing}Live sets and where they play, on Afterglow.`, 200),
     url: `${webUrl}/artist/${artist.id}`,
+    ...(artist.imageUrl ? { image: artist.imageUrl } : {}),
   };
 }
 
@@ -51,5 +52,12 @@ export function withPreview(html: string, p: PagePreview): string {
     meta('property', 'og:title', p.title),
     meta('property', 'og:description', p.description),
     meta('property', 'og:url', p.url),
+    // The artist's photo in place of the site picture (a square, so no fixed size).
+    (doc: string) =>
+      p.image
+        ? meta('property', 'og:image', p.image)(doc)
+            .replace(/\s*<meta property="og:image:(width|height|alt)" content="[^"]*" \/>/g, '')
+            .replace(/(<meta name="twitter:card" content=")[^"]*(")/, '$1summary$2')
+        : doc,
   ].reduce((doc, f) => f(doc), html);
 }

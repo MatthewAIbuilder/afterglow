@@ -1,4 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { PageTitle } from '../../components/PageTitle';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -37,6 +38,8 @@ import { showAlert } from '../../lib/dialog';
 const HEADER_H = 96;
 /** The row of festival chips under the subtitle. */
 const SCOPE_H = 44;
+/** How far the header's scrim fades out over the top of the map. */
+const SCRIM_FADE = 36;
 
 export default function MySoundScreen() {
   const insets = useSafeAreaInsets();
@@ -161,11 +164,27 @@ export default function MySoundScreen() {
         />
       </View>
 
+      {/* And a soft fade at the bottom, under the tab bar. */}
+      <LinearGradient
+        colors={['rgba(10,9,24,0)', 'rgba(10,9,24,0.85)', 'rgba(10,9,24,0.97)']}
+        locations={[0, 0.55, 1]}
+        style={[styles.bottomScrim, { height: tabSpace + SCRIM_FADE }]}
+        pointerEvents="none"
+      />
+
       {search ? (
         <SearchNote search={search} query={query} extra={extra.length} bottom={tabSpace + space.lg} />
       ) : null}
       {sparse && scope && <SparseNote festival={scope} shown={onMap.length} bottom={tabSpace + space.lg} />}
       {!search && !sparse && note && <MusicNoteView note={note} bottom={tabSpace + space.lg} />}
+
+      {/* A soft scrim under the header: bubbles glide beneath it rather than being cut off. */}
+      <LinearGradient
+        colors={['rgba(10,9,24,0.97)', 'rgba(10,9,24,0.93)', 'rgba(10,9,24,0)']}
+        locations={[0, (mapTop - space.sm) / (mapTop + SCRIM_FADE), 1]}
+        style={[styles.scrim, { height: mapTop + SCRIM_FADE }]}
+        pointerEvents="none"
+      />
 
       <View style={[styles.header, { paddingTop: insets.top + space.lg }]} pointerEvents="box-none">
         <View style={styles.titleRow} pointerEvents="box-none">
@@ -451,6 +470,8 @@ function subtitle(summary: TasteSummary, rated: number, lean: SoundTag[], import
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl },
+  scrim: { position: 'absolute', top: 0, left: 0, right: 0 },
+  bottomScrim: { position: 'absolute', bottom: 0, left: 0, right: 0 },
   chipsWrap: { marginTop: space.md, marginHorizontal: -space.xl, flexGrow: 0 },
   chips: { paddingHorizontal: space.xl, gap: space.sm },
   chip: {
@@ -467,7 +488,7 @@ const styles = StyleSheet.create({
   searchChip: { paddingHorizontal: space.md, justifyContent: 'center' },
   scopePill: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 220 },
   chipDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', marginVertical: 6, backgroundColor: color.hairline },
-  breakdown: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: 'rgba(169,124,255,0.45)', marginRight: space.sm },
+  breakdown: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: 'rgba(169,124,255,0.45)' },
   chipText: { ...type.caption, color: color.moonDim },
   sparse: {
     position: 'absolute',

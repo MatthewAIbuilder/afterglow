@@ -42,6 +42,10 @@ export type ParsedFile = {
   updated?: string;
   /** Plain-language notes on everything left out. Empty when the file is perfect. */
   problems: string[];
+  /** Artist id -> photo link, for artists without their own imageUrl (filled in by the nightly photo job). */
+  photos?: Record<string, string>;
+  /** Where those photos are from ("Deezer"), credited on artist pages. */
+  photoCredit?: string;
 };
 
 const ID = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -323,5 +327,23 @@ export function parseCatalogFile(input: unknown): ParsedFile {
   };
   if (raw.similar !== undefined) snapshot.similarities = pick(list(raw.similar).map((s) => parseSimilar(s, problems)));
   const updated = text(raw.updated);
-  return updated ? { snapshot, mode, updated, problems } : { snapshot, mode, problems };
+  const parsed: ParsedFile = updated ? { snapshot, mode, updated, problems } : { snapshot, mode, problems };
+  // Photos for artists that have none of their own: { "artist-id": "https://…" }.
+  if (raw.photos !== undefined) {
+    if (!isObj(raw.photos)) problems.push('"photos" should be written as { "artist-id": "https://…" }, so it was left out.');
+    else {
+      const photos: Record<string, string> = {};
+      let bad = 0;
+      for (const [key, value] of Object.entries(raw.photos)) {
+        const url = safeImageUrl(value);
+        if (id(key) && url) photos[key] = url;
+        else bad++;
+      }
+      if (bad) problems.push(`${bad} ${bad === 1 ? 'photo was' : 'photos were'} left out: each needs an artist id and an https link.`);
+      if (Object.keys(photos).length) parsed.photos = photos;
+    }
+  }
+  const credit = text(raw.photoCredit);
+  if (credit) parsed.photoCredit = credit.slice(0, 40);
+  return parsed;
 }
