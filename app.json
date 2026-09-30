@@ -49,7 +49,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Afterglow uses where you are when you record to work out which festival you're at."
+          "locationWhenInUsePermission": "Afterglow uses where you are to show festivals near you and, when you record, to work out which festival you're at."
         }
       ],
       [

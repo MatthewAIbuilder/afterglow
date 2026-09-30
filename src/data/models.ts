@@ -79,6 +79,11 @@ export type Festival = {
   name: string;
   dates: string;
   location: string;
+  /**
+   * Where it is on the map (the venue), for "Near you". Imported festivals
+   * carry the venue's coordinates; the phone looks up the rest from `location`.
+   */
+  place?: { lat: number; lon: number };
   /** Link to the official lineup poster, if you have one. Tap to view full screen. */
   posterImageUrl?: string;
   /** Official links (https only): where to buy tickets, the festival's own site. */

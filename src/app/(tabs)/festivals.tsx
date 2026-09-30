@@ -21,6 +21,9 @@ import { PlayIcon } from '../../features/discover/icons';
 import { lineupReach } from '../../features/festivals/links';
 import { searchArtists, searchFestivals } from '../../features/festivals/search';
 import { whereWhen } from '../../features/festivals/format';
+import { distanceLabel, distanceShort, nearYou, reachLabel } from '../../features/festivals/near';
+import { NearYouPrompt } from '../../features/festivals/NearYouPrompt';
+import { useNearby } from '../../state/nearby';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
@@ -50,14 +53,22 @@ export default function FestivalsScreen() {
   // Many festivals (the nightly feed): a short shelf for you, the rest behind "More festivals".
   const loves = useLoves();
   const many = isMany(festivals);
-  const shelf = useMemo(
-    () => (many ? festivalShelf(festivals, going, loves, today) : undefined),
-    [many, festivals, going, loves, today],
+  // Near you, once you've turned it on: festivals within reach you're not already going to.
+  const nearby = useNearby();
+  const near = useMemo(
+    () => (nearby.here ? nearYou(festivals.filter((f) => !going.includes(f.id)), nearby.here, nearby.placeOf, today) : []),
+    [nearby.here, nearby.placeOf, festivals, going, today],
   );
-  const rest = useMemo(
-    () => (shelf ? bySoonest(groups.others.filter((f) => !shelf.festivals.includes(f)), today) : groups.others),
-    [shelf, groups.others, today],
-  );
+  const shelf = useMemo(() => {
+    if (!many) return undefined;
+    const nearIds = new Set(near.map((n) => n.festival.id));
+    return festivalShelf(festivals.filter((f) => !nearIds.has(f.id)), going, loves, today);
+  }, [many, festivals, going, loves, today, near]);
+  const rest = useMemo(() => {
+    if (!shelf) return groups.others;
+    const shown = new Set([...shelf.festivals, ...near.map((n) => n.festival)].map((f) => f.id));
+    return bySoonest(groups.others.filter((f) => !shown.has(f.id)), today);
+  }, [shelf, near, groups.others, today]);
   const [restShown, setRestShown] = useState(MORE_PAGE);
   // Find any artist or festival.
   const [query, setQuery] = useState('');
@@ -131,6 +142,30 @@ export default function FestivalsScreen() {
           <>
             {groups.going.length > 0 && <Text style={styles.section}>Going</Text>}
             {list(groups.going)}
+            {nearby.status === 'on' && (many || near.length > 0) ? (
+              <>
+                <View style={styles.nearHead}>
+                  <Text style={[styles.section, styles.nearTitle]}>Near you</Text>
+                  <Pressable
+                    onPress={() => {
+                      haptic.select();
+                      nearby.turnOff();
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Stop showing festivals near you"
+                    hitSlop={8}
+                  >
+                    <Text style={styles.nearOff}>Turn off</Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.nearSub}>
+                  {reachLabel(nearby.units)} of {nearby.hereLabel ?? 'you'}
+                </Text>
+                {near.length > 0 ? list(near.map((n) => n.festival)) : <Text style={styles.nearNone}>No festivals that close yet. New ones arrive every night.</Text>}
+              </>
+            ) : (
+              many && <NearYouPrompt />
+            )}
             {shelf && shelf.festivals.length > 0 && <Text style={styles.section}>{shelf.title}</Text>}
             {shelf && list(shelf.festivals)}
             {/* Once you're going somewhere (or there are many), the rest wait behind "More festivals" so they stay out of the way. */}
@@ -257,6 +292,8 @@ function FestivalTile({ festival, taste }: { festival: Festival; taste: Record<s
     .sort((a, b) => (taste[b.id] ?? 0) - (taste[a.id] ?? 0));
   const loved = ranked.filter((a) => (taste[a.id] ?? 0) >= LOVE).length;
   const timesOut = !!festival.sets?.length;
+  const { distanceTo, units } = useNearby();
+  const away = distanceTo(festival);
   // The colour of your best match there tints the tile.
   const [, bright] = artistColors(ranked[0]?.id ?? festival.id, ranked[0]?.color);
   const discover = () => {
@@ -287,6 +324,7 @@ function FestivalTile({ festival, taste }: { festival: Festival; taste: Record<s
       </Text>
       <Text style={styles.tileLoved} numberOfLines={1}>
         {loved > 0 ? `${loved} you’ll love` : `${ranked.length} acts`}
+        {away !== undefined ? ` · ${distanceShort(away, units)}` : ''}
       </Text>
       <View style={styles.tileBottom}>
         <View style={[styles.faces, { flex: 1 }]}>
@@ -328,6 +366,8 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
   const timesOut = !!festival.sets?.length;
   const today = useToday();
   const soon = countdown(festival, today);
+  const { distanceTo, units } = useNearby();
+  const away = distanceTo(festival);
 
   return (
     <Pressable
@@ -349,6 +389,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
           <Text style={styles.name}>{festival.name}</Text>
           <Text style={styles.meta}>
             {whereWhen(festival)}
+            {away !== undefined ? ` · ${distanceLabel(away, units)}` : ''}
           </Text>
         </View>
         <ChevronIcon color={color.moonFaint} />
@@ -461,6 +502,11 @@ const styles = StyleSheet.create({
   },
   clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
+  nearHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: space.xl },
+  nearTitle: { flex: 1 },
+  nearOff: { ...type.label, color: color.moonFaint },
+  nearSub: { ...type.caption, color: color.moonDim, paddingHorizontal: space.xl, marginTop: -space.xs, marginBottom: space.md },
+  nearNone: { ...type.body, color: color.moonDim, paddingHorizontal: space.xl, marginBottom: space.lg },
   moreRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingRight: space.xl, marginTop: space.sm },
   moreText: { marginBottom: 0, paddingRight: 0 },
   moreCount: { ...type.label, color: color.moonFaint, flex: 1, fontVariant: ['tabular-nums'] },

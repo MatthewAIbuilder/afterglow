@@ -12,7 +12,7 @@
  * matched by name; new ones are added with no sound (shown as New).
  */
 export type EdmtrainArtist = { id?: number; name?: string; link?: string; b2bInd?: boolean };
-export type EdmtrainVenue = { id?: number; name?: string; location?: string; address?: string; state?: string };
+export type EdmtrainVenue = { id?: number; name?: string; location?: string; address?: string; state?: string; latitude?: number; longitude?: number };
 export type EdmtrainEvent = {
   id?: number;
   link?: string;
@@ -35,6 +35,7 @@ type FileFestival = {
   name: string;
   dates: string;
   location: string;
+  place?: { lat: number; lon: number };
   start: string;
   end: string;
   weekends?: { start: string; end: string }[];
@@ -84,6 +85,14 @@ export function datesLabel(start: string, end: string): string {
   const sameMonth = start.slice(0, 7) === end.slice(0, 7);
   const tail = sameMonth ? dom(end) : `${mon(end)} ${dom(end)}`;
   return `${mon(start)} ${dom(start)} ${dayGap(start, end) === 1 ? 'and' : 'to'} ${tail}`;
+}
+
+/** The venue on the map, when EDMTrain gives real coordinates (rounded to about 100 m). */
+function placeOf(v: EdmtrainVenue): { place?: { lat: number; lon: number } } {
+  const lat = Number(v.latitude);
+  const lon = Number(v.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180 || (lat === 0 && lon === 0)) return {};
+  return { place: { lat: Math.round(lat * 1000) / 1000, lon: Math.round(lon * 1000) / 1000 } };
 }
 
 /** The city from a venue's location ("Orlando, FL" -> "orlando"). */
@@ -211,6 +220,7 @@ export function edmtrainCatalogue(
         name,
         dates: datesLabel(start, end),
         location,
+        ...placeOf(venue),
         start,
         end,
         ...(twoWeekends ? { weekends: edition.map((r) => ({ start: r[0], end: r.at(-1)! })) } : {}),

@@ -180,6 +180,14 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
   if (Object.keys(notes).length) festival.notes = notes;
   if (Object.keys(artistDays).length) festival.artistDays = artistDays;
   if (Object.keys(artistWeekends).length) festival.artistWeekends = artistWeekends;
+  // Where the venue is: { "lat": 28.4, "lon": -81.5 }.
+  if (raw.place !== undefined) {
+    const lat = isObj(raw.place) ? raw.place.lat : undefined;
+    const lon = isObj(raw.place) ? raw.place.lon : undefined;
+    if (typeof lat === 'number' && typeof lon === 'number' && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && (lat !== 0 || lon !== 0))
+      festival.place = { lat, lon };
+    else problems.push(`Festival "${festivalId}": "place" should be { "lat": 28.4, "lon": -81.5 }, so it was ignored.`);
+  }
   for (const [key, field] of [['start', 'startDate'], ['end', 'endDate']] as const) {
     if (raw[key] === undefined) continue;
     const day = isoDay(raw[key]);
