@@ -26,6 +26,7 @@ import { FriendsGoing } from '../social/FriendsGoing';
 import { CrewCard } from '../crews/CrewCard';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
+import { useLineupNews } from '../../state/lineupNews';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -55,6 +56,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const [order, setOrder] = useState<Order>('match');
   const [query, setQuery] = useState('');
   const { ratings } = useRatings();
+  // Acts added to this lineup lately (a catalogue update), marked "Just added".
+  const added = useLineupNews().justAdded(festival.id);
   const today = useToday();
 
   const lineup = useMemo(() => {
@@ -226,13 +229,14 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           ) : null}
           {shown.map((a) => {
             const set = setFor(festival, a.id);
+            const line = setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id]);
             return (
               <ArtistRow
                 key={a.id}
                 festivalId={festival.id}
                 artist={a}
                 affinity={taste[a.id] ?? 0}
-                detail={setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id])}
+                detail={added.has(a.id) ? (line ? `Just added · ${line}` : 'Just added') : line}
                 rating={ratings[a.id]}
               />
             );

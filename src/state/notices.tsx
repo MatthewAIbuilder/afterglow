@@ -3,10 +3,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from 'react-native';
 import { activityNotices } from '../features/notifications/activity';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
+import { lineupNotices } from '../features/notifications/lineupNews';
+import { TIER_AT } from '../features/plan/plan';
 import type { Activity, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
 import { useGoing } from './going';
+import { useLineupNews } from './lineupNews';
+import { useRatings } from './ratings';
+import { useTaste } from './taste';
 import { useSocial } from './social';
 import { useWeekends } from './weekends';
 
@@ -65,6 +70,22 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   const { forYou } = useWeekends();
   const mine = useMemo(() => festivals.map(forYou), [festivals, forYou]);
   const list = useMemo(() => notices(mine, going, today), [mine, going, today]);
+  // Artists you'd love, newly added to a lineup (or on a festival new to Afterglow).
+  const { memory } = useLineupNews();
+  const { ratings } = useRatings();
+  const { taste, informed } = useTaste();
+  const { artist: artistById } = useCatalog();
+  const lineupList = useMemo(
+    () =>
+      lineupNotices(memory.news, {
+        festivals: mine,
+        loves: (id) => ratings[id] === 'love' || (ratings[id] !== 'pass' && informed[id] && (taste[id] ?? 0) >= TIER_AT.strong),
+        nameOf: (id) => artistById(id)?.name,
+        going: new Set(going),
+        today,
+      }),
+    [memory.news, mine, ratings, informed, taste, artistById, going, today],
+  );
   // Your activity: fetched when you sign in, when the app comes back, and when the bell's screen asks.
   const social = useSocial();
   const uid = social.user?.uid;
@@ -113,7 +134,7 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
         : [],
     [activity, uid, social.blocked],
   );
-  const all = useMemo(() => [...list, ...activityList], [list, activityList]);
+  const all = useMemo(() => [...list, ...lineupList, ...activityList], [list, lineupList, activityList]);
 
   const value = useMemo<Ctx>(() => ({ list: all, refresh, read, markRead, hydrated }), [all, refresh, read, markRead, hydrated]);
   return <NoticesContext.Provider value={value}>{children}</NoticesContext.Provider>;

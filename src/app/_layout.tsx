@@ -9,6 +9,7 @@ import { CatalogProvider } from '../state/catalog';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
 import { GoingProvider } from '../state/going';
+import { LineupNewsProvider } from '../state/lineupNews';
 import { MemoriesProvider } from '../state/memories';
 import { MusicConnectionsProvider } from '../state/music';
 import { NoticesProvider } from '../state/notices';
@@ -35,6 +36,7 @@ export default function RootLayout() {
       <GoingProvider>
       <SeenProvider>
       <WeekendsProvider>
+      <LineupNewsProvider>
       <SocialProvider>
       <NoticesProvider>
       <CrewsProvider>
@@ -111,6 +113,7 @@ export default function RootLayout() {
       </CrewsProvider>
       </NoticesProvider>
       </SocialProvider>
+      </LineupNewsProvider>
       </WeekendsProvider>
       </SeenProvider>
       </GoingProvider>
