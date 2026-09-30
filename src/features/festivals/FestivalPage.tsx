@@ -164,6 +164,20 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
                 <Text style={styles.discoverCount}>{toRate} to rate</Text>
               </Pressable>
             )}
+            {/* Side by side with other festivals, when there are others to compare. */}
+            {catalog.festivals.length > 1 && (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push({ pathname: '/compare', params: { ids: whole.id } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Compare ${whole.name} with other festivals`}
+                style={({ pressed }) => [styles.discover, styles.tune, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+              >
+                <Text style={styles.discoverText}>Compare</Text>
+              </Pressable>
+            )}
           </View>
           {/* Tickets and the festival's own site, when the catalogue has them. */}
           <OfficialLinks festival={whole} over={soon === 'Over'} />

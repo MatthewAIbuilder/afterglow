@@ -24,6 +24,7 @@ import CrewScreen from '../crew/[id]';
 import PlanCardScreen from '../plan-card/[id]';
 import RecapScreen from '../recap/[id]';
 import PickArtistsScreen from '../pick-artists';
+import CompareScreen from '../compare';
 import PosterScreen from '../poster/[id]';
 import ProfileEditScreen from '../profile-edit';
 import RequestScreen from '../request';
@@ -60,6 +61,7 @@ export const APP_ROUTES = {
   'plan-card/[id]': PlanCardScreen,
   'recap/[id]': RecapScreen,
   'pick-artists': PickArtistsScreen,
+  compare: CompareScreen,
   music: MusicScreen,
   'music-auth': MusicAuthReturn,
   'memory-tag': MemoryTagScreen,
