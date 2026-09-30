@@ -12,7 +12,7 @@ What works on the website: Discover (YouTube clips, likes, saves, skips, videos 
 2. Builds the website (`npm run build:web`, into `dist/`), stamped with the commit it came from (shown at the bottom of Profile, like "Afterglow 1.0.0 · build 3f2a9c1").
 3. Deploys it: **live** from `main`, a **preview** for a pull request (a link is posted on the PR; it lasts 7 days).
 
-Until the secrets below are added, steps 1 and 2 still run and the deploy is skipped.
+Until the secrets below are added, steps 1 and 2 still run and the deploy is skipped. To republish without a new merge: GitHub → **Actions** → **Website** → **Run workflow** (on `main`).
 
 `firebase.json` (`hosting`) serves `dist/`, sends every address to the app (so links like `/festival/edc-orlando-26` work), keeps the app's code files cached for a year (their names change with every build), and never caches the page itself, so a refresh always gets the newest version.
 
