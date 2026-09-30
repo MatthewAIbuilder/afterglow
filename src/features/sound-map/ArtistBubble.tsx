@@ -15,7 +15,7 @@ import Animated, {
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { color, motion, type } from '../../theme/tokens';
-import { LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
+import { FULL_LABELS, LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
 
 type Props = {
   placed: PlacedArtist;
@@ -37,9 +37,6 @@ const MAX_LAG = 14;
 const LABEL_W = 150;
 const D = MAX_R * 2; // bubbles render at full size and scale down, so size can animate
 const GLOW = MAX_R * 2.5;
-
-/** Only this many of the strongest matches get a full label; the rest a smaller, dimmer name and no percentage. */
-const FULL_LABELS = 12;
 
 /** Focus of a search match: bigger than selected (2), so it pops. */
 const MATCH = 2.8;
@@ -139,7 +136,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
   const glowStrength = Math.pow(affinity, 3) * 0.75;
   const gid = `g-${artist.id}`;
   const pct = Math.round(affinity * 100);
-  // index is the bloom order: strongest match first.
+  // index is the bloom order: strongest match first. Only the strongest get a full label; the rest a smaller, dimmer name.
   const prominent = index < FULL_LABELS;
 
   return (

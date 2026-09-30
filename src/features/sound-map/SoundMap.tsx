@@ -13,7 +13,7 @@ import { SOUND_LABEL } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { color, motion, type } from '../../theme/tokens';
 import { ArtistBubble } from './ArtistBubble';
-import { computeLayout } from './layout';
+import { computeLayout, fitScale as frameScale } from './layout';
 
 type Props = {
   artists: Artist[];
@@ -38,13 +38,8 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     [layout],
   );
 
-  // Fit the whole universe on screen, keeping your top match dead centre.
-  const fitScale = useMemo(() => {
-    const b = layout.bounds;
-    const halfW = Math.max(-b.minX, b.maxX, 1);
-    const halfH = Math.max(-b.minY, b.maxY, 1);
-    return Math.min(1.1, (width / 2 - 12) / halfW, (height / 2 - 12) / halfH);
-  }, [layout, width, height]);
+  // Frame the heart of your universe (your strongest matches), keeping your top match dead centre.
+  const fitScale = useMemo(() => frameScale(layout, width, height), [layout, width, height]);
   const cx = 0;
   const cy = 0;
 
@@ -54,6 +49,17 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
   const velY = useSharedValue(0);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
+  // Once you move the map yourself, it stays where you put it; until then it reframes as it reshapes
+  // (your ratings load a moment after the first frame, and taste changes reshape it).
+  const touched = useSharedValue(false);
+  useEffect(() => {
+    if (touched.get() || matchIds) return;
+    scale.set(withSpring(fitScale, motion.gentle));
+    tx.set(withSpring(0, motion.gentle));
+    ty.set(withSpring(0, motion.gentle));
+    // Only a new framing should move the camera.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitScale]);
 
   // How far you can wander before the map gently holds you back.
   const limitX = width * 0.9;
@@ -61,35 +67,41 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
 
   const pan = Gesture.Pan()
     .averageTouches(true)
+    .onStart(() => {
+      touched.set(true);
+    })
     .onChange((e) => {
-      tx.value += e.changeX;
-      ty.value += e.changeY;
-      velX.value = e.velocityX;
-      velY.value = e.velocityY;
+      tx.set(tx.get() + e.changeX);
+      ty.set(ty.get() + e.changeY);
+      velX.set(e.velocityX);
+      velY.set(e.velocityY);
     })
     .onFinalize(() => {
-      velX.value = 0;
-      velY.value = 0;
+      velX.set(0);
+      velY.set(0);
     })
     .onEnd((e) => {
-      tx.value = withDecay({ velocity: e.velocityX, clamp: [-limitX, limitX], rubberBandEffect: true });
-      ty.value = withDecay({ velocity: e.velocityY, clamp: [-limitY, limitY], rubberBandEffect: true });
+      tx.set(withDecay({ velocity: e.velocityX, clamp: [-limitX, limitX], rubberBandEffect: true }));
+      ty.set(withDecay({ velocity: e.velocityY, clamp: [-limitY, limitY], rubberBandEffect: true }));
     });
 
   const pinch = Gesture.Pinch()
+    .onStart(() => {
+      touched.set(true);
+    })
     .onChange((e) => {
-      const next = Math.min(MAX_ZOOM * 1.15, Math.max(MIN_ZOOM * 0.85, scale.value * e.scaleChange));
-      const ratio = next / scale.value;
+      const next = Math.min(MAX_ZOOM * 1.15, Math.max(MIN_ZOOM * 0.85, scale.get() * e.scaleChange));
+      const ratio = next / scale.get();
       // Keep the point under your fingers fixed while zooming.
       const fx = e.focalX - width / 2;
       const fy = e.focalY - height / 2;
-      tx.value = fx - (fx - tx.value) * ratio;
-      ty.value = fy - (fy - ty.value) * ratio;
-      scale.value = next;
+      tx.set(fx - (fx - tx.get()) * ratio);
+      ty.set(fy - (fy - ty.get()) * ratio);
+      scale.set(next);
     })
     .onEnd(() => {
-      if (scale.value > MAX_ZOOM || scale.value < MIN_ZOOM) {
-        scale.value = withSpring(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, scale.value)), motion.snappy);
+      if (scale.get() > MAX_ZOOM || scale.get() < MIN_ZOOM) {
+        scale.set(withSpring(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, scale.get())), motion.snappy));
         runOnJS(haptic.settle)();
       }
     });
@@ -98,9 +110,10 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     .numberOfTaps(2)
     .onEnd((_e, ok) => {
       if (!ok) return;
-      scale.value = withSpring(fitScale, motion.gentle);
-      tx.value = withSpring(0, motion.gentle);
-      ty.value = withSpring(0, motion.gentle);
+      touched.set(false);
+      scale.set(withSpring(fitScale, motion.gentle));
+      tx.set(withSpring(0, motion.gentle));
+      ty.set(withSpring(0, motion.gentle));
       runOnJS(haptic.settle)();
     });
 
@@ -144,6 +157,7 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
       return;
     }
     haptic.tap();
+    touched.set(true);
     onSelect(hit.artist.id);
     // Glide the chosen artist into the space above the sheet.
     const target = Math.max(s, fitScale * 1.15);
@@ -158,13 +172,13 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     .maxDistance(12)
     .requireExternalGestureToFail(doubleTap)
     .onEnd((e, ok) => {
-      if (ok) runOnJS(handleTap)(e.x, e.y, tx.value, ty.value, scale.value);
+      if (ok) runOnJS(handleTap)(e.x, e.y, tx.get(), ty.get(), scale.get());
     });
 
   const gesture = Gesture.Simultaneous(pan, pinch, Gesture.Exclusive(doubleTap, singleTap));
 
   const worldStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
+    transform: [{ translateX: tx.get() }, { translateY: ty.get() }, { scale: scale.get() }],
   }));
 
   return (
