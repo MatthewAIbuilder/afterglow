@@ -111,6 +111,56 @@ service cloud.firestore {
       allow delete: if signedIn() && (resource.data.uid == me() || resource.data.owner == me());
     }
 
+    // Festival crews: a few friends planning one festival. The id is the invite: anyone signed in who has it
+    // can read the crew (its name and members) and join it, adding only themselves, up to 12, with a profile, not
+    // if the owner blocked them. Members leave by removing only themselves (an owner who leaves hands it to a
+    // member). The owner can rename it, remove people and delete it. Listing is only of crews you're in.
+    function crewShape(d) {
+      return d.keys().hasOnly(['festivalId', 'name', 'owner', 'members', 'createdAt'])
+        && d.festivalId is string && d.festivalId.size() > 0 && d.festivalId.size() <= 100
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 40
+        && d.members is list && d.members.size() <= 12 && d.owner in d.members
+        && d.createdAt is string && d.createdAt.size() <= 40;
+    }
+    function blockedBy(uid) { return exists(path('blocks', uid)) && me() in get(path('blocks', uid)).data.uids; }
+    match /crews/{id} {
+      allow get: if signedIn();
+      allow list: if signedIn() && me() in resource.data.members;
+      allow create: if signedIn() && crewShape(request.resource.data)
+        && request.resource.data.owner == me() && request.resource.data.members == [me()]
+        && exists(path('profiles', me()));
+      allow update: if signedIn() && crewShape(request.resource.data)
+        && request.resource.data.festivalId == resource.data.festivalId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          // Join: add only yourself, at the end.
+          (!(me() in resource.data.members)
+            && request.resource.data.members == resource.data.members.concat([me()])
+            && request.resource.data.owner == resource.data.owner && request.resource.data.name == resource.data.name
+            && exists(path('profiles', me())) && !blockedBy(resource.data.owner))
+          // Leave: remove only yourself; an owner hands the crew to someone still in it.
+          || (me() in resource.data.members
+            && request.resource.data.members == resource.data.members.removeAll([me()])
+            && request.resource.data.name == resource.data.name
+            && (request.resource.data.owner == resource.data.owner || resource.data.owner == me()))
+          // The owner: rename, or remove other people (never add anyone).
+          || (resource.data.owner == me() && request.resource.data.owner == me()
+            && request.resource.data.members.toSet().difference(resource.data.members.toSet()).size() == 0)
+        );
+      allow delete: if signedIn() && resource.data.owner == me();
+
+      // Each member's starred sets, shared with the crew: written by that member, read by members,
+      // removed by that member or the owner.
+      match /picks/{uid} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create, update: if signedIn() && me() == uid && me() in get(path('crews', id)).data.members
+          && request.resource.data.keys().hasOnly(['artists', 'updatedAt'])
+          && request.resource.data.artists is list && request.resource.data.artists.size() <= 100
+          && request.resource.data.updatedAt is string && request.resource.data.updatedAt.size() <= 40;
+        allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
+      }
+    }
+
     // Reports: anyone signed in can file one; only the project owner reads them (in the Firebase console).
     match /reports/{id} {
       allow create: if signedIn() && request.resource.data.by == me()

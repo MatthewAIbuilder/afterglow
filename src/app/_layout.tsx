@@ -7,7 +7,9 @@ import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
 import { CommunityProvider } from '../state/community';
+import { CrewsProvider } from '../state/crews';
 import { GoingProvider } from '../state/going';
+import { LineupNewsProvider } from '../state/lineupNews';
 import { MemoriesProvider } from '../state/memories';
 import { MusicConnectionsProvider } from '../state/music';
 import { NoticesProvider } from '../state/notices';
@@ -16,6 +18,7 @@ import { PlanProvider } from '../state/plan';
 import { RatingsProvider } from '../state/ratings';
 import { ReactionsProvider } from '../state/reactions';
 import { SeenProvider } from '../state/seen';
+import { SetRemindersProvider } from '../state/setReminders';
 import { SocialProvider } from '../state/social';
 import { color } from '../theme/tokens';
 
@@ -29,11 +32,14 @@ export default function RootLayout() {
       <CommunityProvider>
       <RatingsProvider>
       <PlanProvider>
+      <SetRemindersProvider>
       <GoingProvider>
       <SeenProvider>
       <WeekendsProvider>
+      <LineupNewsProvider>
       <SocialProvider>
       <NoticesProvider>
+      <CrewsProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -53,6 +59,8 @@ export default function RootLayout() {
         <Stack.Screen name="u/[handle]" />
         <Stack.Screen name="people" />
         <Stack.Screen name="follows/[handle]" />
+        <Stack.Screen name="going/[id]" />
+        <Stack.Screen name="crew/[id]" />
         <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
@@ -102,11 +110,14 @@ export default function RootLayout() {
       <ReminderSync />
       <LikeSync />
       <DialogHost />
+      </CrewsProvider>
       </NoticesProvider>
       </SocialProvider>
+      </LineupNewsProvider>
       </WeekendsProvider>
       </SeenProvider>
       </GoingProvider>
+      </SetRemindersProvider>
       </PlanProvider>
       </RatingsProvider>
       </CommunityProvider>

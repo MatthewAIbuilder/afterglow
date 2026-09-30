@@ -159,6 +159,70 @@ await t('likes: not on the video of someone who blocked you', async () => {
   await assertFails(setDoc(doc(A.firestore(), 'likes', 'memB_uidA'), like('memB', 'uidB', 'uidA')));
   await assertSucceeds(setDoc(doc(B.firestore(), 'blocks', 'uidB'), { uids: [] }));
 });
+const crew = (over = {}) => ({ festivalId: 'acl-26', name: 'The crew', owner: 'uidA', members: ['uidA'], createdAt: now, ...over });
+const C = env.authenticatedContext('uidC');
+await t('crews: A starts a crew as its only member', () => assertSucceeds(setDoc(doc(A.firestore(), 'crews', 'c1'), crew())));
+await t('crews: not for someone else, not with others in it, not without a profile, no extra fields, name limits', async () => {
+  await assertFails(setDoc(doc(B.firestore(), 'crews', 'c2'), crew()));
+  await assertFails(setDoc(doc(A.firestore(), 'crews', 'c2'), crew({ members: ['uidA', 'uidB'] })));
+  await assertFails(setDoc(doc(C.firestore(), 'crews', 'c2'), crew({ owner: 'uidC', members: ['uidC'] })));
+  await assertFails(setDoc(doc(A.firestore(), 'crews', 'c2'), crew({ secret: 1 })));
+  await assertFails(setDoc(doc(A.firestore(), 'crews', 'c2'), crew({ name: '' })));
+  await assertFails(setDoc(doc(A.firestore(), 'crews', 'c2'), crew({ name: 'x'.repeat(41) })));
+});
+await t('crews: anyone signed in with the link can see it; signed out can’t', async () => {
+  await assertSucceeds(getDoc(doc(B.firestore(), 'crews', 'c1')));
+  await assertFails(getDoc(doc(anon.firestore(), 'crews', 'c1')));
+});
+await t('crews: you list only crews you’re in', async () => {
+  await assertSucceeds(getDocs(query(collection(A.firestore(), 'crews'), where('members', 'array-contains', 'uidA'))));
+  await assertFails(getDocs(query(collection(B.firestore(), 'crews'), where('members', 'array-contains', 'uidA'))));
+  await assertFails(getDocs(collection(B.firestore(), 'crews')));
+});
+await t('crews: B joins, adding only itself', async () => {
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB', 'uidC'] }));
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB'], name: 'Mine now' }));
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidB'] , owner: 'uidB' }));
+  await assertSucceeds(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB'] }));
+});
+await t('crews: not without a profile, not when full, not if the owner blocked you', async () => {
+  await assertFails(updateDoc(doc(C.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB', 'uidC'] }));
+  const full = Array.from({ length: 12 }, (_, i) => (i ? `u${i}` : 'uidA'));
+  await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'crews', 'full'), crew({ members: full })));
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'full'), { members: [...full, 'uidB'] }));
+  await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'crews', 'c3'), crew()));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'blocks', 'uidA'), { uids: ['uidB'] }));
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c3'), { members: ['uidA', 'uidB'] }));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'blocks', 'uidA'), { uids: [] }));
+});
+await t('crews: members share picks; others can’t read or write them', async () => {
+  await assertSucceeds(setDoc(doc(B.firestore(), 'crews', 'c1', 'picks', 'uidB'), { artists: ['skrillex'], updatedAt: now }));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'crews', 'c1', 'picks', 'uidA'), { artists: ['skrillex', 'levity'], updatedAt: now }));
+  await assertSucceeds(getDocs(collection(A.firestore(), 'crews', 'c1', 'picks')));
+  await assertFails(setDoc(doc(A.firestore(), 'crews', 'c1', 'picks', 'uidB'), { artists: [], updatedAt: now }));
+  await assertFails(getDocs(collection(C.firestore(), 'crews', 'c1', 'picks')));
+  await assertFails(setDoc(doc(C.firestore(), 'crews', 'c1', 'picks', 'uidC'), { artists: [], updatedAt: now }));
+  await assertFails(setDoc(doc(B.firestore(), 'crews', 'c1', 'picks', 'uidB'), { artists: [], updatedAt: now, note: 'x' }));
+  await assertFails(setDoc(doc(B.firestore(), 'crews', 'c1', 'picks', 'uidB'), { artists: Array(101).fill('x'), updatedAt: now }));
+});
+await t('crews: only the owner renames, removes people or deletes', async () => {
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { name: 'B’s crew' }));
+  await assertFails(deleteDoc(doc(B.firestore(), 'crews', 'c1')));
+  await assertSucceeds(updateDoc(doc(A.firestore(), 'crews', 'c1'), { name: 'Weekend 1' }));
+  await assertFails(updateDoc(doc(A.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB', 'uidC'] }));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'crews', 'c1', 'picks', 'uidB')));
+  await assertSucceeds(updateDoc(doc(A.firestore(), 'crews', 'c1'), { members: ['uidA'] }));
+  await assertFails(getDocs(collection(B.firestore(), 'crews', 'c1', 'picks')));
+});
+await t('crews: leaving removes only yourself; an owner hands it on; the last one out deletes it', async () => {
+  await assertSucceeds(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB'] }));
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidB'] }));
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA'], owner: 'uidA', name: 'x' }));
+  await assertFails(updateDoc(doc(A.firestore(), 'crews', 'c1'), { members: ['uidB'], owner: 'uidC' }));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'crews', 'c1', 'picks', 'uidA')));
+  await assertSucceeds(updateDoc(doc(A.firestore(), 'crews', 'c1'), { members: ['uidB'], owner: 'uidB' }));
+  await assertSucceeds(deleteDoc(doc(B.firestore(), 'crews', 'c1')));
+});
 await t('account deletion: profile, handle and blocks go in one write', async () => {
   const db = A.firestore(); const b = writeBatch(db);
   b.delete(doc(db, 'handles', 'maya2')); b.delete(doc(db, 'profiles', 'uidA')); b.delete(doc(db, 'blocks', 'uidA'));

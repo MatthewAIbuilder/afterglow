@@ -1,5 +1,5 @@
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import type { Profile, SharedMemory } from '../models';
+import { CREW_MAX, CREW_PICKS_MAX, type Crew, type CrewPicks, type Profile, type SharedMemory } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -53,6 +53,22 @@ export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {
     height: num(o.height),
     createdAt: str(o.createdAt) ?? '',
   };
+}
+
+export function crewFromDoc(id: string, d: unknown): Crew | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const festivalId = str(o.festivalId);
+  const owner = str(o.owner);
+  const members = strs(o.members, CREW_MAX);
+  if (!festivalId || !owner || !members.includes(owner)) return null;
+  return { id, festivalId, name: str(o.name) ?? '', owner, members, createdAt: str(o.createdAt) ?? '' };
+}
+
+export function crewPicksFromDoc(uid: string, d: unknown): CrewPicks | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  return { uid, artists: strs(o.artists, CREW_PICKS_MAX), updatedAt: str(o.updatedAt) ?? '' };
 }
 
 /** Firebase's error codes as the app's kinds. */

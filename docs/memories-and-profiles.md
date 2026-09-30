@@ -87,6 +87,21 @@ useRankedFeed(activeIndex, focus, community) → ClipCard → ClipPlayer → Nat
 - **Public**: who follows whom is visible to anyone signed in, like profiles. Deleting your account removes your follows both ways.
 - Not yet: notifications for new followers.
 
+## Who else is going
+
+Festival pages show who else is going: people you follow first, then others on Afterglow ("Maya and 2 others you follow are going, plus 12 others on Afterglow"), with their faces; tapping opens the full list (`going/[id].tsx`) with Follow beside each. It reads `profiles` whose shown festivals include this one (`profilesGoingTo`, up to 200), so only people who switched on "Show festivals I'm going to" appear; you and anyone you blocked never do.
+
+## Festival crews
+
+A few friends planning one festival together.
+
+- **Start one** from a festival page ("Plan with friends", under who's going). It needs a profile (your crew sees your name and photo). The crew opens with its name ready to change ("EDC Orlando 2026 crew" until you rename it).
+- **Invite**: "Invite friends" shares `https://afterglowmusic.app/crew/<id>` (the share sheet on phones, share or copy on the website). The crew's id is the invite: anyone signed in with the link sees the crew's name and who's in it, and can join (with a profile, up to 12 people, not if the crew's owner blocked them). The join screen says what joining shares. In the app, `afterglow://crew/<id>` opens the same page.
+- **What's shared**: each member's starred sets at that festival, and nothing else about their taste. `CrewsProvider` (`state/crews.tsx`, inside Social and Plan) loads your crews on sign-in and when the app comes back, and sends your stars to each crew 2 seconds after they settle (`CREW_SYNC_MS`), only when they changed (`picksChanged`); a failed send is tried again on the next change. Stars stay a planning preference: this is the only place they go, and never into taste.
+- **The crew page** (`crew/[id].tsx`, `features/crews/useCrewPage.ts`): the festival (opens it), the name (the owner can rename it), Invite friends, **Sets you share** (starred by two or more of you, most of you first, then billing order, as artist rows with your match and "Both of you" / "All 4 of you" / "Maya and you"), **Everyone's picks** (your own are your stars right now), and Leave. The owner can remove people (their picks go too). Leaving takes your picks with you; an owner who leaves hands the crew to the next member; the last one out ends it. Deleting your account leaves every crew.
+- **Pure** (`features/crews/together.ts`): `crewTogether` (shared picks and each member's picks, ignoring people who left and artists off the lineup), `whoLine`, `crewMembersLine`, `sharedCountLine`, `firstName`, `crewPath`, `picksChanged`. Crew names: `cleanCrewName`, `crewNameProblem` in `validate.ts` (1 to 40 characters, friendly).
+- **Profile** lists your crews (each opens its page), or suggests starting one from a festival page.
+
 ## Likes and the bell
 
 - **One like everywhere.** Liking a video from the crowd (Discover's heart or double-tap, Your clips, or the heart on the shared video itself) is the same reaction on `community:<sharedId>`: it shapes your taste like any clip and, once you have a profile, the person who filmed it sees it. Without a profile the like stays on your phone, and the shared video says so.
@@ -105,11 +120,13 @@ useRankedFeed(activeIndex, focus, community) → ClipCard → ClipPlayer → Nat
 | `blocks/{uid}` | you | you |
 | `likes/{memoryId}_{uid}` | signed in | created by `uid` on someone else's existing video (`owner` must be its owner), not if the owner blocked you; never edited; deleted by the liker or the owner |
 | `follows/{from}_{to}` | signed in | created by `from` (both have profiles, not yourself, not someone who blocked you); never edited; deleted by either |
+| `crews/{id}` | signed in (get); listed only by members | created by you as its only member (with a profile); joined by adding only yourself (profile, at most 12, not if the owner blocked you); left by removing only yourself (an owner hands it to a member); renamed, members removed or deleted by the owner |
+| `crews/{id}/picks/{uid}` | members of the crew | that member (`artists` up to 100); deleted by that member or the owner |
 | `reports/{id}` | nobody (console only) | anyone signed in, as themselves |
 
 Storage: `memories/{uid}/{id}.(mp4|mov|m4v)` (video, under 150 MB) and `.jpg` stills (under 5 MB), `avatars/{uid}.jpg`; written only by that uid, read by anyone signed in. Shared files are served through Firebase download links, which work for anyone who has the link; removing a memory from your profile deletes the file, so the link stops working.
 
-`scripts/firebase-rules.test.mjs` checks both rule files against the Firebase emulator (44 checks, all passing on 2026-09-30).
+`scripts/firebase-rules.test.mjs` checks both rule files against the Firebase emulator (53 checks, all passing on 2026-09-30).
 
 ## Tests
 
@@ -118,5 +135,6 @@ Storage: `memories/{uid}/{id}.(mp4|mov|m4v)` (video, under 150 MB) and `.jpg` st
 - `src/app/__tests__/memories.test.tsx`: the whole flow through the real routes, with the in-memory backend.
 - `features/community/__tests__/likes.test.ts`, `features/notifications/__tests__/activity.test.ts`; `src/app/__tests__/likes.test.tsx` (likes from Discover and the video, private without a profile, counts and who, the bell).
 - `features/social/__tests__/follow.test.ts` (follow and like rules in the in-memory backend); `src/app/__tests__/follow.test.tsx` (Follow on a profile, lists, Find people, Profile counts, blocking, Following in Discover).
+- `features/crews/__tests__/together.test.ts`, `features/social/__tests__/crews.test.ts` (crew rules in the in-memory backend); `src/app/__tests__/crews.test.tsx` (start from a festival page, rename, stars reach the crew, join from an invite, sets you share, remove, leave, signed out, ended).
 - `features/community/__tests__/clips.test.ts` (filtering, remembering artists, taste after a clip is gone); `src/app/__tests__/community.test.tsx` (Discover shows a shared video; credit, Report, Hide, Block, the switch, signed out, likes remembered).
 - Not covered by `npm test`: the real picker, camera and media library, Firebase itself (the adapter), and the emulator rules check.

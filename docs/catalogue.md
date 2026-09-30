@@ -133,6 +133,10 @@ The demo artists already exist, and you can use them in your lineups without add
 
 This tells the app two artists sound alike, beyond what their `sound` tags say. The score goes from 0 to 1.
 
+## Adding acts later (lineup news)
+
+When you add acts to a festival's lineup (a phase two announcement, say) or add a whole new festival, people who already have the app hear about it: the bell says "SUBTRONICS was added to Cyclops Cove 4" for acts they'd love (ones they rated "Love their sound" or strongly match), and the festival page marks those acts "Just added" for two weeks. Nothing to do on your side beyond updating the file. Acts are never announced twice, even if an older copy of the file shows for a moment, and someone opening the app for the first time isn't told everything is new.
+
 ## When something's wrong
 
 The app never crashes on a bad file. It leaves out what it can't use and explains why.

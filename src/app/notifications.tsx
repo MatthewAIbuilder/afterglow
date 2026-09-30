@@ -33,13 +33,13 @@ export default function NotificationsScreen() {
       >
         <View style={styles.pad}>
           <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.meta}>{social.user ? 'Your festivals, new followers and likes on your videos.' : 'News about the festivals you’re going to.'}</Text>
+          <Text style={styles.meta}>{social.user ? 'Your festivals, lineup news, new followers and likes on your videos.' : 'Your festivals, and artists you’d love added to lineups.'}</Text>
         </View>
         <View style={[styles.pad, styles.list]}>
           {list.length === 0 ? (
             <Text style={styles.empty}>
               Nothing new. Tap “I’m going” on a festival and you’ll hear here when its set times come out and when
-              it’s nearly time.
+              it’s nearly time, and whenever an artist you’d love is added to a lineup.
             </Text>
           ) : null}
           {list.map((n) => {

@@ -1,6 +1,6 @@
-import type { Activity, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from '../models';
+import { CREW_MAX, CREW_PICKS_MAX, type Activity, type Crew, type CrewPicks, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser } from '../models';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
-import { cleanProfileInput, handleProblem, normalizeHandle, profileProblems } from '../validate';
+import { cleanCrewName, cleanProfileInput, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
 /**
  * An in-memory social backend for tests, following the same rules as the
@@ -18,6 +18,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const follows = new Map<string, { from: string; to: string; createdAt: string }>();
   /** Likes as `memoryId_uid`. */
   const likes = new Map<string, { memoryId: string; owner: string; uid: string; createdAt: string }>();
+  const crews = new Map<string, Crew>();
+  /** Picks as `crewId/uid`. */
+  const picks = new Map<string, CrewPicks>();
   const reports: { by: string; target: ReportTarget; reason: ReportReason; note?: string }[] = [];
   const listeners = new Set<(u: SocialUser | null) => void>();
   let current: SocialUser | null = null;
@@ -28,6 +31,31 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     return current;
   };
   const now = () => new Date().toISOString();
+  const crewOf = (id: string) => {
+    const c = crews.get(id);
+    if (!c) throw new SocialError('not-found');
+    return c;
+  };
+  const memberOf = (id: string) => {
+    const c = crewOf(id);
+    if (!c.members.includes(me().uid)) throw new SocialError('unknown');
+    return c;
+  };
+  const dropPicks = (id: string, uid?: string) => {
+    for (const k of picks.keys()) if (k.startsWith(`${id}/`) && (!uid || k === `${id}/${uid}`)) picks.delete(k);
+  };
+  const leave = (id: string, uid: string) => {
+    const c = crews.get(id);
+    if (!c || !c.members.includes(uid)) return;
+    const members = c.members.filter((m) => m !== uid);
+    if (!members.length) {
+      crews.delete(id);
+      dropPicks(id);
+      return;
+    }
+    dropPicks(id, uid);
+    crews.set(id, { ...c, members, owner: c.owner === uid ? members[0] : c.owner });
+  };
 
   const service: SocialService = {
     availability: () => (opts.available === false ? { ok: false, reason: 'not-set-up' } : { ok: true }),
@@ -69,6 +97,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.delete(u.uid);
       for (const [k, f] of follows) if (f.from === u.uid || f.to === u.uid) follows.delete(k);
       for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
+      for (const id of [...crews.keys()]) leave(id, u.uid);
       accounts.delete(u.email ?? '');
       current = null;
       emit();
@@ -124,6 +153,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const q = raw.trim().replace(/^@+/, '').toLowerCase();
       if (q.length < 2) return [];
       return [...profiles.values()].filter((p) => p.handle.startsWith(q) || p.displayName.toLowerCase().startsWith(q));
+    },
+    async profilesGoingTo(festivalId, max) {
+      return [...profiles.values()].filter((p) => p.festivals.includes(festivalId)).slice(0, max);
     },
     async shareMemory(input: ShareInput, onProgress) {
       const u = me();
@@ -224,6 +256,60 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       ];
       return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
+    async createCrew(festivalId, raw) {
+      const u = me();
+      if (!profiles.has(u.uid)) throw new SocialError('no-profile');
+      if (crewNameProblem(raw)) throw new SocialError('unknown');
+      const c: Crew = { id: `crew-${++n}`, festivalId, name: cleanCrewName(raw), owner: u.uid, members: [u.uid], createdAt: now() };
+      crews.set(c.id, c);
+      return c;
+    },
+    async crew(id) {
+      me();
+      return crews.get(id) ?? null;
+    },
+    async myCrews() {
+      const u = me();
+      return [...crews.values()].filter((c) => c.members.includes(u.uid));
+    },
+    async joinCrew(id) {
+      const u = me();
+      const c = crewOf(id);
+      if (c.members.includes(u.uid)) return c;
+      if (!profiles.has(u.uid)) throw new SocialError('no-profile');
+      if ((blocks.get(c.owner) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      if (c.members.length >= CREW_MAX) throw new SocialError('crew-full');
+      const next = { ...c, members: [...c.members, u.uid] };
+      crews.set(id, next);
+      return next;
+    },
+    async leaveCrew(id) {
+      leave(id, me().uid);
+    },
+    async renameCrew(id, raw) {
+      const c = memberOf(id);
+      if (c.owner !== me().uid || crewNameProblem(raw)) throw new SocialError('unknown');
+      const next = { ...c, name: cleanCrewName(raw) };
+      crews.set(id, next);
+      return next;
+    },
+    async removeFromCrew(id, uid) {
+      const c = memberOf(id);
+      if (c.owner !== me().uid || uid === c.owner) throw new SocialError('unknown');
+      dropPicks(id, uid);
+      const next = { ...c, members: c.members.filter((m) => m !== uid) };
+      crews.set(id, next);
+      return next;
+    },
+    async setCrewPicks(id, artists) {
+      memberOf(id);
+      const uid = me().uid;
+      picks.set(`${id}/${uid}`, { uid, artists: [...new Set(artists)].slice(0, CREW_PICKS_MAX), updatedAt: now() });
+    },
+    async crewPicks(id) {
+      memberOf(id);
+      return [...picks.entries()].filter(([k]) => k.startsWith(`${id}/`)).map(([, p]) => p);
+    },
     async report(target, reason, note) {
       reports.push({ by: me().uid, target, reason, note });
     },
@@ -236,5 +322,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, reports, currentUser: () => current };
 }

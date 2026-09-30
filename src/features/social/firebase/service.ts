@@ -28,6 +28,7 @@ import {
   query,
   runTransaction,
   setDoc,
+  updateDoc,
   where,
   writeBatch,
   type Firestore,
@@ -36,10 +37,10 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import type { Activity, Profile } from '../models';
+import { CREW_MAX, CREW_PICKS_MAX, type Activity, type Crew, type CrewPicks, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
-import { cleanProfileInput, handleProblem, normalizeHandle, profileProblems } from '../validate';
-import { asSocialError, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
+import { cleanCrewName, cleanProfileInput, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
+import { asSocialError, crewFromDoc, crewPicksFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -59,6 +60,8 @@ import { asSocialError, memoryFromDoc, prefixEnd, profileFromDoc, videoType } fr
  *   blocks/{uid}        { uids: [...] }: only you can read or write yours
  *   follows/{from}_{to} from, to, createdAt: made by `from`, removed by either
  *   likes/{memoryId}_{uid} memoryId, owner, uid, createdAt: made by `uid`, removed by `uid` or the video's owner
+ *   crews/{id}          festivalId, name, owner, members (up to 12), createdAt: the id is the invite
+ *   crews/{id}/picks/{uid} artists, updatedAt: written by that member, read by members
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
  * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg
  */
@@ -151,6 +154,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await deleteDoc(d.ref);
         }
         await removeFile(`avatars/${user.uid}.jpg`);
+        // Out of every crew (your picks go with you).
+        for (const c of await service.myCrews()) await service.leaveCrew(c.id);
         // Follows and likes either way.
         const snaps = await Promise.all([
           getDocs(query(collection(db, 'follows'), where('from', '==', user.uid))),
@@ -252,6 +257,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           if (p) out.set(p.uid, p);
         }
         return [...out.values()].slice(0, 20);
+      }),
+
+    profilesGoingTo: (festivalId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'profiles'), where('festivals', 'array-contains', festivalId), limit(max)));
+        return snap.docs.map((d) => profileFromDoc(d.id, d.data())).filter((p): p is Profile => !!p);
       }),
 
     shareMemory: (input, onProgress) =>
@@ -403,6 +414,89 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           if (str(l.uid) && str(l.memoryId) && str(l.createdAt)) items.push({ kind: 'like', id: d.id, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt });
         }
         return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+      }),
+
+    createCrew: (festivalId, raw) =>
+      guard(async () => {
+        const user = me();
+        if (crewNameProblem(raw)) throw new SocialError('unknown');
+        const crewRef = doc(collection(fb().db, 'crews'));
+        const data = { festivalId, name: cleanCrewName(raw), owner: user.uid, members: [user.uid], createdAt: now() };
+        await setDoc(crewRef, data);
+        return { id: crewRef.id, ...data };
+      }),
+    crew: (id) => guard(async () => crewFromDoc(id, (await getDoc(doc(fb().db, 'crews', id))).data())),
+    myCrews: () =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'crews'), where('members', 'array-contains', user.uid), limit(50)));
+        return snap.docs.map((d) => crewFromDoc(d.id, d.data())).filter((c): c is Crew => !!c);
+      }),
+    joinCrew: (id) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        return runTransaction(db, async (tx) => {
+          const crewRef = doc(db, 'crews', id);
+          const c = crewFromDoc(id, (await tx.get(crewRef)).data());
+          if (!c) throw new SocialError('not-found');
+          if (c.members.includes(user.uid)) return c;
+          if (c.members.length >= CREW_MAX) throw new SocialError('crew-full');
+          const members = [...c.members, user.uid];
+          tx.update(crewRef, { members });
+          return { ...c, members };
+        });
+      }),
+    leaveCrew: (id) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const crewRef = doc(db, 'crews', id);
+        const c = crewFromDoc(id, (await getDoc(crewRef)).data());
+        if (!c || !c.members.includes(user.uid)) return;
+        const members = c.members.filter((m) => m !== user.uid);
+        if (!members.length) {
+          // The last one out: everyone's picks, then the crew.
+          const all = await getDocs(collection(db, 'crews', id, 'picks'));
+          const b = writeBatch(db);
+          for (const d of all.docs) b.delete(d.ref);
+          b.delete(crewRef);
+          await b.commit();
+          return;
+        }
+        await deleteDoc(doc(db, 'crews', id, 'picks', user.uid));
+        await updateDoc(crewRef, { members, owner: c.owner === user.uid ? members[0] : c.owner });
+      }),
+    renameCrew: (id, raw) =>
+      guard(async () => {
+        if (crewNameProblem(raw)) throw new SocialError('unknown');
+        const crewRef = doc(fb().db, 'crews', id);
+        const name = cleanCrewName(raw);
+        await updateDoc(crewRef, { name });
+        const c = crewFromDoc(id, (await getDoc(crewRef)).data());
+        if (!c) throw new SocialError('not-found');
+        return c;
+      }),
+    removeFromCrew: (id, uid) =>
+      guard(async () => {
+        const { db } = fb();
+        const crewRef = doc(db, 'crews', id);
+        const c = crewFromDoc(id, (await getDoc(crewRef)).data());
+        if (!c) throw new SocialError('not-found');
+        await deleteDoc(doc(db, 'crews', id, 'picks', uid));
+        const members = c.members.filter((m) => m !== uid);
+        await updateDoc(crewRef, { members });
+        return { ...c, members };
+      }),
+    setCrewPicks: (id, artists) =>
+      guard(async () => {
+        const user = me();
+        await setDoc(doc(fb().db, 'crews', id, 'picks', user.uid), { artists: [...new Set(artists)].slice(0, CREW_PICKS_MAX), updatedAt: now() });
+      }),
+    crewPicks: (id) =>
+      guard(async () => {
+        const snap = await getDocs(collection(fb().db, 'crews', id, 'picks'));
+        return snap.docs.map((d) => crewPicksFromDoc(d.id, d.data())).filter((p): p is CrewPicks => !!p);
       }),
 
     report: (target, reason, note) =>

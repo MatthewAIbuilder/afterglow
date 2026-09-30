@@ -71,3 +71,29 @@ export const REPORT_REASONS: { key: ReportReason; label: string }[] = [
 export type Activity =
   | { kind: 'follow'; id: string; from: string; createdAt: string }
   | { kind: 'like'; id: string; from: string; memoryId: string; createdAt: string };
+
+/**
+ * A festival crew: a few friends planning one festival together. Anyone
+ * signed in who has the crew's link can see its name and join (the id is the
+ * invite); only members see each other's picks.
+ */
+export type Crew = {
+  id: string;
+  festivalId: string;
+  name: string;
+  /** Who started it (or was handed it when they left). Can rename it and remove people. */
+  owner: string;
+  /** Members' uids in the order they joined, the owner among them. At most CREW_MAX. */
+  members: string[];
+  createdAt: string;
+};
+
+/** One member's starred sets at the crew's festival, shared with the crew only. */
+export type CrewPicks = { uid: string; artists: string[]; updatedAt: string };
+
+/** A crew holds at most this many people. */
+export const CREW_MAX = 12;
+/** Crew names are at most this long. */
+export const CREW_NAME_MAX = 40;
+/** At most this many picks are shared per member. */
+export const CREW_PICKS_MAX = 100;

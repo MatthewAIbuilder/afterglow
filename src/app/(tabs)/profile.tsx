@@ -11,6 +11,7 @@ import { haptic } from '../../lib/haptics';
 import { VERSION_LINE } from '../../lib/version';
 import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
+import { useCrews } from '../../state/crews';
 import { useGoing } from '../../state/going';
 import { useMemories } from '../../state/memories';
 import { useMusic } from '../../state/music';
@@ -57,6 +58,7 @@ export default function ProfileScreen() {
   const connectedMusic = (Object.keys(music) as (keyof typeof music)[]).map((p) => PROVIDER_NAME[p]).join(', ');
   const { memories } = useMemories();
   const social = useSocial();
+  const { crews } = useCrews();
   const me = social.profile;
   // Your followers, fetched each time the tab comes into view; who you follow is known on the phone.
   const [followers, setFollowers] = useState<{ uid: string; n: number } | undefined>();
@@ -246,15 +248,40 @@ export default function ProfileScreen() {
             <ChevronIcon color={color.moonFaint} size={12} />
           </Pressable>
 
-          <View style={styles.soon}>
-            <Text style={styles.soonKicker}>Coming soon</Text>
-            <Text style={styles.soonTitle}>{social.availability.ok ? 'Festival crews' : 'Friends'}</Text>
-            <Text style={styles.soonBody}>
-              {social.availability.ok
-                ? 'Plan sets together with the people you follow, and see who else is going.'
-                : 'Your festival profile, friends, and seeing who else is going.'}
-            </Text>
-          </View>
+          {social.user
+            ? crews.map((c) => (
+                <Pressable
+                  key={c.id}
+                  onPress={() => {
+                    haptic.select();
+                    router.push({ pathname: '/crew/[id]', params: { id: c.id } });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Your crew ${c.name}, ${catalog.festival(c.festivalId)?.name ?? ''}, ${c.members.length} ${c.members.length === 1 ? 'person' : 'people'}`}
+                  style={({ pressed }) => [styles.row, styles.rowGap, pressed && { opacity: 0.75 }]}
+                >
+                  <Text style={styles.rowText} numberOfLines={1}>
+                    {c.name}
+                  </Text>
+                  <Text style={styles.rowCount} numberOfLines={1}>
+                    {c.members.length === 1 ? 'Just you' : `${c.members.length} of you`}
+                  </Text>
+                  <ChevronIcon color={color.moonFaint} size={12} />
+                </Pressable>
+              ))
+            : null}
+
+          {social.availability.ok ? (
+            social.user && !crews.length ? (
+              <Text style={styles.crewNote}>Going with friends? Start a crew from a festival page to plan your sets together.</Text>
+            ) : null
+          ) : (
+            <View style={styles.soon}>
+              <Text style={styles.soonKicker}>Coming soon</Text>
+              <Text style={styles.soonTitle}>Friends</Text>
+              <Text style={styles.soonBody}>Your festival profile, friends, and seeing who else is going.</Text>
+            </View>
+          )}
         </View>
         <Text style={styles.version}>{VERSION_LINE}</Text>
       </ScrollView>
@@ -356,6 +383,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(169,124,255,0.35)',
     backgroundColor: 'rgba(169,124,255,0.08)',
   },
+  crewNote: { ...type.caption, color: color.moonFaint, marginTop: space.lg, paddingHorizontal: space.xs },
   soonKicker: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 0.8 },
   soonTitle: { ...type.headline, color: color.moon, marginTop: space.sm },
   soonBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
