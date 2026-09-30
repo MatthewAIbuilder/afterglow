@@ -765,6 +765,23 @@ describe('Discover', () => {
     expect(await AsyncStorage.getItem('discoverFocus.v1')).toBe('mix');
   });
 
+  it('focuses Discover on one sound from every lineup', async () => {
+    const app = await renderApp('/');
+    await settle();
+    await settle();
+    await fireEvent.press(app.getByLabelText(/^Solstice 2026, live sets from the lineup\. Choose what to discover\.$/));
+    await settle();
+    expect(app.getByText('By sound')).toBeTruthy();
+    const chip = app.getAllByLabelText(/^[A-Z][a-z ]+, \d+ clips from every lineup$/)[0];
+    const label = chip.props.accessibilityLabel.split(',')[0] as string;
+    await fireEvent.press(chip);
+    await settle();
+    await settle();
+    expect(app.getByText(label)).toBeTruthy();
+    expect(app.getByText(`${label} from every lineup`)).toBeTruthy();
+    expect(await AsyncStorage.getItem('discoverFocus.v1')).toMatch(/^sound:/);
+  });
+
   it('opens where you left it', async () => {
     await AsyncStorage.setItem('discoverFocus.v1', 'mix');
     const app = await renderApp('/');

@@ -1,5 +1,7 @@
-import type { Clip, Festival } from '../../data/models';
+import type { Artist, Clip, Festival, SoundTag } from '../../data/models';
+import { SOUND_TAGS } from '../../data/models';
 import { groupFestivals, type Going } from '../festivals/going';
+import { carriesSound } from '../festivals/search';
 import { defaultFocus, focusForClip, lineupClips, playsAt } from '../festivals/links';
 
 /**
@@ -9,9 +11,35 @@ import { defaultFocus, focusForClip, lineupClips, playsAt } from '../festivals/l
  */
 export const MIX = 'mix';
 export const FOLLOWING = 'following';
-/** Focuses that aren't one festival: they draw from every lineup. */
-export const isWide = (focus: Focus | undefined) => focus === MIX || focus === FOLLOWING;
 export type Focus = string;
+
+/** One sound from every lineup: "sound:dubstep". */
+const SOUND_PREFIX = 'sound:';
+export const soundFocus = (tag: SoundTag): Focus => `${SOUND_PREFIX}${tag}`;
+/** The sound a focus is about, when it's a sound. */
+export function soundOf(focus: Focus | null | undefined): SoundTag | undefined {
+  if (!focus?.startsWith(SOUND_PREFIX)) return undefined;
+  const tag = focus.slice(SOUND_PREFIX.length);
+  return (SOUND_TAGS as readonly string[]).includes(tag) ? (tag as SoundTag) : undefined;
+}
+/** Focuses that aren't one festival: they draw from every lineup. */
+export const isWide = (focus: Focus | undefined) => focus === MIX || focus === FOLLOWING || !!soundOf(focus);
+
+/** A sound is offered in Discover once this many clips carry it. */
+export const SOUND_CLIPS_MIN = 3;
+
+/** The sounds Discover can focus on: ones with enough clips, most first. */
+export function soundChoices(clips: readonly Clip[], artist: (id: string) => Artist | undefined, min = SOUND_CLIPS_MIN): { tag: SoundTag; clips: number }[] {
+  return SOUND_TAGS.map((tag) => ({ tag, clips: clips.filter((c) => inSound(c, tag, artist)).length }))
+    .filter((s) => s.clips >= min)
+    .sort((a, b) => b.clips - a.clips || SOUND_TAGS.indexOf(a.tag) - SOUND_TAGS.indexOf(b.tag));
+}
+
+/** Whether a clip belongs to a sound: its artist carries it. */
+export function inSound(clip: Clip, tag: SoundTag, artist: (id: string) => Artist | undefined): boolean {
+  const a = artist(clip.artistId);
+  return !!a && carriesSound(a, tag);
+}
 
 /**
  * Where Discover opens: what you last picked, if it's still there with clips
@@ -19,7 +47,7 @@ export type Focus = string;
  * otherwise the festival with the most clips.
  */
 export function startFocus(festivals: Festival[], clips: Clip[], going: Going, stored?: string | null): Focus | undefined {
-  if (stored === MIX || stored === FOLLOWING) return stored;
+  if (stored === MIX || stored === FOLLOWING || soundOf(stored)) return stored!;
   const withClips = (f: Festival | undefined) => !!f && lineupClips(f, clips).length > 0;
   const saved = festivals.find((f) => f.id === stored);
   if (withClips(saved)) return saved!.id;
@@ -38,11 +66,13 @@ export function nextDiscoverFocus(
   asked: { festival?: string; clip?: Clip },
   festivals: Festival[],
 ): Focus | undefined {
-  if (asked.festival === MIX || asked.festival === FOLLOWING) return asked.festival;
+  if (asked.festival === MIX || asked.festival === FOLLOWING || soundOf(asked.festival)) return asked.festival;
   const festival = asked.festival ? festivals.find((f) => f.id === asked.festival) : undefined;
   if (festival) return festival.id;
   if (!asked.clip || current === MIX) return current;
   if (current === FOLLOWING && asked.clip.source?.provider === 'community') return current;
+  // A sound may not have that clip: the mix has every one.
+  if (soundOf(current)) return MIX;
   const now = festivals.find((f) => f.id === current);
   return (focusForClip(asked.clip, now, festivals) ?? now)?.id ?? current;
 }

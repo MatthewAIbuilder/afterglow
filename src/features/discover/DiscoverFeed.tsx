@@ -36,7 +36,8 @@ import { useMemories } from '../../state/memories';
 import { alreadyKnown, currentHint } from './hints';
 import type { FeedPager } from './feedPager';
 import { defaultFocus } from '../festivals/links';
-import { FOLLOWING, type Focus, MIX, mixContext, nextDiscoverFocus, startFocus } from './focus';
+import { SOUND_LABEL } from '../../data/models';
+import { FOLLOWING, type Focus, MIX, mixContext, nextDiscoverFocus, soundOf, startFocus } from './focus';
 import { reasonNote } from '../recommend/copy';
 import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
@@ -94,8 +95,11 @@ export function DiscoverFeed() {
   }, [decided, focusId, saveFocus]);
   const mix = focusId === MIX;
   const followingFocus = focusId === FOLLOWING;
-  // Both draw from every lineup: each clip is shown against a festival you're going to where the artist plays.
-  const wide = mix || followingFocus;
+  // One sound from every lineup ("Dubstep").
+  const sound = soundOf(focusId);
+  const soundLabel = sound ? SOUND_LABEL[sound] : undefined;
+  // These draw from every lineup: each clip is shown against a festival you're going to where the artist plays.
+  const wide = mix || followingFocus || !!sound;
   // If the catalogue changes under us (a hosted file arrived) and the festival is gone, open the first one with clips.
   const festival =
     !decided || wide
@@ -108,7 +112,7 @@ export function DiscoverFeed() {
 
   // Clips people at the festival shared to their profiles, beside the official ones (none when signed out or switched off).
   // In Following, they're the only clips: videos from the people you follow.
-  const { clips: fetched, loaded: communityLoaded } = useCommunityFeed(mix ? 'mix' : followingFocus ? 'following' : festival);
+  const { clips: fetched, loaded: communityLoaded } = useCommunityFeed(mix || sound ? 'mix' : followingFocus ? 'following' : festival);
   const social = useSocial();
   // Videos from the crowd you opened from Your clips stay in the feed while you're on this focus
   // (unless you hide them or block who filmed them).
@@ -125,7 +129,7 @@ export function DiscoverFeed() {
     const extra = wanted.filter((c) => pool.find(c.id) && !fetched.some((f) => f.id === c.id));
     return extra.length ? [...fetched, ...extra] : fetched;
   }, [opened, focusId, asked, pool, fetched]);
-  const feed = useRankedFeed(activeIndex, mix ? MIX : followingFocus ? FOLLOWING : festival, community);
+  const feed = useRankedFeed(activeIndex, mix ? MIX : followingFocus ? FOLLOWING : sound ? focusId : festival, community);
   const { mustSeesAt } = usePlan();
   const count = feed?.length ?? 0;
   // After the last clip comes one more page: the end of the lineup (or of everything), with where to go next.
@@ -285,7 +289,7 @@ export function DiscoverFeed() {
         }}
         ListFooterComponent={
           hasEnd ? (
-            <FeedEnd festival={festival} following={followingFocus} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
+            <FeedEnd festival={festival} following={followingFocus} soundLabel={soundLabel} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
           ) : null
         }
         getItemLayout={(_d, index) => ({ length: height, offset: height * index, index })}
@@ -326,16 +330,22 @@ export function DiscoverFeed() {
               router.push({ pathname: '/discover-focus', params: { current: focusId } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${festival ? `${festival.name}, live sets from the lineup` : followingFocus ? 'Following, videos from people you follow' : 'Your mix, a bit of everything'}. Choose what to discover.`}
+            accessibilityLabel={`${festival ? `${festival.name}, live sets from the lineup` : followingFocus ? 'Following, videos from people you follow' : soundLabel ? `${soundLabel}, live sets from every lineup` : 'Your mix, a bit of everything'}. Choose what to discover.`}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.headerTitle}>
-              <Text style={styles.festival} numberOfLines={1}>{festival ? festival.name : followingFocus ? 'Following' : 'Your mix'}</Text>
+              <Text style={styles.festival} numberOfLines={1}>{festival ? festival.name : followingFocus ? 'Following' : (soundLabel ?? 'Your mix')}</Text>
               <ChevronIcon color={color.moonDim} size={13} direction="down" />
             </View>
             <Text style={styles.dates} numberOfLines={1}>
-              {festival ? `Live sets from the lineup · ${festival.dates}` : followingFocus ? 'Videos from people you follow' : 'A bit of everything, from every lineup'}
+              {festival
+                ? `Live sets from the lineup · ${festival.dates}`
+                : followingFocus
+                  ? 'Videos from people you follow'
+                  : soundLabel
+                    ? `${soundLabel} from every lineup`
+                    : 'A bit of everything, from every lineup'}
             </Text>
           </Pressable>
           <View style={styles.headerEnd}>
