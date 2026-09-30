@@ -16,6 +16,7 @@ import { PlanProvider } from '../state/plan';
 import { RatingsProvider } from '../state/ratings';
 import { ReactionsProvider } from '../state/reactions';
 import { SeenProvider } from '../state/seen';
+import { SetRemindersProvider } from '../state/setReminders';
 import { SocialProvider } from '../state/social';
 import { color } from '../theme/tokens';
 
@@ -29,6 +30,7 @@ export default function RootLayout() {
       <CommunityProvider>
       <RatingsProvider>
       <PlanProvider>
+      <SetRemindersProvider>
       <GoingProvider>
       <SeenProvider>
       <WeekendsProvider>
@@ -107,6 +109,7 @@ export default function RootLayout() {
       </WeekendsProvider>
       </SeenProvider>
       </GoingProvider>
+      </SetRemindersProvider>
       </PlanProvider>
       </RatingsProvider>
       </CommunityProvider>

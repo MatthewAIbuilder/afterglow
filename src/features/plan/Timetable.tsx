@@ -16,6 +16,7 @@ import { PickRow } from './MustSeeList';
 import type { ClashVerdict, Schedule, ScheduleDay, ScheduleItem, TimedPick } from './plan';
 import type { DayRoute } from './route';
 import { RouteList } from './RouteList';
+import { SetReminderToggle } from './SetReminderToggle';
 
 type Mode = 'route' | 'picks';
 
@@ -49,6 +50,7 @@ export function Timetable({
   return (
     <View>
       {route ? <ModePicker value={mode} onChange={setMode} /> : null}
+      {route && mode === 'route' ? <SetReminderToggle festival={festival} /> : null}
       <DayPicker days={schedule.days} value={current.day} onChange={setDay} />
       <LayoutAnimationConfig skipEntering>
         <Animated.View key={`${mode}:${current.day}`} entering={reduceMotion ? undefined : FadeIn.duration(220)}>
