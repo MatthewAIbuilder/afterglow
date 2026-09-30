@@ -79,6 +79,8 @@ export type Festival = {
   posterImageUrl?: string;
   /** Official links (https only): where to buy tickets, the festival's own site. */
   links?: { tickets?: string; website?: string };
+  /** Where an imported festival's details came from (credited on its page), e.g. { name: 'EDMTrain', url }. */
+  source?: { name: string; url: string };
   /** Everyone announced, in billing order. Available months ahead. */
   lineup: string[];
   days: string[];

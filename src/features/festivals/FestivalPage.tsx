@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArtistRow } from '../../components/ArtistRow';
 import { NightSky } from '../../components/NightSky';
 import { SearchField } from '../../components/SearchField';
@@ -254,6 +254,18 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
             );
           })}
         </View>
+
+        {/* Festivals from the nightly EDMTrain feed credit it, as its terms ask. */}
+        {festival.source ? (
+          <Pressable
+            onPress={() => void Linking.openURL(festival.source!.url).catch(() => {})}
+            accessibilityRole="link"
+            accessibilityLabel={`Event info from ${festival.source.name}. Opens their page.`}
+            style={({ pressed }) => [styles.pad, styles.source, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={styles.sourceText}>Event info from {festival.source.name} ↗</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -442,6 +454,8 @@ const styles = StyleSheet.create({
   },
   posterHintText: { ...type.caption, color: color.moon },
   note: { marginTop: space.xl },
+  source: { marginTop: space.xl, paddingVertical: space.sm, alignSelf: 'flex-start' },
+  sourceText: { ...type.caption, color: color.moonDim },
   noteTitle: { ...type.headline, color: color.moon },
   noteBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginBottom: space.sm },

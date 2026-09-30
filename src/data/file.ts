@@ -209,6 +209,14 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
     if (url) festival.links = { ...festival.links, [key]: url };
     else problems.push(`Festival "${festivalId}": the ${key} link must start with https://, so it was ignored.`);
   }
+  // Where an imported festival came from, credited on its page.
+  if (raw.source !== undefined) {
+    const src = isObj(raw.source) ? raw.source : undefined;
+    const name = src ? text(src.name) : undefined;
+    const url = src ? safeImageUrl(src.url) : undefined;
+    if (name && url) festival.source = { name: name.slice(0, 40), url };
+    else problems.push(`Festival "${festivalId}": "source" should be { "name", "url" } with an https link, so it was left out.`);
+  }
   if (raw.poster !== undefined) {
     const posterImageUrl = safeImageUrl(raw.poster);
     if (posterImageUrl) festival.posterImageUrl = posterImageUrl;

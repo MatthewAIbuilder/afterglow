@@ -196,3 +196,6 @@ jest.mock('expo-network', () => {
 jest.mock('expo-calendar/legacy', () => ({
   createEventInCalendarAsync: jest.fn(async () => ({ action: 'saved', id: 'event-1' })),
 }));
+
+// Tests use the bundled catalogue only, never the hosted one.
+jest.mock('../src/config/data', () => ({ ...(jest.requireActual('../src/config/data') as object), CATALOG_URL: '' }));
