@@ -7,7 +7,8 @@ import { ArtistAvatar } from '../components/ArtistAvatar';
 import { SearchField } from '../components/SearchField';
 import { CheckIcon } from '../components/TabIcons';
 import type { Artist, Festival } from '../data/models';
-import { matchesName } from '../features/festivals/search';
+import { matchesName, searchFestivals } from '../features/festivals/search';
+import { festivalsAround, isMany } from '../features/festivals/shelves';
 import { artistConfidence, festivalConfidence, guessArtists, guessFestivals, reasonLine, type ArtistGuess } from '../features/memories/guess';
 import type { MemoryTagInput } from '../features/memories/models';
 import { momentLine } from '../features/memories/organize';
@@ -59,10 +60,19 @@ export default function MemoryTagScreen() {
       ),
     [catalog.festivals, whenMs, city, region, going],
   );
+  // With many festivals: the guesses, yours and the ones around that date, and a search for the rest.
+  const many = isMany(catalog.festivals);
+  const [festivalQuery, setFestivalQuery] = useState('');
+  const [searchingFestival, setSearchingFestival] = useState(false);
   const festivals = useMemo(() => {
     const first = guesses.map((g) => g.festival);
-    return [...first, ...catalog.festivals.filter((f) => !first.includes(f))];
-  }, [guesses, catalog.festivals]);
+    if (!many) return [...first, ...catalog.festivals.filter((f) => !first.includes(f))];
+    if (festivalQuery.trim()) return searchFestivals(catalog.festivals, festivalQuery);
+    const chosen = existing?.festivalId ? catalog.festival(existing.festivalId) : undefined;
+    const mine = catalog.festivals.filter((f) => going.includes(f.id));
+    const when = whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs) : undefined;
+    return festivalsAround(catalog.festivals, { first: [...first, ...(chosen ? [chosen] : []), ...mine], when });
+  }, [guesses, catalog, many, festivalQuery, existing?.festivalId, going, whenMs]);
   const topFestival = guesses[0];
   const festivalSure = festivalConfidence(topFestival) !== 'maybe';
 
@@ -193,11 +203,26 @@ export default function MemoryTagScreen() {
 
         <Text style={styles.section}>Festival</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {festivals.map((f) => (
+          {[...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals].map((f) => (
             <Chip key={f.id} label={f.name} on={f.id === festivalId} onPress={() => pickFestival(f.id === festivalId ? undefined : f)} />
           ))}
           <Chip label="Not at a festival" on={!festivalId} onPress={() => pickFestival(undefined)} />
+          {many && !searchingFestival ? (
+            <Chip
+              label="Another festival…"
+              on={false}
+              onPress={() => {
+                haptic.select();
+                setSearchingFestival(true);
+              }}
+            />
+          ) : null}
         </ScrollView>
+        {many && searchingFestival ? (
+          <View style={styles.festivalSearch}>
+            <SearchField value={festivalQuery} onChange={setFestivalQuery} placeholder="Find the festival" label="Find the festival" />
+          </View>
+        ) : null}
 
         {festival && festival.days.length > 1 ? (
           <>
@@ -346,6 +371,7 @@ const styles = StyleSheet.create({
   when: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, paddingHorizontal: space.xl, marginTop: space.xl, marginBottom: space.sm },
   chips: { paddingHorizontal: space.xl, gap: space.sm },
+  festivalSearch: { paddingHorizontal: space.xl, marginTop: space.md },
   chip: {
     paddingHorizontal: space.md + 2,
     paddingVertical: space.sm,

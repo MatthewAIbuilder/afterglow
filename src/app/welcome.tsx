@@ -4,10 +4,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
+import { SearchField } from '../components/SearchField';
 import { CheckIcon } from '../components/TabIcons';
 import { APP_NAME } from '../config/app';
 import type { Festival } from '../data/types';
 import { whereWhen } from '../features/festivals/format';
+import { festivalShelf, isMany, pickerList } from '../features/festivals/shelves';
 import { countdown } from '../features/festivals/when';
 import { watchFestival, welcomeFestival } from '../features/welcome/firstRun';
 import { haptic } from '../lib/haptics';
@@ -17,6 +19,7 @@ import { useGoing } from '../state/going';
 import { useWeekends } from '../state/weekends';
 import { FilterChips } from '../components/FilterChips';
 import { runLabel } from '../features/festivals/weekend';
+import { useLoves } from '../state/useLoves';
 import { useWelcomed } from '../state/welcome';
 import { color, radius, space, type } from '../theme/tokens';
 
@@ -39,6 +42,12 @@ export default function WelcomeScreen() {
   const [step, setStep] = useState<Step>('hello');
 
   const picked = welcomeFestival(catalog.festivals, going);
+  // Many festivals: a search and a short list (your picks, then the soonest or best for you).
+  const loves = useLoves();
+  const many = isMany(catalog.festivals);
+  const [query, setQuery] = useState('');
+  const shelf = many ? festivalShelf(catalog.festivals, going, loves, today).festivals : [];
+  const choices = many ? pickerList(catalog.festivals, going, query, shelf) : catalog.festivals;
 
   const next = (s: Step) => {
     haptic.select();
@@ -80,11 +89,24 @@ export default function WelcomeScreen() {
             </Text>
           </View>
         ) : step === 'going' ? (
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
             <Text style={styles.title}>Where are you going?</Text>
             <Text style={styles.sub}>Pick any you have tickets for, or are thinking about. You can change this later.</Text>
+            {many && (
+              <View style={styles.search}>
+                <SearchField value={query} onChange={setQuery} placeholder="Find your festival" label="Find your festival" />
+              </View>
+            )}
+            {many && query.trim() !== '' && choices.length === 0 ? (
+              <Text style={styles.sub}>No festival matches “{query.trim()}” yet.</Text>
+            ) : null}
             <View style={styles.list}>
-              {catalog.festivals.map((f) => {
+              {choices.map((f) => {
                 const on = isGoing(f.id);
                 const soon = countdown(f, today);
                 return (
@@ -208,6 +230,7 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon, textAlign: 'center' },
   sub: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center' },
   list: { marginTop: space.xl, gap: space.md },
+  search: { marginTop: space.xl },
   festival: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -61,6 +61,23 @@ describe('lineup news', () => {
     expect(lineupNotices(news, { festivals, ...opts([]) })).toEqual([]);
   });
 
+  it('many new festivals at once (the nightly feed) become one notice', () => {
+    const ids = ['p', 'q', 'r', 's', 't'];
+    const festivals = [...ids.map((id, i) => fest(id, [['a', 'b', 'c', 'd', 'a'][i]])), fest('f', ['a', 'b'])];
+    const news = [
+      ...ids.map((id, i) => ({ festivalId: id, artists: [['a', 'b', 'c', 'd', 'a'][i]], newFestival: true, at: 5 })),
+      { festivalId: 'f', artists: ['b'], at: 5 },
+    ];
+    const n = lineupNotices(news, { festivals, ...opts(['a', 'b', 'c']) });
+    expect(n.map((x) => [x.title, x.body, x.href])).toEqual([
+      ['BRAVO was added to F', 'See the full lineup.', '/festival/f'],
+      ['4 new festivals with artists you’d love', 'ALPHA, BRAVO and 1 more you’d love play. See them on Festivals.', '/festivals'],
+    ]);
+    expect(n[1].id).toBe('lineup:new:5');
+    // Three or fewer still get their own notices.
+    expect(lineupNotices(news.slice(0, 3), { festivals, ...opts(['a', 'b', 'c']) })).toHaveLength(3);
+  });
+
   it('acts not playing your weekend are left out', () => {
     const n = lineupNotices([{ festivalId: 'f', artists: ['a', 'b'], at: 1 }], { festivals: [fest('f', ['a'])], ...opts(['a', 'b']) });
     expect(n[0].title).toBe('ALPHA was added to F');

@@ -6,6 +6,8 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { FestivalPage } from '../../features/festivals/FestivalPage';
 import { lineupChoices } from '../../features/festivals/going';
+import { festivalShelf, isMany } from '../../features/festivals/shelves';
+import { useLoves } from '../../state/useLoves';
 import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
@@ -23,7 +25,10 @@ export default function LineupScreen() {
   const catalog = useCatalog();
   const { going } = useGoing();
   const today = useToday();
-  const { festivals, yours } = lineupChoices(catalog.festivals, going, today);
+  // With many festivals and none picked, the chips are the short shelf (For you / Coming up).
+  const loves = useLoves();
+  const shelf = isMany(catalog.festivals) ? festivalShelf(catalog.festivals, going, loves, today).festivals : undefined;
+  const { festivals, yours } = lineupChoices(catalog.festivals, going, today, shelf);
   const [picked, setPicked] = useState<string | undefined>();
   const festival = festivals.find((f) => f.id === picked) ?? festivals[0];
 

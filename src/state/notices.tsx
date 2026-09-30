@@ -4,16 +4,13 @@ import { AppState } from 'react-native';
 import { activityNotices } from '../features/notifications/activity';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
 import { lineupNotices } from '../features/notifications/lineupNews';
-import { TIER_AT } from '../features/plan/plan';
-import { isCold, isWarm } from '../features/taste/ratings';
 import type { Activity, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
 import { useGoing } from './going';
 import { useLineupNews } from './lineupNews';
-import { useRatings } from './ratings';
-import { useTaste } from './taste';
 import { useSocial } from './social';
+import { useLoves } from './useLoves';
 import { useWeekends } from './weekends';
 
 /**
@@ -73,19 +70,18 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   const list = useMemo(() => notices(mine, going, today), [mine, going, today]);
   // Artists you'd love, newly added to a lineup (or on a festival new to Afterglow).
   const { memory } = useLineupNews();
-  const { ratings } = useRatings();
-  const { taste, informed } = useTaste();
+  const loves = useLoves();
   const { artist: artistById } = useCatalog();
   const lineupList = useMemo(
     () =>
       lineupNotices(memory.news, {
         festivals: mine,
-        loves: (id) => isWarm(ratings[id]) || (!isCold(ratings[id]) && informed[id] && (taste[id] ?? 0) >= TIER_AT.strong),
+        loves,
         nameOf: (id) => artistById(id)?.name,
         going: new Set(going),
         today,
       }),
-    [memory.news, mine, ratings, informed, taste, artistById, going, today],
+    [memory.news, mine, loves, artistById, going, today],
   );
   // Your activity: fetched when you sign in, when the app comes back, and when the bell's screen asks.
   const social = useSocial();

@@ -1,5 +1,5 @@
 import type { Festival } from '../../data/models';
-import { daysUntil } from './when';
+import { whenRank } from './shelves';
 
 /**
  * The festivals you're going to. A planning choice: it orders the Festivals
@@ -23,12 +23,7 @@ export function cleanGoing(raw: unknown): string[] {
  * catalogue order.
  */
 export function groupFestivals(festivals: Festival[], going: Going, today: Date) {
-  const rank = (f: Festival) => {
-    const until = daysUntil(f, today);
-    if (until === undefined) return Number.MAX_SAFE_INTEGER - 1;
-    const end = daysUntil({ ...f, startDate: f.endDate ?? f.startDate }, today)!;
-    return end < 0 ? Number.MAX_SAFE_INTEGER : until;
-  };
+  const rank = (f: Festival) => whenRank(f, today);
   const mine = festivals
     .map((f, i) => ({ f, i }))
     .filter(({ f }) => going.includes(f.id))
@@ -39,9 +34,10 @@ export function groupFestivals(festivals: Festival[], going: Going, today: Date)
 
 /**
  * The festivals the Lineup tab switches between: the ones you're going to,
- * soonest first; every festival when you haven't picked any yet.
+ * soonest first; when you haven't picked any yet, `instead` (a short shelf
+ * when there are many festivals) or every festival.
  */
-export function lineupChoices(festivals: Festival[], going: Going, today: Date) {
+export function lineupChoices(festivals: Festival[], going: Going, today: Date, instead?: Festival[]) {
   const mine = groupFestivals(festivals, going, today).going;
-  return { festivals: mine.length ? mine : festivals, yours: mine.length > 0 };
+  return { festivals: mine.length ? mine : instead?.length ? instead : festivals, yours: mine.length > 0 };
 }

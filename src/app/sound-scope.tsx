@@ -4,7 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckIcon } from '../components/TabIcons';
 import type { Festival } from '../data/types';
 import { lineupDays } from '../features/festivals/days';
+import { useState } from 'react';
+import { SearchField } from '../components/SearchField';
 import { groupFestivals } from '../features/festivals/going';
+import { festivalShelf, isMany, pickerList } from '../features/festivals/shelves';
+import { useLoves } from '../state/useLoves';
 import { countdown } from '../features/festivals/when';
 import { EVERYONE } from '../features/sound-map/scope';
 import { haptic } from '../lib/haptics';
@@ -24,6 +28,14 @@ export default function SoundScopeScreen() {
   const today = useToday();
   const insets = useSafeAreaInsets();
   const groups = groupFestivals(festivals, going, today);
+  // Many festivals: a search, and otherwise the short shelf (plus the one being shown).
+  const loves = useLoves();
+  const many = isMany(festivals);
+  const [query, setQuery] = useState('');
+  const shelf = many ? festivalShelf(festivals, going, loves, today).festivals : [];
+  const others = many
+    ? pickerList(festivals, current ? [current] : [], query, shelf).filter((f) => query.trim() || !going.includes(f.id))
+    : groups.others;
 
   const pick = (id: string) => {
     haptic.select();
@@ -63,7 +75,11 @@ export default function SoundScopeScreen() {
   };
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
+    <ScrollView
+      style={styles.root}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
       <Text style={styles.title}>Show my sound for</Text>
       <View style={styles.list}>
         {row(EVERYONE, 'Everyone', 'Every artist the app knows', !current, 'Your sound across every artist')}
@@ -74,12 +90,19 @@ export default function SoundScopeScreen() {
           <View style={styles.list}>{groups.going.map(festivalRow)}</View>
         </>
       )}
-      {groups.others.length > 0 && (
-        <>
-          <Text style={styles.section}>{groups.going.length ? 'More festivals' : 'Festivals'}</Text>
-          <View style={styles.list}>{groups.others.map(festivalRow)}</View>
-        </>
+      {many && (
+        <View style={styles.search}>
+          <SearchField value={query} onChange={setQuery} placeholder="Find a festival" label="Find a festival" />
+        </View>
       )}
+      {others.length > 0 ? (
+        <>
+          <Text style={styles.section}>{query.trim() ? 'Matches' : groups.going.length ? 'More festivals' : 'Festivals'}</Text>
+          <View style={styles.list}>{others.map(festivalRow)}</View>
+        </>
+      ) : query.trim() ? (
+        <Text style={styles.none}>No festival matches “{query.trim()}”.</Text>
+      ) : null}
     </ScrollView>
   );
 }
@@ -90,6 +113,8 @@ const styles = StyleSheet.create({
   title: { ...type.title, color: color.moon },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xl },
   list: { gap: space.sm, marginTop: space.md },
+  search: { marginTop: space.xl },
+  none: { ...type.body, color: color.moonDim, marginTop: space.lg },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

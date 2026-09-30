@@ -15,6 +15,8 @@ import { ChevronIcon, GridIcon, ListIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
+import { bySoonest, festivalShelf, isMany } from '../../features/festivals/shelves';
+import { useLoves } from '../../state/useLoves';
 import { PlayIcon } from '../../features/discover/icons';
 import { lineupReach } from '../../features/festivals/links';
 import { searchArtists, searchFestivals } from '../../features/festivals/search';
@@ -30,6 +32,8 @@ import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
 const LOVE = 0.8;
+/** With many festivals, "More festivals" shows this many at a time. */
+const MORE_PAGE = 20;
 
 export default function FestivalsScreen() {
   const insets = useSafeAreaInsets();
@@ -43,6 +47,18 @@ export default function FestivalsScreen() {
   const { ratings } = useRatings();
   const today = useToday();
   const groups = groupFestivals(festivals, going, today);
+  // Many festivals (the nightly feed): a short shelf for you, the rest behind "More festivals".
+  const loves = useLoves();
+  const many = isMany(festivals);
+  const shelf = useMemo(
+    () => (many ? festivalShelf(festivals, going, loves, today) : undefined),
+    [many, festivals, going, loves, today],
+  );
+  const rest = useMemo(
+    () => (shelf ? bySoonest(groups.others.filter((f) => !shelf.festivals.includes(f)), today) : groups.others),
+    [shelf, groups.others, today],
+  );
+  const [restShown, setRestShown] = useState(MORE_PAGE);
   // Find any artist or festival.
   const [query, setQuery] = useState('');
   const found = useMemo(() => searchArtists(catalog.artists, query), [catalog.artists, query]);
@@ -115,8 +131,10 @@ export default function FestivalsScreen() {
           <>
             {groups.going.length > 0 && <Text style={styles.section}>Going</Text>}
             {list(groups.going)}
-            {/* Once you're going somewhere, the rest wait behind "More festivals" so they stay out of the way. */}
-            {groups.going.length > 0 && groups.others.length > 0 && (
+            {shelf && shelf.festivals.length > 0 && <Text style={styles.section}>{shelf.title}</Text>}
+            {shelf && list(shelf.festivals)}
+            {/* Once you're going somewhere (or there are many), the rest wait behind "More festivals" so they stay out of the way. */}
+            {(groups.going.length > 0 || shelf) && rest.length > 0 && (
               <Pressable
                 onPress={() => {
                   haptic.select();
@@ -124,16 +142,37 @@ export default function FestivalsScreen() {
                 }}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: showMore }}
-                accessibilityLabel={`More festivals, ${groups.others.length}. ${showMore ? 'Hide them' : 'Show them'}`}
+                accessibilityLabel={`More festivals, ${rest.length}. ${showMore ? 'Hide them' : 'Show them'}`}
                 hitSlop={6}
                 style={({ pressed }) => [styles.moreRow, pressed && { opacity: 0.7 }]}
               >
                 <Text style={[styles.section, styles.moreText]}>More festivals</Text>
-                <Text style={styles.moreCount}>{groups.others.length}</Text>
+                <Text style={styles.moreCount}>{rest.length}</Text>
                 <ChevronIcon color={color.moonFaint} size={12} direction={showMore ? 'up' : 'down'} />
               </Pressable>
             )}
-            {(groups.going.length === 0 || showMore) && list(groups.others)}
+            {shelf ? (
+              showMore && (
+                <>
+                  {list(rest.slice(0, restShown))}
+                  {rest.length > restShown && (
+                    <Pressable
+                      onPress={() => {
+                        haptic.select();
+                        setRestShown((n) => n + MORE_PAGE);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Show more festivals. ${rest.length - restShown} left`}
+                      style={({ pressed }) => [styles.showMore, pressed && { opacity: 0.7 }]}
+                    >
+                      <Text style={styles.showMoreText}>Show more · {rest.length - restShown} left</Text>
+                    </Pressable>
+                  )}
+                </>
+              )
+            ) : (
+              (groups.going.length === 0 || showMore) && list(groups.others)
+            )}
             <RequestRow />
           </>
         )}
@@ -360,6 +399,16 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   resultsHead: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.md, marginBottom: space.xs },
+  showMore: {
+    alignSelf: 'center',
+    marginTop: space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.xl,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  showMoreText: { ...type.label, color: color.moonDim },
   request: { alignSelf: 'center', paddingVertical: space.lg, paddingHorizontal: space.xl },
   requestInline: { alignSelf: 'flex-start', paddingHorizontal: 0 },
   requestText: { ...type.label, color: color.moonDim },
