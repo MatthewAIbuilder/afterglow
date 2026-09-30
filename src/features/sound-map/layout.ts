@@ -95,6 +95,29 @@ function footprint(name: string, r: number): Part[] {
   ];
 }
 
+/** The strongest matches that get a full label, and that the map's first view frames. */
+export const FULL_LABELS = 12;
+
+/**
+ * The zoom that frames the map's heart: your strongest `core` matches, with
+ * room for their labels, keeping your top match dead centre (the map opens
+ * centred on it). Never below `min`, so bubbles stay readable; the rest of
+ * a big map is a swipe away. Pure.
+ */
+export function fitScale(
+  layout: MapLayout,
+  width: number,
+  height: number,
+  { core = FULL_LABELS, min = 0.5, max = 1.1 }: { core?: number; min?: number; max?: number } = {},
+): number {
+  const heart = [...layout.bubbles].sort((a, b) => b.affinity - a.affinity).slice(0, core);
+  if (!heart.length) return max;
+  const halfW = Math.max(1, ...heart.map((b) => Math.abs(b.x) + b.r));
+  const halfH = Math.max(1, ...heart.map((b) => Math.max(Math.abs(b.y - b.r), Math.abs(b.y + b.r + LABEL_OFFSET + LABEL_H))));
+  const s = Math.min((width / 2 - 12) / halfW, (height / 2 - 12) / halfH);
+  return Math.min(max, Math.max(min, s));
+}
+
 /** Most bubbles on the map at once: enough to feel like a universe, few enough to stay calm and fast. */
 export const MAP_MAX = 40;
 
