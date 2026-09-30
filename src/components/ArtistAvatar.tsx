@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Artist } from '../data/types';
+import { paletteFrom } from '../theme/artistColor';
 import { color } from '../theme/tokens';
 
 // Stable per-artist gradient so monograms are distinguishable but on-palette.
@@ -14,12 +15,16 @@ const PAIRS: [string, string][] = [
 ];
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
-/** The artist's colour pair: [deep, bright]. Shared by avatars and the stage scene. */
-export const artistColors = (id: string) => PAIRS[hash(id) % PAIRS.length];
+/**
+ * The artist's colour pair: [deep, bright]. From their own colour (taken from
+ * their photo) when they have one, otherwise a stable on-palette pair for
+ * their id. Shared by avatars, bubbles, artist pages and the stage scene.
+ */
+export const artistColors = (id: string, own?: string): [string, string] => (own ? paletteFrom(own) : PAIRS[hash(id) % PAIRS.length]);
 
 export function ArtistAvatar({ artist, size }: { artist: Artist; size: number }) {
   const ring = { width: size, height: size, borderRadius: size / 2 };
-  const [from, to] = artistColors(artist.id);
+  const [from, to] = artistColors(artist.id, artist.color);
   const initials = artist.name
     .split(' ')
     .map((w) => w[0])

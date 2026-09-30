@@ -68,4 +68,14 @@ describe('photos in the catalogue file', () => {
     expect(applyPhotos(snap, { x: pic(H1) }, 'Deezer')).toBe(snap);
     expect(applyPhotos(snap, undefined)).toBe(snap);
   });
+
+  it('gives artists showing a photo the colour taken from it', () => {
+    const file = parseCatalogFile({ version: 1, artists: [], festivals: [], clips: [], photos: { subtronics: pic(H1) }, colors: { subtronics: '#e04090', levity: '#00ff00', bad: 'pink' } });
+    expect(file.colors).toEqual({ subtronics: '#E04090', levity: '#00FF00' });
+    const built = buildCatalog(BUILT_IN.snapshot, file);
+    expect(built.problems).toEqual([]);
+    expect(built.catalog.artist('subtronics')?.color).toBe('#E04090');
+    // No photo showing, so no colour from one.
+    expect(built.catalog.artist('levity')?.color).toBeUndefined();
+  });
 });

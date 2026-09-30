@@ -83,7 +83,7 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
   // A video from the crowd: its own still, and who filmed it.
   const crowd = clip.source?.provider === 'community' ? clip.source : undefined;
   const still = source ? posterUrl(source) : crowd?.thumbUrl;
-  const [deep, bright] = artistColors(clip.artistId);
+  const [deep, bright] = artistColors(clip.artistId, artist?.color);
   const name = artist?.name ?? 'Unknown artist';
 
   return (

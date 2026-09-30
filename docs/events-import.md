@@ -157,3 +157,13 @@ alongside them, like it does for artists who sound alike.
   from lineups never counts as much as a real match of sound.
 - Each artist keeps their six closest. Tagging an artist's sound in
   `catalogue/afterglow.json` replaces these guesses for them.
+
+## Artist colours (automatic)
+
+After the photo step, `scripts/artist-colors.ts` takes each artist's colour
+from their photo (the most present vivid colour in a small copy of it) and
+publishes it in `catalogue.json` as `colors`. Their bubble's glow on My
+Sound, their initials, their artist page and their Discover stage then use
+it, softened to stay within the night palette. Black-and-white or washed-out
+photos keep the app's own colours, and so does anyone without a photo.
+Colours are kept from night to night while the photo is the same.

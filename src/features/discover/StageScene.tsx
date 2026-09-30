@@ -8,6 +8,8 @@ import { color } from '../../theme/tokens';
 
 type Props = {
   artistId: string;
+  /** Their colour, when they have one. */
+  artistColor?: string;
   bpm: number;
   width: number;
   height: number;
@@ -21,8 +23,8 @@ type Props = {
  * the stage glow pulses on the beat, a crowd stands in silhouette. Each artist
  * gets their own colours. Replaced by real footage when a clip has a video.
  */
-function StageSceneBase({ artistId, bpm, width, height, clock, reduceMotion }: Props) {
-  const [deep, bright] = artistColors(artistId);
+function StageSceneBase({ artistId, artistColor, bpm, width, height, clock, reduceMotion }: Props) {
+  const [deep, bright] = artistColors(artistId, artistColor);
   const beat = 60000 / bpm;
 
   // Deterministic beam layout per artist.

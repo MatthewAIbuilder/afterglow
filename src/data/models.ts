@@ -38,6 +38,8 @@ export type Artist = {
   imageUrl?: string;
   /** Where a photo that came from a photo list is from ("Deezer"), credited on the artist page. */
   imageCredit?: string;
+  /** Their colour ("#8E6BFF"), taken from their photo; tints their avatar, bubble glow and stage. */
+  color?: string;
   /** How much of each sound this artist carries, 0 to 1. */
   sound: Partial<Record<SoundTag, number>>;
 };

@@ -70,6 +70,13 @@ jobs:
           curl -fsS https://afterglowmusic.web.app/catalogue.json -o /tmp/published.json || true
           npx --yes tsx@4 scripts/artist-photos.ts /tmp/published.json || echo "::warning::Artist photos were skipped tonight."
 
+      # Each artist's colour, from their photo (docs/events-import.md).
+      - name: Artist colours
+        if: github.event_name != 'pull_request'
+        run: |
+          npm install --no-save jpeg-js@0.4.4
+          npx --yes tsx@4 scripts/artist-colors.ts /tmp/published.json || echo "::warning::Artist colours were skipped tonight."
+
       # Discover clips: the best live set on YouTube for artists on upcoming festivals, a few a night (docs/events-import.md).
       - name: YouTube clips
         if: github.event_name != 'pull_request' && env.HAS_YOUTUBE == 'true'

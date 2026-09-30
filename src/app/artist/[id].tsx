@@ -72,7 +72,7 @@ export default function ArtistScreen() {
   const similarAt = similarThere.length ? starFestival : undefined;
   const festivals = catalog.festivalsOf(artist.id);
   const clips = catalog.clipsOf(artist.id);
-  const [deep, bright] = artistColors(artist.id);
+  const [deep, bright] = artistColors(artist.id, artist.color);
 
   return (
     <View style={styles.root}>
