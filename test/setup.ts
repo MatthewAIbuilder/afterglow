@@ -177,3 +177,8 @@ jest.mock('expo-video', () => {
 jest.mock('../src/features/social/services', () => ({
   defaultSocialService: () => jest.requireActual<typeof import('../src/features/social/__tests__/fakeSocial')>('../src/features/social/__tests__/fakeSocial').fakeSocial({ available: false }).service,
 }));
+
+// The phone's own New Event screen: in tests it "saves" straight away, and remembers what it was given.
+jest.mock('expo-calendar/legacy', () => ({
+  createEventInCalendarAsync: jest.fn(async () => ({ action: 'saved', id: 'event-1' })),
+}));

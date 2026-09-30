@@ -163,3 +163,13 @@ export function SearchIcon({ color, size = 16 }: P) {
     </Svg>
   );
 }
+
+/** A calendar page. */
+export function CalendarIcon({ color, size = 16 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v10a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-10A2.5 2.5 0 0 1 6.5 5z" stroke={color} strokeWidth={1.9} />
+      <Path d="M4 10h16M8.5 3v4M15.5 3v4" stroke={color} strokeWidth={1.9} strokeLinecap="round" />
+    </Svg>
+  );
+}
