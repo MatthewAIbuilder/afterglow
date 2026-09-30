@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from 'react-native';
 import type { Clip, Festival } from '../data/models';
 import { cleanKept, COMMUNITY_MAX, communityClips, keepClip, keptClips, rememberArtist } from '../features/community/clips';
+import { withOwner } from '../features/community/likes';
 import type { SharedMemory } from '../features/social/models';
 import { useCatalog } from './catalog';
 import { useSocial } from './social';
@@ -26,13 +27,21 @@ type Ctx = {
   kept: Record<string, Clip>;
   /** Remember a community clip's artist; `liked` also keeps the whole clip for Your clips. */
   remember: (clip: Clip, liked?: boolean) => void;
+  /** Community clip id -> who shared it, so a like can reach them. */
+  owners: Record<string, string>;
+  rememberOwner: (clipId: string, uid: string) => void;
+  /** Public likes this phone has sent, per account (clip ids). */
+  sent: Record<string, string[]>;
+  markSent: (account: string, clipId: string, on: boolean) => void;
+  /** What was saved has loaded. */
+  hydrated: boolean;
 };
 
 export const COMMUNITY_STORAGE_KEY = 'community.v1';
 
 const CommunityContext = createContext<Ctx | null>(null);
 
-type Saved = { enabled: boolean; hidden: string[]; artistOf: Record<string, string>; kept: Record<string, Clip> };
+type Saved = { enabled: boolean; hidden: string[]; artistOf: Record<string, string>; kept: Record<string, Clip>; owners: Record<string, string>; sent: Record<string, string[]> };
 
 function clean(raw: unknown): Saved {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -45,11 +54,26 @@ function clean(raw: unknown): Saved {
     hidden: Array.isArray(o.hidden) ? o.hidden.filter((x): x is string => typeof x === 'string').slice(-2000) : [],
     artistOf,
     kept: cleanKept(o.kept),
+    owners: strings(o.owners),
+    sent: lists(o.sent),
   };
 }
 
+const strings = (raw: unknown): Record<string, string> => {
+  const out: Record<string, string> = {};
+  if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'string' && v) out[k] = v;
+  return out;
+};
+const lists = (raw: unknown): Record<string, string[]> => {
+  const out: Record<string, string[]> = {};
+  if (raw && typeof raw === 'object')
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (Array.isArray(v)) out[k] = v.filter((x): x is string => typeof x === 'string').slice(-1000);
+  return out;
+};
+
 export function CommunityProvider({ children }: { children: ReactNode }) {
-  const [saved, setSaved] = useState<Saved>({ enabled: true, hidden: [], artistOf: {}, kept: {} });
+  const [saved, setSaved] = useState<Saved>({ enabled: true, hidden: [], artistOf: {}, kept: {}, owners: {}, sent: {} });
+  const [hydrated, setHydrated] = useState(false);
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -62,11 +86,14 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
           hidden: [...new Set([...s.hidden, ...cur.hidden])],
           artistOf: { ...s.artistOf, ...cur.artistOf },
           kept: { ...s.kept, ...cur.kept },
+          owners: { ...s.owners, ...cur.owners },
+          sent: { ...s.sent, ...cur.sent },
         }));
       })
       .catch(() => {})
       .finally(() => {
         loaded.current = true;
+        setHydrated(true);
       });
   }, []);
 
@@ -82,15 +109,33 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       setSaved((s) => {
         const artistOf = rememberArtist(s.artistOf, clip.id, clip.artistId);
         const kept = liked && !s.kept[clip.id] ? keepClip(s.kept, clip) : s.kept;
-        return artistOf === s.artistOf && kept === s.kept ? s : { ...s, artistOf, kept };
+        const owners = clip.source?.provider === 'community' ? withOwner(s.owners, clip.id, clip.source.uid) : s.owners;
+        return artistOf === s.artistOf && kept === s.kept && owners === s.owners ? s : { ...s, artistOf, kept, owners };
+      }),
+    [],
+  );
+  const rememberOwner = useCallback(
+    (clipId: string, uid: string) =>
+      setSaved((s) => {
+        const owners = withOwner(s.owners, clipId, uid);
+        return owners === s.owners ? s : { ...s, owners };
+      }),
+    [],
+  );
+  const markSent = useCallback(
+    (account: string, clipId: string, on: boolean) =>
+      setSaved((s) => {
+        const list = s.sent[account] ?? [];
+        if (list.includes(clipId) === on) return s;
+        return { ...s, sent: { ...s.sent, [account]: on ? [...list, clipId] : list.filter((x) => x !== clipId) } };
       }),
     [],
   );
   const hidden = useMemo(() => new Set(saved.hidden), [saved.hidden]);
 
   const value = useMemo<Ctx>(
-    () => ({ enabled: saved.enabled, setEnabled, hidden, hide, artistOf: saved.artistOf, kept: saved.kept, remember }),
-    [saved.enabled, setEnabled, hidden, hide, saved.artistOf, saved.kept, remember],
+    () => ({ enabled: saved.enabled, setEnabled, hidden, hide, artistOf: saved.artistOf, kept: saved.kept, remember, owners: saved.owners, rememberOwner, sent: saved.sent, markSent, hydrated }),
+    [saved.enabled, setEnabled, hidden, hide, saved.artistOf, saved.kept, remember, saved.owners, rememberOwner, saved.sent, markSent, hydrated],
   );
   return <CommunityContext.Provider value={value}>{children}</CommunityContext.Provider>;
 }

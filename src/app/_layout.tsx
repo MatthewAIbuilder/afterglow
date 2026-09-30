@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { LikeSync } from '../features/community/LikeSync';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
@@ -30,8 +31,8 @@ export default function RootLayout() {
       <GoingProvider>
       <SeenProvider>
       <WeekendsProvider>
-      <NoticesProvider>
       <SocialProvider>
+      <NoticesProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -51,6 +52,7 @@ export default function RootLayout() {
         <Stack.Screen name="u/[handle]" />
         <Stack.Screen name="people" />
         <Stack.Screen name="follows/[handle]" />
+        <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
@@ -97,8 +99,9 @@ export default function RootLayout() {
       </Stack>
       <FirstRun />
       <ReminderSync />
-      </SocialProvider>
+      <LikeSync />
       </NoticesProvider>
+      </SocialProvider>
       </WeekendsProvider>
       </SeenProvider>
       </GoingProvider>

@@ -59,7 +59,7 @@ npx firebase-tools@latest use --add
 npx firebase-tools@latest deploy --only firestore,storage
 ```
 
-It should end with "Deploy complete!" (this also creates the indexes Afterglow needs). If you'd rather not use the command line, paste the contents of `firestore.rules` into Firebase console → Firestore → **Rules** → Publish, and `storage.rules` into Storage → **Rules** → Publish, then add the two indexes by hand: Firestore → **Indexes** → Composite → Create index → collection `memories`, fields `uid` Ascending and `capturedAt` Descending, query scope Collection; then four more: `memories` with `festivalId` Ascending and `createdAt` Descending; `memories` with `uid` Ascending and `createdAt` Descending; `follows` with `from` Ascending and `createdAt` Descending; `follows` with `to` Ascending and `createdAt` Descending. They take a few minutes to build.
+It should end with "Deploy complete!" (this also creates the indexes Afterglow needs). If you'd rather not use the command line, paste the contents of `firestore.rules` into Firebase console → Firestore → **Rules** → Publish, and `storage.rules` into Storage → **Rules** → Publish, then add the two indexes by hand: Firestore → **Indexes** → Composite → Create index → collection `memories`, fields `uid` Ascending and `capturedAt` Descending, query scope Collection; then six more: `memories` with `festivalId` Ascending and `createdAt` Descending; `memories` with `uid` Ascending and `createdAt` Descending; `follows` with `from` Ascending and `createdAt` Descending; `follows` with `to` Ascending and `createdAt` Descending; `likes` with `memoryId` Ascending and `createdAt` Descending; `likes` with `owner` Ascending and `createdAt` Descending. They take a few minutes to build.
 
 ## 6. Try it (in Expo Go)
 
@@ -74,7 +74,8 @@ Restart the app with the new `.env`: `npx expo start --go --clear`, and open it 
 7. **Remove from profile**: in the memory → **On your profile** → Remove. It's gone from the profile (and from Storage), still in your Memories.
 8. **Videos from the crowd in Discover**: with the second account signed in, open Discover on the festival your first account's memory is tagged with (it needs an artist from that lineup). After a clip or two, the shared video plays in the feed with **Filmed by @yourhandle** under it; tap that to open the profile. The **•••** beside it offers Report, Hide and Block, and each makes it disappear straight away. **What to discover** (tap the festival name at the top) has a **Videos from the crowd** switch to turn them off.
 9. **Follow**: as the second account, open the first account's profile (Find people) → **Follow**. It turns into **Following** and the profile says "1 follower". Tap **1 follower** to see the list. Then Discover → tap the name at the top → **Following**: the first account's shared videos play there. Tap **Following** on the profile again to unfollow; their videos leave the Following feed.
-10. **Delete account**: Profile → Edit profile → **Delete account** → your password → **Delete account forever**. Your profile, handle, shared videos and the account are removed; your Memories stay on the phone.
+10. **Likes**: as the second account, like the first account's video in Discover (or open it from their profile and tap the heart). As the first account, open Festivals → the bell: "@… liked your video of …" and "@… started following you". Open your video from your profile: it says "1 like"; tap it to see who.
+11. **Delete account**: Profile → Edit profile → **Delete account** → your password → **Delete account forever**. Your profile, handle, shared videos and the account are removed; your Memories stay on the phone.
 
 ## Troubleshooting
 

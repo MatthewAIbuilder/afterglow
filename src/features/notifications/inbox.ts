@@ -5,16 +5,19 @@ import { countdown, nextRun } from '../festivals/when';
 /**
  * What the bell has for you, worked out from the catalogue and your plans:
  * set times coming out for a festival you're going to, and the festival
- * getting close or starting. Pure: nothing is sent anywhere. Later, likes and
- * followers can join the same list.
+ * getting close or starting. Pure: nothing is sent anywhere. New followers
+ * and likes on your videos join the same list (see activity.ts).
  */
 export type Notice = {
   /** Stable, so a notice you've read stays read; changes when the news does (e.g. new dates). */
   id: string;
-  festivalId: string;
-  kind: 'now' | 'soon' | 'setTimes';
+  kind: 'now' | 'soon' | 'setTimes' | 'follow' | 'like';
   title: string;
   body: string;
+  /** Where tapping it goes. */
+  href: string;
+  /** The festival it's about (festival notices). */
+  festivalId?: string;
 };
 
 /** How close a festival must be before the bell mentions it. */
@@ -31,18 +34,19 @@ export function notices(festivals: Festival[], going: Going, today: Date): Notic
     const until = next?.until;
     const which = next && next.index > 0 ? ` weekend ${next.index + 1}` : '';
     if (next && next.until <= 0) {
-      now.push({ id: `now:${f.id}:${next.run.start}`, festivalId: f.id, kind: 'now', title: `${f.name} is happening now`, body: 'See who your plan says to catch next.' });
+      now.push({ id: `now:${f.id}:${next.run.start}`, festivalId: f.id, href: `/festival/${f.id}`, kind: 'now', title: `${f.name} is happening now`, body: 'See who your plan says to catch next.' });
     } else if (next && until !== undefined && until >= 1 && until <= SOON_DAYS) {
       soon.push({
         id: `soon:${f.id}:${next.run.start}`,
         festivalId: f.id,
+        href: `/festival/${f.id}`,
         kind: 'soon',
         title: `${f.name}${which} starts ${until === 1 ? 'tomorrow' : `in ${until} days`}`,
         body: f.sets?.length ? 'Your day-by-day plan is ready.' : 'Set times aren’t out yet. Your must sees are ready.',
       });
     }
     if (f.sets?.length && when !== 'Over') {
-      times.push({ id: `sets:${f.id}`, festivalId: f.id, kind: 'setTimes', title: `Set times are out for ${f.name}`, body: 'Your plan is laid out day by day, with clashes called out.' });
+      times.push({ id: `sets:${f.id}`, festivalId: f.id, href: `/festival/${f.id}`, kind: 'setTimes', title: `Set times are out for ${f.name}`, body: 'Your plan is laid out day by day, with clashes called out.' });
     }
   }
   return [...now, ...soon, ...times];

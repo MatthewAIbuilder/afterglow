@@ -35,7 +35,7 @@ import {
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import type { Profile } from '../models';
+import type { Activity, Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanProfileInput, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { asSocialError, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
@@ -57,6 +57,7 @@ import { asSocialError, memoryFromDoc, prefixEnd, profileFromDoc, videoType } fr
  *   memories/{id}       uid, handle, videoPath, videoUrl, thumbPath, thumbUrl, festivalId, night, artistId, capturedAt, durationSec, width, height, createdAt
  *   blocks/{uid}        { uids: [...] }: only you can read or write yours
  *   follows/{from}_{to} from, to, createdAt: made by `from`, removed by either
+ *   likes/{memoryId}_{uid} memoryId, owner, uid, createdAt: made by `uid`, removed by `uid` or the video's owner
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
  * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg
  */
@@ -144,14 +145,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await deleteDoc(d.ref);
         }
         await removeFile(`avatars/${user.uid}.jpg`);
-        // Follows either way.
-        const [out, inn] = await Promise.all([
+        // Follows and likes either way.
+        const snaps = await Promise.all([
           getDocs(query(collection(db, 'follows'), where('from', '==', user.uid))),
           getDocs(query(collection(db, 'follows'), where('to', '==', user.uid))),
+          getDocs(query(collection(db, 'likes'), where('uid', '==', user.uid))),
+          getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid))),
         ]);
-        for (let i = 0; i < out.docs.length + inn.docs.length; i += 400) {
+        const refs = snaps.flatMap((snap) => snap.docs.map((d) => d.ref));
+        for (let i = 0; i < refs.length; i += 400) {
           const b = writeBatch(db);
-          for (const d of [...out.docs, ...inn.docs].slice(i, i + 400)) b.delete(d.ref);
+          for (const r of refs.slice(i, i + 400)) b.delete(r);
           await b.commit();
         }
         const profile = await getDoc(doc(db, 'profiles', user.uid));
@@ -290,6 +294,13 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!d.exists()) return;
         const data = d.data() as { uid?: string; videoPath?: string; thumbPath?: string };
         if (data.uid !== user.uid) throw new SocialError('not-signed-in');
+        // Its likes go with it.
+        const liked = await getDocs(query(collection(fb().db, 'likes'), where('memoryId', '==', id), where('owner', '==', user.uid)));
+        for (let i = 0; i < liked.docs.length; i += 400) {
+          const b = writeBatch(fb().db);
+          for (const d of liked.docs.slice(i, i + 400)) b.delete(d.ref);
+          await b.commit();
+        }
         await deleteDoc(memRef);
         await removeFile(data.videoPath);
         await removeFile(data.thumbPath);
@@ -351,6 +362,41 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           .filter((m): m is NonNullable<typeof m> => !!m)
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
           .slice(0, max);
+      }),
+
+    like: (memoryId, owner) =>
+      guard(async () => {
+        const user = me();
+        if (owner === user.uid) throw new SocialError('unknown');
+        await setDoc(doc(fb().db, 'likes', `${memoryId}_${user.uid}`), { memoryId, owner, uid: user.uid, createdAt: now() });
+      }),
+    unlike: (memoryId) => guard(async () => deleteDoc(doc(fb().db, 'likes', `${memoryId}_${me().uid}`))),
+    likeCount: (memoryId) =>
+      guard(async () => (await getCountFromServer(query(collection(fb().db, 'likes'), where('memoryId', '==', memoryId)))).data().count),
+    likedBy: (memoryId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'likes'), where('memoryId', '==', memoryId), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => (d.data() as { uid?: unknown }).uid).filter((x): x is string => typeof x === 'string');
+      }),
+    activity: (max) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const [followed, liked] = await Promise.all([
+          getDocs(query(collection(db, 'follows'), where('to', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
+          getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
+        ]);
+        const str = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+        const items: Activity[] = [];
+        for (const d of followed.docs) {
+          const f = d.data() as { from?: unknown; createdAt?: unknown };
+          if (str(f.from) && str(f.createdAt)) items.push({ kind: 'follow', id: d.id, from: f.from, createdAt: f.createdAt });
+        }
+        for (const d of liked.docs) {
+          const l = d.data() as { uid?: unknown; memoryId?: unknown; createdAt?: unknown };
+          if (str(l.uid) && str(l.memoryId) && str(l.createdAt)) items.push({ kind: 'like', id: d.id, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt });
+        }
+        return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
       }),
 
     report: (target, reason, note) =>

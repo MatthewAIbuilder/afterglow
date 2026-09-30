@@ -87,6 +87,14 @@ useRankedFeed(activeIndex, focus, community) → ClipCard → ClipPlayer → Nat
 - **Public**: who follows whom is visible to anyone signed in, like profiles. Deleting your account removes your follows both ways.
 - Not yet: notifications for new followers.
 
+## Likes and the bell
+
+- **One like everywhere.** Liking a video from the crowd (Discover's heart or double-tap, Your clips, or the heart on the shared video itself) is the same reaction on `community:<sharedId>`: it shapes your taste like any clip and, once you have a profile, the person who filmed it sees it. Without a profile the like stays on your phone, and the shared video says so.
+- **Kept in step on the phone.** `features/community/likes.ts` (pure: `wantedLikes`, `likeChanges`) and `LikeSync` (root layout) compare what you like with what this phone has sent for your account (`community.v1`: `owners` clip → who shared it, `sent` account → clip ids) and send or take back one change at a time; one that fails (video removed, its owner blocked you, no connection) isn't retried until the app next opens. Likes live on the phone, not the account, so a second account signing in on the same phone would send them too. Start over clears your likes, and so takes back the public ones.
+- **Counts.** The shared video shows its likes; on your own video the count opens `likes/[id].tsx` (who liked it, newest 100, Follow beside each, blocked people left out).
+- **The bell** (`state/notices.tsx`, now inside `SocialProvider`) adds your activity to the festival notices: "@sam started following you" (opens their profile) and "@sam and 2 others liked your video of HEDEX" (opens it), from `SocialService.activity` (the newest 30 follows and likes), turned into notices by `features/notifications/activity.ts` (pure; likes on one video together; blocked people and deleted accounts left out). Read when you sign in, when the app comes back, and when you open the bell. There are no phone notifications for these (that needs a server).
+- Removing a video from your profile removes its likes; deleting your account removes likes either way.
+
 ### Data and rules
 
 | Firestore | Who can read | Who can write |
@@ -95,18 +103,20 @@ useRankedFeed(activeIndex, focus, community) → ClipCard → ClipPlayer → Nat
 | `handles/{handle}` | signed in | created with your profile; released only when your profile moves off it; never reassigned |
 | `memories/{id}` | signed in | created by you, pointing at your own files; never edited; deleted by you |
 | `blocks/{uid}` | you | you |
+| `likes/{memoryId}_{uid}` | signed in | created by `uid` on someone else's existing video (`owner` must be its owner), not if the owner blocked you; never edited; deleted by the liker or the owner |
 | `follows/{from}_{to}` | signed in | created by `from` (both have profiles, not yourself, not someone who blocked you); never edited; deleted by either |
 | `reports/{id}` | nobody (console only) | anyone signed in, as themselves |
 
 Storage: `memories/{uid}/{id}.(mp4|mov|m4v)` (video, under 150 MB) and `.jpg` stills (under 5 MB), `avatars/{uid}.jpg`; written only by that uid, read by anyone signed in. Shared files are served through Firebase download links, which work for anyone who has the link; removing a memory from your profile deletes the file, so the link stops working.
 
-`scripts/firebase-rules.test.mjs` checks both rule files against the Firebase emulator (38 checks, all passing on 2026-09-30).
+`scripts/firebase-rules.test.mjs` checks both rule files against the Firebase emulator (44 checks, all passing on 2026-09-30).
 
 ## Tests
 
 - `features/memories/__tests__/guess.test.ts`, `organize.test.ts`; `state/__tests__/memories.test.tsx`.
 - `features/social/__tests__/social.test.ts` (validation, reading documents defensively, error kinds, publishing).
 - `src/app/__tests__/memories.test.tsx`: the whole flow through the real routes, with the in-memory backend.
-- `features/social/__tests__/follow.test.ts` (follow rules in the in-memory backend); `src/app/__tests__/follow.test.tsx` (Follow on a profile, lists, Find people, Profile counts, blocking, Following in Discover).
+- `features/community/__tests__/likes.test.ts`, `features/notifications/__tests__/activity.test.ts`; `src/app/__tests__/likes.test.tsx` (likes from Discover and the video, private without a profile, counts and who, the bell).
+- `features/social/__tests__/follow.test.ts` (follow and like rules in the in-memory backend); `src/app/__tests__/follow.test.tsx` (Follow on a profile, lists, Find people, Profile counts, blocking, Following in Discover).
 - `features/community/__tests__/clips.test.ts` (filtering, remembering artists, taste after a clip is gone); `src/app/__tests__/community.test.tsx` (Discover shows a shared video; credit, Report, Hide, Block, the switch, signed out, likes remembered).
 - Not covered by `npm test`: the real picker, camera and media library, Firebase itself (the adapter), and the emulator rules check.

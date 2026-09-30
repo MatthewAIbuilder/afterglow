@@ -95,6 +95,22 @@ service cloud.firestore {
       allow delete: if signedIn() && (resource.data.from == me() || resource.data.to == me());
     }
 
+    // Likes on shared videos: `uid` likes memory `memoryId`, shared by `owner`. Anyone signed in can see them.
+    // Only as yourself, on a video that exists and isn't yours, not if its owner blocked you; either of you can remove it.
+    match /likes/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == me()
+        && request.resource.data.keys().hasOnly(['memoryId', 'owner', 'uid', 'createdAt'])
+        && request.resource.data.memoryId is string && id == request.resource.data.memoryId + '_' + me()
+        && exists(path('memories', request.resource.data.memoryId))
+        && get(path('memories', request.resource.data.memoryId)).data.uid == request.resource.data.owner
+        && request.resource.data.owner != me()
+        && !(exists(path('blocks', request.resource.data.owner)) && me() in get(path('blocks', request.resource.data.owner)).data.uids)
+        && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
+      allow update: if false;
+      allow delete: if signedIn() && (resource.data.uid == me() || resource.data.owner == me());
+    }
+
     // Reports: anyone signed in can file one; only the project owner reads them (in the Firebase console).
     match /reports/{id} {
       allow create: if signedIn() && request.resource.data.by == me()

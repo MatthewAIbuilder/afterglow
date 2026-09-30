@@ -1,4 +1,4 @@
-import type { Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from '../models';
+import type { Activity, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from '../models';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanProfileInput, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -16,6 +16,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const blocks = new Map<string, string[]>();
   /** Follows as `from>to`, in the order made. */
   const follows = new Map<string, { from: string; to: string; createdAt: string }>();
+  /** Likes as `memoryId_uid`. */
+  const likes = new Map<string, { memoryId: string; owner: string; uid: string; createdAt: string }>();
   const reports: { by: string; target: ReportTarget; reason: ReportReason; note?: string }[] = [];
   const listeners = new Set<(u: SocialUser | null) => void>();
   let current: SocialUser | null = null;
@@ -66,6 +68,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       profiles.delete(u.uid);
       blocks.delete(u.uid);
       for (const [k, f] of follows) if (f.from === u.uid || f.to === u.uid) follows.delete(k);
+      for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
       accounts.delete(u.email ?? '');
       current = null;
       emit();
@@ -155,6 +158,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!m) return;
       if (m.uid !== u.uid) throw new SocialError('not-signed-in');
       memories.delete(id);
+      for (const [k, l] of likes) if (l.memoryId === id) likes.delete(k);
     },
     async memoriesOf(uid) {
       return [...memories.values()].filter((m) => m.uid === uid).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
@@ -173,7 +177,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (uid === u.uid || !profiles.has(uid) || !profiles.has(u.uid)) throw new SocialError('unknown');
       if ((blocks.get(uid) ?? []).includes(u.uid)) throw new SocialError('unknown');
       const k = `${u.uid}>${uid}`;
-      if (!follows.has(k)) follows.set(k, { from: u.uid, to: uid, createdAt: `${now()}#${++n}` });
+      if (!follows.has(k)) follows.set(k, { from: u.uid, to: uid, createdAt: `${now()}#${String(++n).padStart(6, '0')}` });
     },
     async unfollow(uid) {
       follows.delete(`${me().uid}>${uid}`);
@@ -195,6 +199,31 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const who = new Set(uids);
       return [...memories.values()].filter((m) => who.has(m.uid)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
+    async like(memoryId, owner) {
+      const u = me();
+      const m = memories.get(memoryId);
+      if (!m || m.uid !== owner || owner === u.uid) throw new SocialError('unknown');
+      if ((blocks.get(owner) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      const k = `${memoryId}_${u.uid}`;
+      if (!likes.has(k)) likes.set(k, { memoryId, owner, uid: u.uid, createdAt: `${now()}#${String(++n).padStart(6, '0')}` });
+    },
+    async unlike(memoryId) {
+      likes.delete(`${memoryId}_${me().uid}`);
+    },
+    async likeCount(memoryId) {
+      return [...likes.values()].filter((l) => l.memoryId === memoryId).length;
+    },
+    async likedBy(memoryId, max) {
+      return [...likes.values()].filter((l) => l.memoryId === memoryId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max).map((l) => l.uid);
+    },
+    async activity(max) {
+      const u = me();
+      const items: Activity[] = [
+        ...[...follows.values()].filter((f) => f.to === u.uid).map((f): Activity => ({ kind: 'follow', id: `${f.from}_${f.to}`, from: f.from, createdAt: f.createdAt })),
+        ...[...likes.values()].filter((l) => l.owner === u.uid).map((l): Activity => ({ kind: 'like', id: `${l.memoryId}_${l.uid}`, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt })),
+      ];
+      return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
     async report(target, reason, note) {
       reports.push({ by: me().uid, target, reason, note });
     },
@@ -207,5 +236,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, reports, currentUser: () => current };
 }

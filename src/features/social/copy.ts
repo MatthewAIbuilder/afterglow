@@ -25,3 +25,5 @@ export function goingLine(names: string[]): string | undefined {
 export const followersLabel = (n: number) => `${n} ${n === 1 ? 'follower' : 'followers'}`;
 /** "3 following". */
 export const followingLabel = (n: number) => `${n} following`;
+/** "1 like", "12 likes". */
+export const likesLabel = (n: number) => `${n} ${n === 1 ? 'like' : 'likes'}`;

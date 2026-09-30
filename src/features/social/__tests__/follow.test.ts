@@ -81,3 +81,55 @@ describe('following', () => {
     expect(await s().followCounts(sam)).toEqual({ followers: 0, following: 0 });
   });
 });
+
+describe('likes on shared videos', () => {
+  async function mayaShares() {
+    await as('maya');
+    const m = await s().shareMemory({ memoryId: 'm1', videoUri: 'file:///1.mov', capturedAt: '2026-12-04T22:00:00.000Z' });
+    await as('sam');
+    return m.id;
+  }
+
+  it('like, count, who liked it, and unlike', async () => {
+    const id = await mayaShares();
+    await s().like(id, maya);
+    await s().like(id, maya);
+    expect(await s().likeCount(id)).toBe(1);
+    expect(await s().likedBy(id, 10)).toEqual([sam]);
+    await s().unlike(id);
+    expect(await s().likeCount(id)).toBe(0);
+  });
+
+  it('not your own video, not with the wrong owner, not if the owner blocked you', async () => {
+    const id = await mayaShares();
+    await expect(s().like(id, sam)).rejects.toThrow();
+    await as('maya');
+    await expect(s().like(id, maya)).rejects.toThrow();
+    await s().setBlocked(sam, true);
+    await as('sam');
+    await expect(s().like(id, maya)).rejects.toThrow();
+  });
+
+  it('activity: new followers and likes for the owner, newest first', async () => {
+    const id = await mayaShares();
+    await s().follow(maya);
+    await s().like(id, maya);
+    await as('maya');
+    const got = await s().activity(10);
+    expect(got.map((a) => a.kind)).toEqual(['like', 'follow']);
+    expect(got.every((a) => a.from === sam)).toBe(true);
+  });
+
+  it('removing a video from your profile removes its likes; so does deleting an account', async () => {
+    const id = await mayaShares();
+    await s().like(id, maya);
+    await as('maya');
+    await s().unshareMemory(id);
+    expect(social.likes.size).toBe(0);
+    const again = (await s().shareMemory({ memoryId: 'm2', videoUri: 'file:///2.mov', capturedAt: '2026-12-04T22:00:00.000Z' })).id;
+    await as('sam');
+    await s().like(again, maya);
+    await s().deleteAccount('password123');
+    expect(social.likes.size).toBe(0);
+  });
+});
