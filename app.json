@@ -58,6 +58,14 @@
           "supportsBackgroundPlayback": false,
           "supportsPictureInPicture": false
         }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Afterglow adds the festivals you're going to to your calendar.",
+          "writeOnlyCalendarPermission": "Afterglow adds the festivals you're going to to your calendar.",
+          "remindersPermission": "Afterglow doesn't use your reminders."
+        }
       ]
     ],
     "scheme": "afterglow",

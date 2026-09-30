@@ -191,3 +191,8 @@ jest.mock('expo-network', () => {
     },
   };
 });
+
+// The phone's own New Event screen: in tests it "saves" straight away, and remembers what it was given.
+jest.mock('expo-calendar/legacy', () => ({
+  createEventInCalendarAsync: jest.fn(async () => ({ action: 'saved', id: 'event-1' })),
+}));
