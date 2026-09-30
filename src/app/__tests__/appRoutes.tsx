@@ -19,6 +19,7 @@ import NotificationsScreen from '../notifications';
 import PeopleScreen from '../people';
 import FollowsScreen from '../follows/[handle]';
 import LikesScreen from '../likes/[id]';
+import GoingScreen from '../going/[id]';
 import PlanCardScreen from '../plan-card/[id]';
 import PosterScreen from '../poster/[id]';
 import ProfileEditScreen from '../profile-edit';
@@ -64,6 +65,7 @@ export const APP_ROUTES = {
   people: PeopleScreen,
   'follows/[handle]': FollowsScreen,
   'likes/[id]': LikesScreen,
+  'going/[id]': GoingScreen,
 };
 
 export const renderApp = (initialUrl: string) => renderRouter(APP_ROUTES, { initialUrl });

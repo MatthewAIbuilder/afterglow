@@ -22,6 +22,7 @@ import { useToday } from '../../lib/useToday';
 import { leftToRate } from './tune';
 import { YourFestival } from '../plan/YourFestival';
 import { haptic } from '../../lib/haptics';
+import { FriendsGoing } from '../social/FriendsGoing';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
@@ -129,6 +130,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               </Pressable>
             )}
           </View>
+          {/* People you follow (and others) who show this festival on their profile. */}
+          <FriendsGoing festivalId={whole.id} />
         </View>
 
         {whole.weekends && whole.weekends.length > 1 ? <WeekendPicker festival={whole} shown={festival.lineup.length} /> : null}

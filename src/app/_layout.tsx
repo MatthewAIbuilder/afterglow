@@ -55,6 +55,7 @@ export default function RootLayout() {
         <Stack.Screen name="u/[handle]" />
         <Stack.Screen name="people" />
         <Stack.Screen name="follows/[handle]" />
+        <Stack.Screen name="going/[id]" />
         <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen

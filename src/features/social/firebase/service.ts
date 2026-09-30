@@ -254,6 +254,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         return [...out.values()].slice(0, 20);
       }),
 
+    profilesGoingTo: (festivalId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'profiles'), where('festivals', 'array-contains', festivalId), limit(max)));
+        return snap.docs.map((d) => profileFromDoc(d.id, d.data())).filter((p): p is Profile => !!p);
+      }),
+
     shareMemory: (input, onProgress) =>
       guard(async () => {
         const user = me();

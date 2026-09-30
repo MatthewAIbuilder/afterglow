@@ -125,6 +125,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (q.length < 2) return [];
       return [...profiles.values()].filter((p) => p.handle.startsWith(q) || p.displayName.toLowerCase().startsWith(q));
     },
+    async profilesGoingTo(festivalId, max) {
+      return [...profiles.values()].filter((p) => p.festivals.includes(festivalId)).slice(0, max);
+    },
     async shareMemory(input: ShareInput, onProgress) {
       const u = me();
       const p = profiles.get(u.uid);

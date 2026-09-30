@@ -87,6 +87,10 @@ useRankedFeed(activeIndex, focus, community) → ClipCard → ClipPlayer → Nat
 - **Public**: who follows whom is visible to anyone signed in, like profiles. Deleting your account removes your follows both ways.
 - Not yet: notifications for new followers.
 
+## Who else is going
+
+Festival pages show who else is going: people you follow first, then others on Afterglow ("Maya and 2 others you follow are going, plus 12 others on Afterglow"), with their faces; tapping opens the full list (`going/[id].tsx`) with Follow beside each. It reads `profiles` whose shown festivals include this one (`profilesGoingTo`, up to 200), so only people who switched on "Show festivals I'm going to" appear; you and anyone you blocked never do.
+
 ## Likes and the bell
 
 - **One like everywhere.** Liking a video from the crowd (Discover's heart or double-tap, Your clips, or the heart on the shared video itself) is the same reaction on `community:<sharedId>`: it shapes your taste like any clip and, once you have a profile, the person who filmed it sees it. Without a profile the like stays on your phone, and the shared video says so.

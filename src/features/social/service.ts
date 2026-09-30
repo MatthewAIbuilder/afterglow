@@ -46,6 +46,8 @@ export interface SocialService {
   setAvatar(uri: string | null): Promise<Profile>;
   handleAvailable(handle: string): Promise<boolean>;
   searchProfiles(query: string): Promise<Profile[]>;
+  /** Profiles that show this festival among the ones they're going to (only people who switched that on), at most `max`. */
+  profilesGoingTo(festivalId: string, max: number): Promise<Profile[]>;
 
   shareMemory(input: ShareInput, onProgress?: (share: number) => void): Promise<SharedMemory>;
   unshareMemory(sharedId: string): Promise<void>;

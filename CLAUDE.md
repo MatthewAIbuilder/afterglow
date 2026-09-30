@@ -122,6 +122,11 @@ Milestones 5 to 10 are merged into `main`. Milestones 6.5 (Discover playback), 7
   - *Sync*: `ReminderSync` computes `festivalRoute` for festivals switched on (your weekend, live taste and must-sees) and schedules festival + set reminders together. Opening the app and your own changes (going, the switch) sync at once and may ask for permission; a route that moved because of likes or stars resyncs 600 ms later and never asks.
   - *UI*: `features/plan/SetReminderToggle.tsx` ("Remind me before each set", a switch) above the Full day route in `Timetable`, only when `canRemindSets` and not on web. No festival in the catalogue has both dates and set times yet (the demo Solstice has no dates), so it appears once real set times arrive.
   - *Tests*: `features/notifications/__tests__/setReminders.test.ts`, `features/plan/__tests__/setReminderToggle.test.tsx`.
+- **Who else is going (Milestone 51, branch `claude/friends-going`, stacked on Milestone 50's branch, awaiting review and phone testing)**: the first step of friends at the festival.
+  - `SocialService.profilesGoingTo(festivalId, max)` (Firebase: `profiles` where `festivals` array-contains, no new index or rule; `fakeSocial` mirrors it). Only profiles with "Show festivals I'm going to" on list festivals, so only they appear.
+  - Pure `features/social/going.ts`: `splitGoers(profiles, { following, blocked, me })` (people you follow, then others, A to Z; never you or anyone blocked; deduped) and `goersLine` ("Maya is going", "Maya and 3 others you follow are going, plus 12 others on Afterglow", "2 people on Afterglow are going").
+  - `useGoers(festivalId)` (`features/social/useGoers.ts`: up to `GOERS_MAX` 200, cached per festival for 5 min at module level, `forgetGoers` for tests; undefined when signed out or not set up). `FriendsGoing` (under the festival page's pills: up to 4 faces, the line, opens `going/[id].tsx`: People you follow, then Also going, PersonRows with Follow, and a note that only people who show their festivals appear). Nothing shows when no one else is going.
+  - *Tests*: `features/social/__tests__/going.test.ts`, `src/app/__tests__/going.test.tsx`.
 - **Your festival** (Milestone 5) on each festival page. Before set times: lineup ranked into Must see / Strong match / Explore from the live match. After set times: day-by-day timeline, clashes grouped with a suggestion (clear winner, close call, or your starred pick, plus how much of the other set you can still catch), explore picks as discoveries when you're free or as a quiet alternative. A star marks a personal must-see at that festival only (festivalId + artistId); it's a planning preference stored apart from reactions and never changes the match. Artist pages opened from a festival get a `festival` route param and star for that festival; opened elsewhere they show no star.
 
 Do not start the next milestone unless asked.
@@ -164,6 +169,7 @@ src/
     people.tsx                Find people (stack push)
     follows/[handle].tsx      Someone's followers and who they follow (stack push from a profile)
     likes/[id].tsx            Who liked a video you shared (modal from the shared video)
+    going/[id].tsx            Who else is going to a festival (stack push from the festival page)
     sound-scope.tsx           Which lineup My Sound shows (form sheet from My Sound)
     plan-card/[id].tsx        Share your plan as a picture or text (modal from Your festival)
     (tabs)/lineup.tsx         Your lineup (festival page for where you're going)
