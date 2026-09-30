@@ -378,6 +378,20 @@ describe('Festivals', () => {
     await settle();
     expect(app.queryByText(/Where to be all day/)).toBeNull();
   });
+
+  it('shows every set of the day as a timetable', async () => {
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    await fireEvent.press(app.getByLabelText('All sets, as a timetable'));
+    await settle();
+    expect(app.getByText('Bass Tent')).toBeTruthy();
+    expect(app.getByText('The Warehouse')).toBeTruthy();
+    const block = app.getByLabelText(/^ILLENIUM, 11:40 PM to 1:10 AM, Main Stage, /);
+    expect(app.getByText('10 PM', { includeHiddenElements: true })).toBeTruthy();
+    await fireEvent.press(block);
+    await settle();
+    expect(app.getAllByText('ILLENIUM').length).toBeGreaterThan(0);
+  });
 });
 
 describe('Tune your lineup', () => {

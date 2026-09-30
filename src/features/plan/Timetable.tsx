@@ -17,8 +17,9 @@ import type { ClashVerdict, Schedule, ScheduleDay, ScheduleItem, TimedPick } fro
 import type { DayRoute } from './route';
 import { RouteList } from './RouteList';
 import { SetReminderToggle } from './SetReminderToggle';
+import { TimetableGrid } from './TimetableGrid';
 
-type Mode = 'route' | 'picks';
+type Mode = 'route' | 'picks' | 'grid';
 
 /** After set times: your picks as a day-by-day timeline, with clashes called out. */
 export function Timetable({
@@ -54,7 +55,9 @@ export function Timetable({
       <DayPicker days={schedule.days} value={current.day} onChange={setDay} />
       <LayoutAnimationConfig skipEntering>
         <Animated.View key={`${mode}:${current.day}`} entering={reduceMotion ? undefined : FadeIn.duration(220)}>
-          {mode === 'route' && dayRoute ? (
+          {mode === 'grid' ? (
+            <TimetableGrid festival={festival} day={current.day} route={dayRoute} />
+          ) : mode === 'route' && dayRoute ? (
             <RouteList festival={festival} route={dayRoute} />
           ) : (
             <>
@@ -99,11 +102,12 @@ function daySummary(d: ScheduleDay) {
   return `${sets}, ${d.clashes} ${d.clashes === 1 ? 'clash' : 'clashes'} to decide.`;
 }
 
-/** Full day (the set-to-set route) or your picks (with clashes called out). */
+/** Full day (the set-to-set route), your picks (with clashes called out), or every set as a timetable. */
 function ModePicker({ value, onChange }: { value: Mode; onChange: (m: Mode) => void }) {
-  const options: { key: Mode; label: string }[] = [
-    { key: 'route', label: 'Full day' },
-    { key: 'picks', label: 'Your picks' },
+  const options: { key: Mode; label: string; a11y: string }[] = [
+    { key: 'route', label: 'Full day', a11y: 'Full day, set to set' },
+    { key: 'picks', label: 'Your picks', a11y: 'Your picks and clashes' },
+    { key: 'grid', label: 'All sets', a11y: 'All sets, as a timetable' },
   ];
   return (
     <View style={styles.modes} accessibilityRole="tablist">
@@ -114,7 +118,7 @@ function ModePicker({ value, onChange }: { value: Mode; onChange: (m: Mode) => v
             key={o.key}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            accessibilityLabel={o.key === 'route' ? 'Full day, set to set' : 'Your picks and clashes'}
+            accessibilityLabel={o.a11y}
             onPress={() => {
               if (on) return;
               haptic.select();

@@ -64,6 +64,7 @@ describe('architecture', () => {
       'features/notifications/inbox.ts',
       'features/notifications/reminders.ts',
       'features/plan/route.ts',
+      'features/plan/grid.ts',
       'features/festivals/request.ts',
       'features/festivals/days.ts',
       'features/festivals/weekend.ts',
