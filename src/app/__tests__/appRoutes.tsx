@@ -25,6 +25,7 @@ import PlanCardScreen from '../plan-card/[id]';
 import RecapScreen from '../recap/[id]';
 import PickArtistsScreen from '../pick-artists';
 import CompareScreen from '../compare';
+import YearScreen from '../year/[year]';
 import PosterScreen from '../poster/[id]';
 import ProfileEditScreen from '../profile-edit';
 import RequestScreen from '../request';
@@ -62,6 +63,7 @@ export const APP_ROUTES = {
   'recap/[id]': RecapScreen,
   'pick-artists': PickArtistsScreen,
   compare: CompareScreen,
+  'year/[year]': YearScreen,
   music: MusicScreen,
   'music-auth': MusicAuthReturn,
   'memory-tag': MemoryTagScreen,

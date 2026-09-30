@@ -50,6 +50,7 @@ describe('architecture', () => {
       'features/festivals/near.ts',
       'features/festivals/compare.ts',
       'features/recap/recap.ts',
+      'features/recap/year.ts',
       'features/festivals/search.ts',
       'features/festivals/when.ts',
       'features/recommend/feed.ts',

@@ -15,7 +15,7 @@ import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
 import { useCrews } from '../../state/crews';
 import { useGoing } from '../../state/going';
-import { useRecapFestivals } from '../../features/recap/useRecap';
+import { useRecapFestivals, useYear } from '../../features/recap/useRecap';
 import { useMemories } from '../../state/memories';
 import { useMusic } from '../../state/music';
 import { useSocial } from '../../state/social';
@@ -45,6 +45,9 @@ export default function ProfileScreen() {
   const { going } = useGoing();
   // Festivals that are over and you were part of: a recap each.
   const recaps = useRecapFestivals();
+  // Your year so far, once there's something in it.
+  const thisYear = useToday().getFullYear();
+  const yearCard = useYear(thisYear);
   const { ratings } = useRatings();
   const { reactions } = useReactions();
   const pool = useClipPool();
@@ -209,6 +212,23 @@ export default function ProfileScreen() {
               })}
             </View>
           )}
+
+          {/* Your year so far: festivals, top artists, sound and numbers, to share. */}
+          {yearCard ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push({ pathname: '/year/[year]', params: { year: String(thisYear) } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Your ${thisYear} on Afterglow. ${yearCard.subtitle}.`}
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
+            >
+              <Text style={styles.rowText}>Your {thisYear}</Text>
+              <Text style={styles.rowCount}>{yearCard.subtitle.endsWith('so far') ? 'So far' : 'Ready to share'}</Text>
+              <ChevronIcon color={color.moonFaint} size={12} />
+            </Pressable>
+          ) : null}
 
           {recaps.length > 0 && (
             <View style={styles.block}>

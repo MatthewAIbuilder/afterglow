@@ -9,6 +9,10 @@ import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { bySoonest } from '../festivals/shelves';
 import { festivalRecap, hasRecap, type RecapInput } from './recap';
+import { yearCard } from './year';
+import { tasteMix } from '../taste/lean';
+import { useSeen } from '../../state/seen';
+import { useWeekends } from '../../state/weekends';
 
 /** Everything a recap is built from, for one festival. */
 function useRecapInputs() {
@@ -47,4 +51,33 @@ export function useRecapFestivals(): Festival[] {
   const { festivals } = useCatalog();
   const today = useToday();
   return useMemo(() => bySoonest(festivals.filter((f) => hasRecap(inputs(f))), today).reverse(), [festivals, inputs, today]);
+}
+
+/** Your year on Afterglow as a card (undefined when there's nothing yet). */
+export function useYear(year: number) {
+  const { going } = useGoing();
+  const { memories } = useMemories();
+  const { ratings } = useRatings();
+  const { taste, informed } = useTaste();
+  const { seen } = useSeen();
+  const catalog = useCatalog();
+  const today = useToday();
+  const { forYou } = useWeekends();
+  return useMemo(
+    () =>
+      yearCard({
+        year,
+        festivals: catalog.festivals.map(forYou),
+        going,
+        memories,
+        seen,
+        ratings,
+        taste,
+        informed,
+        sounds: tasteMix(catalog.artists, taste, informed),
+        artist: catalog.artist,
+        today,
+      }),
+    [year, catalog, forYou, going, memories, seen, ratings, taste, informed, today],
+  );
 }
