@@ -93,3 +93,51 @@ credited "Photo from Deezer" at the bottom of the artist page.
 - Deezer's photos belong to Deezer and the artists. That's fine for testing;
   before a public launch, check Deezer's terms for showing them in an app,
   or switch to another source.
+
+## Discover clips from YouTube (automatic)
+
+Every night, after the festival and photo steps, the Website workflow runs
+`scripts/youtube-clips.ts`. For artists on upcoming festivals who have no clip
+yet (festivals you added by hand first, soonest first, in billing order), it
+searches YouTube for "<artist> live set" and adds the best match to Discover
+as a one-minute clip, a third of the way into the set (past the intro).
+
+- **Any channel** (the owner's choice), but the video must name the artist,
+  look like a set ("live", "set", "full set", festival words), run at least
+  10 minutes, be public and allow playing inside other apps. Reactions,
+  interviews, trailers, aftermovies, music videos and lyric videos are left
+  out. The artist's own channel and well-known festival and live-set channels
+  (Insomniac, Tomorrowland, Lost Lands, Boiler Room, Cercle and others) come
+  first.
+- YouTube's free daily allowance covers about 90 searches a night, so
+  Discover fills up over a few nights. Clips found before are kept; artists
+  with no set found are tried again after a month.
+- The clip's credit line in Discover names the YouTube channel. Clips you add
+  yourself in `catalogue/afterglow.json` always stay; an artist who already
+  has one isn't searched.
+- If a clip looks wrong, tell Claude the artist: it can be left out.
+
+### Setting it up (one time)
+
+You need a free YouTube API key from Google. **Never paste it into a chat
+or a file in the project**: it only goes into GitHub's secret settings.
+
+1. Go to <https://console.cloud.google.com/> and sign in with your Google
+   account.
+2. At the top, click the project picker, then **New project**. Name it
+   `Afterglow` and click **Create**. Make sure it's selected.
+3. In the search bar, type **YouTube Data API v3**, open it and click
+   **Enable**.
+4. Open **APIs & Services → Credentials → Create credentials → API key**.
+   Copy the key it shows.
+5. Click **Edit API key** (or the key's name). Under **API restrictions**,
+   choose **Restrict key**, tick **YouTube Data API v3**, and **Save**.
+6. On GitHub: **Settings → Secrets and variables → Actions → New repository
+   secret**. Name: `YOUTUBE_API_KEY`. Secret: paste the key. **Add secret**.
+7. To run it straight away: **Actions → Website → Run workflow → Run
+   workflow**. When it finishes, the **YouTube clips** step says how many
+   clips it found. Open Discover in the app (pick "Your mix" or a festival)
+   to see them.
+
+There's no cost: the key stays within YouTube's free daily allowance, and
+Google doesn't charge for it unless you add billing yourself.

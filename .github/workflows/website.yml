@@ -27,6 +27,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
+      HAS_YOUTUBE: ${{ secrets.YOUTUBE_API_KEY != '' }}
       HAS_EDMTRAIN: ${{ secrets.EDMTRAIN_API_KEY != '' && github.event_name != 'pull_request' }}
       CAN_DEPLOY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
@@ -63,6 +64,13 @@ jobs:
         run: |
           curl -fsS https://afterglowmusic.web.app/catalogue.json -o /tmp/published.json || true
           npx --yes tsx@4 scripts/artist-photos.ts /tmp/published.json || echo "::warning::Artist photos were skipped tonight."
+
+      # Discover clips: the best live set on YouTube for artists on upcoming festivals, a few a night (docs/events-import.md).
+      - name: YouTube clips
+        if: github.event_name != 'pull_request' && env.HAS_YOUTUBE == 'true'
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: npx --yes tsx@4 scripts/youtube-clips.ts /tmp/published.json || echo "::warning::YouTube clips were skipped tonight."
 
       - name: Build the website
         run: npm run build:web
