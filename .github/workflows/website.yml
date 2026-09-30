@@ -10,6 +10,9 @@ on:
   pull_request:
   # "Run workflow" on the Actions tab republishes main by hand.
   workflow_dispatch:
+  # Every night: fresh festivals from EDMTrain (docs/events-import.md), published with the site.
+  schedule:
+    - cron: '17 9 * * *'
 
 permissions:
   contents: read
@@ -24,6 +27,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
+      HAS_EDMTRAIN: ${{ secrets.EDMTRAIN_API_KEY != '' && github.event_name != 'pull_request' }}
       CAN_DEPLOY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +44,18 @@ jobs:
 
       - name: Tests
         run: npx jest --ci
+
+      # public/catalogue.json is what the app reads (CATALOG_URL). With the EDMTrain key it's
+      # rebuilt from EDMTrain; if that fails, the live copy is kept so a bad night never empties it.
+      - name: Festivals from EDMTrain
+        if: env.HAS_EDMTRAIN == 'true'
+        env:
+          EDMTRAIN_API_KEY: ${{ secrets.EDMTRAIN_API_KEY }}
+        run: |
+          if ! npx --yes tsx@4 scripts/import-edmtrain.ts; then
+            echo "::warning::EDMTrain import failed; keeping the live catalogue."
+            curl -fsS https://afterglowmusic.web.app/catalogue.json -o /tmp/live.json && node -e "JSON.parse(require('fs').readFileSync('/tmp/live.json','utf8'))" && cp /tmp/live.json public/catalogue.json || true
+          fi
 
       - name: Build the website
         run: npm run build:web
