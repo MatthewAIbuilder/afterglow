@@ -98,7 +98,7 @@ jest.mock('expo-web-browser', () => ({
 jest.mock('expo-file-system', () => {
   const files = new Map<string, string>();
   const join = (...parts: unknown[]) =>
-    parts.map((p) => (typeof p === 'string' ? p : (p as { uri: string }).uri)).join('/').replace(/\/+/g, '/').replace(':/', '://');
+    parts.map((p) => (typeof p === 'string' ? p : (p as { uri: string }).uri)).join('/').replace(/(?<![:/])\/{2,}/g, '/');
   class File {
     uri: string;
     constructor(...parts: unknown[]) {

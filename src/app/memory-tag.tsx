@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../components/ArtistAvatar';
@@ -99,10 +99,16 @@ export default function MemoryTagScreen() {
 
   const tag: MemoryTagInput = { festivalId, night: festivalId ? night : undefined, artistId: chosenArtist };
 
-  // Nothing to tag (opened without a video, or the memory was deleted): step back.
+  // Nothing to tag (opened without a video, or the memory was deleted): step back, unless we're already leaving
+  // (saving clears the draft, and going back twice would close the screen underneath too).
   const missing = !existing && !draft;
+  const leaving = useRef(false);
+  const leave = () => {
+    leaving.current = true;
+    router.back();
+  };
   useEffect(() => {
-    if (missing && router.canGoBack()) router.back();
+    if (missing && !leaving.current && router.canGoBack()) router.back();
   }, [missing]);
 
   const player = useVideoPlayer(videoUri ?? null, (p) => {
@@ -115,7 +121,7 @@ export default function MemoryTagScreen() {
     if (existing) {
       mem.tag(existing.id, tag);
       haptic.settle();
-      router.back();
+      leave();
       return;
     }
     const kept = await mem.keepDraft(tag);
@@ -124,7 +130,7 @@ export default function MemoryTagScreen() {
       return;
     }
     haptic.settle();
-    router.back();
+    leave();
   };
 
   const cancel = () => {
@@ -135,6 +141,7 @@ export default function MemoryTagScreen() {
           text: 'Discard',
           style: 'destructive',
           onPress: () => {
+            leaving.current = true;
             mem.setDraft(undefined);
             router.back();
           },
@@ -142,6 +149,7 @@ export default function MemoryTagScreen() {
       ]);
       return;
     }
+    leaving.current = true;
     if (draft) mem.setDraft(undefined);
     router.back();
   };

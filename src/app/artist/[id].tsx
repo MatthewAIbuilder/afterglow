@@ -18,6 +18,8 @@ import { mostSimilar } from '../../features/taste/similarity';
 import { listenLinks } from '../../features/taste/listen';
 import { artistSignals, whyLine } from '../../features/taste/why';
 import { PROVIDER_NAME } from '../../features/music/models';
+import { MemoryTile } from '../../features/memories/MemoryTile';
+import { useMemories } from '../../state/memories';
 import { dayList, daysOf } from '../../features/festivals/days';
 import { describeSet, formatDuration } from '../../features/festivals/format';
 import { setLine } from '../../features/festivals/when';
@@ -39,10 +41,12 @@ export default function ArtistScreen() {
   const artist = catalog.artist(id);
   const insets = useSafeAreaInsets();
   const { taste, informed, similarity, importedFrom, imported, importing } = useTaste();
+  const { memories, uriOf } = useMemories();
   const { isMustSee, toggleMustSee } = usePlan();
   const { reactions } = useReactions();
   const { ratings } = useRatings();
   if (!artist) return null;
+  const yours = memories.filter((m) => m.artistId === artist.id);
   const context = festivalId ? catalog.festival(festivalId) : undefined;
   const starFestival = context?.lineup.includes(artist.id) ? context : undefined;
   const mustSee = !!starFestival && isMustSee(starFestival.id, artist.id);
@@ -182,6 +186,24 @@ export default function ArtistScreen() {
           </Section>
         )}
 
+        {/* Your own videos of them, from Memories. */}
+        {yours.length > 0 && (
+          <Section title="Your memories">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.memoryRow} style={styles.memoryScroll}>
+              {yours.map((m) => (
+                <MemoryTile
+                  key={m.id}
+                  memory={m}
+                  thumbUri={m.thumb ? uriOf(m.thumb) : undefined}
+                  width={96}
+                  label={`Your memory of ${artist.name}${m.night ? `, ${m.night}` : ''}`}
+                  onPress={() => router.push({ pathname: '/memory/[id]', params: { id: m.id } })}
+                />
+              ))}
+            </ScrollView>
+          </Section>
+        )}
+
         {/* Somewhere to hear them before you rate them. Plain links out to the services' own search. */}
         <Section title="Listen">
           <View style={styles.listen}>
@@ -284,6 +306,8 @@ const styles = StyleSheet.create({
   },
   listenText: { ...type.label, color: color.moon },
   section: { marginTop: space.xxl, paddingHorizontal: space.xl },
+  memoryScroll: { marginHorizontal: -space.xl },
+  memoryRow: { paddingHorizontal: space.xl, gap: space.sm },
   sectionTitle: { ...type.title, fontSize: 22, color: color.moon, marginBottom: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md, gap: space.md },
   rowTitle: { ...type.headline, color: color.moon },

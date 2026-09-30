@@ -175,6 +175,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
     .minDuration(HOLD_MS)
     .maxDistance(12)
     .enabled(!!onHold)
+    .withTestId(`hold-${clip.id}`)
     .runOnJS(true)
     .onStart(() => {
       haptic.tap();
