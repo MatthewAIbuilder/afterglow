@@ -31,22 +31,31 @@ export default function PublicProfileScreen() {
   const [profile, setProfile] = useState<Profile | null | undefined>();
   const [memories, setMemories] = useState<SharedMemory[]>([]);
   const [problem, setProblem] = useState<string | undefined>();
+  const [memoriesFailed, setMemoriesFailed] = useState(false);
 
   const signedIn = !!social.user;
   useEffect(() => {
     if (!signedIn) return;
     let live = true;
     (async () => {
+      let p: Profile | null;
       try {
-        const p = await social.service.profileByHandle(handle ?? '');
-        const ms = p ? await social.service.memoriesOf(p.uid) : [];
-        if (!live) return;
-        setProfile(p);
-        setMemories(ms);
+        p = await social.service.profileByHandle(handle ?? '');
       } catch (e) {
         if (!live) return;
         setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
         setProfile(null);
+        return;
+      }
+      if (!live) return;
+      setProfile(p);
+      if (!p) return;
+      // Memories load on their own: if they can't, the profile still shows.
+      try {
+        const ms = await social.service.memoriesOf(p.uid);
+        if (live) setMemories(ms);
+      } catch {
+        if (live) setMemoriesFailed(true);
       }
     })();
     return () => {
@@ -153,7 +162,9 @@ export default function PublicProfileScreen() {
             })}
           </View>
         ) : (
-          <Text style={styles.body}>{mine ? 'Share a memory from Memories and it shows up here.' : 'Nothing shared yet.'}</Text>
+          <Text style={styles.body}>
+            {memoriesFailed ? 'Couldn’t load memories just now.' : mine ? 'Share a memory from Memories and it shows up here.' : 'Nothing shared yet.'}
+          </Text>
         )}
       </>
     );
