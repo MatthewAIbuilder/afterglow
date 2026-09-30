@@ -1,4 +1,4 @@
-import type { Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
+import type { Activity, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -19,7 +19,11 @@ export type ShareInput = {
   artistId?: string;
   capturedAt: string;
   durationSec?: number;
+  width?: number;
+  height?: number;
 };
+
+export type FollowCounts = { followers: number; following: number };
 
 export type ReportTarget = { kind: 'profile' | 'memory'; id: string; ownerUid: string };
 
@@ -46,7 +50,32 @@ export interface SocialService {
   shareMemory(input: ShareInput, onProgress?: (share: number) => void): Promise<SharedMemory>;
   unshareMemory(sharedId: string): Promise<void>;
   memoriesOf(uid: string): Promise<SharedMemory[]>;
+  /** Shared memories tagged with this festival, newest first (community clips in Discover). */
+  festivalMemories(festivalId: string, max: number): Promise<SharedMemory[]>;
+  /** The newest shared memories from every festival (community clips in your mix). */
+  recentMemories(max: number): Promise<SharedMemory[]>;
   sharedMemory(id: string): Promise<SharedMemory | null>;
+
+  /** Follow someone (not yourself). Following twice is the same as once. */
+  follow(uid: string): Promise<void>;
+  unfollow(uid: string): Promise<void>;
+  /** Stop someone following you (used when you block them). */
+  removeFollower(uid: string): Promise<void>;
+  /** Who this person follows / who follows them, newest first, at most `max`. */
+  following(uid: string, max: number): Promise<string[]>;
+  followers(uid: string, max: number): Promise<string[]>;
+  followCounts(uid: string): Promise<FollowCounts>;
+  /** Shared memories from these people, newest first (Following in Discover). */
+  memoriesBy(uids: string[], max: number): Promise<SharedMemory[]>;
+
+  /** Like someone else's shared video (`owner` is who shared it). Liking twice is the same as once. */
+  like(memoryId: string, owner: string): Promise<void>;
+  unlike(memoryId: string): Promise<void>;
+  likeCount(memoryId: string): Promise<number>;
+  /** Who liked a video, newest first. */
+  likedBy(memoryId: string, max: number): Promise<string[]>;
+  /** What happened to you lately (new followers, likes on your videos), newest first. */
+  activity(max: number): Promise<Activity[]>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;

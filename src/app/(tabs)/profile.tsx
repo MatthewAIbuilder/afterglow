@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -8,12 +8,15 @@ import { NightSky } from '../../components/NightSky';
 import { ChevronIcon, ProfileIcon } from '../../components/TabIcons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { haptic } from '../../lib/haptics';
+import { VERSION_LINE } from '../../lib/version';
 import { useCatalog } from '../../state/catalog';
+import { useClipPool } from '../../state/community';
 import { useGoing } from '../../state/going';
 import { useMemories } from '../../state/memories';
 import { useMusic } from '../../state/music';
 import { useSocial } from '../../state/social';
 import { PROVIDER_NAME } from '../../features/music/models';
+import { followersLabel, followingLabel } from '../../features/social/copy';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { SOUND_LABEL } from '../../data/models';
@@ -38,7 +41,8 @@ export default function ProfileScreen() {
   const { going } = useGoing();
   const { ratings } = useRatings();
   const { reactions } = useReactions();
-  const clips = yourClipCount(yourClips(catalog.clips, reactions));
+  const pool = useClipPool();
+  const clips = yourClipCount(yourClips(pool.clips, reactions));
   const rated = Object.keys(ratings).length;
   const festivals = going.filter((id) => catalog.festival(id)).length;
   // Your sound in three bars, from the live taste.
@@ -54,6 +58,27 @@ export default function ProfileScreen() {
   const { memories } = useMemories();
   const social = useSocial();
   const me = social.profile;
+  // Your followers, fetched each time the tab comes into view; who you follow is known on the phone.
+  const [followers, setFollowers] = useState<{ uid: string; n: number } | undefined>();
+  const meUid = me?.uid;
+  useFocusEffect(
+    useCallback(() => {
+      if (!meUid) return;
+      let live = true;
+      social.service
+        .followCounts(meUid)
+        .then((c) => live && setFollowers({ uid: meUid, n: c.followers }))
+        .catch(() => {});
+      return () => {
+        live = false;
+      };
+    }, [meUid, social.service]),
+  );
+  const openFollows = (list: 'followers' | 'following') => {
+    if (!me) return;
+    haptic.select();
+    router.push({ pathname: '/follows/[handle]', params: { handle: me.handle, list } });
+  };
   const openSelf = () => {
     haptic.select();
     if (!social.user) router.push('/account');
@@ -93,6 +118,16 @@ export default function ProfileScreen() {
           <Text style={styles.title}>{me?.displayName ?? 'You'}</Text>
           <Text style={styles.meta}>{me ? `@${me.handle}` : 'Your festivals and your sound, in one place.'}</Text>
         </Pressable>
+        {me ? (
+          <View style={styles.follows}>
+            <Pressable onPress={() => openFollows('followers')} accessibilityRole="button" hitSlop={6}>
+              <Text style={styles.followCount}>{followers?.uid === me.uid ? followersLabel(followers.n) : 'Followers'}</Text>
+            </Pressable>
+            <Pressable onPress={() => openFollows('following')} accessibilityRole="button" hitSlop={6}>
+              <Text style={styles.followCount}>{followingLabel(social.following.size)}</Text>
+            </Pressable>
+          </View>
+        ) : null}
         {social.availability.ok && social.ready ? (
           <View style={styles.profileActions}>
             {me ? (
@@ -213,14 +248,15 @@ export default function ProfileScreen() {
 
           <View style={styles.soon}>
             <Text style={styles.soonKicker}>Coming soon</Text>
-            <Text style={styles.soonTitle}>Friends</Text>
+            <Text style={styles.soonTitle}>{social.availability.ok ? 'Festival crews' : 'Friends'}</Text>
             <Text style={styles.soonBody}>
               {social.availability.ok
-                ? 'Follow friends, see who else is going, and plan sets together.'
+                ? 'Plan sets together with the people you follow, and see who else is going.'
                 : 'Your festival profile, friends, and seeing who else is going.'}
             </Text>
           </View>
         </View>
+        <Text style={styles.version}>{VERSION_LINE}</Text>
       </ScrollView>
     </View>
   );
@@ -242,6 +278,9 @@ function SmallButton({ label, onPress, glow }: { label: string; onPress: () => v
 }
 
 const styles = StyleSheet.create({
+  version: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.xl },
+  follows: { flexDirection: 'row', justifyContent: 'center', gap: space.lg, marginTop: space.sm },
+  followCount: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   profileActions: { flexDirection: 'row', justifyContent: 'center', gap: space.sm, marginTop: space.lg },
   small: {
     paddingHorizontal: space.lg,

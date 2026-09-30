@@ -1,14 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AppState } from 'react-native';
+import { activityNotices } from '../features/notifications/activity';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
+import type { Activity, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
 import { useGoing } from './going';
+import { useSocial } from './social';
 import { useWeekends } from './weekends';
 
-/** The bell's notices, worked out from your festivals, and which ones you've read (saved on the device). */
+/**
+ * The bell's notices: news about your festivals (worked out on the phone),
+ * then new followers and likes on your videos (read from your profile's
+ * activity when you're signed in), and which ones you've read (saved on the
+ * device). Must sit inside SocialProvider.
+ */
 type Ctx = {
   list: Notice[];
+  /** Read your activity again (the bell's screen does when it opens). */
+  refresh: () => void;
   read: ReadonlySet<string>;
   markRead: (ids: string[]) => void;
   /** Read notices have loaded, so the bell never flashes a count it shouldn't. */
@@ -16,6 +27,8 @@ type Ctx = {
 };
 
 const STORAGE_KEY = 'noticesRead.v1';
+/** How much recent activity the bell reads. */
+const ACTIVITY_MAX = 30;
 
 const NoticesContext = createContext<Ctx | null>(null);
 
@@ -52,7 +65,57 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   const { forYou } = useWeekends();
   const mine = useMemo(() => festivals.map(forYou), [festivals, forYou]);
   const list = useMemo(() => notices(mine, going, today), [mine, going, today]);
-  const value = useMemo<Ctx>(() => ({ list, read, markRead, hydrated }), [list, read, markRead, hydrated]);
+  // Your activity: fetched when you sign in, when the app comes back, and when the bell's screen asks.
+  const social = useSocial();
+  const uid = social.user?.uid;
+  const [activity, setActivity] = useState<{ uid: string; items: Activity[]; people: Record<string, Profile | null>; videos: Record<string, string> }>();
+  const [tick, setTick] = useState(0);
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && refresh());
+    return () => sub.remove();
+  }, [refresh]);
+  const { artist } = useCatalog();
+  useEffect(() => {
+    if (!uid || !social.availability.ok) return;
+    let live = true;
+    (async () => {
+      try {
+        const items = await social.service.activity(ACTIVITY_MAX);
+        const who = [...new Set(items.map((a) => a.from))];
+        const people: Record<string, Profile | null> = {};
+        await Promise.all(who.map(async (u) => (people[u] = await social.service.profileOf(u).catch(() => null))));
+        // What your liked videos are of, from what you've shared.
+        const videos: Record<string, string> = {};
+        if (items.some((a) => a.kind === 'like')) {
+          for (const m of await social.service.memoriesOf(uid).catch(() => [])) {
+            const name = m.artistId ? artist(m.artistId)?.name : undefined;
+            if (name) videos[m.id] = `your video of ${name}`;
+          }
+        }
+        if (live) setActivity({ uid, items, people, videos });
+      } catch {
+        // Keep what was there; the next refresh tries again.
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [uid, social.availability.ok, social.service, artist, tick]);
+  const activityList = useMemo(
+    () =>
+      activity && activity.uid === uid
+        ? activityNotices(activity.items, {
+            handleOf: (u) => activity.people[u]?.handle,
+            videoOf: (id) => activity.videos[id],
+            blocked: social.blocked,
+          })
+        : [],
+    [activity, uid, social.blocked],
+  );
+  const all = useMemo(() => [...list, ...activityList], [list, activityList]);
+
+  const value = useMemo<Ctx>(() => ({ list: all, refresh, read, markRead, hydrated }), [all, refresh, read, markRead, hydrated]);
   return <NoticesContext.Provider value={value}>{children}</NoticesContext.Provider>;
 }
 

@@ -7,6 +7,9 @@ export const APP_NAME = 'Afterglow';
  */
 export const APP_ORIGIN = 'https://afterglow.app.local';
 
+/** The website, for links people share (profiles now; festivals and artists later). */
+export const WEB_URL = 'https://afterglowmusic.app';
+
 /**
  * Where "Request a festival" sends requests: an email address the team reads.
  * Empty means the request goes out through the phone's share sheet instead

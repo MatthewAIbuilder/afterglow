@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { color } from '../../theme/tokens';
 import type { ClipMedia } from './media';
+import { NativeVideoPlayer } from './NativeVideoPlayer';
 import { POSTER_MAX_WAIT_MS, showPoster } from './playback';
 import { YouTubePlayer } from './YouTubePlayer';
 
@@ -41,8 +42,9 @@ export type ClipPlayerProps = Common & {
   load: boolean;
 };
 
-/** What each provider's player implements. Only ClipPlayer renders one. */
-export type EngineProps = Common & {
+/** What each provider's player implements, for its own kind of media. Only ClipPlayer renders one. */
+export type EngineProps<M extends ClipMedia = ClipMedia> = Omit<Common, 'media'> & {
+  media: M;
   onReady: () => void;
   /** Frames are actually moving. */
   onStarted: () => void;
@@ -102,10 +104,9 @@ function ClipPlayerBase({ load, ...props }: ClipPlayerProps) {
 
   return (
     <View style={styles.frame}>
-      {load && media.provider === 'youtube' && (
-        <YouTubePlayer {...props} onReady={onReady} onStarted={onStarted} />
-      )}
-      {posterMounted && (
+      {load && media.provider === 'youtube' && <YouTubePlayer {...props} media={media} onReady={onReady} onStarted={onStarted} />}
+      {load && media.provider === 'video' && <NativeVideoPlayer {...props} media={media} onReady={onReady} onStarted={onStarted} />}
+      {posterMounted && !!media.posterUrl && (
         <Animated.View style={[StyleSheet.absoluteFill, posterStyle]} pointerEvents="none">
           <Image
             source={{ uri: media.posterUrl }}

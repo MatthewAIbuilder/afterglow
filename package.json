@@ -28,6 +28,7 @@
     "firebase": "^12.19.0",
     "obscenity": "^0.4.6",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-reanimated": "4.5.1",
@@ -35,6 +36,7 @@
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
     "react-native-view-shot": "5.1.0",
+    "react-native-web": "~0.21.0",
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.1"
   },
@@ -58,6 +60,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:web": "expo export --platform web --output-dir dist",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "lint": "expo lint"

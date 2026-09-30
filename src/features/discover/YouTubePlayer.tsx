@@ -3,6 +3,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { APP_ORIGIN } from '../../config/app';
 import type { EngineProps } from './ClipPlayer';
+import type { YouTubeMedia } from './media';
 import { canCountWatch, playedSpan, readPlayerReport, shouldPlay } from './playback';
 import { clipProgress, parsePlayerMessage, PLAYER_STATE, playerHtml } from './youtube';
 
@@ -25,7 +26,7 @@ function YouTubePlayerBase({
   onReady,
   onStarted,
   onFail,
-}: EngineProps) {
+}: EngineProps<YouTubeMedia>) {
   const { source } = media;
   const web = useRef<WebView>(null);
   const [ready, setReady] = useState(false);

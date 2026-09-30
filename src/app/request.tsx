@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckIcon } from '../components/TabIcons';
 import { APP_NAME, REQUEST_EMAIL } from '../config/app';
@@ -8,6 +8,7 @@ import { cleanRequest, requestMailto, requestText } from '../features/festivals/
 import { haptic } from '../lib/haptics';
 import { useRequests } from '../state/requests';
 import { color, radius, space, type } from '../theme/tokens';
+import { shareMessage } from '../lib/share';
 
 /**
  * Request a festival that isn't in the app yet: its name and, if you have
@@ -33,8 +34,8 @@ export default function RequestScreen() {
         done = true;
       } else {
         const { subject, body } = requestText(request, APP_NAME);
-        const result = await Share.share({ title: subject, message: body });
-        done = result.action !== Share.dismissedAction;
+        const outcome = await shareMessage(body, subject);
+        done = outcome === 'shared' || outcome === 'copied';
       }
     } catch {
       done = false;

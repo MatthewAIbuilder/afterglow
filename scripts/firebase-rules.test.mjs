@@ -10,7 +10,7 @@
  */
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'fs';
-import { doc, getDoc, setDoc, deleteDoc, writeBatch, updateDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, getDocs, getCountFromServer, setDoc, deleteDoc, writeBatch, updateDoc, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 const env = await initializeTestEnvironment({
@@ -70,6 +70,17 @@ await t('over-long fields and unknown fields refused', async () => {
   await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem6'), mem('mem6', 'uidA', { place: 'Austin' })));
   await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem7'), mem('mem7', 'uidA', { thumbUrl: 'http://x' })));
 });
+await t('a memory may record the video’s size, as numbers', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'mem8'), mem('mem8', 'uidA', { festivalId: 'acl-26', width: 1080, height: 1920 })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem9'), mem('mem9', 'uidA', { width: '1080' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'mem10'), mem('mem10', 'uidA', { height: 50000 })));
+});
+await t('Discover can list a festival’s shared memories, newest first, when signed in', async () => {
+  const q = (fs) => query(collection(fs, 'memories'), where('festivalId', '==', 'acl-26'), orderBy('createdAt', 'desc'), limit(80));
+  await assertSucceeds(getDocs(q(B.firestore())));
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'memories'), orderBy('createdAt', 'desc'), limit(80))));
+  await assertFails(getDocs(q(anon.firestore())));
+});
 await t('memories are never edited', () => assertFails(updateDoc(doc(A.firestore(), 'memories', 'mem1'), { artistId: 'x' })));
 await t('B can read but not delete A’s memory', async () => {
   await assertSucceeds(getDoc(doc(B.firestore(), 'memories', 'mem1')));
@@ -87,6 +98,66 @@ await t('reports: filed as yourself, never read back', async () => {
   await assertFails(setDoc(doc(B.firestore(), 'reports', 'r2'), { ...r, by: 'uidA' }));
   await assertFails(setDoc(doc(B.firestore(), 'reports', 'r3'), { ...r, reason: 'boring' }));
   await assertFails(getDoc(doc(B.firestore(), 'reports', 'r1')));
+});
+const follow = (from, to, over = {}) => ({ from, to, createdAt: now, ...over });
+await t('follows: someone you blocked can’t follow you', () => assertFails(setDoc(doc(B.firestore(), 'follows', 'uidB_uidA'), follow('uidB', 'uidA'))));
+await t('follows: A follows B', () => assertSucceeds(setDoc(doc(A.firestore(), 'follows', 'uidA_uidB'), follow('uidA', 'uidB'))));
+await t('follows: only as yourself, with the right id, not yourself, only people with a profile, no extra fields', async () => {
+  await assertFails(setDoc(doc(A.firestore(), 'follows', 'uidB_uidA'), follow('uidB', 'uidA')));
+  await assertFails(setDoc(doc(A.firestore(), 'follows', 'x_uidB'), follow('uidA', 'uidB')));
+  await assertFails(setDoc(doc(A.firestore(), 'follows', 'uidA_uidA'), follow('uidA', 'uidA')));
+  await assertFails(setDoc(doc(A.firestore(), 'follows', 'uidA_uidZ'), follow('uidA', 'uidZ')));
+  await assertFails(setDoc(doc(env.authenticatedContext('uidZ').firestore(), 'follows', 'uidZ_uidB'), follow('uidZ', 'uidB')));
+  await assertFails(setDoc(doc(A.firestore(), 'follows', 'uidA_uidB'), follow('uidA', 'uidB', { note: 'hi' })));
+});
+await t('follows: lists and counts for anyone signed in, not signed out', async () => {
+  const q = (fs) => query(collection(fs, 'follows'), where('to', '==', 'uidB'), orderBy('createdAt', 'desc'), limit(50));
+  await assertSucceeds(getDocs(q(B.firestore())));
+  await assertSucceeds(getCountFromServer(query(collection(B.firestore(), 'follows'), where('from', '==', 'uidA'))));
+  await assertFails(getDocs(q(anon.firestore())));
+});
+await t('follows: never edited; a stranger can’t remove one', async () => {
+  await assertFails(updateDoc(doc(A.firestore(), 'follows', 'uidA_uidB'), { createdAt: 'x' }));
+  await assertFails(deleteDoc(doc(env.authenticatedContext('uidC').firestore(), 'follows', 'uidA_uidB')));
+});
+await t('follows: the person followed can remove a follower; you can unfollow', async () => {
+  await assertSucceeds(deleteDoc(doc(B.firestore(), 'follows', 'uidA_uidB')));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'follows', 'uidA_uidB'), follow('uidA', 'uidB')));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'follows', 'uidA_uidB')));
+});
+await t('follows: once unblocked, B can follow A', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'blocks', 'uidA'), { uids: [] }));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'follows', 'uidB_uidA'), follow('uidB', 'uidA')));
+  // Account deletion removes follows either way: A removes B's follow of A.
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'follows', 'uidB_uidA')));
+});
+await t('likes: set up a video of B’s to like', () => assertSucceeds(setDoc(doc(B.firestore(), 'memories', 'memB'), mem('memB', 'uidB'))));
+const like = (memoryId, owner, uid, over = {}) => ({ memoryId, owner, uid, createdAt: now, ...over });
+await t('likes: A likes B’s video', () => assertSucceeds(setDoc(doc(A.firestore(), 'likes', 'memB_uidA'), like('memB', 'uidB', 'uidA'))));
+await t('likes: only as yourself, the right id and owner, not your own video, not a missing one, no extra fields', async () => {
+  await assertFails(setDoc(doc(A.firestore(), 'likes', 'memB_uidC'), like('memB', 'uidB', 'uidC')));
+  await assertFails(setDoc(doc(A.firestore(), 'likes', 'x_uidA'), like('memB', 'uidB', 'uidA')));
+  await assertFails(setDoc(doc(A.firestore(), 'likes', 'memB_uidA'), like('memB', 'uidA', 'uidA')));
+  await assertFails(setDoc(doc(B.firestore(), 'likes', 'memB_uidB'), like('memB', 'uidB', 'uidB')));
+  await assertFails(setDoc(doc(A.firestore(), 'likes', 'nope_uidA'), like('nope', 'uidB', 'uidA')));
+  await assertFails(setDoc(doc(A.firestore(), 'likes', 'memB_uidA'), like('memB', 'uidB', 'uidA', { note: 'x' })));
+});
+await t('likes: counted and listed for anyone signed in, not signed out', async () => {
+  await assertSucceeds(getCountFromServer(query(collection(B.firestore(), 'likes'), where('memoryId', '==', 'memB'))));
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'likes'), where('owner', '==', 'uidB'), orderBy('createdAt', 'desc'), limit(30))));
+  await assertFails(getDocs(query(collection(anon.firestore(), 'likes'), where('memoryId', '==', 'memB'))));
+});
+await t('likes: never edited; a stranger can’t remove one; the owner and the liker can', async () => {
+  await assertFails(updateDoc(doc(A.firestore(), 'likes', 'memB_uidA'), { createdAt: 'x' }));
+  await assertFails(deleteDoc(doc(env.authenticatedContext('uidC').firestore(), 'likes', 'memB_uidA')));
+  await assertSucceeds(deleteDoc(doc(B.firestore(), 'likes', 'memB_uidA')));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'likes', 'memB_uidA'), like('memB', 'uidB', 'uidA')));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'likes', 'memB_uidA')));
+});
+await t('likes: not on the video of someone who blocked you', async () => {
+  await assertSucceeds(setDoc(doc(B.firestore(), 'blocks', 'uidB'), { uids: ['uidA'] }));
+  await assertFails(setDoc(doc(A.firestore(), 'likes', 'memB_uidA'), like('memB', 'uidB', 'uidA')));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'blocks', 'uidB'), { uids: [] }));
 });
 await t('account deletion: profile, handle and blocks go in one write', async () => {
   const db = A.firestore(); const b = writeBatch(db);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Clip, Festival } from '../../../data/models';
-import { focusChoices, MIX, mixContext, nextDiscoverFocus, startFocus } from '../focus';
+import { focusChoices, FOLLOWING, isWide, MIX, mixContext, nextDiscoverFocus, startFocus } from '../focus';
 
 const fest = (id: string, lineup: string[], startDate?: string): Festival => ({
   id,
@@ -32,6 +32,18 @@ describe('Discover focus', () => {
     expect(startFocus(festivals, clips, ['c', 'b'], null)).toBe('b');
     expect(startFocus(festivals, clips, ['c'], null)).toBe('a');
     expect(startFocus(festivals, clips, [])).toBe('a');
+  });
+
+  it('Following: remembered like the mix, kept for a video from the crowd, left for an official clip', () => {
+    expect(startFocus(festivals, clips, [], FOLLOWING)).toBe(FOLLOWING);
+    expect(nextDiscoverFocus('a', { festival: FOLLOWING }, festivals)).toBe(FOLLOWING);
+    const crowd: Clip = {
+      ...clip('community:s1', 'z', 'b'),
+      source: { provider: 'community', videoUrl: 'https://x/v.mp4', handle: 'maya', uid: 'u1', sharedId: 's1', capturedAt: '', vertical: true },
+    };
+    expect(nextDiscoverFocus(FOLLOWING, { clip: crowd }, festivals)).toBe(FOLLOWING);
+    expect(nextDiscoverFocus(FOLLOWING, { clip: clips[2] }, festivals)).toBe('b');
+    expect(isWide(FOLLOWING) && isWide(MIX) && !isWide('a')).toBe(true);
   });
 
   it('moves to what it is asked for', () => {

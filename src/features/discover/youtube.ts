@@ -1,4 +1,4 @@
-import type { Clip, ClipSource } from '../../data/types';
+import type { Clip, YouTubeClipSource } from '../../data/models';
 
 /**
  * Pure helpers for real footage played in YouTube's official embedded player.
@@ -8,7 +8,7 @@ import type { Clip, ClipSource } from '../../data/types';
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 
 /** The clip's footage if it can be played, otherwise undefined and the card shows the stage. */
-export function playableSource(clip: Clip): ClipSource | undefined {
+export function playableSource(clip: Clip): YouTubeClipSource | undefined {
   const s = clip.source;
   if (!s || s.provider !== 'youtube') return undefined;
   if (!VIDEO_ID.test(s.videoId)) return undefined;
@@ -17,19 +17,19 @@ export function playableSource(clip: Clip): ClipSource | undefined {
 }
 
 /** How far through the clip a playback time is, 0 to 1. A video shorter than the section ends early. */
-export function clipProgress(time: number, source: ClipSource, duration?: number) {
+export function clipProgress(time: number, source: YouTubeClipSource, duration?: number) {
   const end = duration && duration > source.start ? Math.min(source.end, duration) : source.end;
   const p = (time - source.start) / (end - source.start);
   return Math.min(1, Math.max(0, p));
 }
 
 /** The video's own still, shown while the player loads. Horizontal stills come letterboxed, so fill and crop. */
-export function posterUrl(source: ClipSource) {
+export function posterUrl(source: YouTubeClipSource) {
   return `https://i.ytimg.com/vi/${source.videoId}/hqdefault.jpg`;
 }
 
 /** Link to the same moment on YouTube itself, for videos that can't play here. */
-export function watchUrl(source: ClipSource) {
+export function watchUrl(source: YouTubeClipSource) {
   return `https://www.youtube.com/watch?v=${source.videoId}&t=${Math.floor(source.start)}s`;
 }
 
@@ -60,7 +60,7 @@ export function parsePlayerMessage(raw: string): PlayerMessage | undefined {
  * own controls and branding; nothing is drawn over it. The page loops the clip
  * section and reports readiness, state, time and errors.
  */
-export function playerHtml(source: ClipSource, origin: string) {
+export function playerHtml(source: YouTubeClipSource, origin: string) {
   const config = JSON.stringify({
     videoId: source.videoId,
     start: source.start,

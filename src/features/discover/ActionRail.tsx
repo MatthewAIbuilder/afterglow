@@ -8,7 +8,8 @@ type Props = {
   liked: boolean;
   saved: boolean;
   onLike: () => void;
-  onSave: () => void;
+  /** Without it there's no Save button (community clips can't be kept in Your clips). */
+  onSave?: () => void;
   onSkip: () => void;
   /** Row sits under a video instead of floating beside the stage. */
   horizontal?: boolean;
@@ -20,9 +21,11 @@ export function ActionRail({ liked, saved, onLike, onSave, onSkip, horizontal }:
       <RailButton label={liked ? 'Liked' : 'Like'} active={liked} onPress={onLike}>
         <HeartIcon color={liked ? color.glow : color.moon} filled={liked} />
       </RailButton>
-      <RailButton label={saved ? 'Saved' : 'Save'} active={saved} onPress={onSave}>
-        <SaveIcon color={saved ? color.glow : color.moon} filled={saved} />
-      </RailButton>
+      {onSave ? (
+        <RailButton label={saved ? 'Saved' : 'Save'} active={saved} onPress={onSave}>
+          <SaveIcon color={saved ? color.glow : color.moon} filled={saved} />
+        </RailButton>
+      ) : null}
       <RailButton label="Skip" active={false} onPress={onSkip}>
         <SkipIcon color={color.moon} />
       </RailButton>

@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
@@ -18,6 +18,7 @@ import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
+import { showAlert } from '../lib/dialog';
 
 /**
  * Your profile, as others will see it: photo, name, @handle, a short bio,
@@ -97,7 +98,7 @@ export default function ProfileEditScreen() {
 
   const changePhoto = () => {
     if (!p) {
-      Alert.alert('Save your profile first', 'Then you can add a photo.');
+      showAlert('Save your profile first', 'Then you can add a photo.');
       return;
     }
     const pick = async () => {
@@ -107,10 +108,10 @@ export default function ProfileEditScreen() {
         await social.setAvatar(r.assets[0].uri);
         haptic.settle();
       } catch (e) {
-        Alert.alert('Couldn’t update your photo', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+        showAlert('Couldn’t update your photo', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
       }
     };
-    Alert.alert('Profile photo', undefined, [
+    showAlert('Profile photo', undefined, [
       { text: 'Choose a photo', onPress: () => void pick() },
       ...(p.avatarUrl ? [{ text: 'Remove photo', style: 'destructive' as const, onPress: () => void social.setAvatar(null).catch(() => {}) }] : []),
       { text: 'Cancel', style: 'cancel' },
@@ -118,7 +119,7 @@ export default function ProfileEditScreen() {
   };
 
   const signOut = () => {
-    Alert.alert('Sign out?', 'Your memories stay on this phone. Shared ones stay on your profile.', [
+    showAlert('Sign out?', 'Your memories stay on this phone. Shared ones stay on your profile.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign out',
@@ -134,7 +135,7 @@ export default function ProfileEditScreen() {
     try {
       await social.deleteAccount(password);
       haptic.settle();
-      Alert.alert('Account deleted', 'Your profile and everything you shared are gone. Your memories are still on this phone.');
+      showAlert('Account deleted', 'Your profile and everything you shared are gone. Your memories are still on this phone.');
       if (router.canGoBack()) router.back();
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);

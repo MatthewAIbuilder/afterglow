@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
 import Animated, {
   runOnJS,
   runOnUI,
@@ -14,7 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
+import type { Clip } from '../../data/models';
+import { isCommunityClip } from '../community/clips';
 import { useCatalog } from '../../state/catalog';
+import { useClipPool, useCommunityFeed } from '../../state/community';
+import { useSocial } from '../../state/social';
 import { useStoredFocus } from '../../state/discoverFocus';
 import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
@@ -24,13 +28,14 @@ import { useSeen } from '../../state/seen';
 import { color, space, type } from '../../theme/tokens';
 import { ClipCard } from './ClipCard';
 import { FeedEnd } from './FeedEnd';
+import { FollowingEmpty } from './FollowingEmpty';
 import { FeedHint } from './FeedHint';
 import { useAddMemory } from '../memories/useAddMemory';
 import { useMemories } from '../../state/memories';
 import { alreadyKnown, currentHint } from './hints';
 import type { FeedPager } from './feedPager';
 import { defaultFocus } from '../festivals/links';
-import { type Focus, MIX, mixContext, nextDiscoverFocus, startFocus } from './focus';
+import { FOLLOWING, type Focus, MIX, mixContext, nextDiscoverFocus, startFocus } from './focus';
 import { reasonNote } from '../recommend/copy';
 import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
@@ -49,7 +54,10 @@ import { useRankedFeed } from './useRankedFeed';
  * that artist doesn't play the current festival. It opens where you left it.
  */
 export function DiscoverFeed() {
-  const { width, height } = useWindowDimensions();
+  // One phone-shaped column, even on a wide screen (a browser on a computer); phones are never wider than this.
+  const screen = useWindowDimensions();
+  const width = Math.min(screen.width, FEED_MAX_WIDTH);
+  const height = screen.height;
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const listRef = useAnimatedRef<FlatList<FeedItem>>();
@@ -68,7 +76,9 @@ export function DiscoverFeed() {
   // Undecided until the saved focus and your festivals have loaded; then what you picked last, or where you're going.
   const [focusId, setFocusId] = useState<Focus | undefined>();
   const [decided, setDecided] = useState(false);
-  const requestedClip = requested ? catalog.clip(requested) : undefined;
+  // A clip from the catalogue, or a video from the crowd you liked (opened from Your clips).
+  const pool = useClipPool();
+  const requestedClip = requested ? pool.find(requested) : undefined;
   if (stored !== undefined && goingLoaded) {
     const base = decided ? focusId : startFocus(catalog.festivals, catalog.clips, going, stored);
     const target = nextDiscoverFocus(base, { festival: focusParam || undefined, clip: requestedClip }, catalog.festivals);
@@ -82,9 +92,12 @@ export function DiscoverFeed() {
     if (decided && focusId) saveFocus(focusId);
   }, [decided, focusId, saveFocus]);
   const mix = focusId === MIX;
+  const followingFocus = focusId === FOLLOWING;
+  // Both draw from every lineup: each clip is shown against a festival you're going to where the artist plays.
+  const wide = mix || followingFocus;
   // If the catalogue changes under us (a hosted file arrived) and the festival is gone, open the first one with clips.
   const festival =
-    !decided || mix
+    !decided || wide
       ? undefined
       : ((focusId ? catalog.festival(focusId) : undefined) ?? defaultFocus(catalog.festivals, catalog.clips));
   // Cleared once handled, which waits for the focus to be decided.
@@ -92,11 +105,30 @@ export function DiscoverFeed() {
     if (focusParam && decided) navigation.setParams({ festival: '' } as never);
   }, [focusParam, decided, navigation]);
 
-  const feed = useRankedFeed(activeIndex, mix ? MIX : festival);
+  // Clips people at the festival shared to their profiles, beside the official ones (none when signed out or switched off).
+  // In Following, they're the only clips: videos from the people you follow.
+  const { clips: fetched, loaded: communityLoaded } = useCommunityFeed(mix ? 'mix' : followingFocus ? 'following' : festival);
+  const social = useSocial();
+  // Videos from the crowd you opened from Your clips stay in the feed while you're on this focus
+  // (unless you hide them or block who filmed them).
+  const [opened, setOpened] = useState<{ focus: Focus | undefined; clips: Clip[] }>({ focus: undefined, clips: [] });
+  if (requestedClip && isCommunityClip(requestedClip) && decided) {
+    const same = opened.focus === focusId;
+    if (!same || !opened.clips.some((c) => c.id === requestedClip.id)) setOpened({ focus: focusId, clips: [...(same ? opened.clips : []), requestedClip] });
+  }
+  // The one being asked for counts straight away, so it's ranked in with the first feed rather than after it.
+  const asked = requestedClip && isCommunityClip(requestedClip) ? requestedClip : undefined;
+  const community = useMemo(() => {
+    const wanted = opened.focus === focusId ? [...opened.clips] : [];
+    if (asked && !wanted.some((c) => c.id === asked.id)) wanted.push(asked);
+    const extra = wanted.filter((c) => pool.find(c.id) && !fetched.some((f) => f.id === c.id));
+    return extra.length ? [...fetched, ...extra] : fetched;
+  }, [opened, focusId, asked, pool, fetched]);
+  const feed = useRankedFeed(activeIndex, mix ? MIX : followingFocus ? FOLLOWING : festival, community);
   const { mustSeesAt } = usePlan();
   const count = feed?.length ?? 0;
   // After the last clip comes one more page: the end of the lineup (or of everything), with where to go next.
-  const hasEnd = (mix || !!festival) && count > 0;
+  const hasEnd = (wide || !!festival) && count > 0;
   const pages = hasEnd ? count + 1 : count;
 
   // What you've had on screen, so the feed can hold it back next time.
@@ -126,7 +158,9 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
   }, [ready, reactions, markDone]);
-  const hint = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
+  const next = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
+  // Adding your own videos is in the phone app, so the website doesn't teach the hold.
+  const hint = next === 'hold' && Platform.OS === 'web' ? undefined : next;
   // Press and hold a clip to add your own video: the third tip is done the first time you do.
   const addMemory = useAddMemory();
   const onHold = useCallback(() => {
@@ -200,7 +234,8 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (!requested || !feed) return;
     const index = feed.findIndex((it) => it.clip.id === requested);
-    if (index < 0 && requestedClip && festival && festival.lineup.includes(requestedClip.artistId)) return;
+    // Still waiting for the clip to join the feed (its festival's feed, or a video from the crowd being added).
+    if (index < 0 && requestedClip && ((festival && festival.lineup.includes(requestedClip.artistId)) || (wide && isCommunityClip(requestedClip)))) return;
     if (index >= 0) {
       activeRef.current = index;
       setActiveIndex(index);
@@ -219,7 +254,7 @@ export function DiscoverFeed() {
   );
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { width, alignSelf: 'center' }]}>
       <Animated.FlatList
         ref={listRef}
         data={feed ?? []}
@@ -228,7 +263,7 @@ export function DiscoverFeed() {
         renderItem={({ item, index }: { item: FeedItem; index: number }) => {
           const playback = clipPlayback(index, activeIndex, feedLive);
           // In your mix, each clip is shown against a festival you're going to where the artist plays, if any.
-          const context = mix ? mixContext(item.clip, catalog.festivals, going) : festival;
+          const context = wide ? mixContext(item.clip, catalog.festivals, going) : festival;
           return (
             <ClipCard
               clip={item.clip}
@@ -249,7 +284,7 @@ export function DiscoverFeed() {
         }}
         ListFooterComponent={
           hasEnd ? (
-            <FeedEnd festival={festival} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
+            <FeedEnd festival={festival} following={followingFocus} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
           ) : null
         }
         getItemLayout={(_d, index) => ({ length: height, offset: height * index, index })}
@@ -274,7 +309,15 @@ export function DiscoverFeed() {
         style={[styles.topScrim, { height: insets.top + 90 }]}
         pointerEvents="none"
       />
-      {(festival || mix) && (
+      {followingFocus && feed && count === 0 ? (
+        <FollowingEmpty
+          signedIn={!!social.user}
+          follows={social.following.size}
+          loading={!communityLoaded}
+          bottomSpace={tabSpace}
+        />
+      ) : null}
+      {(festival || wide) && (
         <View style={[styles.header, { top: insets.top + space.sm }]} pointerEvents="box-none">
           <Pressable
             onPress={() => {
@@ -282,16 +325,16 @@ export function DiscoverFeed() {
               router.push({ pathname: '/discover-focus', params: { current: focusId } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${festival ? `${festival.name}, live sets from the lineup` : 'Your mix, a bit of everything'}. Choose what to discover.`}
+            accessibilityLabel={`${festival ? `${festival.name}, live sets from the lineup` : followingFocus ? 'Following, videos from people you follow' : 'Your mix, a bit of everything'}. Choose what to discover.`}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.headerTitle}>
-              <Text style={styles.festival} numberOfLines={1}>{festival ? festival.name : 'Your mix'}</Text>
+              <Text style={styles.festival} numberOfLines={1}>{festival ? festival.name : followingFocus ? 'Following' : 'Your mix'}</Text>
               <ChevronIcon color={color.moonDim} size={13} direction="down" />
             </View>
             <Text style={styles.dates} numberOfLines={1}>
-              {festival ? `Live sets from the lineup · ${festival.dates}` : 'A bit of everything, from every lineup'}
+              {festival ? `Live sets from the lineup · ${festival.dates}` : followingFocus ? 'Videos from people you follow' : 'A bit of everything, from every lineup'}
             </Text>
           </Pressable>
           {hint ? <FeedHint hint={hint} /> : null}
@@ -300,6 +343,9 @@ export function DiscoverFeed() {
     </View>
   );
 }
+
+/** The feed's widest: about a large phone. */
+const FEED_MAX_WIDTH = 520;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },

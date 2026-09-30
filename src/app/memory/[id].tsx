@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { CloseIcon } from '../../components/TabIcons';
@@ -13,6 +13,7 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useMemories } from '../../state/memories';
 import { color, radius, space, type } from '../../theme/tokens';
+import { showAlert } from '../../lib/dialog';
 
 /**
  * One memory, full screen, with sound. Tap to pause. Below it: who, where
@@ -53,7 +54,7 @@ export default function MemoryScreen() {
     haptic.tap();
     const ok = await mem.saveToPhotos(m.id);
     if (ok) haptic.settle();
-    else Alert.alert('Couldn’t save to Photos', 'Allow Afterglow to add to Photos in Settings, then try again.');
+    else showAlert('Couldn’t save to Photos', 'Allow Afterglow to add to Photos in Settings, then try again.');
   };
   const send = async () => {
     haptic.select();
@@ -61,7 +62,7 @@ export default function MemoryScreen() {
   };
   const remove = () => {
     haptic.select();
-    Alert.alert(
+    showAlert(
       'Delete this memory?',
       m.sharedId ? 'It’s removed from this phone. It stays on your profile until you remove it there.' : 'It’s removed from this phone. If it isn’t in Photos, it’s gone for good.',
       [

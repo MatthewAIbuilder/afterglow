@@ -51,6 +51,9 @@ export type SharedMemory = {
   artistId?: string;
   capturedAt: string;
   durationSec?: number;
+  /** The video's size, so upright clips get a tall player. */
+  width?: number;
+  height?: number;
   createdAt: string;
 };
 
@@ -63,3 +66,8 @@ export const REPORT_REASONS: { key: ReportReason; label: string }[] = [
   { key: 'not-theirs', label: 'Not their video' },
   { key: 'other', label: 'Something else' },
 ];
+
+/** Something that happened to you: someone followed you, or liked a video you shared. */
+export type Activity =
+  | { kind: 'follow'; id: string; from: string; createdAt: string }
+  | { kind: 'like'; id: string; from: string; memoryId: string; createdAt: string };

@@ -7,12 +7,16 @@ import { NightSky } from '../components/NightSky';
 import { ChevronIcon } from '../components/TabIcons';
 import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
+import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 
-/** Notifications: news about the festivals you're going to. Opening it marks everything read. */
+/** Notifications: news about the festivals you're going to, new followers and likes on your videos. Opening it marks everything read. */
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
-  const { list, read, markRead, hydrated } = useNotices();
+  const { list, read, markRead, hydrated, refresh } = useNotices();
+  const social = useSocial();
+  // Fresh activity each time you look.
+  useEffect(() => refresh(), [refresh]);
   // What was new when you opened this keeps its glow for this visit.
   const [fresh, setFresh] = useState<ReadonlySet<string> | undefined>();
   if (hydrated && !fresh) setFresh(new Set(list.filter((n) => !read.has(n.id)).map((n) => n.id)));
@@ -29,7 +33,7 @@ export default function NotificationsScreen() {
       >
         <View style={styles.pad}>
           <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.meta}>News about the festivals you’re going to.</Text>
+          <Text style={styles.meta}>{social.user ? 'Your festivals, new followers and likes on your videos.' : 'News about the festivals you’re going to.'}</Text>
         </View>
         <View style={[styles.pad, styles.list]}>
           {list.length === 0 ? (
@@ -45,7 +49,7 @@ export default function NotificationsScreen() {
                 key={n.id}
                 onPress={() => {
                   haptic.select();
-                  router.push(`/festival/${n.festivalId}`);
+                  router.push(n.href as never);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`${isNew ? 'New. ' : ''}${n.title}. ${n.body}`}

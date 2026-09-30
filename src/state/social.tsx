@@ -39,11 +39,27 @@ type Ctx = {
   unshare: (memory: Memory) => Promise<void>;
   sharing: Record<string, number>;
   blocked: ReadonlySet<string>;
+  /** Blocking also ends follows both ways. */
   setBlocked: (uid: string, blocked: boolean) => Promise<void>;
+  /** People you follow. */
+  following: ReadonlySet<string>;
+  /** Follow or unfollow; shown straight away, undone if it doesn't go through. */
+  setFollowing: (uid: string, on: boolean) => Promise<void>;
   report: (target: ReportTarget, reason: ReportReason, note?: string) => Promise<void>;
 };
 
 const SocialContext = createContext<Ctx | null>(null);
+
+/** How many of the people you follow are loaded (and followable). */
+export const FOLLOWING_MAX = 1000;
+
+const withId = (s: ReadonlySet<string>, id: string, on: boolean) => {
+  if (s.has(id) === on) return s;
+  const next = new Set(s);
+  if (on) next.add(id);
+  else next.delete(id);
+  return next;
+};
 
 /** Only this many of your top sounds are shown. */
 const SOUNDS_SHOWN = 3;
@@ -55,6 +71,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const [user, setUser] = useState<SocialUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [blocked, setBlockedIds] = useState<ReadonlySet<string>>(new Set());
+  const [following, setFollowingIds] = useState<ReadonlySet<string>>(new Set());
   const [sharing, setSharing] = useState<Record<string, number>>({});
   const mem = useMemories();
 
@@ -69,6 +86,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         setReady(true);
         setProfile(null);
         setBlockedIds(new Set());
+        setFollowingIds(new Set());
         if (!u) return;
         service
           .profileOf(u.uid)
@@ -77,6 +95,10 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         service
           .blocked()
           .then((ids) => currentUid.current === u.uid && setBlockedIds(new Set(ids)))
+          .catch(() => {});
+        service
+          .following(u.uid, FOLLOWING_MAX)
+          .then((ids) => currentUid.current === u.uid && setFollowingIds(new Set(ids)))
           .catch(() => {});
       }),
     [service],
@@ -146,6 +168,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
             artistId: m.artistId,
             capturedAt: m.capturedAt,
             durationSec: m.durationSec,
+            width: m.width,
+            height: m.height,
           },
           (p) => setSharing((s) => (m.id in s ? { ...s, [m.id]: p } : s)),
         );
@@ -169,20 +193,35 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const setBlocked = useCallback(
     async (uid: string, on: boolean) => {
       await service.setBlocked(uid, on);
-      setBlockedIds((s) => {
-        const next = new Set(s);
-        if (on) next.add(uid);
-        else next.delete(uid);
-        return next;
-      });
+      setBlockedIds((s) => withId(s, uid, on));
+      if (on) {
+        // Blocking ends follows either way (best effort: the block itself already stands).
+        setFollowingIds((s) => withId(s, uid, false));
+        await Promise.all([service.unfollow(uid).catch(() => {}), service.removeFollower(uid).catch(() => {})]);
+      }
     },
     [service],
+  );
+  const setFollowing = useCallback(
+    async (uid: string, on: boolean) => {
+      if (!user) throw new SocialError('not-signed-in');
+      if (on && !profile) throw new SocialError('no-profile');
+      if (uid === user.uid) return;
+      setFollowingIds((s) => withId(s, uid, on));
+      try {
+        await (on ? service.follow(uid) : service.unfollow(uid));
+      } catch (e) {
+        if (currentUid.current === user.uid) setFollowingIds((s) => withId(s, uid, !on));
+        throw e;
+      }
+    },
+    [service, user, profile],
   );
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, report }),
-    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, report],
+    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, following, setFollowing, report }),
+    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, following, setFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

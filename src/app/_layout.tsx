@@ -1,9 +1,12 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { DialogHost } from '../components/DialogHost';
+import { LikeSync } from '../features/community/LikeSync';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
+import { CommunityProvider } from '../state/community';
 import { GoingProvider } from '../state/going';
 import { MemoriesProvider } from '../state/memories';
 import { MusicConnectionsProvider } from '../state/music';
@@ -23,13 +26,14 @@ export default function RootLayout() {
       <MusicConnectionsProvider>
       <MemoriesProvider>
       <ReactionsProvider>
+      <CommunityProvider>
       <RatingsProvider>
       <PlanProvider>
       <GoingProvider>
       <SeenProvider>
       <WeekendsProvider>
-      <NoticesProvider>
       <SocialProvider>
+      <NoticesProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -48,6 +52,8 @@ export default function RootLayout() {
         <Stack.Screen name="profile-edit" />
         <Stack.Screen name="u/[handle]" />
         <Stack.Screen name="people" />
+        <Stack.Screen name="follows/[handle]" />
+        <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
@@ -94,13 +100,16 @@ export default function RootLayout() {
       </Stack>
       <FirstRun />
       <ReminderSync />
-      </SocialProvider>
+      <LikeSync />
+      <DialogHost />
       </NoticesProvider>
+      </SocialProvider>
       </WeekendsProvider>
       </SeenProvider>
       </GoingProvider>
       </PlanProvider>
       </RatingsProvider>
+      </CommunityProvider>
       </ReactionsProvider>
       </MemoriesProvider>
       </MusicConnectionsProvider>

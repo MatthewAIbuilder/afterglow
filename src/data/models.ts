@@ -149,7 +149,29 @@ export type YouTubeClipSource = {
   vertical?: boolean;
 };
 
-export type ClipSource = YouTubeClipSource;
+/**
+ * A video someone shared to their Afterglow profile (a community clip). It
+ * never comes from a catalogue file: only the app builds these, from shared
+ * memories, and plays them with the phone's own video player.
+ */
+export type CommunityClipSource = {
+  provider: 'community';
+  /** The shared video file (https). */
+  videoUrl: string;
+  /** Its still (https), when there is one. */
+  thumbUrl?: string;
+  /** Who shared it, credited on the clip; opens their profile. */
+  handle: string;
+  uid: string;
+  /** The shared memory's id, for reporting it. */
+  sharedId: string;
+  /** When it was filmed, ISO 8601. */
+  capturedAt: string;
+  /** Filmed upright. Gets a tall player. */
+  vertical: boolean;
+};
+
+export type ClipSource = YouTubeClipSource | CommunityClipSource;
 
 export type Clip = {
   id: string;

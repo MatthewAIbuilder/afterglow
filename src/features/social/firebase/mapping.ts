@@ -49,6 +49,8 @@ export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {
     artistId: str(o.artistId),
     capturedAt,
     durationSec: num(o.durationSec),
+    width: num(o.width),
+    height: num(o.height),
     createdAt: str(o.createdAt) ?? '',
   };
 }

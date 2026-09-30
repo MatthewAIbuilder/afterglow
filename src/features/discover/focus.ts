@@ -3,10 +3,14 @@ import { groupFestivals, type Going } from '../festivals/going';
 import { defaultFocus, focusForClip, lineupClips, playsAt } from '../festivals/links';
 
 /**
- * What Discover is showing: one festival's lineup (its id), or your mix, a bit
- * of everything from every lineup. Pure.
+ * What Discover is showing: one festival's lineup (its id), your mix (a bit
+ * of everything from every lineup), or Following (videos from the people you
+ * follow). Pure.
  */
 export const MIX = 'mix';
+export const FOLLOWING = 'following';
+/** Focuses that aren't one festival: they draw from every lineup. */
+export const isWide = (focus: Focus | undefined) => focus === MIX || focus === FOLLOWING;
 export type Focus = string;
 
 /**
@@ -15,7 +19,7 @@ export type Focus = string;
  * otherwise the festival with the most clips.
  */
 export function startFocus(festivals: Festival[], clips: Clip[], going: Going, stored?: string | null): Focus | undefined {
-  if (stored === MIX) return MIX;
+  if (stored === MIX || stored === FOLLOWING) return stored;
   const withClips = (f: Festival | undefined) => !!f && lineupClips(f, clips).length > 0;
   const saved = festivals.find((f) => f.id === stored);
   if (withClips(saved)) return saved!.id;
@@ -25,18 +29,20 @@ export function startFocus(festivals: Festival[], clips: Clip[], going: Going, s
 
 /**
  * Where the focus goes when Discover is asked to open something: a festival
- * (or the mix) wins; a clip keeps the mix, which has every clip, and
- * otherwise moves to a festival the artist plays if needed.
+ * (or the mix, or Following) wins; a clip keeps the mix, which has every
+ * clip, and Following when it's a video from the crowd; otherwise it moves to
+ * a festival the artist plays if needed.
  */
 export function nextDiscoverFocus(
   current: Focus | undefined,
   asked: { festival?: string; clip?: Clip },
   festivals: Festival[],
 ): Focus | undefined {
-  if (asked.festival === MIX) return MIX;
+  if (asked.festival === MIX || asked.festival === FOLLOWING) return asked.festival;
   const festival = asked.festival ? festivals.find((f) => f.id === asked.festival) : undefined;
   if (festival) return festival.id;
   if (!asked.clip || current === MIX) return current;
+  if (current === FOLLOWING && asked.clip.source?.provider === 'community') return current;
   const now = festivals.find((f) => f.id === current);
   return (focusForClip(asked.clip, now, festivals) ?? now)?.id ?? current;
 }

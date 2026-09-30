@@ -1,16 +1,16 @@
-import type { Clip, ClipSource } from '../../data/types';
+import type { Clip, CommunityClipSource, YouTubeClipSource } from '../../data/models';
 import { playableSource, posterUrl, watchUrl } from './youtube';
 
 /**
  * What Discover needs to know about a clip's real footage, whatever plays it.
- * Only ClipPlayer and this file know which provider is behind a clip, so a
- * native video source can later be added here without touching the feed.
+ * Only ClipPlayer and this file know which provider is behind a clip.
+ *
+ * - youtube: a section of an official upload, in YouTube's embedded player.
+ * - video: a video file someone shared (a community clip), in the phone's
+ *   own player (expo-video).
  */
-export type ClipMedia = {
-  provider: 'youtube';
-  /** Provider details, read only by the matching player. */
-  source: ClipSource;
-  /** Length of the clip section in seconds. */
+type Shared = {
+  /** Length of the clip in seconds. */
   lengthSec: number;
   /** Still shown while the player loads. */
   posterUrl: string;
@@ -18,12 +18,43 @@ export type ClipMedia = {
   vertical: boolean;
   /** Credit line under the clip. */
   credit: string;
+};
+
+export type YouTubeMedia = Shared & {
+  provider: 'youtube';
+  /** Provider details, read only by the YouTube player. */
+  source: YouTubeClipSource;
   /** Where to watch the original if it can't play here. */
   externalUrl: string;
 };
 
+export type VideoMedia = Shared & {
+  provider: 'video';
+  /** The video file to play. */
+  uri: string;
+  /** Who shared it and how to report it. Read by the card, not the player. */
+  community: CommunityClipSource;
+};
+
+export type ClipMedia = YouTubeMedia | VideoMedia;
+
+const HTTPS = /^https:\/\//;
+
 /** The clip's playable footage, or undefined and the card shows the stage. */
 export function clipMedia(clip: Clip): ClipMedia | undefined {
+  const s = clip.source;
+  if (s?.provider === 'community') {
+    if (!HTTPS.test(s.videoUrl)) return undefined;
+    return {
+      provider: 'video',
+      uri: s.videoUrl,
+      lengthSec: clip.durationSec,
+      posterUrl: s.thumbUrl && HTTPS.test(s.thumbUrl) ? s.thumbUrl : '',
+      vertical: s.vertical,
+      credit: `Filmed by @${s.handle}`,
+      community: s,
+    };
+  }
   const source = playableSource(clip);
   if (!source) return undefined;
   return {

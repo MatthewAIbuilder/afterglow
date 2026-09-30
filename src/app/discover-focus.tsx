@@ -1,14 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CheckIcon, ChevronIcon } from '../components/TabIcons';
-import { focusChoices, MIX, type FocusChoice } from '../features/discover/focus';
+import { CheckIcon, ChevronIcon, ProfileIcon } from '../components/TabIcons';
+import { focusChoices, FOLLOWING, isWide, MIX, type FocusChoice } from '../features/discover/focus';
 import { PlayIcon } from '../features/discover/icons';
 import { countdown } from '../features/festivals/when';
 import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
+import { useCommunity } from '../state/community';
 import { useGoing } from '../state/going';
+import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 
 /**
@@ -22,8 +24,10 @@ export default function DiscoverFocusScreen() {
   const { going } = useGoing();
   const today = useToday();
   const insets = useSafeAreaInsets();
+  const social = useSocial();
+  const community = useCommunity();
   const choices = focusChoices(catalog.festivals, catalog.clips, going, today);
-  const currentFestival = current && current !== MIX ? catalog.festival(current) : undefined;
+  const currentFestival = current && !isWide(current) ? catalog.festival(current) : undefined;
 
   const pick = (focus: string) => {
     haptic.select();
@@ -70,6 +74,21 @@ export default function DiscoverFocusScreen() {
             <PlayIcon color={color.moon} size={14} />
           </View>
         ))}
+        {social.availability.ok &&
+          row(
+            FOLLOWING,
+            'Following',
+            !social.user
+              ? 'Sign in to follow people and see their videos'
+              : social.following.size
+                ? `Videos from the ${social.following.size === 1 ? 'person' : `${social.following.size} people`} you follow`
+                : 'Follow people to see their videos here',
+            current === FOLLOWING,
+            () => pick(FOLLOWING),
+            <View style={styles.mixIcon}>
+              <ProfileIcon color={color.moon} size={15} />
+            </View>,
+          )}
       </View>
 
       {choices.going.length > 0 && (
@@ -86,6 +105,31 @@ export default function DiscoverFocusScreen() {
       )}
       {choices.going.length === 0 && (
         <Text style={styles.hint}>Mark the festivals you’re going to on the Festivals tab and they’ll show up first.</Text>
+      )}
+
+      {social.availability.ok && (
+        <View style={styles.switchRow}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Videos from the crowd</Text>
+            <Text style={styles.switchDetail}>
+              {!social.user
+                ? 'Sign in on your profile to see videos people shared from the festival.'
+                : community.enabled
+                  ? 'Videos people shared from the festival, beside the official clips.'
+                  : 'Only official clips.'}
+            </Text>
+          </View>
+          <Switch
+            value={community.enabled}
+            onValueChange={(v) => {
+              haptic.select();
+              community.setEnabled(v);
+            }}
+            trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
+            accessibilityLabel="Videos from the crowd"
+            testID="community-switch"
+          />
+        </View>
       )}
 
       {currentFestival && (
@@ -141,6 +185,19 @@ const styles = StyleSheet.create({
     backgroundColor: color.glowDeep,
   },
   hint: { ...type.caption, color: color.moonFaint, marginTop: space.lg },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.xl,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  switchDetail: { ...type.caption, color: color.moonDim, marginTop: 2 },
   link: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', marginTop: space.xl, padding: space.sm },
   linkText: { ...type.label, color: color.moonDim },
 });

@@ -29,7 +29,7 @@ export type PickedVideo = {
   moment: Moment;
 };
 
-export type PickResult = { ok: true; video: PickedVideo } | { ok: false; reason: 'cancelled' | 'no-permission' | 'too-long' | 'failed' };
+export type PickResult = { ok: true; video: PickedVideo } | { ok: false; reason: 'cancelled' | 'no-permission' | 'too-long' | 'failed' | 'app-only' };
 
 /** Record a new clip with the camera, or choose one from the library. */
 export async function pickVideo(source: 'camera' | 'library'): Promise<PickResult> {

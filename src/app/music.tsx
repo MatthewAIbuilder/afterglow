@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
@@ -13,6 +13,7 @@ import { useNow } from '../lib/useNow';
 import { useCatalog } from '../state/catalog';
 import { useMusic } from '../state/music';
 import { color, radius, space, type } from '../theme/tokens';
+import { showAlert } from '../lib/dialog';
 
 /**
  * Music connections: connect Spotify (or, later, Apple Music) so Afterglow
@@ -110,7 +111,7 @@ function ServiceCard({ provider, view }: { provider: MusicProviderId; view: Conn
 
   const disconnect = () => {
     haptic.select();
-    Alert.alert(
+    showAlert(
       `Disconnect ${name}?`,
       `Everything Afterglow imported from ${name} is removed from this phone and the sign-in is forgotten. Your likes, saves and ratings stay.` +
         (provider === 'spotify' ? '\n\nTo also remove Afterglow from your Spotify account, visit spotify.com/account/apps.' : ''),

@@ -1,26 +1,31 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
 import { SOUND_LABEL } from '../../data/models';
 import { clipLength } from '../../features/memories/organize';
-import { goingLine } from '../../features/social/copy';
+import { followersLabel, followingLabel, goingLine } from '../../features/social/copy';
+import { FollowButton } from '../../features/social/FollowButton';
 import type { Profile, SharedMemory } from '../../features/social/models';
 import { askBlock, askReport } from '../../features/social/moderation';
-import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/service';
+import { SOCIAL_ERROR_COPY, socialErrorKind, type FollowCounts } from '../../features/social/service';
+import { WEB_URL } from '../../config/app';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { showActionSheet } from '../../lib/dialog';
+import { shareMessage } from '../../lib/share';
 
 /**
  * Someone's festival profile (or yours, as others see it): photo, name,
- * @handle and bio, where they're going and their sound if they show them,
- * and the memories they've shared. Report and Block from the menu.
+ * @handle and bio, followers and following, Follow, where they're going and
+ * their sound if they show them, and the memories they've shared. Report and
+ * Block from the menu.
  */
 export default function PublicProfileScreen() {
   const { handle } = useLocalSearchParams<{ handle: string }>();
@@ -32,6 +37,7 @@ export default function PublicProfileScreen() {
   const [memories, setMemories] = useState<SharedMemory[]>([]);
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
+  const [counts, setCounts] = useState<FollowCounts | undefined>();
 
   const signedIn = !!social.user;
   useEffect(() => {
@@ -50,7 +56,11 @@ export default function PublicProfileScreen() {
       if (!live) return;
       setProfile(p);
       if (!p) return;
-      // Memories load on their own: if they can't, the profile still shows.
+      // Counts and memories load on their own: if they can't, the profile still shows.
+      social.service
+        .followCounts(p.uid)
+        .then((c) => live && setCounts(c))
+        .catch(() => {});
       try {
         const ms = await social.service.memoriesOf(p.uid);
         if (live) setMemories(ms);
@@ -71,21 +81,14 @@ export default function PublicProfileScreen() {
     haptic.select();
     const report = () => askReport({ kind: 'profile', id: profile.uid, ownerUid: profile.uid }, social.report);
     const block = () => askBlock(profile.handle, blocked, (on) => social.setBlocked(profile.uid, on));
-    const options = ['Report', blocked ? 'Unblock' : 'Block', 'Cancel'];
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions({ options, destructiveButtonIndex: 1, cancelButtonIndex: 2, userInterfaceStyle: 'dark' }, (i) => (i === 0 ? report() : i === 1 ? block() : undefined));
-    } else {
-      Alert.alert(`@${profile.handle}`, undefined, [
-        { text: 'Report', onPress: report },
-        { text: options[1], style: 'destructive', onPress: block },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    }
+    showActionSheet({ title: `@${profile.handle}`, options: ['Report', blocked ? 'Unblock' : 'Block', 'Cancel'], destructiveButtonIndex: 1, cancelButtonIndex: 2 }, (i) =>
+      i === 0 ? report() : i === 1 ? block() : undefined,
+    );
   };
   const share = () => {
     if (!profile) return;
     haptic.select();
-    Share.share({ message: `@${profile.handle} on Afterglow: afterglow://u/${profile.handle}` }).catch(() => {});
+    void shareMessage(`@${profile.handle} on Afterglow: ${WEB_URL}/u/${profile.handle}`);
   };
 
   const cols = 3;
@@ -129,11 +132,37 @@ export default function PublicProfileScreen() {
               ))}
             </View>
           ) : null}
+          {counts ? (
+            <View style={styles.counts}>
+              {(['followers', 'following'] as const).map((list) => (
+                <Pressable
+                  key={list}
+                  onPress={() => {
+                    haptic.select();
+                    router.push({ pathname: '/follows/[handle]', params: { handle: profile.handle, list } });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${list === 'followers' ? followersLabel(counts.followers) : followingLabel(counts.following)}. Opens the list.`}
+                  hitSlop={6}
+                >
+                  <Text style={styles.count}>{list === 'followers' ? followersLabel(counts.followers) : followingLabel(counts.following)}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           {mine ? (
             <Pressable onPress={() => router.push('/profile-edit')} accessibilityRole="button" style={styles.edit}>
               <Text style={styles.link}>Edit profile</Text>
             </Pressable>
-          ) : null}
+          ) : (
+            <View style={styles.edit}>
+              <FollowButton
+                uid={profile.uid}
+                handle={profile.handle}
+                onChange={(on) => setCounts((c) => (c ? { ...c, followers: Math.max(0, c.followers + (on ? 1 : -1)) } : c))}
+              />
+            </View>
+          )}
         </View>
         <Text style={styles.section}>{memories.length ? `Memories · ${memories.length}` : 'Memories'}</Text>
         {memories.length ? (
@@ -211,6 +240,8 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: space.md, paddingVertical: 5, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.16)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.4)' },
   chipText: { ...type.caption, color: color.moon },
   edit: { marginTop: space.md },
+  counts: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
+  count: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.xxl, marginBottom: space.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   tile: { borderRadius: radius.sm, overflow: 'hidden', backgroundColor: color.nightRaised },

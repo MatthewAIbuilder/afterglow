@@ -15,6 +15,7 @@ import { playableSource, posterUrl } from '../features/discover/youtube';
 import { formatDuration } from '../features/festivals/format';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
+import { useClipPool } from '../state/community';
 import { useReactions } from '../state/reactions';
 import { color, radius, space, type } from '../theme/tokens';
 
@@ -23,11 +24,12 @@ type Shelf = 'saved' | 'liked';
 /** Your clips: saved to watch again, and liked. Tap one to play it in Discover. */
 export default function YourClipsScreen() {
   const insets = useSafeAreaInsets();
-  const catalog = useCatalog();
+  // The catalogue's clips and the videos from the crowd you liked.
+  const { clips } = useClipPool();
   const { reactions } = useReactions();
   // What was here when you arrived stays listed, so unsaving or unliking can be undone.
-  const [opened] = useState(() => openedWith(yourClips(catalog.clips, reactions)));
-  const listed = useMemo(() => listedClips(catalog.clips, opened, reactions), [catalog.clips, opened, reactions]);
+  const [opened] = useState(() => openedWith(yourClips(clips, reactions)));
+  const listed = useMemo(() => listedClips(clips, opened, reactions), [clips, opened, reactions]);
   const empty = listed.saved.length + listed.liked.length === 0;
 
   return (
@@ -78,6 +80,9 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
   const artist = catalog.artist(clip.artistId);
   const festival = catalog.festival(clip.festivalId);
   const source = playableSource(clip);
+  // A video from the crowd: its own still, and who filmed it.
+  const crowd = clip.source?.provider === 'community' ? clip.source : undefined;
+  const still = source ? posterUrl(source) : crowd?.thumbUrl;
   const [deep, bright] = artistColors(clip.artistId);
   const name = artist?.name ?? 'Unknown artist';
 
@@ -86,7 +91,8 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
       <Pressable
         onPress={() => {
           haptic.select();
-          router.navigate({ pathname: '/', params: { clip: clip.id } });
+          // Back to the Discover already open underneath (not a second copy on top), playing this clip.
+          router.dismissTo({ pathname: '/', params: { clip: clip.id } });
         }}
         accessibilityRole="button"
         accessibilityLabel={`Play ${name}, ${clip.title}`}
@@ -94,7 +100,7 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
       >
         <View style={styles.thumb}>
           <LinearGradient colors={[bright, deep]} style={StyleSheet.absoluteFill} />
-          {source ? <Image source={{ uri: posterUrl(source) }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
+          {still ? <Image source={{ uri: still }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
           <View style={styles.play}>
             <PlayIcon color={color.moon} size={16} />
           </View>
@@ -104,7 +110,7 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
             {name}
           </Text>
           <Text style={styles.clipTitle} numberOfLines={1}>
-            {clip.title}
+            {crowd ? `${clip.title} · @${crowd.handle}` : clip.title}
           </Text>
           <Text style={styles.detail} numberOfLines={1}>
             {festival ? `${festival.name}, ` : ''}
