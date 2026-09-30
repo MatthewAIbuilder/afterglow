@@ -36,6 +36,8 @@ export type Artist = {
   name: string;
   /** Remote image. Leave undefined to show the gradient monogram. */
   imageUrl?: string;
+  /** Where a photo that came from a photo list is from ("Deezer"), credited on the artist page. */
+  imageCredit?: string;
   /** How much of each sound this artist carries, 0 to 1. */
   sound: Partial<Record<SoundTag, number>>;
 };

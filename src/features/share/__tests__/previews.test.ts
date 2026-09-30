@@ -31,4 +31,12 @@ describe('link previews', () => {
     expect(out).toContain('<meta property="og:image" content="https://afterglowmusic.app/og.png" />');
     expect(out.length - page.length).toBeLessThan(400);
   });
+
+  it('uses the artist photo as the preview picture', () => {
+    const a = { ...builtInCatalog.artist('steve-aoki')!, imageUrl: 'https://cdn-images.dzcdn.net/images/artist/x/500x500.jpg' };
+    const out = withPreview(page, artistPreview(a, [], WEB));
+    expect(out).toContain('<meta property="og:image" content="https://cdn-images.dzcdn.net/images/artist/x/500x500.jpg" />');
+    expect(out).not.toContain('og:image:width');
+    expect(out).toContain('<meta name="twitter:card" content="summary" />');
+  });
 });

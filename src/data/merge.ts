@@ -29,6 +29,22 @@ export function mergeSnapshots(base: CatalogSnapshot, top: CatalogSnapshot): Cat
   return merged;
 }
 
+/**
+ * A file's photo list applied to the artists that have no photo of their
+ * own (a photo set in the catalogue always wins). Pure.
+ */
+export function applyPhotos(snapshot: CatalogSnapshot, photos: Record<string, string> | undefined, credit?: string): CatalogSnapshot {
+  if (!photos) return snapshot;
+  let changed = false;
+  const artists = snapshot.artists.map((a) => {
+    const url = photos[a.id];
+    if (a.imageUrl || !url) return a;
+    changed = true;
+    return credit ? { ...a, imageUrl: url, imageCredit: credit } : { ...a, imageUrl: url };
+  });
+  return changed ? { ...snapshot, artists } : snapshot;
+}
+
 /** snapshot: the checked data behind the catalogue, for building on further. */
 export type Built = { catalog: Catalog; snapshot: CatalogSnapshot; problems: string[]; usedFile: boolean };
 
@@ -43,7 +59,7 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
     return { catalog: createCatalog(snapshot), snapshot };
   };
   if (!file?.snapshot) return { ...fallback(), problems: file?.problems ?? [], usedFile: false };
-  const combined = file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot);
+  const combined = applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit);
   const { snapshot, problems } = validateSnapshot(combined);
   const all = [...file.problems, ...problems];
   if (snapshot.festivals.length === 0 || snapshot.clips.length === 0) {

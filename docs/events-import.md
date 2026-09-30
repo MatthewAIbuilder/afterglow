@@ -70,3 +70,26 @@ Until the key is added, everything works as before and the step is skipped.
   (it couldn't be reached from the cloud session where this was built). If
   the step fails, the run's log says why in plain words; send that line to
   Claude.
+
+## Artist photos (automatic)
+
+Every night, after the festivals step, the Website workflow runs
+`scripts/artist-photos.ts`. For every artist without a photo of their own
+it looks up Deezer's public artist search (no key or account needed) and
+adds the photo to the published `catalogue.json` as a `photos` list,
+credited "Photo from Deezer" at the bottom of the artist page.
+
+- Only an exact name match is used (letters and digits, ignoring accents
+  and capitals), the most followed one if there are several, and never
+  Deezer's blank placeholder. Back-to-back acts ("A b2b B") usually have no
+  photo and keep their coloured initials.
+- Photos found before are reused from the live file, so each night only
+  looks up new artists (and ones not found yet).
+- A photo you set yourself in `catalogue/afterglow.json` (`"image"` on the
+  artist) always wins.
+- If Deezer can't be reached, the photos already found stay and the rest
+  wait for the next night. The app shows initials until a photo loads, and
+  whenever one can't.
+- Deezer's photos belong to Deezer and the artists. That's fine for testing;
+  before a public launch, check Deezer's terms for showing them in an app,
+  or switch to another source.

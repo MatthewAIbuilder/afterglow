@@ -267,6 +267,8 @@ export default function ArtistScreen() {
             </View>
           </Section>
         )}
+        {/* Photos from the nightly photo list credit where they're from. */}
+        {artist.imageUrl && artist.imageCredit ? <Text style={styles.credit}>Photo from {artist.imageCredit}</Text> : null}
       </ScrollView>
 
       <PageActions shareLabel={`Share ${artist.name}`} onShare={() => void shareMessage(artistShareText(artist, festivals, WEB_URL), artist.name)} />
@@ -287,6 +289,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   crewLine: { ...type.label, color: color.moonDim, marginTop: space.md, textAlign: 'center' },
   hero: { alignItems: 'center', paddingHorizontal: space.xl },
+  credit: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.xxl },
   halo: { position: 'absolute', top: HERO / 2 - HALO / 2 },
   name: { ...type.largeTitle, color: color.moon, marginTop: space.xl, textAlign: 'center' },
   match: { ...type.headline, color: color.glow, fontVariant: ['tabular-nums'], marginTop: space.xs },
