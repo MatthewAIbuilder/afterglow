@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -67,6 +68,7 @@ export default function ArtistScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title={artist.name} />
       <NightSky />
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom + space.xxxl }}

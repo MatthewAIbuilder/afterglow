@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { PageTitle } from '../../components/PageTitle';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
@@ -22,6 +23,7 @@ export default function LegalScreen() {
 
   return (
     <View style={styles.root}>
+      <PageTitle title={d.title} />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>
         <View style={styles.page}>
