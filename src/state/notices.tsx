@@ -5,6 +5,7 @@ import { activityNotices } from '../features/notifications/activity';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
 import { lineupNotices } from '../features/notifications/lineupNews';
 import { TIER_AT } from '../features/plan/plan';
+import { isCold, isWarm } from '../features/taste/ratings';
 import type { Activity, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
@@ -79,7 +80,7 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
     () =>
       lineupNotices(memory.news, {
         festivals: mine,
-        loves: (id) => ratings[id] === 'love' || (ratings[id] !== 'pass' && informed[id] && (taste[id] ?? 0) >= TIER_AT.strong),
+        loves: (id) => isWarm(ratings[id]) || (!isCold(ratings[id]) && informed[id] && (taste[id] ?? 0) >= TIER_AT.strong),
         nameOf: (id) => artistById(id)?.name,
         going: new Set(going),
         today,

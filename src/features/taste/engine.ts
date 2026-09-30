@@ -1,7 +1,7 @@
 import type { Artist, Clip, TasteProfile } from '../../data/types';
 import type { Reaction } from '../../state/reactions';
 import { type Similarity, soundSimilarity } from './similarity';
-import { isRating, type Ratings } from './ratings';
+import { isRating, type Rating, type Ratings } from './ratings';
 import { isWatch, type Watch } from './watch';
 
 /**
@@ -15,12 +15,13 @@ import { isWatch, type Watch } from './watch';
  *   nudges them down. A skip cancels the watch on that clip, and a like or
  *   save cancels a quick swipe. Passive signal per artist is capped below a
  *   single like or skip, so watching can never outweigh what you tap.
- * - Rating an artist directly ("love their sound", "not for me") counts like
- *   a save or a skip on one of their clips for the similar sounds it spills
- *   over to. For the artist themselves it's a clear answer: someone you love
- *   is at least a strong match (`RATED.love`), someone you pass on is left
- *   out of your plan (`RATED.pass`). It's how a lineup with no clips gets
- *   learned.
+ * - Rating an artist directly (Love them, Like them, They're OK, Not really,
+ *   Not for me) counts from a save down to a skip on one of their clips for
+ *   the similar sounds it spills over to (`RATING_WEIGHT`). For the artist
+ *   themselves it's a clear answer that keeps them in a range
+ *   (`RATED_RANGE`): someone you love is at least a strong match, someone
+ *   you pass on is left out of your plan. It's how a lineup with no clips
+ *   gets learned.
  * - Part of that signal spills over to artists with a similar sound, which is
  *   how the map learns about artists you have not seen yet.
  * - Changes shrink near the edges: a 98% match barely moves on another like,
@@ -37,10 +38,26 @@ import { isWatch, type Watch } from './watch';
  */
 
 export const WEIGHT = { like: 1, save: 1.3, skip: -0.8 };
-/** Rating an artist directly: as strong as saving or skipping one of their clips. */
-export const RATING_WEIGHT = { love: 1.3, pass: -0.8 } as const;
+/**
+ * Rating an artist directly, for the similar sounds it spills over to: love
+ * as strong as saving one of their clips, not for me as a skip, and the steps
+ * between in proportion ("They're OK" says nothing about anyone else).
+ */
+export const RATING_WEIGHT: Record<Rating, number> = { love: 1.3, like: 0.7, ok: 0, meh: -0.4, pass: -0.8 };
 /** What a direct rating says about the artist themselves: love is at least this, pass at most this. */
 export const RATED = { love: 0.8, pass: 0.3 } as const;
+/**
+ * Where each answer puts the artist, whatever else says otherwise: [at least,
+ * at most]. Love and like reach your plan, OK sits among things to explore,
+ * not really and not for me leave it.
+ */
+export const RATED_RANGE: Record<Rating, readonly [number, number]> = {
+  love: [RATED.love, 1],
+  like: [0.7, 1],
+  ok: [0.4, 0.7],
+  meh: [0, 0.4],
+  pass: [0, RATED.pass],
+};
 /** Passive watch signals, one per clip at most. */
 export const WATCH_WEIGHT: Record<Watch, number> = { through: 0.3, replayed: 0.5, quick: -0.2 };
 /** Bounds on all passive signal for one artist, however many clips you watch. */
@@ -185,17 +202,21 @@ export function computeTaste(
   // Whether a match rests on anything real (a starting prediction or your reactions), or is only the default guess.
   const informed: Record<string, boolean> = {};
   for (const a of artists) {
-    informed[a.id] = a.id in base || signal[a.id] !== 0;
+    // Rated at all (even "They're OK") means you've told us: it's no longer a guess.
+    informed[a.id] = a.id in base || signal[a.id] !== 0 || isRating(ratings[a.id]);
     const start = base[a.id] ?? 0.5;
     const s = signal[a.id];
     // Room to move shrinks as you approach 0% or 100%.
     const room = s >= 0 ? 1 - start : start;
     const next = start + Math.tanh(s * STEP * 2) * room * 0.9;
     taste[a.id] = Math.min(CEILING, Math.max(FLOOR, next));
-    // You said so yourself: a love is never below a strong match, a pass never above "not for you".
+    // You said so yourself: each answer keeps the artist in its range (a love never below a strong match,
+    // a pass never above "not for you", OK in between).
     const rated = ratings[a.id];
-    if (rated === 'love') taste[a.id] = Math.max(taste[a.id], RATED.love);
-    else if (rated === 'pass') taste[a.id] = Math.min(taste[a.id], RATED.pass);
+    if (isRating(rated)) {
+      const [lo, hi] = RATED_RANGE[rated];
+      taste[a.id] = Math.min(hi, Math.max(lo, taste[a.id]));
+    }
   }
   return { taste, summary, informed, imported: fromLibrary };
 }
