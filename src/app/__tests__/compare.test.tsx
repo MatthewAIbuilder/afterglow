@@ -38,4 +38,13 @@ describe('comparing festivals', () => {
     await flush();
     expect(app.queryByLabelText(/^Horizon 2027\. /)).toBeNull();
   });
+
+  it("an artist's festivals put yours first, with the countdown", async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['horizon-27']));
+    const app = await renderApp('/artist/subtronics');
+    await flush();
+    const names = app.getAllByText(/^(Solstice 2026|Horizon 2027|Cyclops Cove 4)$/).map((n) => n.props.children);
+    expect(names[0]).toBe('Horizon 2027');
+    expect(app.getByText('Going')).toBeTruthy();
+  });
 });
