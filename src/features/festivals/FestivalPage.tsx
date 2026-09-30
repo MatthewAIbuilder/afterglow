@@ -26,6 +26,7 @@ import { FriendsGoing } from '../social/FriendsGoing';
 import { CrewCard } from '../crews/CrewCard';
 import { starsShort } from '../crews/together';
 import { useCrews } from '../../state/crews';
+import { CalendarPill } from '../calendar/CalendarPill';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
 import { useLineupNews } from '../../state/lineupNews';
@@ -82,6 +83,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
 
   const timesOut = !!festival.sets?.length;
   const soon = countdown(festival, today);
+  const { isGoing } = useGoing();
   const reach = lineupReach(festival, catalog.clips);
   const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
 
@@ -103,6 +105,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           {soon ? <Text style={styles.soon}>{soon}</Text> : null}
           <View style={styles.pills}>
             <GoingPill festival={whole} />
+            {/* Once you're going: the days (your weekend) into your calendar. */}
+            {isGoing(whole.id) && soon !== 'Over' ? <CalendarPill festival={festival} /> : null}
             {reach.clips > 0 && (
               <Pressable
                 onPress={() => {
