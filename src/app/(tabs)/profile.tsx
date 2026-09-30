@@ -9,6 +9,7 @@ import { ChevronIcon, ProfileIcon } from '../../components/TabIcons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { haptic } from '../../lib/haptics';
 import { VERSION_LINE } from '../../lib/version';
+import { LegalLinks } from '../../components/LegalLinks';
 import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
 import { useCrews } from '../../state/crews';
@@ -283,6 +284,9 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
+        <View style={styles.legal}>
+          <LegalLinks />
+        </View>
         <Text style={styles.version}>{VERSION_LINE}</Text>
       </ScrollView>
     </View>
@@ -305,7 +309,8 @@ function SmallButton({ label, onPress, glow }: { label: string; onPress: () => v
 }
 
 const styles = StyleSheet.create({
-  version: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.xl },
+  legal: { marginTop: space.xl },
+  version: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.md },
   follows: { flexDirection: 'row', justifyContent: 'center', gap: space.lg, marginTop: space.sm },
   followCount: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   profileActions: { flexDirection: 'row', justifyContent: 'center', gap: space.sm, marginTop: space.lg },
