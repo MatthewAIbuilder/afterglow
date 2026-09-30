@@ -1,4 +1,4 @@
-import type { Activity, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
+import type { Activity, Crew, CrewPicks, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -79,6 +79,25 @@ export interface SocialService {
   /** What happened to you lately (new followers, likes on your videos), newest first. */
   activity(max: number): Promise<Activity[]>;
 
+  /** Start a crew for a festival, with you as its only member. Needs your profile. */
+  createCrew(festivalId: string, name: string): Promise<Crew>;
+  /** A crew by its id (anyone signed in with the link can see its name and who's in it). */
+  crew(id: string): Promise<Crew | null>;
+  /** The crews you're in. */
+  myCrews(): Promise<Crew[]>;
+  /** Join a crew (needs your profile; refused when it's full). Joining twice is the same as once. */
+  joinCrew(id: string): Promise<Crew>;
+  /** Leave a crew, taking your picks with you. The last one out ends it; an owner who leaves hands it on. */
+  leaveCrew(id: string): Promise<void>;
+  /** The owner renames the crew. */
+  renameCrew(id: string, name: string): Promise<Crew>;
+  /** The owner removes someone from the crew (and their picks). */
+  removeFromCrew(id: string, uid: string): Promise<Crew>;
+  /** Share your starred sets with a crew you're in (replaces what you shared before). */
+  setCrewPicks(id: string, artists: string[]): Promise<void>;
+  /** Everyone's shared picks in a crew you're in. */
+  crewPicks(id: string): Promise<CrewPicks[]>;
+
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;
   setBlocked(uid: string, blocked: boolean): Promise<void>;
@@ -95,6 +114,8 @@ export type SocialErrorKind =
   | 'not-signed-in'
   | 'no-profile'
   | 'too-large'
+  | 'crew-full'
+  | 'not-found'
   | 'network'
   | 'unavailable'
   | 'unknown';
@@ -122,6 +143,8 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'not-signed-in': 'Sign in to do that.',
   'no-profile': 'Create your profile first.',
   'too-large': 'That video is too big to share. Try a shorter clip.',
+  'crew-full': 'That crew is full.',
+  'not-found': 'That doesn’t exist any more.',
   network: 'Couldn’t reach Afterglow. Check your connection and try again.',
   unavailable: 'Profiles aren’t available in this version of Afterglow yet.',
   unknown: 'Something went wrong. Try again.',

@@ -1,5 +1,5 @@
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from 'obscenity';
-import type { ProfileInput } from './models';
+import { CREW_NAME_MAX, type ProfileInput } from './models';
 
 /**
  * Checks on what people publish: handles, names and bios. Pure. Plain-words
@@ -76,3 +76,15 @@ export function suggestHandle(from: string): string {
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 /** Firebase accepts 6; asking for 8 is kinder to accounts. */
 export const PASSWORD_MIN = 8;
+
+/** A crew name as it's saved: trimmed, one line, single spaces. */
+export const cleanCrewName = (raw: string) => raw.trim().replace(/\s+/g, ' ');
+
+/** What's wrong with a crew name, in plain words (checked on the cleaned name). */
+export function crewNameProblem(raw: string): string | undefined {
+  const name = cleanCrewName(raw);
+  if (!name) return 'Give your crew a name.';
+  if (name.length > CREW_NAME_MAX) return `At most ${CREW_NAME_MAX} characters.`;
+  if (isOffensive(name)) return 'That name isn’t allowed.';
+  return undefined;
+}

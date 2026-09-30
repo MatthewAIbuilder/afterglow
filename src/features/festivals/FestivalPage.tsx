@@ -23,6 +23,7 @@ import { leftToRate } from './tune';
 import { YourFestival } from '../plan/YourFestival';
 import { haptic } from '../../lib/haptics';
 import { FriendsGoing } from '../social/FriendsGoing';
+import { CrewCard } from '../crews/CrewCard';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
@@ -132,6 +133,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           </View>
           {/* People you follow (and others) who show this festival on their profile. */}
           <FriendsGoing festivalId={whole.id} />
+          {/* Your crews for this festival, or start one. */}
+          <CrewCard festival={whole} />
         </View>
 
         {whole.weekends && whole.weekends.length > 1 ? <WeekendPicker festival={whole} shown={festival.lineup.length} /> : null}

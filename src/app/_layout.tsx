@@ -7,6 +7,7 @@ import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
 import { CommunityProvider } from '../state/community';
+import { CrewsProvider } from '../state/crews';
 import { GoingProvider } from '../state/going';
 import { MemoriesProvider } from '../state/memories';
 import { MusicConnectionsProvider } from '../state/music';
@@ -36,6 +37,7 @@ export default function RootLayout() {
       <WeekendsProvider>
       <SocialProvider>
       <NoticesProvider>
+      <CrewsProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -56,6 +58,7 @@ export default function RootLayout() {
         <Stack.Screen name="people" />
         <Stack.Screen name="follows/[handle]" />
         <Stack.Screen name="going/[id]" />
+        <Stack.Screen name="crew/[id]" />
         <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
@@ -105,6 +108,7 @@ export default function RootLayout() {
       <ReminderSync />
       <LikeSync />
       <DialogHost />
+      </CrewsProvider>
       </NoticesProvider>
       </SocialProvider>
       </WeekendsProvider>

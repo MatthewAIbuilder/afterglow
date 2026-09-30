@@ -44,7 +44,7 @@ EXPO_PUBLIC_FIREBASE_APP_ID=1:1234567890:web:abc123
 
 ## 5. Install the security rules (5 minutes, once, and again whenever I change them)
 
-The rules decide who can read and write what: only you can change your profile and your shared videos, a handle belongs to one person, blocks are private, reports can't be read back, and uploads are limited to videos and photos of sensible size. They're in the repo as `firestore.rules`, `storage.rules` and `firestore.indexes.json`, and they have been checked against Firebase's own emulator (`scripts/firebase-rules.test.mjs`).
+The rules decide who can read and write what: only you can change your profile and your shared videos, a handle belongs to one person, blocks are private, festival crews' picks are seen only by the crew, reports can't be read back, and uploads are limited to videos and photos of sensible size. They're in the repo as `firestore.rules`, `storage.rules` and `firestore.indexes.json`, and they have been checked against Firebase's own emulator (`scripts/firebase-rules.test.mjs`).
 
 In PowerShell, in the Afterglow folder:
 
