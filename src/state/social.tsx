@@ -58,21 +58,25 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const [sharing, setSharing] = useState<Record<string, number>>({});
   const mem = useMemories();
 
-  // Sign-in state, then your profile and blocks whenever the account changes.
+  // Sign-in state, then your profile and blocks whenever the account changes. An answer that arrives after
+  // the account changed again (a quick sign-out and in) is dropped, so one account never shows another's profile.
+  const currentUid = useRef<string | null>(null);
   useEffect(
     () =>
       service.onAuthChange((u) => {
+        currentUid.current = u?.uid ?? null;
         setUser(u);
         setReady(true);
-        if (!u) {
-          setProfile(null);
-          setBlockedIds(new Set());
-          return;
-        }
-        service.profileOf(u.uid).then(setProfile).catch(() => {});
+        setProfile(null);
+        setBlockedIds(new Set());
+        if (!u) return;
+        service
+          .profileOf(u.uid)
+          .then((p) => currentUid.current === u.uid && setProfile(p))
+          .catch(() => {});
         service
           .blocked()
-          .then((ids) => setBlockedIds(new Set(ids)))
+          .then((ids) => currentUid.current === u.uid && setBlockedIds(new Set(ids)))
           .catch(() => {});
       }),
     [service],
@@ -91,7 +95,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const saveProfile = useCallback(
     async (input: ProfileInput) => {
       const p = await service.saveProfile(input, published);
-      setProfile(p);
+      if (currentUid.current === p.uid) setProfile(p);
       return p;
     },
     [service, published],
@@ -102,7 +106,10 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     if (!profile || !publishedChanged(profile, published.festivals, published.sounds)) return;
     const t = setTimeout(() => {
       const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound };
-      service.saveProfile(input, published).then(setProfile).catch(() => {});
+      service
+        .saveProfile(input, published)
+        .then((p) => currentUid.current === p.uid && setProfile(p))
+        .catch(() => {});
     }, 3000);
     return () => clearTimeout(t);
   }, [profile, published, service]);

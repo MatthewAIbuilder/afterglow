@@ -16,6 +16,8 @@ service cloud.firestore {
       return h is string && h.matches('^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$') && !h.matches('.*[._][._].*') && !reserved(h);
     }
     function path(coll, id) { return /databases/$(database)/documents/$(coll)/$(id); }
+    // An optional short text field: absent, or a string of at most `max` characters.
+    function shortOrAbsent(data, field, max) { return !(field in data) || (data[field] is string && data[field].size() <= max); }
 
     // Profiles: anyone signed in can read; only you can write yours, and only
     // with a handle you own (claimed in the same transaction).
@@ -28,6 +30,7 @@ service cloud.firestore {
         && request.resource.data.nameLower == request.resource.data.displayName.lower()
         && request.resource.data.bio is string && request.resource.data.bio.size() <= 160
         && request.resource.data.festivals is list && request.resource.data.festivals.size() <= 50
+        && request.resource.data.createdAt.size() <= 40 && request.resource.data.updatedAt.size() <= 40
         && request.resource.data.sounds is list && request.resource.data.sounds.size() <= 3
         && request.resource.data.showFestivals is bool && request.resource.data.showSound is bool
         && (!('avatarUrl' in request.resource.data) || (request.resource.data.avatarUrl is string && request.resource.data.avatarUrl.matches('^https://.*')))
@@ -43,7 +46,9 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uid']) && request.resource.data.uid == me()
         && getAfter(path('profiles', me())).data.handle == handle;
       allow update: if false;
-      allow delete: if signedIn() && resource.data.uid == me();
+      // Only when you're moving to another handle or deleting your profile, so a profile never points at a handle it doesn't own.
+      allow delete: if signedIn() && resource.data.uid == me()
+        && (!existsAfter(path('profiles', me())) || getAfter(path('profiles', me())).data.handle != handle);
     }
 
     // Shared memories: readable by anyone signed in; created only by their owner,
@@ -56,7 +61,12 @@ service cloud.firestore {
         && request.resource.data.videoPath.matches('^memories/' + me() + '/' + id + '[.](mp4|mov|m4v)$')
         && request.resource.data.videoUrl is string && request.resource.data.videoUrl.matches('^https://.*')
         && (!('thumbPath' in request.resource.data) || request.resource.data.thumbPath == 'memories/' + me() + '/' + id + '.jpg')
-        && request.resource.data.capturedAt is string && request.resource.data.createdAt is string;
+        && (!('thumbUrl' in request.resource.data) || (request.resource.data.thumbUrl is string && request.resource.data.thumbUrl.matches('^https://.*')))
+        && shortOrAbsent(request.resource.data, 'festivalId', 100) && shortOrAbsent(request.resource.data, 'artistId', 100)
+        && shortOrAbsent(request.resource.data, 'night', 40) && shortOrAbsent(request.resource.data, 'memoryId', 60)
+        && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
+        && request.resource.data.capturedAt is string && request.resource.data.capturedAt.size() <= 40
+        && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
       allow update: if false;
       allow delete: if signedIn() && resource.data.uid == me();
     }
@@ -73,6 +83,8 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.by == me()
         && request.resource.data.keys().hasOnly(['by', 'kind', 'targetId', 'ownerUid', 'reason', 'note', 'createdAt'])
         && request.resource.data.kind in ['profile', 'memory']
+        && request.resource.data.targetId is string && request.resource.data.targetId.size() <= 128
+        && request.resource.data.ownerUid is string && request.resource.data.ownerUid.size() <= 128
         && request.resource.data.reason in ['offensive', 'harassment', 'spam', 'not-theirs', 'other']
         && request.resource.data.note is string && request.resource.data.note.size() <= 500;
       allow read, update, delete: if false;

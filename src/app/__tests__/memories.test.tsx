@@ -283,7 +283,7 @@ describe('social profiles', () => {
     await flush();
     await fireEvent.press(app.getByRole('button', { name: 'Share to profile' }));
     await flush();
-    expect(alert).toHaveBeenCalledWith('Share to your profile?', expect.stringMatching(/Where you filmed it isn’t shared/), expect.any(Array));
+    expect(alert).toHaveBeenCalledWith('Share to your profile?', expect.stringMatching(/doesn’t add where you filmed it, but some videos carry their location inside the file/), expect.any(Array));
     expect(mockSocial.memories.size).toBe(1);
     const shared = [...mockSocial.memories.values()][0];
     expect(shared).toMatchObject({ uid: 'uid-1', handle: 'maya', festivalId: 'cyclops-cove-4', artistId: 'subtronics' });

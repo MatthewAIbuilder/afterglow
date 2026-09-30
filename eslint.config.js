@@ -5,6 +5,7 @@ const expoConfig = require("eslint-config-expo/flat");
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ["dist/*"],
+    // scripts/ holds tools run outside the app (their packages aren't app dependencies).
+    ignores: ["dist/*", "scripts/*"],
   }
 ]);

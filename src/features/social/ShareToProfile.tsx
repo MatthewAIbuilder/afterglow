@@ -45,7 +45,7 @@ export function ShareToProfile({ memory, render }: { memory: Memory; render: (la
     }
     Alert.alert(
       'Share to your profile?',
-      `Anyone on Afterglow can watch it on @${social.profile.handle}, with who was playing and the festival. Where you filmed it isn’t shared. Only share videos you filmed yourself.`,
+      `Anyone on Afterglow can watch it on @${social.profile.handle}, with who was playing and the festival. Afterglow doesn’t add where you filmed it, but some videos carry their location inside the file. Only share videos you filmed yourself.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
