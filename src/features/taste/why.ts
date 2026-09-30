@@ -46,9 +46,11 @@ const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? o
  * "From your 2 likes and 1 save", "From your Spotify library and 1 like",
  * "From your rating and 1 like". The rating
  * itself is shown right beside this on the artist page, so it's only named.
- * `informed` says whether anything real is behind the match.
+ * `informed` says whether anything real is behind the match. `nearLibrary`
+ * names the services whose library lifts this artist only by sounding alike
+ * ("Close to artists in your Spotify library").
  */
-export function whyLine(s: ArtistSignals, informed: boolean): string {
+export function whyLine(s: ArtistSignals, informed: boolean, nearLibrary: string[] = []): string {
   const parts = [
     s.library?.length ? `${s.library.join(' and ')} ${s.library.length === 1 ? 'library' : 'libraries'}` : undefined,
     s.rating ? 'rating' : undefined,
@@ -61,5 +63,6 @@ export function whyLine(s: ArtistSignals, informed: boolean): string {
     const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
     return `From your ${list}`;
   }
+  if (nearLibrary.length) return `Close to artists in your ${nearLibrary.join(' and ')} ${nearLibrary.length === 1 ? 'library' : 'libraries'}`;
   return informed ? 'From sounds you like' : 'A first guess. Rate them or react to their clips to sharpen it.';
 }

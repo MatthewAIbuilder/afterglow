@@ -38,5 +38,9 @@ describe('why a match is what it is', () => {
     const none = { likes: 0, saves: 0, skips: 0, watched: 0 };
     expect(whyLine(none, true)).toBe('From sounds you like');
     expect(whyLine(none, false)).toMatch(/^A first guess/);
+    // Lifted only by sounding like your library: says so, naming the service.
+    expect(whyLine(none, true, ['Spotify'])).toBe('Close to artists in your Spotify library');
+    // Your own signal comes first.
+    expect(whyLine({ ...none, likes: 1 }, true, ['Spotify'])).toBe('From your 1 like');
   });
 });

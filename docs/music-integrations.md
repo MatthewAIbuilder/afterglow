@@ -46,9 +46,13 @@ Adapters keep only names, ids, counts and genres. Song titles, album names, play
    - `IMPORT_WEIGHT` 0.6: a library strength of 1 counts 0.6, below one like (1.0).
    - Spill-over to similar artists works like likes (same `SPILL`, same similarity).
    - Library artists outside the catalogue reach only artists at least `IMPORT_SOUND_MIN_SIMILARITY` 0.5 alike, at `IMPORT_SOUND_SHARE` half weight, adding at most `IMPORT_SOUND_CAP` 0.3.
+   - Everything that reaches an artist only by sounding like your library (spill from similar library artists plus the sounds of library artists Afterglow doesn't have) is at most `IMPORT_SPILL_CAP` 0.3, and it only fills the room the artist's own library strength leaves (`own + spill × (1 − own / IMPORT_CAP)`). So an artist who merely sounds like your library never ties with one who is in it, and a stronger library artist always ranks higher. (Before Milestone 44, a big library spilled every similar act up to the same cap as the listener's favourite.)
    - Everything imported for one artist is capped at `IMPORT_CAP` 0.6.
    - Once you've reacted to or rated an artist in Afterglow, the library counts `IMPORT_OWN_SHARE` half for them.
    - Ratings are still taken at their word, and one skip outweighs a whole library.
+5. `startingPrior(base, imported)`: everyone starts from the built-in starting guess (`data/mock/tasteProfile.ts`) so a newcomer's map isn't empty. That guess is made up, so once a library names at least `PRIOR_YIELDS_AT` 3 Afterglow artists it steps aside and every match starts at 50%: your library decides who leads the map (a house fan's favourite used to sit below five made-up bass favourites). Disconnecting brings the guess back. My Sound's "only N of your artists…" note uses the same threshold (`LITTLE_LIBRARY`).
+
+A heavy library artist ends around 56% on its own, a single like around 60%: the engine moves in small steps, so "strongly represented" on My Sound means leading the map (centre, biggest bubbles), not a high percentage. Real behaviour then takes over quickly.
 
 The map fills only with what's real: imported artists are "informed" and join My Sound; if few of your artists are on Afterglow's lineups, My Sound says so rather than padding the map.
 
@@ -74,7 +78,7 @@ Rules the code follows:
 |---|---|---|---|
 | Normalising, merging, taste integration, privacy | Fully tested with fixtures | Yes | Nothing |
 | Music connections screen, My Sound notes, states | Tested with test doubles | Yes (shows "not available" until set up) | Nothing |
-| Spotify sign-in and sync | Tested against recorded response shapes | Probably not (see redirect below) | Spotify Client ID, a development build |
+| Spotify sign-in and sync | Tested against recorded response shapes, PKCE and state checks | No: shows "Needs the full version" | Spotify Client ID, a development build (see spotify-setup.md) |
 | Apple Music sign-in and sync | API reading tested with fixtures | No (Expo Go has no MusicKit) | MusicKit module in a development build, developer-token service |
 
 Nothing in the app pretends to connect: without setup, both services say "Not available in this version of Afterglow yet." or "Needs the full version of Afterglow."
@@ -88,17 +92,27 @@ Put these in a local `.env` (git ignores it; see `.env.example`) or in EAS envir
 
 Secrets that must stay **outside** the app and the repo: the Spotify client secret (not used at all: PKCE needs none), the Apple MusicKit private key (.p8), its Key ID and your Team ID (used only by the service that signs developer tokens).
 
-### Spotify, one-time setup
+### Spotify
 
-1. Sign in at developer.spotify.com > Dashboard > Create app. Name it, tick "Web API". As of Spotify's February 2026 changes, a development-mode app needs its owner to have Spotify Premium and allows up to 5 listed users; wider use needs Spotify's extended quota approval.
-2. Redirect URI: add `afterglow://music-auth` (the app's scheme from app.json plus the path in `config/music.ts`). Spotify requires HTTPS or loopback for web redirects and still allows custom schemes for apps, but has recommended universal links; if the dashboard rejects the scheme, set up a universal link and point `MUSIC_REDIRECT` at it.
-3. Under "User Management", add the Spotify accounts that will test.
-4. Copy the Client ID into `EXPO_PUBLIC_SPOTIFY_CLIENT_ID`.
-5. Build a development build (`npx eas-cli@latest build --profile development --platform ios`), install it, open Profile > Music connections > Spotify > Connect.
+**Step-by-step setup and a test checklist: [`spotify-setup.md`](spotify-setup.md).**
 
-Expo Go's redirect is `exp://<your computer's address>/--/music-auth`, which changes with your network, so Spotify sign-in is only practical in a development build.
+How the connection works:
 
-Scopes requested (the minimum): `user-library-read` (saved songs), `user-follow-read` (followed artists), `user-top-read` (top artists, about six months and the last four weeks). Nothing that writes, no playlists, no playback, no email. If Spotify stops offering a part to an app (it has removed endpoints before), that part becomes a gap and the rest still syncs.
+- **Sign-in**: Authorization Code with PKCE (S256), no client secret anywhere. `spotify/auth.ts` (pure, tested) makes the verifier, challenge and a random `state`, builds the authorize link, and reads the answer: a code only counts if it arrives at the exact redirect address with the same `state`; a denial is only believed with the right `state` too. `spotify/signIn.ts` opens it in the system sheet with `expo-web-browser`'s `openAuthSessionAsync` (ASWebAuthenticationSession on iPhone, a Custom Tab on Android). `tokens.ts` exchanges the code and refreshes.
+- **Redirect**: `afterglow://music-auth` by default. `EXPO_PUBLIC_SPOTIFY_REDIRECT_URI` can switch to an https universal link if Spotify's dashboard refuses the custom scheme for a new app; `app.config.ts` then adds the Associated Domains entitlement and an Android App Link for that host, and the sheet uses the universal-link callback (iOS 17.4+). Anything else (http, `exp://`, a query string) is ignored.
+- **Expo Go**: Spotify is shown as needing the full app (`needsOwnApp`, from `Constants.executionEnvironment`), because Expo Go's `exp://` return address can't be registered. Use a development build (`expo-dev-client`, `eas.json` profile `development`).
+- **Tokens**: kept only in the secure store, refreshed a minute before they run out and once more on a 401. A refused refresh (revoked at spotify.com/account/apps, or older than Spotify's 6-month refresh-token limit) clears the session and shows "Sign in again", keeping the last import until you disconnect.
+- **Connection state** (`state/music.tsx`): one sign-in at a time (`connecting` while the sheet is open), one read at a time (a second Sync now joins the running one), a sign-in or read that finishes after a disconnect is dropped and anything it stored is forgotten, a secure-store sign-in with no connection behind it is forgotten on launch (the iPhone keychain outlives an uninstall), and a connected library with no import yet or older than a day is read again on launch.
+- **Screen states** (`copy.ts`, `connectionStatus`): not connected, connecting, connected, syncing, synced, sign in again (expired, revoked or not allowed), sync failed (network, busy, unknown), plus "not available" when the build can't connect. Synced shows Last synced, artists analyzed and on upcoming festivals (`reach.ts`). No account details are shown or stored.
+
+Spotify's rules this relies on (checked 2026-09-29 against sources quoting Spotify's changelog; developer.spotify.com itself is blocked from the cloud session):
+
+- Development mode (February 2026): the app owner needs Premium; up to 5 listed users; existing apps migrated 2026-03-09.
+- Still available: `GET /me/tracks`, `GET /me/following?type=artist`, `GET /me/top/artists`. Removed: follow/unfollow writes, `/me/following/contains`, batch artist lookups, artist top tracks. Artist `genres` remain; `popularity` and `followers` are gone (Afterglow doesn't read them).
+- Redirects: https or loopback IP only for web addresses (no `http://`, no `localhost`, since November 2025); custom schemes documented as still supported, though some developers report new apps refusing them (hence the universal-link option).
+- Refresh tokens expire 6 months after sign-in.
+
+If Spotify stops offering a part to an app, that part becomes a gap ("Spotify didn't share your top artists this time…") and the rest still syncs. If every part is refused (typically an account missing from User Management), the sync fails as "Spotify didn't allow access".
 
 ### Apple Music, one-time setup
 
@@ -116,7 +130,11 @@ npx jest --ci src/features/music src/features/taste src/app/__tests__/music.test
 ```
 
 - `features/music/__tests__/fixtures.ts`: realistic Spotify and Apple Music responses and a fake `fetch`. No real accounts or credentials.
-- `spotify.test.ts`, `apple.test.ts`: normalising, paging, refresh, expired and revoked access, gaps, denied, rate limits, tokens never leaving the service's API.
+- `spotify.test.ts`, `apple.test.ts`: normalising, paging, refresh, expired and revoked access, gaps, denied, rate limits, tokens never leaving the service's API, failed token exchange, Expo Go.
+- `spotifyAuth.test.ts`: PKCE (RFC 7636 test vector), the authorize link, state and redirect checks, denied/cancelled/failed sheets, the redirect setting.
+- `reach.test.ts`: "on upcoming festivals".
+- `src/state/__tests__/music.test.tsx`: the provider on its own: connecting, duplicate syncs, disconnect mid sign-in and mid sync, forgotten orphan sign-ins, the launch re-read.
+- `features/taste/__tests__/coldStart.test.ts`: a new listener's messy Spotify library, end to end against the real catalogue: duplicates, missing names, artists Afterglow doesn't have, lineup artists, the library leading the first map, and behaviour taking over.
 - `library.test.ts`: merging services, duplicates, provider leakage, catalogue matching, genres.
 - `features/taste/__tests__/imported.test.ts`: the imported layer is conservative, capped, reported separately, and likes/skips/ratings still work.
 - `store.test.ts`: failed syncs keep the last snapshot, disconnect removes everything, copy for every state.

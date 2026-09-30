@@ -28,11 +28,12 @@ import { isWatch, type Watch } from './watch';
  * - A connected music library (Spotify, Apple Music) is a separate imported
  *   layer, kept apart from what you do in Afterglow so the two can be tuned
  *   independently. It gives a new listener a head start and never more:
- *   everything it says about one artist (their own library strength, spill
- *   from similar library artists, and the sounds of library artists Afterglow
- *   doesn't have) is capped at `IMPORT_CAP`, below a single like, and counts
- *   half once you've reacted to or rated that artist here. A skip in
- *   Afterglow outweighs a whole library's worth of plays.
+ *   everything it says about one artist (their own library strength, plus
+ *   spill from similar library artists and the sounds of library artists
+ *   Afterglow doesn't have, itself capped at `IMPORT_SPILL_CAP`) is at most
+ *   `IMPORT_CAP`, below a single like, and counts half once you've reacted to
+ *   or rated that artist here. A skip in Afterglow outweighs a whole
+ *   library's worth of plays.
  */
 
 export const WEIGHT = { like: 1, save: 1.3, skip: -0.8 };
@@ -56,6 +57,14 @@ export const IMPORT_SOUND_SHARE = 0.5;
 export const IMPORT_SOUND_MIN_SIMILARITY = 0.5;
 /** ...and adding at most this to any one artist. */
 export const IMPORT_SOUND_CAP = 0.3;
+/**
+ * Everything that reaches an artist only by sounding like your library
+ * (similar library artists, and sounds of ones Afterglow doesn't have) is at
+ * most this: half the cap, so an artist who merely sounds like your library
+ * never matches one who is in it. Without it, a big library spilled every
+ * similar act up to the same cap as your actual favourite.
+ */
+export const IMPORT_SPILL_CAP = 0.3;
 
 /**
  * What a connected music library says, already matched to the catalogue
@@ -68,6 +77,28 @@ export type ImportedTaste = {
   sounds: { sound: Artist['sound']; strength: number }[];
 };
 const NO_IMPORT: ImportedTaste = { artists: {}, sounds: [] };
+
+/**
+ * A connected library that gives Afterglow at least this many of its own
+ * artists replaces the built-in starting guess (see `startingPrior`).
+ */
+export const PRIOR_YIELDS_AT = 3;
+
+/**
+ * The starting profile the engine begins from. Everyone starts from the
+ * built-in guess (`base`) so a newcomer's map isn't empty, but that guess is
+ * made up, not about you. Once a connected library names at least
+ * `PRIOR_YIELDS_AT` Afterglow artists, it steps aside and every match starts
+ * at an even 50%: your library then decides who leads the map, instead of
+ * trailing behind guesses that outrank it (a house fan's own favourite would
+ * otherwise sit below five bass acts they've never played). The library's own
+ * weight is unchanged, so one like or skip still counts for more than it, and
+ * disconnecting brings the guess back.
+ */
+export function startingPrior(base: TasteProfile, imported: ImportedTaste = NO_IMPORT): TasteProfile {
+  const named = Object.values(imported.artists).filter((s) => s > 0).length;
+  return named >= PRIOR_YIELDS_AT ? {} : base;
+}
 
 const STEP = 0.11; // how much one signal moves a mid-range match
 const SPILL = 0.45; // share of a signal that reaches similar artists
@@ -189,20 +220,24 @@ function importedSignal(
   if (!sources.length && !imported.sounds.length) return {};
   const out: Record<string, number> = {};
   for (const a of artists) {
-    let s = direct[a.id] ?? 0;
+    // Spill from similar library artists, and from the sounds of library artists Afterglow doesn't have.
+    let fromArtists = 0;
     for (const id of sources) {
       if (id === a.id) continue;
       const sim = similarity(a, byId.get(id)!);
-      if (sim >= SPILL_MIN_SIMILARITY) s += direct[id] * sim * SPILL;
+      if (sim >= SPILL_MIN_SIMILARITY) fromArtists += direct[id] * sim * SPILL;
     }
     let bySound = 0;
     for (const v of imported.sounds) {
       const sim = soundSimilarity(a, { id: '', name: '', sound: v.sound });
       if (sim >= IMPORT_SOUND_MIN_SIMILARITY) bySound += Math.min(1, v.strength) * IMPORT_WEIGHT * IMPORT_SOUND_SHARE * sim * SPILL;
     }
-    s += Math.min(IMPORT_SOUND_CAP, bySound);
+    const spill = Math.min(IMPORT_SPILL_CAP, fromArtists + Math.min(IMPORT_SOUND_CAP, bySound));
+    // Spill fills only the room the artist's own library strength leaves, so it never reaches the cap on
+    // its own, a stronger library artist always ends higher, and the total stays within IMPORT_CAP.
+    const mine = Math.min(IMPORT_CAP, direct[a.id] ?? 0);
+    let s = mine + spill * (1 - mine / IMPORT_CAP);
     if (a.id in own) s = Math.min(s, IMPORT_CAP * IMPORT_OWN_SHARE);
-    s = Math.min(IMPORT_CAP, s);
     if (s > 0) out[a.id] = s;
   }
   return out;

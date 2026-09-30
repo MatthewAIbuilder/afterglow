@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import { SECRET_KEY } from '../secrets';
 import { MusicServiceError } from '../service';
 import { readSpotifyLibrary, spotifyClient, SPOTIFY_API } from '../spotify/api';
@@ -248,6 +248,47 @@ describe('Spotify service', () => {
     expect(make({ clientId: '' }).service.availability()).toEqual({ ok: false, reason: 'not-set-up' });
     expect(make({ secureStorage: false }).service.availability()).toEqual({ ok: false, reason: 'not-on-this-device' });
     expect(make().service.availability()).toEqual({ ok: true });
+  });
+
+  it('in Expo Go it says a development build is needed, and never opens the sign-in', async () => {
+    const signIn = jest.fn(async () => ({ type: 'cancelled' as const }));
+    const { service } = make({ needsOwnApp: true, signIn });
+    expect(service.availability()).toEqual({ ok: false, reason: 'needs-full-app' });
+    expect(await service.connect()).toEqual({ ok: false, reason: 'unavailable' });
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it('a sign-in Spotify refuses at the token step (bad code, wrong redirect) stores nothing', async () => {
+    const secrets = memorySecrets();
+    const net = fakeFetch({ [SPOTIFY_ENDPOINTS.tokenEndpoint]: { status: 400, body: { error: 'invalid_grant' } } });
+    const { service } = make({ secrets, fetch: net.fetch });
+    expect(await service.connect()).toEqual({ ok: false, reason: 'unknown' });
+    expect(secrets.items.size).toBe(0);
+  });
+
+  it('no connection during sign-in is a network problem, and stores nothing', async () => {
+    const secrets = memorySecrets();
+    const { service } = make({ secrets, fetch: async () => { throw new Error('offline'); } });
+    expect(await service.connect()).toEqual({ ok: false, reason: 'network' });
+    expect(secrets.items.size).toBe(0);
+  });
+
+  it('the code is exchanged with the same redirect address the sign-in used', async () => {
+    const { service, net } = make();
+    await service.connect();
+    const body = net.calls.find((c) => c.url === SPOTIFY_ENDPOINTS.tokenEndpoint)!.init!.body!;
+    expect(body).toContain(`redirect_uri=${encodeURIComponent('afterglow://music-auth')}`);
+    expect(body).not.toContain('client_secret');
+  });
+
+  it('an expired session that can’t be refreshed makes the next sync `expired` and forgets the session', async () => {
+    const { service, secrets } = make();
+    await service.connect();
+    const stored = JSON.parse(secrets.items.get(SECRET_KEY.spotify)!);
+    secrets.items.set(SECRET_KEY.spotify, JSON.stringify({ ...stored, expiresAt: NOW - 1 }));
+    const refused = make({ secrets, fetch: fakeFetch({ [SPOTIFY_ENDPOINTS.tokenEndpoint]: { status: 400, body: { error: 'invalid_grant' } } }).fetch });
+    await expect(refused.service.fetchLibrary(AT)).rejects.toMatchObject({ kind: 'expired' });
+    expect(secrets.items.size).toBe(0);
   });
 
   it('connecting exchanges the code with PKCE and keeps the session in the secure store only', async () => {
