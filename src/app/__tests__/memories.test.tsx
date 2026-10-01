@@ -234,7 +234,7 @@ describe('social profiles', () => {
     const app = await renderApp('/profile');
     await flush();
     expect(app.queryByRole('button', { name: 'Create your profile' })).toBeNull();
-    expect(app.getByText('Your festival profile, friends, and seeing who else is going.')).toBeTruthy();
+    expect(app.getByText('Your festivals, your videos and your sound.')).toBeTruthy();
   });
 
   it('create an account (agreeing to the guidelines), make a profile, and see it on Profile', async () => {

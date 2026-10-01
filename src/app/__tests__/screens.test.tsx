@@ -871,25 +871,32 @@ describe('Lineup tab', () => {
 });
 
 describe('Profile tab', () => {
-  it('shows what you have built so far and what is coming', async () => {
+  it('shows what you have built so far, with tabs for your videos, festivals and saved clips', async () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
     const app = await renderApp('/profile');
     await settle();
     expect(app.getByLabelText('1 festival')).toBeTruthy();
     expect(app.getByLabelText('0 artists rated')).toBeTruthy();
-    // What's still to come; profiles themselves say plainly they aren't set up in this build.
-    expect(app.getByText('Friends')).toBeTruthy();
-    expect(app.getByText('Your festival profile, friends, and seeing who else is going.')).toBeTruthy();
+    // Videos first: nothing filmed yet, so it says what goes here.
+    expect(app.getByText('Your festival videos')).toBeTruthy();
+    await fireEvent.press(app.getByRole('tab', { name: 'Saved' }));
+    expect(app.getByLabelText('Your clips, 0')).toBeTruthy();
+    // Everything else is behind the menu.
+    await fireEvent.press(app.getByLabelText('Settings and more'));
+    await settle();
     expect(app.getByLabelText('Memories, 0')).toBeTruthy();
+    expect(app.getByLabelText('Music connections, none connected')).toBeTruthy();
   });
 
-  it('shows your sound in three bars and the festivals you are going to, with your weekend', async () => {
+  it('shows your sound as chips and the festivals you are going to, with your weekend', async () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['acl-26']));
     await AsyncStorage.setItem('weekends.v1', JSON.stringify({ 'acl-26': 2 }));
     const app = await renderApp('/profile');
     await settle();
     expect(app.getByLabelText(/^Your sound: .+ percent/)).toBeTruthy();
-    expect(app.getByLabelText(/^Austin City Limits 2026, weekend 2, /)).toBeTruthy();
+    await fireEvent.press(app.getByRole('tab', { name: 'Festivals, 1' }));
+    // The round shortcut and the row in the Festivals tab.
+    expect(app.getAllByLabelText(/^Austin City Limits 2026, Weekend 2 · /)).toHaveLength(2);
   });
 });
 

@@ -84,6 +84,7 @@ export default function RootLayout() {
         <Stack.Screen name="compare" />
         <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="your-artists" />
+        <Stack.Screen name="settings" />
         <Stack.Screen name="year/[year]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"

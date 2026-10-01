@@ -23,7 +23,7 @@ describe('your year', () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
     const app = await renderApp('/profile');
     await flush();
-    await fireEvent.press(app.getByLabelText(new RegExp(`^Your ${year} on Afterglow\\.`)));
+    await fireEvent.press(app.getByLabelText(new RegExp(`^Your ${year} on Afterglow`)));
     await flush();
     expect(app.getAllByText(`Your ${year}`).length).toBeGreaterThan(0);
     expect(app.getByText('Your top artists')).toBeTruthy();

@@ -73,6 +73,8 @@ describe('Music connections', () => {
   it('opens from Profile and shows the disconnected state, explained plainly', async () => {
     const app = await renderApp('/profile');
     await settle();
+    await fireEvent.press(app.getByLabelText('Settings and more'));
+    await settle();
     await fireEvent.press(app.getByLabelText('Music connections, none connected'));
     await settle();
     expect(app.getByText(/^Start your map from the artists you already play\. What you do in Afterglow still counts for more\.$/)).toBeTruthy();

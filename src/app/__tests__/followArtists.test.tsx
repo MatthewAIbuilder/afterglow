@@ -59,6 +59,7 @@ describe('following artists', () => {
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ subtronics: 'love' }));
     const app = await renderApp('/profile');
     await flush();
+    await fireEvent.press(app.getByRole('tab', { name: 'Saved' }));
     await fireEvent.press(app.getByLabelText('Your artists, none followed yet'));
     await flush();
     expect(app.getByText('Follow artists to hear when they’re added to a lineup.')).toBeTruthy();

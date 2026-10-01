@@ -16,10 +16,12 @@ beforeEach(async () => {
 });
 
 describe('legal pages', () => {
-  it('open from Profile and link to each other', async () => {
+  it('open from Profile settings and link to each other', async () => {
     const app = await renderApp('/profile');
     await flush();
-    await fireEvent.press(app.getByRole('link', { name: 'Privacy' }));
+    await fireEvent.press(app.getByLabelText('Settings and more'));
+    await flush();
+    await fireEvent.press(app.getByRole('button', { name: 'Privacy' }));
     await flush();
     expect(app.getByText('Privacy Policy')).toBeTruthy();
     expect(app.getByText('What stays on your device')).toBeTruthy();
