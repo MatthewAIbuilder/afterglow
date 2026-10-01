@@ -14,6 +14,10 @@ export async function pickVideo(_source: 'camera' | 'library'): Promise<PickResu
   return { ok: false, reason: 'app-only' };
 }
 
+export async function recordedVideo(): Promise<never> {
+  throw new Error('Filming is in the iPhone app for now.');
+}
+
 export const deviceMemoryFiles: MemoryFiles = {
   async keep() {
     throw new Error('Memories are in the iPhone app for now.');

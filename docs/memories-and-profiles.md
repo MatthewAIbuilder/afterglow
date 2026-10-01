@@ -5,11 +5,12 @@ How Afterglow keeps your own festival videos, guesses who was playing, and share
 ## Memories (on the phone, private)
 
 ```
-Discover: press and hold around a clip ──► Record a video / Choose from library (useAddMemory)
-        │                                    expo-image-picker (iPhone trims to 3 min)
+Discover: swipe right (or the camera button) ──► camera.tsx: Afterglow's own camera (expo-camera)
+          press and hold a clip ──► Record a video (the camera) / Choose from library (useAddMemory)
+        │                                    library: expo-image-picker (iPhone trims to 3 min)
         ▼                                    when + where: the video's creation time and location
 features/memories/device.ts                  (expo-media-library), or now + here for a recording
-  pickVideo → PickedVideo { uri, source, durationSec, moment: { when, place: { city, region } } }
+  pickVideo / recordedVideo → PickedVideo { uri, source, durationSec, moment: { when, place: { city, region } } }
         │                                    coordinates → place name on the phone (expo-location), then dropped
         ▼
 memory-tag.tsx (tagging sheet) ◄── guess.ts: guessFestivals, guessArtists (pure)
@@ -23,6 +24,7 @@ state/memories.tsx (MemoriesProvider)
 memories.tsx (festival → night → set) · memory/[id].tsx (player) · artist pages ("Your memories")
 ```
 
+- **The camera** (`src/app/camera.tsx`, `features/camera/`): swiping right on Discover peeks its edge in (Discover shifts up to `PEEK_MAX` 110 points, with a tick as you pass the point that opens it) and opens it past `OPEN_AT` 35% of the width or with a flick; the header's camera button opens it too, and so does "Record a video". Tap the record button to start and tap again to stop, or hold it to film while held (`recordButton` in `record.ts`, `HOLD_MS` 350); the ring fills to `RECORD_MAX_SEC` 180; under `MIN_RECORD_MS` 0.8 s isn't kept. Then the tagging sheet replaces the camera. Torch, front/back, Photos (library), "Filming at <festival> · <night>" when you're at one you're going to. Swipe left or close to go back; leaving mid-recording keeps nothing. Camera and microphone are asked for on the page, with Open Settings once refused (no microphone means silent video). Phones only: the website says filming is in the app.
 - **Files by name, not path.** iOS moves the app's folder between updates, so a memory stores `m…mov`, and the folder is looked up each time.
 - **Nothing is lost by accident.** Files no memory points to are tidied on launch, but only when the saved list read back whole: a damaged list never deletes videos. A recording you cancel asks first, because it exists nowhere else yet.
 - **Private.** Only a city and region are kept from where you filmed. Nothing leaves the phone until you share it.

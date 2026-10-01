@@ -3,13 +3,20 @@ import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewToken } from 'react-native';
 import Animated, {
+  interpolate,
   runOnJS,
   runOnUI,
   scrollTo,
+  useAnimatedReaction,
   useAnimatedRef,
   useAnimatedScrollHandler,
+  useAnimatedStyle,
   useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { CameraIcon } from '../camera/icons';
+import { OPEN_AT, PEEK_MAX, swipeOpens } from '../camera/record';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon, SearchIcon } from '../../components/TabIcons';
@@ -26,7 +33,7 @@ import { usePlan } from '../../state/plan';
 import { useHints } from '../../state/hints';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
-import { color, space, type } from '../../theme/tokens';
+import { color, motion, space, type } from '../../theme/tokens';
 import { ClipCard } from './ClipCard';
 import { FeedEnd } from './FeedEnd';
 import { FollowingEmpty } from './FollowingEmpty';
@@ -164,7 +171,7 @@ export function DiscoverFeed() {
     if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
   }, [ready, reactions, markDone]);
   const next = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
-  // Adding your own videos is in the phone app, so the website doesn't teach the hold.
+  // Filming is in the phone app, so the website doesn't teach it.
   const hint = next === 'hold' && Platform.OS === 'web' ? undefined : next;
   // Press and hold a clip to add your own video: the third tip is done the first time you do.
   const addMemory = useAddMemory();
@@ -172,6 +179,52 @@ export function DiscoverFeed() {
     markDone(['hold']);
     addMemory();
   }, [markDone, addMemory]);
+  // The camera: swipe right on the feed (or its button). Opening it is the third tip done too.
+  const openCamera = useCallback(() => {
+    markDone(['hold']);
+    haptic.tap();
+    router.push('/camera');
+  }, [markDone]);
+  const peek = useSharedValue(0);
+  const swipeToCamera = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(Platform.OS !== 'web')
+        .withTestId('swipe-to-camera')
+        .activeOffsetX(18)
+        .failOffsetX(-12)
+        .failOffsetY([-14, 14])
+        .onUpdate((e) => {
+          peek.set(Math.max(0, e.translationX));
+        })
+        .onEnd((e) => {
+          if (swipeOpens(e.translationX, e.velocityX, width)) runOnJS(openCamera)();
+        })
+        .onFinalize(() => {
+          peek.set(withSpring(0, motion.gentle));
+        }),
+    [peek, width, openCamera],
+  );
+  // A light tick as the drag passes the point where letting go opens the camera.
+  useAnimatedReaction(
+    () => peek.get() > width * OPEN_AT,
+    (past, before) => {
+      if (past && before === false) runOnJS(haptic.select)();
+    },
+    [width],
+  );
+  const feedShift = useAnimatedStyle(() => ({
+    transform: [{ translateX: PEEK_MAX * (1 - Math.exp(-peek.get() / (PEEK_MAX * 1.6))) }],
+  }));
+  const edgeStyle = useAnimatedStyle(() => {
+    const shift = PEEK_MAX * (1 - Math.exp(-peek.get() / (PEEK_MAX * 1.6)));
+    const t = Math.min(1, peek.get() / (width * OPEN_AT));
+    return { width: shift, opacity: interpolate(t, [0, 0.15, 1], [0, 0.6, 1]) };
+  });
+  const edgeIconStyle = useAnimatedStyle(() => {
+    const t = Math.min(1, peek.get() / (width * OPEN_AT));
+    return { transform: [{ scale: 0.8 + 0.3 * t }], opacity: t };
+  });
 
   // The feed's position and whether its own scrolling has the finger, read by swipes that start on a video.
   const offsetY = useSharedValue(0);
@@ -259,7 +312,17 @@ export function DiscoverFeed() {
   );
 
   return (
+    <GestureDetector gesture={swipeToCamera}>
     <View style={[styles.root, { width, alignSelf: 'center' }]}>
+      {/* Swiping right: the camera's edge peeks in on the left, glowing as you near the point that opens it. */}
+      <Animated.View style={[styles.cameraEdge, edgeStyle]} pointerEvents="none">
+        <LinearGradient colors={['#1A1238', '#05040E']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
+        <Animated.View style={[styles.cameraEdgeIcon, edgeIconStyle]}>
+          <CameraIcon color={color.glow} size={26} />
+          <Text style={styles.cameraEdgeText}>Camera</Text>
+        </Animated.View>
+      </Animated.View>
+      <Animated.View style={[styles.shifting, feedShift]}>
       <Animated.FlatList
         ref={listRef}
         data={feed ?? []}
@@ -351,6 +414,12 @@ export function DiscoverFeed() {
           </Pressable>
           <View style={styles.headerEnd}>
             {hint ? <FeedHint hint={hint} /> : null}
+            {/* Film your own video (or swipe right). The camera needs the phone app. */}
+            {Platform.OS !== 'web' ? (
+              <GlassCircleButton label="Open the camera to film a memory" onPress={openCamera}>
+                <CameraIcon color={color.moon} size={18} />
+              </GlassCircleButton>
+            ) : null}
             {/* Search everything: people, artists, festivals. */}
             <GlassCircleButton label="Search artists, festivals and people" onPress={() => router.push('/search')}>
               <SearchIcon color={color.moon} size={17} />
@@ -358,7 +427,9 @@ export function DiscoverFeed() {
           </View>
         </View>
       )}
+      </Animated.View>
     </View>
+    </GestureDetector>
   );
 }
 
@@ -366,7 +437,11 @@ export function DiscoverFeed() {
 const FEED_MAX_WIDTH = 520;
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.night },
+  root: { flex: 1, backgroundColor: color.night, overflow: 'hidden' },
+  shifting: { flex: 1 },
+  cameraEdge: { position: 'absolute', left: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  cameraEdgeIcon: { alignItems: 'center', gap: 6, width: 90 },
+  cameraEdgeText: { ...type.caption, color: color.moonDim },
   topScrim: { position: 'absolute', top: 0, left: 0, right: 0 },
   header: {
     position: 'absolute',

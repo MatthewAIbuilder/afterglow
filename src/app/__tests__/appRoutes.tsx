@@ -7,6 +7,7 @@ import LineupScreen from '../(tabs)/lineup';
 import ProfileScreen from '../(tabs)/profile';
 import SoundScreen from '../(tabs)/sound';
 import AccountScreen from '../account';
+import CameraScreen from '../camera';
 import ArtistScreen from '../artist/[id]';
 import DiscoverFocusScreen from '../discover-focus';
 import FestivalScreen from '../festival/[id]';
@@ -71,6 +72,7 @@ export const APP_ROUTES = {
   music: MusicScreen,
   'music-auth': MusicAuthReturn,
   'memory-tag': MemoryTagScreen,
+  camera: CameraScreen,
   memories: MemoriesScreen,
   'memory/[id]': MemoryScreen,
   'shared/[id]': SharedMemoryScreen,
