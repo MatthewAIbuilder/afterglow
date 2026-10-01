@@ -70,6 +70,7 @@ describe('architecture', () => {
       'features/plan/grid.ts',
       'features/plan/warmup.ts',
       'features/prep/checklist.ts',
+      'features/artists/follow.ts',
       'features/plan/lineupPoster.ts',
       'features/festivals/request.ts',
       'features/festivals/days.ts',
