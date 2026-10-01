@@ -3,14 +3,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from 'react-native';
 import { activityNotices } from '../features/notifications/activity';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
+import { clipNotices } from '../features/notifications/clipNews';
 import { lineupNotices } from '../features/notifications/lineupNews';
 import { recapNotices } from '../features/recap/recap';
 import { useRecapFestivals } from '../features/recap/useRecap';
 import type { Activity, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
+import { useClipNews } from './clipNews';
 import { useGoing } from './going';
 import { useLineupNews } from './lineupNews';
+import { useSeen } from './seen';
 import { useSocial } from './social';
 import { useLoves } from './useLoves';
 import { useWeekends } from './weekends';
@@ -85,6 +88,14 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
       }),
     [memory.news, mine, loves, artistById, going, today],
   );
+  // New sets from artists you'd love that you haven't watched yet.
+  const { memory: clipMemory } = useClipNews();
+  const { clip: clipById } = useCatalog();
+  const { seen } = useSeen();
+  const clipList = useMemo(
+    () => clipNotices(clipMemory.news, { clip: clipById, loves, nameOf: (id) => artistById(id)?.name, watched: (id) => id in seen }),
+    [clipMemory.news, clipById, loves, artistById, seen],
+  );
   // Your activity: fetched when you sign in, when the app comes back, and when the bell's screen asks.
   const social = useSocial();
   const uid = social.user?.uid;
@@ -136,7 +147,7 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   // Festivals that ended lately with a recap for you.
   const recapFestivals = useRecapFestivals();
   const recapList = useMemo(() => recapNotices(recapFestivals, today), [recapFestivals, today]);
-  const all = useMemo(() => [...recapList, ...list, ...lineupList, ...activityList], [recapList, list, lineupList, activityList]);
+  const all = useMemo(() => [...recapList, ...list, ...lineupList, ...clipList, ...activityList], [recapList, list, lineupList, clipList, activityList]);
 
   const value = useMemo<Ctx>(() => ({ list: all, refresh, read, markRead, hydrated }), [all, refresh, read, markRead, hydrated]);
   return <NoticesContext.Provider value={value}>{children}</NoticesContext.Provider>;

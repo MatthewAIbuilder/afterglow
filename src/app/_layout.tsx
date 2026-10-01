@@ -7,6 +7,7 @@ import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
+import { ClipNewsProvider } from '../state/clipNews';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
 import { FollowedArtistsProvider } from '../state/followedArtists';
@@ -44,6 +45,7 @@ export default function RootLayout() {
       <SeenProvider>
       <WeekendsProvider>
       <LineupNewsProvider>
+      <ClipNewsProvider>
       <SocialProvider>
       <NoticesProvider>
       <CrewsProvider>
@@ -129,6 +131,7 @@ export default function RootLayout() {
       </CrewsProvider>
       </NoticesProvider>
       </SocialProvider>
+      </ClipNewsProvider>
       </LineupNewsProvider>
       </WeekendsProvider>
       </SeenProvider>
