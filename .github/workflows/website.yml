@@ -77,6 +77,11 @@ jobs:
           npm install --no-save jpeg-js@0.4.4
           npx --yes tsx@4 scripts/artist-colors.ts /tmp/published.json || echo "::warning::Artist colours were skipped tonight."
 
+      # The picture each festival's official site shares (often its lineup poster), for festivals with a website (docs/events-import.md).
+      - name: Pictures from official sites
+        if: github.event_name != 'pull_request'
+        run: npx --yes tsx@4 scripts/site-pictures.ts /tmp/published.json || echo "::warning::Site pictures were skipped tonight."
+
       # Discover clips: the best live set on YouTube for artists on upcoming festivals, a few a night (docs/events-import.md).
       - name: YouTube clips
         if: github.event_name != 'pull_request' && env.HAS_YOUTUBE == 'true'

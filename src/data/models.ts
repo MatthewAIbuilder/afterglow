@@ -102,6 +102,12 @@ export type Festival = {
   place?: { lat: number; lon: number };
   /** Link to the official lineup poster, if you have one. Tap to view full screen. */
   posterImageUrl?: string;
+  /**
+   * Where the poster came from when it's the picture the festival's own site
+   * shares ("orlando.edc.com"), rather than one set in the catalogue. It may
+   * be key art rather than the full lineup, so it's credited, not called the poster.
+   */
+  posterFrom?: string;
   /** Official links (https only): where to buy tickets, the festival's own site. */
   links?: { tickets?: string; website?: string };
   /** Where an imported festival's details came from (credited on its page), e.g. { name: 'EDMTrain', url }. */

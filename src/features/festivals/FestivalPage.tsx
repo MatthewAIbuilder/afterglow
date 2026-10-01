@@ -211,12 +211,22 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               router.push(`/poster/${festival.id}`);
             }}
             accessibilityRole="imagebutton"
-            accessibilityLabel="Official lineup poster. Opens full screen."
-            style={styles.posterWrap}
+            accessibilityLabel={festival.posterFrom ? `Picture from ${festival.posterFrom}, the festival's official site. Opens full screen.` : 'Official lineup poster. Opens full screen.'}
+            style={[styles.posterWrap, festival.posterFrom && styles.siteWrap]}
           >
-            <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" transition={250} />
+            {festival.posterFrom ? (
+              // A site's picture can be any shape (often a wide banner): all of it, over a soft blurred copy.
+              <>
+                <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" blurRadius={30} />
+                <View style={styles.siteShade} />
+                <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="contain" transition={250} />
+              </>
+            ) : (
+              <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" transition={250} />
+            )}
             <View style={styles.posterHint}>
-              <Text style={styles.posterHintText}>View poster</Text>
+              {/* A picture from the festival's own site may be key art rather than the lineup, so it's credited, not called the poster. */}
+              <Text style={styles.posterHintText}>{festival.posterFrom ? `From ${festival.posterFrom}` : 'View poster'}</Text>
               <ChevronIcon color={color.moon} size={12} />
             </View>
           </Pressable>
@@ -492,7 +502,9 @@ const styles = StyleSheet.create({
     aspectRatio: 4 / 5,
     backgroundColor: color.glass,
   },
-  poster: { width: '100%', height: '100%' },
+  poster: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
+  siteWrap: { aspectRatio: 4 / 3 },
+  siteShade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,9,24,0.45)' },
   posterHint: {
     position: 'absolute',
     right: space.md,

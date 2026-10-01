@@ -46,6 +46,8 @@ export type ParsedFile = {
   photos?: Record<string, string>;
   /** Where those photos are from ("Deezer"), credited on artist pages. */
   photoCredit?: string;
+  /** Festival id -> the picture its official site shares (filled in by the nightly site pictures job). */
+  sitePictures?: Record<string, string>;
   /** Artist name -> photo link, for the artists in a b2b who aren't on Afterglow themselves (filled in by the nightly photo job). */
   memberPhotos?: Record<string, string>;
   /** Artist id -> colour ("#8E6BFF") taken from their photo (filled in by the nightly colour job). */
@@ -356,6 +358,15 @@ export function parseCatalogFile(input: unknown): ParsedFile {
       if (bad) problems.push(`${bad} ${bad === 1 ? 'photo was' : 'photos were'} left out: each needs an artist id and an https link.`);
       if (Object.keys(photos).length) parsed.photos = photos;
     }
+  }
+  // Pictures from festivals' official sites: { "festival-id": "https://…" }. Bad entries are quietly left out.
+  if (isObj(raw.sitePictures)) {
+    const sitePictures: Record<string, string> = {};
+    for (const [key, value] of Object.entries(raw.sitePictures)) {
+      const url = safeImageUrl(value);
+      if (id(key) && url) sitePictures[key] = url;
+    }
+    if (Object.keys(sitePictures).length) parsed.sitePictures = sitePictures;
   }
   // Photos for artists playing in a b2b who aren't on Afterglow themselves: { "CRANKDAT": "https://…" }. Bad entries are quietly left out.
   if (isObj(raw.memberPhotos)) {

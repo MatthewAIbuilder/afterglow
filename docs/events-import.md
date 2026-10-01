@@ -181,3 +181,24 @@ Sound, their initials, their artist page and their Discover stage then use
 it, softened to stay within the night palette. Black-and-white or washed-out
 photos keep the app's own colours, and so does anyone without a photo.
 Colours are kept from night to night while the photo is the same.
+
+## Pictures from official sites (automatic)
+
+Every night, after the artist colours, the Website workflow runs
+`scripts/site-pictures.ts`. For every festival with an official `website`
+link (and no `poster` of its own) it reads the picture the site shares
+(the one you see when you paste the link into a message: its "og:image")
+and adds it to the published `catalogue.json` as `sitePictures`.
+
+- The festival page shows it where the poster goes, credited "From
+  orlando.edc.com", whole (a wide banner sits over a soft blurred copy), and
+  tapping it opens the zoomable viewer.
+- It's often the lineup poster, but it can be key art or a logo, which is
+  why it's credited to the site rather than called the poster. A `poster`
+  set in `catalogue/afterglow.json` always wins.
+- Only https pictures that really are images (JPEG, PNG, WebP, GIF or AVIF)
+  are used. A site that can't be read keeps last night's picture.
+- Only festivals with a `website` get one, so for more of them, add their
+  official site links to the catalogue. EDMTrain's festivals only link to
+  EDMTrain, so they don't get one.
+
