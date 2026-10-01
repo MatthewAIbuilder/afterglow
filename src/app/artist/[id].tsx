@@ -8,6 +8,7 @@ import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { Missing } from '../../components/Missing';
 import { PageActions } from '../../components/PageActions';
+import { anyPhoto, photoCredit } from '../../data/members';
 import { WEB_URL } from '../../config/app';
 import { starsLine } from '../../features/crews/together';
 import { artistShareText } from '../../features/share/pages';
@@ -113,14 +114,17 @@ export default function ArtistScreen() {
     router.navigate({ pathname: '/', params: starFestival ? { clip: c.id, festival: starFestival.id } : { clip: c.id } });
   };
 
+  // A b2b without a photo of its own shows its artists' photos.
+  const backdrop = anyPhoto(artist);
+  const credit = photoCredit(artist);
   return (
     <View style={styles.root}>
       <PageTitle title={artist.name} />
       <NightSky />
       {/* Their photo as a soft light behind the top of the page, fading into the night. */}
-      {artist.imageUrl ? (
+      {backdrop ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Image source={{ uri: artist.imageUrl }} style={[styles.photoGlow, { height: insets.top + 56 + HERO + 260 }]} contentFit="cover" blurRadius={45} transition={400} />
+          <Image source={{ uri: backdrop }} style={[styles.photoGlow, { height: insets.top + 56 + HERO + 260 }]} contentFit="cover" blurRadius={45} transition={400} />
           <LinearGradient
             colors={['rgba(10,9,24,0.3)', 'rgba(10,9,24,0.72)', 'rgba(10,9,24,0.95)', 'rgba(10,9,24,0.97)']}
             locations={[0, 0.2, 0.42, 1]}
@@ -353,7 +357,7 @@ export default function ArtistScreen() {
           </Section>
         )}
         {/* Photos from the nightly photo list credit where they're from. */}
-        {artist.imageUrl && artist.imageCredit ? <Text style={styles.credit}>Photo from {artist.imageCredit}</Text> : null}
+        {credit ? <Text style={styles.credit}>{artist.imageUrl ? 'Photo' : 'Photos'} from {credit}</Text> : null}
       </ScrollView>
 
       <PageActions shareLabel={`Share ${artist.name}`} onShare={() => void shareMessage(artistShareText(artist, festivals, WEB_URL), artist.name)} />

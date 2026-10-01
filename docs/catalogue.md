@@ -63,6 +63,7 @@ The demo artists already exist, and you can use them in your lineups without add
   - If you're not sure, leave `sound` out. The artist shows as "New" until you react to their clips.
   - With a sound, the app can work out who's similar to artists you like. My Sound shows up to 40 artists the app knows something about, and new ones join as your likes reach them.
 - **`image`** (optional) is a photo link starting with `https://`. Only use images you have the rights to.
+- **Back-to-back sets** are one artist named with "B2B" (`"SUBTRONICS B2B CRANKDAT"`). Without an `image` of their own, the app shows each artist's own photo in a split circle, so write the names as the artists appear elsewhere in the file. The nightly job can add photos for b2b artists who aren't in the file as `"memberPhotos": { "CRANKDAT": "https://…" }`.
 
 ### Festivals
 
@@ -92,6 +93,7 @@ The demo artists already exist, and you can use them in your lineups without add
   - A set that runs past midnight belongs to the night it starts. For example, `"day": "Friday"` with `"start": "23:30"` and `"end": "01:00"`.
   - Every set's day must be in `days`, and its stage in `stages`.
 - **`poster`** (optional) is a link to the official lineup poster, starting with `https://`. Only use a poster you have the rights to.
+  - Without one, a festival with a `website` gets the picture its official site shares, looked up each night and credited to the site (see "Pictures from official sites" in `docs/events-import.md`).
 - **`tickets`** and **`website`** (optional) are the festival's official ticket page and its own site, each starting with `https://`. They show as "Get tickets" (until the festival is over) and "Official site" on the festival page, and open the festival's own pages. Use only official links.
 - **`place`** (optional) is where the venue is on the map, written as `{ "lat": 28.44, "lon": -81.47 }` (latitude and longitude, which you can copy from a map app). It lets "Near you" on the Festivals tab include the festival. Without it, the phone looks the place up from `location` (not on the website).
 - **`weekends`** (optional) is for a festival that runs over separate weekends, like ACL or Coachella. List each weekend's first and last day, in order:

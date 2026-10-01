@@ -1,5 +1,7 @@
 import { type Catalog, createCatalog } from './catalog';
 import type { ParsedFile } from './file';
+import { siteName } from './import/sitePicture';
+import { withMembers } from './members';
 import type { ArtistSimilarity, CatalogSnapshot } from './models';
 import { validateSnapshot } from './validate';
 
@@ -54,6 +56,24 @@ export function applyPhotos(
   return changed ? { ...snapshot, artists } : snapshot;
 }
 
+/**
+ * The pictures festivals' official sites share, as the poster of festivals
+ * with a `website` and no poster of their own, credited to the site. The
+ * same object when none applies.
+ */
+export function applySitePictures(snapshot: CatalogSnapshot, pictures: Record<string, string> | undefined): CatalogSnapshot {
+  if (!pictures) return snapshot;
+  let changed = false;
+  const festivals = snapshot.festivals.map((f) => {
+    const url = pictures[f.id];
+    const site = f.links?.website && siteName(f.links.website);
+    if (!url || f.posterImageUrl || !site) return f;
+    changed = true;
+    return { ...f, posterImageUrl: url, posterFrom: site };
+  });
+  return changed ? { ...snapshot, festivals } : snapshot;
+}
+
 /** The snapshot without clips of these YouTube videos (reported as wrong). The same object when none is in it. */
 export function withoutVideos(snapshot: CatalogSnapshot, videoIds: readonly string[] | undefined): CatalogSnapshot {
   if (!videoIds?.length) return snapshot;
@@ -77,7 +97,14 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
   };
   if (!file?.snapshot) return { ...fallback(), problems: file?.problems ?? [], usedFile: false };
   const combined = withoutVideos(
-    applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit, file.colors),
+    applySitePictures(
+      withMembers(
+        applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit, file.colors),
+        file.memberPhotos,
+        file.photoCredit,
+      ),
+      file.sitePictures,
+    ),
     file.blockedVideos,
   );
   const { snapshot, problems } = validateSnapshot(combined);

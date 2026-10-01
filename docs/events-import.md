@@ -81,8 +81,14 @@ credited "Photo from Deezer" at the bottom of the artist page.
 
 - Only an exact name match is used (letters and digits, ignoring accents
   and capitals), the most followed one if there are several, and never
-  Deezer's blank placeholder. Back-to-back acts ("A b2b B") usually have no
-  photo and keep their coloured initials.
+  Deezer's blank placeholder.
+- Back-to-back acts ("SUBTRONICS B2B CRANKDAT", or "WITCHING HOUR (JEANIE
+  B2B VAMPA)") have no photo of their own, so their avatar is one circle
+  split between the artists playing, each with their own photo. Artists
+  already on Afterglow bring theirs; for the others the same step looks up
+  each name (after the solo artists, within the night's 600 lookups) and
+  adds them as `memberPhotos` (name -> link). Only "b2b" (or b3b, b4b)
+  splits a name: "&" and "x" are usually a duo's own name.
 - Photos found before are reused from the live file, so each night only
   looks up new artists (and ones not found yet).
 - A photo you set yourself in `catalogue/afterglow.json` (`"image"` on the
@@ -175,3 +181,24 @@ Sound, their initials, their artist page and their Discover stage then use
 it, softened to stay within the night palette. Black-and-white or washed-out
 photos keep the app's own colours, and so does anyone without a photo.
 Colours are kept from night to night while the photo is the same.
+
+## Pictures from official sites (automatic)
+
+Every night, after the artist colours, the Website workflow runs
+`scripts/site-pictures.ts`. For every festival with an official `website`
+link (and no `poster` of its own) it reads the picture the site shares
+(the one you see when you paste the link into a message: its "og:image")
+and adds it to the published `catalogue.json` as `sitePictures`.
+
+- The festival page shows it where the poster goes, credited "From
+  orlando.edc.com", whole (a wide banner sits over a soft blurred copy), and
+  tapping it opens the zoomable viewer.
+- It's often the lineup poster, but it can be key art or a logo, which is
+  why it's credited to the site rather than called the poster. A `poster`
+  set in `catalogue/afterglow.json` always wins.
+- Only https pictures that really are images (JPEG, PNG, WebP, GIF or AVIF)
+  are used. A site that can't be read keeps last night's picture.
+- Only festivals with a `website` get one, so for more of them, add their
+  official site links to the catalogue. EDMTrain's festivals only link to
+  EDMTrain, so they don't get one.
+
