@@ -5,6 +5,8 @@ import { nextRun } from '../festivals/when';
 /**
  * The camera page's rules, pure. The record button works two ways: tap to
  * start and tap again to stop, or hold it down to film only while held.
+ * While holding, slide your finger away from the button in any direction to
+ * lock: filming carries on after you let go, and a tap stops it.
  * Swiping right on Discover peeks the camera in and opens it past a point.
  */
 
@@ -14,13 +16,22 @@ export const RECORD_MAX_SEC = 60;
 export const HOLD_MS = 350;
 /** Anything shorter is a slip of the finger, not a clip. */
 export const MIN_RECORD_MS = 800;
+/** How far (points) a held finger slides from where it went down, any direction, to lock filming on. */
+export const LOCK_DISTANCE = 80;
+
+/** How close a slide is to locking: 0 to 1. */
+export const lockProgress = (dx: number, dy: number) => Math.min(1, Math.max(0, Math.hypot(dx, dy) / LOCK_DISTANCE));
 
 export type RecordState =
   | { phase: 'idle' }
-  /** `mode`: still deciding (finger down), held (stops on release) or tapped (stops on the next tap). */
-  | { phase: 'recording'; startedAt: number; pressedAt: number; mode: 'pending' | 'tap' | 'tap-down' };
+  /**
+   * `mode`: still deciding (finger down), tapped (stops on the next tap),
+   * locked by a slide (also stops on the next tap), or a stopping tap's finger
+   * is down.
+   */
+  | { phase: 'recording'; startedAt: number; pressedAt: number; mode: 'pending' | 'tap' | 'locked' | 'tap-down' };
 
-export type RecordEvent = { type: 'press-in' | 'press-out'; at: number };
+export type RecordEvent = { type: 'press-in' | 'press-out' | 'lock'; at: number };
 
 export const IDLE: RecordState = { phase: 'idle' };
 
@@ -30,7 +41,9 @@ export function recordButton(state: RecordState, e: RecordEvent): { state: Recor
     if (e.type !== 'press-in') return { state };
     return { state: { phase: 'recording', startedAt: e.at, pressedAt: e.at, mode: 'pending' }, action: 'start' };
   }
-  if (e.type === 'press-in') return state.mode === 'tap' ? { state: { ...state, pressedAt: e.at, mode: 'tap-down' } } : { state };
+  // Slid far enough while holding: keep filming hands-free.
+  if (e.type === 'lock') return state.mode === 'pending' ? { state: { ...state, mode: 'locked' } } : { state };
+  if (e.type === 'press-in') return state.mode === 'tap' || state.mode === 'locked' ? { state: { ...state, pressedAt: e.at, mode: 'tap-down' } } : { state };
   // Letting go.
   if (state.mode === 'pending') {
     if (e.at - state.pressedAt >= HOLD_MS) return { state: IDLE, action: 'stop' };

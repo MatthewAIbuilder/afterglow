@@ -11,6 +11,9 @@ import { color, motion, radius, space, type } from '../../theme/tokens';
 import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { RateArtist } from '../taste/RateArtist';
+import { artistMix } from '../taste/lean';
+import { SOUND_COLOR, withAlpha } from './colors';
+import { SoundSpectrum } from './SoundSpectrum';
 
 type Props = {
   artistId: string | null;
@@ -98,9 +101,15 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
             </View>
           </View>
 
+          {tags.length > 0 && (
+            <View style={styles.spectrum}>
+              <SoundSpectrum shares={artistMix(artist)} label={`${artist.name}'s sound`} height={5} />
+            </View>
+          )}
           <View style={styles.tags}>
             {tags.map(([tag]) => (
-              <View key={tag} style={styles.tag}>
+              <View key={tag} style={[styles.tag, { borderColor: withAlpha(SOUND_COLOR[tag], 0.45), backgroundColor: withAlpha(SOUND_COLOR[tag], 0.12) }]}>
+                <View style={[styles.tagDot, { backgroundColor: SOUND_COLOR[tag] }]} />
                 <Text style={styles.tagText}>{SOUND_LABEL[tag]}</Text>
               </View>
             ))}
@@ -158,8 +167,13 @@ const styles = StyleSheet.create({
   headerText: { marginLeft: space.lg, flex: 1 },
   name: { ...type.title, color: color.moon },
   match: { ...type.headline, color: color.glow, fontVariant: ['tabular-nums'], marginTop: 2 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xl },
+  spectrum: { marginTop: space.xl },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
+  tagDot: { width: 6, height: 6, borderRadius: 3 },
   tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,

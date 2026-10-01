@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { ActionSheetIOS, Alert } from 'react-native';
 import type { MusicLibrarySnapshot, MusicProviderId } from '../../features/music/models';
 import { MusicServiceError, type MusicAvailability, type MusicService } from '../../features/music/service';
 import { renderApp } from './appRoutes';
@@ -273,7 +273,8 @@ describe('My Sound with connected music', () => {
     });
     const app = await renderApp('/sound');
     await settle();
-    await fireEvent.press(app.getByLabelText('Start your sound over'));
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Start over')));
+    await fireEvent.press(app.getByLabelText(/^More: /));
     await settle();
     expect(alert).toHaveBeenCalledWith(expect.any(String), expect.stringMatching(/Your Spotify library stays connected/), expect.any(Array));
     expect(JSON.parse((await AsyncStorage.getItem('musicLibrary.v1')) ?? '{}').spotify.snapshot.artists).toHaveLength(2);

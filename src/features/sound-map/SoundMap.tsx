@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -11,9 +11,13 @@ import Animated, {
 import type { Artist, SoundTag, TasteProfile } from '../../data/types';
 import { SOUND_LABEL } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { color, motion, type } from '../../theme/tokens';
+import { motion, type } from '../../theme/tokens';
 import { ArtistBubble } from './ArtistBubble';
 import { computeLayout, fitScale as frameScale, regionAt } from './layout';
+import { mixColor, SOUND_COLOR } from './colors';
+import { artistColors } from '../../components/ArtistAvatar';
+import { Constellation, HeartHalo, NebulaCloud, ReshapeRipple, SparkBurst, Starfield } from './MapSky';
+import { chosenLinks, constellation, CONSTELLATION_OF, heartColors, nebulae } from './sky';
 
 type Props = {
   artists: Artist[];
@@ -27,13 +31,36 @@ type Props = {
   onRegionTap?: (tag: SoundTag) => void;
   /** While searching: who matches. Matches pop and the map glides to show them. */
   matchIds?: ReadonlySet<string>;
+  /** How alike two artists sound: joins the closest with constellation lines. */
+  similarity?: (a: Artist, b: Artist) => number;
+  /** Artists you love (or like): a small heart on their bubble. */
+  loved?: ReadonlySet<string>;
 };
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.4;
 
-export function SoundMap({ artists, taste, width, height, selectedId, onSelect, onBackgroundTap, onRegionTap, matchIds }: Props) {
+export function SoundMap({ artists, taste, width, height, selectedId, onSelect, onBackgroundTap, onRegionTap, matchIds, similarity, loved }: Props) {
   const layout = useMemo(() => computeLayout(artists, taste), [artists, taste]);
+  // The sky around the bubbles: each sound's nebula, and lines between artists who sound alike.
+  const skies = useMemo(() => nebulae(layout), [layout]);
+  // Your constellation: lines between your strongest matches who sound alike. A chosen artist adds lines to those most like them.
+  const ambient = useMemo(
+    () => (similarity ? constellation([...layout.bubbles].sort((a, b) => b.affinity - a.affinity).slice(0, CONSTELLATION_OF), similarity) : []),
+    [layout, similarity],
+  );
+  const fadeKey = ambient.map((l) => `${l.a}-${l.b}-${Math.round(l.x1)}-${Math.round(l.y1)}`).join('|');
+  const links = useMemo(() => {
+    if (!similarity || !selectedId) return ambient;
+    const extra = chosenLinks(layout.bubbles, selectedId, similarity).filter((l) => !ambient.some((m) => [m.a, m.b].sort().join() === [l.a, l.b].sort().join()));
+    return [...ambient, ...extra];
+  }, [ambient, layout, selectedId, similarity]);
+  const byId = useMemo(() => new Map(layout.bubbles.map((b) => [b.artist.id, b.artist])), [layout]);
+  const artistOf = useCallback((id: string) => byId.get(id), [byId]);
+  // Lines wait for the first bloom to finish; after a reshape, for the bubbles to glide into place.
+  const [linkDelay] = useState(() => 600 + Math.min(artists.length, 40) * 70);
+  // Sparks where you last tapped a bubble.
+  const [spark, setSpark] = useState<{ key: number; x: number; y: number; r: number; color: string } | undefined>();
   // Strongest matches bloom first.
   const bloomOrder = useMemo(
     () => [...layout.bubbles].sort((a, b) => b.affinity - a.affinity).map((b) => b.artist.id),
@@ -165,6 +192,7 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     haptic.tap();
     touched.set(true);
     onSelect(hit.artist.id);
+    setSpark((last) => ({ key: (last?.key ?? 0) + 1, x: hit.x, y: hit.y, r: hit.r, color: hit.artist.color ? artistColors(hit.artist.id, hit.artist.color)[1] : mixColor(hit.artist.sound) }));
     // Glide the chosen artist into the space above the sheet.
     const target = Math.max(s, fitScale * 1.15);
     const bx = ox + hit.x - width / 2;
@@ -190,11 +218,18 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
   return (
     <GestureDetector gesture={gesture}>
       <View style={[styles.viewport, { width, height }]}>
+        <Starfield width={width} height={height} tx={tx} ty={ty} scale={scale} />
         <Animated.View style={[{ width, height }, worldStyle]}>
+          {skies.map((n, i) => (
+            <NebulaCloud key={n.tag} nebula={n} index={i} ox={ox} oy={oy} />
+          ))}
+          <ReshapeRipple pulse={layout} color={heartColors(skies)[0]} ox={ox} oy={oy} />
+          <Constellation links={links} artist={artistOf} selectedId={selectedId} dimmed={!!matchIds} ox={ox} oy={oy} delay={linkDelay} fadeKey={fadeKey} />
+          {layout.bubbles[0] ? <HeartHalo skies={skies} r={layout.bubbles[0].r} ox={ox} oy={oy} /> : null}
           {layout.regions.map((r) => (
             <Text
               key={r.tag}
-              style={[styles.region, { left: ox + r.x - 60, top: oy + r.y - 8 }]}
+              style={[styles.region, { left: ox + r.x - 60, top: oy + r.y - 8, color: SOUND_COLOR[r.tag], textShadowColor: SOUND_COLOR[r.tag] }]}
               pointerEvents="none"
               accessible={!!onRegionTap}
               accessibilityRole={onRegionTap ? 'button' : undefined}
@@ -216,9 +251,11 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
                 matched={!!matchIds?.has(b.artist.id)}
                 velX={velX}
                 velY={velY}
+                loved={!!loved?.has(b.artist.id)}
               />
             ))}
           </View>
+          {spark ? <SparkBurst key={spark.key} x={ox + spark.x} y={oy + spark.y} r={spark.r} color={spark.color} /> : null}
         </Animated.View>
       </View>
     </GestureDetector>
@@ -228,12 +265,17 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
 const styles = StyleSheet.create({
   // Not clipped: bubbles drift softly under the header's scrim instead of being cut off at an edge.
   viewport: { overflow: 'visible' },
+  // Each sound's name in its own colour, softly lit, matching its nebula.
   region: {
     position: 'absolute',
     width: 120,
     textAlign: 'center',
     ...type.caption,
-    color: color.moonFaint,
-    letterSpacing: 0.2,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    opacity: 0.85,
+    textShadowRadius: 10,
+    textShadowOffset: { width: 0, height: 0 },
   },
 });

@@ -102,9 +102,10 @@ function Camera() {
     [finish],
   );
 
-  const press = (type: 'press-in' | 'press-out') => {
+  const press = (type: 'press-in' | 'press-out' | 'lock') => {
     if (!ready) return;
     const r = recordButton(rec, { type, at: Date.now() });
+    if (type === 'lock' && r.state !== rec) haptic.tap();
     setRec(r.state);
     if (r.action === 'start' && r.state.phase === 'recording') start(r.state.startedAt);
     if (r.action === 'stop') cam.current?.stopRecording();
@@ -125,13 +126,15 @@ function Camera() {
   const swipeBack = useMemo(
     () =>
       Gesture.Pan()
+        // Never while filming: sliding left off the record button is a lock, not a way out.
+        .enabled(!recording)
         .activeOffsetX(-24)
         .failOffsetY([-24, 24])
         .runOnJS(true)
         .onEnd((e) => {
           if (e.translationX < -width * 0.3 || e.velocityX < -700) close();
         }),
-    [width, close],
+    [width, close, recording],
   );
 
   const allowed = !!camPerm?.granted;
@@ -220,7 +223,7 @@ function Camera() {
               {hint}
             </Animated.Text>
           ) : (
-            <Text style={styles.hint}>{recording ? (rec.mode === 'pending' ? 'Filming while you hold' : 'Tap to stop') : allowed ? 'Tap to record · hold to film while you hold' : ' '}</Text>
+            <Text style={styles.hint}>{recording ? (rec.mode === 'pending' ? 'Filming while you hold · slide away to lock' : rec.mode === 'locked' ? 'Locked · tap to stop' : 'Tap to stop') : allowed ? 'Tap to record · hold to film while you hold' : ' '}</Text>
           )}
           <View style={styles.controls}>
             <Pressable
@@ -238,9 +241,12 @@ function Camera() {
             </Pressable>
             <RecordButton
               recording={recording}
+              holding={recording && rec.mode === 'pending'}
+              locked={recording && rec.mode === 'locked'}
               disabled={!allowed || !ready}
               onPressIn={() => press('press-in')}
               onPressOut={() => press('press-out')}
+              onLock={() => press('lock')}
               label={recording ? 'Stop recording' : 'Record a video'}
             />
             <Pressable

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { Alert, Linking, Share } from 'react-native';
+import { ActionSheetIOS, Alert, Linking, Share } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Sharing from 'expo-sharing';
 import { renderApp, showTab } from './appRoutes';
@@ -110,7 +110,7 @@ describe('Welcome', () => {
     await fireEvent.press(app.getByText('Start watching instead'));
     await settle();
     expect(app.queryByText('Pick artists you know')).toBeNull();
-    expect(app.getByText(/Live sets from the lineup/)).toBeTruthy();
+    expect(app.getByLabelText(/, live sets from the lineup\. Choose what to discover\.$/)).toBeTruthy();
   });
 
   it('is never shown to someone who has used the app', async () => {
@@ -493,25 +493,27 @@ describe('Tune your lineup', () => {
 });
 
 describe('Artist', () => {
-  it('rates an artist from their page, in a festival’s context', async () => {
+  it('rates an artist from their page with one Rate button, in a festival’s context', async () => {
+    // Pick the n-th choice in the sheet the Rate button opens.
+    const choose = (n: number) => jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(n));
     const app = await renderApp('/artist/wooli?festival=edc-orlando-26');
     await settle();
     expect(app.getByText('WOOLI')).toBeTruthy();
     expect(app.getByText('Mark as must see')).toBeTruthy();
-    await fireEvent.press(app.getByLabelText("Love WOOLI's sound"));
+    choose(0);
+    await fireEvent.press(app.getByLabelText('Rate WOOLI'));
     await settle();
-    expect(app.getByLabelText("You love WOOLI's sound. Tap to undo.")).toBeTruthy();
-    await fireEvent.press(app.getByLabelText("You love WOOLI's sound. Tap to undo."));
+    expect(app.getByLabelText('Your rating of WOOLI: Love them. Change it')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('artistRatings.v1'))!)).toEqual({ wooli: 'love' });
+    // The in-between answers, then clearing it (the choice after the five).
+    choose(3);
+    await fireEvent.press(app.getByLabelText('Your rating of WOOLI: Love them. Change it'));
     await settle();
-    expect(app.getByLabelText("Love WOOLI's sound")).toBeTruthy();
-    // The in-between answers, one at a time.
-    await fireEvent.press(app.getByLabelText('WOOLI is not really for me'));
+    expect(app.getByLabelText('Your rating of WOOLI: Not really. Change it')).toBeTruthy();
+    choose(5);
+    await fireEvent.press(app.getByLabelText('Your rating of WOOLI: Not really. Change it'));
     await settle();
-    expect(app.getByLabelText('WOOLI is not really for you. Tap to undo.')).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Like WOOLI'));
-    await settle();
-    expect(app.getByLabelText('You like WOOLI. Tap to undo.')).toBeTruthy();
-    expect(app.queryByLabelText('WOOLI is not really for you. Tap to undo.')).toBeNull();
+    expect(app.getByLabelText('Rate WOOLI')).toBeTruthy();
   });
 
   it('suggests similar artists from the same lineup, keeping the festival', async () => {
@@ -543,7 +545,9 @@ describe('Artist', () => {
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     const app = await renderApp('/artist/wooli');
     await settle();
-    await fireEvent.press(app.getByLabelText('Listen to WOOLI on Spotify'));
+    // Listen opens YouTube or Spotify: the second is Spotify.
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(1));
+    await fireEvent.press(app.getByLabelText('Listen to WOOLI'));
     expect(open).toHaveBeenCalledWith('https://open.spotify.com/search/WOOLI');
     open.mockRestore();
   });
@@ -565,7 +569,7 @@ describe('My Sound', () => {
     // The title, and the tab bar's label.
     expect(app.getAllByText('My Sound').length).toBeGreaterThan(0);
     expect(app.getByText(/Bigger means a closer match/)).toBeTruthy();
-    expect(app.queryByLabelText('Start your sound over')).toBeNull();
+    expect(app.queryByLabelText(/^More: /)).toBeNull();
   });
 
   it('rates an artist from the map, which reshapes when the sheet closes', async () => {
@@ -652,13 +656,14 @@ describe('My Sound', () => {
       jest.advanceTimersByTime(500);
     });
     expect(app.getByText(/^Shaped by your 1 like and 1 rated artist\. Leaning [a-z ]+\.$/)).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Start your sound over'));
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Start over')));
+    await fireEvent.press(app.getByLabelText(/^More: /));
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
     expect(alert).toHaveBeenCalledTimes(1);
     expect(app.getByText(/^Bigger means a closer match/)).toBeTruthy();
-    expect(app.queryByLabelText('Start your sound over')).toBeNull();
+    expect(app.queryByLabelText(/^More: /)).toBeNull();
     await settle();
     expect(JSON.parse((await AsyncStorage.getItem('reactions.v1')) ?? 'null')).toEqual({});
     expect(JSON.parse((await AsyncStorage.getItem('artistRatings.v1')) ?? 'null')).toEqual({});
@@ -672,7 +677,8 @@ describe('Your clips', () => {
     await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: false, saved: true, skipped: false } }));
     const app = await renderApp('/sound');
     await settle();
-    await fireEvent.press(app.getByLabelText('Your clips, 1'));
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Your clips · 1')));
+    await fireEvent.press(app.getByLabelText(/^More: your clips \(1\)/));
     await settle();
     expect(app.getByText('What you saved to watch again, and what you liked.')).toBeTruthy();
     expect(app.queryByText('Liked')).toBeNull();
@@ -696,7 +702,8 @@ describe('Your clips', () => {
     const app = await renderApp('/sound');
     await settle();
     // Saved and liked counts once.
-    await fireEvent.press(app.getByLabelText('Your clips, 2'));
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Your clips · 2')));
+    await fireEvent.press(app.getByLabelText(/^More: your clips \(2\)/));
     await settle();
     expect(app.getByText('Saved')).toBeTruthy();
     expect(app.getByText('Liked')).toBeTruthy();
@@ -723,7 +730,7 @@ describe('Discover', () => {
     await settle();
     await settle();
     expect(app.getByText('Solstice 2026')).toBeTruthy();
-    expect(app.getByText(/Live sets from the lineup/)).toBeTruthy();
+    expect(app.getByLabelText(/, live sets from the lineup\. Choose what to discover\.$/)).toBeTruthy();
     expect(app.getAllByText('ILLENIUM').length).toBeGreaterThan(0);
   });
 
@@ -810,7 +817,7 @@ describe('Discover', () => {
     await settle();
     await settle();
     expect(app.getByText('Your mix')).toBeTruthy();
-    expect(app.getByText('A bit of everything, from every lineup')).toBeTruthy();
+    expect(app.getByText('Every lineup')).toBeTruthy();
     expect(await AsyncStorage.getItem('discoverFocus.v1')).toBe('mix');
   });
 
@@ -827,7 +834,7 @@ describe('Discover', () => {
     await settle();
     await settle();
     expect(app.getByText(label)).toBeTruthy();
-    expect(app.getByText(`${label} from every lineup`)).toBeTruthy();
+    expect(app.getByText('Every lineup')).toBeTruthy();
     expect(await AsyncStorage.getItem('discoverFocus.v1')).toMatch(/^sound:/);
   });
 
@@ -954,6 +961,17 @@ describe('Sound breakdowns', () => {
     expect(app.getByText('Their sound')).toBeTruthy();
     expect(app.getByLabelText('Melodic bass, 80 percent')).toBeTruthy();
     expect(app.getByLabelText('Dubstep, 20 percent')).toBeTruthy();
+  });
+
+  it('shows your sound as a line of colour on My Sound, which opens the breakdown', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love' }));
+    const app = await renderApp('/sound');
+    await settle();
+    const spectrum = app.getByLabelText(/^Your sound: [A-Z][a-z -]+ \d+ percent/);
+    await fireEvent.press(spectrum);
+    await settle();
+    expect(app.getByText('Your sound')).toBeTruthy();
+    expect(app.getAllByLabelText(/, \d+ percent$/).length).toBeGreaterThan(0);
   });
 
   it('breaks your sound down from My Sound, for everyone or one festival', async () => {

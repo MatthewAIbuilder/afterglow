@@ -69,7 +69,7 @@ describe('the camera', () => {
     const app = await openCamera();
     await fireEvent(app.getByLabelText('Record a video'), 'pressIn');
     await settle(1500);
-    expect(app.getByText('Filming while you hold')).toBeTruthy();
+    expect(app.getByText('Filming while you hold · slide away to lock')).toBeTruthy();
     expect(app.getByLabelText(/^Recording, 0:01$/)).toBeTruthy();
     await fireEvent(app.getByLabelText('Stop recording'), 'pressOut');
     await flush();
@@ -77,6 +77,27 @@ describe('the camera', () => {
     // The tagging sheet took the camera's place.
     expect(app.getByLabelText('Save to Memories')).toBeTruthy();
     expect(app.queryByTestId('camera-view')).toBeNull();
+  });
+
+  it('slide away while holding: locks, keeps filming after you let go, and a tap stops', async () => {
+    const app = await openCamera();
+    const at = (x: number, y: number) => ({ nativeEvent: { pageX: x, pageY: y } });
+    await fireEvent(app.getByLabelText('Record a video'), 'pressIn', at(200, 700));
+    await settle(500);
+    // Not far enough yet.
+    await fireEvent(app.getByLabelText('Stop recording'), 'touchMove', at(170, 690));
+    expect(app.getByText('Filming while you hold · slide away to lock')).toBeTruthy();
+    // Any direction: here, up and to the left.
+    await fireEvent(app.getByLabelText('Stop recording'), 'touchMove', at(150, 620));
+    expect(app.getByText('Locked · tap to stop')).toBeTruthy();
+    await fireEvent(app.getByLabelText('Stop recording'), 'pressOut');
+    await settle(3000);
+    expect(app.getByText('Locked · tap to stop')).toBeTruthy();
+    expect(app.queryByLabelText('Save to Memories')).toBeNull();
+    await fireEvent(app.getByLabelText('Stop recording'), 'pressIn', at(200, 700));
+    await fireEvent(app.getByLabelText('Stop recording'), 'pressOut');
+    await flush();
+    expect(app.getByLabelText('Save to Memories')).toBeTruthy();
   });
 
   it('tap: keeps filming after you let go, and the next tap stops', async () => {

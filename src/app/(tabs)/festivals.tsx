@@ -386,7 +386,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
         router.push(`/festival/${festival.id}`);
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${festival.name}, ${festival.dates}`}
+      accessibilityLabel={`${festival.name}, ${festival.dates}${soon ? `, ${soon}` : ''}, ${loved > 0 ? `${loved} of ${ranked.length} artists you'll love` : `${ranked.length} artists`}${timesOut ? ', set times are out' : ''}`}
       // The clips button sits inside the card, so screen readers get it as an action on the card.
       accessibilityActions={reach.clips > 0 ? [{ name: 'discover', label: 'Discover the lineup' }] : undefined}
       onAccessibilityAction={(e) => {
@@ -417,13 +417,15 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
           ))}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.loved}>
-            {loved > 0 ? `${loved} of ${ranked.length} artists you'll love` : `${ranked.length} artists`}
+          <Text style={styles.loved} numberOfLines={1}>
+            {loved > 0 ? `${loved} you'll love` : `${ranked.length} ${ranked.length === 1 ? 'act' : 'acts'}`}
           </Text>
-          <Text style={[styles.status, timesOut && { color: color.glow }]}>
-            {soon ? `${soon} · ` : ''}
-            {timesOut ? 'Set times are out' : 'Set times not announced yet'}
-          </Text>
+          {/* One short line: when it is, and set times only once they're out (the festival page says the rest). */}
+          {soon || timesOut ? (
+            <Text style={[styles.status, timesOut && { color: color.glow }]} numberOfLines={1}>
+              {[soon, timesOut ? 'Set times out' : undefined].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
         </View>
         {reach.clips > 0 && (
           <Pressable

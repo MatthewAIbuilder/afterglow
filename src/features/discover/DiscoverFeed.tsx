@@ -402,18 +402,12 @@ export function DiscoverFeed() {
               <Text style={styles.festival} numberOfLines={1}>{festival ? festival.name : followingFocus ? 'Following' : (soundLabel ?? 'Your mix')}</Text>
               <ChevronIcon color={color.moonDim} size={13} direction="down" />
             </View>
+            {/* Short, so the title never fights the buttons: the dates, or where the clips come from. */}
             <Text style={styles.dates} numberOfLines={1}>
-              {festival
-                ? `Live sets from the lineup · ${festival.dates}`
-                : followingFocus
-                  ? 'Videos from people you follow'
-                  : soundLabel
-                    ? `${soundLabel} from every lineup`
-                    : 'A bit of everything, from every lineup'}
+              {festival ? festival.dates || 'Live sets from the lineup' : followingFocus ? 'People you follow' : 'Every lineup'}
             </Text>
           </Pressable>
           <View style={styles.headerEnd}>
-            {hint ? <FeedHint hint={hint} /> : null}
             {/* Film your own video (or swipe right). The camera needs the phone app. */}
             {Platform.OS !== 'web' ? (
               <GlassCircleButton label="Open the camera to film a memory" onPress={openCamera}>
@@ -427,6 +421,12 @@ export function DiscoverFeed() {
           </View>
         </View>
       )}
+      {/* A first-time tip on its own line under the title, so the header stays one clean row. */}
+      {hint && (festival || wide) ? (
+        <View style={[styles.hint, { top: insets.top + space.sm + HEADER_HEIGHT }]} pointerEvents="none">
+          <FeedHint hint={hint} />
+        </View>
+      ) : null}
       </Animated.View>
     </View>
     </GestureDetector>
@@ -435,6 +435,8 @@ export function DiscoverFeed() {
 
 /** The feed's widest: about a large phone. */
 const FEED_MAX_WIDTH = 520;
+/** Roughly the header row's height, for the tip under it. */
+const HEADER_HEIGHT = 48;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night, overflow: 'hidden' },
@@ -453,6 +455,7 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   headerButton: { alignSelf: 'flex-start', flexShrink: 1 },
+  hint: { position: 'absolute', left: space.xl, right: space.xl, flexDirection: 'row' },
   headerEnd: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   festival: { ...type.headline, color: color.moon },

@@ -200,3 +200,14 @@ export function BookmarkIcon({ color, size = 18 }: P) {
     </Svg>
   );
 }
+
+/** Three dots: more options. */
+export function MoreIcon({ color, size = 18 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={5.5} cy={12} r={1.7} fill={color} />
+      <Circle cx={12} cy={12} r={1.7} fill={color} />
+      <Circle cx={18.5} cy={12} r={1.7} fill={color} />
+    </Svg>
+  );
+}

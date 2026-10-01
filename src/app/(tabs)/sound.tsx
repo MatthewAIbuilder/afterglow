@@ -6,11 +6,10 @@ import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
-import { BarsIcon, ChevronIcon, SearchIcon } from '../../components/TabIcons';
+import { BarsIcon, ChevronIcon, MoreIcon, SearchIcon } from '../../components/TabIcons';
 import { SearchField } from '../../components/SearchField';
 import { extraMatches, type MapSearch, mapSearch } from '../../features/sound-map/search';
 import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
-import { SaveIcon } from '../../features/discover/icons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { EVERYONE } from '../../features/sound-map/scope';
 import { soundChoices, soundFocus } from '../../features/discover/focus';
@@ -30,13 +29,18 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Festival } from '../../data/types';
 import type { TasteSummary } from '../../features/taste/engine';
-import { soundLean } from '../../features/taste/lean';
+import { soundLean, tasteMix } from '../../features/taste/lean';
+import { isWarm } from '../../features/taste/ratings';
+import { SoundSpectrum } from '../../features/sound-map/SoundSpectrum';
 import { musicNote, type MusicNote } from '../../features/music/copy';
 import { PROVIDER_NAME, type MusicProviderId } from '../../features/music/models';
 import { useMusic } from '../../state/music';
-import { showAlert } from '../../lib/dialog';
+import { showActionSheet, showAlert } from '../../lib/dialog';
+import { GlassCircleButton } from '../../components/GlassCircleButton';
 
 const HEADER_H = 96;
+/** The line of colour under the subtitle: your sound as a spectrum. */
+const SPECTRUM_H = 18;
 /** The row of festival chips under the subtitle. */
 const SCOPE_H = 44;
 /** How far the header's scrim fades out over the top of the map. */
@@ -128,6 +132,11 @@ export default function MySoundScreen() {
   // Closing the sheet lets the map catch up with anything you rated in it.
   // Which sounds you lean towards, across everyone (not just the festival in view).
   const lean = useMemo(() => soundLean(artists, shown.taste, shown.informed), [artists, shown]);
+  // Your sound as one line of colour, for whoever the map shows (the same pull as the breakdown).
+  const mix = useMemo(() => tasteMix(candidates, shown.taste, shown.informed), [candidates, shown]);
+  // Artists you love or like wear a small heart on the map.
+  const { ratings: rated } = useRatings();
+  const loved = useMemo(() => new Set(Object.keys(rated).filter((id) => isWarm(rated[id]))), [rated]);
 
   const close = useCallback(() => {
     setSelectedId(null);
@@ -151,7 +160,7 @@ export default function MySoundScreen() {
   );
   const sparse = !search && !!scope && onMap.length < SPARSE_MAP;
   const hasScopes = festivals.length > 0;
-  const mapTop = insets.top + HEADER_H + (hasScopes ? SCOPE_H : 0);
+  const mapTop = insets.top + HEADER_H + (mix.length ? SPECTRUM_H : 0) + (hasScopes ? SCOPE_H : 0);
   const mapHeight = height - mapTop - tabSpace;
 
   return (
@@ -172,6 +181,8 @@ export default function MySoundScreen() {
           onBackgroundTap={close}
           onRegionTap={showSound}
           matchIds={search?.ids}
+          similarity={live.similarity}
+          loved={loved}
         />
       </View>
 
@@ -203,9 +214,8 @@ export default function MySoundScreen() {
             My Sound
           </Text>
           <View style={styles.actions} pointerEvents="box-none">
-            <SavedPill />
             {hasSignal(live.summary, live.rated) ? (
-              <StartOver onCleared={reshapeSoon} />
+              <SoundMenu onCleared={reshapeSoon} scopeId={scope?.id} />
             ) : (
               // Nothing of yours yet: the quickest way to a real map.
               <Pressable
@@ -226,6 +236,15 @@ export default function MySoundScreen() {
         <Text style={styles.subtitle} pointerEvents="none">
           {subtitle(shown.summary, shown.rated, lean, shown.importing)}
         </Text>
+        {mix.length ? (
+          <View style={styles.spectrum}>
+            <SoundSpectrum
+              shares={mix}
+              label={scope ? `Your sound at ${scope.name}` : 'Your sound'}
+              onPress={() => router.push({ pathname: '/your-sound', params: scope ? { festival: scope.id } : {} })}
+            />
+          </View>
+        ) : null}
         {searchOpen ? (
           <View style={styles.searchRow}>
             <View style={{ flex: 1 }}>
@@ -421,76 +440,71 @@ function MusicNoteView({ note, bottom }: { note: MusicNote; bottom: number }) {
   );
 }
 
-/** Opens your clips (saved and liked). Only there once you have one. */
-function SavedPill() {
-  const { clips } = useClipPool();
-  const { reactions } = useReactions();
-  const count = yourClipCount(yourClips(clips, reactions));
-  if (count === 0) return null;
-  return (
-    <Pressable
-      onPress={() => {
-        haptic.select();
-        router.push('/saved');
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={`Your clips, ${count}`}
-      hitSlop={10}
-      style={({ pressed }) => [styles.pill, styles.savedPill, pressed && { opacity: 0.7 }]}
-    >
-      <SaveIcon color={color.glow} filled size={13} />
-      <Text style={styles.savedCount}>{count}</Text>
-    </Pressable>
-  );
-}
-
 const hasSignal = ({ likes, saves, skips, watched }: TasteSummary, rated: number) =>
   likes + saves + skips + watched + rated > 0;
 
 /**
- * Clear everything your sound has learned (likes, saves, skips, watching,
- * ratings) and the feed's viewing history. Plans stay: festivals you're going
- * to and starred sets are yours, not your taste.
+ * One quiet button for the rest: your clips (saved and liked), picking more
+ * artists, and starting over. Starting over clears everything your sound
+ * has learned (likes, saves, skips, watching, ratings) and the feed's viewing
+ * history. Plans stay: festivals you're going to and starred sets are yours,
+ * not your taste.
  */
-function StartOver({ onCleared }: { onCleared: () => void }) {
+function SoundMenu({ onCleared, scopeId }: { onCleared: () => void; scopeId?: string }) {
   const reactions = useReactions();
   const ratings = useRatings();
   const seen = useSeen();
+  const { clips } = useClipPool();
+  const count = yourClipCount(yourClips(clips, reactions.reactions));
   // Connected music is a connection, not something you did here: it stays, and says where to remove it.
   const { importing } = useMusic();
   const music = importing.length
     ? ` Your ${importing.map((p) => PROVIDER_NAME[p]).join(' and ')} library stays connected (remove it in Music connections).`
     : '';
+  const startOver = () =>
+    showAlert(
+      'Start your sound over?',
+      `This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.${music}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start over',
+          style: 'destructive',
+          onPress: () => {
+            reactions.clear();
+            ratings.clear();
+            seen.clear();
+            // The map reshapes to the starting sound a beat later, as when you come back to it.
+            onCleared();
+          },
+        },
+      ],
+    );
+  const items: { label: string; run: () => void; destructive?: boolean }[] = [
+    ...(count > 0 ? [{ label: `Your clips · ${count}`, run: () => router.push('/saved') }] : []),
+    {
+      label: 'Pick more artists',
+      run: () => router.push(scopeId ? { pathname: '/pick-artists', params: { festivals: scopeId } } : '/pick-artists'),
+    },
+    { label: 'Start over', run: startOver, destructive: true },
+  ];
   return (
-    <Pressable
-      onPress={() => {
-        haptic.select();
-        showAlert(
-          'Start your sound over?',
-          `This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.${music}`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Start over',
-              style: 'destructive',
-              onPress: () => {
-                reactions.clear();
-                ratings.clear();
-                seen.clear();
-                // The map reshapes to the starting sound a beat later, as when you come back to it.
-                onCleared();
-              },
-            },
-          ],
-        );
-      }}
-      accessibilityRole="button"
-      accessibilityLabel="Start your sound over"
-      hitSlop={10}
-      style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}
+    <GlassCircleButton
+      label={count > 0 ? `More: your clips (${count}), pick artists, start over` : 'More: pick artists, start over'}
+      onPress={() =>
+        showActionSheet(
+          {
+            title: 'Your sound',
+            options: [...items.map((i) => i.label), 'Cancel'],
+            cancelButtonIndex: items.length,
+            destructiveButtonIndex: items.findIndex((i) => i.destructive),
+          },
+          (i) => items[i]?.run(),
+        )
+      }
     >
-      <Text style={styles.startOverText}>Start over</Text>
-    </Pressable>
+      <MoreIcon color={color.moon} />
+    </GlassCircleButton>
   );
 }
 
@@ -568,7 +582,6 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   startOverText: { ...type.caption, color: color.moonDim },
-  savedPill: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  savedCount: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  spectrum: { marginTop: space.md - 2, height: 6 },
 });
