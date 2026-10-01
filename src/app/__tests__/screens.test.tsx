@@ -963,6 +963,17 @@ describe('Sound breakdowns', () => {
     expect(app.getByLabelText('Dubstep, 20 percent')).toBeTruthy();
   });
 
+  it('shows your sound as a line of colour on My Sound, which opens the breakdown', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love' }));
+    const app = await renderApp('/sound');
+    await settle();
+    const spectrum = app.getByLabelText(/^Your sound: [A-Z][a-z -]+ \d+ percent/);
+    await fireEvent.press(spectrum);
+    await settle();
+    expect(app.getByText('Your sound')).toBeTruthy();
+    expect(app.getAllByLabelText(/, \d+ percent$/).length).toBeGreaterThan(0);
+  });
+
   it('breaks your sound down from My Sound, for everyone or one festival', async () => {
     const app = await renderApp('/sound');
     await settle();

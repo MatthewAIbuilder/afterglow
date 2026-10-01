@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SOUND_LABEL } from '../data/models';
 import { mapCandidates } from '../features/sound-map/layout';
 import { tasteMix } from '../features/taste/lean';
+import { SOUND_COLOR } from '../features/sound-map/colors';
 import { SoundBreakdown } from '../features/taste/SoundBreakdown';
 import { useCatalog } from '../state/catalog';
 import { useTaste } from '../state/taste';
@@ -40,10 +41,10 @@ export default function YourSoundScreen() {
       </Text>
       {mix.length > 0 ? (
         <>
-          <Text style={styles.headline} accessibilityRole="header">
+          <Text style={[styles.headline, { color: SOUND_COLOR[mix[0].tag] }]} accessibilityRole="header">
             {mix[0].percent}% {SOUND_LABEL[mix[0].tag].toLowerCase()}
           </Text>
-          <SoundBreakdown shares={mix} />
+          <SoundBreakdown shares={mix} colored />
         </>
       ) : (
         <Text style={styles.empty}>

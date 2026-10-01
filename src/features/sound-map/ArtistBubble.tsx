@@ -12,7 +12,8 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
+import { mixColor, withAlpha } from './colors';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { color, motion, type } from '../../theme/tokens';
 import { FULL_LABELS, LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
@@ -29,6 +30,8 @@ type Props = {
   /** Pan velocity of the map, px/s. */
   velX: SharedValue<number>;
   velY: SharedValue<number>;
+  /** You love or like them: a small glowing heart on the bubble. */
+  loved?: boolean;
 };
 
 // How far a bubble trails the finger, and the cap on that trail.
@@ -44,12 +47,13 @@ const MATCH = 2.8;
 // How the map reshapes when your taste changes: unhurried, one soft overshoot.
 const reshape = { damping: 16, stiffness: 70, mass: 1.1 };
 
-function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matched, velX, velY }: Props) {
+function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matched, velX, velY, loved }: Props) {
   const { artist, affinity, x, y, r } = placed;
   const reduceMotion = useReducedMotion();
 
   const bloom = useSharedValue(reduceMotion ? 1 : 0);
   const drift = useSharedValue(0.5);
+  const driftX = useSharedValue(0.5);
   const focus = useSharedValue(1);
   const lagX = useSharedValue(0);
   const lagY = useSharedValue(0);
@@ -90,6 +94,11 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
       index * 180,
       withRepeat(withTiming(1, { duration: 3200 + (index % 4) * 450, easing: Easing.inOut(Easing.sin) }), -1, true),
     );
+    // A slower sway across, out of step with the bob, so each bubble floats on its own.
+    driftX.value = withDelay(
+      index * 110,
+      withRepeat(withTiming(1, { duration: 4700 + (index % 5) * 600, easing: Easing.inOut(Easing.sin) }), -1, true),
+    );
     // Only on first mount; later changes in rank should not replay the bloom.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -111,7 +120,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
     return {
       opacity: Math.min(1, p) * (f < 1 ? 0.28 + 0.72 * f : 1),
       transform: [
-        { translateX: px.value * p + lagX.value },
+        { translateX: px.value * p + (driftX.value - 0.5) * 5 + lagX.value },
         { translateY: py.value * p + (drift.value - 0.5) * 6 + lagY.value },
       ],
     };
@@ -129,13 +138,20 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
     return { opacity: f > 2 ? Math.min(1, (f - 2) / (MATCH - 2)) : 0 };
   });
 
+  // The heart sits on the bubble's upper right edge, whatever its size.
+  const heartStyle = useAnimatedStyle(() => {
+    const rr = pr.value * bloom.value;
+    return { opacity: Math.min(1, bloom.value), transform: [{ translateX: rr * 0.72 - 9 }, { translateY: -rr * 0.72 - 9 }] };
+  });
+
   const labelStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: pr.value * bloom.value + LABEL_OFFSET }],
   }));
 
   const glowStrength = Math.pow(affinity, 3) * 0.75;
-  // Their own light when their photo gives them a colour, else the app's glow.
-  const glowColor = artist.color ? artistColors(artist.id, artist.color)[1] : color.glow;
+  // Their own light when their photo gives them a colour, else the colour of their sound.
+  const soundTone = mixColor(artist.sound);
+  const glowColor = artist.color ? artistColors(artist.id, artist.color)[1] : soundTone;
   const gid = `g-${artist.id}`;
   const pct = Math.round(affinity * 100);
   // index is the bloom order: strongest match first. Only the strongest get a full label; the rest a smaller, dimmer name.
@@ -174,7 +190,17 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
 
       <Animated.View style={[styles.body, bodyStyle]}>
         <ArtistAvatar artist={artist} size={D} />
+        {/* A rim of their sound's colour, so you can tell sounds apart at a glance. */}
+        <View style={[styles.rim, { borderColor: withAlpha(soundTone, 0.75) }]} pointerEvents="none" />
       </Animated.View>
+
+      {loved ? (
+        <Animated.View style={[styles.heart, heartStyle]} pointerEvents="none">
+          <Svg width={12} height={12} viewBox="0 0 24 24">
+            <Path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.2 0 3.6 1.2 5.2 3 1.6-1.8 3-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z" fill="#fff" />
+          </Svg>
+        </Animated.View>
+      ) : null}
 
       <Animated.View style={[styles.label, labelStyle]} pointerEvents="none">
         {/* Quieter labels for smaller bubbles, so the strongest matches lead; the match is still read out, and shown once selected. */}
@@ -193,6 +219,24 @@ const styles = StyleSheet.create({
   anchor: { position: 'absolute', left: 0, top: 0, width: 0, height: 0 },
   glow: { position: 'absolute', left: -GLOW / 2, top: -GLOW / 2, width: GLOW, height: GLOW },
   body: { position: 'absolute', left: -D / 2, top: -D / 2, width: D, height: D },
+  rim: { position: 'absolute', top: -2, left: -2, right: -2, bottom: -2, borderRadius: D / 2 + 2, borderWidth: 5 },
+  heart: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.glow,
+    borderWidth: 1.5,
+    borderColor: color.night,
+    shadowColor: color.glow,
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
   label: { position: 'absolute', left: -LABEL_W / 2, top: 0, width: LABEL_W, alignItems: 'center' },
   name: { ...type.label, color: color.moon, textAlign: 'center' },
   nameSmall: { fontSize: 11, lineHeight: 14, color: color.moonDim, fontWeight: '500' },

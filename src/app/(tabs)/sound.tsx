@@ -29,7 +29,9 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Festival } from '../../data/types';
 import type { TasteSummary } from '../../features/taste/engine';
-import { soundLean } from '../../features/taste/lean';
+import { soundLean, tasteMix } from '../../features/taste/lean';
+import { isWarm } from '../../features/taste/ratings';
+import { SoundSpectrum } from '../../features/sound-map/SoundSpectrum';
 import { musicNote, type MusicNote } from '../../features/music/copy';
 import { PROVIDER_NAME, type MusicProviderId } from '../../features/music/models';
 import { useMusic } from '../../state/music';
@@ -37,6 +39,8 @@ import { showActionSheet, showAlert } from '../../lib/dialog';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 
 const HEADER_H = 96;
+/** The line of colour under the subtitle: your sound as a spectrum. */
+const SPECTRUM_H = 18;
 /** The row of festival chips under the subtitle. */
 const SCOPE_H = 44;
 /** How far the header's scrim fades out over the top of the map. */
@@ -128,6 +132,11 @@ export default function MySoundScreen() {
   // Closing the sheet lets the map catch up with anything you rated in it.
   // Which sounds you lean towards, across everyone (not just the festival in view).
   const lean = useMemo(() => soundLean(artists, shown.taste, shown.informed), [artists, shown]);
+  // Your sound as one line of colour, for whoever the map shows (the same pull as the breakdown).
+  const mix = useMemo(() => tasteMix(candidates, shown.taste, shown.informed), [candidates, shown]);
+  // Artists you love or like wear a small heart on the map.
+  const { ratings: rated } = useRatings();
+  const loved = useMemo(() => new Set(Object.keys(rated).filter((id) => isWarm(rated[id]))), [rated]);
 
   const close = useCallback(() => {
     setSelectedId(null);
@@ -151,7 +160,7 @@ export default function MySoundScreen() {
   );
   const sparse = !search && !!scope && onMap.length < SPARSE_MAP;
   const hasScopes = festivals.length > 0;
-  const mapTop = insets.top + HEADER_H + (hasScopes ? SCOPE_H : 0);
+  const mapTop = insets.top + HEADER_H + (mix.length ? SPECTRUM_H : 0) + (hasScopes ? SCOPE_H : 0);
   const mapHeight = height - mapTop - tabSpace;
 
   return (
@@ -172,6 +181,8 @@ export default function MySoundScreen() {
           onBackgroundTap={close}
           onRegionTap={showSound}
           matchIds={search?.ids}
+          similarity={live.similarity}
+          loved={loved}
         />
       </View>
 
@@ -225,6 +236,15 @@ export default function MySoundScreen() {
         <Text style={styles.subtitle} pointerEvents="none">
           {subtitle(shown.summary, shown.rated, lean, shown.importing)}
         </Text>
+        {mix.length ? (
+          <View style={styles.spectrum}>
+            <SoundSpectrum
+              shares={mix}
+              label={scope ? `Your sound at ${scope.name}` : 'Your sound'}
+              onPress={() => router.push({ pathname: '/your-sound', params: scope ? { festival: scope.id } : {} })}
+            />
+          </View>
+        ) : null}
         {searchOpen ? (
           <View style={styles.searchRow}>
             <View style={{ flex: 1 }}>
@@ -563,4 +583,5 @@ const styles = StyleSheet.create({
   },
   startOverText: { ...type.caption, color: color.moonDim },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  spectrum: { marginTop: space.md - 2, height: 6 },
 });

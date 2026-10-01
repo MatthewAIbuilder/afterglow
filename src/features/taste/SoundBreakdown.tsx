@@ -4,11 +4,14 @@ import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, w
 import { SOUND_LABEL } from '../../data/models';
 import { color, radius, space, type } from '../../theme/tokens';
 import type { SoundShare } from './lean';
+import { SOUND_COLOR } from '../sound-map/colors';
 
 type Props = {
   shares: SoundShare[];
   /** Grow the bars in when shown (off with reduced motion). */
   animate?: boolean;
+  /** Each bar in its sound's own colour (My Sound's colours), with a dot by the name. */
+  colored?: boolean;
 };
 
 /**
@@ -16,17 +19,17 @@ type Props = {
  * for size only; the names say which sound is which. Bars are to scale: a full
  * track is 100%.
  */
-export function SoundBreakdown({ shares, animate = true }: Props) {
+export function SoundBreakdown({ shares, animate = true, colored = false }: Props) {
   return (
     <View style={styles.list}>
       {shares.map((s, i) => (
-        <Row key={s.tag} share={s} index={i} animate={animate} />
+        <Row key={s.tag} share={s} index={i} animate={animate} colored={colored} />
       ))}
     </View>
   );
 }
 
-function Row({ share, index, animate }: { share: SoundShare; index: number; animate: boolean }) {
+function Row({ share, index, animate, colored }: { share: SoundShare; index: number; animate: boolean; colored: boolean }) {
   const reduceMotion = useReducedMotion();
   const still = !animate || reduceMotion;
   const grow = useSharedValue(still ? 1 : 0);
@@ -39,11 +42,14 @@ function Row({ share, index, animate }: { share: SoundShare; index: number; anim
 
   return (
     <View style={styles.row} accessible accessibilityLabel={`${label}, ${share.percent} percent`}>
-      <Text style={styles.label} numberOfLines={1}>
-        {label}
-      </Text>
+      <View style={styles.labelWrap}>
+        {colored ? <View style={[styles.dot, { backgroundColor: SOUND_COLOR[share.tag] }]} /> : null}
+        <Text style={styles.label} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
       <View style={styles.track}>
-        <Animated.View style={[styles.fill, index === 0 && styles.top, fill]} />
+        <Animated.View style={[styles.fill, index === 0 && styles.top, colored && { backgroundColor: SOUND_COLOR[share.tag], opacity: index === 0 ? 1 : 0.8 }, fill]} />
       </View>
       <Text style={styles.percent}>{share.percent}%</Text>
     </View>
@@ -53,7 +59,9 @@ function Row({ share, index, animate }: { share: SoundShare; index: number; anim
 const styles = StyleSheet.create({
   list: { gap: space.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  label: { ...type.label, color: color.moon, width: 104 },
+  labelWrap: { flexDirection: 'row', alignItems: 'center', gap: 6, width: 104 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  label: { ...type.label, color: color.moon, flexShrink: 1 },
   track: { flex: 1, height: 8, borderRadius: radius.pill, backgroundColor: color.glass, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.7)' },
   top: { backgroundColor: color.glow },
