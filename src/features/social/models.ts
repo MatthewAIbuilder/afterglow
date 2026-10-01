@@ -97,3 +97,51 @@ export const CREW_MAX = 12;
 export const CREW_NAME_MAX = 40;
 /** At most this many picks are shared per member. */
 export const CREW_PICKS_MAX = 100;
+
+/**
+ * A crew update: where you are and what you're seeing, for your crew only.
+ * From a video (filmed then) or a quick check-in (tapped then).
+ *
+ * Two times, kept apart on purpose. `at` is when it happened on your phone:
+ * when the video was filmed or the check-in tapped. That's the time the crew
+ * sees, and the one that decides which update is newest. `sentAt` is when it
+ * reached the crew, stamped by the server; festival signal can hold an update
+ * back for hours, and the app says so instead of passing it off as new.
+ */
+export type CrewUpdate = {
+  id: string;
+  crewId: string;
+  uid: string;
+  kind: 'video' | 'checkin';
+  /** When it happened on the phone (ISO 8601). */
+  at: string;
+  /** When it reached the crew (ISO 8601, from the server). */
+  sentAt: string;
+  festivalId: string;
+  artistId?: string;
+  stage?: string;
+  /** A check-in's words ("Meet at our spot"), at most CREW_NOTE_MAX. */
+  note?: string;
+  videoUrl?: string;
+  thumbUrl?: string;
+  /** When the video was also shared to Discover: that copy's id. */
+  sharedId?: string;
+  durationSec?: number;
+  width?: number;
+  height?: number;
+};
+
+/** What you send: the id is made on your phone, so sending again after a dropped connection never doubles it. */
+export type CrewUpdateInput = Omit<CrewUpdate, 'crewId' | 'uid' | 'sentAt' | 'videoUrl' | 'thumbUrl'> & {
+  /** A video already shared to Discover: the crew update points at that copy. */
+  videoUrl?: string;
+  thumbUrl?: string;
+  /** Otherwise the files on this phone, uploaded for the crew only. */
+  videoUri?: string;
+  thumbUri?: string;
+};
+
+/** Check-in words are at most this long. */
+export const CREW_NOTE_MAX = 80;
+/** Stage names in an update are at most this long. */
+export const CREW_STAGE_MAX = 60;

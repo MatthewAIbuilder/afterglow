@@ -13,6 +13,7 @@ import { ClipFlagsProvider } from '../state/clipFlags';
 import { ClipNewsProvider } from '../state/clipNews';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
+import { CrewUpdatesProvider } from '../state/crewUpdates';
 import { FollowedArtistsProvider } from '../state/followedArtists';
 import { GoingProvider } from '../state/going';
 import { LineupNewsProvider } from '../state/lineupNews';
@@ -55,6 +56,7 @@ export default function RootLayout() {
       <SocialProvider>
       <NoticesProvider>
       <CrewsProvider>
+      <CrewUpdatesProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -88,6 +90,17 @@ export default function RootLayout() {
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="care" />
+        <Stack.Screen
+          name="check-in"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.75, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: color.nightRaised },
+          }}
+        />
+        <Stack.Screen name="crew-story" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="year/[year]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
@@ -137,6 +150,7 @@ export default function RootLayout() {
       <LikeSync />
       <OfflineNotice />
       <DialogHost />
+      </CrewUpdatesProvider>
       </CrewsProvider>
       </NoticesProvider>
       </SocialProvider>

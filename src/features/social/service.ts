@@ -1,4 +1,4 @@
-import type { Activity, Crew, CrewPicks, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
+import type { Activity, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -97,6 +97,16 @@ export interface SocialService {
   setCrewPicks(id: string, artists: string[]): Promise<void>;
   /** Everyone's shared picks in a crew you're in. */
   crewPicks(id: string): Promise<CrewPicks[]>;
+  /**
+   * Send an update to a crew you're in. A video not already shared is
+   * uploaded for the crew only. Sending the same id again (a retry after a
+   * dropped connection) returns what's already there.
+   */
+  postCrewUpdate(crewId: string, input: CrewUpdateInput, onProgress?: (share: number) => void): Promise<CrewUpdate>;
+  /** A crew's updates that happened since `sinceMs`, newest first (by when they happened), at most `max`. */
+  crewUpdates(crewId: string, sinceMs: number, max: number): Promise<CrewUpdate[]>;
+  /** Take back one of your updates. */
+  deleteCrewUpdate(crewId: string, id: string): Promise<void>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;

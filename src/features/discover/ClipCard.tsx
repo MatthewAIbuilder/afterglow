@@ -74,6 +74,8 @@ type Props = {
   onNext?: () => void;
   /** Press and hold: add your own video. */
   onHold?: () => void;
+  /** Extra room under the header (your crew's stories), so nothing ever sits over the player. */
+  topExtra?: number;
 };
 
 const BURST = 110;
@@ -82,7 +84,7 @@ const HOLD_MS = 450;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip, onNext, onHold }: Props) {
+function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip, onNext, onHold, topExtra = 0 }: Props) {
   const catalog = useCatalog();
   const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
@@ -375,7 +377,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   );
 
   if (media && showVideo) {
-    const top = insets.top + HEADER_CLEARANCE;
+    const top = insets.top + HEADER_CLEARANCE + topExtra;
     const bottom = bottomSpace + space.lg;
     const tall = media.vertical ? tallLayout({ width, height, top, bottom }) : undefined;
     const stackedWidth = width - space.lg * 2;

@@ -22,6 +22,9 @@ import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { shareDetail, shareOffer } from '../features/social/shareChoice';
+import { clock } from '../features/crews/updates';
+import { useCrews } from '../state/crews';
+import { useCrewUpdates } from '../state/crewUpdates';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { useSocial } from '../state/social';
 
@@ -124,6 +127,12 @@ export default function MemoryTagScreen() {
   });
   const [shareChoice, setShareChoice] = useState<boolean | undefined>();
   const shareOn = offer === 'ready' && (shareChoice ?? true);
+  // Send to my crew: your crews at this festival see it with the time you filmed it. On by default for a new video.
+  const crewUpdates = useCrewUpdates();
+  const { crewsAt } = useCrews();
+  const crewsHere = festivalId && crewUpdates.ready ? crewsAt(festivalId) : [];
+  const [crewChoice, setCrewChoice] = useState<boolean | undefined>();
+  const crewOn = crewsHere.length > 0 && (crewChoice ?? !existing);
   const shareIt = (m: Parameters<typeof social.share>[0]) =>
     void social.share(m).catch((e) => showAlert('Couldn’t share it to Discover', `${SOCIAL_ERROR_COPY[socialErrorKind(e)]} It’s saved in your Memories, so you can share it from there.`));
 
@@ -150,6 +159,7 @@ export default function MemoryTagScreen() {
       mem.tag(existing.id, tag);
       haptic.settle();
       if (shareOn) shareIt({ ...existing, ...tag });
+      if (crewOn) crewUpdates.sendVideo({ ...existing, ...tag });
       leave();
       return;
     }
@@ -161,6 +171,8 @@ export default function MemoryTagScreen() {
     haptic.settle();
     // It uploads in the background; Memories shows the progress.
     if (shareOn) shareIt(kept);
+    // Waits for signal (and for the Discover upload, if any) on its own.
+    if (crewOn) crewUpdates.sendVideo(kept);
     leave();
   };
 
@@ -335,6 +347,31 @@ export default function MemoryTagScreen() {
             </View>
           )}
         </View>
+        {crewsHere.length > 0 ? (
+          <>
+            <Text style={styles.section}>Your crew</Text>
+            <View style={styles.shareRow}>
+              <View style={styles.shareText}>
+                <Text style={styles.shareTitle}>Send to my crew</Text>
+                <Text style={styles.shareDetail}>
+                  {crewOn
+                    ? `${crewsHere.map((c) => c.name).join(' and ')} ${crewsHere.length === 1 ? 'sees' : 'see'} it marked ${whenMs ? `filmed ${clock(new Date(whenMs).toISOString())}` : 'with when you filmed it'}, even if your signal holds it back. Only your crew.`
+                    : 'Only in your Memories.'}
+                </Text>
+              </View>
+              <Switch
+                value={crewOn}
+                onValueChange={(v) => {
+                  haptic.select();
+                  setCrewChoice(v);
+                }}
+                trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
+                accessibilityLabel="Send to my crew"
+                testID="send-to-crew"
+              />
+            </View>
+          </>
+        ) : null}
         {offer !== 'hidden' ? (
           <>
             <Text style={styles.section}>Discover</Text>

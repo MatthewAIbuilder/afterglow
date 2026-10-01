@@ -1,5 +1,5 @@
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_PICKS_MAX, type Crew, type CrewPicks, type Profile, type SharedMemory } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Profile, type SharedMemory } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -69,6 +69,45 @@ export function crewPicksFromDoc(uid: string, d: unknown): CrewPicks | null {
   if (!d || typeof d !== 'object') return null;
   const o = d as Record<string, unknown>;
   return { uid, artists: strs(o.artists, CREW_PICKS_MAX), updatedAt: str(o.updatedAt) ?? '' };
+}
+
+/** A server time (a Firestore Timestamp, or milliseconds) as ISO 8601. */
+function timeOf(v: unknown): string | undefined {
+  if (typeof v === 'number' && Number.isFinite(v)) return new Date(v).toISOString();
+  if (v && typeof v === 'object' && 'toMillis' in v && typeof (v as { toMillis: unknown }).toMillis === 'function') {
+    return new Date((v as { toMillis: () => number }).toMillis()).toISOString();
+  }
+  return undefined;
+}
+
+/** A crew update document. `atMs` (when it happened on the phone) is required; a missing server time reads as that time. */
+export function crewUpdateFromDoc(crewId: string, id: string, d: unknown): CrewUpdate | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const uid = str(o.uid);
+  const festivalId = str(o.festivalId);
+  const kind = o.kind === 'video' || o.kind === 'checkin' ? o.kind : undefined;
+  const at = typeof o.atMs === 'number' && Number.isFinite(o.atMs) ? new Date(o.atMs).toISOString() : undefined;
+  if (!uid || !festivalId || !kind || !at) return null;
+  const videoUrl = https(o.videoUrl);
+  if (kind === 'video' && !videoUrl) return null;
+  return {
+    id,
+    crewId,
+    uid,
+    kind,
+    at,
+    sentAt: timeOf(o.sentAt) ?? at,
+    festivalId,
+    ...(str(o.artistId) ? { artistId: str(o.artistId) } : {}),
+    ...(str(o.stage) ? { stage: str(o.stage)!.slice(0, CREW_STAGE_MAX) } : {}),
+    ...(str(o.note) ? { note: str(o.note)!.slice(0, CREW_NOTE_MAX) } : {}),
+    ...(videoUrl ? { videoUrl } : {}),
+    ...(https(o.thumbUrl) ? { thumbUrl: https(o.thumbUrl) } : {}),
+    ...(str(o.sharedId) ? { sharedId: str(o.sharedId) } : {}),
+    ...(num(o.durationSec) ? { durationSec: num(o.durationSec) } : {}),
+    ...(num(o.width) && num(o.height) ? { width: num(o.width), height: num(o.height) } : {}),
+  };
 }
 
 /** Firebase's error codes as the app's kinds. */

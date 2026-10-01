@@ -105,6 +105,18 @@ A few friends planning one festival together.
 - **Pure** (`features/crews/together.ts`): `crewTogether` (shared picks and each member's picks, ignoring people who left and artists off the lineup), `whoLine`, `crewMembersLine`, `sharedCountLine`, `firstName`, `crewPath`, `picksChanged`. Crew names: `cleanCrewName`, `crewNameProblem` in `validate.ts` (1 to 40 characters, friendly).
 - **Profile** lists your crews (each opens its page), or suggests starting one from a festival page.
 
+## Crew updates
+
+Where your crew is, from the videos they film and quick check-ins, along the top of Discover like stories.
+
+- **Two times, kept apart.** Every update carries `at`, when it happened on the phone (a video's filming time, or the moment a check-in was tapped), and `sentAt`, when it reached the crew (the server's own time; the rules refuse anything else). The crew sees `at`, and `at` decides what's newest: a 4:05 PM video beats a 3:00 PM one even if the 3:00 PM one only got through at 5:00 PM. When an update arrived 10 minutes or more after it happened, it says so: "Sent 3:00 PM, reached the crew 5:02 PM".
+- **Videos**: the tagging sheet's "Send to my crew" (on by default for a new video when you're in a crew at its festival). If the video is also shared to Discover, the crew update waits for that upload and points at it (one upload); otherwise it's uploaded for the crew only (`crews/{crewId}/{uid}/{updateId}.mp4`). The stage comes from the artist's set when set times are out.
+- **Check-ins** (`check-in.tsx`): one tap ("I'm here", "Meet at our spot", "Getting water", "Phone's dying", "Heading out") or your own words (80 characters), with an optional stage or "Watching <artist>" from the set on now.
+- **No signal**: everything you post goes into an outbox on the phone (`crewOutbox.v1`) with its time and id fixed the moment you post. It sends itself when there's signal (opening the app, coming back to it, the network returning, and every 15 s to 2 min), oldest first. Sending an id twice lands once. Items waiting more than a day are dropped.
+- **Reading**: every minute while the app is open, for crews whose festival isn't over (or undated), the last 36 hours. What you've watched is remembered (`crewSeen.v1`), so new stories glow.
+- **Where**: the stories row on Discover (you first, to check in; "Waiting…" while something's in the outbox), `crew-story.tsx` (full screen, latest first, tap right for earlier), and "Latest from the crew" on the crew page.
+- **Privacy**: crew members only. Leaving a crew (or being removed) takes your updates with you; the crew ending removes them all. Crew video files sit at random paths whose links are only in the members-only updates.
+
 ## Likes and the bell
 
 - **One like everywhere.** Liking a video from the crowd (Discover's heart or double-tap, Your clips, or the heart on the shared video itself) is the same reaction on `community:<sharedId>`: it shapes your taste like any clip and, once you have a profile, the person who filmed it sees it. Without a profile the like stays on your phone, and the shared video says so.

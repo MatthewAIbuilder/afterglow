@@ -159,6 +159,39 @@ service cloud.firestore {
           && request.resource.data.updatedAt is string && request.resource.data.updatedAt.size() <= 40;
         allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
       }
+
+      // Crew updates: where a member is and what they're seeing, from a video or a check-in. Members read
+      // them; you post only as yourself while you're in the crew. `atMs` is when it happened on the phone
+      // (no later than now, no older than a week); `sentAt` must be the server's own time, so "reached
+      // the crew at" can't be faked. Never edited; removed by the author or the owner.
+      match /updates/{updateId} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create: if signedIn() && me() in get(path('crews', id)).data.members
+          && updateId.matches('^[A-Za-z0-9_-]{6,64}$')
+          && request.resource.data.keys().hasOnly(['uid', 'kind', 'atMs', 'sentAt', 'festivalId', 'artistId', 'stage', 'note', 'videoUrl', 'thumbUrl', 'videoPath', 'thumbPath', 'sharedId', 'durationSec', 'width', 'height'])
+          && request.resource.data.uid == me()
+          && request.resource.data.kind in ['video', 'checkin']
+          && request.resource.data.atMs is number
+          && request.resource.data.atMs <= request.time.toMillis() + 300000
+          && request.resource.data.atMs >= request.time.toMillis() - 7 * 24 * 3600 * 1000
+          && request.resource.data.sentAt == request.time
+          && request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 100
+          && request.resource.data.festivalId == get(path('crews', id)).data.festivalId
+          && shortOrAbsent(request.resource.data, 'artistId', 100)
+          && shortOrAbsent(request.resource.data, 'stage', 60)
+          && shortOrAbsent(request.resource.data, 'note', 80)
+          && shortOrAbsent(request.resource.data, 'sharedId', 128)
+          && shortOrAbsent(request.resource.data, 'videoPath', 300)
+          && shortOrAbsent(request.resource.data, 'thumbPath', 300)
+          && (!('videoUrl' in request.resource.data) || (request.resource.data.videoUrl is string && request.resource.data.videoUrl.size() <= 2000 && request.resource.data.videoUrl.matches('^https://.*')))
+          && (!('thumbUrl' in request.resource.data) || (request.resource.data.thumbUrl is string && request.resource.data.thumbUrl.size() <= 2000 && request.resource.data.thumbUrl.matches('^https://.*')))
+          && (request.resource.data.kind == 'checkin' || 'videoUrl' in request.resource.data)
+          && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
+          && (!('width' in request.resource.data) || (request.resource.data.width is number && request.resource.data.width <= 20000))
+          && (!('height' in request.resource.data) || (request.resource.data.height is number && request.resource.data.height <= 20000));
+        allow update: if false;
+        allow delete: if signedIn() && (resource.data.uid == me() || get(path('crews', id)).data.owner == me());
+      }
     }
 
     // Reports: anyone signed in can file one; only the project owner reads them (in the Firebase console).
