@@ -81,8 +81,14 @@ credited "Photo from Deezer" at the bottom of the artist page.
 
 - Only an exact name match is used (letters and digits, ignoring accents
   and capitals), the most followed one if there are several, and never
-  Deezer's blank placeholder. Back-to-back acts ("A b2b B") usually have no
-  photo and keep their coloured initials.
+  Deezer's blank placeholder.
+- Back-to-back acts ("SUBTRONICS B2B CRANKDAT", or "WITCHING HOUR (JEANIE
+  B2B VAMPA)") have no photo of their own, so their avatar is one circle
+  split between the artists playing, each with their own photo. Artists
+  already on Afterglow bring theirs; for the others the same step looks up
+  each name (after the solo artists, within the night's 600 lookups) and
+  adds them as `memberPhotos` (name -> link). Only "b2b" (or b3b, b4b)
+  splits a name: "&" and "x" are usually a duo's own name.
 - Photos found before are reused from the live file, so each night only
   looks up new artists (and ones not found yet).
 - A photo you set yourself in `catalogue/afterglow.json` (`"image"` on the

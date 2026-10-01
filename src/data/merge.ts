@@ -1,5 +1,6 @@
 import { type Catalog, createCatalog } from './catalog';
 import type { ParsedFile } from './file';
+import { withMembers } from './members';
 import type { ArtistSimilarity, CatalogSnapshot } from './models';
 import { validateSnapshot } from './validate';
 
@@ -77,7 +78,11 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
   };
   if (!file?.snapshot) return { ...fallback(), problems: file?.problems ?? [], usedFile: false };
   const combined = withoutVideos(
-    applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit, file.colors),
+    withMembers(
+      applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit, file.colors),
+      file.memberPhotos,
+      file.photoCredit,
+    ),
     file.blockedVideos,
   );
   const { snapshot, problems } = validateSnapshot(combined);

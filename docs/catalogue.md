@@ -63,6 +63,7 @@ The demo artists already exist, and you can use them in your lineups without add
   - If you're not sure, leave `sound` out. The artist shows as "New" until you react to their clips.
   - With a sound, the app can work out who's similar to artists you like. My Sound shows up to 40 artists the app knows something about, and new ones join as your likes reach them.
 - **`image`** (optional) is a photo link starting with `https://`. Only use images you have the rights to.
+- **Back-to-back sets** are one artist named with "B2B" (`"SUBTRONICS B2B CRANKDAT"`). Without an `image` of their own, the app shows each artist's own photo in a split circle, so write the names as the artists appear elsewhere in the file. The nightly job can add photos for b2b artists who aren't in the file as `"memberPhotos": { "CRANKDAT": "https://…" }`.
 
 ### Festivals
 

@@ -1,4 +1,5 @@
 import type { Artist, Festival } from '../../data/models';
+import { anyPhoto } from '../../data/members';
 import { whereWhen } from '../festivals/format';
 
 /**
@@ -36,7 +37,7 @@ export function artistPreview(artist: Artist, festivals: Festival[], webUrl: str
     title: `${artist.name} · Afterglow`,
     description: cut(`${playing}Live sets and where they play, on Afterglow.`, 200),
     url: `${webUrl}/artist/${artist.id}`,
-    ...(artist.imageUrl ? { image: artist.imageUrl } : {}),
+    ...(anyPhoto(artist) ? { image: anyPhoto(artist) } : {}),
   };
 }
 

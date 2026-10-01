@@ -42,6 +42,22 @@ export type Artist = {
   color?: string;
   /** How much of each sound this artist carries, 0 to 1. */
   sound: Partial<Record<SoundTag, number>>;
+  /**
+   * The artists playing together in a b2b ("SUBTRONICS B2B CRANKDAT"), in
+   * name order, with their own photos: worked out from the name for b2b acts
+   * without a photo of their own (`withMembers` in data/members.ts).
+   */
+  members?: ArtistMember[];
+};
+
+/** One of the artists in a b2b, with their photo when Afterglow has one. */
+export type ArtistMember = {
+  name: string;
+  /** Their own artist id, when they're on Afterglow too. */
+  id?: string;
+  imageUrl?: string;
+  imageCredit?: string;
+  color?: string;
 };
 
 /**
