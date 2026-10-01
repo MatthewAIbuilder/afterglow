@@ -8,7 +8,8 @@ import { color, radius, space, type } from '../../theme/tokens';
  * Follow / Following for an artist: news when they're added to a lineup.
  * Kept on this phone; it never changes your match.
  */
-export function FollowArtistButton({ artist, compact = false }: { artist: Artist; compact?: boolean }) {
+/** `compact` for lists; `row` to sit in a row of 40-point actions (the artist page). */
+export function FollowArtistButton({ artist, compact = false, row = false }: { artist: Artist; compact?: boolean; row?: boolean }) {
   const { isFollowing, setFollowing } = useFollowedArtists();
   const on = isFollowing(artist.id);
   return (
@@ -23,9 +24,9 @@ export function FollowArtistButton({ artist, compact = false }: { artist: Artist
       accessibilityLabel={on ? `Following ${artist.name}. Tap to unfollow.` : `Follow ${artist.name}`}
       accessibilityHint={on ? undefined : 'Hear when they’re added to a lineup'}
       hitSlop={compact ? 6 : 0}
-      style={({ pressed }) => [styles.pill, compact && styles.compact, on ? styles.on : styles.off, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.pill, compact && styles.compact, row && styles.row, on ? styles.on : styles.off, pressed && styles.pressed]}
     >
-      <Text style={[styles.label, compact && styles.compactLabel, on && styles.onLabel]}>{on ? 'Following' : 'Follow'}</Text>
+      <Text style={[styles.label, (compact || row) && styles.compactLabel, on && styles.onLabel]}>{on ? 'Following' : 'Follow'}</Text>
     </Pressable>
   );
 }
@@ -33,6 +34,7 @@ export function FollowArtistButton({ artist, compact = false }: { artist: Artist
 const styles = StyleSheet.create({
   pill: { minWidth: 120, alignItems: 'center', paddingHorizontal: space.xl, paddingVertical: space.sm + 2, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth },
   compact: { minWidth: 92, paddingHorizontal: space.md, paddingVertical: 6 },
+  row: { minWidth: 104, minHeight: 40, justifyContent: 'center', paddingVertical: 0, paddingHorizontal: space.lg },
   off: { backgroundColor: color.glowDeep, borderColor: 'rgba(169,124,255,0.6)' },
   on: { backgroundColor: color.glass, borderColor: color.hairline },
   label: { ...type.headline, color: color.moon },

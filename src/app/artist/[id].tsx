@@ -24,8 +24,8 @@ import { posterUrl } from '../../features/discover/youtube';
 import { StarIcon } from '../../features/plan/icons';
 import { artistMix } from '../../features/taste/lean';
 import { FollowArtistButton } from '../../features/artists/FollowArtistButton';
-import { RateArtist } from '../../features/taste/RateArtist';
-import { useFollowedArtists } from '../../state/followedArtists';
+import { RatePill } from '../../features/taste/RatePill';
+import { showActionSheet } from '../../lib/dialog';
 import { SoundBreakdown } from '../../features/taste/SoundBreakdown';
 import { mostSimilar } from '../../features/taste/similarity';
 import { listenLinks } from '../../features/taste/listen';
@@ -82,7 +82,6 @@ export default function ArtistScreen() {
   const { going } = useGoing();
   const today = useToday();
   const { distanceTo, units } = useNearby();
-  const { isFollowing } = useFollowedArtists();
   const { seen } = useSeen();
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
   const yours = memories.filter((m) => m.artistId === artist.id);
@@ -158,13 +157,26 @@ export default function ArtistScreen() {
               !importedFrom[artist.id] && (imported[artist.id] ?? 0) > 0 ? importing.map((p) => PROVIDER_NAME[p]) : [],
             )}
           </Text>
-          <View style={styles.follow}>
-            <FollowArtistButton artist={artist} />
-            <Text style={styles.followNote}>
-              {isFollowing(artist.id) ? 'You’ll hear when they’re added to a lineup.' : 'Follow to hear when they’re added to a lineup.'}
-            </Text>
+          {/* One row: follow (news when they're added to a lineup), your take, and somewhere to hear them. */}
+          <View style={styles.actions}>
+            <FollowArtistButton artist={artist} row />
+            <RatePill artist={artist} />
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                const links = listenLinks(artist.name);
+                showActionSheet({ title: `Listen to ${artist.name}`, options: [...links.map((l) => l.service), 'Cancel'], cancelButtonIndex: links.length }, (i) => {
+                  if (links[i]) Linking.openURL(links[i].url).catch(() => {});
+                });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Listen to ${artist.name}`}
+              style={({ pressed }) => [styles.listenPill, pressed && { opacity: 0.7 }]}
+            >
+              <PlayIcon color={color.moon} size={12} />
+              <Text style={styles.listenText}>Listen</Text>
+            </Pressable>
           </View>
-          <RateArtist artist={artist} />
           {starFestival && (
             <Pressable
               onPress={() => {
@@ -195,15 +207,6 @@ export default function ArtistScreen() {
             </Text>
           ) : null}
         </View>
-
-        {/* Their sound as a mix, e.g. 80% melodic bass, 20% dubstep. */}
-        {mix.length > 0 && (
-          <Section title="Their sound">
-            <View style={styles.mix}>
-              <SoundBreakdown shares={mix} />
-            </View>
-          </Section>
-        )}
 
         {festivals.length > 0 && (
           <Section title="Playing">
@@ -310,26 +313,14 @@ export default function ArtistScreen() {
           </Section>
         )}
 
-        {/* Somewhere to hear them before you rate them. Plain links out to the services' own search. */}
-        <Section title="Listen">
-          <View style={styles.listen}>
-            {listenLinks(artist.name).map((l) => (
-              <Pressable
-                key={l.service}
-                onPress={() => {
-                  haptic.select();
-                  Linking.openURL(l.url).catch(() => {});
-                }}
-                accessibilityRole="link"
-                accessibilityLabel={`Listen to ${artist.name} on ${l.service}`}
-                style={({ pressed }) => [styles.listenPill, pressed && { opacity: 0.7 }]}
-              >
-                <Text style={styles.listenText}>{l.service}</Text>
-                <ChevronIcon color={color.moonFaint} size={11} />
-              </Pressable>
-            ))}
-          </View>
-        </Section>
+        {/* Their sound as a mix, e.g. 80% melodic bass, 20% dubstep. */}
+        {mix.length > 0 && (
+          <Section title="Their sound">
+            <View style={styles.mix}>
+              <SoundBreakdown shares={mix} />
+            </View>
+          </Section>
+        )}
 
         {similar.length > 0 && (
           <Section title={similarAt ? `Similar sound at ${similarAt.name}` : 'Similar sound'}>
@@ -385,8 +376,7 @@ const styles = StyleSheet.create({
   match: { ...type.headline, color: color.glow, fontVariant: ['tabular-nums'], marginTop: space.xs },
   why: { ...type.caption, color: color.moonDim, marginTop: 4, textAlign: 'center', paddingHorizontal: space.xl },
   mix: { marginTop: space.sm },
-  follow: { alignItems: 'center', marginTop: space.lg, gap: space.xs },
-  followNote: { ...type.caption, color: color.moonFaint, textAlign: 'center' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.lg },
   mustSee: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -400,13 +390,12 @@ const styles = StyleSheet.create({
   },
   mustSeeOn: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.4)' },
   mustSeeText: { ...type.label, color: color.moonDim },
-  listen: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
   listenPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    minHeight: 40,
     paddingHorizontal: space.lg,
-    paddingVertical: space.sm,
     borderRadius: radius.pill,
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,

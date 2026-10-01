@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { Alert, Linking, Share } from 'react-native';
+import { ActionSheetIOS, Alert, Linking, Share } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Sharing from 'expo-sharing';
 import { renderApp, showTab } from './appRoutes';
@@ -493,25 +493,27 @@ describe('Tune your lineup', () => {
 });
 
 describe('Artist', () => {
-  it('rates an artist from their page, in a festival’s context', async () => {
+  it('rates an artist from their page with one Rate button, in a festival’s context', async () => {
+    // Pick the n-th choice in the sheet the Rate button opens.
+    const choose = (n: number) => jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(n));
     const app = await renderApp('/artist/wooli?festival=edc-orlando-26');
     await settle();
     expect(app.getByText('WOOLI')).toBeTruthy();
     expect(app.getByText('Mark as must see')).toBeTruthy();
-    await fireEvent.press(app.getByLabelText("Love WOOLI's sound"));
+    choose(0);
+    await fireEvent.press(app.getByLabelText('Rate WOOLI'));
     await settle();
-    expect(app.getByLabelText("You love WOOLI's sound. Tap to undo.")).toBeTruthy();
-    await fireEvent.press(app.getByLabelText("You love WOOLI's sound. Tap to undo."));
+    expect(app.getByLabelText('Your rating of WOOLI: Love them. Change it')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('artistRatings.v1'))!)).toEqual({ wooli: 'love' });
+    // The in-between answers, then clearing it (the choice after the five).
+    choose(3);
+    await fireEvent.press(app.getByLabelText('Your rating of WOOLI: Love them. Change it'));
     await settle();
-    expect(app.getByLabelText("Love WOOLI's sound")).toBeTruthy();
-    // The in-between answers, one at a time.
-    await fireEvent.press(app.getByLabelText('WOOLI is not really for me'));
+    expect(app.getByLabelText('Your rating of WOOLI: Not really. Change it')).toBeTruthy();
+    choose(5);
+    await fireEvent.press(app.getByLabelText('Your rating of WOOLI: Not really. Change it'));
     await settle();
-    expect(app.getByLabelText('WOOLI is not really for you. Tap to undo.')).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Like WOOLI'));
-    await settle();
-    expect(app.getByLabelText('You like WOOLI. Tap to undo.')).toBeTruthy();
-    expect(app.queryByLabelText('WOOLI is not really for you. Tap to undo.')).toBeNull();
+    expect(app.getByLabelText('Rate WOOLI')).toBeTruthy();
   });
 
   it('suggests similar artists from the same lineup, keeping the festival', async () => {
@@ -543,7 +545,9 @@ describe('Artist', () => {
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     const app = await renderApp('/artist/wooli');
     await settle();
-    await fireEvent.press(app.getByLabelText('Listen to WOOLI on Spotify'));
+    // Listen opens YouTube or Spotify: the second is Spotify.
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(1));
+    await fireEvent.press(app.getByLabelText('Listen to WOOLI'));
     expect(open).toHaveBeenCalledWith('https://open.spotify.com/search/WOOLI');
     open.mockRestore();
   });

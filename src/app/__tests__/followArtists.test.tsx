@@ -23,11 +23,9 @@ describe('following artists', () => {
   it('follow from an artist page, see where they play next, and unfollow', async () => {
     const app = await renderApp('/artist/subtronics');
     await flush();
-    expect(app.getByText('Follow to hear when they’re added to a lineup.')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Follow SUBTRONICS'));
     await flush();
     expect(app.getByLabelText('Following SUBTRONICS. Tap to unfollow.')).toBeTruthy();
-    expect(app.getByText('You’ll hear when they’re added to a lineup.')).toBeTruthy();
     expect(JSON.parse((await AsyncStorage.getItem('followedArtists.v1'))!)).toEqual(['subtronics']);
 
     await act(async () => router.push('/your-artists'));
