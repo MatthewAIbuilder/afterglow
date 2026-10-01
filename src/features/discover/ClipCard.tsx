@@ -43,6 +43,8 @@ import { HeartIcon, PlayIcon } from './icons';
 import { clipMedia } from './media';
 import { clipShareText } from './share';
 import { communityMenu } from '../community/menu';
+import { flagMenu } from './flagMenu';
+import { useClipFlags } from '../../state/clipFlags';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
 import { MIN_PLAYER, tallLayout } from './videoLayout';
@@ -97,6 +99,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   // A community clip (someone's shared video): credited to them, with Report / Hide / Block.
   const community = media?.provider === 'video' ? media.community : undefined;
   const communityState = useCommunity();
+  const clipFlags = useClipFlags();
   const social = useSocial();
   const { remember } = communityState;
   // So your reactions keep counting for the artist after this clip leaves the feed.
@@ -456,6 +459,15 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
             style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
           >
             <ShareIcon color={color.moonDim} size={15} />
+          </Pressable>
+          <Pressable
+            onPress={() => flagMenu(clip, artist.name, media.externalUrl, clipFlags)}
+            accessibilityRole="button"
+            accessibilityLabel={`Something wrong with this clip of ${artist.name}? Hide it or report it`}
+            hitSlop={12}
+            style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+          >
+            <Text style={styles.more}>•••</Text>
           </Pressable>
         </View>
         ) : null}

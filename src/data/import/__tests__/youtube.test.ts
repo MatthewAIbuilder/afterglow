@@ -43,6 +43,8 @@ describe('YouTube live sets', () => {
     expect(pickLiveSet('SUBTRONICS', { items: [details.items[0], details.items[1], details.items[4]] })?.videoId).toBe(ids[1]);
     expect(pickLiveSet('SUBTRONICS', { items: [details.items[0], details.items[4], details.items[6]] })).toBeUndefined();
     expect(pickLiveSet('X', details)).toBeUndefined();
+    // A video reported as wrong is never picked: the next best is.
+    expect(pickLiveSet('SUBTRONICS', details, new Set([ids[3]]))?.videoId).toBe(ids[1]);
   });
 
   it('makes a one-minute clip a third of the way in, titled without the artist name', () => {

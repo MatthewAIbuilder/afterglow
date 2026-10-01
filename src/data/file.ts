@@ -48,6 +48,8 @@ export type ParsedFile = {
   photoCredit?: string;
   /** Artist id -> colour ("#8E6BFF") taken from their photo (filled in by the nightly colour job). */
   colors?: Record<string, string>;
+  /** YouTube videos never to show (wrong artist, not a set), by video id: their clips are left out wherever they come from. */
+  blockedVideos?: string[];
 };
 
 const ID = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -358,6 +360,11 @@ export function parseCatalogFile(input: unknown): ParsedFile {
     const colors: Record<string, string> = {};
     for (const [key, value] of Object.entries(raw.colors)) if (id(key) && typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)) colors[key] = value.toUpperCase();
     if (Object.keys(colors).length) parsed.colors = colors;
+  }
+  // Videos reported as wrong: ["dQw4w9WgXcQ", "https://youtu.be/…"]. Anything that isn't a YouTube video is quietly left out.
+  if (Array.isArray(raw.blockedVideos)) {
+    const ids = raw.blockedVideos.map((v) => parseYouTubeLink(v)?.videoId).filter((v): v is string => !!v);
+    if (ids.length) parsed.blockedVideos = [...new Set(ids)];
   }
   const credit = text(raw.photoCredit);
   if (credit) parsed.photoCredit = credit.slice(0, 40);
