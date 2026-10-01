@@ -151,7 +151,7 @@ describe('Following in Discover', () => {
     const app = await renderApp('/?festival=following');
     await flush();
     expect(app.getByText('Following')).toBeTruthy();
-    expect(app.getByText('Videos from people you follow')).toBeTruthy();
+    expect(app.getByText('People you follow')).toBeTruthy();
     expect(app.getByLabelText('Filmed by @maya. Opens their profile.')).toBeTruthy();
   });
 

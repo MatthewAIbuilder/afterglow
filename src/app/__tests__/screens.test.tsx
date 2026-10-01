@@ -110,7 +110,7 @@ describe('Welcome', () => {
     await fireEvent.press(app.getByText('Start watching instead'));
     await settle();
     expect(app.queryByText('Pick artists you know')).toBeNull();
-    expect(app.getByText(/Live sets from the lineup/)).toBeTruthy();
+    expect(app.getByLabelText(/, live sets from the lineup\. Choose what to discover\.$/)).toBeTruthy();
   });
 
   it('is never shown to someone who has used the app', async () => {
@@ -727,7 +727,7 @@ describe('Discover', () => {
     await settle();
     await settle();
     expect(app.getByText('Solstice 2026')).toBeTruthy();
-    expect(app.getByText(/Live sets from the lineup/)).toBeTruthy();
+    expect(app.getByLabelText(/, live sets from the lineup\. Choose what to discover\.$/)).toBeTruthy();
     expect(app.getAllByText('ILLENIUM').length).toBeGreaterThan(0);
   });
 
@@ -814,7 +814,7 @@ describe('Discover', () => {
     await settle();
     await settle();
     expect(app.getByText('Your mix')).toBeTruthy();
-    expect(app.getByText('A bit of everything, from every lineup')).toBeTruthy();
+    expect(app.getByText('Every lineup')).toBeTruthy();
     expect(await AsyncStorage.getItem('discoverFocus.v1')).toBe('mix');
   });
 
@@ -831,7 +831,7 @@ describe('Discover', () => {
     await settle();
     await settle();
     expect(app.getByText(label)).toBeTruthy();
-    expect(app.getByText(`${label} from every lineup`)).toBeTruthy();
+    expect(app.getByText('Every lineup')).toBeTruthy();
     expect(await AsyncStorage.getItem('discoverFocus.v1')).toMatch(/^sound:/);
   });
 
