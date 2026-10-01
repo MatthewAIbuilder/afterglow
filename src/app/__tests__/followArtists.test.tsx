@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { renderApp } from './appRoutes';
+import { renderApp, showTab } from './appRoutes';
 import { builtInCatalog } from '../../state/catalog';
 
 const settle = () =>
@@ -52,6 +52,7 @@ describe('following artists', () => {
     expect(app.getByText('TAPE B was added to Solstice 2026')).toBeTruthy();
     await act(async () => router.push('/festival/solstice-26'));
     await flush();
+    await showTab(app, 'Lineup');
     expect(app.getAllByLabelText(/^TAPE B, \d+ percent match, Just added · Following/).length).toBeGreaterThan(0);
   });
 
@@ -59,6 +60,7 @@ describe('following artists', () => {
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ subtronics: 'love' }));
     const app = await renderApp('/profile');
     await flush();
+    await fireEvent.press(app.getByRole('tab', { name: 'Saved' }));
     await fireEvent.press(app.getByLabelText('Your artists, none followed yet'));
     await flush();
     expect(app.getByText('Follow artists to hear when they’re added to a lineup.')).toBeTruthy();

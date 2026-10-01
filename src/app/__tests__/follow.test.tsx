@@ -124,8 +124,8 @@ describe('following people', () => {
     await s().follow(maya);
     const app = await renderApp('/profile');
     await flush();
-    expect(app.getByText('0 followers')).toBeTruthy();
-    expect(app.getByText('1 following')).toBeTruthy();
+    expect(app.getByLabelText('0 followers')).toBeTruthy();
+    expect(app.getByLabelText('1 following')).toBeTruthy();
   });
 
   it('blocking someone ends follows both ways', async () => {

@@ -46,7 +46,9 @@ export function YourFestival({ festival }: { festival: Festival }) {
     <View style={styles.root}>
       <View style={styles.head}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Your festival</Text>
+          <Text style={[styles.sub, { flex: 1 }]}>
+            {schedule ? 'Your night, set to set. Star anyone you won’t miss.' : 'Ranked by what you like and rate. It turns into your schedule when set times are out.'}
+          </Text>
           {text ? (
             <Pressable
               onPress={() => {
@@ -63,11 +65,6 @@ export function YourFestival({ festival }: { festival: Festival }) {
             </Pressable>
           ) : null}
         </View>
-        <Text style={styles.sub}>
-          {schedule
-            ? 'Your night, built from what you like, save, skip and rate. Star anyone you won’t miss.'
-            : 'Who to see, ranked by what you like, save, skip and rate. When set times are out, this becomes your schedule.'}
-        </Text>
         {expected ? <Text style={styles.expected}>{expected}</Text> : null}
         {warmup ? (
           <Pressable
@@ -151,10 +148,9 @@ const styles = StyleSheet.create({
   toggleItem: { paddingHorizontal: space.lg, paddingVertical: 6, borderRadius: radius.pill },
   toggleOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
   toggleText: { ...type.label, color: color.moonDim },
-  root: { marginTop: space.xxl, marginHorizontal: space.lg },
+  root: { marginTop: space.lg, marginHorizontal: space.lg },
   head: { paddingHorizontal: space.sm },
-  titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   share: { padding: space.xs },
   warmup: {
     flexDirection: 'row',

@@ -26,12 +26,12 @@ export const TIER_HINT: Record<Tier, string> = {
 };
 
 /** Under a shortened explore list. */
-export const moreToExplore = (n: number) => `${n} more to explore in the full lineup below.`;
+export const moreToExplore = (n: number) => `${n} more to explore in the Lineup tab.`;
 
 export function exploreLine(reason: ExploreReason, free = false) {
   switch (reason.kind) {
     case 'unknown':
-      return free ? "New to you, and you're free then." : "New to you. We don't know your take yet.";
+      return free ? "New to you, and you're free then." : "Not rated yet.";
     case 'near':
       return free
         ? `Close to ${plainName(reason.to)}'s sound, and you're free then.`

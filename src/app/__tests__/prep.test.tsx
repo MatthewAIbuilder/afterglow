@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { renderApp } from './appRoutes';
+import { renderApp, showTab } from './appRoutes';
 
 const flush = async () => {
   for (let i = 0; i < 6; i++)
@@ -20,6 +20,7 @@ describe('get ready', () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
     const app = await renderApp('/festival/cyclops-cove-4');
     await flush();
+    await showTab(app, 'Info');
     await fireEvent.press(app.getByLabelText(/^Get ready for Cyclops Cove 4\. 0 of \d+ done\. Opens the checklist\.$/));
     await flush();
     expect(app.getByText('Get ready')).toBeTruthy();

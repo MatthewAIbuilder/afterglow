@@ -1,4 +1,4 @@
-import { renderRouter } from 'expo-router/testing-library';
+import { fireEvent, renderRouter } from 'expo-router/testing-library';
 import RootLayout from '../_layout';
 import TabsLayout from '../(tabs)/_layout';
 import DiscoverScreen from '../(tabs)/index';
@@ -28,6 +28,8 @@ import PickArtistsScreen from '../pick-artists';
 import CompareScreen from '../compare';
 import PrepScreen from '../prep/[id]';
 import YourArtistsScreen from '../your-artists';
+import SettingsScreen from '../settings';
+import CareScreen from '../care';
 import YearScreen from '../year/[year]';
 import PosterScreen from '../poster/[id]';
 import ProfileEditScreen from '../profile-edit';
@@ -68,6 +70,8 @@ export const APP_ROUTES = {
   compare: CompareScreen,
   'prep/[id]': PrepScreen,
   'your-artists': YourArtistsScreen,
+  settings: SettingsScreen,
+  care: CareScreen,
   'year/[year]': YearScreen,
   music: MusicScreen,
   'music-auth': MusicAuthReturn,
@@ -89,3 +93,8 @@ export const APP_ROUTES = {
 };
 
 export const renderApp = (initialUrl: string) => renderRouter(APP_ROUTES, { initialUrl });
+
+/** Open one of a page's tabs ("Lineup", "Info") by the start of its name. */
+export async function showTab(app: { getByRole: (role: 'tab', opts: { name: RegExp }) => unknown }, label: string) {
+  await fireEvent.press(app.getByRole('tab', { name: new RegExp(`^${label}`) }) as never);
+}

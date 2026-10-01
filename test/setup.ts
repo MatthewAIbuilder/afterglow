@@ -80,6 +80,15 @@ jest.mock('expo-notifications', () => {
 
 // Sharing a picture: capture and the share sheet, recorded for the tests.
 jest.mock('react-native-view-shot', () => ({ captureRef: jest.fn(async () => 'file:///tmp/plan.png') }));
+// Face ID: there, and says yes unless a test sets __result.
+jest.mock('expo-local-authentication', () => {
+  const state = { result: { success: true } as { success: boolean } };
+  return {
+    __state: state,
+    hasHardwareAsync: jest.fn(async () => true),
+    authenticateAsync: jest.fn(async () => state.result),
+  };
+});
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(async () => true), shareAsync: jest.fn(async () => {}) }));
 
 // The secure store: an in-memory keychain the tests can read (`__items`).

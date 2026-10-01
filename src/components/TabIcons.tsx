@@ -173,3 +173,30 @@ export function CalendarIcon({ color, size = 16 }: P) {
     </Svg>
   );
 }
+
+/** Three lines: a menu (settings and more). */
+export function MenuIcon({ color, size = 20 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 7h16M4 12h16M4 17h16" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** A grid of tiles: videos. */
+export function TilesIcon({ color, size = 18 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z" stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** A bookmark: saved things. */
+export function BookmarkIcon({ color, size = 18 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M6.5 4h11v16l-5.5-4-5.5 4z" stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
+    </Svg>
+  );
+}
