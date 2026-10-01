@@ -35,6 +35,26 @@ beforeEach(async () => {
 });
 
 describe('festival crews', () => {
+  it('once set times are out, the crew gets one route with who splits off', async () => {
+    await person('maya', 'Maya');
+    const crew = await s().createCrew('solstice-26', 'Bass crew');
+    await s().setCrewPicks(crew.id, ['subtronics']);
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().joinCrew(crew.id);
+    await s().setCrewPicks(crew.id, ['subtronics']);
+    await s().signOut();
+    await person('jordan', 'Jordan');
+    await s().joinCrew(crew.id);
+    await AsyncStorage.setItem('mustSees.v2', JSON.stringify({ 'solstice-26': ['illenium'] }));
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love' }));
+    const app = await renderApp(`/crew/${crew.id}`);
+    await flush();
+    expect(app.getByText('Our route')).toBeTruthy();
+    expect(app.getByLabelText(/SUBTRONICS, Bass Tent, .*a must-see for the crew, starred by Maya and Sam$/)).toBeTruthy();
+    expect(app.getByLabelText(/^You could split off for ILLENIUM at 11:40 PM, Main Stage/)).toBeTruthy();
+  });
+
   it('start a crew from a festival page, name it, and your stars reach it', async () => {
     await AsyncStorage.setItem('mustSees.v2', JSON.stringify({ 'edc-orlando-26': ['steve-aoki', 'a-little-sound'] }));
     const me = await person('maya', 'Maya Chen');
