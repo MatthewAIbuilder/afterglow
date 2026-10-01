@@ -11,6 +11,7 @@ import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
 import { WEB_URL } from '../../config/app';
 import { crewPath, crewTogether, firstName, whoLine } from '../../features/crews/together';
 import { CrewRouteSection } from '../../features/crews/CrewRouteSection';
+import { CrewLatest } from '../../features/crews/CrewLatest';
 import { useWeekends } from '../../state/weekends';
 import { useCrewPage } from '../../features/crews/useCrewPage';
 import { whereWhen } from '../../features/festivals/format';
@@ -355,6 +356,9 @@ function Member({
         <Text style={styles.primaryText}>Invite friends</Text>
       </Pressable>
       {!others.length ? <Text style={styles.note}>Send the invite to your friends. Anyone with the link can join, up to {CREW_MAX} people.</Text> : null}
+
+      {/* Where everyone last was, while the festival is on or coming up. */}
+      <CrewLatest crew={crew} nameOf={who} />
 
       <Text style={styles.section}>Sets you share</Text>
       {together.shared.length ? (

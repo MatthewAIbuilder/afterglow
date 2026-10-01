@@ -27,6 +27,7 @@ import {
   orderBy,
   query,
   runTransaction,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
@@ -37,10 +38,10 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_PICKS_MAX, type Activity, type Crew, type CrewPicks, type Profile } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanCrewName, cleanProfileInput, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
-import { asSocialError, crewFromDoc, crewPicksFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
+import { asSocialError, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -62,8 +63,10 @@ import { asSocialError, crewFromDoc, crewPicksFromDoc, memoryFromDoc, prefixEnd,
  *   likes/{memoryId}_{uid} memoryId, owner, uid, createdAt: made by `uid`, removed by `uid` or the video's owner
  *   crews/{id}          festivalId, name, owner, members (up to 12), createdAt: the id is the invite
  *   crews/{id}/picks/{uid} artists, updatedAt: written by that member, read by members
+ *   crews/{id}/updates/{updateId} uid, kind, atMs (when it happened on the phone), sentAt (server time), festivalId,
+ *                       artistId, stage, note, videoUrl/thumbUrl (+ videoPath/thumbPath when uploaded for the crew), sharedId, durationSec, width, height
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
- * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg
+ * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg, crews/{crewId}/{uid}/{updateId}.(mp4|mov|m4v|jpg) (links only in members-only updates)
  */
 type Handles = { app: FirebaseApp; auth: Auth; db: Firestore; storage: FirebaseStorage };
 
@@ -115,6 +118,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     return getDownloadURL(task.snapshot.ref);
   }
   const removeFile = (path: string | undefined) => (path ? deleteObject(ref(fb().storage, path)).catch(() => {}) : Promise.resolve());
+  /** A crew's updates (one person's, or everyone's when the crew ends), with their crew-only files. */
+  async function removeUpdates(crewId: string, uid?: string) {
+    const col = collection(fb().db, 'crews', crewId, 'updates');
+    const snap = await getDocs(uid ? query(col, where('uid', '==', uid)) : col);
+    for (const d of snap.docs) {
+      const data = d.data() as { videoPath?: string; thumbPath?: string };
+      await deleteDoc(d.ref).catch(() => {});
+      await removeFile(data.videoPath);
+      await removeFile(data.thumbPath);
+    }
+  }
 
   const service: SocialService = {
     availability: () => (firebaseConfigured(config) ? { ok: true } : { ok: false, reason: 'not-set-up' }),
@@ -456,7 +470,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!c || !c.members.includes(user.uid)) return;
         const members = c.members.filter((m) => m !== user.uid);
         if (!members.length) {
-          // The last one out: everyone's picks, then the crew.
+          // The last one out: everyone's updates and picks, then the crew.
+          await removeUpdates(id);
           const all = await getDocs(collection(db, 'crews', id, 'picks'));
           const b = writeBatch(db);
           for (const d of all.docs) b.delete(d.ref);
@@ -464,6 +479,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await b.commit();
           return;
         }
+        // Your updates and picks go with you.
+        await removeUpdates(id, user.uid).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', user.uid));
         await updateDoc(crewRef, { members, owner: c.owner === user.uid ? members[0] : c.owner });
       }),
@@ -483,6 +500,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const crewRef = doc(db, 'crews', id);
         const c = crewFromDoc(id, (await getDoc(crewRef)).data());
         if (!c) throw new SocialError('not-found');
+        await removeUpdates(id, uid).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', uid));
         const members = c.members.filter((m) => m !== uid);
         await updateDoc(crewRef, { members });
@@ -497,6 +515,80 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const snap = await getDocs(collection(fb().db, 'crews', id, 'picks'));
         return snap.docs.map((d) => crewPicksFromDoc(d.id, d.data())).filter((p): p is CrewPicks => !!p);
+      }),
+
+    postCrewUpdate: (crewId, input, onProgress) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const ref_ = doc(db, 'crews', crewId, 'updates', input.id);
+        // A retry after a dropped connection: it already made it.
+        const existing = await getDoc(ref_);
+        if (existing.exists()) {
+          const done = crewUpdateFromDoc(crewId, input.id, existing.data());
+          if (done) return done;
+        }
+        let videoUrl = input.videoUrl;
+        let thumbUrl = input.thumbUrl;
+        let videoPath: string | undefined;
+        let thumbPath: string | undefined;
+        if (input.kind === 'video' && !videoUrl) {
+          if (!input.videoUri) throw new SocialError('unknown');
+          const type = videoType(input.videoUri);
+          const ext = type === 'video/quicktime' ? 'mov' : type === 'video/x-m4v' ? 'm4v' : 'mp4';
+          videoPath = `crews/${crewId}/${user.uid}/${input.id}.${ext}`;
+          videoUrl = await upload(videoPath, input.videoUri, type, (s) => onProgress?.(s * 0.95));
+          if (input.thumbUri) {
+            thumbPath = `crews/${crewId}/${user.uid}/${input.id}.jpg`;
+            thumbUrl = await upload(thumbPath, input.thumbUri, 'image/jpeg').catch(() => undefined);
+            if (!thumbUrl) thumbPath = undefined;
+          }
+        }
+        const data = {
+          uid: user.uid,
+          kind: input.kind,
+          atMs: Date.parse(input.at),
+          sentAt: serverTimestamp(),
+          festivalId: input.festivalId,
+          ...(input.artistId ? { artistId: input.artistId } : {}),
+          ...(input.stage ? { stage: input.stage.slice(0, CREW_STAGE_MAX) } : {}),
+          ...(input.note ? { note: input.note.slice(0, CREW_NOTE_MAX) } : {}),
+          ...(videoUrl ? { videoUrl } : {}),
+          ...(thumbUrl ? { thumbUrl } : {}),
+          ...(videoPath ? { videoPath } : {}),
+          ...(thumbPath ? { thumbPath } : {}),
+          ...(input.sharedId ? { sharedId: input.sharedId } : {}),
+          ...(input.durationSec ? { durationSec: input.durationSec } : {}),
+          ...(input.width && input.height ? { width: input.width, height: input.height } : {}),
+        };
+        try {
+          await setDoc(ref_, data);
+        } catch (e) {
+          await removeFile(videoPath);
+          await removeFile(thumbPath);
+          throw e;
+        }
+        onProgress?.(1);
+        return crewUpdateFromDoc(crewId, input.id, { ...data, sentAt: Date.now() })!;
+      }),
+    crewUpdates: (crewId, sinceMs, max) =>
+      guard(async () => {
+        const snap = await getDocs(
+          query(collection(fb().db, 'crews', crewId, 'updates'), where('atMs', '>=', sinceMs), orderBy('atMs', 'desc'), limit(max)),
+        );
+        return snap.docs.map((d) => crewUpdateFromDoc(crewId, d.id, d.data())).filter((u): u is CrewUpdate => !!u);
+      }),
+    deleteCrewUpdate: (crewId, id) =>
+      guard(async () => {
+        const user = me();
+        const ref_ = doc(fb().db, 'crews', crewId, 'updates', id);
+        const d = await getDoc(ref_);
+        if (!d.exists()) return;
+        const data = d.data() as { uid?: string; videoPath?: string; thumbPath?: string };
+        if (data.uid !== user.uid) throw new SocialError('not-signed-in');
+        await deleteDoc(ref_);
+        await removeFile(data.videoPath);
+        await removeFile(data.thumbPath);
       }),
 
     report: (target, reason, note) =>

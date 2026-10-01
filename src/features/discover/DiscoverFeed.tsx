@@ -38,6 +38,8 @@ import { ClipCard } from './ClipCard';
 import { FeedEnd } from './FeedEnd';
 import { FollowingEmpty } from './FollowingEmpty';
 import { FeedHint } from './FeedHint';
+import { CrewStories, STORIES_H } from '../crews/CrewStories';
+import { useCrewUpdates } from '../../state/crewUpdates';
 import { useAddMemory } from '../memories/useAddMemory';
 import { useMemories } from '../../state/memories';
 import { alreadyKnown, currentHint } from './hints';
@@ -311,6 +313,10 @@ export function DiscoverFeed() {
     [scrollToPage, pages],
   );
 
+  // Your crew's updates along the top, while a crew's festival is on or coming up.
+  const storiesOn = useCrewUpdates().crewCount > 0;
+  const storiesSpace = storiesOn ? STORIES_H : 0;
+
   return (
     <GestureDetector gesture={swipeToCamera}>
     <View style={[styles.root, { width, alignSelf: 'center' }]}>
@@ -348,6 +354,7 @@ export function DiscoverFeed() {
               onSkip={() => skipFrom(index)}
               onNext={() => skipFrom(index)}
               onHold={onHold}
+              topExtra={storiesSpace}
             />
           );
         }}
@@ -375,7 +382,7 @@ export function DiscoverFeed() {
 
       <LinearGradient
         colors={['rgba(3,2,10,0.6)', 'rgba(3,2,10,0)']}
-        style={[styles.topScrim, { height: insets.top + 90 }]}
+        style={[styles.topScrim, { height: insets.top + 90 + storiesSpace }]}
         pointerEvents="none"
       />
       {followingFocus && feed && count === 0 ? (
@@ -421,9 +428,14 @@ export function DiscoverFeed() {
           </View>
         </View>
       )}
+      {storiesOn ? (
+        <View style={[styles.stories, { top: insets.top + space.sm + HEADER_HEIGHT + 4 }]} pointerEvents="box-none">
+          <CrewStories />
+        </View>
+      ) : null}
       {/* A first-time tip on its own line under the title, so the header stays one clean row. */}
       {hint && (festival || wide) ? (
-        <View style={[styles.hint, { top: insets.top + space.sm + HEADER_HEIGHT }]} pointerEvents="none">
+        <View style={[styles.hint, { top: insets.top + space.sm + HEADER_HEIGHT + storiesSpace }]} pointerEvents="none">
           <FeedHint hint={hint} />
         </View>
       ) : null}
@@ -439,6 +451,7 @@ const FEED_MAX_WIDTH = 520;
 const HEADER_HEIGHT = 48;
 
 const styles = StyleSheet.create({
+  stories: { position: 'absolute', left: 0, right: 0 },
   root: { flex: 1, backgroundColor: color.night, overflow: 'hidden' },
   shifting: { flex: 1 },
   cameraEdge: { position: 'absolute', left: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

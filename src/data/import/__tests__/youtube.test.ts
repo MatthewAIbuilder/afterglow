@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { BUILT_IN } from '../../bundled';
 import { parseCatalogFile } from '../../file';
 import { buildCatalog } from '../../merge';
-import { clipPlan, clipTitle, isoSeconds, pickLiveSet, searchIds, searchUrl, setClip } from '../youtube';
+import { clipPlan, clipTitle, isoSeconds, pickLiveSet, searchIds, searchUrl, setClip, shapesUrl, uprightOf, videoShapes } from '../youtube';
 
 // A videos.list answer shaped like YouTube's.
 const video = (id: string, title: string, channel: string, duration: string, over: Record<string, unknown> = {}) => ({
@@ -64,6 +64,27 @@ describe('YouTube live sets', () => {
     const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile({ version: 1, artists: [], festivals: [], clips: [clip] }));
     expect(built.problems).toEqual([]);
     expect(built.catalog.clipsOf('subtronics').map((c) => c.id)).toContain(`yt-${ids[3]}`);
+  });
+
+  it('learns which videos were filmed upright, and gives those the tall player in Discover', () => {
+    const upright = { player: { embedWidth: '405', embedHeight: '720' } };
+    const wide = { player: { embedWidth: '1280', embedHeight: '720' } };
+    expect(uprightOf(upright)).toBe(true);
+    expect(uprightOf(wide)).toBe(false);
+    // Square-ish, or no size given: not upright, or unknown.
+    expect(uprightOf({ player: { embedWidth: '700', embedHeight: '720' } })).toBe(false);
+    expect(uprightOf({ player: {} })).toBeUndefined();
+    expect(videoShapes({ items: [{ id: ids[0], ...upright }, { id: ids[1], ...wide }, { id: ids[2] }] })).toEqual({ [ids[0]]: true, [ids[1]]: false });
+    expect(shapesUrl([ids[0]], 'k')).toContain('part=player&maxHeight=720');
+
+    const set = pickLiveSet('MACY TODD', { items: [video(ids[4], 'MACY TODD Live Full Set NYC', 'Jeremy Dann', 'PT45M', upright)] });
+    expect(set?.upright).toBe(true);
+    const clip = setClip(set!, { id: 'macy-todd', name: 'MACY TODD' }, 'acl-26');
+    expect(clip.video).toMatchObject({ vertical: true });
+    const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile({ version: 1, clips: [{ ...clip, artist: 'subtronics', festival: 'cyclops-cove-4' }] }));
+    expect(built.problems).toEqual([]);
+    const source = built.catalog.clipsOf('subtronics').find((c) => c.id === clip.id)?.source;
+    expect(source && 'vertical' in source && source.vertical).toBe(true);
   });
 
   it('plans tonight: artists without a clip, skipping recent misses, up to the budget', () => {

@@ -1,4 +1,4 @@
-import { CREW_MAX, CREW_PICKS_MAX, type Activity, type Crew, type CrewPicks, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser } from '../models';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanCrewName, cleanProfileInput, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -21,6 +21,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const crews = new Map<string, Crew>();
   /** Picks as `crewId/uid`. */
   const picks = new Map<string, CrewPicks>();
+  /** Crew updates as `crewId/updateId`. */
+  const updates = new Map<string, CrewUpdate>();
+  /** Switch the "network" off to see what happens with no signal: crew updates fail to send. */
+  const network = { down: false };
   const reports: { by: string; target: ReportTarget; reason: ReportReason; note?: string }[] = [];
   const listeners = new Set<(u: SocialUser | null) => void>();
   let current: SocialUser | null = null;
@@ -44,6 +48,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const dropPicks = (id: string, uid?: string) => {
     for (const k of picks.keys()) if (k.startsWith(`${id}/`) && (!uid || k === `${id}/${uid}`)) picks.delete(k);
   };
+  const dropUpdates = (id: string, uid?: string) => {
+    for (const [k, u] of updates) if (k.startsWith(`${id}/`) && (!uid || u.uid === uid)) updates.delete(k);
+  };
   const leave = (id: string, uid: string) => {
     const c = crews.get(id);
     if (!c || !c.members.includes(uid)) return;
@@ -51,9 +58,11 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     if (!members.length) {
       crews.delete(id);
       dropPicks(id);
+      dropUpdates(id);
       return;
     }
     dropPicks(id, uid);
+    dropUpdates(id, uid);
     crews.set(id, { ...c, members, owner: c.owner === uid ? members[0] : c.owner });
   };
 
@@ -297,6 +306,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const c = memberOf(id);
       if (c.owner !== me().uid || uid === c.owner) throw new SocialError('unknown');
       dropPicks(id, uid);
+      dropUpdates(id, uid);
       const next = { ...c, members: c.members.filter((m) => m !== uid) };
       crews.set(id, next);
       return next;
@@ -310,6 +320,51 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       memberOf(id);
       return [...picks.entries()].filter(([k]) => k.startsWith(`${id}/`)).map(([, p]) => p);
     },
+    async postCrewUpdate(crewId, input, onProgress) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      const key = `${crewId}/${input.id}`;
+      const existing = updates.get(key);
+      if (existing) return existing;
+      const at = Date.parse(input.at);
+      if (!Number.isFinite(at) || at > Date.now() + 5 * 60_000) throw new SocialError('unknown');
+      if (input.kind === 'video' && !input.videoUrl && !input.videoUri) throw new SocialError('unknown');
+      const uploaded = input.kind === 'video' && !input.videoUrl;
+      const u: CrewUpdate = {
+        id: input.id,
+        crewId,
+        uid: me().uid,
+        kind: input.kind,
+        at: new Date(at).toISOString(),
+        sentAt: now(),
+        festivalId: input.festivalId,
+        ...(input.artistId ? { artistId: input.artistId } : {}),
+        ...(input.stage ? { stage: input.stage.slice(0, CREW_STAGE_MAX) } : {}),
+        ...(input.note ? { note: input.note.slice(0, CREW_NOTE_MAX) } : {}),
+        ...(input.kind === 'video' ? { videoUrl: input.videoUrl ?? `https://files.example/crews/${crewId}/${input.id}.mp4` } : {}),
+        ...(input.thumbUrl || (uploaded && input.thumbUri) ? { thumbUrl: input.thumbUrl ?? `https://files.example/crews/${crewId}/${input.id}.jpg` } : {}),
+        ...(input.sharedId ? { sharedId: input.sharedId } : {}),
+        ...(input.durationSec ? { durationSec: input.durationSec } : {}),
+        ...(input.width && input.height ? { width: input.width, height: input.height } : {}),
+      };
+      updates.set(key, u);
+      onProgress?.(1);
+      return u;
+    },
+    async crewUpdates(crewId, sinceMs, max) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      return [...updates.values()]
+        .filter((u) => u.crewId === crewId && Date.parse(u.at) >= sinceMs)
+        .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+        .slice(0, max);
+    },
+    async deleteCrewUpdate(crewId, id) {
+      const u = updates.get(`${crewId}/${id}`);
+      if (!u) return;
+      if (u.uid !== me().uid) throw new SocialError('not-signed-in');
+      updates.delete(`${crewId}/${id}`);
+    },
     async report(target, reason, note) {
       reports.push({ by: me().uid, target, reason, note });
     },
@@ -322,5 +377,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, network, reports, currentUser: () => current };
 }

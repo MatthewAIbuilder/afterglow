@@ -58,7 +58,40 @@ export const searchUrl = (name: string, key: string) =>
   )}&key=${encodeURIComponent(key)}`;
 
 export const detailsUrl = (ids: string[], key: string) =>
-  `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status&id=${ids.join(',')}&key=${encodeURIComponent(key)}`;
+  `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status,player&maxHeight=720&id=${ids.join(',')}&key=${encodeURIComponent(key)}`;
+
+/** Just the players of up to 50 videos (1 unit of quota): enough to learn each video's shape. */
+export const shapesUrl = (ids: string[], key: string) =>
+  `https://www.googleapis.com/youtube/v3/videos?part=player&maxHeight=720&id=${ids.join(',')}&key=${encodeURIComponent(key)}`;
+
+/**
+ * Whether a video was uploaded upright (filmed on a phone held up), from the
+ * size YouTube suggests for its player: asked for with a `maxHeight`, it
+ * answers in the video's own shape. Undefined when it doesn't say. A video
+ * with black bars filmed into a wide frame still reads as wide: those can't
+ * be cropped (the YouTube player mustn't be cut down), so they keep the wide
+ * player.
+ */
+export function uprightOf(item: unknown): boolean | undefined {
+  const p = (item as { player?: { embedWidth?: unknown; embedHeight?: unknown } } | null)?.player;
+  const w = Number(p?.embedWidth);
+  const h = Number(p?.embedHeight);
+  if (!(w > 0) || !(h > 0)) return undefined;
+  return h > w * 1.1;
+}
+
+/** Each video's shape in a details or shapes answer: id -> upright. Videos YouTube didn't size are left out. */
+export function videoShapes(answer: unknown): Record<string, boolean> {
+  const items = (answer as { items?: unknown } | null)?.items;
+  const out: Record<string, boolean> = {};
+  if (!Array.isArray(items)) return out;
+  for (const it of items) {
+    const id = (it as { id?: unknown })?.id;
+    const up = uprightOf(it);
+    if (typeof id === 'string' && up !== undefined) out[id] = up;
+  }
+  return out;
+}
 
 /** The video ids in a search answer. */
 export function searchIds(answer: unknown): string[] {
@@ -78,7 +111,7 @@ export function isoSeconds(d: unknown): number | undefined {
   return dd * 86400 + h * 3600 + mi * 60 + s;
 }
 
-export type LiveSet = { videoId: string; title: string; channel: string; seconds: number; score: number };
+export type LiveSet = { videoId: string; title: string; channel: string; seconds: number; score: number; upright?: boolean };
 
 const SET_WORDS = /\b(live|set|dj set|full set|festival|stage|boiler room|cercle|b2b)\b/i;
 const NOT_A_SET = /\b(reaction|reacts|tutorial|how to|interview|trailer|teaser|aftermovie|lyrics|lyric video|official video|music video|karaoke|cover|remix pack|sample pack|full album|podcast)\b/i;
@@ -113,7 +146,7 @@ export function pickLiveSet(artistName: string, details: unknown, blocked: Reado
     if (KNOWN_CHANNELS.some((k) => ch.includes(k))) score += 3;
     if (/\bfull set\b/i.test(title)) score += 1;
     if (seconds >= 30 * 60 && seconds <= 150 * 60) score += 1;
-    found.push({ videoId, title, channel, seconds, score });
+    found.push({ videoId, title, channel, seconds, score, ...(uprightOf(raw) ? { upright: true } : {}) });
   }
   // Best score first; the search's own order breaks ties.
   return found.map((f, i) => ({ f, i })).sort((a, b) => b.f.score - a.f.score || a.i - b.i)[0]?.f;
@@ -143,7 +176,14 @@ export function setClip(set: LiveSet, artist: { id: string; name: string }, fest
     artist: artist.id,
     festival: festivalId,
     title: clipTitle(artist.name, set.title),
-    video: { link: `https://www.youtube.com/watch?v=${set.videoId}`, from: mmss(from), to: mmss(to), channel: set.channel.slice(0, 100) },
+    video: {
+      link: `https://www.youtube.com/watch?v=${set.videoId}`,
+      from: mmss(from),
+      to: mmss(to),
+      channel: set.channel.slice(0, 100),
+      // Filmed upright: Discover gives it the tall, full-height player.
+      ...(set.upright ? { vertical: true } : {}),
+    },
   };
 }
 

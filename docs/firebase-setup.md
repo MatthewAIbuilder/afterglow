@@ -61,6 +61,8 @@ npx firebase-tools@latest deploy --only firestore,storage
 
 It should end with "Deploy complete!" (this also creates the indexes Afterglow needs). If you'd rather not use the command line, paste the contents of `firestore.rules` into Firebase console → Firestore → **Rules** → Publish, and `storage.rules` into Storage → **Rules** → Publish, then add the two indexes by hand: Firestore → **Indexes** → Composite → Create index → collection `memories`, fields `uid` Ascending and `capturedAt` Descending, query scope Collection; then six more: `memories` with `festivalId` Ascending and `createdAt` Descending; `memories` with `uid` Ascending and `createdAt` Descending; `follows` with `from` Ascending and `createdAt` Descending; `follows` with `to` Ascending and `createdAt` Descending; `likes` with `memoryId` Ascending and `createdAt` Descending; `likes` with `owner` Ascending and `createdAt` Descending. They take a few minutes to build.
 
+> **Updated 2026-10-01 (crew updates):** the rules changed again. Run the deploy command above once more so crews can post and read updates.
+
 ## 6. Try it (in Expo Go)
 
 Restart the app with the new `.env`: `npx expo start --go --clear`, and open it in Expo Go.

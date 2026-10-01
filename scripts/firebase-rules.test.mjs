@@ -1,7 +1,8 @@
 /**
  * Checks firestore.rules and storage.rules against the Firebase emulator:
  * handle ownership, profile limits, who may share, read and delete memories,
- * private blocks, write-only reports, and storage paths, types and sizes.
+ * private blocks, write-only reports, crews and their updates (server-stamped
+ * arrival times), and storage paths, types and sizes.
  * Not part of `npm test` (it needs Java and the emulator). To run it:
  *
  *   mkdir -p /tmp/rules && cp firestore.rules storage.rules scripts/firebase-rules.test.mjs scripts/firebase-rules.json /tmp/rules/
@@ -10,7 +11,7 @@
  */
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'fs';
-import { doc, getDoc, getDocs, getCountFromServer, setDoc, deleteDoc, writeBatch, updateDoc, collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, getDocs, getCountFromServer, setDoc, deleteDoc, writeBatch, updateDoc, collection, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 const env = await initializeTestEnvironment({
@@ -204,6 +205,41 @@ await t('crews: members share picks; others can’t read or write them', async (
   await assertFails(setDoc(doc(C.firestore(), 'crews', 'c1', 'picks', 'uidC'), { artists: [], updatedAt: now }));
   await assertFails(setDoc(doc(B.firestore(), 'crews', 'c1', 'picks', 'uidB'), { artists: [], updatedAt: now, note: 'x' }));
   await assertFails(setDoc(doc(B.firestore(), 'crews', 'c1', 'picks', 'uidB'), { artists: Array(101).fill('x'), updatedAt: now }));
+});
+const update = (over = {}) => ({ uid: 'uidB', kind: 'checkin', atMs: Date.now() - 3600_000, sentAt: serverTimestamp(), festivalId: 'acl-26', stage: 'Main Stage', note: 'Meet at our spot', ...over });
+await t('crew updates: a member posts as themselves, stamped with the server’s time; members read them', async () => {
+  await assertSucceeds(setDoc(doc(B.firestore(), 'crews', 'c1', 'updates', 'u000001'), update()));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'crews', 'c1', 'updates', 'u000002'), update({ kind: 'video', videoUrl: 'https://x/v.mp4', durationSec: 30 })));
+  await assertSucceeds(getDocs(query(collection(A.firestore(), 'crews', 'c1', 'updates'), where('atMs', '>=', 0), orderBy('atMs', 'desc'), limit(50))));
+  await assertFails(getDocs(collection(C.firestore(), 'crews', 'c1', 'updates')));
+});
+await t('crew updates: not as someone else, not from the future or long ago, not a faked arrival time, not off-festival', async () => {
+  const db = B.firestore(); const at = (id) => doc(db, 'crews', 'c1', 'updates', id);
+  await assertFails(setDoc(at('u000003'), update({ uid: 'uidA' })));
+  await assertFails(setDoc(at('u000004'), update({ atMs: Date.now() + 3600_000 })));
+  await assertFails(setDoc(at('u000005'), update({ atMs: Date.now() - 8 * 24 * 3600_000 })));
+  await assertFails(setDoc(at('u000006'), update({ sentAt: Date.now() - 3600_000 })));
+  await assertFails(setDoc(at('u000007'), update({ festivalId: 'edc-orlando-26' })));
+  await assertFails(setDoc(at('u000008'), update({ kind: 'video' })));
+  await assertFails(setDoc(at('u000009'), update({ note: 'x'.repeat(81) })));
+  await assertFails(setDoc(at('u000010'), update({ secret: 1 })));
+  await assertFails(setDoc(at('u000011'), update({ kind: 'video', videoUrl: 'http://x/v.mp4' })));
+  await assertFails(setDoc(doc(C.firestore(), 'crews', 'c1', 'updates', 'u000012'), update({ uid: 'uidC' })));
+});
+await t('crew updates: never edited; removed by the author or the owner', async () => {
+  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1', 'updates', 'u000001'), { note: 'changed' }));
+  await assertFails(deleteDoc(doc(C.firestore(), 'crews', 'c1', 'updates', 'u000001')));
+  await assertSucceeds(deleteDoc(doc(B.firestore(), 'crews', 'c1', 'updates', 'u000001')));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'crews', 'c1', 'updates', 'u000002')));
+});
+await t('storage: crew videos go only in your own folder; signed out can’t watch; only you remove them', async () => {
+  await assertSucceeds(uploadBytes(ref(B.storage(), 'crews/c1/uidB/u000002.mp4'), new Uint8Array(1000), { contentType: 'video/mp4' }));
+  await assertFails(uploadBytes(ref(B.storage(), 'crews/c1/uidA/u000002.mp4'), new Uint8Array(10), { contentType: 'video/mp4' }));
+  await assertFails(uploadBytes(ref(B.storage(), 'crews/c1/uidB/x.exe'), new Uint8Array(10), { contentType: 'application/octet-stream' }));
+  await assertSucceeds(getBytes(ref(A.storage(), 'crews/c1/uidB/u000002.mp4')));
+  await assertFails(getBytes(ref(anon.storage(), 'crews/c1/uidB/u000002.mp4')));
+  await assertFails(deleteObject(ref(A.storage(), 'crews/c1/uidB/u000002.mp4')));
+  await assertSucceeds(deleteObject(ref(B.storage(), 'crews/c1/uidB/u000002.mp4')));
 });
 await t('crews: only the owner renames, removes people or deletes', async () => {
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { name: 'B’s crew' }));
