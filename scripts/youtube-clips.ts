@@ -9,13 +9,16 @@
  * artists on upcoming festivals who still have no clip, and adds the best
  * live set for each as a one-minute clip (src/data/import/youtube.ts).
  * Searches that found nothing are remembered ("clipMisses") and retried after
- * a month. Writes public/catalogue.json only if the app would read it with no
+ * a month. Videos reported as wrong ("blockedVideos" in
+ * catalogue/afterglow.json) are dropped and never picked again, and the list
+ * is copied into the published file so phones with a saved copy drop them too.
+ * Writes public/catalogue.json only if the app would read it with no
  * problems. The key is never printed.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { BUILT_IN } from '../src/data/bundled';
-import { parseCatalogFile } from '../src/data/file';
+import { BUILT_IN, BUNDLED_FILE } from '../src/data/bundled';
+import { parseCatalogFile, parseYouTubeLink } from '../src/data/file';
 import type { Festival } from '../src/data/models';
 import { clipPlan, detailsUrl, pickLiveSet, searchIds, searchUrl, setClip } from '../src/data/import/youtube';
 import { buildCatalog } from '../src/data/merge';
@@ -24,6 +27,8 @@ import { bySoonest, isOver } from '../src/features/festivals/shelves';
 
 const OUT = resolve(__dirname, '../public/catalogue.json');
 type FileClip = ReturnType<typeof setClip>;
+/** A published clip's YouTube video id ("" when it has none). */
+const videoIdOf = (c: FileClip) => (c?.id?.startsWith('yt-') ? c.id.slice(3) : (parseYouTubeLink(c?.video?.link)?.videoId ?? ''));
 
 function stop(message: string): never {
   console.error(`YouTube clips skipped: ${message}`);
@@ -53,6 +58,10 @@ async function main() {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const file = JSON.parse(readFileSync(OUT, 'utf8')) as Record<string, unknown> & { clips?: FileClip[] };
+  // Videos reported as wrong, from the bundled catalogue (and any already in the file).
+  const blockedList = [...new Set([...(BUNDLED_FILE.blockedVideos ?? []), ...(parseCatalogFile(readFileSync(OUT, 'utf8')).blockedVideos ?? [])])];
+  const blocked = new Set(blockedList);
+  const isBlocked = (c: FileClip) => blocked.has(videoIdOf(c));
   const catalog = buildCatalog(BUILT_IN.snapshot, parseCatalogFile(readFileSync(OUT, 'utf8'))).catalog;
 
   // The artist's soonest festival that isn't over: where a clip belongs.
@@ -67,10 +76,10 @@ async function main() {
       published = JSON.parse(readFileSync(lastPath, 'utf8'));
     } catch {}
   }
-  const clips: FileClip[] = [...(file.clips ?? [])];
+  const clips: FileClip[] = (file.clips ?? []).filter((c) => !isBlocked(c));
   const has = new Set([...catalog.clips.map((c) => c.artistId), ...clips.map((c) => c.artist)]);
   for (const c of published.clips ?? []) {
-    if (typeof c?.id !== 'string' || !c.id.startsWith('yt-') || has.has(c.artist) || !catalog.artist(c.artist)) continue;
+    if (typeof c?.id !== 'string' || !c.id.startsWith('yt-') || isBlocked(c) || has.has(c.artist) || !catalog.artist(c.artist)) continue;
     // Its festival if still listed (even once it's over, so likes on the clip keep counting), else another the artist plays.
     const home = catalog.festival(c.festival)?.lineup.includes(c.artist)
       ? c.festival
@@ -105,7 +114,7 @@ async function main() {
     searched++;
     const ids = searchIds(s.body);
     const d = ids.length ? await getJson(detailsUrl(ids, key)) : undefined;
-    const set = d?.ok ? pickLiveSet(a.name, d.body) : undefined;
+    const set = d?.ok ? pickLiveSet(a.name, d.body, blocked) : undefined;
     const home = homeOf(a.id);
     if (set && home) {
       clips.push(setClip(set, a, home.id));
@@ -115,7 +124,7 @@ async function main() {
     } else misses[a.id] = today;
   }
 
-  const next = { ...file, clips, clipMisses: misses };
+  const next = blockedList.length ? { ...file, clips, clipMisses: misses, blockedVideos: blockedList } : { ...file, clips, clipMisses: misses };
   const out = JSON.stringify(next);
   const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile(out));
   if (out.length > MAX_FILE_CHARS) stop('the file would be too large.');

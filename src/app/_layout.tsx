@@ -7,6 +7,7 @@ import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
+import { ClipFlagsProvider } from '../state/clipFlags';
 import { ClipNewsProvider } from '../state/clipNews';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
@@ -30,6 +31,7 @@ import { color } from '../theme/tokens';
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.night }}>
+      <ClipFlagsProvider>
       <CatalogProvider>
       <NearbyProvider>
       <MusicConnectionsProvider>
@@ -147,6 +149,7 @@ export default function RootLayout() {
       </MusicConnectionsProvider>
       </NearbyProvider>
       </CatalogProvider>
+      </ClipFlagsProvider>
     </GestureHandlerRootView>
   );
 }

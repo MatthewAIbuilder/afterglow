@@ -54,6 +54,14 @@ export function applyPhotos(
   return changed ? { ...snapshot, artists } : snapshot;
 }
 
+/** The snapshot without clips of these YouTube videos (reported as wrong). The same object when none is in it. */
+export function withoutVideos(snapshot: CatalogSnapshot, videoIds: readonly string[] | undefined): CatalogSnapshot {
+  if (!videoIds?.length) return snapshot;
+  const blocked = new Set(videoIds);
+  const clips = snapshot.clips.filter((c) => !(c.source?.provider === 'youtube' && blocked.has(c.source.videoId)));
+  return clips.length === snapshot.clips.length ? snapshot : { ...snapshot, clips };
+}
+
 /** snapshot: the checked data behind the catalogue, for building on further. */
 export type Built = { catalog: Catalog; snapshot: CatalogSnapshot; problems: string[]; usedFile: boolean };
 
@@ -68,7 +76,10 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
     return { catalog: createCatalog(snapshot), snapshot };
   };
   if (!file?.snapshot) return { ...fallback(), problems: file?.problems ?? [], usedFile: false };
-  const combined = applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit, file.colors);
+  const combined = withoutVideos(
+    applyPhotos(file.mode === 'replace' ? file.snapshot : mergeSnapshots(base, file.snapshot), file.photos, file.photoCredit, file.colors),
+    file.blockedVideos,
+  );
   const { snapshot, problems } = validateSnapshot(combined);
   const all = [...file.problems, ...problems];
   if (snapshot.festivals.length === 0 || snapshot.clips.length === 0) {
