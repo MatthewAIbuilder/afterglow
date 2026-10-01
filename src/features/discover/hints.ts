@@ -10,14 +10,14 @@ export const HINTS: readonly Hint[] = ['swipe', 'like', 'hold'];
 export const HINT_COPY: Record<Hint, string> = {
   swipe: 'Swipe up',
   like: 'Double-tap',
-  hold: 'Hold to add yours',
+  hold: 'Swipe right to film',
 };
 
 /** The whole tip, for screen readers. */
 export const HINT_SPOKEN: Record<Hint, string> = {
   swipe: 'Swipe up for the next clip',
   like: 'Double-tap a clip to like it',
-  hold: 'Press and hold around a clip to add your own video to Memories',
+  hold: 'Swipe right, or tap the camera button, to film your own video',
 };
 
 /** The tip to show now: the first one you haven't done yet, if any. */

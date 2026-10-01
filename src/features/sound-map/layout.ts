@@ -58,6 +58,16 @@ export type MapLayout = {
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 };
 
+/** Half the tappable box around a sound name (a label is drawn 120 wide, about 16 tall). */
+export const REGION_HIT = { x: 60, y: 14 } as const;
+
+/** The sound name at a point in layout coordinates, if any (nearest first). */
+export function regionAt(regions: readonly RegionLabel[], x: number, y: number): SoundTag | undefined {
+  return regions
+    .filter((r) => Math.abs(x - r.x) <= REGION_HIT.x && Math.abs(y - r.y) <= REGION_HIT.y)
+    .sort((a, b) => Math.hypot(x - a.x, y - a.y) - Math.hypot(x - b.x, y - b.y))[0]?.tag;
+}
+
 const angleOf = (tag: SoundTag) => (RING_PLACE[tag] / 6) * Math.PI * 2 - Math.PI / 2;
 
 export const bubbleRadius = (affinity: number) => {

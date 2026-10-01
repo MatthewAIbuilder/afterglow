@@ -8,12 +8,12 @@ import Animated, {
   withDecay,
   withSpring,
 } from 'react-native-reanimated';
-import type { Artist, TasteProfile } from '../../data/types';
+import type { Artist, SoundTag, TasteProfile } from '../../data/types';
 import { SOUND_LABEL } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { color, motion, type } from '../../theme/tokens';
 import { ArtistBubble } from './ArtistBubble';
-import { computeLayout, fitScale as frameScale } from './layout';
+import { computeLayout, fitScale as frameScale, regionAt } from './layout';
 
 type Props = {
   artists: Artist[];
@@ -23,6 +23,8 @@ type Props = {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onBackgroundTap: () => void;
+  /** A sound name around the map was tapped. */
+  onRegionTap?: (tag: SoundTag) => void;
   /** While searching: who matches. Matches pop and the map glides to show them. */
   matchIds?: ReadonlySet<string>;
 };
@@ -30,7 +32,7 @@ type Props = {
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.4;
 
-export function SoundMap({ artists, taste, width, height, selectedId, onSelect, onBackgroundTap, matchIds }: Props) {
+export function SoundMap({ artists, taste, width, height, selectedId, onSelect, onBackgroundTap, onRegionTap, matchIds }: Props) {
   const layout = useMemo(() => computeLayout(artists, taste), [artists, taste]);
   // Strongest matches bloom first.
   const bloomOrder = useMemo(
@@ -153,7 +155,11 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     const qy = height / 2 + (py - height / 2 - t1) / s;
     const hit = layout.bubbles.find((b) => Math.hypot(qx - (ox + b.x), qy - (oy + b.y)) <= b.r + 6);
     if (!hit) {
-      onBackgroundTap();
+      const region = onRegionTap ? regionAt(layout.regions, qx - ox, qy - oy) : undefined;
+      if (region) {
+        haptic.select();
+        onRegionTap?.(region);
+      } else onBackgroundTap();
       return;
     }
     haptic.tap();
@@ -190,6 +196,10 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
               key={r.tag}
               style={[styles.region, { left: ox + r.x - 60, top: oy + r.y - 8 }]}
               pointerEvents="none"
+              accessible={!!onRegionTap}
+              accessibilityRole={onRegionTap ? 'button' : undefined}
+              accessibilityLabel={onRegionTap ? `${SOUND_LABEL[r.tag]}. Show these artists` : undefined}
+              onAccessibilityTap={onRegionTap ? () => onRegionTap(r.tag) : undefined}
             >
               {SOUND_LABEL[r.tag]}
             </Text>

@@ -13,6 +13,7 @@ import { ArtistSheet } from '../../features/sound-map/ArtistSheet';
 import { SaveIcon } from '../../features/discover/icons';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { EVERYONE } from '../../features/sound-map/scope';
+import { soundChoices, soundFocus } from '../../features/discover/focus';
 import { lineupDays, playsOn } from '../../features/festivals/days';
 import { leftToRate } from '../../features/festivals/tune';
 import { artistsOnMap, mapCandidates, SPARSE_MAP } from '../../features/sound-map/layout';
@@ -104,6 +105,14 @@ export default function MySoundScreen() {
   // Searching the map: an artist or a sound. Matches pop; ones not on the map yet join it.
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
+  // Opened by tapping a sound name around the map: no keyboard, just that sound lit up.
+  const [typing, setTyping] = useState(true);
+  const showSound = useCallback((tag: SoundTag) => {
+    setSelectedId(null);
+    setTyping(false);
+    setQuery(SOUND_LABEL[tag]);
+    setSearchOpen(true);
+  }, []);
   const search = useMemo(() => (searchOpen ? mapSearch(candidates, query) : undefined), [searchOpen, candidates, query]);
   const extra = useMemo(
     () => (search ? extraMatches(candidates, known, search, shown.taste) : []),
@@ -113,6 +122,7 @@ export default function MySoundScreen() {
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
     setQuery('');
+    setTyping(true);
   }, []);
 
   // Closing the sheet lets the map catch up with anything you rated in it.
@@ -160,6 +170,7 @@ export default function MySoundScreen() {
           selectedId={selectedId}
           onSelect={setSelectedId}
           onBackgroundTap={close}
+          onRegionTap={showSound}
           matchIds={search?.ids}
         />
       </View>
@@ -223,7 +234,7 @@ export default function MySoundScreen() {
                 onChange={setQuery}
                 placeholder="Artist or sound, like dubstep"
                 label="Search your map for an artist or a sound"
-                autoFocus
+                autoFocus={typing}
               />
             </View>
             <Pressable onPress={closeSearch} accessibilityRole="button" accessibilityLabel="Done searching" hitSlop={8}>
@@ -326,17 +337,33 @@ function ScopeRow({
   );
 }
 
-/** While searching: what lit up, in a quiet glass note above the tab bar. */
+/** While searching: what lit up, in a quiet glass note above the tab bar; for one sound, a way to watch it in Discover. */
 function SearchNote({ search, query, extra, bottom }: { search: MapSearch; query: string; extra: number; bottom: number }) {
+  const catalog = useCatalog();
   const n = search.ids.size;
-  const sound = search.sounds.length === 1 ? SOUND_LABEL[search.sounds[0]].toLowerCase() : undefined;
+  const tag = search.sounds.length === 1 ? search.sounds[0] : undefined;
+  const sound = tag ? SOUND_LABEL[tag].toLowerCase() : undefined;
+  const watchable = !!tag && soundChoices(catalog.clips, catalog.artist).some((c) => c.tag === tag);
   const text =
     n === 0
       ? `No artist or sound matches “${query.trim()}”.`
       : `${n} ${sound ? `${sound} ` : ''}${n === 1 ? 'artist' : 'artists'}${extra ? `, ${extra} new to your map` : ''}. Tap one to see more.`;
   return (
-    <View style={[styles.sparse, { bottom }]} pointerEvents="none" accessibilityLiveRegion="polite">
+    <View style={[styles.sparse, { bottom }]} pointerEvents="box-none" accessibilityLiveRegion="polite">
       <Text style={styles.sparseText}>{text}</Text>
+      {watchable && tag && n > 0 ? (
+        <Pressable
+          onPress={() => {
+            haptic.tap();
+            router.navigate({ pathname: '/', params: { festival: soundFocus(tag) } });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Watch ${sound} live sets in Discover`}
+          style={({ pressed }) => [styles.sparseButton, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+        >
+          <Text style={styles.sparseButtonText}>Watch {sound}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

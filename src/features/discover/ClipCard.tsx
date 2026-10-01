@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  runOnJS,
+  useAnimatedReaction,
   useAnimatedStyle,
   useFrameCallback,
   useReducedMotion,
@@ -20,6 +22,7 @@ import { APP_NAME } from '../../config/app';
 import { setFor } from '../../data/festival';
 import type { Clip, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
+import { useAutoplay } from '../../state/autoplay';
 import { useCatalog } from '../../state/catalog';
 import { useCommunity } from '../../state/community';
 import { useReactions } from '../../state/reactions';
@@ -31,6 +34,8 @@ import { StarIcon } from '../plan/icons';
 import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
+import { AUTOPLAY_COUNTDOWN_SEC, countdownTick, passFinished } from './autoplay';
+import { UpNextPill } from './UpNextPill';
 import { AmbientBackdrop } from './AmbientBackdrop';
 import { ClipPlayer } from './ClipPlayer';
 import { type FeedPager, usePlayerSwipe } from './feedPager';
@@ -38,6 +43,8 @@ import { HeartIcon, PlayIcon } from './icons';
 import { clipMedia } from './media';
 import { clipShareText } from './share';
 import { communityMenu } from '../community/menu';
+import { flagMenu } from './flagMenu';
+import { useClipFlags } from '../../state/clipFlags';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
 import { MIN_PLAYER, tallLayout } from './videoLayout';
@@ -63,6 +70,8 @@ type Props = {
   /** Lets a vertical swipe on the video move the feed. */
   pager: FeedPager;
   onSkip: () => void;
+  /** Move on to the next clip by itself (after a clip is watched to the end), without counting it as a skip. */
+  onNext?: () => void;
   /** Press and hold: add your own video. */
   onHold?: () => void;
 };
@@ -73,7 +82,7 @@ const HOLD_MS = 450;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip, onHold }: Props) {
+function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip, onNext, onHold }: Props) {
   const catalog = useCatalog();
   const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
@@ -90,6 +99,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   // A community clip (someone's shared video): credited to them, with Report / Hide / Block.
   const community = media?.provider === 'video' ? media.community : undefined;
   const communityState = useCommunity();
+  const clipFlags = useClipFlags();
   const social = useSocial();
   const { remember } = communityState;
   // So your reactions keep counting for the artist after this clip leaves the feed.
@@ -108,9 +118,46 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   // How this visit to the clip is being watched. Only real footage counts, and
   // only what the player reports as played while live; see features/taste/watch.
   const watch = useRef<WatchSession | null>(null);
-  const onPlayed = useCallback((from: number, to: number) => {
-    if (watch.current) watch.current = addPlayed(watch.current, from, to);
+
+  // Watched to the end: count down, then glide to the next clip, unless you stay (or pause).
+  const autoplay = useAutoplay();
+  const [upNext, setUpNext] = useState<number | null>(null);
+  const [stayed, setStayed] = useState(false);
+  // A new visit to the clip starts fresh; pausing during the countdown means you're staying.
+  const [visitActive, setVisitActive] = useState(isActive);
+  if (visitActive !== isActive) {
+    setVisitActive(isActive);
+    setUpNext(null);
+    setStayed(false);
+  }
+  if (paused && upNext !== null) {
+    setUpNext(null);
+    setStayed(true);
+  }
+  // The feed passes a fresh function each render; keep the latest without restarting the countdown.
+  const onNextRef = useRef(onNext);
+  useEffect(() => {
+    onNextRef.current = onNext;
+  }, [onNext]);
+  const canNext = !!onNext;
+  const finishPass = useCallback(() => {
+    if (!autoplay.enabled || stayed || !canNext) return;
+    setUpNext((n) => n ?? AUTOPLAY_COUNTDOWN_SEC);
+  }, [autoplay.enabled, stayed, canNext]);
+  const stay = useCallback(() => {
+    haptic.select();
+    setStayed(true);
+    setUpNext(null);
   }, []);
+
+  const lengthSec = media?.lengthSec ?? 0;
+  const onPlayed = useCallback(
+    (from: number, to: number) => {
+      if (watch.current) watch.current = addPlayed(watch.current, from, to);
+      if (passFinished(to, lengthSec)) finishPass();
+    },
+    [lengthSec, finishPass],
+  );
   const wasActive = useRef(false);
   useEffect(() => {
     if (isActive && !wasActive.current) watch.current = media ? startWatch(media.lengthSec) : null;
@@ -145,6 +192,29 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       setPaused(false);
     }
   }, [isActive, clock]);
+
+  // The drawn stage has no player: its own clock reaching the clip's length is a finished pass.
+  const stageOnly = !showVideo;
+  const stageMs = clip.durationSec * 1000;
+  useAnimatedReaction(
+    () => stageOnly && clock.value >= stageMs,
+    (done, before) => {
+      if (done && !before) runOnJS(finishPass)();
+    },
+    [stageOnly, stageMs, finishPass],
+  );
+
+  // The countdown runs only while the clip plays.
+  useEffect(() => {
+    if (upNext === null || !playing) return;
+    const t = setTimeout(() => {
+      const step = countdownTick(upNext);
+      setUpNext(step === 'next' ? null : step);
+      if (step === 'next') onNextRef.current?.();
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [upNext, playing]);
+  const upNextPill = upNext !== null ? <UpNextPill left={upNext} onStay={stay} /> : null;
 
   const progressStyle = useAnimatedStyle(() => ({
     width: `${((clock.value / (clip.durationSec * 1000)) % 1) * 100}%`,
@@ -338,6 +408,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
     );
     const info = (
       <>
+        {upNextPill}
         {artistButton}
         <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
           {clip.title}
@@ -388,6 +459,15 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
             style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
           >
             <ShareIcon color={color.moonDim} size={15} />
+          </Pressable>
+          <Pressable
+            onPress={() => flagMenu(clip, artist.name, media.externalUrl, clipFlags)}
+            accessibilityRole="button"
+            accessibilityLabel={`Something wrong with this clip of ${artist.name}? Hide it or report it`}
+            hitSlop={12}
+            style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+          >
+            <Text style={styles.more}>•••</Text>
           </Pressable>
         </View>
         ) : null}
@@ -465,6 +545,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       </GestureDetector>
 
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
+        {upNextPill}
         {artistButton}
         <Text style={styles.title}>{clip.title}</Text>
         {metaLine(false)}

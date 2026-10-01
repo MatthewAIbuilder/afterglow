@@ -115,7 +115,15 @@ as a one-minute clip, a third of the way into the set (past the intro).
 - The clip's credit line in Discover names the YouTube channel. Clips you add
   yourself in `catalogue/afterglow.json` always stay; an artist who already
   has one isn't searched.
-- If a clip looks wrong, tell Claude the artist: it can be left out.
+- If a clip looks wrong, flag it in Discover (the ••• under the video): it's
+  hidden for you at once, and "Send report" emails the video's link. Adding
+  that video to `blockedVideos` in `catalogue/afterglow.json` (see
+  `docs/catalogue.md`) takes it out for everyone, and the next night's search
+  finds that artist another set.
+- The app's bell says when new sets arrive for artists you'd love ("New live
+  sets from SUBTRONICS and 2 more you'd love") and opens Discover on them. The
+  first time the app sees the clips it only takes note, so nobody gets a pile
+  of news on their first day.
 
 ### Setting it up (one time)
 

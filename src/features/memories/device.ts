@@ -17,7 +17,7 @@ import type { Moment } from './guess';
  */
 
 /** Memories are clips: longer videos are trimmed (iPhone) or refused (Android). */
-export const MAX_CLIP_SECONDS = 180;
+export const MAX_CLIP_SECONDS = 60;
 
 export type PickedVideo = {
   uri: string;
@@ -55,6 +55,11 @@ export async function pickVideo(source: 'camera' | 'library'): Promise<PickResul
   } catch {
     return { ok: false, reason: 'failed' };
   }
+}
+
+/** A clip just filmed with Afterglow's own camera, ready for the tagging sheet: now, and where you are. */
+export async function recordedVideo(uri: string, durationSec: number, size?: { width: number; height: number }): Promise<PickedVideo> {
+  return { uri, source: 'camera', durationSec: Math.max(1, Math.round(durationSec)), width: size?.width, height: size?.height, moment: await momentNow() };
 }
 
 /** Just recorded: now, and where you are (asking for location only while you use the app). */

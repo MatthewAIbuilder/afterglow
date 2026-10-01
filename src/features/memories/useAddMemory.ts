@@ -3,23 +3,25 @@ import { useCallback, useRef } from 'react';
 import { Linking, Platform } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { useMemories } from '../../state/memories';
-import { MAX_CLIP_SECONDS, pickVideo } from './device';
+import { pickVideo } from './device';
 import { showActionSheet, showAlert } from '../../lib/dialog';
 
 /**
- * Adding a memory: record or choose a video, then the tagging sheet. One at a
- * time; a declined permission or a clip that's too long says so plainly.
+ * Choosing a video you already have, then the tagging sheet. A declined
+ * permission or a clip that's too long says so plainly. (Recording happens
+ * on the camera page.)
  */
-export function useAddMemory() {
+export function useMemoryPicker() {
   const { setDraft } = useMemories();
-  const busy = useRef(false);
 
   const from = useCallback(
-    async (source: 'camera' | 'library') => {
+    /** `replace`: the tagging sheet takes this screen's place (from the camera, so you don't land back on it). */
+    async (source: 'camera' | 'library', { replace = false }: { replace?: boolean } = {}) => {
       const r = await pickVideo(source);
       if (r.ok) {
         setDraft(r.video);
-        router.push('/memory-tag');
+        if (replace) router.replace('/memory-tag');
+        else router.push('/memory-tag');
         return;
       }
       if (r.reason === 'no-permission') {
@@ -28,7 +30,7 @@ export function useAddMemory() {
           { text: 'Open Settings', onPress: () => void Linking.openSettings().catch(() => {}) },
         ]);
       } else if (r.reason === 'too-long') {
-        showAlert('That video is too long', `Choose a clip under ${MAX_CLIP_SECONDS / 60} minutes.`);
+        showAlert('That video is too long', 'Choose a clip of a minute or less.');
       } else if (r.reason === 'app-only') {
         showAlert('Memories are in the iPhone app', 'Adding your own videos works in the Afterglow app on your phone for now.');
       } else if (r.reason === 'failed') {
@@ -37,7 +39,16 @@ export function useAddMemory() {
     },
     [setDraft],
   );
+  return from;
+}
 
+/**
+ * Adding a memory: open the camera, or choose a video from your library.
+ * One at a time.
+ */
+export function useAddMemory() {
+  const from = useMemoryPicker();
+  const busy = useRef(false);
   return useCallback(() => {
     // In a browser there's nothing to choose between yet: say where it works.
     if (Platform.OS === 'web') {
@@ -49,12 +60,15 @@ export function useAddMemory() {
     const done = () => {
       busy.current = false;
     };
-    const run = (source: 'camera' | 'library') => {
-      haptic.select();
-      void from(source).finally(done);
-    };
-    showActionSheet({ title: 'Add a memory', options: ['Record a video', 'Choose from library', 'Cancel'], cancelButtonIndex: 2 }, (i) =>
-      i === 0 ? run('camera') : i === 1 ? run('library') : done(),
-    );
+    showActionSheet({ title: 'Add a memory', options: ['Record a video', 'Choose from library', 'Cancel'], cancelButtonIndex: 2 }, (i) => {
+      if (i === 0) {
+        haptic.select();
+        done();
+        router.push('/camera');
+      } else if (i === 1) {
+        haptic.select();
+        void from('library').finally(done);
+      } else done();
+    });
   }, [from]);
 }

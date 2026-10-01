@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Artist, SoundTag } from '../../../data/models';
-import { computeLayout } from '../layout';
+import { computeLayout, regionAt } from '../layout';
 
 const artist = (id: string, tag: SoundTag): Artist => ({ id, name: id.toUpperCase(), sound: { [tag]: 1 } });
 
@@ -21,5 +21,16 @@ describe('sound names around the map', () => {
       for (const other of regions.slice(i + 1)) expect(Math.abs(r.x - other.x) >= 72 || Math.abs(r.y - other.y) >= 22).toBe(true);
     // The stronger of the two keeps its name.
     expect(regions.map((r) => r.tag)).toContain('melodic-bass');
+  });
+
+  it('finds the sound name under a tap', () => {
+    const regions = [
+      { tag: 'dubstep' as const, x: 100, y: 0 },
+      { tag: 'house' as const, x: -100, y: 40 },
+    ];
+    expect(regionAt(regions, 130, 6)).toBe('dubstep');
+    expect(regionAt(regions, -100, 40)).toBe('house');
+    expect(regionAt(regions, 0, 0)).toBeUndefined();
+    expect(regionAt(regions, 100, 30)).toBeUndefined();
   });
 });

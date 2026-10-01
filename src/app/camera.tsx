@@ -1,0 +1,334 @@
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Linking, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { FadeIn, FadeOut, useReducedMotion } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassCircleButton } from '../components/GlassCircleButton';
+import { PageTitle } from '../components/PageTitle';
+import { CloseIcon } from '../components/TabIcons';
+import { CameraIcon, FlipIcon, PhotosIcon, TorchIcon } from '../features/camera/icons';
+import { elapsedLabel, filmingAt, IDLE, MIN_RECORD_MS, RECORD_MAX_SEC, recordButton, type RecordState } from '../features/camera/record';
+import { RecordButton } from '../features/camera/RecordButton';
+import { recordedVideo } from '../features/memories/device';
+import { useMemoryPicker } from '../features/memories/useAddMemory';
+import { haptic } from '../lib/haptics';
+import { useCatalog } from '../state/catalog';
+import { useGoing } from '../state/going';
+import { useMemories } from '../state/memories';
+import { color, radius, space, type } from '../theme/tokens';
+
+/**
+ * The camera: film a moment at a festival. Reached by swiping right on
+ * Discover (or its camera button, or "Record a video" anywhere). Tap the
+ * button to start and again to stop, or hold it to film while held; then the
+ * tagging sheet works out who was playing. Swipe left or tap close to go
+ * back. Videos stay on the phone unless you share them.
+ */
+export default function CameraScreen() {
+  if (Platform.OS === 'web') return <OnlyInApp />;
+  return <Camera />;
+}
+
+function Camera() {
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
+  const cam = useRef<CameraView>(null);
+  const [camPerm, askCam] = useCameraPermissions();
+  const [micPerm, askMic] = useMicrophonePermissions();
+  const [facing, setFacing] = useState<'back' | 'front'>('back');
+  const [torch, setTorch] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [rec, setRec] = useState<RecordState>(IDLE);
+  const [elapsed, setElapsed] = useState(0);
+  const [hint, setHint] = useState<string | undefined>();
+  const recording = rec.phase === 'recording';
+  const { setDraft } = useMemories();
+  const pick = useMemoryPicker();
+
+  // Where you are, when you're at a festival you're going to.
+  const { festivals } = useCatalog();
+  const { going } = useGoing();
+  const [now] = useState(() => new Date());
+  const at = filmingAt(festivals, going, now);
+
+  // The timer while recording.
+  const startedAt = recording ? rec.startedAt : undefined;
+  useEffect(() => {
+    if (startedAt === undefined) return;
+    const t = setInterval(() => setElapsed(Date.now() - startedAt), 250);
+    return () => clearInterval(t);
+  }, [startedAt]);
+
+  // Closing (or leaving) mid-recording throws the clip away.
+  const leaving = useRef(false);
+  const finish = useCallback(
+    async (uri: string | undefined, began: number) => {
+      if (leaving.current) return;
+      const length = Date.now() - began;
+      setRec(IDLE);
+      setElapsed(0);
+      if (!uri) return;
+      if (length < MIN_RECORD_MS) {
+        setHint('Hold a little longer to film.');
+        return;
+      }
+      haptic.settle();
+      setDraft(await recordedVideo(uri, length / 1000));
+      router.replace('/memory-tag');
+    },
+    [setDraft],
+  );
+
+  const start = useCallback(
+    (began: number) => {
+      const camera = cam.current;
+      if (!camera) return;
+      haptic.tap();
+      setHint(undefined);
+      setElapsed(0);
+      camera
+        .recordAsync({ maxDuration: RECORD_MAX_SEC })
+        .then((r) => finish(r?.uri, began))
+        .catch(() => {
+          setRec(IDLE);
+          setHint('Couldn’t record that one. Try again.');
+        });
+    },
+    [finish],
+  );
+
+  const press = (type: 'press-in' | 'press-out') => {
+    if (!ready) return;
+    const r = recordButton(rec, { type, at: Date.now() });
+    setRec(r.state);
+    if (r.action === 'start' && r.state.phase === 'recording') start(r.state.startedAt);
+    if (r.action === 'stop') cam.current?.stopRecording();
+  };
+
+  useEffect(() => {
+    const camera = cam;
+    return () => {
+      leaving.current = true;
+      camera.current?.stopRecording();
+    };
+  }, []);
+
+  // Leaving runs the cleanup above, which stops and throws away a recording in progress.
+  const close = useCallback(() => router.back(), []);
+
+  // Swipe left to go back to Discover, the way you came.
+  const swipeBack = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX(-24)
+        .failOffsetY([-24, 24])
+        .runOnJS(true)
+        .onEnd((e) => {
+          if (e.translationX < -width * 0.3 || e.velocityX < -700) close();
+        }),
+    [width, close],
+  );
+
+  const allowed = !!camPerm?.granted;
+  const askAll = async () => {
+    haptic.select();
+    const c = await askCam();
+    if (c.granted && !micPerm?.granted) await askMic();
+  };
+
+  return (
+    <GestureDetector gesture={swipeBack}>
+      <View style={styles.root}>
+        <PageTitle title="Camera" />
+        <StatusBar style="light" />
+        {allowed ? (
+          <CameraView
+            ref={cam}
+            style={StyleSheet.absoluteFill}
+            facing={facing}
+            mode="video"
+            mute={!micPerm?.granted}
+            enableTorch={torch && facing === 'back'}
+            onCameraReady={() => setReady(true)}
+            onMountError={() => setHint('The camera couldn’t start. Close and try again.')}
+          />
+        ) : null}
+
+        {/* Night fades at the top and bottom, so the controls read over any picture. */}
+        <LinearGradient colors={['rgba(5,4,14,0.75)', 'rgba(5,4,14,0)']} style={[styles.fadeTop, { height: insets.top + 110 }]} pointerEvents="none" />
+        <LinearGradient colors={['rgba(5,4,14,0)', 'rgba(5,4,14,0.85)']} style={[styles.fadeBottom, { height: insets.bottom + 220 }]} pointerEvents="none" />
+
+        <View style={[styles.top, { top: insets.top + space.sm }]}>
+          {allowed && facing === 'back' ? (
+            <GlassCircleButton label={torch ? 'Turn the light off' : 'Turn the light on'} onPress={() => setTorch((t) => !t)}>
+              <TorchIcon color={torch ? color.glow : color.moon} filled={torch} size={18} />
+            </GlassCircleButton>
+          ) : (
+            <View style={styles.spacer} />
+          )}
+          <View style={styles.chip} accessibilityRole="text">
+            {recording ? (
+              <View style={styles.timerRow} accessibilityLiveRegion="polite" accessibilityLabel={`Recording, ${elapsedLabel(elapsed)}`}>
+                <View style={styles.recDot} />
+                <Text style={styles.timer}>{elapsedLabel(elapsed)}</Text>
+              </View>
+            ) : (
+              <Text style={styles.chipText} numberOfLines={1}>
+                {at ? `Filming at ${at}` : 'New memory'}
+              </Text>
+            )}
+          </View>
+          <GlassCircleButton label="Close the camera" onPress={close}>
+            <CloseIcon color={color.moon} size={16} />
+          </GlassCircleButton>
+        </View>
+
+        {!allowed && camPerm ? (
+          <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(260)} style={styles.permission}>
+            <View style={styles.permIcon}>
+              <CameraIcon color={color.moon} size={26} />
+            </View>
+            <Text style={styles.permTitle}>Film your festival</Text>
+            <Text style={styles.permBody}>
+              Record a moment and Afterglow works out who was playing. Your videos stay on your phone unless you share them.
+            </Text>
+            {camPerm.canAskAgain ? (
+              <Pressable onPress={askAll} accessibilityRole="button" style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}>
+                <Text style={styles.permButtonText}>Allow camera</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => void Linking.openSettings().catch(() => {})}
+                accessibilityRole="button"
+                accessibilityLabel="Camera access is off. Open Settings to allow it."
+                style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.permButtonText}>Open Settings</Text>
+              </Pressable>
+            )}
+          </Animated.View>
+        ) : null}
+
+        <View style={[styles.bottom, { paddingBottom: insets.bottom + space.xl }]}>
+          {hint ? (
+            <Animated.Text entering={reduceMotion ? undefined : FadeIn} exiting={reduceMotion ? undefined : FadeOut} style={styles.hint} accessibilityLiveRegion="polite">
+              {hint}
+            </Animated.Text>
+          ) : (
+            <Text style={styles.hint}>{recording ? (rec.mode === 'pending' ? 'Filming while you hold' : 'Tap to stop') : allowed ? 'Tap to record · hold to film while you hold' : ' '}</Text>
+          )}
+          <View style={styles.controls}>
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                void pick('library', { replace: true });
+              }}
+              disabled={recording}
+              accessibilityRole="button"
+              accessibilityLabel="Choose a video from your library"
+              hitSlop={10}
+              style={({ pressed }) => [styles.side, recording && styles.hidden, pressed && styles.pressed]}
+            >
+              <PhotosIcon color={color.moon} size={22} />
+            </Pressable>
+            <RecordButton
+              recording={recording}
+              disabled={!allowed || !ready}
+              onPressIn={() => press('press-in')}
+              onPressOut={() => press('press-out')}
+              label={recording ? 'Stop recording' : 'Record a video'}
+            />
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                setFacing((f) => (f === 'back' ? 'front' : 'back'));
+              }}
+              disabled={recording || !allowed}
+              accessibilityRole="button"
+              accessibilityLabel={facing === 'back' ? 'Switch to the front camera' : 'Switch to the back camera'}
+              hitSlop={10}
+              style={({ pressed }) => [styles.side, (recording || !allowed) && styles.hidden, pressed && styles.pressed]}
+            >
+              <FlipIcon color={color.moon} size={22} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </GestureDetector>
+  );
+}
+
+/** In a browser: filming needs the phone. */
+function OnlyInApp() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.root, styles.web, { paddingTop: insets.top + space.xxl }]}>
+      <PageTitle title="Camera" />
+      <View style={styles.permIcon}>
+        <CameraIcon color={color.moon} size={26} />
+      </View>
+      <Text style={styles.permTitle}>Filming is in the app</Text>
+      <Text style={styles.permBody}>Record festival moments with the Afterglow app on your phone. They show up on your profile when you share them.</Text>
+      <Pressable onPress={() => router.back()} accessibilityRole="button" style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}>
+        <Text style={styles.permButtonText}>Back to Discover</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#05040E' },
+  web: { alignItems: 'center', paddingHorizontal: space.xl },
+  fadeTop: { position: 'absolute', top: 0, left: 0, right: 0 },
+  fadeBottom: { position: 'absolute', bottom: 0, left: 0, right: 0 },
+  top: { position: 'absolute', left: space.lg, right: space.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
+  spacer: { width: 40 },
+  chip: {
+    flexShrink: 1,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs + 2,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(18,16,38,0.45)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  chipText: { ...type.label, color: color.moon },
+  timerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow, shadowColor: color.glow, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
+  timer: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
+  permission: { position: 'absolute', left: space.xl, right: space.xl, top: '28%', alignItems: 'center' },
+  permIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(169,124,255,0.18)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(169,124,255,0.45)',
+  },
+  permTitle: { ...type.title, color: color.moon, marginTop: space.lg, textAlign: 'center' },
+  permBody: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center', maxWidth: 320 },
+  permButton: { marginTop: space.xl, paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  permButtonText: { ...type.headline, color: color.moon },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
+  hint: { ...type.caption, color: color.moonDim, marginBottom: space.lg, textAlign: 'center', paddingHorizontal: space.xl },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', paddingHorizontal: space.xxl },
+  side: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(18,16,38,0.5)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  hidden: { opacity: 0 },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.95 }] },
+});

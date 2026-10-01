@@ -6,7 +6,10 @@ import { LikeSync } from '../features/community/LikeSync';
 import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
+import { AutoplayProvider } from '../state/autoplay';
 import { CatalogProvider } from '../state/catalog';
+import { ClipFlagsProvider } from '../state/clipFlags';
+import { ClipNewsProvider } from '../state/clipNews';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
 import { FollowedArtistsProvider } from '../state/followedArtists';
@@ -29,6 +32,7 @@ import { color } from '../theme/tokens';
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.night }}>
+      <ClipFlagsProvider>
       <CatalogProvider>
       <NearbyProvider>
       <MusicConnectionsProvider>
@@ -42,8 +46,10 @@ export default function RootLayout() {
       <PrepProvider>
       <GoingProvider>
       <SeenProvider>
+      <AutoplayProvider>
       <WeekendsProvider>
       <LineupNewsProvider>
+      <ClipNewsProvider>
       <SocialProvider>
       <NoticesProvider>
       <CrewsProvider>
@@ -58,6 +64,7 @@ export default function RootLayout() {
         <Stack.Screen name="music-auth" options={{ animation: 'none' }} />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="memory-tag" options={{ presentation: 'modal', gestureEnabled: false }} />
+        <Stack.Screen name="camera" options={{ animation: 'slide_from_left', gestureEnabled: false }} />
         <Stack.Screen name="memories" />
         <Stack.Screen name="memory/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="shared/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
@@ -129,8 +136,10 @@ export default function RootLayout() {
       </CrewsProvider>
       </NoticesProvider>
       </SocialProvider>
+      </ClipNewsProvider>
       </LineupNewsProvider>
       </WeekendsProvider>
+      </AutoplayProvider>
       </SeenProvider>
       </GoingProvider>
       </PrepProvider>
@@ -144,6 +153,7 @@ export default function RootLayout() {
       </MusicConnectionsProvider>
       </NearbyProvider>
       </CatalogProvider>
+      </ClipFlagsProvider>
     </GestureHandlerRootView>
   );
 }

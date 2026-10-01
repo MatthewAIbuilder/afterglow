@@ -83,8 +83,8 @@ export type LiveSet = { videoId: string; title: string; channel: string; seconds
 const SET_WORDS = /\b(live|set|dj set|full set|festival|stage|boiler room|cercle|b2b)\b/i;
 const NOT_A_SET = /\b(reaction|reacts|tutorial|how to|interview|trailer|teaser|aftermovie|lyrics|lyric video|official video|music video|karaoke|cover|remix pack|sample pack|full album|podcast)\b/i;
 
-/** The best live set for an artist among a details answer, or undefined. */
-export function pickLiveSet(artistName: string, details: unknown): LiveSet | undefined {
+/** The best live set for an artist among a details answer, or undefined. Videos reported as wrong (`blocked`) are never picked. */
+export function pickLiveSet(artistName: string, details: unknown, blocked: ReadonlySet<string> = new Set()): LiveSet | undefined {
   const want = fold(artistName);
   if (want.length < 2) return undefined;
   const items = (details as { items?: unknown } | null)?.items;
@@ -101,7 +101,7 @@ export function pickLiveSet(artistName: string, details: unknown): LiveSet | und
     const title = typeof it.snippet?.title === 'string' ? it.snippet.title : '';
     const channel = typeof it.snippet?.channelTitle === 'string' ? it.snippet.channelTitle : '';
     const seconds = isoSeconds(it.contentDetails?.duration);
-    if (!videoId || !title || !channel || !seconds) continue;
+    if (!videoId || !title || !channel || !seconds || blocked.has(videoId)) continue;
     if (it.status?.embeddable !== true || it.status?.privacyStatus !== 'public') continue;
     if (it.snippet?.liveBroadcastContent && it.snippet.liveBroadcastContent !== 'none') continue;
     if (seconds < MIN_SET_MINUTES * 60 || seconds > 6 * 3600) continue;

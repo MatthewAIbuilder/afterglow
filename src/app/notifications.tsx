@@ -33,7 +33,7 @@ export default function NotificationsScreen() {
       >
         <View style={styles.pad}>
           <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.meta}>{social.user ? 'Your festivals, lineup news, new followers and likes on your videos.' : 'Your festivals, and artists you’d love added to lineups.'}</Text>
+          <Text style={styles.meta}>{social.user ? 'Your festivals, lineup news, new sets, new followers and likes on your videos.' : 'Your festivals, artists you’d love added to lineups, and their new sets.'}</Text>
         </View>
         <View style={[styles.pad, styles.list]}>
           {list.length === 0 ? (
@@ -49,7 +49,9 @@ export default function NotificationsScreen() {
                 key={n.id}
                 onPress={() => {
                   haptic.select();
-                  router.push(n.href as never);
+                  // Discover is a tab: go back to it rather than stacking a second set of tabs.
+                  if (n.href.startsWith('/?')) router.dismissTo(n.href as never);
+                  else router.push(n.href as never);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`${isNew ? 'New. ' : ''}${n.title}. ${n.body}`}

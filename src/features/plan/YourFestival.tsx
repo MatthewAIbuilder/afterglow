@@ -7,6 +7,8 @@ import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
 import { lineupDays } from '../festivals/days';
 import { daysUntil } from '../festivals/when';
+import { setTimesExpected } from '../festivals/setTimes';
+import { useGoing } from '../../state/going';
 import { color, radius, space, type } from '../../theme/tokens';
 import { festivalNight } from './live';
 import { LiveNow } from './LiveNow';
@@ -36,6 +38,9 @@ export function YourFestival({ festival }: { festival: Festival }) {
   // Live sets from the artists you'd love here, as one YouTube playlist.
   const { clipsOf } = useCatalog();
   const warmup = useMemo(() => warmupPlaylist(picks, clipsOf), [picks, clipsOf]);
+  // Before set times: roughly when to expect them.
+  const { isGoing } = useGoing();
+  const expected = schedule ? undefined : setTimesExpected(festival, today, isGoing(festival.id));
 
   return (
     <View style={styles.root}>
@@ -63,6 +68,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
             ? 'Your night, built from what you like, save, skip and rate. Star anyone you won’t miss.'
             : 'Who to see, ranked by what you like, save, skip and rate. When set times are out, this becomes your schedule.'}
         </Text>
+        {expected ? <Text style={styles.expected}>{expected}</Text> : null}
         {warmup ? (
           <Pressable
             onPress={() => {
@@ -133,6 +139,7 @@ function Toggle({ byDay, onChange }: { byDay: boolean; onChange: (v: boolean) =>
 }
 
 const styles = StyleSheet.create({
+  expected: { ...type.caption, color: color.glow, marginTop: space.sm },
   toggle: {
     flexDirection: 'row',
     alignSelf: 'flex-start',

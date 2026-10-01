@@ -68,3 +68,14 @@ export function createCatalog(snapshot: CatalogSnapshot): Catalog {
     },
   };
 }
+
+/** The catalogue without these clips (e.g. ones you flagged as wrong). The same object when none of them is in it. */
+export function withoutClips(catalog: Catalog, ids: ReadonlySet<string>): Catalog {
+  if (!ids.size || !catalog.clips.some((c) => ids.has(c.id))) return catalog;
+  return createCatalog({
+    artists: catalog.artists,
+    festivals: catalog.festivals,
+    clips: catalog.clips.filter((c) => !ids.has(c.id)),
+    similarities: catalog.similarities,
+  });
+}

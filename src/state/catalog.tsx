@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CATALOG_TIMEOUT_MS, CATALOG_URL } from '../config/data';
 import { BUILT_IN } from '../data/bundled';
-import { type Catalog, createCatalog } from '../data/catalog';
+import { type Catalog, createCatalog, withoutClips } from '../data/catalog';
 import type { CatalogSource } from '../data/models';
 import { type FetchText, refreshCatalog, type TextStore } from '../data/remote';
 import { validateSnapshot } from '../data/validate';
+import { useClipFlags } from './clipFlags';
 
 /**
  * The catalogue the app is showing. Starts with what ships with the app (the
@@ -84,7 +85,10 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
     };
   }, [source]);
 
-  return <CatalogContext.Provider value={catalog}>{children}</CatalogContext.Provider>;
+  // Clips you flagged as wrong are left out everywhere (ClipFlagsProvider sits outside this one).
+  const { hidden } = useClipFlags();
+  const shown = useMemo(() => withoutClips(catalog, hidden), [catalog, hidden]);
+  return <CatalogContext.Provider value={shown}>{children}</CatalogContext.Provider>;
 }
 
 /** Artists, festivals and clips, with lookups. The only way screens should reach catalogue data. */

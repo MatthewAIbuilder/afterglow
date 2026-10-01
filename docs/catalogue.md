@@ -135,6 +135,21 @@ The demo artists already exist, and you can use them in your lineups without add
 
 This tells the app two artists sound alike, beyond what their `sound` tags say. The score goes from 0 to 1.
 
+### Wrong videos (optional)
+
+When someone flags a clip in Discover ("Wrong artist", "Not a live set", "Doesn't
+play"), it's hidden on their phone straight away, and they can email a report
+with the video's link. To take it out for everyone, add the video to
+`blockedVideos`, as YouTube ids or links:
+
+```json
+"blockedVideos": ["dQw4w9WgXcQ", "https://www.youtube.com/watch?v=abcdefghijk"]
+```
+
+Clips of those videos are left out wherever they come from, and the nightly
+YouTube search never picks them again (it looks for the artist's next best set
+instead). Anything that isn't a YouTube video is quietly ignored.
+
 ## Adding acts later (lineup news)
 
 When you add acts to a festival's lineup (a phase two announcement, say) or add a whole new festival, people who already have the app hear about it: the bell says "SUBTRONICS was added to Cyclops Cove 4" for acts they'd love (ones they rated "Love their sound" or strongly match), and the festival page marks those acts "Just added" for two weeks. Nothing to do on your side beyond updating the file. Acts are never announced twice, even if an older copy of the file shows for a moment, and someone opening the app for the first time isn't told everything is new.

@@ -16,8 +16,10 @@ import { useCrews } from '../../state/crews';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
-import type { Artist } from '../../data/types';
+import type { Artist, Clip } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
+import { alsoWatch, theirClips } from '../../features/discover/nextToWatch';
+import { posterUrl } from '../../features/discover/youtube';
 import { StarIcon } from '../../features/plan/icons';
 import { artistMix } from '../../features/taste/lean';
 import { FollowArtistButton } from '../../features/artists/FollowArtistButton';
@@ -43,10 +45,25 @@ import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
 import { useToday } from '../../lib/useToday';
 import { useReactions } from '../../state/reactions';
+import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
 const HERO = 132;
+
+/** A clip's video still, or the artist's colours when it has none, with a small play mark. */
+function ClipStill({ clip, colors, style }: { clip: Clip; colors: [string, string]; style: object }) {
+  const source = clip.source?.provider === 'youtube' ? clip.source : undefined;
+  const still = source ? posterUrl(source) : clip.source?.provider === 'community' ? clip.source.thumbUrl : undefined;
+  return (
+    <LinearGradient colors={colors} style={[style, { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }]}>
+      {still ? <Image source={{ uri: still }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
+      <View style={styles.playMark}>
+        <PlayIcon color={color.moon} size={14} />
+      </View>
+    </LinearGradient>
+  );
+}
 const HALO = HERO * 2;
 
 export default function ArtistScreen() {
@@ -65,6 +82,7 @@ export default function ArtistScreen() {
   const today = useToday();
   const { distanceTo, units } = useNearby();
   const { isFollowing } = useFollowedArtists();
+  const { seen } = useSeen();
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
   const yours = memories.filter((m) => m.artistId === artist.id);
   const context = festivalId ? catalog.festival(festivalId) : undefined;
@@ -85,8 +103,15 @@ export default function ArtistScreen() {
   const festivals = catalog.festivalsOf(artist.id);
   // Yours first, then near you (when it's on), then the soonest; what's over last.
   const playing = playingList(festivals, { going, today, distanceTo, nearKm: NEAR_KM });
-  const clips = catalog.clipsOf(artist.id);
+  // Their clips, ones you haven't watched first; then one each from artists who sound like them.
+  const clips = theirClips(catalog.clipsOf(artist.id), seen);
+  const fansWatch = alsoWatch(artist, catalog.artists, catalog.clipsOf, similarity, seen);
   const [deep, bright] = artistColors(artist.id, artist.color);
+  const play = (c: Clip) => {
+    haptic.select();
+    // Opened from a festival: keep discovering that lineup.
+    router.navigate({ pathname: '/', params: starFestival ? { clip: c.id, festival: starFestival.id } : { clip: c.id } });
+  };
 
   return (
     <View style={styles.root}>
@@ -211,29 +236,55 @@ export default function ArtistScreen() {
 
         {clips.length > 0 && (
           <Section title="Live clips">
-            {clips.map((c) => (
-              <Pressable
-                key={c.id}
-                onPress={() => {
-                  haptic.select();
-                  // Opened from a festival: keep discovering that lineup.
-                  router.navigate({ pathname: '/', params: starFestival ? { clip: c.id, festival: starFestival.id } : { clip: c.id } });
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Play ${c.title}`}
-                style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
-              >
-                <LinearGradient colors={[bright, deep]} style={styles.thumb}>
-                  <PlayIcon color={color.moon} size={20} />
-                </LinearGradient>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>{c.title}</Text>
-                  <Text style={styles.rowMeta}>
-                    {catalog.festival(c.festivalId)?.name}, {formatDuration(c.durationSec)}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
+            {clips.map((c) => {
+              const watched = c.id in seen;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => play(c)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Play ${c.title}${watched ? ', watched' : ''}`}
+                  style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
+                >
+                  <ClipStill clip={c} colors={[bright, deep]} style={styles.thumb} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>{c.title}</Text>
+                    <Text style={styles.rowMeta}>
+                      {catalog.festival(c.festivalId)?.name}, {formatDuration(c.durationSec)}
+                      {watched ? ' · Watched' : ''}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </Section>
+        )}
+
+        {/* One artist leads to the next: a clip each from artists who sound like them. */}
+        {fansWatch.length > 0 && (
+          <Section title="Fans also watch">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memoryScroll} contentContainerStyle={styles.alsoRow}>
+              {fansWatch.map(({ artist: a, clip: c, seen: watched }) => {
+                const [aDeep, aBright] = artistColors(a.id, a.color);
+                return (
+                  <Pressable
+                    key={c.id}
+                    onPress={() => play(c)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Play ${a.name}, ${c.title}${watched ? ', watched' : ''}. ${Math.round((taste[a.id] ?? 0) * 100)} percent match.`}
+                    style={({ pressed }) => [styles.also, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
+                  >
+                    <ClipStill clip={c} colors={[aBright, aDeep]} style={styles.alsoStill} />
+                    <Text style={styles.alsoName} numberOfLines={1}>
+                      {a.name}
+                    </Text>
+                    <Text style={styles.rowMeta} numberOfLines={1}>
+                      {Math.round((taste[a.id] ?? 0) * 100)}% · {watched ? 'Watched' : c.title}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </Section>
         )}
 
@@ -367,6 +418,11 @@ const styles = StyleSheet.create({
   rowMeta: { ...type.caption, color: color.moonDim, marginTop: 2 },
   thumb: { width: 52, height: 64, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   similar: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
+  playMark: { width: 28, height: 28, borderRadius: 14, paddingLeft: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(10,9,24,0.5)' },
+  alsoRow: { paddingHorizontal: space.xl, gap: space.md },
+  also: { width: 168 },
+  alsoStill: { width: 168, height: 94, borderRadius: radius.md },
+  alsoName: { ...type.label, color: color.moon, marginTop: space.sm },
   similarItem: { width: 88, alignItems: 'center' },
   similarName: { ...type.label, color: color.moon, marginTop: space.sm, textAlign: 'center' },
 });

@@ -49,8 +49,14 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Soft: 'soft' },
 }));
 jest.mock('react-native-webview', () => {
+  const React = require('react');
   const { View } = require('react-native');
-  return { WebView: View };
+  // A plain view that also takes the player's commands (ignored), so tests can drive it through onMessage.
+  const WebView = React.forwardRef((props: object, ref: unknown) => {
+    React.useImperativeHandle(ref, () => ({ injectJavaScript: () => {}, reload: () => {} }));
+    return React.createElement(View, props);
+  });
+  return { WebView };
 });
 
 // Local notifications: an in-memory schedule the tests can read, with permission granted.
@@ -132,6 +138,45 @@ jest.mock('expo-file-system', () => {
     }
   }
   return { __files: files, File, Directory, Paths: { document: new Directory('file:///docs'), cache: new Directory('file:///cache') } };
+});
+// The camera page: permissions the tests can set (granted by default), and a camera that's ready at once,
+// whose recording finishes with a file when stopped (`__lastRecording` holds the options it was started with).
+jest.mock('expo-camera', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const perms = { camera: { granted: true, canAskAgain: true, status: 'granted' }, mic: { granted: true, canAskAgain: true, status: 'granted' } };
+  const state: { lastRecording?: object; stop?: () => void } = {};
+  const CameraView = React.forwardRef((props: { onCameraReady?: () => void }, ref: unknown) => {
+    React.useImperativeHandle(ref, () => ({
+      recordAsync: (options: object) =>
+        new Promise((resolve) => {
+          state.lastRecording = options;
+          state.stop = () => resolve({ uri: 'file:///cache/Camera/REC.mov' });
+        }),
+      stopRecording: () => state.stop?.(),
+    }));
+    React.useEffect(() => {
+      props.onCameraReady?.();
+    }, []);
+    return React.createElement(View, { ...props, testID: 'camera-view' });
+  });
+  const hook = (key: 'camera' | 'mic') => () => {
+    const [p, setP] = React.useState(perms[key]);
+    const ask = async () => {
+      const next = { ...perms[key], granted: true, status: 'granted' };
+      perms[key] = next;
+      setP(next);
+      return next;
+    };
+    return [p, ask, ask];
+  };
+  return {
+    CameraView,
+    useCameraPermissions: hook('camera'),
+    useMicrophonePermissions: hook('mic'),
+    __perms: perms,
+    __state: state,
+  };
 });
 jest.mock('expo-image-picker', () => ({
   requestCameraPermissionsAsync: jest.fn(async () => ({ granted: true })),

@@ -66,6 +66,14 @@
           "writeOnlyCalendarPermission": "Afterglow adds the festivals you're going to to your calendar.",
           "remindersPermission": "Afterglow doesn't use your reminders."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Afterglow uses the camera to record festival moments for your Memories.",
+          "microphonePermission": "Afterglow records sound with your festival videos.",
+          "recordAudioAndroid": true
+        }
       ]
     ],
     "scheme": "afterglow",
