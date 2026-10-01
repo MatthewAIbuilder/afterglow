@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../components/ArtistAvatar';
 import { SearchField } from '../components/SearchField';
@@ -21,6 +21,9 @@ import { usePlan } from '../state/plan';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
+import { shareDetail, shareOffer } from '../features/social/shareChoice';
+import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
+import { useSocial } from '../state/social';
 
 /** Guesses shown as big rows before "Someone else". */
 const TOP_GUESSES = 3;
@@ -110,6 +113,20 @@ export default function MemoryTagScreen() {
 
   const tag: MemoryTagInput = { festivalId, night: festivalId ? night : undefined, artistId: chosenArtist };
 
+  // Share to Discover: on by default once it's tagged and you have a profile; always your choice.
+  const social = useSocial();
+  const offer = shareOffer({
+    available: social.availability.ok,
+    signedIn: !!social.user,
+    hasProfile: !!social.profile,
+    tagged: !!tag.festivalId && !!tag.artistId,
+    alreadyShared: !!existing?.sharedId,
+  });
+  const [shareChoice, setShareChoice] = useState<boolean | undefined>();
+  const shareOn = offer === 'ready' && (shareChoice ?? true);
+  const shareIt = (m: Parameters<typeof social.share>[0]) =>
+    void social.share(m).catch((e) => showAlert('Couldn’t share it to Discover', `${SOCIAL_ERROR_COPY[socialErrorKind(e)]} It’s saved in your Memories, so you can share it from there.`));
+
   // Nothing to tag (opened without a video, or the memory was deleted): step back, unless we're already leaving
   // (saving clears the draft, and going back twice would close the screen underneath too).
   const missing = !existing && !draft;
@@ -132,6 +149,7 @@ export default function MemoryTagScreen() {
     if (existing) {
       mem.tag(existing.id, tag);
       haptic.settle();
+      if (shareOn) shareIt({ ...existing, ...tag });
       leave();
       return;
     }
@@ -141,6 +159,8 @@ export default function MemoryTagScreen() {
       return;
     }
     haptic.settle();
+    // It uploads in the background; Memories shows the progress.
+    if (shareOn) shareIt(kept);
     leave();
   };
 
@@ -315,6 +335,40 @@ export default function MemoryTagScreen() {
             </View>
           )}
         </View>
+        {offer !== 'hidden' ? (
+          <>
+            <Text style={styles.section}>Discover</Text>
+            <View style={styles.shareRow}>
+              <View style={styles.shareText}>
+                <Text style={styles.shareTitle}>Share to Discover</Text>
+                <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name, on: shareOn })}</Text>
+                {offer === 'needs-account' || offer === 'needs-profile' ? (
+                  <Pressable
+                    onPress={() => {
+                      haptic.select();
+                      router.push(offer === 'needs-account' ? '/account' : '/profile-edit');
+                    }}
+                    accessibilityRole="button"
+                    hitSlop={8}
+                  >
+                    <Text style={[styles.link, styles.shareLink]}>{offer === 'needs-account' ? 'Sign in' : 'Make a profile'}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              <Switch
+                value={shareOn}
+                disabled={offer !== 'ready'}
+                onValueChange={(v) => {
+                  haptic.select();
+                  setShareChoice(v);
+                }}
+                trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
+                accessibilityLabel="Share to Discover"
+                testID="share-to-discover"
+              />
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -406,4 +460,19 @@ const styles = StyleSheet.create({
   linkOn: { color: color.moon },
   quiet: { ...type.caption, color: color.moonDim, paddingVertical: space.sm },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
+  shareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginHorizontal: space.xl,
+    padding: space.md,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  shareText: { flex: 1, gap: 2 },
+  shareTitle: { ...type.headline, color: color.moon },
+  shareDetail: { ...type.caption, color: color.moonDim },
+  shareLink: { marginTop: space.xs },
 });

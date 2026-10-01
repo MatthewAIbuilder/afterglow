@@ -8,10 +8,14 @@ import type { MemoryFiles, PickResult } from './device';
  */
 export type { MemoryFiles, PickedVideo, PickResult } from './device';
 
-export const MAX_CLIP_SECONDS = 180;
+export const MAX_CLIP_SECONDS = 60;
 
 export async function pickVideo(_source: 'camera' | 'library'): Promise<PickResult> {
   return { ok: false, reason: 'app-only' };
+}
+
+export async function recordedVideo(): Promise<never> {
+  throw new Error('Filming is in the iPhone app for now.');
 }
 
 export const deviceMemoryFiles: MemoryFiles = {

@@ -60,6 +60,7 @@ export default function RootLayout() {
         <Stack.Screen name="music-auth" options={{ animation: 'none' }} />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="memory-tag" options={{ presentation: 'modal', gestureEnabled: false }} />
+        <Stack.Screen name="camera" options={{ animation: 'slide_from_left', gestureEnabled: false }} />
         <Stack.Screen name="memories" />
         <Stack.Screen name="memory/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="shared/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />

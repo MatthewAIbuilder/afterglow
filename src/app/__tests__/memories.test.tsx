@@ -135,15 +135,17 @@ describe('adding a memory from Discover', () => {
   });
 
   it('cancelling a video you just recorded asks first, then keeps nothing', async () => {
+    // Record a video: the camera opens; hold the button for a couple of seconds.
     jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(0));
-    (ImagePicker.launchCameraAsync as jest.Mock<typeof ImagePicker.launchCameraAsync>).mockResolvedValueOnce({
-      canceled: false,
-      assets: [{ uri: 'file:///cache/Camera/NEW.MOV', duration: 12_000, width: 1080, height: 1920, type: 'video' }],
-    } as ImagePicker.ImagePickerResult);
     const alert = answerAlerts('Discard');
     const app = await renderApp('/');
     await flush();
     await act(async () => holdClip());
+    await flush();
+    const record = app.getByLabelText('Record a video');
+    await fireEvent(record, 'pressIn');
+    await settle(2000);
+    await fireEvent(app.getByLabelText('Stop recording'), 'pressOut');
     await flush();
     await fireEvent.press(app.getByLabelText('Cancel'));
     await flush();
@@ -162,7 +164,7 @@ describe('adding a memory from Discover', () => {
     await flush();
     await act(async () => holdClip());
     await flush();
-    expect(alert).toHaveBeenCalledWith('That video is too long', 'Choose a clip under 3 minutes.');
+    expect(alert).toHaveBeenCalledWith('That video is too long', 'Choose a clip of a minute or less.');
     expect(app.queryByText('New memory')).toBeNull();
   });
 });

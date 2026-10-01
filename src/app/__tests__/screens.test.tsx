@@ -750,7 +750,7 @@ describe('Discover', () => {
     // They know swiping and liking; the only tip left is the new one, adding your own video.
     expect(regular.queryByLabelText('Tip: Swipe up for the next clip')).toBeNull();
     expect(regular.queryByLabelText('Tip: Double-tap a clip to like it')).toBeNull();
-    expect(regular.getByLabelText('Tip: Press and hold around a clip to add your own video to Memories')).toBeTruthy();
+    expect(regular.getByLabelText('Tip: Swipe right, or tap the camera button, to film your own video')).toBeTruthy();
     expect(JSON.parse((await AsyncStorage.getItem('hints.v1')) ?? '[]')).toEqual(['swipe', 'like']);
   });
 

@@ -1,6 +1,6 @@
 import { StyleSheet, Text } from 'react-native';
 import Animated, { FadeIn, FadeOut, useReducedMotion } from 'react-native-reanimated';
-import { ChevronIcon, PlusIcon } from '../../components/TabIcons';
+import { ChevronIcon } from '../../components/TabIcons';
 import { color, radius, space, type } from '../../theme/tokens';
 import { HINT_COPY, HINT_SPOKEN, type Hint } from './hints';
 import { HeartIcon } from './icons';
@@ -21,7 +21,7 @@ export function FeedHint({ hint }: { hint: Hint }) {
       {hint === 'swipe' ? (
         <ChevronIcon color={color.glow} size={11} direction="up" />
       ) : hint === 'hold' ? (
-        <PlusIcon color={color.glow} size={12} />
+        <ChevronIcon color={color.glow} size={11} direction="right" />
       ) : (
         <HeartIcon color={color.glow} size={12} filled />
       )}
