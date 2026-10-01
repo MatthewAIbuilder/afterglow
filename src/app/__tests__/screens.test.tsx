@@ -569,7 +569,7 @@ describe('My Sound', () => {
     // The title, and the tab bar's label.
     expect(app.getAllByText('My Sound').length).toBeGreaterThan(0);
     expect(app.getByText(/Bigger means a closer match/)).toBeTruthy();
-    expect(app.queryByLabelText('Start your sound over')).toBeNull();
+    expect(app.queryByLabelText(/^More: /)).toBeNull();
   });
 
   it('rates an artist from the map, which reshapes when the sheet closes', async () => {
@@ -656,13 +656,14 @@ describe('My Sound', () => {
       jest.advanceTimersByTime(500);
     });
     expect(app.getByText(/^Shaped by your 1 like and 1 rated artist\. Leaning [a-z ]+\.$/)).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Start your sound over'));
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Start over')));
+    await fireEvent.press(app.getByLabelText(/^More: /));
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
     expect(alert).toHaveBeenCalledTimes(1);
     expect(app.getByText(/^Bigger means a closer match/)).toBeTruthy();
-    expect(app.queryByLabelText('Start your sound over')).toBeNull();
+    expect(app.queryByLabelText(/^More: /)).toBeNull();
     await settle();
     expect(JSON.parse((await AsyncStorage.getItem('reactions.v1')) ?? 'null')).toEqual({});
     expect(JSON.parse((await AsyncStorage.getItem('artistRatings.v1')) ?? 'null')).toEqual({});
@@ -676,7 +677,8 @@ describe('Your clips', () => {
     await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: false, saved: true, skipped: false } }));
     const app = await renderApp('/sound');
     await settle();
-    await fireEvent.press(app.getByLabelText('Your clips, 1'));
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Your clips · 1')));
+    await fireEvent.press(app.getByLabelText(/^More: your clips \(1\)/));
     await settle();
     expect(app.getByText('What you saved to watch again, and what you liked.')).toBeTruthy();
     expect(app.queryByText('Liked')).toBeNull();
@@ -700,7 +702,8 @@ describe('Your clips', () => {
     const app = await renderApp('/sound');
     await settle();
     // Saved and liked counts once.
-    await fireEvent.press(app.getByLabelText('Your clips, 2'));
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Your clips · 2')));
+    await fireEvent.press(app.getByLabelText(/^More: your clips \(2\)/));
     await settle();
     expect(app.getByText('Saved')).toBeTruthy();
     expect(app.getByText('Liked')).toBeTruthy();
