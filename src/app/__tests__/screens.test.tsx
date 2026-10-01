@@ -359,6 +359,17 @@ describe('Festivals', () => {
     share.mockRestore();
   });
 
+  it('opens a warm-up playlist of live sets from your artists on YouTube', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love', subtronics: 'love', excision: 'like' }));
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    const card = app.getByLabelText(/^Warm-up playlist: live sets from .+\. Opens YouTube\.$/);
+    await fireEvent.press(card);
+    expect(open).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/www\.youtube\.com\/watch_videos\?video_ids=[\w-]{11}(,[\w-]{11})+$/));
+    open.mockRestore();
+  });
+
   it('turns your lineup into a festival poster to share', async () => {
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love', subtronics: 'love', levity: 'like' }));
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });

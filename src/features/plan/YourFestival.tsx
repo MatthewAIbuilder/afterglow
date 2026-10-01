@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ShareIcon } from '../../components/TabIcons';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
@@ -14,6 +14,9 @@ import { ByDayList } from './ByDayList';
 import { MustSeeList } from './MustSeeList';
 import { Timetable } from './Timetable';
 import { useFestivalPlan } from './useFestivalPlan';
+import { warmupLine, warmupPlaylist } from './warmup';
+import { PlayIcon } from '../discover/icons';
+import { useCatalog } from '../../state/catalog';
 
 /**
  * "Your festival": who to see, from your live taste. Before set times it is a
@@ -30,6 +33,9 @@ export function YourFestival({ festival }: { festival: Festival }) {
   // Before set times, when the poster says who plays which day: your picks by day, or ranked.
   const byDayPossible = !schedule && lineupDays(festival).length > 0;
   const [byDay, setByDay] = useState(true);
+  // Live sets from the artists you'd love here, as one YouTube playlist.
+  const { clipsOf } = useCatalog();
+  const warmup = useMemo(() => warmupPlaylist(picks, clipsOf), [picks, clipsOf]);
 
   return (
     <View style={styles.root}>
@@ -57,6 +63,28 @@ export function YourFestival({ festival }: { festival: Festival }) {
             ? 'Your night, built from what you like, save, skip and rate. Star anyone you won’t miss.'
             : 'Who to see, ranked by what you like, save, skip and rate. When set times are out, this becomes your schedule.'}
         </Text>
+        {warmup ? (
+          <Pressable
+            onPress={() => {
+              haptic.tap();
+              void Linking.openURL(warmup.url).catch(() => {});
+            }}
+            accessibilityRole="link"
+            accessibilityLabel={`Warm-up playlist: live sets from ${warmupLine(warmup)}. Opens YouTube.`}
+            style={({ pressed }) => [styles.warmup, pressed && { opacity: 0.75, transform: [{ scale: 0.99 }] }]}
+          >
+            <View style={styles.warmupIcon}>
+              <PlayIcon color={color.moon} size={13} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.warmupTitle}>Warm-up playlist</Text>
+              <Text style={styles.warmupSub} numberOfLines={1}>
+                {warmup.artists.length} live sets · {warmupLine(warmup)}
+              </Text>
+            </View>
+            <Text style={styles.warmupGo}>YouTube ↗</Text>
+          </Pressable>
+        ) : null}
       </View>
       {picks.length === 0 ? (
         <Text style={[styles.sub, styles.head]}>Like a few clips in Discover and your picks will show up here.</Text>
@@ -121,5 +149,20 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   title: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
   share: { padding: space.xs },
+  warmup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.md,
+    padding: space.md,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  warmupIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep },
+  warmupTitle: { ...type.label, color: color.moon },
+  warmupSub: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  warmupGo: { ...type.caption, color: color.glow },
   sub: { ...type.body, color: color.moonDim, marginTop: space.xs },
 });

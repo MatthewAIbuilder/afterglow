@@ -30,6 +30,7 @@ import { CrewCard } from '../crews/CrewCard';
 import { starsShort } from '../crews/together';
 import { useCrews } from '../../state/crews';
 import { OfficialLinks } from './OfficialLinks';
+import { GetReadyCard } from '../prep/GetReadyCard';
 import { useRecap } from '../recap/useRecap';
 import { CalendarPill } from '../calendar/CalendarPill';
 import { useCatalog } from '../../state/catalog';
@@ -179,6 +180,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               </Pressable>
             )}
           </View>
+          {/* Going and it isn't over: your checklist. */}
+          {isGoing(whole.id) && soon !== 'Over' ? <GetReadyCard festival={festival} /> : null}
           {/* Tickets and the festival's own site, when the catalogue has them. */}
           <OfficialLinks festival={whole} over={soon === 'Over'} />
           {/* People you follow (and others) who show this festival on their profile. */}

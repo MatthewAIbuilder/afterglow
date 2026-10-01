@@ -17,6 +17,7 @@ import { NearbyProvider } from '../state/nearby';
 import { NoticesProvider } from '../state/notices';
 import { WeekendsProvider } from '../state/weekends';
 import { PlanProvider } from '../state/plan';
+import { PrepProvider } from '../state/prep';
 import { RatingsProvider } from '../state/ratings';
 import { ReactionsProvider } from '../state/reactions';
 import { SeenProvider } from '../state/seen';
@@ -36,6 +37,7 @@ export default function RootLayout() {
       <RatingsProvider>
       <PlanProvider>
       <SetRemindersProvider>
+      <PrepProvider>
       <GoingProvider>
       <SeenProvider>
       <WeekendsProvider>
@@ -71,6 +73,7 @@ export default function RootLayout() {
         <Stack.Screen name="recap/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="pick-artists" options={{ presentation: 'modal' }} />
         <Stack.Screen name="compare" />
+        <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="year/[year]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
@@ -127,6 +130,7 @@ export default function RootLayout() {
       </WeekendsProvider>
       </SeenProvider>
       </GoingProvider>
+      </PrepProvider>
       </SetRemindersProvider>
       </PlanProvider>
       </RatingsProvider>
