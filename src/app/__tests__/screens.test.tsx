@@ -4,7 +4,7 @@ import { act, fireEvent } from '@testing-library/react-native';
 import { Alert, Linking, Share } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Sharing from 'expo-sharing';
-import { renderApp } from './appRoutes';
+import { renderApp, showTab } from './appRoutes';
 
 /**
  * Smoke tests for every screen: rendered with the real catalogue through the
@@ -205,6 +205,7 @@ describe('Festivals', () => {
     const app = await renderApp('/festival/acl-26');
     await settle();
     expect(app.getByText('Your weekend')).toBeTruthy();
+    await showTab(app, 'Lineup');
     await fireEvent.changeText(app.getByLabelText('Find an artist on the Austin City Limits 2026 lineup'), 'skrillex');
     await settle();
     expect(app.getAllByText('SKRILLEX').length).toBeGreaterThan(0);
@@ -231,6 +232,7 @@ describe('Festivals', () => {
   it('filters a big lineup by day', async () => {
     const app = await renderApp('/festival/acl-26');
     await settle();
+    await showTab(app, 'Lineup');
     await fireEvent.press(app.getByLabelText(/^Sunday, \d+ artists$/));
     await settle();
     expect(app.getAllByText(/^Sunday/).length).toBeGreaterThan(0);
@@ -251,14 +253,15 @@ describe('Festivals', () => {
     const app = await renderApp('/festival/edc-orlando-26');
     await settle();
     expect(app.getByText('EDC Orlando 2026')).toBeTruthy();
-    expect(app.getByText('Tune your lineup')).toBeTruthy();
-    expect(app.getByText('110 to rate')).toBeTruthy();
-    expect(app.getByText('Your festival')).toBeTruthy();
-    expect(app.getByText(/more to explore in the full lineup below/)).toBeTruthy();
-    expect(app.getByText('Full lineup')).toBeTruthy();
-    expect(app.getAllByText('WOOLI').length).toBeGreaterThan(0);
-    // The countdown and the poster's set notes.
+    expect(app.getByLabelText(/^Tune your lineup\. Rate 110 artists/)).toBeTruthy();
+    // For you first: your plan, with the rest of the explore picks in the Lineup tab.
+    expect(app.getByRole('tab', { name: 'For you' }).props.accessibilityState).toEqual({ selected: true });
+    expect(app.getByText(/more to explore in the Lineup tab/)).toBeTruthy();
+    // The countdown, then the full lineup with the poster's set notes.
     expect(app.getByText(/^(In \d+ (days|months)|Tomorrow|Happening now|Over)$/)).toBeTruthy();
+    await showTab(app, 'Lineup');
+    expect(app.getByText('110 acts')).toBeTruthy();
+    expect(app.getAllByText('WOOLI').length).toBeGreaterThan(0);
     expect(app.getAllByText('Sunset set').length).toBeGreaterThan(0);
   });
 
@@ -266,7 +269,8 @@ describe('Festivals', () => {
     const app = await renderApp('/festival/acl-26');
     await settle();
     expect(app.getByText('Austin City Limits 2026')).toBeTruthy();
-    expect(app.getByText('138 to rate')).toBeTruthy();
+    expect(app.getByLabelText(/^Tune your lineup\. Rate 138 artists/)).toBeTruthy();
+    await showTab(app, 'Lineup');
     // Its pop, indie and rock acts can be picked out with the sound filter.
     expect(app.getByLabelText(/^Pop, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
     expect(app.getByLabelText(/^Indie, \d+ artists on the Austin City Limits 2026 lineup$/)).toBeTruthy();
@@ -300,6 +304,7 @@ describe('Festivals', () => {
   it('finds an artist on a big lineup', async () => {
     const app = await renderApp('/festival/edc-orlando-26');
     await settle();
+    await showTab(app, 'Lineup');
     const row = (name: string) => app.queryByLabelText(new RegExp(`^${name}, \\d+ percent match`));
     expect(row('ALESSO')).toBeTruthy();
     await fireEvent.changeText(app.getByLabelText('Find an artist on the EDC Orlando 2026 lineup'), 'wool');
@@ -318,6 +323,7 @@ describe('Festivals', () => {
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ wooli: 'love', alesso: 'pass' }));
     const app = await renderApp('/festival/edc-orlando-26');
     await settle();
+    await showTab(app, 'Lineup');
     expect(app.getByLabelText(/^WOOLI, \d+ percent match, you love their sound/)).toBeTruthy();
     expect(app.getByLabelText(/^ALESSO, \d+ percent match, .*Not for you$/)).toBeTruthy();
   });
@@ -325,6 +331,7 @@ describe('Festivals', () => {
   it('narrows a big lineup to one sound', async () => {
     const app = await renderApp('/festival/edc-orlando-26');
     await settle();
+    await showTab(app, 'Lineup');
     const row = (name: string) => app.queryByLabelText(new RegExp(`^${name}, \\d+ percent match`));
     await fireEvent.press(app.getByLabelText(/^Dubstep, \d+ artists on the EDC Orlando 2026 lineup$/));
     await settle();
@@ -391,7 +398,7 @@ describe('Festivals', () => {
     const app = await renderApp('/festival/solstice-26');
     await settle();
     expect(app.getByText('Solstice 2026')).toBeTruthy();
-    expect(app.getByText('Set times are out')).toBeTruthy();
+    expect(app.getByText(/^Your night, set to set\./)).toBeTruthy();
     expect(app.getAllByText(/Friday/).length).toBeGreaterThan(0);
   });
 
@@ -854,7 +861,7 @@ describe('Lineup tab', () => {
     await settle();
     expect(app.getByText('Lineups')).toBeTruthy();
     expect(app.getByText(/Tap “I’m going” on a festival/)).toBeTruthy();
-    expect(app.getByText('Full lineup')).toBeTruthy();
+    expect(app.getByRole('tab', { name: /^Lineup, \d+$/ })).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Show the Horizon 2027 lineup'));
     await settle();
     expect(app.getAllByText('Horizon 2027').length).toBeGreaterThan(1);

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { renderApp } from './appRoutes';
+import { renderApp, showTab } from './appRoutes';
 import { builtInCatalog } from '../../state/catalog';
 
 /** Lineup news through the real routes: an act you love added to a lineup since you last looked (the demo Solstice, which has no dates, so it's never over). */
@@ -36,6 +36,7 @@ describe('lineup news', () => {
     expect(saved.seen[edc.id]).toContain('subtronics');
     await act(async () => router.push('/festival/solstice-26'));
     await flush();
+    await showTab(app, 'Lineup');
     expect(app.getAllByLabelText(/^SUBTRONICS, \d+ percent match, you love their sound, Just added/).length).toBeGreaterThan(0);
   });
 

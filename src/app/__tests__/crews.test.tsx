@@ -5,7 +5,7 @@ import { Alert, type AlertButton } from 'react-native';
 import { router } from 'expo-router';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
-import { renderApp } from './appRoutes';
+import { renderApp, showTab } from './appRoutes';
 
 /** Festival crews through the real routes, with the in-memory backend. */
 let mockSocial = fakeSocial();
@@ -60,6 +60,7 @@ describe('festival crews', () => {
     const me = await person('maya', 'Maya Chen');
     const app = await renderApp('/festival/edc-orlando-26');
     await flush();
+    await showTab(app, 'Info');
     await fireEvent.press(app.getByLabelText('Plan with friends. Start a crew and see which sets you all want.'));
     await flush();
     // A fresh crew opens with its name ready to change.
@@ -158,6 +159,7 @@ describe('festival crews', () => {
     await s().joinCrew(crew.id);
     const app = await renderApp('/festival/edc-orlando-26');
     await flush();
+    await showTab(app, 'Lineup');
     expect(app.getAllByLabelText(/^STEVE AOKI, \d+ percent match, ★ Maya/).length).toBeGreaterThan(0);
     await act(async () => router.push({ pathname: '/artist/[id]', params: { id: 'steve-aoki', festival: 'edc-orlando-26' } }));
     await flush();

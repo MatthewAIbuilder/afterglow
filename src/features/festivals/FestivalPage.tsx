@@ -5,6 +5,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-na
 import { ArtistRow } from '../../components/ArtistRow';
 import { NightSky } from '../../components/NightSky';
 import { SearchField } from '../../components/SearchField';
+import { Tabs } from '../../components/Tabs';
 import { CheckIcon, ChevronIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
@@ -44,6 +45,8 @@ import { coverPhotos } from './cover';
 import { FestivalCover } from './FestivalCover';
 
 type Order = 'match' | 'billing';
+/** The page's tabs: your plan, the whole lineup, and the practical things. */
+type Section = 'plan' | 'lineup' | 'info';
 
 type Props = {
   festival: Festival;
@@ -96,7 +99,6 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
     [lineup, query, sound, festival, day],
   );
 
-  const timesOut = !!festival.sets?.length;
   const soon = countdown(festival, today);
   const { isGoing } = useGoing();
   const reach = lineupReach(festival, catalog.clips);
@@ -105,6 +107,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const { distanceTo, units } = useNearby();
   const away = distanceTo(whole);
   const cover = useMemo(() => coverPhotos(whole, catalog.artist), [whole, catalog]);
+  const [tab, setTab] = useState<Section>('plan');
 
   return (
     <View style={styles.root}>
@@ -125,60 +128,176 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
             {away !== undefined ? ` · ${distanceLabel(away, units)}` : ''}
           </Text>
           {soon ? <Text style={styles.soon}>{soon}</Text> : null}
+          {/* One row of the things you do here; everything else is in the tabs below. */}
           <View style={styles.pills}>
             <GoingPill festival={whole} />
             {/* Over, and you were part of it: your recap. */}
             {recap ? (
+              <Action
+                label="Recap"
+                a11y={`See your recap of ${whole.name}`}
+                icon={<StarIcon color={color.glow} size={13} filled />}
+                onPress={() => router.push({ pathname: '/recap/[id]', params: { id: whole.id } })}
+              />
+            ) : null}
+            {reach.clips > 0 ? (
+              <Action
+                label="Watch"
+                count={reach.clips}
+                glow
+                a11y={`Discover the lineup. ${reach.clips} live clips from ${reach.artists} artists playing ${festival.name}.`}
+                icon={<PlayIcon color={color.moon} size={13} />}
+                onPress={() => router.navigate({ pathname: '/', params: { festival: festival.id } })}
+              />
+            ) : null}
+            {toRate > 0 ? (
+              <Action
+                label="Tune"
+                count={toRate}
+                a11y={`Tune your lineup. Rate ${toRate} artists one at a time.`}
+                icon={<HeartIcon color={color.moon} size={13} />}
+                // Narrowed to a day in the lineup? Tune that day.
+                onPress={() => router.push(day ? { pathname: '/tune/[id]', params: { id: festival.id, day } } : `/tune/${festival.id}`)}
+              />
+            ) : null}
+          </View>
+          {/* People you follow (and others) who show this festival on their profile. */}
+          <FriendsGoing festivalId={whole.id} />
+        </View>
+
+        {whole.weekends && whole.weekends.length > 1 ? <WeekendPicker festival={whole} shown={festival.lineup.length} /> : null}
+
+        <View style={styles.tabs}>
+          <Tabs<Section>
+            value={tab}
+            onChange={setTab}
+            items={[
+              { key: 'plan', label: 'For you' },
+              { key: 'lineup', label: 'Lineup', count: festival.lineup.length },
+              { key: 'info', label: 'Info' },
+            ]}
+          />
+        </View>
+
+        {tab === 'plan' ? <YourFestival festival={festival} /> : null}
+
+        {tab === 'lineup' ? (
+          <View style={styles.lineupTab}>
+            <View style={[styles.pad, styles.lineupHead]}>
+              <Text style={styles.lineupCount}>
+                {shown.length === lineup.length ? `${lineup.length} acts` : `${shown.length} of ${lineup.length} acts`}
+              </Text>
+              <Segmented value={order} onChange={setOrder} />
+            </View>
+            {lineup.length > SEARCH_FROM && (
+              <View style={[styles.pad, styles.searchWrap]}>
+                <SearchField
+                  value={query}
+                  onChange={setQuery}
+                  placeholder="Find an artist"
+                  label={`Find an artist on the ${festival.name} lineup`}
+                />
+              </View>
+            )}
+
+            {days.length > 0 && (
+              <View style={styles.dayChips}>
+                <FilterChips
+                  chips={[
+                    { key: undefined, label: 'All days', accessibilityLabel: `Every day at ${festival.name}` },
+                    ...days.map((d) => ({
+                      key: d,
+                      label: d,
+                      count: lineup.filter((a) => playsOn(festival, a.id, d)).length,
+                      accessibilityLabel: `${d}, ${lineup.filter((a) => playsOn(festival, a.id, d)).length} artists`,
+                    })),
+                  ]}
+                  value={day}
+                  onChange={setPickedDay}
+                />
+              </View>
+            )}
+
+            {sounds.length > 1 && (
+              <SoundChips festivalName={festival.name} sounds={sounds} value={sound} onChange={setPicked} />
+            )}
+
+            <View style={styles.pad}>
+              {(query || day) && shown.length === 0 ? (
+                <Text style={styles.noMatch}>
+                  {sound
+                    ? `No ${SOUND_LABEL[sound].toLowerCase()} artist on the lineup matches “${query.trim()}”.`
+                    : query
+                      ? `No one on the lineup matches “${query.trim()}”.`
+                      : `No one with that sound plays ${day}.`}
+                </Text>
+              ) : null}
+              {shown.map((a) => {
+                const set = setFor(festival, a.id);
+                const line = setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id]);
+                // "Just added", following, your crewmates' stars, then when they play.
+                const detail = [added.has(a.id) ? 'Just added' : undefined, isFollowing(a.id) ? 'Following' : undefined, starsShort(crewStarsFor(festival.id, a.id)), line].filter(Boolean).join(' · ') || undefined;
+                return (
+                  <ArtistRow
+                    key={a.id}
+                    festivalId={festival.id}
+                    artist={a}
+                    affinity={taste[a.id] ?? 0}
+                    detail={detail}
+                    rating={ratings[a.id]}
+                  />
+                );
+              })}
+            </View>
+
+          </View>
+        ) : null}
+
+        {tab === 'info' ? (
+          <View style={styles.infoTab}>
+            <View style={styles.pad}>
+              {/* Tickets and the festival's own site, when the catalogue has them. */}
+              <OfficialLinks festival={whole} over={soon === 'Over'} />
+              {/* Once you're going: the days (your weekend) into your calendar, and your checklist. */}
+              {isGoing(whole.id) && soon !== 'Over' ? (
+                <View style={styles.infoPills}>
+                  <CalendarPill festival={festival} />
+                </View>
+              ) : null}
+              {isGoing(whole.id) && soon !== 'Over' ? <GetReadyCard festival={festival} /> : null}
+              {/* Your crews for this festival, or start one. */}
+              <CrewCard festival={whole} />
+            </View>
+            {festival.posterImageUrl ? (
               <Pressable
                 onPress={() => {
-                  haptic.tap();
-                  router.push({ pathname: '/recap/[id]', params: { id: whole.id } });
+                  haptic.select();
+                  router.push(`/poster/${festival.id}`);
                 }}
-                accessibilityRole="button"
-                accessibilityLabel={`See your recap of ${whole.name}`}
-                style={({ pressed }) => [styles.discover, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+                accessibilityRole="imagebutton"
+                accessibilityLabel={festival.posterFrom ? `Picture from ${festival.posterFrom}, the festival's official site. Opens full screen.` : 'Official lineup poster. Opens full screen.'}
+                style={[styles.posterWrap, festival.posterFrom && styles.siteWrap]}
               >
-                <StarIcon color={color.glow} size={13} filled />
-                <Text style={styles.discoverText}>See your recap</Text>
+                {festival.posterFrom ? (
+                  // A site's picture can be any shape (often a wide banner): all of it, over a soft blurred copy.
+                  <>
+                    <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" blurRadius={30} />
+                    <View style={styles.siteShade} />
+                    <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="contain" transition={250} />
+                  </>
+                ) : (
+                  <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" transition={250} />
+                )}
+                <View style={styles.posterHint}>
+                  {/* A picture from the festival's own site may be key art rather than the lineup, so it's credited, not called the poster. */}
+                  <Text style={styles.posterHintText}>{festival.posterFrom ? `From ${festival.posterFrom}` : 'View poster'}</Text>
+                  <ChevronIcon color={color.moon} size={12} />
+                </View>
               </Pressable>
             ) : null}
-            {/* Once you're going: the days (your weekend) into your calendar. */}
-            {isGoing(whole.id) && soon !== 'Over' ? <CalendarPill festival={festival} /> : null}
-            {reach.clips > 0 && (
-              <Pressable
-                onPress={() => {
-                  haptic.tap();
-                  router.navigate({ pathname: '/', params: { festival: festival.id } });
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Discover the lineup. ${reach.clips} live clips from ${reach.artists} artists playing ${festival.name}.`}
-                style={({ pressed }) => [styles.discover, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
-              >
-                <PlayIcon color={color.moon} size={14} />
-                <Text style={styles.discoverText}>Discover the lineup</Text>
-                <Text style={styles.discoverCount}>
-                  {reach.clips} {reach.clips === 1 ? 'clip' : 'clips'}
-                </Text>
-              </Pressable>
-            )}
-            {toRate > 0 && (
-              <Pressable
-                onPress={() => {
-                  haptic.tap();
-                  // Narrowed to a day in the lineup below? Tune that day.
-                  router.push(day ? { pathname: '/tune/[id]', params: { id: festival.id, day } } : `/tune/${festival.id}`);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Tune your lineup. Rate ${toRate} artists one at a time.`}
-                style={({ pressed }) => [styles.discover, styles.tune, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
-              >
-                <HeartIcon color={color.moon} size={14} />
-                <Text style={styles.discoverText}>Tune your lineup</Text>
-                <Text style={styles.discoverCount}>{toRate} to rate</Text>
-              </Pressable>
-            )}
+
             {/* Side by side with other festivals, when there are others to compare. */}
-            {catalog.festivals.length > 1 && (
+            {catalog.festivals.length > 1 ? (
               <Pressable
                 onPress={() => {
                   haptic.select();
@@ -186,147 +305,27 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Compare ${whole.name} with other festivals`}
-                style={({ pressed }) => [styles.discover, styles.tune, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+                style={({ pressed }) => [styles.pad, styles.infoRow, pressed && { opacity: 0.7 }]}
               >
-                <Text style={styles.discoverText}>Compare</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoRowTitle}>Compare festivals</Text>
+                  <Text style={styles.infoRowSub}>See which lineup fits your sound best</Text>
+                </View>
+                <ChevronIcon color={color.moonFaint} size={12} />
               </Pressable>
-            )}
+            ) : null}
+            {/* Festivals from the nightly EDMTrain feed credit it, as its terms ask. */}
+            {festival.source ? (
+              <Pressable
+                onPress={() => void Linking.openURL(festival.source!.url).catch(() => {})}
+                accessibilityRole="link"
+                accessibilityLabel={`Event info from ${festival.source.name}. Opens their page.`}
+                style={({ pressed }) => [styles.pad, styles.source, pressed && { opacity: 0.6 }]}
+              >
+                <Text style={styles.sourceText}>Event info from {festival.source.name} ↗</Text>
+              </Pressable>
+            ) : null}
           </View>
-          {/* Going and it isn't over: your checklist. */}
-          {isGoing(whole.id) && soon !== 'Over' ? <GetReadyCard festival={festival} /> : null}
-          {/* Tickets and the festival's own site, when the catalogue has them. */}
-          <OfficialLinks festival={whole} over={soon === 'Over'} />
-          {/* People you follow (and others) who show this festival on their profile. */}
-          <FriendsGoing festivalId={whole.id} />
-          {/* Your crews for this festival, or start one. */}
-          <CrewCard festival={whole} />
-        </View>
-
-        {whole.weekends && whole.weekends.length > 1 ? <WeekendPicker festival={whole} shown={festival.lineup.length} /> : null}
-
-        {festival.posterImageUrl ? (
-          <Pressable
-            onPress={() => {
-              haptic.select();
-              router.push(`/poster/${festival.id}`);
-            }}
-            accessibilityRole="imagebutton"
-            accessibilityLabel={festival.posterFrom ? `Picture from ${festival.posterFrom}, the festival's official site. Opens full screen.` : 'Official lineup poster. Opens full screen.'}
-            style={[styles.posterWrap, festival.posterFrom && styles.siteWrap]}
-          >
-            {festival.posterFrom ? (
-              // A site's picture can be any shape (often a wide banner): all of it, over a soft blurred copy.
-              <>
-                <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" blurRadius={30} />
-                <View style={styles.siteShade} />
-                <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="contain" transition={250} />
-              </>
-            ) : (
-              <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" transition={250} />
-            )}
-            <View style={styles.posterHint}>
-              {/* A picture from the festival's own site may be key art rather than the lineup, so it's credited, not called the poster. */}
-              <Text style={styles.posterHintText}>{festival.posterFrom ? `From ${festival.posterFrom}` : 'View poster'}</Text>
-              <ChevronIcon color={color.moon} size={12} />
-            </View>
-          </Pressable>
-        ) : null}
-
-        <View style={[styles.pad, styles.note]}>
-          {timesOut ? (
-            <>
-              <Text style={styles.noteTitle}>Set times are out</Text>
-              <Text style={styles.noteBody}>Your plan below is laid out day by day, with any clashes called out.</Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.noteTitle}>Set times aren’t out yet</Text>
-              <Text style={styles.noteBody}>
-                Festivals usually publish them a week or two before the gates open. Until then, here’s who to put
-                first.
-              </Text>
-            </>
-          )}
-        </View>
-
-        <YourFestival festival={festival} />
-
-        <View style={[styles.pad, styles.lineupHead]}>
-          <Text style={styles.section}>Full lineup</Text>
-          <Segmented value={order} onChange={setOrder} />
-        </View>
-
-        {lineup.length > SEARCH_FROM && (
-          <View style={[styles.pad, styles.searchWrap]}>
-            <SearchField
-              value={query}
-              onChange={setQuery}
-              placeholder="Find an artist"
-              label={`Find an artist on the ${festival.name} lineup`}
-            />
-          </View>
-        )}
-
-        {days.length > 0 && (
-          <View style={styles.dayChips}>
-            <FilterChips
-              chips={[
-                { key: undefined, label: 'All days', accessibilityLabel: `Every day at ${festival.name}` },
-                ...days.map((d) => ({
-                  key: d,
-                  label: d,
-                  count: lineup.filter((a) => playsOn(festival, a.id, d)).length,
-                  accessibilityLabel: `${d}, ${lineup.filter((a) => playsOn(festival, a.id, d)).length} artists`,
-                })),
-              ]}
-              value={day}
-              onChange={setPickedDay}
-            />
-          </View>
-        )}
-
-        {sounds.length > 1 && (
-          <SoundChips festivalName={festival.name} sounds={sounds} value={sound} onChange={setPicked} />
-        )}
-
-        <View style={styles.pad}>
-          {(query || day) && shown.length === 0 ? (
-            <Text style={styles.noMatch}>
-              {sound
-                ? `No ${SOUND_LABEL[sound].toLowerCase()} artist on the lineup matches “${query.trim()}”.`
-                : query
-                  ? `No one on the lineup matches “${query.trim()}”.`
-                  : `No one with that sound plays ${day}.`}
-            </Text>
-          ) : null}
-          {shown.map((a) => {
-            const set = setFor(festival, a.id);
-            const line = setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id]);
-            // "Just added", following, your crewmates' stars, then when they play.
-            const detail = [added.has(a.id) ? 'Just added' : undefined, isFollowing(a.id) ? 'Following' : undefined, starsShort(crewStarsFor(festival.id, a.id)), line].filter(Boolean).join(' · ') || undefined;
-            return (
-              <ArtistRow
-                key={a.id}
-                festivalId={festival.id}
-                artist={a}
-                affinity={taste[a.id] ?? 0}
-                detail={detail}
-                rating={ratings[a.id]}
-              />
-            );
-          })}
-        </View>
-
-        {/* Festivals from the nightly EDMTrain feed credit it, as its terms ask. */}
-        {festival.source ? (
-          <Pressable
-            onPress={() => void Linking.openURL(festival.source!.url).catch(() => {})}
-            accessibilityRole="link"
-            accessibilityLabel={`Event info from ${festival.source.name}. Opens their page.`}
-            style={({ pressed }) => [styles.pad, styles.source, pressed && { opacity: 0.6 }]}
-          >
-            <Text style={styles.sourceText}>Event info from {festival.source.name} ↗</Text>
-          </Pressable>
         ) : null}
       </ScrollView>
     </View>
@@ -362,6 +361,25 @@ function WeekendPicker({ festival, shown }: { festival: Festival; shown: number 
         </Text>
       ) : null}
     </View>
+  );
+}
+
+/** One of the actions under the title: an icon, a short label, maybe a count. `glow` for the main one. */
+function Action({ label, a11y, icon, count, glow, onPress }: { label: string; a11y: string; icon: ReactNode; count?: number; glow?: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.tap();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      style={({ pressed }) => [styles.discover, !glow && styles.tune, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+    >
+      {icon}
+      <Text style={styles.discoverText}>{label}</Text>
+      {count ? <Text style={styles.discoverCount}>{count}</Text> : null}
+    </Pressable>
   );
 }
 
@@ -471,6 +489,14 @@ function Segmented({ value, onChange }: { value: Order; onChange: (o: Order) => 
 
 const styles = StyleSheet.create({
   cover: { position: 'absolute', top: 0, left: 0, right: 0 },
+  tabs: { marginTop: space.xl },
+  lineupTab: { paddingTop: space.sm },
+  lineupCount: { ...type.label, color: color.moonDim, flex: 1 },
+  infoTab: { paddingTop: space.sm },
+  infoPills: { flexDirection: 'row', marginTop: space.sm },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xl, paddingVertical: space.md },
+  infoRowTitle: { ...type.headline, fontSize: 16, color: color.moon },
+  infoRowSub: { ...type.caption, color: color.moonDim, marginTop: 2 },
   root: { flex: 1, backgroundColor: color.night },
   pad: { paddingHorizontal: space.xl },
   title: { ...type.largeTitle, color: color.moon },
@@ -518,11 +544,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10,9,24,0.6)',
   },
   posterHintText: { ...type.caption, color: color.moon },
-  note: { marginTop: space.xl },
   source: { marginTop: space.xl, paddingVertical: space.sm, alignSelf: 'flex-start' },
   sourceText: { ...type.caption, color: color.moonDim },
-  noteTitle: { ...type.headline, color: color.moon },
-  noteBody: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginBottom: space.sm },
   dayChips: { marginBottom: space.sm },
   weekends: { marginTop: space.xl },
@@ -545,8 +568,7 @@ const styles = StyleSheet.create({
   chipText: { ...type.caption, color: color.moonDim },
   chipCount: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
-  lineupHead: { marginTop: space.xxl, marginBottom: space.sm, flexDirection: 'row', alignItems: 'center' },
-  section: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
+  lineupHead: { marginTop: space.md, marginBottom: space.md, flexDirection: 'row', alignItems: 'center' },
   segment: { flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: color.glass },
   segItem: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill },
   segOn: { backgroundColor: 'rgba(169,124,255,0.22)' },

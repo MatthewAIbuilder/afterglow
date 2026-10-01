@@ -1,4 +1,4 @@
-import { renderRouter } from 'expo-router/testing-library';
+import { fireEvent, renderRouter } from 'expo-router/testing-library';
 import RootLayout from '../_layout';
 import TabsLayout from '../(tabs)/_layout';
 import DiscoverScreen from '../(tabs)/index';
@@ -91,3 +91,8 @@ export const APP_ROUTES = {
 };
 
 export const renderApp = (initialUrl: string) => renderRouter(APP_ROUTES, { initialUrl });
+
+/** Open one of a page's tabs ("Lineup", "Info") by the start of its name. */
+export async function showTab(app: { getByRole: (role: 'tab', opts: { name: RegExp }) => unknown }, label: string) {
+  await fireEvent.press(app.getByRole('tab', { name: new RegExp(`^${label}`) }) as never);
+}

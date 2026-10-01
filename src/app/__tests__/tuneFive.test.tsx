@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { renderApp } from './appRoutes';
+import { renderApp, showTab } from './appRoutes';
 
 // Screen tests run on fake timers once rendered, and the next card comes a frame later: move the clock on.
 const flush = async () => {
@@ -35,6 +35,7 @@ describe('five answers in Tune your lineup', () => {
     // On the lineup: "you like them".
     await act(async () => router.replace('/festival/edc-orlando-26'));
     await flush();
+    await showTab(app, 'Lineup');
     expect(app.getAllByLabelText(/^A LITTLE SOUND, \d+ percent match, you like them/).length).toBeGreaterThan(0);
   });
 });

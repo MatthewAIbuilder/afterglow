@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { renderApp } from './appRoutes';
+import { renderApp, showTab } from './appRoutes';
 
 const flush = async () => {
   for (let i = 0; i < 6; i++)
@@ -20,6 +20,7 @@ describe('comparing festivals', () => {
   it('opens from a festival page, adds another and shows who plays both', async () => {
     const app = await renderApp('/festival/solstice-26');
     await flush();
+    await showTab(app, 'Info');
     await fireEvent.press(app.getByLabelText('Compare Solstice 2026 with other festivals'));
     await flush();
     expect(app.getAllByText('Compare festivals').length).toBeGreaterThan(0);

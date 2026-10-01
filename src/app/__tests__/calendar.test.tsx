@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import * as Calendar from 'expo-calendar/legacy';
-import { renderApp } from './appRoutes';
+import { renderApp, showTab } from './appRoutes';
 
 const flush = async () => {
   for (let i = 0; i < 6; i++)
@@ -24,6 +24,7 @@ describe('add to calendar', () => {
     expect(app.queryByLabelText('Add EDC Orlando 2026 to your calendar')).toBeNull();
     await fireEvent.press(app.getByLabelText("I'm going to EDC Orlando 2026"));
     await flush();
+    await showTab(app, 'Info');
     await fireEvent.press(app.getByLabelText('Add EDC Orlando 2026 to your calendar'));
     await flush();
     const given = (Calendar.createEventInCalendarAsync as jest.Mock).mock.calls[0][0] as { title: string; allDay: boolean; startDate: Date; endDate: Date; location: string };
@@ -38,6 +39,7 @@ describe('add to calendar', () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['solstice-26']));
     const app = await renderApp('/festival/solstice-26');
     await flush();
+    await showTab(app, 'Info');
     expect(app.queryByText('Add to calendar')).toBeNull();
   });
 });
