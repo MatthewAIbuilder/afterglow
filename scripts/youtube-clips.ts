@@ -20,7 +20,7 @@ import { resolve } from 'node:path';
 import { BUILT_IN, BUNDLED_FILE } from '../src/data/bundled';
 import { parseCatalogFile, parseYouTubeLink } from '../src/data/file';
 import type { Festival } from '../src/data/models';
-import { clipPlan, detailsUrl, pickLiveSet, searchIds, searchUrl, setClip } from '../src/data/import/youtube';
+import { clipPlan, detailsUrl, pickLiveSet, searchIds, searchUrl, setClip, shapesUrl, videoShapes } from '../src/data/import/youtube';
 import { buildCatalog } from '../src/data/merge';
 import { MAX_FILE_CHARS } from '../src/data/remote';
 import { bySoonest, isOver } from '../src/features/festivals/shelves';
@@ -124,6 +124,22 @@ async function main() {
     } else misses[a.id] = today;
   }
 
+  // Each clip's shape, asked again every night (50 videos per unit of quota): upright uploads get the tall player.
+  const ytIds = [...new Set(clips.filter((c) => c.id.startsWith('yt-')).map(videoIdOf).filter(Boolean))];
+  const shapes: Record<string, boolean> = {};
+  for (let i = 0; i < ytIds.length; i += 50) {
+    const r = await getJson(shapesUrl(ytIds.slice(i, i + 50), key));
+    if (r.ok) Object.assign(shapes, videoShapes(r.body));
+  }
+  let upright = 0;
+  for (const [i, c] of clips.entries()) {
+    const shape = shapes[videoIdOf(c)];
+    if (shape === undefined || !c.video) continue; // not asked, or YouTube didn't say: as it was
+    const { vertical: _was, ...video } = c.video as FileClip['video'] & { vertical?: boolean };
+    clips[i] = { ...c, video: shape ? { ...video, vertical: true } : video };
+    if (shape) upright++;
+  }
+
   const next = blockedList.length ? { ...file, clips, clipMisses: misses, blockedVideos: blockedList } : { ...file, clips, clipMisses: misses };
   const out = JSON.stringify(next);
   const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile(out));
@@ -131,7 +147,7 @@ async function main() {
   if (!built.usedFile || built.problems.length) stop(built.problems.slice(0, 3).join(' ') || 'the app would refuse the file.');
   writeFileSync(OUT, `${out}\n`);
   console.log(
-    `YouTube clips: ${clips.length} clips in all, ${found} new from ${searched} searches tonight (${Object.keys(misses).length} artists with no set found yet).`,
+    `YouTube clips: ${clips.length} clips in all (${upright} filmed upright), ${found} new from ${searched} searches tonight (${Object.keys(misses).length} artists with no set found yet).`,
   );
 }
 

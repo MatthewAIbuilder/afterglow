@@ -156,6 +156,9 @@ or a file in the project**: it only goes into GitHub's secret settings.
 There's no cost: the key stays within YouTube's free daily allowance, and
 Google doesn't charge for it unless you add billing yourself.
 
+
+**Upright videos.** Each night the job also asks YouTube for every clip's player size (50 videos per unit of quota) and marks videos uploaded upright (`"vertical": true`), so Discover gives them the tall, full-height player instead of a wide box with black sides. A video filmed with black bars burned into a wide frame still reads as wide: YouTube's player mustn't be cropped, so those keep the wide player (report them with ••• if they look bad).
+
 ## Who sounds alike, from lineups (automatic)
 
 Artists from EDMTrain arrive without sound tags, so nothing you like could

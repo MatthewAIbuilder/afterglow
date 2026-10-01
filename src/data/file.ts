@@ -296,7 +296,8 @@ function parseClip(raw: unknown, i: number, problems: string[]): Clip | undefine
     else if (!channel) problems.push(`Clip "${clipId}": say which official channel the video is from.`);
     else {
       source = { provider: 'youtube', videoId: link.videoId, start, end, channel };
-      if (link.vertical) source.vertical = true;
+      // A Short, or a video marked upright (the nightly clip finder asks YouTube for each video's shape).
+      if (link.vertical || v.vertical === true) source.vertical = true;
     }
   }
 
