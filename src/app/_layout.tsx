@@ -9,6 +9,7 @@ import { FirstRun } from '../features/welcome/FirstRun';
 import { CatalogProvider } from '../state/catalog';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
+import { FollowedArtistsProvider } from '../state/followedArtists';
 import { GoingProvider } from '../state/going';
 import { LineupNewsProvider } from '../state/lineupNews';
 import { MemoriesProvider } from '../state/memories';
@@ -35,6 +36,7 @@ export default function RootLayout() {
       <ReactionsProvider>
       <CommunityProvider>
       <RatingsProvider>
+      <FollowedArtistsProvider>
       <PlanProvider>
       <SetRemindersProvider>
       <PrepProvider>
@@ -74,6 +76,7 @@ export default function RootLayout() {
         <Stack.Screen name="pick-artists" options={{ presentation: 'modal' }} />
         <Stack.Screen name="compare" />
         <Stack.Screen name="prep/[id]" />
+        <Stack.Screen name="your-artists" />
         <Stack.Screen name="year/[year]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
@@ -133,6 +136,7 @@ export default function RootLayout() {
       </PrepProvider>
       </SetRemindersProvider>
       </PlanProvider>
+      </FollowedArtistsProvider>
       </RatingsProvider>
       </CommunityProvider>
       </ReactionsProvider>

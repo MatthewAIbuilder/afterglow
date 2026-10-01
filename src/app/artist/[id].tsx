@@ -20,7 +20,9 @@ import type { Artist } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
 import { StarIcon } from '../../features/plan/icons';
 import { artistMix } from '../../features/taste/lean';
+import { FollowArtistButton } from '../../features/artists/FollowArtistButton';
 import { RateArtist } from '../../features/taste/RateArtist';
+import { useFollowedArtists } from '../../state/followedArtists';
 import { SoundBreakdown } from '../../features/taste/SoundBreakdown';
 import { mostSimilar } from '../../features/taste/similarity';
 import { listenLinks } from '../../features/taste/listen';
@@ -62,6 +64,7 @@ export default function ArtistScreen() {
   const { going } = useGoing();
   const today = useToday();
   const { distanceTo, units } = useNearby();
+  const { isFollowing } = useFollowedArtists();
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
   const yours = memories.filter((m) => m.artistId === artist.id);
   const context = festivalId ? catalog.festival(festivalId) : undefined;
@@ -126,6 +129,12 @@ export default function ArtistScreen() {
               !importedFrom[artist.id] && (imported[artist.id] ?? 0) > 0 ? importing.map((p) => PROVIDER_NAME[p]) : [],
             )}
           </Text>
+          <View style={styles.follow}>
+            <FollowArtistButton artist={artist} />
+            <Text style={styles.followNote}>
+              {isFollowing(artist.id) ? 'You’ll hear when they’re added to a lineup.' : 'Follow to hear when they’re added to a lineup.'}
+            </Text>
+          </View>
           <RateArtist artist={artist} />
           {starFestival && (
             <Pressable
@@ -321,6 +330,8 @@ const styles = StyleSheet.create({
   match: { ...type.headline, color: color.glow, fontVariant: ['tabular-nums'], marginTop: space.xs },
   why: { ...type.caption, color: color.moonDim, marginTop: 4, textAlign: 'center', paddingHorizontal: space.xl },
   mix: { marginTop: space.sm },
+  follow: { alignItems: 'center', marginTop: space.lg, gap: space.xs },
+  followNote: { ...type.caption, color: color.moonFaint, textAlign: 'center' },
   mustSee: {
     flexDirection: 'row',
     alignItems: 'center',

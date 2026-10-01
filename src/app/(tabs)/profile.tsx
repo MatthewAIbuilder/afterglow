@@ -29,6 +29,7 @@ import { countdown } from '../../features/festivals/when';
 import { tasteMix } from '../../features/taste/lean';
 import { SoundBreakdown } from '../../features/taste/SoundBreakdown';
 import { useToday } from '../../lib/useToday';
+import { useFollowedArtists } from '../../state/followedArtists';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -65,6 +66,8 @@ export default function ProfileScreen() {
   const { state: music } = useMusic();
   const connectedMusic = (Object.keys(music) as (keyof typeof music)[]).map((p) => PROVIDER_NAME[p]).join(', ');
   const { memories } = useMemories();
+  const { followed } = useFollowedArtists();
+  const followedCount = followed.filter((id) => catalog.artist(id)).length;
   const social = useSocial();
   const { crews } = useCrews();
   const me = social.profile;
@@ -269,6 +272,20 @@ export default function ProfileScreen() {
           >
             <Text style={styles.rowText}>Memories</Text>
             <Text style={styles.rowCount}>{memories.length || 'Add your videos'}</Text>
+            <ChevronIcon color={color.moonFaint} size={12} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push('/your-artists');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Your artists, ${followedCount ? followedCount : 'none followed yet'}`}
+            style={({ pressed }) => [styles.row, styles.rowGap, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={styles.rowText}>Your artists</Text>
+            <Text style={styles.rowCount}>{followedCount || 'Follow artists'}</Text>
             <ChevronIcon color={color.moonFaint} size={12} />
           </Pressable>
 
