@@ -17,7 +17,7 @@ import type { Moment } from './guess';
  */
 
 /** Memories are clips: longer videos are trimmed (iPhone) or refused (Android). */
-export const MAX_CLIP_SECONDS = 180;
+export const MAX_CLIP_SECONDS = 60;
 
 export type PickedVideo = {
   uri: string;

@@ -3,7 +3,7 @@ import { useCallback, useRef } from 'react';
 import { Linking, Platform } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { useMemories } from '../../state/memories';
-import { MAX_CLIP_SECONDS, pickVideo } from './device';
+import { pickVideo } from './device';
 import { showActionSheet, showAlert } from '../../lib/dialog';
 
 /**
@@ -30,7 +30,7 @@ export function useMemoryPicker() {
           { text: 'Open Settings', onPress: () => void Linking.openSettings().catch(() => {}) },
         ]);
       } else if (r.reason === 'too-long') {
-        showAlert('That video is too long', `Choose a clip under ${MAX_CLIP_SECONDS / 60} minutes.`);
+        showAlert('That video is too long', 'Choose a clip of a minute or less.');
       } else if (r.reason === 'app-only') {
         showAlert('Memories are in the iPhone app', 'Adding your own videos works in the Afterglow app on your phone for now.');
       } else if (r.reason === 'failed') {

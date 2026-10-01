@@ -164,7 +164,7 @@ describe('adding a memory from Discover', () => {
     await flush();
     await act(async () => holdClip());
     await flush();
-    expect(alert).toHaveBeenCalledWith('That video is too long', 'Choose a clip under 3 minutes.');
+    expect(alert).toHaveBeenCalledWith('That video is too long', 'Choose a clip of a minute or less.');
     expect(app.queryByText('New memory')).toBeNull();
   });
 });

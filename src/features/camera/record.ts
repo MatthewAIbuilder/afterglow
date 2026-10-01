@@ -9,7 +9,7 @@ import { nextRun } from '../festivals/when';
  */
 
 /** Longest recording: memories are clips. */
-export const RECORD_MAX_SEC = 180;
+export const RECORD_MAX_SEC = 60;
 /** Held at least this long, letting go stops; a shorter press starts a tap-to-stop recording. */
 export const HOLD_MS = 350;
 /** Anything shorter is a slip of the finger, not a clip. */

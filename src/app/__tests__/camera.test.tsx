@@ -73,7 +73,7 @@ describe('the camera', () => {
     expect(app.getByLabelText(/^Recording, 0:01$/)).toBeTruthy();
     await fireEvent(app.getByLabelText('Stop recording'), 'pressOut');
     await flush();
-    expect(camera.__state.lastRecording).toEqual({ maxDuration: 180 });
+    expect(camera.__state.lastRecording).toEqual({ maxDuration: 60 });
     // The tagging sheet took the camera's place.
     expect(app.getByLabelText('Save to Memories')).toBeTruthy();
     expect(app.queryByTestId('camera-view')).toBeNull();
