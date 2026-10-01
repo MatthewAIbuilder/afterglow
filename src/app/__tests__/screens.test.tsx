@@ -359,6 +359,23 @@ describe('Festivals', () => {
     share.mockRestore();
   });
 
+  it('turns your lineup into a festival poster to share', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love', subtronics: 'love', levity: 'like' }));
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Share your plan for Solstice 2026'));
+    await settle();
+    await fireEvent.press(app.getByRole('tab', { name: 'Lineup poster' }));
+    await settle();
+    expect(app.getByLabelText(/^Your Solstice 2026 lineup poster: .*ILLENIUM/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Share your lineup as text'));
+    const { message } = share.mock.calls[0][0] as { message: string };
+    expect(message.split('\n')[0]).toBe('My Solstice 2026 lineup');
+    expect(message).toContain('SUBTRONICS');
+    share.mockRestore();
+  });
+
   it('shows the day-by-day plan for a festival with set times', async () => {
     const app = await renderApp('/festival/solstice-26');
     await settle();

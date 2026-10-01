@@ -10,6 +10,8 @@ import { NightSky } from '../../components/NightSky';
 import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
 import { WEB_URL } from '../../config/app';
 import { crewPath, crewTogether, firstName, whoLine } from '../../features/crews/together';
+import { CrewRouteSection } from '../../features/crews/CrewRouteSection';
+import { useWeekends } from '../../state/weekends';
 import { useCrewPage } from '../../features/crews/useCrewPage';
 import { whereWhen } from '../../features/festivals/format';
 import { CREW_MAX, CREW_NAME_MAX, type Crew, type Profile } from '../../features/social/models';
@@ -217,6 +219,15 @@ function Member({
     return crewTogether(all, crew.members, festival?.lineup ?? []);
   }, [picks, me, myStars, crew.members, festival]);
 
+  // Everyone's stars for the crew route (yours live from the phone).
+  const stars = useMemo(() => {
+    const all: Record<string, readonly string[]> = {};
+    for (const p of picks) if (p.uid !== me) all[p.uid] = p.artists;
+    if (me) all[me] = myStars;
+    return all;
+  }, [picks, me, myStars]);
+  const { forYou } = useWeekends();
+
   const problem = crewNameProblem(name);
   const saveName = async () => {
     if (problem) return;
@@ -356,6 +367,11 @@ function Member({
           {others.length ? 'When two of you star the same set, it shows up here.' : 'Once friends join, the sets you both starred show up here.'}
         </Text>
       )}
+
+      {/* Once set times are out: one route for the crew, with who splits off where. */}
+      {festival?.sets?.length && me && others.length ? (
+        <CrewRouteSection festival={forYou(festival)} me={me} members={crew.members} stars={stars} nameOf={who} crewName={crew.name} />
+      ) : null}
 
       <Text style={styles.section}>Everyone’s picks</Text>
       {[...(me ? [me] : []), ...others].map((uid) => {

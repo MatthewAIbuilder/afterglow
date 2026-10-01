@@ -30,11 +30,16 @@ import { MemoryTile } from '../../features/memories/MemoryTile';
 import { useMemories } from '../../state/memories';
 import { dayList, daysOf } from '../../features/festivals/days';
 import { describeSet, formatDuration } from '../../features/festivals/format';
-import { setLine } from '../../features/festivals/when';
+import { countdown, setLine } from '../../features/festivals/when';
+import { distanceLabel, NEAR_KM } from '../../features/festivals/near';
+import { playingList } from '../../features/festivals/playing';
+import { useNearby } from '../../state/nearby';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
+import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
+import { useToday } from '../../lib/useToday';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -54,6 +59,9 @@ export default function ArtistScreen() {
   const { reactions } = useReactions();
   const { ratings } = useRatings();
   const { crewStarsFor } = useCrews();
+  const { going } = useGoing();
+  const today = useToday();
+  const { distanceTo, units } = useNearby();
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
   const yours = memories.filter((m) => m.artistId === artist.id);
   const context = festivalId ? catalog.festival(festivalId) : undefined;
@@ -72,6 +80,8 @@ export default function ArtistScreen() {
   const similar = similarThere.length ? similarThere : mostSimilar(artist, catalog.artists, similarity);
   const similarAt = similarThere.length ? starFestival : undefined;
   const festivals = catalog.festivalsOf(artist.id);
+  // Yours first, then near you (when it's on), then the soonest; what's over last.
+  const playing = playingList(festivals, { going, today, distanceTo, nearKm: NEAR_KM });
   const clips = catalog.clipsOf(artist.id);
   const [deep, bright] = artistColors(artist.id, artist.color);
 
@@ -159,8 +169,10 @@ export default function ArtistScreen() {
 
         {festivals.length > 0 && (
           <Section title="Playing">
-            {festivals.map((f) => {
+            {playing.map(({ festival: f, going: mine, over, km }) => {
               const set = setFor(f, artist.id);
+              const when = over ? 'Over' : countdown(f, today);
+              const extra = [mine ? 'Going' : '', when ?? '', km !== undefined && !over ? distanceLabel(km, units) : ''].filter(Boolean).join(' · ');
               return (
                 <Pressable
                   key={f.id}
@@ -169,7 +181,7 @@ export default function ArtistScreen() {
                     router.push(`/festival/${f.id}`);
                   }}
                   accessibilityRole="button"
-                  style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
+                  style={({ pressed }) => [styles.row, over && { opacity: 0.55 }, pressed && { opacity: 0.6 }]}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowTitle}>{f.name}</Text>
@@ -179,6 +191,7 @@ export default function ArtistScreen() {
                         f.notes?.[artist.id],
                       )}
                     </Text>
+                    {extra ? <Text style={[styles.rowMeta, mine && { color: color.glow }]}>{extra}</Text> : null}
                   </View>
                   <ChevronIcon color={color.moonFaint} size={14} />
                 </Pressable>
