@@ -81,6 +81,10 @@ export default function SettingsScreen() {
           {yearCard ? <Row label={`Your ${year}`} detail={yearCard.subtitle.endsWith('so far') ? 'So far' : 'Ready to share'} onPress={() => router.push({ pathname: '/year/[year]', params: { year: String(year) } })} /> : null}
         </Group>
 
+        <Group title="Festival nights">
+          <Row label="Look after yourself" detail="Private" a11y="Look after yourself: timers, water, food and check-ins, private to you" onPress={() => router.push('/care')} />
+        </Group>
+
         <Group title="Connections">
           <Row
             label="Music connections"

@@ -29,6 +29,7 @@ import CompareScreen from '../compare';
 import PrepScreen from '../prep/[id]';
 import YourArtistsScreen from '../your-artists';
 import SettingsScreen from '../settings';
+import CareScreen from '../care';
 import YearScreen from '../year/[year]';
 import PosterScreen from '../poster/[id]';
 import ProfileEditScreen from '../profile-edit';
@@ -70,6 +71,7 @@ export const APP_ROUTES = {
   'prep/[id]': PrepScreen,
   'your-artists': YourArtistsScreen,
   settings: SettingsScreen,
+  care: CareScreen,
   'year/[year]': YearScreen,
   music: MusicScreen,
   'music-auth': MusicAuthReturn,

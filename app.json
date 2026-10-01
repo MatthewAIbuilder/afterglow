@@ -74,6 +74,12 @@
           "microphonePermission": "Afterglow records sound with your festival videos.",
           "recordAudioAndroid": true
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Afterglow uses Face ID to keep your Look after yourself notes private."
+        }
       ]
     ],
     "scheme": "afterglow",

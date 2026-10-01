@@ -7,6 +7,7 @@ import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { AutoplayProvider } from '../state/autoplay';
+import { CareProvider } from '../state/care';
 import { CatalogProvider } from '../state/catalog';
 import { ClipFlagsProvider } from '../state/clipFlags';
 import { ClipNewsProvider } from '../state/clipNews';
@@ -47,6 +48,7 @@ export default function RootLayout() {
       <GoingProvider>
       <SeenProvider>
       <AutoplayProvider>
+      <CareProvider>
       <WeekendsProvider>
       <LineupNewsProvider>
       <ClipNewsProvider>
@@ -85,6 +87,7 @@ export default function RootLayout() {
         <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="care" />
         <Stack.Screen name="year/[year]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="sound-scope"
@@ -140,6 +143,7 @@ export default function RootLayout() {
       </ClipNewsProvider>
       </LineupNewsProvider>
       </WeekendsProvider>
+      </CareProvider>
       </AutoplayProvider>
       </SeenProvider>
       </GoingProvider>

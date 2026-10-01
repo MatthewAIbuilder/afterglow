@@ -21,7 +21,7 @@ import { distanceLabel } from './near';
 import { useNearby } from '../../state/nearby';
 import { lineupReach } from './links';
 import { filterLineup, lineupSounds, SEARCH_FROM } from './search';
-import { countdown, setLine } from './when';
+import { countdown, daysUntil, setLine } from './when';
 import { useToday } from '../../lib/useToday';
 import { leftToRate } from './tune';
 import { YourFestival } from '../plan/YourFestival';
@@ -35,6 +35,8 @@ import { OfficialLinks } from './OfficialLinks';
 import { GetReadyCard } from '../prep/GetReadyCard';
 import { useRecap } from '../recap/useRecap';
 import { CalendarPill } from '../calendar/CalendarPill';
+import { CareCard } from '../care/CareCard';
+
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
 import { useLineupNews } from '../../state/lineupNews';
@@ -108,6 +110,9 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const away = distanceTo(whole);
   const cover = useMemo(() => coverPhotos(whole, catalog.artist), [whole, catalog]);
   const [tab, setTab] = useState<Section>('plan');
+  // From the first day to the morning after the last.
+  const until = daysUntil(festival, today);
+  const onNow = until !== undefined && until <= 0 && until >= -festival.days.length;
 
   return (
     <View style={styles.root}>
@@ -163,6 +168,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           </View>
           {/* People you follow (and others) who show this festival on their profile. */}
           <FriendsGoing festivalId={whole.id} />
+          {/* While it's on: timers, water and check-ins, private to you. */}
+          {onNow ? <CareCard /> : null}
         </View>
 
         {whole.weekends && whole.weekends.length > 1 ? <WeekendPicker festival={whole} shown={festival.lineup.length} /> : null}
