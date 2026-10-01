@@ -18,6 +18,8 @@ import { groupFestivals } from '../../features/festivals/going';
 import { byMonth, bySoonest, festivalShelf, isMany } from '../../features/festivals/shelves';
 import { useLoves } from '../../state/useLoves';
 import { PlayIcon } from '../../features/discover/icons';
+import { coverPhotos } from '../../features/festivals/cover';
+import { FestivalCover } from '../../features/festivals/FestivalCover';
 import { lineupReach } from '../../features/festivals/links';
 import { searchArtists, searchFestivals } from '../../features/festivals/search';
 import { whereWhen } from '../../features/festivals/format';
@@ -278,6 +280,9 @@ function RequestRow({ name }: { name?: string }) {
   );
 }
 
+/** How tall the faces are across the top of a festival card. */
+const COVER_HEIGHT = 128;
+
 /** The festival as a square tile: countdown, name, how many you'll love, and its clips. */
 function FestivalTile({ festival, taste }: { festival: Festival; taste: Record<string, number> }) {
   const { artist: artistById, clips } = useCatalog();
@@ -296,6 +301,7 @@ function FestivalTile({ festival, taste }: { festival: Festival; taste: Record<s
   const away = distanceTo(festival);
   // The colour of your best match there tints the tile.
   const [, bright] = artistColors(ranked[0]?.id ?? festival.id, ranked[0]?.color);
+  const cover = coverPhotos(festival, artistById);
   const discover = () => {
     haptic.tap();
     router.navigate({ pathname: '/', params: { festival: festival.id } });
@@ -313,8 +319,11 @@ function FestivalTile({ festival, taste }: { festival: Festival; taste: Record<s
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'discover') discover();
       }}
-      style={({ pressed }) => [styles.tile, { width: size, height: size }, pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 }]}
+      style={({ pressed }) => [styles.tile, { width: size, height: size }, cover.length > 0 && { backgroundColor: color.night }, pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 }]}
     >
+      {/* The headliners' faces behind it all, when they have photos. */}
+      <FestivalCover photos={cover} style={StyleSheet.absoluteFill} />
+      {cover.length > 0 && <View style={styles.coverGlass} pointerEvents="none" />}
       <LinearGradient colors={[`${bright}33`, 'rgba(0,0,0,0)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
       <Text style={[styles.tileWhen, timesOut && { color: color.glow }]} numberOfLines={1}>
         {timesOut ? 'Set times out' : (soon ?? festival.dates)}
@@ -368,6 +377,7 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
   const soon = countdown(festival, today);
   const { distanceTo, units } = useNearby();
   const away = distanceTo(festival);
+  const cover = coverPhotos(festival, artistById);
 
   return (
     <Pressable
@@ -382,8 +392,11 @@ function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<s
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'discover') discover();
       }}
-      style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.985 }], opacity: 0.9 }]}
+      style={({ pressed }) => [styles.card, cover.length > 0 && styles.cardCovered, pressed && { transform: [{ scale: 0.985 }], opacity: 0.9 }]}
     >
+      {/* The headliners' faces across the top, fading into the card under the name. */}
+      <FestivalCover photos={cover} style={styles.cover} />
+      {cover.length > 0 && <View style={styles.coverGlass} pointerEvents="none" />}
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{festival.name}</Text>
@@ -527,6 +540,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
+  // Solid night under the cover and the glass laid over both, so the faces fade into the card with no edge.
+  cardCovered: { overflow: 'hidden', paddingTop: COVER_HEIGHT - space.xl * 1.5, backgroundColor: color.night },
+  coverGlass: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: color.glass },
+  cover: { position: 'absolute', top: 0, left: 0, right: 0, height: COVER_HEIGHT },
   cardTop: { flexDirection: 'row', alignItems: 'center' },
   name: { ...type.title, color: color.moon },
   meta: { ...type.body, color: color.moonDim, marginTop: 2 },

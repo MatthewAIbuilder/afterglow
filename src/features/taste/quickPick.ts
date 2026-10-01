@@ -1,4 +1,5 @@
 import type { Artist, Festival } from '../../data/models';
+import { anyPhoto } from '../../data/members';
 import type { Ratings } from './ratings';
 
 /**
@@ -30,7 +31,7 @@ export function pickCandidates(
       if (a) out.push(a);
     }
   }
-  const known = (a: Artist) => plays(a.id) + (Object.keys(a.sound).length ? 1 : 0) + (a.imageUrl ? 0.5 : 0);
+  const known = (a: Artist) => plays(a.id) + (Object.keys(a.sound).length ? 1 : 0) + (anyPhoto(a) ? 0.5 : 0);
   return out
     .map((a, i) => ({ a, i, k: known(a) }))
     .sort((p, q) => q.k - p.k || p.i - q.i)

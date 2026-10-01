@@ -40,6 +40,8 @@ import { useLineupNews } from '../../state/lineupNews';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
+import { coverPhotos } from './cover';
+import { FestivalCover } from './FestivalCover';
 
 type Order = 'match' | 'billing';
 
@@ -57,6 +59,11 @@ type Props = {
  * festival plan and the full lineup with search and sound filter. Used by the
  * festival route and the Lineup tab.
  */
+/** How far the cover reaches below the top space, behind the title. */
+const COVER_BELOW = 150;
+/** How far below that the night eases back into the sky. */
+const COVER_TAIL = 140;
+
 export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: Props) {
   const catalog = useCatalog();
   // The festival as it is for you: for one run over several weekends, the weekend you're going to.
@@ -97,6 +104,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const recap = useRecap(whole);
   const { distanceTo, units } = useNearby();
   const away = distanceTo(whole);
+  const cover = useMemo(() => coverPhotos(whole, catalog.artist), [whole, catalog]);
 
   return (
     <View style={styles.root}>
@@ -107,6 +115,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        {/* The headliners' faces behind the top of the page, fading into the night under the title. */}
+        <FestivalCover photos={cover} fade="page" tail={COVER_TAIL} style={[styles.cover, { height: topSpace + COVER_BELOW + COVER_TAIL }]} />
         {above}
         <View style={styles.pad}>
           <Text style={styles.title}>{festival.name}</Text>
@@ -201,12 +211,22 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               router.push(`/poster/${festival.id}`);
             }}
             accessibilityRole="imagebutton"
-            accessibilityLabel="Official lineup poster. Opens full screen."
-            style={styles.posterWrap}
+            accessibilityLabel={festival.posterFrom ? `Picture from ${festival.posterFrom}, the festival's official site. Opens full screen.` : 'Official lineup poster. Opens full screen.'}
+            style={[styles.posterWrap, festival.posterFrom && styles.siteWrap]}
           >
-            <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" transition={250} />
+            {festival.posterFrom ? (
+              // A site's picture can be any shape (often a wide banner): all of it, over a soft blurred copy.
+              <>
+                <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" blurRadius={30} />
+                <View style={styles.siteShade} />
+                <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="contain" transition={250} />
+              </>
+            ) : (
+              <Image source={{ uri: festival.posterImageUrl }} style={styles.poster} contentFit="cover" transition={250} />
+            )}
             <View style={styles.posterHint}>
-              <Text style={styles.posterHintText}>View poster</Text>
+              {/* A picture from the festival's own site may be key art rather than the lineup, so it's credited, not called the poster. */}
+              <Text style={styles.posterHintText}>{festival.posterFrom ? `From ${festival.posterFrom}` : 'View poster'}</Text>
               <ChevronIcon color={color.moon} size={12} />
             </View>
           </Pressable>
@@ -450,6 +470,7 @@ function Segmented({ value, onChange }: { value: Order; onChange: (o: Order) => 
 }
 
 const styles = StyleSheet.create({
+  cover: { position: 'absolute', top: 0, left: 0, right: 0 },
   root: { flex: 1, backgroundColor: color.night },
   pad: { paddingHorizontal: space.xl },
   title: { ...type.largeTitle, color: color.moon },
@@ -481,7 +502,9 @@ const styles = StyleSheet.create({
     aspectRatio: 4 / 5,
     backgroundColor: color.glass,
   },
-  poster: { width: '100%', height: '100%' },
+  poster: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
+  siteWrap: { aspectRatio: 4 / 3 },
+  siteShade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,9,24,0.45)' },
   posterHint: {
     position: 'absolute',
     right: space.md,

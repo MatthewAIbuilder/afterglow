@@ -42,6 +42,22 @@ export type Artist = {
   color?: string;
   /** How much of each sound this artist carries, 0 to 1. */
   sound: Partial<Record<SoundTag, number>>;
+  /**
+   * The artists playing together in a b2b ("SUBTRONICS B2B CRANKDAT"), in
+   * name order, with their own photos: worked out from the name for b2b acts
+   * without a photo of their own (`withMembers` in data/members.ts).
+   */
+  members?: ArtistMember[];
+};
+
+/** One of the artists in a b2b, with their photo when Afterglow has one. */
+export type ArtistMember = {
+  name: string;
+  /** Their own artist id, when they're on Afterglow too. */
+  id?: string;
+  imageUrl?: string;
+  imageCredit?: string;
+  color?: string;
 };
 
 /**
@@ -86,6 +102,12 @@ export type Festival = {
   place?: { lat: number; lon: number };
   /** Link to the official lineup poster, if you have one. Tap to view full screen. */
   posterImageUrl?: string;
+  /**
+   * Where the poster came from when it's the picture the festival's own site
+   * shares ("orlando.edc.com"), rather than one set in the catalogue. It may
+   * be key art rather than the full lineup, so it's credited, not called the poster.
+   */
+  posterFrom?: string;
   /** Official links (https only): where to buy tickets, the festival's own site. */
   links?: { tickets?: string; website?: string };
   /** Where an imported festival's details came from (credited on its page), e.g. { name: 'EDMTrain', url }. */

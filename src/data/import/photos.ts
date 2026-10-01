@@ -1,3 +1,4 @@
+import { b2bParts } from '../members';
 import { fold } from './edmtrain';
 
 /**
@@ -51,6 +52,36 @@ export function photoPlan(
     if (a.imageUrl) continue; // its own photo, set in the catalogue
     if (published[a.id]) reuse[a.id] = published[a.id];
     else if (lookUp.length < max) lookUp.push({ id: a.id, name: a.name });
+  }
+  return { reuse, lookUp };
+}
+
+/**
+ * The same for the artists playing in b2b acts (pass the artists with
+ * tonight's photos applied, before member photos): artists on Afterglow bring
+ * their own photo, so only the others are needed, by name. Reuses last time's
+ * member photos, or looks them up (at most `max`), each name once.
+ */
+export function memberPlan(
+  artists: readonly { name: string; imageUrl?: string }[],
+  published: Record<string, string>,
+  max: number,
+): { reuse: Record<string, string>; lookUp: string[] } {
+  const onAfterglow = new Set(artists.filter((a) => !b2bParts(a.name)).map((a) => fold(a.name)));
+  const last = new Map(Object.entries(published).map(([name, url]) => [fold(name), url]));
+  const reuse: Record<string, string> = {};
+  const lookUp: string[] = [];
+  const done = new Set<string>();
+  for (const a of artists) {
+    if (a.imageUrl) continue;
+    for (const name of b2bParts(a.name) ?? []) {
+      const key = fold(name);
+      if (!key || done.has(key) || onAfterglow.has(key)) continue;
+      done.add(key);
+      const url = last.get(key);
+      if (url) reuse[name] = url;
+      else if (lookUp.length < max) lookUp.push(name);
+    }
   }
   return { reuse, lookUp };
 }
