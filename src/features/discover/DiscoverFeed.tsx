@@ -283,6 +283,7 @@ export function DiscoverFeed() {
               bottomSpace={tabSpace}
               pager={pager}
               onSkip={() => skipFrom(index)}
+              onNext={() => skipFrom(index)}
               onHold={onHold}
             />
           );

@@ -49,8 +49,14 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Soft: 'soft' },
 }));
 jest.mock('react-native-webview', () => {
+  const React = require('react');
   const { View } = require('react-native');
-  return { WebView: View };
+  // A plain view that also takes the player's commands (ignored), so tests can drive it through onMessage.
+  const WebView = React.forwardRef((props: object, ref: unknown) => {
+    React.useImperativeHandle(ref, () => ({ injectJavaScript: () => {}, reload: () => {} }));
+    return React.createElement(View, props);
+  });
+  return { WebView };
 });
 
 // Local notifications: an in-memory schedule the tests can read, with permission granted.

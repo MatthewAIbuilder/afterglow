@@ -6,6 +6,7 @@ import { LikeSync } from '../features/community/LikeSync';
 import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { FirstRun } from '../features/welcome/FirstRun';
+import { AutoplayProvider } from '../state/autoplay';
 import { CatalogProvider } from '../state/catalog';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
@@ -42,6 +43,7 @@ export default function RootLayout() {
       <PrepProvider>
       <GoingProvider>
       <SeenProvider>
+      <AutoplayProvider>
       <WeekendsProvider>
       <LineupNewsProvider>
       <SocialProvider>
@@ -131,6 +133,7 @@ export default function RootLayout() {
       </SocialProvider>
       </LineupNewsProvider>
       </WeekendsProvider>
+      </AutoplayProvider>
       </SeenProvider>
       </GoingProvider>
       </PrepProvider>

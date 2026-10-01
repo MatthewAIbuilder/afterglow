@@ -8,6 +8,7 @@ import { PlayIcon } from '../features/discover/icons';
 import { countdown } from '../features/festivals/when';
 import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
+import { useAutoplay } from '../state/autoplay';
 import { useCatalog } from '../state/catalog';
 import { useCommunity } from '../state/community';
 import { useGoing } from '../state/going';
@@ -27,6 +28,7 @@ export default function DiscoverFocusScreen() {
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const community = useCommunity();
+  const autoplay = useAutoplay();
   const choices = focusChoices(catalog.festivals, catalog.clips, going, today);
   const currentFestival = current && !isWide(current) ? catalog.festival(current) : undefined;
   // One sound from every lineup, for the sounds with enough clips.
@@ -158,6 +160,25 @@ export default function DiscoverFocusScreen() {
           />
         </View>
       )}
+
+      <View style={styles.switchRow}>
+        <View style={styles.rowText}>
+          <Text style={styles.rowTitle}>Play the next clip</Text>
+          <Text style={styles.switchDetail}>
+            {autoplay.enabled ? 'When you’ve watched a clip to the end, the next one starts after a short countdown.' : 'Clips loop until you swipe.'}
+          </Text>
+        </View>
+        <Switch
+          value={autoplay.enabled}
+          onValueChange={(v) => {
+            haptic.select();
+            autoplay.setEnabled(v);
+          }}
+          trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
+          accessibilityLabel="Play the next clip"
+          testID="autoplay-switch"
+        />
+      </View>
 
       {currentFestival && (
         <Pressable
