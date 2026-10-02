@@ -67,6 +67,15 @@ describe('Friends', () => {
     expect(app.getByLabelText('Jo, @jojo')).toBeTruthy();
     expect(maya).toBeTruthy();
 
+    // Following back keeps her listed for this visit, showing Following, so it can be undone.
+    await fireEvent.press(app.getByLabelText('Follow @maya'));
+    await flush();
+    expect(app.getByLabelText('Maya, @maya')).toBeTruthy();
+    expect(app.getByLabelText('Following @maya. Tap to unfollow.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Follow @jojo'));
+    await flush();
+    expect(app.getByLabelText('Following @jojo. Tap to unfollow.')).toBeTruthy();
+
     await fireEvent.press(app.getByLabelText('Start a crew for a festival'));
     await flush();
     await fireEvent.press(app.getByLabelText('Start a crew for Cyclops Cove 4'));
