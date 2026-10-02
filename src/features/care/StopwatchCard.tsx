@@ -1,9 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
-import { type CareTimer, elapsed, lastDose } from './care';
+import { type CareTimer, elapsed, type FeelingPoint, lastDose, type Mood } from './care';
+import { FeelingGraph } from './FeelingGraph';
+import { FeelingChips } from './feelings';
 import { guideEntry, phaseAt, phaseMarks, stopwatchText, tooSoon, tooSoonLine } from './guide';
 
 const AMBER = '#FFB86B';
@@ -16,7 +19,23 @@ const MIN = 60_000;
  * probably are, what that means, and the most important tip. "Took more"
  * asks first when it's too soon.
  */
-export function StopwatchCard({ timer, now, onTookMore, onStop }: { timer: CareTimer; now: number; onTookMore: () => void; onStop: () => void }) {
+export function StopwatchCard({
+  timer,
+  now,
+  feelings,
+  onTookMore,
+  onStop,
+  onFeel,
+}: {
+  timer: CareTimer;
+  now: number;
+  /** Your check-ins since this stopwatch started. */
+  feelings: FeelingPoint[];
+  onTookMore: () => void;
+  onStop: () => void;
+  onFeel: (m: Mood) => void;
+}) {
+  const [asking, setAsking] = useState(false);
   const entry = guideEntry(timer.guide);
   const last = lastDose(timer);
   const since = (now - last) / MIN;
@@ -83,6 +102,34 @@ export function StopwatchCard({ timer, now, onTookMore, onStop }: { timer: CareT
         {entry?.tips[0] && phase?.phase !== 'after' ? <Text style={styles.tip}>{entry.tips[0]}</Text> : null}
       </View>
 
+      {/* How you've felt since you started, against the time. */}
+      <View style={styles.feel}>
+        <View style={styles.feelHead}>
+          <Text style={styles.feelTitle}>How you’ve felt</Text>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              setAsking((a) => !a);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={asking ? 'Close' : `How do you feel now? Log it on ${name}`}
+            hitSlop={8}
+          >
+            <Text style={styles.feelLink}>{asking ? 'Close' : '+ How do you feel now?'}</Text>
+          </Pressable>
+        </View>
+        {asking ? (
+          <FeelingChips
+            compact
+            onPick={(m) => {
+              onFeel(m);
+              setAsking(false);
+            }}
+          />
+        ) : null}
+        <FeelingGraph start={timer.startedAt} now={now} points={feelings} entry={entry} doses={timer.doses} />
+      </View>
+
       <View style={styles.actions}>
         <Pressable
           onPress={more}
@@ -137,6 +184,10 @@ const styles = StyleSheet.create({
   legendText: { ...type.caption, fontSize: 11, color: color.moonFaint },
   line: { ...type.body, color: color.moon },
   tip: { ...type.caption, color: color.moonDim },
+  feel: { marginTop: space.sm, paddingTop: space.md, gap: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline },
+  feelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  feelTitle: { ...type.label, color: color.moonDim },
+  feelLink: { ...type.label, color: color.glow },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
   action: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.18)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)' },
   actionText: { ...type.label, color: color.moon },

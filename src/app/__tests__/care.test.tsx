@@ -57,7 +57,7 @@ describe('look after yourself', () => {
   it('puts help first when you are not great', async () => {
     const app = await renderApp('/care');
     await flush();
-    expect(app.getByText('Get help')).toBeTruthy();
+    expect(app.getAllByText('Get help').length).toBeGreaterThan(0);
     await fireEvent.press(app.getByLabelText("I'm feeling not great"));
     await flush();
     expect(app.getByText('You said you’re not great. Help is close.')).toBeTruthy();

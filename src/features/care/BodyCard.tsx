@@ -4,7 +4,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { unitsFor } from '../festivals/near';
-import { bpmFromTaps, currentTaps, PULSE_TAPS, pulseNote, stepsLine } from './body';
+import { bpmFromTaps, currentTaps, PULSE_ROUNDS, PULSE_TAPS, pulseAverage, pulseNote, stepsLine } from './body';
 import { nightStart } from './care';
 
 const locale = () => {
@@ -100,44 +100,89 @@ function Steps({ now }: { now: number }) {
 
 function Pulse({ now }: { now: number }) {
   const [taps, setTaps] = useState<number[]>([]);
-  const [result, setResult] = useState<number | undefined>();
-  const counting = currentTaps(taps, now).length;
+  // One reading per round; three make the result.
+  const [readings, setReadings] = useState<number[]>([]);
+  const done = readings.length >= PULSE_ROUNDS;
+  const counting = done ? 0 : currentTaps(taps, now).length;
+  const avg = pulseAverage(readings);
+  const note = done && avg ? pulseNote(avg.bpm) : undefined;
 
   const tap = () => {
+    if (done) return;
     haptic.select();
     const t = Date.now();
     const next = currentTaps([...taps, t], t);
-    setTaps(next);
     const bpm = bpmFromTaps(next);
-    if (bpm) setResult(bpm);
+    if (bpm) {
+      // A reading: on to the next round, starting fresh.
+      haptic.settle();
+      setReadings((r) => [...r, bpm]);
+      setTaps([]);
+    } else setTaps(next);
   };
-  const note = result ? pulseNote(result) : undefined;
+  const again = () => {
+    haptic.select();
+    setTaps([]);
+    setReadings([]);
+  };
 
   return (
     <View style={styles.tile}>
-      <Text style={styles.label}>Check your pulse</Text>
-      <Text style={styles.small}>Find it on your wrist or neck, then tap the circle with each beat for about 10 seconds.</Text>
+      <View style={styles.head}>
+        <Text style={styles.label}>Check your pulse</Text>
+        {readings.length ? (
+          <Pressable onPress={again} accessibilityRole="button" accessibilityLabel="Check your pulse again from the start" hitSlop={8}>
+            <Text style={styles.link}>Check again</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      <Text style={styles.small}>
+        {done
+          ? `Average of ${PULSE_ROUNDS} readings.`
+          : `Find it on your wrist or neck, then tap the heart with each beat. ${PULSE_ROUNDS} short readings make it more accurate.`}
+      </Text>
       <View style={styles.pulseRow}>
         <Pressable
           onPress={tap}
+          disabled={done}
           accessibilityRole="button"
-          accessibilityLabel="Tap with each heartbeat"
-          accessibilityHint={`Tap at least ${PULSE_TAPS} times in time with your pulse`}
-          style={({ pressed }) => [styles.heart, pressed && { transform: [{ scale: 0.92 }] }]}
+          accessibilityLabel={done ? 'Pulse checked' : `Tap with each heartbeat. Reading ${readings.length + 1} of ${PULSE_ROUNDS}`}
+          accessibilityHint={done ? undefined : `Tap at least ${PULSE_TAPS} times in time with your pulse`}
+          style={({ pressed }) => [styles.heart, done && styles.heartDone, pressed && { transform: [{ scale: 0.92 }] }]}
         >
           <Text style={styles.heartText}>♥</Text>
         </Pressable>
-        <View style={{ flex: 1 }} accessibilityLiveRegion="polite">
-          {result ? (
+        <View style={{ flex: 1, gap: 4 }} accessibilityLiveRegion="polite">
+          {done && avg ? (
             <>
               <Text style={styles.big}>
-                {result} <Text style={styles.unit}>beats a minute</Text>
+                {avg.bpm} <Text style={styles.unit}>beats a minute</Text>
               </Text>
               <Text style={[styles.small, note?.tone === 'help' && styles.danger, note?.tone === 'watch' && styles.amber]}>{note?.line}</Text>
+              {!avg.steady ? <Text style={styles.small}>Your readings were quite far apart. Sit still for a minute and check again.</Text> : null}
             </>
           ) : (
-            <Text style={styles.small}>{counting ? `${counting} of ${PULSE_TAPS} taps…` : 'Ready when you are.'}</Text>
+            <>
+              <Text style={styles.round}>
+                Reading {readings.length + 1} of {PULSE_ROUNDS}
+              </Text>
+              <View style={styles.taps} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                {Array.from({ length: PULSE_TAPS }, (_, i) => (
+                  <View key={i} style={[styles.tapDot, i < counting && styles.tapDotOn]} />
+                ))}
+              </View>
+              <Text style={styles.small}>{counting ? `${counting} of ${PULSE_TAPS} taps…` : readings.length ? 'Now again, in time with your pulse.' : 'Ready when you are.'}</Text>
+            </>
           )}
+          {readings.length ? (
+            <View style={styles.readings}>
+              {readings.map((r, i) => (
+                <Text key={i} style={styles.reading}>
+                  {r}
+                </Text>
+              ))}
+            </View>
+          ) : null}
         </View>
       </View>
     </View>
@@ -155,6 +200,15 @@ const styles = StyleSheet.create({
   pulseRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.sm },
   heart: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,126,182,0.22)', borderWidth: 1, borderColor: 'rgba(255,126,182,0.6)' },
   heartText: { fontSize: 30, color: '#FF7EB6' },
+  heartDone: { opacity: 0.5 },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  link: { ...type.label, color: color.glow },
+  round: { ...type.headline, color: color.moon },
+  taps: { flexDirection: 'row', gap: 5 },
+  tapDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.12)' },
+  tapDotOn: { backgroundColor: '#FF7EB6' },
+  readings: { flexDirection: 'row', gap: space.sm },
+  reading: { ...type.caption, color: color.moonDim, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },
   danger: { color: 'rgba(255,150,150,0.95)' },
   amber: { color: '#FFB86B' },
   soon: { padding: space.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderStyle: 'dashed', borderColor: color.hairline },
