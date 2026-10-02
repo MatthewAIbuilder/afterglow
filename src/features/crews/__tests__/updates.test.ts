@@ -16,6 +16,7 @@ import {
   markSeen,
   OUTBOX_KEEP_MS,
   outboxLine,
+  refusedOnce,
   repliesLine,
   repliesTo,
   retryDelay,
@@ -182,5 +183,16 @@ describe('crew videos to tidy', () => {
     expect(sent).toEqual({ c1: ['b', 'a'] });
     expect(cleanSentVideos({ c1: ['a', 3], c2: 'x', c3: [] })).toEqual({ c1: ['a'] });
     expect(cleanSentVideos(null)).toEqual({});
+  });
+});
+
+describe('outbox refusals', () => {
+  it('counts refusals apart from tries with no signal, and remembers whether any crew got it', () => {
+    const item: OutboxItem = { id: 'u1', crewIds: ['c1', 'c2'], input: { id: 'u1', kind: 'checkin', at: t(17), festivalId: 'f' }, tries: 2, queuedAt: now };
+    const once = refusedOnce([item], 'u1')[0];
+    expect(once).toMatchObject({ tries: 3, refused: 1 });
+    expect(delivered([item], 'u1', ['c1'])[0]).toMatchObject({ crewIds: ['c2'], reachedSome: true });
+    expect(delivered([item], 'u1', ['c1'], false)[0]).toMatchObject({ crewIds: ['c2'], reachedSome: false });
+    expect(cleanOutbox([once], now)[0].refused).toBe(1);
   });
 });

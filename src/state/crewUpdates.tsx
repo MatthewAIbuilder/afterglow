@@ -10,6 +10,7 @@ import {
   delivered,
   enqueue,
   failed,
+  refusedOnce,
   liveCrews,
   markSeen as seenStory,
   REFUSED_TRIES,
@@ -62,6 +63,8 @@ type Ctx = {
   updatesFor: (crewId: string) => CrewUpdate[];
   /** Your updates still waiting for signal, oldest first. */
   outbox: OutboxItem[];
+  /** Updates given up on this session because a crew kept refusing them. */
+  dropped: string[];
   /** A crewmate's profile, once read. */
   profileOf: (uid: string) => Profile | undefined;
   /** Post a quick check-in to every crew you're in at this festival: its id (it's in the outbox until it reaches them). False when you have no crew there. */
@@ -106,6 +109,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
   const [seen, setSeen] = useState<Record<string, number>>({});
   const [sentVideos, setSentVideos] = useState<SentVideos>({});
+  // Updates given up on this session (a crew kept refusing them), so a screen never says they were sent.
+  const [dropped, setDropped] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     let alive = true;
@@ -267,7 +272,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         }
         const reached: string[] = [];
         let stop = false;
-        let refused = false;
+        const refusedBy: string[] = [];
         for (const crewId of crewIds) {
           try {
             const posted = await service.postCrewUpdate(crewId, input);
@@ -279,17 +284,26 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
             });
           } catch (e) {
             const kind = socialErrorKind(e);
-            if (kind === 'network' || kind === 'unavailable') stop = true;
-            else refused = true;
-            break;
+            if (kind === 'network' || kind === 'unavailable') {
+              stop = true;
+              break;
+            }
+            // This crew refused it; the others can still take it.
+            refusedBy.push(crewId);
           }
         }
-        // Refused too often: let it go rather than hold up everything after it.
-        const givenUp = refused && item.tries + 1 >= REFUSED_TRIES ? crewIds : [];
-        const gone = [...reached, ...givenUp, ...item.crewIds.filter((id) => !crewIds.includes(id))];
-        if (gone.length) setOutbox((o) => delivered(o, item.id, gone));
-        if (stop || (refused && !givenUp.length)) {
+        // Refused too often (by the crews that refused, never counting tries with no signal): let it go
+        // for them rather than hold up everything after it.
+        const givenUp = refusedBy.length && (item.refused ?? 0) + 1 >= REFUSED_TRIES ? refusedBy : [];
+        const notGoing = [...givenUp, ...item.crewIds.filter((id) => !crewIds.includes(id))];
+        if (reached.length || notGoing.length) setOutbox((o) => delivered(delivered(o, item.id, reached), item.id, notGoing, false));
+        // Nobody got it at all: say so, rather than let it look sent.
+        if (givenUp.length && !reached.length && !item.reachedSome && givenUp.length === crewIds.length) setDropped((d) => [...d, item.id]);
+        if (stop) {
           setOutbox((o) => failed(o, item.id));
+          setTimeout(() => setRetryTick((t) => t + 1), retryDelay(item.tries));
+        } else if (refusedBy.length && !givenUp.length) {
+          setOutbox((o) => refusedOnce(o, item.id));
           setTimeout(() => setRetryTick((t) => t + 1), retryDelay(item.tries));
         }
         // No signal: nothing else will get through either. Refused: carry on with the rest.
@@ -422,8 +436,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }
@@ -435,6 +449,7 @@ const OFF: Ctx = {
   stories: [],
   updatesFor: () => [],
   outbox: [],
+  dropped: [],
   profileOf: () => undefined,
   checkIn: () => false,
   reply: () => false,

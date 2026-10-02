@@ -124,6 +124,37 @@ describe('crew updates', () => {
     expect(app.getByText('Sent to your crew')).toBeTruthy();
   });
 
+  it('a crew that refuses a check-in never costs the other crew it; and refused everywhere, it says so', async () => {
+    const crew = await crewWithNews();
+    const own = await s().createCrew('solstice-26', 'Second crew');
+    const samUid = mockSocial.currentUser()!.uid;
+    const app = await renderApp('/');
+    await flush();
+    // The second crew stops taking anything from Sam (it ended), though the phone hasn't heard yet.
+    mockSocial.crews.delete(own.id);
+    await fireEvent.press(app.getByLabelText('Check in with your crew'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Send “Getting water” to your crew'));
+    await flush();
+    expect([...mockSocial.updates.values()].filter((u) => u.note === 'Getting water').map((u) => u.crewId)).toEqual([crew.id]);
+    for (let i = 0; i < 4; i++) await settle(130_000);
+    await flush();
+    expect(app.getByText('Sent to your crew')).toBeTruthy();
+    await fireEvent.press(app.getByText('Done'));
+    await flush();
+
+    // Now the first crew refuses too: nobody can take it, and the screen doesn't pretend.
+    mockSocial.crews.set(crew.id, { ...mockSocial.crews.get(crew.id)!, members: mockSocial.crews.get(crew.id)!.members.filter((m) => m !== samUid) });
+    await fireEvent.press(app.getByLabelText('Check in with your crew'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Send “Heading out” to your crew'));
+    await flush();
+    expect(app.getByText('Sending…')).toBeTruthy();
+    for (let i = 0; i < 4; i++) await settle(130_000);
+    await flush();
+    expect(app.getByText('Couldn’t reach your crew')).toBeTruthy();
+  });
+
   it('the crew page shows where everyone last was', async () => {
     const crew = await crewWithNews();
     const app = await renderApp(`/crew/${crew.id}`);

@@ -26,7 +26,7 @@ import { color, radius, space, type } from '../theme/tokens';
 export default function CheckInScreen() {
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
-  const { crewFestivals, checkIn, ready, outbox } = useCrewUpdates();
+  const { crewFestivals, checkIn, ready, outbox, dropped } = useCrewUpdates();
   const { crewsAt } = useCrews();
   const { taste } = useTaste();
   const { mustSeesAt } = usePlan();
@@ -71,13 +71,16 @@ export default function CheckInScreen() {
   if (sent) {
     // Said only once it's really through: until then it's sending, or waiting for signal.
     const waiting = outbox.some((o) => o.id === sent.id);
+    const refused = dropped.includes(sent.id);
     const marked = clock(sent.at.toISOString());
     return (
       <View style={[styles.root, styles.done, { paddingBottom: insets.bottom + space.xl }]} accessibilityLiveRegion="polite">
         <Text style={styles.doneTime}>{marked}</Text>
-        <Text style={styles.title}>{!waiting ? 'Sent to your crew' : offline ? 'Saved for when there’s signal' : 'Sending…'}</Text>
+        <Text style={styles.title}>{refused ? 'Couldn’t reach your crew' : !waiting ? 'Sent to your crew' : offline ? 'Saved for when there’s signal' : 'Sending…'}</Text>
         <Text style={styles.body}>
-          {!waiting
+          {refused
+            ? 'Your crew couldn’t take this check-in (the crew may have ended, or your phone’s clock may be off). Try checking in again.'
+            : !waiting
             ? `${crews.map((c) => c.name).join(' and ')} ${crews.length === 1 ? 'sees' : 'see'} it marked ${marked}.`
             : offline
               ? `No signal right now. It sends itself as soon as there is, still marked ${marked}, so your crew knows when you were there.`

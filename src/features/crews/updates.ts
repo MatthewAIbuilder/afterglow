@@ -148,6 +148,10 @@ export type OutboxItem = {
   /** A video also being shared to Discover: wait for that upload and point at it, rather than uploading twice. */
   memoryId?: string;
   tries: number;
+  /** How many times a crew refused it outright (not counting tries that failed for want of signal). */
+  refused?: number;
+  /** It already reached at least one of its crews. */
+  reachedSome?: boolean;
   /** When it was put in the outbox (ms). */
   queuedAt: number;
 };
@@ -166,17 +170,24 @@ export function enqueue(outbox: readonly OutboxItem[], item: OutboxItem): Outbox
   return [...outbox.filter((o) => o.id !== item.id), item].sort((a, b) => ms(a.input.at) - ms(b.input.at)).slice(-OUTBOX_MAX);
 }
 
-/** It reached these crews: take them off; an item that reached every crew leaves the outbox. */
-export function delivered(outbox: readonly OutboxItem[], id: string, crewIds: readonly string[]): OutboxItem[] {
+/**
+ * It reached these crews (or, with `reached` false, is no longer going to them): take them off; an item
+ * with no crews left leaves the outbox.
+ */
+export function delivered(outbox: readonly OutboxItem[], id: string, crewIds: readonly string[], reached = true): OutboxItem[] {
   return outbox.flatMap((o) => {
     if (o.id !== id) return [o];
     const left = o.crewIds.filter((c) => !crewIds.includes(c));
-    return left.length ? [{ ...o, crewIds: left }] : [];
+    return left.length ? [{ ...o, crewIds: left, reachedSome: o.reachedSome || (reached && o.crewIds.length > left.length) }] : [];
   });
 }
 
 /** One more failed try. */
 export const failed = (outbox: readonly OutboxItem[], id: string): OutboxItem[] => outbox.map((o) => (o.id === id ? { ...o, tries: o.tries + 1 } : o));
+
+/** A crew refused it once more (also a try, for the back-off). */
+export const refusedOnce = (outbox: readonly OutboxItem[], id: string): OutboxItem[] =>
+  outbox.map((o) => (o.id === id ? { ...o, tries: o.tries + 1, refused: (o.refused ?? 0) + 1 } : o));
 
 /**
  * A send the server refused (not a dropped connection) is tried this many
@@ -208,7 +219,7 @@ export function cleanOutbox(raw: unknown, now: number): OutboxItem[] {
       now - i.queuedAt <= OUTBOX_KEEP_MS
     );
   });
-  return items.map((i) => ({ ...i, tries: typeof i.tries === 'number' ? i.tries : 0 })).sort((a, b) => ms(a.input.at) - ms(b.input.at)).slice(-OUTBOX_MAX);
+  return items.map((i) => ({ ...i, tries: typeof i.tries === 'number' ? i.tries : 0, refused: typeof i.refused === 'number' ? i.refused : undefined })).sort((a, b) => ms(a.input.at) - ms(b.input.at)).slice(-OUTBOX_MAX);
 }
 
 /** "Waiting for signal · 2 updates" and the like, for your own pending updates. */
