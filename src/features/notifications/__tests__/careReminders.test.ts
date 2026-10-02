@@ -18,9 +18,13 @@ describe('water reminders', () => {
     expect(careReminders(care, undefined, at(22))).toEqual([]);
   });
 
-  it('starts from now when there is no water tonight, never sooner than a few minutes away', () => {
+  it('keeps a steady beat when there is no water tonight, never sooner than a few minutes away', () => {
     const list = careReminders({ ...EMPTY_CARE, waterEvery: 45 }, 'cc4', at(23));
-    expect(list[0].at).toEqual(at(23, 45));
+    // Every 45 min from noon: 11:15 PM is the next.
+    expect(list[0].at).toEqual(at(23, 15));
+    // Working it out again a little later (after logging food, say) moves nothing.
+    expect(careReminders({ ...EMPTY_CARE, waterEvery: 45, log: [{ kind: 'food', at: at(23, 2).getTime() }] }, 'cc4', at(23, 3)).map((r) => r.id)).toEqual(list.map((r) => r.id));
+    expect(careReminders({ ...EMPTY_CARE, waterEvery: 45 }, 'cc4', at(23, 12))[0].at).toEqual(at(0, 0, 6));
     const late = careReminders({ ...EMPTY_CARE, waterEvery: 45, log: [{ kind: 'water', at: at(21).getTime() }] }, 'cc4', at(23));
     expect(late[0].at.getTime()).toBeGreaterThan(at(23).getTime());
   });
