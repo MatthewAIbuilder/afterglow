@@ -178,6 +178,13 @@ export function delivered(outbox: readonly OutboxItem[], id: string, crewIds: re
 /** One more failed try. */
 export const failed = (outbox: readonly OutboxItem[], id: string): OutboxItem[] => outbox.map((o) => (o.id === id ? { ...o, tries: o.tries + 1 } : o));
 
+/**
+ * A send the server refused (not a dropped connection) is tried this many
+ * times, then let go, so one bad update (a reply to one that was deleted)
+ * never holds up the rest.
+ */
+export const REFUSED_TRIES = 3;
+
 /** Wait between tries: 15 s, 30 s, 1 min, then every 2 min. */
 export const retryDelay = (tries: number) => Math.min(120_000, 15_000 * 2 ** Math.max(0, tries));
 

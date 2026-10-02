@@ -140,6 +140,38 @@ describe('crew updates', () => {
     expect(page.getByText('1 reply · Sam: On my way')).toBeTruthy();
   });
 
+  it('a reply the crew can no longer take never holds up the updates after it', async () => {
+    const crew = await crewWithNews();
+    await as('sam');
+    const app = await renderApp('/');
+    await flush();
+    network.__setState({ isConnected: false, isInternetReachable: false });
+    mockSocial.network.down = true;
+    await fireEvent.press(app.getByLabelText(/^Maya, updated 4:05 PM/));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Reply “Be there in 10” to Maya'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Close'));
+    await flush();
+    await fireEvent.press(app.getByLabelText(/^Check in with your crew\. 1 update is waiting for signal$/));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Send “Getting water” to your crew'));
+    await flush();
+    await fireEvent.press(app.getByText('Done'));
+    await flush();
+    // Meanwhile Maya took her check-in back, so the reply has nothing to answer.
+    mockSocial.updates.delete(`${crew.id}/u-checkin1`);
+    mockSocial.network.down = false;
+    network.__setState({ isConnected: true, isInternetReachable: true });
+    await flush();
+    expect([...mockSocial.updates.values()].some((u) => u.note === 'Getting water')).toBe(true);
+    // The refused reply is tried a few times, then let go.
+    for (let i = 0; i < 4; i++) await settle(130_000);
+    await flush();
+    expect(app.getByLabelText('Check in with your crew')).toBeTruthy();
+    expect([...mockSocial.updates.values()].some((u) => u.kind === 'reply')).toBe(false);
+  });
+
   it('nobody sees updates from a crew they are not in', async () => {
     const crew = await crewWithNews();
     await s().signOut();
