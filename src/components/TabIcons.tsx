@@ -211,3 +211,15 @@ export function MoreIcon({ color, size = 18 }: P) {
     </Svg>
   );
 }
+
+/** Two people: friends. */
+export function PeopleIcon({ color, size = 20 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={9} cy={8} r={3.4} stroke={color} strokeWidth={1.7} />
+      <Path d="M2.8 19.5c.6-3.3 3.1-5.3 6.2-5.3s5.6 2 6.2 5.3" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
+      <Circle cx={16.6} cy={9} r={2.7} stroke={color} strokeWidth={1.6} />
+      <Path d="M16.9 14.4c2.3.2 3.9 1.8 4.4 4.4" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+    </Svg>
+  );
+}

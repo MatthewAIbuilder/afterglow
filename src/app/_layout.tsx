@@ -90,6 +90,17 @@ export default function RootLayout() {
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="care" />
+        <Stack.Screen name="friends" />
+        <Stack.Screen
+          name="start-crew"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.75, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: color.nightRaised },
+          }}
+        />
         <Stack.Screen
           name="check-in"
           options={{

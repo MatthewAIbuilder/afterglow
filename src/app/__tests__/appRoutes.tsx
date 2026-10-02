@@ -31,6 +31,8 @@ import YourArtistsScreen from '../your-artists';
 import SettingsScreen from '../settings';
 import CareScreen from '../care';
 import CheckInScreen from '../check-in';
+import FriendsScreen from '../friends';
+import StartCrewScreen from '../start-crew';
 import CrewStoryScreen from '../crew-story';
 import YearScreen from '../year/[year]';
 import PosterScreen from '../poster/[id]';
@@ -75,6 +77,8 @@ export const APP_ROUTES = {
   settings: SettingsScreen,
   care: CareScreen,
   'check-in': CheckInScreen,
+  friends: FriendsScreen,
+  'start-crew': StartCrewScreen,
   'crew-story': CrewStoryScreen,
   'year/[year]': YearScreen,
   music: MusicScreen,
