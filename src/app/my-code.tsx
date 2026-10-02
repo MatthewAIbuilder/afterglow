@@ -12,6 +12,7 @@ import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
 import { useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
+import { accountsOff } from '../features/social/unavailable';
 import { color, radius, space, type } from '../theme/tokens';
 
 /**
@@ -41,8 +42,8 @@ export default function MyCodeScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
         {!myCard ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{social.availability.ok ? 'Make a profile to get your code' : 'Friend codes are in the app'}</Text>
-            <Text style={styles.body}>Friends scan it to add you, even when the signal is bad.</Text>
+            <Text style={styles.emptyTitle}>{social.availability.ok ? 'Make a profile to get your code' : accountsOff(Platform.OS === 'web', 'Friend codes').title}</Text>
+            <Text style={styles.body}>{social.availability.ok ? 'Friends scan it to add you, even when the signal is bad.' : accountsOff(Platform.OS === 'web', 'Friend codes').body}</Text>
             {social.availability.ok ? (
               <Pressable
                 onPress={() => router.push(social.user ? '/profile-edit' : '/account')}

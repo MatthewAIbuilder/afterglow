@@ -3,6 +3,7 @@ import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from '
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
+import { accountsOff } from '../social/unavailable';
 import { color, radius, space, type } from '../../theme/tokens';
 
 /**
@@ -19,7 +20,7 @@ export function HereEmpty({ festival, loading, bottomSpace, onFilm }: { festival
     );
   }
   const [title, body] = !social.availability.ok
-    ? ['Videos from the crowd are in the app', `Open Afterglow on your phone to watch what people film at ${festival.name}.`]
+    ? (({ title, body }) => [title, body])(accountsOff(Platform.OS === 'web', 'Videos from the crowd'))
     : !social.user
       ? [`Live from ${festival.name}`, 'Sign in to watch the videos people film here, and share yours.']
       : [`Nothing from ${festival.name} yet`, 'Be the first: film a set and turn on Share to Discover. Videos people share from here show up as they come in.'];

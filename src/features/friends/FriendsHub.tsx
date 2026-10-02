@@ -13,6 +13,7 @@ import { CrewWhereCard } from '../crews/CrewWhereCard';
 import { LostButton } from '../crews/LostButton';
 import { MeetSpotCard } from '../crews/MeetSpotCard';
 import { FriendAddsList } from './FriendAddsList';
+import { accountsOff } from '../social/unavailable';
 import { firstName } from '../../features/crews/together';
 import { clock, updatePlace } from '../../features/crews/updates';
 import { FOLLOWING } from '../../features/discover/focus';
@@ -138,10 +139,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
         </View>
 
         {!social.availability.ok ? (
-          <Hero
-            title="Friends are in the app"
-            body="Profiles, crews and following aren't switched on in this version yet. Open Afterglow on your phone to plan festivals with friends."
-          />
+          <Hero {...accountsOff(Platform.OS === 'web', 'Friends, crews and friend codes')} />
         ) : !me ? (
           <Hero
             title="Festivals are better together"
