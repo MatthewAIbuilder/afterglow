@@ -4,6 +4,7 @@ import type { Crew, CrewUpdate } from '../../social/models';
 import {
   ago,
   cleanOutbox,
+  cleanSentVideos,
   clock,
   crewStories,
   delivered,
@@ -19,6 +20,7 @@ import {
   repliesTo,
   retryDelay,
   updateLine,
+  withSentVideo,
   type OutboxItem,
 } from '../updates';
 
@@ -171,5 +173,14 @@ describe('crew updates: replies', () => {
     const ok = { ...base, id: 'r1', input: { id: 'r1', kind: 'reply', at: t(17), festivalId: 'f', replyTo: 'm1', note: 'On my way' } };
     const broken = { ...base, id: 'r2', input: { id: 'r2', kind: 'reply', at: t(17), festivalId: 'f', note: 'Hm' } };
     expect(cleanOutbox([ok, broken], now).map((o) => o.id)).toEqual(['r1']);
+  });
+});
+
+describe('crew videos to tidy', () => {
+  it('remembers each crew’s uploaded videos once, and reads them back safely', () => {
+    const sent = withSentVideo(withSentVideo(withSentVideo({}, 'c1', 'a'), 'c1', 'b'), 'c1', 'a');
+    expect(sent).toEqual({ c1: ['b', 'a'] });
+    expect(cleanSentVideos({ c1: ['a', 3], c2: 'x', c3: [] })).toEqual({ c1: ['a'] });
+    expect(cleanSentVideos(null)).toEqual({});
   });
 });

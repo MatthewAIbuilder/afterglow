@@ -16,10 +16,11 @@ service firebase.storage {
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
     // Videos sent to a crew only. Their links live only in the crew's updates, which only members can read
-    // (firestore.rules); the file names are random. You add and remove only your own.
+    // (firestore.rules); the file names are random. You add and remove only your own. Writing over your
+    // own file is allowed, so a send that stopped after the upload can try again with the same name.
     match /crews/{crewId}/{uid}/{file} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == uid
+      allow create, update: if request.auth != null && request.auth.uid == uid
         && file.matches('^[A-Za-z0-9_-]+[.](mp4|mov|m4v|jpg)$')
         && (
           (file.matches('.*[.]jpg$') && request.resource.contentType == 'image/jpeg' && request.resource.size < 5 * 1024 * 1024)

@@ -191,6 +191,25 @@ describe('crew updates', () => {
     expect([...mockSocial.updates.values()].some((u) => u.kind === 'reply')).toBe(false);
   });
 
+  it('once you are out of a crew, your crew-only videos there come out of storage', async () => {
+    const crew = await crewWithNews();
+    const other = await s().createCrew('solstice-26', 'Second crew'); // Sam's own, still in it
+    const samUid = mockSocial.currentUser()!.uid;
+    mockSocial.crewFiles.add(`${crew.id}/${samUid}/u-video77`);
+    mockSocial.crewFiles.add(`${other.id}/${samUid}/u-video88`);
+    await AsyncStorage.setItem('crewVideos.v1', JSON.stringify({ [crew.id]: ['u-video77'], [other.id]: ['u-video88'] }));
+    // Maya, the owner, takes Sam out of the first crew.
+    await s().signOut();
+    await as('maya');
+    await s().removeFromCrew(crew.id, samUid);
+    await s().signOut();
+    await as('sam');
+    await renderApp('/');
+    await flush();
+    expect([...mockSocial.crewFiles]).toEqual([`${other.id}/${samUid}/u-video88`]);
+    expect(JSON.parse((await AsyncStorage.getItem('crewVideos.v1'))!)).toEqual({ [other.id]: ['u-video88'] });
+  });
+
   it('nobody sees updates from a crew they are not in', async () => {
     const crew = await crewWithNews();
     await s().signOut();

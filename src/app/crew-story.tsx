@@ -131,7 +131,7 @@ export default function CrewStoryScreen() {
         </View>
       ) : null}
 
-      {target ? <ReplyBar key={target.id} target={target} nameOf={nameOf} me={me} bottom={insets.bottom} /> : null}
+      {target ? <ReplyBar key={`replies-${target.id}`} target={target} nameOf={nameOf} me={me} bottom={insets.bottom} /> : null}
     </View>
   );
 }

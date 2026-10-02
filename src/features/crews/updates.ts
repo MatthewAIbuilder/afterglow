@@ -268,3 +268,25 @@ export function repliesLine(replies: readonly CrewUpdate[], nameOf: (uid: string
 /** The update a reply answers, when it's still here. */
 export const answered = (updates: readonly CrewUpdate[], reply: CrewUpdate) =>
   reply.replyTo ? updates.find((u) => u.crewId === reply.crewId && u.id === reply.replyTo) : undefined;
+
+/** Crew-only videos you uploaded, per crew (update ids), so they can be removed once you're out of that crew. */
+export type SentVideos = Record<string, string[]>;
+/** At most this many are remembered per crew (oldest dropped). */
+export const SENT_VIDEOS_MAX = 200;
+
+export const withSentVideo = (sent: SentVideos, crewId: string, id: string): SentVideos => ({
+  ...sent,
+  [crewId]: [...(sent[crewId] ?? []).filter((x) => x !== id), id].slice(-SENT_VIDEOS_MAX),
+});
+
+/** A saved list read back safely. */
+export function cleanSentVideos(raw: unknown): SentVideos {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: SentVideos = {};
+  for (const [crewId, ids] of Object.entries(raw as Record<string, unknown>)) {
+    if (!Array.isArray(ids)) continue;
+    const kept = ids.filter((x): x is string => typeof x === 'string').slice(-SENT_VIDEOS_MAX);
+    if (kept.length) out[crewId] = kept;
+  }
+  return out;
+}

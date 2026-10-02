@@ -610,6 +610,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         );
         return snap.docs.map((d) => crewUpdateFromDoc(crewId, d.id, d.data())).filter((u): u is CrewUpdate => !!u);
       }),
+    forgetCrewVideos: (crewId, ids) =>
+      guard(async () => {
+        const user = me();
+        // The files are named after the update; the video's type isn't known, so each is tried.
+        for (const id of ids) for (const ext of ['mp4', 'mov', 'm4v', 'jpg']) await removeFile(`crews/${crewId}/${user.uid}/${id}.${ext}`);
+      }),
     deleteCrewUpdate: (crewId, id) =>
       guard(async () => {
         const user = me();

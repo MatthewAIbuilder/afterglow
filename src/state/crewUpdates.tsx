@@ -5,6 +5,7 @@ import { AppState } from 'react-native';
 import {
   cleanNote,
   cleanOutbox,
+  cleanSentVideos,
   crewStories,
   delivered,
   enqueue,
@@ -16,9 +17,11 @@ import {
   retryDelay,
   stageOf,
   updateId,
+  withSentVideo,
   UPDATES_MAX,
   UPDATES_WINDOW_MS,
   type OutboxItem,
+  type SentVideos,
   type Story,
 } from '../features/crews/updates';
 import type { Memory } from '../features/memories/models';
@@ -78,6 +81,8 @@ type Ctx = {
 
 export const OUTBOX_KEY = 'crewOutbox.v1';
 export const SEEN_KEY = 'crewSeen.v1';
+/** Crew-only videos you uploaded, so they're removed from storage once you're out of the crew. */
+export const SENT_VIDEOS_KEY = 'crewVideos.v1';
 /** How often crews' updates are read while the app is open. */
 export const POLL_MS = 60_000;
 
@@ -100,12 +105,16 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   // --- Your outbox and what you've seen, kept on this phone.
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
   const [seen, setSeen] = useState<Record<string, number>>({});
+  const [sentVideos, setSentVideos] = useState<SentVideos>({});
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     let alive = true;
-    Promise.all([AsyncStorage.getItem(OUTBOX_KEY), AsyncStorage.getItem(SEEN_KEY)])
-      .then(([o, s]) => {
+    Promise.all([AsyncStorage.getItem(OUTBOX_KEY), AsyncStorage.getItem(SEEN_KEY), AsyncStorage.getItem(SENT_VIDEOS_KEY)])
+      .then(([o, s, v]) => {
         if (!alive) return;
+        try {
+          setSentVideos(cleanSentVideos(JSON.parse(v ?? '{}')));
+        } catch {}
         try {
           setOutbox(cleanOutbox(JSON.parse(o ?? '[]'), Date.now()));
         } catch {}
@@ -125,6 +134,40 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) AsyncStorage.setItem(OUTBOX_KEY, JSON.stringify(outbox)).catch(() => {});
   }, [outbox, hydrated]);
+  useEffect(() => {
+    if (hydrated) AsyncStorage.setItem(SENT_VIDEOS_KEY, JSON.stringify(sentVideos)).catch(() => {});
+  }, [sentVideos, hydrated]);
+
+  // Out of a crew (left, removed by the owner, or it ended): your videos there come out of storage too.
+  // Each crew is checked with the server first, so a failed read never deletes anything.
+  const tidying = useRef(false);
+  const sentKey = Object.keys(sentVideos).join('|');
+  const crewKey = crews.map((c) => c.id).join('|');
+  useEffect(() => {
+    if (!ready || !uid || !online || !hydrated || tidying.current) return;
+    const gone = Object.keys(sentVideos).filter((id) => !crews.some((c) => c.id === id));
+    if (!gone.length) return;
+    tidying.current = true;
+    (async () => {
+      for (const crewId of gone) {
+        try {
+          const crew = await service.crew(crewId);
+          if (crew && crew.members.includes(uid)) continue;
+          await service.forgetCrewVideos(crewId, sentVideos[crewId] ?? []);
+          setSentVideos((v) => {
+            const { [crewId]: _gone, ...rest } = v;
+            return rest;
+          });
+        } catch {
+          // No answer: leave it for next time.
+        }
+      }
+    })().finally(() => {
+      tidying.current = false;
+    });
+    // sentKey and crewKey stand for sentVideos and crews.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, uid, online, hydrated, sentKey, crewKey, service]);
   useEffect(() => {
     if (hydrated) AsyncStorage.setItem(SEEN_KEY, JSON.stringify(seen)).catch(() => {});
   }, [seen, hydrated]);
@@ -209,7 +252,12 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
           if (item.memoryId in sharingRef.current) continue; // still uploading to Discover: wait for it
           if (m.sharedId) {
             const shared = await service.sharedMemory(m.sharedId).catch(() => undefined);
-            if (shared === undefined) break; // couldn't ask: no signal, try later
+            if (shared === undefined) {
+              // Couldn't ask (weak signal): try again on the usual back-off, not only when the app reopens.
+              setOutbox((o) => failed(o, item.id));
+              setTimeout(() => setRetryTick((t) => t + 1), retryDelay(item.tries));
+              break;
+            }
             input = shared
               ? { ...item.input, videoUrl: shared.videoUrl, thumbUrl: shared.thumbUrl, sharedId: shared.id }
               : { ...item.input, videoUri: mem.uriOf(m.file), thumbUri: m.thumb ? mem.uriOf(m.thumb) : undefined };
@@ -224,6 +272,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
           try {
             const posted = await service.postCrewUpdate(crewId, input);
             reached.push(crewId);
+            if (input.kind === 'video' && input.videoUri) setSentVideos((v) => withSentVideo(v, crewId, posted.id));
             setUpdates((s) => {
               const list = (s.byCrew[crewId] ?? []).filter((u) => u.id !== posted.id);
               return { uid: s.uid ?? uid, byCrew: { ...s.byCrew, [crewId]: [posted, ...list] } };

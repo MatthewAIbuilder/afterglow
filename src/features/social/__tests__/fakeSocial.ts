@@ -26,6 +26,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const updates = new Map<string, CrewUpdate>();
   /** Switch the "network" off to see what happens with no signal: crew updates fail to send. */
   const network = { down: false };
+  /** Crew-only video files uploaded, as `crewId/uid/updateId`. */
+  const crewFiles = new Set<string>();
   const reports: { by: string; target: ReportTarget; reason: ReportReason; note?: string }[] = [];
   const listeners = new Set<(u: SocialUser | null) => void>();
   let current: SocialUser | null = null;
@@ -380,6 +382,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         ...(input.width && input.height ? { width: input.width, height: input.height } : {}),
       };
       updates.set(key, u);
+      if (uploaded) crewFiles.add(`${crewId}/${u.uid}/${input.id}`);
       onProgress?.(1);
       return u;
     },
@@ -390,6 +393,11 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         .filter((u) => u.crewId === crewId && Date.parse(u.at) >= sinceMs)
         .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
         .slice(0, max);
+    },
+    async forgetCrewVideos(crewId, ids) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      for (const id of ids) crewFiles.delete(`${crewId}/${u.uid}/${id}`);
     },
     async deleteCrewUpdate(crewId, id) {
       const u = updates.get(`${crewId}/${id}`);
@@ -409,5 +417,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, comments, network, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, comments, network, reports, currentUser: () => current };
 }
