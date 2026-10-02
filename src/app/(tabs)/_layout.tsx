@@ -13,6 +13,8 @@ export default function TabLayout() {
       <Tabs.Screen name="sound" options={{ title: 'My Sound' }} />
       <Tabs.Screen name="festivals" options={{ title: 'Festivals' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      {/* Festival mode's Friends tab (the tab bar shows it only in festival mode). */}
+      <Tabs.Screen name="together" options={{ title: 'Friends' }} />
     </Tabs>
   );
 }

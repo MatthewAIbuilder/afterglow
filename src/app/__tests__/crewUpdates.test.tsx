@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
 import { renderApp } from './appRoutes';
@@ -239,6 +240,38 @@ describe('crew updates', () => {
     await flush();
     expect([...mockSocial.crewFiles]).toEqual([`${other.id}/${samUid}/u-video88`]);
     expect(JSON.parse((await AsyncStorage.getItem('crewVideos.v1'))!)).toEqual({ [other.id]: ['u-video88'] });
+  });
+
+  it('a meeting spot any member can set, and “Can’t find you” pointing at it', async () => {
+    const crew = await crewWithNews();
+    await as('sam');
+    const page = await renderApp(`/crew/${crew.id}`);
+    await flush();
+    await fireEvent.press(page.getByLabelText('Pick a meeting spot for your crew'));
+    await fireEvent.changeText(page.getByLabelText('Meeting spot'), 'By the big tree left of Main Stage');
+    await fireEvent.press(page.getByLabelText('Save the meeting spot'));
+    await flush();
+    expect(mockSocial.meets.get(crew.id)).toMatchObject({ text: 'By the big tree left of Main Stage' });
+    expect(page.getByLabelText(/^Meeting spot: By the big tree left of Main Stage\. Set by you\. Change it$/)).toBeTruthy();
+    await page.unmount();
+
+    const app = await renderApp('/check-in');
+    await flush();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'Send')?.onPress?.());
+    await fireEvent.press(app.getByLabelText('Can’t find my crew. Tell them'));
+    await flush();
+    alert.mockRestore();
+    const lost = [...mockSocial.updates.values()].find((u) => u.lost);
+    expect(lost).toMatchObject({ kind: 'checkin', note: 'Can’t find you. Heading to By the big tree left of Main Stage' });
+    expect(app.getByText('Sent. Your crew can see it.')).toBeTruthy();
+    await app.unmount();
+
+    // Maya sees it at the front of her stories.
+    await s().signOut();
+    await as('maya');
+    const hers = await renderApp('/');
+    await flush();
+    expect(hers.getByLabelText(/^Sam, can’t find the crew, 5:30 PM, “Can’t find you\. Heading to By the big tree left of Main Stage”\. New$/)).toBeTruthy();
   });
 
   it('nobody sees updates from a crew they are not in', async () => {

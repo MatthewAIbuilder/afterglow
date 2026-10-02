@@ -77,11 +77,11 @@ function StoryFace({ story, name, url, artist }: { story: Story; name?: string; 
         router.push({ pathname: '/crew-story', params: { uid: story.uid } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${who}, ${u.kind === 'reply' ? 'replied to you' : 'updated'} ${clock(u.at)}${place ? `, ${place}` : ''}${u.note ? `, “${u.note}”` : ''}${story.fresh ? '. New' : ''}`}
+      accessibilityLabel={`${who}, ${u.lost ? 'can’t find the crew,' : u.kind === 'reply' ? 'replied to you' : 'updated'} ${clock(u.at)}${place ? `, ${place}` : ''}${u.note ? `, “${u.note}”` : ''}${story.fresh ? '. New' : ''}`}
       style={({ pressed }) => [styles.item, pressed && styles.pressed]}
     >
       {story.fresh ? (
-        <LinearGradient colors={['#A97CFF', '#FF7EB6', '#FFB86B']} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={styles.ringGlow}>
+        <LinearGradient colors={u.lost ? ['#FFB86B', '#FF7E5F', '#FFB86B'] : ['#A97CFF', '#FF7EB6', '#FFB86B']} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={styles.ringGlow}>
           <View style={styles.ringGap}>
             <PersonAvatar name={name} url={url} size={FACE} />
           </View>

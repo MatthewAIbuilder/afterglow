@@ -15,6 +15,8 @@ import { ClipNewsProvider } from '../state/clipNews';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
 import { CrewUpdatesProvider } from '../state/crewUpdates';
+import { FestivalModeProvider } from '../state/festivalMode';
+import { FriendAddsProvider } from '../state/friendAdds';
 import { FollowedArtistsProvider } from '../state/followedArtists';
 import { GoingProvider } from '../state/going';
 import { LineupNewsProvider } from '../state/lineupNews';
@@ -58,6 +60,8 @@ export default function RootLayout() {
       <NoticesProvider>
       <CrewsProvider>
       <CrewUpdatesProvider>
+      <FestivalModeProvider>
+      <FriendAddsProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -167,6 +171,8 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen name="poster/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="my-code" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }} />
       </Stack>
       <FirstRun />
@@ -175,6 +181,8 @@ export default function RootLayout() {
       <LikeSync />
       <OfflineNotice />
       <DialogHost />
+      </FriendAddsProvider>
+      </FestivalModeProvider>
       </CrewUpdatesProvider>
       </CrewsProvider>
       </NoticesProvider>

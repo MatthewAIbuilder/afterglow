@@ -1,4 +1,4 @@
-import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
+import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -61,6 +61,14 @@ export interface SocialService {
   /** Follow someone (not yourself). Following twice is the same as once. */
   follow(uid: string): Promise<void>;
   unfollow(uid: string): Promise<void>;
+  /** Save your private friend code (the one in your QR code). Only the rules ever read it. */
+  setFriendCode(code: string): Promise<void>;
+  /**
+   * Become friends with someone whose QR code you scanned: you follow each
+   * other. Already following either way is fine. Refused (not `network`)
+   * when the code isn't their current one or they blocked you.
+   */
+  addFriend(uid: string, code: string): Promise<void>;
   /** Stop someone following you (used when you block them). */
   removeFollower(uid: string): Promise<void>;
   /** Who this person follows / who follows them, newest first, at most `max`. */
@@ -116,6 +124,10 @@ export interface SocialService {
   deleteCrewUpdate(crewId: string, id: string): Promise<void>;
   /** Remove the crew-only video files you uploaded with these updates (after you've left or been taken out of the crew). */
   forgetCrewVideos(crewId: string, updateIds: readonly string[]): Promise<void>;
+  /** The crew's meeting spot, if one's set. Members only. */
+  meetSpot(crewId: string): Promise<MeetSpot | null>;
+  /** Set the crew's meeting spot (any member), or clear it with an empty text. */
+  setMeetSpot(crewId: string, text: string): Promise<MeetSpot | null>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;

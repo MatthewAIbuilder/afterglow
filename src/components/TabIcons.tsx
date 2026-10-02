@@ -232,3 +232,32 @@ export function CommentIcon({ color, size = 18 }: P) {
     </Svg>
   );
 }
+
+/** A QR code: your friend code. */
+export function QrIcon({ color, size = 20 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={3.5} y={3.5} width={6.5} height={6.5} rx={1.8} stroke={color} strokeWidth={1.6} />
+      <Rect x={14} y={3.5} width={6.5} height={6.5} rx={1.8} stroke={color} strokeWidth={1.6} />
+      <Rect x={3.5} y={14} width={6.5} height={6.5} rx={1.8} stroke={color} strokeWidth={1.6} />
+      <Rect x={5.9} y={5.9} width={1.7} height={1.7} rx={0.4} fill={color} />
+      <Rect x={16.4} y={5.9} width={1.7} height={1.7} rx={0.4} fill={color} />
+      <Rect x={5.9} y={16.4} width={1.7} height={1.7} rx={0.4} fill={color} />
+      <Circle cx={15} cy={15} r={1.1} fill={color} />
+      <Circle cx={19.5} cy={15} r={1.1} fill={color} />
+      <Circle cx={17.2} cy={17.3} r={1.1} fill={color} />
+      <Circle cx={15} cy={19.6} r={1.1} fill={color} />
+      <Circle cx={19.5} cy={19.6} r={1.1} fill={color} />
+    </Svg>
+  );
+}
+
+/** A scanning frame: scan a friend's code. */
+export function ScanIcon({ color, size = 20 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M3.5 8V5.5a2 2 0 0 1 2-2H8M16 3.5h2.5a2 2 0 0 1 2 2V8M20.5 16v2.5a2 2 0 0 1-2 2H16M8 20.5H5.5a2 2 0 0 1-2-2V16" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
+      <Path d="M6.5 12h11" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}

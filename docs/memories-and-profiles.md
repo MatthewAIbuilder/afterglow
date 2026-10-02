@@ -119,6 +119,17 @@ Where your crew is, from the videos they film and quick check-ins, along the top
 
 **Replies.** Tap a crewmate's update to open it, then tap a quick reply ("On my way", "Save me a spot") or write your own. A reply is a crew update of its own (kind `reply`, pointing at the update it answers), so it waits for signal like a check-in and keeps the time you sent it. Replies to your updates show up as news in that person's story and under your latest on the crew page ("1 reply · Sam: On my way"); replies between other people stay under the update they answer. The rules only accept a reply with words, answering an update in the same crew.
 
+**Find my crew.** Each crew can keep one meeting spot ("Big tree left of Main Stage"), set by any member on the crew page or on Tonight (`crews/{id}/meta/meet`, members only, 80 characters, who set it and when). "Can't find my crew" (Tonight and the check-in screen) sends a check-in marked lost ("Can’t find you. Heading to Big tree left of Main Stage"); it goes through the outbox like any check-in, so it waits for signal and keeps the time you tapped. Your crew sees it first in their stories with an amber ring. Nothing is tracked: it only says what you chose to send.
+
+## Friend codes
+
+Add a friend face to face by scanning their QR code (Friends → Scan a code, or festival mode's Friends tab). It's made for festival signal.
+
+- **What a code says**: a link, `https://afterglowmusic.app/add/<handle>?u=<account id>&c=<friend code>&n=<name>`, so even a phone's own camera opens it (the website, or the app's `add/[handle]` page). Everything needed to add someone is in the code, so scanning works with no signal at all.
+- **Both ways**: scanning makes you follow each other. Only someone who saw your current code can make you follow them: the scan writes a friend link with your code, and the rules check it against `friendCodes/{you}`, which nobody can read. Make a new code (My code → Make a new code) and old screenshots stop working. Blocking still wins.
+- **No signal**: the scan is kept on the phone (`friendAdds.v1`) and tried again by itself (signal back, opening the app, every 15 s doubling to 5 minutes). When it goes through later you get a notification. A scan waiting more than a day, or refused 12 times, is given up and listed with Try again.
+- **Your code** is made on your phone and saved to Afterglow the first time there's signal. Until then, scans of it wait (they go through once you've both had signal).
+
 ## Comments
 
 - Firestore `comments/{id}` (`memoryId`, `owner` (who shared the video), `uid`, `handle` (yours, checked against your profile), `text` 1 to 300, `createdAt`). Anyone signed in reads them; you write as yourself with a profile, on a video that exists, not if its owner blocked you; never edited; removed by the writer or the video's owner. Unsharing a video removes its comments; deleting your account removes the comments you wrote and those on your videos. Indexes: (memoryId, createdAt asc), (owner, createdAt desc). Reports can now be about a comment.

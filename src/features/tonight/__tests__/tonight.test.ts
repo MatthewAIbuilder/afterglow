@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { isOn, tonightFestival, tonightKey, tonightTitle } from '../tonight';
+import { isOn, tonightClips, tonightFestival, tonightKey, tonightOrder, tonightTitle } from '../tonight';
 
 const fest = (id: string, more: Partial<Festival>): Festival => ({ id, name: id.toUpperCase(), dates: '', location: '', lineup: [], days: [], stages: [], ...more });
 const cc4 = fest('cc4', { startDate: '2026-12-04', endDate: '2026-12-06', days: ['Friday', 'Saturday', 'Sunday'] });
@@ -44,5 +44,37 @@ describe('festival-day mode', () => {
     expect(tonightKey('cc4', new Date(2026, 11, 6, 14))).toBe('cc4:2026-12-06');
     expect(tonightTitle({ festival: cc4, night: 'Saturday' })).toBe('Saturday at CC4');
     expect(tonightTitle({ festival: cc4 })).toBe('CC4');
+  });
+});
+
+describe('tonight’s preview', () => {
+  const clip = (id: string, artistId: string) => ({ id, artistId, festivalId: 'cc4', title: '', durationSec: 60, bpm: 140 });
+  const item = (id: string, artistId: string) => ({ clip: clip(id, artistId) });
+  const lineup = fest('cc4', {
+    startDate: '2026-12-04',
+    endDate: '2026-12-06',
+    days: ['Friday', 'Saturday', 'Sunday'],
+    lineup: ['a', 'b', 'c', 'd'],
+    artistDays: { a: ['Saturday'], b: ['Saturday'], c: ['Friday'], d: ['Saturday'] },
+  });
+
+  it('one set per artist playing tonight, in ranked order before set times', () => {
+    const items = [item('1', 'b'), item('2', 'c'), item('3', 'b'), item('4', 'a')];
+    expect(tonightOrder(items, lineup, 'Saturday').map((i) => i.clip.id)).toEqual(['1', '4']);
+    expect(tonightClips(lineup, [clip('x', 'a'), clip('y', 'c'), clip('z', 'zz')], 'Saturday').map((c) => c.id)).toEqual(['x']);
+  });
+
+  it('in set-time order once set times are out, after-midnight sets last; what is on screen never moves', () => {
+    const timed = {
+      ...lineup,
+      sets: [
+        { artistId: 'a', day: 'Saturday', stageId: 'm', start: '00:30', end: '01:30' },
+        { artistId: 'b', day: 'Saturday', stageId: 'm', start: '22:00', end: '23:00' },
+        { artistId: 'd', day: 'Saturday', stageId: 'm', start: '20:00', end: '21:00' },
+      ],
+    };
+    const items = [item('1', 'a'), item('2', 'b'), item('3', 'd')];
+    expect(tonightOrder(items, timed, 'Saturday').map((i) => i.clip.artistId)).toEqual(['d', 'b', 'a']);
+    expect(tonightOrder(items, timed, 'Saturday', 1).map((i) => i.clip.artistId)).toEqual(['a', 'd', 'b']);
   });
 });

@@ -38,10 +38,10 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, type Profile } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
-import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
+import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -179,6 +179,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid))),
           getDocs(query(collection(db, 'comments'), where('uid', '==', user.uid))),
           getDocs(query(collection(db, 'comments'), where('owner', '==', user.uid))),
+          getDocs(query(collection(db, 'friendLinks'), where('from', '==', user.uid))),
         ]);
         const refs = snaps.flatMap((snap) => snap.docs.map((d) => d.ref));
         for (let i = 0; i < refs.length; i += 400) {
@@ -192,6 +193,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (handle) batch.delete(doc(db, 'handles', handle));
         batch.delete(doc(db, 'profiles', user.uid));
         batch.delete(doc(db, 'blocks', user.uid));
+        batch.delete(doc(db, 'friendCodes', user.uid));
         await batch.commit();
         await deleteUser(user);
       }),
@@ -364,6 +366,20 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (uid === user.uid) throw new SocialError('unknown');
         await setDoc(doc(fb().db, 'follows', `${user.uid}_${uid}`), { from: user.uid, to: uid, createdAt: now() });
       }),
+    setFriendCode: (code) => guard(async () => setDoc(doc(fb().db, 'friendCodes', me().uid), { code, updatedAt: serverTimestamp() })),
+    addFriend: (uid, code) =>
+      guard(async () => {
+        const user = me();
+        if (uid === user.uid) throw new SocialError('unknown');
+        const db = fb().db;
+        // Follows are never rewritten, so only the missing ones are made, with the proof in the same batch.
+        const [mine, theirs] = await Promise.all([getDoc(doc(db, 'follows', `${user.uid}_${uid}`)), getDoc(doc(db, 'follows', `${uid}_${user.uid}`))]);
+        const batch = writeBatch(db);
+        batch.set(doc(db, 'friendLinks', `${user.uid}_${uid}`), { from: user.uid, to: uid, code, createdAt: now() });
+        if (!mine.exists()) batch.set(doc(db, 'follows', `${user.uid}_${uid}`), { from: user.uid, to: uid, createdAt: now() });
+        if (!theirs.exists()) batch.set(doc(db, 'follows', `${uid}_${user.uid}`), { from: uid, to: user.uid, createdAt: now(), via: 'code' });
+        await batch.commit();
+      }),
     unfollow: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${me().uid}_${uid}`))),
     removeFollower: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${uid}_${me().uid}`))),
     following: (uid, max) =>
@@ -506,6 +522,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const all = await getDocs(collection(db, 'crews', id, 'picks'));
           const b = writeBatch(db);
           for (const d of all.docs) b.delete(d.ref);
+          b.delete(doc(db, 'crews', id, 'meta', 'meet'));
           b.delete(crewRef);
           await b.commit();
           return;
@@ -585,6 +602,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           ...(input.stage ? { stage: input.stage.slice(0, CREW_STAGE_MAX) } : {}),
           ...(input.note ? { note: input.note.slice(0, CREW_NOTE_MAX) } : {}),
           ...(input.kind === 'reply' && input.replyTo ? { replyTo: input.replyTo } : {}),
+          ...(input.kind === 'checkin' && input.lost ? { lost: true } : {}),
           ...(videoUrl ? { videoUrl } : {}),
           ...(thumbUrl ? { thumbUrl } : {}),
           ...(videoPath ? { videoPath } : {}),
@@ -609,6 +627,20 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           query(collection(fb().db, 'crews', crewId, 'updates'), where('atMs', '>=', sinceMs), orderBy('atMs', 'desc'), limit(max)),
         );
         return snap.docs.map((d) => crewUpdateFromDoc(crewId, d.id, d.data())).filter((u): u is CrewUpdate => !!u);
+      }),
+    meetSpot: (crewId) =>
+      guard(async () => meetSpotFromDoc((await getDoc(doc(fb().db, 'crews', crewId, 'meta', 'meet'))).data())),
+    setMeetSpot: (crewId, raw) =>
+      guard(async () => {
+        const user = me();
+        const ref_ = doc(fb().db, 'crews', crewId, 'meta', 'meet');
+        const text = raw.replace(/\s+/g, ' ').trim().slice(0, MEET_SPOT_MAX);
+        if (!text) {
+          await deleteDoc(ref_);
+          return null;
+        }
+        await setDoc(ref_, { text, by: user.uid, at: serverTimestamp() });
+        return { text, by: user.uid, at: new Date().toISOString() };
       }),
     forgetCrewVideos: (crewId, ids) =>
       guard(async () => {

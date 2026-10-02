@@ -6,7 +6,8 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { lineupClips } from '../festivals/links';
-import { FOLLOWING, inSound, MIX, soundOf } from './focus';
+import { tonightClips, tonightOrder } from '../tonight/tonight';
+import { FOLLOWING, inSound, MIX, soundOf, TONIGHT } from './focus';
 import { type FeedItem, rankFeed } from '../recommend/feed';
 
 const NO_CLIPS: Clip[] = [];
@@ -27,6 +28,8 @@ export function useRankedFeed(
   focus: Festival | string | undefined,
   /** Clips people shared for this focus (community clips), ranked alongside the official ones. */
   community: Clip[] = NO_CLIPS,
+  /** For Tonight's preview: the festival on now (as it is for you) and tonight's night. */
+  tonight?: { festival: Festival; night?: string },
 ): FeedItem[] | null {
   const { reactions, hydrated: reactionsReady } = useReactions();
   const { seen, hydrated: seenReady } = useSeen();
@@ -38,18 +41,21 @@ export function useRankedFeed(
   const [sessionStart] = useState(() => Date.now());
   const clips = useMemo(() => {
     // Following is only videos from people you follow; the mix is every clip.
+    // Tonight: the lineup's clips of artists playing tonight, crowd videos included.
+    if (focus === TONIGHT) return tonight ? tonightClips(tonight.festival, [...catalog.clips, ...community], tonight.night) : [];
     const tag = typeof focus === 'string' ? soundOf(focus) : undefined;
     if (tag) return [...catalog.clips, ...community].filter((c) => inSound(c, tag, catalog.artist));
     const official =
       focus === MIX ? catalog.clips : focus === FOLLOWING || typeof focus === 'string' ? [] : focus ? lineupClips(focus, catalog.clips) : [];
     return community.length ? [...official, ...community] : official;
-  }, [focus, catalog, community]);
+  }, [focus, catalog, community, tonight]);
 
   // Re-rank when an input changes, during render (no extra pass through an effect).
   const [state, setState] = useState<{ feed: FeedItem[] | null; inputs: readonly unknown[] }>({ feed: null, inputs: [] });
   const inputs = [ready, taste, informed, reactions, seen, activeIndex, clips, catalog.artists, similarity, ratings, focus] as const;
   if (ready && inputs.some((v, i) => v !== state.inputs[i])) {
-    const feed = rankFeed({
+    const keep = state.feed && focus === state.inputs[10] ? state.feed.slice(0, activeIndex + 2).map((it) => it.clip.id) : [];
+    const ranked = rankFeed({
       clips,
       artists: catalog.artists,
       similarity,
@@ -60,8 +66,10 @@ export function useRankedFeed(
       seen,
       now: Object.values(seen).reduce((a, b) => Math.max(a, b), sessionStart),
       // Same focus: keep what's on screen and next, even when community clips arrive later. New focus: start over.
-      keep: state.feed && focus === state.inputs[10] ? state.feed.slice(0, activeIndex + 2).map((it) => it.clip.id) : [],
+      keep,
     });
+    // Tonight's preview: one set per artist, in set-time order once set times are out.
+    const feed = focus === TONIGHT && tonight ? tonightOrder(ranked, tonight.festival, tonight.night, keep.length) : ranked;
     setState({ feed, inputs });
     return feed;
   }

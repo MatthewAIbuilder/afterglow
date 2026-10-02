@@ -107,6 +107,7 @@ export function updatePlace(u: Pick<CrewUpdate, 'stage' | 'note'>, artistName?: 
 /** "Updated 4:05 PM · Main Stage · SLANDER", the line under a crewmate's story ("Replied 4:12 PM" for a reply). */
 export function updateLine(u: CrewUpdate, artistName?: string): string {
   if (isReply(u)) return `Replied ${clock(u.at)}`;
+  if (u.lost) return `Can’t find the crew · ${clock(u.at)}`;
   const place = updatePlace(u, artistName);
   return `Updated ${clock(u.at)}${place ? ` · ${place}` : ''}`;
 }
