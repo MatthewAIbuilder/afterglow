@@ -10,6 +10,9 @@ import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { festivalRoute } from '../plan/route';
 import { festivalReminders, reminderChanges, type Reminder } from './reminders';
+import { careReminders } from './careReminders';
+import { useCare } from '../../state/care';
+import { tonightFestival } from '../tonight/tonight';
 import { canRemindSets, setReminders, soonest } from './setReminders';
 
 // While the app is open, a reminder still shows as a banner (quietly). Phones only.
@@ -49,6 +52,8 @@ function PhoneReminders() {
   const { artists } = useCatalog();
   const { taste, informed } = useTaste();
   const { mustSeesAt } = usePlan();
+  // Water reminders, if you switched them on, while a festival you're going to is on.
+  const { care, hydrated: careLoaded } = useCare();
   const routes = useMemo(
     () =>
       festivals
@@ -63,7 +68,8 @@ function PhoneReminders() {
         try {
           const now = new Date();
           const sets: Reminder[] = soonest(routes.flatMap(({ festival, route }) => setReminders(festival, route, now)));
-          const wanted = [...festivalReminders(festivals, going, now), ...sets];
+          const water = careReminders(care, tonightFestival(festivals, going, now)?.festival.id, now);
+          const wanted = [...festivalReminders(festivals, going, now), ...sets, ...water];
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           const { cancel, schedule } = reminderChanges(
             wanted,
@@ -77,7 +83,7 @@ function PhoneReminders() {
           for (const r of schedule) {
             await Notifications.scheduleNotificationAsync({
               identifier: r.id,
-              content: { title: r.title, body: r.body, data: { festivalId: r.festivalId } },
+              content: { title: r.title, body: r.body, data: { festivalId: r.festivalId, ...(r.href ? { href: r.href } : {}) } },
               trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: r.at },
             });
           }
@@ -86,18 +92,19 @@ function PhoneReminders() {
         }
       });
     },
-    [festivals, going, routes],
+    [festivals, going, routes, care],
   );
 
   // Only a change you make may ask for permission: going, or the set reminders switch. Not the sync when the app
   // opens, and not a route that moved because you liked something.
-  const asked = useRef<{ going: unknown; changed: number } | undefined>(undefined);
+  const asked = useRef<{ going: unknown; changed: number; water: unknown } | undefined>(undefined);
 
   useEffect(() => {
-    if (!hydrated || !weekendsLoaded || !setsLoaded) return;
+    if (!hydrated || !weekendsLoaded || !setsLoaded || !careLoaded) return;
     const first = !asked.current;
-    const mayAsk = !first && (asked.current!.going !== going || asked.current!.changed !== changed);
-    asked.current = { going, changed };
+    const mayAsk =
+      !first && (asked.current!.going !== going || asked.current!.changed !== changed || asked.current!.water !== care.waterEvery);
+    asked.current = { going, changed, water: care.waterEvery };
     // Opening the app and your own changes sync at once; a route that moved (a burst of likes) a beat later, once.
     if (first || mayAsk) {
       sync(mayAsk);
@@ -105,7 +112,7 @@ function PhoneReminders() {
     }
     const t = setTimeout(() => sync(false), 600);
     return () => clearTimeout(t);
-  }, [going, hydrated, weekendsLoaded, setsLoaded, changed, sync]);
+  }, [going, hydrated, weekendsLoaded, setsLoaded, careLoaded, care.waterEvery, changed, sync]);
 
 
   // Opened from a reminder: go to that festival (once per reminder).
@@ -113,11 +120,13 @@ function PhoneReminders() {
   const handled = useRef<string | undefined>(undefined);
   useEffect(() => {
     const id = response?.notification.request.identifier;
-    const festivalId = response?.notification.request.content.data?.festivalId;
+    const data = response?.notification.request.content.data;
+    const festivalId = data?.festivalId;
+    const href = typeof data?.href === 'string' && data.href.startsWith('/') ? data.href : undefined;
     if (!id || handled.current === id || typeof festivalId !== 'string') return;
     handled.current = id;
     // Let navigation settle first when the app was opened by the tap.
-    const t = setTimeout(() => router.push(`/festival/${festivalId}`), 300);
+    const t = setTimeout(() => router.push((href ?? `/festival/${festivalId}`) as never), 300);
     return () => clearTimeout(t);
   }, [response]);
 

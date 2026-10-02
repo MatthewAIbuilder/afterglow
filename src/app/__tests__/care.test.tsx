@@ -97,3 +97,28 @@ describe('look after yourself', () => {
     expect(app.queryByLabelText(/^Look after yourself\./)).toBeNull();
   });
 });
+
+describe('water reminders', () => {
+  it('schedules gentle reminders on the phone while a festival you are going to is on', async () => {
+    const notifications = jest.requireMock<{ __scheduled: Map<string, unknown> }>('expo-notifications');
+    notifications.__scheduled.clear();
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    await AsyncStorage.setItem('tonightShown.v1', 'cyclops-cove-4:2026-12-05');
+    const app = await renderApp('/care');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Water reminders every hour'));
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    await flush();
+    expect((await saved()).waterEvery).toBe(60);
+    const ids = [...notifications.__scheduled.keys()].filter((id) => id.includes('care:water:cyclops-cove-4'));
+    expect(ids.length).toBeGreaterThan(3);
+    await fireEvent.press(app.getByLabelText('No water reminders'));
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    await flush();
+    expect([...notifications.__scheduled.keys()].filter((id) => id.includes('care:water'))).toEqual([]);
+  });
+});

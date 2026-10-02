@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
-import { countTonight, regionOf, elapsed, emergencyNumber, lastLine, type Mood, MOOD_LABEL, needsHelp, TIMERS_MAX } from '../features/care/care';
+import { countTonight, regionOf, elapsed, emergencyNumber, lastLine, type Mood, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY } from '../features/care/care';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
@@ -31,7 +31,7 @@ const region = () => {
  */
 export default function CareScreen() {
   const insets = useSafeAreaInsets();
-  const { care, hydrated, start, stop, log, undo, checkIn, setLock, clear } = useCare();
+  const { care, hydrated, start, stop, log, undo, checkIn, setLock, setWaterEvery, clear } = useCare();
   const now = useNow(15_000).getTime();
   const [label, setLabel] = useState('');
   const [unlocked, setUnlocked] = useState(false);
@@ -175,6 +175,39 @@ export default function CareScreen() {
         </View>
         <Text style={styles.note}>Sip regularly and take breaks somewhere cool. Drinking a lot more water than you need can be dangerous too. Press and hold to take one back.</Text>
 
+        {/* Gentle water reminders on the phone, during a festival night you're going to. */}
+        {Platform.OS !== 'web' ? (
+          <View style={styles.remind}>
+            <Text style={styles.remindTitle}>Remind me to drink water</Text>
+            <View style={styles.remindRow} accessibilityRole="radiogroup">
+              {([undefined, ...WATER_EVERY] as const).map((m) => {
+                const on = care.waterEvery === m;
+                const label = m === undefined ? 'Off' : m === 60 ? 'Every hour' : `Every ${m} min`;
+                return (
+                  <Pressable
+                    key={m ?? 'off'}
+                    onPress={() => {
+                      haptic.select();
+                      setWaterEvery(m);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={m === undefined ? 'No water reminders' : `Water reminders ${label.toLowerCase()}`}
+                    style={({ pressed }) => [styles.remindChip, on && styles.remindChipOn, pressed && { opacity: 0.8 }]}
+                  >
+                    <Text style={[styles.remindChipText, on && { color: color.moon }]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={styles.note}>
+              {care.waterEvery
+                ? 'While a festival you’re going to is on, until 6 AM. Each water you log starts the clock again.'
+                : 'A quiet nudge while a festival you’re going to is on. Nothing private shows on your lock screen.'}
+            </Text>
+          </View>
+        ) : null}
+
         {/* Check-in */}
         <Text style={styles.section}>How are you feeling?</Text>
         <View style={styles.moods}>
@@ -315,6 +348,12 @@ const styles = StyleSheet.create({
   tileCount: { ...type.largeTitle, color: color.moon, fontVariant: ['tabular-nums'], marginTop: space.xs },
   tilePlus: { ...type.caption, color: color.glow, marginTop: space.md },
   note: { ...type.caption, color: color.moonFaint, marginTop: space.sm },
+  remind: { marginTop: space.lg },
+  remindTitle: { ...type.label, color: color.moon },
+  remindRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
+  remindChip: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  remindChipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.5)' },
+  remindChipText: { ...type.caption, color: color.moonDim },
   moods: { flexDirection: 'row', gap: space.sm },
   mood: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   moodRough: { borderColor: 'rgba(255,140,140,0.45)' },
