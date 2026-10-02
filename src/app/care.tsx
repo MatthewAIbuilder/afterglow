@@ -1,11 +1,18 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
-import { countTonight, regionOf, elapsed, emergencyNumber, lastLine, type Mood, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY } from '../features/care/care';
+import { useLocalSearchParams } from 'expo-router';
+import { BodyCard } from '../features/care/BodyCard';
+import { BloomWash, HeartMark } from '../features/care/HeartIntro';
+import { countTonight, regionOf, emergencyNumber, lastLine, type Mood, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY } from '../features/care/care';
+import { GuideList } from '../features/care/GuideList';
+import { riskyMixes } from '../features/care/guide';
+import { StartStopwatch } from '../features/care/StartStopwatch';
+import { StopwatchCard } from '../features/care/StopwatchCard';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
@@ -25,15 +32,20 @@ const region = () => {
 };
 
 /**
- * Look after yourself: timers in your own words, water and food, check-ins,
- * and help one tap away. Private: only on this phone, optionally behind Face
- * ID. No substances are named and no dosing advice is given.
+ * Look after yourself: stopwatches that say when things usually kick in and
+ * wear off (the timing guide, never doses), warnings about risky mixes,
+ * water and food, steps and a pulse check, check-ins, help one tap away, and
+ * the guide itself to read with no signal. Private: only on this phone,
+ * optionally behind Face ID.
  */
 export default function CareScreen() {
   const insets = useSafeAreaInsets();
-  const { care, hydrated, start, stop, log, undo, checkIn, setLock, setWaterEvery, clear } = useCare();
-  const now = useNow(15_000).getTime();
-  const [label, setLabel] = useState('');
+  // Opened by holding the camera button: the heart lands into place.
+  const fromHeart = useLocalSearchParams<{ from?: string }>().from === 'heart';
+  const { care, hydrated, start, stop, tookMore, log, undo, checkIn, setLock, setWaterEvery, clear } = useCare();
+  // Every second, for the stopwatches.
+  const now = useNow(1000).getTime();
+  const mixes = riskyMixes(care.timers.map((t) => t.guide).filter((g): g is string => !!g));
   const [unlocked, setUnlocked] = useState(false);
   const canLock = Platform.OS !== 'web';
   const locked = canLock && hydrated && care.lock && !unlocked;
@@ -90,64 +102,27 @@ export default function CareScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        <HeartMark bloom={fromHeart} />
         <Text style={styles.title}>Look after yourself</Text>
         <Text style={styles.sub}>Private to you: kept only on this phone, never shared.</Text>
 
         {help ? <Help number={number} first /> : null}
 
-        {/* Timers */}
-        <Text style={styles.section}>Timers</Text>
-        {care.timers.map((t) => (
-          <View key={t.id} style={styles.card} accessible accessibilityLabel={`${t.label || 'Timer'}, ${elapsed(now - t.startedAt)}, started ${clock(t.startedAt)}`}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.timerLabel} numberOfLines={1}>
-                {t.label || 'Timer'}
-              </Text>
-              <Text style={styles.timerBig}>{elapsed(now - t.startedAt)}</Text>
-              <Text style={styles.cardSub}>Started {clock(t.startedAt)}</Text>
-            </View>
-            <Pressable
-              onPress={() =>
-                showAlert('Stop this timer?', t.label ? `“${t.label}”, started ${clock(t.startedAt)}.` : `Started ${clock(t.startedAt)}.`, [
-                  { text: 'Keep it', style: 'cancel' },
-                  { text: 'Stop', style: 'destructive', onPress: () => stop(t.id) },
-                ])
-              }
-              accessibilityRole="button"
-              accessibilityLabel={`Stop ${t.label || 'timer'}`}
-              hitSlop={8}
-              style={({ pressed }) => [styles.small, pressed && { opacity: 0.7 }]}
-            >
-              <Text style={styles.smallText}>Stop</Text>
-            </Pressable>
+        {/* Stopwatches: from the timing guide, or your own words. */}
+        <Text style={styles.section}>Stopwatches</Text>
+        {mixes.map((m) => (
+          <View key={`${m.a.id}-${m.b.id}`} style={styles.mix} accessible accessibilityLabel={`Careful: ${m.a.name} and ${m.b.name} together. ${m.why}`}>
+            <Text style={styles.mixTitle}>
+              Careful: {m.a.name} and {m.b.name}
+            </Text>
+            <Text style={styles.mixBody}>{m.why}</Text>
           </View>
         ))}
-        {care.timers.length < TIMERS_MAX ? (
-          <View style={styles.startRow}>
-            <TextInput
-              value={label}
-              onChangeText={setLabel}
-              placeholder="Label it your way (optional)"
-              placeholderTextColor={color.moonFaint}
-              accessibilityLabel="Timer label"
-              maxLength={40}
-              style={styles.input}
-              returnKeyType="done"
-            />
-            <Pressable
-              onPress={() => {
-                haptic.tap();
-                start(label);
-                setLabel('');
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Start a timer"
-              style={({ pressed }) => [styles.startButton, pressed && { opacity: 0.8 }]}
-            >
-              <Text style={styles.startText}>Start</Text>
-            </Pressable>
-          </View>
-        ) : null}
+        {care.timers.map((t) => (
+          <StopwatchCard key={t.id} timer={t} now={now} onTookMore={() => tookMore(t.id)} onStop={() => stop(t.id)} />
+        ))}
+        {care.timers.length < TIMERS_MAX ? <StartStopwatch onStart={start} /> : null}
+        {!care.timers.length ? <Text style={styles.note}>Start one when you take something, and it tells you when it usually kicks in, so you’re never guessing.</Text> : null}
 
         {/* Water and food */}
         <Text style={styles.section}>Water and food</Text>
@@ -208,6 +183,10 @@ export default function CareScreen() {
           </View>
         ) : null}
 
+        {/* Your body */}
+        <Text style={styles.section}>Your body</Text>
+        <BodyCard now={now} />
+
         {/* Check-in */}
         <Text style={styles.section}>How are you feeling?</Text>
         <View style={styles.moods}>
@@ -229,6 +208,10 @@ export default function CareScreen() {
         <Text style={styles.note}>{lastLine(care, 'checkin', now).replace('None yet tonight', 'No check-ins yet tonight')}</Text>
 
         {!help ? <Help number={number} /> : null}
+
+        {/* The timing guide, readable with no signal. */}
+        <Text style={styles.section}>Timing guide</Text>
+        <GuideList />
 
         {/* Privacy */}
         <Text style={styles.section}>Privacy</Text>
@@ -253,7 +236,7 @@ export default function CareScreen() {
           ) : null}
           <Pressable
             onPress={() =>
-              showAlert('Clear everything?', 'Your timers, water, food and check-ins are removed from this phone.', [
+              showAlert('Clear everything?', 'Your stopwatches, water, food and check-ins are removed from this phone.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Clear', style: 'destructive', onPress: clear },
               ])
@@ -265,6 +248,7 @@ export default function CareScreen() {
           </Pressable>
         </View>
       </ScrollView>
+      <BloomWash bloom={fromHeart} />
     </View>
   );
 }
@@ -303,7 +287,6 @@ function Big({ label, onPress, danger }: { label: string; onPress: () => void; d
   );
 }
 
-const clock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
@@ -372,4 +355,7 @@ const styles = StyleSheet.create({
   clear: { paddingVertical: space.sm, width: '100%' },
   clearText: { ...type.label, color: 'rgba(255,150,150,0.95)' },
   lockedBox: { paddingHorizontal: space.xl, gap: space.lg },
+  mix: { padding: space.lg, marginBottom: space.sm, gap: space.xs, borderRadius: radius.lg, backgroundColor: 'rgba(255,120,120,0.1)', borderWidth: 1, borderColor: 'rgba(255,140,140,0.5)' },
+  mixTitle: { ...type.headline, color: 'rgba(255,190,190,1)' },
+  mixBody: { ...type.body, color: color.moon },
 });

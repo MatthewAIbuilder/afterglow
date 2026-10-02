@@ -43,7 +43,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
               'If you turn on festivals near you, Afterglow asks for your location, rounds it to about a kilometre and keeps it on your phone (or in your browser) to show how far festivals are. Your phone’s maps service may be asked which town that is, and where a festival’s venue is. It isn’t sent to us, and you can turn it off on the Festivals tab.',
               'If you connect Spotify or Apple Music, your sign-in is kept in your phone’s secure storage and a summary of your library (which artists, not song titles or playlists) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
               'Reminders are scheduled on your phone. We don’t send push notifications.',
-              'Look after yourself (timers, water, food and check-ins) is kept only on your phone. It is never sent to us, never shown on your profile or in recaps, can be locked with Face ID, and Clear everything removes it.',
+              'Look after yourself (stopwatches, including what you chose to time them for, water, food, check-ins and pulse checks) is kept only on your phone. Steps are read from your phone’s own motion counter, only after you ask, and are not stored. None of it is sent to us, shown on your profile or in recaps; it can be locked with Face ID, and Clear everything removes it.',
             ],
           },
           {

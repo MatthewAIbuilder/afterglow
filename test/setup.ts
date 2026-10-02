@@ -255,3 +255,20 @@ jest.mock('expo-calendar/legacy', () => ({
 
 // Tests use the bundled catalogue only, never the hosted one.
 jest.mock('../src/config/data', () => ({ ...(jest.requireActual('../src/config/data') as object), CATALOG_URL: '' }));
+// Steps: a phone with a motion counter, allowed, 4,210 steps tonight; `__state.allowed = false` asks first.
+jest.mock('expo-sensors', () => {
+  const state = { allowed: true, steps: 4210 };
+  return {
+    __state: state,
+    Pedometer: {
+      isAvailableAsync: jest.fn(async () => true),
+      getPermissionsAsync: jest.fn(async () => ({ granted: state.allowed, canAskAgain: true, status: state.allowed ? 'granted' : 'undetermined' })),
+      requestPermissionsAsync: jest.fn(async () => {
+        state.allowed = true;
+        return { granted: true, canAskAgain: true, status: 'granted' };
+      }),
+      getStepCountAsync: jest.fn(async () => ({ steps: state.steps })),
+      watchStepCount: jest.fn(() => ({ remove: () => {} })),
+    },
+  };
+});

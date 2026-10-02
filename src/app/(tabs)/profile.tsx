@@ -7,6 +7,8 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { MenuIcon, PeopleIcon, TilesIcon, BookmarkIcon, FestivalsIcon } from '../../components/TabIcons';
 import { useCrewUpdates } from '../../state/crewUpdates';
+import { FestivalProfile } from '../../features/festivalMode/FestivalProfile';
+import { useFestivalMode } from '../../state/festivalMode';
 import { Tabs } from '../../components/Tabs';
 import { WEB_URL } from '../../config/app';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
@@ -43,6 +45,12 @@ type Tab = 'videos' | 'festivals' | 'saved';
  * (music, settings, legal) is behind the menu at the top right.
  */
 export default function ProfileScreen() {
+  // In festival mode: just you, your code and what you filmed here.
+  const { active } = useFestivalMode();
+  return active ? <FestivalProfile festival={active.festival} /> : <FullProfile />;
+}
+
+function FullProfile() {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const { width } = useWindowDimensions();

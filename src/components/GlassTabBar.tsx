@@ -2,7 +2,9 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import Animated, { Easing, interpolate, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import { HeartBurst, HeartFace, HeartHalo } from './HeartHold';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraIcon } from '../features/camera/icons';
 import { useFestivalMode } from '../state/festivalMode';
@@ -44,6 +46,9 @@ const TEST_BANNER_H = 36;
 export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { active, leave, hydrated } = useFestivalMode();
+  // The camera button turning into a heart when held (festival mode).
+  const hold = useSharedValue(0);
+  const burst = useSharedValue(0);
   const order = active ? FESTIVAL_TABS : FULL_TABS;
   const current = state.routes[state.index]?.name;
   // Switching modes while on a tab the other mode doesn't have: back to Discover.
@@ -71,11 +76,12 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           <Text style={styles.testEnd}>End</Text>
         </Pressable>
       ) : null}
+      {active ? <HeartHalo hold={hold} bottom={TAB_BAR_HEIGHT / 2} /> : null}
       <View style={styles.pill}>
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, styles.tint]} />
         {order.map((name) => {
-          if (name === CAMERA) return <CameraTab key={CAMERA} />;
+          if (name === CAMERA) return <CameraTab key={CAMERA} hold={hold} burst={burst} />;
           const i = state.routes.findIndex((r) => r.name === name);
           const route = state.routes[i];
           if (!route) return null;
@@ -108,32 +114,69 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           );
         })}
       </View>
+      {active ? <HeartBurst burst={burst} bottom={TAB_BAR_HEIGHT / 2} /> : null}
     </View>
   );
 }
 
-/** Festival mode's middle button: straight to the camera. */
-function CameraTab() {
+/** Look after yourself, opened from the held camera button: the heart blooms, then the page opens over it. */
+function openCare(hold: SharedValue<number>, burst: SharedValue<number>, still: boolean) {
+  haptic.settle();
+  if (still) {
+    router.push('/care');
+    return;
+  }
+  hold.set(1);
+  burst.set(0);
+  burst.set(withTiming(1, { duration: 750, easing: Easing.out(Easing.quad) }));
+  setTimeout(() => router.push({ pathname: '/care', params: { from: 'heart' } }), 320);
+  // Back to a camera for when you return.
+  setTimeout(() => {
+    hold.set(0);
+    burst.set(0);
+  }, 950);
+}
+
+/** Festival mode's middle button: straight to the camera; held, it turns into a heart and opens Look after yourself. */
+function CameraTab({ hold, burst }: { hold: SharedValue<number>; burst: SharedValue<number> }) {
+  const reduce = useReducedMotion();
+  const fired = useRef(false);
+  const button = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.16 * hold.get() }] }));
+  const camera = useAnimatedStyle(() => ({ opacity: interpolate(hold.get(), [0, 0.5], [1, 0], 'clamp') }));
   return (
     <Pressable
       onPress={() => {
         haptic.tap();
         router.push('/camera');
       }}
+      onPressIn={() => {
+        fired.current = false;
+        // A short wait, so a quick tap stays a camera; then the heart grows until the hold completes.
+        if (!reduce) hold.set(withDelay(120, withTiming(1, { duration: 330, easing: Easing.out(Easing.quad) })));
+      }}
+      onPressOut={() => {
+        if (!fired.current) hold.set(withTiming(0, { duration: 180 }));
+      }}
+      // Hold it for Look after yourself, from any tab.
+      onLongPress={() => {
+        fired.current = true;
+        openCare(hold, burst, !!reduce);
+      }}
+      delayLongPress={450}
       accessibilityRole="button"
       accessibilityLabel="Film a video"
+      accessibilityHint="Hold to open Look after yourself"
+      accessibilityActions={[{ name: 'longpress', label: 'Look after yourself' }]}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && openCare(hold, burst, true)}
       style={styles.item}
     >
-      {({ pressed }) => (
-        <LinearGradient
-          colors={CAMERA_COLORS}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.camera, pressed && { transform: [{ scale: 0.92 }] }]}
-        >
+      <Animated.View style={[styles.camera, button]}>
+        <LinearGradient colors={CAMERA_COLORS} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, styles.cameraFill]} />
+        <Animated.View style={camera}>
           <CameraIcon color={color.night} size={24} />
-        </LinearGradient>
-      )}
+        </Animated.View>
+        <HeartFace hold={hold} />
+      </Animated.View>
     </Pressable>
   );
 }
@@ -177,5 +220,6 @@ const styles = StyleSheet.create({
   testDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#FF7EB6' },
   testText: { ...type.caption, color: color.moon },
   testEnd: { ...type.caption, color: '#FF7EB6', fontWeight: '700' },
+  cameraFill: { borderRadius: 25 },
   camera: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', shadowColor: '#FF7EB6', shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
 });
