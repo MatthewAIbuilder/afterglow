@@ -10,6 +10,7 @@ import type { Festival } from '../data/models';
 import { CameraIcon } from '../features/camera/icons';
 import { CareCard } from '../features/care/CareCard';
 import { CrewLatest } from '../features/crews/CrewLatest';
+import { CrewWhereCard } from '../features/crews/CrewWhereCard';
 import { picksByDay } from '../features/plan/byDay';
 import { LiveNow } from '../features/plan/LiveNow';
 import { useFestivalPlan } from '../features/plan/useFestivalPlan';
@@ -99,7 +100,12 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
       {social.availability.ok ? (
         <Section title="Your crew">
           {crews.length ? (
-            crews.map((c) => <CrewLatest key={c.id} crew={c} nameOf={() => undefined} />)
+            <>
+              <CrewWhereCard festival={festival} crews={crews} />
+              {crews.map((c) => (
+                <CrewLatest key={c.id} crew={c} nameOf={() => undefined} />
+              ))}
+            </>
           ) : (
             <Pressable
               onPress={() => {

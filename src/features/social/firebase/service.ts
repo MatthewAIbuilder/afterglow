@@ -584,6 +584,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           ...(input.artistId ? { artistId: input.artistId } : {}),
           ...(input.stage ? { stage: input.stage.slice(0, CREW_STAGE_MAX) } : {}),
           ...(input.note ? { note: input.note.slice(0, CREW_NOTE_MAX) } : {}),
+          ...(input.kind === 'reply' && input.replyTo ? { replyTo: input.replyTo } : {}),
           ...(videoUrl ? { videoUrl } : {}),
           ...(thumbUrl ? { thumbUrl } : {}),
           ...(videoPath ? { videoPath } : {}),

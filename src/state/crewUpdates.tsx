@@ -11,6 +11,7 @@ import {
   failed,
   liveCrews,
   markSeen as seenStory,
+  repliesTo,
   retryDelay,
   stageOf,
   updateId,
@@ -60,6 +61,10 @@ type Ctx = {
   profileOf: (uid: string) => Profile | undefined;
   /** Post a quick check-in to every crew you're in at this festival. False when you have no crew there. */
   checkIn: (festivalId: string, words: { note?: string; stage?: string; artistId?: string }) => boolean;
+  /** Answer a crewmate's update, in its crew only; waits for signal like a check-in. False when you can't. */
+  reply: (update: CrewUpdate, note: string) => boolean;
+  /** The replies to an update, oldest first, with yours still waiting for signal at the end. */
+  repliesFor: (update: CrewUpdate) => { reply: CrewUpdate; waiting: boolean }[];
   /** Send a tagged video to your crews at its festival (if it's also being shared to Discover, it waits and points at that copy). */
   sendVideo: (memory: Memory) => boolean;
   /** You watched a crewmate's story: it stops glowing until they post something newer. */
@@ -277,6 +282,20 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     [crewIdsAt, ready],
   );
 
+  const reply = useCallback(
+    (target: CrewUpdate, words: string) => {
+      const note = cleanNote(words);
+      const inCrew = !!uid && crews.some((c) => c.id === target.crewId && c.members.includes(uid));
+      if (!ready || !inCrew || !note || target.kind === 'reply') return false;
+      const now = Date.now();
+      const id = updateId(now);
+      const input: CrewUpdateInput = { id, kind: 'reply', at: new Date(now).toISOString(), festivalId: target.festivalId, replyTo: target.id, note };
+      setOutbox((o) => enqueue(o, { id, crewIds: [target.crewId], input, tries: 0, queuedAt: now }));
+      return true;
+    },
+    [crews, ready, uid],
+  );
+
   const sendVideo = useCallback(
     (m: Memory) => {
       if (!m.festivalId) return false;
@@ -326,6 +345,16 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     (crewId: string) => (updates.uid === uid ? [...(updates.byCrew[crewId] ?? [])].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)) : []),
     [updates, uid],
   );
+  const repliesFor = useCallback(
+    (target: CrewUpdate) => {
+      const sent = repliesTo(updates.uid === uid ? (updates.byCrew[target.crewId] ?? []) : [], target, [...social.blocked]);
+      const pending = outbox
+        .filter((o) => o.input.kind === 'reply' && o.input.replyTo === target.id && o.crewIds.includes(target.crewId) && !sent.some((r) => r.id === o.id))
+        .map((o) => ({ ...o.input, crewId: target.crewId, uid: uid ?? '', sentAt: o.input.at }) as CrewUpdate);
+      return [...sent.map((r) => ({ reply: r, waiting: false })), ...pending.map((r) => ({ reply: r, waiting: true }))];
+    },
+    [updates, uid, outbox, social.blocked],
+  );
   const profileOf = useCallback(
     (m: string) => profiles.current.get(m),
     // profilesVersion marks new profiles read into the ref.
@@ -336,8 +365,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, profileOf, checkIn, sendVideo, markSeen, remove, refresh }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, profileOf, checkIn, sendVideo, markSeen, remove, refresh],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }
@@ -351,6 +380,8 @@ const OFF: Ctx = {
   outbox: [],
   profileOf: () => undefined,
   checkIn: () => false,
+  reply: () => false,
+  repliesFor: () => [],
   sendVideo: () => false,
   markSeen: () => {},
   remove: async () => {},

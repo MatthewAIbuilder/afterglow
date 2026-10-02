@@ -117,6 +117,8 @@ Where your crew is, from the videos they film and quick check-ins, along the top
 - **Where**: the stories row on Discover (you first, to check in; "Waiting…" while something's in the outbox), `crew-story.tsx` (full screen, latest first, tap right for earlier), and "Latest from the crew" on the crew page.
 - **Privacy**: crew members only. Leaving a crew (or being removed) takes your updates with you; the crew ending removes them all. Crew video files sit at random paths whose links are only in the members-only updates.
 
+**Replies.** Tap a crewmate's update to open it, then tap a quick reply ("On my way", "Save me a spot") or write your own. A reply is a crew update of its own (kind `reply`, pointing at the update it answers), so it waits for signal like a check-in and keeps the time you sent it. Replies to your updates show up as news in that person's story and under your latest on the crew page ("1 reply · Sam: On my way"); replies between other people stay under the update they answer. The rules only accept a reply with words, answering an update in the same crew.
+
 ## Comments
 
 - Firestore `comments/{id}` (`memoryId`, `owner` (who shared the video), `uid`, `handle` (yours, checked against your profile), `text` 1 to 300, `createdAt`). Anyone signed in reads them; you write as yourself with a profile, on a video that exists, not if its owner blocked you; never edited; removed by the writer or the video's owner. Unsharing a video removes its comments; deleting your account removes the comments you wrote and those on your videos. Indexes: (memoryId, createdAt asc), (owner, createdAt desc). Reports can now be about a comment.

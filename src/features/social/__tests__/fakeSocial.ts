@@ -359,6 +359,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const at = Date.parse(input.at);
       if (!Number.isFinite(at) || at > Date.now() + 5 * 60_000) throw new SocialError('unknown');
       if (input.kind === 'video' && !input.videoUrl && !input.videoUri) throw new SocialError('unknown');
+      if (input.kind === 'reply' && (!input.replyTo || !input.note?.trim() || !updates.has(`${crewId}/${input.replyTo}`))) throw new SocialError('unknown');
       const uploaded = input.kind === 'video' && !input.videoUrl;
       const u: CrewUpdate = {
         id: input.id,
@@ -371,6 +372,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         ...(input.artistId ? { artistId: input.artistId } : {}),
         ...(input.stage ? { stage: input.stage.slice(0, CREW_STAGE_MAX) } : {}),
         ...(input.note ? { note: input.note.slice(0, CREW_NOTE_MAX) } : {}),
+        ...(input.kind === 'reply' ? { replyTo: input.replyTo } : {}),
         ...(input.kind === 'video' ? { videoUrl: input.videoUrl ?? `https://files.example/crews/${crewId}/${input.id}.mp4` } : {}),
         ...(input.thumbUrl || (uploaded && input.thumbUri) ? { thumbUrl: input.thumbUrl ?? `https://files.example/crews/${crewId}/${input.id}.jpg` } : {}),
         ...(input.sharedId ? { sharedId: input.sharedId } : {}),

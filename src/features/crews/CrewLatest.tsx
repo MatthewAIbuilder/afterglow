@@ -9,7 +9,7 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import type { Crew } from '../social/models';
 import { firstName } from './together';
-import { ago, lateLine, latestPerMember, outboxLine, updateLine } from './updates';
+import { ago, lateLine, latestPerMember, outboxLine, repliesLine, updateLine } from './updates';
 
 /**
  * On the crew page: where everyone last was, from their newest video or
@@ -17,7 +17,7 @@ import { ago, lateLine, latestPerMember, outboxLine, updateLine } from './update
  * it back), and a way to check in yourself.
  */
 export function CrewLatest({ crew, nameOf }: { crew: Crew; nameOf: (uid: string) => string | undefined }) {
-  const { updatesFor, outbox, profileOf, crewCount, stories } = useCrewUpdates();
+  const { updatesFor, outbox, profileOf, crewCount, stories, repliesFor } = useCrewUpdates();
   const social = useSocial();
   const catalog = useCatalog();
   const now = useNow().getTime();
@@ -36,6 +36,8 @@ export function CrewLatest({ crew, nameOf }: { crew: Crew; nameOf: (uid: string)
         const artist = latest?.artistId ? catalog.artist(latest.artistId)?.name : undefined;
         const late = latest ? lateLine(latest) : undefined;
         const canOpen = !mine && stories.some((s) => s.uid === uid);
+        // What the crew said back to your latest.
+        const answers = mine && latest ? repliesLine(repliesFor(latest).map((r) => r.reply), (id) => (id === me ? 'You' : (nameOf(id) ?? (profileOf(id) ? firstName(profileOf(id)!.displayName) : 'Crewmate')))) : undefined;
         const body = (
           <>
             <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={40} />
@@ -48,6 +50,11 @@ export function CrewLatest({ crew, nameOf }: { crew: Crew; nameOf: (uid: string)
                 {latest ? `${updateLine(latest, artist)}${latest.note && latest.kind === 'checkin' ? ` · “${latest.note}”` : ''}` : 'No updates yet'}
               </Text>
               {late ? <Text style={styles.late}>{late}</Text> : null}
+              {answers ? (
+                <Text style={styles.answers} numberOfLines={1}>
+                  {answers}
+                </Text>
+              ) : null}
             </View>
           </>
         );
@@ -94,6 +101,7 @@ const styles = StyleSheet.create({
   line: { ...type.label, color: color.moonDim, marginTop: 1 },
   late: { ...type.caption, color: '#FFB86B', marginTop: 2 },
   waiting: { ...type.caption, color: '#FFB86B' },
+  answers: { ...type.caption, color: color.glow, marginTop: 2 },
   button: {
     alignSelf: 'flex-start',
     marginTop: space.xs,
