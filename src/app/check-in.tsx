@@ -26,7 +26,7 @@ import { color, radius, space, type } from '../theme/tokens';
 export default function CheckInScreen() {
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
-  const { crewFestivals, checkIn, ready } = useCrewUpdates();
+  const { crewFestivals, checkIn, ready, outbox } = useCrewUpdates();
   const { crewsAt } = useCrews();
   const { taste } = useTaste();
   const { mustSeesAt } = usePlan();
@@ -45,7 +45,7 @@ export default function CheckInScreen() {
   const [stage, setStage] = useState<string | undefined>();
   const [watching, setWatching] = useState(false);
   const [note, setNote] = useState('');
-  const [sent, setSent] = useState<{ at: Date; offline: boolean } | undefined>();
+  const [sent, setSent] = useState<{ id: string; at: Date } | undefined>();
 
   if (!ready || !festival) {
     return (
@@ -58,25 +58,30 @@ export default function CheckInScreen() {
 
   const crews = crewsAt(festival.id);
   const send = (words?: string) => {
-    const ok = checkIn(festival.id, {
+    const id = checkIn(festival.id, {
       note: words,
       stage: watching && playing?.stage ? playing.stage : stage,
       artistId: watching ? playing?.artist.id : undefined,
     });
-    if (!ok) return;
+    if (!id) return;
     haptic.settle();
-    setSent({ at: new Date(), offline });
+    setSent({ id, at: new Date() });
   };
 
   if (sent) {
+    // Said only once it's really through: until then it's sending, or waiting for signal.
+    const waiting = outbox.some((o) => o.id === sent.id);
+    const marked = clock(sent.at.toISOString());
     return (
       <View style={[styles.root, styles.done, { paddingBottom: insets.bottom + space.xl }]} accessibilityLiveRegion="polite">
-        <Text style={styles.doneTime}>{clock(sent.at.toISOString())}</Text>
-        <Text style={styles.title}>{sent.offline ? 'Saved for when there’s signal' : 'Sent to your crew'}</Text>
+        <Text style={styles.doneTime}>{marked}</Text>
+        <Text style={styles.title}>{!waiting ? 'Sent to your crew' : offline ? 'Saved for when there’s signal' : 'Sending…'}</Text>
         <Text style={styles.body}>
-          {sent.offline
-            ? `No signal right now. It sends itself as soon as there is, still marked ${clock(sent.at.toISOString())}, so your crew knows when you were there.`
-            : `${crews.map((c) => c.name).join(' and ')} ${crews.length === 1 ? 'sees' : 'see'} it marked ${clock(sent.at.toISOString())}.`}
+          {!waiting
+            ? `${crews.map((c) => c.name).join(' and ')} ${crews.length === 1 ? 'sees' : 'see'} it marked ${marked}.`
+            : offline
+              ? `No signal right now. It sends itself as soon as there is, still marked ${marked}, so your crew knows when you were there.`
+              : `The signal’s slow. It keeps trying by itself, still marked ${marked}. You can close this.`}
         </Text>
         <Pressable onPress={() => router.back()} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
           <Text style={styles.primaryText}>Done</Text>

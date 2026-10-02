@@ -105,6 +105,25 @@ describe('crew updates', () => {
     expect(app.getByLabelText('Check in with your crew')).toBeTruthy();
   });
 
+  it('a check-in only says sent once it has really reached the crew', async () => {
+    await crewWithNews();
+    await as('sam');
+    const app = await renderApp('/');
+    await flush();
+    // Bars on the phone, but nothing getting through.
+    mockSocial.network.down = true;
+    await fireEvent.press(app.getByLabelText('Check in with your crew'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Send “I’m here” to your crew'));
+    await flush();
+    expect(app.getByText('Sending…')).toBeTruthy();
+    expect(app.queryByText('Sent to your crew')).toBeNull();
+    mockSocial.network.down = false;
+    await settle(20_000);
+    await flush();
+    expect(app.getByText('Sent to your crew')).toBeTruthy();
+  });
+
   it('the crew page shows where everyone last was', async () => {
     const crew = await crewWithNews();
     const app = await renderApp(`/crew/${crew.id}`);

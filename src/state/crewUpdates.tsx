@@ -61,8 +61,8 @@ type Ctx = {
   outbox: OutboxItem[];
   /** A crewmate's profile, once read. */
   profileOf: (uid: string) => Profile | undefined;
-  /** Post a quick check-in to every crew you're in at this festival. False when you have no crew there. */
-  checkIn: (festivalId: string, words: { note?: string; stage?: string; artistId?: string }) => boolean;
+  /** Post a quick check-in to every crew you're in at this festival: its id (it's in the outbox until it reaches them). False when you have no crew there. */
+  checkIn: (festivalId: string, words: { note?: string; stage?: string; artistId?: string }) => string | false;
   /** Answer a crewmate's update, in its crew only; waits for signal like a check-in. False when you can't. */
   reply: (update: CrewUpdate, note: string) => boolean;
   /** The replies to an update, oldest first, with yours still waiting for signal at the end. */
@@ -285,7 +285,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         ...(words.artistId ? { artistId: words.artistId } : {}),
       };
       setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
-      return true;
+      return id;
     },
     [crewIdsAt, ready],
   );
