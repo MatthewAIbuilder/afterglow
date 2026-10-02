@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
 import { crewPeopleLine, followBack, goerSuggestions, inviteText } from '../friends';
 import type { Profile } from '../models';
+import { cleanComment, commentProblem } from '../validate';
 
 const p = (uid: string, name: string): Profile => ({
   uid,
@@ -43,5 +44,15 @@ describe('the friends hub', () => {
     expect(inviteText('maya', f('cc4'))).toBe("Join me on Afterglow, I'm @maya. Let's plan CC4 together.\nhttps://afterglowmusic.app/u/maya");
     expect(inviteText()).toMatch(/^Join me on Afterglow\. Find your sets/);
     expect([crewPeopleLine(1), crewPeopleLine(4)]).toEqual(['Just you so far', '4 of you']);
+  });
+});
+
+describe('comments', () => {
+  it('are tidied, and refused when empty, too long or unkind', () => {
+    expect(cleanComment('  hi\n\n\n\nthere  ')).toBe('hi\n\nthere');
+    expect(commentProblem('   ')).toBe('Write something first.');
+    expect(commentProblem('x'.repeat(301))).toMatch(/under 300/);
+    expect(commentProblem('what a set')).toBeUndefined();
+    expect(commentProblem('you are a fucking idiot')).toMatch(/Keep it kind/);
   });
 });

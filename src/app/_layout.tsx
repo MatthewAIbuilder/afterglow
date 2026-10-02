@@ -83,6 +83,16 @@ export default function RootLayout() {
         <Stack.Screen name="going/[id]" />
         <Stack.Screen name="crew/[id]" />
         <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="comments/[id]"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.7, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: color.nightRaised },
+          }}
+        />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recap/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="pick-artists" options={{ presentation: 'modal' }} />

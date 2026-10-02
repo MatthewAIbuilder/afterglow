@@ -24,6 +24,17 @@ describe('activity in the bell', () => {
     expect(got[1]).toMatchObject({ id: 'follow:u2_me', href: '/u/bo' });
   });
 
+  it('comments say who and what, each its own notice, opening the comments', () => {
+    const items: Activity[] = [
+      { kind: 'comment', id: 'c1', from: 'u1', memoryId: 'm1', text: 'That drop!', createdAt: '2026-09-30T12:00' },
+      { kind: 'comment', id: 'c2', from: 'u2', memoryId: 'm2', text: 'x'.repeat(120), createdAt: '2026-09-30T11:00' },
+    ];
+    const got = activityNotices(items, look());
+    expect(got[0]).toMatchObject({ id: 'comment:c1', kind: 'comment', title: '@sam commented on your video of HEDEX', body: '“That drop!”', href: '/comments/m1' });
+    expect(got[1].title).toBe('@bo commented on your video');
+    expect(got[1].body.length).toBeLessThan(90);
+  });
+
   it('two likers are both named', () => {
     const items: Activity[] = [
       { kind: 'like', id: 'm1_u1', from: 'u1', memoryId: 'm1', createdAt: '2' },

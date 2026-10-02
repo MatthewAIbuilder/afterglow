@@ -2,7 +2,7 @@ import type { Activity } from '../social/models';
 import type { Notice } from './inbox';
 
 /**
- * New followers and likes on your videos, as bell notices. Pure. People you
+ * New followers, and likes and comments on your videos, as bell notices. Pure. People you
  * blocked, and people whose profile couldn't be found (a deleted account),
  * are left out. Likes on the same video come together: "@sam and 2 others
  * liked your video of HEDEX". Newest first.
@@ -23,6 +23,10 @@ export function activityNotices(items: Activity[], look: ActivityLookups): Notic
     if (!handle || look.blocked.has(a.from)) continue;
     if (a.kind === 'follow') {
       out.push({ at: a.createdAt, notice: { id: `follow:${a.id}`, kind: 'follow', title: `@${handle} started following you`, body: 'See their profile, and follow back if you like.', href: `/u/${handle}` } });
+    } else if (a.kind === 'comment') {
+      const what = look.videoOf(a.memoryId) ?? 'your video';
+      const said = a.text.length > 80 ? `${a.text.slice(0, 79).trimEnd()}…` : a.text;
+      out.push({ at: a.createdAt, notice: { id: `comment:${a.id}`, kind: 'comment', title: `@${handle} commented on ${what}`, body: `“${said}”`, href: `/comments/${a.memoryId}` } });
     } else {
       const g = likesByVideo.get(a.memoryId) ?? { handles: [], ids: [], at: a.createdAt };
       if (!g.handles.includes(handle)) g.handles.push(handle);

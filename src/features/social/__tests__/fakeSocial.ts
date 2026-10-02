@@ -1,6 +1,6 @@
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser } from '../models';
+import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser } from '../models';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
-import { cleanCrewName, cleanProfileInput, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
+import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
 /**
  * An in-memory social backend for tests, following the same rules as the
@@ -21,6 +21,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const crews = new Map<string, Crew>();
   /** Picks as `crewId/uid`. */
   const picks = new Map<string, CrewPicks>();
+  const comments = new Map<string, Comment>();
   /** Crew updates as `crewId/updateId`. */
   const updates = new Map<string, CrewUpdate>();
   /** Switch the "network" off to see what happens with no signal: crew updates fail to send. */
@@ -106,6 +107,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.delete(u.uid);
       for (const [k, f] of follows) if (f.from === u.uid || f.to === u.uid) follows.delete(k);
       for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
+      for (const [k, c] of comments) if (c.uid === u.uid || c.owner === u.uid) comments.delete(k);
       for (const id of [...crews.keys()]) leave(id, u.uid);
       accounts.delete(u.email ?? '');
       current = null;
@@ -200,6 +202,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (m.uid !== u.uid) throw new SocialError('not-signed-in');
       memories.delete(id);
       for (const [k, l] of likes) if (l.memoryId === id) likes.delete(k);
+      for (const [k, c] of comments) if (c.memoryId === id) comments.delete(k);
     },
     async memoriesOf(uid) {
       return [...memories.values()].filter((m) => m.uid === uid).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
@@ -257,9 +260,36 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async likedBy(memoryId, max) {
       return [...likes.values()].filter((l) => l.memoryId === memoryId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max).map((l) => l.uid);
     },
+    async comment(memoryId, owner, raw) {
+      const u = me();
+      const p = profiles.get(u.uid);
+      if (!p) throw new SocialError('no-profile');
+      const m = memories.get(memoryId);
+      if (!m || m.uid !== owner || commentProblem(raw)) throw new SocialError('unknown');
+      if ((blocks.get(owner) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      const c: Comment = { id: `comment-${++n}`, memoryId, owner, uid: u.uid, handle: p.handle, text: cleanComment(raw), createdAt: `${now()}#${String(n).padStart(6, '0')}` };
+      comments.set(c.id, c);
+      return c;
+    },
+    async comments(memoryId, max) {
+      return [...comments.values()].filter((c) => c.memoryId === memoryId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(0, max);
+    },
+    async commentCount(memoryId) {
+      return [...comments.values()].filter((c) => c.memoryId === memoryId).length;
+    },
+    async deleteComment(id) {
+      const u = me();
+      const c = comments.get(id);
+      if (!c) return;
+      if (c.uid !== u.uid && c.owner !== u.uid) throw new SocialError('not-signed-in');
+      comments.delete(id);
+    },
     async activity(max) {
       const u = me();
       const items: Activity[] = [
+        ...[...comments.values()]
+          .filter((c) => c.owner === u.uid && c.uid !== u.uid)
+          .map((c): Activity => ({ kind: 'comment', id: c.id, from: c.uid, memoryId: c.memoryId, text: c.text, createdAt: c.createdAt })),
         ...[...follows.values()].filter((f) => f.to === u.uid).map((f): Activity => ({ kind: 'follow', id: `${f.from}_${f.to}`, from: f.from, createdAt: f.createdAt })),
         ...[...likes.values()].filter((l) => l.owner === u.uid).map((l): Activity => ({ kind: 'like', id: `${l.memoryId}_${l.uid}`, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt })),
       ];
@@ -377,5 +407,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, network, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, comments, network, reports, currentUser: () => current };
 }

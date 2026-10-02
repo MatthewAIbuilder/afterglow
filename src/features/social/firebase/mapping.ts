@@ -1,5 +1,5 @@
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Profile, type SharedMemory } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Comment, COMMENT_MAX, type Profile, type SharedMemory } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -69,6 +69,20 @@ export function crewPicksFromDoc(uid: string, d: unknown): CrewPicks | null {
   if (!d || typeof d !== 'object') return null;
   const o = d as Record<string, unknown>;
   return { uid, artists: strs(o.artists, CREW_PICKS_MAX), updatedAt: str(o.updatedAt) ?? '' };
+}
+
+/** A comment document; anything missing or of the wrong type drops it. */
+export function commentFromDoc(id: string, d: unknown): Comment | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const memoryId = str(o.memoryId);
+  const owner = str(o.owner);
+  const uid = str(o.uid);
+  const handle = str(o.handle);
+  const text = str(o.text);
+  const createdAt = str(o.createdAt);
+  if (!memoryId || !owner || !uid || !handle || !text || !createdAt) return null;
+  return { id, memoryId, owner, uid, handle, text: text.slice(0, COMMENT_MAX), createdAt };
 }
 
 /** A server time (a Firestore Timestamp, or milliseconds) as ISO 8601. */

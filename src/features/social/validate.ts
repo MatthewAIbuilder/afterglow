@@ -1,5 +1,5 @@
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from 'obscenity';
-import { CREW_NAME_MAX, type ProfileInput } from './models';
+import { COMMENT_MAX, CREW_NAME_MAX, type ProfileInput } from './models';
 
 /**
  * Checks on what people publish: handles, names and bios. Pure. Plain-words
@@ -86,5 +86,17 @@ export function crewNameProblem(raw: string): string | undefined {
   if (!name) return 'Give your crew a name.';
   if (name.length > CREW_NAME_MAX) return `At most ${CREW_NAME_MAX} characters.`;
   if (isOffensive(name)) return 'That name isn’t allowed.';
+  return undefined;
+}
+
+/** A comment's words tidied: trimmed, runs of blank lines folded, at most COMMENT_MAX. */
+export const cleanComment = (raw: string) => raw.replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, COMMENT_MAX);
+
+/** Why a comment can't be posted, in plain words, or undefined when it can. */
+export function commentProblem(raw: string): string | undefined {
+  const text = cleanComment(raw);
+  if (!text) return 'Write something first.';
+  if (raw.trim().length > COMMENT_MAX) return `Keep it under ${COMMENT_MAX} characters.`;
+  if (isOffensive(text)) return 'That comment has words we don’t allow. Keep it kind.';
   return undefined;
 }

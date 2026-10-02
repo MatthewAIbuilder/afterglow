@@ -1,18 +1,18 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
-import { CloseIcon } from '../../components/TabIcons';
 import type { SharedMemory } from '../../features/social/models';
 import { askReport } from '../../features/social/moderation';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/service';
 import { haptic } from '../../lib/haptics';
 import { communityClip, communityClipId } from '../../features/community/clips';
 import { HeartIcon } from '../../features/discover/icons';
-import { likesLabel } from '../../features/social/copy';
+import { commentsLabel, likesLabel } from '../../features/social/copy';
+import { CloseIcon, CommentIcon } from '../../components/TabIcons';
 import { useCatalog } from '../../state/catalog';
 import { useCommunity } from '../../state/community';
 import { useReactions } from '../../state/reactions';
@@ -35,6 +35,7 @@ export default function SharedMemoryScreen() {
   const mem = useMemories();
   const [m, setM] = useState<SharedMemory | null | undefined>();
   const [count, setCount] = useState<number | undefined>();
+  const [comments, setComments] = useState<number | undefined>();
   const { get, setLiked } = useReactions();
   const community = useCommunity();
   const clipId = communityClipId(id);
@@ -49,6 +50,20 @@ export default function SharedMemoryScreen() {
       .catch(() => setM(null));
   }, [id, social.service]);
   const me = social.user?.uid;
+  // How many comments, read each time you come back from them.
+  useFocusEffect(
+    useCallback(() => {
+      if (!me) return;
+      let live = true;
+      social.service
+        .commentCount(id)
+        .then((n) => live && setComments(n))
+        .catch(() => {});
+      return () => {
+        live = false;
+      };
+    }, [id, me, social.service]),
+  );
   useEffect(() => {
     if (!me) return;
     let live = true;
@@ -156,6 +171,15 @@ export default function SharedMemoryScreen() {
                 <Text style={styles.actionText}>{likesLabel(shown)}</Text>
               </Pressable>
             ) : null}
+            <Pressable
+              onPress={() => router.push({ pathname: '/comments/[id]', params: { id: m.id } })}
+              accessibilityRole="button"
+              accessibilityLabel={comments !== undefined ? `${commentsLabel(comments)}. Read and write comments.` : 'Comments'}
+              style={[styles.action, styles.like]}
+            >
+              <CommentIcon color={color.moon} size={16} />
+              <Text style={styles.actionText}>{comments ? String(comments) : 'Comment'}</Text>
+            </Pressable>
             {mine ? (
               <Pressable onPress={remove} accessibilityRole="button" style={styles.action}>
                 <Text style={styles.actionText}>Remove from profile</Text>

@@ -223,3 +223,12 @@ export function PeopleIcon({ color, size = 20 }: P) {
     </Svg>
   );
 }
+
+/** A speech bubble: comments. */
+export function CommentIcon({ color, size = 18 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4.5 5.5h15a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V17.5h-1A1.5 1.5 0 0 1 3 16V7a1.5 1.5 0 0 1 1.5-1.5z" stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
+    </Svg>
+  );
+}

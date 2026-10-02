@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
-import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
+import { ChevronIcon, CommentIcon, ShareIcon } from '../../components/TabIcons';
 import { APP_NAME } from '../../config/app';
 import { setFor } from '../../data/festival';
 import type { Clip, Festival } from '../../data/types';
@@ -432,6 +432,19 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
               <Text style={styles.credit} numberOfLines={1}>
                 {media.credit}
               </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                if (watch.current) watch.current = excuseWatch(watch.current);
+                router.push({ pathname: '/comments/[id]', params: { id: community.sharedId } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Comments on @${community.handle}'s video`}
+              hitSlop={12}
+              style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+            >
+              <CommentIcon color={color.moonDim} size={16} />
             </Pressable>
             <Pressable
               onPress={() =>
