@@ -132,6 +132,46 @@ await t('follows: once unblocked, B can follow A', async () => {
   // Account deletion removes follows either way: A removes B's follow of A.
   await assertSucceeds(deleteDoc(doc(A.firestore(), 'follows', 'uidB_uidA')));
 });
+const F = env.authenticatedContext('uidF'), G = env.authenticatedContext('uidG');
+const scan = (ctx, me, them, code, extra = true) => {
+  const db = ctx.firestore(); const b = writeBatch(db);
+  b.set(doc(db, 'friendLinks', `${me}_${them}`), { from: me, to: them, code, createdAt: now });
+  b.set(doc(db, 'follows', `${me}_${them}`), follow(me, them));
+  if (extra) b.set(doc(db, 'follows', `${them}_${me}`), follow(them, me, { via: 'code' }));
+  return b.commit();
+};
+await t('friend codes: set your own (server time), never read back, not someone else’s', async () => {
+  await assertSucceeds(claim(F, 'uidF', 'fran'));
+  await assertSucceeds(claim(G, 'uidG', 'gus'));
+  await assertSucceeds(setDoc(doc(F.firestore(), 'friendCodes', 'uidF'), { code: 'abcd2345wxyz', updatedAt: serverTimestamp() }));
+  await assertFails(getDoc(doc(F.firestore(), 'friendCodes', 'uidF')));
+  await assertFails(setDoc(doc(G.firestore(), 'friendCodes', 'uidF'), { code: 'gggg2345wxyz', updatedAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(F.firestore(), 'friendCodes', 'uidF'), { code: 'abcd2345wxyz', updatedAt: now }));
+  await assertFails(setDoc(doc(F.firestore(), 'friendCodes', 'uidF'), { code: 'BAD CODE!', updatedAt: serverTimestamp() }));
+});
+await t('friend codes: the wrong code, or no proof, can’t make someone follow you', async () => {
+  await assertFails(scan(G, 'uidG', 'uidF', 'wrongcode2345'));
+  await assertFails(setDoc(doc(G.firestore(), 'follows', 'uidF_uidG'), follow('uidF', 'uidG', { via: 'code' })));
+});
+await t('friend codes: scanning the right code makes it both ways, and again is fine', async () => {
+  await assertSucceeds(scan(G, 'uidG', 'uidF', 'abcd2345wxyz'));
+  await assertSucceeds(getDoc(doc(G.firestore(), 'follows', 'uidF_uidG')));
+  // A second scan only renews the proof (the follows already exist and are never rewritten).
+  await assertSucceeds(setDoc(doc(G.firestore(), 'friendLinks', 'uidG_uidF'), { from: 'uidG', to: 'uidF', code: 'abcd2345wxyz', createdAt: now }));
+  await assertSucceeds(getDoc(doc(G.firestore(), 'friendLinks', 'uidG_uidF')));
+  await assertFails(getDoc(doc(F.firestore(), 'friendLinks', 'uidG_uidF')));
+  // F can still end either side.
+  await assertSucceeds(deleteDoc(doc(F.firestore(), 'follows', 'uidF_uidG')));
+});
+await t('friend codes: a new code stops old ones; someone blocked can’t use one', async () => {
+  await assertSucceeds(setDoc(doc(F.firestore(), 'friendCodes', 'uidF'), { code: 'newcode23456', updatedAt: serverTimestamp() }));
+  await assertSucceeds(deleteDoc(doc(G.firestore(), 'follows', 'uidG_uidF')));
+  await assertFails(scan(G, 'uidG', 'uidF', 'abcd2345wxyz'));
+  await assertSucceeds(setDoc(doc(F.firestore(), 'blocks', 'uidF'), { uids: ['uidG'] }));
+  await assertFails(scan(G, 'uidG', 'uidF', 'newcode23456'));
+  await assertSucceeds(setDoc(doc(F.firestore(), 'blocks', 'uidF'), { uids: [] }));
+  await assertSucceeds(scan(G, 'uidG', 'uidF', 'newcode23456'));
+});
 await t('likes: set up a video of B’s to like', () => assertSucceeds(setDoc(doc(B.firestore(), 'memories', 'memB'), mem('memB', 'uidB'))));
 const like = (memoryId, owner, uid, over = {}) => ({ memoryId, owner, uid, createdAt: now, ...over });
 await t('likes: A likes B’s video', () => assertSucceeds(setDoc(doc(A.firestore(), 'likes', 'memB_uidA'), like('memB', 'uidB', 'uidA'))));

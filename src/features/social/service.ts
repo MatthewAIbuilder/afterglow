@@ -61,6 +61,14 @@ export interface SocialService {
   /** Follow someone (not yourself). Following twice is the same as once. */
   follow(uid: string): Promise<void>;
   unfollow(uid: string): Promise<void>;
+  /** Save your private friend code (the one in your QR code). Only the rules ever read it. */
+  setFriendCode(code: string): Promise<void>;
+  /**
+   * Become friends with someone whose QR code you scanned: you follow each
+   * other. Already following either way is fine. Refused (not `network`)
+   * when the code isn't their current one or they blocked you.
+   */
+  addFriend(uid: string, code: string): Promise<void>;
   /** Stop someone following you (used when you block them). */
   removeFollower(uid: string): Promise<void>;
   /** Who this person follows / who follows them, newest first, at most `max`. */

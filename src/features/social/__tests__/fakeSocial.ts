@@ -26,6 +26,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const updates = new Map<string, CrewUpdate>();
   /** Switch the "network" off to see what happens with no signal: crew updates fail to send. */
   const network = { down: false };
+  /** Each person's friend code (what their QR code carries). */
+  const friendCodes = new Map<string, string>();
   /** Crew-only video files uploaded, as `crewId/uid/updateId`. */
   const crewFiles = new Set<string>();
   /** Each crew's meeting spot. */
@@ -110,6 +112,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       profiles.delete(u.uid);
       blocks.delete(u.uid);
       for (const [k, f] of follows) if (f.from === u.uid || f.to === u.uid) follows.delete(k);
+      friendCodes.delete(u.uid);
       for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
       for (const [k, c] of comments) if (c.uid === u.uid || c.owner === u.uid) comments.delete(k);
       for (const id of [...crews.keys()]) leave(id, u.uid);
@@ -226,6 +229,24 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if ((blocks.get(uid) ?? []).includes(u.uid)) throw new SocialError('unknown');
       const k = `${u.uid}>${uid}`;
       if (!follows.has(k)) follows.set(k, { from: u.uid, to: uid, createdAt: `${now()}#${String(++n).padStart(6, '0')}` });
+    },
+    async setFriendCode(code) {
+      if (network.down) throw new SocialError('network');
+      friendCodes.set(me().uid, code);
+    },
+    async addFriend(uid, code) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      if (uid === u.uid || !profiles.has(uid) || !profiles.has(u.uid)) throw new SocialError('unknown');
+      if ((blocks.get(uid) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      if (friendCodes.get(uid) !== code) throw new SocialError('unknown');
+      for (const [from, to] of [
+        [u.uid, uid],
+        [uid, u.uid],
+      ]) {
+        const k = `${from}>${to}`;
+        if (!follows.has(k)) follows.set(k, { from, to, createdAt: `${now()}#${String(++n).padStart(6, '0')}` });
+      }
     },
     async unfollow(uid) {
       follows.delete(`${me().uid}>${uid}`);
@@ -437,5 +458,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, friendCodes, reports, currentUser: () => current };
 }

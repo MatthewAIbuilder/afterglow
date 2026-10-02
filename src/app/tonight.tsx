@@ -9,6 +9,7 @@ import { CloseIcon } from '../components/TabIcons';
 import type { Festival } from '../data/models';
 import { CameraIcon } from '../features/camera/icons';
 import { CareCard } from '../features/care/CareCard';
+import { FestivalModeCard } from '../features/festivalMode/FestivalModeCard';
 import { CrewLatest } from '../features/crews/CrewLatest';
 import { LostButton } from '../features/crews/LostButton';
 import { MeetSpotCard } from '../features/crews/MeetSpotCard';
@@ -78,6 +79,7 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
 
   return (
     <>
+      <FestivalModeCard festival={festival} />
       <Section title={schedule ? 'Your route' : night ? `Your picks for ${night}` : 'Your picks'}>
         {schedule ? (
           <LiveNow festival={festival} schedule={schedule} route={route} />

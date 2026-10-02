@@ -179,6 +179,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid))),
           getDocs(query(collection(db, 'comments'), where('uid', '==', user.uid))),
           getDocs(query(collection(db, 'comments'), where('owner', '==', user.uid))),
+          getDocs(query(collection(db, 'friendLinks'), where('from', '==', user.uid))),
         ]);
         const refs = snaps.flatMap((snap) => snap.docs.map((d) => d.ref));
         for (let i = 0; i < refs.length; i += 400) {
@@ -192,6 +193,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (handle) batch.delete(doc(db, 'handles', handle));
         batch.delete(doc(db, 'profiles', user.uid));
         batch.delete(doc(db, 'blocks', user.uid));
+        batch.delete(doc(db, 'friendCodes', user.uid));
         await batch.commit();
         await deleteUser(user);
       }),
@@ -363,6 +365,20 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const user = me();
         if (uid === user.uid) throw new SocialError('unknown');
         await setDoc(doc(fb().db, 'follows', `${user.uid}_${uid}`), { from: user.uid, to: uid, createdAt: now() });
+      }),
+    setFriendCode: (code) => guard(async () => setDoc(doc(fb().db, 'friendCodes', me().uid), { code, updatedAt: serverTimestamp() })),
+    addFriend: (uid, code) =>
+      guard(async () => {
+        const user = me();
+        if (uid === user.uid) throw new SocialError('unknown');
+        const db = fb().db;
+        // Follows are never rewritten, so only the missing ones are made, with the proof in the same batch.
+        const [mine, theirs] = await Promise.all([getDoc(doc(db, 'follows', `${user.uid}_${uid}`)), getDoc(doc(db, 'follows', `${uid}_${user.uid}`))]);
+        const batch = writeBatch(db);
+        batch.set(doc(db, 'friendLinks', `${user.uid}_${uid}`), { from: user.uid, to: uid, code, createdAt: now() });
+        if (!mine.exists()) batch.set(doc(db, 'follows', `${user.uid}_${uid}`), { from: user.uid, to: uid, createdAt: now() });
+        if (!theirs.exists()) batch.set(doc(db, 'follows', `${uid}_${user.uid}`), { from: uid, to: user.uid, createdAt: now(), via: 'code' });
+        await batch.commit();
       }),
     unfollow: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${me().uid}_${uid}`))),
     removeFollower: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${uid}_${me().uid}`))),

@@ -197,13 +197,17 @@ export type CommunityFocus = Festival | 'mix' | 'following' | undefined;
  * same time; a failed fetch keeps what was there. `loaded` is true once
  * there's an answer (or nothing to fetch).
  */
-export function useCommunityFeed(focus: CommunityFocus): { clips: Clip[]; loaded: boolean } {
+export function useCommunityFeed(
+  focus: CommunityFocus,
+  /** Festival mode: the festival's videos are the whole feed, whatever the Videos from the crowd switch says. */
+  always = false,
+): { clips: Clip[]; loaded: boolean } {
   const social = useSocial();
   const { enabled, hidden } = useCommunity();
   const { artists } = useCatalog();
   const following = focus === 'following';
   const key = focus === 'mix' ? MIX_KEY : following ? followKey(social.following) : focus?.id;
-  const active = social.availability.ok && !!social.user && (enabled || following) && !!key && (!following || social.following.size > 0);
+  const active = social.availability.ok && !!social.user && (enabled || following || always) && !!key && (!following || social.following.size > 0);
   const [cache, setCache] = useState<Record<string, { at: number; memories: SharedMemory[] }>>({});
   const inflight = useRef<Set<string>>(new Set());
   const [tick, setTick] = useState(0);

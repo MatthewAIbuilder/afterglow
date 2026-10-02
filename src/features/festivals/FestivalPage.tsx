@@ -33,6 +33,7 @@ import { useFollowedArtists } from '../../state/followedArtists';
 import { useCrews } from '../../state/crews';
 import { OfficialLinks } from './OfficialLinks';
 import { GetReadyCard } from '../prep/GetReadyCard';
+import { TryFestivalMode } from '../festivalMode/FestivalModeCard';
 import { useRecap } from '../recap/useRecap';
 import { CalendarPill } from '../calendar/CalendarPill';
 import { CareCard } from '../care/CareCard';
@@ -271,6 +272,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
                 </View>
               ) : null}
               {isGoing(whole.id) && soon !== 'Over' ? <GetReadyCard festival={festival} /> : null}
+              {/* A simpler app for the day itself: test it any day. */}
+              {soon !== 'Over' ? <TryFestivalMode festival={whole} /> : null}
               {/* Your crews for this festival, or start one. */}
               <CrewCard festival={whole} />
             </View>

@@ -14,6 +14,9 @@ import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
 import { VERSION_LINE } from '../lib/version';
 import { useCatalog } from '../state/catalog';
+import { useFestivalMode } from '../state/festivalMode';
+import { useGoing } from '../state/going';
+import { testFestival } from '../features/festivalMode/mode';
 import { useClipPool } from '../state/community';
 import { useFollowedArtists } from '../state/followedArtists';
 import { useMemories } from '../state/memories';
@@ -28,6 +31,10 @@ import { color, radius, space, type } from '../theme/tokens';
  * iOS settings, so the profile itself stays a profile.
  */
 export default function SettingsScreen() {
+  const mode = useFestivalMode();
+  const { going } = useGoing();
+  const modeToday = useToday();
+  const modeFestival = testFestival(useCatalog().festivals, going, modeToday);
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
   const social = useSocial();
@@ -84,6 +91,24 @@ export default function SettingsScreen() {
 
         <Group title="Festival nights">
           <Row label="Look after yourself" detail="Private" a11y="Look after yourself: timers, water, food and check-ins, private to you" onPress={() => router.push('/care')} />
+          {modeFestival ? (
+            <Row
+              label={mode.active?.preview ? 'End festival mode test' : mode.active ? 'Leave festival mode' : 'Test festival mode'}
+              detail={mode.active ? mode.active.festival.name : modeFestival.name}
+              a11y={
+                mode.active
+                  ? `${mode.active.preview ? 'End the festival mode test' : 'Leave festival mode'}, ${mode.active.festival.name}`
+                  : `Test festival mode with ${modeFestival.name}: see how the app looks on festival day`
+              }
+              onPress={() => {
+                if (mode.active) mode.leave();
+                else {
+                  mode.preview(modeFestival.id);
+                  router.dismissTo('/');
+                }
+              }}
+            />
+          ) : null}
         </Group>
 
         <Group title="Connections">
