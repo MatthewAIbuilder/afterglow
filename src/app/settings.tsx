@@ -90,7 +90,7 @@ export default function SettingsScreen() {
         </Group>
 
         <Group title="Festival nights">
-          <Row label="Look after yourself" detail="Private" a11y="Look after yourself: timers, water, food and check-ins, private to you" onPress={() => router.push('/care')} />
+          <Row label="Look after yourself" detail="Private" a11y="Look after yourself: stopwatches, water, food and check-ins, private to you" onPress={() => router.push('/care')} />
           {modeFestival ? (
             <Row
               label={mode.active?.preview ? 'End festival mode test' : mode.active ? 'Leave festival mode' : 'Test festival mode'}

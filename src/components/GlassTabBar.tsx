@@ -112,7 +112,12 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   );
 }
 
-/** Festival mode's middle button: straight to the camera. */
+const openCare = () => {
+  haptic.settle();
+  router.push('/care');
+};
+
+/** Festival mode's middle button: straight to the camera; held, Look after yourself. */
 function CameraTab() {
   return (
     <Pressable
@@ -120,8 +125,14 @@ function CameraTab() {
         haptic.tap();
         router.push('/camera');
       }}
+      // Hold it for Look after yourself, from any tab.
+      onLongPress={openCare}
+      delayLongPress={450}
       accessibilityRole="button"
       accessibilityLabel="Film a video"
+      accessibilityHint="Hold to open Look after yourself"
+      accessibilityActions={[{ name: 'longpress', label: 'Look after yourself' }]}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && openCare()}
       style={styles.item}
     >
       {({ pressed }) => (

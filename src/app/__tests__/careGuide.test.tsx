@@ -1,0 +1,96 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, fireEvent } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
+import { renderApp } from './appRoutes';
+
+/** The care guide's stopwatches, body checks and timing guide; festival mode's Profile and the held camera button. */
+const settle = (ms = 0) =>
+  act(async () => {
+    if (ms) jest.advanceTimersByTime(ms);
+    await Promise.resolve();
+  });
+const flush = async () => {
+  for (let i = 0; i < 8; i++) await settle();
+};
+const START = new Date(2026, 11, 5, 22, 0);
+const saved = async () => JSON.parse((await AsyncStorage.getItem('care.v1')) ?? '{}');
+
+beforeEach(async () => {
+  jest.useFakeTimers({ now: START });
+  await AsyncStorage.clear();
+  await AsyncStorage.setItem('welcomed.v1', 'true');
+});
+afterEach(() => {
+  jest.useRealTimers();
+  jest.restoreAllMocks();
+});
+
+describe('stopwatches with the timing guide', () => {
+  it('says when it usually kicks in, warns before taking more too soon, and flags a risky mix', async () => {
+    const alerts = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const app = await renderApp('/care');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Start a stopwatch'));
+    await fireEvent.press(app.getByLabelText(/^MDMA \/ molly\. Usually starts in 30 to 90 min$/));
+    await flush();
+    expect(app.getByText('0:00')).toBeTruthy();
+    expect(app.getByText('Waiting')).toBeTruthy();
+    expect(app.getByText('Usually starts in 30 to 90 min. Not feeling it yet is normal.')).toBeTruthy();
+
+    // 40 minutes on: coming up, and taking more now asks first.
+    await settle(40 * 60_000);
+    await flush();
+    expect(app.getByText('Coming up')).toBeTruthy();
+    expect(app.getByText('40:00')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('I took more MDMA / molly'));
+    const [title, body, buttons] = alerts.mock.calls[0] as [string, string, AlertButton[]];
+    expect(title).toBe('Wait a bit longer?');
+    expect(body).toMatch(/^It’s only been 40 min\. MDMA \/ molly can take up to 90 min to start\./);
+    expect(buttons.map((b) => b.text)).toEqual(['I’ll wait', 'Log it anyway']);
+    await act(async () => buttons[1].onPress?.());
+    await flush();
+    expect((await saved()).timers[0]).toMatchObject({ guide: 'mdma', doses: [START.getTime() + 40 * 60_000] });
+
+    // Alcohol as well: the mix warning shows above the stopwatches.
+    await fireEvent.press(app.getByLabelText('Start a stopwatch'));
+    await fireEvent.press(app.getByLabelText(/^Alcohol\. Usually starts in/));
+    await flush();
+    expect(app.getByText('Careful: MDMA / molly and Alcohol')).toBeTruthy();
+    expect(app.getByText('Both dry you out and make overheating harder to notice.')).toBeTruthy();
+  });
+
+  it('counts steps, checks a pulse by tapping, and keeps the timing guide readable offline', async () => {
+    const app = await renderApp('/care');
+    await flush();
+    expect(app.getByText('4,210')).toBeTruthy();
+    for (let i = 0; i < 10; i++) {
+      await fireEvent.press(app.getByLabelText('Tap with each heartbeat'));
+      await settle(750);
+    }
+    expect(app.getByText('That’s in the usual resting range.')).toBeTruthy();
+    expect(app.getByText('Before you take anything')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText(/^Ketamine, snorted\./));
+    await flush();
+    expect(app.getByText('Riskier mixed with')).toBeTruthy();
+  });
+});
+
+describe('festival mode', () => {
+  it('keeps Profile simple, and holding the camera button opens Look after yourself', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    await AsyncStorage.setItem('festivalMode.v1', JSON.stringify({ choices: { 'cyclops-cove-4': 'on' } }));
+    // Tonight has already opened by itself tonight.
+    await AsyncStorage.setItem('tonightShown.v1', 'cyclops-cove-4:2026-12-05');
+    const app = await renderApp('/profile');
+    await flush();
+    expect(app.getByText('At Cyclops Cove 4')).toBeTruthy();
+    expect(app.getByText('Your videos')).toBeTruthy();
+    // No counts, shortcuts or tabs.
+    expect(app.queryByRole('tab', { name: /Videos/ })).toBeNull();
+    await fireEvent(app.getByLabelText('Film a video'), 'longPress');
+    await flush();
+    expect(app.getByText('Look after yourself')).toBeTruthy();
+    expect(app.getByText('Stopwatches')).toBeTruthy();
+  });
+});

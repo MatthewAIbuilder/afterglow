@@ -68,7 +68,7 @@ Apple asks what the app collects. From the code, the honest answers are:
 | User ID | Yes (the Firebase account id) | App functionality | Yes |
 | Location | **No**: Near you and filming guesses stay on the phone, and only a town name and rounded point are kept there | | |
 | Music library (Spotify) | **No**: read on the phone and kept there | | |
-| Health, timers, check-ins in Look after yourself | **No**: only on the phone | | |
+| Health and fitness: stopwatches, what they're for, pulse checks, steps, check-ins in Look after yourself | **No**: only on the phone (steps are read from the phone's motion counter and not stored) | | |
 | Usage data, crash data, advertising | **No**: there's no analytics or advertising | | |
 
 "Used for tracking": **No** for everything. Afterglow doesn't share data with
@@ -105,9 +105,20 @@ a server), these answers need updating.
 - **Sign in with Apple** (4.8): only needed if the app offers Google or
   another social sign-in. It only has email and password, so it isn't needed
   yet. If Google sign-in is added later, Sign in with Apple must come with it.
-- **Health and safety**: Look after yourself never names substances or gives
-  dosing advice, sends people to medics and the local emergency number, and
-  keeps everything on the phone.
+- **Health and safety**: Look after yourself has a harm-reduction timing guide
+  (when common substances, including alcohol, usually start, peak and wear
+  off; risky mixes; "don't take more too soon"). It never gives doses, sends
+  people to medics and the local emergency number, and keeps everything on the
+  phone. Before submitting:
+  - Answer the age rating questionnaire with **frequent/intense alcohol, tobacco
+    or drug use or references**, which makes the app **17+**.
+  - Have the timing figures in `src/features/care/guide.ts` checked against
+    DanceSafe's or TripSit's own pages by someone qualified (they're typical
+    ranges written from general harm-reduction guidance).
+  - In the review notes, say plainly that it's harm reduction: it doesn't sell,
+    source or encourage drugs, never gives amounts, and its main message is to
+    wait, not mix, and get help. Guideline 1.4.3 (drug use) is the one
+    reviewers will look at.
 
 ## Before the first public release
 

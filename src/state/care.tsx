@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { addEntry, type Care, type WaterEvery, type CareEntry, cleanCare, EMPTY_CARE, type Mood, startTimer, stopTimer, undoLast } from '../features/care/care';
+import { addEntry, type Care, type WaterEvery, type CareEntry, cleanCare, EMPTY_CARE, type Mood, startTimer, stopTimer, tookMore as tookMoreOn, undoLast } from '../features/care/care';
 
 /**
  * Look after yourself: timers, water and food, check-ins. Kept only in this
@@ -10,7 +10,10 @@ import { addEntry, type Care, type WaterEvery, type CareEntry, cleanCare, EMPTY_
 type Ctx = {
   care: Care;
   hydrated: boolean;
-  start: (label: string) => void;
+  /** Start a stopwatch: your own words, or a timing guide entry (`guide`). */
+  start: (label: string, guide?: string) => void;
+  /** Log taking more on a stopwatch. */
+  tookMore: (id: string) => void;
   stop: (id: string) => void;
   log: (kind: 'water' | 'food') => void;
   undo: (kind: CareEntry['kind']) => void;
@@ -52,7 +55,8 @@ export function CareProvider({ children }: { children: ReactNode }) {
     () => ({
       care,
       hydrated,
-      start: (label) => update((c) => startTimer(c, label, Date.now())),
+      start: (label, guide) => update((c) => startTimer(c, label, Date.now(), undefined, guide)),
+      tookMore: (id) => update((c) => tookMoreOn(c, id, Date.now())),
       stop: (id) => update((c) => stopTimer(c, id)),
       log: (kind) => update((c) => addEntry(c, { kind, at: Date.now() })),
       undo: (kind) => update((c) => undoLast(c, kind)),

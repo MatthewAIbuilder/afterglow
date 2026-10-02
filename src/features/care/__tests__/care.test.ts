@@ -46,7 +46,7 @@ describe('look after yourself', () => {
     let care = startTimer(EMPTY_CARE, 'since doors', NOW - 72 * MIN, 'a');
     care = addEntry(care, { kind: 'water', at: NOW - 40 * MIN });
     expect(cardLine(care, NOW)).toBe('Since doors 1 h 12 min · water 40 min ago');
-    expect(cardLine(EMPTY_CARE, NOW)).toBe('Timers, water and check-ins, private to you');
+    expect(cardLine(EMPTY_CARE, NOW)).toBe('Stopwatches, water and check-ins, private to you');
   });
 
   it('knows the emergency number from the phone’s region', () => {

@@ -30,15 +30,16 @@ describe('look after yourself', () => {
   it('shows on the festival page while it is on, and keeps timers, water and check-ins on the phone', async () => {
     const app = await renderApp('/festival/cyclops-cove-4');
     await flush();
-    await fireEvent.press(app.getByLabelText(/^Look after yourself\. Timers, water and check-ins, private to you\./));
+    await fireEvent.press(app.getByLabelText(/^Look after yourself\. Stopwatches, water and check-ins, private to you\./));
     await flush();
     expect(app.getByText('Private to you: kept only on this phone, never shared.')).toBeTruthy();
 
-    await fireEvent.changeText(app.getByLabelText('Timer label'), 'since doors');
-    await fireEvent.press(app.getByLabelText('Start a timer'));
+    await fireEvent.press(app.getByLabelText('Start a stopwatch'));
+    await fireEvent.changeText(app.getByLabelText('Name it your own way'), 'since doors');
+    await fireEvent.press(app.getByLabelText('Start a stopwatch with your own name'));
     await flush();
     expect(app.getByText('since doors')).toBeTruthy();
-    expect(app.getByText('Just now')).toBeTruthy();
+    expect(app.getByText('0:00')).toBeTruthy();
 
     await fireEvent.press(app.getByLabelText(/^Water: add one\. 0 tonight/));
     await flush();
@@ -67,7 +68,7 @@ describe('look after yourself', () => {
   it('can be locked with Face ID, and cleared', async () => {
     const app = await renderApp('/settings');
     await flush();
-    await fireEvent.press(app.getByLabelText(/^Look after yourself: timers/));
+    await fireEvent.press(app.getByLabelText(/^Look after yourself: stopwatches/));
     await flush();
     await fireEvent(app.getByLabelText('Lock with Face ID'), 'valueChange', true);
     await flush();

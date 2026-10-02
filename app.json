@@ -83,6 +83,12 @@
         {
           "faceIDPermission": "Afterglow uses Face ID to keep your Look after yourself notes private."
         }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Afterglow counts your steps on a festival night in Look after yourself. Your steps stay on this phone."
+        }
       ]
     ],
     "scheme": "afterglow",

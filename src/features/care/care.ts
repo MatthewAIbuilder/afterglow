@@ -1,11 +1,20 @@
 /**
- * Look after yourself: private notes for a festival night. Timers in your
- * own words, water and food taps, quick check-ins. Plain data, kept only on
- * this phone (state/care.tsx); never uploaded, never in recaps or profiles.
- * The app never names substances and gives no dosing advice. Pure.
+ * Look after yourself: private notes for a festival night. Stopwatches (from
+ * the timing guide, or in your own words), water and food taps, quick
+ * check-ins. Plain data, kept only on this phone (state/care.tsx); never
+ * uploaded, never in recaps or profiles. The timing guide (guide.ts) says
+ * when effects usually start and wear off, never how much to take. Pure.
  */
 
-export type CareTimer = { id: string; label: string; startedAt: number };
+export type CareTimer = {
+  id: string;
+  label: string;
+  startedAt: number;
+  /** The timing guide entry it follows (guide.ts), if any. */
+  guide?: string;
+  /** Each time you logged taking more, after the start. */
+  doses?: number[];
+};
 export type Mood = 'good' | 'okay' | 'rough';
 export type CareEntry = { kind: 'water' | 'food'; at: number } | { kind: 'checkin'; at: number; mood: Mood };
 export type Care = {
@@ -34,11 +43,22 @@ export const MOOD_LABEL: Record<Mood, string> = { good: 'Good', okay: 'Okay', ro
 
 const MIN = 60_000;
 
-export function startTimer(care: Care, label: string, now: number, id = `t${now.toString(36)}`): Care {
+export function startTimer(care: Care, label: string, now: number, id = `t${now.toString(36)}`, guide?: string): Care {
   if (care.timers.length >= TIMERS_MAX) return care;
   const clean = label.replace(/\s+/g, ' ').trim().slice(0, LABEL_MAX);
-  return { ...care, timers: [...care.timers, { id, label: clean, startedAt: now }] };
+  return { ...care, timers: [...care.timers, { id, label: clean, startedAt: now, ...(guide ? { guide } : {}) }] };
 }
+
+/** Most extra doses remembered on one stopwatch. */
+export const DOSES_MAX = 20;
+
+/** You took more: logged on the stopwatch (its window restarts from now). */
+export function tookMore(care: Care, id: string, now: number): Care {
+  return { ...care, timers: care.timers.map((t) => (t.id === id ? { ...t, doses: [...(t.doses ?? []), now].slice(-DOSES_MAX) } : t)) };
+}
+
+/** When you last took it: the start, or the latest time you took more. */
+export const lastDose = (t: CareTimer): number => Math.max(t.startedAt, ...(t.doses ?? []));
 
 export const stopTimer = (care: Care, id: string): Care => ({ ...care, timers: care.timers.filter((t) => t.id !== id) });
 
@@ -97,10 +117,10 @@ export function needsHelp(care: Care, now: number): boolean {
 export function cardLine(care: Care, now: number): string {
   const parts: string[] = [];
   const t = care.timers[0];
-  if (t) parts.push(`${t.label || 'Timer'} ${elapsed(now - t.startedAt)}`);
+  if (t) parts.push(`${t.label || 'Stopwatch'} ${elapsed(now - t.startedAt)}`);
   const water = lastOf(care, 'water');
   if (water && water.at >= nightStart(now)) parts.push(`water ${elapsed(now - water.at)} ago`);
-  return parts.length ? parts.join(' · ').replace(/^./, (c) => c.toUpperCase()) : 'Timers, water and check-ins, private to you';
+  return parts.length ? parts.join(' · ').replace(/^./, (c) => c.toUpperCase()) : 'Stopwatches, water and check-ins, private to you';
 }
 
 /** The region in a locale: "en-US" -> "US", "es_419" -> undefined. */
@@ -124,7 +144,11 @@ export function cleanCare(raw: unknown, now: number): Care {
   const timers = (Array.isArray(o.timers) ? o.timers : [])
     .filter((t): t is CareTimer => !!t && typeof t === 'object' && typeof (t as CareTimer).id === 'string' && typeof (t as CareTimer).label === 'string' && fresh((t as CareTimer).startedAt))
     .slice(0, TIMERS_MAX)
-    .map((t) => ({ id: t.id, label: t.label.slice(0, LABEL_MAX), startedAt: t.startedAt }));
+    .map((t) => {
+      const guide = typeof t.guide === 'string' && /^[a-z-]{1,20}$/.test(t.guide) ? t.guide : undefined;
+      const doses = (Array.isArray(t.doses) ? t.doses : []).filter((d) => fresh(d) && d >= t.startedAt).slice(-DOSES_MAX);
+      return { id: t.id, label: t.label.slice(0, LABEL_MAX), startedAt: t.startedAt, ...(guide ? { guide } : {}), ...(doses.length ? { doses } : {}) };
+    });
   const log = (Array.isArray(o.log) ? o.log : [])
     .filter((e): e is CareEntry => {
       if (!e || typeof e !== 'object' || !fresh((e as CareEntry).at)) return false;
