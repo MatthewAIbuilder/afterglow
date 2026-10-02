@@ -72,10 +72,16 @@ describe('comments on shared videos', () => {
     const app = await renderApp(`/comments/${id}`);
     await flush();
     expect(app.getByText('Wish I was there')).toBeTruthy();
-    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Delete comment')));
+    let offered: string[] = [];
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => {
+      offered = o.options;
+      cb(o.options.indexOf('Delete comment'));
+    });
     await fireEvent(app.getByLabelText(/^@sam: Wish I was there\./), 'accessibilityAction', { nativeEvent: { actionName: 'more' } });
     await flush();
     expect(app.queryByText('Wish I was there')).toBeNull();
     expect(mockSocial.comments.has(sams.id)).toBe(false);
+    // On her own video she can also report or block the person who wrote it.
+    expect(offered).toEqual(['Delete comment', 'Report comment', 'Block @sam', 'Cancel']);
   });
 });
