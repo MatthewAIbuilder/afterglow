@@ -63,6 +63,8 @@ It should end with "Deploy complete!" (this also creates the indexes Afterglow n
 
 > **Updated 2026-10-02 (crew updates and comments):** the rules and indexes changed again. Run the deploy command above once more so crews can post updates and people can comment. Firebase builds the new comment indexes in a few minutes; comments may say they couldn't load until it's done.
 
+> **Updated 2026-10-02 (replies to crew updates):** one more small rules change, so crewmates can reply to each other's updates. Run the same deploy command again.
+
 ## 6. Try it (in Expo Go)
 
 Restart the app with the new `.env`: `npx expo start --go --clear`, and open it in Expo Go.

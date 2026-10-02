@@ -15,6 +15,8 @@ import {
   markSeen,
   OUTBOX_KEEP_MS,
   outboxLine,
+  repliesLine,
+  repliesTo,
   retryDelay,
   updateLine,
   type OutboxItem,
@@ -135,5 +137,39 @@ describe('which crews are live', () => {
     const crews = ['on', 'over', 'tbd', 'missing'].map((f) => ({ ...crew, id: f, festivalId: f }));
     expect(liveCrews(crews, (id) => festivals.get(id), new Date(2026, 10, 9, 3)).map((c) => c.id)).toEqual(['on', 'tbd']);
     expect(liveCrews(crews, (id) => festivals.get(id), new Date(2026, 10, 10, 12)).map((c) => c.id)).toEqual(['tbd']);
+  });
+});
+
+describe('crew updates: replies', () => {
+  const reply = (id: string, uid: string, at: string, replyTo: string, note: string) =>
+    up(id, uid, at, at, { kind: 'reply', replyTo, note, videoUrl: undefined });
+
+  it('replies to you join the replier\'s story; replies between others stay under their update', () => {
+    const mine = up('m1', 'me', t(16), t(16), { kind: 'checkin', note: 'Meet at our spot', videoUrl: undefined });
+    const sams = up('s1', 'sam', t(16, 2), t(16, 2), { kind: 'checkin', videoUrl: undefined });
+    const toMe = reply('r1', 'maya', t(16, 10), 'm1', 'On my way');
+    const toSam = reply('r2', 'maya', t(16, 20), 's1', 'Save me a spot');
+    const stories = crewStories([mine, sams, toMe, toSam], [crew], { me: 'me', now });
+    const maya = stories.find((s) => s.uid === 'maya')!;
+    expect(maya.updates.map((u) => u.id)).toEqual(['r1']);
+    expect(updateLine(maya.latest)).toBe('Replied 4:10 PM');
+    // A reply never says where someone is.
+    expect(latestPerMember([mine, toMe, toSam], ['me', 'maya']).map((r) => r.latest?.id)).toEqual(['m1', undefined]);
+  });
+
+  it('a thread reads oldest first, without blocked people, and sums up in one line', () => {
+    const target = up('m1', 'me', t(16), t(16), { kind: 'checkin', videoUrl: undefined });
+    const list = [reply('r2', 'sam', t(16, 20), 'm1', 'Be there in 10'), reply('r1', 'maya', t(16, 10), 'm1', 'On my way'), reply('r3', 'troll', t(16, 30), 'm1', 'Hi')];
+    const thread = repliesTo(list, target, ['troll']);
+    expect(thread.map((r) => r.id)).toEqual(['r1', 'r2']);
+    expect(repliesLine(thread, (u) => (u === 'sam' ? 'Sam' : 'Maya'))).toBe('2 replies · Sam: Be there in 10');
+    expect(repliesLine([], () => '')).toBeUndefined();
+  });
+
+  it('a waiting reply survives a restart, one without its target does not', () => {
+    const base = { crewIds: ['c1'], tries: 0, queuedAt: now };
+    const ok = { ...base, id: 'r1', input: { id: 'r1', kind: 'reply', at: t(17), festivalId: 'f', replyTo: 'm1', note: 'On my way' } };
+    const broken = { ...base, id: 'r2', input: { id: 'r2', kind: 'reply', at: t(17), festivalId: 'f', note: 'Hm' } };
+    expect(cleanOutbox([ok, broken], now).map((o) => o.id)).toEqual(['r1']);
   });
 });

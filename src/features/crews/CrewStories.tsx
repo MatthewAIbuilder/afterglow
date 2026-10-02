@@ -77,7 +77,7 @@ function StoryFace({ story, name, url, artist }: { story: Story; name?: string; 
         router.push({ pathname: '/crew-story', params: { uid: story.uid } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${who}, updated ${clock(u.at)}${place ? `, ${place}` : ''}${u.note ? `, “${u.note}”` : ''}${story.fresh ? '. New' : ''}`}
+      accessibilityLabel={`${who}, ${u.kind === 'reply' ? 'replied to you' : 'updated'} ${clock(u.at)}${place ? `, ${place}` : ''}${u.note ? `, “${u.note}”` : ''}${story.fresh ? '. New' : ''}`}
       style={({ pressed }) => [styles.item, pressed && styles.pressed]}
     >
       {story.fresh ? (

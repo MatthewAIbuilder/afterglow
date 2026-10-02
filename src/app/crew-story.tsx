@@ -8,12 +8,14 @@ import { PageTitle } from '../components/PageTitle';
 import { PersonAvatar } from '../components/PersonAvatar';
 import { CloseIcon } from '../components/TabIcons';
 import { firstName } from '../features/crews/together';
-import { ago, lateLine, updateLine } from '../features/crews/updates';
+import { ReplyBar } from '../features/crews/ReplyBar';
+import { ago, answered, clock, isReply, lateLine, updateLine } from '../features/crews/updates';
 import type { CrewUpdate } from '../features/social/models';
 import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
 import { useCatalog } from '../state/catalog';
 import { useCrewUpdates } from '../state/crewUpdates';
+import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 
 /**
@@ -21,13 +23,15 @@ import { color, radius, space, type } from '../theme/tokens';
  * ones. Each says when it happened ("Updated 4:05 PM · Main Stage ·
  * SLANDER"), and, when the signal held it back, when it reached you. Tap the
  * right side for earlier, the left for later; past their last, the next
- * crewmate's story.
+ * crewmate's story. Underneath, what the crew said back and a way to reply.
  */
 export default function CrewStoryScreen() {
   const { uid } = useLocalSearchParams<{ uid?: string }>();
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
-  const { stories, profileOf, markSeen } = useCrewUpdates();
+  const { stories, profileOf, markSeen, updatesFor } = useCrewUpdates();
+  const social = useSocial();
+  const me = social.user?.uid;
   const now = useNow().getTime();
 
   // The order is fixed when it opens, so watching (which stops a story glowing) never reshuffles it.
@@ -54,6 +58,10 @@ export default function CrewStoryScreen() {
   const name = profile ? firstName(profile.displayName) : 'Crewmate';
   const artist = u.artistId ? catalog.artist(u.artistId)?.name : undefined;
   const late = lateLine(u);
+  // A reply to you: the thread is your update's, and writing back goes there.
+  const yourUpdate = isReply(u) ? answered(updatesFor(u.crewId), u) : undefined;
+  const target = isReply(u) ? yourUpdate : u;
+  const nameOf = (id: string) => (id === me ? 'You' : profileOf(id) ? firstName(profileOf(id)!.displayName) : 'Crewmate');
 
   const step = (dir: 1 | -1) => {
     haptic.select();
@@ -74,7 +82,11 @@ export default function CrewStoryScreen() {
   return (
     <View style={styles.root}>
       <PageTitle title={`${name}’s update`} />
-      {u.kind === 'video' && u.videoUrl ? <StoryVideo key={u.id} url={u.videoUrl} /> : <CheckInCard key={u.id} update={u} artist={artist} />}
+      {u.kind === 'video' && u.videoUrl ? (
+        <StoryVideo key={u.id} url={u.videoUrl} />
+      ) : (
+        <CheckInCard key={u.id} update={u} artist={artist} replyingTo={isReply(u) ? (yourUpdate ? `Replying to your ${clock(yourUpdate.at)} update${yourUpdate.note ? `, “${yourUpdate.note}”` : ''}` : 'Replying to your update') : undefined} />
+      )}
 
       <LinearGradient colors={['rgba(3,2,10,0.75)', 'rgba(3,2,10,0)']} style={[styles.topFade, { height: insets.top + 150 }]} pointerEvents="none" />
 
@@ -114,10 +126,12 @@ export default function CrewStoryScreen() {
       </View>
 
       {u.kind === 'video' && u.note ? (
-        <View style={[styles.caption, { bottom: insets.bottom + space.xl }]} pointerEvents="none">
+        <View style={[styles.caption, { top: insets.top + 110 }]} pointerEvents="none">
           <Text style={styles.captionText}>{u.note}</Text>
         </View>
       ) : null}
+
+      {target ? <ReplyBar key={target.id} target={target} nameOf={nameOf} me={me} bottom={insets.bottom} /> : null}
     </View>
   );
 }
@@ -131,10 +145,11 @@ function StoryVideo({ url }: { url: string }) {
 }
 
 /** A check-in, as a card of its own: their words big, where and when beneath. */
-function CheckInCard({ update: u, artist }: { update: CrewUpdate; artist?: string }) {
+function CheckInCard({ update: u, artist, replyingTo }: { update: CrewUpdate; artist?: string; replyingTo?: string }) {
   return (
     <LinearGradient colors={['#2A1C5C', '#120E2A', '#0A0918']} style={[StyleSheet.absoluteFill, styles.center]}>
       <View style={styles.card}>
+        {replyingTo ? <Text style={styles.cardReplying}>{replyingTo}</Text> : null}
         <Text style={styles.cardWords}>{u.note ?? 'Checked in'}</Text>
         {u.stage || artist ? <Text style={styles.cardPlace}>{[u.stage, artist].filter(Boolean).join(' · ')}</Text> : null}
       </View>
@@ -165,6 +180,7 @@ const styles = StyleSheet.create({
   card: { paddingHorizontal: space.xxl, alignItems: 'center', gap: space.md },
   cardWords: { fontSize: 34, lineHeight: 40, fontWeight: '700', color: color.moon, textAlign: 'center', letterSpacing: -0.6 },
   cardPlace: { ...type.headline, color: color.glow, textAlign: 'center' },
+  cardReplying: { ...type.label, color: color.moonDim, textAlign: 'center' },
   caption: { position: 'absolute', left: space.xl, right: space.xl, alignItems: 'center' },
   captionText: { ...type.headline, color: color.moon, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.md, overflow: 'hidden' },
 });

@@ -64,10 +64,15 @@ export type Story = {
   fresh: boolean;
 };
 
+/** A reply to someone's update, not news of where someone is. */
+export const isReply = (u: Pick<CrewUpdate, 'kind'>) => u.kind === 'reply';
+
 /**
  * One story per crewmate with an update in the window: their updates newest
  * first. Never you, never anyone blocked or no longer in the crew it was
- * posted to. Fresh stories first, then the most recent.
+ * posted to. Replies only count when they answer one of yours (others'
+ * replies stay under the update they answer). Fresh stories first, then the
+ * most recent.
  */
 export function crewStories(
   updates: readonly CrewUpdate[],
@@ -75,8 +80,14 @@ export function crewStories(
   { me, blocked = [], seen = {}, now }: { me?: string; blocked?: readonly string[]; seen?: Record<string, number>; now: number },
 ): Story[] {
   const inCrew = new Map(crews.map((c) => [c.id, new Set(c.members)]));
+  const mine = new Set(updates.filter((u) => u.uid === me && !isReply(u)).map((u) => `${u.crewId}/${u.id}`));
   const kept = unique(updates).filter(
-    (u) => u.uid !== me && !blocked.includes(u.uid) && inCrew.get(u.crewId)?.has(u.uid) && now - ms(u.at) <= UPDATES_WINDOW_MS,
+    (u) =>
+      u.uid !== me &&
+      !blocked.includes(u.uid) &&
+      inCrew.get(u.crewId)?.has(u.uid) &&
+      now - ms(u.at) <= UPDATES_WINDOW_MS &&
+      (!isReply(u) || mine.has(`${u.crewId}/${u.replyTo}`)),
   );
   const byUid = new Map<string, CrewUpdate[]>();
   for (const u of kept) byUid.set(u.uid, [...(byUid.get(u.uid) ?? []), u]);
@@ -93,8 +104,9 @@ export function updatePlace(u: Pick<CrewUpdate, 'stage' | 'note'>, artistName?: 
   return [u.stage, artistName].filter(Boolean).join(' · ');
 }
 
-/** "Updated 4:05 PM · Main Stage · SLANDER", the line under a crewmate's story. */
+/** "Updated 4:05 PM · Main Stage · SLANDER", the line under a crewmate's story ("Replied 4:12 PM" for a reply). */
 export function updateLine(u: CrewUpdate, artistName?: string): string {
+  if (isReply(u)) return `Replied ${clock(u.at)}`;
   const place = updatePlace(u, artistName);
   return `Updated ${clock(u.at)}${place ? ` · ${place}` : ''}`;
 }
@@ -181,7 +193,7 @@ export function cleanOutbox(raw: unknown, now: number): OutboxItem[] {
       i.crewIds.length > 0 &&
       i.crewIds.every((c) => typeof c === 'string') &&
       !!i.input &&
-      (i.input.kind === 'video' || i.input.kind === 'checkin') &&
+      (i.input.kind === 'video' || i.input.kind === 'checkin' || (i.input.kind === 'reply' && typeof i.input.replyTo === 'string')) &&
       typeof i.input.at === 'string' &&
       Number.isFinite(ms(i.input.at)) &&
       typeof i.input.festivalId === 'string' &&
@@ -223,7 +235,29 @@ export function liveCrews(crews: readonly Crew[], festival: (id: string) => Fest
   });
 }
 
-/** Each member's newest update in one crew (by when it happened), members in the crew's order. */
+/** Each member's newest update in one crew (by when it happened; replies say nothing of where they are), members in the crew's order. */
 export function latestPerMember(updates: readonly CrewUpdate[], members: readonly string[]): { uid: string; latest?: CrewUpdate }[] {
-  return members.map((uid) => ({ uid, latest: [...updates].filter((u) => u.uid === uid).sort(byHappened)[0] }));
+  return members.map((uid) => ({ uid, latest: [...updates].filter((u) => u.uid === uid && !isReply(u)).sort(byHappened)[0] }));
 }
+
+/** Quick replies: one tap, like check-ins. */
+export const QUICK_REPLIES = ['On my way', 'Be there in 10', 'Save me a spot', 'Where exactly?', 'Can’t make it'] as const;
+
+/** The replies to one update in its crew, oldest first (a conversation reads down), never from anyone blocked. */
+export function repliesTo(updates: readonly CrewUpdate[], target: Pick<CrewUpdate, 'id' | 'crewId'>, blocked: readonly string[] = []): CrewUpdate[] {
+  return unique(updates)
+    .filter((u) => isReply(u) && u.crewId === target.crewId && u.replyTo === target.id && !blocked.includes(u.uid))
+    .sort((a, b) => -byHappened(a, b));
+}
+
+/** "2 replies · Maya: On my way", the latest answer to one of your updates. */
+export function repliesLine(replies: readonly CrewUpdate[], nameOf: (uid: string) => string): string | undefined {
+  const last = replies[replies.length - 1];
+  if (!last) return undefined;
+  const count = replies.length === 1 ? '1 reply' : `${replies.length} replies`;
+  return `${count} · ${nameOf(last.uid)}: ${last.note ?? ''}`;
+}
+
+/** The update a reply answers, when it's still here. */
+export const answered = (updates: readonly CrewUpdate[], reply: CrewUpdate) =>
+  reply.replyTo ? updates.find((u) => u.crewId === reply.crewId && u.id === reply.replyTo) : undefined;

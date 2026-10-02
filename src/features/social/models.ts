@@ -113,7 +113,8 @@ export type CrewUpdate = {
   id: string;
   crewId: string;
   uid: string;
-  kind: 'video' | 'checkin';
+  /** A video, a check-in, or a reply to someone's update (`replyTo`, words in `note`). */
+  kind: 'video' | 'checkin' | 'reply';
   /** When it happened on the phone (ISO 8601). */
   at: string;
   /** When it reached the crew (ISO 8601, from the server). */
@@ -121,8 +122,10 @@ export type CrewUpdate = {
   festivalId: string;
   artistId?: string;
   stage?: string;
-  /** A check-in's words ("Meet at our spot"), at most CREW_NOTE_MAX. */
+  /** A check-in's or reply's words ("Meet at our spot"), at most CREW_NOTE_MAX. */
   note?: string;
+  /** A reply: the id of the update it answers, in the same crew. */
+  replyTo?: string;
   videoUrl?: string;
   thumbUrl?: string;
   /** When the video was also shared to Discover: that copy's id. */

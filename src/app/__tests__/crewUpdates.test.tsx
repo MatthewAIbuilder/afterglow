@@ -114,11 +114,38 @@ describe('crew updates', () => {
     expect(app.getByText('No updates yet')).toBeTruthy();
   });
 
+  it('reply to a crewmate from their story; it reaches them as news, and shows on the crew page', async () => {
+    const crew = await crewWithNews();
+    await as('sam');
+    const app = await renderApp('/');
+    await flush();
+    await fireEvent.press(app.getByLabelText(/^Maya, updated 4:05 PM/));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Reply “On my way” to Maya'));
+    await flush();
+    const sent = [...mockSocial.updates.values()].find((u) => u.kind === 'reply');
+    expect(sent).toMatchObject({ crewId: crew.id, replyTo: 'u-checkin1', note: 'On my way' });
+    expect(app.getByLabelText(/^You, 5:30 PM: On my way$/)).toBeTruthy();
+    await app.unmount();
+
+    // Maya sees Sam's answer as news, and under her latest on the crew page.
+    await s().signOut();
+    await as('maya');
+    const hers = await renderApp('/');
+    await flush();
+    expect(hers.getByLabelText(/^Sam, replied to you 5:30 PM, “On my way”\. New$/)).toBeTruthy();
+    await hers.unmount();
+    const page = await renderApp(`/crew/${crew.id}`);
+    await flush();
+    expect(page.getByText('1 reply · Sam: On my way')).toBeTruthy();
+  });
+
   it('nobody sees updates from a crew they are not in', async () => {
     const crew = await crewWithNews();
     await s().signOut();
     await person('stranger', 'Stranger');
     await expect(s().crewUpdates(crew.id, 0, 10)).rejects.toThrow();
     await expect(s().postCrewUpdate(crew.id, { id: 'u-sneaky1', kind: 'checkin', at: at(17).toISOString(), festivalId: 'solstice-26' })).rejects.toThrow();
+    await expect(s().postCrewUpdate(crew.id, { id: 'u-sneaky2', kind: 'reply', at: at(17).toISOString(), festivalId: 'solstice-26', replyTo: 'u-checkin1', note: 'hi' })).rejects.toThrow();
   });
 });

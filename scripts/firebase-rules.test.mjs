@@ -255,6 +255,18 @@ await t('crew updates: not as someone else, not from the future or long ago, not
   await assertFails(setDoc(at('u000011'), update({ kind: 'video', videoUrl: 'http://x/v.mp4' })));
   await assertFails(setDoc(doc(C.firestore(), 'crews', 'c1', 'updates', 'u000012'), update({ uid: 'uidC' })));
 });
+await t('crew updates: replies answer an update in the same crew, with words, never a video', async () => {
+  const at = (db, id) => doc(db, 'crews', 'c1', 'updates', id);
+  const reply = (over = {}) => update({ uid: 'uidA', kind: 'reply', replyTo: 'u000001', note: 'On my way', stage: undefined, ...over });
+  const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+  await assertSucceeds(setDoc(at(A.firestore(), 'r000001'), clean(reply())));
+  await assertFails(setDoc(at(A.firestore(), 'r000002'), clean(reply({ replyTo: 'u999999' }))));
+  await assertFails(setDoc(at(A.firestore(), 'r000003'), clean(reply({ note: '' }))));
+  await assertFails(setDoc(at(A.firestore(), 'r000004'), clean(reply({ replyTo: undefined }))));
+  await assertFails(setDoc(at(A.firestore(), 'r000005'), clean(reply({ videoUrl: 'https://x/v.mp4' }))));
+  await assertFails(setDoc(at(A.firestore(), 'r000006'), clean(update({ uid: 'uidA', replyTo: 'u000001' }))));
+  await assertFails(setDoc(at(C.firestore(), 'r000007'), clean(reply({ uid: 'uidC' }))));
+});
 await t('crew updates: never edited; removed by the author or the owner', async () => {
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1', 'updates', 'u000001'), { note: 'changed' }));
   await assertFails(deleteDoc(doc(C.firestore(), 'crews', 'c1', 'updates', 'u000001')));

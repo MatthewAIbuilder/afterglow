@@ -100,11 +100,12 @@ export function crewUpdateFromDoc(crewId: string, id: string, d: unknown): CrewU
   const o = d as Record<string, unknown>;
   const uid = str(o.uid);
   const festivalId = str(o.festivalId);
-  const kind = o.kind === 'video' || o.kind === 'checkin' ? o.kind : undefined;
+  const kind = o.kind === 'video' || o.kind === 'checkin' || o.kind === 'reply' ? o.kind : undefined;
   const at = typeof o.atMs === 'number' && Number.isFinite(o.atMs) ? new Date(o.atMs).toISOString() : undefined;
   if (!uid || !festivalId || !kind || !at) return null;
   const videoUrl = https(o.videoUrl);
   if (kind === 'video' && !videoUrl) return null;
+  if (kind === 'reply' && (!str(o.replyTo) || !str(o.note))) return null;
   return {
     id,
     crewId,
@@ -116,6 +117,7 @@ export function crewUpdateFromDoc(crewId: string, id: string, d: unknown): CrewU
     ...(str(o.artistId) ? { artistId: str(o.artistId) } : {}),
     ...(str(o.stage) ? { stage: str(o.stage)!.slice(0, CREW_STAGE_MAX) } : {}),
     ...(str(o.note) ? { note: str(o.note)!.slice(0, CREW_NOTE_MAX) } : {}),
+    ...(kind === 'reply' ? { replyTo: str(o.replyTo) } : {}),
     ...(videoUrl ? { videoUrl } : {}),
     ...(https(o.thumbUrl) ? { thumbUrl: https(o.thumbUrl) } : {}),
     ...(str(o.sharedId) ? { sharedId: str(o.sharedId) } : {}),
