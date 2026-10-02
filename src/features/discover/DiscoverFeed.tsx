@@ -22,7 +22,7 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon, SearchIcon } from '../../components/TabIcons';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { haptic } from '../../lib/haptics';
-import type { Clip } from '../../data/models';
+import type { Clip, Festival } from '../../data/models';
 import { isCommunityClip } from '../community/clips';
 import { useCatalog } from '../../state/catalog';
 import { useClipPool, useCommunityFeed } from '../../state/community';
@@ -48,7 +48,7 @@ import { alreadyKnown, currentHint } from './hints';
 import type { FeedPager } from './feedPager';
 import { defaultFocus } from '../festivals/links';
 import { SOUND_LABEL } from '../../data/models';
-import { FOLLOWING, type Focus, MIX, mixContext, nextDiscoverFocus, soundOf, startFocus } from './focus';
+import { FOLLOWING, type Focus, MIX, mixContext, nextDiscoverFocus, soundOf, startFocus, TONIGHT } from './focus';
 import { reasonNote } from '../recommend/copy';
 import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
@@ -104,6 +104,12 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (decided && focusId) saveFocus(focusId);
   }, [decided, focusId, saveFocus]);
+  // Tonight's preview: who plays tonight at the festival you're at, in set order. Over (or never on): the festival logic below takes over.
+  const tonight = useTonight();
+  const tonightKey = tonight ? `${tonight.festival.id}|${tonight.night ?? ''}` : '';
+  const [tonightFocus, setTonightFocus] = useState<{ key: string; value?: { festival: Festival; night?: string } }>({ key: '' });
+  if (tonightFocus.key !== tonightKey) setTonightFocus({ key: tonightKey, value: tonight && { festival: tonight.festival, night: tonight.night } });
+  const tonightOn = focusId === TONIGHT && !!tonightFocus.value;
   const mix = focusId === MIX;
   const followingFocus = focusId === FOLLOWING;
   // One sound from every lineup ("Dubstep").
@@ -115,7 +121,9 @@ export function DiscoverFeed() {
   const festival =
     !decided || wide
       ? undefined
-      : ((focusId ? catalog.festival(focusId) : undefined) ?? defaultFocus(catalog.festivals, catalog.clips));
+      : tonightOn
+        ? tonightFocus.value!.festival
+        : ((focusId ? catalog.festival(focusId) : undefined) ?? defaultFocus(catalog.festivals, catalog.clips));
   // Cleared once handled, which waits for the focus to be decided.
   useEffect(() => {
     if (focusParam && decided) navigation.setParams({ festival: '' } as never);
@@ -140,7 +148,12 @@ export function DiscoverFeed() {
     const extra = wanted.filter((c) => pool.find(c.id) && !fetched.some((f) => f.id === c.id));
     return extra.length ? [...fetched, ...extra] : fetched;
   }, [opened, focusId, asked, pool, fetched]);
-  const feed = useRankedFeed(activeIndex, mix ? MIX : followingFocus ? FOLLOWING : sound ? focusId : festival, community);
+  const feed = useRankedFeed(
+    activeIndex,
+    mix ? MIX : followingFocus ? FOLLOWING : sound ? focusId : tonightOn ? TONIGHT : festival,
+    community,
+    tonightOn ? tonightFocus.value : undefined,
+  );
   const { mustSeesAt } = usePlan();
   const count = feed?.length ?? 0;
   // After the last clip comes one more page: the end of the lineup (or of everything), with where to go next.
@@ -318,7 +331,6 @@ export function DiscoverFeed() {
   // Your crew's updates along the top, while a crew's festival is on or coming up.
   const storiesOn = useCrewUpdates().crewCount > 0;
   // On a festival night, a way back to Tonight sits above the stories.
-  const tonight = useTonight();
   const tonightSpace = tonight ? TONIGHT_PILL_H : 0;
   const storiesSpace = (storiesOn ? STORIES_H : 0) + tonightSpace;
 
@@ -406,17 +418,17 @@ export function DiscoverFeed() {
               router.push({ pathname: '/discover-focus', params: { current: focusId } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${festival ? `${festival.name}, live sets from the lineup` : followingFocus ? 'Following, videos from people you follow' : soundLabel ? `${soundLabel}, live sets from every lineup` : 'Your mix, a bit of everything'}. Choose what to discover.`}
+            accessibilityLabel={`${tonightOn ? `Tonight, who plays ${tonight?.night ? `${tonight.night} ` : ''}at ${festival?.name}, in set order` : festival ? `${festival.name}, live sets from the lineup` : followingFocus ? 'Following, videos from people you follow' : soundLabel ? `${soundLabel}, live sets from every lineup` : 'Your mix, a bit of everything'}. Choose what to discover.`}
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.headerTitle}>
-              <Text style={styles.festival} numberOfLines={1}>{festival ? festival.name : followingFocus ? 'Following' : (soundLabel ?? 'Your mix')}</Text>
+              <Text style={styles.festival} numberOfLines={1}>{tonightOn ? 'Tonight' : festival ? festival.name : followingFocus ? 'Following' : (soundLabel ?? 'Your mix')}</Text>
               <ChevronIcon color={color.moonDim} size={13} direction="down" />
             </View>
             {/* Short, so the title never fights the buttons: the dates, or where the clips come from. */}
             <Text style={styles.dates} numberOfLines={1}>
-              {festival ? festival.dates || 'Live sets from the lineup' : followingFocus ? 'People you follow' : 'Every lineup'}
+              {tonightOn && tonight ? `${tonight.night ? `${tonight.night} at ` : ''}${festival?.name} · in set order` : festival ? festival.dates || 'Live sets from the lineup' : followingFocus ? 'People you follow' : 'Every lineup'}
             </Text>
           </Pressable>
           <View style={styles.headerEnd}>

@@ -14,7 +14,9 @@ import { CrewWhereCard } from '../features/crews/CrewWhereCard';
 import { picksByDay } from '../features/plan/byDay';
 import { LiveNow } from '../features/plan/LiveNow';
 import { useFestivalPlan } from '../features/plan/useFestivalPlan';
-import { tonightTitle } from '../features/tonight/tonight';
+import { TONIGHT } from '../features/discover/focus';
+import { tonightClips, tonightTitle } from '../features/tonight/tonight';
+import { useCatalog } from '../state/catalog';
 import { useTonight } from '../features/tonight/useTonight';
 import { haptic } from '../lib/haptics';
 import { useCrews } from '../state/crews';
@@ -67,6 +69,9 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
   const { crewsAt } = useCrews();
   const { ready } = useCrewUpdates();
   const crews = social.user ? crewsAt(festival.id) : [];
+  // Sets to preview in Discover: the lineup's clips of tonight's artists.
+  const catalog = useCatalog();
+  const previewable = tonightClips(festival, catalog.clips, night).length > 0;
   // Before set times: tonight's picks from the lineup's days (or your top picks when days aren't known).
   const tonightPicks = schedule
     ? []
@@ -132,6 +137,13 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
           <Action label="Film" a11y="Film a video" onPress={() => router.push('/camera')} icon={<CameraIcon color={color.moon} size={20} />} />
         ) : null}
         {ready && crews.length ? <Action label="Check in" a11y="Check in with your crew" onPress={() => router.push('/check-in')} /> : null}
+        {previewable ? (
+          <Action
+            label="Preview"
+            a11y={`Preview tonight's sets in Discover, in set order`}
+            onPress={() => router.dismissTo({ pathname: '/', params: { festival: TONIGHT } })}
+          />
+        ) : null}
         <Action label="Lineup" a11y={`${festival.name} lineup`} onPress={() => router.push(`/festival/${festival.id}`)} />
       </View>
       <Text style={styles.footnote}>Your plan, lineup and route work without signal.</Text>

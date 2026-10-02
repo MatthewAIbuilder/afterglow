@@ -3,7 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckIcon, ChevronIcon, ProfileIcon } from '../components/TabIcons';
 import { SOUND_LABEL } from '../data/models';
-import { focusChoices, FOLLOWING, isWide, MIX, soundChoices, soundFocus, type FocusChoice } from '../features/discover/focus';
+import { focusChoices, FOLLOWING, isWide, MIX, soundChoices, soundFocus, TONIGHT, type FocusChoice } from '../features/discover/focus';
+import { tonightClips } from '../features/tonight/tonight';
+import { useTonight } from '../features/tonight/useTonight';
 import { PlayIcon } from '../features/discover/icons';
 import { countdown } from '../features/festivals/when';
 import { haptic } from '../lib/haptics';
@@ -33,6 +35,9 @@ export default function DiscoverFocusScreen() {
   const currentFestival = current && !isWide(current) ? catalog.festival(current) : undefined;
   // One sound from every lineup, for the sounds with enough clips.
   const sounds = soundChoices(catalog.clips, catalog.artist);
+  // A festival you're going to is on: preview who plays tonight, in set order.
+  const tonight = useTonight();
+  const tonightSets = tonight ? new Set(tonightClips(tonight.festival, catalog.clips, tonight.night).map((c) => c.artistId)).size : 0;
 
   const pick = (focus: string) => {
     haptic.select();
@@ -74,6 +79,18 @@ export default function DiscoverFocusScreen() {
       <Text style={styles.body}>Focus on a festival to shape your plan for it, or mix it up.</Text>
 
       <View style={styles.list}>
+        {tonight && tonightSets > 0
+          ? row(
+              TONIGHT,
+              'Tonight',
+              `${tonight.night ? `${tonight.night} at ` : ''}${tonight.festival.name} · ${tonightSets} ${tonightSets === 1 ? 'artist' : 'artists'}, in set order`,
+              current === TONIGHT,
+              () => pick(TONIGHT),
+              <View style={[styles.mixIcon, styles.tonightIcon]}>
+                <PlayIcon color={color.night} size={14} />
+              </View>,
+            )
+          : null}
         {row(MIX, 'Your mix', 'A bit of everything, from every lineup', current === MIX, () => pick(MIX), (
           <View style={styles.mixIcon}>
             <PlayIcon color={color.moon} size={14} />
@@ -239,6 +256,7 @@ const styles = StyleSheet.create({
   rowText: { flex: 1 },
   rowTitle: { ...type.headline, color: color.moon },
   detail: { ...type.caption, color: color.moonDim, marginTop: 2, fontVariant: ['tabular-nums'] },
+  tonightIcon: { backgroundColor: color.glow },
   mixIcon: {
     width: 32,
     height: 32,
