@@ -66,6 +66,22 @@ describe('dialogs', () => {
     expect(picked).toEqual([2]);
   });
 
+  it('on Android: three choices or fewer are the system alert; a longer list is the app’s own sheet, so none go missing', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const picked: number[] = [];
+    showActionSheet({ options: ['A', 'B', 'Cancel'], cancelButtonIndex: 2 }, (i) => picked.push(i));
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(current()).toEqual([]);
+    const options = ['Love them', 'Like them', 'They’re OK', 'Not really', 'Not for me', 'Cancel'];
+    const app = await render(<DialogHost />);
+    await act(async () => showActionSheet({ title: 'How do you feel about SUBTRONICS?', options, cancelButtonIndex: 5 }, (i) => picked.push(i)));
+    expect(alert).toHaveBeenCalledTimes(1);
+    for (const o of options) expect(app.getByRole('button', { name: o })).toBeTruthy();
+    await fireEvent.press(app.getByRole('button', { name: 'Not really' }));
+    expect(picked).toEqual([3]);
+  });
+
   it('DialogHost shows one at a time in a browser, and nothing on a phone', async () => {
     const phone = await render(<DialogHost />);
     expect(phone.toJSON()).toBeNull();

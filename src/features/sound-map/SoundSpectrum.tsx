@@ -75,5 +75,6 @@ function Segment({ share, color, index, last }: { share: number; color: string; 
 
 const styles = StyleSheet.create({
   track: { flexDirection: 'row', overflow: 'visible', backgroundColor: 'rgba(255,255,255,0.05)' },
-  segment: { height: '100%', borderRadius: 3, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
+  // flexShrink lets the 2 pt gaps come out of the segments, so the line never runs past its track.
+  segment: { height: '100%', flexShrink: 1, borderRadius: 3, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
 });
