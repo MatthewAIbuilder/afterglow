@@ -486,11 +486,12 @@ function SoundMenu({ onCleared, scopeId }: { onCleared: () => void; scopeId?: st
       label: 'Pick more artists',
       run: () => router.push(scopeId ? { pathname: '/pick-artists', params: { festivals: scopeId } } : '/pick-artists'),
     },
+    { label: 'Play this or that', run: () => router.push('/this-or-that') },
     { label: 'Start over', run: startOver, destructive: true },
   ];
   return (
     <GlassCircleButton
-      label={count > 0 ? `More: your clips (${count}), pick artists, start over` : 'More: pick artists, start over'}
+      label={count > 0 ? `More: your clips (${count}), pick artists, this or that, start over` : 'More: pick artists, this or that, start over'}
       onPress={() =>
         showActionSheet(
           {

@@ -26,6 +26,7 @@ import CrewScreen from '../crew/[id]';
 import PlanCardScreen from '../plan-card/[id]';
 import RecapScreen from '../recap/[id]';
 import PickArtistsScreen from '../pick-artists';
+import ThisOrThatScreen from '../this-or-that';
 import CompareScreen from '../compare';
 import PrepScreen from '../prep/[id]';
 import YourArtistsScreen from '../your-artists';
@@ -73,6 +74,7 @@ export const APP_ROUTES = {
   'plan-card/[id]': PlanCardScreen,
   'recap/[id]': RecapScreen,
   'pick-artists': PickArtistsScreen,
+  'this-or-that': ThisOrThatScreen,
   compare: CompareScreen,
   'prep/[id]': PrepScreen,
   'your-artists': YourArtistsScreen,

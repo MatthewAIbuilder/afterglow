@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import type { Festival } from '../data/types';
 import { whereWhen } from '../features/festivals/format';
 import { festivalShelf, isMany, pickerList } from '../features/festivals/shelves';
 import { countdown } from '../features/festivals/when';
+import { ROUNDS_MIN, thisOrThatPairs } from '../features/taste/thisOrThat';
 import { watchFestival, welcomeFestival } from '../features/welcome/firstRun';
 import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
@@ -65,6 +66,16 @@ export default function WelcomeScreen() {
     haptic.tap();
     markWelcomed();
     router.replace({ pathname: '/pick-artists', params: { festivals: going.join(','), then: 'discover' } });
+  };
+  // This or that needs enough live sets to compare; until then picking artists leads.
+  const canCompare = useMemo(
+    () => thisOrThatPairs(catalog.clips, catalog.artist, { prefer: going }).length >= ROUNDS_MIN,
+    [catalog, going],
+  );
+  const thisOrThat = () => {
+    haptic.tap();
+    markWelcomed();
+    router.replace({ pathname: '/this-or-that', params: { then: 'discover' } });
   };
   const tune = (f: Festival) => {
     haptic.tap();
@@ -166,15 +177,18 @@ export default function WelcomeScreen() {
           <View style={styles.center}>
             <Text style={styles.title}>Tell us what you love</Text>
             <Text style={[styles.sub, styles.centerText]}>
-              Tap the artists you love from {going.length > 1 ? 'your festivals' : picked.name}. It takes seconds and shapes
-              your whole plan. Or go through the lineup one artist at a time.
+              {canCompare
+                ? 'Play this or that: two live sets at a time, tap the one you’d rather hear. A minute, and your sound takes shape. Or tap the artists you love.'
+                : `Tap the artists you love from ${going.length > 1 ? 'your festivals' : picked.name}. It takes seconds and shapes your whole plan. Or go through the lineup one artist at a time.`}
             </Text>
           </View>
         ) : (
           <View style={styles.center}>
             <Text style={styles.title}>Tell us what you love</Text>
             <Text style={[styles.sub, styles.centerText]}>
-              Tap the artists you love and {APP_NAME} learns your sound. Or start with the sets: like, save or skip clips.
+              {canCompare
+                ? `Play this or that: two live sets at a time, tap the one you’d rather hear, and ${APP_NAME} learns your sound in a minute. Or tap the artists you love.`
+                : `Tap the artists you love and ${APP_NAME} learns your sound. Or start with the sets: like, save or skip clips.`}
             </Text>
           </View>
         )}
@@ -185,6 +199,16 @@ export default function WelcomeScreen() {
           <Primary label="Get started" onPress={() => next('going')} />
         ) : step === 'going' ? (
           <Primary label={going.length ? 'Continue' : 'Not sure yet'} onPress={() => next('taste')} />
+        ) : canCompare ? (
+          <>
+            <Primary label="Play this or that" onPress={thisOrThat} />
+            <Secondary label="Pick artists you know" onPress={pickArtists} />
+            {picked ? (
+              <Secondary label="Rate the lineup one by one" onPress={() => tune(picked)} />
+            ) : (
+              <Secondary label="Start watching instead" onPress={startWatching} />
+            )}
+          </>
         ) : picked ? (
           <>
             <Primary label="Pick artists you know" onPress={pickArtists} />
