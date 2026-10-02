@@ -22,6 +22,11 @@ export function soundOf(focus: Focus | null | undefined): SoundTag | undefined {
   const tag = focus.slice(SOUND_PREFIX.length);
   return (SOUND_TAGS as readonly string[]).includes(tag) ? (tag as SoundTag) : undefined;
 }
+/** Festival mode: only videos people filmed at this festival ("here:cyclops-cove-4"). Never saved as your focus. */
+const HERE_PREFIX = 'here:';
+export const hereFocus = (festivalId: string): Focus => `${HERE_PREFIX}${festivalId}`;
+export const hereOf = (focus: Focus | null | undefined): string | undefined => (focus?.startsWith(HERE_PREFIX) ? focus.slice(HERE_PREFIX.length) || undefined : undefined);
+
 /** Focuses that aren't one festival: they draw from every lineup. */
 export const isWide = (focus: Focus | undefined) => focus === MIX || focus === FOLLOWING || !!soundOf(focus);
 

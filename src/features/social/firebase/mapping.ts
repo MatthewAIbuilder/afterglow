@@ -1,5 +1,5 @@
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Comment, COMMENT_MAX, type Profile, type SharedMemory } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, type Profile, type SharedMemory } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -118,12 +118,23 @@ export function crewUpdateFromDoc(crewId: string, id: string, d: unknown): CrewU
     ...(str(o.stage) ? { stage: str(o.stage)!.slice(0, CREW_STAGE_MAX) } : {}),
     ...(str(o.note) ? { note: str(o.note)!.slice(0, CREW_NOTE_MAX) } : {}),
     ...(kind === 'reply' ? { replyTo: str(o.replyTo) } : {}),
+    ...(kind === 'checkin' && o.lost === true ? { lost: true } : {}),
     ...(videoUrl ? { videoUrl } : {}),
     ...(https(o.thumbUrl) ? { thumbUrl: https(o.thumbUrl) } : {}),
     ...(str(o.sharedId) ? { sharedId: str(o.sharedId) } : {}),
     ...(num(o.durationSec) ? { durationSec: num(o.durationSec) } : {}),
     ...(num(o.width) && num(o.height) ? { width: num(o.width), height: num(o.height) } : {}),
   };
+}
+
+/** A crew's meeting spot document; empty or malformed is none. */
+export function meetSpotFromDoc(d: unknown): MeetSpot | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const text = str(o.text)?.trim();
+  const by = str(o.by);
+  if (!text || !by) return null;
+  return { text: text.slice(0, MEET_SPOT_MAX), by, at: timeOf(o.at) ?? '' };
 }
 
 /** Firebase's error codes as the app's kinds. */

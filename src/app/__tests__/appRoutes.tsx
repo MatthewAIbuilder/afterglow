@@ -6,6 +6,10 @@ import FestivalsScreen from '../(tabs)/festivals';
 import LineupScreen from '../(tabs)/lineup';
 import ProfileScreen from '../(tabs)/profile';
 import SoundScreen from '../(tabs)/sound';
+import TogetherScreen from '../(tabs)/together';
+import MyCodeScreen from '../my-code';
+import ScanScreen from '../scan';
+import AddFriendScreen from '../add/[handle]';
 import AccountScreen from '../account';
 import CameraScreen from '../camera';
 import ArtistScreen from '../artist/[id]';
@@ -60,6 +64,10 @@ export const APP_ROUTES = {
   '(tabs)/festivals': FestivalsScreen,
   '(tabs)/lineup': LineupScreen,
   '(tabs)/profile': ProfileScreen,
+  '(tabs)/together': TogetherScreen,
+  'my-code': MyCodeScreen,
+  scan: ScanScreen,
+  'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,
   'festival/[id]': FestivalScreen,
   'poster/[id]': PosterScreen,

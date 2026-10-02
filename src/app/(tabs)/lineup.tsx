@@ -8,6 +8,8 @@ import { FestivalPage } from '../../features/festivals/FestivalPage';
 import { lineupChoices } from '../../features/festivals/going';
 import { festivalShelf, isMany } from '../../features/festivals/shelves';
 import { useLoves } from '../../state/useLoves';
+import { TonightPlan } from '../../features/festivalMode/TonightPlan';
+import { useFestivalMode } from '../../state/festivalMode';
 import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
@@ -20,6 +22,12 @@ import { color, radius, space, type } from '../../theme/tokens';
  * between them. Going to none yet: every festival, with a nudge to pick.
  */
 export default function LineupScreen() {
+  // In festival mode the tab is your night, planned for you.
+  const { active } = useFestivalMode();
+  return active ? <TonightPlan mode={active} /> : <FullLineup />;
+}
+
+function FullLineup() {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const catalog = useCatalog();

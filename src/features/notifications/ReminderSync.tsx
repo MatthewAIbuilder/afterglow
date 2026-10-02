@@ -123,7 +123,7 @@ function PhoneReminders() {
     const data = response?.notification.request.content.data;
     const festivalId = data?.festivalId;
     const href = typeof data?.href === 'string' && data.href.startsWith('/') ? data.href : undefined;
-    if (!id || handled.current === id || typeof festivalId !== 'string') return;
+    if (!id || handled.current === id || (typeof festivalId !== 'string' && !href)) return;
     handled.current = id;
     // Let navigation settle first when the app was opened by the tap.
     const t = setTimeout(() => router.push((href ?? `/festival/${festivalId}`) as never), 300);

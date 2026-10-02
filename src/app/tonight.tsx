@@ -9,7 +9,10 @@ import { CloseIcon } from '../components/TabIcons';
 import type { Festival } from '../data/models';
 import { CameraIcon } from '../features/camera/icons';
 import { CareCard } from '../features/care/CareCard';
+import { FestivalModeCard } from '../features/festivalMode/FestivalModeCard';
 import { CrewLatest } from '../features/crews/CrewLatest';
+import { LostButton } from '../features/crews/LostButton';
+import { MeetSpotCard } from '../features/crews/MeetSpotCard';
 import { CrewWhereCard } from '../features/crews/CrewWhereCard';
 import { picksByDay } from '../features/plan/byDay';
 import { LiveNow } from '../features/plan/LiveNow';
@@ -76,6 +79,7 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
 
   return (
     <>
+      <FestivalModeCard festival={festival} />
       <Section title={schedule ? 'Your route' : night ? `Your picks for ${night}` : 'Your picks'}>
         {schedule ? (
           <LiveNow festival={festival} schedule={schedule} route={route} />
@@ -102,6 +106,10 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
           {crews.length ? (
             <>
               <CrewWhereCard festival={festival} crews={crews} />
+              {ready ? <LostButton festivalId={festival.id} /> : null}
+              {crews.map((c) => (
+                <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={crews.length > 1} />
+              ))}
               {crews.map((c) => (
                 <CrewLatest key={c.id} crew={c} nameOf={() => undefined} />
               ))}

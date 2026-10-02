@@ -126,6 +126,8 @@ export type CrewUpdate = {
   note?: string;
   /** A reply: the id of the update it answers, in the same crew. */
   replyTo?: string;
+  /** A check-in that says "Can't find you": the crew should look out for you (or head to the meeting spot). */
+  lost?: boolean;
   videoUrl?: string;
   thumbUrl?: string;
   /** When the video was also shared to Discover: that copy's id. */
@@ -144,6 +146,11 @@ export type CrewUpdateInput = Omit<CrewUpdate, 'crewId' | 'uid' | 'sentAt' | 'vi
   videoUri?: string;
   thumbUri?: string;
 };
+
+/** A crew's meeting spot, in words ("by the big tree left of Main Stage"), and who set it when. */
+export type MeetSpot = { text: string; by: string; at: string };
+/** Meeting spots are at most this long. */
+export const MEET_SPOT_MAX = 80;
 
 /** Check-in words are at most this long. */
 export const CREW_NOTE_MAX = 80;

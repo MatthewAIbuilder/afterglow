@@ -45,6 +45,8 @@ type Ctx = {
   following: ReadonlySet<string>;
   /** Follow or unfollow; shown straight away, undone if it doesn't go through. */
   setFollowing: (uid: string, on: boolean) => Promise<void>;
+  /** Count someone as followed on this phone after a follow made elsewhere (scanning their QR code). */
+  noteFollowing: (uid: string) => void;
   report: (target: ReportTarget, reason: ReportReason, note?: string) => Promise<void>;
 };
 
@@ -202,6 +204,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     },
     [service],
   );
+  const noteFollowing = useCallback((uid: string) => setFollowingIds((s) => withId(s, uid, true)), []);
   const setFollowing = useCallback(
     async (uid: string, on: boolean) => {
       if (!user) throw new SocialError('not-signed-in');
@@ -220,8 +223,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, following, setFollowing, report }),
-    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, following, setFollowing, report],
+    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

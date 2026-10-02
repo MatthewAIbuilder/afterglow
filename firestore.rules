@@ -82,17 +82,53 @@ service cloud.firestore {
 
     // Follows: `from` follows `to`. Anyone signed in can see who follows whom. You can only follow as
     // yourself, someone else with a profile, and not someone who blocked you; either of you can end it.
+    // Scanning a friend's QR code makes it both ways: with proof you scanned their code (a friend link,
+    // written in the same batch), you may also make them follow you (`via: 'code'`).
     match /follows/{id} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.from == me()
-        && request.resource.data.keys().hasOnly(['from', 'to', 'createdAt'])
+      allow create: if signedIn() && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40
+        && ((request.resource.data.from == me()
+            && request.resource.data.keys().hasOnly(['from', 'to', 'createdAt'])
+            && request.resource.data.to is string && request.resource.data.to != me()
+            && id == me() + '_' + request.resource.data.to
+            && exists(path('profiles', me())) && exists(path('profiles', request.resource.data.to))
+            && !(exists(path('blocks', request.resource.data.to)) && me() in get(path('blocks', request.resource.data.to)).data.uids))
+          || (request.resource.data.to == me()
+            && request.resource.data.keys().hasOnly(['from', 'to', 'createdAt', 'via']) && request.resource.data.via == 'code'
+            && request.resource.data.from is string && request.resource.data.from != me()
+            && id == request.resource.data.from + '_' + me()
+            && exists(path('profiles', me())) && exists(path('profiles', request.resource.data.from))
+            && !(exists(path('blocks', request.resource.data.from)) && me() in get(path('blocks', request.resource.data.from)).data.uids)
+            && existsAfter(path('friendLinks', me() + '_' + request.resource.data.from))
+            && getAfter(path('friendLinks', me() + '_' + request.resource.data.from)).data.code == get(path('friendCodes', request.resource.data.from)).data.code));
+      allow update: if false;
+      allow delete: if signedIn() && (resource.data.from == me() || resource.data.to == me());
+    }
+
+    // Friend codes: the private code in your QR code. Nobody reads it back, not even you; only these
+    // rules compare a scanned code with it. A new code makes old ones stop working.
+    match /friendCodes/{uid} {
+      allow read: if false;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['code', 'updatedAt'])
+        && request.resource.data.code is string && request.resource.data.code.matches('^[a-z0-9]{8,32}$')
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && me() == uid;
+    }
+
+    // Friend links: proof you scanned someone's current code, made together with the follows.
+    // Only the scanner can see or remove theirs.
+    match /friendLinks/{id} {
+      allow read, delete: if signedIn() && resource.data.from == me();
+      allow create, update: if signedIn() && request.resource.data.from == me()
+        && request.resource.data.keys().hasOnly(['from', 'to', 'code', 'createdAt'])
         && request.resource.data.to is string && request.resource.data.to != me()
         && id == me() + '_' + request.resource.data.to
         && exists(path('profiles', me())) && exists(path('profiles', request.resource.data.to))
+        && exists(path('friendCodes', request.resource.data.to))
+        && request.resource.data.code == get(path('friendCodes', request.resource.data.to)).data.code
         && !(exists(path('blocks', request.resource.data.to)) && me() in get(path('blocks', request.resource.data.to)).data.uids)
         && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
-      allow update: if false;
-      allow delete: if signedIn() && (resource.data.from == me() || resource.data.to == me());
     }
 
     // Likes on shared videos: `uid` likes memory `memoryId`, shared by `owner`. Anyone signed in can see them.
@@ -179,6 +215,18 @@ service cloud.firestore {
         allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
       }
 
+      // The crew's meeting spot ("by the big tree left of Main Stage"): read and set by any member, as
+      // themselves, stamped with the server's time. One document, `meet`.
+      match /meta/{doc} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create, update: if signedIn() && doc == 'meet' && me() in get(path('crews', id)).data.members
+          && request.resource.data.keys().hasOnly(['text', 'by', 'at'])
+          && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 80
+          && request.resource.data.by == me()
+          && request.resource.data.at == request.time;
+        allow delete: if signedIn() && me() in get(path('crews', id)).data.members;
+      }
+
       // Crew updates: where a member is and what they're seeing, from a video or a check-in. Members read
       // them; you post only as yourself while you're in the crew. `atMs` is when it happened on the phone
       // (no later than now, no older than a week); `sentAt` must be the server's own time, so "reached
@@ -188,7 +236,7 @@ service cloud.firestore {
         allow read: if signedIn() && me() in get(path('crews', id)).data.members;
         allow create: if signedIn() && me() in get(path('crews', id)).data.members
           && updateId.matches('^[A-Za-z0-9_-]{6,64}$')
-          && request.resource.data.keys().hasOnly(['uid', 'kind', 'atMs', 'sentAt', 'festivalId', 'artistId', 'stage', 'note', 'videoUrl', 'thumbUrl', 'videoPath', 'thumbPath', 'sharedId', 'durationSec', 'width', 'height', 'replyTo'])
+          && request.resource.data.keys().hasOnly(['uid', 'kind', 'atMs', 'sentAt', 'festivalId', 'artistId', 'stage', 'note', 'videoUrl', 'thumbUrl', 'videoPath', 'thumbPath', 'sharedId', 'durationSec', 'width', 'height', 'replyTo', 'lost'])
           && request.resource.data.uid == me()
           && request.resource.data.kind in ['video', 'checkin', 'reply']
           && request.resource.data.atMs is number
@@ -213,6 +261,8 @@ service cloud.firestore {
             && request.resource.data.note is string && request.resource.data.note.size() > 0
             && !('videoUrl' in request.resource.data)))
           && (request.resource.data.kind == 'reply' || !('replyTo' in request.resource.data))
+          // "Can't find you": only on a check-in.
+          && (!('lost' in request.resource.data) || (request.resource.data.lost == true && request.resource.data.kind == 'checkin'))
           && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
           && (!('width' in request.resource.data) || (request.resource.data.width is number && request.resource.data.width <= 20000))
           && (!('height' in request.resource.data) || (request.resource.data.height is number && request.resource.data.height <= 20000));
