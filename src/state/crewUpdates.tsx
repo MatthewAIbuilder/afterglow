@@ -11,6 +11,7 @@ import {
   failed,
   liveCrews,
   markSeen as seenStory,
+  REFUSED_TRIES,
   repliesTo,
   retryDelay,
   stageOf,
@@ -23,6 +24,7 @@ import {
 import type { Memory } from '../features/memories/models';
 import { isOffline } from '../features/offline/status';
 import type { CrewUpdate, CrewUpdateInput, Profile } from '../features/social/models';
+import { socialErrorKind } from '../features/social/service';
 import { useNow } from '../lib/useNow';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
@@ -217,6 +219,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         }
         const reached: string[] = [];
         let stop = false;
+        let refused = false;
         for (const crewId of crewIds) {
           try {
             const posted = await service.postCrewUpdate(crewId, input);
@@ -225,18 +228,23 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
               const list = (s.byCrew[crewId] ?? []).filter((u) => u.id !== posted.id);
               return { uid: s.uid ?? uid, byCrew: { ...s.byCrew, [crewId]: [posted, ...list] } };
             });
-          } catch {
-            stop = true;
+          } catch (e) {
+            const kind = socialErrorKind(e);
+            if (kind === 'network' || kind === 'unavailable') stop = true;
+            else refused = true;
             break;
           }
         }
-        const gone = [...reached, ...item.crewIds.filter((id) => !crewIds.includes(id))];
+        // Refused too often: let it go rather than hold up everything after it.
+        const givenUp = refused && item.tries + 1 >= REFUSED_TRIES ? crewIds : [];
+        const gone = [...reached, ...givenUp, ...item.crewIds.filter((id) => !crewIds.includes(id))];
         if (gone.length) setOutbox((o) => delivered(o, item.id, gone));
-        if (stop) {
+        if (stop || (refused && !givenUp.length)) {
           setOutbox((o) => failed(o, item.id));
           setTimeout(() => setRetryTick((t) => t + 1), retryDelay(item.tries));
-          break;
         }
+        // No signal: nothing else will get through either. Refused: carry on with the rest.
+        if (stop) break;
       }
     } finally {
       sending.current = false;

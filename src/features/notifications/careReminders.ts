@@ -10,8 +10,8 @@ const LEAD_MS = 5 * 60_000;
 
 /**
  * Water reminders for tonight, when you've switched them on and a festival
- * you're going to is on: every `waterEvery` minutes from your last water (or
- * from now), until 6 AM. Logging water moves them on (their ids carry the
+ * you're going to is on: every `waterEvery` minutes from your last water (or,
+ * before any, on a steady beat from noon), until 6 AM. Logging water moves them on (their ids carry the
  * time). The words are gentle and say nothing private, since they can show on
  * the lock screen. Pure.
  */
@@ -22,7 +22,9 @@ export function careReminders(care: Care, festivalId: string | undefined, now: D
   const start = nightStart(t);
   const end = start + (24 - 12 + CARE_UNTIL_HOUR) * 3_600_000;
   const water = lastOf(care, 'water');
-  const from = water && water.at >= start ? water.at : t;
+  // No water yet tonight: a steady beat from the start of the night, so other
+  // changes (logging food, a check-in) never push the next one back.
+  const from = water && water.at >= start ? water.at : start;
   let at = from + every;
   while (at < t + LEAD_MS) at += every;
   const out: Reminder[] = [];
