@@ -78,6 +78,7 @@ Firebase console → **Authentication** → **Settings** → **Authorized domain
 |---|---|
 | The Actions run is red at "Type-check" or "Tests" | Something in the code needs fixing: tell Claude which step failed. |
 | Green, but "Deploy" was skipped | The `FIREBASE_SERVICE_ACCOUNT` secret is missing or misspelled (step 2). |
+| "Check the Firebase key" fails, or Deploy says "Failed to authenticate" | The `FIREBASE_SERVICE_ACCOUNT` secret holds something else (for example the `.env` file's lines). Replace it with the whole `.json` key file from step 2: open it in Notepad, select all, copy, paste. |
 | Deploy fails with "permission denied" | The key is for a different project, or `EXPO_PUBLIC_FIREBASE_PROJECT_ID` is wrong. |
 | Deploy fails with "No currently active project" | Fixed: the project (`afterglowmusic`) is now in `.firebaserc` and the workflow. |
 | The site says profiles aren't available | A variable from step 3 is missing; re-run the latest Actions run after adding it. |

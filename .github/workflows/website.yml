@@ -104,6 +104,17 @@ jobs:
       - name: Link previews
         run: npx --yes tsx@4 scripts/page-previews.ts dist
 
+      - name: Check the Firebase key
+        if: env.CAN_DEPLOY == 'true'
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        # Never prints the key: only says whether it looks like the .json file Firebase gives you.
+        run: |
+          if ! printf '%s' "$KEY" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const k=JSON.parse(s);process.exit(k.type==="service_account"&&k.private_key?0:1)}catch{process.exit(1)}})'; then
+            echo "::error::The FIREBASE_SERVICE_ACCOUNT secret isn't a Firebase service account key. It should be the whole .json file from Firebase console > Project settings > Service accounts > Generate new private key (it starts with {). See docs/web-deploy.md, step 2."
+            exit 1
+          fi
+
       - name: Deploy (live from main, a preview for pull requests)
         if: env.CAN_DEPLOY == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
