@@ -11,6 +11,8 @@ import { defaultFocus, focusForClip, lineupClips, playsAt } from '../festivals/l
  */
 export const MIX = 'mix';
 export const FOLLOWING = 'following';
+/** Tonight's preview: who plays tonight at the festival you're at, in set order (only while one is on). */
+export const TONIGHT = 'tonight';
 export type Focus = string;
 
 /** One sound from every lineup: "sound:dubstep". */
@@ -52,7 +54,7 @@ export function inSound(clip: Clip, tag: SoundTag, artist: (id: string) => Artis
  * otherwise the festival with the most clips.
  */
 export function startFocus(festivals: Festival[], clips: Clip[], going: Going, stored?: string | null): Focus | undefined {
-  if (stored === MIX || stored === FOLLOWING || soundOf(stored)) return stored!;
+  if (stored === MIX || stored === FOLLOWING || stored === TONIGHT || soundOf(stored)) return stored!;
   const withClips = (f: Festival | undefined) => !!f && lineupClips(f, clips).length > 0;
   const saved = festivals.find((f) => f.id === stored);
   if (withClips(saved)) return saved!.id;
@@ -71,7 +73,7 @@ export function nextDiscoverFocus(
   asked: { festival?: string; clip?: Clip },
   festivals: Festival[],
 ): Focus | undefined {
-  if (asked.festival === MIX || asked.festival === FOLLOWING || soundOf(asked.festival)) return asked.festival;
+  if (asked.festival === MIX || asked.festival === FOLLOWING || asked.festival === TONIGHT || soundOf(asked.festival)) return asked.festival;
   const festival = asked.festival ? festivals.find((f) => f.id === asked.festival) : undefined;
   if (festival) return festival.id;
   if (!asked.clip || current === MIX) return current;
