@@ -15,7 +15,10 @@ export type CareTimer = {
   /** Each time you logged taking more, after the start. */
   doses?: number[];
 };
-export type Mood = 'good' | 'okay' | 'rough';
+/** How you feel, from great to not great. `rough` is "Not great" (its saved name from before). */
+export type Mood = 'great' | 'good' | 'okay' | 'tired' | 'anxious' | 'hot' | 'sick' | 'overwhelmed' | 'rough';
+/** In the order they're offered: the good ones, the in-between, then the ones that need care. */
+export const MOODS: readonly Mood[] = ['great', 'good', 'okay', 'tired', 'anxious', 'hot', 'overwhelmed', 'sick', 'rough'];
 export type CareEntry = { kind: 'water' | 'food'; at: number } | { kind: 'checkin'; at: number; mood: Mood };
 export type Care = {
   timers: CareTimer[];
@@ -39,7 +42,36 @@ export const LOG_MAX = 300;
 /** Notes older than this are dropped when read back: a night's notes aren't a diary. */
 export const KEEP_MS = 3 * 24 * 60 * 60 * 1000;
 
-export const MOOD_LABEL: Record<Mood, string> = { good: 'Good', okay: 'Okay', rough: 'Not great' };
+export const MOOD_LABEL: Record<Mood, string> = {
+  great: 'Great',
+  good: 'Good',
+  okay: 'Okay',
+  tired: 'Tired',
+  anxious: 'Anxious',
+  hot: 'Too hot',
+  overwhelmed: 'Overwhelmed',
+  sick: 'Sick',
+  rough: 'Not great',
+};
+
+/** Where each feeling sits on the graph, 5 (great) to 1 (not great). */
+export const MOOD_LEVEL: Record<Mood, number> = { great: 5, good: 4, okay: 3, tired: 2, anxious: 2, hot: 2, overwhelmed: 1, sick: 1, rough: 1 };
+
+/** Feelings that bring Get help to the top. */
+export const HELP_MOODS: readonly Mood[] = ['overwhelmed', 'sick', 'rough'];
+
+/** One plain, useful thing to do for each feeling. */
+export const MOOD_TIP: Record<Mood, string> = {
+  great: 'Love that. Keep sipping water and check in again in a while.',
+  good: 'Nice. Take breaks from dancing now and then, and keep sipping water.',
+  okay: 'Take a breather somewhere calmer, eat something if you can, and check in again soon.',
+  tired: 'Sit down for a while, eat something and have some water. Taking more to push through tends to make things worse.',
+  anxious: 'Breathe slowly: in for 4, out for 6. Find a quieter spot with a friend. Feelings like this pass.',
+  hot: 'Get out of the crowd to shade or the chill-out area, take off a layer and sip water. If you stop sweating, feel confused or faint, get help now.',
+  overwhelmed: 'Find somewhere quieter with a friend and sit down. Medics and welfare tents are there for exactly this.',
+  sick: 'Sit down somewhere cool with a friend. If you’re being sick and can’t keep water down, or feel confused, get help.',
+  rough: 'Tell a friend and stay with them. Help is close if you need it.',
+};
 
 const MIN = 60_000;
 
@@ -107,10 +139,25 @@ export function lastLine(care: Care, kind: CareEntry['kind'], now: number): stri
   return ago === 'Just now' ? 'Just now' : `Last ${ago} ago`;
 }
 
-/** Whether the latest check-in tonight was "not great": help comes first then. */
+/** Whether the latest check-in tonight was one that needs care (not great, sick, overwhelmed): help comes first then. */
 export function needsHelp(care: Care, now: number): boolean {
   const last = lastOf(care, 'checkin');
-  return !!last && last.kind === 'checkin' && last.mood === 'rough' && last.at >= nightStart(now);
+  return !!last && last.kind === 'checkin' && HELP_MOODS.includes(last.mood) && last.at >= nightStart(now);
+}
+
+/** Your latest feeling tonight, if you've checked in. */
+export function lastFeeling(care: Care, now: number): { mood: Mood; at: number } | undefined {
+  const last = lastOf(care, 'checkin');
+  return last && last.kind === 'checkin' && last.at >= nightStart(now) ? { mood: last.mood, at: last.at } : undefined;
+}
+
+export type FeelingPoint = { at: number; mood: Mood; level: number };
+
+/** Every check-in between two moments, oldest first, for the graph. */
+export function feelingsBetween(care: Care, from: number, to: number): FeelingPoint[] {
+  return care.log
+    .filter((e): e is Extract<CareEntry, { kind: 'checkin' }> => e.kind === 'checkin' && e.at >= from && e.at <= to)
+    .map((e) => ({ at: e.at, mood: e.mood, level: MOOD_LEVEL[e.mood] }));
 }
 
 /** The one line on the festival page's card: what's running and when you last drank. */
@@ -154,7 +201,7 @@ export function cleanCare(raw: unknown, now: number): Care {
       if (!e || typeof e !== 'object' || !fresh((e as CareEntry).at)) return false;
       const k = (e as CareEntry).kind;
       if (k === 'water' || k === 'food') return true;
-      return k === 'checkin' && ['good', 'okay', 'rough'].includes((e as { mood?: string }).mood ?? '');
+      return k === 'checkin' && (MOODS as readonly string[]).includes((e as { mood?: string }).mood ?? '');
     })
     .sort((a, b) => a.at - b.at)
     .slice(-LOG_MAX);

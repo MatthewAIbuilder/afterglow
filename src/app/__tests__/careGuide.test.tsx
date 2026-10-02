@@ -41,7 +41,7 @@ describe('stopwatches with the timing guide', () => {
     // 40 minutes on: coming up, and taking more now asks first.
     await settle(40 * 60_000);
     await flush();
-    expect(app.getByText('Coming up')).toBeTruthy();
+    expect(app.getAllByText('Coming up').length).toBeGreaterThan(0);
     expect(app.getByText('40:00')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('I took more MDMA / molly'));
     const [title, body, buttons] = alerts.mock.calls[0] as [string, string, AlertButton[]];
@@ -64,15 +64,57 @@ describe('stopwatches with the timing guide', () => {
     const app = await renderApp('/care');
     await flush();
     expect(app.getByText('4,210')).toBeTruthy();
-    for (let i = 0; i < 10; i++) {
-      await fireEvent.press(app.getByLabelText('Tap with each heartbeat'));
+    // Three readings of 8 taps each make the result.
+    for (let i = 0; i < 24; i++) {
+      if (i === 8) expect(app.getByText('Reading 2 of 3')).toBeTruthy();
+      await fireEvent.press(app.getByLabelText(/^Tap with each heartbeat/));
       await settle(750);
     }
     expect(app.getByText('That’s in the usual resting range.')).toBeTruthy();
+    expect(app.getByText('Average of 3 readings.')).toBeTruthy();
+    expect(app.getByLabelText('Pulse checked')).toBeTruthy();
+    // Check again starts over.
+    await fireEvent.press(app.getByLabelText('Check your pulse again from the start'));
+    expect(app.getByText('Reading 1 of 3')).toBeTruthy();
+    expect(app.queryByText('That’s in the usual resting range.')).toBeNull();
     expect(app.getByText('Before you take anything')).toBeTruthy();
     await fireEvent.press(app.getByLabelText(/^Ketamine, snorted\./));
     await flush();
     expect(app.getByText('Riskier mixed with')).toBeTruthy();
+  });
+});
+
+describe('how you are feeling', () => {
+  it('gives a tip for how you feel, and logs feelings on a stopwatch as a graph', async () => {
+    const app = await renderApp('/care');
+    await flush();
+    await fireEvent.press(app.getByLabelText("I'm feeling too hot"));
+    await flush();
+    expect(app.getByLabelText(/^Last check-in: Too hot, Just now ago\./)).toBeTruthy();
+    expect((await saved()).log).toEqual([{ kind: 'checkin', at: START.getTime(), mood: 'hot' }]);
+    await settle(10 * 60_000);
+
+    await fireEvent.press(app.getByLabelText('Start a stopwatch'));
+    await fireEvent.press(app.getByLabelText(/^MDMA \/ molly\. Usually starts in/));
+    await flush();
+    expect(app.getByLabelText('No check-ins on this stopwatch yet.')).toBeTruthy();
+    await settle(45 * 60_000);
+    await flush();
+    await fireEvent.press(app.getByLabelText('How do you feel now? Log it on MDMA / molly'));
+    await fireEvent.press(app.getAllByLabelText("I'm feeling anxious").at(-1)!);
+    await flush();
+    expect(app.getByLabelText('How you felt since you started: 45 min in, anxious.')).toBeTruthy();
+    expect(app.getAllByText(/Breathe slowly/).length).toBeGreaterThan(0);
+    // Two check-ins tonight: the night's graph shows too.
+    expect(app.getByText('Tonight so far')).toBeTruthy();
+  });
+
+  it('jumps to each part of the page', async () => {
+    const app = await renderApp('/care');
+    await flush();
+    for (const part of ['Feelings', 'Stopwatches', 'Water', 'Body', 'Get help', 'Timing guide']) expect(app.getByLabelText(new RegExp(`^${part}(,|\\.)`))).toBeTruthy();
+    await fireEvent.press(app.getByLabelText(/^Timing guide/));
+    expect(app.getByText('Before you take anything')).toBeTruthy();
   });
 });
 
@@ -94,6 +136,6 @@ describe('festival mode', () => {
     await settle(400);
     await flush();
     expect(app.getByText('Look after yourself')).toBeTruthy();
-    expect(app.getByText('Stopwatches')).toBeTruthy();
+    expect(app.getAllByText('Stopwatches').length).toBeGreaterThan(0);
   });
 });

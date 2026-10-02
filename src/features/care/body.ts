@@ -50,3 +50,16 @@ export function stepsLine(steps: number, miles: boolean): string {
   const dist = miles ? `${(km / 1.609).toFixed(1)} mi` : `${km.toFixed(1)} km`;
   return `${steps.toLocaleString('en-US')} ${steps === 1 ? 'step' : 'steps'} · about ${dist}`;
 }
+
+/** A pulse is taken this many times and averaged, for a steadier number. */
+export const PULSE_ROUNDS = 3;
+/** Readings further apart than this are worth taking again. */
+export const PULSE_SPREAD = 15;
+
+/** The average of your readings, and whether they agreed with each other. */
+export function pulseAverage(readings: readonly number[]): { bpm: number; spread: number; steady: boolean } | undefined {
+  if (!readings.length) return undefined;
+  const bpm = Math.round(readings.reduce((a, b) => a + b, 0) / readings.length);
+  const spread = Math.max(...readings) - Math.min(...readings);
+  return { bpm, spread, steady: spread <= PULSE_SPREAD };
+}

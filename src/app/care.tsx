@@ -1,5 +1,5 @@
 import * as LocalAuthentication from 'expo-local-authentication';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
@@ -8,7 +8,8 @@ import { PageTitle } from '../components/PageTitle';
 import { useLocalSearchParams } from 'expo-router';
 import { BodyCard } from '../features/care/BodyCard';
 import { BloomWash, HeartMark } from '../features/care/HeartIntro';
-import { countTonight, regionOf, emergencyNumber, lastLine, type Mood, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY } from '../features/care/care';
+import { countTonight, feelingsBetween, lastFeeling, regionOf, emergencyNumber, lastLine, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY } from '../features/care/care';
+import { FeelingCard } from '../features/care/FeelingCard';
 import { GuideList } from '../features/care/GuideList';
 import { riskyMixes } from '../features/care/guide';
 import { StartStopwatch } from '../features/care/StartStopwatch';
@@ -50,6 +51,16 @@ export default function CareScreen() {
   const canLock = Platform.OS !== 'web';
   const locked = canLock && hydrated && care.lock && !unlocked;
   const help = needsHelp(care, now);
+  // Where each part of the page starts, for the jump chips.
+  const scroller = useRef<ScrollView>(null);
+  const spots = useRef<Partial<Record<PartId, number>>>({});
+  const at = useCallback((id: PartId, y: number) => {
+    spots.current[id] = y;
+  }, []);
+  const jumpTo = (id: PartId) => {
+    const y = spots.current[id];
+    if (y !== undefined) scroller.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+  };
 
   // Face ID (or the passcode); a phone without either just opens.
   const askToUnlock = () =>
@@ -87,6 +98,16 @@ export default function CareScreen() {
   }
 
   const number = emergencyNumber(region());
+  const feeling = lastFeeling(care, now);
+  const water = countTonight(care, 'water', now);
+  const jumps: { id: PartId; label: string; detail?: string }[] = [
+    { id: 'feelings', label: 'Feelings', detail: feeling ? MOOD_LABEL[feeling.mood] : undefined },
+    { id: 'stopwatches', label: 'Stopwatches', detail: care.timers.length ? String(care.timers.length) : undefined },
+    { id: 'water', label: 'Water', detail: water ? String(water) : undefined },
+    { id: 'body', label: 'Body' },
+    { id: 'help', label: 'Get help' },
+    { id: 'guide', label: 'Timing guide' },
+  ];
   const tap = (kind: 'water' | 'food') => {
     haptic.tap();
     log(kind);
@@ -98,6 +119,7 @@ export default function CareScreen() {
       <NightSky />
       <PageActions />
       <ScrollView
+        ref={scroller}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -106,112 +128,136 @@ export default function CareScreen() {
         <Text style={styles.title}>Look after yourself</Text>
         <Text style={styles.sub}>Private to you: kept only on this phone, never shared.</Text>
 
-        {help ? <Help number={number} first /> : null}
-
-        {/* Stopwatches: from the timing guide, or your own words. */}
-        <Text style={styles.section}>Stopwatches</Text>
-        {mixes.map((m) => (
-          <View key={`${m.a.id}-${m.b.id}`} style={styles.mix} accessible accessibilityLabel={`Careful: ${m.a.name} and ${m.b.name} together. ${m.why}`}>
-            <Text style={styles.mixTitle}>
-              Careful: {m.a.name} and {m.b.name}
-            </Text>
-            <Text style={styles.mixBody}>{m.why}</Text>
-          </View>
-        ))}
-        {care.timers.map((t) => (
-          <StopwatchCard key={t.id} timer={t} now={now} onTookMore={() => tookMore(t.id)} onStop={() => stop(t.id)} />
-        ))}
-        {care.timers.length < TIMERS_MAX ? <StartStopwatch onStart={start} /> : null}
-        {!care.timers.length ? <Text style={styles.note}>Start one when you take something, and it tells you when it usually kicks in, so you’re never guessing.</Text> : null}
-
-        {/* Water and food */}
-        <Text style={styles.section}>Water and food</Text>
-        <View style={styles.pair}>
-          {(['water', 'food'] as const).map((kind) => {
-            const n = countTonight(care, kind, now);
-            const name = kind === 'water' ? 'Water' : 'Food';
-            return (
-              <Pressable
-                key={kind}
-                onPress={() => tap(kind)}
-                onLongPress={() => n && undo(kind)}
-                accessibilityRole="button"
-                accessibilityLabel={`${name}: add one. ${n} tonight. ${lastLine(care, kind, now)}.`}
-                accessibilityHint="Press and hold to take the last one back"
-                style={({ pressed }) => [styles.tile, pressed && { transform: [{ scale: 0.97 }] }]}
-              >
-                <Text style={styles.tileName}>{kind === 'water' ? 'Water refill' : 'Ate something'}</Text>
-                <Text style={styles.tileCount}>{n}</Text>
-                <Text style={styles.cardSub}>{lastLine(care, kind, now)}</Text>
-                <Text style={styles.tilePlus}>+ Tap to add</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <Text style={styles.note}>Sip regularly and take breaks somewhere cool. Drinking a lot more water than you need can be dangerous too. Press and hold to take one back.</Text>
-
-        {/* Gentle water reminders on the phone, during a festival night you're going to. */}
-        {Platform.OS !== 'web' ? (
-          <View style={styles.remind}>
-            <Text style={styles.remindTitle}>Remind me to drink water</Text>
-            <View style={styles.remindRow} accessibilityRole="radiogroup">
-              {([undefined, ...WATER_EVERY] as const).map((m) => {
-                const on = care.waterEvery === m;
-                const label = m === undefined ? 'Off' : m === 60 ? 'Every hour' : `Every ${m} min`;
-                return (
-                  <Pressable
-                    key={m ?? 'off'}
-                    onPress={() => {
-                      haptic.select();
-                      setWaterEvery(m);
-                    }}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: on }}
-                    accessibilityLabel={m === undefined ? 'No water reminders' : `Water reminders ${label.toLowerCase()}`}
-                    style={({ pressed }) => [styles.remindChip, on && styles.remindChipOn, pressed && { opacity: 0.8 }]}
-                  >
-                    <Text style={[styles.remindChipText, on && { color: color.moon }]}>{label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.note}>
-              {care.waterEvery
-                ? 'While a festival you’re going to is on, until 6 AM. Each water you log starts the clock again.'
-                : 'A quiet nudge while a festival you’re going to is on. Nothing private shows on your lock screen.'}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Your body */}
-        <Text style={styles.section}>Your body</Text>
-        <BodyCard now={now} />
-
-        {/* Check-in */}
-        <Text style={styles.section}>How are you feeling?</Text>
-        <View style={styles.moods}>
-          {(['good', 'okay', 'rough'] as Mood[]).map((m) => (
+        {/* Jump to a part of the page, each with what's there tonight. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.jumpWrap} contentContainerStyle={styles.jump}>
+          {jumps.map((j) => (
             <Pressable
-              key={m}
+              key={j.id}
               onPress={() => {
                 haptic.select();
-                checkIn(m);
+                jumpTo(j.id);
               }}
               accessibilityRole="button"
-              accessibilityLabel={`I'm feeling ${MOOD_LABEL[m].toLowerCase()}`}
-              style={({ pressed }) => [styles.mood, m === 'rough' && styles.moodRough, pressed && { opacity: 0.75 }]}
+              accessibilityLabel={`${j.label}${j.detail ? `, ${j.detail}` : ''}. Jump there`}
+              style={({ pressed }) => [styles.jumpChip, j.id === 'help' && help && styles.jumpHelp, pressed && { opacity: 0.8 }]}
             >
-              <Text style={styles.moodText}>{MOOD_LABEL[m]}</Text>
+              <Text style={styles.jumpText}>{j.label}</Text>
+              {j.detail ? <Text style={styles.jumpDetail}>{j.detail}</Text> : null}
             </Pressable>
           ))}
-        </View>
-        <Text style={styles.note}>{lastLine(care, 'checkin', now).replace('None yet tonight', 'No check-ins yet tonight')}</Text>
+        </ScrollView>
 
-        {!help ? <Help number={number} /> : null}
+        {help ? (
+          <Part id="help" at={at}>
+            <Help number={number} first />
+          </Part>
+        ) : null}
+
+        {/* How you're feeling, near the top: check in often. */}
+        <Part id="feelings" title="How are you feeling?" at={at}>
+          <FeelingCard care={care} now={now} onFeel={checkIn} />
+        </Part>
+
+        {/* Stopwatches: from the timing guide, or your own words, each with how you've felt since. */}
+        <Part id="stopwatches" title="Stopwatches" at={at}>
+          {mixes.map((m) => (
+            <View key={`${m.a.id}-${m.b.id}`} style={styles.mix} accessible accessibilityLabel={`Careful: ${m.a.name} and ${m.b.name} together. ${m.why}`}>
+              <Text style={styles.mixTitle}>
+                Careful: {m.a.name} and {m.b.name}
+              </Text>
+              <Text style={styles.mixBody}>{m.why}</Text>
+            </View>
+          ))}
+          {care.timers.map((t) => (
+            <StopwatchCard
+              key={t.id}
+              timer={t}
+              now={now}
+              feelings={feelingsBetween(care, t.startedAt, now)}
+              onFeel={checkIn}
+              onTookMore={() => tookMore(t.id)}
+              onStop={() => stop(t.id)}
+            />
+          ))}
+          {care.timers.length < TIMERS_MAX ? <StartStopwatch onStart={start} /> : null}
+          {!care.timers.length ? <Text style={styles.note}>Start one when you take something. It tells you when it usually kicks in, and charts how you feel along the way.</Text> : null}
+        </Part>
+
+        {/* Water and food */}
+        <Part id="water" title="Water and food" at={at}>
+          <View style={styles.pair}>
+            {(['water', 'food'] as const).map((kind) => {
+              const n = countTonight(care, kind, now);
+              const name = kind === 'water' ? 'Water' : 'Food';
+              return (
+                <Pressable
+                  key={kind}
+                  onPress={() => tap(kind)}
+                  onLongPress={() => n && undo(kind)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${name}: add one. ${n} tonight. ${lastLine(care, kind, now)}.`}
+                  accessibilityHint="Press and hold to take the last one back"
+                  style={({ pressed }) => [styles.tile, pressed && { transform: [{ scale: 0.97 }] }]}
+                >
+                  <Text style={styles.tileName}>{kind === 'water' ? 'Water refill' : 'Ate something'}</Text>
+                  <Text style={styles.tileCount}>{n}</Text>
+                  <Text style={styles.cardSub}>{lastLine(care, kind, now)}</Text>
+                  <Text style={styles.tilePlus}>+ Tap to add</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.note}>Sip regularly and take breaks somewhere cool. Drinking a lot more water than you need can be dangerous too. Press and hold to take one back.</Text>
+
+          {/* Gentle water reminders on the phone, during a festival night you're going to. */}
+          {Platform.OS !== 'web' ? (
+            <View style={styles.remind}>
+              <Text style={styles.remindTitle}>Remind me to drink water</Text>
+              <View style={styles.remindRow} accessibilityRole="radiogroup">
+                {([undefined, ...WATER_EVERY] as const).map((m) => {
+                  const on = care.waterEvery === m;
+                  const label = m === undefined ? 'Off' : m === 60 ? 'Every hour' : `Every ${m} min`;
+                  return (
+                    <Pressable
+                      key={m ?? 'off'}
+                      onPress={() => {
+                        haptic.select();
+                        setWaterEvery(m);
+                      }}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: on }}
+                      accessibilityLabel={m === undefined ? 'No water reminders' : `Water reminders ${label.toLowerCase()}`}
+                      style={({ pressed }) => [styles.remindChip, on && styles.remindChipOn, pressed && { opacity: 0.8 }]}
+                    >
+                      <Text style={[styles.remindChipText, on && { color: color.moon }]}>{label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={styles.note}>
+                {care.waterEvery
+                  ? 'While a festival you’re going to is on, until 6 AM. Each water you log starts the clock again.'
+                  : 'A quiet nudge while a festival you’re going to is on. Nothing private shows on your lock screen.'}
+              </Text>
+            </View>
+          ) : null}
+        </Part>
+
+        {/* Your body */}
+        <Part id="body" title="Your body" at={at}>
+          <BodyCard now={now} />
+        </Part>
+
+        {!help ? (
+          <Part id="help" at={at}>
+            <Help number={number} />
+          </Part>
+        ) : null}
 
         {/* The timing guide, readable with no signal. */}
-        <Text style={styles.section}>Timing guide</Text>
-        <GuideList />
+        <Part id="guide" title="Timing guide" at={at}>
+          <GuideList />
+        </Part>
 
         {/* Privacy */}
         <Text style={styles.section}>Privacy</Text>
@@ -249,6 +295,22 @@ export default function CareScreen() {
         </View>
       </ScrollView>
       <BloomWash bloom={fromHeart} />
+    </View>
+  );
+}
+
+type PartId = 'help' | 'feelings' | 'stopwatches' | 'water' | 'body' | 'guide';
+
+/** One part of the page: a heading (when it has one), and where it starts for the jump chips. */
+function Part({ id, title, at, children }: { id: PartId; title?: string; at: (id: PartId, y: number) => void; children: React.ReactNode }) {
+  return (
+    <View onLayout={(e) => at(id, e.nativeEvent.layout.y)}>
+      {title ? (
+        <Text style={styles.section} accessibilityRole="header">
+          {title}
+        </Text>
+      ) : null}
+      {children}
     </View>
   );
 }
@@ -337,10 +399,6 @@ const styles = StyleSheet.create({
   remindChip: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   remindChipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.5)' },
   remindChipText: { ...type.caption, color: color.moonDim },
-  moods: { flexDirection: 'row', gap: space.sm },
-  mood: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  moodRough: { borderColor: 'rgba(255,140,140,0.45)' },
-  moodText: { ...type.label, color: color.moon },
   help: { marginTop: space.xxl, padding: space.lg, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(255,120,120,0.07)', borderWidth: 1, borderColor: 'rgba(255,140,140,0.3)' },
   helpFirst: { marginTop: space.xl },
   helpTitle: { ...type.headline, color: color.moon },
@@ -355,6 +413,12 @@ const styles = StyleSheet.create({
   clear: { paddingVertical: space.sm, width: '100%' },
   clearText: { ...type.label, color: 'rgba(255,150,150,0.95)' },
   lockedBox: { paddingHorizontal: space.xl, gap: space.lg },
+  jumpWrap: { marginTop: space.lg, marginHorizontal: -space.xl },
+  jump: { gap: space.sm, paddingHorizontal: space.xl },
+  jumpChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  jumpHelp: { borderColor: 'rgba(255,140,140,0.6)', backgroundColor: 'rgba(255,120,120,0.12)' },
+  jumpText: { ...type.label, color: color.moon },
+  jumpDetail: { ...type.caption, color: color.glow },
   mix: { padding: space.lg, marginBottom: space.sm, gap: space.xs, borderRadius: radius.lg, backgroundColor: 'rgba(255,120,120,0.1)', borderWidth: 1, borderColor: 'rgba(255,140,140,0.5)' },
   mixTitle: { ...type.headline, color: 'rgba(255,190,190,1)' },
   mixBody: { ...type.body, color: color.moon },

@@ -57,7 +57,7 @@ describe('look after yourself', () => {
   it('reads saved notes back safely and lets old nights go', () => {
     const raw = {
       timers: [{ id: 'a', label: 'x', startedAt: NOW - MIN }, { id: 'old', label: 'y', startedAt: NOW - KEEP_MS - MIN }, { nope: true }],
-      log: [{ kind: 'water', at: NOW - MIN }, { kind: 'checkin', mood: 'great', at: NOW }, { kind: 'food', at: 'soon' }, { kind: 'checkin', mood: 'okay', at: NOW }],
+      log: [{ kind: 'water', at: NOW - MIN }, { kind: 'checkin', mood: 'great', at: NOW }, { kind: 'food', at: 'soon' }, { kind: 'checkin', mood: 'meh', at: NOW }],
       lock: true,
     };
     const care = cleanCare(raw, NOW);
