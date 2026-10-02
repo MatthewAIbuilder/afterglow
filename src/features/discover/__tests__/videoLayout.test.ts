@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { MIN_PLAYER, overlaps, tallLayout } from '../videoLayout';
+import { fillsScreen, MIN_PLAYER, overlaps, tallLayout } from '../videoLayout';
 
 // Roughly an iPhone 15 and an iPhone SE, with the feed header and tab bar reserved.
 const phone = { width: 393, height: 852, top: 159, bottom: 122 };
@@ -32,5 +32,13 @@ describe('tallLayout', () => {
 
   it('falls back (to the stacked card) on a screen too small for it', () => {
     expect(tallLayout(small)).toBeUndefined();
+  });
+});
+
+describe('full-screen crowd videos', () => {
+  it('fills the screen only for upright videos filmed by people, never YouTube', () => {
+    expect(fillsScreen({ provider: 'video', vertical: true })).toBe(true);
+    expect(fillsScreen({ provider: 'video', vertical: false })).toBe(false);
+    expect(fillsScreen({ provider: 'youtube', vertical: true })).toBe(false);
   });
 });

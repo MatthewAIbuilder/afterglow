@@ -56,6 +56,7 @@ export default function SettingsScreen() {
             {me ? (
               <>
                 <Row label="Edit profile" detail={`@${me.handle}`} onPress={() => router.push('/profile-edit')} />
+                <Row label="Friends and crews" onPress={() => router.push('/friends')} />
                 <Row label="Find people" onPress={() => router.push('/people')} />
               </>
             ) : (

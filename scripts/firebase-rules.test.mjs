@@ -160,8 +160,37 @@ await t('likes: not on the video of someone who blocked you', async () => {
   await assertFails(setDoc(doc(A.firestore(), 'likes', 'memB_uidA'), like('memB', 'uidB', 'uidA')));
   await assertSucceeds(setDoc(doc(B.firestore(), 'blocks', 'uidB'), { uids: [] }));
 });
-const crew = (over = {}) => ({ festivalId: 'acl-26', name: 'The crew', owner: 'uidA', members: ['uidA'], createdAt: now, ...over });
 const C = env.authenticatedContext('uidC');
+const comment = (over = {}) => ({ memoryId: 'memB', owner: 'uidB', uid: 'uidA', handle: 'maya2', text: 'What a drop', createdAt: now, ...over });
+await t('comments: A comments on B’s video as itself, with its own handle; anyone signed in reads them', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'comments', 'c1'), comment()));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'comments', 'c2'), comment({ uid: 'uidB', handle: 'bob', text: 'Thanks!' })));
+  await assertSucceeds(getDocs(query(collection(A.firestore(), 'comments'), where('memoryId', '==', 'memB'), orderBy('createdAt', 'asc'))));
+  await assertFails(getDocs(query(collection(anon.firestore(), 'comments'), where('memoryId', '==', 'memB'))));
+});
+await t('comments: not as someone else, not with another handle, not empty or too long, not on a missing video or the wrong owner, no extra fields', async () => {
+  const db = A.firestore();
+  await assertFails(setDoc(doc(db, 'comments', 'c3'), comment({ uid: 'uidB' })));
+  await assertFails(setDoc(doc(db, 'comments', 'c3'), comment({ handle: 'bob' })));
+  await assertFails(setDoc(doc(db, 'comments', 'c3'), comment({ text: '' })));
+  await assertFails(setDoc(doc(db, 'comments', 'c3'), comment({ text: 'x'.repeat(301) })));
+  await assertFails(setDoc(doc(db, 'comments', 'c3'), comment({ memoryId: 'nope' })));
+  await assertFails(setDoc(doc(db, 'comments', 'c3'), comment({ owner: 'uidA' })));
+  await assertFails(setDoc(doc(db, 'comments', 'c3'), comment({ pinned: true })));
+  await assertFails(setDoc(doc(C.firestore(), 'comments', 'c3'), comment({ uid: 'uidC', handle: 'cara' })));
+});
+await t('comments: never edited; removed by the writer or the video’s owner, not a stranger', async () => {
+  await assertFails(updateDoc(doc(A.firestore(), 'comments', 'c1'), { text: 'changed' }));
+  await assertFails(deleteDoc(doc(C.firestore(), 'comments', 'c1')));
+  await assertSucceeds(deleteDoc(doc(B.firestore(), 'comments', 'c1')));
+  await assertSucceeds(deleteDoc(doc(B.firestore(), 'comments', 'c2')));
+});
+await t('comments: not on the video of someone who blocked you', async () => {
+  await assertSucceeds(setDoc(doc(B.firestore(), 'blocks', 'uidB'), { uids: ['uidA'] }));
+  await assertFails(setDoc(doc(A.firestore(), 'comments', 'c4'), comment()));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'blocks', 'uidB'), { uids: [] }));
+});
+const crew = (over = {}) => ({ festivalId: 'acl-26', name: 'The crew', owner: 'uidA', members: ['uidA'], createdAt: now, ...over });
 await t('crews: A starts a crew as its only member', () => assertSucceeds(setDoc(doc(A.firestore(), 'crews', 'c1'), crew())));
 await t('crews: not for someone else, not with others in it, not without a profile, no extra fields, name limits', async () => {
   await assertFails(setDoc(doc(B.firestore(), 'crews', 'c2'), crew()));

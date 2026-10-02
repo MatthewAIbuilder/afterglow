@@ -111,6 +111,25 @@ service cloud.firestore {
       allow delete: if signedIn() && (resource.data.uid == me() || resource.data.owner == me());
     }
 
+    // Comments on shared videos: anyone signed in reads them; you write as yourself, with a profile, with your
+    // own handle, on a video that exists (`owner` is its sharer), not if its owner blocked you; 1 to 300
+    // characters. Never edited; removed by the writer or the video's owner.
+    match /comments/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == me()
+        && request.resource.data.keys().hasOnly(['memoryId', 'owner', 'uid', 'handle', 'text', 'createdAt'])
+        && request.resource.data.memoryId is string
+        && exists(path('memories', request.resource.data.memoryId))
+        && get(path('memories', request.resource.data.memoryId)).data.uid == request.resource.data.owner
+        && !(exists(path('blocks', request.resource.data.owner)) && me() in get(path('blocks', request.resource.data.owner)).data.uids)
+        && exists(path('profiles', me()))
+        && request.resource.data.handle == get(path('profiles', me())).data.handle
+        && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 300
+        && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
+      allow update: if false;
+      allow delete: if signedIn() && (resource.data.uid == me() || resource.data.owner == me());
+    }
+
     // Festival crews: a few friends planning one festival. The id is the invite: anyone signed in who has it
     // can read the crew (its name and members) and join it, adding only themselves, up to 12, with a profile, not
     // if the owner blocked them. Members leave by removing only themselves (an owner who leaves hands it to a
@@ -198,7 +217,7 @@ service cloud.firestore {
     match /reports/{id} {
       allow create: if signedIn() && request.resource.data.by == me()
         && request.resource.data.keys().hasOnly(['by', 'kind', 'targetId', 'ownerUid', 'reason', 'note', 'createdAt'])
-        && request.resource.data.kind in ['profile', 'memory']
+        && request.resource.data.kind in ['profile', 'memory', 'comment']
         && request.resource.data.targetId is string && request.resource.data.targetId.size() <= 128
         && request.resource.data.ownerUid is string && request.resource.data.ownerUid.size() <= 128
         && request.resource.data.reason in ['offensive', 'harassment', 'spam', 'not-theirs', 'other']

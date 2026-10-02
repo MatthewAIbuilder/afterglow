@@ -48,3 +48,11 @@ export function tallLayout({ width, height, top, bottom }: Input): TallLayout | 
 
 export const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/**
+ * Upright videos filmed by people on Afterglow fill the whole screen, TikTok
+ * style, with the clip info and buttons over the bottom. Only our own videos:
+ * YouTube's player mustn't be covered or cropped, so official clips keep the
+ * layouts above.
+ */
+export const fillsScreen = (media: { provider: string; vertical?: boolean }) => media.provider === 'video' && !!media.vertical;

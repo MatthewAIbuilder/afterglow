@@ -70,7 +70,8 @@ export const REPORT_REASONS: { key: ReportReason; label: string }[] = [
 /** Something that happened to you: someone followed you, or liked a video you shared. */
 export type Activity =
   | { kind: 'follow'; id: string; from: string; createdAt: string }
-  | { kind: 'like'; id: string; from: string; memoryId: string; createdAt: string };
+  | { kind: 'like'; id: string; from: string; memoryId: string; createdAt: string }
+  | { kind: 'comment'; id: string; from: string; memoryId: string; text: string; createdAt: string };
 
 /**
  * A festival crew: a few friends planning one festival together. Anyone
@@ -145,3 +146,19 @@ export type CrewUpdateInput = Omit<CrewUpdate, 'crewId' | 'uid' | 'sentAt' | 'vi
 export const CREW_NOTE_MAX = 80;
 /** Stage names in an update are at most this long. */
 export const CREW_STAGE_MAX = 60;
+
+/** A comment on a shared video. Anyone signed in can read them; you write as yourself, with a profile. */
+export type Comment = {
+  id: string;
+  memoryId: string;
+  /** Who shared the video (they can remove any comment on it). */
+  owner: string;
+  uid: string;
+  /** The commenter's @handle when they wrote it. */
+  handle: string;
+  text: string;
+  createdAt: string;
+};
+
+/** Comments are at most this long. */
+export const COMMENT_MAX = 300;

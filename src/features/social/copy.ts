@@ -27,3 +27,4 @@ export const followersLabel = (n: number) => `${n} ${n === 1 ? 'follower' : 'fol
 export const followingLabel = (n: number) => `${n} following`;
 /** "1 like", "12 likes". */
 export const likesLabel = (n: number) => `${n} ${n === 1 ? 'like' : 'likes'}`;
+export const commentsLabel = (n: number) => `${n} ${n === 1 ? 'comment' : 'comments'}`;

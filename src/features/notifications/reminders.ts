@@ -15,6 +15,8 @@ export type Reminder = {
   at: Date;
   title: string;
   body: string;
+  /** Where tapping it goes, when not the festival page. */
+  href?: string;
 };
 
 /** Every reminder id starts with this, so the app only ever touches its own. */

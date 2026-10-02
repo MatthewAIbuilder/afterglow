@@ -38,10 +38,10 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, type Profile } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
-import { cleanCrewName, cleanProfileInput, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
-import { asSocialError, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
+import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
+import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -65,6 +65,7 @@ import { asSocialError, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, memory
  *   crews/{id}/picks/{uid} artists, updatedAt: written by that member, read by members
  *   crews/{id}/updates/{updateId} uid, kind, atMs (when it happened on the phone), sentAt (server time), festivalId,
  *                       artistId, stage, note, videoUrl/thumbUrl (+ videoPath/thumbPath when uploaded for the crew), sharedId, durationSec, width, height
+ *   comments/{id}       memoryId, owner, uid, handle, text (≤ 300), createdAt: written as yourself, removed by you or the video's owner
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
  * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg, crews/{crewId}/{uid}/{updateId}.(mp4|mov|m4v|jpg) (links only in members-only updates)
  */
@@ -176,6 +177,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           getDocs(query(collection(db, 'follows'), where('to', '==', user.uid))),
           getDocs(query(collection(db, 'likes'), where('uid', '==', user.uid))),
           getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid))),
+          getDocs(query(collection(db, 'comments'), where('uid', '==', user.uid))),
+          getDocs(query(collection(db, 'comments'), where('owner', '==', user.uid))),
         ]);
         const refs = snaps.flatMap((snap) => snap.docs.map((d) => d.ref));
         for (let i = 0; i < refs.length; i += 400) {
@@ -325,7 +328,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!d.exists()) return;
         const data = d.data() as { uid?: string; videoPath?: string; thumbPath?: string };
         if (data.uid !== user.uid) throw new SocialError('not-signed-in');
-        // Its likes go with it.
+        // Its likes and comments go with it.
+        const said = await getDocs(query(collection(fb().db, 'comments'), where('memoryId', '==', id), where('owner', '==', user.uid)));
+        for (const d of said.docs) await deleteDoc(d.ref).catch(() => {});
         const liked = await getDocs(query(collection(fb().db, 'likes'), where('memoryId', '==', id), where('owner', '==', user.uid)));
         for (let i = 0; i < liked.docs.length; i += 400) {
           const b = writeBatch(fb().db);
@@ -409,13 +414,34 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const snap = await getDocs(query(collection(fb().db, 'likes'), where('memoryId', '==', memoryId), orderBy('createdAt', 'desc'), limit(max)));
         return snap.docs.map((d) => (d.data() as { uid?: unknown }).uid).filter((x): x is string => typeof x === 'string');
       }),
+    comment: (memoryId, owner, raw) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        if (commentProblem(raw)) throw new SocialError('unknown');
+        const profile = profileFromDoc(user.uid, (await getDoc(doc(db, 'profiles', user.uid))).data());
+        if (!profile) throw new SocialError('no-profile');
+        const ref_ = doc(collection(db, 'comments'));
+        const data = { memoryId, owner, uid: user.uid, handle: profile.handle, text: cleanComment(raw), createdAt: now() };
+        await setDoc(ref_, data);
+        return { id: ref_.id, ...data };
+      }),
+    comments: (memoryId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'comments'), where('memoryId', '==', memoryId), orderBy('createdAt', 'asc'), limit(max)));
+        return snap.docs.map((d) => commentFromDoc(d.id, d.data())).filter((c): c is Comment => !!c);
+      }),
+    commentCount: (memoryId) =>
+      guard(async () => (await getCountFromServer(query(collection(fb().db, 'comments'), where('memoryId', '==', memoryId)))).data().count),
+    deleteComment: (id) => guard(async () => deleteDoc(doc(fb().db, 'comments', id))),
     activity: (max) =>
       guard(async () => {
         const user = me();
         const { db } = fb();
-        const [followed, liked] = await Promise.all([
+        const [followed, liked, said] = await Promise.all([
           getDocs(query(collection(db, 'follows'), where('to', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
           getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
+          getDocs(query(collection(db, 'comments'), where('owner', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
         ]);
         const str = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
         const items: Activity[] = [];
@@ -426,6 +452,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         for (const d of liked.docs) {
           const l = d.data() as { uid?: unknown; memoryId?: unknown; createdAt?: unknown };
           if (str(l.uid) && str(l.memoryId) && str(l.createdAt)) items.push({ kind: 'like', id: d.id, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt });
+        }
+        for (const d of said.docs) {
+          const c = commentFromDoc(d.id, d.data());
+          // Your own comments on your own videos aren't news.
+          if (c && c.uid !== user.uid) items.push({ kind: 'comment', id: c.id, from: c.uid, memoryId: c.memoryId, text: c.text, createdAt: c.createdAt });
         }
         return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
       }),

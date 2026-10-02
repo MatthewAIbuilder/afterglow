@@ -118,7 +118,7 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
         await Promise.all(who.map(async (u) => (people[u] = await social.service.profileOf(u).catch(() => null))));
         // What your liked videos are of, from what you've shared.
         const videos: Record<string, string> = {};
-        if (items.some((a) => a.kind === 'like')) {
+        if (items.some((a) => a.kind === 'like' || a.kind === 'comment')) {
           for (const m of await social.service.memoriesOf(uid).catch(() => [])) {
             const name = m.artistId ? artist(m.artistId)?.name : undefined;
             if (name) videos[m.id] = `your video of ${name}`;

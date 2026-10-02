@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { addEntry, type Care, type CareEntry, cleanCare, EMPTY_CARE, type Mood, startTimer, stopTimer, undoLast } from '../features/care/care';
+import { addEntry, type Care, type WaterEvery, type CareEntry, cleanCare, EMPTY_CARE, type Mood, startTimer, stopTimer, undoLast } from '../features/care/care';
 
 /**
  * Look after yourself: timers, water and food, check-ins. Kept only in this
@@ -16,6 +16,8 @@ type Ctx = {
   undo: (kind: CareEntry['kind']) => void;
   checkIn: (mood: Mood) => void;
   setLock: (on: boolean) => void;
+  /** Water reminders during a festival night: every 45, 60 or 90 minutes, or off. */
+  setWaterEvery: (every: WaterEvery | undefined) => void;
   clear: () => void;
 };
 
@@ -56,6 +58,12 @@ export function CareProvider({ children }: { children: ReactNode }) {
       undo: (kind) => update((c) => undoLast(c, kind)),
       checkIn: (mood) => update((c) => addEntry(c, { kind: 'checkin', mood, at: Date.now() })),
       setLock: (on) => update((c) => ({ ...c, lock: on })),
+      setWaterEvery: (every) =>
+        update((c) => {
+          if (c.waterEvery === every) return c;
+          const { waterEvery: _off, ...rest } = c;
+          return every ? { ...rest, waterEvery: every } : rest;
+        }),
       clear: () => {
         setCare(EMPTY_CARE);
         AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});

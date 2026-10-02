@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
-import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
+import { ChevronIcon, CommentIcon, ShareIcon } from '../../components/TabIcons';
 import { APP_NAME } from '../../config/app';
 import { setFor } from '../../data/festival';
 import type { Clip, Festival } from '../../data/types';
@@ -47,7 +47,7 @@ import { flagMenu } from './flagMenu';
 import { useClipFlags } from '../../state/clipFlags';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
-import { MIN_PLAYER, tallLayout } from './videoLayout';
+import { fillsScreen, MIN_PLAYER, tallLayout } from './videoLayout';
 import { shareMessage } from '../../lib/share';
 
 type Props = {
@@ -434,6 +434,19 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
               </Text>
             </Pressable>
             <Pressable
+              onPress={() => {
+                haptic.select();
+                if (watch.current) watch.current = excuseWatch(watch.current);
+                router.push({ pathname: '/comments/[id]', params: { id: community.sharedId } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Comments on @${community.handle}'s video`}
+              hitSlop={12}
+              style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+            >
+              <CommentIcon color={color.moonDim} size={16} />
+            </Pressable>
+            <Pressable
               onPress={() =>
                 communityMenu(community, { report: social.report, hide: communityState.hide, block: social.setBlocked })
               }
@@ -475,6 +488,46 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         ) : null}
       </>
     );
+
+    if (fillsScreen(media)) {
+      // A crowd video filmed upright: edge to edge, the clip info and buttons over the bottom, like TikTok.
+      return (
+        <View style={{ width, height }}>
+          <GestureDetector gesture={surface}>
+            <View style={StyleSheet.absoluteFill}>
+              <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <ClipPlayer
+                  media={media}
+                  load={isNear}
+                  active={isActive}
+                  live={live}
+                  paused={paused}
+                  progress={videoProgress}
+                  onPausedChange={setPaused}
+                  onPlayed={onPlayed}
+                  onFail={failVideo}
+                />
+              </View>
+              <LinearGradient colors={['rgba(3,2,10,0.7)', 'rgba(3,2,10,0)']} style={[styles.topFade, { height: top + 40 }]} pointerEvents="none" />
+              <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(3,2,10,0.82)']} style={[styles.scrim, { height: height * 0.5 }]} pointerEvents="none" />
+              <Animated.View style={[styles.center, pauseStyle]} pointerEvents="none">
+                <View style={styles.playDisc}>
+                  <PlayIcon color={color.moon} />
+                </View>
+              </Animated.View>
+              {burst}
+            </View>
+          </GestureDetector>
+          <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
+            {info}
+          </View>
+          <View style={[styles.rail, { bottom: bottomSpace + space.lg }]}>{actions(false)}</View>
+          <View style={[styles.track, { bottom: bottomSpace - 2 }]} pointerEvents="none">
+            <Animated.View style={[styles.progress, videoProgressStyle]} />
+          </View>
+        </View>
+      );
+    }
 
     return (
       <View style={{ width, height }}>
@@ -580,6 +633,7 @@ const shadow = { textShadowColor: 'rgba(0,0,0,0.55)', textShadowRadius: 10 } as 
 
 const styles = StyleSheet.create({
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  topFade: { position: 'absolute', left: 0, right: 0, top: 0 },
   center: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   playDisc: {
     width: 84,

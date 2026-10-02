@@ -1,4 +1,4 @@
-import type { Activity, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
+import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -25,7 +25,7 @@ export type ShareInput = {
 
 export type FollowCounts = { followers: number; following: number };
 
-export type ReportTarget = { kind: 'profile' | 'memory'; id: string; ownerUid: string };
+export type ReportTarget = { kind: 'profile' | 'memory' | 'comment'; id: string; ownerUid: string };
 
 export interface SocialService {
   availability(): SocialAvailability;
@@ -76,7 +76,14 @@ export interface SocialService {
   likeCount(memoryId: string): Promise<number>;
   /** Who liked a video, newest first. */
   likedBy(memoryId: string, max: number): Promise<string[]>;
-  /** What happened to you lately (new followers, likes on your videos), newest first. */
+  /** Comment on someone's shared video, or your own (`owner` is who shared it). Needs your profile. */
+  comment(memoryId: string, owner: string, text: string): Promise<Comment>;
+  /** A video's comments, oldest first, at most `max`. */
+  comments(memoryId: string, max: number): Promise<Comment[]>;
+  commentCount(memoryId: string): Promise<number>;
+  /** Remove a comment: your own, or any on your video. */
+  deleteComment(id: string): Promise<void>;
+  /** What happened to you lately (new followers, likes and comments on your videos), newest first. */
   activity(max: number): Promise<Activity[]>;
 
   /** Start a crew for a festival, with you as its only member. Needs your profile. */

@@ -117,6 +117,13 @@ Where your crew is, from the videos they film and quick check-ins, along the top
 - **Where**: the stories row on Discover (you first, to check in; "Waiting…" while something's in the outbox), `crew-story.tsx` (full screen, latest first, tap right for earlier), and "Latest from the crew" on the crew page.
 - **Privacy**: crew members only. Leaving a crew (or being removed) takes your updates with you; the crew ending removes them all. Crew video files sit at random paths whose links are only in the members-only updates.
 
+## Comments
+
+- Firestore `comments/{id}` (`memoryId`, `owner` (who shared the video), `uid`, `handle` (yours, checked against your profile), `text` 1 to 300, `createdAt`). Anyone signed in reads them; you write as yourself with a profile, on a video that exists, not if its owner blocked you; never edited; removed by the writer or the video's owner. Unsharing a video removes its comments; deleting your account removes the comments you wrote and those on your videos. Indexes: (memoryId, createdAt asc), (owner, createdAt desc). Reports can now be about a comment.
+- `commentProblem` (`social/validate.ts`) refuses empty, over-long and offensive comments (the same `obscenity` check as names and bios).
+- `comments/[id].tsx` (form sheet): oldest first, "filmed it" on the sharer's own replies, Post at the bottom (or "Create a profile to comment"), hold a comment (or VoiceOver's action) to delete it (yours, or any on your video) or report / block. Reached from the Comment button on shared videos (with the count) and the speech bubble on crowd clips in Discover.
+- The bell: "@sam commented on your video of HEDEX" with the words, opening the comments.
+
 ## Likes and the bell
 
 - **One like everywhere.** Liking a video from the crowd (Discover's heart or double-tap, Your clips, or the heart on the shared video itself) is the same reaction on `community:<sharedId>`: it shapes your taste like any clip and, once you have a profile, the person who filmed it sees it. Without a profile the like stays on your phone, and the shared video says so.

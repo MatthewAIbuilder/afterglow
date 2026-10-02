@@ -1,0 +1,77 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, fireEvent } from '@testing-library/react-native';
+import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
+import { forgetGoers } from '../../features/social/useGoers';
+import { renderApp } from './appRoutes';
+
+/** The Friends hub through the real routes, with the in-memory backend. */
+let mockSocial = fakeSocial();
+jest.mock('../../features/social/services', () => ({ defaultSocialService: () => mockSocial.service }));
+
+const settle = (ms = 50) =>
+  act(async () => {
+    jest.advanceTimersByTime(ms);
+    await Promise.resolve();
+  });
+const flush = async (rounds = 10) => {
+  for (let i = 0; i < rounds; i++) await settle();
+};
+const s = () => mockSocial.service;
+async function person(handle: string, name: string, festivals: string[] = []) {
+  const u = await s().signUp(`${handle}@example.com`, 'password123');
+  await s().saveProfile({ handle, displayName: name, bio: '', showFestivals: festivals.length > 0, showSound: false }, { festivals, sounds: [] });
+  return u.uid;
+}
+
+beforeEach(async () => {
+  jest.useFakeTimers({ now: new Date(2026, 9, 2, 12) });
+  await AsyncStorage.clear();
+  await AsyncStorage.setItem('welcomed.v1', 'true');
+  mockSocial = fakeSocial();
+  forgetGoers();
+});
+
+describe('Friends', () => {
+  it('signed out, says what friends are for and how to start', async () => {
+    const app = await renderApp('/profile');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Friends'));
+    await flush();
+    expect(app.getByText('Festivals are better together')).toBeTruthy();
+    await fireEvent.press(app.getByText('Create your profile'));
+    await flush();
+    expect(app.getAllByText(/community guidelines/i).length).toBeGreaterThan(0);
+  });
+
+  it('shows who to follow back and who is going to your festivals, and starts a crew', async () => {
+    const maya = await person('maya', 'Maya');
+    await s().signOut();
+    await person('jojo', 'Jo', ['cyclops-cove-4']);
+    await s().signOut();
+    await person('sam', 'Sam', ['cyclops-cove-4']);
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const sam = [...mockSocial.profiles.values()].find((p) => p.handle === 'sam')!.uid;
+    await s().follow(sam);
+    await s().signOut();
+    await s().signIn('sam@example.com', 'password123');
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+
+    const app = await renderApp('/friends');
+    await flush();
+    expect(app.getByText('Following you')).toBeTruthy();
+    expect(app.getByLabelText('Maya, @maya')).toBeTruthy();
+    expect(app.getByText('Going to your festivals')).toBeTruthy();
+    expect(app.getByText('Going to Cyclops Cove 4')).toBeTruthy();
+    expect(app.getByLabelText('Jo, @jojo')).toBeTruthy();
+    expect(maya).toBeTruthy();
+
+    await fireEvent.press(app.getByLabelText('Start a crew for a festival'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Start a crew for Cyclops Cove 4'));
+    await flush();
+    expect(app.getByLabelText('Crew name').props.value).toBe('Cyclops Cove 4 crew');
+    expect([...mockSocial.crews.values()][0]).toMatchObject({ festivalId: 'cyclops-cove-4', members: [sam] });
+  });
+});

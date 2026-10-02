@@ -5,6 +5,7 @@ import { DialogHost } from '../components/DialogHost';
 import { LikeSync } from '../features/community/LikeSync';
 import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
+import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
@@ -82,6 +83,16 @@ export default function RootLayout() {
         <Stack.Screen name="going/[id]" />
         <Stack.Screen name="crew/[id]" />
         <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="comments/[id]"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.7, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: color.nightRaised },
+          }}
+        />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recap/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="pick-artists" options={{ presentation: 'modal' }} />
@@ -90,6 +101,18 @@ export default function RootLayout() {
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="care" />
+        <Stack.Screen name="friends" />
+        <Stack.Screen name="tonight" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen
+          name="start-crew"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.75, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: color.nightRaised },
+          }}
+        />
         <Stack.Screen
           name="check-in"
           options={{
@@ -146,6 +169,7 @@ export default function RootLayout() {
         <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }} />
       </Stack>
       <FirstRun />
+      <TonightLauncher />
       <ReminderSync />
       <LikeSync />
       <OfflineNotice />

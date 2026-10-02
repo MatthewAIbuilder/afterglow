@@ -20,6 +20,7 @@ import NotificationsScreen from '../notifications';
 import PeopleScreen from '../people';
 import FollowsScreen from '../follows/[handle]';
 import LikesScreen from '../likes/[id]';
+import CommentsScreen from '../comments/[id]';
 import GoingScreen from '../going/[id]';
 import CrewScreen from '../crew/[id]';
 import PlanCardScreen from '../plan-card/[id]';
@@ -31,6 +32,9 @@ import YourArtistsScreen from '../your-artists';
 import SettingsScreen from '../settings';
 import CareScreen from '../care';
 import CheckInScreen from '../check-in';
+import FriendsScreen from '../friends';
+import TonightScreen from '../tonight';
+import StartCrewScreen from '../start-crew';
 import CrewStoryScreen from '../crew-story';
 import YearScreen from '../year/[year]';
 import PosterScreen from '../poster/[id]';
@@ -75,6 +79,9 @@ export const APP_ROUTES = {
   settings: SettingsScreen,
   care: CareScreen,
   'check-in': CheckInScreen,
+  friends: FriendsScreen,
+  tonight: TonightScreen,
+  'start-crew': StartCrewScreen,
   'crew-story': CrewStoryScreen,
   'year/[year]': YearScreen,
   music: MusicScreen,
@@ -92,6 +99,7 @@ export const APP_ROUTES = {
   'legal/[doc]': LegalScreen,
   'follows/[handle]': FollowsScreen,
   'likes/[id]': LikesScreen,
+  'comments/[id]': CommentsScreen,
   'going/[id]': GoingScreen,
   'crew/[id]': CrewScreen,
 };
