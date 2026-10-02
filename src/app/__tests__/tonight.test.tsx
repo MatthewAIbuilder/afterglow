@@ -46,6 +46,16 @@ describe('Tonight', () => {
     expect(app.getByLabelText(/^Tonight: Saturday at Cyclops Cove 4\./)).toBeTruthy();
   });
 
+  it('waits until you are back on a tab before opening', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    const app = await renderApp('/care');
+    await flush();
+    expect(app.queryByText('Saturday at Cyclops Cove 4')).toBeNull();
+    await fireEvent.press(app.getByLabelText('Back'));
+    await flush();
+    expect(app.getByText('Saturday at Cyclops Cove 4')).toBeTruthy();
+  });
+
   it('stays out of the way when you are not going', async () => {
     const app = await renderApp('/');
     await flush();
