@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
@@ -53,15 +53,24 @@ export default function FriendsScreen() {
   // Read each time the screen comes into view: who follows you, and who's going to your festivals.
   const [followers, setFollowers] = useState<Profile[] | undefined>();
   const [goers, setGoers] = useState<{ festival: (typeof upcoming)[number]; profiles: Profile[] }[]>([]);
+  // Who you followed when the lists were read: following someone from a list keeps them there
+  // (showing Following, so it can be undone) until you come back.
+  const [followedThen, setFollowedThen] = useState<ReadonlySet<string>>(() => new Set());
+  const followingRef = useRef(social.following);
+  useEffect(() => {
+    followingRef.current = social.following;
+  }, [social.following]);
   const meUid = me?.uid;
   const upcomingKey = upcoming.map((f) => f.id).join('|');
   useFocusEffect(
     useCallback(() => {
       if (!meUid) return;
       let live = true;
+      const following = followingRef.current;
+      setFollowedThen(following);
       social.service
         .followers(meUid, 50)
-        .then((uids) => followBack(uids, { following: social.following, blocked: social.blocked, me: meUid }))
+        .then((uids) => followBack(uids, { following, blocked: social.blocked, me: meUid }))
         .then((uids) => Promise.all(uids.map((u) => social.service.profileOf(u).catch(() => null))))
         .then((list) => live && setFollowers(list.filter((p): p is Profile => !!p)))
         .catch(() => live && setFollowers([]));
@@ -78,11 +87,11 @@ export default function FriendsScreen() {
       };
       // upcomingKey stands for `upcoming`.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [meUid, social.service, social.following, social.blocked, upcomingKey]),
+    }, [meUid, social.service, social.blocked, upcomingKey]),
   );
   const suggestions: GoerSuggestion[] = useMemo(
-    () => goerSuggestions(goers, { following: social.following, blocked: social.blocked, me: meUid }),
-    [goers, social.following, social.blocked, meUid],
+    () => goerSuggestions(goers, { following: followedThen, blocked: social.blocked, me: meUid }),
+    [goers, followedThen, social.blocked, meUid],
   );
 
   const invite = () => {

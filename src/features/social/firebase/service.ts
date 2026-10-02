@@ -610,6 +610,18 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         );
         return snap.docs.map((d) => crewUpdateFromDoc(crewId, d.id, d.data())).filter((u): u is CrewUpdate => !!u);
       }),
+    forgetCrewVideos: (crewId, ids) =>
+      guard(async () => {
+        const user = me();
+        // The files are named after the update; the video's type isn't known, so each is tried. A file
+        // that isn't there is fine; any other failure (no signal) throws, so the phone tries again later.
+        for (const id of ids)
+          for (const ext of ['mp4', 'mov', 'm4v', 'jpg']) {
+            await deleteObject(ref(fb().storage, `crews/${crewId}/${user.uid}/${id}.${ext}`)).catch((e: unknown) => {
+              if ((e as { code?: string })?.code !== 'storage/object-not-found') throw e;
+            });
+          }
+      }),
     deleteCrewUpdate: (crewId, id) =>
       guard(async () => {
         const user = me();

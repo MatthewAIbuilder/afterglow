@@ -7,7 +7,7 @@ import { useNow } from '../../lib/useNow';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
-import type { Crew } from '../social/models';
+import type { Crew, CrewUpdate } from '../social/models';
 import { firstName } from './together';
 import { ago, clock } from './updates';
 import { crewWhere, whereLine, type Whereabouts } from './where';
@@ -18,11 +18,17 @@ import { crewWhere, whereLine, type Whereabouts } from './where';
  * people posted, never live location; old places say so.
  */
 export function CrewWhereCard({ festival, crews }: { festival: Festival; crews: readonly Crew[] }) {
-  const { updatesFor, profileOf, stories } = useCrewUpdates();
+  const { updatesFor, profileOf, stories, outbox } = useCrewUpdates();
   const social = useSocial();
   const now = useNow().getTime();
   const me = social.user?.uid;
-  const updates = crews.flatMap((c) => updatesFor(c.id));
+  // Your own check-ins still waiting for signal count too: you know where you are.
+  const waiting = me
+    ? outbox
+        .filter((o) => o.input.kind !== 'reply')
+        .flatMap((o) => o.crewIds.filter((id) => crews.some((c) => c.id === id)).map((crewId) => ({ ...o.input, crewId, uid: me, sentAt: o.input.at }) as CrewUpdate))
+    : [];
+  const updates = [...crews.flatMap((c) => updatesFor(c.id)), ...waiting];
   const where = crewWhere(festival, crews, updates, { blocked: [...social.blocked], now });
   if (!where.stages.length && !where.elsewhere.length) return null;
 

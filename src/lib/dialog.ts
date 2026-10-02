@@ -3,7 +3,8 @@ import { ActionSheetIOS, Alert, Platform, type AlertButton, type AlertOptions } 
 /**
  * Alerts and action sheets that work everywhere. On a phone they are the
  * system's own (Alert, and ActionSheetIOS on iPhone); in a browser, where
- * React Native's Alert does nothing, `DialogHost` shows them in the app.
+ * React Native's Alert does nothing, `DialogHost` shows them in the app, as
+ * it does long choice lists on Android.
  * Use these instead of Alert / ActionSheetIOS directly.
  */
 /** A button: its words, its look, and what pressing it does. */
@@ -58,9 +59,15 @@ export function showAlert(title: string, message?: string, buttons?: DialogButto
   });
 }
 
+/** Android's own alert shows no more than this many buttons. */
+export const ANDROID_ALERT_MAX = 3;
+
 export type SheetOptions = { title?: string; message?: string; options: string[]; cancelButtonIndex?: number; destructiveButtonIndex?: number };
 
-/** A list of choices: the iPhone action sheet, an alert on Android, the app's own sheet in a browser. `onSelect` gets the index. */
+/**
+ * A list of choices: the iPhone action sheet; on Android an alert (or the app's own sheet when there are
+ * more than three choices); the app's own sheet in a browser. `onSelect` gets the index.
+ */
 export function showActionSheet(o: SheetOptions, onSelect: (index: number) => void) {
   if (Platform.OS === 'ios') {
     ActionSheetIOS.showActionSheetWithOptions({ ...o, userInterfaceStyle: 'dark' }, onSelect);
@@ -72,7 +79,8 @@ export function showActionSheet(o: SheetOptions, onSelect: (index: number) => vo
     onPress: () => onSelect(i),
   }));
   const dismiss = () => (o.cancelButtonIndex !== undefined ? onSelect(o.cancelButtonIndex) : undefined);
-  if (Platform.OS === 'web') {
+  // Android's alert shows at most three buttons, so a longer list uses the app's own sheet there too.
+  if (Platform.OS === 'web' || buttons.length > ANDROID_ALERT_MAX) {
     openWeb({ title: o.title ?? '', message: o.message, buttons, sheet: true, cancelable: true, onDismiss: dismiss });
     return;
   }

@@ -276,6 +276,9 @@ await t('crew updates: never edited; removed by the author or the owner', async 
 await t('storage: crew videos go only in your own folder; signed out can’t watch; only you remove them', async () => {
   await assertSucceeds(uploadBytes(ref(B.storage(), 'crews/c1/uidB/u000002.mp4'), new Uint8Array(1000), { contentType: 'video/mp4' }));
   await assertFails(uploadBytes(ref(B.storage(), 'crews/c1/uidA/u000002.mp4'), new Uint8Array(10), { contentType: 'video/mp4' }));
+  // A retry after a send stopped part way writes over your own file; never someone else's.
+  await assertSucceeds(uploadBytes(ref(B.storage(), 'crews/c1/uidB/u000002.mp4'), new Uint8Array(1200), { contentType: 'video/mp4' }));
+  await assertFails(uploadBytes(ref(A.storage(), 'crews/c1/uidB/u000002.mp4'), new Uint8Array(10), { contentType: 'video/mp4' }));
   await assertFails(uploadBytes(ref(B.storage(), 'crews/c1/uidB/x.exe'), new Uint8Array(10), { contentType: 'application/octet-stream' }));
   await assertSucceeds(getBytes(ref(A.storage(), 'crews/c1/uidB/u000002.mp4')));
   await assertFails(getBytes(ref(anon.storage(), 'crews/c1/uidB/u000002.mp4')));

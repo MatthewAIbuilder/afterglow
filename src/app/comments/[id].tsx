@@ -70,13 +70,16 @@ export default function CommentsScreen() {
   };
 
   const more = (c: Comment) => {
-    const canRemove = c.uid === me || video?.uid === me;
-    const options = canRemove ? ['Delete comment'] : ['Report comment', `Block @${c.handle}`];
+    const yours = c.uid === me;
+    const canRemove = yours || video?.uid === me;
+    // On your own video you can take down someone's comment and still report or block them.
+    const options = [...(canRemove ? ['Delete comment'] : []), ...(yours ? [] : ['Report comment', `Block @${c.handle}`])];
     showActionSheet(
       { title: `@${c.handle}`, options: [...options, 'Cancel'], cancelButtonIndex: options.length, destructiveButtonIndex: 0 },
       (i) => {
-        if (i >= options.length) return;
-        if (canRemove) {
+        const choice = options[i];
+        if (!choice) return;
+        if (choice === 'Delete comment') {
           social.service
             .deleteComment(c.id)
             .then(() => {
@@ -84,7 +87,7 @@ export default function CommentsScreen() {
               setList((l) => (l ?? []).filter((x) => x.id !== c.id));
             })
             .catch((e) => showAlert('Couldn’t delete it', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
-        } else if (i === 0) askReport({ kind: 'comment', id: c.id, ownerUid: c.uid }, social.report);
+        } else if (choice === 'Report comment') askReport({ kind: 'comment', id: c.id, ownerUid: c.uid }, social.report);
         else askBlock(c.handle, false, (on) => social.setBlocked(c.uid, on));
       },
     );
@@ -112,7 +115,7 @@ export default function CommentsScreen() {
             onLongPress={() => more(c)}
             accessibilityRole="text"
             accessibilityLabel={`@${c.handle}${c.uid === video?.uid ? ', who filmed it' : ''}: ${c.text}. ${ago(c.createdAt.split('#')[0], now)}`}
-            accessibilityActions={[{ name: 'more', label: c.uid === me || video?.uid === me ? 'Delete' : 'Report or block' }]}
+            accessibilityActions={[{ name: 'more', label: c.uid === me ? 'Delete' : video?.uid === me ? 'Delete, report or block' : 'Report or block' }]}
             onAccessibilityAction={() => more(c)}
             style={styles.comment}
           >

@@ -5,24 +5,30 @@ import { AppState } from 'react-native';
 import {
   cleanNote,
   cleanOutbox,
+  cleanSentVideos,
   crewStories,
   delivered,
   enqueue,
   failed,
+  refusedOnce,
   liveCrews,
   markSeen as seenStory,
+  REFUSED_TRIES,
   repliesTo,
   retryDelay,
   stageOf,
   updateId,
+  withSentVideo,
   UPDATES_MAX,
   UPDATES_WINDOW_MS,
   type OutboxItem,
+  type SentVideos,
   type Story,
 } from '../features/crews/updates';
 import type { Memory } from '../features/memories/models';
 import { isOffline } from '../features/offline/status';
 import type { CrewUpdate, CrewUpdateInput, Profile } from '../features/social/models';
+import { socialErrorKind } from '../features/social/service';
 import { useNow } from '../lib/useNow';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
@@ -57,10 +63,12 @@ type Ctx = {
   updatesFor: (crewId: string) => CrewUpdate[];
   /** Your updates still waiting for signal, oldest first. */
   outbox: OutboxItem[];
+  /** Updates given up on this session because a crew kept refusing them. */
+  dropped: string[];
   /** A crewmate's profile, once read. */
   profileOf: (uid: string) => Profile | undefined;
-  /** Post a quick check-in to every crew you're in at this festival. False when you have no crew there. */
-  checkIn: (festivalId: string, words: { note?: string; stage?: string; artistId?: string }) => boolean;
+  /** Post a quick check-in to every crew you're in at this festival: its id (it's in the outbox until it reaches them). False when you have no crew there. */
+  checkIn: (festivalId: string, words: { note?: string; stage?: string; artistId?: string }) => string | false;
   /** Answer a crewmate's update, in its crew only; waits for signal like a check-in. False when you can't. */
   reply: (update: CrewUpdate, note: string) => boolean;
   /** The replies to an update, oldest first, with yours still waiting for signal at the end. */
@@ -76,6 +84,8 @@ type Ctx = {
 
 export const OUTBOX_KEY = 'crewOutbox.v1';
 export const SEEN_KEY = 'crewSeen.v1';
+/** Crew-only videos you uploaded, so they're removed from storage once you're out of the crew. */
+export const SENT_VIDEOS_KEY = 'crewVideos.v1';
 /** How often crews' updates are read while the app is open. */
 export const POLL_MS = 60_000;
 
@@ -98,12 +108,18 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   // --- Your outbox and what you've seen, kept on this phone.
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
   const [seen, setSeen] = useState<Record<string, number>>({});
+  const [sentVideos, setSentVideos] = useState<SentVideos>({});
+  // Updates given up on this session (a crew kept refusing them), so a screen never says they were sent.
+  const [dropped, setDropped] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     let alive = true;
-    Promise.all([AsyncStorage.getItem(OUTBOX_KEY), AsyncStorage.getItem(SEEN_KEY)])
-      .then(([o, s]) => {
+    Promise.all([AsyncStorage.getItem(OUTBOX_KEY), AsyncStorage.getItem(SEEN_KEY), AsyncStorage.getItem(SENT_VIDEOS_KEY)])
+      .then(([o, s, v]) => {
         if (!alive) return;
+        try {
+          setSentVideos(cleanSentVideos(JSON.parse(v ?? '{}')));
+        } catch {}
         try {
           setOutbox(cleanOutbox(JSON.parse(o ?? '[]'), Date.now()));
         } catch {}
@@ -123,6 +139,40 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) AsyncStorage.setItem(OUTBOX_KEY, JSON.stringify(outbox)).catch(() => {});
   }, [outbox, hydrated]);
+  useEffect(() => {
+    if (hydrated) AsyncStorage.setItem(SENT_VIDEOS_KEY, JSON.stringify(sentVideos)).catch(() => {});
+  }, [sentVideos, hydrated]);
+
+  // Out of a crew (left, removed by the owner, or it ended): your videos there come out of storage too.
+  // Each crew is checked with the server first, so a failed read never deletes anything.
+  const tidying = useRef(false);
+  const sentKey = Object.keys(sentVideos).join('|');
+  const crewKey = crews.map((c) => c.id).join('|');
+  useEffect(() => {
+    if (!ready || !uid || !online || !hydrated || tidying.current) return;
+    const gone = Object.keys(sentVideos).filter((id) => !crews.some((c) => c.id === id));
+    if (!gone.length) return;
+    tidying.current = true;
+    (async () => {
+      for (const crewId of gone) {
+        try {
+          const crew = await service.crew(crewId);
+          if (crew && crew.members.includes(uid)) continue;
+          await service.forgetCrewVideos(crewId, sentVideos[crewId] ?? []);
+          setSentVideos((v) => {
+            const { [crewId]: _gone, ...rest } = v;
+            return rest;
+          });
+        } catch {
+          // No answer: leave it for next time.
+        }
+      }
+    })().finally(() => {
+      tidying.current = false;
+    });
+    // sentKey and crewKey stand for sentVideos and crews.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, uid, online, hydrated, sentKey, crewKey, service]);
   useEffect(() => {
     if (hydrated) AsyncStorage.setItem(SEEN_KEY, JSON.stringify(seen)).catch(() => {});
   }, [seen, hydrated]);
@@ -207,7 +257,12 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
           if (item.memoryId in sharingRef.current) continue; // still uploading to Discover: wait for it
           if (m.sharedId) {
             const shared = await service.sharedMemory(m.sharedId).catch(() => undefined);
-            if (shared === undefined) break; // couldn't ask: no signal, try later
+            if (shared === undefined) {
+              // Couldn't ask (weak signal): try again on the usual back-off, not only when the app reopens.
+              setOutbox((o) => failed(o, item.id));
+              setTimeout(() => setRetryTick((t) => t + 1), retryDelay(item.tries));
+              break;
+            }
             input = shared
               ? { ...item.input, videoUrl: shared.videoUrl, thumbUrl: shared.thumbUrl, sharedId: shared.id }
               : { ...item.input, videoUri: mem.uriOf(m.file), thumbUri: m.thumb ? mem.uriOf(m.thumb) : undefined };
@@ -217,26 +272,42 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         }
         const reached: string[] = [];
         let stop = false;
+        const refusedBy: string[] = [];
         for (const crewId of crewIds) {
           try {
             const posted = await service.postCrewUpdate(crewId, input);
             reached.push(crewId);
+            if (input.kind === 'video' && input.videoUri) setSentVideos((v) => withSentVideo(v, crewId, posted.id));
             setUpdates((s) => {
               const list = (s.byCrew[crewId] ?? []).filter((u) => u.id !== posted.id);
               return { uid: s.uid ?? uid, byCrew: { ...s.byCrew, [crewId]: [posted, ...list] } };
             });
-          } catch {
-            stop = true;
-            break;
+          } catch (e) {
+            const kind = socialErrorKind(e);
+            if (kind === 'network' || kind === 'unavailable') {
+              stop = true;
+              break;
+            }
+            // This crew refused it; the others can still take it.
+            refusedBy.push(crewId);
           }
         }
-        const gone = [...reached, ...item.crewIds.filter((id) => !crewIds.includes(id))];
-        if (gone.length) setOutbox((o) => delivered(o, item.id, gone));
+        // Refused too often (by the crews that refused, never counting tries with no signal): let it go
+        // for them rather than hold up everything after it.
+        const givenUp = refusedBy.length && (item.refused ?? 0) + 1 >= REFUSED_TRIES ? refusedBy : [];
+        const notGoing = [...givenUp, ...item.crewIds.filter((id) => !crewIds.includes(id))];
+        if (reached.length || notGoing.length) setOutbox((o) => delivered(delivered(o, item.id, reached), item.id, notGoing, false));
+        // Nobody got it at all: say so, rather than let it look sent.
+        if (givenUp.length && !reached.length && !item.reachedSome && givenUp.length === crewIds.length) setDropped((d) => [...d, item.id]);
         if (stop) {
           setOutbox((o) => failed(o, item.id));
           setTimeout(() => setRetryTick((t) => t + 1), retryDelay(item.tries));
-          break;
+        } else if (refusedBy.length && !givenUp.length) {
+          setOutbox((o) => refusedOnce(o, item.id));
+          setTimeout(() => setRetryTick((t) => t + 1), retryDelay(item.tries));
         }
+        // No signal: nothing else will get through either. Refused: carry on with the rest.
+        if (stop) break;
       }
     } finally {
       sending.current = false;
@@ -277,7 +348,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         ...(words.artistId ? { artistId: words.artistId } : {}),
       };
       setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
-      return true;
+      return id;
     },
     [crewIdsAt, ready],
   );
@@ -365,8 +436,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }
@@ -378,6 +449,7 @@ const OFF: Ctx = {
   stories: [],
   updatesFor: () => [],
   outbox: [],
+  dropped: [],
   profileOf: () => undefined,
   checkIn: () => false,
   reply: () => false,

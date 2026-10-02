@@ -114,6 +114,8 @@ export interface SocialService {
   crewUpdates(crewId: string, sinceMs: number, max: number): Promise<CrewUpdate[]>;
   /** Take back one of your updates. */
   deleteCrewUpdate(crewId: string, id: string): Promise<void>;
+  /** Remove the crew-only video files you uploaded with these updates (after you've left or been taken out of the crew). */
+  forgetCrewVideos(crewId: string, updateIds: readonly string[]): Promise<void>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;

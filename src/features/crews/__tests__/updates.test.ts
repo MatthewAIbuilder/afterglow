@@ -4,6 +4,7 @@ import type { Crew, CrewUpdate } from '../../social/models';
 import {
   ago,
   cleanOutbox,
+  cleanSentVideos,
   clock,
   crewStories,
   delivered,
@@ -15,10 +16,12 @@ import {
   markSeen,
   OUTBOX_KEEP_MS,
   outboxLine,
+  refusedOnce,
   repliesLine,
   repliesTo,
   retryDelay,
   updateLine,
+  withSentVideo,
   type OutboxItem,
 } from '../updates';
 
@@ -171,5 +174,25 @@ describe('crew updates: replies', () => {
     const ok = { ...base, id: 'r1', input: { id: 'r1', kind: 'reply', at: t(17), festivalId: 'f', replyTo: 'm1', note: 'On my way' } };
     const broken = { ...base, id: 'r2', input: { id: 'r2', kind: 'reply', at: t(17), festivalId: 'f', note: 'Hm' } };
     expect(cleanOutbox([ok, broken], now).map((o) => o.id)).toEqual(['r1']);
+  });
+});
+
+describe('crew videos to tidy', () => {
+  it('remembers each crew’s uploaded videos once, and reads them back safely', () => {
+    const sent = withSentVideo(withSentVideo(withSentVideo({}, 'c1', 'a'), 'c1', 'b'), 'c1', 'a');
+    expect(sent).toEqual({ c1: ['b', 'a'] });
+    expect(cleanSentVideos({ c1: ['a', 3], c2: 'x', c3: [] })).toEqual({ c1: ['a'] });
+    expect(cleanSentVideos(null)).toEqual({});
+  });
+});
+
+describe('outbox refusals', () => {
+  it('counts refusals apart from tries with no signal, and remembers whether any crew got it', () => {
+    const item: OutboxItem = { id: 'u1', crewIds: ['c1', 'c2'], input: { id: 'u1', kind: 'checkin', at: t(17), festivalId: 'f' }, tries: 2, queuedAt: now };
+    const once = refusedOnce([item], 'u1')[0];
+    expect(once).toMatchObject({ tries: 3, refused: 1 });
+    expect(delivered([item], 'u1', ['c1'])[0]).toMatchObject({ crewIds: ['c2'], reachedSome: true });
+    expect(delivered([item], 'u1', ['c1'], false)[0]).toMatchObject({ crewIds: ['c2'], reachedSome: false });
+    expect(cleanOutbox([once], now)[0].refused).toBe(1);
   });
 });

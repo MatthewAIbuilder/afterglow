@@ -1,18 +1,29 @@
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { closeDialog, subscribeDialogs, type WebDialog } from '../lib/dialog';
 import { color, radius, space, type } from '../theme/tokens';
 
 /**
  * Shows `showAlert` / `showActionSheet` in a browser, one at a time: a glass
  * card over a dimmed page, with its buttons (a list for a sheet). Tapping
- * outside or pressing Escape counts as cancel when there is one. Renders
- * nothing on a phone, where the system shows them.
+ * outside, pressing Escape or Android's back button counts as cancel when
+ * there is one. On phones it only shows long choice lists on Android; the
+ * system shows everything else.
  */
 export function DialogHost() {
   const [queue, setQueue] = useState<WebDialog[]>([]);
   useEffect(() => subscribeDialogs(setQueue), []);
-  const d = Platform.OS === 'web' ? queue[0] : undefined;
+  // Only filled in a browser, and by long choice lists on Android; phones otherwise use the system's.
+  const d = queue[0];
+  // Android's back button cancels, like a system dialog.
+  useEffect(() => {
+    if (!d) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (d.cancelable) closeDialog(d.id);
+      return true;
+    });
+    return () => sub.remove();
+  }, [d]);
   // Escape cancels, like a system dialog.
   useEffect(() => {
     if (!d || !d.cancelable || typeof document === 'undefined') return;

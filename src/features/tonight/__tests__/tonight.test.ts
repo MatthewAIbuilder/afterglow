@@ -20,6 +20,24 @@ describe('festival-day mode', () => {
     expect(isOn(cc4, new Date(2026, 11, 8, 9))).toBe(false);
   });
 
+  it('counts either weekend of a two-weekend festival, and not the days between', () => {
+    const acl = fest('acl', {
+      startDate: '2026-10-02',
+      endDate: '2026-10-11',
+      days: ['Friday', 'Saturday', 'Sunday'],
+      weekends: [
+        { start: '2026-10-02', end: '2026-10-04' },
+        { start: '2026-10-09', end: '2026-10-11' },
+      ],
+    });
+    expect(isOn(acl, new Date(2026, 9, 3, 21))).toBe(true);
+    expect(isOn(acl, new Date(2026, 9, 5, 9))).toBe(true); // the morning after weekend 1
+    expect(isOn(acl, new Date(2026, 9, 7, 21))).toBe(false); // midweek
+    expect(isOn(acl, new Date(2026, 9, 10, 21))).toBe(true); // weekend 2
+    expect(isOn(acl, new Date(2026, 9, 12, 9))).toBe(true);
+    expect(isOn(acl, new Date(2026, 9, 13, 9))).toBe(false);
+  });
+
   it('opens by itself once a night', () => {
     expect(tonightKey('cc4', new Date(2026, 11, 5, 22))).toBe('cc4:2026-12-05');
     expect(tonightKey('cc4', new Date(2026, 11, 6, 2))).toBe('cc4:2026-12-05');
