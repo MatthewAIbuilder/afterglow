@@ -5,6 +5,7 @@ import { DialogHost } from '../components/DialogHost';
 import { LikeSync } from '../features/community/LikeSync';
 import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
+import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
@@ -91,6 +92,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings" />
         <Stack.Screen name="care" />
         <Stack.Screen name="friends" />
+        <Stack.Screen name="tonight" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen
           name="start-crew"
           options={{
@@ -157,6 +159,7 @@ export default function RootLayout() {
         <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }} />
       </Stack>
       <FirstRun />
+      <TonightLauncher />
       <ReminderSync />
       <LikeSync />
       <OfflineNotice />

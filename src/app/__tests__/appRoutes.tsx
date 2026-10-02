@@ -32,6 +32,7 @@ import SettingsScreen from '../settings';
 import CareScreen from '../care';
 import CheckInScreen from '../check-in';
 import FriendsScreen from '../friends';
+import TonightScreen from '../tonight';
 import StartCrewScreen from '../start-crew';
 import CrewStoryScreen from '../crew-story';
 import YearScreen from '../year/[year]';
@@ -78,6 +79,7 @@ export const APP_ROUTES = {
   care: CareScreen,
   'check-in': CheckInScreen,
   friends: FriendsScreen,
+  tonight: TonightScreen,
   'start-crew': StartCrewScreen,
   'crew-story': CrewStoryScreen,
   'year/[year]': YearScreen,

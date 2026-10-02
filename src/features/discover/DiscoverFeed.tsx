@@ -39,6 +39,8 @@ import { FeedEnd } from './FeedEnd';
 import { FollowingEmpty } from './FollowingEmpty';
 import { FeedHint } from './FeedHint';
 import { CrewStories, STORIES_H } from '../crews/CrewStories';
+import { TONIGHT_PILL_H, TonightPill } from '../tonight/TonightPill';
+import { useTonight } from '../tonight/useTonight';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { useAddMemory } from '../memories/useAddMemory';
 import { useMemories } from '../../state/memories';
@@ -315,7 +317,10 @@ export function DiscoverFeed() {
 
   // Your crew's updates along the top, while a crew's festival is on or coming up.
   const storiesOn = useCrewUpdates().crewCount > 0;
-  const storiesSpace = storiesOn ? STORIES_H : 0;
+  // On a festival night, a way back to Tonight sits above the stories.
+  const tonight = useTonight();
+  const tonightSpace = tonight ? TONIGHT_PILL_H : 0;
+  const storiesSpace = (storiesOn ? STORIES_H : 0) + tonightSpace;
 
   return (
     <GestureDetector gesture={swipeToCamera}>
@@ -428,8 +433,13 @@ export function DiscoverFeed() {
           </View>
         </View>
       )}
+      {tonight ? (
+        <View style={[styles.stories, { top: insets.top + space.sm + HEADER_HEIGHT }]} pointerEvents="box-none">
+          <TonightPill tonight={tonight} />
+        </View>
+      ) : null}
       {storiesOn ? (
-        <View style={[styles.stories, { top: insets.top + space.sm + HEADER_HEIGHT + 4 }]} pointerEvents="box-none">
+        <View style={[styles.stories, { top: insets.top + space.sm + HEADER_HEIGHT + 4 + tonightSpace }]} pointerEvents="box-none">
           <CrewStories />
         </View>
       ) : null}
