@@ -47,7 +47,7 @@ import { flagMenu } from './flagMenu';
 import { useClipFlags } from '../../state/clipFlags';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
-import { MIN_PLAYER, tallLayout } from './videoLayout';
+import { fillsScreen, MIN_PLAYER, tallLayout } from './videoLayout';
 import { shareMessage } from '../../lib/share';
 
 type Props = {
@@ -476,6 +476,46 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       </>
     );
 
+    if (fillsScreen(media)) {
+      // A crowd video filmed upright: edge to edge, the clip info and buttons over the bottom, like TikTok.
+      return (
+        <View style={{ width, height }}>
+          <GestureDetector gesture={surface}>
+            <View style={StyleSheet.absoluteFill}>
+              <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <ClipPlayer
+                  media={media}
+                  load={isNear}
+                  active={isActive}
+                  live={live}
+                  paused={paused}
+                  progress={videoProgress}
+                  onPausedChange={setPaused}
+                  onPlayed={onPlayed}
+                  onFail={failVideo}
+                />
+              </View>
+              <LinearGradient colors={['rgba(3,2,10,0.7)', 'rgba(3,2,10,0)']} style={[styles.topFade, { height: top + 40 }]} pointerEvents="none" />
+              <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(3,2,10,0.82)']} style={[styles.scrim, { height: height * 0.5 }]} pointerEvents="none" />
+              <Animated.View style={[styles.center, pauseStyle]} pointerEvents="none">
+                <View style={styles.playDisc}>
+                  <PlayIcon color={color.moon} />
+                </View>
+              </Animated.View>
+              {burst}
+            </View>
+          </GestureDetector>
+          <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
+            {info}
+          </View>
+          <View style={[styles.rail, { bottom: bottomSpace + space.lg }]}>{actions(false)}</View>
+          <View style={[styles.track, { bottom: bottomSpace - 2 }]} pointerEvents="none">
+            <Animated.View style={[styles.progress, videoProgressStyle]} />
+          </View>
+        </View>
+      );
+    }
+
     return (
       <View style={{ width, height }}>
         {/* The video's own colours glow out to the edges. Taps here pause, double-taps like; the player takes its own touches. */}
@@ -580,6 +620,7 @@ const shadow = { textShadowColor: 'rgba(0,0,0,0.55)', textShadowRadius: 10 } as 
 
 const styles = StyleSheet.create({
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  topFade: { position: 'absolute', left: 0, right: 0, top: 0 },
   center: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   playDisc: {
     width: 84,
