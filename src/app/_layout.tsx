@@ -96,6 +96,7 @@ export default function RootLayout() {
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recap/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="pick-artists" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="this-or-that" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="compare" />
         <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="your-artists" />
