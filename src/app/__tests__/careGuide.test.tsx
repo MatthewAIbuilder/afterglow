@@ -88,7 +88,10 @@ describe('festival mode', () => {
     expect(app.getByText('Your videos')).toBeTruthy();
     // No counts, shortcuts or tabs.
     expect(app.queryByRole('tab', { name: /Videos/ })).toBeNull();
+    // Held, the button turns into a heart that blooms; the page opens a moment later.
+    await fireEvent(app.getByLabelText('Film a video'), 'pressIn');
     await fireEvent(app.getByLabelText('Film a video'), 'longPress');
+    await settle(400);
     await flush();
     expect(app.getByText('Look after yourself')).toBeTruthy();
     expect(app.getByText('Stopwatches')).toBeTruthy();

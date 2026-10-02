@@ -5,7 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
+import { useLocalSearchParams } from 'expo-router';
 import { BodyCard } from '../features/care/BodyCard';
+import { BloomWash, HeartMark } from '../features/care/HeartIntro';
 import { countTonight, regionOf, emergencyNumber, lastLine, type Mood, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY } from '../features/care/care';
 import { GuideList } from '../features/care/GuideList';
 import { riskyMixes } from '../features/care/guide';
@@ -38,6 +40,8 @@ const region = () => {
  */
 export default function CareScreen() {
   const insets = useSafeAreaInsets();
+  // Opened by holding the camera button: the heart lands into place.
+  const fromHeart = useLocalSearchParams<{ from?: string }>().from === 'heart';
   const { care, hydrated, start, stop, tookMore, log, undo, checkIn, setLock, setWaterEvery, clear } = useCare();
   // Every second, for the stopwatches.
   const now = useNow(1000).getTime();
@@ -98,6 +102,7 @@ export default function CareScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        <HeartMark bloom={fromHeart} />
         <Text style={styles.title}>Look after yourself</Text>
         <Text style={styles.sub}>Private to you: kept only on this phone, never shared.</Text>
 
@@ -243,6 +248,7 @@ export default function CareScreen() {
           </Pressable>
         </View>
       </ScrollView>
+      <BloomWash bloom={fromHeart} />
     </View>
   );
 }
