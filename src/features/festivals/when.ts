@@ -22,6 +22,20 @@ export function daysUntil(festival: Festival, today: Date): number | undefined {
 /** One stretch of festival days: a weekend, or the whole festival when it runs in one go. */
 export type Run = { start: string; end: string };
 
+/**
+ * Whether the festival is on: from the first day to the morning after the
+ * last (nights run past midnight). For a two-weekend festival, either
+ * weekend counts, and the days between them don't.
+ */
+export function isLive(festival: Festival, today: Date): boolean {
+  if (festival.weekends?.length) {
+    const t = fromDate(today);
+    return festival.weekends.some((r) => fromIso(r.start) <= t && t <= fromIso(r.end) + 1);
+  }
+  const until = daysUntil(festival, today);
+  return until !== undefined && until <= 0 && until >= -festival.days.length;
+}
+
 /** The festival's runs in order: its weekends, or one run from start to end. None without dates. */
 export function runsOf(festival: Festival): Run[] {
   if (festival.weekends?.length) return festival.weekends;

@@ -1,6 +1,6 @@
 import type { Festival } from '../../data/models';
 import { nightStart } from '../care/care';
-import { daysUntil } from '../festivals/when';
+import { isLive } from '../festivals/when';
 import { festivalNight } from '../plan/live';
 
 /**
@@ -10,11 +10,8 @@ import { festivalNight } from '../plan/live';
 
 export type Tonight = { festival: Festival; night?: string };
 
-/** From the first day to the morning after the last (the same window as the festival page's live cards). */
-export function isOn(festival: Festival, now: Date): boolean {
-  const until = daysUntil(festival, now);
-  return until !== undefined && until <= 0 && until >= -festival.days.length;
-}
+/** From the first day to the morning after the last, either weekend of a two-weekend festival (the same window as the festival page's live cards). */
+export const isOn = (festival: Festival, now: Date): boolean => isLive(festival, now);
 
 /**
  * The festival you're going to that's on now, with its night ("Saturday")

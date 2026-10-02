@@ -21,7 +21,7 @@ import { distanceLabel } from './near';
 import { useNearby } from '../../state/nearby';
 import { lineupReach } from './links';
 import { filterLineup, lineupSounds, SEARCH_FROM } from './search';
-import { countdown, daysUntil, setLine } from './when';
+import { countdown, isLive, setLine } from './when';
 import { useToday } from '../../lib/useToday';
 import { leftToRate } from './tune';
 import { YourFestival } from '../plan/YourFestival';
@@ -110,9 +110,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const away = distanceTo(whole);
   const cover = useMemo(() => coverPhotos(whole, catalog.artist), [whole, catalog]);
   const [tab, setTab] = useState<Section>('plan');
-  // From the first day to the morning after the last.
-  const until = daysUntil(festival, today);
-  const onNow = until !== undefined && until <= 0 && until >= -festival.days.length;
+  // From the first day to the morning after the last (either weekend of a two-weekend festival).
+  const onNow = isLive(festival, today);
 
   return (
     <View style={styles.root}>

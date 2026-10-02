@@ -6,7 +6,7 @@ import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
 import { lineupDays } from '../festivals/days';
-import { daysUntil } from '../festivals/when';
+import { isLive } from '../festivals/when';
 import { setTimesExpected } from '../festivals/setTimes';
 import { useGoing } from '../../state/going';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -28,8 +28,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
   const { picks, schedule, route, text } = useFestivalPlan(festival);
   // Only during the festival's days (and the morning after) is there anything live to show.
   const today = useToday();
-  const until = daysUntil(festival, today);
-  const maybeLive = !!schedule && until !== undefined && until <= 0 && until >= -festival.days.length;
+  const maybeLive = !!schedule && isLive(festival, today);
   // During the festival the timetable opens on tonight.
   const tonight = maybeLive ? festivalNight(festival, today)?.day : undefined;
   // Before set times, when the poster says who plays which day: your picks by day, or ranked.
