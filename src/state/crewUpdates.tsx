@@ -27,7 +27,7 @@ import {
 } from '../features/crews/updates';
 import type { Memory } from '../features/memories/models';
 import { isOffline } from '../features/offline/status';
-import type { CrewUpdate, CrewUpdateInput, Profile } from '../features/social/models';
+import type { CrewUpdate, CrewUpdateInput, MeetSpot, Profile } from '../features/social/models';
 import { socialErrorKind } from '../features/social/service';
 import { useNow } from '../lib/useNow';
 import { useToday } from '../lib/useToday';
@@ -69,6 +69,12 @@ type Ctx = {
   profileOf: (uid: string) => Profile | undefined;
   /** Post a quick check-in to every crew you're in at this festival: its id (it's in the outbox until it reaches them). False when you have no crew there. */
   checkIn: (festivalId: string, words: { note?: string; stage?: string; artistId?: string }) => string | false;
+  /** A crew's meeting spot, once read. */
+  meetSpotFor: (crewId: string) => MeetSpot | undefined;
+  /** Set (or, with empty words, clear) a crew's meeting spot. Needs signal: throws when it can't be saved. */
+  setMeetSpot: (crewId: string, text: string) => Promise<void>;
+  /** "Can't find you": a check-in to every crew you're in at this festival, waiting for signal like any other. */
+  callLost: (festivalId: string) => string | false;
   /** Answer a crewmate's update, in its crew only; waits for signal like a check-in. False when you can't. */
   reply: (update: CrewUpdate, note: string) => boolean;
   /** The replies to an update, oldest first, with yours still waiting for signal at the end. */
@@ -179,6 +185,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
 
   // --- Everyone's updates, per crew.
   const [updates, setUpdates] = useState<{ uid?: string; byCrew: Record<string, CrewUpdate[]> }>({ byCrew: {} });
+  // Each crew's meeting spot, read with its updates (a crew that couldn't be read keeps what it had).
+  const [meets, setMeets] = useState<{ uid?: string; byCrew: Record<string, MeetSpot | null> }>({ byCrew: {} });
   const liveKey = live.map((c) => `${c.id}:${c.members.join(',')}`).join('|');
   const profiles = useRef(new Map<string, Profile | undefined>());
   const [profilesVersion, setProfilesVersion] = useState(0);
@@ -192,6 +200,12 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
       const byCrew = s.uid === uid ? { ...s.byCrew } : {};
       // A crew that couldn't be read keeps what it had.
       for (const [id, list] of read) if (list) byCrew[id] = list;
+      return { uid, byCrew };
+    });
+    const spots = await Promise.all(live.map(async (c) => [c.id, await service.meetSpot(c.id).catch(() => undefined)] as const));
+    setMeets((s) => {
+      const byCrew = s.uid === uid ? { ...s.byCrew } : {};
+      for (const [id, spot] of spots) if (spot !== undefined) byCrew[id] = spot;
       return { uid, byCrew };
     });
     // Crewmates' names and faces, once each.
@@ -353,6 +367,36 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     [crewIdsAt, ready],
   );
 
+  const callLost = useCallback(
+    (festivalId: string) => {
+      const crewIds = crewIdsAt(festivalId);
+      if (!ready || !crewIds.length) return false;
+      const now = Date.now();
+      const id = updateId(now);
+      const spot = crewIds.map((c) => (meets.uid === uid ? meets.byCrew[c] : undefined)).find((m) => !!m);
+      const input: CrewUpdateInput = {
+        id,
+        kind: 'checkin',
+        lost: true,
+        at: new Date(now).toISOString(),
+        festivalId,
+        note: cleanNote(spot ? `Can’t find you. Heading to ${spot.text}` : 'Can’t find you'),
+      };
+      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
+      return id;
+    },
+    [crewIdsAt, ready, meets, uid],
+  );
+
+  const meetSpotFor = useCallback((crewId: string) => (meets.uid === uid ? (meets.byCrew[crewId] ?? undefined) : undefined), [meets, uid]);
+  const setMeetSpot = useCallback(
+    async (crewId: string, text: string) => {
+      const spot = await service.setMeetSpot(crewId, text);
+      setMeets((s) => ({ uid, byCrew: { ...(s.uid === uid ? s.byCrew : {}), [crewId]: spot } }));
+    },
+    [service, uid],
+  );
+
   const reply = useCallback(
     (target: CrewUpdate, words: string) => {
       const note = cleanNote(words);
@@ -436,8 +480,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, reply, repliesFor, sendVideo, markSeen, remove, refresh],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }
@@ -452,6 +496,9 @@ const OFF: Ctx = {
   dropped: [],
   profileOf: () => undefined,
   checkIn: () => false,
+  callLost: () => false,
+  meetSpotFor: () => undefined,
+  setMeetSpot: async () => {},
   reply: () => false,
   repliesFor: () => [],
   sendVideo: () => false,

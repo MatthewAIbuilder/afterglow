@@ -179,6 +179,18 @@ service cloud.firestore {
         allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
       }
 
+      // The crew's meeting spot ("by the big tree left of Main Stage"): read and set by any member, as
+      // themselves, stamped with the server's time. One document, `meet`.
+      match /meta/{doc} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create, update: if signedIn() && doc == 'meet' && me() in get(path('crews', id)).data.members
+          && request.resource.data.keys().hasOnly(['text', 'by', 'at'])
+          && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 80
+          && request.resource.data.by == me()
+          && request.resource.data.at == request.time;
+        allow delete: if signedIn() && me() in get(path('crews', id)).data.members;
+      }
+
       // Crew updates: where a member is and what they're seeing, from a video or a check-in. Members read
       // them; you post only as yourself while you're in the crew. `atMs` is when it happened on the phone
       // (no later than now, no older than a week); `sentAt` must be the server's own time, so "reached
@@ -188,7 +200,7 @@ service cloud.firestore {
         allow read: if signedIn() && me() in get(path('crews', id)).data.members;
         allow create: if signedIn() && me() in get(path('crews', id)).data.members
           && updateId.matches('^[A-Za-z0-9_-]{6,64}$')
-          && request.resource.data.keys().hasOnly(['uid', 'kind', 'atMs', 'sentAt', 'festivalId', 'artistId', 'stage', 'note', 'videoUrl', 'thumbUrl', 'videoPath', 'thumbPath', 'sharedId', 'durationSec', 'width', 'height', 'replyTo'])
+          && request.resource.data.keys().hasOnly(['uid', 'kind', 'atMs', 'sentAt', 'festivalId', 'artistId', 'stage', 'note', 'videoUrl', 'thumbUrl', 'videoPath', 'thumbPath', 'sharedId', 'durationSec', 'width', 'height', 'replyTo', 'lost'])
           && request.resource.data.uid == me()
           && request.resource.data.kind in ['video', 'checkin', 'reply']
           && request.resource.data.atMs is number
@@ -213,6 +225,8 @@ service cloud.firestore {
             && request.resource.data.note is string && request.resource.data.note.size() > 0
             && !('videoUrl' in request.resource.data)))
           && (request.resource.data.kind == 'reply' || !('replyTo' in request.resource.data))
+          // "Can't find you": only on a check-in.
+          && (!('lost' in request.resource.data) || (request.resource.data.lost == true && request.resource.data.kind == 'checkin'))
           && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
           && (!('width' in request.resource.data) || (request.resource.data.width is number && request.resource.data.width <= 20000))
           && (!('height' in request.resource.data) || (request.resource.data.height is number && request.resource.data.height <= 20000));

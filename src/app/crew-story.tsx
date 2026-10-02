@@ -150,6 +150,7 @@ function CheckInCard({ update: u, artist, replyingTo }: { update: CrewUpdate; ar
     <LinearGradient colors={['#2A1C5C', '#120E2A', '#0A0918']} style={[StyleSheet.absoluteFill, styles.center]}>
       <View style={styles.card}>
         {replyingTo ? <Text style={styles.cardReplying}>{replyingTo}</Text> : null}
+        {u.lost ? <Text style={styles.cardLost}>Can’t find the crew</Text> : null}
         <Text style={styles.cardWords}>{u.note ?? 'Checked in'}</Text>
         {u.stage || artist ? <Text style={styles.cardPlace}>{[u.stage, artist].filter(Boolean).join(' · ')}</Text> : null}
       </View>
@@ -180,6 +181,7 @@ const styles = StyleSheet.create({
   card: { paddingHorizontal: space.xxl, alignItems: 'center', gap: space.md },
   cardWords: { fontSize: 34, lineHeight: 40, fontWeight: '700', color: color.moon, textAlign: 'center', letterSpacing: -0.6 },
   cardPlace: { ...type.headline, color: color.glow, textAlign: 'center' },
+  cardLost: { ...type.label, color: '#FFB86B', textTransform: 'uppercase', letterSpacing: 1.4, textAlign: 'center' },
   cardReplying: { ...type.label, color: color.moonDim, textAlign: 'center' },
   caption: { position: 'absolute', left: space.xl, right: space.xl, alignItems: 'center' },
   captionText: { ...type.headline, color: color.moon, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.md, overflow: 'hidden' },

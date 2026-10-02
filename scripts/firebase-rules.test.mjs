@@ -267,6 +267,25 @@ await t('crew updates: replies answer an update in the same crew, with words, ne
   await assertFails(setDoc(at(A.firestore(), 'r000006'), clean(update({ uid: 'uidA', replyTo: 'u000001' }))));
   await assertFails(setDoc(at(C.firestore(), 'r000007'), clean(reply({ uid: 'uidC' }))));
 });
+await t('crew meeting spot: members set it as themselves with the server time; others can’t read or write it', async () => {
+  const meet = (db) => doc(db, 'crews', 'c1', 'meta', 'meet');
+  await assertSucceeds(setDoc(meet(B.firestore()), { text: 'By the big tree', by: 'uidB', at: serverTimestamp() }));
+  await assertSucceeds(getDoc(meet(A.firestore())));
+  await assertSucceeds(setDoc(meet(A.firestore()), { text: 'Main Stage left', by: 'uidA', at: serverTimestamp() }));
+  await assertFails(setDoc(meet(A.firestore()), { text: 'x', by: 'uidB', at: serverTimestamp() }));
+  await assertFails(setDoc(meet(A.firestore()), { text: 'x'.repeat(81), by: 'uidA', at: serverTimestamp() }));
+  await assertFails(setDoc(meet(A.firestore()), { text: '', by: 'uidA', at: serverTimestamp() }));
+  await assertFails(setDoc(meet(A.firestore()), { text: 'x', by: 'uidA', at: Date.now() }));
+  await assertFails(setDoc(doc(A.firestore(), 'crews', 'c1', 'meta', 'other'), { text: 'x', by: 'uidA', at: serverTimestamp() }));
+  await assertFails(getDoc(meet(C.firestore())));
+  await assertFails(setDoc(meet(C.firestore()), { text: 'x', by: 'uidC', at: serverTimestamp() }));
+});
+await t('crew updates: “can’t find you” only on a check-in', async () => {
+  const at = (id) => doc(B.firestore(), 'crews', 'c1', 'updates', id);
+  await assertSucceeds(setDoc(at('l000001'), update({ lost: true, note: 'Can’t find you' })));
+  await assertFails(setDoc(at('l000002'), update({ lost: false })));
+  await assertFails(setDoc(at('l000003'), update({ lost: true, kind: 'video', videoUrl: 'https://x/v.mp4' })));
+});
 await t('crew updates: never edited; removed by the author or the owner', async () => {
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1', 'updates', 'u000001'), { note: 'changed' }));
   await assertFails(deleteDoc(doc(C.firestore(), 'crews', 'c1', 'updates', 'u000001')));

@@ -38,10 +38,10 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, type Profile } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
-import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
+import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -506,6 +506,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const all = await getDocs(collection(db, 'crews', id, 'picks'));
           const b = writeBatch(db);
           for (const d of all.docs) b.delete(d.ref);
+          b.delete(doc(db, 'crews', id, 'meta', 'meet'));
           b.delete(crewRef);
           await b.commit();
           return;
@@ -585,6 +586,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           ...(input.stage ? { stage: input.stage.slice(0, CREW_STAGE_MAX) } : {}),
           ...(input.note ? { note: input.note.slice(0, CREW_NOTE_MAX) } : {}),
           ...(input.kind === 'reply' && input.replyTo ? { replyTo: input.replyTo } : {}),
+          ...(input.kind === 'checkin' && input.lost ? { lost: true } : {}),
           ...(videoUrl ? { videoUrl } : {}),
           ...(thumbUrl ? { thumbUrl } : {}),
           ...(videoPath ? { videoPath } : {}),
@@ -609,6 +611,20 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           query(collection(fb().db, 'crews', crewId, 'updates'), where('atMs', '>=', sinceMs), orderBy('atMs', 'desc'), limit(max)),
         );
         return snap.docs.map((d) => crewUpdateFromDoc(crewId, d.id, d.data())).filter((u): u is CrewUpdate => !!u);
+      }),
+    meetSpot: (crewId) =>
+      guard(async () => meetSpotFromDoc((await getDoc(doc(fb().db, 'crews', crewId, 'meta', 'meet'))).data())),
+    setMeetSpot: (crewId, raw) =>
+      guard(async () => {
+        const user = me();
+        const ref_ = doc(fb().db, 'crews', crewId, 'meta', 'meet');
+        const text = raw.replace(/\s+/g, ' ').trim().slice(0, MEET_SPOT_MAX);
+        if (!text) {
+          await deleteDoc(ref_);
+          return null;
+        }
+        await setDoc(ref_, { text, by: user.uid, at: serverTimestamp() });
+        return { text, by: user.uid, at: new Date().toISOString() };
       }),
     forgetCrewVideos: (crewId, ids) =>
       guard(async () => {

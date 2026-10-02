@@ -12,6 +12,7 @@ import { WEB_URL } from '../../config/app';
 import { crewPath, crewTogether, firstName, whoLine } from '../../features/crews/together';
 import { CrewRouteSection } from '../../features/crews/CrewRouteSection';
 import { CrewLatest } from '../../features/crews/CrewLatest';
+import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
 import { useWeekends } from '../../state/weekends';
 import { useCrewPage } from '../../features/crews/useCrewPage';
 import { whereWhen } from '../../features/festivals/format';
@@ -359,6 +360,7 @@ function Member({
 
       {/* Where everyone last was, while the festival is on or coming up. */}
       <CrewLatest crew={crew} nameOf={who} />
+      <MeetSpotCard crew={crew} />
 
       <Text style={styles.section}>Sets you share</Text>
       {together.shared.length ? (

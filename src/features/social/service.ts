@@ -1,4 +1,4 @@
-import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
+import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -116,6 +116,10 @@ export interface SocialService {
   deleteCrewUpdate(crewId: string, id: string): Promise<void>;
   /** Remove the crew-only video files you uploaded with these updates (after you've left or been taken out of the crew). */
   forgetCrewVideos(crewId: string, updateIds: readonly string[]): Promise<void>;
+  /** The crew's meeting spot, if one's set. Members only. */
+  meetSpot(crewId: string): Promise<MeetSpot | null>;
+  /** Set the crew's meeting spot (any member), or clear it with an empty text. */
+  setMeetSpot(crewId: string, text: string): Promise<MeetSpot | null>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;
