@@ -29,6 +29,7 @@ import {
   wildKind,
 } from '../features/sprouts/sprouts';
 import { tonightKey } from '../features/tonight/tonight';
+import { nightStart } from '../features/care/care';
 import { useTonight } from '../features/tonight/useTonight';
 import { topSound } from '../features/taste/thisOrThat';
 import { notifyNow } from '../lib/notifyNow';
@@ -64,6 +65,8 @@ type Stored = {
   starterAt?: number;
   /** Wild sprouts found at festivals (this phone). */
   wild?: GardenSprout[];
+  /** When each festival was first marked going on this phone (0: before sprouts existed). */
+  goingSince?: Record<string, number>;
 };
 
 type Ctx = {
@@ -119,9 +122,9 @@ function cleanGarden(raw: unknown): Stored['garden'] {
   );
 }
 
-function cleanTimes(raw: unknown): Record<string, number> {
+function cleanTimes(raw: unknown, zeroOk = false): Record<string, number> {
   const out: Record<string, number> = {};
-  if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'number' && v > 0 && k.length <= 64) out[k] = v;
+  if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'number' && (zeroOk ? v >= 0 : v > 0) && k.length <= 120) out[k] = v;
   return out;
 }
 
@@ -135,6 +138,7 @@ function clean(raw: unknown): Stored {
     bloomedAt: cleanTimes(o.bloomedAt),
     bloomsShown: Array.isArray(o.bloomsShown) ? o.bloomsShown.filter((x): x is string => typeof x === 'string').slice(-SHOWN_MAX) : [],
     ...(typeof o.starterAt === 'number' ? { starterAt: o.starterAt } : {}),
+    ...(o.goingSince && typeof o.goingSince === 'object' ? { goingSince: cleanTimes(o.goingSince, true) } : {}),
     wild: Array.isArray(o.wild)
       ? o.wild.filter((g): g is GardenSprout => !!g && typeof g === 'object' && typeof g.id === 'string' && g.id.startsWith(WILD_PREFIX) && isKind(g.kind) && typeof g.at === 'number').slice(-500)
       : [],
@@ -207,6 +211,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           bloomedAt: { ...s.bloomedAt, ...cur.bloomedAt },
           bloomsShown: [...new Set([...(s.bloomsShown ?? []), ...(cur.bloomsShown ?? [])])],
           starterAt: s.starterAt ?? cur.starterAt ?? Date.now(),
+          ...(s.goingSince || cur.goingSince ? { goingSince: { ...cur.goingSince, ...s.goingSince } } : {}),
           wild: [...(s.wild ?? []), ...(cur.wild ?? []).filter((w) => !(s.wild ?? []).some((x) => x.id === w.id))],
         }));
       })
@@ -400,7 +405,19 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   );
 
   // ---- Giving -----------------------------------------------------------
-  const festivalDay = !!tonight;
+  // When each festival was marked going: festivals already going when this first ran count from always.
+  useEffect(() => {
+    if (!hydrated) return;
+    const since = stored.goingSince;
+    const missing = going.filter((id) => !since || since[id] === undefined);
+    if (!missing.length && since) return;
+    const at = since ? Date.now() : 0;
+    void Promise.resolve().then(() => setStored((s) => ({ ...s, goingSince: { ...Object.fromEntries(missing.map((id) => [id, at])), ...s.goingSince } })));
+  }, [hydrated, going, stored.goingSince, setStored]);
+  const goingSince = useCallback((id: string) => stored.goingSince?.[id] ?? Number.POSITIVE_INFINITY, [stored.goingSince]);
+  // At the festival tonight: going since before tonight began (ticking "I'm going" on the night gives no wild sprout or extra seeds).
+  const here = !!tonight && goingSince(tonight.festival.id) < nightStart(tonight.at.getTime());
+  const festivalDay = here;
   const seeds = seedsLeft(
     gifts.map((g) => g.at),
     now,
@@ -482,9 +499,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       watched,
       filmed: memories.map((m) => Date.parse(m.capturedAt)).filter((t) => !Number.isNaN(t)),
       gave: gifts.map((g) => g.at),
-      festivalDays: festivalDaysOf(catalog.festivals, going, now),
+      festivalDays: festivalDaysOf(catalog.festivals, going, now, goingSince),
     };
-  }, [seen, catalog, memories, gifts, going, now]);
+  }, [seen, catalog, memories, gifts, going, now, goingSince]);
 
   const sprouts = useMemo<GardenSprout[]>(() => {
     const mine = account ? stored.garden.filter((g) => g.account === account) : [];
@@ -492,7 +509,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     return [...mine, ...(stored.wild ?? []), ...starter];
   }, [stored.garden, stored.starterAt, stored.wild, account]);
   // A wild sprout on each festival night you're at (once loaded, so one's never found twice).
-  const wildId = tonight ? `${WILD_PREFIX}${tonightKey(tonight.festival.id, tonight.at)}` : undefined;
+  const wildId = tonight && here ? `${WILD_PREFIX}${tonightKey(tonight.festival.id, tonight.at)}` : undefined;
   const wildName = tonight?.festival.name;
   useEffect(() => {
     if (!hydrated || !wildId || !wildName || (stored.wild ?? []).some((w) => w.id === wildId)) return;

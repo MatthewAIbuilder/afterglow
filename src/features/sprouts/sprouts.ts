@@ -158,8 +158,11 @@ export type Journey = {
 const HEAVY = new Set(['dubstep', 'riddim', 'trap', 'hip-hop']);
 const GROOVE = new Set(['house', 'techno']);
 
-/** Mid-day of each festival day you're going to, up to now. */
-export function festivalDaysOf(festivals: readonly Festival[], going: readonly string[], now: number): number[] {
+/**
+ * Mid-day of each festival day you're going to, up to now. With `goingSince`, a day counts only when
+ * you'd marked the festival going before it (ticking "I'm going" on the day itself doesn't count).
+ */
+export function festivalDaysOf(festivals: readonly Festival[], going: readonly string[], now: number, goingSince?: (festivalId: string) => number): number[] {
   const out: number[] = [];
   for (const f of festivals) {
     if (!going.includes(f.id)) continue;
@@ -167,7 +170,8 @@ export function festivalDaysOf(festivals: readonly Festival[], going: readonly s
       const [y, m, d] = r.start.split('-').map(Number);
       const [ey, em, ed] = r.end.split('-').map(Number);
       const end = new Date(ey, em - 1, ed, 12).getTime();
-      for (let t = new Date(y, m - 1, d, 12); t.getTime() <= end && t.getTime() <= now; t.setDate(t.getDate() + 1)) out.push(t.getTime());
+      const since = goingSince?.(f.id) ?? 0;
+      for (let t = new Date(y, m - 1, d, 12); t.getTime() <= end && t.getTime() <= now; t.setDate(t.getDate() + 1)) if (since < t.getTime()) out.push(t.getTime());
     }
   }
   return out;

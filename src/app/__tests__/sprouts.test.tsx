@@ -251,6 +251,19 @@ describe('sprouts', () => {
     expect(app.queryByText('A wild sprout appeared')).toBeNull();
   });
 
+  it('ticking “I’m going” on the night itself brings no wild sprout or extra seeds', async () => {
+    jest.setSystemTime(new Date(2026, 11, 5, 22, 0));
+    await person('maya', 'Maya');
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    await AsyncStorage.setItem('tonightShown.v1', JSON.stringify(['cyclops-cove-4:2026-12-05']));
+    // Sprouts were already in use, and Cyclops Cove wasn't one of your festivals until now.
+    await AsyncStorage.setItem('sprouts.v1', JSON.stringify({ gifts: [], claims: [], garden: [], bloomed: {}, starterAt: 1, goingSince: {} }));
+    const app = await renderApp('/give-sprout');
+    await flush(20);
+    expect(app.getByText('5 of 5 seeds left today')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('sprouts.v1')) ?? '{}').wild ?? []).toEqual([]);
+  });
+
   it('the Friends tab and Profile lead to sprouts', async () => {
     await person('maya', 'Maya');
     const app = await renderApp('/together');

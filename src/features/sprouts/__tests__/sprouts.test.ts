@@ -92,6 +92,9 @@ describe('growing', () => {
     const f = { id: 'cc', startDate: '2026-12-04', endDate: '2026-12-06' } as Festival;
     expect(festivalDaysOf([f], ['cc'], new Date(2026, 11, 5, 20).getTime())).toHaveLength(2);
     expect(festivalDaysOf([f], [], new Date(2026, 11, 7).getTime())).toHaveLength(0);
+    // Marked going on the Saturday morning: only Saturday and Sunday count.
+    const since = new Date(2026, 11, 5, 9).getTime();
+    expect(festivalDaysOf([f], ['cc'], new Date(2026, 11, 7).getTime(), () => since)).toHaveLength(2);
   });
 
   it('a garden remembers what each sprout bloomed into, and those kinds can be given', () => {
