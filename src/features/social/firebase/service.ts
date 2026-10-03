@@ -472,6 +472,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
           .slice(0, max);
       }),
+    artistMemories: (artistId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'memories'), where('artistId', '==', artistId), orderBy('createdAt', 'desc'), limit(max))).catch(() => undefined);
+        return (snap?.docs ?? []).map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
+      }),
     recentMemories: (max) =>
       guard(async () => {
         const snap = await getDocs(query(collection(fb().db, 'memories'), orderBy('createdAt', 'desc'), limit(max)));

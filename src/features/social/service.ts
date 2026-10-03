@@ -120,6 +120,8 @@ export interface SocialService {
   memoriesOf(uid: string): Promise<SharedMemory[]>;
   /** Shared memories tagged with this festival, newest first (community clips in Discover). */
   festivalMemories(festivalId: string, max: number): Promise<SharedMemory[]>;
+  /** Everyone's shared videos of an artist, newest first (a database without that index yet has none). */
+  artistMemories(artistId: string, max: number): Promise<SharedMemory[]>;
   /** The newest shared memories from every festival (community clips in your mix). */
   recentMemories(max: number): Promise<SharedMemory[]>;
   sharedMemory(id: string): Promise<SharedMemory | null>;

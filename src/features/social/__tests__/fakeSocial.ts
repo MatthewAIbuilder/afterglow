@@ -293,6 +293,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async festivalMemories(festivalId, max) {
       return [...memories.values()].filter((m) => m.festivalId === festivalId || m.past?.seriesId === festivalId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
+    async artistMemories(artistId, max) {
+      return [...memories.values()].filter((m) => m.artistId === artistId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
     async recentMemories(max) {
       return [...memories.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
