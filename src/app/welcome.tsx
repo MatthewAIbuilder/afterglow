@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { SearchField } from '../components/SearchField';
@@ -13,6 +13,8 @@ import { festivalShelf, isMany, pickerList } from '../features/festivals/shelves
 import { countdown } from '../features/festivals/when';
 import { ROUNDS_MIN, thisOrThatPairs } from '../features/taste/thisOrThat';
 import { watchFestival, welcomeFestival } from '../features/welcome/firstRun';
+import { HeroOrb } from '../features/welcome/HeroOrb';
+import { Waiting } from '../features/welcome/Waiting';
 import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
@@ -24,13 +26,20 @@ import { useLoves } from '../state/useLoves';
 import { useWelcomed } from '../state/welcome';
 import { color, radius, space, type } from '../theme/tokens';
 
-type Step = 'hello' | 'going' | 'taste';
-const STEPS: Step[] = ['hello', 'going', 'taste'];
+type Step = 'hello' | 'going' | 'waiting' | 'taste';
+const STEPS: Step[] = ['hello', 'going', 'waiting', 'taste'];
+
+/** What Afterglow is, in three lines under the name: [dot colour, words]. */
+const PROMISES: [string, string][] = [
+  ['#5B8CFF', 'Live sets from the lineups you’re going to'],
+  ['#A97CFF', 'Your sound as a living map'],
+  ['#FF7EB6', 'A plan, set to set, with your crew'],
+];
 
 /**
- * First run: what Afterglow is, which festivals you're going to, then
- * straight into rating that lineup (or just watching). Shown once; skippable
- * at every step.
+ * First run: what Afterglow is, which festivals you're going to, a peek at
+ * what's waiting (sprouts, quests, crews, care), then straight into telling
+ * it what you love (or just watching). Shown once; skippable at every step.
  */
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -43,6 +52,13 @@ export default function WelcomeScreen() {
   const [step, setStep] = useState<Step>('hello');
 
   const picked = welcomeFestival(catalog.festivals, going);
+  // Small screens (iPhone SE): a smaller picture on the first step.
+  const { height } = useWindowDimensions();
+  const compact = height < 700;
+  const pickedSoon = picked ? countdown(picked, today) : undefined;
+  const waitingLine = picked
+    ? `${picked.name}${pickedSoon ? ` · ${pickedSoon}` : ''}. A few things to make the most of it.`
+    : 'A few things to find once you’re in.';
   // Many festivals: a search and a short list (your picks, then the soonest or best for you).
   const loves = useLoves();
   const many = isMany(catalog.festivals);
@@ -100,10 +116,21 @@ export default function WelcomeScreen() {
       <Animated.View key={step} entering={reduceMotion ? undefined : FadeIn.duration(360)} style={styles.body}>
         {step === 'hello' ? (
           <View style={styles.center}>
-            <Text style={styles.brand}>{APP_NAME}</Text>
-            <Text style={styles.lead}>
-              Live sets from the festivals you’re going to, and a plan built from the sound you love.
-            </Text>
+            <HeroOrb size={compact ? 170 : 220} />
+            <Text style={[styles.brand, { marginTop: compact ? space.lg : space.xl }]}>{APP_NAME}</Text>
+            <Text style={styles.lead}>Find your sets, see your sound, go with your people.</Text>
+            <View style={styles.promises}>
+              {PROMISES.map(([c, words], i) => (
+                <Animated.View
+                  key={words}
+                  entering={reduceMotion ? undefined : FadeInDown.delay(300 + i * 140).duration(420)}
+                  style={styles.promise}
+                >
+                  <View style={[styles.promiseDot, { backgroundColor: c, shadowColor: c }]} />
+                  <Text style={styles.promiseText}>{words}</Text>
+                </Animated.View>
+              ))}
+            </View>
           </View>
         ) : step === 'going' ? (
           <ScrollView
@@ -173,6 +200,12 @@ export default function WelcomeScreen() {
               })}
             </View>
           </ScrollView>
+        ) : step === 'waiting' ? (
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <Text style={styles.title}>Here’s what’s waiting</Text>
+            <Text style={styles.sub}>{waitingLine}</Text>
+            <Waiting />
+          </ScrollView>
         ) : picked ? (
           <View style={styles.center}>
             <Text style={styles.title}>Tell us what you love</Text>
@@ -198,7 +231,9 @@ export default function WelcomeScreen() {
         {step === 'hello' ? (
           <Primary label="Get started" onPress={() => next('going')} />
         ) : step === 'going' ? (
-          <Primary label={going.length ? 'Continue' : 'Not sure yet'} onPress={() => next('taste')} />
+          <Primary label={going.length ? 'Continue' : 'Not sure yet'} onPress={() => next('waiting')} />
+        ) : step === 'waiting' ? (
+          <Primary label="Continue" onPress={() => next('taste')} />
         ) : canCompare ? (
           <>
             <Primary label="Play this or that" onPress={thisOrThat} />
@@ -258,7 +293,11 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: space.xxl },
   centerText: { textAlign: 'center' },
   brand: { ...type.largeTitle, fontSize: 44, lineHeight: 50, color: color.moon, letterSpacing: -1.2 },
-  lead: { ...type.body, fontSize: 17, lineHeight: 24, color: color.moonDim, textAlign: 'center', marginTop: space.lg },
+  lead: { ...type.body, fontSize: 17, lineHeight: 24, color: color.moonDim, textAlign: 'center', marginTop: space.sm },
+  promises: { marginTop: space.xl, gap: space.md, alignItems: 'flex-start' },
+  promise: { flexDirection: 'row', alignItems: 'center', gap: space.md, maxWidth: '100%' },
+  promiseDot: { width: 8, height: 8, borderRadius: 4, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
+  promiseText: { ...type.label, color: color.moon, flexShrink: 1 },
   scroll: { paddingHorizontal: space.xl, paddingTop: space.xxl, paddingBottom: space.xl },
   title: { ...type.largeTitle, color: color.moon, textAlign: 'center' },
   sub: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center' },

@@ -52,6 +52,8 @@ describe('this or that', () => {
     await flush();
     await fireEvent.press(app.getByText(/Continue|Not sure yet/));
     await flush();
+    await fireEvent.press(app.getByText('Continue'));
+    await flush();
     await fireEvent.press(app.getByText('Play this or that'));
     await flush();
     expect(app.getByText(/^Round 1 of/)).toBeTruthy();
