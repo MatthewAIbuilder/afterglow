@@ -22,7 +22,8 @@ const OUT = resolve(__dirname, '../public/catalogue.json');
 const text = readFileSync(OUT, 'utf8');
 const file = JSON.parse(text) as Record<string, unknown>;
 const { catalog } = buildCatalog(BUILT_IN.snapshot, parseCatalogFile(text));
-const tagged = new Set(catalog.artists.filter((a) => Object.keys(a.sound).length > 0).map((a) => a.id));
+// Guessed sounds (data/soundGuess.ts) don't count as tags: they come from these very lineups.
+const tagged = new Set(catalog.artists.filter((a) => Object.keys(a.sound).length > 0 && !a.soundGuessed).map((a) => a.id));
 const pairs = lineupSimilarities(catalog.festivals, (id) => tagged.has(id));
 
 const out = JSON.stringify({ ...file, similar: pairs });
@@ -33,4 +34,5 @@ if (out.length > MAX_FILE_CHARS || !built.usedFile || built.problems.length) {
 }
 writeFileSync(OUT, `${out}\n`);
 const reached = new Set(pairs.flatMap((p) => [p.artist, p.other]).filter((id) => !tagged.has(id)));
-console.log(`Sounds alike: ${pairs.length} pairs from ${catalog.festivals.length} lineups, reaching ${reached.size} artists without sound tags.`);
+const guessed = built.catalog.artists.filter((a) => a.soundGuessed).length;
+console.log(`Sounds alike: ${pairs.length} pairs from ${catalog.festivals.length} lineups, reaching ${reached.size} artists without sound tags; ${guessed} artists get a guessed sound.`);

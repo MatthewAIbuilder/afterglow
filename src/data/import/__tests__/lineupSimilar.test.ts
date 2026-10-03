@@ -51,12 +51,14 @@ describe('who sounds alike, from lineups', () => {
       clips: [],
     };
     const { catalog } = buildCatalog(BUILT_IN.snapshot, parseCatalogFile(raw));
-    const tagged = (id: string) => Object.keys(catalog.artist(id)?.sound ?? {}).length > 0;
+    const tagged = (id: string) => Object.keys(catalog.artist(id)?.sound ?? {}).length > 0 && !catalog.artist(id)?.soundGuessed;
     const pairs = lineupSimilarities(catalog.festivals, tagged);
     const withPairs = buildCatalog(BUILT_IN.snapshot, parseCatalogFile({ ...raw, similar: pairs }));
     expect(withPairs.problems).toEqual([]);
     const c = withPairs.catalog;
-    const before = computeTaste(MOCK_TASTE, c.artists, c.clips, {}, undefined, { subtronics: 'love' });
+    // Before the pairs, the new act had no sound to reach.
+    expect(catalog.artist('new-act')?.sound).toEqual({});
+    const before = computeTaste(MOCK_TASTE, catalog.artists, catalog.clips, {}, undefined, { subtronics: 'love' });
     const after = computeTaste(MOCK_TASTE, c.artists, c.clips, {}, similarityWith(c.similarities), { subtronics: 'love' });
     expect(before.informed['new-act']).toBeFalsy();
     expect(after.informed['new-act']).toBe(true);

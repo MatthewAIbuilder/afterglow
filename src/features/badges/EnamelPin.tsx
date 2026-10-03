@@ -1,7 +1,7 @@
 import { type ReactNode, useId } from 'react';
 import { Platform } from 'react-native';
 import Animated, { type SharedValue, useAnimatedProps } from 'react-native-reanimated';
-import Svg, { Circle, ClipPath, Defs, Ellipse, G, Line, LinearGradient, Path, RadialGradient, Rect, Stop, Text as SvgText, TextPath } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, Ellipse, G, Line, LinearGradient, Path, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { hashOf, type PinBacking, type PinLook, type PinPalette, type PinTheme } from './badges';
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
@@ -15,10 +15,66 @@ const CY = 56;
 const RO = 44;
 const RI = 35.6;
 const RS = 34.4;
+/** The middle of the rim's enamel band, how much of it the name may use, and the gap between letters. */
+const RIM_MID = (RO - 2.6 + RI) / 2;
+const RIM_ROOM = RIM_MID * ((230 * Math.PI) / 180);
+const RIM_SPACING = 0.55;
+/** Half of a capital's height, as a share of the font size: letters sit with their middle on the line. */
+const CAP = 0.36;
+/** The ribbon's middle line (a gentle curve from x 27 to 93), and how much of it the dates may use. */
+const RIBBON_ROOM = 58;
+const RIBBON_SPACING = 0.6;
+const ribbonAt = (offset: number) => {
+  const t = Math.max(0, Math.min(1, (offset + 33) / 66));
+  const x = 27 + 66 * t;
+  const y = CY + 37 + 9.6 * t * (1 - t);
+  const deg = (Math.atan((9.6 * (1 - 2 * t)) / 66) * 180) / Math.PI;
+  return { x, y, deg };
+};
 
 const pt = (r: number, deg: number) => {
   const a = (deg * Math.PI) / 180;
   return `${(CX + r * Math.cos(a)).toFixed(2)} ${(CY + r * Math.sin(a)).toFixed(2)}`;
+};
+/**
+ * Roughly how wide each capital is in a heavy sans, as a share of the font
+ * size. Letters are placed one by one from these, so the words sit centred and
+ * fit on every platform (SVG text on a path is measured differently on
+ * iPhone, Android and the web).
+ */
+const WIDE: Record<string, number> = { M: 0.9, W: 0.98, O: 0.8, Q: 0.8, G: 0.78, C: 0.74, D: 0.76, H: 0.76, N: 0.76, U: 0.74, A: 0.72, V: 0.7, X: 0.7, Y: 0.68, K: 0.7, R: 0.7, B: 0.7, P: 0.66, E: 0.6, F: 0.58, L: 0.56, S: 0.64, T: 0.62, Z: 0.64, J: 0.54, I: 0.3 };
+export const glyphWidth = (c: string) => {
+  if (WIDE[c] !== undefined) return WIDE[c];
+  if (/[0-9]/.test(c)) return 0.64;
+  if (c === ' ') return 0.3;
+  if (c === '·' || c === '.' || c === ',' || c === "'" || c === '’') return 0.3;
+  if (c === '–' || c === '-') return 0.5;
+  if (c === '&') return 0.76;
+  return 0.66;
+};
+/** How long a line of letters is at a size, with spacing between them. */
+export const lineLength = (text: string, size: number, spacing: number) => {
+  const chars = [...text];
+  return chars.reduce((sum, c) => sum + glyphWidth(c) * size, 0) + spacing * Math.max(0, chars.length - 1);
+};
+/** The biggest size, up to `max`, at which the line fits in `room`, never below `min`. */
+export const fitSize = (text: string, room: number, spacing: number, max: number, min: number) => {
+  const chars = [...text];
+  const perSize = chars.reduce((sum, c) => sum + glyphWidth(c), 0);
+  if (!perSize) return max;
+  const size = (room - spacing * Math.max(0, chars.length - 1)) / perSize;
+  return Math.max(min, Math.min(max, size));
+};
+/** Where each letter's middle goes along a line, measured from the line's middle. */
+export const letterOffsets = (text: string, size: number, spacing: number) => {
+  const total = lineLength(text, size, spacing);
+  let at = -total / 2;
+  return [...text].map((c) => {
+    const w = glyphWidth(c) * size;
+    const mid = at + w / 2;
+    at += w + spacing;
+    return { c, mid };
+  });
 };
 /** A steady list of numbers 0..1 from a seed, for glitter and confetti. */
 const seeded = (seed: number, n: number) => {
@@ -336,10 +392,12 @@ export function EnamelPin({ look, size, locked, sheen }: Props) {
   const p = locked ? LOCKED : look.palette;
   const metalStops = locked ? ['#C9C8D6', '#8C8AA3', '#55536A', '#B5B3C6', '#6E6C84'] : ['#FFF6CF', '#E8B84A', '#9C6B1F', '#F7D57A', '#B8862B'];
   const seed = hashOf(look.rimText);
-  // The rim text runs over the top, from low on the left to low on the right.
-  const arc = `M ${pt(38.6, 158)} A 38.6 38.6 0 1 1 ${pt(38.6, 22)}`;
-  // Fit the name to the rim: about 130 units of arc, letters ~0.78 of their size wide plus spacing.
-  const rimSize = Math.max(4, Math.min(6.6, (130 / Math.max(10, look.rimText.length) - 0.7) / 0.78));
+  // The name runs over the top of the rim, centred and sized to fit its band.
+  const rimSize = fitSize(look.rimText, RIM_ROOM, RIM_SPACING, 6.2, 3.6);
+  const rimLetters = letterOffsets(look.rimText, rimSize, RIM_SPACING);
+  const rimBase = RIM_MID - CAP * rimSize;
+  const ribbonSize = look.ribbon ? fitSize(look.ribbon, RIBBON_ROOM, RIBBON_SPACING, 6.4, 3.8) : 0;
+  const ribbonLetters = look.ribbon ? letterOffsets(look.ribbon, ribbonSize, RIBBON_SPACING) : [];
   const sheenProps = useAnimatedProps(() => ({ x: CX - 30 + (sheen ? sheen.get() : -0.4) * 70 }));
   const ink: Ink = { p, metal: u('metal'), sky: u('sky'), seed, city: look.rimText };
 
@@ -354,11 +412,15 @@ export function EnamelPin({ look, size, locked, sheen }: Props) {
       <Circle cx={CX} cy={CY} r={RO} fill={u('metal')} />
       <Circle cx={CX} cy={CY} r={RO - 1.6} fill={u('metalDark')} />
       <Circle cx={CX} cy={CY} r={RO - 2.6} fill={p.rim} />
-      <SvgText fontSize={rimSize} fontFamily={FONT} fontWeight="900" fill={u('metal')} letterSpacing={0.7}>
-        <TextPath href={`#arc${id}`} startOffset="50%" textAnchor="middle">
-          {look.rimText}
-        </TextPath>
-      </SvgText>
+      <G>
+        {rimLetters.map(({ c, mid }, i) => (
+          <G key={i} transform={`rotate(${((mid / RIM_MID) * 180) / Math.PI} ${CX} ${CY})`}>
+            <SvgText x={CX} y={CY - rimBase} fontSize={rimSize} fontFamily={FONT} fontWeight="900" fill={u('metal')} textAnchor="middle">
+              {c}
+            </SvgText>
+          </G>
+        ))}
+      </G>
       <Circle cx={CX} cy={CY} r={RI} fill={u('metal')} />
       {/* The scene. */}
       <G clipPath={u('scene')}>
@@ -399,7 +461,6 @@ export function EnamelPin({ look, size, locked, sheen }: Props) {
         <ClipPath id={`face${id}`}>
           <Circle cx={CX} cy={CY} r={RO} />
         </ClipPath>
-        <Path id={`arc${id}`} d={arc} />
       </Defs>
 
       <G opacity={locked ? 0.55 : 1}>{body}</G>
@@ -412,9 +473,16 @@ export function EnamelPin({ look, size, locked, sheen }: Props) {
           <Path d={`M 24 ${CY + 30} Q ${CX} ${CY + 35} 96 ${CY + 30} L 96 ${CY + 44} Q ${CX} ${CY + 49} 24 ${CY + 44} Z`} fill="#000000" opacity={0.35} transform="translate(0 2)" />
           <Path d={`M 24 ${CY + 30} Q ${CX} ${CY + 35} 96 ${CY + 30} L 96 ${CY + 44} Q ${CX} ${CY + 49} 24 ${CY + 44} Z`} fill={u('metal')} />
           <Path d={`M 27 ${CY + 32.4} Q ${CX} ${CY + 37.2} 93 ${CY + 32.4} L 93 ${CY + 41.6} Q ${CX} ${CY + 46.4} 27 ${CY + 41.6} Z`} fill={p.ribbon} />
-          <SvgText x={CX} y={CY + 42.4} fontSize={look.ribbon.length > 16 ? 5 : look.ribbon.length > 14 ? 5.6 : 6.4} fontFamily={FONT} fontWeight="800" textAnchor="middle" fill={locked ? '#B5B3C6' : '#FFF6CF'} letterSpacing={0.9}>
-            {look.ribbon}
-          </SvgText>
+          {ribbonLetters.map(({ c, mid }, i) => {
+            const at = ribbonAt(mid);
+            return (
+              <G key={i} transform={`rotate(${at.deg} ${at.x} ${at.y})`}>
+                <SvgText x={at.x} y={at.y + CAP * ribbonSize} fontSize={ribbonSize} fontFamily={FONT} fontWeight="800" textAnchor="middle" fill={locked ? '#B5B3C6' : '#FFF6CF'}>
+                  {c}
+                </SvgText>
+              </G>
+            );
+          })}
         </G>
       ) : null}
 

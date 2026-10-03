@@ -1,7 +1,9 @@
 import { Image } from 'expo-image';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
-import { StandingAvatar, StandingCaption } from '../../features/standing/StandingAvatar';
+import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
+import { filmedOrbit } from '../../features/profile/identity';
+import type { ProfileStat } from '../../features/profile/profileView';
 import { ProfileCover } from '../../components/ProfileCover';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -11,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
-import { SOUND_LABEL } from '../../data/models';
 import { clipLength } from '../../features/memories/organize';
 import { followersLabel, followingLabel, goingLine } from '../../features/social/copy';
 import { inCommon } from '../../features/social/common';
@@ -137,6 +138,19 @@ export default function PublicProfileScreen() {
   const gap = space.xs;
   const tileW = Math.floor((width - space.xl * 2 - gap * (cols - 1)) / cols);
   const going = profile?.festivals.map((id) => catalog.festival(id)?.name).filter((n): n is string => !!n) ?? [];
+  // The living header, as on your own profile: the artists they've filmed drift round their photo.
+  const orbit = useMemo(() => filmedOrbit(memories.map((m) => m.artistId), catalog.artist), [memories, catalog]);
+  const stats: ProfileStat[] = [
+    ...(counts
+      ? [
+          { key: 'followers' as const, n: counts.followers, label: counts.followers === 1 ? 'Follower' : 'Followers', a11y: `${followersLabel(counts.followers)}. Opens the list.` },
+          { key: 'following' as const, n: counts.following, label: 'Following', a11y: `${followingLabel(counts.following)}. Opens the list.` },
+        ]
+      : []),
+    { key: 'festivals', n: going.length, label: going.length === 1 ? 'Festival' : 'Festivals', a11y: `${going.length} ${going.length === 1 ? 'festival' : 'festivals'}` },
+    { key: 'moments', n: memories.length, label: memories.length === 1 ? 'Moment' : 'Moments', a11y: `${memories.length} shared ${memories.length === 1 ? 'moment' : 'moments'}` },
+    { key: 'badges', n: badges.length, label: badges.length === 1 ? 'Badge' : 'Badges', a11y: `${badges.length} festival ${badges.length === 1 ? 'badge' : 'badges'}` },
+  ];
 
   let body: React.ReactNode;
   if (!social.availability.ok || !social.user) {
@@ -157,55 +171,37 @@ export default function PublicProfileScreen() {
   } else {
     body = (
       <>
-        <View style={styles.head}>
-          <View style={styles.avatarWrap}>
-            <StandingAvatar uid={profile.uid} name={profile.displayName} url={profile.avatarUrl} size={96} />
-          </View>
-          <Text style={styles.name}>{profile.displayName}</Text>
-          <Text style={styles.handle}>@{profile.handle}</Text>
-          <StandingCaption uid={profile.uid} align="center" />
-          {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
-          {goingLine(going) ? <Text style={styles.meta}>{goingLine(going)}</Text> : null}
-          {profile.sounds.length ? (
-            <View style={styles.chips}>
-              {profile.sounds.map((s) => (
-                <View key={s} style={styles.chip}>
-                  <Text style={styles.chipText}>{SOUND_LABEL[s]}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-          {counts ? (
-            <View style={styles.counts}>
-              {(['followers', 'following'] as const).map((list) => (
-                <Pressable
-                  key={list}
-                  onPress={() => {
-                    haptic.select();
-                    router.push({ pathname: '/follows/[handle]', params: { handle: profile.handle, list } });
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${list === 'followers' ? followersLabel(counts.followers) : followingLabel(counts.following)}. Opens the list.`}
-                  hitSlop={6}
-                >
-                  <Text style={styles.count}>{list === 'followers' ? followersLabel(counts.followers) : followingLabel(counts.following)}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
-          {mine ? (
-            <Pressable onPress={() => router.push('/profile-edit')} accessibilityRole="button" style={styles.edit}>
-              <Text style={styles.link}>Edit profile</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.edit}>
-              <FollowButton
-                uid={profile.uid}
-                handle={profile.handle}
-                onChange={(on) => setCounts((c) => (c ? { ...c, followers: Math.max(0, c.followers + (on ? 1 : -1)) } : c))}
-              />
-            </View>
-          )}
+        <View style={styles.headWrap}>
+          <ProfileHeader
+            name={profile.displayName}
+            initial
+            handle={profile.handle}
+            whose={mine ? 'Your' : `${profile.displayName}’s`}
+            uid={profile.uid}
+            avatarUrl={profile.avatarUrl}
+            bio={profile.bio || undefined}
+            note={goingLine(going) || undefined}
+            stats={stats}
+            tappable={['followers', 'following']}
+            onStat={(key) => {
+              if (key !== 'followers' && key !== 'following') return;
+              router.push({ pathname: '/follows/[handle]', params: { handle: profile.handle, list: key } });
+            }}
+            sounds={profile.sounds.map((tag) => ({ tag }))}
+            orbit={orbit}
+          >
+            {mine ? (
+              <ProfileButton label="Edit profile" onPress={() => router.push('/profile-edit')} />
+            ) : (
+              <View style={styles.follow}>
+                <FollowButton
+                  uid={profile.uid}
+                  handle={profile.handle}
+                  onChange={(on) => setCounts((c) => (c ? { ...c, followers: Math.max(0, c.followers + (on ? 1 : -1)) } : c))}
+                />
+              </View>
+            )}
+          </ProfileHeader>
         </View>
         {common.length > 0 || match !== undefined ? (
           <View
@@ -305,19 +301,9 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   actions: { position: 'absolute', right: space.lg, flexDirection: 'row', gap: space.sm },
   more: { ...type.caption, color: color.moon, letterSpacing: 1 },
-  head: { alignItems: 'center', gap: space.xs },
-  avatarWrap: { marginBottom: space.sm },
+  headWrap: { marginHorizontal: -space.xl },
+  follow: { flex: 1, alignItems: 'center' },
   badges: { marginHorizontal: -space.lg, marginTop: space.sm },
-  name: { ...type.title, color: color.moon, textAlign: 'center' },
-  handle: { ...type.body, color: color.moonDim },
-  bio: { ...type.body, color: color.moon, textAlign: 'center', marginTop: space.sm },
-  meta: { ...type.caption, color: color.moonDim, marginTop: space.xs, textAlign: 'center' },
-  chips: { flexDirection: 'row', gap: space.xs, marginTop: space.sm, flexWrap: 'wrap', justifyContent: 'center' },
-  chip: { paddingHorizontal: space.md, paddingVertical: 5, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.16)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.4)' },
-  chipText: { ...type.caption, color: color.moon },
-  edit: { marginTop: space.md },
-  counts: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
-  count: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.xxl, marginBottom: space.md },
   common: {
     marginTop: space.xl,

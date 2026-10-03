@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
 import type { SharedMemory } from '../../social/models';
 import { badgeShareText, cityOf, earnedBadges, earnedLine, filmedThere, hashOf, pinLook, ribbonText, themeOf, toCollect } from '../badges';
+import { fitSize, glyphWidth, letterOffsets, lineLength } from '../EnamelPin';
 
 const fest = (id: string, extra: Partial<Festival> = {}): Festival =>
   ({ id, name: id === 'cc4' ? 'Cyclops Cove 4' : 'Eternal NYE 2026', dates: '', location: '', lineup: [], days: [], stages: [], startDate: '2026-12-04', endDate: '2026-12-06', ...extra }) as Festival;
@@ -57,6 +58,8 @@ describe('festival badges', () => {
 
   it('put the town in the rim and the dates on the ribbon', () => {
     expect([cityOf('Sunset Cove Amphitheater, Boca Raton'), cityOf('Austin, Texas'), cityOf('Lakeside Grounds'), cityOf(undefined)]).toEqual(['BOCA RATON', 'AUSTIN', 'LAKESIDE GROUNDS', undefined]);
+    // Venue, town and state, as EDMTrain writes places: the town, never the venue.
+    expect([cityOf('NOS Events Center, San Bernardino, CA'), cityOf('Legend Valley, Thornville, Ohio, USA'), cityOf('Florida')]).toEqual(['SAN BERNARDINO', 'THORNVILLE', 'FLORIDA']);
     expect(ribbonText({ startDate: '2026-12-31', endDate: '2027-01-01' })).toBe('DEC 31–JAN 1 · 2027');
     expect(ribbonText({ startDate: '2026-11-07' })).toBe('NOV 7 · 2026');
     expect(ribbonText({})).toBeUndefined();
@@ -71,3 +74,22 @@ describe('sharing a badge', () => {
     expect(badgeShareText('Cyclops Cove 4', 'https://x', false, 'sam')).toMatch(/^@sam collected the Cyclops Cove 4 badge/);
   });
 });
+
+describe('pin lettering', () => {
+  it('fits long names into the rim and keeps short ones at full size', () => {
+    const room = 150;
+    expect(fitSize('EDC ORLANDO', room, 0.55, 6.2, 3.6)).toBe(6.2);
+    const long = 'SOME REALLY LONG FESTIVAL NAME WEEKENDER · SOMEWHERE';
+    const size = fitSize(long, room, 0.55, 6.2, 3.6);
+    expect(size).toBeLessThan(6.2);
+    expect(lineLength(long, size, 0.55)).toBeLessThanOrEqual(room + 0.001);
+  });
+  it('centres the letters on the middle of the line', () => {
+    const letters = letterOffsets('DEC 4–6 · 2026', 6, 0.6);
+    const half = lineLength('DEC 4–6 · 2026', 6, 0.6) / 2;
+    // The first letter starts as far left of the middle as the last one ends to the right.
+    expect(letters[0].mid - (glyphWidth('D') * 6) / 2).toBeCloseTo(-half, 5);
+    expect(letters[letters.length - 1].mid + (glyphWidth('6') * 6) / 2).toBeCloseTo(half, 5);
+  });
+});
+

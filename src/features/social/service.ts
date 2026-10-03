@@ -102,6 +102,8 @@ export interface SocialService {
   adminFestivals(ids: string[]): Promise<Record<string, { going: number; videos: number }>>;
   /** Someone's founder number and flair, for their border and caption. */
   standingOf(uid: string): Promise<Standing>;
+  /** Show your glow level on your profile (a number from 1), or take it off (null). */
+  setLevel(level: number | null): Promise<void>;
   searchProfiles(query: string): Promise<Profile[]>;
   /** Profiles that show this festival among the ones they're going to (only people who switched that on), at most `max`. */
   profilesGoingTo(festivalId: string, max: number): Promise<Profile[]>;
@@ -169,6 +171,8 @@ export interface SocialService {
   declineCrewInvite(crewId: string): Promise<void>;
   /** Leave a crew, taking your picks with you. The last one out ends it; an owner who leaves hands it on. */
   leaveCrew(id: string): Promise<void>;
+  /** The owner ends the crew for everyone: everyone's picks, updates and the meeting spot go with it. */
+  endCrew(id: string): Promise<void>;
   /** The owner renames the crew. */
   renameCrew(id: string, name: string): Promise<Crew>;
   /** The owner removes someone from the crew (and their picks). */

@@ -3,8 +3,15 @@ import type { Artist, ArtistSimilarity, SoundTag } from '../../data/models';
 /** How alike two artists are, 0 to 1. Everything that asks "similar sound?" goes through one of these. */
 export type Similarity = (a: Artist, b: Artist) => number;
 
-/** Cosine similarity of two artists' sound tags. The default, and the fallback for pairs a source says nothing about. */
+/** How much a guessed sound (`Artist.soundGuessed`) is trusted, next to tags someone set. */
+export const GUESS_TRUST = 0.8;
+
+/**
+ * Cosine similarity of two artists' sound tags. The default, and the fallback
+ * for pairs a source says nothing about. A guessed sound on either side counts a little less.
+ */
 export function soundSimilarity(a: Artist, b: Artist) {
+  const trust = a.soundGuessed || b.soundGuessed ? GUESS_TRUST : 1;
   const tags = new Set([...Object.keys(a.sound), ...Object.keys(b.sound)]) as Set<SoundTag>;
   let dot = 0;
   let na = 0;
@@ -16,7 +23,7 @@ export function soundSimilarity(a: Artist, b: Artist) {
     na += x * x;
     nb += y * y;
   }
-  return na && nb ? dot / Math.sqrt(na * nb) : 0;
+  return na && nb ? (trust * dot) / Math.sqrt(na * nb) : 0;
 }
 
 const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);

@@ -11,6 +11,9 @@ import { useWeekends } from '../../state/weekends';
 import { festivalRoute } from '../plan/route';
 import { festivalReminders, reminderChanges, type Reminder } from './reminders';
 import { careReminders, feelReminders } from './careReminders';
+import { questReminder } from './questReminder';
+import { useQuestReminder } from '../../state/questReminder';
+import { useDailyQuests } from '../quests/useDailyQuests';
 import { useCare } from '../../state/care';
 import { tonightFestival } from '../tonight/tonight';
 import { canRemindSets, setReminders, soonest } from './setReminders';
@@ -54,6 +57,10 @@ function PhoneReminders() {
   const { mustSeesAt } = usePlan();
   // Water reminders, if you switched them on, while a festival you're going to is on.
   const { care, hydrated: careLoaded } = useCare();
+  // The 8 PM nudge for daily quests, if you asked for it.
+  const nudge = useQuestReminder();
+  const quests = useDailyQuests();
+  const questsLeft = quests.ready ? quests.rows.length - quests.doneToday : 0;
   const routes = useMemo(
     () =>
       festivals
@@ -69,7 +76,8 @@ function PhoneReminders() {
           const now = new Date();
           const sets: Reminder[] = soonest(routes.flatMap(({ festival, route }) => setReminders(festival, route, now)));
           const water = careReminders(care, tonightFestival(festivals, going, now)?.festival.id, now);
-          const wanted = [...festivalReminders(festivals, going, now), ...sets, ...water, ...feelReminders(care, now)];
+          const evening = quests.ready ? questReminder(nudge.on, now, questsLeft, quests.streak) : undefined;
+          const wanted = [...festivalReminders(festivals, going, now), ...sets, ...water, ...feelReminders(care, now), ...(evening ? [evening] : [])];
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           const { cancel, schedule } = reminderChanges(
             wanted,
@@ -92,19 +100,19 @@ function PhoneReminders() {
         }
       });
     },
-    [festivals, going, routes, care],
+    [festivals, going, routes, care, nudge.on, questsLeft, quests.ready, quests.streak],
   );
 
   // Only a change you make may ask for permission: going, or the set reminders switch. Not the sync when the app
   // opens, and not a route that moved because you liked something.
-  const asked = useRef<{ going: unknown; changed: number; water: unknown; feel: unknown } | undefined>(undefined);
+  const asked = useRef<{ going: unknown; changed: number; water: unknown; feel: unknown; nudge: boolean } | undefined>(undefined);
 
   useEffect(() => {
-    if (!hydrated || !weekendsLoaded || !setsLoaded || !careLoaded) return;
+    if (!hydrated || !weekendsLoaded || !setsLoaded || !careLoaded || !nudge.loaded) return;
     const first = !asked.current;
     const mayAsk =
-      !first && (asked.current!.going !== going || asked.current!.changed !== changed || asked.current!.water !== care.waterEvery || asked.current!.feel !== care.feelEvery);
-    asked.current = { going, changed, water: care.waterEvery, feel: care.feelEvery };
+      !first && (asked.current!.going !== going || asked.current!.changed !== changed || asked.current!.water !== care.waterEvery || asked.current!.feel !== care.feelEvery || asked.current!.nudge !== nudge.on);
+    asked.current = { going, changed, water: care.waterEvery, feel: care.feelEvery, nudge: nudge.on };
     // Opening the app and your own changes sync at once; a route that moved (a burst of likes) a beat later, once.
     if (first || mayAsk) {
       sync(mayAsk);
@@ -112,7 +120,7 @@ function PhoneReminders() {
     }
     const t = setTimeout(() => sync(false), 600);
     return () => clearTimeout(t);
-  }, [going, hydrated, weekendsLoaded, setsLoaded, careLoaded, care.waterEvery, care.feelEvery, changed, sync]);
+  }, [going, hydrated, weekendsLoaded, setsLoaded, careLoaded, care.waterEvery, care.feelEvery, changed, sync, nudge.loaded, nudge.on]);
 
 
   // Opened from a reminder: go to that festival (once per reminder).

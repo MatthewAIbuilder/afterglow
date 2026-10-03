@@ -14,6 +14,8 @@ import { searchCatalog, searchesPeople, liveRecents, topArtists, type Recent } f
 import type { Profile } from '../features/social/models';
 import { PersonRow } from '../features/social/PersonRow';
 import { haptic } from '../lib/haptics';
+import { searchSecret } from '../features/secrets/secrets';
+import { revealSecret } from '../state/secrets';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useRatings } from '../state/ratings';
@@ -38,6 +40,13 @@ export default function SearchScreen() {
   const social = useSocial();
   const { recents, remember, forget, clear } = useRecentSearches();
   const [query, setQuery] = useState('');
+  // A secret word: "plur" rains hearts (once per time you type it).
+  const secretWord = searchSecret(query);
+  useEffect(() => {
+    if (!secretWord) return;
+    const t = setTimeout(() => revealSecret(secretWord), 500);
+    return () => clearTimeout(t);
+  }, [secretWord]);
   const q = query.trim();
 
   const found = useMemo(() => searchCatalog(q, catalog, taste), [q, catalog, taste]);

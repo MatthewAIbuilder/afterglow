@@ -22,6 +22,7 @@ import { listenLinks } from '../../features/taste/listen';
 import { isCold, isWarm, RATING_LABEL, type Rating } from '../../features/taste/ratings';
 import { ratingA11y } from '../../features/taste/RateArtist';
 import { haptic } from '../../lib/haptics';
+import { AnswerPop, DoneBurst, MilestonePill, TUNE_MILESTONE } from '../../features/tune/TuneFeedback';
 import { useCatalog } from '../../state/catalog';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
@@ -106,7 +107,10 @@ export default function TuneScreen() {
     if (a !== 'unsure') rate(artist.id, a);
     const finished = steps.length + 1 >= queue.length;
     then(a, () => setSteps((s) => [...s, { id: artist.id, answer: a }]));
-    if (finished) setTimeout(() => haptic.settle(), 250);
+    // Every tenth answer: a little celebration.
+    const answered = steps.length + 1;
+    if (answered % TUNE_MILESTONE === 0 && !finished) setTimeout(() => haptic.celebrate(), 200);
+    if (finished) setTimeout(() => haptic.celebrate(), 250);
   };
 
   const undo = () => {
@@ -188,6 +192,7 @@ export default function TuneScreen() {
       </View>
 
       <View style={styles.stage}>
+        {steps.length > 0 && steps.length % TUNE_MILESTONE === 0 && !done ? <MilestonePill key={`ms-${steps.length}`} count={steps.length} /> : null}
         {artist ? (
           <Animated.View
             key={artist.id}
@@ -219,6 +224,7 @@ export default function TuneScreen() {
           </Animated.View>
         ) : (
           <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(320)} style={styles.card}>
+            {queue.length > 0 ? <DoneBurst /> : null}
             <HeartIcon color={color.glow} filled size={56} />
             <Text style={styles.name}>{queue.length === 0 ? 'All rated' : 'That’s everyone'}</Text>
             <Text style={styles.doneText}>
@@ -232,6 +238,7 @@ export default function TuneScreen() {
             </Text>
           </Animated.View>
         )}
+        {steps.length > 0 ? <AnswerPop key={`pop-${steps.length}`} answer={steps[steps.length - 1].answer} /> : null}
       </View>
 
       <View style={[styles.actions, { paddingBottom: insets.bottom + space.xl }]}>

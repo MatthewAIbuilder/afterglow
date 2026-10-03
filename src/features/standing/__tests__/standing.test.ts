@@ -22,6 +22,11 @@ describe('standing', () => {
     expect(standingFromDocs(undefined, undefined, { active: true })).toEqual({ plus: true });
     expect(standingFromDocs(undefined, undefined, { active: true, until: '2020-01-01T00:00:00Z' })).toEqual({});
     expect(standingFromDocs(undefined, undefined, { active: false })).toEqual({});
+    // Glow levels: whole numbers from 1 to 999 only.
+    expect(standingFromDocs(undefined, undefined, undefined, { level: 4 })).toEqual({ level: 4 });
+    expect(standingFromDocs(undefined, undefined, undefined, { level: 0 })).toEqual({});
+    expect(standingFromDocs(undefined, undefined, undefined, { level: 2.5 })).toEqual({});
+    expect(standingFromDocs(undefined, undefined, undefined, { level: '4' })).toEqual({});
     expect([showsGlow(undefined), showsGlow({ founder: 3 }), showsGlow({ plus: true })]).toEqual([true, true, false]);
   });
 });

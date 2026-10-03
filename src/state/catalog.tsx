@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CATALOG_TIMEOUT_MS, CATALOG_URL } from '../config/data';
 import { BUILT_IN } from '../data/bundled';
 import { type Catalog, createCatalog, withoutClips } from '../data/catalog';
@@ -99,10 +99,38 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
     return built.catalog;
   }, [base, patches]);
 
+  // Pull to refresh: read the hosted catalogue again (new festivals and clips arrive each night).
+  const refresh = useCallback(async () => {
+    const started = Date.now();
+    if (!source && CATALOG_URL)
+      await refreshCatalog({
+        url: CATALOG_URL,
+        base: BUILT_IN.snapshot,
+        fetchText,
+        store: storeFor(CATALOG_URL.trim()),
+        onCatalog: (built) => setBase(built),
+        onProblems: (problems, from) => report(problems, from === 'online' ? CATALOG_URL : 'saved copy'),
+      }).catch(() => {});
+    // Long enough for the spinner to read as "checked".
+    const left = 700 - (Date.now() - started);
+    if (left > 0) await new Promise((r) => setTimeout(r, left));
+  }, [source]);
+
   // Clips you flagged as wrong are left out everywhere (ClipFlagsProvider sits outside this one).
   const { hidden } = useClipFlags();
   const shown = useMemo(() => withoutClips(catalog, hidden), [catalog, hidden]);
-  return <CatalogContext.Provider value={shown}>{children}</CatalogContext.Provider>;
+  return (
+    <CatalogRefreshContext.Provider value={refresh}>
+      <CatalogContext.Provider value={shown}>{children}</CatalogContext.Provider>
+    </CatalogRefreshContext.Provider>
+  );
+}
+
+const CatalogRefreshContext = createContext<() => Promise<void>>(async () => {});
+
+/** Reads the hosted catalogue again (pull to refresh). */
+export function useCatalogRefresh() {
+  return useContext(CatalogRefreshContext);
 }
 
 /** Artists, festivals and clips, with lookups. The only way screens should reach catalogue data. */

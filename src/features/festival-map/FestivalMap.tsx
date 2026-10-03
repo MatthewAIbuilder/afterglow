@@ -1,0 +1,377 @@
+import { BlurView } from 'expo-blur';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import MapView, { Circle, type LatLng, Marker, Polyline } from 'react-native-maps';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { NEAR_KM } from '../festivals/near';
+import type { Point } from '../festivals/near';
+import { haptic } from '../../lib/haptics';
+import { revealSecret } from '../../state/secrets';
+import { color, radius, space, type } from '../../theme/tokens';
+import {
+  type Cluster,
+  type MapPoint,
+  type Marker as FestivalMarker,
+  type Region,
+  DEFAULT_BOX,
+  NAMES_DELTA,
+  SINGLE_DELTA,
+  STREET_DELTA,
+  boxAround,
+  clusterMarkers,
+  project,
+  pxPerUnit,
+  regionOf,
+  unproject,
+} from './map';
+import { NIGHT_STYLE } from './mapStyle';
+import { HERE_COLOR, TONE_COLOR } from './tones';
+
+/** Lights closer than this many pixels share one. */
+const CLUSTER_PX = 30;
+/** How long a glide takes. */
+const GLIDE_MS = 480;
+
+const toLatLng = (m: MapPoint): LatLng => {
+  const p = unproject(m);
+  return { latitude: p.lat, longitude: p.lon };
+};
+const pointLatLng = (p: Point): LatLng => ({ latitude: p.lat, longitude: p.lon });
+
+/**
+ * The festival map on phones: Apple Maps (iPhone) or Google Maps (Android)
+ * in a dark, quiet night style, with every festival glowing where it
+ * happens. The map moves and zooms natively, down to the streets around a
+ * venue. Lights that sit close together share one with a count, and split
+ * as you zoom in. The website draws its own map of dots (FestivalMap.web.tsx).
+ * `area` is the part of the screen left clear of the header and the cards.
+ */
+export function FestivalMap({
+  markers,
+  selected,
+  onSelect,
+  here,
+  width,
+  area,
+  journey,
+  frameKey,
+  toHere,
+  testID,
+}: {
+  markers: readonly FestivalMarker[];
+  selected?: string;
+  onSelect: (festivalId: string) => void;
+  here?: Point;
+  width: number;
+  height: number;
+  area: { top: number; bottom: number };
+  /** Your festivals in date order: a glowing line between them. */
+  journey?: readonly MapPoint[];
+  /** The map frames its festivals again only when this changes. */
+  frameKey: string;
+  /** Bump to glide to where you are. */
+  toHere?: number;
+  testID?: string;
+}) {
+  const reduced = useReducedMotion();
+  const map = useRef<MapView>(null);
+  const [ready, setReady] = useState(false);
+  const points = useMemo(() => [...markers.map((m) => m.at), ...(here ? [project(here)] : [])], [markers, here]);
+  const [first] = useState(() => regionOf(boxAround(points)));
+  const [region, setRegion] = useState<Region>(first);
+  // Moved by hand since it was last framed: offer to show everything again.
+  const [moved, setMoved] = useState(false);
+  const duration = reduced ? 0 : GLIDE_MS;
+
+  const frameAll = useCallback(
+    (animated: boolean) => {
+      const m = map.current;
+      if (!m) return;
+      if (points.length > 1) {
+        m.fitToCoordinates(points.map(toLatLng), { edgePadding: { top: 36, right: 56, bottom: 36, left: 56 }, animated });
+      } else {
+        const r = points.length ? { ...toLatLng(points[0]), latitudeDelta: SINGLE_DELTA, longitudeDelta: SINGLE_DELTA } : regionOf(DEFAULT_BOX);
+        m.animateToRegion(r, animated ? duration : 0);
+      }
+      setMoved(false);
+    },
+    [points, duration],
+  );
+
+  // Framed once per `frameKey` (a filter, a tour): a place looked up later never yanks the map back,
+  // but a map framed from nothing frames again once there's something to show.
+  const framed = useRef<{ key?: string; from: number }>({ from: 0 });
+  useEffect(() => {
+    if (!ready) return;
+    const f = framed.current;
+    if (f.key === frameKey && !(f.from === 0 && points.length > 0)) return;
+    const firstTime = f.key === undefined;
+    framed.current = { key: frameKey, from: points.length };
+    frameAll(!firstTime);
+  }, [ready, frameKey, points, frameAll]);
+
+  // Glide to the chosen festival, keeping the zoom.
+  const lastGlide = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!ready || !selected || selected === lastGlide.current) return;
+    lastGlide.current = selected;
+    const m = markers.find((k) => k.festival.id === selected);
+    if (m) map.current?.animateCamera({ center: toLatLng(m.at) }, { duration });
+  }, [ready, selected, markers, duration]);
+
+  // "Show me": glide to where you are, only when asked.
+  const answered = useRef(0);
+  useEffect(() => {
+    if (!ready || !toHere || !here || answered.current === toHere) return;
+    answered.current = toHere;
+    const span = Math.min(region.longitudeDelta, 10);
+    map.current?.animateToRegion({ ...pointLatLng(here), latitudeDelta: span * 0.8, longitudeDelta: span }, duration);
+  }, [ready, toHere, here, region.longitudeDelta, duration]);
+
+  const street = useRef(false);
+  const onRegion = useCallback((r: Region) => {
+    // A secret: all the way down to the streets (once each time you get there).
+    const atStreet = r.longitudeDelta < STREET_DELTA;
+    if (atStreet && !street.current) revealSecret('edge');
+    street.current = atStreet;
+    setRegion(r);
+  }, []);
+
+  // Lights cluster by zoom, in steps, so small moves don't shuffle them.
+  const scale = pxPerUnit(region, width);
+  const step = 2 ** (Math.round(Math.log2(scale) * 2) / 2);
+  const clusters = useMemo(() => clusterMarkers(markers, step, CLUSTER_PX), [markers, step]);
+  const allNamed = region.longitudeDelta < NAMES_DELTA;
+  const trail = useMemo(() => (journey && journey.length > 1 ? journey.map(toLatLng) : undefined), [journey]);
+
+  return (
+    <View
+      style={StyleSheet.absoluteFill}
+      testID={testID}
+      onTouchStart={() => {
+        if (!moved) setMoved(true);
+      }}
+    >
+      <MapView
+        ref={map}
+        style={StyleSheet.absoluteFill}
+        initialRegion={first}
+        userInterfaceStyle="dark"
+        mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+        customMapStyle={NIGHT_STYLE}
+        mapPadding={{ top: area.top, right: 0, bottom: area.bottom, left: 0 }}
+        showsPointsOfInterests={false}
+        showsBuildings={false}
+        showsTraffic={false}
+        showsIndoors={false}
+        showsCompass={false}
+        toolbarEnabled={false}
+        pitchEnabled={false}
+        rotateEnabled={false}
+        moveOnMarkerPress={false}
+        onMapReady={() => setReady(true)}
+        onRegionChangeComplete={onRegion}
+      >
+        {/* How far Near you reaches, around you. */}
+        {here ? (
+          <Circle center={pointLatLng(here)} radius={NEAR_KM * 1000} strokeColor="rgba(111,195,255,0.5)" strokeWidth={1.2} fillColor="rgba(111,195,255,0.05)" lineDashPattern={[6, 6]} />
+        ) : null}
+        {trail ? (
+          <>
+            <Polyline coordinates={trail} geodesic strokeColor="rgba(255,154,213,0.28)" strokeWidth={8} lineCap="round" />
+            <Polyline coordinates={trail} geodesic strokeColor="#FF9AD5" strokeWidth={2} lineCap="round" />
+          </>
+        ) : null}
+        {here ? (
+          <Marker coordinate={pointLatLng(here)} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={1}>
+            <HereDot reduced={reduced} />
+          </Marker>
+        ) : null}
+        {clusters.map((c) => (
+          <Light
+            key={c.lead.festival.id}
+            cluster={c}
+            chosen={c.members.some((m) => m.festival.id === selected)}
+            named={allNamed || c.lead.tone === 'going'}
+            reduced={reduced}
+            onPress={() => {
+              haptic.select();
+              lastGlide.current = c.lead.festival.id;
+              onSelect(c.lead.festival.id);
+              const at = toLatLng(c.at);
+              // A cluster opens up: zoom in until it splits.
+              if (c.members.length > 1) {
+                const span = region.longitudeDelta / 3;
+                map.current?.animateToRegion({ ...at, latitudeDelta: span * 0.8, longitudeDelta: span }, duration);
+              } else map.current?.animateCamera({ center: at }, { duration });
+            }}
+          />
+        ))}
+      </MapView>
+      {moved && markers.length ? (
+        <View style={[styles.again, { top: area.top + space.sm }]} pointerEvents="box-none">
+          <Pressable
+            onPress={() => {
+              haptic.soft();
+              frameAll(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={markers.length > 1 ? 'Show all these festivals again' : 'Back to the festival'}
+            style={({ pressed }) => [styles.againPill, pressed && { opacity: 0.8 }]}
+          >
+            <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+            <Text style={styles.againText}>{markers.length > 1 ? 'Show all' : 'Back to it'}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** Size of the area a light is drawn in: the light on top, its name under it. */
+const LIGHT = 44;
+const BOX_W = 150;
+const BOX_H = LIGHT + 34;
+
+/**
+ * Redraws a marker's picture for a moment after it changes, then stops
+ * (Google Maps draws markers as pictures; keeping them live costs frames).
+ */
+function useTracking(key: string) {
+  const [seen, setSeen] = useState(key);
+  const [track, setTrack] = useState(true);
+  if (seen !== key) {
+    setSeen(key);
+    setTrack(true);
+  }
+  useEffect(() => {
+    if (!track) return;
+    const t = setTimeout(() => setTrack(false), 700);
+    return () => clearTimeout(t);
+  }, [track, key]);
+  return track;
+}
+
+/** A festival's light: a glowing core in its colour, a halo, a ring when chosen, a slow pulse when you're going. */
+function Light({ cluster, chosen, named, reduced, onPress }: { cluster: Cluster; chosen: boolean; named: boolean; reduced: boolean; onPress: () => void }) {
+  const { lead, members } = cluster;
+  const tone = lead.tone;
+  const tint = TONE_COLOR[tone];
+  const core = tone === 'going' ? 13 : tone === 'love' ? 10 + Math.min(4, lead.loved) : tone === 'more' ? 8 : 6;
+  const showName = named || chosen;
+  const track = useTracking(`${chosen}|${showName}|${members.length}`);
+  // The pulse lives on iPhone, where markers are real views (Google Maps draws them as still pictures).
+  const pulses = tone === 'going' && !reduced && Platform.OS === 'ios';
+  const what = tone === 'going' ? 'You’re going.' : tone === 'over' ? 'It’s over.' : lead.loved ? `${lead.loved} you’d love.` : '';
+  const label = members.length > 1 ? `${lead.festival.name} and ${members.length - 1} more here. ${what}` : `${lead.festival.name}, ${lead.festival.dates}, ${lead.festival.location}. ${what}`;
+  return (
+    <Marker
+      coordinate={toLatLng(cluster.at)}
+      anchor={{ x: 0.5, y: LIGHT / 2 / BOX_H }}
+      onPress={onPress}
+      tracksViewChanges={track}
+      zIndex={chosen ? 100 : tone === 'going' ? 30 : tone === 'love' ? 20 : 10}
+    >
+      <View
+        style={styles.box}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={label.trim()}
+        accessibilityState={{ selected: chosen }}
+        testID={`map-light-${lead.festival.id}`}
+        collapsable={false}
+      >
+        <View style={styles.lightHit}>
+          {tone !== 'over' ? <View style={[styles.halo, { backgroundColor: tint, width: core * 3, height: core * 3, borderRadius: core * 1.5 }]} /> : null}
+          {pulses ? <Pulse tint={tint} /> : tone === 'going' ? <View style={[styles.pulse, { borderColor: tint, opacity: 0.45 }]} /> : null}
+          {chosen ? <View style={[styles.ring, { borderColor: tint }]} /> : null}
+          <View style={[styles.core, { width: core, height: core, borderRadius: core / 2, backgroundColor: tint, shadowColor: tint }]} />
+          {members.length > 1 ? (
+            <View style={[styles.count, { borderColor: tint }]}>
+              <Text style={styles.countText}>{members.length}</Text>
+            </View>
+          ) : null}
+        </View>
+        {showName ? (
+          <Text numberOfLines={2} style={[styles.name, chosen && styles.nameChosen]}>
+            {lead.festival.name}
+          </Text>
+        ) : null}
+      </View>
+    </Marker>
+  );
+}
+
+function Pulse({ tint }: { tint: string }) {
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.set(withRepeat(withTiming(1, { duration: 2200, easing: Easing.out(Easing.quad) }), -1, false));
+  }, [p]);
+  const style = useAnimatedStyle(() => ({ opacity: (1 - p.get()) * 0.7, transform: [{ scale: 0.6 + p.get() * 1.3 }] }));
+  return <Animated.View style={[styles.pulse, { borderColor: tint }, style]} />;
+}
+
+/** Where you are, when Near you is on: a cool blue dot. */
+function HereDot({ reduced }: { reduced: boolean }) {
+  return (
+    <View style={styles.lightHit} accessible accessibilityLabel="You are here, roughly" collapsable={false}>
+      {reduced || Platform.OS !== 'ios' ? <View style={[styles.pulse, { borderColor: HERE_COLOR, opacity: 0.4 }]} /> : <Pulse tint={HERE_COLOR} />}
+      <View style={styles.here} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  box: { width: BOX_W, height: BOX_H, alignItems: 'center' },
+  lightHit: { width: LIGHT, height: LIGHT, alignItems: 'center', justifyContent: 'center' },
+  halo: { position: 'absolute', opacity: 0.22 },
+  core: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.75)', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  ring: { position: 'absolute', width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
+  pulse: { position: 'absolute', width: 28, height: 28, borderRadius: 14, borderWidth: 1.5 },
+  count: {
+    position: 'absolute',
+    top: 3,
+    right: 1,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 9,
+    paddingHorizontal: 3,
+    backgroundColor: color.night,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countText: { ...type.caption, fontSize: 10, lineHeight: 12, color: color.moon, fontWeight: '700' },
+  name: {
+    ...type.caption,
+    marginTop: -6,
+    textAlign: 'center',
+    color: color.moon,
+    textShadowColor: color.night,
+    textShadowRadius: 5,
+  },
+  nameChosen: { fontWeight: '700' },
+  here: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: HERE_COLOR,
+    borderWidth: 2,
+    borderColor: color.moon,
+    shadowColor: HERE_COLOR,
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  again: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  againPill: {
+    overflow: 'hidden',
+    borderRadius: radius.pill,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderWidth: 1,
+    borderColor: color.hairline,
+    backgroundColor: 'rgba(18,16,38,0.5)',
+  },
+  againText: { ...type.label, color: color.moon },
+});

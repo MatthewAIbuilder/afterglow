@@ -6,6 +6,8 @@ export const haptic = {
   tap: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}),
   soft: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {}),
   settle: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
+  /** A big moment landing: the bass drop. */
+  heavy: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {}),
   /** Something earned: a badge unlocked. */
   celebrate: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}),
 };

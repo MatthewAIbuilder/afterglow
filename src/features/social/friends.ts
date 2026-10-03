@@ -57,3 +57,29 @@ export function inviteText(handle?: string, festival?: Festival): string {
 
 /** "3 of you", "Just you so far". */
 export const crewPeopleLine = (members: number) => (members <= 1 ? 'Just you so far' : `${members} of you`);
+
+export type MayKnow = { profile: Profile; why: string };
+
+/** How many people the Friends page suggests before "Show more". */
+export const MAY_KNOW_SHOWN = 4;
+
+/**
+ * One list of people you may know: people who follow you that you don't
+ * follow back first ("Follows you"), then people going to your festivals
+ * ("Going to Cyclops Cove 4"), each once.
+ */
+export function peopleYouMayKnow(followsYou: readonly Profile[], goers: readonly GoerSuggestion[]): MayKnow[] {
+  const seen = new Set<string>();
+  const out: MayKnow[] = [];
+  for (const p of followsYou) {
+    if (seen.has(p.uid)) continue;
+    seen.add(p.uid);
+    out.push({ profile: p, why: 'Follows you' });
+  }
+  for (const g of goers) {
+    if (seen.has(g.profile.uid)) continue;
+    seen.add(g.profile.uid);
+    out.push({ profile: g.profile, why: `Going to ${g.festival.name}` });
+  }
+  return out;
+}

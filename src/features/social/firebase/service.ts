@@ -69,6 +69,7 @@ import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDo
  *   crews/{id}/updates/{updateId} uid, kind, atMs (when it happened on the phone), sentAt (server time), festivalId,
  *                       artistId, stage, note, videoUrl/thumbUrl (+ videoPath/thumbPath when uploaded for the crew), sharedId, durationSec, width, height
  *   comments/{id}       memoryId, owner, uid, handle, text (≤ 300), createdAt: written as yourself, removed by you or the video's owner
+ *   levels/{uid}        level, at: your glow level, shown on your profile unless you switch it off
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
  * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg, crews/{crewId}/{uid}/{updateId}.(mp4|mov|m4v|jpg) (links only in members-only updates)
  */
@@ -134,6 +135,19 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     }
   }
 
+  /**
+   * The whole crew goes: what's in it first, as well as it can (a part the
+   * database won't let go of never stops the crew ending), then the crew.
+   */
+  async function endWholeCrew(id: string) {
+    const { db } = fb();
+    await removeUpdates(id).catch(() => {});
+    const picks = await getDocs(collection(db, 'crews', id, 'picks')).catch(() => null);
+    for (const d of picks?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+    await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
+    await deleteDoc(doc(db, 'crews', id));
+  }
+
   const service: SocialService = {
     availability: () => (firebaseConfigured(config) ? { ok: true } : { ok: false, reason: 'not-set-up' }),
 
@@ -193,6 +207,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           for (const r of refs.slice(i, i + 400)) b.delete(r);
           await b.commit();
         }
+        // On its own, so a database whose rules predate glow levels never blocks deleting the account.
+        await deleteDoc(doc(db, 'levels', user.uid)).catch(() => {});
         const profile = await getDoc(doc(db, 'profiles', user.uid));
         const batch = writeBatch(db);
         const handle = profile.exists() ? (profile.data() as { handle?: string }).handle : undefined;
@@ -413,8 +429,21 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     standingOf: (uid) =>
       guard(async () => {
         const { db } = fb();
-        const [f, fl, pl] = await Promise.all([getDoc(doc(db, 'founders', uid)), getDoc(doc(db, 'flairs', uid)), getDoc(doc(db, 'plus', uid))]);
-        return standingFromDocs(f.data(), fl.data(), pl.data());
+        // The level has its own catch: a database whose rules predate it refuses the read, and that must not hide the rest.
+        const [f, fl, pl, lv] = await Promise.all([
+          getDoc(doc(db, 'founders', uid)),
+          getDoc(doc(db, 'flairs', uid)),
+          getDoc(doc(db, 'plus', uid)),
+          getDoc(doc(db, 'levels', uid)).catch(() => undefined),
+        ]);
+        return standingFromDocs(f.data(), fl.data(), pl.data(), lv?.data());
+      }),
+    setLevel: (level) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'levels', user.uid);
+        if (level === null) await deleteDoc(ref);
+        else await setDoc(ref, { level, at: serverTimestamp() });
       }),
     sendVerification: () => guard(async () => sendEmailVerification(me() as FirebaseAuth.User)),
     reloadUser: () =>
@@ -829,20 +858,22 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!c || !c.members.includes(user.uid)) return;
         const members = c.members.filter((m) => m !== user.uid);
         if (!members.length) {
-          // The last one out: everyone's updates and picks, then the crew.
-          await removeUpdates(id);
-          const all = await getDocs(collection(db, 'crews', id, 'picks'));
-          const b = writeBatch(db);
-          for (const d of all.docs) b.delete(d.ref);
-          b.delete(doc(db, 'crews', id, 'meta', 'meet'));
-          b.delete(crewRef);
-          await b.commit();
+          // The last one out ends it.
+          await endWholeCrew(id);
           return;
         }
         // Your updates and picks go with you.
         await removeUpdates(id, user.uid).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', user.uid));
         await updateDoc(crewRef, { members, owner: c.owner === user.uid ? members[0] : c.owner });
+      }),
+    endCrew: (id) =>
+      guard(async () => {
+        const user = me();
+        const c = crewFromDoc(id, (await getDoc(doc(fb().db, 'crews', id))).data());
+        if (!c) return;
+        if (c.owner !== user.uid) throw new SocialError('unknown');
+        await endWholeCrew(id);
       }),
     renameCrew: (id, raw) =>
       guard(async () => {

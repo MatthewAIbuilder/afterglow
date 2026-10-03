@@ -101,6 +101,9 @@ describe('architecture', () => {
       'features/music/apple/normalize.ts',
       'features/music/apple/api.ts',
       'features/music/apple/musicKit.ts',
+      'features/quests/daily.ts',
+      'features/festival-map/map.ts',
+      'features/festival-map/land.ts',
     ];
     for (const p of pure) {
       const f = all.find((x) => x.path === p);

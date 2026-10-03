@@ -6,16 +6,16 @@ import { NightSky } from '../../components/NightSky';
 import { PageActions } from '../../components/PageActions';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
-import { ChevronIcon, PeopleIcon, PlusIcon, QrIcon, ScanIcon, SearchIcon } from '../../components/TabIcons';
+import { ChevronIcon, PeopleIcon, PlusIcon } from '../../components/TabIcons';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import type { Festival } from '../../data/models';
 import { CrewWhereCard } from '../crews/CrewWhereCard';
-import { LostButton } from '../crews/LostButton';
-import { CareButtons } from '../crews/CareButtons';
+import { CheckInPanel } from '../crews/CheckInPanel';
 import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
 import { MeetSpotCard } from '../crews/MeetSpotCard';
 import { FriendAddsList } from './FriendAddsList';
 import { InviteCard } from './InviteCard';
+import { QuickActions } from './QuickActions';
 import { SideQuestsCard } from '../quests/SideQuestsCard';
 import { FriendsActivity } from './FriendsActivity';
 import { accountsOff } from '../social/unavailable';
@@ -24,7 +24,7 @@ import { clock, updatePlace } from '../../features/crews/updates';
 import { FOLLOWING } from '../../features/discover/focus';
 import { groupFestivals } from '../../features/festivals/going';
 import { isOver } from '../../features/festivals/shelves';
-import { crewPeopleLine, followBack, goerSuggestions, type GoerSuggestion } from '../../features/social/friends';
+import { crewPeopleLine, followBack, goerSuggestions, MAY_KNOW_SHOWN, peopleYouMayKnow, type GoerSuggestion } from '../../features/social/friends';
 import type { Profile } from '../../features/social/models';
 import { PersonRow } from '../../features/social/PersonRow';
 import { haptic } from '../../lib/haptics';
@@ -104,10 +104,74 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [meUid, social.service, social.blocked, upcomingKey]),
   );
+  const [showAllMayKnow, setShowAllMayKnow] = useState(false);
   const suggestions: GoerSuggestion[] = useMemo(
     () => goerSuggestions(goers, { following: followedThen, blocked: social.blocked, me: meUid }),
     [goers, followedThen, social.blocked, meUid],
   );
+  // One list: people who follow you, then people going to your festivals.
+  const mayKnow = useMemo(() => peopleYouMayKnow(followers ?? [], suggestions), [followers, suggestions]);
+
+  // Your crews: they're what you do with friends at a festival.
+  const crewsSection = me ? (
+    <Section title="Your crews">
+      {crews.map((c) => {
+        const festival = catalog.festival(c.festivalId);
+        const news = stories.find((s) => s.updates.some((u) => u.crewId === c.id));
+        const who = news ? profileOf(news.uid) : undefined;
+        const artist = news?.latest.artistId ? catalog.artist(news.latest.artistId)?.name : undefined;
+        const place = news ? updatePlace(news.latest, artist) : '';
+        return (
+          <Pressable
+            key={c.id}
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/crew/[id]', params: { id: c.id } });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`${c.name}, ${festival?.name ?? 'a festival'}, ${crewPeopleLine(c.members.length)}${news ? `. Latest: ${who ? firstName(who.displayName) : 'a crewmate'} at ${clock(news.latest.at)}${place ? `, ${place}` : ''}` : ''}`}
+            style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+          >
+            <Faces uids={c.members.filter((m) => m !== meUid)} profileOf={profileOf} me={me} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {c.name}
+              </Text>
+              <Text style={styles.cardDetail} numberOfLines={1}>
+                {festival?.name ?? 'Festival'} · {crewPeopleLine(c.members.length)}
+              </Text>
+              {news ? (
+                <Text style={[styles.cardDetail, news.fresh && styles.fresh]} numberOfLines={1}>
+                  {who ? firstName(who.displayName) : 'Crewmate'} · {clock(news.latest.at)}
+                  {place ? ` · ${place}` : ''}
+                </Text>
+              ) : null}
+            </View>
+            <ChevronIcon color={color.moonFaint} size={12} />
+          </Pressable>
+        );
+      })}
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          router.push('/start-crew');
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Start a crew for a festival"
+        style={({ pressed }) => [styles.card, styles.startCard, pressed && styles.pressed]}
+      >
+        <View style={styles.plusCircle}>
+          <PlusIcon color={color.night} size={16} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>Start a crew</Text>
+          <Text style={styles.cardDetail}>
+            {crews.length ? 'For another festival.' : 'Plan a festival with friends: shared picks, one route, and where everyone is on the day.'}
+          </Text>
+        </View>
+      </Pressable>
+    </Section>
+  ) : null;
 
   return (
     <View style={styles.root}>
@@ -122,21 +186,8 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
           <Text style={styles.title} accessibilityRole="header">
             Friends
           </Text>
-          {me ? (
-            <Pressable
-              onPress={() => {
-                haptic.select();
-                router.push('/people');
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Find people"
-              hitSlop={8}
-              style={({ pressed }) => [styles.round, pressed && styles.pressed]}
-            >
-              <SearchIcon color={color.moon} size={17} />
-            </Pressable>
-          ) : null}
         </View>
+        {festival ? <Text style={styles.atFestival}>At {festival.name}</Text> : null}
 
         {!social.availability.ok ? (
           <>
@@ -157,125 +208,76 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
           </>
         ) : (
           <>
-            {/* Someone asked you to join their crew: that's the first thing to answer. */}
-            <CrewInvitesCard />
-            {/* Away from a festival, bringing friends in comes first. */}
-            {festival ? null : <InviteCard handle={me.handle} festivals={upcoming} />}
-            {/* Adding friends face to face: show your code, or scan theirs. Works with no signal. */}
-            <View style={styles.addRow}>
-              <AddButton label="My code" a11y="Show my friend code" icon={<QrIcon color={color.moon} size={22} />} onPress={() => router.push('/my-code')} />
-              {Platform.OS !== 'web' ? (
-                <AddButton label="Scan a code" a11y="Scan a friend's code" icon={<ScanIcon color={color.night} size={22} />} onPress={() => router.push('/scan')} primary />
-              ) : null}
-            </View>
-            <FriendAddsList />
-            <FriendsActivity />
-
-            {festival && here.length ? (
-              <Section title={`At ${festival.name}`}>
-                <CrewHelpAlerts festivalId={festival.id} />
-                <CrewWhereCard festival={festival} crews={here} />
-                {updatesReady ? <CareButtons festivalId={festival.id} /> : null}
-                {updatesReady ? <LostButton festivalId={festival.id} /> : null}
-                {here.map((c) => (
-                  <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={here.length > 1} />
-                ))}
-                <SideQuestsCard max={2} />
-              </Section>
-            ) : null}
-
-            {/* Crews first: they're what you do with friends at a festival. */}
-            <Section title="Your crews">
-              {crews.map((c) => {
-                const festival = catalog.festival(c.festivalId);
-                const news = stories.find((s) => s.updates.some((u) => u.crewId === c.id));
-                const who = news ? profileOf(news.uid) : undefined;
-                const artist = news?.latest.artistId ? catalog.artist(news.latest.artistId)?.name : undefined;
-                const place = news ? updatePlace(news.latest, artist) : '';
-                return (
+            {festival ? (
+              <>
+                {/* At the festival: add the people in front of you, then your crew. */}
+                <QuickActions handle={me.handle} atFestival />
+                <CrewInvitesCard />
+                <FriendAddsList />
+                {here.length ? (
+                  <>
+                    {/* A crewmate asking for help comes before anything else. */}
+                    <CrewHelpAlerts festivalId={festival.id} />
+                    {updatesReady ? <CheckInPanel festivalId={festival.id} /> : null}
+                    <CrewWhereCard festival={festival} crews={here} />
+                    {here.map((c) => (
+                      <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={here.length > 1} />
+                    ))}
+                  </>
+                ) : (
                   <Pressable
-                    key={c.id}
                     onPress={() => {
                       haptic.select();
-                      router.push({ pathname: '/crew/[id]', params: { id: c.id } });
+                      router.push('/start-crew');
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`${c.name}, ${festival?.name ?? 'a festival'}, ${crewPeopleLine(c.members.length)}${news ? `. Latest: ${who ? firstName(who.displayName) : 'a crewmate'} at ${clock(news.latest.at)}${place ? `, ${place}` : ''}` : ''}`}
-                    style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+                    accessibilityLabel={`Start a crew for ${festival.name}`}
+                    style={({ pressed }) => [styles.card, styles.startCard, pressed && styles.pressed]}
                   >
-                    <Faces uids={c.members.filter((m) => m !== meUid)} profileOf={profileOf} me={me} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitle} numberOfLines={1}>
-                        {c.name}
-                      </Text>
-                      <Text style={styles.cardDetail} numberOfLines={1}>
-                        {festival?.name ?? 'Festival'} · {crewPeopleLine(c.members.length)}
-                      </Text>
-                      {news ? (
-                        <Text style={[styles.cardDetail, news.fresh && styles.fresh]} numberOfLines={1}>
-                          {who ? firstName(who.displayName) : 'Crewmate'} · {clock(news.latest.at)}
-                          {place ? ` · ${place}` : ''}
-                        </Text>
-                      ) : null}
+                    <View style={styles.plusCircle}>
+                      <PlusIcon color={color.night} size={16} />
                     </View>
-                    <ChevronIcon color={color.moonFaint} size={12} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cardTitle}>Start a crew for {festival.name}</Text>
+                      <Text style={styles.cardDetail}>Check in with each other, see where everyone is, and pick a meeting spot.</Text>
+                    </View>
                   </Pressable>
-                );
-              })}
-              <Pressable
-                onPress={() => {
-                  haptic.select();
-                  router.push('/start-crew');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Start a crew for a festival"
-                style={({ pressed }) => [styles.card, styles.startCard, pressed && styles.pressed]}
-              >
-                <View style={styles.plusCircle}>
-                  <PlusIcon color={color.night} size={16} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>Start a crew</Text>
-                  <Text style={styles.cardDetail}>
-                    {crews.length ? 'For another festival.' : 'Plan a festival with friends: shared picks, one route, and where everyone is on the day.'}
-                  </Text>
-                </View>
-              </Pressable>
-            </Section>
+                )}
+                <Section title="Side quests">
+                  <SideQuestsCard max={2} />
+                </Section>
+              </>
+            ) : (
+              <>
+                <QuickActions handle={me.handle} festivals={upcoming} />
+                {/* Someone asked you to join their crew: that's the first thing to answer. */}
+                <CrewInvitesCard />
+                <FriendAddsList />
+                <FriendsActivity between={crewsSection} />
 
-            {festival ? <InviteCard handle={me.handle} festivals={upcoming} /> : null}
+                {mayKnow.length ? (
+                  <Section title="People you may know">
+                    {(showAllMayKnow ? mayKnow : mayKnow.slice(0, MAY_KNOW_SHOWN)).map((m) => (
+                      <View key={m.profile.uid}>
+                        <PersonRow profile={m.profile} follow />
+                        <Text style={styles.why}>{m.why}</Text>
+                      </View>
+                    ))}
+                    {mayKnow.length > MAY_KNOW_SHOWN && !showAllMayKnow ? (
+                      <Pressable onPress={() => setShowAllMayKnow(true)} accessibilityRole="button" hitSlop={8} style={styles.more}>
+                        <Text style={styles.link}>Show {mayKnow.length - MAY_KNOW_SHOWN} more</Text>
+                      </Pressable>
+                    ) : null}
+                  </Section>
+                ) : upcoming.length === 0 ? (
+                  <Text style={styles.quiet}>Tap I’m going on a festival to see who else is going.</Text>
+                ) : null}
 
-            {followers && followers.length ? (
-              <Section title="Following you">
-                {followers.map((p) => (
-                  <PersonRow key={p.uid} profile={p} follow />
-                ))}
-              </Section>
-            ) : null}
-
-            {suggestions.length ? (
-              <Section title="Going to your festivals">
-                {suggestions.map((s) => (
-                  <View key={s.profile.uid}>
-                    <PersonRow profile={s.profile} follow />
-                    <Text style={styles.why}>Going to {s.festival.name}</Text>
-                  </View>
-                ))}
-              </Section>
-            ) : upcoming.length === 0 ? (
-              <Text style={styles.quiet}>Tap I’m going on a festival to see who else is going.</Text>
-            ) : null}
-
-            <Section title="People you follow">
-              <Row
-                label={social.following.size ? `${social.following.size} ${social.following.size === 1 ? 'person' : 'people'}` : 'No one yet'}
-                detail={social.following.size ? 'See who' : 'Find people'}
-                onPress={() =>
-                  social.following.size ? router.push({ pathname: '/follows/[handle]', params: { handle: me.handle, list: 'following' } }) : router.push('/people')
-                }
-              />
-              <Row label="Videos from people you follow" detail="In Discover" onPress={() => router.navigate({ pathname: '/', params: { festival: FOLLOWING } })} />
-            </Section>
+                {social.following.size ? (
+                  <Row label="Videos from people you follow" detail="In Discover" onPress={() => router.navigate({ pathname: '/', params: { festival: FOLLOWING } })} />
+                ) : null}
+              </>
+            )}
           </>
         )}
       </ScrollView>
@@ -326,23 +328,6 @@ function Hero({
   );
 }
 
-function AddButton({ label, a11y, icon, onPress, primary }: { label: string; a11y: string; icon: React.ReactNode; onPress: () => void; primary?: boolean }) {
-  return (
-    <Pressable
-      onPress={() => {
-        haptic.tap();
-        onPress();
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-      style={({ pressed }) => [styles.addButton, primary && styles.addPrimary, pressed && styles.pressed]}
-    >
-      {icon}
-      <Text style={[styles.addText, primary && styles.addTextPrimary]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -385,28 +370,13 @@ function Faces({ uids, profileOf, me }: { uids: string[]; profileOf: (uid: strin
 }
 
 const styles = StyleSheet.create({
+  more: { alignSelf: 'flex-start', paddingVertical: space.sm },
+  atFestival: { ...type.label, color: color.glow, marginTop: -space.sm },
   root: { flex: 1, backgroundColor: color.night },
   content: { paddingHorizontal: space.xl, alignSelf: 'center', width: '100%', maxWidth: 640 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.largeTitle, color: color.moon },
-  round: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  addRow: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
-  addButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-    minHeight: 52,
-    borderRadius: radius.pill,
-    backgroundColor: color.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.45)',
-  },
-  addPrimary: { backgroundColor: color.glow, borderColor: color.glow },
-  addText: { ...type.headline, color: color.moon },
-  addTextPrimary: { color: color.night },
   hero: { marginTop: space.xl, padding: space.xl, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', gap: space.md },
   heroIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(169,124,255,0.16)' },
   heroTitle: { ...type.title, color: color.moon, textAlign: 'center' },

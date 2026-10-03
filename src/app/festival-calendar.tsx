@@ -1,0 +1,204 @@
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FestivalRow } from '../components/FestivalRow';
+import { NightSky } from '../components/NightSky';
+import { PageActions } from '../components/PageActions';
+import { PageTitle } from '../components/PageTitle';
+import { ChevronIcon } from '../components/TabIcons';
+import type { Festival } from '../data/types';
+import {
+  type Month,
+  WEEKDAY_LETTERS,
+  calendarMonths,
+  dayKey,
+  monthFestivals,
+  monthGrid,
+  monthLine,
+  monthOf,
+  monthTitle,
+  sameMonth,
+} from '../features/festivals/calendar';
+import { lovedOn } from '../features/festivals/shelves';
+import { haptic } from '../lib/haptics';
+import { useToday } from '../lib/useToday';
+import { useCatalog } from '../state/catalog';
+import { useGoing } from '../state/going';
+import { useLoves } from '../state/useLoves';
+import { useWeekends } from '../state/weekends';
+import { color, radius, space, type } from '../theme/tokens';
+
+const GOING = '#FF9AD5';
+
+/**
+ * The festival calendar: a month at a time, each day lit with a dot for every
+ * festival on it (pink for yours, glow for ones with acts you'd love). Tap a
+ * day to see what's on; flip months with the arrows.
+ */
+export default function FestivalCalendarScreen() {
+  const insets = useSafeAreaInsets();
+  const reduced = useReducedMotion();
+  const today = useToday();
+  const catalog = useCatalog();
+  const { forYou } = useWeekends();
+  const festivals = useMemo(() => catalog.festivals.map(forYou), [catalog.festivals, forYou]);
+  const { going } = useGoing();
+  const loves = useLoves();
+  const months = useMemo(() => calendarMonths(festivals, today), [festivals, today]);
+  const [index, setIndex] = useState(0);
+  const month: Month = months[Math.min(index, months.length - 1)] ?? monthOf(today);
+  const onDays = useMemo(() => monthFestivals(festivals, month), [festivals, month]);
+  const inMonth = useMemo(() => [...new Set([...onDays.values()].flat())], [onDays]);
+  const todayKey = dayKey(today.getFullYear(), today.getMonth(), today.getDate());
+  const [picked, setPicked] = useState<string | undefined>();
+  const day = picked && picked.startsWith(`${month.year}-${String(month.month + 1).padStart(2, '0')}`) ? picked : undefined;
+  const listed: Festival[] = day ? (onDays.get(day) ?? []) : inMonth;
+  const tone = (f: Festival) => (going.includes(f.id) ? GOING : lovedOn(f, loves) > 0 ? color.glow : color.moonDim);
+
+  const flip = (by: number) => {
+    const next = index + by;
+    if (next < 0 || next >= months.length) return;
+    haptic.select();
+    setIndex(next);
+    setPicked(undefined);
+  };
+
+  return (
+    <View style={styles.root}>
+      <PageTitle title="Festival calendar" />
+      <NightSky />
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
+        <View style={styles.head}>
+          <Pressable onPress={() => flip(-1)} disabled={index === 0} accessibilityRole="button" accessibilityLabel="Previous month" hitSlop={12} style={[styles.arrow, index === 0 && styles.off]}>
+            <ChevronIcon color={color.moon} direction="left" size={16} />
+          </Pressable>
+          <View style={styles.titleWrap}>
+            <Text style={styles.title} accessibilityRole="header">
+              {monthTitle(month, today)}
+            </Text>
+            <Text style={styles.sub}>{monthLine(inMonth.length, month)}</Text>
+          </View>
+          <Pressable
+            onPress={() => flip(1)}
+            disabled={index >= months.length - 1}
+            accessibilityRole="button"
+            accessibilityLabel="Next month"
+            hitSlop={12}
+            style={[styles.arrow, index >= months.length - 1 && styles.off]}
+          >
+            <ChevronIcon color={color.moon} direction="right" size={16} />
+          </Pressable>
+        </View>
+
+        <Animated.View key={`${month.year}-${month.month}`} entering={reduced ? undefined : FadeIn.duration(220)} style={styles.grid}>
+          <View style={styles.week}>
+            {WEEKDAY_LETTERS.map((l, i) => (
+              <Text key={i} style={styles.weekday}>
+                {l}
+              </Text>
+            ))}
+          </View>
+          {monthGrid(month).map((week, w) => (
+            <View key={w} style={styles.week}>
+              {week.map((key, i) => {
+                if (!key) return <View key={i} style={styles.cell} />;
+                const on = onDays.get(key) ?? [];
+                const chosen = key === day;
+                const isToday = key === todayKey;
+                const past = key < todayKey;
+                const mine = on.some((f) => going.includes(f.id));
+                return (
+                  <Pressable
+                    key={key}
+                    onPress={() => {
+                      haptic.select();
+                      setPicked(chosen ? undefined : key);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${Number(key.slice(8))} ${monthTitle(month, today)}${on.length ? `, ${on.map((f) => f.name).join(', ')}` : ', nothing on'}${mine ? ', you’re going' : ''}`}
+                    accessibilityState={{ selected: chosen }}
+                    testID={`cal-${key}`}
+                    style={[styles.cell, on.length > 0 && styles.cellOn, mine && styles.cellMine, chosen && styles.cellChosen, isToday && styles.cellToday]}
+                  >
+                    <Text style={[styles.num, past && styles.past, on.length > 0 && styles.numOn, chosen && styles.numChosen]}>{Number(key.slice(8))}</Text>
+                    <View style={styles.dots}>
+                      {on.slice(0, 3).map((f) => (
+                        <View key={f.id} style={[styles.dot, { backgroundColor: chosen ? color.night : tone(f) }]} />
+                      ))}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </Animated.View>
+
+        <View style={styles.legend} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <View style={[styles.dot, { backgroundColor: GOING }]} />
+          <Text style={styles.legendText}>Going</Text>
+          <View style={[styles.dot, { backgroundColor: color.glow, marginLeft: space.md }]} />
+          <Text style={styles.legendText}>Artists you’d love</Text>
+        </View>
+
+        <Text style={styles.section} accessibilityRole="header">
+          {day ? `On ${Number(day.slice(8))} ${monthTitle(month, today)}` : `In ${monthTitle(month, today)}`}
+        </Text>
+        {listed.length ? (
+          <View style={styles.rows}>
+            {listed.map((f) => (
+              <FestivalRow key={f.id} festival={f} />
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.none}>{day ? 'Nothing on that day yet.' : 'New festivals arrive every night.'}</Text>
+        )}
+        {sameMonth(month, monthOf(today)) ? null : (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              setIndex(0);
+              setPicked(undefined);
+            }}
+            accessibilityRole="button"
+            style={styles.back}
+          >
+            <Text style={styles.backText}>Back to this month</Text>
+          </Pressable>
+        )}
+      </ScrollView>
+      <PageActions />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: color.night },
+  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.lg, marginBottom: space.lg },
+  arrow: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass },
+  off: { opacity: 0.3 },
+  titleWrap: { flex: 1, alignItems: 'center' },
+  title: { ...type.title, color: color.moon },
+  sub: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  grid: { marginHorizontal: space.md, padding: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  week: { flexDirection: 'row' },
+  weekday: { flex: 1, textAlign: 'center', ...type.caption, color: color.moonFaint, paddingVertical: space.xs },
+  cell: { flex: 1, aspectRatio: 0.9, margin: 2, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  cellOn: { backgroundColor: 'rgba(169,124,255,0.1)' },
+  cellMine: { backgroundColor: 'rgba(255,154,213,0.14)' },
+  cellChosen: { backgroundColor: color.glow },
+  cellToday: { borderWidth: 1.5, borderColor: color.moon },
+  num: { ...type.label, color: color.moonDim },
+  past: { color: color.moonFaint },
+  numOn: { color: color.moon },
+  numChosen: { color: color.night },
+  dots: { flexDirection: 'row', gap: 2, height: 6, marginTop: 3 },
+  dot: { width: 5, height: 5, borderRadius: 2.5 },
+  legend: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: space.xl, marginTop: space.md },
+  legendText: { ...type.caption, color: color.moonDim },
+  section: { ...type.headline, color: color.moon, paddingHorizontal: space.xl, marginTop: space.xl, marginBottom: space.sm },
+  rows: { paddingHorizontal: space.xl },
+  none: { ...type.body, color: color.moonDim, paddingHorizontal: space.xl },
+  back: { alignSelf: 'center', marginTop: space.lg, padding: space.sm },
+  backText: { ...type.label, color: color.glow },
+});

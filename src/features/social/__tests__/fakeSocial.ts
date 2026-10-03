@@ -37,6 +37,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const flairs = new Map<string, Flair>();
   /** Afterglow Plus members (set by hand, like the Firebase console). */
   const plus = new Set<string>();
+  const levels = new Map<string, number>();
   const counter = { founders: 0 };
   /** Crew-only video files uploaded, as `crewId/uid/updateId`. */
   const crewFiles = new Set<string>();
@@ -138,6 +139,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       friendCodes.delete(u.uid);
       founders.delete(u.uid);
       presence.delete(u.uid);
+      levels.delete(u.uid);
       for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
       for (const [k, c] of comments) if (c.uid === u.uid || c.owner === u.uid) comments.delete(k);
       for (const id of [...crews.keys()]) leave(id, u.uid);
@@ -280,7 +282,13 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async standingOf(uid) {
       const founder = founders.get(uid);
       const flair = flairs.get(uid);
-      return { ...(founder ? { founder } : {}), ...(flair ? { flair } : {}), ...(plus.has(uid) ? { plus: true } : {}) };
+      const level = levels.get(uid);
+      return { ...(founder ? { founder } : {}), ...(flair ? { flair } : {}), ...(plus.has(uid) ? { plus: true } : {}), ...(level ? { level } : {}) };
+    },
+    async setLevel(level) {
+      const u = me();
+      if (level === null) levels.delete(u.uid);
+      else levels.set(u.uid, level);
     },
     async sendVerification() {
       me();
@@ -599,6 +607,15 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async leaveCrew(id) {
       leave(id, me().uid);
     },
+    async endCrew(id) {
+      const c = crews.get(id);
+      if (!c) return;
+      if (c.owner !== me().uid) throw new SocialError('unknown');
+      crews.delete(id);
+      dropPicks(id);
+      dropUpdates(id);
+      meets.delete(id);
+    },
     async renameCrew(id, raw) {
       const c = memberOf(id);
       if (c.owner !== me().uid || crewNameProblem(raw)) throw new SocialError('unknown');
@@ -709,5 +726,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, levels, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
 }

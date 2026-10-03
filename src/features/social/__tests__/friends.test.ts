@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { crewPeopleLine, followBack, goerSuggestions, inviteText } from '../friends';
+import { crewPeopleLine, followBack, goerSuggestions, inviteText, peopleYouMayKnow } from '../friends';
 import type { Profile } from '../models';
 import { cleanComment, commentProblem } from '../validate';
 
@@ -44,6 +44,22 @@ describe('the friends hub', () => {
     expect(inviteText('maya', f('cc4'))).toBe("Join me on Afterglow, I'm @maya. Let's plan CC4 together.\nhttps://afterglowmusic.app/u/maya");
     expect(inviteText()).toMatch(/^Join me on Afterglow\. Find your sets/);
     expect([crewPeopleLine(1), crewPeopleLine(4)]).toEqual(['Just you so far', '4 of you']);
+  });
+});
+
+describe('people you may know', () => {
+  it('lists people who follow you first, then people going to your festivals, each once', () => {
+    const cc4 = { id: 'cc4', name: 'Cyclops Cove 4' } as Festival;
+    const list = peopleYouMayKnow([p('a', 'Ava'), p('b', 'Bo')], [
+      { profile: p('b', 'Bo'), festival: cc4 },
+      { profile: p('c', 'Cy'), festival: cc4 },
+    ]);
+    expect(list.map((m) => [m.profile.uid, m.why])).toEqual([
+      ['a', 'Follows you'],
+      ['b', 'Follows you'],
+      ['c', 'Going to Cyclops Cove 4'],
+    ]);
+    expect(peopleYouMayKnow([], [])).toEqual([]);
   });
 });
 

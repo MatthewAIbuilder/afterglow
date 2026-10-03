@@ -41,7 +41,7 @@ export function forgetCareTip() {
 }
 
 /** True once loaded and you haven't held the camera yet. */
-export function useCareTip(): boolean {
+export function useCareTip(): boolean | undefined {
   const [isDone, setDone] = useState<boolean | undefined>(done);
   useEffect(() => {
     listeners.add(setDone);
@@ -50,5 +50,6 @@ export function useCareTip(): boolean {
       listeners.delete(setDone);
     };
   }, []);
-  return isDone === false;
+  // Undefined while loading, so nothing shows a tip it might not need.
+  return isDone === undefined ? undefined : !isDone;
 }

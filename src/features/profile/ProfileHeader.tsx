@@ -6,6 +6,8 @@ import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { type ProfileStat, shortCount } from './profileView';
 import { StandingAvatar, StandingCaption } from '../standing/StandingAvatar';
+import { SparkIcon } from '../quests/QuestRing';
+import { LEVEL_SHOWN_FROM, levelName } from '../quests/daily';
 import { ringOf } from '../standing/standing';
 import { useStanding } from '../standing/useStanding';
 import { SOUND_COLOR, withAlpha } from '../sound-map/colors';
@@ -22,7 +24,8 @@ type Props = {
   stats: ProfileStat[];
   onStat?: (key: ProfileStat['key']) => void;
   /** Your top sounds, as small chips (tap: the full breakdown). */
-  sounds: { tag: SoundTag; percent: number }[];
+  /** Top sounds, as small chips (tap: the full breakdown). Someone else's come without percentages. */
+  sounds: { tag: SoundTag; percent?: number }[];
   onSounds?: () => void;
   /** The artists drifting round your photo, and where tapping them goes (My Sound). */
   orbit: Favourite[];
@@ -32,6 +35,16 @@ type Props = {
   children?: React.ReactNode;
   /** Your uid, for a founder's or flair's ring and caption. */
   uid?: string;
+  /** Someone else's profile: their @handle under the name, and whose they are ("Maya's") in what's read out. */
+  handle?: string;
+  whose?: string;
+  /** A quiet line under the bio ("Going to EDC Orlando 2026"). */
+  note?: string;
+  /** Your glow level, live from your quests, as a gold pill that opens them. Without it, the level their profile shows (if any). */
+  level?: { level: number; name: string };
+  onLevel?: () => void;
+  /** Which counts can be tapped (all of them by default). */
+  tappable?: ProfileStat['key'][];
 };
 
 const ORBIT_H = 236;
@@ -42,9 +55,11 @@ const ORBIT_H = 236;
  * round it), your name and bio, what you're feeling lately, the counts, your
  * sound as chips, and the buttons (passed as children).
  */
-export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid }: Props) {
+export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable, level, onLevel }: Props) {
   const standing = useStanding(uid);
   const ringed = !!ringOf(standing);
+  // Your own level comes live from your quests; anyone else's from what their profile shows.
+  const shownLevel = level ?? (standing?.level && standing.level >= LEVEL_SHOWN_FROM ? { level: standing.level, name: levelName(standing.level) } : undefined);
   const { width } = useWindowDimensions();
   const orbitWidth = Math.min(width, 520);
   const social = stats.filter((s) => s.key === 'followers' || s.key === 'following');
@@ -62,9 +77,10 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
       )}
     </View>
   );
+  const owner = whose ?? 'Your';
   const orbitLabel = orbit.length
-    ? `Your sound universe: ${orbit.map((o) => o.artist.name).join(', ')}.${onOrbit ? ' Opens My Sound.' : ''}`
-    : `Your photo.${onOrbit ? ' Opens My Sound.' : ''}`;
+    ? `${owner} sound universe: ${orbit.map((o) => o.artist.name).join(', ')}.${onOrbit ? ' Opens My Sound.' : ''}`
+    : `${owner} photo.${onOrbit ? ' Opens My Sound.' : ''}`;
   return (
     <View style={styles.root}>
       <View style={styles.orbitWrap}>
@@ -76,8 +92,32 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
       <Text style={styles.name} accessibilityRole="header">
         {name}
       </Text>
+      {handle ? <Text style={styles.handle}>@{handle}</Text> : null}
       <StandingCaption standing={standing} align="center" />
+      {shownLevel && onLevel ? (
+        <Pressable
+          onPress={onLevel}
+          accessibilityRole="button"
+          accessibilityLabel={`Glow level ${shownLevel.level}, ${shownLevel.name}. Opens your quests.`}
+          hitSlop={6}
+          style={({ pressed }) => [styles.level, pressed && { opacity: 0.75 }]}
+          testID="profile-level"
+        >
+          <SparkIcon size={13} />
+          <Text style={styles.levelText}>
+            Level {shownLevel.level} · {shownLevel.name}
+          </Text>
+        </Pressable>
+      ) : shownLevel ? (
+        <View style={styles.level} accessible accessibilityLabel={`Glow level ${shownLevel.level}, ${shownLevel.name}`} testID="profile-level">
+          <SparkIcon size={13} />
+          <Text style={styles.levelText}>
+            Level {shownLevel.level} · {shownLevel.name}
+          </Text>
+        </View>
+      ) : null}
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
+      {note ? <Text style={styles.note}>{note}</Text> : null}
       {feeling ? (
         <View style={[styles.feeling, { borderColor: withAlpha(SOUND_COLOR[feeling], 0.5), backgroundColor: withAlpha(SOUND_COLOR[feeling], 0.12) }]}>
           <View style={[styles.feelingDot, { backgroundColor: SOUND_COLOR[feeling], shadowColor: SOUND_COLOR[feeling] }]} />
@@ -85,8 +125,8 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
         </View>
       ) : null}
 
-      {social.length ? <StatRow stats={social} onStat={onStat} big /> : null}
-      <StatRow stats={mine} onStat={onStat} />
+      {social.length ? <StatRow stats={social} onStat={onStat} tappable={tappable} big /> : null}
+      <StatRow stats={mine} onStat={onStat} tappable={tappable} />
 
       {sounds.length > 0 ? (
         <Pressable
@@ -94,15 +134,17 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
             haptic.select();
             onSounds?.();
           }}
-          accessibilityRole="button"
-          accessibilityLabel={`Your sound: ${sounds.map((m) => `${SOUND_LABEL[m.tag]} ${m.percent} percent`).join(', ')}. Opens the full breakdown.`}
+          disabled={!onSounds}
+          accessibilityRole={onSounds ? 'button' : 'text'}
+          accessibilityLabel={`${owner} sound: ${sounds.map((m) => (m.percent !== undefined ? `${SOUND_LABEL[m.tag]} ${m.percent} percent` : SOUND_LABEL[m.tag])).join(', ')}.${onSounds ? ' Opens the full breakdown.' : ''}`}
           style={({ pressed }) => [styles.sounds, pressed && { opacity: 0.7 }]}
         >
           {sounds.map((m) => (
             <View key={m.tag} style={[styles.sound, { borderColor: withAlpha(SOUND_COLOR[m.tag], 0.45) }]}>
               <View style={[styles.soundDot, { backgroundColor: SOUND_COLOR[m.tag] }]} />
               <Text style={styles.soundText}>
-                {SOUND_LABEL[m.tag]} <Text style={styles.soundPct}>{m.percent}%</Text>
+                {SOUND_LABEL[m.tag]}
+                {m.percent !== undefined ? <Text style={styles.soundPct}> {m.percent}%</Text> : null}
               </Text>
             </View>
           ))}
@@ -116,20 +158,20 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
 
 const TAPPABLE: ProfileStat['key'][] = ['followers', 'following', 'festivals', 'moments', 'badges', 'artists'];
 
-function StatRow({ stats, onStat, big }: { stats: ProfileStat[]; onStat?: (key: ProfileStat['key']) => void; big?: boolean }) {
+function StatRow({ stats, onStat, big, tappable = TAPPABLE }: { stats: ProfileStat[]; onStat?: (key: ProfileStat['key']) => void; big?: boolean; tappable?: ProfileStat['key'][] }) {
   return (
     <View style={[styles.stats, big && styles.statsBig]} accessibilityRole="summary">
       {stats.map((s) => {
-        const tappable = !!onStat && TAPPABLE.includes(s.key);
+        const canTap = !!onStat && tappable.includes(s.key);
         return (
           <Pressable
             key={s.key}
-            disabled={!tappable}
+            disabled={!canTap}
             onPress={() => {
               haptic.select();
               onStat?.(s.key);
             }}
-            accessibilityRole={tappable ? 'button' : 'text'}
+            accessibilityRole={canTap ? 'button' : 'text'}
             accessibilityLabel={s.a11y}
             hitSlop={6}
             style={({ pressed }) => [styles.stat, pressed && { opacity: 0.6 }]}
@@ -165,6 +207,19 @@ export function ProfileButton({ label, onPress, glow, a11y, flex = true }: { lab
 const AVATAR = 104;
 
 const styles = StyleSheet.create({
+  level: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: space.sm,
+    paddingVertical: 4,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,211,110,0.55)',
+    backgroundColor: 'rgba(255,211,110,0.1)',
+  },
+  levelText: { ...type.caption, color: '#FFD36E', fontWeight: '700' },
   root: { paddingHorizontal: space.xl, alignItems: 'center' },
   orbitWrap: { marginHorizontal: -space.xl, alignItems: 'center', marginTop: -space.sm },
   avatar: {
@@ -186,6 +241,8 @@ const styles = StyleSheet.create({
   initial: { ...type.largeTitle, color: color.moon },
   name: { ...type.title, color: color.moon, marginTop: -space.xs, textAlign: 'center' },
   bio: { ...type.body, color: color.moonDim, marginTop: 4, textAlign: 'center' },
+  handle: { ...type.body, color: color.moonDim, marginTop: 2, textAlign: 'center' },
+  note: { ...type.caption, color: color.moonDim, marginTop: space.xs, textAlign: 'center' },
   feeling: {
     flexDirection: 'row',
     alignItems: 'center',

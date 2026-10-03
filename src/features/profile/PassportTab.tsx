@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { FilterChips } from '../../components/FilterChips';
+import { MapIcon } from '../../components/TabIcons';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -73,6 +74,18 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
               </Text>
             )}
           </View>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/festival-map', params: { show: 'going' } });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="See your festivals on the map"
+            style={({ pressed }) => [styles.mapLink, pressed && { opacity: 0.7 }]}
+          >
+            <MapIcon color={color.glow} size={16} />
+            <Text style={styles.mapLinkText}>Your festivals on the map</Text>
+          </Pressable>
         </>
       )}
       {children}
@@ -136,6 +149,8 @@ function PassportCard({ stamp, planning, artistOf, loves, recap, today }: { stam
 }
 
 const styles = StyleSheet.create({
+  mapLink: { flexDirection: 'row', alignItems: 'center', gap: space.sm, alignSelf: 'center', paddingVertical: space.md, paddingHorizontal: space.lg },
+  mapLinkText: { ...type.label, color: color.glow },
   root: { paddingTop: space.md },
   cards: { paddingHorizontal: space.lg, gap: space.md, marginTop: space.md },
   card: {

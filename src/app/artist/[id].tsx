@@ -15,7 +15,7 @@ import { artistShareText } from '../../features/share/pages';
 import { shareMessage } from '../../lib/share';
 import { useCrews } from '../../state/crews';
 import { NightSky } from '../../components/NightSky';
-import { ChevronIcon } from '../../components/TabIcons';
+import { ChevronIcon, MapIcon } from '../../components/TabIcons';
 import { setFor } from '../../data/festival';
 import type { Artist, Clip } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
@@ -81,7 +81,7 @@ export default function ArtistScreen() {
   const { crewStarsFor } = useCrews();
   const { going } = useGoing();
   const today = useToday();
-  const { distanceTo, units } = useNearby();
+  const { distanceTo, units, placeOf } = useNearby();
   const { seen } = useSeen();
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
   const yours = memories.filter((m) => m.artistId === artist.id);
@@ -238,6 +238,21 @@ export default function ArtistScreen() {
                 </Pressable>
               );
             })}
+            {/* Where they play, glowing on the map and joined up in date order. */}
+            {festivals.some((f) => placeOf(f)) ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push({ pathname: '/festival-map', params: { artist: artist.id } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`See ${artist.name}'s festivals on the map`}
+                style={({ pressed }) => [styles.tourLink, pressed && { opacity: 0.7 }]}
+              >
+                <MapIcon color={color.glow} size={16} />
+                <Text style={styles.tourText}>See their tour on the map</Text>
+              </Pressable>
+            ) : null}
           </Section>
         )}
 
@@ -315,10 +330,11 @@ export default function ArtistScreen() {
 
         {/* Their sound as a mix, e.g. 80% melodic bass, 20% dubstep. */}
         {mix.length > 0 && (
-          <Section title="Their sound">
+          <Section title={artist.soundGuessed ? 'Their sound, a guess' : 'Their sound'}>
             <View style={styles.mix}>
               <SoundBreakdown shares={mix} />
             </View>
+            {artist.soundGuessed ? <Text style={styles.guess}>Guessed from the festivals they play and who they share bills with. Rate them to sharpen your matches.</Text> : null}
           </Section>
         )}
 
@@ -366,6 +382,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const styles = StyleSheet.create({
+  guess: { ...type.caption, color: color.moonDim, marginTop: space.sm },
+  tourLink: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.md },
+  tourText: { ...type.label, color: color.glow },
   root: { flex: 1, backgroundColor: color.night },
   crewLine: { ...type.label, color: color.moonDim, marginTop: space.md, textAlign: 'center' },
   hero: { alignItems: 'center', paddingHorizontal: space.xl },
