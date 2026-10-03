@@ -21,7 +21,7 @@ export function useShake(on: boolean, onShake: () => void) {
     Accelerometer.isAvailableAsync()
       .then((ok) => {
         if (!ok || !live) return;
-        Accelerometer.setUpdateInterval(80);
+        Accelerometer.setUpdateInterval(100);
         sub = Accelerometer.addListener((s) => {
           const step = shakeStep(jolts, { ...s, t: Date.now() });
           jolts = step.jolts;

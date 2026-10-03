@@ -55,11 +55,11 @@ describe('secrets', () => {
     const sensors = require('expo-sensors');
     await act(async () => {
       for (const [x, at] of [
-        [2.2, 0],
+        [3.2, 0],
         [0, 50],
-        [2.4, 300],
+        [3.4, 300],
         [0, 50],
-        [2.3, 300],
+        [3.3, 300],
       ]) {
         jest.advanceTimersByTime(at);
         sensors.__accel({ x, y: 0, z: 1 });

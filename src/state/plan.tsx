@@ -11,8 +11,8 @@ type Ctx = {
   mustSeesAt: (festivalId: string) => ReadonlySet<string>;
   isMustSee: (festivalId: string, artistId: string) => boolean;
   toggleMustSee: (festivalId: string, artistId: string) => void;
-  /** Every star at every festival (daily quests count them). */
-  starCount: number;
+  /** Every star at every festival, as "festival:artist" (daily quests count them). */
+  starKeys: string[];
   /** Saved stars have loaded (or failed to). */
   hydrated: boolean;
 };
@@ -55,7 +55,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       mustSeesAt: (festivalId) => mustSeesAt(all, festivalId),
       isMustSee: (festivalId, artistId) => isMustSee(all, festivalId, artistId),
       toggleMustSee: toggle,
-      starCount: Object.values(all).reduce((n, ids) => n + (Array.isArray(ids) ? ids.length : 0), 0),
+      starKeys: Object.entries(all).flatMap(([f, ids]) => (Array.isArray(ids) ? ids.map((a) => `${f}:${a}`) : [])),
       hydrated,
     }),
     [all, toggle, hydrated],

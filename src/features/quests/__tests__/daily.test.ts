@@ -11,7 +11,8 @@ import {
   dayLetter,
   dayStart,
   levelOf,
-  lowerBase,
+  added,
+  picksFor,
   questDay,
   questWeek,
   settleQuests,
@@ -26,6 +27,7 @@ import {
 } from '../daily';
 
 const at = (y: number, m: number, d: number, h = 12, min = 0) => new Date(y, m - 1, d, h, min).getTime();
+const ids = (n: number, p = 'c') => Array.from({ length: n }, (_, i) => `${p}${i}`);
 const snap = (counts: Partial<typeof NO_COUNTS> = {}, seen: Record<string, number> = {}, sounds: Record<string, string> = {}): QuestSnapshot => ({
   counts: { ...NO_COUNTS, ...counts },
   seen,
@@ -85,10 +87,13 @@ describe('progress', () => {
   const spec = (id: string) => DAILY.find((q) => q.id === id)!;
 
   it('counts what changed since the day began', () => {
-    const base = { ...NO_COUNTS, likes: 10 };
-    expect(dailyCurrent(spec('like'), snap({ likes: 12 }), base, {}, since)).toBe(2);
-    expect(dailyCurrent(spec('like'), snap({ likes: 20 }), base, {}, since)).toBe(3); // capped
-    expect(dailyCurrent(spec('like'), snap({ likes: 4 }), base, {}, since)).toBe(0); // never negative
+    const base = { ...NO_COUNTS, likes: ids(10) };
+    expect(dailyCurrent(spec('like'), snap({ likes: ids(12) }), base, {}, since)).toBe(2);
+    expect(dailyCurrent(spec('like'), snap({ likes: ids(20) }), base, {}, since)).toBe(3); // capped
+    expect(dailyCurrent(spec('like'), snap({ likes: ids(4) }), base, {}, since)).toBe(0);
+    // Taking an old like back and giving it again never counts.
+    expect(dailyCurrent(spec('like'), snap({ likes: [...ids(9), 'c9'] }), base, {}, since)).toBe(0);
+    expect(added(['a', 'b', 'c'], ['b'])).toBe(2);
   });
 
   it('counts sets watched today and the sounds they span', () => {
@@ -107,13 +112,14 @@ describe('the book', () => {
   const now = at(2026, 10, 3, 15);
 
   it('starts with a snapshot, and turns the day over keeping the history and glow', () => {
-    const book = turnOver(undefined, now, { ...NO_COUNTS, likes: 5 });
-    expect(book.base.likes).toBe(5);
-    expect(turnOver(book, now + 60_000, { ...NO_COUNTS, likes: 9 })).toBe(book);
-    const tomorrow = turnOver({ ...book, done: ['like'], glow: 80, lit: ['2026-10-03'] }, at(2026, 10, 4, 9), { ...NO_COUNTS, likes: 9 });
+    const book = turnOver(undefined, now, { ...NO_COUNTS, likes: ids(5) });
+    expect(book.base.likes).toHaveLength(5);
+    expect(turnOver(book, now + 60_000, { ...NO_COUNTS, likes: ids(9) })).toBe(book);
+    const tomorrow = turnOver({ ...book, done: ['like'], picks: ['like', 'rate', 'map'], glow: 80, lit: ['2026-10-03'] }, at(2026, 10, 4, 9), { ...NO_COUNTS, likes: ids(9) });
     expect(tomorrow.day).toBe('2026-10-04');
     expect(tomorrow.done).toEqual([]);
-    expect(tomorrow.base.likes).toBe(9);
+    expect(tomorrow.picks).toBeUndefined();
+    expect(tomorrow.base.likes).toHaveLength(9);
     expect(tomorrow.glow).toBe(80);
     expect(tomorrow.lit).toEqual(['2026-10-03']);
   });
@@ -121,27 +127,28 @@ describe('the book', () => {
   it('finishes quests once, adds their glow, and the bonus for all three', () => {
     let book = turnOver(undefined, now, NO_COUNTS);
     const picks = DAILY.filter((q) => ['like', 'rate', 'map'].includes(q.id));
-    let r = settleQuests(book, picks, snap({ likes: 3 }));
+    let r = settleQuests(book, picks, snap({ likes: ids(3) }));
     expect(r.finished.map((f) => f.kind)).toEqual(['daily']);
     expect(r.book.glow).toBe(15);
     book = withEvent(r.book, 'map');
-    r = settleQuests(book, picks, snap({ likes: 3, rated: 5 }));
+    r = settleQuests(book, picks, snap({ likes: ids(3), rated: ids(5, 'a') }));
     expect(r.finished.map((f) => (f.kind === 'daily' ? f.spec.id : f.kind))).toEqual(['rate', 'map', 'all']);
     expect(r.book.glow).toBe(15 + 25 + 10 + ALL_DONE_BONUS);
     expect(r.book.lit).toEqual(['2026-10-03']);
-    expect(settleQuests(r.book, picks, snap({ likes: 3, rated: 5 })).book).toBe(r.book);
+    expect(settleQuests(r.book, picks, snap({ likes: ids(3), rated: ids(5, 'a') })).book).toBe(r.book);
   });
 
-  it('follows counts down, so starting over doesn’t stall the day', () => {
-    const book = turnOver(undefined, now, { ...NO_COUNTS, likes: 40 });
-    const lowered = lowerBase(book, { ...NO_COUNTS, likes: 0 });
-    expect(lowered.base.likes).toBe(0);
-    expect(lowerBase(lowered, NO_COUNTS)).toBe(lowered);
+  it('keeps the day’s three once drawn, even when what you can do changes', () => {
+    const book = { ...turnOver(undefined, now, NO_COUNTS), picks: ['like' as const, 'rate' as const, 'map' as const] };
+    expect(picksFor(book, () => false).map((q) => q.id)).toEqual(['like', 'rate', 'map']);
+    expect(picksFor({ ...book, picks: undefined }, () => true)).toHaveLength(3);
   });
 
   it('reads a saved book back, or nothing when it’s broken', () => {
     const book = turnOver(undefined, now, NO_COUNTS);
-    expect(cleanBook(JSON.parse(JSON.stringify({ ...book, done: ['like', 'nope'], glow: 12.7 })))).toEqual({ ...book, done: ['like'], glow: 12 });
+    expect(cleanBook(JSON.parse(JSON.stringify({ ...book, done: ['like', 'nope'], glow: 12.7 })))).toEqual({ ...book, done: ['like'], glow: 12, picks: undefined });
+    // An old book that kept numbers reads as nothing (a fresh start).
+    expect(cleanBook({ ...book, base: { likes: 3 } })).toBeUndefined();
     expect(cleanBook({ day: 'x' })).toBeUndefined();
     expect(cleanBook(null)).toBeUndefined();
   });

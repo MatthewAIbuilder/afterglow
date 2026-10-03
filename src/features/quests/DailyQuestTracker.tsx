@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNow } from '../../lib/useNow';
 import { announceFinished, setQuestBook, useQuestBook } from '../../state/dailyQuests';
-import { canDo, dailyPicks, lowerBase, settleQuests, turnOver } from './daily';
+import { canDo, picksFor, settleQuests, turnOver } from './daily';
 import { useQuestAvailability, useQuestSnapshot } from './useDailyQuests';
 
 /**
@@ -15,8 +15,11 @@ export function DailyQuestTracker() {
   const now = useNow().getTime();
   useEffect(() => {
     if (!loaded || !ready) return;
-    const turned = lowerBase(turnOver(book, now, snap.counts), snap.counts);
-    const { book: settled, finished } = settleQuests(turned, dailyPicks(turned.day, canDo({ planning, enoughSets })), snap);
+    let turned = turnOver(book, now, snap.counts);
+    // The day's three are drawn once, when it begins, and kept.
+    const picks = picksFor(turned, canDo({ planning, enoughSets }));
+    if (!turned.picks) turned = { ...turned, picks: picks.map((p) => p.id) };
+    const { book: settled, finished } = settleQuests(turned, picks, snap);
     if (settled !== book) setQuestBook(settled);
     announceFinished(finished);
   }, [book, loaded, snap, ready, planning, enoughSets, now]);

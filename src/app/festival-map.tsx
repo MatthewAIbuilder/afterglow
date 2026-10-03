@@ -123,6 +123,7 @@ export default function FestivalMapScreen() {
         height={height}
         area={{ top: headerH, bottom: cardsSpace }}
         journey={journey}
+        frameKey={`${params.artist ?? ''}|${filter}`}
       />
 
       {/* The header fades into the map, so the lights glide under it. */}

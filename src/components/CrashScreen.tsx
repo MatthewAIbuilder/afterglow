@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { useNavigationContainerRef } from 'expo-router';
 import { useEffect } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
@@ -37,6 +37,16 @@ export function CrashScreen({ error, retry }: { error: Error; retry: () => Promi
   }, [flicker, reduced]);
   const light = useAnimatedStyle(() => ({ opacity: flicker.get() }));
   const mail = crashMailto(error);
+  // The way home: reset navigation to the tabs (the broken page goes), then draw again.
+  const nav = useNavigationContainerRef();
+  const goHome = () => {
+    try {
+      if (nav?.isReady()) nav.resetRoot({ index: 0, routes: [{ name: '(tabs)' }] });
+    } catch {
+      // Nothing to reset: drawing again is all we can do.
+    }
+    void retry();
+  };
   return (
     <View style={styles.root} testID="crash-screen">
       <NightSky />
@@ -74,11 +84,7 @@ export function CrashScreen({ error, retry }: { error: Error; retry: () => Promi
       <Pressable
         onPress={() => {
           haptic.select();
-          try {
-            router.replace('/');
-          } catch {
-            void retry();
-          }
+          goHome();
         }}
         accessibilityRole="button"
         style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}

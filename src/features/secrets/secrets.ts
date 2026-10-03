@@ -40,8 +40,8 @@ export const isSunriseHour = (t: number) => {
 /** An accelerometer reading, in g. */
 export type Accel = { x: number; y: number; z: number; t: number };
 
-/** A jolt this strong (beyond gravity) counts towards a shake. */
-export const SHAKE_G = 1.6;
+/** A jolt this strong (beyond gravity) counts towards a shake: well past running or dancing. */
+export const SHAKE_G = 1.8;
 /** This many jolts within `SHAKE_WINDOW_MS` make a shake. */
 export const SHAKE_JOLTS = 3;
 export const SHAKE_WINDOW_MS = 900;
@@ -51,7 +51,8 @@ export const SHAKE_WINDOW_MS = 900;
  * to keep (cleared after a shake, so one shake is one shake).
  */
 export function shakeStep(jolts: readonly number[], sample: Accel): { jolts: number[]; shook: boolean } {
-  const g = Math.sqrt(sample.x ** 2 + sample.y ** 2 + sample.z ** 2);
+  // Beyond gravity: the reading includes 1 g even with the phone still.
+  const g = Math.abs(Math.sqrt(sample.x ** 2 + sample.y ** 2 + sample.z ** 2) - 1);
   const recent = jolts.filter((t) => sample.t - t <= SHAKE_WINDOW_MS);
   // A jolt needs a gap from the last, so one long wobble isn't three.
   if (g >= SHAKE_G && (!recent.length || sample.t - recent[recent.length - 1] > 120)) recent.push(sample.t);

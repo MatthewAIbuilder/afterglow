@@ -12,23 +12,27 @@ describe('secrets', () => {
   it('tells a shake from a wobble', () => {
     let jolts: number[] = [];
     const g = (t: number, x: number) => {
-      const r = shakeStep(jolts, { x, y: 0, z: 1, t });
+      const r = shakeStep(jolts, { x, y: 0, z: 0, t });
       jolts = r.jolts;
       return r.shook;
     };
     // Gravity alone, a long wobble, then three sharp jolts.
-    expect(g(0, 0)).toBe(false);
-    expect(g(100, 1.8)).toBe(false);
-    expect(g(150, 1.8)).toBe(false); // too soon after the last: the same jolt
-    expect(g(400, 1.9)).toBe(false);
-    expect(g(700, 2.1)).toBe(true);
+    // Gravity alone, then a run's footfalls (about 2.5 g in all), then three sharp jolts.
+    expect(g(0, 1)).toBe(false);
+    expect(g(50, 2.5)).toBe(false);
+    expect(g(400, 2.5)).toBe(false);
+    expect(g(750, 2.5)).toBe(false);
+    expect(g(1000, 3.1)).toBe(false);
+    expect(g(1050, 3.1)).toBe(false); // too soon after the last: the same jolt
+    expect(g(1300, 3.2)).toBe(false);
+    expect(g(1600, 3.3)).toBe(true);
     // A shake is used up: it takes three more.
-    expect(g(900, 2.1)).toBe(false);
+    expect(g(1800, 3.3)).toBe(false);
     // Jolts too far apart never add up.
     jolts = [];
-    expect(g(5000, 2)).toBe(false);
-    expect(g(6000, 2)).toBe(false);
-    expect(g(7000, 2)).toBe(false);
+    expect(g(5000, 3)).toBe(false);
+    expect(g(6000, 3)).toBe(false);
+    expect(g(7000, 3)).toBe(false);
   });
 
   it('counts quick taps in a row', () => {

@@ -12,7 +12,8 @@ describe('when a screen breaks', () => {
     expect(app.getByText('Something went wrong')).toBeTruthy();
     await fireEvent.press(app.getByText('Try again'));
     expect(retry).toHaveBeenCalled();
-    expect(app.getByText('Go to Discover')).toBeTruthy();
+    await fireEvent.press(app.getByText('Go to Discover'));
+    expect(retry).toHaveBeenCalledTimes(2);
     expect(crashMailto(new Error('boom'))).toMatch(/^mailto:afterglowmusic\.support@gmail\.com\?subject=Afterglow%20crashed&body=.*boom/);
     expect(crashMailto(new Error('x'), '')).toBeUndefined();
   });

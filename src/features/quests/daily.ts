@@ -11,24 +11,23 @@
  * at 4 AM, so a late night still counts as the night it was.
  */
 
-export type Counters = {
-  /** Clips you like. */
-  likes: number;
-  /** Clips you saved. */
-  saves: number;
-  /** Clips you watched to the end (or more). */
-  through: number;
-  /** Artists you rated. */
-  rated: number;
-  /** Artists you love or like. */
-  warm: number;
-  /** Artists you follow. */
-  follows: number;
-  /** Sets you starred as must-sees. */
-  stars: number;
-};
+export type CountKey = 'likes' | 'saves' | 'through' | 'rated' | 'warm' | 'follows' | 'stars';
+export const COUNT_KEYS: readonly CountKey[] = ['likes', 'saves', 'through', 'rated', 'warm', 'follows', 'stars'];
 
-export const NO_COUNTS: Counters = { likes: 0, saves: 0, through: 0, rated: 0, warm: 0, follows: 0, stars: 0 };
+/**
+ * What quests count, as the ids of each kind of thing (clips you like, save
+ * or watched to the end; artists you rated, love or like, follow; sets you
+ * starred as "festival:artist"). Progress is the ids that weren't there when
+ * the day began, so taking a like back and giving it again never counts twice.
+ */
+export type Counters = Record<CountKey, readonly string[]>;
+export const NO_COUNTS: Counters = { likes: [], saves: [], through: [], rated: [], warm: [], follows: [], stars: [] };
+
+/** How many of `now` weren't in `base`. */
+export const added = (now: readonly string[], base: readonly string[]) => {
+  const was = new Set(base);
+  return now.filter((id) => !was.has(id)).length;
+};
 
 /** Things counted as they happen. */
 export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble';
@@ -157,6 +156,12 @@ export const canDo =
   (id: DailyQuestId): boolean =>
     id === 'stars' ? a.planning : id === 'thisorthat' ? a.enoughSets : true;
 
+/** The day's picks: as fixed in the book, else drawn now. */
+export function picksFor(book: Pick<QuestBook, 'day' | 'picks'>, can: (id: DailyQuestId) => boolean): DailySpec[] {
+  if (book.picks) return book.picks.map((id) => DAILY.find((q) => q.id === id)!).filter(Boolean);
+  return dailyPicks(book.day, can);
+}
+
 /** This week's big quest, drawn by the week. */
 export function weeklyPick(week: string): WeeklySpec {
   return WEEKLY[hashOf(`week:${week}`) % WEEKLY.length];
@@ -171,8 +176,6 @@ export type QuestSnapshot = {
   soundOf: (clipId: string) => string | undefined;
 };
 
-const positive = (n: number) => Math.max(0, n);
-
 /** Sets on screen since a moment, and how many sounds they span. */
 export function watchedSince(snap: QuestSnapshot, since: number): { sets: number; sounds: number } {
   const ids = Object.entries(snap.seen)
@@ -184,7 +187,7 @@ export function watchedSince(snap: QuestSnapshot, since: number): { sets: number
 
 /** How far along a daily quest is (capped at its target). */
 export function dailyCurrent(spec: DailySpec, snap: QuestSnapshot, base: Counters, events: Partial<Record<QuestEvent, number>>, since: number): number {
-  const d = (k: keyof Counters) => positive(snap.counts[k] - base[k]);
+  const d = (k: CountKey) => added(snap.counts[k], base[k]);
   const watched = spec.id === 'watch' || spec.id === 'sounds' ? watchedSince(snap, since) : undefined;
   const n = {
     watch: () => watched!.sets,
@@ -210,8 +213,8 @@ export function weeklyCurrent(spec: WeeklySpec, snap: QuestSnapshot, base: Count
   const n = {
     'w-watch': watched.sets,
     'w-sounds': watched.sounds,
-    'w-rate': positive(snap.counts.rated - base.rated),
-    'w-love': positive(snap.counts.warm - base.warm),
+    'w-rate': added(snap.counts.rated, base.rated),
+    'w-love': added(snap.counts.warm, base.warm),
     'w-days': daysDone,
   }[spec.id];
   return Math.min(spec.target, n);
@@ -224,6 +227,8 @@ export type QuestBook = {
   base: Counters;
   /** Things counted today. */
   events: Partial<Record<QuestEvent, number>>;
+  /** Today's three, fixed when the day began (so planning a festival mid-day never swaps one). */
+  picks?: DailyQuestId[];
   /** Quests done today. */
   done: DailyQuestId[];
   week: string;
@@ -236,6 +241,8 @@ export type QuestBook = {
 };
 
 export const HISTORY_DAYS = 60;
+/** At most this many ids of each kind in a snapshot. */
+export const IDS_MAX = 2000;
 
 /** A fresh book, or the day (and week) turned over: new snapshots, the history kept. */
 export function turnOver(book: QuestBook | undefined, now: number, counts: Counters): QuestBook {
@@ -243,7 +250,7 @@ export function turnOver(book: QuestBook | undefined, now: number, counts: Count
   const week = questWeek(now);
   if (!book) return { day, base: counts, events: {}, done: [], week, weekBase: counts, weekDone: false, lit: [], glow: 0 };
   let next = book;
-  if (book.day !== day) next = { ...next, day, base: counts, events: {}, done: [] };
+  if (book.day !== day) next = { ...next, day, base: counts, events: {}, done: [], picks: undefined };
   if (book.week !== week) next = { ...next, week, weekBase: counts, weekDone: false };
   if (next !== book) next = { ...next, lit: next.lit.filter((d) => d >= shiftDay(day, HISTORY_DAYS)) };
   return next;
@@ -384,10 +391,11 @@ export function cleanBook(raw: unknown): QuestBook | undefined {
   const counts = (v: unknown): Counters | undefined => {
     if (!v || typeof v !== 'object') return undefined;
     const c = v as Record<string, unknown>;
-    const out = { ...NO_COUNTS };
-    for (const k of Object.keys(NO_COUNTS) as (keyof Counters)[]) {
-      const n = c[k];
-      if (typeof n === 'number' && Number.isFinite(n) && n >= 0) out[k] = n;
+    const out: Record<CountKey, string[]> = { likes: [], saves: [], through: [], rated: [], warm: [], follows: [], stars: [] };
+    for (const k of COUNT_KEYS) {
+      const list = c[k];
+      if (!Array.isArray(list)) return undefined;
+      out[k] = list.filter((x): x is string => typeof x === 'string').slice(0, IDS_MAX);
     }
     return out;
   };
@@ -407,6 +415,7 @@ export function cleanBook(raw: unknown): QuestBook | undefined {
     base,
     events,
     done: Array.isArray(b.done) ? (b.done.filter((d) => typeof d === 'string' && ids.has(d)) as DailyQuestId[]) : [],
+    picks: Array.isArray(b.picks) && b.picks.length === 3 && b.picks.every((d) => typeof d === 'string' && ids.has(d)) ? (b.picks as DailyQuestId[]) : undefined,
     week: b.week,
     weekBase,
     weekDone: b.weekDone === true,
@@ -415,16 +424,3 @@ export function cleanBook(raw: unknown): QuestBook | undefined {
   };
 }
 
-/**
- * Counts can go down (unliking, starting your sound over). Today's (and the
- * week's) snapshot follows them down, so what you do next still counts.
- */
-export function lowerBase(book: QuestBook, counts: Counters): QuestBook {
-  let base = book.base;
-  let weekBase = book.weekBase;
-  for (const k of Object.keys(counts) as (keyof Counters)[]) {
-    if (counts[k] < base[k]) base = { ...base, [k]: counts[k] };
-    if (counts[k] < weekBase[k]) weekBase = { ...weekBase, [k]: counts[k] };
-  }
-  return base === book.base && weekBase === book.weekBase ? book : { ...book, base, weekBase };
-}

@@ -76,6 +76,7 @@ export function FestivalMap({
   height,
   area,
   journey,
+  frameKey,
   testID,
 }: {
   markers: readonly Marker[];
@@ -87,6 +88,8 @@ export function FestivalMap({
   area: { top: number; bottom: number };
   /** Your festivals in date order: a glowing line draws in between them. */
   journey?: readonly MapPoint[];
+  /** The map frames its festivals again only when this changes. */
+  frameKey: string;
   testID?: string;
 }) {
   const reduced = useReducedMotion();
@@ -96,7 +99,10 @@ export function FestivalMap({
 
   // Frame every festival (and you) the first time; the drawable world reaches well beyond it.
   const points = useMemo(() => [...markers.map((m) => m.at), ...(here ? [project(here)] : [])], [markers, here]);
-  const frame = useMemo(() => boxAround(points), [points]);
+  // Framed once per `frameKey` (a filter, a tour): data arriving later (a place looked up) never yanks the map back.
+  const [framing, setFraming] = useState(() => ({ key: frameKey, frame: boxAround(points) }));
+  if (framing.key !== frameKey) setFraming({ key: frameKey, frame: boxAround(points) });
+  const frame = framing.frame;
   const view = useMemo(() => fitView(frame, width * 0.9, areaH * 0.9), [frame, width, areaH]);
   const S = view.scale;
   // Room to roam: well past the festivals, and always more than a screen in every direction.
@@ -146,11 +152,15 @@ export function FestivalMap({
     setZoomStep(1);
   }, [frame, width, areaH, view, toLayer, areaCx, areaCy, reduced, ax, ay, z, shown]);
 
+  const lastZoom = useSharedValue(1);
   const settle = useCallback(
     (zoom: number, x: number, y: number) => {
       setZoomStep(Math.round(zoom * 4) / 4);
-      // A secret: as close as the map goes.
-      if (zoom >= MAX_ZOOM * 0.98) revealSecret('edge');
+      // A secret: as close as the map goes (once each time you get there, not every move once you're there).
+      if (zoom >= MAX_ZOOM * 0.98 && lastZoom.get() < MAX_ZOOM * 0.98) revealSecret('edge');
+      lastZoom.set(zoom);
+      // The base dots step aside for the sharp ones when zoomed in, and come back when not.
+      baseOn.set(withTiming(zoom < DETAIL_AT ? 1 : 0, { duration: 240 }));
       if (zoom < DETAIL_AT) {
         setDetail(undefined);
         return;
@@ -161,7 +171,7 @@ export function FestivalMap({
       const b = toMap(width, height);
       setDetail((d) => (d && Math.abs(d.z - zoom) / zoom < 0.12 && within(d.box, a, b) ? d : { z: zoom, box: grow({ x0: a.x, y0: a.y, x1: b.x, y1: b.y }, 0.5) }));
     },
-    [world, S, width, height],
+    [world, S, width, height, baseOn, lastZoom],
   );
 
   // Keep the middle of the screen over the drawable world.
@@ -171,6 +181,7 @@ export function FestivalMap({
   };
 
   const pan0 = useSharedValue({ x: 0, y: 0 });
+  const gliding = useSharedValue(0);
   const pinch0 = useSharedValue({ z: 1, x: 0, y: 0, fx: 0, fy: 0 });
   const report = () => {
     'worklet';
@@ -180,6 +191,8 @@ export function FestivalMap({
     .maxPointers(1)
     .onStart(() => {
       pan0.set({ x: ax.get(), y: ay.get() });
+      // Bring the base dots back while moving, in case you drag past the sharp ones.
+      baseOn.set(1);
     })
     .onUpdate((e) => {
       const p = pan0.get();
@@ -190,8 +203,16 @@ export function FestivalMap({
       const zoom = z.get();
       const lo = (mid: number, size: number) => [mid - size * zoom, mid] as [number, number];
       const fling = (v: number) => Math.max(-2400, Math.min(2400, v));
-      ax.set(withDecay({ velocity: fling(e.velocityX), deceleration: 0.993, clamp: lo(width / 2, layerW) }, (done) => done && report()));
-      ay.set(withDecay({ velocity: fling(e.velocityY), deceleration: 0.993, clamp: lo(height / 2, layerH) }));
+      // Measure once both directions have come to rest.
+      gliding.set(2);
+      const rest = (done?: boolean) => {
+        'worklet';
+        if (!done) return;
+        gliding.set(gliding.get() - 1);
+        if (gliding.get() === 0) report();
+      };
+      ax.set(withDecay({ velocity: fling(e.velocityX), deceleration: 0.993, clamp: lo(width / 2, layerW) }, rest));
+      ay.set(withDecay({ velocity: fling(e.velocityY), deceleration: 0.993, clamp: lo(height / 2, layerH) }, rest));
     });
   const pinch = Gesture.Pinch()
     .onStart((e) => {
@@ -218,9 +239,12 @@ export function FestivalMap({
         ay.set(withSpring(height / 2 - ly * zoom, motion.gentle));
         z.set(withSpring(zoom, motion.gentle, (done) => done && report()));
       } else {
-        ax.set(withSpring(clampA(ax.get(), zoom, layerW, width / 2), motion.gentle));
-        ay.set(withSpring(clampA(ay.get(), zoom, layerH, height / 2), motion.gentle));
-        report();
+        const tx = clampA(ax.get(), zoom, layerW, width / 2);
+        const ty = clampA(ay.get(), zoom, layerH, height / 2);
+        ax.set(withSpring(tx, motion.gentle));
+        ay.set(withSpring(ty, motion.gentle));
+        // Where it's springing to, not where it is now.
+        runOnJS(settle)(zoom, tx, ty);
       }
     });
   const doubleTap = Gesture.Tap()
@@ -277,9 +301,6 @@ export function FestivalMap({
     return { path: dotsPath(dots, detail.box, scale, DOT_GAP * DOT_R * Math.min(1.6, 1 + (detail.z - 1) * 0.15)), ...detail };
   }, [detail, S]);
 
-  useEffect(() => {
-    baseOn.set(withTiming(sharp ? 0 : 1, { duration: 240 }));
-  }, [sharp, baseOn]);
   const baseStyle = useAnimatedStyle(() => {
     const k = z.get();
     return {

@@ -24,7 +24,14 @@ function load() {
     .then((raw) => (raw ? cleanBook(JSON.parse(raw)) : undefined))
     .catch(() => undefined)
     .then((book) => {
-      state = { book: state.book ?? book, loaded: true };
+      let next = state.book ?? book;
+      // Things counted while it loaded land on the book now.
+      if (next && pending.length) {
+        for (const e of pending) next = withEvent(next, e);
+        pending = [];
+        void save(next);
+      }
+      state = { book: next, loaded: true };
       emit();
     });
   return loading;
