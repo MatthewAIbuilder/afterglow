@@ -2,8 +2,8 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import { useEffect, useRef } from 'react';
-import Animated, { Easing, FadeIn, FadeOut, interpolate, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import { useEffect, useRef, useState } from 'react';
+import Animated, { Easing, FadeIn, FadeOut, interpolate, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { HeartBurst, HeartFace, HeartHalo } from './HeartHold';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraIcon } from '../features/camera/icons';
@@ -12,7 +12,7 @@ import { useCrewUpdates } from '../state/crewUpdates';
 import { markCareTipDone, useCareTip } from '../state/careTip';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../lib/haptics';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, motion, radius, space, type } from '../theme/tokens';
 import { DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
 import { HiddenToe } from '../features/toes/Toe';
 
@@ -60,6 +60,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   // Something new from your crew: a glow dot on Friends.
   const freshCrew = useCrewUpdates().stories.some((s) => s.fresh);
   const current = state.routes[state.index]?.name;
+  const [pillW, setPillW] = useState(0);
+  const slot = current ? order.indexOf(current) : -1;
   // Switching modes while on a tab the other mode doesn't have: back to Discover.
   const hidden = hydrated && !!current && !order.includes(current);
   useEffect(() => {
@@ -89,9 +91,11 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       {active ? <HeartHalo hold={hold} bottom={TAB_BAR_HEIGHT / 2} /> : null}
       {/* A toe peeking over the top of the bar (one person's app only). */}
       <HiddenToe size={13} opacity={0.4} turn={-14} style={styles.peek} />
-      <View style={styles.pill}>
+      <View style={styles.pill} onLayout={(e) => setPillW(e.nativeEvent.layout.width)}>
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, styles.tint]} />
+        {/* One highlight that glides to the tab you pick. */}
+        {pillW > 0 && slot >= 0 ? <Glider index={slot} width={(pillW - 12) / order.length} /> : null}
         {order.map((name) => {
           if (name === CAMERA) return <CameraTab key={CAMERA} hold={hold} burst={burst} />;
           const i = state.routes.findIndex((r) => r.name === name);
@@ -119,11 +123,10 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
               }}
               style={styles.item}
             >
-              {focused && <View style={styles.activeBg} />}
-              <View>
+              <Bounce on={focused}>
                 <Icon color={focused ? color.glow : tint} size={24} />
                 {news ? <View style={styles.newsDot} /> : null}
-              </View>
+              </Bounce>
               <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
                 {title}
               </Text>
@@ -134,6 +137,28 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       {active ? <HeartBurst burst={burst} bottom={TAB_BAR_HEIGHT / 2} /> : null}
     </View>
   );
+}
+
+/** The highlight behind the chosen tab, gliding from one to the next. */
+function Glider({ index, width }: { index: number; width: number }) {
+  const reduce = useReducedMotion();
+  const x = useSharedValue(index * width);
+  useEffect(() => {
+    x.set(reduce ? index * width : withSpring(index * width, motion.snappy));
+  }, [index, width, x, reduce]);
+  const style = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
+  return <Animated.View pointerEvents="none" style={[styles.glider, { width }, style]} />;
+}
+
+/** The chosen tab's icon gives a little hop. */
+function Bounce({ on, children }: { on: boolean; children: React.ReactNode }) {
+  const reduce = useReducedMotion();
+  const s = useSharedValue(1);
+  useEffect(() => {
+    if (on && !reduce) s.set(withSequence(withTiming(0.82, { duration: 90 }), withSpring(1, motion.bloom)));
+  }, [on, s, reduce]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: s.get() }] }));
+  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
 /** Look after yourself, opened from the held camera button: the heart blooms, then the page opens over it. */
@@ -244,7 +269,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     gap: 2,
   },
-  activeBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.14)' },
+  glider: { position: 'absolute', top: 6, bottom: 6, left: 6, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.14)' },
   label: { ...type.caption, fontSize: 11 },
   newsDot: { position: 'absolute', top: -1, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow, borderWidth: 1.5, borderColor: color.night },
   test: {
