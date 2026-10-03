@@ -109,7 +109,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const reach = lineupReach(festival, catalog.clips);
   const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
   const recap = useRecap(whole);
-  const { distanceTo, units } = useNearby();
+  const { distanceTo, units, placeOf } = useNearby();
   const away = distanceTo(whole);
   const cover = useMemo(() => coverPhotos(whole, catalog.artist), [whole, catalog]);
   const [tab, setTab] = useState<Section>('plan');
@@ -312,6 +312,24 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               </Pressable>
             ) : null}
 
+            {/* Where it is, glowing among the others. */}
+            {placeOf(whole) ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push({ pathname: '/festival-map', params: { focus: whole.id } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`See ${whole.name} on the festival map`}
+                style={({ pressed }) => [styles.pad, styles.infoRow, pressed && { opacity: 0.7 }]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoRowTitle}>See it on the map</Text>
+                  <Text style={styles.infoRowSub}>{whole.location}, among the other festivals</Text>
+                </View>
+                <ChevronIcon color={color.moonFaint} size={12} />
+              </Pressable>
+            ) : null}
             {/* Side by side with other festivals, when there are others to compare. */}
             {catalog.festivals.length > 1 ? (
               <Pressable

@@ -11,7 +11,7 @@ import { SearchField } from '../../components/SearchField';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { NoticeBell } from '../../components/NoticeBell';
-import { GridIcon, ListIcon } from '../../components/TabIcons';
+import { GridIcon, ListIcon, MapIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
@@ -106,6 +106,19 @@ export default function FestivalsScreen() {
           <View style={styles.titleRow}>
             <Text style={styles.title}>Festivals</Text>
             <View style={styles.actions}>
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push('/festival-map');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Festival map"
+                accessibilityHint="Every festival, glowing on a map"
+                hitSlop={10}
+                style={({ pressed }) => [styles.toggle, pressed && { transform: [{ scale: 0.92 }] }]}
+              >
+                <MapIcon color={color.moonDim} />
+              </Pressable>
               <ViewToggle value={view} onChange={setView} />
               <NoticeBell />
             </View>

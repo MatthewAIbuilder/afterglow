@@ -110,6 +110,7 @@ export default function RootLayout() {
         <Stack.Screen name="pick-artists" options={{ presentation: 'modal' }} />
         <Stack.Screen name="this-or-that" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="compare" />
+        <Stack.Screen name="festival-map" />
         <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />

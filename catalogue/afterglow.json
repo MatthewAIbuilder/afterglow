@@ -2150,6 +2150,7 @@
       "start": "2026-11-06",
       "end": "2026-11-08",
       "location": "Tinker Field, Orlando",
+      "place": { "lat": 28.537, "lon": -81.404 },
       "website": "https://orlando.edc.com/",
       "lineup": [
         "a-little-sound",
@@ -2317,6 +2318,7 @@
         }
       ],
       "location": "Austin, Texas",
+      "place": { "lat": 30.267, "lon": -97.771 },
       "days": [
         "Friday",
         "Saturday",
@@ -3328,6 +3330,7 @@
       "start": "2026-12-04",
       "end": "2026-12-06",
       "location": "Sunset Cove Amphitheater, Boca Raton",
+      "place": { "lat": 26.382, "lon": -80.207 },
       "tickets": "https://cyclopscove.frontgatetickets.com/",
       "days": [
         "Friday",
@@ -3657,6 +3660,7 @@
       "start": "2026-12-30",
       "end": "2026-12-31",
       "location": "Orlando Amphitheater, Orlando",
+      "place": { "lat": 28.537, "lon": -81.403 },
       "days": [
         "Dec 30",
         "Dec 31"
@@ -3722,6 +3726,7 @@
       "start": "2026-12-31",
       "end": "2027-01-01",
       "location": "NOS Events Center, San Bernardino",
+      "place": { "lat": 34.093, "lon": -117.264 },
       "lineup": [
         "33-below",
         "acraze",
