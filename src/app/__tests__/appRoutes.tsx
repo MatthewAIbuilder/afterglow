@@ -27,6 +27,7 @@ import LikesScreen from '../likes/[id]';
 import CommentsScreen from '../comments/[id]';
 import GoingScreen from '../going/[id]';
 import CrewScreen from '../crew/[id]';
+import CrewInviteScreen from '../crew-invite/[id]';
 import PlanCardScreen from '../plan-card/[id]';
 import RecapScreen from '../recap/[id]';
 import PickArtistsScreen from '../pick-artists';
@@ -120,6 +121,7 @@ export const APP_ROUTES = {
   'comments/[id]': CommentsScreen,
   'going/[id]': GoingScreen,
   'crew/[id]': CrewScreen,
+  'crew-invite/[id]': CrewInviteScreen,
 };
 
 export const renderApp = (initialUrl: string) => renderRouter(APP_ROUTES, { initialUrl });

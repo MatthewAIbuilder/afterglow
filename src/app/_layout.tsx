@@ -93,6 +93,7 @@ export default function RootLayout() {
         <Stack.Screen name="follows/[handle]" />
         <Stack.Screen name="going/[id]" />
         <Stack.Screen name="crew/[id]" />
+        <Stack.Screen name="crew-invite/[id]" />
         <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="comments/[id]"

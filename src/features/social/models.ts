@@ -80,6 +80,20 @@ export type Activity =
  * signed in who has the crew's link can see its name and join (the id is the
  * invite); only members see each other's picks.
  */
+/** An invitation to join a crew, sent in the app to someone you know there. They join from the crew page; joining or saying no removes it. */
+export type CrewInvite = {
+  /** `crewId_to` */
+  id: string;
+  crewId: string;
+  festivalId: string;
+  crewName: string;
+  /** Who invited them (a member of the crew). */
+  from: string;
+  to: string;
+  /** When it was sent (server time, ISO 8601). */
+  at: string;
+};
+
 export type Crew = {
   id: string;
   festivalId: string;

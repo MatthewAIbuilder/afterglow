@@ -490,6 +490,29 @@ await t('support account: reads and resolves reports, takes down a video, counts
   await assertFails(deleteDoc(doc(NOT_VERIFIED.firestore(), 'memories', 'mem8')));
   await assertSucceeds(deleteDoc(doc(ADMIN.firestore(), 'memories', 'mem8')));
 });
+const D = env.authenticatedContext('uidD');
+const invite = (over = {}) => ({ crewId: 'inv1', festivalId: 'acl-26', crewName: 'Bass crew', from: 'uidB', to: 'uidD', createdAt: serverTimestamp(), ...over });
+await t('crew invites: a member invites someone with a profile; only the two of them see it', async () => {
+  await assertSucceeds(setDoc(doc(B.firestore(), 'crews', 'inv1'), crew({ owner: 'uidB', members: ['uidB'], name: 'Bass crew' })));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'crewInvites', 'inv1_uidD'), invite()));
+  await assertFails(setDoc(doc(B.firestore(), 'crewInvites', 'inv1_uidC'), invite({ to: 'uidC' })));
+  await assertFails(setDoc(doc(C.firestore(), 'crewInvites', 'inv1_uidD'), invite({ from: 'uidC' })));
+  await assertFails(setDoc(doc(B.firestore(), 'crewInvites', 'other_uidD'), invite()));
+  await assertFails(setDoc(doc(B.firestore(), 'crewInvites', 'inv1_uidD'), invite({ festivalId: 'edc-orlando-26' })));
+  await assertFails(setDoc(doc(B.firestore(), 'crewInvites', 'inv1_uidB'), invite({ to: 'uidB' })));
+  await assertSucceeds(getDoc(doc(D.firestore(), 'crewInvites', 'inv1_uidD')));
+  await assertFails(getDoc(doc(C.firestore(), 'crewInvites', 'inv1_uidD')));
+  await assertSucceeds(getDocs(query(collection(D.firestore(), 'crewInvites'), where('to', '==', 'uidD'))));
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'crewInvites'), where('crewId', '==', 'inv1'), where('from', '==', 'uidB'))));
+  await assertFails(getDocs(collection(C.firestore(), 'crewInvites')));
+});
+await t('crew invites: not to someone who blocked you; removed by the person invited', async () => {
+  await assertSucceeds(setDoc(doc(D.firestore(), 'blocks', 'uidD'), { uids: ['uidB'] }));
+  await assertFails(setDoc(doc(B.firestore(), 'crewInvites', 'inv1_uidD'), invite()));
+  await assertSucceeds(setDoc(doc(D.firestore(), 'blocks', 'uidD'), { uids: [] }));
+  await assertFails(deleteDoc(doc(C.firestore(), 'crewInvites', 'inv1_uidD')));
+  await assertSucceeds(deleteDoc(doc(D.firestore(), 'crewInvites', 'inv1_uidD')));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

@@ -8,8 +8,7 @@ import { ArtistRow } from '../../components/ArtistRow';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
-import { WEB_URL } from '../../config/app';
-import { crewPath, crewTogether, firstName, whoLine } from '../../features/crews/together';
+import { crewTogether, firstName, whoLine } from '../../features/crews/together';
 import { CrewRouteSection } from '../../features/crews/CrewRouteSection';
 import { CrewLatest } from '../../features/crews/CrewLatest';
 import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
@@ -21,7 +20,6 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/servic
 import { crewNameProblem } from '../../features/social/validate';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
-import { shareMessage } from '../../lib/share';
 import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
 import { usePlan } from '../../state/plan';
@@ -115,9 +113,12 @@ const nameOf = (profiles: Record<string, Profile>) => (uid: string) => (profiles
 /** Someone opened an invite: the crew, who's in it, and Join. */
 function Invite({ crew, profiles, onJoined }: { crew: Crew; profiles: Record<string, Profile>; onJoined: () => void }) {
   const social = useSocial();
-  const { join } = useCrews();
+  const { join, invites, inviters, declineInvite } = useCrews();
   const festival = useCatalog().festival(crew.festivalId);
   const [busy, setBusy] = useState(false);
+  // Invited in the app: say by whom, and offer No thanks.
+  const invited = invites.find((i) => i.crewId === crew.id);
+  const inviter = invited ? inviters[invited.from] : undefined;
   const full = crew.members.length >= CREW_MAX;
   const festivalName = festival?.name ?? 'this festival';
 
@@ -141,7 +142,7 @@ function Invite({ crew, profiles, onJoined }: { crew: Crew; profiles: Record<str
 
   return (
     <>
-      <Text style={styles.kicker}>{festivalName}</Text>
+      <Text style={styles.kicker}>{invited ? `${inviter ? firstName(inviter.displayName) : 'A friend'} invited you · ${festivalName}` : festivalName}</Text>
       <Text style={styles.title} accessibilityRole="header">
         {crew.name}
       </Text>
@@ -153,6 +154,20 @@ function Invite({ crew, profiles, onJoined }: { crew: Crew; profiles: Record<str
         <>
           <Primary label={social.profile ? 'Join the crew' : 'Create your profile to join'} onPress={() => void press()} busy={busy} />
           <Text style={styles.note}>When you join, the sets you star at {festivalName} are shared with this crew. You can leave any time.</Text>
+          {invited ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                void declineInvite(crew.id);
+                if (router.canGoBack()) router.back();
+                else router.replace('/together');
+              }}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.decline, pressed && styles.pressed]}
+            >
+              <Text style={styles.declineText}>No thanks</Text>
+            </Pressable>
+          ) : null}
         </>
       )}
     </>
@@ -245,11 +260,9 @@ function Member({
     }
   };
 
-  const invite = async () => {
+  const invite = () => {
     haptic.select();
-    const where = festival ? ` for ${festival.name}` : '';
-    const outcome = await shareMessage(`Join my crew${where} on Afterglow, so we can plan our sets together: ${WEB_URL}${crewPath(crew.id)}`, crew.name);
-    if (outcome === 'failed') showAlert('Couldn’t share the invite', 'Try again in a moment.');
+    router.push({ pathname: '/crew-invite/[id]', params: { id: crew.id } });
   };
 
   const leave = () => {
@@ -352,7 +365,7 @@ function Member({
       )}
       {festival ? <Text style={styles.meta}>{whereWhen(festival)}</Text> : null}
 
-      <Pressable onPress={() => void invite()} accessibilityRole="button" accessibilityLabel="Invite friends" style={({ pressed }) => [styles.primary, styles.inviteRow, pressed && styles.pressed]}>
+      <Pressable onPress={invite} accessibilityRole="button" accessibilityLabel="Invite friends" style={({ pressed }) => [styles.primary, styles.inviteRow, pressed && styles.pressed]}>
         <ShareIcon color={color.moon} size={16} />
         <Text style={styles.primaryText}>Invite friends</Text>
       </Pressable>
@@ -419,6 +432,8 @@ const mineNote = (festivalName?: string) => (
 );
 
 const styles = StyleSheet.create({
+  decline: { alignSelf: 'center', minHeight: 40, paddingHorizontal: space.lg, alignItems: 'center', justifyContent: 'center' },
+  declineText: { ...type.label, color: color.moonDim },
   root: { flex: 1, backgroundColor: color.night },
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },

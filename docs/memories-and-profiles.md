@@ -105,6 +105,16 @@ A few friends planning one festival together.
 - **Pure** (`features/crews/together.ts`): `crewTogether` (shared picks and each member's picks, ignoring people who left and artists off the lineup), `whoLine`, `crewMembersLine`, `sharedCountLine`, `firstName`, `crewPath`, `picksChanged`. Crew names: `cleanCrewName`, `crewNameProblem` in `validate.ts` (1 to 40 characters, friendly).
 - **Profile** lists your crews (each opens its page), or suggests starting one from a festival page.
 
+### Inviting people you know
+
+A crew page's **Invite friends** opens a list of people you follow and people who follow you (those going to the crew's festival first, crewmates last as "In the crew"), with **Invite** beside each, and **Share a link instead** for friends who aren't on Afterglow yet.
+
+An invite is a Firestore document `crewInvites/{crewId}_{to}` (`crewId`, `festivalId`, `crewName`, `from`, `to`, `createdAt` = server time). Rules: only a member of the crew can send one, as themselves, to someone with a profile who isn't already in it and hasn't blocked them, for the crew's own festival; only the two people can read it; either can delete it. Index: `to` + `createdAt` descending. Joining the crew removes it; **Not now** (Friends tab) or **No thanks** (crew page) removes it too. Deleting an account removes invites both ways.
+
+The person invited sees it in the bell ("Maya invited you to Bass crew"), at the top of the Friends tab (Join / Not now), and on the crew page ("Maya invited you · Cyclops Cove 4"). Pure helpers: `features/crews/invite.ts` (`inviteCandidates`, `openInvites`, `inviteTitle`, `inviteNotices`).
+
+A crew link opened by someone new shows the crew first: the first-run welcome waits until they reach one of the tabs.
+
 ## Crew updates
 
 Where your crew is, from the videos they film and quick check-ins, along the top of Discover like stories.

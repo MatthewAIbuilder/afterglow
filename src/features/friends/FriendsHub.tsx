@@ -35,6 +35,7 @@ import { useCrewUpdates } from '../../state/crewUpdates';
 import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 
 /** How many of your festivals are asked who else is going. */
 const GOER_FESTIVALS = 3;
@@ -156,6 +157,8 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
           </>
         ) : (
           <>
+            {/* Someone asked you to join their crew: that's the first thing to answer. */}
+            <CrewInvitesCard />
             {/* Away from a festival, bringing friends in comes first. */}
             {festival ? null : <InviteCard handle={me.handle} festivals={upcoming} />}
             {/* Adding friends face to face: show your code, or scan theirs. Works with no signal. */}

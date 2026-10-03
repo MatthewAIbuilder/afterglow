@@ -1,4 +1,4 @@
-import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
@@ -20,6 +20,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Likes as `memoryId_uid`. */
   const likes = new Map<string, { memoryId: string; owner: string; uid: string; createdAt: string }>();
   const crews = new Map<string, Crew>();
+  /** Crew invites as `crewId_to`. */
+  const crewInvites = new Map<string, CrewInvite>();
   /** Picks as `crewId/uid`. */
   const picks = new Map<string, CrewPicks>();
   const comments = new Map<string, Comment>();
@@ -131,6 +133,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
       for (const [k, c] of comments) if (c.uid === u.uid || c.owner === u.uid) comments.delete(k);
       for (const id of [...crews.keys()]) leave(id, u.uid);
+      for (const [k, i] of crewInvites) if (i.from === u.uid || i.to === u.uid) crewInvites.delete(k);
       accounts.delete(u.email ?? '');
       current = null;
       emit();
@@ -482,7 +485,27 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (c.members.length >= CREW_MAX) throw new SocialError('crew-full');
       const next = { ...c, members: [...c.members, u.uid] };
       crews.set(id, next);
+      crewInvites.delete(`${id}_${u.uid}`);
       return next;
+    },
+    async inviteToCrew(crewId, uid) {
+      const u = me();
+      const c = crews.get(crewId);
+      if (!c || !c.members.includes(u.uid)) throw new SocialError('not-found');
+      if (uid === u.uid || c.members.includes(uid)) return;
+      if (!profiles.has(uid) || (blocks.get(uid) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      crewInvites.set(`${crewId}_${uid}`, { id: `${crewId}_${uid}`, crewId, festivalId: c.festivalId, crewName: c.name, from: u.uid, to: uid, at: now() });
+    },
+    async crewInvites(max) {
+      const u = me();
+      return [...crewInvites.values()].filter((i) => i.to === u.uid).sort((a, b) => b.at.localeCompare(a.at)).slice(0, max);
+    },
+    async sentCrewInvites(crewId) {
+      const u = me();
+      return [...crewInvites.values()].filter((i) => i.crewId === crewId && i.from === u.uid).map((i) => i.to);
+    },
+    async declineCrewInvite(crewId) {
+      crewInvites.delete(`${crewId}_${me().uid}`);
     },
     async leaveCrew(id) {
       leave(id, me().uid);
@@ -597,5 +620,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, counter, reports, support, verified, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, counter, reports, support, verified, currentUser: () => current };
 }

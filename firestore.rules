@@ -226,6 +226,25 @@ service cloud.firestore {
         && d.createdAt is string && d.createdAt.size() <= 40;
     }
     function blockedBy(uid) { return exists(path('blocks', uid)) && me() in get(path('blocks', uid)).data.uids; }
+    // Crew invites sent in the app: `crewId_to`. A member of the crew invites someone with a profile who
+    // hasn't blocked them, as themselves, stamped with the server's time. Only the two of them can see it;
+    // either can remove it (joining or saying no). Inviting again overwrites it.
+    match /crewInvites/{id} {
+      allow read: if signedIn() && (resource.data.to == me() || resource.data.from == me());
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['crewId', 'festivalId', 'crewName', 'from', 'to', 'createdAt'])
+        && request.resource.data.from == me() && request.resource.data.to is string && request.resource.data.to != me()
+        && request.resource.data.crewId is string
+        && id == request.resource.data.crewId + '_' + request.resource.data.to
+        && me() in get(path('crews', request.resource.data.crewId)).data.members
+        && !(request.resource.data.to in get(path('crews', request.resource.data.crewId)).data.members)
+        && request.resource.data.festivalId == get(path('crews', request.resource.data.crewId)).data.festivalId
+        && request.resource.data.crewName is string && request.resource.data.crewName.size() <= 40
+        && request.resource.data.createdAt == request.time
+        && exists(path('profiles', request.resource.data.to))
+        && !blockedBy(request.resource.data.to);
+      allow delete: if signedIn() && (resource.data.to == me() || resource.data.from == me());
+    }
     match /crews/{id} {
       allow get: if signedIn();
       allow list: if (signedIn() && me() in resource.data.members) || isAdmin();
