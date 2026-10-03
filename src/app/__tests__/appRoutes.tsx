@@ -55,6 +55,7 @@ import TuneScreen from '../tune/[id]';
 import BadgeScreen from '../badge/[id]';
 import BadgeCardScreen from '../badge-card/[id]';
 import AdminScreen from '../admin';
+import SwitchAccountScreen from '../switch-account';
 import SupportScreen from '../support';
 import PublicProfileScreen from '../u/[handle]';
 import WelcomeScreen from '../welcome';
@@ -112,6 +113,7 @@ export const APP_ROUTES = {
   'badge/[id]': BadgeScreen,
   'badge-card/[id]': BadgeCardScreen,
   admin: AdminScreen,
+  'switch-account': SwitchAccountScreen,
   support: SupportScreen,
   people: PeopleScreen,
   search: SearchScreen,

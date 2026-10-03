@@ -63,6 +63,9 @@ export default function AdminScreen() {
             <Pressable onPress={viewApp} accessibilityRole="button" accessibilityLabel="View the app as everyone sees it" style={({ pressed }) => [styles.pill, pressed && styles.pressed]}>
               <Text style={styles.pillText}>View the app</Text>
             </Pressable>
+            <Pressable onPress={() => router.push('/switch-account')} accessibilityRole="button" accessibilityLabel="Switch account" hitSlop={6}>
+              <Text style={styles.switchText}>Switch account</Text>
+            </Pressable>
             <Pressable onPress={signOut} accessibilityRole="button" hitSlop={6}>
               <Text style={styles.signOut}>Sign out</Text>
             </Pressable>
@@ -125,6 +128,7 @@ const styles = StyleSheet.create({
   pill: { paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.5)' },
   pillText: { ...type.label, color: color.moon },
   signOut: { ...type.caption, color: color.moonFaint },
+  switchText: { ...type.caption, color: color.glow },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   tabs: { marginBottom: space.lg },
   verify: { marginHorizontal: space.lg, padding: space.xl, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(255,184,107,0.08)', borderWidth: 1, borderColor: 'rgba(255,184,107,0.4)' },

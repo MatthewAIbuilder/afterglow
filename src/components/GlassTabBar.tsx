@@ -117,6 +117,19 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   navigation.navigate(route.name);
                 }
               }}
+              // Hold Profile to switch between accounts saved on this phone.
+              {...(route.name === 'profile'
+                ? {
+                    onLongPress: () => {
+                      haptic.settle();
+                      router.push('/switch-account');
+                    },
+                    delayLongPress: 450,
+                    accessibilityHint: 'Hold to switch accounts',
+                    accessibilityActions: [{ name: 'longpress', label: 'Switch account' }],
+                    onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => e.nativeEvent.actionName === 'longpress' && router.push('/switch-account'),
+                  }
+                : {})}
               style={styles.item}
             >
               {focused && <View style={styles.activeBg} />}

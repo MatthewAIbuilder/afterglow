@@ -227,6 +227,14 @@ People write in from **Settings → About → Contact support** (`support.tsx`):
 2. In the app: Profile, then Create your profile, then New here. Use afterglowmusic.support@gmail.com and a password only you know. (If you already made an account with that email, choose Sign in instead.)
 3. The dashboard opens and asks you to confirm the email: tap **Send the email**, open that Gmail inbox (check spam), tap the link, come back and tap **I've confirmed it**.
 
+## Switching accounts
+
+Hold the **Profile** tab (or Settings → Account → Switch account, or "Switch account" on the dashboard) to open `switch-account.tsx` (form sheet): the accounts saved on this phone (up to 5), one tap to move between them, the current one ticked. Handy for going from your own profile to the support account and back.
+
+- The first time, tap **Save this account** and type its password (checked by signing in again), then **Add an account** for the other one. "Remember the password on this phone" (on by default) keeps it in the keychain (`features/accounts/vault.ts`, expo-secure-store, this device only, while unlocked); the website keeps no passwords (`vault.web.ts`) and asks each time.
+- The list itself (uid, email, name, @handle, photo; never passwords) is AsyncStorage `savedAccounts.v1` (`state/savedAccounts.ts`); `SavedAccountSync` (root layout) keeps a saved account's name and photo current. Pure helpers in `features/accounts/saved.ts`.
+- Signing in to another account replaces the current one only once it works, so a wrong password never signs you out; a saved password that stops working is forgotten and asked for again (`useSwitchAccount.ts`). After a switch the app starts from the top: the support account lands on its dashboard (its "view the app" choice is reset), anyone else on Discover. Deleting an account takes it off the list.
+
 ## The edge glow and Afterglow Plus
 
 Every video in Discover gets a soft neon edge in festival light (`components/EdgeGlow.tsx`: a thin line with a haze around it running purple, pink, amber and blue, breathing slowly while it plays, still with reduced motion). YouTube clips get it just outside the player (their picture is never covered). Videos filmed with Afterglow (crowd videos, full screen, shared videos, and your own memories) also carry the word AFTERGLOW, small and spaced, in a gap on the right edge: Afterglow's mark on them wherever they're watched in the app or on the website.
