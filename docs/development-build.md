@@ -148,3 +148,19 @@ On iPhone the festival map is Apple Maps, which needs nothing set up. An Android
 - **TestFlight and the App Store**: `docs/app-store.md` (a production build,
   then `submit`).
 - **Spotify on the development build**: `docs/spotify-setup.md`.
+- **Tapping phones to give a sprout**: worth knowing before planning it. iPhones
+  can't swap data phone to phone over NFC (Apple keeps that for Apple Pay and
+  NameDrop), so "tap to give" can't work between two iPhones the way it does
+  with a contactless card. What can work, from easiest:
+  1. **Sprout stickers or kandi with an NFC chip**: a cheap NFC tag holding a
+     sprout link (one per sprout). Any iPhone or Android reads it by holding
+     it near the top of the phone, no app needed: it opens the same sprout
+     page as the code. Needs a way to make one-use links in bulk (a small
+     addition in HQ).
+  2. **Nearby giving over Bluetooth**: two phones with Afterglow open find
+     each other and pass the sprout, no code to scan. Needs a native module
+     (Apple's Multipeer Connectivity / Android's Nearby) in the development
+     build, so it's more work, and both people need the app.
+  3. **Android to Android over NFC**: possible, but leaves iPhones out.
+  The sprout codes and links are already made so any of these can be added
+  without changing how sprouts work.
