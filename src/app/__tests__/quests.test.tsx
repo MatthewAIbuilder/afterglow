@@ -82,3 +82,17 @@ describe('the evening nudge', () => {
     expect(await AsyncStorage.getItem('questReminder.v1')).toBe('true');
   });
 });
+
+describe('the quests tip', () => {
+  it('comes after the other tips, and goes once you open your quests', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 3, 12) });
+    await AsyncStorage.setItem('hints.v1', JSON.stringify(['swipe', 'like', 'hold']));
+    await AsyncStorage.setItem('careTip.v1', '1');
+    const app = await renderApp('/');
+    await flush(20);
+    expect(app.getByLabelText('Tip: The ring at the top right holds your daily quests. Tap it to see them')).toBeTruthy();
+    await fireEvent.press(app.getByTestId('quest-button'));
+    await flush();
+    expect(await AsyncStorage.getItem('questTip.v1')).toBe('1');
+  });
+});

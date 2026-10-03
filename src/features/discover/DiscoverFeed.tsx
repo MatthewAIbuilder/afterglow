@@ -33,6 +33,7 @@ import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
 import { useHints } from '../../state/hints';
 import { markCareTipDone, useCareTip } from '../../state/careTip';
+import { useQuestTip } from '../../state/questTip';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { color, motion, space, type } from '../../theme/tokens';
@@ -46,7 +47,7 @@ import { useTonight } from '../tonight/useTonight';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { useAddMemory } from '../memories/useAddMemory';
 import { useMemories } from '../../state/memories';
-import { alreadyKnown, CARE_HINT, currentHint } from './hints';
+import { alreadyKnown, CARE_HINT, currentHint, QUESTS_HINT } from './hints';
 import type { FeedPager } from './feedPager';
 import { defaultFocus } from '../festivals/links';
 import { SOUND_LABEL } from '../../data/models';
@@ -211,10 +212,13 @@ export function DiscoverFeed() {
     if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
   }, [ready, reactions, markDone]);
   // Once the three are done: holding the camera button opens Look after yourself.
-  const careTip = useCareTip();
-  const next = ready && count > 0 && activeIndex < count ? (currentHint(hintsDone) ?? (careTip ? CARE_HINT : undefined)) : undefined;
+  const careTip = useCareTip() && Platform.OS !== 'web';
+  // Then: the ring beside it holds your daily quests.
+  const questTip = useQuestTip();
+  const next =
+    ready && count > 0 && activeIndex < count ? (currentHint(hintsDone) ?? (careTip ? CARE_HINT : questTip && !hereFestival ? QUESTS_HINT : undefined)) : undefined;
   // Filming (and the camera button) is in the phone app, so the website doesn't teach it.
-  const hint = (next === 'hold' || next === 'care') && Platform.OS === 'web' ? undefined : next;
+  const hint = next === 'hold' && Platform.OS === 'web' ? undefined : next;
   // Press and hold a clip to add your own video: the third tip is done the first time you do.
   const addMemory = useAddMemory();
   const onHold = useCallback(() => {

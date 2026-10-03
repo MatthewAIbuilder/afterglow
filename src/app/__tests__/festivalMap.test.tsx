@@ -64,4 +64,17 @@ describe('the festival map', () => {
     expect(app.queryByTestId('map-card-acl-26')).toBeNull();
     expect(app.queryByLabelText(/^All festivals, /)).toBeNull();
   });
+
+  it('shows you on the map once you allow it', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Location = require('expo-location');
+    Location.requestForegroundPermissionsAsync.mockImplementationOnce(async () => ({ granted: true }));
+    Location.getCurrentPositionAsync.mockImplementationOnce(async () => ({ coords: { latitude: 28.5, longitude: -81.4 } }));
+    const app = await renderApp('/festival-map');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Show me on the map'));
+    await flush();
+    expect(app.getByLabelText('You are here, roughly')).toBeTruthy();
+    expect(app.getByLabelText('Show where I am')).toBeTruthy();
+  });
 });

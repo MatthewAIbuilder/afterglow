@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../components/ArtistAvatar';
 import { FilterChips } from '../components/FilterChips';
 import { PageActions } from '../components/PageActions';
+import { GlassCircleButton } from '../components/GlassCircleButton';
+import { LocateIcon } from '../components/TabIcons';
 import { PageTitle } from '../components/PageTitle';
 import type { Festival } from '../data/types';
 import { FestivalMap, TONE_COLOR } from '../features/festival-map/FestivalMap';
@@ -17,6 +19,7 @@ import { lovedOn } from '../features/festivals/shelves';
 import { dateBlock } from '../features/festivals/timeline';
 import { lovedLine, useFestivalSummary } from '../features/festivals/useFestivalSummary';
 import { haptic } from '../lib/haptics';
+import { showAlert } from '../lib/dialog';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
 import { bumpQuestEvent } from '../state/dailyQuests';
@@ -45,6 +48,7 @@ export default function FestivalMapScreen() {
   const { going } = useGoing();
   const loves = useLoves();
   const nearby = useNearby();
+  const [toHere, setToHere] = useState(0);
   const today = useToday();
 
   const all = useMemo(
@@ -123,6 +127,7 @@ export default function FestivalMapScreen() {
         height={height}
         area={{ top: headerH, bottom: cardsSpace }}
         journey={journey}
+        toHere={toHere}
         frameKey={`${params.artist ?? ''}|${filter}`}
       />
 
@@ -147,6 +152,23 @@ export default function FestivalMapScreen() {
         )}
       </View>
       <PageActions />
+      {/* You on the map: switches on Near you the first time (it asks), then glides to you. */}
+      <View style={[styles.here, { top: insets.top + space.sm }]}>
+        <GlassCircleButton
+          label={nearby.here ? 'Show where I am' : 'Show me on the map'}
+          hint={nearby.here ? undefined : 'Uses your location, rounded, kept on this phone'}
+          onPress={() => {
+            if (nearby.here) setToHere((n) => n + 1);
+            else
+              void nearby.turnOn().then((s) => {
+                if (s === 'on') setToHere((n) => n + 1);
+                else if (s === 'denied') showAlert('Location is off for Afterglow', 'Turn it on in your settings to see where you are among the festivals.');
+              });
+          }}
+        >
+          <LocateIcon color={nearby.here ? '#6FC3FF' : color.moon} size={18} />
+        </GlassCircleButton>
+      </View>
 
       {markers.length === 0 ? (
         <View style={[styles.empty, { bottom: insets.bottom + space.xl }]}>
@@ -241,6 +263,7 @@ function MapCard({ marker, width, chosen, onFocus }: { marker: Marker; width: nu
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { position: 'absolute', left: 0, right: 0, top: 0 },
+  here: { position: 'absolute', right: space.lg },
   scrim: { position: 'absolute', left: 0, right: 0, top: 0, bottom: -32 },
   titleWrap: { alignItems: 'center', height: 44, justifyContent: 'center', paddingHorizontal: 64 },
   title: { ...type.headline, color: color.moon },

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { haptic } from '../lib/haptics';
 import { useQuests } from '../state/quests';
 import { revealSecret, useSecrets } from '../state/secrets';
 import { setQuestReminder, useQuestReminder } from '../state/questReminder';
+import { markQuestTipDone } from '../state/questTip';
 import { secretsLine } from '../features/secrets/secrets';
 import { color, motion, radius, space, type } from '../theme/tokens';
 
@@ -34,6 +35,8 @@ export default function QuestsScreen() {
   const sideDone = QUESTS.filter((x) => log[x.id]).length;
   const secrets = useSecrets();
   const nudge = useQuestReminder();
+  // Opening your quests is the last first-time tip done.
+  useEffect(() => markQuestTipDone(), []);
   const next = LEVELS[q.level.level] ?? undefined;
   const toNext = q.level.to - q.level.glow;
   const go = (to: string | undefined) => {

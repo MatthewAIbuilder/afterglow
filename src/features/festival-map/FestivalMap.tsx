@@ -77,6 +77,7 @@ export function FestivalMap({
   area,
   journey,
   frameKey,
+  toHere,
   testID,
 }: {
   markers: readonly Marker[];
@@ -90,6 +91,8 @@ export function FestivalMap({
   journey?: readonly MapPoint[];
   /** The map frames its festivals again only when this changes. */
   frameKey: string;
+  /** Bump to glide to where you are. */
+  toHere?: number;
   testID?: string;
 }) {
   const reduced = useReducedMotion();
@@ -285,6 +288,11 @@ export function FestivalMap({
 
   // The journey, in layer pixels.
   const trail = useMemo(() => (journey && journey.length > 1 ? arcPath(journey.map(toLayer)) : undefined), [journey, toLayer]);
+
+  // "Show me": glide to where you are.
+  useEffect(() => {
+    if (toHere && here) glideTo(project(here));
+  }, [toHere, here, glideTo]);
 
   const clusters = useMemo(() => clusterMarkers(markers, S * zoomStep, CLUSTER_PX), [markers, S, zoomStep]);
 
