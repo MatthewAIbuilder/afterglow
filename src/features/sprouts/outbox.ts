@@ -1,5 +1,5 @@
 import type { Notice } from '../notifications/inbox';
-import { isKind, kindOf, isSproutId, type SproutCard, type SproutKind, SPROUT_KEEP_DAYS, SPROUT_NOTE_MAX } from './sprouts';
+import { type GardenSprout, isKind, kindOf, isSproutId, type SproutCard, type SproutKind, SPROUT_KEEP_DAYS, SPROUT_NOTE_MAX } from './sprouts';
 
 /**
  * Giving and picking up sprouts with bad signal, pure. A sprout you give is
@@ -144,4 +144,19 @@ export function bloomNotices(blooms: readonly { id: string; kind: SproutKind; at
       const name = kindOf(b.kind).name;
       return { id: `bloom:${b.id}`, kind: 'sprout' as const, title: `Your sprout bloomed into a ${name}`, body: `You can give ${name}s now.`, href: '/garden' };
     });
+}
+
+/** "Your sprout from Maya is in your garden": for sprouts picked up in the background. */
+export function arrivalNotices(garden: readonly GardenSprout[], now: number): Notice[] {
+  return garden
+    .filter((g) => g.late && now - g.at < SPROUT_NEWS_DAYS * 86_400_000)
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 10)
+    .map((g) => ({
+      id: `sprout-in:${g.id}`,
+      kind: 'sprout' as const,
+      title: `Your ${kindOf(g.kind).name} from ${g.name ?? (g.handle ? `@${g.handle}` : 'a friend')} is in your garden`,
+      body: g.note ? `“${g.note}”` : 'It grows as you go: festival days, sets, videos and sprouts you give.',
+      href: '/garden',
+    }));
 }

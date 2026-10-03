@@ -110,6 +110,11 @@ describe('sprouts', () => {
     const sam = await person('sam', 'Sam');
     await flush(20);
     expect(mockSocial.sprouts.get(ID)?.to).toBe(sam);
+    // Wherever signing up took them, the bell says it's there.
+    await act(async () => router.push('/notifications'));
+    await flush();
+    expect(app.getByText('Your PLUR sprout from Maya is in your garden')).toBeTruthy();
+    expect(app.getByText('“So glad we met”')).toBeTruthy();
   });
 
   it('with no signal, a scan is kept and goes through by itself once there’s signal', async () => {

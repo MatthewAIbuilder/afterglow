@@ -228,11 +228,11 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   );
 
   const addToGarden = useCallback(
-    (card: SproutCard, sprout: Sprout | undefined, me: string, at: number) =>
+    (card: SproutCard, sprout: Sprout | undefined, me: string, at: number, late?: boolean) =>
       setStored((s) => {
         if (s.garden.some((g) => g.id === card.id && g.account === me)) return s;
         const kind = sprout && isKind(sprout.kind) ? sprout.kind : card.kind;
-        const entry = { id: card.id, kind, from: card.from, handle: card.handle, name: card.name, at, account: me, ...(sprout?.note ? { note: sprout.note } : {}) };
+        const entry = { id: card.id, kind, from: card.from, handle: card.handle, name: card.name, at, account: me, ...(sprout?.note ? { note: sprout.note } : {}), ...(late ? { late: true } : {}) };
         return { ...s, garden: [entry, ...s.garden] };
       }),
     [setStored],
@@ -251,9 +251,11 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       inFlight.current.add(c.card.id);
       try {
         const sprout = await timeout(social.service.claimSprout(c.card.id), TRY_TIMEOUT_MS);
-        addToGarden(c.card, sprout, me, Date.now());
+        // Scanned while signed out, or waiting for signal: it arrives in the background, so say so.
+        const late = c.tries > 0 || !c.account;
+        addToGarden(c.card, sprout, me, Date.now(), late);
         done('claimed');
-        if (c.tries > 0) void notifyNow(`sprout:${c.card.id}`, `Your sprout from ${c.card.name} is in your garden`, 'It went through once there was signal.', '/garden');
+        if (late) void notifyNow(`sprout:${c.card.id}`, `Your sprout from ${c.card.name} is in your garden`, c.tries > 0 ? 'It went through once there was signal.' : 'It was waiting for you to sign in.', '/garden');
         return 'claimed';
       } catch (e) {
         const kind = socialErrorKind(e);

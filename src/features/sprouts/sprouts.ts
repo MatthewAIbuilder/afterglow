@@ -236,6 +236,8 @@ export type GardenSprout = {
   note?: string;
   /** When it reached you (ms). */
   at: number;
+  /** Picked up in the background (after signing in, or once there was signal): the bell says so. */
+  late?: boolean;
 };
 
 /** The sprout everyone starts with. */
