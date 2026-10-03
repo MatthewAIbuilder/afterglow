@@ -11,6 +11,8 @@ import { SOUND_LABEL } from '../data/models';
 import { goingLine } from '../features/social/copy';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { BIO_MAX, normalizeHandle, profileProblems, suggestHandle } from '../features/social/validate';
+import { SOCIALS, readSocial, socialUrl, type SocialKey } from '../features/social/socials';
+import { SocialIcon } from '../components/SocialIcons';
 import { tasteMix } from '../features/taste/lean';
 import { haptic } from '../lib/haptics';
 import { forgetAccount } from '../state/savedAccounts';
@@ -44,6 +46,7 @@ export default function ProfileEditScreen() {
   const [bio, setBio] = useState(p?.bio ?? '');
   const [showFestivals, setShowFestivals] = useState(p?.showFestivals ?? false);
   const [showSound, setShowSound] = useState(p?.showSound ?? false);
+  const [socials, setSocials] = useState<Record<SocialKey, string>>({ instagram: p?.socials?.instagram ?? '', snapchat: p?.socials?.snapchat ?? '', tiktok: p?.socials?.tiktok ?? '' });
   // Applies at once (it isn't part of the saved profile): LevelSync sends or removes it.
   const showLevel = useShowLevel();
   const daily = useDailyQuests();
@@ -56,7 +59,7 @@ export default function ProfileEditScreen() {
   const [uploading, setUploading] = useState<CropShape>();
   const [password, setPassword] = useState('');
 
-  const input = { handle, displayName, bio, showFestivals, showSound };
+  const input = { handle, displayName, bio, showFestivals, showSound, socials };
   const problems = profileProblems(input);
   const h = normalizeHandle(handle);
 
@@ -91,7 +94,7 @@ export default function ProfileEditScreen() {
 
   const save = async () => {
     if (Object.keys(problems).length || available === false) {
-      setProblem(problems.displayName ?? problems.handle ?? problems.bio ?? SOCIAL_ERROR_COPY['handle-taken']);
+      setProblem(problems.displayName ?? problems.handle ?? problems.bio ?? problems.instagram ?? problems.snapchat ?? problems.tiktok ?? SOCIAL_ERROR_COPY['handle-taken']);
       return;
     }
     haptic.tap();
@@ -243,6 +246,32 @@ export default function ProfileEditScreen() {
             />
           </Field>
 
+          <Text style={styles.section}>Your socials</Text>
+          <Text style={styles.note}>Add your usernames and they show as little icons on your profile. Paste a link or type the name.</Text>
+          {SOCIALS.map((s) => {
+            const name = readSocial(s.key, socials[s.key]);
+            const bad = problems[s.key];
+            return (
+              <View key={s.key} style={{ gap: 4 }}>
+                <View style={styles.socialRow}>
+                  <SocialIcon kind={s.key} color={color.moon} size={20} />
+                  <TextInput
+                    value={socials[s.key]}
+                    onChangeText={(v) => setSocials((x) => ({ ...x, [s.key]: v }))}
+                    placeholder={`${s.label} username`}
+                    placeholderTextColor={color.moonFaint}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={120}
+                    accessibilityLabel={`${s.label} username`}
+                    style={[styles.input, styles.socialInput]}
+                  />
+                </View>
+                {bad ? <Text style={styles.problemNote}>{bad}</Text> : name ? <Text style={styles.note}>{socialUrl(s.key, name).replace('https://', '')}</Text> : null}
+              </View>
+            );
+          })}
+
           <View style={styles.switches}>
             <SwitchRow label="Show festivals I’m going to" detail={showFestivals ? (goingLine(goingNames) ?? 'None yet. Tap I’m going on a festival.') : 'Hidden'} value={showFestivals} onChange={setShowFestivals} />
             <SwitchRow
@@ -360,6 +389,9 @@ const styles = StyleSheet.create({
   at: { ...type.headline, color: color.moonDim, position: 'absolute', left: space.lg, zIndex: 1 },
   handleInput: { flex: 1, paddingLeft: space.lg + 16 },
   bio: { minHeight: 84, textAlignVertical: 'top' },
+  socialRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  socialInput: { flex: 1 },
+  problemNote: { ...type.caption, color: '#FF8A8A' },
   note: { ...type.caption, color: color.moonDim },
   good: { color: color.glow },
   switches: { gap: space.md, marginTop: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass },

@@ -95,6 +95,14 @@ describe('milestones', () => {
     expect(progressLine(next)).toBe('20 of 25');
     expect(milestones({ been: 0, cities: 0, moments: 0, kept: 0, rated: 0, bass: 0, founder: 23 })[0]).toMatchObject({ id: 'og', earned: true, how: 'One of the first 100 · #23' });
   });
+
+  it('sprouts earn their own: one in bloom, 10 given, all 7 kinds', () => {
+    const list = milestones({ been: 0, cities: 0, moments: 0, kept: 0, rated: 0, bass: 0, bloomed: 1, given: 4, kinds: 7 });
+    const by = (id: string) => list.find((m) => m.id === id)!;
+    expect(by('green').earned).toBe(true);
+    expect(by('gardener').earned).toBe(true);
+    expect(progressLine(by('giver'))).toBe('4 of 10');
+  });
 });
 
 describe('someone else’s orbit', () => {

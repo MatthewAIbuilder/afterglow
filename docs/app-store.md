@@ -62,12 +62,14 @@ Apple asks what the app collects. From the code, the honest answers are:
 | Email address | Yes, with a profile | Signing in | Yes |
 | Name, @handle, photo, bio | Yes, with a profile | Their public profile | Yes |
 | Photos or videos | Yes, only videos they choose to share | Shown on their profile, in Discover and to their crew | Yes |
-| Other user content | Yes: comments, crew check-ins and replies, festival picks shared with a crew | App functionality | Yes |
+| Photos | Yes, only photos sent to a crew (and profile and cover photos) | Shown to that crew (or on their profile) | Yes |
+| Other user content | Yes: comments, crew chat messages, crew check-ins and replies, festival picks shared with a crew, sprouts given (kind, note, who gave and who picked it up), support messages | App functionality | Yes |
 | User ID | Yes (the Firebase account id) | App functionality | Yes |
 | Location | **No**: Near you and filming guesses stay on the phone, and only a town name and rounded point are kept there | | |
 | Music library (Spotify) | **No**: read on the phone and kept there | | |
 | Health and fitness: stopwatches, what they're for, pulse checks, steps, check-ins in Look after yourself | **No**: only on the phone (steps are read from the phone's motion counter and not stored) | | |
-| Usage data, crash data, advertising | **No**: there's no analytics or advertising | | |
+| Usage data (Product interaction) | Yes, for signed-in accounts: the days the app was opened, the platform and app version (for the team's dashboard; never what anyone did in it) | Analytics | Yes |
+| Crash data, advertising | **No**: no crash reporting service and no advertising | | |
 
 "Used for tracking": **No** for everything. Afterglow doesn't share data with
 advertisers or data brokers.

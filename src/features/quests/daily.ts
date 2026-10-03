@@ -30,8 +30,8 @@ export const added = (now: readonly string[], base: readonly string[]) => {
 };
 
 /** Things counted as they happen. */
-export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble';
-export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble'];
+export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble' | 'chat' | 'door' | 'crowd' | 'sprout';
+export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble', 'chat', 'door', 'crowd', 'sprout'];
 
 export type DailyQuestId =
   | 'watch'
@@ -46,7 +46,11 @@ export type DailyQuestId =
   | 'follow'
   | 'stars'
   | 'map'
-  | 'share';
+  | 'share'
+  | 'chat'
+  | 'door'
+  | 'crowd'
+  | 'sprout';
 
 export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-love';
 
@@ -54,7 +58,7 @@ export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-lo
 export type QuestLane = 'watch' | 'taste' | 'plan';
 
 /** Where tapping a quest takes you. `festival` = your next festival's page (or Festivals). */
-export type QuestGo = '/' | '/sound' | '/pick-artists' | '/this-or-that' | '/search' | '/festival-map' | 'festival' | '/discover-focus';
+export type QuestGo = '/together' | '/give-sprout' | '/' | '/sound' | '/pick-artists' | '/this-or-that' | '/search' | '/festival-map' | 'festival' | '/discover-focus';
 
 export type DailySpec = { id: DailyQuestId; lane: QuestLane; title: string; how: string; target: number; glow: number; go?: QuestGo };
 export type WeeklySpec = { id: WeeklyQuestId; title: string; how: string; target: number; glow: number; go?: QuestGo };
@@ -64,6 +68,7 @@ export const DAILY: readonly DailySpec[] = [
   { id: 'through', lane: 'watch', title: 'All the way', how: 'Watch 2 clips to the end', target: 2, glow: 25, go: '/' },
   { id: 'like', lane: 'watch', title: 'Feel it', how: 'Double-tap to like 3 clips', target: 3, glow: 15, go: '/' },
   { id: 'save', lane: 'watch', title: 'Keeper', how: 'Save a set to watch again', target: 1, glow: 15, go: '/' },
+  { id: 'crowd', lane: 'watch', title: 'In the crowd', how: 'Watch 2 videos filmed by people on Afterglow', target: 2, glow: 15, go: '/' },
   { id: 'sounds', lane: 'watch', title: 'Genre hopper', how: 'Watch sets from 3 different sounds', target: 3, glow: 25, go: '/discover-focus' },
   { id: 'rate', lane: 'taste', title: 'Taste test', how: 'Rate 5 artists', target: 5, glow: 25, go: '/pick-artists' },
   { id: 'warm', lane: 'taste', title: 'New love', how: 'Find an artist you love or like', target: 1, glow: 20, go: '/this-or-that' },
@@ -73,6 +78,9 @@ export const DAILY: readonly DailySpec[] = [
   { id: 'stars', lane: 'plan', title: 'Must-see', how: 'Star 2 sets you won’t miss', target: 2, glow: 20, go: 'festival' },
   { id: 'map', lane: 'plan', title: 'Explorer', how: 'Look around the festival map', target: 1, glow: 10, go: '/festival-map' },
   { id: 'share', lane: 'plan', title: 'Spread the glow', how: 'Share a set, a plan or a festival', target: 1, glow: 15 },
+  { id: 'chat', lane: 'plan', title: 'Crew call', how: 'Send a message in your crew chat', target: 1, glow: 15, go: '/together' },
+  { id: 'sprout', lane: 'plan', title: 'Pass it on', how: 'Give someone a sprout', target: 1, glow: 20, go: '/give-sprout' },
+  { id: 'door', lane: 'plan', title: 'Knock knock', how: 'Open today’s festival week door', target: 1, glow: 20, go: 'festival' },
 ];
 
 export const WEEKLY: readonly WeeklySpec[] = [
@@ -96,7 +104,9 @@ const dateKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
 
 /** The quest day a moment belongs to ("2026-10-03"); days run 4 AM to 4 AM. */
 export function questDay(t: number): string {
-  const d = new Date(t - DAY_TURNS_AT * 3_600_000);
+  // By the clock on the wall, so it's 4 AM on the days the clocks change too.
+  const d = new Date(t);
+  if (d.getHours() < DAY_TURNS_AT) d.setDate(d.getDate() - 1);
   return dateKey(d);
 }
 
@@ -149,12 +159,45 @@ export function dailyPicks(day: string, can: (id: DailyQuestId) => boolean = () 
   return picks;
 }
 
-/** What's possible right now: starring sets needs a festival you're going to; This or that needs enough sets. */
-export type QuestAbility = { planning: boolean; enoughSets: boolean };
+/**
+ * What's possible right now: starring sets needs a festival you're going to;
+ * This or that needs enough sets; Crew call needs a crew; Knock knock needs a
+ * festival week door ready to open; In the crowd and Pass it on need you
+ * signed in.
+ */
+export type QuestAbility = {
+  planning: boolean;
+  enoughSets: boolean;
+  crew?: boolean;
+  /** A festival week door ready to open today and not opened yet. */
+  door?: boolean;
+  /** Videos from the crowd there to watch. */
+  crowd?: boolean;
+  /** Signed in with a profile: you can give a sprout. */
+  sprout?: boolean;
+  /** Everything above has loaded (until then, the day's quests aren't drawn). */
+  settled?: boolean;
+};
 export const canDo =
   (a: QuestAbility) =>
   (id: DailyQuestId): boolean =>
-    id === 'stars' ? a.planning : id === 'thisorthat' ? a.enoughSets : true;
+    id === 'stars'
+      ? a.planning
+      : id === 'thisorthat'
+        ? a.enoughSets
+        : id === 'chat'
+          ? !!a.crew
+          : id === 'door'
+            ? !!a.door
+            : id === 'crowd'
+              ? !!a.crowd
+              : id === 'sprout'
+                ? !!a.sprout
+                : true;
+
+/** Videos from the crowd on screen since a moment (their clip ids start with "community:"). */
+export const crowdSince = (seen: Readonly<Record<string, number>>, since: number) =>
+  Object.entries(seen).filter(([id, t]) => t >= since && id.startsWith('community:')).length;
 
 /** The day's picks: as fixed in the book, else drawn now. */
 export function picksFor(book: Pick<QuestBook, 'day' | 'picks'>, can: (id: DailyQuestId) => boolean): DailySpec[] {
@@ -203,6 +246,11 @@ export function dailyCurrent(spec: DailySpec, snap: QuestSnapshot, base: Counter
     bubble: () => events.bubble ?? 0,
     map: () => events.map ?? 0,
     share: () => events.share ?? 0,
+    chat: () => events.chat ?? 0,
+    door: () => events.door ?? 0,
+    // Each crowd video once: in Discover or on its own page, it's marked seen.
+    crowd: () => crowdSince(snap.seen, since),
+    sprout: () => events.sprout ?? 0,
   }[spec.id]();
   return Math.min(spec.target, n);
 }

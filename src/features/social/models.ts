@@ -1,3 +1,4 @@
+import type { Socials } from './socials';
 import type { SoundTag } from '../../data/models';
 import type { PastEvent } from '../memories/past';
 
@@ -29,6 +30,8 @@ export type Profile = {
   /** Your switches, so the published lists can follow your plans without re-saving. */
   showFestivals: boolean;
   showSound: boolean;
+  /** Your Instagram, Snapchat and TikTok usernames, if you added them. */
+  socials?: Socials;
   createdAt: string;
   updatedAt: string;
 };
@@ -40,6 +43,8 @@ export type ProfileInput = {
   bio: string;
   showFestivals: boolean;
   showSound: boolean;
+  /** Left out: your current ones stay as they are. */
+  socials?: Socials;
 };
 
 /** A memory you shared, as others see it. Where you filmed it is never included. */
@@ -84,6 +89,22 @@ export type Activity =
  * invite); only members see each other's picks.
  */
 /** An invitation to join a crew, sent in the app to someone you know there. They join from the crew page; joining or saying no removes it. */
+/** A sprout someone gave (`sprouts/{id}`; the id is made on the giver's phone). */
+export type Sprout = {
+  id: string;
+  kind: string;
+  /** Who gave it. */
+  from: string;
+  /** Who picked it up, once someone has. */
+  to?: string;
+  note?: string;
+  festivalId?: string;
+  /** When it reached Afterglow (ISO). */
+  createdAt: string;
+  claimedAt?: string;
+};
+export type SproutInput = { id: string; kind: string; note?: string; festivalId?: string };
+
 export type CrewInvite = {
   /** `crewId_to` */
   id: string;

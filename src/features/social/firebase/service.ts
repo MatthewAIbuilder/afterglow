@@ -46,7 +46,7 @@ import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
-import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -114,6 +114,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     }
   };
   const now = () => new Date().toISOString();
+  /** A Firestore time (or ISO string) as ISO; undefined when missing. */
+  const readTime = (v: unknown): string | undefined => {
+    if (typeof v === 'string') return v;
+    const t = v as { toDate?: () => Date } | null;
+    return t?.toDate ? t.toDate().toISOString() : undefined;
+  };
   /** A write that hasn't got through by `ms` counts as no signal (Firestore keeps trying it in the background). */
   const withTimeout = <T,>(p: Promise<T>, ms: number) =>
     new Promise<T>((resolve, reject) => {
@@ -169,6 +175,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     const picks = await getDocs(collection(db, 'crews', id, 'picks')).catch(() => null);
     for (const d of picks?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await removeChat(id).catch(() => {});
+    const reads = await getDocs(collection(db, 'crews', id, 'reads')).catch(() => null);
+    for (const d of reads?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'invite')).catch(() => {});
     const joins = await getDocs(collection(db, 'crews', id, 'joins')).catch(() => null);
@@ -250,6 +258,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await batch.commit();
         // Once the profile is gone (the rules allow it only then), and never in the way of deleting the account.
         await deleteDoc(doc(db, 'usage', user.uid)).catch(() => {});
+        // Sprouts you gave and picked up go too (the rules allow it once the profile is gone).
+        for (const field of ['from', 'to'] as const) {
+          const snap = await getDocs(query(collection(db, 'sprouts'), where(field, '==', user.uid), limit(500))).catch(() => null);
+          for (const d of snap?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+        }
         await deleteUser(user);
       }),
 
@@ -283,6 +296,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           if (current && current.handle !== input.handle) tx.delete(doc(db, 'handles', current.handle));
           if (!owner.exists()) tx.set(handleRef, { uid: user.uid });
           const at = now();
+          // Left out of the input: keep the ones you have.
+          const socials = input.socials ?? current?.socials;
           const next: Profile = {
             uid: user.uid,
             handle: input.handle,
@@ -294,11 +309,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             sounds: input.showSound ? published.sounds.slice(0, 3) : [],
             showFestivals: input.showFestivals,
             showSound: input.showSound,
+            ...(socials && Object.keys(socials).length ? { socials } : {}),
             createdAt: current?.createdAt || at,
             updatedAt: at,
           };
-          const { uid: _uid, avatarUrl, coverUrl, ...fields } = next;
-          tx.set(profileRef, { ...fields, nameLower: next.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
+          tx.set(profileRef, profileFields(next));
           return next;
         });
       }),
@@ -313,8 +328,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
         if (!current) throw new SocialError('no-profile');
         const updatedAt = now();
-        const { uid: _uid, avatarUrl: _old, coverUrl, ...fields } = current;
-        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
+        await setDoc(profileRef, profileFields({ ...current, avatarUrl, updatedAt }));
         return { ...current, avatarUrl, updatedAt };
       }),
     setCover: (uri) =>
@@ -328,8 +342,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
         if (!current) throw new SocialError('no-profile');
         const updatedAt = now();
-        const { uid: _uid, coverUrl: _old, avatarUrl, ...fields } = current;
-        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
+        await setDoc(profileRef, profileFields({ ...current, coverUrl, updatedAt }));
         return { ...current, coverUrl, updatedAt };
       }),
     searchProfiles: (raw) =>
@@ -459,6 +472,15 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           .filter((m): m is NonNullable<typeof m> => !!m)
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
           .slice(0, max);
+      }),
+    artistMemories: (artistId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'memories'), where('artistId', '==', artistId), orderBy('createdAt', 'desc'), limit(max))).catch((e: unknown) => {
+          // A database without the index yet just has none to show; anything else (no signal) is an error, so it's tried again.
+          if ((e as { code?: string })?.code === 'failed-precondition') return undefined;
+          throw e;
+        });
+        return (snap?.docs ?? []).map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
       }),
     recentMemories: (max) =>
       guard(async () => {
@@ -955,6 +977,80 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const snap = await getDocs(query(collection(fb().db, 'crewInvites'), where('crewId', '==', crewId), where('from', '==', user.uid), limit(100)));
         return snap.docs.map((d) => crewInviteFromDoc(d.id, d.data())?.to).filter((u): u is string => !!u);
       }),
+    giveSprout: (input) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'sprouts', input.id);
+        try {
+          await withTimeout(
+            setDoc(ref, {
+              from: user.uid,
+              kind: input.kind,
+              ...(input.note ? { note: input.note.slice(0, 60) } : {}),
+              ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+              createdAt: serverTimestamp(),
+            }),
+            CHAT_SEND_TIMEOUT_MS,
+          );
+        } catch (e) {
+          // Sent before and the answer was lost: writing again is refused, and it's already there.
+          if (e instanceof SocialError && e.kind === 'network') throw e;
+          const there = sproutFromDoc(input.id, (await getDoc(ref)).data());
+          if (there?.from === user.uid) return;
+          throw e;
+        }
+      }),
+    claimSprout: (id) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'sprouts', id);
+        const read = async () => sproutFromDoc(id, (await getDoc(ref)).data());
+        const s = await read();
+        if (!s) throw new SocialError('not-found');
+        if (s.to === user.uid || s.from === user.uid) return s;
+        if (s.to) throw new SocialError('sprout-taken');
+        if (Date.now() - Date.parse(s.createdAt) > 30 * 86_400_000) throw new SocialError('sprout-gone');
+        try {
+          await updateDoc(ref, { to: user.uid, claimedAt: serverTimestamp() });
+        } catch (e) {
+          const again = await read().catch(() => undefined);
+          if (again === null) throw new SocialError('not-found');
+          if (again?.to === user.uid) return again;
+          if (again?.to) throw new SocialError('sprout-taken');
+          // Still there and nobody has it, but refused: the giver blocked you.
+          if (again && asSocialError(e).kind !== 'network') throw new SocialError('sprout-gone');
+          throw e;
+        }
+        return (await read()) ?? { ...s, to: user.uid, claimedAt: now() };
+      }),
+    sprout: (id) => guard(async () => sproutFromDoc(id, (await getDoc(doc(fb().db, 'sprouts', id))).data())),
+    sproutsGiven: (max) =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('from', '==', user.uid), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    sproutsReceived: (max) =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('to', '==', user.uid), orderBy('claimedAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    takeBackSprout: (id) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'sprouts', id);
+        try {
+          // Writes from this phone go in order, so a give still waiting for signal lands before this.
+          await deleteDoc(ref);
+        } catch (e) {
+          const s = sproutFromDoc(id, (await getDoc(ref)).data());
+          if (!s) return;
+          if (s.to) throw new SocialError('sprout-taken');
+          if (s.from !== user.uid) throw new SocialError('not-found');
+          throw e;
+        }
+      }),
     declineCrewInvite: (crewId) =>
       guard(async () => {
         const user = me();
@@ -976,6 +1072,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // Your updates, messages and picks go with you.
         await removeUpdates(id, user.uid).catch(() => {});
         await removeChat(id, user.uid).catch(() => {});
+        await deleteDoc(doc(db, 'crews', id, 'reads', user.uid)).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', user.uid));
         await updateDoc(crewRef, { members, owner: c.owner === user.uid ? members[0] : c.owner });
       }),
@@ -1005,9 +1102,13 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!c) throw new SocialError('not-found');
         await removeUpdates(id, uid).catch(() => {});
         await removeChat(id, uid).catch(() => {});
+        await deleteDoc(doc(db, 'crews', id, 'reads', uid)).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', uid));
         const members = c.members.filter((m) => m !== uid);
         await updateDoc(crewRef, { members });
+        // The invite link they came in with stops working, so they can't come straight back.
+        await setDoc(doc(db, 'crews', id, 'meta', 'invite'), { code: doc(collection(db, 'crews')).id, by: me().uid, at: serverTimestamp() }).catch(() => {});
+        await deleteDoc(doc(db, 'crews', id, 'joins', uid)).catch(() => {});
         return { ...c, members };
       }),
     setCrewPicks: (id, artists) =>
@@ -1111,6 +1212,15 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const there = await Promise.all(ready.map(async (i) => ((await getDoc(doc(db, 'crews', crewId, 'chat', i.id))).exists() ? i.id : null)));
           const done = there.filter((x): x is string => !!x);
           if (!done.length) throw e;
+          // The rest were refused only because they came with those: send them on their own.
+          const rest = ready.filter((i) => !done.includes(i.id));
+          if (rest.length) {
+            const again = writeBatch(db);
+            for (const i of rest) again.set(doc(db, 'crews', crewId, 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
+            await withTimeout(again.commit(), CHAT_SEND_TIMEOUT_MS)
+              .then(() => done.push(...rest.map((i) => i.id)))
+              .catch(() => {});
+          }
           return done;
         }
       }),
@@ -1119,6 +1229,26 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       return onSnapshot(
         query(collection(fb().db, 'crews', crewId, 'chat'), orderBy('sentAt', 'desc'), limit(max)),
         (snap) => listener(snap.docs.map((d) => crewMessageFromDoc(crewId, d.id, d.data({ serverTimestamps: 'estimate' }))).filter((m): m is CrewMessage => !!m)),
+        (e) => onError?.(asSocialError(e)),
+      );
+    },
+    markCrewChatRead: (crewId) =>
+      guard(async () => {
+        const user = me();
+        await withTimeout(setDoc(doc(fb().db, 'crews', crewId, 'reads', user.uid), { at: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
+      }),
+    watchCrewReads(crewId, listener, onError) {
+      if (!firebaseConfigured(config)) return () => {};
+      return onSnapshot(
+        collection(fb().db, 'crews', crewId, 'reads'),
+        (snap) => {
+          const reads: Record<string, string> = {};
+          for (const d of snap.docs) {
+            const at = readTime(d.data({ serverTimestamps: 'estimate' }).at);
+            if (at) reads[d.id] = at;
+          }
+          listener(reads);
+        },
         (e) => onError?.(asSocialError(e)),
       );
     },

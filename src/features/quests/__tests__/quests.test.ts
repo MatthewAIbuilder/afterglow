@@ -90,6 +90,18 @@ describe('side quests', () => {
     expect(questProgress({ ...base, memories: [m('1', at(4, 22))] }).everynight).toEqual({ current: 1 });
   });
 
+  it('sprouts: a swap on one night, and five given at one festival', () => {
+    const p = questProgress({ ...base, sprouts: { gave: [{ at: at(4, 21), picked: true }], got: [at(5, 1)] } });
+    expect(p.sproutswap.done).toEqual({ at: at(5, 1), festivalId: 'cc' });
+    // Given on Friday, got on Saturday night: not a swap.
+    expect(questProgress({ ...base, sprouts: { gave: [{ at: at(4, 21), picked: true }], got: [at(5, 21)] } }).sproutswap).toEqual({ current: 1 });
+    // Away from the festival nothing counts.
+    expect(questProgress({ ...base, sprouts: { gave: [{ at: at(1, 21), picked: true }], got: [at(1, 22)] } }).sproutswap).toEqual({ current: 0 });
+    const five = Array.from({ length: 5 }, (_, k) => ({ at: at(4, 20 + k % 4, k), picked: true }));
+    expect(questProgress({ ...base, sprouts: { gave: five, got: [] } }).sproutlove.done?.festivalId).toBe('cc');
+    expect(questProgress({ ...base, sprouts: { gave: five.map((g, k) => ({ ...g, picked: k < 3 })), got: [] } }).sproutlove).toEqual({ current: 3 });
+  });
+
   it('keeps done quests in the log, lists them as badges, and says what is still open', () => {
     const p = questProgress({ ...base, friends: [{ uid: 'maya', at: at(4, 22, 30) }] });
     const fresh = newlyDone(p, {});

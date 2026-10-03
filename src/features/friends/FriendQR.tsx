@@ -10,7 +10,25 @@ import { qrMatrix } from './qrMatrix';
  * colours, soft rounded corner squares and your face in the middle. Dark on
  * a light card so any phone's camera reads it, even in a dark field.
  */
-export function FriendQR({ value, size, theme, name, avatarUrl }: { value: string; size: number; theme: CodeTheme; name?: string; avatarUrl?: string }) {
+export function FriendQR({
+  value,
+  size,
+  theme,
+  name,
+  avatarUrl,
+  dots: ownDots,
+  centre,
+}: {
+  value: string;
+  size: number;
+  theme: CodeTheme;
+  name?: string;
+  avatarUrl?: string;
+  /** Dot colours instead of the theme's (sprouts are green). */
+  dots?: readonly [string, string];
+  /** Something else in the middle instead of your face. */
+  centre?: (size: number) => React.ReactNode;
+}) {
   const grid = useMemo(() => qrMatrix(value), [value]);
   const n = grid.size;
   // A hole for your face: a fifth of the code across, an odd number of squares so it sits centred.
@@ -21,7 +39,7 @@ export function FriendQR({ value, size, theme, name, avatarUrl }: { value: strin
       for (let x = 0; x < n; x++) if (grid.dark(x, y) && !isFinder(n, x, y) && !inCentre(n, x, y, hole + 1)) out.push([x, y]);
     return out;
   }, [grid, n, hole]);
-  const [from, to] = CODE_THEMES[theme].dots;
+  const [from, to] = ownDots ?? CODE_THEMES[theme].dots;
   // A quiet margin of two squares all round, as scanners like.
   const pad = 2;
   const face = (hole / (n + pad * 2)) * size;
@@ -46,7 +64,7 @@ export function FriendQR({ value, size, theme, name, avatarUrl }: { value: strin
         ))}
       </Svg>
       <View style={[styles.face, { width: face, height: face, borderRadius: face / 2, left: (size - face) / 2, top: (size - face) / 2 }]}>
-        <PersonAvatar name={name} url={avatarUrl} size={face - 6} />
+        {centre ? centre(face - 6) : <PersonAvatar name={name} url={avatarUrl} size={face - 6} />}
       </View>
     </View>
   );

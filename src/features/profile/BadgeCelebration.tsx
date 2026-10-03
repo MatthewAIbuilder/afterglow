@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -19,13 +19,20 @@ import Svg, { Defs, G, Path, RadialGradient, Stop } from 'react-native-svg';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
+import { Sprout } from '../sprouts/Sprout';
+import { kindOf, type SproutKind } from '../sprouts/sprouts';
 import { pinAbout, pinLook, throwbackAbout, throwbackLook } from '../badges/badges';
 import { type PastEvent, pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
 import type { Milestone } from './milestones';
 import { Medal, medalColors } from './Milestones';
 
-export type Unlock = { kind: 'pin'; festival: Festival } | { kind: 'throwback'; past: PastEvent } | { kind: 'milestone'; milestone: Milestone };
+export type Unlock =
+  | { kind: 'pin'; festival: Festival }
+  | { kind: 'throwback'; past: PastEvent }
+  | { kind: 'milestone'; milestone: Milestone }
+  /** A sprout in your garden bloomed into a kind. */
+  | { kind: 'sprout'; sprout: SproutKind; foundAt?: string };
 
 const RAYS = 18;
 const SPARKS = 26;
@@ -38,23 +45,57 @@ const BADGE = 190;
  * springs in with a little wobble before settling into a glow. Then what it
  * is and "Add to collection". With reduced motion: the badge and words, still.
  */
-export function BadgeCelebration({ unlock, onDone }: { unlock: Unlock | undefined; onDone: () => void }) {
+/**
+ * `id` names what's being celebrated, so one straight after another gets its own moment (and a quick
+ * double tap on the first never dismisses the next before it's seen).
+ */
+export function BadgeCelebration({ unlock, onDone, id }: { unlock: Unlock | undefined; onDone: () => void; id?: string }) {
   return (
     <Modal visible={!!unlock} transparent animationType="fade" statusBarTranslucent onRequestClose={onDone}>
-      {unlock ? <Burst unlock={unlock} onDone={onDone} /> : null}
+      {unlock ? <Burst key={id ?? unlockKey(unlock)} unlock={unlock} onDone={onDone} /> : null}
     </Modal>
   );
 }
 
+/** What an unlock is, as a key. */
+const unlockKey = (u: Unlock) =>
+  u.kind === 'pin' ? `pin:${u.festival.id}` : u.kind === 'throwback' ? `past:${pastLabel(u.past)}` : u.kind === 'milestone' ? `m:${u.milestone.id}` : `sprout:${u.sprout}:${u.foundAt ?? ''}`;
+
+/** A moment is ready to dismiss after this long (a double tap meant for the one before is ignored). */
+const ARM_MS = 400;
+
 function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setArmed(true), ARM_MS);
+    return () => clearTimeout(t);
+  }, []);
   const reduce = useReducedMotion();
   const { width } = useWindowDimensions();
   const look = unlock.kind === 'pin' ? pinLook(unlock.festival) : unlock.kind === 'throwback' ? throwbackLook(unlock.past) : undefined;
   const [c1, c2] =
-    unlock.kind === 'throwback' ? ['#F2B8A6', look?.palette.accent ?? '#FFB86B'] : look ? [look.palette.accent, look.palette.ribbon] : unlock.kind === 'milestone' ? medalColors(unlock.milestone.id) : ['#A97CFF', '#FFB86B'];
+    unlock.kind === 'throwback'
+      ? ['#F2B8A6', look?.palette.accent ?? '#FFB86B']
+      : look
+        ? [look.palette.accent, look.palette.ribbon]
+        : unlock.kind === 'milestone'
+          ? medalColors(unlock.milestone.id)
+          : unlock.kind === 'sprout'
+            ? [kindOf(unlock.sprout).body[0], kindOf(unlock.sprout).accent]
+            : ['#A97CFF', '#FFB86B'];
   const colors = [c1, c2, '#FFE38A', '#FFFFFF'];
-  const title = unlock.kind === 'pin' ? unlock.festival.name : unlock.kind === 'throwback' ? pastLabel(unlock.past) : unlock.milestone.title;
-  const about = unlock.kind === 'pin' ? pinAbout(unlock.festival, true) : unlock.kind === 'throwback' ? throwbackAbout(unlock.past) : unlock.milestone.about;
+  const title =
+    unlock.kind === 'pin' ? unlock.festival.name : unlock.kind === 'throwback' ? pastLabel(unlock.past) : unlock.kind === 'sprout' ? kindOf(unlock.sprout).name : unlock.milestone.title;
+  const about =
+    unlock.kind === 'pin'
+      ? pinAbout(unlock.festival, true)
+      : unlock.kind === 'throwback'
+        ? throwbackAbout(unlock.past)
+        : unlock.kind === 'sprout'
+          ? unlock.foundAt
+            ? `${kindOf(unlock.sprout).about} Found at ${unlock.foundAt}: every festival night brings a new one.`
+            : `${kindOf(unlock.sprout).about} You can give ${kindOf(unlock.sprout).name}s now.`
+          : unlock.milestone.about;
 
   const pop = useSharedValue(reduce ? 1 : 0);
   const wobble = useSharedValue(0);
@@ -110,18 +151,33 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           ? null
           : Array.from({ length: SPARKS }, (_, i) => <Spark key={i} index={i} progress={sparks} color={colors[i % colors.length]} reach={field / 2 - 10} />)}
         <Animated.View style={badgeStyle}>
-          {look ? <EnamelPin look={look} size={BADGE} /> : unlock.kind === 'milestone' ? <Medal milestone={unlock.milestone} size={BADGE * 0.8} /> : null}
+          {look ? (
+            <EnamelPin look={look} size={BADGE} />
+          ) : unlock.kind === 'milestone' ? (
+            <Medal milestone={unlock.milestone} size={BADGE * 0.8} />
+          ) : unlock.kind === 'sprout' ? (
+            <Sprout kind={unlock.sprout} stage={3} size={BADGE} />
+          ) : null}
         </Animated.View>
       </View>
 
       <Animated.View entering={reduce ? undefined : FadeInDown.delay(450).duration(420)} style={styles.words}>
-        <Text style={[styles.kicker, { color: '#FFE38A' }]}>{unlock.kind === 'milestone' && unlock.milestone.quest ? 'Side quest complete' : unlock.kind === 'throwback' ? 'Throwback unlocked' : 'Badge unlocked'}</Text>
+        <Text style={[styles.kicker, { color: '#FFE38A' }]}>{unlock.kind === 'milestone' && unlock.milestone.quest
+            ? 'Side quest complete'
+            : unlock.kind === 'throwback'
+              ? 'Throwback unlocked'
+              : unlock.kind === 'sprout'
+                ? unlock.foundAt
+                  ? 'A wild sprout appeared'
+                  : 'Your sprout bloomed'
+                : 'Badge unlocked'}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>
         <Text style={styles.about}>{about}</Text>
         <Pressable
           onPress={() => {
+            if (!armed) return;
             haptic.select();
             onDone();
           }}
@@ -129,7 +185,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           accessibilityLabel={`Add ${title} to your collection`}
           style={({ pressed }) => [styles.button, { backgroundColor: c1 }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
         >
-          <Text style={styles.buttonText}>Add to collection</Text>
+          <Text style={styles.buttonText}>{unlock.kind === 'sprout' ? 'Lovely' : 'Add to collection'}</Text>
         </Pressable>
       </Animated.View>
     </View>

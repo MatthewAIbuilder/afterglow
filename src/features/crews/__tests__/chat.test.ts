@@ -9,6 +9,8 @@ import {
   heldFor,
   justArrivedLate,
   lateNote,
+  seenBy,
+  seenLine,
   waitingLine,
   chatLines,
   chatPreview,
@@ -58,13 +60,19 @@ describe('crew chat', () => {
   it('the chat reads in the order things were written, yours waiting included, never blocked people', () => {
     const sent = [msg('m2', 'sam', T(22, 10)), msg('m1', 'maya', T(22), T(22, 30)), msg('m3', 'bad', T(22, 1))];
     const lines = chatLines(sent, [out('m4', T(22, 5)), out('m2', T(22, 10))], 'c1', 'me', ['bad'], T(22, 40));
+    // m2 shows in the phone's copy of the chat, but Afterglow hasn't confirmed it yet: still waiting.
     expect(lines.map((l) => [l.id, l.status])).toEqual([
       ['m1', 'sent'],
       ['m4', 'waiting'],
-      ['m2', 'sent'],
+      ['m2', 'waiting'],
     ]);
     expect(arrivedLate(lines[0])).toBe(true);
-    expect(arrivedLate(lines[2])).toBe(false);
+    expect(chatLines(sent, [], 'c1', 'me', [], T(22, 40)).find((l) => l.id === 'm2')?.status).toBe('sent');
+  });
+
+  it('another account’s waiting messages on this phone are never shown as yours', () => {
+    const lines = chatLines([], [{ ...out('m9', T(22, 5)), uid: 'someone-else' }, { ...out('m8', T(22, 6)), uid: 'me' }], 'c1', 'me', [], T(22, 40));
+    expect(lines.map((l) => l.id)).toEqual(['m8']);
   });
 
   it('counts new messages from others since you last read it', () => {
@@ -109,5 +117,18 @@ describe('crew chat', () => {
     const sent = [late, msg('m2', 'sam', T(22, 19)), msg('m3', 'me', T(21), T(22, 20)), msg('m4', 'maya', T(20), T(21))];
     expect(justArrivedLate(sent, 'me', [], T(22, 25)).map((m) => m.id)).toEqual(['m1']);
     expect(justArrivedLate(sent, 'me', ['maya'], T(22, 25))).toEqual([]);
+  });
+
+  it('says who has seen your latest message, by the server’s clock', () => {
+    const m = msg('m1', 'me', T(22), T(22, 1));
+    const reads = { maya: iso(T(22, 5)), sam: iso(T(21)), me: iso(T(23)) };
+    expect(seenBy(m, reads, ['me', 'maya', 'sam', 'jo'], 'me')).toEqual(['maya']);
+    const name = (u: string) => ({ maya: 'Maya', sam: 'Sam', jo: 'Jo' })[u] ?? u;
+    expect(seenLine([], 3, name)).toBe('Delivered');
+    expect(seenLine(['maya'], 3, name)).toBe('Seen by Maya');
+    expect(seenLine(['maya', 'sam'], 3, name)).toBe('Seen by Maya and Sam');
+    expect(seenLine(['maya', 'sam', 'jo'], 3, name)).toBe('Seen by everyone');
+    expect(seenLine(['maya', 'sam', 'jo'], 5, name)).toBe('Seen by Maya, Sam and 1 more');
+    expect(seenLine(['maya'], 1, name)).toBe('Seen by Maya');
   });
 });

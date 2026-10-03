@@ -8,6 +8,7 @@
  * site's page with that festival's or artist's own title and description,
  * so shared links preview properly. Firebase Hosting serves them for
  * /festival/<id> and /artist/<id> (cleanUrls); the app inside is the same.
+ * Also dist/sprout.html, the one page every sprout link gets.
  * Uses the catalogue the site is publishing (the built-in data plus
  * dist/catalogue.json).
  */
@@ -17,7 +18,7 @@ import { WEB_URL } from '../src/config/app';
 import { BUILT_IN } from '../src/data/bundled';
 import { parseCatalogFile } from '../src/data/file';
 import { buildCatalog } from '../src/data/merge';
-import { artistPreview, festivalPreview, withPreview } from '../src/features/share/previews';
+import { artistPreview, festivalPreview, sproutPreview, withPreview } from '../src/features/share/previews';
 
 const dist = resolve(process.argv[2] ?? 'dist');
 const html = readFileSync(join(dist, 'index.html'), 'utf8');
@@ -30,4 +31,6 @@ const previews = [
 ];
 for (const dir of ['festival', 'artist']) mkdirSync(join(dist, dir), { recursive: true });
 for (const p of previews) writeFileSync(join(dist, `${p.path}.html`), withPreview(html, p));
+// Every sprout link shares one page (firebase.json sends /sprout/** to it).
+writeFileSync(join(dist, 'sprout.html'), withPreview(html, sproutPreview(WEB_URL)));
 console.log(`Link previews: ${catalog.festivals.length} festivals and ${catalog.artists.length} artists.`);

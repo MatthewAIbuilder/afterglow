@@ -7,7 +7,7 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
 import { ChevronIcon } from '../../components/TabIcons';
-import { CHAT_RULES, QUICK_MESSAGES, arrivedLate, arrivedLateLine, chatRows, deliveryLine, justArrivedLate, lateNote, waitingLine, type ChatLine } from '../../features/crews/chat';
+import { CHAT_RULES, QUICK_MESSAGES, arrivedLate, arrivedLateLine, chatRows, deliveryLine, justArrivedLate, lateNote, seenBy, seenLine, waitingLine, type ChatLine } from '../../features/crews/chat';
 import { firstName } from '../../features/crews/together';
 import { clock } from '../../features/crews/updates';
 import { useCrewPage } from '../../features/crews/useCrewPage';
@@ -19,6 +19,8 @@ import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
 import { useCrewChat } from '../../state/crewChat';
+import { searchSecret } from '../../features/secrets/secrets';
+import { revealSecret } from '../../state/secrets';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -49,6 +51,9 @@ export default function CrewChatScreen() {
   const festival = crew ? catalog.festival(crew.festivalId) : undefined;
   const lines = chat.linesFor(id);
   const rows = useMemo(() => chatRows(lines, me, now), [lines, me, now]);
+  // "Seen by" goes under your latest message that reached the crew.
+  const lastMine = [...lines].reverse().find((l) => l.uid === me && l.status === 'sent');
+  const readsHere = chat.readsFor(id);
   const nameOf = (uid: string) => (uid === me ? 'You' : profiles[uid] ? firstName(profiles[uid].displayName) : 'Someone');
 
   // Reading the chat: now, and whenever something new arrives while it's open.
@@ -76,6 +81,9 @@ export default function CrewChatScreen() {
     if (!chat.send(id, words)) return;
     haptic.tap();
     setText('');
+    // A little secret: PLUR sets off the heart rain here too.
+    const secret = searchSecret(words);
+    if (secret) revealSecret(secret);
   };
 
   const more = (line: ChatLine) => {
@@ -161,7 +169,11 @@ export default function CrewChatScreen() {
                 >
                   <Text style={styles.text}>{line.text}</Text>
                 </Pressable>
-                {late ? (
+                {mine && lastMine?.id === line.id && crew ? (
+                  <Text style={styles.meta} accessibilityLiveRegion="polite">
+                    {clock(line.at)} · {seenLine(seenBy(line, readsHere, crew.members, me), crew.members.length - 1, nameOf)}
+                  </Text>
+                ) : late ? (
                   <Text style={[styles.meta, { color: AMBER }]} accessibilityLabel={`Held up by signal. ${lateNote(line)}`}>
                     {lateNote(line)}
                   </Text>

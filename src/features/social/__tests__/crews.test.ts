@@ -80,8 +80,12 @@ describe('festival crews (in-memory backend, same rules as Firestore)', () => {
     await expect(f.service.removeFromCrew(crew.id, sam)).rejects.toThrow();
     await as(f, 'maya');
     expect((await f.service.renameCrew(crew.id, 'Weekend 2')).name).toBe('Weekend 2');
+    const oldCode = f.codeOf(crew.id);
     expect((await f.service.removeFromCrew(crew.id, sam)).members).toHaveLength(1);
     expect(f.picks.has(`${crew.id}/${sam}`)).toBe(false);
+    // Removed, the old link no longer lets them straight back in.
+    await as(f, 'sam');
+    await expect(f.service.joinCrew(crew.id, oldCode)).rejects.toThrow();
   });
 
   it('leaving takes your picks; an owner hands it on; the last one out ends it; deleting your account leaves', async () => {

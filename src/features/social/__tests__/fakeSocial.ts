@@ -1,5 +1,5 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
@@ -24,6 +24,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const crews = new Map<string, Crew>();
   /** Crew invites as `crewId_to`. */
   const crewInvites = new Map<string, CrewInvite>();
+  const sprouts = new Map<string, Sprout>();
   /** Picks as `crewId/uid`. */
   const picks = new Map<string, CrewPicks>();
   const comments = new Map<string, Comment>();
@@ -50,13 +51,24 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const crewCodes = new Map<string, string>();
   /** Who agreed to the chat rules when they joined or started a crew, as `crewId/uid`. */
   const agreed = new Set<string>();
+  /** When each member last read each crew's chat, as `crewId/uid` -> ISO. */
+  const reads = new Map<string, string>();
+  const readWatchers = new Set<{ crewId: string; listener: (r: Record<string, string>) => void }>();
+  const readsOf = (crewId: string) => Object.fromEntries([...reads].filter(([k]) => k.startsWith(`${crewId}/`)).map(([k, v]) => [k.slice(crewId.length + 1), v]));
+  const readsChanged = (crewId: string) => {
+    for (const w of readWatchers) if (w.crewId === crewId) w.listener(readsOf(crewId));
+  };
   const chatWatchers = new Set<{ crewId: string; max: number; listener: (m: CrewMessage[]) => void }>();
   const chatOf = (crewId: string, max: number) =>
     [...chat.values()].filter((m) => m.crewId === crewId).sort((a, b) => b.sentAt.localeCompare(a.sentAt) || b.id.localeCompare(a.id)).slice(0, max);
   const chatChanged = (crewId: string) => {
     for (const w of chatWatchers) if (w.crewId === crewId) w.listener(chatOf(crewId, w.max));
   };
+  const dropReads = (id: string, uid?: string) => {
+    for (const k of [...reads.keys()]) if (k.startsWith(`${id}/`) && (!uid || k === `${id}/${uid}`)) reads.delete(k);
+  };
   const dropChat = (id: string, uid?: string) => {
+    dropReads(id, uid);
     for (const [k, m] of chat) if (k.startsWith(`${id}/`) && (!uid || m.uid === uid)) chat.delete(k);
     chatChanged(id);
   };
@@ -166,6 +178,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       for (const [k, c] of comments) if (c.uid === u.uid || c.owner === u.uid) comments.delete(k);
       for (const id of [...crews.keys()]) leave(id, u.uid);
       for (const [k, i] of crewInvites) if (i.from === u.uid || i.to === u.uid) crewInvites.delete(k);
+      for (const [k, sp] of sprouts) if (sp.from === u.uid || sp.to === u.uid) sprouts.delete(k);
       accounts.delete(u.email ?? '');
       current = null;
       emit();
@@ -204,6 +217,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         sounds: input.showSound ? published.sounds : [],
         showFestivals: input.showFestivals,
         showSound: input.showSound,
+        ...((input.socials ?? before?.socials) && Object.keys(input.socials ?? before?.socials ?? {}).length ? { socials: input.socials ?? before?.socials } : {}),
         createdAt: before?.createdAt ?? at,
         updatedAt: at,
       };
@@ -280,6 +294,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async festivalMemories(festivalId, max) {
       return [...memories.values()].filter((m) => m.festivalId === festivalId || m.past?.seriesId === festivalId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async artistMemories(artistId, max) {
+      return [...memories.values()].filter((m) => m.artistId === artistId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
     async recentMemories(max) {
       return [...memories.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
@@ -685,6 +702,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       dropChat(id, uid);
       const next = { ...c, members: c.members.filter((m) => m !== uid) };
       crews.set(id, next);
+      // A new invite link: the old one stops working.
+      if (crewCodes.has(id)) crewCodes.set(id, `code${id.replace(/[^A-Za-z0-9]/g, '')}${++n}renewed1`);
+      agreed.delete(`${id}/${uid}`);
       return next;
     },
     async setCrewPicks(id, artists) {
@@ -768,6 +788,26 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         chatWatchers.delete(w);
       };
     },
+    async markCrewChatRead(crewId) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      reads.set(`${crewId}/${me().uid}`, now());
+      readsChanged(crewId);
+    },
+    watchCrewReads(crewId, listener, onError) {
+      try {
+        memberOf(crewId);
+      } catch (e) {
+        onError?.(e as SocialError);
+        return () => {};
+      }
+      const w = { crewId, listener };
+      readWatchers.add(w);
+      listener(readsOf(crewId));
+      return () => {
+        readWatchers.delete(w);
+      };
+    },
     async deleteCrewMessage(crewId, id) {
       const m = chat.get(`${crewId}/${id}`);
       if (!m) return;
@@ -804,6 +844,48 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (u.uid !== me().uid) throw new SocialError('not-signed-in');
       updates.delete(`${crewId}/${id}`);
     },
+    async giveSprout(input) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      if (!profiles.has(u.uid)) throw new SocialError('no-profile');
+      const there = sprouts.get(input.id);
+      if (there) {
+        if (there.from === u.uid) return;
+        throw new SocialError('unknown');
+      }
+      sprouts.set(input.id, { id: input.id, kind: input.kind, from: u.uid, createdAt: now(), ...(input.note ? { note: input.note } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}) });
+    },
+    async claimSprout(id) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      const s = sprouts.get(id);
+      if (!s) throw new SocialError('not-found');
+      if (s.to === u.uid || s.from === u.uid) return s;
+      if (s.to) throw new SocialError('sprout-taken');
+      if (Date.parse(now()) - Date.parse(s.createdAt) > 30 * 86_400_000 || (blocks.get(s.from) ?? []).includes(u.uid)) throw new SocialError('sprout-gone');
+      const claimed = { ...s, to: u.uid, claimedAt: now() };
+      sprouts.set(id, claimed);
+      return claimed;
+    },
+    async sprout(id) {
+      if (network.down) throw new SocialError('network');
+      return sprouts.get(id) ?? null;
+    },
+    async sproutsGiven(max) {
+      const u = me();
+      return [...sprouts.values()].filter((s) => s.from === u.uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async sproutsReceived(max) {
+      const u = me();
+      return [...sprouts.values()].filter((s) => s.to === u.uid).sort((a, b) => (b.claimedAt ?? '').localeCompare(a.claimedAt ?? '')).slice(0, max);
+    },
+    async takeBackSprout(id) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      const s = sprouts.get(id);
+      if (s?.to) throw new SocialError('sprout-taken');
+      if (s && s.from === u.uid) sprouts.delete(id);
+    },
     async report(target, reason, note) {
       reports.push({ id: `r${++n}`, by: me().uid, target, reason, note, createdAt: `${now()}#${String(n).padStart(6, '0')}`, status: 'open' });
     },
@@ -821,5 +903,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     if (!crewCodes.has(crewId)) crewCodes.set(crewId, `code${crewId.replace(/[^A-Za-z0-9]/g, '')}${++n}abcdefgh`);
     return crewCodes.get(crewId)!;
   };
-  return { service, codeOf, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, chat, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
+  /** Someone reads a crew's chat now (for tests). */
+  const readAs = (crewId: string, uid: string) => {
+    reads.set(`${crewId}/${uid}`, now());
+    readsChanged(crewId);
+  };
+  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
 }

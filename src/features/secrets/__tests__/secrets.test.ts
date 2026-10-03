@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { SECRETS, cleanFound, isSunriseHour, searchSecret, secretsLine, shakeStep, tapStep } from '../secrets';
+import { SECRETS, cleanFound, isNightOwlHour, isSunriseHour, triedAll, searchSecret, secretsLine, shakeStep, tapStep } from '../secrets';
 
 describe('secrets', () => {
   it('knows the secret word, however it’s typed', () => {
@@ -54,6 +54,15 @@ describe('secrets', () => {
     expect(isSunriseHour(new Date(2026, 9, 3, 5, 30).getTime())).toBe(true);
     expect(isSunriseHour(new Date(2026, 9, 3, 7, 0).getTime())).toBe(false);
     expect(isSunriseHour(new Date(2026, 9, 3, 23, 0).getTime())).toBe(false);
+    expect(isNightOwlHour(new Date(2026, 9, 3, 2, 0).getTime())).toBe(true);
+    expect(isNightOwlHour(new Date(2026, 9, 3, 3, 59).getTime())).toBe(true);
+    expect(isNightOwlHour(new Date(2026, 9, 3, 4, 0).getTime())).toBe(false);
+    expect(isNightOwlHour(new Date(2026, 9, 3, 1, 59).getTime())).toBe(false);
+  });
+
+  it('knows when every choice has been tried', () => {
+    expect(triedAll(new Set(['a', 'b']), ['a', 'b', 'c'])).toBe(false);
+    expect(triedAll(new Set(['a', 'b', 'c']), ['a', 'b', 'c'])).toBe(true);
   });
 
   it('reads found secrets back', () => {

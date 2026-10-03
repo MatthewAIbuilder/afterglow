@@ -1,5 +1,5 @@
 import type { PastEvent } from '../memories/past';
-import type { Activity, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
+import type { Activity, Comment, Crew, Sprout, SproutInput, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -120,6 +120,8 @@ export interface SocialService {
   memoriesOf(uid: string): Promise<SharedMemory[]>;
   /** Shared memories tagged with this festival, newest first (community clips in Discover). */
   festivalMemories(festivalId: string, max: number): Promise<SharedMemory[]>;
+  /** Everyone's shared videos of an artist, newest first (a database without that index yet has none). */
+  artistMemories(artistId: string, max: number): Promise<SharedMemory[]>;
   /** The newest shared memories from every festival (community clips in your mix). */
   recentMemories(max: number): Promise<SharedMemory[]>;
   sharedMemory(id: string): Promise<SharedMemory | null>;
@@ -226,12 +228,39 @@ export interface SocialService {
    * Returns a stop function.
    */
   watchCrewChat(crewId: string, max: number, listener: (messages: CrewMessage[]) => void, onError?: (e: SocialError) => void): () => void;
+  /** Note that you've read a crew's chat up to now (server time), so crewmates can see "Seen by". */
+  markCrewChatRead(crewId: string): Promise<void>;
+  /** Follow when each member last read a crew's chat: uid -> ISO time, now and whenever it changes. Returns a stop function. */
+  watchCrewReads(crewId: string, listener: (reads: Record<string, string>) => void, onError?: (e: SocialError) => void): () => void;
   /** Remove a chat message: your own, or anyone's in a crew you own. */
   deleteCrewMessage(crewId: string, id: string): Promise<void>;
   /** The crew's meeting spot, if one's set. Members only. */
   meetSpot(crewId: string): Promise<MeetSpot | null>;
   /** Set the crew's meeting spot (any member), or clear it with an empty text. */
   setMeetSpot(crewId: string, text: string): Promise<MeetSpot | null>;
+
+  /**
+   * Give a sprout: saves the one whose code you're showing (its id was made
+   * on your phone). Needs your profile. Giving the same id again is the same
+   * as once.
+   */
+  giveSprout(input: SproutInput): Promise<void>;
+  /**
+   * Pick up a sprout someone gave you. `not-found` when it isn't there (yet:
+   * the giver may still be waiting for signal); `sprout-gone` when it can't
+   * be picked up (more than 30 days old, or the giver blocked you);
+   * `sprout-taken` when someone else picked it up. Picking up your own
+   * sprout again returns it.
+   */
+  claimSprout(id: string): Promise<Sprout>;
+  /** One sprout, if it exists (for its note, and whether it's been picked up). */
+  sprout(id: string): Promise<Sprout | null>;
+  /** Sprouts you gave, newest first. */
+  sproutsGiven(max: number): Promise<Sprout[]>;
+  /** Sprouts you picked up, newest first. */
+  sproutsReceived(max: number): Promise<Sprout[]>;
+  /** Take back a sprout nobody has picked up (one that isn't there is fine; `sprout-taken` once someone has it). */
+  takeBackSprout(id: string): Promise<void>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;
@@ -251,6 +280,8 @@ export type SocialErrorKind =
   | 'too-large'
   | 'crew-full'
   | 'not-invited'
+  | 'sprout-taken'
+  | 'sprout-gone'
   | 'throwback-limit'
   | 'not-found'
   | 'network'
@@ -282,6 +313,8 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'too-large': 'That video is too big to share. Try a shorter clip.',
   'crew-full': 'That crew is full.',
   'not-invited': 'Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.',
+  'sprout-taken': 'Someone else already picked up this sprout.',
+  'sprout-gone': 'This sprout can’t be picked up any more. Ask them for a new code.',
   'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
   'not-found': 'That doesn’t exist any more.',
   network: 'Couldn’t reach Afterglow. Check your connection and try again.',

@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { builtInCatalog } from '../../../state/catalog';
-import { artistPreview, festivalPreview, withPreview } from '../previews';
+import { artistPreview, festivalPreview, sproutPreview, withPreview } from '../previews';
 
 const WEB = 'https://afterglowmusic.app';
 const page = readFileSync(join(__dirname, '../../../../public/index.html'), 'utf8');
@@ -38,5 +38,14 @@ describe('link previews', () => {
     expect(out).toContain('<meta property="og:image" content="https://cdn-images.dzcdn.net/images/artist/x/500x500.jpg" />');
     expect(out).not.toContain('og:image:width');
     expect(out).toContain('<meta name="twitter:card" content="summary" />');
+  });
+
+  it('gives every sprout link the same page, with the big sprout picture', () => {
+    const out = withPreview(page, sproutPreview(WEB));
+    expect(out).toContain('<title>A sprout for you · Afterglow</title>');
+    expect(out).toContain('<meta property="og:image" content="https://afterglowmusic.app/sprout-og.png" />');
+    expect(out).toContain('<meta property="og:image:width" content="1200" />');
+    expect(out).toContain('<meta name="twitter:card" content="summary_large_image" />');
+    expect(out).toContain('og:image:alt" content="A little green sprout with a heart');
   });
 });

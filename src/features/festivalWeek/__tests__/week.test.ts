@@ -23,6 +23,10 @@ describe('festival week', () => {
     expect(festivalWeek(fest(), new Date(2026, 11, 3))).toEqual({ until: 1 });
     expect(festivalWeek(fest(), new Date(2026, 11, 4))).toEqual({ until: 0 });
     expect(festivalWeek(fest(), new Date(2026, 11, 5))).toBeUndefined();
+    // A two-weekend festival counts down to its first weekend only (pick weekend 2 to count down to that).
+    const acl = fest({ startDate: '2026-10-02', endDate: '2026-10-11', weekends: [{ start: '2026-10-02', end: '2026-10-04' }, { start: '2026-10-09', end: '2026-10-11' }] });
+    expect(festivalWeek(acl, new Date(2026, 8, 30))).toEqual({ until: 2 });
+    expect(festivalWeek(acl, new Date(2026, 9, 6))).toBeUndefined();
     expect(festivalWeek(fest({ startDate: undefined, endDate: undefined }), new Date(2026, 11, 1))).toBeUndefined();
   });
 

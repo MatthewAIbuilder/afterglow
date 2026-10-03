@@ -10,7 +10,15 @@ import { whereWhen } from '../festivals/format';
  * artist with its own title and description; the app itself is unchanged.
  * Pure.
  */
-export type PagePreview = { path: string; title: string; description: string; url: string; image?: string };
+export type PagePreview = {
+  path: string;
+  title: string;
+  description: string;
+  url: string;
+  image?: string;
+  /** The image is a wide 1200 × 630 card (keeps the big preview); otherwise a square photo. */
+  wide?: { alt: string };
+};
 
 const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
 
@@ -41,6 +49,18 @@ export function artistPreview(artist: Artist, festivals: Festival[], webUrl: str
   };
 }
 
+/** Sprout links (`/sprout/<id>?…`): every one gets the same page, saying a sprout is waiting. */
+export function sproutPreview(webUrl: string): PagePreview {
+  return {
+    path: 'sprout',
+    title: 'A sprout for you · Afterglow',
+    description: 'Someone gave you a sprout on Afterglow. Open it to keep it in your garden.',
+    url: `${webUrl}/sprout`,
+    image: `${webUrl}/sprout-og.png`,
+    wide: { alt: 'A little green sprout with a heart: a sprout for you on Afterglow.' },
+  };
+}
+
 const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** The site's page with this preview's title, description and address in place of the site-wide ones. */
@@ -55,7 +75,9 @@ export function withPreview(html: string, p: PagePreview): string {
     meta('property', 'og:url', p.url),
     // The artist's photo in place of the site picture (a square, so no fixed size).
     (doc: string) =>
-      p.image
+      p.image && p.wide
+        ? meta('property', 'og:image:alt', p.wide.alt)(meta('property', 'og:image', p.image)(doc))
+        : p.image
         ? meta('property', 'og:image', p.image)(doc)
             .replace(/\s*<meta property="og:image:(width|height|alt)" content="[^"]*" \/>/g, '')
             .replace(/(<meta name="twitter:card" content=")[^"]*(")/, '$1summary$2')

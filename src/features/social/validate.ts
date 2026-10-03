@@ -1,3 +1,4 @@
+import { SOCIALS, cleanSocials, readSocial, socialProblem, type SocialKey } from './socials';
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from 'obscenity';
 import { COMMENT_MAX, CREW_NAME_MAX, type ProfileInput } from './models';
 
@@ -39,7 +40,7 @@ export function handleProblem(raw: string): string | undefined {
   return undefined;
 }
 
-export type ProfileProblems = Partial<Record<'handle' | 'displayName' | 'bio', string>>;
+export type ProfileProblems = Partial<Record<'handle' | 'displayName' | 'bio' | SocialKey, string>>;
 
 export function profileProblems(input: ProfileInput): ProfileProblems {
   const out: ProfileProblems = {};
@@ -52,6 +53,11 @@ export function profileProblems(input: ProfileInput): ProfileProblems {
   const bio = input.bio.trim();
   if (bio.length > BIO_MAX) out.bio = `At most ${BIO_MAX} characters.`;
   else if (isOffensive(bio)) out.bio = 'Please keep your bio friendly.';
+  for (const spec of SOCIALS) {
+    const name = input.socials?.[spec.key];
+    const problem = name ? socialProblem(spec.key, readSocial(spec.key, name)) : undefined;
+    if (problem) out[spec.key] = problem;
+  }
   return out;
 }
 
@@ -63,6 +69,7 @@ export function cleanProfileInput(input: ProfileInput): ProfileInput {
     bio: input.bio.trim().replace(/\n{3,}/g, '\n\n'),
     showFestivals: input.showFestivals,
     showSound: input.showSound,
+    ...(input.socials ? { socials: cleanSocials(input.socials) } : {}),
   };
 }
 

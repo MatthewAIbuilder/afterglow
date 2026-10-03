@@ -139,6 +139,8 @@ The app says when signal held something up:
 - once they get through, "Your 2 messages reached the crew, held up 18 min by signal", plus a phone notification if they were held 10 minutes or more and you're not in that chat;
 - a crewmate's late message reads "Sent 7:30 PM · reached the crew 8:00 PM", and the chat points it out.
 
+**Seen by:** each member's `crews/{id}/reads/{uid}` holds when they last read the chat (server time). It's written when they read, and again once there's signal if that write didn't get through. Your latest message shows "Delivered", "Seen by Maya" or "Seen by everyone".
+
 The chat screen is `crew-chat/[id].tsx`:
 - the rules at the top;
 - day headings, with each person's messages grouped together;
@@ -286,3 +288,16 @@ It's an overlay in the app, not burned into the file: a video saved to Photos or
 2. Find their uid: `handles`, then the document named after their @handle; copy `uid`.
 3. Start collection (or open) `plus`, add a document with that uid as its ID, a field `active` of type boolean set to true, and optionally `until` of type timestamp.
 4. It applies within about ten minutes (sooner after an app restart).
+
+## Sprouts
+
+Little green collectibles people give each other at festivals, a rave tradition.
+
+- **Giving** (`give-sprout.tsx`, from the Friends tab's Sprout button, Profile's "Your garden" row and the garden): choose a kind and an optional note (60 characters), then show the code. The code is a link, `https://afterglowmusic.app/sprout/<id>?u=<giver>&h=<handle>&k=<kind>&n=<name>`, so it reads with no signal, and a phone's own camera opens it on the website for someone without the app. The id (20 characters) is made on the giver's phone. One code is one sprout. While the code shows, it's checked every 4 seconds; when someone picks it up the screen says so with confetti. "Take it back" removes one nobody picked up and gives the seed back; "Send as a link" shares it to someone far away.
+- **Seeds**: 5 a day, 10 on a festival day you're at (Tonight's festival); days turn over at 4 AM like quests. Counted on the phone.
+- **Picking up** (`sprout/[id].tsx`, also reached by scanning with Afterglow's scanner): the sprout pops up out of the ground; "Add to my garden". Without an account it's kept on the phone (AsyncStorage `sprouts.v1`) and picked up automatically once you sign up or sign in. With no signal it's kept and picked up once there is (tried again 15 s, doubling to 5 min, for 3 days; the giver may still be offline too), with a notification if it went through later. Someone else got there first: it says so.
+- **Growing**: everyone starts with one sprout. A plain sprout grows from what you do after it reaches you: festival days you're at (8), sprouts you give (4), videos you film (3), sets you watch (1). Seed, Sprout (6), Leafy (18), In bloom (36). At bloom it becomes the kind that grew it most: Wanderer (festival days), PLUR (giving), Spotlight (filming; Sunrise if one was filmed 5 to 8 AM), Bass / Melody / Groove (watching, by the sets' sounds). The kind is remembered once it blooms. Kinds you've grown can be given; sprouts you're given as a kind are collectibles, already grown.
+- **Wild sprouts**: on each night of a festival you're going to that's on, a wild sprout appears in your garden (`wild:<festival>:<night>`), already grown, its kind picked by the festival and night (`wildKind`), the same for everyone there. The garden celebrates it and the bell says so. Only for a festival marked going before that night began (so is the festival-day double seeds and growth). Kept on the phone (`sprouts.v1` `wild`).
+- **Your garden** (`garden.tsx`): your sprouts (tap for details, growth and tips), sprouts still waiting for signal, the seven kinds (grey until collected, with how they grow) and what you've given and who picked it up.
+- **Data**: Firestore `sprouts/{id}`: `from`, `kind`, optional `note` and `festivalId`, `createdAt` (server time), then `to` and `claimedAt` once picked up. Rules: created as yourself with a profile; read by anyone signed in (with the code); picked up once, not by the giver or anyone the giver blocked, within 30 days, changing only `to` and `claimedAt`; taken back by the giver while nobody has it; removed with the account. Indexes: (from, createdAt desc), (to, claimedAt desc). Code in `features/sprouts/` (pure `sprouts.ts`, `outbox.ts`; `Sprout.tsx` draws them) and `state/sprouts.tsx`.
+- **Later**: tapping phones together (NFC) needs the development build.

@@ -33,7 +33,7 @@ describe('secrets', () => {
   it('the small print hides one, and Secrets lists what you found', async () => {
     const app = await renderApp('/settings');
     await flush();
-    expect(app.getByText('0 of 8 secrets found')).toBeTruthy();
+    expect(app.getByText('0 of 11 secrets found')).toBeTruthy();
     const version = app.getByText(VERSION_LINE);
     for (let i = 0; i < 7; i++) {
       await fireEvent.press(version);
@@ -43,7 +43,7 @@ describe('secrets', () => {
     expect(app.getByTestId('secret-fireworks')).toBeTruthy();
     await fireEvent.press(app.getByText('Secrets'));
     await flush();
-    expect(app.getByText('1 of 8 secrets found')).toBeTruthy();
+    expect(app.getByText('1 of 11 secrets found')).toBeTruthy();
     expect(app.getByTestId('secret-card-smallprint').props.accessibilityLabel).toMatch(/^Small print\. Tap the version line/);
     expect(app.getByTestId('secret-card-plur').props.accessibilityLabel).toBe('A secret not found yet. Hint: Four letters every raver knows. Look for them.');
   });

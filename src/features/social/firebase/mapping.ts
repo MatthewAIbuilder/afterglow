@@ -1,6 +1,7 @@
+import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
+import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -28,6 +29,7 @@ export function profileFromDoc(uid: string, d: unknown): Profile | null {
     sounds: strs(o.sounds, 3).filter((s): s is SoundTag => (SOUND_TAGS as readonly string[]).includes(s)),
     showFestivals: o.showFestivals === true,
     showSound: o.showSound === true,
+    ...(Object.keys(cleanSocials(o)).length ? { socials: cleanSocials(o) } : {}),
     createdAt: str(o.createdAt) ?? '',
     updatedAt: str(o.updatedAt) ?? '',
   };
@@ -107,6 +109,39 @@ export function crewInviteFromDoc(id: string, d: unknown): CrewInvite | null {
   const to = str(o.to);
   if (!crewId || !festivalId || !from || !to) return null;
   return { id, crewId, festivalId, crewName: (str(o.crewName) ?? '').slice(0, 40), from, to, at: timeOf(o.createdAt) ?? new Date().toISOString() };
+}
+
+/**
+ * A profile as its Firestore fields: usernames as their own fields
+ * (instagram, snapchat, tiktok; the rules list no `socials`), no uid, the
+ * lowercase name for search, and photo links only when set.
+ */
+export function profileFields(p: Profile): Record<string, unknown> {
+  const { uid: _uid, avatarUrl, coverUrl, socials, ...fields } = p;
+  return { ...fields, ...(socials ?? {}), nameLower: p.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) };
+}
+
+/** A sprout document. */
+export function sproutFromDoc(id: string, d: unknown): Sprout | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const from = str(o.from);
+  const kind = str(o.kind);
+  if (!from || !kind) return null;
+  const to = str(o.to);
+  const note = str(o.note);
+  const festivalId = str(o.festivalId);
+  const claimedAt = timeOf(o.claimedAt);
+  return {
+    id,
+    kind,
+    from,
+    createdAt: timeOf(o.createdAt) ?? new Date().toISOString(),
+    ...(to ? { to } : {}),
+    ...(note ? { note: note.slice(0, 60) } : {}),
+    ...(festivalId ? { festivalId } : {}),
+    ...(claimedAt ? { claimedAt } : {}),
+  };
 }
 
 /** A crew update document. `atMs` (when it happened on the phone) is required; a missing server time reads as that time. */

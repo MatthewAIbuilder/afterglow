@@ -6,15 +6,18 @@ import { useCrewChat } from '../../state/crewChat';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import type { Crew } from '../social/models';
-import { chatPreview, unreadLine } from './chat';
+import { chatPreview, gaveUp, unreadLine } from './chat';
+import { useNow } from '../../lib/useNow';
 
 /** A crew's chat, as a card: the latest message and how many are new. Opens the chat. */
 export function CrewChatCard({ crew, nameOf }: { crew: Crew; nameOf: (uid: string) => string }) {
   const chat = useCrewChat();
   const me = useSocial().user?.uid;
+  const now = useNow().getTime();
   if (!chat.ready) return null;
   const unread = chat.unreadFor(crew.id);
-  const waiting = chat.waitingFor(crew.id).length;
+  // Ones given up on say so in the chat itself; here only the ones still trying.
+  const waiting = chat.waitingFor(crew.id).filter((o) => !gaveUp(o, now)).length;
   const preview = chatPreview(chat.latestFor(crew.id), me, nameOf);
   const line = waiting
     ? waiting === 1

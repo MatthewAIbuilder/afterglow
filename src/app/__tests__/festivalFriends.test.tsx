@@ -83,7 +83,7 @@ describe('Profile at a festival', () => {
     expect(app.getByRole('tab', { name: /Moments/ })).toBeTruthy();
     await fireEvent.press(app.getByRole('tab', { name: /Badges/ }));
     await flush();
-    expect(app.getByText(/^Side quests · 0 of 10/)).toBeTruthy();
+    expect(app.getByText(/^Side quests · 0 of 12/)).toBeTruthy();
     expect(app.getByText('Festival pins')).toBeTruthy();
     await app.unmount();
   });

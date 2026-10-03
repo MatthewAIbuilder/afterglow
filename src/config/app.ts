@@ -24,3 +24,10 @@ export const REQUEST_EMAIL = 'afterglowmusic.support@gmail.com';
  * shared content to publish a contact. Empty until the user sets one.
  */
 export const SUPPORT_EMAIL = 'afterglowmusic.support@gmail.com';
+
+/**
+ * The app's App Store page, once it's published. Empty until then: pages on
+ * the website (a sprout someone scanned with their camera) say the app is
+ * coming instead of showing a download button.
+ */
+export const APP_STORE_URL = '';

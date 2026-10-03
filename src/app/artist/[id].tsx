@@ -41,10 +41,13 @@ import { playingList } from '../../features/festivals/playing';
 import { useNearby } from '../../state/nearby';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useWeekends } from '../../state/weekends';
 import { usePlan } from '../../state/plan';
 import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
 import { useToday } from '../../lib/useToday';
+import { artistStory, hasStory, nextShow, nextShowLine, storyLines } from '../../features/artists/story';
+import { ArtistCrowdRow } from '../../features/artists/ArtistCrowdRow';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
@@ -81,6 +84,7 @@ export default function ArtistScreen() {
   const { crewStarsFor } = useCrews();
   const { going } = useGoing();
   const today = useToday();
+  const { forYou } = useWeekends();
   const { distanceTo, units, placeOf } = useNearby();
   const { seen } = useSeen();
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
@@ -103,6 +107,12 @@ export default function ArtistScreen() {
   const festivals = catalog.festivalsOf(artist.id);
   // Yours first, then near you (when it's on), then the soonest; what's over last.
   const playing = playingList(festivals, { going, today, distanceTo, nearKm: NEAR_KM });
+  // Their next show, and what you've done with their music here.
+  // As each festival is for you: an artist on the other weekend of a two-weekend festival isn't your next show there.
+  const next = nextShow(festivals.map(forYou), artist.id, today);
+  // Their clips, crowd videos you reacted to included.
+  const story = artistStory({ artistId: artist.id, clips: tasteClips.filter((c) => c.artistId === artist.id), reactions, seen, memories, festivalOf: catalog.festival });
+  const storyText = storyLines(story);
   // Their clips, ones you haven't watched first; then one each from artists who sound like them.
   const clips = theirClips(catalog.clipsOf(artist.id), seen);
   const fansWatch = alsoWatch(artist, catalog.artists, catalog.clipsOf, similarity, seen);
@@ -199,6 +209,26 @@ export default function ArtistScreen() {
               </Text>
             </Pressable>
           )}
+          {/* Their next show: where and when, with the set time once it's out. */}
+          {next ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push(`/festival/${next.id}`);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Next show: ${next.name}, ${nextShowLine(next, artist.id, today, (f, a) => dayList(daysOf(f, a)))}${going.includes(next.id) ? '. You’re going' : ''}. Opens the festival.`}
+              style={({ pressed }) => [styles.nextShow, going.includes(next.id) && styles.nextShowGoing, pressed && { opacity: 0.8 }]}
+            >
+              <Text style={styles.nextKicker}>{going.includes(next.id) ? 'NEXT SHOW · YOU’RE GOING' : 'NEXT SHOW'}</Text>
+              <Text style={styles.nextName} numberOfLines={1}>
+                {next.name}
+              </Text>
+              <Text style={styles.nextLine} numberOfLines={1}>
+                {nextShowLine(next, artist.id, today, (f, a) => dayList(daysOf(f, a)))}
+              </Text>
+            </Pressable>
+          ) : null}
           {/* Crewmates who starred them at this festival. */}
           {starFestival && crewLine ? (
             <Text style={styles.crewLine}>
@@ -207,6 +237,19 @@ export default function ArtistScreen() {
             </Text>
           ) : null}
         </View>
+
+        {/* You and them: what you've done with their music on Afterglow. */}
+        {hasStory(story) ? (
+          <Section title="You and them">
+            <View style={styles.story} accessible accessibilityLabel={storyText.join('. ')}>
+              {storyText.map((line, i) => (
+                <Text key={line} style={[styles.storyLine, i === 0 && story.seenLive.length > 0 && { color: color.moon }]}>
+                  {line}
+                </Text>
+              ))}
+            </View>
+          </Section>
+        ) : null}
 
         {festivals.length > 0 && (
           <Section title="Playing">
@@ -310,6 +353,9 @@ export default function ArtistScreen() {
           </Section>
         )}
 
+        {/* Everyone's videos of them. */}
+        <ArtistCrowdRow artist={artist} />
+
         {/* Your own videos of them, from Memories. */}
         {yours.length > 0 && (
           <Section title="Your memories">
@@ -382,6 +428,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const styles = StyleSheet.create({
+  nextShow: { alignSelf: 'stretch', marginTop: space.lg, paddingVertical: space.md, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', gap: 2 },
+  nextShowGoing: { borderColor: 'rgba(169,124,255,0.55)', backgroundColor: 'rgba(169,124,255,0.10)' },
+  nextKicker: { ...type.caption, fontSize: 10, letterSpacing: 1.5, fontWeight: '700', color: color.glow },
+  nextName: { ...type.headline, color: color.moon },
+  nextLine: { ...type.caption, color: color.moonDim },
+  story: { padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, gap: 6 },
+  storyLine: { ...type.body, color: color.moonDim },
   guess: { ...type.caption, color: color.moonDim, marginTop: space.sm },
   tourLink: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.md },
   tourText: { ...type.label, color: color.glow },

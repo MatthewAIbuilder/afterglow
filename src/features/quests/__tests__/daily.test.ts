@@ -71,9 +71,34 @@ describe('picking quests', () => {
   it('leaves out what you can’t do right now', () => {
     for (let i = 0; i < 40; i++) {
       const picks = dailyPicks(shiftDay('2026-10-03', -i), canDo({ planning: false, enoughSets: false }));
-      expect(picks.some((q) => q.id === 'stars' || q.id === 'thisorthat')).toBe(false);
+      expect(picks.some((q) => ['stars', 'thisorthat', 'chat', 'door', 'crowd', 'sprout'].includes(q.id))).toBe(false);
       expect(picks).toHaveLength(3);
     }
+  });
+
+  it('Crew call is offered only when you’re in a crew', () => {
+    expect(canDo({ planning: true, enoughSets: true })('chat')).toBe(false);
+    expect(canDo({ planning: true, enoughSets: true, crew: true })('chat')).toBe(true);
+  });
+
+  it('Knock knock needs a festival week door, In the crowd needs you signed in', () => {
+    expect(canDo({ planning: true, enoughSets: true })('door')).toBe(false);
+    expect(canDo({ planning: true, enoughSets: true, door: true })('door')).toBe(true);
+    expect(canDo({ planning: true, enoughSets: true })('crowd')).toBe(false);
+    expect(canDo({ planning: true, enoughSets: true, crowd: true })('crowd')).toBe(true);
+  });
+
+  it('In the crowd counts each crowd video seen today once', () => {
+    const crowd = DAILY.find((q) => q.id === 'crowd')!;
+    const since = at(2026, 10, 3, 4);
+    const seen = { 'community:a': at(2026, 10, 3, 9), 'community:old': at(2026, 10, 2, 22), c1: at(2026, 10, 3, 10) };
+    expect(dailyCurrent(crowd, snap({}, seen), NO_COUNTS, {}, since)).toBe(1);
+    expect(dailyCurrent(crowd, snap({}, { ...seen, 'community:b': at(2026, 10, 3, 11) }), NO_COUNTS, {}, since)).toBe(2);
+    const sprout = DAILY.find((q) => q.id === 'sprout')!;
+    expect(dailyCurrent(sprout, snap(), NO_COUNTS, { sprout: 1 }, since)).toBe(1);
+    expect(canDo({ planning: true, enoughSets: true })('sprout')).toBe(false);
+    const door = DAILY.find((q) => q.id === 'door')!;
+    expect(dailyCurrent(door, snap(), NO_COUNTS, { door: 1 }, since)).toBe(1);
   });
 
   it('every quest can be drawn', () => {

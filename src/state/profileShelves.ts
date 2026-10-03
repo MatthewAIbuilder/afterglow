@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'profileShelves.v1';
-export type Shelf = 'artists' | 'festivals';
-const SHELVES: Shelf[] = ['artists', 'festivals'];
+export type Shelf = 'artists' | 'festivals' | 'garden';
+const SHELVES: Shelf[] = ['artists', 'festivals', 'garden'];
 
 /** Which rows on your profile you've tucked away (Your artists, Your festivals), on this phone. */
 export function useProfileShelves() {

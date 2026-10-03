@@ -53,6 +53,14 @@ await t('field limits: long name, long bio, extra field, bad avatar', async () =
   await assertFails(claim(C, 'uidC', 'cara', { coverUrl: 'http://x/c.jpg' }));
   await assertFails(claim(C, 'uidC', 'cara', { nameLower: 'someone else' }));
 });
+await t('profiles may carry Instagram, Snapchat and TikTok usernames, in each service’s shape, never links', async () => {
+  const E = env.authenticatedContext('uidE');
+  await assertSucceeds(claim(E, 'uidE', 'eve', { instagram: 'eve.c', snapchat: 'evec', tiktok: 'eve.dances' }));
+  await assertFails(claim(E, 'uidE', 'eve', { instagram: 'https://instagram.com/eve' }));
+  await assertFails(claim(E, 'uidE', 'eve', { snapchat: '1eve' }));
+  await assertFails(claim(E, 'uidE', 'eve', { tiktok: 'Eve' }));
+  await assertFails(claim(E, 'uidE', 'eve', { facebook: 'eve' }));
+});
 await t('a cover photo link must be https', () => assertSucceeds(claim(env.authenticatedContext('uidD'), 'uidD', 'dana', { coverUrl: 'https://x/c.jpg' })));
 await t('A moves to @maya2 (old handle released in the same write)', async () => {
   const db = A.firestore(); const b = writeBatch(db);
@@ -354,6 +362,16 @@ await t('crew chat: several waiting messages go in one write, each keeping when 
   await assertSucceeds(b.commit());
   // Sending one again (an earlier try that did get through) is refused, never doubled.
   await assertFails(setDoc(doc(db, 'crews', 'c1', 'chat', 'mb00001'), chatMsg()));
+});
+await t('crew chat: you note when you read it, with the server’s time; members see it; nobody else', async () => {
+  const r = (db, uid) => doc(db, 'crews', 'c1', 'reads', uid);
+  await assertSucceeds(setDoc(r(B.firestore(), 'uidB'), { at: serverTimestamp() }));
+  await assertSucceeds(setDoc(r(B.firestore(), 'uidB'), { at: serverTimestamp() }));
+  await assertFails(setDoc(r(B.firestore(), 'uidA'), { at: serverTimestamp() }));
+  await assertFails(setDoc(r(B.firestore(), 'uidB'), { at: now }));
+  await assertFails(setDoc(r(C.firestore(), 'uidC'), { at: serverTimestamp() }));
+  await assertSucceeds(getDocs(collection(A.firestore(), 'crews', 'c1', 'reads')));
+  await assertFails(getDocs(collection(C.firestore(), 'crews', 'c1', 'reads')));
 });
 await t('crew chat: never edited; removed by the writer or the owner', async () => {
   const at = (db, id) => doc(db, 'crews', 'c1', 'chat', id);
@@ -666,6 +684,43 @@ await t('HQ: only the support account uploads, publishes and gives Plus and flai
   await assertSucceeds(uploadBytes(ref(ADMIN.storage(), 'drops/d1/1-poster.png'), new Uint8Array([1, 2, 3]), { contentType: 'image/png' }));
   await assertFails(uploadBytes(ref(A.storage(), 'drops/d1/2-poster.png'), new Uint8Array([1, 2, 3]), { contentType: 'image/png' }));
   await assertFails(uploadBytes(ref(ADMIN.storage(), 'drops/d1/3-app.exe'), new Uint8Array([1]), { contentType: 'application/octet-stream' }));
+});
+await t('sprouts: given as yourself, picked up once, by anyone else not blocked, within 30 days', async () => {
+  const sprout = (over = {}) => ({ from: 'uidA', kind: 'plur', note: 'Happy you came', createdAt: serverTimestamp(), ...over });
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'profiles', 'uidA'), profile('maya2'));
+    await setDoc(doc(db, 'profiles', 'uidF'), profile('fern'));
+    await setDoc(doc(db, 'blocks', 'uidF'), { uids: ['uidG'] });
+  });
+  await assertSucceeds(setDoc(doc(A.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv'), sprout()));
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'bad'), sprout()));
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'bbbbbbbbbbbbbbbbbbbb'), sprout({ from: 'uidB' })));
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'cccccccccccccccccccc'), sprout({ kind: 'golden' })));
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'dddddddddddddddddddd'), sprout({ to: 'uidB' })));
+  await assertFails(setDoc(doc(anon.firestore(), 'sprouts', 'eeeeeeeeeeeeeeeeeeee'), sprout()));
+  // Sending again is refused (it's already there).
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv'), sprout()));
+  await assertSucceeds(getDoc(doc(B.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv')));
+  await assertFails(updateDoc(doc(A.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv'), { to: 'uidA', claimedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(B.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv'), { to: 'uidC', claimedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(B.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv'), { to: 'uidB', claimedAt: serverTimestamp(), kind: 'sunrise' }));
+  await assertSucceeds(updateDoc(doc(B.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv'), { to: 'uidB', claimedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(C.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv'), { to: 'uidC', claimedAt: serverTimestamp() }));
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'sprouts'), where('to', '==', 'uidB'))));
+  await assertSucceeds(getDocs(query(collection(A.firestore(), 'sprouts'), where('from', '==', 'uidA'))));
+  await assertFails(getDocs(collection(C.firestore(), 'sprouts')));
+  // Picked up, it can't be taken back.
+  await assertFails(deleteDoc(doc(A.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv')));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'sprouts', 'ffffffffffffffffffff'), sprout()));
+  await assertFails(deleteDoc(doc(B.firestore(), 'sprouts', 'ffffffffffffffffffff')));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'sprouts', 'ffffffffffffffffffff')));
+  // Someone the giver blocked can't pick it up.
+  await assertSucceeds(setDoc(doc(F.firestore(), 'sprouts', 'gggggggggggggggggggg'), sprout({ from: 'uidF' })));
+  await assertFails(updateDoc(doc(G.firestore(), 'sprouts', 'gggggggggggggggggggg'), { to: 'uidG', claimedAt: serverTimestamp() }));
+  // Too old to pick up.
+  await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), { from: 'uidA', kind: 'seedling', createdAt: new Date(Date.now() - 31 * 86400_000) }));
+  await assertFails(updateDoc(doc(B.firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), { to: 'uidB', claimedAt: serverTimestamp() }));
 });
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();

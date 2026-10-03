@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useRef } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
@@ -7,6 +8,8 @@ import { PageTitle } from '../components/PageTitle';
 import { CloseIcon, ScanIcon, ShareIcon } from '../components/TabIcons';
 import { FriendQR } from '../features/friends/FriendQR';
 import { CODE_THEMES, friendLink, THEME_ORDER } from '../features/friends/qr';
+import { triedAll } from '../features/secrets/secrets';
+import { revealSecret } from '../state/secrets';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
@@ -27,6 +30,8 @@ export default function MyCodeScreen() {
   const { myCard, codeSaved, theme, setTheme, newCode } = useFriendAdds();
   const size = Math.min(width - space.xl * 2 - 48, 300);
   const glow = CODE_THEMES[theme].glow;
+  // Trying every colour in one visit (the one showing when you start tapping counts) is a secret.
+  const tried = useRef(new Set<string>());
 
   return (
     <View style={styles.root}>
@@ -84,6 +89,12 @@ export default function MyCodeScreen() {
                   onPress={() => {
                     haptic.select();
                     setTheme(t);
+                    tried.current.add(theme);
+                    tried.current.add(t);
+                    if (triedAll(tried.current, THEME_ORDER)) {
+                      tried.current.clear();
+                      revealSecret('colours');
+                    }
                   }}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: t === theme }}

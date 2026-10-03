@@ -14,7 +14,8 @@ export const WEEK_DAYS = 7;
 /** Where the festival is in its week: days until it starts (your weekend's run), or nothing outside the week. */
 export function festivalWeek(festival: Festival, today: Date): { until: number } | undefined {
   const next = nextRun(festival, today);
-  if (!next) return undefined;
+  // Only before the first run: a two-weekend festival's doors are opened once (pick a weekend to count down to it).
+  if (!next || next.index > 0) return undefined;
   if (next.until < 0 || next.until > WEEK_DAYS) return undefined;
   return { until: next.until };
 }

@@ -178,6 +178,7 @@ export default function PublicProfileScreen() {
       <>
         <View style={styles.headWrap}>
           <ProfileHeader
+            socials={profile.socials}
             name={profile.displayName}
             initial
             handle={profile.handle}

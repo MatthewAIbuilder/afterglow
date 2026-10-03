@@ -44,6 +44,8 @@ export type ChatOutboxItem = {
   tries: number;
   refused?: number;
   nextAt?: number;
+  /** The account that wrote it (only that account sends it). */
+  uid?: string;
 };
 
 /** A message as the chat shows it: sent, waiting for signal, or given up. */
@@ -103,6 +105,7 @@ export function cleanChatOutbox(raw: unknown): ChatOutboxItem[] {
       tries: typeof o.tries === 'number' && o.tries >= 0 ? o.tries : 0,
       ...(typeof o.refused === 'number' && o.refused > 0 ? { refused: o.refused } : {}),
       ...(typeof o.nextAt === 'number' ? { nextAt: o.nextAt } : {}),
+      ...(typeof o.uid === 'string' ? { uid: o.uid } : {}),
     });
   }
   return out.slice(-CHAT_OUTBOX_MAX);
@@ -123,11 +126,14 @@ export function cleanChatRead(raw: unknown): Record<string, number> {
  */
 export function chatLines(sent: readonly CrewMessage[], outbox: readonly ChatOutboxItem[], crewId: string, me: string | undefined, blocked: readonly string[], now: number): ChatLine[] {
   const block = new Set(blocked);
-  const ids = new Set(sent.map((m) => m.id));
-  const lines: ChatLine[] = sent.filter((m) => !block.has(m.uid)).map((m) => ({ ...m, status: 'sent' as const }));
+  // Still in the outbox means Afterglow hasn't confirmed it, even if the phone's own copy of the chat
+  // already shows it (Firestore shows a write straight away and sends it when it can): it's waiting.
+  // Only your own account's (another account on this phone may have some waiting too).
+  const yours = outbox.filter((o) => o.crewId === crewId && (!o.uid || o.uid === me));
+  const waiting = new Set(me ? yours.map((o) => o.id) : []);
+  const lines: ChatLine[] = sent.filter((m) => !block.has(m.uid) && !waiting.has(m.id)).map((m) => ({ ...m, status: 'sent' as const }));
   if (me)
-    for (const o of outbox)
-      if (o.crewId === crewId && !ids.has(o.id))
+    for (const o of yours)
         lines.push({ id: o.id, crewId, uid: me, text: o.text, at: o.at, sentAt: o.at, status: gaveUp(o, now) ? 'failed' : 'waiting' });
   return lines.sort((a, b) => ms(a.at) - ms(b.at) || a.id.localeCompare(b.id));
 }
@@ -238,3 +244,22 @@ export function chatPreview(m: Pick<CrewMessage, 'uid' | 'text'> | undefined, me
 
 /** "2 new messages". */
 export const unreadLine = (n: number) => (n === 1 ? '1 new message' : `${n} new messages`);
+
+/**
+ * Who has read up to a message of yours: crewmates (never you) whose last
+ * read reached it. Both times come from the server, so phones' clocks never
+ * matter.
+ */
+export function seenBy(m: Pick<CrewMessage, 'sentAt'>, reads: Readonly<Record<string, string>>, members: readonly string[], me: string | undefined): string[] {
+  const at = ms(m.sentAt);
+  return members.filter((u) => u !== me && reads[u] && ms(reads[u]) >= at);
+}
+
+/** Under your latest message: "Delivered", "Seen by Maya", "Seen by Maya and Sam", "Seen by everyone". */
+export function seenLine(seen: readonly string[], others: number, nameOf: (uid: string) => string): string {
+  if (!seen.length) return 'Delivered';
+  if (others > 1 && seen.length >= others) return 'Seen by everyone';
+  const names = seen.map(nameOf);
+  if (names.length <= 2) return `Seen by ${names.join(' and ')}`;
+  return `Seen by ${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+}

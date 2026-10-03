@@ -22,6 +22,9 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   streak7: ['#FFB86B', '#C2477E'],
   streak30: ['#FFD36E', '#E0567A'],
   neon: ['#FF7EF0', '#5B3BC4'],
+  green: ['#8FF0B4', '#1E8F4A'],
+  giver: ['#9EF2C0', '#C2477E'],
+  gardener: ['#C2F0A0', '#1F7F6E'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -33,6 +36,8 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   sunrise: ['#FFD27A', '#E0567A'],
   everynight: ['#8FA2FF', '#3A2A8C'],
   stages: ['#9EF0A8', '#2F8A6E'],
+  sproutswap: ['#8FF0B4', '#7A3CC8'],
+  sproutlove: ['#9EF2C0', '#E0567A'],
 };
 const LOCKED: [string, string] = ['#4A4760', '#26243A'];
 /** A milestone's two colours, for its unlock. */
@@ -94,6 +99,37 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
     case 'neon':
       // A four-pointed spark.
       return <Path d="M12 3 C12.6 8 16 11.4 21 12 C16 12.6 12.6 16 12 21 C11.4 16 8 12.6 3 12 C8 11.4 11.4 8 12 3 Z" {...p} />;
+    case 'green':
+      // A sprout: a stem and two leaves.
+      return (
+        <G>
+          <Path d="M12 21 L12 11" {...p} />
+          <Path d="M12 12 C12 7 7 5 4 6 C4 10 8 12.5 12 12 Z" {...p} />
+          <Path d="M12 14 C12 10 16 8 20 9 C20 12.5 16.5 14.5 12 14 Z" {...p} />
+        </G>
+      );
+    case 'giver':
+      // A heart with a leaf on top.
+      return (
+        <G>
+          <Path d="M12 21 C6.5 17 4 14 4 11 A3.8 3.8 0 0 1 12 9.5 A3.8 3.8 0 0 1 20 11 C20 14 17.5 17 12 21 Z" {...p} />
+          <Path d="M12 9.5 C12 6 14 3.5 17 3.5 C17 6.5 15 8.5 12 9.5" {...p} />
+        </G>
+      );
+    case 'gardener':
+      // Three sprouts in a row.
+      return (
+        <G>
+          <Path d="M3 20 L21 20" {...p} />
+          {[6, 12, 18].map((x) => (
+            <G key={x}>
+              <Path d={`M${x} 20 L${x} ${x === 12 ? 9 : 13}`} {...p} />
+              <Path d={`M${x} ${x === 12 ? 11 : 15} C${x} ${x === 12 ? 8 : 12.5} ${x - 3} ${x === 12 ? 7 : 11.5} ${x - 3.5} ${x === 12 ? 8 : 12}`} {...p} />
+              <Path d={`M${x} ${x === 12 ? 10 : 14} C${x} ${x === 12 ? 7 : 11.5} ${x + 3} ${x === 12 ? 6 : 10.5} ${x + 3.5} ${x === 12 ? 7 : 11}`} {...p} />
+            </G>
+          ))}
+        </G>
+      );
     case 'basshead':
       // A bass wave.
       return <Path d="M3 12 L6 12 L8 6 L11 18 L13.5 4 L16 20 L18 9 L19.5 12 L21 12" {...p} />;
@@ -176,6 +212,25 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
         <G>
           <Path d="M15.5 4.5 A7.5 7.5 0 1 0 19.5 15 A6 6 0 0 1 15.5 4.5 Z" {...p} />
           <Path d="M19 4 L19 7 M17.5 5.5 L20.5 5.5" {...p} />
+        </G>
+      );
+    case 'sproutswap':
+      // Two sprouts leaning together.
+      return (
+        <G>
+          <Path d="M8 21 C8 16 9 13 11 11" {...p} />
+          <Path d="M16 21 C16 16 15 13 13 11" {...p} />
+          <Path d="M10 13 C7 12 5 9 5 6.5 C8 6.5 10 9 10 13" {...p} />
+          <Path d="M14 13 C17 12 19 9 19 6.5 C16 6.5 14 9 14 13" {...p} />
+        </G>
+      );
+    case 'sproutlove':
+      // A sprout with a heart for a bloom.
+      return (
+        <G>
+          <Path d="M12 21 L12 12" {...p} />
+          <Path d="M12 16 C9 16 6.5 14.5 6 12 C9 11.8 11 13.5 12 16" {...p} />
+          <Path d="M12 9.5 C9.2 7.6 8 6.3 8 5 A2 2 0 0 1 12 4.4 A2 2 0 0 1 16 5 C16 6.3 14.8 7.6 12 9.5 Z" {...p} />
         </G>
       );
     case 'stages':

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { DeviceMotion } from 'expo-sensors';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,11 +16,24 @@ import { EnamelPin } from '../../features/badges/EnamelPin';
 import { useBadges } from '../../features/badges/useBadges';
 import { whereWhen } from '../../features/festivals/format';
 import { haptic } from '../../lib/haptics';
+import { tapStep } from '../../features/secrets/secrets';
+import { revealSecret } from '../../state/secrets';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 
 /** The shine on a big pin: follows the tilt where there's a motion sensor, else a slow sweep. */
+/** Tapping a pin seven times in a row polishes it: a secret. */
+function usePinTaps() {
+  const taps = useRef<number[]>([]);
+  return () => {
+    haptic.select();
+    const step = tapStep(taps.current, Date.now());
+    taps.current = step.taps;
+    if (step.done) revealSecret('pinspin');
+  };
+}
+
 function usePinSheen() {
   const sheen = useSharedValue(-0.6);
   const reduce = useReducedMotion();
@@ -88,6 +101,7 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
   }, [uid, mine, social.service, social.availability.ok]);
 
   const sheen = usePinSheen();
+  const pinTap = usePinTaps();
   const reduce = useReducedMotion();
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
@@ -113,7 +127,9 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl }]}>
         <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={`${festival.name} badge${collected ? '' : ', not collected yet'}`}>
           {collected ? <View style={[styles.glow, { backgroundColor: `${look.palette.ribbon}55`, shadowColor: look.palette.accent }]} /> : null}
-          <EnamelPin look={look} size={260} locked={!collected} sheen={sheen} />
+          <Pressable onPress={pinTap} accessible={false} testID="badge-pin">
+            <EnamelPin look={look} size={260} locked={!collected} sheen={sheen} />
+          </Pressable>
         </Animated.View>
         <Text style={styles.kicker}>{collected ? (mine ? 'In your collection' : owner ? `@${owner}’s badge` : 'Collected') : 'Not collected yet'}</Text>
         <Text style={styles.title}>{festival.name}</Text>
@@ -178,6 +194,7 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
   const mine = !whose || whose === social.user?.uid;
   const badge = useThrowbacks(uid).find((t) => t.key === pastKey);
   const sheen = usePinSheen();
+  const pinTap = usePinTaps();
   const reduce = useReducedMotion();
   const [owner, setOwner] = useState<string | undefined>();
   useEffect(() => {
@@ -212,7 +229,9 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl }]}>
         <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={`${pastLabel(past)} throwback badge`}>
           <View style={[styles.glow, { backgroundColor: 'rgba(242,184,166,0.3)', shadowColor: ROSE }]} />
-          <EnamelPin look={look} size={260} sheen={sheen} />
+          <Pressable onPress={pinTap} accessible={false} testID="badge-pin">
+            <EnamelPin look={look} size={260} sheen={sheen} />
+          </Pressable>
         </Animated.View>
         <Text style={[styles.kicker, { color: ROSE }]}>{mine ? 'Throwback · in your collection' : handle ? `Throwback · @${handle}’s badge` : 'Throwback'}</Text>
         <Text style={styles.title}>{pastLabel(past)}</Text>

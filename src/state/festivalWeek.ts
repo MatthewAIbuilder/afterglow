@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { cleanOpened } from '../features/festivalWeek/week';
+import { bumpQuestEvent } from './dailyQuests';
 
 const STORAGE_KEY = 'festivalWeek.v1';
 
@@ -27,10 +28,16 @@ function load() {
   return loading;
 }
 
-/** Open a door (it stays open). */
+/** Open a door (it stays open). Counts for the Knock knock quest the first time only. */
 export function openDoor(festivalId: string, day: number) {
-  const now = opened ?? {};
+  // Not loaded yet: a door already open in storage would look closed, so wait for it.
+  if (!opened) {
+    void load().then(() => openDoor(festivalId, day));
+    return;
+  }
+  const now = opened;
   if (now[festivalId]?.includes(day)) return;
+  bumpQuestEvent('door');
   opened = { ...now, [festivalId]: [...(now[festivalId] ?? []), day] };
   listeners.forEach((l) => l(opened!));
   AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(opened)).catch(() => {});
@@ -41,6 +48,19 @@ export function forgetFestivalWeek() {
   opened = undefined;
   loading = undefined;
   listeners.clear();
+}
+
+/** Every festival's opened doors (festival id -> days). */
+export function useAllOpenedDoors(): Readonly<Record<string, number[]>> {
+  const [all, setAll] = useState<Record<string, number[]>>(opened ?? {});
+  useEffect(() => {
+    listeners.add(setAll);
+    void load();
+    return () => {
+      listeners.delete(setAll);
+    };
+  }, []);
+  return all;
 }
 
 /** The doors you've opened at a festival. */
