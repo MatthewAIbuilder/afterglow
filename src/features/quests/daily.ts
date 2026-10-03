@@ -30,8 +30,8 @@ export const added = (now: readonly string[], base: readonly string[]) => {
 };
 
 /** Things counted as they happen. */
-export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble';
-export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble'];
+export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble' | 'chat';
+export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble', 'chat'];
 
 export type DailyQuestId =
   | 'watch'
@@ -46,7 +46,8 @@ export type DailyQuestId =
   | 'follow'
   | 'stars'
   | 'map'
-  | 'share';
+  | 'share'
+  | 'chat';
 
 export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-love';
 
@@ -54,7 +55,7 @@ export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-lo
 export type QuestLane = 'watch' | 'taste' | 'plan';
 
 /** Where tapping a quest takes you. `festival` = your next festival's page (or Festivals). */
-export type QuestGo = '/' | '/sound' | '/pick-artists' | '/this-or-that' | '/search' | '/festival-map' | 'festival' | '/discover-focus';
+export type QuestGo = '/together' | '/' | '/sound' | '/pick-artists' | '/this-or-that' | '/search' | '/festival-map' | 'festival' | '/discover-focus';
 
 export type DailySpec = { id: DailyQuestId; lane: QuestLane; title: string; how: string; target: number; glow: number; go?: QuestGo };
 export type WeeklySpec = { id: WeeklyQuestId; title: string; how: string; target: number; glow: number; go?: QuestGo };
@@ -73,6 +74,7 @@ export const DAILY: readonly DailySpec[] = [
   { id: 'stars', lane: 'plan', title: 'Must-see', how: 'Star 2 sets you won’t miss', target: 2, glow: 20, go: 'festival' },
   { id: 'map', lane: 'plan', title: 'Explorer', how: 'Look around the festival map', target: 1, glow: 10, go: '/festival-map' },
   { id: 'share', lane: 'plan', title: 'Spread the glow', how: 'Share a set, a plan or a festival', target: 1, glow: 15 },
+  { id: 'chat', lane: 'plan', title: 'Crew call', how: 'Send a message in your crew chat', target: 1, glow: 15, go: '/together' },
 ];
 
 export const WEEKLY: readonly WeeklySpec[] = [
@@ -149,12 +151,12 @@ export function dailyPicks(day: string, can: (id: DailyQuestId) => boolean = () 
   return picks;
 }
 
-/** What's possible right now: starring sets needs a festival you're going to; This or that needs enough sets. */
-export type QuestAbility = { planning: boolean; enoughSets: boolean };
+/** What's possible right now: starring sets needs a festival you're going to; This or that needs enough sets; Crew call needs a crew. */
+export type QuestAbility = { planning: boolean; enoughSets: boolean; crew?: boolean };
 export const canDo =
   (a: QuestAbility) =>
   (id: DailyQuestId): boolean =>
-    id === 'stars' ? a.planning : id === 'thisorthat' ? a.enoughSets : true;
+    id === 'stars' ? a.planning : id === 'thisorthat' ? a.enoughSets : id === 'chat' ? !!a.crew : true;
 
 /** The day's picks: as fixed in the book, else drawn now. */
 export function picksFor(book: Pick<QuestBook, 'day' | 'picks'>, can: (id: DailyQuestId) => boolean): DailySpec[] {
@@ -203,6 +205,7 @@ export function dailyCurrent(spec: DailySpec, snap: QuestSnapshot, base: Counter
     bubble: () => events.bubble ?? 0,
     map: () => events.map ?? 0,
     share: () => events.share ?? 0,
+    chat: () => events.chat ?? 0,
   }[spec.id]();
   return Math.min(spec.target, n);
 }

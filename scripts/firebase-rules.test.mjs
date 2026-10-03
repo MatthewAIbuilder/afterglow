@@ -355,6 +355,16 @@ await t('crew chat: several waiting messages go in one write, each keeping when 
   // Sending one again (an earlier try that did get through) is refused, never doubled.
   await assertFails(setDoc(doc(db, 'crews', 'c1', 'chat', 'mb00001'), chatMsg()));
 });
+await t('crew chat: you note when you read it, with the server’s time; members see it; nobody else', async () => {
+  const r = (db, uid) => doc(db, 'crews', 'c1', 'reads', uid);
+  await assertSucceeds(setDoc(r(B.firestore(), 'uidB'), { at: serverTimestamp() }));
+  await assertSucceeds(setDoc(r(B.firestore(), 'uidB'), { at: serverTimestamp() }));
+  await assertFails(setDoc(r(B.firestore(), 'uidA'), { at: serverTimestamp() }));
+  await assertFails(setDoc(r(B.firestore(), 'uidB'), { at: now }));
+  await assertFails(setDoc(r(C.firestore(), 'uidC'), { at: serverTimestamp() }));
+  await assertSucceeds(getDocs(collection(A.firestore(), 'crews', 'c1', 'reads')));
+  await assertFails(getDocs(collection(C.firestore(), 'crews', 'c1', 'reads')));
+});
 await t('crew chat: never edited; removed by the writer or the owner', async () => {
   const at = (db, id) => doc(db, 'crews', 'c1', 'chat', id);
   await assertFails(updateDoc(at(B.firestore(), 'm000001'), { text: 'changed' }));

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useNow } from '../../lib/useNow';
 import { useBadgeClaims } from '../../state/badgeClaims';
+import { useCrewChat } from '../../state/crewChat';
 import { useCatalog } from '../../state/catalog';
 import { useQuestBook } from '../../state/dailyQuests';
 import { useFollowedArtists } from '../../state/followedArtists';
@@ -78,14 +79,14 @@ export type WeekRow = { spec: WeeklySpec; current: number; done: boolean };
 export function useDailyQuests() {
   const { book, loaded } = useQuestBook();
   const { snap, ready } = useQuestSnapshot();
-  const { planning, enoughSets } = useQuestAvailability();
+  const ability = useQuestAvailability();
   const now = useNow().getTime();
   const { log, loaded: sideLoaded } = useQuests();
   const { claimed } = useBadgeClaims();
   const secrets = useSecrets();
   const day = book?.day ?? questDay(now);
   // Cheap enough to work out on every render (the React Compiler keeps it steady).
-  const picks = picksFor({ day, picks: book?.day === day ? book.picks : undefined }, canDo({ planning, enoughSets }));
+  const picks = picksFor({ day, picks: book?.day === day ? book.picks : undefined }, canDo(ability));
   const rows: QuestRow[] = picks.map((spec) => {
     const done = !!book?.done.includes(spec.id);
     const current = book ? dailyCurrent(spec, snap, book.base, book.events, dayStart(book.day)) : 0;
@@ -152,7 +153,8 @@ export function useQuestAvailability(): QuestAbility {
   const { ratings } = useRatings();
   const { reactions } = useReactions();
   const enoughSets = enoughSetsFor(catalog, ratings, reactions, going);
-  return useMemo(() => ({ planning, enoughSets }), [planning, enoughSets]);
+  const crew = useCrewChat().canChat;
+  return useMemo(() => ({ planning, enoughSets, crew }), [planning, enoughSets, crew]);
 }
 
 /** Where a quest's "Go" takes you. */

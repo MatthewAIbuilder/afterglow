@@ -409,6 +409,15 @@ service cloud.firestore {
         allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
       }
 
+      // When each member last read the chat (for "Seen by"): members read them; you write only your own,
+      // with the server's time. Removed by that member or the owner.
+      match /reads/{uid} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create, update: if signedIn() && me() == uid && me() in get(path('crews', id)).data.members
+          && request.resource.data.keys().hasOnly(['at']) && request.resource.data.at == request.time;
+        allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
+      }
+
       // The crew's chat: members read it and write as themselves. `atMs` is when it was written on the
       // phone (no later than now, no older than a week); `sentAt` is the server's time. Never edited;
       // removed by the writer or the owner. The support account can read and remove a reported one.

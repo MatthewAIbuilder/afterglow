@@ -238,3 +238,22 @@ export function chatPreview(m: Pick<CrewMessage, 'uid' | 'text'> | undefined, me
 
 /** "2 new messages". */
 export const unreadLine = (n: number) => (n === 1 ? '1 new message' : `${n} new messages`);
+
+/**
+ * Who has read up to a message of yours: crewmates (never you) whose last
+ * read reached it. Both times come from the server, so phones' clocks never
+ * matter.
+ */
+export function seenBy(m: Pick<CrewMessage, 'sentAt'>, reads: Readonly<Record<string, string>>, members: readonly string[], me: string | undefined): string[] {
+  const at = ms(m.sentAt);
+  return members.filter((u) => u !== me && reads[u] && ms(reads[u]) >= at);
+}
+
+/** Under your latest message: "Delivered", "Seen by Maya", "Seen by Maya and Sam", "Seen by everyone". */
+export function seenLine(seen: readonly string[], others: number, nameOf: (uid: string) => string): string {
+  if (!seen.length) return 'Delivered';
+  if (others > 1 && seen.length >= others) return 'Seen by everyone';
+  const names = seen.map(nameOf);
+  if (names.length <= 2) return `Seen by ${names.join(' and ')}`;
+  return `Seen by ${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+}

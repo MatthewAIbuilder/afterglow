@@ -50,13 +50,24 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const crewCodes = new Map<string, string>();
   /** Who agreed to the chat rules when they joined or started a crew, as `crewId/uid`. */
   const agreed = new Set<string>();
+  /** When each member last read each crew's chat, as `crewId/uid` -> ISO. */
+  const reads = new Map<string, string>();
+  const readWatchers = new Set<{ crewId: string; listener: (r: Record<string, string>) => void }>();
+  const readsOf = (crewId: string) => Object.fromEntries([...reads].filter(([k]) => k.startsWith(`${crewId}/`)).map(([k, v]) => [k.slice(crewId.length + 1), v]));
+  const readsChanged = (crewId: string) => {
+    for (const w of readWatchers) if (w.crewId === crewId) w.listener(readsOf(crewId));
+  };
   const chatWatchers = new Set<{ crewId: string; max: number; listener: (m: CrewMessage[]) => void }>();
   const chatOf = (crewId: string, max: number) =>
     [...chat.values()].filter((m) => m.crewId === crewId).sort((a, b) => b.sentAt.localeCompare(a.sentAt) || b.id.localeCompare(a.id)).slice(0, max);
   const chatChanged = (crewId: string) => {
     for (const w of chatWatchers) if (w.crewId === crewId) w.listener(chatOf(crewId, w.max));
   };
+  const dropReads = (id: string, uid?: string) => {
+    for (const k of [...reads.keys()]) if (k.startsWith(`${id}/`) && (!uid || k === `${id}/${uid}`)) reads.delete(k);
+  };
   const dropChat = (id: string, uid?: string) => {
+    dropReads(id, uid);
     for (const [k, m] of chat) if (k.startsWith(`${id}/`) && (!uid || m.uid === uid)) chat.delete(k);
     chatChanged(id);
   };
@@ -768,6 +779,26 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         chatWatchers.delete(w);
       };
     },
+    async markCrewChatRead(crewId) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      reads.set(`${crewId}/${me().uid}`, now());
+      readsChanged(crewId);
+    },
+    watchCrewReads(crewId, listener, onError) {
+      try {
+        memberOf(crewId);
+      } catch (e) {
+        onError?.(e as SocialError);
+        return () => {};
+      }
+      const w = { crewId, listener };
+      readWatchers.add(w);
+      listener(readsOf(crewId));
+      return () => {
+        readWatchers.delete(w);
+      };
+    },
     async deleteCrewMessage(crewId, id) {
       const m = chat.get(`${crewId}/${id}`);
       if (!m) return;
@@ -821,5 +852,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     if (!crewCodes.has(crewId)) crewCodes.set(crewId, `code${crewId.replace(/[^A-Za-z0-9]/g, '')}${++n}abcdefgh`);
     return crewCodes.get(crewId)!;
   };
-  return { service, codeOf, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, chat, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
+  /** Someone reads a crew's chat now (for tests). */
+  const readAs = (crewId: string, uid: string) => {
+    reads.set(`${crewId}/${uid}`, now());
+    readsChanged(crewId);
+  };
+  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
 }

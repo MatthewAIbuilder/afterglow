@@ -71,9 +71,14 @@ describe('picking quests', () => {
   it('leaves out what you can’t do right now', () => {
     for (let i = 0; i < 40; i++) {
       const picks = dailyPicks(shiftDay('2026-10-03', -i), canDo({ planning: false, enoughSets: false }));
-      expect(picks.some((q) => q.id === 'stars' || q.id === 'thisorthat')).toBe(false);
+      expect(picks.some((q) => q.id === 'stars' || q.id === 'thisorthat' || q.id === 'chat')).toBe(false);
       expect(picks).toHaveLength(3);
     }
+  });
+
+  it('Crew call is offered only when you’re in a crew', () => {
+    expect(canDo({ planning: true, enoughSets: true })('chat')).toBe(false);
+    expect(canDo({ planning: true, enoughSets: true, crew: true })('chat')).toBe(true);
   });
 
   it('every quest can be drawn', () => {

@@ -139,6 +139,8 @@ The app says when signal held something up:
 - once they get through, "Your 2 messages reached the crew, held up 18 min by signal", plus a phone notification if they were held 10 minutes or more and you're not in that chat;
 - a crewmate's late message reads "Sent 7:30 PM · reached the crew 8:00 PM", and the chat points it out.
 
+**Seen by:** each member's `crews/{id}/reads/{uid}` holds when they last read the chat (server time). It's written when they read, and again once there's signal if that write didn't get through. Your latest message shows "Delivered", "Seen by Maya" or "Seen by everyone".
+
 The chat screen is `crew-chat/[id].tsx`:
 - the rules at the top;
 - day headings, with each person's messages grouped together;

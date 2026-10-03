@@ -226,6 +226,10 @@ export interface SocialService {
    * Returns a stop function.
    */
   watchCrewChat(crewId: string, max: number, listener: (messages: CrewMessage[]) => void, onError?: (e: SocialError) => void): () => void;
+  /** Note that you've read a crew's chat up to now (server time), so crewmates can see "Seen by". */
+  markCrewChatRead(crewId: string): Promise<void>;
+  /** Follow when each member last read a crew's chat: uid -> ISO time, now and whenever it changes. Returns a stop function. */
+  watchCrewReads(crewId: string, listener: (reads: Record<string, string>) => void, onError?: (e: SocialError) => void): () => void;
   /** Remove a chat message: your own, or anyone's in a crew you own. */
   deleteCrewMessage(crewId: string, id: string): Promise<void>;
   /** The crew's meeting spot, if one's set. Members only. */

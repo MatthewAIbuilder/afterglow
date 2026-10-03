@@ -114,6 +114,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     }
   };
   const now = () => new Date().toISOString();
+  /** A Firestore time (or ISO string) as ISO; undefined when missing. */
+  const readTime = (v: unknown): string | undefined => {
+    if (typeof v === 'string') return v;
+    const t = v as { toDate?: () => Date } | null;
+    return t?.toDate ? t.toDate().toISOString() : undefined;
+  };
   /** A write that hasn't got through by `ms` counts as no signal (Firestore keeps trying it in the background). */
   const withTimeout = <T,>(p: Promise<T>, ms: number) =>
     new Promise<T>((resolve, reject) => {
@@ -169,6 +175,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     const picks = await getDocs(collection(db, 'crews', id, 'picks')).catch(() => null);
     for (const d of picks?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await removeChat(id).catch(() => {});
+    const reads = await getDocs(collection(db, 'crews', id, 'reads')).catch(() => null);
+    for (const d of reads?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'invite')).catch(() => {});
     const joins = await getDocs(collection(db, 'crews', id, 'joins')).catch(() => null);
@@ -976,6 +984,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // Your updates, messages and picks go with you.
         await removeUpdates(id, user.uid).catch(() => {});
         await removeChat(id, user.uid).catch(() => {});
+        await deleteDoc(doc(db, 'crews', id, 'reads', user.uid)).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', user.uid));
         await updateDoc(crewRef, { members, owner: c.owner === user.uid ? members[0] : c.owner });
       }),
@@ -1005,6 +1014,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!c) throw new SocialError('not-found');
         await removeUpdates(id, uid).catch(() => {});
         await removeChat(id, uid).catch(() => {});
+        await deleteDoc(doc(db, 'crews', id, 'reads', uid)).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', uid));
         const members = c.members.filter((m) => m !== uid);
         await updateDoc(crewRef, { members });
@@ -1119,6 +1129,26 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       return onSnapshot(
         query(collection(fb().db, 'crews', crewId, 'chat'), orderBy('sentAt', 'desc'), limit(max)),
         (snap) => listener(snap.docs.map((d) => crewMessageFromDoc(crewId, d.id, d.data({ serverTimestamps: 'estimate' }))).filter((m): m is CrewMessage => !!m)),
+        (e) => onError?.(asSocialError(e)),
+      );
+    },
+    markCrewChatRead: (crewId) =>
+      guard(async () => {
+        const user = me();
+        await withTimeout(setDoc(doc(fb().db, 'crews', crewId, 'reads', user.uid), { at: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
+      }),
+    watchCrewReads(crewId, listener, onError) {
+      if (!firebaseConfigured(config)) return () => {};
+      return onSnapshot(
+        collection(fb().db, 'crews', crewId, 'reads'),
+        (snap) => {
+          const reads: Record<string, string> = {};
+          for (const d of snap.docs) {
+            const at = readTime(d.data({ serverTimestamps: 'estimate' }).at);
+            if (at) reads[d.id] = at;
+          }
+          listener(reads);
+        },
         (e) => onError?.(asSocialError(e)),
       );
     },

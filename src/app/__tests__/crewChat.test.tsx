@@ -104,6 +104,21 @@ describe('crew chat', () => {
     expect(app.queryByLabelText(/^Waiting for signal\./)).toBeNull();
   });
 
+  it('your latest message says Delivered, then who has seen it; reading it tells the crew', async () => {
+    const { crew, maya, sam } = await crewWithMessage();
+    const app = await renderApp(`/crew-chat/${crew.id}`);
+    await flush();
+    // Opening the chat noted that Sam read it.
+    expect(mockSocial.reads.has(`${crew.id}/${sam}`)).toBe(true);
+    await fireEvent.press(app.getByLabelText('Send “On my way”'));
+    await flush();
+    expect(app.getByText('8:00 PM · Delivered')).toBeTruthy();
+    await settle(1000);
+    await act(async () => mockSocial.readAs(crew.id, maya));
+    await flush();
+    expect(app.getByText('8:00 PM · Seen by Maya')).toBeTruthy();
+  });
+
   it('a crewmate’s message held up by signal sits at the time it was written, and the chat points it out', async () => {
     await person('maya', 'Maya');
     const crew = await s().createCrew('solstice-26', 'Bass crew');

@@ -9,6 +9,8 @@ import {
   heldFor,
   justArrivedLate,
   lateNote,
+  seenBy,
+  seenLine,
   waitingLine,
   chatLines,
   chatPreview,
@@ -109,5 +111,18 @@ describe('crew chat', () => {
     const sent = [late, msg('m2', 'sam', T(22, 19)), msg('m3', 'me', T(21), T(22, 20)), msg('m4', 'maya', T(20), T(21))];
     expect(justArrivedLate(sent, 'me', [], T(22, 25)).map((m) => m.id)).toEqual(['m1']);
     expect(justArrivedLate(sent, 'me', ['maya'], T(22, 25))).toEqual([]);
+  });
+
+  it('says who has seen your latest message, by the server’s clock', () => {
+    const m = msg('m1', 'me', T(22), T(22, 1));
+    const reads = { maya: iso(T(22, 5)), sam: iso(T(21)), me: iso(T(23)) };
+    expect(seenBy(m, reads, ['me', 'maya', 'sam', 'jo'], 'me')).toEqual(['maya']);
+    const name = (u: string) => ({ maya: 'Maya', sam: 'Sam', jo: 'Jo' })[u] ?? u;
+    expect(seenLine([], 3, name)).toBe('Delivered');
+    expect(seenLine(['maya'], 3, name)).toBe('Seen by Maya');
+    expect(seenLine(['maya', 'sam'], 3, name)).toBe('Seen by Maya and Sam');
+    expect(seenLine(['maya', 'sam', 'jo'], 3, name)).toBe('Seen by everyone');
+    expect(seenLine(['maya', 'sam', 'jo'], 5, name)).toBe('Seen by Maya, Sam and 1 more');
+    expect(seenLine(['maya'], 1, name)).toBe('Seen by Maya');
   });
 });
