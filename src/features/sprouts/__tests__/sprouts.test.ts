@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, giftsToSend, queueClaim, retryDelay, tidy, type Gift } from '../outbox';
+import { sproutNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, giftsToSend, queueClaim, retryDelay, tidy, type Gift } from '../outbox';
 import {
   cleanBloomed,
   festivalDaysOf,
@@ -141,5 +141,21 @@ describe('outbox', () => {
     expect(giftsToSend(gifts, 100).map((g) => g.id)).toEqual(['bbbbbbbbbbbbbbbbbbbb']);
     expect(giftsToSend(gifts, 100 + 15_000).map((g) => g.id)).toEqual(['aaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb']);
     expect(cleanGifts([...gifts, { id: 'no', kind: 'plur', at: 1 }])).toHaveLength(3);
+  });
+});
+
+describe('the bell', () => {
+  it('says who picked up your sprouts lately, newest first', () => {
+    const now = at(10, 20);
+    const gifts: Gift[] = [
+      { id: 'aaaaaaaaaaaaaaaaaaaa', kind: 'plur', at: at(10, 1), sent: true, tries: 0, claimedBy: { uid: 's', name: 'Sam' }, claimedAt: at(10, 18), note: 'Hi' },
+      { id: 'bbbbbbbbbbbbbbbbbbbb', kind: 'seedling', at: at(10, 1), sent: true, tries: 0, claimedBy: { uid: 'j', handle: 'jojo' }, claimedAt: at(10, 19) },
+      { id: 'cccccccccccccccccccc', kind: 'seedling', at: at(9, 1), sent: true, tries: 0, claimedBy: { uid: 'k', name: 'Kai' }, claimedAt: at(9, 2) },
+      { id: 'dddddddddddddddddddd', kind: 'seedling', at: at(10, 19), sent: true, tries: 0 },
+    ];
+    expect(sproutNotices(gifts, now).map((n) => [n.title, n.body])).toEqual([
+      ['@jojo picked up your Sprout', 'It’s growing in their garden now.'],
+      ['Sam picked up your PLUR sprout', 'With your note: “Hi”. It’s growing in their garden now.'],
+    ]);
   });
 });

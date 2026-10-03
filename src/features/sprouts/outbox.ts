@@ -1,4 +1,5 @@
-import { isKind, isSproutId, type SproutCard, type SproutKind, SPROUT_KEEP_DAYS, SPROUT_NOTE_MAX } from './sprouts';
+import type { Notice } from '../notifications/inbox';
+import { isKind, kindOf, isSproutId, type SproutCard, type SproutKind, SPROUT_KEEP_DAYS, SPROUT_NOTE_MAX } from './sprouts';
 
 /**
  * Giving and picking up sprouts with bad signal, pure. A sprout you give is
@@ -108,5 +109,23 @@ export function claimLine(c: Claim): string {
   if (c.state === 'claimed') return 'In your garden';
   if (c.state === 'taken') return 'Someone else already picked this one up.';
   if (c.state === 'gone') return 'This sprout couldn’t be found. Ask them for a new code.';
-  return c.account ? 'Saved on your phone. It joins your garden as soon as there’s signal.' : 'Saved on this phone. Sign in to keep it.';
+  return c.account ? 'Saved on your phone. It joins your garden by itself once you’ve both had signal.' : 'Saved on this phone. Sign in to keep it.';
+}
+
+/** Sprouts you gave that were picked up lately become bell news for this many days. */
+export const SPROUT_NEWS_DAYS = 14;
+
+/** "Sam picked up your PLUR sprout", newest first, for the bell. */
+export function sproutNotices(gifts: readonly Gift[], now: number): Notice[] {
+  return gifts
+    .filter((g) => g.claimedBy && g.claimedAt && now - g.claimedAt < SPROUT_NEWS_DAYS * 86_400_000)
+    .sort((a, b) => (b.claimedAt ?? 0) - (a.claimedAt ?? 0))
+    .slice(0, 10)
+    .map((g) => ({
+      id: `sprout:${g.id}`,
+      kind: 'sprout' as const,
+      title: `${g.claimedBy!.name ?? (g.claimedBy!.handle ? `@${g.claimedBy!.handle}` : 'Someone')} picked up your ${kindOf(g.kind).name}`,
+      body: g.note ? `With your note: “${g.note}”. It’s growing in their garden now.` : 'It’s growing in their garden now.',
+      href: '/garden',
+    }));
 }

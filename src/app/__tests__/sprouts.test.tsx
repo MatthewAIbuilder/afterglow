@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { sproutLink } from '../../features/sprouts/sprouts';
 import { renderApp } from './appRoutes';
@@ -73,6 +74,10 @@ describe('sprouts', () => {
     await fireEvent.press(app.getByText('Give another'));
     await flush();
     expect(app.getByText('4 of 5 seeds left today')).toBeTruthy();
+    // The bell has it too.
+    await act(async () => router.push('/notifications'));
+    await flush();
+    expect(app.getByText('Sam picked up your Sprout')).toBeTruthy();
   });
 
   it('a scanned sprout pops up and joins your garden with one tap', async () => {
@@ -117,7 +122,7 @@ describe('sprouts', () => {
     await flush();
     await fireEvent.press(app.getByText('Add to my garden'));
     await flush();
-    expect(app.getByText('Saved on your phone. It joins your garden as soon as there’s signal.')).toBeTruthy();
+    expect(app.getByText('Saved on your phone. It joins your garden by itself once you’ve both had signal.')).toBeTruthy();
     expect(mockSocial.sprouts.get(ID)?.to).toBeUndefined();
     mockSocial.network.down = false;
     network.__setState({ isConnected: true, isInternetReachable: true });

@@ -11,7 +11,7 @@ import { countdown, nextRun } from '../festivals/when';
 export type Notice = {
   /** Stable, so a notice you've read stays read; changes when the news does (e.g. new dates). */
   id: string;
-  kind: 'now' | 'soon' | 'setTimes' | 'lineup' | 'clips' | 'follow' | 'like' | 'comment' | 'recap' | 'crewInvite';
+  kind: 'now' | 'soon' | 'setTimes' | 'lineup' | 'clips' | 'follow' | 'like' | 'comment' | 'recap' | 'crewInvite' | 'sprout';
   title: string;
   body: string;
   /** Where tapping it goes. */

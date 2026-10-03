@@ -73,13 +73,13 @@ export default function RootLayout() {
       <LineupNewsProvider>
       <ClipNewsProvider>
       <SocialProvider>
+      <SproutsProvider>
       <NoticesProvider>
       <CrewsProvider>
       <CrewUpdatesProvider>
       <CrewChatProvider>
       <FestivalModeProvider>
       <FriendAddsProvider>
-      <SproutsProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -235,13 +235,13 @@ export default function RootLayout() {
       <SecretStage />
       <OfflineNotice />
       <DialogHost />
-      </SproutsProvider>
       </FriendAddsProvider>
       </FestivalModeProvider>
       </CrewChatProvider>
       </CrewUpdatesProvider>
       </CrewsProvider>
       </NoticesProvider>
+      </SproutsProvider>
       </SocialProvider>
       </ClipNewsProvider>
       </LineupNewsProvider>

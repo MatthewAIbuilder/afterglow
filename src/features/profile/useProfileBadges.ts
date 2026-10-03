@@ -25,6 +25,7 @@ import { milestoneKey, milestones, pinKey, throwbackKey, unclaimed } from './mil
 import { citiesOf, passport as makePassport } from './passport';
 import { bestStreakOf } from '../quests/daily';
 import { useDailyQuests } from '../quests/useDailyQuests';
+import { useSprouts } from '../../state/sprouts';
 
 /**
  * Everything your badges need, in one place, for the Profile tab and the
@@ -38,6 +39,7 @@ export function useProfileBadges() {
   const catalog = useCatalog();
   // Daily quests: your best streak and glow level earn badges too.
   const daily = useDailyQuests();
+  const sprouts = useSprouts();
   const today = useToday();
   const { going } = useGoing();
   const { forYou } = useWeekends();
@@ -77,8 +79,11 @@ export function useProfileBadges() {
         founder: standing?.founder,
         streak: bestStreakOf(daily.book),
         glow: daily.level.glow,
+        bloomed: sprouts.garden.filter((g) => g.kind === 'seedling' && g.stage === 3 && g.shown !== 'seedling').length,
+        given: sprouts.gifts.filter((g) => g.claimedBy).length,
+        kinds: [...sprouts.collected].filter((k) => k !== 'seedling').length,
       }),
-    [passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow],
+    [passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();

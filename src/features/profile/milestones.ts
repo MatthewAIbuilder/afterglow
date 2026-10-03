@@ -4,7 +4,7 @@ import type { QuestId } from '../quests/quests';
  * Milestone badges: a few quiet markers of your festival life, next to the
  * festival pins. Worked out on the phone from what you've done. Pure.
  */
-export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon';
+export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon' | 'green' | 'giver' | 'gardener';
 
 export type Milestone = {
   id: MilestoneId | QuestId;
@@ -39,6 +39,12 @@ export type MilestoneInput = {
   streak?: number;
   /** Your glow, all told (quests, side quests, badges, secrets). */
   glow?: number;
+  /** Plain sprouts you've grown to bloom. */
+  bloomed?: number;
+  /** Sprouts you gave that someone picked up. */
+  given?: number;
+  /** Sprout kinds in your garden (not counting plain ones). */
+  kinds?: number;
 };
 
 type Spec = { id: MilestoneId; title: string; how: string; about: string; target: number; value: (i: MilestoneInput) => number };
@@ -55,6 +61,9 @@ const SPECS: Spec[] = [
   { id: 'streak7', title: 'On a roll', how: 'A 7-day quest streak', about: 'For finishing all three daily quests seven days in a row.', target: 7, value: (i) => i.streak ?? 0 },
   { id: 'neon', title: 'Neon', how: 'Earn 450 glow', about: 'For reaching glow level 4, Neon: 450 glow from your quests, side quests, badges and secrets.', target: 450, value: (i) => i.glow ?? 0 },
   { id: 'streak30', title: 'Afterglow forever', how: 'A 30-day quest streak', about: 'For finishing all three daily quests every day for a month. That’s devotion.', target: 30, value: (i) => i.streak ?? 0 },
+  { id: 'green', title: 'Green thumb', how: 'Grow a sprout to bloom', about: 'For growing a sprout all the way to bloom: festival days, giving, filming and watching sets all help.', target: 1, value: (i) => i.bloomed ?? 0 },
+  { id: 'giver', title: 'Kind soul', how: 'Give 10 sprouts', about: 'For giving 10 sprouts that people picked up. PLUR in action.', target: 10, value: (i) => i.given ?? 0 },
+  { id: 'gardener', title: 'Gardener', how: 'Collect all 7 sprout kinds', about: 'For a garden with every kind of sprout in it, grown yourself or given to you.', target: 7, value: (i) => i.kinds ?? 0 },
   { id: 'ten', title: '10 festivals', how: 'Go to 10 festivals', about: 'For going to 10 festivals. A proper festival life.', target: 10, value: (i) => i.been },
 ];
 

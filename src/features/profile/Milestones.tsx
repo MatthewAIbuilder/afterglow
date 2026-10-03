@@ -22,6 +22,9 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   streak7: ['#FFB86B', '#C2477E'],
   streak30: ['#FFD36E', '#E0567A'],
   neon: ['#FF7EF0', '#5B3BC4'],
+  green: ['#8FF0B4', '#1E8F4A'],
+  giver: ['#9EF2C0', '#C2477E'],
+  gardener: ['#C2F0A0', '#1F7F6E'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -94,6 +97,37 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
     case 'neon':
       // A four-pointed spark.
       return <Path d="M12 3 C12.6 8 16 11.4 21 12 C16 12.6 12.6 16 12 21 C11.4 16 8 12.6 3 12 C8 11.4 11.4 8 12 3 Z" {...p} />;
+    case 'green':
+      // A sprout: a stem and two leaves.
+      return (
+        <G>
+          <Path d="M12 21 L12 11" {...p} />
+          <Path d="M12 12 C12 7 7 5 4 6 C4 10 8 12.5 12 12 Z" {...p} />
+          <Path d="M12 14 C12 10 16 8 20 9 C20 12.5 16.5 14.5 12 14 Z" {...p} />
+        </G>
+      );
+    case 'giver':
+      // A heart with a leaf on top.
+      return (
+        <G>
+          <Path d="M12 21 C6.5 17 4 14 4 11 A3.8 3.8 0 0 1 12 9.5 A3.8 3.8 0 0 1 20 11 C20 14 17.5 17 12 21 Z" {...p} />
+          <Path d="M12 9.5 C12 6 14 3.5 17 3.5 C17 6.5 15 8.5 12 9.5" {...p} />
+        </G>
+      );
+    case 'gardener':
+      // Three sprouts in a row.
+      return (
+        <G>
+          <Path d="M3 20 L21 20" {...p} />
+          {[6, 12, 18].map((x) => (
+            <G key={x}>
+              <Path d={`M${x} 20 L${x} ${x === 12 ? 9 : 13}`} {...p} />
+              <Path d={`M${x} ${x === 12 ? 11 : 15} C${x} ${x === 12 ? 8 : 12.5} ${x - 3} ${x === 12 ? 7 : 11.5} ${x - 3.5} ${x === 12 ? 8 : 12}`} {...p} />
+              <Path d={`M${x} ${x === 12 ? 10 : 14} C${x} ${x === 12 ? 7 : 11.5} ${x + 3} ${x === 12 ? 6 : 10.5} ${x + 3.5} ${x === 12 ? 7 : 11}`} {...p} />
+            </G>
+          ))}
+        </G>
+      );
     case 'basshead':
       // A bass wave.
       return <Path d="M3 12 L6 12 L8 6 L11 18 L13.5 4 L16 20 L18 9 L19.5 12 L21 12" {...p} />;
