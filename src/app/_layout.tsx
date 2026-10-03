@@ -11,6 +11,7 @@ import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
 import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
 import { QuestToast } from '../features/quests/QuestToast';
+import { WhatsNewLauncher } from '../features/whatsNew/WhatsNewLauncher';
 import { SecretStage } from '../features/secrets/SecretStage';
 import { SunriseWatcher } from '../features/secrets/SunriseWatcher';
 import { FirstRun } from '../features/welcome/FirstRun';
@@ -119,6 +120,7 @@ export default function RootLayout() {
         <Stack.Screen name="festival-map" />
         <Stack.Screen name="festival-calendar" />
         <Stack.Screen name="quests" />
+        <Stack.Screen name="whats-new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="secrets" />
         <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="your-artists" />
@@ -197,6 +199,7 @@ export default function RootLayout() {
       <FounderClaim />
       <AdminReturnPill />
       <TonightLauncher />
+      <WhatsNewLauncher />
       <QuestTracker />
       <DailyQuestTracker />
       <ReminderSync />

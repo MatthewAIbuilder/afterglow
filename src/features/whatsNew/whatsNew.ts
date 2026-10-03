@@ -1,0 +1,19 @@
+/**
+ * What's new in an update, shown once to people who already use the app
+ * (never to someone just finishing the welcome). Bump `key` for the next
+ * update's list. Pure.
+ */
+export type WhatsNewItem = { id: string; title: string; body: string; href?: string };
+
+export const WHATS_NEW: { key: string; items: WhatsNewItem[] } = {
+  key: '2026-10-04',
+  items: [
+    { id: 'map', title: 'The festival map', body: 'Every festival glowing on a night-time world. Pinch around, see your journey, and every artist’s tour.', href: '/festival-map' },
+    { id: 'quests', title: 'Daily quests', body: 'Three small quests a day, a weekly one, a streak and your glow level. The ring on Discover fills as you go.', href: '/quests' },
+    { id: 'secrets', title: 'Secrets', body: 'Eight hidden things to find around the app. Hint: Discover likes a little movement.', href: '/secrets' },
+    { id: 'calendar', title: 'Festival calendar', body: 'Flip through the months and see what’s on any day. Pull Festivals down to refresh.', href: '/festival-calendar' },
+  ],
+};
+
+/** Shown when it's someone who already uses the app and hasn't seen this list. */
+export const showWhatsNew = (seen: string | null, usedBefore: boolean) => usedBefore && seen !== WHATS_NEW.key;

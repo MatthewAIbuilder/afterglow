@@ -37,6 +37,7 @@ import FestivalMapScreen from '../festival-map';
 import FestivalCalendarScreen from '../festival-calendar';
 import QuestsScreen from '../quests';
 import SecretsScreen from '../secrets';
+import WhatsNewScreen from '../whats-new';
 import PrepScreen from '../prep/[id]';
 import YourArtistsScreen from '../your-artists';
 import SettingsScreen from '../settings';
@@ -97,6 +98,7 @@ export const APP_ROUTES = {
   'festival-calendar': FestivalCalendarScreen,
   quests: QuestsScreen,
   secrets: SecretsScreen,
+  'whats-new': WhatsNewScreen,
   'prep/[id]': PrepScreen,
   'your-artists': YourArtistsScreen,
   settings: SettingsScreen,
