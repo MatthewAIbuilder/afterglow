@@ -69,11 +69,14 @@ describe('telling your crew how you are', () => {
     alert.mockRestore();
     const help = [...mockSocial.updates.values()].find((u) => u.care === 'help');
     expect(help).toMatchObject({ kind: 'checkin', crewId: crew.id, note: 'Not feeling great. Can someone come find me?' });
-    expect(app.getByText('Sent. Your crew can see you’d like someone to come.')).toBeTruthy();
-    // Next, the way to clear it.
-    expect(app.getByText('You asked your crew for help at 5:30 PM. Feeling better? Let them know.')).toBeTruthy();
-    expect(app.getByLabelText('I’m OK now. Tell my crew')).toBeTruthy();
+    expect(app.getByText('Sent to your crew')).toBeTruthy();
     await app.unmount();
+    // Next time, the way to clear it.
+    const back = await renderApp('/check-in');
+    await flush();
+    expect(back.getByText('You asked your crew for help at 5:30 PM. Feeling better? Let them know.')).toBeTruthy();
+    expect(back.getByLabelText('I’m OK now. Tell my crew')).toBeTruthy();
+    await back.unmount();
 
     // Maya: an alert wherever the crew shows, a red ring, and one nudge on her phone.
     await s().signOut();
@@ -107,7 +110,7 @@ describe('telling your crew how you are', () => {
     await flush();
     await fireEvent.press(his.getByLabelText('I’m OK now. Tell my crew'));
     await flush();
-    expect(his.getByText('Sent. Your crew knows you’re OK.')).toBeTruthy();
+    expect(his.getByText('Sent to your crew')).toBeTruthy();
     await his.unmount();
     await s().signOut();
     await as('maya');

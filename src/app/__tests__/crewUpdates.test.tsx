@@ -263,7 +263,7 @@ describe('crew updates', () => {
     alert.mockRestore();
     const lost = [...mockSocial.updates.values()].find((u) => u.lost);
     expect(lost).toMatchObject({ kind: 'checkin', note: 'Can’t find you. Heading to By the big tree left of Main Stage' });
-    expect(app.getByText('Sent. Your crew can see it.')).toBeTruthy();
+    expect(app.getByText('Sent to your crew')).toBeTruthy();
     await app.unmount();
 
     // Maya sees it at the front of her stories.

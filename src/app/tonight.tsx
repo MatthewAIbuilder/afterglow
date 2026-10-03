@@ -12,8 +12,7 @@ import { CareCard } from '../features/care/CareCard';
 import { SideQuestsCard } from '../features/quests/SideQuestsCard';
 import { FestivalModeCard } from '../features/festivalMode/FestivalModeCard';
 import { CrewLatest } from '../features/crews/CrewLatest';
-import { LostButton } from '../features/crews/LostButton';
-import { CareButtons } from '../features/crews/CareButtons';
+import { CheckInPanel } from '../features/crews/CheckInPanel';
 import { CrewHelpAlerts } from '../features/crews/CrewHelpAlerts';
 import { MeetSpotCard } from '../features/crews/MeetSpotCard';
 import { CrewWhereCard } from '../features/crews/CrewWhereCard';
@@ -117,9 +116,8 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
           {crews.length ? (
             <>
               <CrewHelpAlerts festivalId={festival.id} />
+              {ready ? <CheckInPanel festivalId={festival.id} /> : null}
               <CrewWhereCard festival={festival} crews={crews} />
-              {ready ? <CareButtons festivalId={festival.id} /> : null}
-              {ready ? <LostButton festivalId={festival.id} /> : null}
               {crews.map((c) => (
                 <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={crews.length > 1} />
               ))}

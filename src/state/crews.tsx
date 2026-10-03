@@ -21,6 +21,8 @@ type Ctx = {
   create: (festivalId: string, name: string) => Promise<Crew>;
   join: (id: string) => Promise<Crew>;
   leave: (id: string) => Promise<void>;
+  /** The owner ends the crew for everyone. */
+  end: (id: string) => Promise<void>;
   rename: (id: string, name: string) => Promise<Crew>;
   remove: (id: string, uid: string) => Promise<Crew>;
   refresh: () => Promise<void>;
@@ -153,6 +155,14 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
     },
     [service],
   );
+  const end = useCallback(
+    async (id: string) => {
+      await service.endCrew(id);
+      published.current.delete(id);
+      setState((s) => ({ ...s, crews: s.crews.filter((c) => c.id !== id) }));
+    },
+    [service],
+  );
   const rename = useCallback(
     async (id: string, name: string) => {
       const crew = await service.renameCrew(id, name);
@@ -229,6 +239,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       create,
       join,
       leave,
+      end,
       rename,
       remove,
       refresh,
@@ -237,7 +248,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       inviters,
       declineInvite,
     }),
-    [crews, loaded, create, join, leave, rename, remove, refresh, stars, invites, inviters, declineInvite],
+    [crews, loaded, create, join, leave, end, rename, remove, refresh, stars, invites, inviters, declineInvite],
   );
   return <CrewsContext.Provider value={value}>{children}</CrewsContext.Provider>;
 }
