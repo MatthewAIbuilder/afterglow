@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
+import { BadgeCelebration } from '../features/profile/BadgeCelebration';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
 import { SPROUT_GREEN } from '../features/sprouts/look';
@@ -36,6 +37,7 @@ export default function GardenScreen() {
     }, [refresh]),
   );
   const waiting = sprouts.claims.filter((c) => c.state === 'waiting');
+  const bloom = sprouts.newBlooms[0];
   const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
   const collected = kinds.filter((k) => sprouts.collected.has(k.id)).length;
 
@@ -163,6 +165,8 @@ export default function GardenScreen() {
         ) : null}
       </ScrollView>
       <SproutSheet sprout={open} onClose={() => setOpen(undefined)} />
+      {/* A sprout that bloomed since you last looked gets its moment, one at a time. */}
+      <BadgeCelebration unlock={bloom && !open ? { kind: 'sprout', sprout: bloom.kind } : undefined} onDone={() => bloom && sprouts.bloomShown(bloom.id)} />
     </View>
   );
 }

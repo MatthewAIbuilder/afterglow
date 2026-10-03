@@ -206,6 +206,26 @@ describe('sprouts', () => {
     expect(app.getByText('This sprout can’t be picked up. Ask them for a new code.')).toBeTruthy();
   });
 
+  it('when your first sprout blooms, the garden celebrates it once, and the bell says so', async () => {
+    const maya = await person('maya', 'Maya');
+    const start = new Date(2026, 9, 1, 12).getTime();
+    // Nine sprouts given since the first one arrived: enough to bloom, from giving (a PLUR sprout).
+    const gifts = Array.from({ length: 9 }, (_, k) => ({ id: `gift${k}aaaaaaaaaaaaaaa`, kind: 'seedling', at: start + (k + 1) * 3_600_000, sent: true, tries: 0, account: maya }));
+    await AsyncStorage.setItem('sprouts.v1', JSON.stringify({ gifts, claims: [], garden: [], bloomed: {}, starterAt: start }));
+    const app = await renderApp('/garden');
+    await flush(20);
+    expect(app.getByText('Your sprout bloomed')).toBeTruthy();
+    expect(app.getAllByText('PLUR sprout').length).toBeGreaterThan(0);
+    await fireEvent.press(app.getByText('Lovely'));
+    await flush();
+    expect(app.queryByText('Your sprout bloomed')).toBeNull();
+    expect(app.getByLabelText('PLUR sprout, Your first sprout. In bloom.')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('sprouts.v1')) ?? '{}').bloomsShown).toEqual(['starter']);
+    await act(async () => router.push('/notifications'));
+    await flush();
+    expect(app.getByText('Your sprout bloomed into a PLUR sprout')).toBeTruthy();
+  });
+
   it('the Friends tab and Profile lead to sprouts', async () => {
     await person('maya', 'Maya');
     const app = await renderApp('/together');

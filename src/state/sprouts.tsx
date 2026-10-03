@@ -55,6 +55,8 @@ type Stored = {
   bloomed: Record<string, SproutKind>;
   /** When each bloomed (for the bell). */
   bloomedAt?: Record<string, number>;
+  /** Blooms already celebrated in the garden. */
+  bloomsShown?: string[];
   /** When this phone's first sprout arrived. */
   starterAt?: number;
 };
@@ -75,6 +77,10 @@ type Ctx = {
   gifts: Gift[];
   /** Your sprouts that bloomed, and when. */
   blooms: { id: string; kind: SproutKind; at: number }[];
+  /** Blooms not yet celebrated in the garden, oldest first. */
+  newBlooms: { id: string; kind: SproutKind; at: number }[];
+  /** The garden celebrated this bloom. */
+  bloomShown: (id: string) => void;
   /** Scans waiting or done (this account, or not signed in yet). */
   claims: Claim[];
   give: (kind: SproutKind, note?: string) => GiveResult;
@@ -120,6 +126,7 @@ function clean(raw: unknown): Stored {
     garden: cleanGarden(o.garden),
     bloomed: cleanBloomed(o.bloomed),
     bloomedAt: cleanTimes(o.bloomedAt),
+    bloomsShown: Array.isArray(o.bloomsShown) ? o.bloomsShown.filter((x): x is string => typeof x === 'string').slice(-200) : [],
     ...(typeof o.starterAt === 'number' ? { starterAt: o.starterAt } : {}),
   };
 }
@@ -179,6 +186,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           garden: [...cur.garden, ...s.garden.filter((g) => !cur.garden.some((c) => c.id === g.id && c.account === g.account))],
           bloomed: { ...s.bloomed, ...cur.bloomed },
           bloomedAt: { ...s.bloomedAt, ...cur.bloomedAt },
+          bloomsShown: [...new Set([...(s.bloomsShown ?? []), ...(cur.bloomsShown ?? [])])],
           starterAt: s.starterAt ?? cur.starterAt ?? Date.now(),
         }));
       })
@@ -471,11 +479,13 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     () => garden.flatMap((g) => (stored.bloomed[g.id] && stored.bloomedAt?.[g.id] ? [{ id: g.id, kind: stored.bloomed[g.id], at: stored.bloomedAt[g.id] }] : [])),
     [garden, stored.bloomed, stored.bloomedAt],
   );
+  const newBlooms = useMemo(() => blooms.filter((b) => !(stored.bloomsShown ?? []).includes(b.id)).sort((a, b) => a.at - b.at), [blooms, stored.bloomsShown]);
+  const bloomShown = useCallback((id: string) => setStored((s) => ({ ...s, bloomsShown: [...(s.bloomsShown ?? []), id].slice(-200) })), [setStored]);
   const collected = useMemo(() => collectedKinds(garden), [garden]);
 
   const value = useMemo<Ctx>(
-    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, claims, give, takeBack, claim, checkGift, refresh }),
-    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, claims, give, takeBack, claim, checkGift, refresh],
+    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, claims, give, takeBack, claim, checkGift, refresh }),
+    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, claims, give, takeBack, claim, checkGift, refresh],
   );
   return <SproutsContext.Provider value={value}>{children}</SproutsContext.Provider>;
 }
