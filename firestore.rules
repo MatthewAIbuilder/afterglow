@@ -30,7 +30,7 @@ service cloud.firestore {
     match /profiles/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['handle', 'displayName', 'nameLower', 'bio', 'avatarUrl', 'coverUrl', 'festivals', 'sounds', 'showFestivals', 'showSound', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['handle', 'displayName', 'nameLower', 'bio', 'avatarUrl', 'coverUrl', 'festivals', 'sounds', 'showFestivals', 'showSound', 'artists', 'showArtists', 'backdrop', 'createdAt', 'updatedAt'])
         && validHandle(request.resource.data.handle)
         && request.resource.data.displayName is string && request.resource.data.displayName.size() > 0 && request.resource.data.displayName.size() <= 40
         && request.resource.data.nameLower == request.resource.data.displayName.lower()
@@ -42,6 +42,13 @@ service cloud.firestore {
         && (!('avatarUrl' in request.resource.data) || (request.resource.data.avatarUrl is string && request.resource.data.avatarUrl.matches('^https://.*')))
         && (!('coverUrl' in request.resource.data) || (request.resource.data.coverUrl is string && request.resource.data.coverUrl.size() <= 2000 && request.resource.data.coverUrl.matches('^https://.*')))
         && request.resource.data.createdAt is string && request.resource.data.updatedAt is string
+        // Favourite artists round your photo (up to 6 ids), and an animated background: a style name, the
+        // panda garden and the frog pond only on the two profiles they were made for.
+        && (!('artists' in request.resource.data) || (request.resource.data.artists is list && request.resource.data.artists.size() <= 6))
+        && (!('showArtists' in request.resource.data) || request.resource.data.showArtists is bool)
+        && (!('backdrop' in request.resource.data) || (request.resource.data.backdrop is string && request.resource.data.backdrop.matches('^[a-z-]{1,20}$')
+          && (request.resource.data.backdrop != 'panda' || uid == '8EEXIUNCQghOnejeAOygGMSl6Bp1')
+          && (request.resource.data.backdrop != 'frog' || uid == '6i9w14pQcdR05jYEUvPmadkQ6NZ2')))
         && getAfter(path('handles', request.resource.data.handle)).data.uid == uid;
       allow delete: if signedIn() && me() == uid;
     }

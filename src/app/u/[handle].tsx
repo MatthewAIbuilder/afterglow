@@ -2,7 +2,8 @@ import { Image } from 'expo-image';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
-import { filmedOrbit } from '../../features/profile/identity';
+import { publicOrbit } from '../../features/profile/identity';
+import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
 import type { ProfileStat } from '../../features/profile/profileView';
 import { ProfileCover } from '../../components/ProfileCover';
 import { PageTitle } from '../../components/PageTitle';
@@ -48,6 +49,7 @@ export default function PublicProfileScreen() {
   const social = useSocial();
   const catalog = useCatalog();
   const [profile, setProfile] = useState<Profile | null | undefined>();
+  const backdrop = useProfileBackdrop(profile);
   const { badges, throwbacks } = useBadges(profile?.uid);
   const [memories, setMemories] = useState<SharedMemory[]>([]);
   const [problem, setProblem] = useState<string | undefined>();
@@ -138,8 +140,12 @@ export default function PublicProfileScreen() {
   const gap = space.xs;
   const tileW = Math.floor((width - space.xl * 2 - gap * (cols - 1)) / cols);
   const going = profile?.festivals.map((id) => catalog.festival(id)?.name).filter((n): n is string => !!n) ?? [];
-  // The living header, as on your own profile: the artists they've filmed drift round their photo.
-  const orbit = useMemo(() => filmedOrbit(memories.map((m) => m.artistId), catalog.artist), [memories, catalog]);
+  // The living header, as on your own profile: their favourite artists drift round their photo (unless they
+  // switched that off), then the artists they've filmed.
+  const orbit = useMemo(
+    () => publicOrbit(profile?.showArtists ? profile.artists : [], memories.map((m) => m.artistId), catalog.artist),
+    [profile, memories, catalog],
+  );
   const stats: ProfileStat[] = [
     ...(counts
       ? [
@@ -276,7 +282,7 @@ export default function PublicProfileScreen() {
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>
         <View style={{ marginHorizontal: -space.xl, marginTop: -(insets.top + 64) }}>
-          <ProfileCover url={profile && !blocked ? profile.coverUrl : undefined} height={insets.top + 64 + 150} />
+          <ProfileCover url={profile && !blocked ? profile.coverUrl : undefined} backdrop={blocked ? undefined : backdrop} height={insets.top + 64 + 150} />
         </View>
         {body}
       </ScrollView>

@@ -52,8 +52,8 @@ SocialService (features/social/service.ts) ── firebase/service.ts (Auth + Fi
 ```
 
 - **Only features/social/firebase/ imports Firebase**, and only `services.ts` wires it in (architecture test). Firebase starts on first use and never without config.
-- **Published**: handle, name, bio, photo, and only what you switch on: festivals you're going to and your top three sounds. Both follow your plans automatically, a few seconds after they change, only when the list really changed (`publishedChanged`). Each shared memory: the video, its still, festival, night, artist, when it was filmed and its length.
-- **Never published**: taste, ratings, reactions, your music library, unshared memories, where you filmed.
+- **Published**: handle, name, bio, photo, your favourite artists (up to `ARTISTS_SHOWN` 6 ids from `favouriteArtists`, on by default, "Show my favourite artists" in Edit profile), your animated background (`backdrop`), and only what you switch on: festivals you're going to and your top three sounds. All of them follow your plans and taste automatically, a few seconds after they change, only when the list really changed (`publishedChanged`). Each shared memory: the video, its still, festival, night, artist, when it was filmed and its length.
+- **Never published**: taste (apart from the favourite artists above), ratings, reactions, your music library, unshared memories, where you filmed.
 - **The video file itself** may carry location metadata that the phone embedded; the app can't re-encode video in Expo Go, so the share confirmation says so. A later development-build step can strip it.
 - **Moderation**: `obscenity` filters handles, names and bios (`validate.ts`); sign-up requires agreeing to the community guidelines (`copy.ts`); every profile and shared video can be reported (Firestore `reports`, read in the console) and people can be blocked (private `blocks/{uid}`; blocked people disappear from search, profiles and shared videos). A contact for the App Store goes in `SUPPORT_EMAIL` (`config/app.ts`).
 - **Account deletion** (in the app, as the App Store requires): re-enter your password; shared memories and their files, your photo, handle, profile and blocks are deleted, then the account. Reports you filed are kept for moderation. Your Memories stay on the phone, no longer marked shared.
@@ -254,3 +254,11 @@ It's an overlay in the app, not burned into the file: a video saved to Photos or
 2. Find their uid: `handles`, then the document named after their @handle; copy `uid`.
 3. Start collection (or open) `plus`, add a document with that uid as its ID, a field `active` of type boolean set to true, and optionally `until` of type timestamp.
 4. It applies within about ten minutes (sooner after an app restart).
+
+## Profile backgrounds
+
+An animated scene across the top of a profile, in place of the cover photo: `backdrop` on the profile (a `BACKDROPS` id from `features/profile/backdrops.ts`, or `'none'`). Fourteen are drawn in code (`AnimatedBackdrop.tsx`, one clock per scene, still with reduced motion): Aurora, Starfield and Nebula are free; Laser show, Sunset grid, Equalizer, Ocean waves, Fireflies, Bass rings, Lava lamp, Prism and Vortex need Afterglow Plus (`plus/{uid}`, given in HQ → Accounts); anyone can preview them in Edit profile → Background (`backdrop.tsx`). A Plus background stops showing when Plus ends (`shownBackdrop`, checked against the owner's standing whenever a profile is drawn); the rules don't check Plus, so an expired one never blocks saving a profile.
+
+Two are made for one person each (`PANDA_FRIENDS`, `FROG_FRIENDS`): the Panda garden and the Frog pond. Their profiles show them by default (no choice saved), they can pick another or "Cover photo" (saved as `'none'`), and the rules refuse them on anyone else's profile.
+
+The newer profile fields (`artists`, `showArtists`, `backdrop`) need the rules from this change. Until they're deployed, saving a profile retries without them (`withOlderRules` in the Firebase adapter), so nothing breaks; choosing a background says it couldn't save.

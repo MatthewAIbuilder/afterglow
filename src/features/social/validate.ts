@@ -63,6 +63,7 @@ export function cleanProfileInput(input: ProfileInput): ProfileInput {
     bio: input.bio.trim().replace(/\n{3,}/g, '\n\n'),
     showFestivals: input.showFestivals,
     showSound: input.showSound,
+    showArtists: input.showArtists !== false,
   };
 }
 

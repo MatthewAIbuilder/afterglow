@@ -40,12 +40,13 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
+import { ARTISTS_SHOWN, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
-import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, profileToDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { cleanBackdrop } from '../../profile/backdrops';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -122,6 +123,29 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       task.on('state_changed', (s) => onProgress?.(s.totalBytes ? s.bytesTransferred / s.totalBytes : 0), reject, () => resolve()),
     );
     return getDownloadURL(task.snapshot.ref);
+  }
+  /**
+   * Writes with the newer profile fields; if the database's rules are older
+   * and refuse them, writes again without (so saving a profile never breaks
+   * before the rules are deployed).
+   */
+  async function withOlderRules<T>(write: (legacy: boolean) => Promise<T>, fallback = true): Promise<T> {
+    try {
+      return await write(false);
+    } catch (e) {
+      if (!fallback || (e as { code?: string })?.code !== 'permission-denied') throw e;
+      return write(true);
+    }
+  }
+  /** Change your profile document. */
+  async function updateProfile(change: (p: Profile) => Profile, fallback = true): Promise<Profile> {
+    const user = me();
+    const profileRef = doc(fb().db, 'profiles', user.uid);
+    const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
+    if (!current) throw new SocialError('no-profile');
+    const next = { ...change(current), updatedAt: now() };
+    await withOlderRules((legacy) => setDoc(profileRef, profileToDoc(next, legacy)), fallback);
+    return next;
   }
   const removeFile = (path: string | undefined) => (path ? deleteObject(ref(fb().storage, path)).catch(() => {}) : Promise.resolve());
   /** A crew's updates (one person's, or everyone's when the crew ends), with their crew-only files. */
@@ -248,62 +272,59 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (Object.keys(profileProblems(input)).length) throw new SocialError('unknown', 'Profile has problems');
         const { db } = fb();
         const profileRef = doc(db, 'profiles', user.uid);
-        return runTransaction(db, async (tx) => {
-          const current = profileFromDoc(user.uid, (await tx.get(profileRef)).data());
-          const handleRef = doc(db, 'handles', input.handle);
-          const owner = await tx.get(handleRef);
-          if (owner.exists() && (owner.data() as { uid?: string }).uid !== user.uid) throw new SocialError('handle-taken');
-          if (current && current.handle !== input.handle) tx.delete(doc(db, 'handles', current.handle));
-          if (!owner.exists()) tx.set(handleRef, { uid: user.uid });
-          const at = now();
-          const next: Profile = {
-            uid: user.uid,
-            handle: input.handle,
-            displayName: input.displayName,
-            bio: input.bio,
-            avatarUrl: current?.avatarUrl,
-            coverUrl: current?.coverUrl,
-            festivals: input.showFestivals ? published.festivals.slice(0, 50) : [],
-            sounds: input.showSound ? published.sounds.slice(0, 3) : [],
-            showFestivals: input.showFestivals,
-            showSound: input.showSound,
-            createdAt: current?.createdAt || at,
-            updatedAt: at,
-          };
-          const { uid: _uid, avatarUrl, coverUrl, ...fields } = next;
-          tx.set(profileRef, { ...fields, nameLower: next.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
-          return next;
-        });
+        const write = (legacy: boolean) =>
+          runTransaction(db, async (tx) => {
+            const current = profileFromDoc(user.uid, (await tx.get(profileRef)).data());
+            const handleRef = doc(db, 'handles', input.handle);
+            const owner = await tx.get(handleRef);
+            if (owner.exists() && (owner.data() as { uid?: string }).uid !== user.uid) throw new SocialError('handle-taken');
+            if (current && current.handle !== input.handle) tx.delete(doc(db, 'handles', current.handle));
+            if (!owner.exists()) tx.set(handleRef, { uid: user.uid });
+            const at = now();
+            const showArtists = input.showArtists !== false;
+            const next: Profile = {
+              uid: user.uid,
+              handle: input.handle,
+              displayName: input.displayName,
+              bio: input.bio,
+              avatarUrl: current?.avatarUrl,
+              coverUrl: current?.coverUrl,
+              festivals: input.showFestivals ? published.festivals.slice(0, 50) : [],
+              sounds: input.showSound ? published.sounds.slice(0, 3) : [],
+              artists: showArtists ? (published.artists ?? current?.artists ?? []).slice(0, ARTISTS_SHOWN) : [],
+              showFestivals: input.showFestivals,
+              showSound: input.showSound,
+              showArtists,
+              backdrop: current?.backdrop,
+              createdAt: current?.createdAt || at,
+              updatedAt: at,
+            };
+            tx.set(profileRef, profileToDoc(next, legacy));
+            return next;
+          });
+        return withOlderRules(write);
       }),
     setAvatar: (uri) =>
       guard(async () => {
         const user = me();
-        const { db } = fb();
         const path = `avatars/${user.uid}.jpg`;
         const avatarUrl = uri ? await upload(path, uri, 'image/jpeg') : undefined;
         if (!uri) await removeFile(path);
-        const profileRef = doc(db, 'profiles', user.uid);
-        const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
-        if (!current) throw new SocialError('no-profile');
-        const updatedAt = now();
-        const { uid: _uid, avatarUrl: _old, coverUrl, ...fields } = current;
-        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
-        return { ...current, avatarUrl, updatedAt };
+        return updateProfile((p) => ({ ...p, avatarUrl }));
       }),
     setCover: (uri) =>
       guard(async () => {
         const user = me();
-        const { db } = fb();
         const path = `covers/${user.uid}.jpg`;
         const coverUrl = uri ? await upload(path, uri, 'image/jpeg') : undefined;
         if (!uri) await removeFile(path);
-        const profileRef = doc(db, 'profiles', user.uid);
-        const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
-        if (!current) throw new SocialError('no-profile');
-        const updatedAt = now();
-        const { uid: _uid, coverUrl: _old, avatarUrl, ...fields } = current;
-        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
-        return { ...current, coverUrl, updatedAt };
+        return updateProfile((p) => ({ ...p, coverUrl }));
+      }),
+    setBackdrop: (id) =>
+      guard(async () => {
+        const backdrop = cleanBackdrop(id ?? undefined);
+        // Never quietly dropped: a database that doesn't know backgrounds yet says so.
+        return updateProfile((p) => ({ ...p, backdrop }), false);
       }),
     searchProfiles: (raw) =>
       guard(async () => {

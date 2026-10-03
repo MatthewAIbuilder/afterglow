@@ -1,6 +1,7 @@
 import { cleanPast } from '../../memories/past';
+import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
+import { ARTISTS_SHOWN, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -26,11 +27,35 @@ export function profileFromDoc(uid: string, d: unknown): Profile | null {
     coverUrl: https(o.coverUrl),
     festivals: strs(o.festivals, 50),
     sounds: strs(o.sounds, 3).filter((s): s is SoundTag => (SOUND_TAGS as readonly string[]).includes(s)),
+    artists: strs(o.artists, ARTISTS_SHOWN),
     showFestivals: o.showFestivals === true,
     showSound: o.showSound === true,
+    showArtists: o.showArtists !== false,
+    backdrop: cleanBackdrop(o.backdrop),
     createdAt: str(o.createdAt) ?? '',
     updatedAt: str(o.updatedAt) ?? '',
   };
+}
+
+/** The fields added after the first rules (favourite artists, the animated background). */
+export const NEWER_PROFILE_FIELDS = ['artists', 'showArtists', 'backdrop'] as const;
+
+/**
+ * A profile as it's written: optional fields only when set (the database
+ * refuses empty values). `legacy` leaves out the newer fields, for a
+ * database whose rules don't know them yet.
+ */
+export function profileToDoc(p: Profile, legacy = false): Record<string, unknown> {
+  const { uid: _uid, avatarUrl, coverUrl, backdrop, ...fields } = p;
+  const out: Record<string, unknown> = {
+    ...fields,
+    nameLower: p.displayName.toLowerCase(),
+    ...(avatarUrl ? { avatarUrl } : {}),
+    ...(coverUrl ? { coverUrl } : {}),
+    ...(backdrop ? { backdrop } : {}),
+  };
+  if (legacy) for (const k of NEWER_PROFILE_FIELDS) delete out[k];
+  return out;
 }
 
 export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {

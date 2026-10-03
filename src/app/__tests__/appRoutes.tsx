@@ -50,6 +50,7 @@ import CrewStoryScreen from '../crew-story';
 import YearScreen from '../year/[year]';
 import PosterScreen from '../poster/[id]';
 import ProfileEditScreen from '../profile-edit';
+import BackdropScreen from '../backdrop';
 import RequestScreen from '../request';
 import SavedScreen from '../saved';
 import SearchScreen from '../search';
@@ -119,6 +120,7 @@ export const APP_ROUTES = {
   'shared/[id]': SharedMemoryScreen,
   account: AccountScreen,
   'profile-edit': ProfileEditScreen,
+  backdrop: BackdropScreen,
   'u/[handle]': PublicProfileScreen,
   'badge/[id]': BadgeScreen,
   'badge-card/[id]': BadgeCardScreen,

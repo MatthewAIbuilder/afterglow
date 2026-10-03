@@ -1,13 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Memory } from '../features/memories/models';
-import type { Profile, ProfileInput, ReportReason, SocialUser } from '../features/social/models';
+import { ARTISTS_SHOWN, type Profile, type ProfileInput, type Published, type ReportReason, type SocialUser } from '../features/social/models';
+import { favouriteArtists } from '../features/profile/identity';
 import { publishedChanged } from '../features/social/publish';
 import { SocialError, type ReportTarget, type SocialAvailability, type SocialService } from '../features/social/service';
 import { defaultSocialService } from '../features/social/services';
 import { tasteMix } from '../features/taste/lean';
 import { useCatalog } from './catalog';
+import { useFollowedArtists } from './followedArtists';
 import { useGoing } from './going';
 import { useMemories } from './memories';
+import { useRatings } from './ratings';
 import { useTaste } from './taste';
 
 /**
@@ -17,8 +20,9 @@ import { useTaste } from './taste';
  *
  * What's published is only what you choose: the profile fields you fill in,
  * the festivals and top sounds you switch on (kept current with your plans),
- * and each memory you share. Nothing about your taste, ratings, reactions or
- * music library is sent.
+ * your favourite artists (on unless you switch it off), and each memory you
+ * share. Nothing else about your taste, ratings, reactions or music library
+ * is sent.
  */
 type Ctx = {
   availability: SocialAvailability;
@@ -37,6 +41,8 @@ type Ctx = {
   /** Read your sign-in again (after confirming your email). */
   refreshUser: () => Promise<void>;
   setCover: (uri: string | null) => Promise<void>;
+  /** An animated background for the top of your profile (a `BACKDROPS` id or `'none'`), or null for the cover photo. */
+  setBackdrop: (id: string | null) => Promise<void>;
   /** Share a memory to your profile; `progress` shows how far along it is (0 to 1). */
   share: (memory: Memory) => Promise<void>;
   unshare: (memory: Memory) => Promise<void>;
@@ -117,7 +123,17 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     () => tasteMix(artists, taste, informed).slice(0, SOUNDS_SHOWN).map((s) => s.tag),
     [artists, taste, informed],
   );
-  const published = useMemo(() => ({ festivals: [...going], sounds }), [going, sounds]);
+  // Your favourite artists, best first (as round your photo on your own profile), once ratings and follows have loaded.
+  const { ratings, hydrated: ratingsLoaded } = useRatings();
+  const { followed, hydrated: followsLoaded } = useFollowedArtists();
+  const favourites = useMemo(
+    () =>
+      ratingsLoaded && followsLoaded
+        ? favouriteArtists({ artists, taste, informed, ratings, followed }, ARTISTS_SHOWN).map((f) => f.artist.id)
+        : undefined,
+    [artists, taste, informed, ratings, followed, ratingsLoaded, followsLoaded],
+  );
+  const published = useMemo<Published>(() => ({ festivals: [...going], sounds, ...(favourites ? { artists: favourites } : {}) }), [going, sounds, favourites]);
 
   const saveProfile = useCallback(
     async (input: ProfileInput) => {
@@ -130,9 +146,16 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
 
   // Keep "Going to" and "My sound" current (a few seconds after they settle, only when they changed).
   useEffect(() => {
-    if (!profile || !publishedChanged(profile, published.festivals, published.sounds)) return;
+    if (!profile || !publishedChanged(profile, published.festivals, published.sounds, published.artists)) return;
     const t = setTimeout(() => {
-      const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound };
+      const input: ProfileInput = {
+        handle: profile.handle,
+        displayName: profile.displayName,
+        bio: profile.bio,
+        showFestivals: profile.showFestivals,
+        showSound: profile.showSound,
+        showArtists: profile.showArtists,
+      };
       service
         .saveProfile(input, published)
         .then((p) => currentUid.current === p.uid && setProfile(p))
@@ -158,6 +181,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     if (u && u.uid === currentUid.current) setUser(u);
   }, [service]);
   const setCover = useCallback(async (uri: string | null) => setProfile(await service.setCover(uri)), [service]);
+  const setBackdrop = useCallback(async (id: string | null) => setProfile(await service.setBackdrop(id)), [service]);
 
   const inflight = useRef<Set<string>>(new Set());
   const share = useCallback(
@@ -232,8 +256,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
-    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
+    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

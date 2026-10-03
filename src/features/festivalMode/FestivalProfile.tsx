@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useProfileBackdrop } from '../profile/useProfileBackdrop';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,6 +42,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
   const social = useSocial();
   const me = social.profile;
   const standing = useStanding(me?.uid);
+  const backdrop = useProfileBackdrop(me);
   const catalog = useCatalog();
   const { memories, uriOf } = useMemories();
   const all = useMemo(() => videoGrid(memories), [memories]);
@@ -70,7 +72,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
       <PageTitle title="Profile" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
-        <ProfileCover url={me?.coverUrl} height={insets.top + 190} />
+        <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + 190} />
         <View style={styles.bar}>
           <Text style={styles.at} numberOfLines={1}>
             {me ? `@${me.handle}` : 'Profile'}

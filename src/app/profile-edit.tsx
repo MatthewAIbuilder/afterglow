@@ -25,11 +25,14 @@ import { useShowLevel, setShowLevel } from '../state/showLevel';
 import { useDailyQuests } from '../features/quests/useDailyQuests';
 import { LEVEL_SHOWN_FROM } from '../features/quests/daily';
 import { type CropSource, PhotoCropper } from '../features/profile/PhotoCropper';
+import { AnimatedBackdrop } from '../features/profile/AnimatedBackdrop';
+import { backdropOf, shownBackdrop } from '../features/profile/backdrops';
+import { useStanding } from '../features/standing/useStanding';
 
 /**
  * Your profile, as others will see it: photo, name, @handle, a short bio,
- * and two switches for what else to show (festivals you're going to, your
- * top sounds). Also where you sign out or delete your account.
+ * an animated background, and switches for what else to show (favourite
+ * artists, festivals you're going to, your top sounds). Also where you sign out or delete your account.
  */
 export default function ProfileEditScreen() {
   const insets = useSafeAreaInsets();
@@ -44,6 +47,9 @@ export default function ProfileEditScreen() {
   const [bio, setBio] = useState(p?.bio ?? '');
   const [showFestivals, setShowFestivals] = useState(p?.showFestivals ?? false);
   const [showSound, setShowSound] = useState(p?.showSound ?? false);
+  const [showArtists, setShowArtists] = useState(p?.showArtists ?? true);
+  const standing = useStanding(p?.uid);
+  const backdrop = backdropOf(p ? shownBackdrop(p.backdrop, p.uid, !!standing?.plus) : undefined);
   // Applies at once (it isn't part of the saved profile): LevelSync sends or removes it.
   const showLevel = useShowLevel();
   const daily = useDailyQuests();
@@ -56,7 +62,7 @@ export default function ProfileEditScreen() {
   const [uploading, setUploading] = useState<CropShape>();
   const [password, setPassword] = useState('');
 
-  const input = { handle, displayName, bio, showFestivals, showSound };
+  const input = { handle, displayName, bio, showFestivals, showSound, showArtists };
   const problems = profileProblems(input);
   const h = normalizeHandle(handle);
 
@@ -209,6 +215,20 @@ export default function ProfileEditScreen() {
             </View>
             <Text style={styles.link}>{uploading === 'cover' ? 'Uploading…' : p?.coverUrl ? 'Change cover' : 'Add cover'}</Text>
           </Pressable>
+          <Pressable
+            onPress={() => (p ? router.push('/backdrop') : showAlert('Save your profile first', 'Then you can choose a background.'))}
+            accessibilityRole="button"
+            accessibilityLabel={`Profile background: ${backdrop?.name ?? 'cover photo'}. Change it`}
+            style={styles.coverRow}
+          >
+            <View style={styles.cover}>
+              {backdrop ? <AnimatedBackdrop id={backdrop.id} width={112} height={63} still /> : <Text style={styles.coverHint}>Animated</Text>}
+            </View>
+            <View style={{ flexShrink: 1 }}>
+              <Text style={styles.link}>{backdrop ? `Background · ${backdrop.name}` : 'Animated background'}</Text>
+              <Text style={styles.rowNote}>{backdrop ? 'Shows in place of your cover photo' : 'Aurora, lasers, a sunset grid and more'}</Text>
+            </View>
+          </Pressable>
           <PhotoCropper source={cropping?.source} shape={cropping?.shape ?? 'avatar'} onDone={(uri) => void applyCrop(uri)} onCancel={() => setCropping(undefined)} />
 
           <Field label="Name">
@@ -250,6 +270,18 @@ export default function ProfileEditScreen() {
               detail={showLevel === false ? 'Hidden' : daily.level.level >= LEVEL_SHOWN_FROM ? `Level ${daily.level.level} · ${daily.level.name}` : 'Shows once you reach level 2 in your quests'}
               value={showLevel !== false}
               onChange={setShowLevel}
+            />
+            <SwitchRow
+              label="Show my favourite artists"
+              detail={showArtists ? 'Round your photo on your profile' : 'Hidden'}
+              value={showArtists}
+              onChange={setShowArtists}
+            />
+            <SwitchRow
+              label="Show my favourite artists"
+              detail={showArtists ? 'They drift round your photo on your profile' : 'Hidden'}
+              value={showArtists}
+              onChange={setShowArtists}
             />
             <SwitchRow label="Show my sound" detail={showSound ? (sounds.length ? sounds.join(', ') : 'Your top sounds, once you’ve reacted to some clips') : 'Hidden'} value={showSound} onChange={setShowSound} />
           </View>
@@ -341,6 +373,7 @@ const styles = StyleSheet.create({
   coverRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
   cover: { width: 112, height: 63, borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', justifyContent: 'center' },
   coverHint: { ...type.caption, color: color.moonFaint },
+  rowNote: { ...type.caption, color: color.moonFaint, marginTop: 2 },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
   avatar: { width: 72, height: 72, borderRadius: 36, overflow: 'hidden', backgroundColor: color.haze, alignItems: 'center', justifyContent: 'center' },
   initial: { ...type.title, color: color.moon },

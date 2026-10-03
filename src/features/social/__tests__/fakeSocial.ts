@@ -1,5 +1,6 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { cleanBackdrop } from '../../profile/backdrops';
+import { ARTISTS_SHOWN, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
@@ -183,8 +184,11 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         coverUrl: before?.coverUrl,
         festivals: input.showFestivals ? published.festivals : [],
         sounds: input.showSound ? published.sounds : [],
+        artists: input.showArtists !== false ? (published.artists ?? before?.artists ?? []).slice(0, ARTISTS_SHOWN) : [],
         showFestivals: input.showFestivals,
         showSound: input.showSound,
+        showArtists: input.showArtists !== false,
+        backdrop: before?.backdrop,
         createdAt: before?.createdAt ?? at,
         updatedAt: at,
       };
@@ -204,6 +208,14 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const p = profiles.get(u.uid);
       if (!p) throw new SocialError('no-profile');
       const next = { ...p, coverUrl: uri ? `https://example.test/covers/${u.uid}.jpg` : undefined };
+      profiles.set(u.uid, next);
+      return next;
+    },
+    async setBackdrop(id) {
+      const u = me();
+      const p = profiles.get(u.uid);
+      if (!p) throw new SocialError('no-profile');
+      const next = { ...p, backdrop: cleanBackdrop(id ?? undefined) };
       profiles.set(u.uid, next);
       return next;
     },

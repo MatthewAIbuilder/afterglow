@@ -95,8 +95,10 @@ describe('what a profile publishes', () => {
     bio: '',
     festivals: ['acl-26'],
     sounds: ['house'],
+    artists: ['subtronics'],
     showFestivals: true,
     showSound: false,
+    showArtists: true,
     createdAt: '',
     updatedAt: '',
   };
@@ -106,6 +108,13 @@ describe('what a profile publishes', () => {
     expect(publishedChanged(p, ['acl-26', 'edc-orlando-26'], ['house'])).toBe(true);
     expect(publishedChanged({ ...p, festivals: ['a', 'b'] }, ['b', 'a'], [])).toBe(false);
     expect(publishedChanged({ ...p, showFestivals: false }, ['anything'], [])).toBe(false);
+  });
+
+  it('keeps your favourite artists current unless you switch them off', () => {
+    expect(publishedChanged(p, ['acl-26'], [], ['subtronics'])).toBe(false);
+    expect(publishedChanged(p, ['acl-26'], [], ['subtronics', 'levity'])).toBe(true);
+    expect(publishedChanged({ ...p, showArtists: false }, ['acl-26'], [], ['levity'])).toBe(false);
+    expect(publishedChanged(p, ['acl-26'], [])).toBe(false); // not given: left alone
   });
 
   it('says where someone is going', () => {
