@@ -194,7 +194,12 @@ export const FLAIR_KINDS: readonly FlairKind[] = ['artist', 'team', 'partner'];
 export type Flair = { kind: FlairKind; caption: string };
 
 /** What sets a profile apart: founder number, and any flair. Anyone can see it; nobody can give it to themselves. */
-export type Standing = { founder?: number; flair?: Flair };
+export type Standing = {
+  founder?: number;
+  flair?: Flair;
+  /** Afterglow Plus: their videos show without the edge glow and its AFTERGLOW label. */
+  plus?: boolean;
+};
 
 /** What a support message is about. */
 export type SupportTopic = 'help' | 'bug' | 'idea' | 'festival' | 'other';

@@ -409,8 +409,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     standingOf: (uid) =>
       guard(async () => {
         const { db } = fb();
-        const [f, fl] = await Promise.all([getDoc(doc(db, 'founders', uid)), getDoc(doc(db, 'flairs', uid))]);
-        return standingFromDocs(f.data(), fl.data());
+        const [f, fl, pl] = await Promise.all([getDoc(doc(db, 'founders', uid)), getDoc(doc(db, 'flairs', uid)), getDoc(doc(db, 'plus', uid))]);
+        return standingFromDocs(f.data(), fl.data(), pl.data());
       }),
     sendVerification: () => guard(async () => sendEmailVerification(me() as FirebaseAuth.User)),
     reloadUser: () =>

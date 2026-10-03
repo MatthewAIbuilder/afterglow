@@ -452,6 +452,9 @@ await t('founders: no more than 100', async () => {
 await t('flairs: anyone can see them, nobody writes one from the app', async () => {
   await assertSucceeds(getDoc(doc(anon.firestore(), 'flairs', 'uidA')));
   await assertFails(setDoc(doc(A.firestore(), 'flairs', 'uidA'), { kind: 'artist', caption: 'Artist' }));
+  // Afterglow Plus too: anyone sees it, nobody gives it to themselves.
+  await assertSucceeds(getDoc(doc(anon.firestore(), 'plus', 'uidA')));
+  await assertFails(setDoc(doc(A.firestore(), 'plus', 'uidA'), { active: true }));
 });
 const ADMIN = env.authenticatedContext('uidAdmin', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
 const NOT_VERIFIED = env.authenticatedContext('uidFake', { email: 'afterglowmusic.support@gmail.com', email_verified: false });

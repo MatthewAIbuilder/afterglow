@@ -187,3 +187,22 @@ describe('live from the crowd', () => {
     expect(app.queryAllByLabelText(/filmed by @maya, 1 day/)).toHaveLength(0);
   });
 });
+
+describe('the edge glow', () => {
+  it('frames videos filmed with Afterglow, unless the person who filmed it has Afterglow Plus', async () => {
+    const uid = await person('maya', 'Maya');
+    const shared = await s().shareMemory({ memoryId: 'g1', videoUri: 'file:///g1.mp4', festivalId: 'cyclops-cove-4', capturedAt: new Date(2026, 11, 5, 22).toISOString() });
+    await s().signOut();
+    await person('sam', 'Sam');
+    const app = await renderApp(`/shared/${shared.id}`);
+    await flush();
+    expect(app.getByTestId('edge-glow-label', { includeHiddenElements: true })).toBeTruthy();
+    await app.unmount();
+
+    mockSocial.plus.add(uid);
+    forgetStandings();
+    const again = await renderApp(`/shared/${shared.id}`);
+    await flush();
+    expect(again.queryByTestId('edge-glow-label', { includeHiddenElements: true })).toBeNull();
+  });
+});

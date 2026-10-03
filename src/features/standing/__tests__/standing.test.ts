@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { standingFromDocs } from '../../social/firebase/mapping';
-import { captionsOf, founderCaption, ringOf, standingA11y } from '../standing';
+import { captionsOf, founderCaption, ringOf, showsGlow, standingA11y } from '../standing';
 
 describe('standing', () => {
   it('reads founders and flairs safely', () => {
@@ -16,5 +16,12 @@ describe('standing', () => {
     expect(captionsOf({ founder: 7, flair: { kind: 'team', caption: 'Afterglow team' } }).map((c) => c.text)).toEqual(['Afterglow team', founderCaption(7)]);
     expect(founderCaption(23)).toBe('One of the first 100 on Afterglow · #23');
     expect(standingA11y({ founder: 23 })).toBe('One of the first 100 on Afterglow, number 23');
+  });
+
+  it('reads Afterglow Plus, which turns the edge glow off', () => {
+    expect(standingFromDocs(undefined, undefined, { active: true })).toEqual({ plus: true });
+    expect(standingFromDocs(undefined, undefined, { active: true, until: '2020-01-01T00:00:00Z' })).toEqual({});
+    expect(standingFromDocs(undefined, undefined, { active: false })).toEqual({});
+    expect([showsGlow(undefined), showsGlow({ founder: 3 }), showsGlow({ plus: true })]).toEqual([true, true, false]);
   });
 });

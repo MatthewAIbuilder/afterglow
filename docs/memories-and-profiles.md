@@ -214,3 +214,16 @@ People write in from **Settings → About → Contact support** (`support.tsx`):
 1. Deploy the rules and indexes from your PC, in the app folder: `npx firebase-tools@latest deploy --only firestore,storage`.
 2. In the app: Profile, then Create your profile, then New here. Use afterglowmusic.support@gmail.com and a password only you know. (If you already made an account with that email, choose Sign in instead.)
 3. The dashboard opens and asks you to confirm the email: tap **Send the email**, open that Gmail inbox (check spam), tap the link, come back and tap **I've confirmed it**.
+
+## The edge glow and Afterglow Plus
+
+Every video in Discover gets a soft neon edge in festival light (`components/EdgeGlow.tsx`: a thin line with a haze around it running purple, pink, amber and blue, breathing slowly while it plays, still with reduced motion). YouTube clips get it just outside the player (their picture is never covered). Videos filmed with Afterglow (crowd videos, full screen, shared videos, and your own memories) also carry the word AFTERGLOW, small and spaced, in a gap on the right edge: Afterglow's mark on them wherever they're watched in the app or on the website.
+
+It's an overlay in the app, not burned into the file: a video saved to Photos or sent from Memories is the person's own, unmarked. (Marking the file itself needs the development build.)
+
+**Afterglow Plus** turns the glow off for that person's videos (everyone then sees them plain). It's a document `plus/{uid}` with `active: true` and, optionally, `until` (a date; after it Plus ends). Anyone can read it; nobody can write it from the app. The App Store purchase will set it from a server later; for now give it by hand:
+
+1. Firebase console, **afterglowmusic**, **Firestore Database**.
+2. Find their uid: `handles`, then the document named after their @handle; copy `uid`.
+3. Start collection (or open) `plus`, add a document with that uid as its ID, a field `active` of type boolean set to true, and optionally `until` of type timestamp.
+4. It applies within about ten minutes (sooner after an app restart).

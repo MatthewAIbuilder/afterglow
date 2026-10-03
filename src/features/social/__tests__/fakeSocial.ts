@@ -32,6 +32,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Founder numbers, in the order people claimed them, and flairs (set by hand, like the Firebase console). */
   const founders = new Map<string, number>();
   const flairs = new Map<string, Flair>();
+  /** Afterglow Plus members (set by hand, like the Firebase console). */
+  const plus = new Set<string>();
   const counter = { founders: 0 };
   /** Crew-only video files uploaded, as `crewId/uid/updateId`. */
   const crewFiles = new Set<string>();
@@ -267,7 +269,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async standingOf(uid) {
       const founder = founders.get(uid);
       const flair = flairs.get(uid);
-      return { ...(founder ? { founder } : {}), ...(flair ? { flair } : {}) };
+      return { ...(founder ? { founder } : {}), ...(flair ? { flair } : {}), ...(plus.has(uid) ? { plus: true } : {}) };
     },
     async sendVerification() {
       me();
@@ -595,5 +597,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, counter, reports, support, verified, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, counter, reports, support, verified, currentUser: () => current };
 }

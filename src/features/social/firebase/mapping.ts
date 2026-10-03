@@ -182,13 +182,17 @@ export function videoType(uri: string): string {
 export const prefixEnd = (q: string) => `${q}`;
 
 /** A founder number and a flair, read from their documents; anything malformed is left out. */
-export function standingFromDocs(founder: unknown, flair: unknown): Standing {
+export function standingFromDocs(founder: unknown, flair: unknown, plus?: unknown): Standing {
   const f = founder as { number?: unknown } | undefined;
   const fl = flair as { kind?: unknown; caption?: unknown } | undefined;
   const number = typeof f?.number === 'number' && Number.isInteger(f.number) && f.number >= 1 && f.number <= FOUNDERS_MAX ? f.number : undefined;
   const kind = FLAIR_KINDS.find((k) => k === fl?.kind);
   const caption = typeof fl?.caption === 'string' ? fl.caption.trim().slice(0, 40) : '';
-  return { ...(number ? { founder: number } : {}), ...(kind && caption ? { flair: { kind, caption } } : {}) };
+  // Plus is on while its document says active (and, when it has one, until it ends).
+  const p = plus as { active?: unknown; until?: unknown } | undefined;
+  const until = p?.until && typeof p.until === 'object' && 'toMillis' in p.until ? (p.until as { toMillis: () => number }).toMillis() : typeof p?.until === 'string' ? Date.parse(p.until) : undefined;
+  const isPlus = p?.active === true && (until === undefined || !Number.isFinite(until) || until > Date.now());
+  return { ...(number ? { founder: number } : {}), ...(kind && caption ? { flair: { kind, caption } } : {}), ...(isPlus ? { plus: true } : {}) };
 }
 
 /** A time written as ISO 8601 text, or by the server. */

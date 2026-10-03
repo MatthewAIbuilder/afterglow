@@ -47,3 +47,6 @@ export function standingA11y(s: Standing | undefined): string {
     .map((c) => (c.kind === 'founder' ? `One of the first ${FOUNDERS_MAX} on Afterglow, number ${s!.founder}` : c.text))
     .join('. ');
 }
+
+/** Videos show the edge glow and its AFTERGLOW label unless the person who filmed them has Afterglow Plus. */
+export const showsGlow = (s: Standing | undefined) => !s?.plus;
