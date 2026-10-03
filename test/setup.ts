@@ -260,6 +260,12 @@ jest.mock('expo-sensors', () => {
   const state = { allowed: true, steps: 4210 };
   return {
     __state: state,
+    DeviceMotion: {
+      isAvailableAsync: jest.fn(async () => false),
+      getPermissionsAsync: jest.fn(async () => ({ granted: false })),
+      setUpdateInterval: jest.fn(),
+      addListener: jest.fn(() => ({ remove: () => {} })),
+    },
     Pedometer: {
       isAvailableAsync: jest.fn(async () => true),
       getPermissionsAsync: jest.fn(async () => ({ granted: state.allowed, canAskAgain: true, status: state.allowed ? 'granted' : 'undetermined' })),

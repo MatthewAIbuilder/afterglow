@@ -107,6 +107,43 @@ service cloud.firestore {
 
     // Friend codes: the private code in your QR code. Nobody reads it back, not even you; only these
     // rules compare a scanned code with it. A new code makes old ones stop working.
+    // Founders: the first 100 people with a profile, numbered in the order they arrived. A shared counter
+    // hands out the numbers: your number and the counter's next value are written together, so two people
+    // never share one and nobody can pick theirs. Anyone can see them; nobody can change one. Leaving
+    // removes yours, and the number is never given out again.
+    function foundedAs(n) {
+      return !exists(path('founders', me())) && existsAfter(path('founders', me()))
+        && getAfter(path('founders', me())).data.number == n;
+    }
+    match /counters/founders {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == 1 && foundedAs(1);
+      allow update: if signedIn() && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == resource.data.count + 1
+        && request.resource.data.count <= 100 && foundedAs(request.resource.data.count);
+      allow delete: if false;
+    }
+    match /founders/{uid} {
+      allow read: if true;
+      allow create: if signedIn() && me() == uid && exists(path('profiles', uid))
+        && request.resource.data.keys().hasOnly(['number', 'at'])
+        && request.resource.data.at == request.time
+        && request.resource.data.number is int
+        && request.resource.data.number >= 1 && request.resource.data.number <= 100
+        && getAfter(path('counters', 'founders')).data.count == request.resource.data.number
+        && ((!exists(path('counters', 'founders')) && request.resource.data.number == 1)
+          || (exists(path('counters', 'founders')) && get(path('counters', 'founders')).data.count + 1 == request.resource.data.number));
+      allow update: if false;
+      allow delete: if signedIn() && me() == uid;
+    }
+    // Flairs: a special border and caption (artists, the team, partners), given out by hand in the Firebase
+    // console. Anyone can see them; nobody can write one from the app.
+    match /flairs/{uid} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /friendCodes/{uid} {
       allow read: if false;
       allow create, update: if signedIn() && me() == uid

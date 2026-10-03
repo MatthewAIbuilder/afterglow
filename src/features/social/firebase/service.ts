@@ -38,10 +38,10 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, FOUNDERS_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
-import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, videoType } from './mapping';
+import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, standingFromDocs, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -194,6 +194,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         batch.delete(doc(db, 'profiles', user.uid));
         batch.delete(doc(db, 'blocks', user.uid));
         batch.delete(doc(db, 'friendCodes', user.uid));
+        // A founder's number goes with them (the spot isn't given to anyone else).
+        batch.delete(doc(db, 'founders', user.uid));
         await batch.commit();
         await deleteUser(user);
       }),
@@ -365,6 +367,31 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const user = me();
         if (uid === user.uid) throw new SocialError('unknown');
         await setDoc(doc(fb().db, 'follows', `${user.uid}_${uid}`), { from: user.uid, to: uid, createdAt: now() });
+      }),
+    claimFounder: () =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const mine = doc(db, 'founders', user.uid);
+        const counter = doc(db, 'counters', 'founders');
+        // One transaction: the counter and your number move together, so two people never share a number.
+        return runTransaction(db, async (tx) => {
+          const had = await tx.get(mine);
+          if (had.exists()) return standingFromDocs(had.data(), undefined).founder ?? null;
+          const c = await tx.get(counter);
+          const count = c.exists() ? Number((c.data() as { count?: unknown }).count) || 0 : 0;
+          if (count >= FOUNDERS_MAX) return null;
+          const number = count + 1;
+          tx.set(counter, { count: number });
+          tx.set(mine, { number, at: serverTimestamp() });
+          return number;
+        });
+      }),
+    standingOf: (uid) =>
+      guard(async () => {
+        const { db } = fb();
+        const [f, fl] = await Promise.all([getDoc(doc(db, 'founders', uid)), getDoc(doc(db, 'flairs', uid))]);
+        return standingFromDocs(f.data(), fl.data());
       }),
     setFriendCode: (code) => guard(async () => setDoc(doc(fb().db, 'friendCodes', me().uid), { code, updatedAt: serverTimestamp() })),
     addFriend: (uid, code) =>

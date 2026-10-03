@@ -5,11 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
-import { MenuIcon, PeopleIcon, TilesIcon, BookmarkIcon, FestivalsIcon } from '../../components/TabIcons';
+import { MenuIcon, PeopleIcon, TilesIcon, BookmarkIcon, FestivalsIcon, PinIcon } from '../../components/TabIcons';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { FestivalProfile } from '../../features/festivalMode/FestivalProfile';
 import { useFestivalMode } from '../../state/festivalMode';
 import { Tabs } from '../../components/Tabs';
+import { toCollect } from '../../features/badges/badges';
+import { BadgesGrid } from '../../features/badges/BadgesGrid';
+import { useBadges } from '../../features/badges/useBadges';
 import { WEB_URL } from '../../config/app';
 import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { groupFestivals } from '../../features/festivals/going';
@@ -36,7 +39,7 @@ import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { color, space, type } from '../../theme/tokens';
 
-type Tab = 'videos' | 'festivals' | 'saved';
+type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
 
 /**
  * Profile, laid out like Instagram and TikTok: your photo and counts, name,
@@ -88,6 +91,9 @@ function FullProfile() {
       }),
     [catalog.festivals, forYou, going, today, weekendOf],
   );
+  // Festival pins: from the videos you've shared, filmed at a festival on its dates.
+  const { badges } = useBadges(me?.uid);
+  const collect = useMemo(() => toCollect(festivals.map((g) => g.festival), badges, today), [festivals, badges, today]);
   const recaps = useRecapFestivals();
   const year = today.getFullYear();
   const yearCard = useYear(year);
@@ -154,6 +160,7 @@ function FullProfile() {
           initial={!!me}
           bio={me ? me.bio : 'Your festivals, your videos and your sound.'}
           avatarUrl={me?.avatarUrl}
+          uid={me?.uid}
           stats={stats}
           onStat={(key) => {
             if (key === 'festivals') setTab('festivals');
@@ -181,6 +188,7 @@ function FullProfile() {
             onChange={setTab}
             items={[
               { key: 'videos', label: 'Videos', count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
+              { key: 'badges', label: 'Badges', count: badges.length, icon: (c) => <PinIcon color={c} size={17} /> },
               { key: 'festivals', label: 'Festivals', count: festivals.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
               { key: 'saved', label: 'Saved', count: kept, icon: (c) => <BookmarkIcon color={c} size={16} /> },
             ]}
@@ -189,6 +197,8 @@ function FullProfile() {
 
         {tab === 'videos' ? (
           <VideosTab memories={videos} width={width} uriOf={uriOf} lookup={catalog} />
+        ) : tab === 'badges' ? (
+          <BadgesGrid badges={badges} toCollect={collect} festivalOf={catalog.festival} uid={me?.uid} width={width} mine />
         ) : tab === 'festivals' ? (
           <FestivalsTab
             going={festivals}

@@ -16,6 +16,9 @@ import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { VideosTab } from '../profile/ProfileTabsContent';
+import { StandingAvatar, StandingCaption } from '../standing/StandingAvatar';
+import { ringOf } from '../standing/standing';
+import { useStanding } from '../standing/useStanding';
 import { videoGrid } from '../profile/profileView';
 
 /**
@@ -30,6 +33,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
   const { width } = useWindowDimensions();
   const social = useSocial();
   const me = social.profile;
+  const standing = useStanding(me?.uid);
   const catalog = useCatalog();
   const { memories, uriOf } = useMemories();
   const all = useMemo(() => videoGrid(memories), [memories]);
@@ -66,13 +70,18 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
         </View>
 
         <View style={styles.hero}>
-          <View style={styles.ring}>
-            <PersonAvatar name={me?.displayName ?? 'You'} url={me?.avatarUrl} size={104} />
-          </View>
+          {standing && ringOf(standing) ? (
+            <StandingAvatar standing={standing} name={me?.displayName ?? 'You'} url={me?.avatarUrl} size={104} />
+          ) : (
+            <View style={styles.ring}>
+              <PersonAvatar name={me?.displayName ?? 'You'} url={me?.avatarUrl} size={104} />
+            </View>
+          )}
           <Text style={styles.name} accessibilityRole="header">
             {me?.displayName ?? 'You'}
           </Text>
           <Text style={styles.where}>At {festival.name}</Text>
+          <StandingCaption standing={standing} align="center" />
           {me?.bio ? <Text style={styles.bio}>{me.bio}</Text> : null}
 
           {me ? (

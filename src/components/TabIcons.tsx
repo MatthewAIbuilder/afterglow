@@ -201,6 +201,17 @@ export function BookmarkIcon({ color, size = 18 }: P) {
   );
 }
 
+/** A pin badge: a medal on a ribbon. */
+export function PinIcon({ color, size = 18 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M8 3h8l-2 6h-4z" stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
+      <Circle cx={12} cy={15} r={6} stroke={color} strokeWidth={1.6} />
+      <Path d="M12 12.4l.8 1.7 1.8.2-1.3 1.2.3 1.8-1.6-.9-1.6.9.3-1.8-1.3-1.2 1.8-.2z" fill={color} />
+    </Svg>
+  );
+}
+
 /** Three dots: more options. */
 export function MoreIcon({ color, size = 18 }: P) {
   return (

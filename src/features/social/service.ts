@@ -1,4 +1,4 @@
-import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser } from './models';
+import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -45,6 +45,14 @@ export interface SocialService {
   /** Replace (a local image uri) or remove (null) your profile photo. */
   setAvatar(uri: string | null): Promise<Profile>;
   handleAvailable(handle: string): Promise<boolean>;
+  /**
+   * Become one of the first FOUNDERS_MAX people, if there's a spot left: your
+   * number (kept if you already have one), or null when they're all taken.
+   * Needs your profile.
+   */
+  claimFounder(): Promise<number | null>;
+  /** Someone's founder number and flair, for their border and caption. */
+  standingOf(uid: string): Promise<Standing>;
   searchProfiles(query: string): Promise<Profile[]>;
   /** Profiles that show this festival among the ones they're going to (only people who switched that on), at most `max`. */
   profilesGoingTo(festivalId: string, max: number): Promise<Profile[]>;

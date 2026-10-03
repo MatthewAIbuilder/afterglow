@@ -179,3 +179,19 @@ Storage: `memories/{uid}/{id}.(mp4|mov|m4v)` (video, under 150 MB) and `.jpg` st
 - `features/crews/__tests__/together.test.ts`, `features/social/__tests__/crews.test.ts` (crew rules in the in-memory backend); `src/app/__tests__/crews.test.tsx` (start from a festival page, rename, stars reach the crew, join from an invite, sets you share, remove, leave, signed out, ended).
 - `features/community/__tests__/clips.test.ts` (filtering, remembering artists, taste after a clip is gone); `src/app/__tests__/community.test.tsx` (Discover shows a shared video; credit, Report, Hide, Block, the switch, signed out, likes remembered).
 - Not covered by `npm test`: the real picker, camera and media library, Firebase itself (the adapter), and the emulator rules check.
+
+## Founders, flairs and festival badges
+
+**Founders.** The first 100 people to make a profile get a number, in the order they arrive (`FounderClaim` in the root layout claims once a session as soon as you have a profile). Firestore keeps a counter at `counters/founders` and each founder at `founders/{uid}` (`number`, `at` server time). The rules only let you write your own number together with the counter moving on by exactly one, never past 100, so nobody can pick a number or claim twice; anyone can read them; deleting your account removes yours and the number is never given out again. A founder's photo gets a slowly turning gold ring with a warm glow and the caption "One of the first 100 on Afterglow · #23" (`features/standing/`: `StandingAvatar`, `StandingCaption`, `useStanding`, pure `standing.ts`). People who opened the app before this shipped claim theirs the next time they open it.
+
+**Flairs (artists, the team, partners).** A special ring and caption that only Afterglow can give, by hand, in the Firebase console. The app can't write them. To give one:
+
+1. Open the Firebase console, pick **afterglowmusic**, then **Firestore Database**.
+2. Find the person's user id: open the `handles` collection, then the document named after their @handle (without the @); the `uid` field is their id.
+3. Back at the top, click **Start collection** (or open `flairs` if it's there already), name it `flairs`.
+4. Add a document whose **Document ID** is that uid, with two fields, both of type string: `kind` = `artist` (or `team`, or `partner`) and `caption` = what to show under their name, like `Artist` or `Afterglow team` (up to 40 characters).
+5. Save. It shows on their profile within about ten minutes (sooner after an app restart).
+
+Artists get a holographic pink-purple-blue ring, the team a purple one, partners a green one. A flair is drawn instead of the gold founder ring; the founder caption still shows under it.
+
+**Festival badges.** Every festival has a collectible enamel pin (`features/badges/`): a gold shape, its own enamel colours and raised metal lines, its mark struck in gold, and a ribbon with the year, all worked out from the festival's id and name (`pinLook`), drawn in SVG (`EnamelPin`). You earn one by sharing a video tagged with the festival and filmed there, on its dates (from the video's own time; the morning after the last day counts). Badges are worked out from someone's shared videos (`earnedBadges`, `useBadges`), so anyone can see anyone's, and nothing new is stored. Profile has a Badges tab (yours, then dim silver "To collect" pins for festivals you're going to); public profiles show their badges above their memories; each opens `badge/[id]` (`?uid=` for someone else's), where the shine follows the phone's tilt.

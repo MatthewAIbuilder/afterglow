@@ -177,3 +177,15 @@ export type Comment = {
 
 /** Comments are at most this long. */
 export const COMMENT_MAX = 300;
+
+/** The first this many people to make a profile are founders, numbered in the order they arrived. */
+export const FOUNDERS_MAX = 100;
+
+/** Who a special border and caption is for, set by Afterglow (never by the person): artists, the team, partners. */
+export type FlairKind = 'artist' | 'team' | 'partner';
+export const FLAIR_KINDS: readonly FlairKind[] = ['artist', 'team', 'partner'];
+/** A special border and caption ("Artist", "Afterglow team"), given out by hand in the Firebase console. */
+export type Flair = { kind: FlairKind; caption: string };
+
+/** What sets a profile apart: founder number, and any flair. Anyone can see it; nobody can give it to themselves. */
+export type Standing = { founder?: number; flair?: Flair };

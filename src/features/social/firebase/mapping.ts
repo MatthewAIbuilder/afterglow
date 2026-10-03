@@ -1,5 +1,5 @@
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, type Profile, type SharedMemory } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, type Profile, type SharedMemory, type Standing } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -178,3 +178,13 @@ export function videoType(uri: string): string {
 
 /** The end of a name range query: everything that starts with `q`. */
 export const prefixEnd = (q: string) => `${q}`;
+
+/** A founder number and a flair, read from their documents; anything malformed is left out. */
+export function standingFromDocs(founder: unknown, flair: unknown): Standing {
+  const f = founder as { number?: unknown } | undefined;
+  const fl = flair as { kind?: unknown; caption?: unknown } | undefined;
+  const number = typeof f?.number === 'number' && Number.isInteger(f.number) && f.number >= 1 && f.number <= FOUNDERS_MAX ? f.number : undefined;
+  const kind = FLAIR_KINDS.find((k) => k === fl?.kind);
+  const caption = typeof fl?.caption === 'string' ? fl.caption.trim().slice(0, 40) : '';
+  return { ...(number ? { founder: number } : {}), ...(kind && caption ? { flair: { kind, caption } } : {}) };
+}

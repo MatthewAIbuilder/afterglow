@@ -51,6 +51,7 @@ import LegalScreen from '../legal/[doc]';
 import SharedMemoryScreen from '../shared/[id]';
 import SoundScopeScreen from '../sound-scope';
 import TuneScreen from '../tune/[id]';
+import BadgeScreen from '../badge/[id]';
 import PublicProfileScreen from '../u/[handle]';
 import WelcomeScreen from '../welcome';
 import YourSoundScreen from '../your-sound';
@@ -104,6 +105,7 @@ export const APP_ROUTES = {
   account: AccountScreen,
   'profile-edit': ProfileEditScreen,
   'u/[handle]': PublicProfileScreen,
+  'badge/[id]': BadgeScreen,
   people: PeopleScreen,
   search: SearchScreen,
   'legal/[doc]': LegalScreen,

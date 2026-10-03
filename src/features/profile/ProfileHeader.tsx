@@ -5,6 +5,9 @@ import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { type ProfileStat, shortCount } from './profileView';
+import { StandingAvatar, StandingCaption } from '../standing/StandingAvatar';
+import { ringOf } from '../standing/standing';
+import { useStanding } from '../standing/useStanding';
 
 type Props = {
   name: string;
@@ -19,6 +22,8 @@ type Props = {
   sounds: { tag: SoundTag; percent: number }[];
   onSounds?: () => void;
   children?: React.ReactNode;
+  /** Your uid, for a founder's or flair's ring and caption. */
+  uid?: string;
 };
 
 /**
@@ -26,10 +31,17 @@ type Props = {
  * the photo on the left with three counts beside it, then the name, the bio,
  * your sound as chips, and the buttons (passed as children).
  */
-export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, children }: Props) {
+export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, children, uid }: Props) {
+  const standing = useStanding(uid);
+  const ringed = !!ringOf(standing);
   return (
     <View style={styles.root}>
       <View style={styles.top}>
+        {ringed ? (
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <StandingAvatar standing={standing} name={name} url={avatarUrl} size={AVATAR - 10} />
+          </View>
+        ) : (
         <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={styles.avatarImage} contentFit="cover" transition={200} />
@@ -39,6 +51,7 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
             <ProfileIcon color={color.moonDim} size={36} />
           )}
         </View>
+        )}
         <View style={styles.stats} accessibilityRole="summary">
           {stats.map((s) => {
             const tappable = !!onStat && (s.key === 'followers' || s.key === 'following' || s.key === 'festivals');
@@ -66,6 +79,7 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
       <Text style={styles.name} accessibilityRole="header">
         {name}
       </Text>
+      <StandingCaption standing={standing} />
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
 
       {sounds.length > 0 ? (
