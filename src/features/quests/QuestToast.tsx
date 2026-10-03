@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ConfettiBurst } from '../../components/ConfettiBurst';
 import { haptic } from '../../lib/haptics';
 import { onQuestsFinished } from '../../state/dailyQuests';
 import { color, motion, radius, space, type } from '../../theme/tokens';
@@ -127,6 +128,7 @@ export function QuestToast() {
         </View>
         {current.glow ? <Text style={styles.glow}>+{current.glow}</Text> : null}
       </Pressable>
+      {current.big ? <ConfettiBurst key={`c${current.key}`} spread={150} /> : null}
     </Animated.View>
   );
 }

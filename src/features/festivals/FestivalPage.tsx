@@ -4,6 +4,7 @@ import { type ReactNode, useMemo, useState } from 'react';
 import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArtistRow } from '../../components/ArtistRow';
+import { ConfettiBurst } from '../../components/ConfettiBurst';
 import { NightSky } from '../../components/NightSky';
 import { SearchField } from '../../components/SearchField';
 import { Tabs } from '../../components/Tabs';
@@ -439,29 +440,38 @@ function Action({ label, a11y, icon, count, glow, onPress }: { label: string; a1
   );
 }
 
-/** "I'm going" / "Going": puts the festival at the top of your Festivals tab. */
+/** "I'm going" / "Going": puts the festival at the top of your Festivals tab. Saying yes is a little celebration. */
 function GoingPill({ festival }: { festival: Festival }) {
   const { isGoing, toggle } = useGoing();
   const going = isGoing(festival.id);
+  // Each yes fires the confetti again (a new key); undoing is quiet.
+  const [cheers, setCheers] = useState(0);
   return (
-    <Pressable
-      onPress={() => {
-        if (going) haptic.select();
-        else haptic.tap();
-        toggle(festival.id);
-      }}
-      accessibilityRole="button"
-      accessibilityState={{ selected: going }}
-      accessibilityLabel={going ? `You're going to ${festival.name}. Tap to undo.` : `I'm going to ${festival.name}`}
-      style={({ pressed }) => [
-        styles.discover,
-        going ? styles.goingOn : styles.tune,
-        pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
-      ]}
-    >
-      <CheckIcon color={going ? color.moon : color.moonDim} size={14} />
-      <Text style={[styles.discoverText, !going && { color: color.moonDim }]}>{going ? 'Going' : 'I’m going'}</Text>
-    </Pressable>
+    // Above the pills beside it, so the confetti flies over them.
+    <View style={{ zIndex: 2 }}>
+      <Pressable
+        onPress={() => {
+          if (going) haptic.select();
+          else {
+            haptic.celebrate();
+            setCheers((n) => n + 1);
+          }
+          toggle(festival.id);
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ selected: going }}
+        accessibilityLabel={going ? `You're going to ${festival.name}. Tap to undo.` : `I'm going to ${festival.name}`}
+        style={({ pressed }) => [
+          styles.discover,
+          going ? styles.goingOn : styles.tune,
+          pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
+        ]}
+      >
+        <CheckIcon color={going ? color.moon : color.moonDim} size={14} />
+        <Text style={[styles.discoverText, !going && { color: color.moonDim }]}>{going ? 'Going' : 'I’m going'}</Text>
+      </Pressable>
+      {cheers && going ? <ConfettiBurst key={cheers} /> : null}
+    </View>
   );
 }
 
