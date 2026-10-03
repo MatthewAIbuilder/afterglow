@@ -1,4 +1,4 @@
-import type { Activity, Comment, Crew, CrewInvite, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, ReportRecord, SupportMessage, SupportTopic } from './models';
+import type { Activity, Comment, Crew, CrewInvite, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -82,6 +82,20 @@ export interface SocialService {
   adminActivity(since: string, max: number): Promise<AdminActivity>;
   /** Every account's last-active record, most recently active first, up to `max`. Support account only. */
   adminPresence(max: number): Promise<AdminPresence[]>;
+  /** HQ uploads: lineup or set-times pictures, PDFs or text, with a note. Support account only. */
+  addDrop(input: DropInput, onProgress?: (share: number) => void): Promise<Drop>;
+  drops(max: number): Promise<Drop[]>;
+  setDropStatus(id: string, status: DropStatus): Promise<void>;
+  deleteDrop(id: string): Promise<void>;
+  /** Catalogue updates published from HQ: anyone may read them (every app applies them); only the support account writes them. */
+  livePatches(): Promise<LivePatch[]>;
+  publishPatch(input: { title: string; festivalId: string; file: string; dropId?: string }): Promise<LivePatch>;
+  unpublishPatch(id: string): Promise<void>;
+  /** Give or take back Afterglow Plus (null takes it back) and a flair (null takes it back). Support account only. */
+  setPlus(uid: string, plus: { until?: string } | null): Promise<void>;
+  setFlair(uid: string, flair: Flair | null): Promise<void>;
+  /** Everyone with Plus or a flair. */
+  privileged(): Promise<Privileges[]>;
   /** Notes that you opened the app now (your own `activity` record; merged with what's there). Never for the support account. */
   markActive(input: { platform: string; version: string; hasProfile: boolean; now: Date }): Promise<void>;
   /** For each festival: how many show they're going, and how many videos were shared there. */

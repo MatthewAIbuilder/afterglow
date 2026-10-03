@@ -194,6 +194,14 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: jest.fn(async () => ({ canceled: true, assets: null })),
   launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
 }));
+// Picking files in HQ: hands back whatever a test puts in `__next` (cancelled when empty).
+jest.mock('expo-document-picker', () => {
+  const __state: { next: { uri: string; name: string; mimeType?: string; size?: number }[] } = { next: [] };
+  return {
+    __state,
+    getDocumentAsync: jest.fn(async () => (__state.next.length ? { canceled: false, assets: __state.next.map((a) => ({ lastModified: 0, ...a })) } : { canceled: true, assets: null })),
+  };
+});
 // Framing photos: records each crop and hands back a "saved" file.
 jest.mock('expo-image-manipulator', () => {
   const __calls: { uri: string; actions: unknown[] }[] = [];

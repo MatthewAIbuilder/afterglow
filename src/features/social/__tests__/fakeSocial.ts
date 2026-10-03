@@ -1,4 +1,4 @@
-import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
@@ -48,6 +48,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const verified = new Set<string>();
   /** Each account's last-active record (`activity/{uid}`). */
   const presence = new Map<string, AdminPresence>();
+  /** HQ uploads, published catalogue updates, and when Plus ends for those given it with an end. */
+  const drops = new Map<string, Drop>();
+  const patches = new Map<string, LivePatch>();
+  const plusUntil = new Map<string, string>();
   const admin = () => !!current?.email && current.email === SUPPORT_EMAIL && verified.has(current.email);
   const needAdmin = () => {
     if (!admin()) throw new SocialError('unknown');
@@ -385,6 +389,65 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       needAdmin();
       return [...presence.values()].sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt)).slice(0, max);
     },
+    async addDrop(input, onProgress) {
+      const u = me();
+      needAdmin();
+      if (network.down) throw new SocialError('network');
+      const id = `drop-${++n}`;
+      const files = input.files.map((f, i) => ({ name: f.name, type: f.type, size: f.size ?? 0, path: `drops/${id}/${i + 1}-${f.name}`, url: `https://files.example/${id}/${i + 1}-${encodeURIComponent(f.name)}` }));
+      onProgress?.(1);
+      const d: Drop = { id, by: u.uid, note: input.note.trim(), files, status: 'waiting', createdAt: `${now()}#${String(n).padStart(6, '0')}`, ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.festivalName ? { festivalName: input.festivalName } : {}), ...(input.text?.trim() ? { text: input.text.trim() } : {}) };
+      drops.set(id, d);
+      return d;
+    },
+    async drops(max) {
+      needAdmin();
+      return [...drops.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async setDropStatus(id, status) {
+      needAdmin();
+      const d = drops.get(id);
+      if (d) drops.set(id, { ...d, status });
+    },
+    async deleteDrop(id) {
+      needAdmin();
+      drops.delete(id);
+    },
+    async livePatches() {
+      if (network.down) throw new SocialError('network');
+      return [...patches.values()].sort((a, b) => a.publishedAt.localeCompare(b.publishedAt));
+    },
+    async publishPatch(input) {
+      const u = me();
+      needAdmin();
+      const p: LivePatch = { id: `patch-${++n}`, title: input.title, festivalId: input.festivalId, file: input.file, by: u.uid, publishedAt: `${now()}#${String(n).padStart(6, '0')}`, ...(input.dropId ? { dropId: input.dropId } : {}) };
+      patches.set(p.id, p);
+      return p;
+    },
+    async unpublishPatch(id) {
+      needAdmin();
+      patches.delete(id);
+    },
+    async setPlus(uid, on) {
+      needAdmin();
+      if (!on) {
+        plus.delete(uid);
+        plusUntil.delete(uid);
+      } else {
+        plus.add(uid);
+        if (on.until) plusUntil.set(uid, on.until);
+        else plusUntil.delete(uid);
+      }
+    },
+    async setFlair(uid, flair) {
+      needAdmin();
+      if (flair) flairs.set(uid, { kind: flair.kind, caption: flair.caption.trim() });
+      else flairs.delete(uid);
+    },
+    async privileged() {
+      const uids = new Set([...plus, ...flairs.keys()]);
+      return [...uids].map((uid) => ({ uid, ...(plus.has(uid) ? { plus: plusUntil.has(uid) ? { until: plusUntil.get(uid) } : {} } : {}), ...(flairs.has(uid) ? { flair: flairs.get(uid) } : {}) }));
+    },
     async markActive(input) {
       const u = me();
       if (network.down) throw new SocialError('network');
@@ -646,5 +709,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, counter, reports, support, verified, presence, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
 }

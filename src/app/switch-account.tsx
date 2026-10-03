@@ -111,7 +111,7 @@ export default function SwitchAccountScreen() {
       {KEEPS_PASSWORDS ? (
         <View style={styles.rememberRow}>
           <Text style={styles.rememberText}>Remember the password on this phone</Text>
-          <Switch value={remember} onValueChange={setRemember} accessibilityLabel="Remember the password on this phone" trackColor={{ true: color.glow }} />
+          <Switch value={remember} onValueChange={setRemember} accessibilityLabel="Remember the password on this phone" trackColor={{ false: 'rgba(255,255,255,0.18)', true: color.glow }} />
         </View>
       ) : null}
       {problem ? <Text style={styles.problem}>{problem}</Text> : null}

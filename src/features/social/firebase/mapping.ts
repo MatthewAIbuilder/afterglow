@@ -1,5 +1,5 @@
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, REPORT_REASONS, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -250,4 +250,64 @@ export function reportFromDoc(id: string, d: unknown): ReportRecord | null {
   const createdAt = whenOf(o.createdAt);
   if (!kind || !reason || !by || !targetId || !createdAt) return null;
   return { id, by, kind, targetId, ownerUid: str(o.ownerUid) ?? '', reason, note: str(o.note) ?? '', createdAt, status: o.status === 'resolved' ? 'resolved' : 'open' };
+}
+
+/** An HQ upload from its document; anything malformed is null. */
+export function dropFromDoc(id: string, d: unknown): Drop | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const by = str(o.by);
+  const createdAt = whenOf(o.createdAt);
+  if (!by || !createdAt) return null;
+  const files: DropFile[] = Array.isArray(o.files)
+    ? o.files.flatMap((f) => {
+        const x = f as Record<string, unknown>;
+        const name = str(x?.name);
+        const path = str(x?.path);
+        const url = str(x?.url);
+        return name && path && url?.startsWith('https://') ? [{ name, path, url, type: str(x.type) ?? '', size: typeof x.size === 'number' ? x.size : 0 }] : [];
+      })
+    : [];
+  const status = DROP_STATUSES.find((s) => s === o.status) ?? 'waiting';
+  return {
+    id,
+    by,
+    note: str(o.note) ?? '',
+    files,
+    status,
+    createdAt,
+    ...(str(o.festivalId) ? { festivalId: str(o.festivalId) } : {}),
+    ...(str(o.festivalName) ? { festivalName: str(o.festivalName) } : {}),
+    ...(str(o.text) ? { text: str(o.text) } : {}),
+  };
+}
+
+/** A published catalogue update from its document; anything malformed is null. */
+export function patchFromDoc(id: string, d: unknown): LivePatch | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const title = str(o.title);
+  const festivalId = str(o.festivalId);
+  const file = str(o.file);
+  const by = str(o.by);
+  const publishedAt = whenOf(o.publishedAt);
+  if (!title || !festivalId || !file || !by || !publishedAt) return null;
+  return { id, title, festivalId, file, by, publishedAt, ...(str(o.dropId) ? { dropId: str(o.dropId) } : {}) };
+}
+
+/** Who has Plus and who has a flair, joined by person. */
+export function privilegesFrom(plus: { id: string; data: unknown }[], flairs: { id: string; data: unknown }[]): Privileges[] {
+  const out = new Map<string, Privileges>();
+  for (const p of plus) {
+    const s = standingFromDocs(undefined, undefined, p.data);
+    if (!s.plus) continue;
+    const until = (p.data as { until?: unknown })?.until;
+    const ms = until && typeof until === 'object' && 'toMillis' in until ? (until as { toMillis: () => number }).toMillis() : typeof until === 'string' ? Date.parse(until) : undefined;
+    out.set(p.id, { uid: p.id, plus: ms && Number.isFinite(ms) ? { until: new Date(ms).toISOString() } : {} });
+  }
+  for (const f of flairs) {
+    const s = standingFromDocs(undefined, f.data);
+    if (s.flair) out.set(f.id, { ...(out.get(f.id) ?? { uid: f.id }), flair: s.flair });
+  }
+  return [...out.values()];
 }

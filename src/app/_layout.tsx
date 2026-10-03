@@ -11,6 +11,7 @@ import { FirstRun } from '../features/welcome/FirstRun';
 import { FounderClaim } from '../features/standing/FounderClaim';
 import { ActivityPing } from '../features/admin/ActivityPing';
 import { SavedAccountSync } from '../features/accounts/SavedAccountSync';
+import { LivePatchSync } from '../features/admin/LivePatchSync';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
@@ -199,6 +200,7 @@ export default function RootLayout() {
       <FounderClaim />
       <ActivityPing />
       <SavedAccountSync />
+      <LivePatchSync />
       <AdminReturnPill />
       <TonightLauncher />
       <QuestTracker />

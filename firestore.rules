@@ -144,15 +144,49 @@ service cloud.firestore {
     }
     // Flairs: a special border and caption (artists, the team, partners), given out by hand in the Firebase
     // console. Anyone can see them; nobody can write one from the app.
-    // Afterglow Plus: given in the Firebase console for now (later by the App Store purchase, from a server).
-    // Anyone can see it (it decides whether someone's videos show the edge glow); nobody writes it from the app.
+    // Afterglow Plus: given from HQ (the support account) or the Firebase console (later by the App Store
+    // purchase, from a server). Anyone can see it (it decides whether someone's videos show the edge glow).
     match /plus/{uid} {
       allow read: if true;
-      allow write: if false;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['active', 'until'])
+        && request.resource.data.active == true && shortOrAbsent(request.resource.data, 'until', 40);
     }
     match /flairs/{uid} {
       allow read: if true;
-      allow write: if false;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['kind', 'caption'])
+        && request.resource.data.kind in ['artist', 'team', 'partner']
+        && request.resource.data.caption is string && request.resource.data.caption.size() > 0 && request.resource.data.caption.size() <= 40;
+    }
+
+    // HQ uploads (lineup and set-times pictures, PDFs and text for Afterglow to add): only the support account.
+    match /drops/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.by == me()
+        && request.resource.data.keys().hasOnly(['by', 'festivalId', 'festivalName', 'note', 'text', 'files', 'status', 'createdAt'])
+        && request.resource.data.status == 'waiting' && request.resource.data.createdAt == request.time
+        && request.resource.data.files is list && request.resource.data.files.size() <= 10
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && shortOrAbsent(request.resource.data, 'festivalId', 100) && shortOrAbsent(request.resource.data, 'festivalName', 120)
+        && shortOrAbsent(request.resource.data, 'text', 50000);
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['waiting', 'sent', 'done'];
+    }
+
+    // Catalogue updates published from HQ: every app reads them on top of its catalogue (they're public
+    // lineup facts); only the support account publishes or takes them down. Never edited.
+    match /published/{id} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.by == me()
+        && request.resource.data.keys().hasOnly(['title', 'festivalId', 'file', 'by', 'publishedAt', 'dropId'])
+        && request.resource.data.publishedAt == request.time
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+        && request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 100
+        && request.resource.data.file is string && request.resource.data.file.size() <= 800000
+        && shortOrAbsent(request.resource.data, 'dropId', 100);
+      allow update: if false;
     }
 
     match /friendCodes/{uid} {

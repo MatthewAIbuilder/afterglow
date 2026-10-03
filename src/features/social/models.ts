@@ -310,3 +310,43 @@ export type AdminActivity = {
   follows: string[];
   crews: string[];
 };
+
+/** A file in an HQ upload: where it's kept and its link (an unguessable download link, so a Claude Code session can read it). */
+export type DropFile = { name: string; type: string; size: number; path: string; url: string };
+/** waiting: just uploaded; sent: handed to a Claude Code session; done: dealt with. */
+export type DropStatus = 'waiting' | 'sent' | 'done';
+export const DROP_STATUSES: readonly DropStatus[] = ['waiting', 'sent', 'done'];
+/**
+ * Something the support account threw into HQ to be added to Afterglow: a
+ * lineup or set-times picture, PDF or text, with the festival it's for and a
+ * note. Only the support account can see it.
+ */
+export type Drop = {
+  id: string;
+  by: string;
+  festivalId?: string;
+  /** For a festival that isn't on Afterglow yet. */
+  festivalName?: string;
+  note: string;
+  text?: string;
+  files: DropFile[];
+  status: DropStatus;
+  createdAt: string;
+};
+export type DropInput = { festivalId?: string; festivalName?: string; note: string; text?: string; files: { uri: string; name: string; type: string; size?: number }[] };
+/** Largest file an HQ upload takes, and how many at once. */
+export const DROP_FILE_MAX = 25 * 1024 * 1024;
+export const DROP_FILES_MAX = 10;
+export const DROP_TEXT_MAX = 50_000;
+export const DROP_NOTE_MAX = 500;
+
+/**
+ * A catalogue update published from HQ: the same file format as
+ * catalogue/afterglow.json, for one festival. Every app reads these on top
+ * of its catalogue, so it shows within minutes, until it's taken down.
+ */
+export type LivePatch = { id: string; title: string; festivalId: string; file: string; by: string; publishedAt: string; dropId?: string };
+export const PATCH_MAX_CHARS = 800_000;
+
+/** Someone given Plus or a flair from HQ. */
+export type Privileges = { uid: string; plus?: { until?: string }; flair?: Flair };

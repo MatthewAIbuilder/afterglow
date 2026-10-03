@@ -115,3 +115,19 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
   }
   return { catalog: createCatalog(snapshot), snapshot, problems: all, usedFile: true };
 }
+
+/**
+ * Catalogue updates published from HQ, applied one after another (oldest
+ * first) on top of the catalogue. One that can't be used is skipped, never
+ * breaking the rest. Pure.
+ */
+export function applyPatches(base: Built, patches: readonly { file: string }[], parse: (text: string) => ParsedFile): Built {
+  let built = base;
+  const problems: string[] = [];
+  for (const p of patches) {
+    const next = buildCatalog(built.snapshot, parse(p.file));
+    problems.push(...next.problems);
+    if (next.usedFile) built = next;
+  }
+  return built === base ? { ...base, problems } : { ...built, problems };
+}
