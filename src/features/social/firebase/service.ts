@@ -46,7 +46,7 @@ import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
-import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -258,6 +258,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await batch.commit();
         // Once the profile is gone (the rules allow it only then), and never in the way of deleting the account.
         await deleteDoc(doc(db, 'usage', user.uid)).catch(() => {});
+        // Sprouts you gave and picked up go too (the rules allow it once the profile is gone).
+        for (const field of ['from', 'to'] as const) {
+          const snap = await getDocs(query(collection(db, 'sprouts'), where(field, '==', user.uid), limit(500))).catch(() => null);
+          for (const d of snap?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+        }
         await deleteUser(user);
       }),
 
@@ -971,6 +976,66 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const user = me();
         const snap = await getDocs(query(collection(fb().db, 'crewInvites'), where('crewId', '==', crewId), where('from', '==', user.uid), limit(100)));
         return snap.docs.map((d) => crewInviteFromDoc(d.id, d.data())?.to).filter((u): u is string => !!u);
+      }),
+    giveSprout: (input) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'sprouts', input.id);
+        try {
+          await withTimeout(
+            setDoc(ref, {
+              from: user.uid,
+              kind: input.kind,
+              ...(input.note ? { note: input.note.slice(0, 60) } : {}),
+              ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+              createdAt: serverTimestamp(),
+            }),
+            CHAT_SEND_TIMEOUT_MS,
+          );
+        } catch (e) {
+          // Sent before and the answer was lost: writing again is refused, and it's already there.
+          if (e instanceof SocialError && e.kind === 'network') throw e;
+          const there = sproutFromDoc(input.id, (await getDoc(ref)).data());
+          if (there?.from === user.uid) return;
+          throw e;
+        }
+      }),
+    claimSprout: (id) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'sprouts', id);
+        const read = async () => sproutFromDoc(id, (await getDoc(ref)).data());
+        const s = await read();
+        if (!s) throw new SocialError('not-found');
+        if (s.to === user.uid || s.from === user.uid) return s;
+        if (s.to) throw new SocialError('sprout-taken');
+        if (Date.now() - Date.parse(s.createdAt) > 30 * 86_400_000) throw new SocialError('not-found');
+        try {
+          await updateDoc(ref, { to: user.uid, claimedAt: serverTimestamp() });
+        } catch (e) {
+          const again = await read().catch(() => null);
+          if (again?.to && again.to !== user.uid) throw new SocialError('sprout-taken');
+          throw e;
+        }
+        return (await read()) ?? { ...s, to: user.uid, claimedAt: now() };
+      }),
+    sprout: (id) => guard(async () => sproutFromDoc(id, (await getDoc(doc(fb().db, 'sprouts', id))).data())),
+    sproutsGiven: (max) =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('from', '==', user.uid), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    sproutsReceived: (max) =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('to', '==', user.uid), orderBy('claimedAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    takeBackSprout: (id) =>
+      guard(async () => {
+        me();
+        await deleteDoc(doc(fb().db, 'sprouts', id));
       }),
     declineCrewInvite: (crewId) =>
       guard(async () => {

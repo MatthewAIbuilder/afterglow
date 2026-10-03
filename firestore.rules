@@ -341,6 +341,36 @@ service cloud.firestore {
         && !blockedBy(request.resource.data.to);
       allow delete: if signedIn() && (resource.data.to == me() || resource.data.from == me());
     }
+    // Sprouts: little gifts. The id is made on the giver's phone and shown as a code. The giver creates it
+    // as themselves (with a profile), stamped with the server's time; anyone signed in with the code can
+    // read it and pick it up once (not the giver, not someone the giver blocked) within 30 days. Never
+    // otherwise changed. The giver takes back one nobody picked up; once someone's profile is gone,
+    // their sprouts (given or picked up) can be removed with the account.
+    match /sprouts/{id} {
+      allow get: if signedIn() || isAdmin();
+      allow list: if signedIn() && (resource.data.from == me() || resource.data.to == me());
+      allow create: if signedIn()
+        && id.matches('^[a-z0-9]{12,40}$')
+        && request.resource.data.keys().hasOnly(['from', 'kind', 'note', 'festivalId', 'createdAt'])
+        && request.resource.data.from == me()
+        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise']
+        && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 60))
+        && (!('festivalId' in request.resource.data) || (request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 120))
+        && request.resource.data.createdAt == request.time
+        && exists(path('profiles', me()));
+      allow update: if signedIn()
+        && !('to' in resource.data)
+        && resource.data.from != me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['to', 'claimedAt'])
+        && request.resource.data.to == me()
+        && request.resource.data.claimedAt == request.time
+        && request.time < resource.data.createdAt + duration.value(30, 'd')
+        && !blockedBy(resource.data.from);
+      allow delete: if signedIn() && (
+        (resource.data.from == me() && !('to' in resource.data))
+        || ((resource.data.from == me() || resource.data.get('to', '') == me()) && !exists(path('profiles', me())))
+      );
+    }
     match /crews/{id} {
       allow get: if signedIn();
       allow list: if (signedIn() && me() in resource.data.members) || isAdmin();

@@ -30,8 +30,8 @@ export const added = (now: readonly string[], base: readonly string[]) => {
 };
 
 /** Things counted as they happen. */
-export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble' | 'chat' | 'door' | 'crowd';
-export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble', 'chat', 'door', 'crowd'];
+export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble' | 'chat' | 'door' | 'crowd' | 'sprout';
+export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble', 'chat', 'door', 'crowd', 'sprout'];
 
 export type DailyQuestId =
   | 'watch'
@@ -49,7 +49,8 @@ export type DailyQuestId =
   | 'share'
   | 'chat'
   | 'door'
-  | 'crowd';
+  | 'crowd'
+  | 'sprout';
 
 export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-love';
 
@@ -57,7 +58,7 @@ export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-lo
 export type QuestLane = 'watch' | 'taste' | 'plan';
 
 /** Where tapping a quest takes you. `festival` = your next festival's page (or Festivals). */
-export type QuestGo = '/together' | '/' | '/sound' | '/pick-artists' | '/this-or-that' | '/search' | '/festival-map' | 'festival' | '/discover-focus';
+export type QuestGo = '/together' | '/give-sprout' | '/' | '/sound' | '/pick-artists' | '/this-or-that' | '/search' | '/festival-map' | 'festival' | '/discover-focus';
 
 export type DailySpec = { id: DailyQuestId; lane: QuestLane; title: string; how: string; target: number; glow: number; go?: QuestGo };
 export type WeeklySpec = { id: WeeklyQuestId; title: string; how: string; target: number; glow: number; go?: QuestGo };
@@ -78,6 +79,7 @@ export const DAILY: readonly DailySpec[] = [
   { id: 'map', lane: 'plan', title: 'Explorer', how: 'Look around the festival map', target: 1, glow: 10, go: '/festival-map' },
   { id: 'share', lane: 'plan', title: 'Spread the glow', how: 'Share a set, a plan or a festival', target: 1, glow: 15 },
   { id: 'chat', lane: 'plan', title: 'Crew call', how: 'Send a message in your crew chat', target: 1, glow: 15, go: '/together' },
+  { id: 'sprout', lane: 'plan', title: 'Pass it on', how: 'Give someone a sprout', target: 1, glow: 20, go: '/give-sprout' },
   { id: 'door', lane: 'plan', title: 'Knock knock', how: 'Open today’s festival week door', target: 1, glow: 20, go: 'festival' },
 ];
 
@@ -158,7 +160,8 @@ export function dailyPicks(day: string, can: (id: DailyQuestId) => boolean = () 
 /**
  * What's possible right now: starring sets needs a festival you're going to;
  * This or that needs enough sets; Crew call needs a crew; Knock knock needs a
- * festival week door ready to open; In the crowd needs to be signed in.
+ * festival week door ready to open; In the crowd and Pass it on need you
+ * signed in.
  */
 export type QuestAbility = { planning: boolean; enoughSets: boolean; crew?: boolean; door?: boolean; crowd?: boolean };
 export const canDo =
@@ -172,7 +175,7 @@ export const canDo =
           ? !!a.crew
           : id === 'door'
             ? !!a.door
-            : id === 'crowd'
+            : id === 'crowd' || id === 'sprout'
               ? !!a.crowd
               : true;
 
@@ -230,6 +233,7 @@ export function dailyCurrent(spec: DailySpec, snap: QuestSnapshot, base: Counter
     chat: () => events.chat ?? 0,
     door: () => events.door ?? 0,
     crowd: () => crowdSince(snap.seen, since) + (events.crowd ?? 0),
+    sprout: () => events.sprout ?? 0,
   }[spec.id]();
   return Math.min(spec.target, n);
 }

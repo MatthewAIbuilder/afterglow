@@ -71,7 +71,7 @@ describe('picking quests', () => {
   it('leaves out what you can’t do right now', () => {
     for (let i = 0; i < 40; i++) {
       const picks = dailyPicks(shiftDay('2026-10-03', -i), canDo({ planning: false, enoughSets: false }));
-      expect(picks.some((q) => ['stars', 'thisorthat', 'chat', 'door', 'crowd'].includes(q.id))).toBe(false);
+      expect(picks.some((q) => ['stars', 'thisorthat', 'chat', 'door', 'crowd', 'sprout'].includes(q.id))).toBe(false);
       expect(picks).toHaveLength(3);
     }
   });
@@ -94,6 +94,9 @@ describe('picking quests', () => {
     const seen = { 'community:a': at(2026, 10, 3, 9), 'community:old': at(2026, 10, 2, 22), c1: at(2026, 10, 3, 10) };
     expect(dailyCurrent(crowd, snap({}, seen), NO_COUNTS, {}, since)).toBe(1);
     expect(dailyCurrent(crowd, snap({}, seen), NO_COUNTS, { crowd: 1 }, since)).toBe(2);
+    const sprout = DAILY.find((q) => q.id === 'sprout')!;
+    expect(dailyCurrent(sprout, snap(), NO_COUNTS, { sprout: 1 }, since)).toBe(1);
+    expect(canDo({ planning: true, enoughSets: true })('sprout')).toBe(false);
     const door = DAILY.find((q) => q.id === 'door')!;
     expect(dailyCurrent(door, snap(), NO_COUNTS, { door: 1 }, since)).toBe(1);
   });

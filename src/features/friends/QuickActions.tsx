@@ -7,13 +7,14 @@ import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { color, space, type } from '../../theme/tokens';
 import { inviteText } from '../social/friends';
+import { Sprout } from '../sprouts/Sprout';
 
 /** How many of your festivals the Invite menu offers. */
 const INVITE_FESTIVALS = 3;
 
 /**
  * The Friends page's one row of round buttons: find people, show your code,
- * scan a friend's (phones), and invite friends to Afterglow (or to plan one
+ * scan a friend's (phones), give a sprout, and invite friends to Afterglow (or to plan one
  * of your festivals). At a festival, inviting gives way: what matters there
  * is adding the people in front of you.
  */
@@ -37,6 +38,7 @@ export function QuickActions({ handle, festivals = [], atFestival = false }: { h
       {atFestival ? null : <Action label="Find" a11y="Find people" icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />}
       <Action label="My code" a11y="Show my friend code" icon={<QrIcon color={color.moon} size={22} />} onPress={() => router.push('/my-code')} />
       {phone ? <Action label="Scan" a11y="Scan a friend's code" icon={<ScanIcon color={color.night} size={22} />} onPress={() => router.push('/scan')} glow /> : null}
+      <Action label="Sprout" a11y="Give someone a sprout" icon={<Sprout kind="seedling" stage={2} size={40} still />} onPress={() => router.push('/give-sprout')} />
       {atFestival ? (
         <Action label="Find" a11y="Find people" icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />
       ) : (
@@ -65,11 +67,11 @@ function Action({ label, a11y, icon, onPress, glow }: { label: string; a11y: str
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-around', marginTop: space.lg, marginBottom: space.sm },
-  action: { alignItems: 'center', gap: space.xs, minWidth: 64 },
+  action: { alignItems: 'center', gap: space.xs, minWidth: 54 },
   circle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.glass,

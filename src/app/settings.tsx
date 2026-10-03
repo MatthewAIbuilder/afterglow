@@ -26,6 +26,7 @@ import { useMusic } from '../state/music';
 import { useReactions } from '../state/reactions';
 import { useMySupport } from '../state/supportSeen';
 import { useSocial } from '../state/social';
+import { useSprouts } from '../state/sprouts';
 import { color, radius, space, type } from '../theme/tokens';
 import { useToes } from '../features/toes/useToes';
 
@@ -52,6 +53,7 @@ export default function SettingsScreen() {
   const { reactions } = useReactions();
   const pool = useClipPool();
   const kept = yourClipCount(yourClips(pool.clips, reactions));
+  const gardenCount = useSprouts().garden.length;
   const { followed } = useFollowedArtists();
   const followedCount = followed.filter((id) => catalog.artist(id)).length;
   const { state: music } = useMusic();
@@ -89,6 +91,7 @@ export default function SettingsScreen() {
         <Group title="Yours">
           <Row label="Memories" detail={memories.length ? `${memories.length}, by festival` : 'Add your videos'} a11y={`Memories, ${memories.length}`} onPress={() => router.push('/memories')} />
           <Row label="Saved and liked clips" detail={String(kept)} a11y={`Your clips, ${kept}`} onPress={() => router.push('/saved')} />
+          <Row label="Your garden" detail={String(gardenCount)} a11y={`Your garden, ${gardenCount} sprouts`} onPress={() => router.push('/garden')} />
           <Row
             label="Artists you follow"
             detail={followedCount ? String(followedCount) : 'Follow artists'}

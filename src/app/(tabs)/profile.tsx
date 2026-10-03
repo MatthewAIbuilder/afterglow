@@ -15,6 +15,7 @@ import { yourClipCount, yourClips } from '../../features/discover/saved';
 import { groupFestivals } from '../../features/festivals/going';
 import { countdown } from '../../features/festivals/when';
 import { Highlights } from '../../features/profile/Highlights';
+import { GardenShelf } from '../../features/sprouts/GardenShelf';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
 import { useDailyQuests } from '../../features/quests/useDailyQuests';
 import { CrewsList, SavedTab, VideosTab } from '../../features/profile/ProfileTabsContent';
@@ -243,6 +244,8 @@ function FullProfile() {
           hidden={shelves.hidden.has('festivals')}
           onToggle={() => shelves.toggle('festivals')}
         />
+
+        <GardenShelf hidden={shelves.hidden.has('garden')} onToggle={() => shelves.toggle('garden')} />
 
         <View style={styles.tabs}>
           <Tabs<Tab>

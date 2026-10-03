@@ -8,6 +8,7 @@ import { PageTitle } from '../components/PageTitle';
 import { PersonAvatar } from '../components/PersonAvatar';
 import { CloseIcon, QrIcon } from '../components/TabIcons';
 import { type FriendCard, readFriendLink } from '../features/friends/qr';
+import { readSproutLink } from '../features/sprouts/sprouts';
 import { haptic } from '../lib/haptics';
 import { type AddResult, useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
@@ -35,9 +36,24 @@ export default function ScanScreen() {
   const onScanned = async (text: string) => {
     if (busy.current || result || text === lastText.current) return;
     lastText.current = text;
+    const sprout = readSproutLink(text);
+    if (sprout) {
+      // A sprout someone's giving you: its own page picks it up.
+      haptic.settle();
+      router.replace({ pathname: '/sprout/[id]', params: { id: sprout.id, u: sprout.from, h: sprout.handle, k: sprout.kind, n: sprout.name } });
+      return;
+    }
     const card = readFriendLink(text);
     if (!card) {
-      setNote('That isn’t an Afterglow friend code.');
+      setNote('That isn’t an Afterglow friend code or sprout.');
+      setTimeout(() => {
+        lastText.current = undefined;
+        setNote(undefined);
+      }, NOT_A_CODE_MS);
+      return;
+    }
+    if (!social.user) {
+      setNote('Sign in to add friends. Sprouts work without an account.');
       setTimeout(() => {
         lastText.current = undefined;
         setNote(undefined);
@@ -68,8 +84,7 @@ export default function ScanScreen() {
     setResult(undefined);
   };
 
-  const signedOut = social.availability.ok && !social.user;
-  const showCamera = Platform.OS !== 'web' && perm?.granted && !signedOut && social.availability.ok;
+  const showCamera = Platform.OS !== 'web' && perm?.granted && social.availability.ok;
 
   return (
     <View style={styles.root}>
@@ -86,7 +101,7 @@ export default function ScanScreen() {
 
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
         <Text style={styles.title} accessibilityRole="header">
-          Scan a friend’s code
+          Scan a code
         </Text>
         <GlassCircleButton label="Close" onPress={() => router.back()}>
           <CloseIcon color={color.moon} size={18} />
@@ -95,8 +110,6 @@ export default function ScanScreen() {
 
       {Platform.OS === 'web' || !social.availability.ok ? (
         <Card title="Scanning is in the app" body="Open Afterglow on your phone to scan a friend’s code." />
-      ) : signedOut ? (
-        <Card title="Sign in to add friends" body="Friends you scan are added to your profile." action="Sign in or create a profile" onAction={() => router.replace('/account')} />
       ) : !perm ? null : !perm.granted ? (
         <Card
           title="Scan with your camera"
@@ -118,7 +131,7 @@ export default function ScanScreen() {
           </View>
           <View style={[styles.bottom, { paddingBottom: insets.bottom + space.xl }]}>
             <Text style={styles.hint} accessibilityLiveRegion="polite">
-              {adding ? `Adding ${adding.name}…` : (note ?? 'Point at a friend’s Afterglow code. It works with no signal.')}
+              {adding ? `Adding ${adding.name}…` : (note ?? 'Point at a friend’s code or a sprout. It works with no signal.')}
             </Text>
             <Pressable
               onPress={() => router.replace('/my-code')}
