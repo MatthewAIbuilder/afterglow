@@ -144,6 +144,12 @@ service cloud.firestore {
     }
     // Flairs: a special border and caption (artists, the team, partners), given out by hand in the Firebase
     // console. Anyone can see them; nobody can write one from the app.
+    // Afterglow Plus: given in the Firebase console for now (later by the App Store purchase, from a server).
+    // Anyone can see it (it decides whether someone's videos show the edge glow); nobody writes it from the app.
+    match /plus/{uid} {
+      allow read: if true;
+      allow write: if false;
+    }
     match /flairs/{uid} {
       allow read: if true;
       allow write: if false;

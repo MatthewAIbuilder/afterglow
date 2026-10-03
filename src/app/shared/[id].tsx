@@ -1,8 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { EdgeGlow } from '../../components/EdgeGlow';
+import { showsGlow } from '../../features/standing/standing';
+import { useStanding } from '../../features/standing/useStanding';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import type { SharedMemory } from '../../features/social/models';
@@ -34,6 +37,8 @@ export default function SharedMemoryScreen() {
   const catalog = useCatalog();
   const mem = useMemories();
   const [m, setM] = useState<SharedMemory | null | undefined>();
+  const screen = useWindowDimensions();
+  const filmer = useStanding(m?.uid);
   const [count, setCount] = useState<number | undefined>();
   const [comments, setComments] = useState<number | undefined>();
   const { get, setLiked } = useReactions();
@@ -132,6 +137,7 @@ export default function SharedMemoryScreen() {
   return (
     <View style={styles.root}>
       {m && !blocked ? <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} /> : null}
+      {m && !blocked && showsGlow(filmer) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label /> : null}
       {m === undefined ? <ActivityIndicator color={color.glow} style={styles.center} /> : null}
       {m === null || blocked ? <Text style={[styles.center, styles.gone]}>{blocked ? 'You blocked this person.' : 'This video isn’t available any more.'}</Text> : null}
       <LinearGradient colors={['rgba(3,2,10,0)', 'rgba(3,2,10,0.85)']} style={styles.scrim} pointerEvents="none" />

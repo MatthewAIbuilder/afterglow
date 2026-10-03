@@ -38,6 +38,9 @@ import { AUTOPLAY_COUNTDOWN_SEC, countdownTick, passFinished } from './autoplay'
 import { UpNextPill } from './UpNextPill';
 import { AmbientBackdrop } from './AmbientBackdrop';
 import { ClipPlayer } from './ClipPlayer';
+import { EdgeGlow } from '../../components/EdgeGlow';
+import { showsGlow } from '../standing/standing';
+import { useStanding } from '../standing/useStanding';
 import { type FeedPager, usePlayerSwipe } from './feedPager';
 import { HeartIcon, PlayIcon } from './icons';
 import { clipMedia } from './media';
@@ -100,6 +103,9 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const media = useMemo(() => clipMedia(clip), [clip]);
   // A community clip (someone's shared video): credited to them, with Report / Hide / Block.
   const community = media?.provider === 'video' ? media.community : undefined;
+  // The edge glow: on every video, unless the person who filmed a crowd video has Afterglow Plus.
+  const filmer = useStanding(community?.uid);
+  const glow = !!media && showsGlow(filmer);
   const communityState = useCommunity();
   const clipFlags = useClipFlags();
   const social = useSocial();
@@ -385,8 +391,11 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       ? tall.player
       : { w: stackedWidth, h: Math.max(MIN_PLAYER, Math.round((stackedWidth * 9) / 16)) };
 
-    // The player takes its own taps; a vertical swipe on it still moves the feed.
+    // The player takes its own taps; a vertical swipe on it still moves the feed. The edge glow sits just
+    // outside it (never over a YouTube picture); videos filmed with the app also carry the AFTERGLOW label.
     const player = (
+      <View style={{ width: frame.w, height: frame.h }}>
+        {glow ? <EdgeGlow width={frame.w} height={frame.h} radius={radius.md + 3} inset={-3} label={!!community} active={playing} /> : null}
       <GestureDetector gesture={playerSwipe}>
         <View style={[styles.player, { width: frame.w, height: frame.h }]}>
           <ClipPlayer
@@ -402,6 +411,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
           />
         </View>
       </GestureDetector>
+      </View>
     );
     const track = (
       <View style={[styles.videoTrack, { width: frame.w }]} pointerEvents="none">
@@ -518,6 +528,8 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
               {burst}
             </View>
           </GestureDetector>
+          {/* Filmed with Afterglow: the edge glow around the screen, with the word on the right. */}
+          {glow ? <EdgeGlow width={width} height={height} radius={44} inset={4} label active={playing} /> : null}
           <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
             {info}
           </View>

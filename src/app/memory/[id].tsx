@@ -2,8 +2,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useSocial } from '../../state/social';
+import { EdgeGlow } from '../../components/EdgeGlow';
+import { showsGlow } from '../../features/standing/standing';
+import { useStanding } from '../../features/standing/useStanding';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { CloseIcon } from '../../components/TabIcons';
@@ -31,6 +35,8 @@ export default function MemoryScreen() {
     p.play();
   });
   const [paused, setPaused] = useState(false);
+  const screen = useWindowDimensions();
+  const mine = useStanding(useSocial().user?.uid);
 
   // Deleted (here or elsewhere): step back.
   useEffect(() => {
@@ -77,6 +83,8 @@ export default function MemoryScreen() {
       <Pressable style={StyleSheet.absoluteFill} onPress={toggle} accessibilityRole="button" accessibilityLabel={paused ? 'Play' : 'Pause'}>
         <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
       </Pressable>
+      {/* How it looks once shared: the edge glow (unless you have Afterglow Plus). */}
+      {showsGlow(mine) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label active={!paused} /> : null}
       <LinearGradient colors={['rgba(3,2,10,0)', 'rgba(3,2,10,0.85)']} style={styles.scrim} pointerEvents="none" />
 
       <View style={[styles.close, { top: insets.top + space.sm }]}>
