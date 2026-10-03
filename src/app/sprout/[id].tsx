@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.xl, gap: space.md, alignItems: 'center', maxWidth: 520, width: '100%', alignSelf: 'center' },
   stage: { width: 240, height: 210, alignItems: 'center', justifyContent: 'flex-end' },
   halo: { position: 'absolute', bottom: 10, width: 180, height: 180, borderRadius: 90, borderWidth: 2, borderColor: SPROUT_GREEN },
-  ground: { width: 150, height: 14, borderRadius: 7, marginTop: -16, backgroundColor: 'rgba(110,231,160,0.16)' },
+  ground: { width: 124, height: 12, borderRadius: 62, marginTop: -14, backgroundColor: 'rgba(110,231,160,0.1)', transform: [{ scaleY: 0.8 }] },
   kicker: { ...type.caption, color: SPROUT_GREEN, letterSpacing: 2, fontWeight: '700' },
   title: { ...type.title, color: color.moon, textAlign: 'center' },
   from: { ...type.label, color: color.moonDim },

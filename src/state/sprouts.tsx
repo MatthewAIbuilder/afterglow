@@ -165,7 +165,7 @@ const SproutsContext = createContext<Ctx | null>(null);
 export function SproutsProvider({ children }: { children: ReactNode }) {
   const social = useSocial();
   const catalog = useCatalog();
-  const { going } = useGoing();
+  const { going, hydrated: goingLoaded } = useGoing();
   const { seen } = useSeen();
   const { memories } = useMemories();
   const tonight = useTonight();
@@ -407,13 +407,13 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   // ---- Giving -----------------------------------------------------------
   // When each festival was marked going: festivals already going when this first ran count from always.
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !goingLoaded) return;
     const since = stored.goingSince;
     const missing = going.filter((id) => !since || since[id] === undefined);
     if (!missing.length && since) return;
     const at = since ? Date.now() : 0;
     void Promise.resolve().then(() => setStored((s) => ({ ...s, goingSince: { ...Object.fromEntries(missing.map((id) => [id, at])), ...s.goingSince } })));
-  }, [hydrated, going, stored.goingSince, setStored]);
+  }, [hydrated, goingLoaded, going, stored.goingSince, setStored]);
   const goingSince = useCallback((id: string) => stored.goingSince?.[id] ?? Number.POSITIVE_INFINITY, [stored.goingSince]);
   // At the festival tonight: going since before tonight began (ticking "I'm going" on the night gives no wild sprout or extra seeds).
   const here = !!tonight && goingSince(tonight.festival.id) < nightStart(tonight.at.getTime());
