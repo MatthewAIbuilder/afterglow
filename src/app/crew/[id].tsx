@@ -12,6 +12,8 @@ import { crewTogether, firstName, whoLine } from '../../features/crews/together'
 import { CrewRouteSection } from '../../features/crews/CrewRouteSection';
 import { CrewLatest } from '../../features/crews/CrewLatest';
 import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
+import { CrewChatCard } from '../../features/crews/CrewChatCard';
+import { CHAT_RULES } from '../../features/crews/chat';
 import { useWeekends } from '../../state/weekends';
 import { useCrewPage } from '../../features/crews/useCrewPage';
 import { whereWhen } from '../../features/festivals/format';
@@ -35,7 +37,7 @@ import { color, radius, space, type } from '../../theme/tokens';
  * remove people.
  */
 export default function CrewScreen() {
-  const { id, fresh } = useLocalSearchParams<{ id: string; fresh?: string }>();
+  const { id, fresh, code } = useLocalSearchParams<{ id: string; fresh?: string; code?: string }>();
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const { page, reload, update } = useCrewPage(id);
@@ -62,7 +64,7 @@ export default function CrewScreen() {
         return page.member ? (
           <Member crew={page.crew} profiles={page.profiles} picks={page.picks} fresh={fresh === '1'} onChange={update} />
         ) : (
-          <Invite crew={page.crew} profiles={page.profiles} onJoined={() => void reload()} />
+          <Invite crew={page.crew} profiles={page.profiles} code={code} onJoined={() => void reload()} />
         );
     }
   })();
@@ -110,8 +112,12 @@ function Primary({ label, onPress, busy = false }: { label: string; onPress: () 
 
 const nameOf = (profiles: Record<string, Profile>) => (uid: string) => (profiles[uid] ? firstName(profiles[uid].displayName) : 'Someone');
 
-/** Someone opened an invite: the crew, who's in it, and Join. */
-function Invite({ crew, profiles, onJoined }: { crew: Crew; profiles: Record<string, Profile>; onJoined: () => void }) {
+/**
+ * Someone opened a crew they're not in. Crews are invite only: with an invite
+ * in the app, or an invite link's code, they see the crew, the chat rules
+ * they agree to by joining, and Join. Without one, they're told to ask.
+ */
+function Invite({ crew, profiles, code, onJoined }: { crew: Crew; profiles: Record<string, Profile>; code?: string; onJoined: () => void }) {
   const social = useSocial();
   const { join, invites, inviters, declineInvite } = useCrews();
   const festival = useCatalog().festival(crew.festivalId);
@@ -121,6 +127,7 @@ function Invite({ crew, profiles, onJoined }: { crew: Crew; profiles: Record<str
   const inviter = invited ? inviters[invited.from] : undefined;
   const full = crew.members.length >= CREW_MAX;
   const festivalName = festival?.name ?? 'this festival';
+  const canJoin = !!invited || !!code;
 
   const press = async () => {
     haptic.select();
@@ -130,7 +137,7 @@ function Invite({ crew, profiles, onJoined }: { crew: Crew; profiles: Record<str
     }
     setBusy(true);
     try {
-      await join(crew.id);
+      await join(crew.id, invited ? undefined : code);
       haptic.settle();
       onJoined();
     } catch (e) {
@@ -146,13 +153,29 @@ function Invite({ crew, profiles, onJoined }: { crew: Crew; profiles: Record<str
       <Text style={styles.title} accessibilityRole="header">
         {crew.name}
       </Text>
-      <Text style={styles.body}>Plan {festivalName} together: see which sets you all want and everyone’s picks.</Text>
+      <Text style={styles.body}>Plan {festivalName} together: see which sets you all want, everyone’s picks, and chat with the crew.</Text>
       <Faces uids={crew.members} profiles={profiles} />
-      {full ? (
+      {!canJoin ? (
+        <View style={styles.rulesCard}>
+          <Text style={styles.rulesTitle}>This crew is invite only</Text>
+          <Text style={styles.note}>Ask someone in it to invite you in the app, or to send you a new invite link.</Text>
+        </View>
+      ) : full ? (
         <Text style={styles.body}>This crew is full ({CREW_MAX} people).</Text>
       ) : (
         <>
-          <Primary label={social.profile ? 'Join the crew' : 'Create your profile to join'} onPress={() => void press()} busy={busy} />
+          <View style={styles.rulesCard} accessible accessibilityLabel={`By joining, you agree to the crew chat rules. ${CHAT_RULES.join(' ')}`}>
+            <Text style={styles.rulesTitle}>By joining, you agree to the crew chat rules</Text>
+            {CHAT_RULES.map((r) => (
+              <Text key={r} style={styles.rule}>
+                · {r}
+              </Text>
+            ))}
+          </View>
+          <Pressable onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'guidelines' } })} accessibilityRole="link" hitSlop={8}>
+            <Text style={styles.link}>Read the community guidelines</Text>
+          </Pressable>
+          <Primary label={social.profile ? 'Agree and join' : 'Create your profile to join'} onPress={() => void press()} busy={busy} />
           <Text style={styles.note}>When you join, the sets you star at {festivalName} are shared with this crew. You can leave any time.</Text>
           {invited ? (
             <Pressable
@@ -270,7 +293,7 @@ function Member({
     const last = crew.members.length === 1;
     showAlert(
       last ? 'End this crew?' : 'Leave this crew?',
-      last ? 'You’re the only one in it, so it ends when you leave.' : 'Your picks are taken out of the crew. You can join again with the invite link.',
+      last ? 'You’re the only one in it, so it ends when you leave.' : 'Your picks and messages are taken out of the crew. You’d need a new invite to join again.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -290,7 +313,7 @@ function Member({
   // The owner can end the crew for everyone (leaving would hand it on instead).
   const endForAll = () => {
     haptic.select();
-    showAlert('End this crew for everyone?', 'The crew, everyone’s picks, updates and the meeting spot are removed for all of you. This can’t be undone.', [
+    showAlert('End this crew for everyone?', 'The crew, its chat, everyone’s picks, updates and the meeting spot are removed for all of you. This can’t be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'End crew',
@@ -308,7 +331,7 @@ function Member({
   const remove = (uid: string) => {
     haptic.select();
     const n = profiles[uid]?.displayName ?? 'them';
-    showAlert(`Remove ${n}?`, 'Their picks are taken out of the crew. They can only come back with the invite link.', [
+    showAlert(`Remove ${n}?`, 'Their picks and messages are taken out of the crew. They can only come back with a new invite.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -387,7 +410,9 @@ function Member({
         <ShareIcon color={color.moon} size={16} />
         <Text style={styles.primaryText}>Invite friends</Text>
       </Pressable>
-      {!others.length ? <Text style={styles.note}>Send the invite to your friends. Anyone with the link can join, up to {CREW_MAX} people.</Text> : null}
+      {!others.length ? <Text style={styles.note}>Crews are invite only. Invite friends in the app or send them the invite link, up to {CREW_MAX} people.</Text> : null}
+
+      <CrewChatCard crew={crew} nameOf={who} />
 
       {/* Where everyone last was, while the festival is on or coming up. */}
       <CrewLatest crew={crew} nameOf={who} />
@@ -455,6 +480,9 @@ const mineNote = (festivalName?: string) => (
 );
 
 const styles = StyleSheet.create({
+  rulesCard: { padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, gap: 4 },
+  rulesTitle: { ...type.label, color: color.moon, marginBottom: 2 },
+  rule: { ...type.caption, color: color.moonDim, lineHeight: 17 },
   endAll: { alignSelf: 'center', paddingVertical: space.sm },
   decline: { alignSelf: 'center', minHeight: 40, paddingHorizontal: space.lg, alignItems: 'center', justifyContent: 'center' },
   declineText: { ...type.label, color: color.moonDim },

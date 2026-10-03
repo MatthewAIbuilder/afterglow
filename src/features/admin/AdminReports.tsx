@@ -44,16 +44,25 @@ export function AdminReports() {
       showAlert('Couldn’t update it', 'Check the signal and try again.');
     }
   };
+  // A crew chat message: only the support account can read it, for the review.
+  const readMessage = async (r: ReportRecord) => {
+    try {
+      const m = await service.reportedMessage(r.targetId);
+      showAlert('The message', m ? `“${m.text}”` : 'It’s already gone.');
+    } catch {
+      showAlert('Couldn’t read it', 'Check the signal and try again.');
+    }
+  };
   const takeDown = (r: ReportRecord) => {
     if (r.kind === 'profile') return;
-    showAlert(r.kind === 'memory' ? 'Take this video down?' : 'Remove this comment?', 'It’s removed for everyone, and the report is marked dealt with.', [
+    showAlert(r.kind === 'memory' ? 'Take this video down?' : r.kind === 'chat' ? 'Remove this message?' : 'Remove this comment?', 'It’s removed for everyone, and the report is marked dealt with.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Take it down',
         style: 'destructive',
         onPress: async () => {
           try {
-            await service.takeDown(r.kind as 'memory' | 'comment', r.targetId);
+            await service.takeDown(r.kind as 'memory' | 'comment' | 'chat', r.targetId);
             await service.resolveReport(r.id);
             haptic.settle();
             void load();
@@ -76,7 +85,7 @@ export function AdminReports() {
         shown.map((r) => (
           <View key={r.id} style={[styles.card, r.status === 'open' && styles.cardOpen]}>
             <View style={styles.head}>
-              <Text style={styles.what}>{r.kind === 'memory' ? 'A video' : r.kind === 'comment' ? 'A comment' : 'A profile'}</Text>
+              <Text style={styles.what}>{r.kind === 'memory' ? 'A video' : r.kind === 'comment' ? 'A comment' : r.kind === 'chat' ? 'A crew chat message' : 'A profile'}</Text>
               <Text style={styles.when}>{agoShort(r.createdAt, now)}</Text>
             </View>
             <Text style={styles.reason}>{REPORT_REASONS.find((x) => x.key === r.reason)?.label}</Text>
@@ -87,8 +96,13 @@ export function AdminReports() {
                   <Text style={styles.link}>Look at it</Text>
                 </Pressable>
               ) : null}
+              {r.kind === 'chat' ? (
+                <Pressable onPress={() => void readMessage(r)} accessibilityRole="button" accessibilityLabel="Read the message" hitSlop={6}>
+                  <Text style={styles.link}>Read it</Text>
+                </Pressable>
+              ) : null}
               {r.kind !== 'profile' && r.status === 'open' ? (
-                <Pressable onPress={() => takeDown(r)} accessibilityRole="button" accessibilityLabel={r.kind === 'memory' ? 'Take the video down' : 'Remove the comment'} hitSlop={6}>
+                <Pressable onPress={() => takeDown(r)} accessibilityRole="button" accessibilityLabel={r.kind === 'memory' ? 'Take the video down' : r.kind === 'chat' ? 'Remove the message' : 'Remove the comment'} hitSlop={6}>
                   <Text style={styles.danger}>Take it down</Text>
                 </Pressable>
               ) : null}

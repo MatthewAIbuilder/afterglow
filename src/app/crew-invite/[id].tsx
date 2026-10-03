@@ -6,9 +6,7 @@ import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { SearchField } from '../../components/SearchField';
 import { ChevronIcon } from '../../components/TabIcons';
-import { WEB_URL } from '../../config/app';
 import { INVITE_PEOPLE_MAX, inviteCandidates, type InviteRow } from '../../features/crews/invite';
-import { crewPath } from '../../features/crews/together';
 import type { Crew, Profile } from '../../features/social/models';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/service';
 import { StandingAvatar } from '../../features/standing/StandingAvatar';
@@ -30,7 +28,7 @@ export default function CrewInviteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const social = useSocial();
-  const { crews } = useCrews();
+  const { crews, inviteLink, newInviteLink } = useCrews();
   const crew: Crew | undefined = crews.find((c) => c.id === id);
   const festival = useCatalog().festival(crew?.festivalId ?? '');
   const me = social.user?.uid;
@@ -78,12 +76,27 @@ export default function CrewInviteScreen() {
     }
   };
 
-  const shareLink = async () => {
+  const shareLink = async (fresh = false) => {
     if (!crew) return;
     haptic.select();
+    let link: string;
+    try {
+      link = fresh ? await newInviteLink(crew.id) : await inviteLink(crew.id);
+    } catch (e) {
+      showAlert('Couldn’t make the invite link', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      return;
+    }
     const where = festival ? ` for ${festival.name}` : '';
-    const outcome = await shareMessage(`Join my crew${where} on Afterglow, so we can plan our sets together: ${WEB_URL}${crewPath(crew.id)}`, crew.name);
+    const outcome = await shareMessage(`Join my crew${where} on Afterglow, so we can plan our sets and chat: ${link}`, crew.name);
     if (outcome === 'failed') showAlert('Couldn’t share the invite', 'Try again in a moment.');
+  };
+  // The owner can make a new link, so an old one that went too far stops working.
+  const freshLink = () => {
+    haptic.select();
+    showAlert('Make a new invite link?', 'The link you shared before stops working. People already in the crew stay in it.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'New link', onPress: () => void shareLink(true) },
+    ]);
   };
 
   const total = people?.length ?? 0;
@@ -151,9 +164,14 @@ export default function CrewInviteScreen() {
           <Pressable onPress={() => void shareLink()} accessibilityRole="button" accessibilityLabel="Share a link instead" style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>Share a link instead</Text>
-              <Text style={styles.detail}>For friends who aren’t on Afterglow yet. It opens this crew.</Text>
+              <Text style={styles.detail}>For friends who aren’t on Afterglow yet. Only share it with people you know: anyone with it can join.</Text>
             </View>
             <ChevronIcon color={color.moonFaint} size={12} />
+          </Pressable>
+        ) : null}
+        {crew && crew.owner === me ? (
+          <Pressable onPress={freshLink} accessibilityRole="button" accessibilityLabel="Make a new invite link" hitSlop={8}>
+            <Text style={styles.detail}>Shared the link too widely? Make a new one; the old link stops working.</Text>
           </Pressable>
         ) : null}
       </ScrollView>

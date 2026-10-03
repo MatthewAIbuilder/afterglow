@@ -8,6 +8,7 @@ import { HeartBurst, HeartFace, HeartHalo } from './HeartHold';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraIcon } from '../features/camera/icons';
 import { useFestivalMode } from '../state/festivalMode';
+import { useCrewChat } from '../state/crewChat';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { markCareTipDone, useCareTip } from '../state/careTip';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -58,7 +59,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const burst = useSharedValue(0);
   const order = active ? FESTIVAL_TABS : FULL_TABS;
   // Something new from your crew: a glow dot on Friends.
-  const freshCrew = useCrewUpdates().stories.some((s) => s.fresh);
+  const unreadChat = useCrewChat().unreadTotal;
+  const freshCrew = useCrewUpdates().stories.some((s) => s.fresh) || unreadChat > 0;
   const current = state.routes[state.index]?.name;
   const [pillW, setPillW] = useState(0);
   const slot = current ? order.indexOf(current) : -1;

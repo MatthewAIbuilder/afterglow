@@ -41,11 +41,11 @@ describe('festival crews', () => {
     await s().setCrewPicks(crew.id, ['subtronics']);
     await s().signOut();
     await person('sam', 'Sam');
-    await s().joinCrew(crew.id);
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     await s().setCrewPicks(crew.id, ['subtronics']);
     await s().signOut();
     await person('jordan', 'Jordan');
-    await s().joinCrew(crew.id);
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     await AsyncStorage.setItem('mustSees.v2', JSON.stringify({ 'solstice-26': ['illenium'] }));
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love' }));
     const app = await renderApp(`/crew/${crew.id}`);
@@ -72,7 +72,7 @@ describe('festival crews', () => {
     expect(app.getByText('Sunrise gang')).toBeTruthy();
     const crew = [...mockSocial.crews.values()][0];
     expect(crew).toMatchObject({ name: 'Sunrise gang', owner: me, members: [me] });
-    expect(app.getByText('Send the invite to your friends. Anyone with the link can join, up to 12 people.')).toBeTruthy();
+    expect(app.getByText('Crews are invite only. Invite friends in the app or send them the invite link, up to 12 people.')).toBeTruthy();
     expect(app.getByText('A LITTLE SOUND · STEVE AOKI')).toBeTruthy();
     // Your stars are shared a moment later.
     await settle(2500);
@@ -84,22 +84,38 @@ describe('festival crews', () => {
     expect(app.getByLabelText('Your crew, Sunrise gang, 1 person. Open it.')).toBeTruthy();
   });
 
-  it('a friend opens the invite, joins, and sees the sets you share', async () => {
+  it('crews are invite only: without an invite or the link’s code there’s no way in', async () => {
+    await person('maya', 'Maya');
+    const crew = await s().createCrew('edc-orlando-26', 'Sunrise gang');
+    await person('sam', 'Sam');
+    const app = await renderApp(`/crew/${crew.id}`);
+    await flush();
+    expect(app.getByText('Sunrise gang')).toBeTruthy();
+    expect(app.getByText('This crew is invite only')).toBeTruthy();
+    expect(app.queryByLabelText('Agree and join')).toBeNull();
+    await expect(s().joinCrew(crew.id)).rejects.toMatchObject({ kind: 'not-invited' });
+    await expect(s().joinCrew(crew.id, 'notthecode12345')).rejects.toMatchObject({ kind: 'not-invited' });
+  });
+
+  it('a friend opens the invite link, agrees to the chat rules, joins, and sees the sets you share', async () => {
     const maya = await person('maya', 'Maya');
     const crew = await s().createCrew('edc-orlando-26', 'Sunrise gang');
     await s().setCrewPicks(crew.id, ['steve-aoki', 'aaron-hibell']);
+    const code = await s().crewInviteCode(crew.id);
     await AsyncStorage.setItem('mustSees.v2', JSON.stringify({ 'edc-orlando-26': ['steve-aoki'] }));
     const sam = await person('sam', 'Sam');
-    const app = await renderApp(`/crew/${crew.id}`);
+    const app = await renderApp(`/crew/${crew.id}?code=${code}`);
     await flush();
     expect(app.getByText('Sunrise gang')).toBeTruthy();
     expect(app.getByLabelText('In this crew: Maya')).toBeTruthy();
     expect(app.getByText('When you join, the sets you star at EDC Orlando 2026 are shared with this crew. You can leave any time.')).toBeTruthy();
+    expect(app.getByText('By joining, you agree to the crew chat rules')).toBeTruthy();
     // Picks stay private until you join.
     expect(app.queryByText('Sets you share')).toBeNull();
-    await fireEvent.press(app.getByLabelText('Join the crew'));
+    await fireEvent.press(app.getByLabelText('Agree and join'));
     await flush();
     expect(mockSocial.crews.get(crew.id)?.members).toEqual([maya, sam]);
+    expect(mockSocial.agreed.has(`${crew.id}/${sam}`)).toBe(true);
     expect(app.getByText('Sets you share')).toBeTruthy();
     expect(app.getByLabelText(/^STEVE AOKI, \d+ percent match, Both of you$/)).toBeTruthy();
     expect(app.getByText('AARON HIBELL · STEVE AOKI')).toBeTruthy();
@@ -112,9 +128,9 @@ describe('festival crews', () => {
     await person('maya', 'Maya');
     const crew = await s().createCrew('edc-orlando-26', 'Crew');
     const sam = await person('sam', 'Sam');
-    await s().joinCrew(crew.id);
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     const jo = await person('jojo', 'Jo');
-    await s().joinCrew(crew.id);
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     await as('maya');
     const app = await renderApp(`/crew/${crew.id}`);
     await flush();
@@ -156,7 +172,7 @@ describe('festival crews', () => {
     const crew = await s().createCrew('edc-orlando-26', 'Crew');
     await s().setCrewPicks(crew.id, ['steve-aoki']);
     await person('sam', 'Sam');
-    await s().joinCrew(crew.id);
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     const app = await renderApp('/festival/edc-orlando-26');
     await flush();
     await showTab(app, 'Lineup');
