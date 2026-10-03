@@ -68,6 +68,7 @@ import { asSocialError, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewPick
  *   crews/{id}/updates/{updateId} uid, kind, atMs (when it happened on the phone), sentAt (server time), festivalId,
  *                       artistId, stage, note, videoUrl/thumbUrl (+ videoPath/thumbPath when uploaded for the crew), sharedId, durationSec, width, height
  *   comments/{id}       memoryId, owner, uid, handle, text (≤ 300), createdAt: written as yourself, removed by you or the video's owner
+ *   levels/{uid}        level, at: your glow level, shown on your profile unless you switch it off
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
  * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg, crews/{crewId}/{uid}/{updateId}.(mp4|mov|m4v|jpg) (links only in members-only updates)
  */
@@ -205,6 +206,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           for (const r of refs.slice(i, i + 400)) b.delete(r);
           await b.commit();
         }
+        // On its own, so a database whose rules predate glow levels never blocks deleting the account.
+        await deleteDoc(doc(db, 'levels', user.uid)).catch(() => {});
         const profile = await getDoc(doc(db, 'profiles', user.uid));
         const batch = writeBatch(db);
         const handle = profile.exists() ? (profile.data() as { handle?: string }).handle : undefined;
@@ -424,8 +427,21 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     standingOf: (uid) =>
       guard(async () => {
         const { db } = fb();
-        const [f, fl, pl] = await Promise.all([getDoc(doc(db, 'founders', uid)), getDoc(doc(db, 'flairs', uid)), getDoc(doc(db, 'plus', uid))]);
-        return standingFromDocs(f.data(), fl.data(), pl.data());
+        // The level has its own catch: a database whose rules predate it refuses the read, and that must not hide the rest.
+        const [f, fl, pl, lv] = await Promise.all([
+          getDoc(doc(db, 'founders', uid)),
+          getDoc(doc(db, 'flairs', uid)),
+          getDoc(doc(db, 'plus', uid)),
+          getDoc(doc(db, 'levels', uid)).catch(() => undefined),
+        ]);
+        return standingFromDocs(f.data(), fl.data(), pl.data(), lv?.data());
+      }),
+    setLevel: (level) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'levels', user.uid);
+        if (level === null) await deleteDoc(ref);
+        else await setDoc(ref, { level, at: serverTimestamp() });
       }),
     sendVerification: () => guard(async () => sendEmailVerification(me() as FirebaseAuth.User)),
     reloadUser: () =>

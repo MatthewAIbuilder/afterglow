@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { PageTitle } from '../../components/PageTitle';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { ArtistRow } from '../../components/ArtistRow';
@@ -11,7 +11,7 @@ import { SearchField } from '../../components/SearchField';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { NoticeBell } from '../../components/NoticeBell';
-import { GridIcon, ListIcon } from '../../components/TabIcons';
+import { CalendarIcon, GridIcon, ListIcon, MapIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
@@ -31,7 +31,8 @@ import { NearYouPrompt } from '../../features/festivals/NearYouPrompt';
 import { useNearby } from '../../state/nearby';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
-import { useCatalog } from '../../state/catalog';
+import { useCatalog, useCatalogRefresh } from '../../state/catalog';
+import { revealSecret } from '../../state/secrets';
 import { type FestivalsView, useFestivalsView } from '../../state/festivalsView';
 import { useGoing } from '../../state/going';
 import { useWeekends } from '../../state/weekends';
@@ -87,6 +88,24 @@ export default function FestivalsScreen() {
   const searching = query.trim().length > 0;
   // Rows on a timeline or square tiles, your choice.
   const { view, setView } = useFestivalsView();
+  // Pull to refresh: the latest festivals and clips. Three pulls in a row set off fireworks.
+  const refreshCatalog = useCatalogRefresh();
+  const [refreshing, setRefreshing] = useState(false);
+  const pulls = useRef<number[]>([]);
+  const pullToRefresh = () => {
+    haptic.soft();
+    const now = Date.now();
+    pulls.current = [...pulls.current.filter((t) => now - t < 20_000), now];
+    if (pulls.current.length >= 3) {
+      pulls.current = [];
+      revealSecret('fireworks');
+    }
+    setRefreshing(true);
+    void refreshCatalog().finally(() => {
+      setRefreshing(false);
+      haptic.settle();
+    });
+  };
   const list = (fs: Festival[], isGoing = false) => <FestivalList festivals={fs} taste={taste} view={view} going={isGoing} />;
 
   return (
@@ -101,11 +120,27 @@ export default function FestivalsScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={pullToRefresh} tintColor={color.glow} colors={[color.glow]} progressBackgroundColor={color.nightRaised} />
+        }
       >
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <Text style={styles.title}>Festivals</Text>
             <View style={styles.actions}>
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push('/festival-map');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Festival map"
+                accessibilityHint="Every festival, glowing on a map"
+                hitSlop={10}
+                style={({ pressed }) => [styles.toggle, pressed && { transform: [{ scale: 0.92 }] }]}
+              >
+                <MapIcon color={color.moonDim} />
+              </Pressable>
               <ViewToggle value={view} onChange={setView} />
               <NoticeBell />
             </View>
@@ -187,7 +222,7 @@ export default function FestivalsScreen() {
                 </ScrollView>
               </>
             ) : null}
-            {rest.length > 0 && <SectionHead title={groups.going.length || shelf ? 'All festivals' : 'Coming up'} count={rest.length} />}
+            {rest.length > 0 && <SectionHead title={groups.going.length || shelf ? 'All festivals' : 'Coming up'} count={rest.length} calendar />}
             {byMonth(rest.slice(0, restShown), today).map((g) => (
               <View key={g.label}>
                 <Text style={[styles.section, styles.month]}>{g.label}</Text>
@@ -216,11 +251,28 @@ export default function FestivalsScreen() {
 }
 
 /** A section title, with how many when it helps. */
-function SectionHead({ title, count }: { title: string; count?: number }) {
+function SectionHead({ title, count, calendar }: { title: string; count?: number; calendar?: boolean }) {
   return (
-    <View style={styles.sectionRow} accessibilityRole="header">
-      <Text style={[styles.section, styles.sectionTitle]}>{title}</Text>
+    <View style={styles.sectionRow}>
+      <Text style={[styles.section, styles.sectionTitle]} accessibilityRole="header">
+        {title}
+      </Text>
       {count ? <Text style={styles.sectionCount}>{count}</Text> : null}
+      {calendar ? (
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            router.push('/festival-calendar');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="See festivals on a calendar"
+          hitSlop={10}
+          style={({ pressed }) => [styles.calLink, pressed && { opacity: 0.7 }]}
+        >
+          <CalendarIcon color={color.glow} size={14} />
+          <Text style={styles.calText}>Calendar</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -364,6 +416,8 @@ function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; ta
 }
 
 const styles = StyleSheet.create({
+  calLink: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 5 },
+  calText: { ...type.label, color: color.glow },
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl, marginBottom: space.xl },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

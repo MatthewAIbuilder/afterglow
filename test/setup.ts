@@ -280,8 +280,19 @@ jest.mock('../src/config/data', () => ({ ...(jest.requireActual('../src/config/d
 // Steps: a phone with a motion counter, allowed, 4,210 steps tonight; `__state.allowed = false` asks first.
 jest.mock('expo-sensors', () => {
   const state = { allowed: true, steps: 4210 };
+  const accel = new Set<CallableFunction>();
   return {
     __state: state,
+    /** Send an accelerometer reading to whoever listens (in g). */
+    __accel: (reading: object) => accel.forEach((l) => l(reading)),
+    Accelerometer: {
+      isAvailableAsync: jest.fn(async () => true),
+      setUpdateInterval: jest.fn(),
+      addListener: jest.fn((l: CallableFunction) => {
+        accel.add(l);
+        return { remove: () => accel.delete(l) };
+      }),
+    },
     DeviceMotion: {
       isAvailableAsync: jest.fn(async () => false),
       getPermissionsAsync: jest.fn(async () => ({ granted: false })),
@@ -300,3 +311,4 @@ jest.mock('expo-sensors', () => {
     },
   };
 });
+

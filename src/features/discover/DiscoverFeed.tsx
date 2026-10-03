@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon, SearchIcon } from '../../components/TabIcons';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
+import { QuestButton } from '../quests/QuestButton';
 import { haptic } from '../../lib/haptics';
 import type { Clip, Festival } from '../../data/models';
 import { isCommunityClip } from '../community/clips';
@@ -32,6 +33,7 @@ import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
 import { useHints } from '../../state/hints';
 import { markCareTipDone, useCareTip } from '../../state/careTip';
+import { useQuestTip } from '../../state/questTip';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { color, motion, space, type } from '../../theme/tokens';
@@ -45,7 +47,7 @@ import { useTonight } from '../tonight/useTonight';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { useAddMemory } from '../memories/useAddMemory';
 import { useMemories } from '../../state/memories';
-import { alreadyKnown, CARE_HINT, currentHint } from './hints';
+import { alreadyKnown, CARE_HINT, currentHint, QUESTS_HINT } from './hints';
 import type { FeedPager } from './feedPager';
 import { defaultFocus } from '../festivals/links';
 import { SOUND_LABEL } from '../../data/models';
@@ -56,6 +58,8 @@ import { reasonNote } from '../recommend/copy';
 import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
 import { useFeedLive } from './useFeedLive';
+import { useShake } from '../secrets/useShake';
+import { revealSecret } from '../../state/secrets';
 import { useRankedFeed } from './useRankedFeed';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
@@ -83,6 +87,13 @@ export function DiscoverFeed() {
   const [activeIndex, setActiveIndex] = useState(0);
   const activeRef = useRef(0);
   const feedLive = useFeedLive();
+  // A secret: shake the phone on Discover for a light show (once every few seconds at most).
+  const lastShow = useRef(0);
+  useShake(feedLive, () => {
+    if (Date.now() - lastShow.current < 5000) return;
+    lastShow.current = Date.now();
+    revealSecret('lightshow');
+  });
 
   // Which festival's lineup you're discovering. Changes start the feed from the top.
   const { clip: requested, festival: focusParam } = useLocalSearchParams<{ clip?: string; festival?: string }>();
@@ -201,10 +212,17 @@ export function DiscoverFeed() {
     if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
   }, [ready, reactions, markDone]);
   // Once the three are done: holding the camera button opens Look after yourself.
-  const careTip = useCareTip();
-  const next = ready && count > 0 && activeIndex < count ? (currentHint(hintsDone) ?? (careTip ? CARE_HINT : undefined)) : undefined;
+  const careTipState = useCareTip();
+  const careTip = careTipState && Platform.OS !== 'web';
+  // Then: the ring beside it holds your daily quests. Neither shows until both are known, so they never swap.
+  const questTip = useQuestTip();
+  const tipsKnown = careTipState !== undefined && questTip !== undefined;
+  const next =
+    ready && count > 0 && activeIndex < count
+      ? (currentHint(hintsDone) ?? (!tipsKnown ? undefined : careTip ? CARE_HINT : questTip && !hereFestival ? QUESTS_HINT : undefined))
+      : undefined;
   // Filming (and the camera button) is in the phone app, so the website doesn't teach it.
-  const hint = (next === 'hold' || next === 'care') && Platform.OS === 'web' ? undefined : next;
+  const hint = next === 'hold' && Platform.OS === 'web' ? undefined : next;
   // Press and hold a clip to add your own video: the third tip is done the first time you do.
   const addMemory = useAddMemory();
   const onHold = useCallback(() => {
@@ -484,6 +502,8 @@ export function DiscoverFeed() {
           </Pressable>
           )}
           <View style={styles.headerEnd}>
+            {/* Today's quests: a ring that fills as you go. */}
+            {!hereFestival ? <QuestButton /> : null}
             {/* Film your own video (or swipe right). The camera needs the phone app. */}
             {Platform.OS !== 'web' ? (
               <GlassCircleButton

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Children, type ReactNode } from 'react';
+import { Children, type ReactNode, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
@@ -13,6 +13,8 @@ import { useYear } from '../features/recap/useRecap';
 import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
 import { VERSION_LINE } from '../lib/version';
+import { secretsLine, tapStep } from '../features/secrets/secrets';
+import { revealSecret, useSecrets } from '../state/secrets';
 import { useCatalog } from '../state/catalog';
 import { useFestivalMode } from '../state/festivalMode';
 import { useGoing } from '../state/going';
@@ -34,6 +36,8 @@ import { useToes } from '../features/toes/useToes';
  */
 export default function SettingsScreen() {
   const toes = useToes();
+  const secrets = useSecrets();
+  const versionTaps = useRef<number[]>([]);
   // Replies from support you haven't seen yet.
   const support = useMySupport();
   const mode = useFestivalMode();
@@ -94,6 +98,11 @@ export default function SettingsScreen() {
           {yearCard ? <Row label={`Your ${year}`} detail={yearCard.subtitle.endsWith('so far') ? 'So far' : 'Ready to share'} onPress={() => router.push({ pathname: '/year/[year]', params: { year: String(year) } })} /> : null}
         </Group>
 
+        <Group title="Fun">
+          <Row label="Quests" detail="Your glow level" a11y="Quests: today's quests, your streak and your glow level" onPress={() => router.push('/quests')} />
+          <Row label="Secrets" detail={secretsLine(Object.keys(secrets.found).length)} onPress={() => router.push('/secrets')} />
+        </Group>
+
         <Group title="Festival nights">
           <Row label="Look after yourself" detail="Private" a11y="Look after yourself: stopwatches, water, food and check-ins, private to you" onPress={() => router.push('/care')} />
           {modeFestival ? (
@@ -131,7 +140,19 @@ export default function SettingsScreen() {
           <Row label="Terms" onPress={() => router.push(legalPath('terms') as never)} />
           <Row label="Community guidelines" onPress={() => router.push(legalPath('guidelines') as never)} />
         </Group>
-        <Text style={styles.version}>{toes ? `${VERSION_LINE} · made with ten toes` : VERSION_LINE}</Text>
+        {/* A secret: tap the small print seven times. */}
+        <Pressable
+          onPress={() => {
+            const step = tapStep(versionTaps.current, Date.now());
+            versionTaps.current = step.taps;
+            if (step.done) revealSecret('smallprint');
+            else if (step.taps.length >= 4) haptic.select();
+          }}
+          accessibilityRole="text"
+          accessibilityLabel={VERSION_LINE}
+        >
+          <Text style={styles.version}>{toes ? `${VERSION_LINE} · made with ten toes` : VERSION_LINE}</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );

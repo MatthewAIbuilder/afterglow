@@ -1,3 +1,5 @@
+import type { ErrorBoundaryProps } from 'expo-router';
+import { CrashScreen } from '../components/CrashScreen';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -7,6 +9,12 @@ import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
+import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
+import { LevelSync } from '../features/quests/LevelSync';
+import { QuestToast } from '../features/quests/QuestToast';
+import { WhatsNewLauncher } from '../features/whatsNew/WhatsNewLauncher';
+import { SecretStage } from '../features/secrets/SecretStage';
+import { SunriseWatcher } from '../features/secrets/SunriseWatcher';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { FounderClaim } from '../features/standing/FounderClaim';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
@@ -110,6 +118,11 @@ export default function RootLayout() {
         <Stack.Screen name="pick-artists" options={{ presentation: 'modal' }} />
         <Stack.Screen name="this-or-that" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="compare" />
+        <Stack.Screen name="festival-map" />
+        <Stack.Screen name="festival-calendar" />
+        <Stack.Screen name="quests" />
+        <Stack.Screen name="whats-new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="secrets" />
         <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />
@@ -187,9 +200,15 @@ export default function RootLayout() {
       <FounderClaim />
       <AdminReturnPill />
       <TonightLauncher />
+      <WhatsNewLauncher />
       <QuestTracker />
+      <DailyQuestTracker />
+      <LevelSync />
       <ReminderSync />
       <LikeSync />
+      <QuestToast />
+      <SunriseWatcher />
+      <SecretStage />
       <OfflineNotice />
       <DialogHost />
       </FriendAddsProvider>
@@ -219,4 +238,9 @@ export default function RootLayout() {
       </ClipFlagsProvider>
     </GestureHandlerRootView>
   );
+}
+
+/** A screen that breaks shows a friendly page with Try again, never a white screen. */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <CrashScreen error={props.error} retry={props.retry} />;
 }

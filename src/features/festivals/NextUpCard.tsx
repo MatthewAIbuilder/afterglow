@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
+import { CountUp } from '../../components/CountUp';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -54,7 +55,7 @@ export function NextUpCard({ festival }: { festival: Festival }) {
         </View>
         {big ? (
           <View style={styles.count} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <Text style={[styles.countValue, live && { color: '#FF7EB6' }]}>{big.value}</Text>
+            <CountUp value={big.value} style={[styles.countValue, live && { color: '#FF7EB6' }]} />
             <Text style={styles.countUnit}>{big.unit}</Text>
           </View>
         ) : null}

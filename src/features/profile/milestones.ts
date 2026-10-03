@@ -4,7 +4,7 @@ import type { QuestId } from '../quests/quests';
  * Milestone badges: a few quiet markers of your festival life, next to the
  * festival pins. Worked out on the phone from what you've done. Pure.
  */
-export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og';
+export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon';
 
 export type Milestone = {
   id: MilestoneId | QuestId;
@@ -35,6 +35,10 @@ export type MilestoneInput = {
   bass: number;
   /** Your founder number, when you're one of the first 100. */
   founder?: number;
+  /** The most days in a row you finished all three daily quests. */
+  streak?: number;
+  /** Your glow, all told (quests, side quests, badges, secrets). */
+  glow?: number;
 };
 
 type Spec = { id: MilestoneId; title: string; how: string; about: string; target: number; value: (i: MilestoneInput) => number };
@@ -48,6 +52,9 @@ const SPECS: Spec[] = [
   { id: 'hopper', title: 'Festival hopper', how: 'Go to 5 festivals', about: 'For going to 5 festivals. Each one you’ve been to counts.', target: 5, value: (i) => i.been },
   { id: 'road', title: 'Road warrior', how: 'Festivals in 3 towns', about: 'For festivals in 3 different towns, ones you’ve been to or are going to.', target: 3, value: (i) => i.cities },
   { id: 'moments', title: 'Moment maker', how: 'Film 25 sets', about: 'For filming 25 sets and keeping them in your Moments.', target: 25, value: (i) => i.moments },
+  { id: 'streak7', title: 'On a roll', how: 'A 7-day quest streak', about: 'For finishing all three daily quests seven days in a row.', target: 7, value: (i) => i.streak ?? 0 },
+  { id: 'neon', title: 'Neon', how: 'Earn 450 glow', about: 'For reaching glow level 4, Neon: 450 glow from your quests, side quests, badges and secrets.', target: 450, value: (i) => i.glow ?? 0 },
+  { id: 'streak30', title: 'Afterglow forever', how: 'A 30-day quest streak', about: 'For finishing all three daily quests every day for a month. That’s devotion.', target: 30, value: (i) => i.streak ?? 0 },
   { id: 'ten', title: '10 festivals', how: 'Go to 10 festivals', about: 'For going to 10 festivals. A proper festival life.', target: 10, value: (i) => i.been },
 ];
 

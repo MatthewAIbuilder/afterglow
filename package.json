@@ -84,6 +84,9 @@
     ],
     "setupFiles": [
       "<rootDir>/test/setup.ts"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/afterEnv.ts"
     ]
   }
 }

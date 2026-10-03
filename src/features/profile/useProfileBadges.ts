@@ -21,6 +21,8 @@ import { useWeekends } from '../../state/weekends';
 import type { Unlock } from './BadgeCelebration';
 import { milestoneKey, milestones, pinKey, unclaimed } from './milestones';
 import { citiesOf, passport as makePassport } from './passport';
+import { bestStreakOf } from '../quests/daily';
+import { useDailyQuests } from '../quests/useDailyQuests';
 
 /**
  * Everything your badges need, in one place, for the Profile tab and the
@@ -32,6 +34,8 @@ export function useProfileBadges() {
   const social = useSocial();
   const me = social.profile;
   const catalog = useCatalog();
+  // Daily quests: your best streak and glow level earn badges too.
+  const daily = useDailyQuests();
   const today = useToday();
   const { going } = useGoing();
   const { forYou } = useWeekends();
@@ -66,8 +70,10 @@ export function useProfileBadges() {
           return !!a && (a.sound.dubstep ?? 0) + (a.sound.riddim ?? 0) >= 0.5;
         }).length,
         founder: standing?.founder,
+        streak: bestStreakOf(daily.book),
+        glow: daily.level.glow,
       }),
-    [passport, memories.length, kept, ratings, catalog, standing?.founder],
+    [passport, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();

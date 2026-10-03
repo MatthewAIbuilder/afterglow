@@ -4,6 +4,7 @@ import { ChevronIcon } from '../../components/TabIcons';
 import { color, radius, space, type } from '../../theme/tokens';
 import { HINT_COPY, HINT_SPOKEN, type Hint } from './hints';
 import { HeartIcon } from './icons';
+import { SparkIcon } from '../quests/QuestRing';
 
 /** A quiet first-time tip in the feed's header. Never over the video. */
 export function FeedHint({ hint }: { hint: Hint }) {
@@ -22,6 +23,8 @@ export function FeedHint({ hint }: { hint: Hint }) {
         <ChevronIcon color={color.glow} size={11} direction="up" />
       ) : hint === 'care' ? (
         <HeartIcon color="#FF7EB6" size={12} filled />
+      ) : hint === 'quests' ? (
+        <SparkIcon size={12} />
       ) : hint === 'hold' ? (
         <ChevronIcon color={color.glow} size={11} direction="right" />
       ) : (

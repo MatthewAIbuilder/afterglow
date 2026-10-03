@@ -47,16 +47,17 @@ describe('near you', () => {
   it('looks up festivals without coordinates once, and remembers them', async () => {
     Location.requestForegroundPermissionsAsync.mockImplementationOnce(async () => ({ granted: true }));
     Location.getCurrentPositionAsync.mockImplementationOnce(async () => ({ coords: { latitude: 26.37, longitude: -80.1 } }));
-    Location.geocodeAsync.mockImplementation(async (text: unknown) => (/Boca Raton/.test(String(text)) ? [{ latitude: 26.3683, longitude: -80.1289 }] : []));
+    Location.geocodeAsync.mockImplementation(async (text: unknown) => (/Lakeside Grounds/.test(String(text)) ? [{ latitude: 26.3683, longitude: -80.1289 }] : []));
     const ctx = await mount();
     await act(async () => void (await ctx().turnOn()));
     await settle();
     expect(ctx().status).toBe('on');
-    const cyclops = { id: 'x', name: 'x', dates: '', location: 'Sunset Cove Amphitheater, Boca Raton', lineup: [], days: [], stages: [] };
+    // Festivals from the catalogue with their own place (Cyclops Cove) aren't looked up; the demo ones are.
+    const cyclops = { id: 'x', name: 'x', dates: '', location: 'Lakeside Grounds', lineup: [], days: [], stages: [] };
     expect(ctx().placeOf(cyclops)).toEqual({ lat: 26.368, lon: -80.129 });
     expect(ctx().distanceTo(cyclops)).toBeLessThan(5);
     const saved = JSON.parse((await AsyncStorage.getItem('festivalPlaces.v1'))!);
-    expect(saved['Sunset Cove Amphitheater, Boca Raton']).toEqual({ lat: 26.368, lon: -80.129 });
+    expect(saved['Lakeside Grounds']).toEqual({ lat: 26.368, lon: -80.129 });
     Location.geocodeAsync.mockReset();
   });
 

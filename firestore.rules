@@ -154,6 +154,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    // Glow levels from daily quests: your own, shown on your profile (switched off in Edit profile, which deletes it).
+    // Anyone can see them; only you write yours, a whole number from 1 to 999, stamped with the server's time.
+    match /levels/{uid} {
+      allow read: if true;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['level', 'at'])
+        && request.resource.data.level is int
+        && request.resource.data.level >= 1 && request.resource.data.level <= 999
+        && request.resource.data.at == request.time
+        && exists(path('profiles', uid));
+      allow delete: if signedIn() && me() == uid;
+    }
 
     match /friendCodes/{uid} {
       allow read: if false;

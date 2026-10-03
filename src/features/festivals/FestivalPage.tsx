@@ -1,8 +1,10 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { type ReactNode, useMemo, useState } from 'react';
+import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArtistRow } from '../../components/ArtistRow';
+import { ConfettiBurst } from '../../components/ConfettiBurst';
 import { NightSky } from '../../components/NightSky';
 import { SearchField } from '../../components/SearchField';
 import { Tabs } from '../../components/Tabs';
@@ -109,24 +111,45 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   const reach = lineupReach(festival, catalog.clips);
   const toRate = leftToRate(festival, ratings, (a) => !!catalog.artist(a));
   const recap = useRecap(whole);
-  const { distanceTo, units } = useNearby();
+  const { distanceTo, units, placeOf } = useNearby();
   const away = distanceTo(whole);
   const cover = useMemo(() => coverPhotos(whole, catalog.artist), [whole, catalog]);
   const [tab, setTab] = useState<Section>('plan');
   // From the first day to the morning after the last (either weekend of a two-weekend festival).
   const onNow = isLive(festival, today);
 
+  // The cover follows the scroll: stretching to fill a pull-down, drifting at 40% as you scroll on.
+  const coverH = topSpace + COVER_BELOW + COVER_TAIL;
+  const reduced = useReducedMotion();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.set(e.contentOffset.y);
+  });
+  const coverMotion = useAnimatedStyle(() => {
+    const y = scrollY.get();
+    if (reduced) return { transform: [] };
+    if (y < 0) {
+      const s = 1 + -y / coverH;
+      return { transform: [{ translateY: y + (coverH * (s - 1)) / 2 }, { scale: s }] };
+    }
+    return { transform: [{ translateY: y * 0.4 }] };
+  });
+
   return (
     <View style={styles.root}>
       <NightSky />
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={{ paddingTop: topSpace, paddingBottom: bottomSpace }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
-        {/* The headliners' faces behind the top of the page, fading into the night under the title. */}
-        <FestivalCover photos={cover} fade="page" tail={COVER_TAIL} style={[styles.cover, { height: topSpace + COVER_BELOW + COVER_TAIL }]} />
+        {/* The headliners' faces behind the top of the page, fading into the night under the title. They stretch when you pull down, and drift slower as you scroll. */}
+        <Animated.View style={[styles.cover, { height: coverH }, coverMotion]} pointerEvents="none">
+          <FestivalCover photos={cover} fade="page" tail={COVER_TAIL} style={[styles.cover, { height: coverH }]} />
+        </Animated.View>
         {above}
         <View style={styles.pad}>
           <Text style={styles.title}>{festival.name}</Text>
@@ -312,6 +335,24 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               </Pressable>
             ) : null}
 
+            {/* Where it is, glowing among the others. */}
+            {placeOf(whole) ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push({ pathname: '/festival-map', params: { focus: whole.id } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`See ${whole.name} on the festival map`}
+                style={({ pressed }) => [styles.pad, styles.infoRow, pressed && { opacity: 0.7 }]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoRowTitle}>See it on the map</Text>
+                  <Text style={styles.infoRowSub}>{whole.location}, among the other festivals</Text>
+                </View>
+                <ChevronIcon color={color.moonFaint} size={12} />
+              </Pressable>
+            ) : null}
             {/* Side by side with other festivals, when there are others to compare. */}
             {catalog.festivals.length > 1 ? (
               <Pressable
@@ -343,7 +384,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
             ) : null}
           </View>
         ) : null}
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -399,29 +440,38 @@ function Action({ label, a11y, icon, count, glow, onPress }: { label: string; a1
   );
 }
 
-/** "I'm going" / "Going": puts the festival at the top of your Festivals tab. */
+/** "I'm going" / "Going": puts the festival at the top of your Festivals tab. Saying yes is a little celebration. */
 function GoingPill({ festival }: { festival: Festival }) {
   const { isGoing, toggle } = useGoing();
   const going = isGoing(festival.id);
+  // Each yes fires the confetti again (a new key); undoing is quiet.
+  const [cheers, setCheers] = useState(0);
   return (
-    <Pressable
-      onPress={() => {
-        if (going) haptic.select();
-        else haptic.tap();
-        toggle(festival.id);
-      }}
-      accessibilityRole="button"
-      accessibilityState={{ selected: going }}
-      accessibilityLabel={going ? `You're going to ${festival.name}. Tap to undo.` : `I'm going to ${festival.name}`}
-      style={({ pressed }) => [
-        styles.discover,
-        going ? styles.goingOn : styles.tune,
-        pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
-      ]}
-    >
-      <CheckIcon color={going ? color.moon : color.moonDim} size={14} />
-      <Text style={[styles.discoverText, !going && { color: color.moonDim }]}>{going ? 'Going' : 'I’m going'}</Text>
-    </Pressable>
+    // Above the pills beside it, so the confetti flies over them.
+    <View style={{ zIndex: 2 }}>
+      <Pressable
+        onPress={() => {
+          if (going) haptic.select();
+          else {
+            haptic.celebrate();
+            setCheers((n) => n + 1);
+          }
+          toggle(festival.id);
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ selected: going }}
+        accessibilityLabel={going ? `You're going to ${festival.name}. Tap to undo.` : `I'm going to ${festival.name}`}
+        style={({ pressed }) => [
+          styles.discover,
+          going ? styles.goingOn : styles.tune,
+          pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
+        ]}
+      >
+        <CheckIcon color={going ? color.moon : color.moonDim} size={14} />
+        <Text style={[styles.discoverText, !going && { color: color.moonDim }]}>{going ? 'Going' : 'I’m going'}</Text>
+      </Pressable>
+      {cheers && going ? <ConfettiBurst key={cheers} /> : null}
+    </View>
   );
 }
 

@@ -22,6 +22,8 @@ import { leftToRate } from '../../features/festivals/tune';
 import { artistsOnMap, mapCandidates, SPARSE_MAP } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
+import { bumpQuestEvent } from '../../state/dailyQuests';
+import { revealSecret } from '../../state/secrets';
 import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
 import { useRatings } from '../../state/ratings';
@@ -206,7 +208,11 @@ export default function MySoundScreen() {
           width={width}
           height={mapHeight}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={(id) => {
+            setSelectedId(id);
+            // Opening artists counts for the "Stargazer" daily quest.
+            if (id) bumpQuestEvent('bubble');
+          }}
           onBackgroundTap={close}
           onRegionTap={showSound}
           matchIds={search?.ids}
@@ -246,9 +252,10 @@ export default function MySoundScreen() {
         onLayout={(e) => setHeaderH(Math.round(e.nativeEvent.layout.height))}
       >
         <View style={styles.titleRow} pointerEvents="box-none">
-          <Text style={styles.title} pointerEvents="none">
-            My Sound
-          </Text>
+          {/* A secret: hold the title for a bass drop. */}
+          <Pressable onLongPress={() => revealSecret('bassdrop')} delayLongPress={700} accessibilityRole="header" accessibilityLabel="My Sound">
+            <Text style={styles.title}>My Sound</Text>
+          </Pressable>
           <View style={styles.actions} pointerEvents="box-none">
             {searchOpen ? null : (
               <GlassCircleButton label="Search your map for an artist or a sound" onPress={() => setSearchOpen(true)}>

@@ -11,6 +11,10 @@ type Ctx = {
   mustSeesAt: (festivalId: string) => ReadonlySet<string>;
   isMustSee: (festivalId: string, artistId: string) => boolean;
   toggleMustSee: (festivalId: string, artistId: string) => void;
+  /** Every star at every festival, as "festival:artist" (daily quests count them). */
+  starKeys: string[];
+  /** Saved stars have loaded (or failed to). */
+  hydrated: boolean;
 };
 
 // v1 stored stars per artist for every festival. Those can't be assigned to a festival, so they are dropped.
@@ -22,6 +26,7 @@ const PlanContext = createContext<Ctx | null>(null);
 export function PlanProvider({ children }: { children: ReactNode }) {
   const [all, setAll] = useState<MustSees>({});
   const loaded = useRef(false);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     AsyncStorage.removeItem(OLD_KEY).catch(() => {});
@@ -32,6 +37,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
       .finally(() => {
         loaded.current = true;
+        setHydrated(true);
       });
   }, []);
 
@@ -49,8 +55,10 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       mustSeesAt: (festivalId) => mustSeesAt(all, festivalId),
       isMustSee: (festivalId, artistId) => isMustSee(all, festivalId, artistId),
       toggleMustSee: toggle,
+      starKeys: Object.entries(all).flatMap(([f, ids]) => (Array.isArray(ids) ? ids.map((a) => `${f}:${a}`) : [])),
+      hydrated,
     }),
-    [all, toggle],
+    [all, toggle, hydrated],
   );
 
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;

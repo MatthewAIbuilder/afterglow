@@ -16,6 +16,7 @@ import { groupFestivals } from '../../features/festivals/going';
 import { countdown } from '../../features/festivals/when';
 import { Highlights } from '../../features/profile/Highlights';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
+import { useDailyQuests } from '../../features/quests/useDailyQuests';
 import { CrewsList, SavedTab, VideosTab } from '../../features/profile/ProfileTabsContent';
 import { currentlyFeeling, favouriteArtists, ORBIT_MAX } from '../../features/profile/identity';
 import { BadgeCelebration } from '../../features/profile/BadgeCelebration';
@@ -65,6 +66,7 @@ export default function ProfileScreen() {
 }
 
 function FullProfile() {
+  const quests = useDailyQuests();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const { width } = useWindowDimensions();
@@ -213,6 +215,8 @@ function FullProfile() {
           orbit={favourites.slice(0, ORBIT_MAX)}
           onOrbit={() => router.navigate('/sound')}
           feeling={feeling?.tag}
+          level={quests.ready ? quests.level : undefined}
+          onLevel={() => router.push('/quests')}
         >
           {me ? (
             <>

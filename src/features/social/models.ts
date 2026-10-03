@@ -213,7 +213,12 @@ export type Standing = {
   flair?: Flair;
   /** Afterglow Plus: their videos show without the edge glow and its AFTERGLOW label. */
   plus?: boolean;
+  /** Their glow level from daily quests, when they show it (on by default; Edit profile turns it off). */
+  level?: number;
 };
+
+/** Glow levels above this are never shown (a guard against bad data). */
+export const LEVEL_MAX = 999;
 
 /** What a support message is about. */
 export type SupportTopic = 'help' | 'bug' | 'idea' | 'festival' | 'other';

@@ -33,6 +33,11 @@ import RecapScreen from '../recap/[id]';
 import PickArtistsScreen from '../pick-artists';
 import ThisOrThatScreen from '../this-or-that';
 import CompareScreen from '../compare';
+import FestivalMapScreen from '../festival-map';
+import FestivalCalendarScreen from '../festival-calendar';
+import QuestsScreen from '../quests';
+import SecretsScreen from '../secrets';
+import WhatsNewScreen from '../whats-new';
 import PrepScreen from '../prep/[id]';
 import YourArtistsScreen from '../your-artists';
 import SettingsScreen from '../settings';
@@ -89,6 +94,11 @@ export const APP_ROUTES = {
   'pick-artists': PickArtistsScreen,
   'this-or-that': ThisOrThatScreen,
   compare: CompareScreen,
+  'festival-map': FestivalMapScreen,
+  'festival-calendar': FestivalCalendarScreen,
+  quests: QuestsScreen,
+  secrets: SecretsScreen,
+  'whats-new': WhatsNewScreen,
   'prep/[id]': PrepScreen,
   'your-artists': YourArtistsScreen,
   settings: SettingsScreen,
