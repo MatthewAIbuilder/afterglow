@@ -75,6 +75,15 @@ advertisers or data brokers.
 If anything changes later (analytics, crash reports, push notifications from
 a server), these answers need updating.
 
+**The privacy manifest** (Apple has required one since May 2024) is already
+in `app.json` under `ios.privacyManifests`, and the build writes it into the
+app: no tracking, and the four "required reason" system features the app and
+React Native use, each with Apple's reason code: saved settings on the phone
+(UserDefaults, `CA92.1`), file dates of its own files (`C617.1`), time since
+the phone started for timing (`35F9.1`) and free space before saving videos
+(`E174.1`). Expo's own modules bring their manifests with them. If Apple's
+upload ever warns about a missing reason, it names the API: add it there.
+
 ## Step 4: questions Apple will ask
 
 - **Encryption**: the app only uses standard HTTPS, so it's exempt. This is

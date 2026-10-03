@@ -14,6 +14,8 @@ import {
   project,
   unplacedLine,
   unproject,
+  arcPath,
+  journeyOf,
 } from '../map';
 
 const fest = (id: string, extra: Partial<Festival> = {}): Festival =>
@@ -108,5 +110,17 @@ describe('markers', () => {
     expect(orlando?.members.map((m) => m.festival.id)).toEqual(['a', 'b']);
     const near = clusterMarkers(markers, 400, 26);
     expect(near).toHaveLength(4);
+  });
+});
+
+describe('your journey', () => {
+  it('goes through your festivals in date order, as arcs', () => {
+    const m = (id: string, start: string | undefined, going: boolean, x: number) =>
+      ({ festival: fest(id, { startDate: start }), going, at: { x, y: 0 }, tone: 'going', loved: 0, point: { lat: 0, lon: 0 } }) as never;
+    expect(journeyOf([m('b', '2026-12-01', true, 2), m('a', '2026-11-01', true, 1), m('c', '2026-10-01', false, 3), m('d', undefined, true, 4)]).map((x: { festival: Festival }) => x.festival.id)).toEqual(['a', 'b', 'd']);
+    const path = arcPath([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }]);
+    expect(path.d).toBe('M0 0Q5 -2.2 10 0Q12.2 5 10 10');
+    expect(path.length).toBeGreaterThan(20);
+    expect(arcPath([{ x: 1, y: 1 }]).length).toBe(0);
   });
 });

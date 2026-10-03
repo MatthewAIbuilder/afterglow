@@ -10,7 +10,7 @@ import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
 import type { Festival } from '../data/types';
 import { FestivalMap, TONE_COLOR } from '../features/festival-map/FestivalMap';
-import { type MapFilter, type Marker, filterMarkers, mapMarkers, unplacedLine } from '../features/festival-map/map';
+import { type MapFilter, type Marker, filterMarkers, journeyOf, mapMarkers, unplacedLine } from '../features/festival-map/map';
 import { whereWhen } from '../features/festivals/format';
 import { distanceLabel } from '../features/festivals/near';
 import { lovedOn } from '../features/festivals/shelves';
@@ -64,6 +64,8 @@ export default function FestivalMapScreen() {
     [all],
   );
   const unplaced = festivals.length - all.length;
+  // Yours: a line through them in date order.
+  const journey = useMemo(() => (filter === 'going' ? journeyOf(markers).map((m) => m.at) : undefined), [filter, markers]);
   // Looking around counts for the "Explorer" daily quest.
   useEffect(() => bumpQuestEvent('map'), []);
 
@@ -117,6 +119,7 @@ export default function FestivalMapScreen() {
         width={width}
         height={height}
         area={{ top: headerH, bottom: cardsSpace }}
+        journey={journey}
       />
 
       {/* The header fades into the map, so the lights glide under it. */}
@@ -172,7 +175,7 @@ export default function FestivalMapScreen() {
 const Gap = () => <View style={{ width: CARD_GAP }} />;
 
 const subLine = (n: number, filter: MapFilter) =>
-  n === 0 ? 'Nothing to show here yet' : filter === 'going' ? `${n} of yours` : filter === 'love' ? `${n} with artists you’d love` : n === 1 ? '1 festival' : `${n} festivals`;
+  n === 0 ? 'Nothing to show here yet' : filter === 'going' ? (n > 1 ? `Your journey · ${n} festivals` : '1 of yours') : filter === 'love' ? `${n} with artists you’d love` : n === 1 ? '1 festival' : `${n} festivals`;
 
 /** A festival's card under the map: its date, name, place, what's there for you. */
 function MapCard({ marker, width, chosen, onFocus }: { marker: Marker; width: number; chosen: boolean; onFocus: () => void }) {

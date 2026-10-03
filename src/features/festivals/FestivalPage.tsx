@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { type ReactNode, useMemo, useState } from 'react';
+import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArtistRow } from '../../components/ArtistRow';
 import { NightSky } from '../../components/NightSky';
@@ -116,17 +117,38 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
   // From the first day to the morning after the last (either weekend of a two-weekend festival).
   const onNow = isLive(festival, today);
 
+  // The cover follows the scroll: stretching to fill a pull-down, drifting at 40% as you scroll on.
+  const coverH = topSpace + COVER_BELOW + COVER_TAIL;
+  const reduced = useReducedMotion();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.set(e.contentOffset.y);
+  });
+  const coverMotion = useAnimatedStyle(() => {
+    const y = scrollY.get();
+    if (reduced) return { transform: [] };
+    if (y < 0) {
+      const s = 1 + -y / coverH;
+      return { transform: [{ translateY: y + (coverH * (s - 1)) / 2 }, { scale: s }] };
+    }
+    return { transform: [{ translateY: y * 0.4 }] };
+  });
+
   return (
     <View style={styles.root}>
       <NightSky />
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={{ paddingTop: topSpace, paddingBottom: bottomSpace }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
-        {/* The headliners' faces behind the top of the page, fading into the night under the title. */}
-        <FestivalCover photos={cover} fade="page" tail={COVER_TAIL} style={[styles.cover, { height: topSpace + COVER_BELOW + COVER_TAIL }]} />
+        {/* The headliners' faces behind the top of the page, fading into the night under the title. They stretch when you pull down, and drift slower as you scroll. */}
+        <Animated.View style={[styles.cover, { height: coverH }, coverMotion]} pointerEvents="none">
+          <FestivalCover photos={cover} fade="page" tail={COVER_TAIL} style={[styles.cover, { height: coverH }]} />
+        </Animated.View>
         {above}
         <View style={styles.pad}>
           <Text style={styles.title}>{festival.name}</Text>
@@ -361,7 +383,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
             ) : null}
           </View>
         ) : null}
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }

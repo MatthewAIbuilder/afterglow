@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   type SharedValue,
+  useAnimatedProps,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -15,7 +16,7 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 import type { Point } from '../festivals/near';
 import { haptic } from '../../lib/haptics';
 import { revealSecret } from '../../state/secrets';
@@ -25,6 +26,7 @@ import {
   type Cluster,
   type MapPoint,
   type Marker,
+  arcPath,
   boxAround,
   clusterMarkers,
   dotsPath,
@@ -71,6 +73,7 @@ export function FestivalMap({
   width,
   height,
   area,
+  journey,
   testID,
 }: {
   markers: readonly Marker[];
@@ -80,6 +83,8 @@ export function FestivalMap({
   width: number;
   height: number;
   area: { top: number; bottom: number };
+  /** Your festivals in date order: a glowing line draws in between them. */
+  journey?: readonly MapPoint[];
   testID?: string;
 }) {
   const reduced = useReducedMotion();
@@ -252,6 +257,9 @@ export function FestivalMap({
     if (m) glideTo(m.at);
   }, [selected, markers, glideTo]);
 
+  // The journey, in layer pixels.
+  const trail = useMemo(() => (journey && journey.length > 1 ? arcPath(journey.map(toLayer)) : undefined), [journey, toLayer]);
+
   const clusters = useMemo(() => clusterMarkers(markers, S * zoomStep, CLUSTER_PX), [markers, S, zoomStep]);
 
   // The base dots: the whole drawable world at the first zoom.
@@ -300,6 +308,7 @@ export function FestivalMap({
                 return <Circle key={m.festival.id} cx={p.x} cy={p.y} r={r} fill={`url(#pool-${m.tone})`} />;
               })}
             <Path d={base} fill={color.moon} fillOpacity={0.2} />
+            {trail ? <Journey key={trail.d} d={trail.d} length={trail.length} reduced={reduced} /> : null}
           </Svg>
         </Animated.View>
         {sharp ? <SharpLayer sharp={sharp} world={world} S={S} ax={ax} ay={ay} z={z} /> : null}
@@ -328,6 +337,29 @@ export function FestivalMap({
         ))}
       </View>
     </GestureDetector>
+  );
+}
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+/** The journey line: it draws itself in, from your first festival to your last. */
+function Journey({ d, length, reduced }: { d: string; length: number; reduced: boolean }) {
+  const drawn = useSharedValue(reduced ? 1 : 0);
+  useEffect(() => {
+    if (!reduced) drawn.set(withDelay(500, withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.cubic) })));
+  }, [drawn, reduced]);
+  const props = useAnimatedProps(() => ({ strokeDashoffset: length * (1 - drawn.get()) }));
+  return (
+    <>
+      <Defs>
+        <LinearGradient id="journey" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#FF9AD5" />
+          <Stop offset="1" stopColor={color.glow} />
+        </LinearGradient>
+      </Defs>
+      <AnimatedPath d={d} stroke="url(#journey)" strokeOpacity={0.35} strokeWidth={6} fill="none" strokeLinecap="round" strokeDasharray={`${length} ${length}`} animatedProps={props} />
+      <AnimatedPath d={d} stroke="url(#journey)" strokeWidth={1.8} fill="none" strokeLinecap="round" strokeDasharray={`${length} ${length}`} animatedProps={props} />
+    </>
   );
 }
 
@@ -455,9 +487,11 @@ function Light({
         ) : null}
       </Pressable>
       {named || chosen ? (
-        <Text numberOfLines={1} style={[styles.name, chosen && styles.nameChosen]} pointerEvents="none">
-          {lead.festival.name}
-        </Text>
+        <View style={styles.nameBox} pointerEvents="none">
+          <Text numberOfLines={2} style={[styles.name, chosen && styles.nameChosen]}>
+            {lead.festival.name}
+          </Text>
+        </View>
       ) : null}
     </Animated.View>
   );
@@ -505,12 +539,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   countText: { ...type.caption, fontSize: 10, lineHeight: 12, color: color.moon },
+  nameBox: { position: 'absolute', top: LIGHT - 8, left: (LIGHT - 140) / 2, width: 140, alignItems: 'center' },
   name: {
     ...type.caption,
-    position: 'absolute',
-    top: LIGHT - 8,
-    left: (LIGHT - 140) / 2,
-    width: 140,
     textAlign: 'center',
     color: color.moonDim,
     textShadowColor: color.night,

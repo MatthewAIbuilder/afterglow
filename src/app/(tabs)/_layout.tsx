@@ -1,3 +1,5 @@
+import type { ErrorBoundaryProps } from 'expo-router';
+import { CrashScreen } from '../../components/CrashScreen';
 import { Redirect, Tabs } from 'expo-router';
 import { isSupportAccount } from '../../features/admin/admin';
 import { useGuestView } from '../../state/adminView';
@@ -24,4 +26,9 @@ export default function TabLayout() {
       <Tabs.Screen name="lineup" options={{ title: 'Lineup' }} />
     </Tabs>
   );
+}
+
+/** A screen that breaks shows a friendly page with Try again, never a white screen. */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <CrashScreen error={props.error} retry={props.retry} />;
 }

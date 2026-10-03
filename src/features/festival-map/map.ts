@@ -214,3 +214,37 @@ export function unplacedLine(n: number): string | undefined {
   if (n <= 0) return undefined;
   return n === 1 ? '1 festival has no place yet, so it isn’t on the map.' : `${n} festivals have no place yet, so they aren’t on the map.`;
 }
+
+/** Your festivals in date order (undated last), for the journey line. */
+export function journeyOf(markers: readonly Marker[]): Marker[] {
+  return markers.filter((m) => m.going).sort((a, b) => (a.festival.startDate ?? '9999').localeCompare(b.festival.startDate ?? '9999'));
+}
+
+/**
+ * A path through points as gentle arcs (each leg bowing to its left by
+ * `bend` of its length, like a flight path), with its total length (roughly)
+ * for drawing it in. Legs between the same place are skipped.
+ */
+export function arcPath(points: readonly MapPoint[], bend = 0.22): { d: string; length: number } {
+  const r = (n: number) => Math.round(n * 10) / 10;
+  let d = '';
+  let length = 0;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    if (i === 0) {
+      d += `M${r(p.x)} ${r(p.y)}`;
+      continue;
+    }
+    const a = points[i - 1];
+    const dx = p.x - a.x;
+    const dy = p.y - a.y;
+    const leg = Math.hypot(dx, dy);
+    if (leg < 0.5) continue;
+    const cx = (a.x + p.x) / 2 + dy * bend;
+    const cy = (a.y + p.y) / 2 - dx * bend;
+    d += `Q${r(cx)} ${r(cy)} ${r(p.x)} ${r(p.y)}`;
+    // A quadratic arc is a little longer than its chord.
+    length += leg * (1 + (8 / 3) * bend * bend);
+  }
+  return { d, length };
+}

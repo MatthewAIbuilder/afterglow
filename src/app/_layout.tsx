@@ -1,3 +1,5 @@
+import type { ErrorBoundaryProps } from 'expo-router';
+import { CrashScreen } from '../components/CrashScreen';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -230,4 +232,9 @@ export default function RootLayout() {
       </ClipFlagsProvider>
     </GestureHandlerRootView>
   );
+}
+
+/** A screen that breaks shows a friendly page with Try again, never a white screen. */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <CrashScreen error={props.error} retry={props.retry} />;
 }
