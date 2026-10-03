@@ -195,13 +195,26 @@ export function cityOf(location: string | undefined): string | undefined {
   return townOf(location)?.toUpperCase();
 }
 
-/** The town as written: "Sunset Cove Amphitheater, Boca Raton" -> "Boca Raton", "Austin, Texas" -> "Austin". */
+/** US states and countries that can end a place, after the town. */
+const REGIONS = new RegExp(
+  '^(' +
+    [
+      'alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut', 'delaware', 'florida', 'georgia', 'hawaii', 'idaho', 'illinois', 'indiana', 'iowa', 'kansas', 'kentucky', 'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan', 'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new hampshire', 'new jersey', 'new mexico', 'new york', 'north carolina', 'north dakota', 'ohio', 'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota', 'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia', 'wisconsin', 'wyoming', 'ontario', 'quebec', 'british columbia', 'alberta',
+      'usa', 'u\\.s\\.a\\.', 'united states', 'canada', 'mexico', 'uk', 'united kingdom', 'england',
+      '[a-z]{2}',
+    ].join('|') +
+    ')$',
+  'i',
+);
+
+/**
+ * The town as written: "Sunset Cove Amphitheater, Boca Raton" -> "Boca Raton", "Austin, Texas" -> "Austin",
+ * "NOS Events Center, San Bernardino, CA" -> "San Bernardino" (states and countries at the end are skipped).
+ */
 export function townOf(location: string | undefined): string | undefined {
   const parts = (location ?? '').split(',').map((p) => p.trim()).filter(Boolean);
-  if (!parts.length) return undefined;
-  // "Austin, Texas": the city comes first; "Venue, City": last.
-  const city = parts.length > 1 && /^(texas|florida|california|nevada|arizona|colorado|georgia|illinois|new york|washington|oregon|tennessee|michigan|ohio|[A-Z]{2})$/i.test(parts[parts.length - 1]) ? parts[0] : parts[parts.length - 1];
-  return city;
+  while (parts.length > 1 && REGIONS.test(parts[parts.length - 1])) parts.pop();
+  return parts.length ? parts[parts.length - 1] : undefined;
 }
 
 /** How a festival's pin looks: its scene from its name and place, colours and backing from its id. */
