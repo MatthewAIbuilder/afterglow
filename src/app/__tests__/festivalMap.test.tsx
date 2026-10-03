@@ -53,4 +53,15 @@ describe('the festival map', () => {
     expect(app.getByTestId('map-light-acl-26').props.accessibilityState).toEqual({ selected: true });
     expect(app.getByText('Open ›')).toBeTruthy();
   });
+
+  it("an artist's festivals, as their tour", async () => {
+    const app = await renderApp('/artist/subtronics');
+    await flush();
+    await fireEvent.press(app.getByLabelText("See SUBTRONICS's festivals on the map"));
+    await flush();
+    expect(app.getByText('SUBTRONICS on tour')).toBeTruthy();
+    expect(app.getByTestId('map-card-cyclops-cove-4')).toBeTruthy();
+    expect(app.queryByTestId('map-card-acl-26')).toBeNull();
+    expect(app.queryByLabelText(/^All festivals, /)).toBeNull();
+  });
 });

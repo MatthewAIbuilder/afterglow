@@ -10,7 +10,7 @@ import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
 import type { Festival } from '../data/types';
 import { FestivalMap, TONE_COLOR } from '../features/festival-map/FestivalMap';
-import { type MapFilter, type Marker, filterMarkers, journeyOf, mapMarkers, unplacedLine } from '../features/festival-map/map';
+import { type MapFilter, type Marker, filterMarkers, inDateOrder, journeyOf, mapMarkers, unplacedLine } from '../features/festival-map/map';
 import { whereWhen } from '../features/festivals/format';
 import { distanceLabel } from '../features/festivals/near';
 import { lovedOn } from '../features/festivals/shelves';
@@ -36,7 +36,7 @@ const CARDS_H = 132;
  * `?focus=<id>` opens on one festival, `?show=going|love` on a filter.
  */
 export default function FestivalMapScreen() {
-  const params = useLocalSearchParams<{ focus?: string; show?: string }>();
+  const params = useLocalSearchParams<{ focus?: string; show?: string; artist?: string }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const catalog = useCatalog();
@@ -53,19 +53,22 @@ export default function FestivalMapScreen() {
   );
   const initial: MapFilter = params.show === 'going' || params.show === 'love' ? params.show : 'all';
   const [filter, setFilter] = useState<MapFilter>(initial);
+  // An artist's tour: only the festivals they play, past ones too, joined up in date order.
+  const touring = params.artist ? catalog.artist(params.artist) : undefined;
   const markers = useMemo(() => {
+    if (touring) return inDateOrder(all.filter((m) => m.festival.lineup.includes(touring.id)));
     const shown = filterMarkers(all, filter);
     // A festival you came to see stays, whatever the filter.
     const focus = all.find((m) => m.festival.id === params.focus);
     return focus && !shown.includes(focus) ? [focus, ...shown] : shown;
-  }, [all, filter, params.focus]);
+  }, [all, filter, params.focus, touring]);
   const counts = useMemo(
     () => ({ all: filterMarkers(all, 'all').length, going: filterMarkers(all, 'going').length, love: filterMarkers(all, 'love').length }),
     [all],
   );
   const unplaced = festivals.length - all.length;
   // Yours: a line through them in date order.
-  const journey = useMemo(() => (filter === 'going' ? journeyOf(markers).map((m) => m.at) : undefined), [filter, markers]);
+  const journey = useMemo(() => (touring ? markers.map((m) => m.at) : filter === 'going' ? journeyOf(markers).map((m) => m.at) : undefined), [touring, filter, markers]);
   // Looking around counts for the "Explorer" daily quest.
   useEffect(() => bumpQuestEvent('map'), []);
 
@@ -99,7 +102,7 @@ export default function FestivalMapScreen() {
     }
   };
 
-  const headerH = insets.top + 112;
+  const headerH = insets.top + (touring ? 64 : 112);
   const cardsSpace = markers.length ? CARDS_H + insets.bottom + space.lg : insets.bottom;
   const chips = [
     { key: 'all', label: 'All festivals', count: counts.all, accessibilityLabel: `All festivals, ${counts.all}` },
@@ -131,14 +134,16 @@ export default function FestivalMapScreen() {
           pointerEvents="none"
         />
         <View style={styles.titleWrap} pointerEvents="none">
-          <Text style={styles.title} accessibilityRole="header">
-            Festival map
+          <Text style={styles.title} accessibilityRole="header" numberOfLines={1}>
+            {touring ? `${touring.name} on tour` : 'Festival map'}
           </Text>
-          <Text style={styles.sub}>{subLine(markers.length, filter)}</Text>
+          <Text style={styles.sub}>{touring ? tourLine(markers.length) : subLine(markers.length, filter)}</Text>
         </View>
-        <View style={styles.chips}>
-          <FilterChips chips={chips} value={filter} onChange={(k) => setFilter((k as MapFilter | undefined) ?? 'all')} inset={space.lg} />
-        </View>
+        {touring ? null : (
+          <View style={styles.chips}>
+            <FilterChips chips={chips} value={filter} onChange={(k) => setFilter((k as MapFilter | undefined) ?? 'all')} inset={space.lg} />
+          </View>
+        )}
       </View>
       <PageActions />
 
@@ -173,6 +178,8 @@ export default function FestivalMapScreen() {
 }
 
 const Gap = () => <View style={{ width: CARD_GAP }} />;
+
+const tourLine = (n: number) => (n === 0 ? 'No festivals with a place yet' : n === 1 ? '1 festival' : `${n} festivals, in date order`);
 
 const subLine = (n: number, filter: MapFilter) =>
   n === 0 ? 'Nothing to show here yet' : filter === 'going' ? (n > 1 ? `Your journey · ${n} festivals` : '1 of yours') : filter === 'love' ? `${n} with artists you’d love` : n === 1 ? '1 festival' : `${n} festivals`;
@@ -234,7 +241,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { position: 'absolute', left: 0, right: 0, top: 0 },
   scrim: { position: 'absolute', left: 0, right: 0, top: 0, bottom: -32 },
-  titleWrap: { alignItems: 'center', height: 44, justifyContent: 'center' },
+  titleWrap: { alignItems: 'center', height: 44, justifyContent: 'center', paddingHorizontal: 64 },
   title: { ...type.headline, color: color.moon },
   sub: { ...type.caption, color: color.moonDim, marginTop: 1 },
   chips: { marginTop: space.sm },

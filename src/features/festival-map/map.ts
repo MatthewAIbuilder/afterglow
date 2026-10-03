@@ -215,10 +215,12 @@ export function unplacedLine(n: number): string | undefined {
   return n === 1 ? '1 festival has no place yet, so it isn’t on the map.' : `${n} festivals have no place yet, so they aren’t on the map.`;
 }
 
+/** Festivals in date order (undated last). */
+export const inDateOrder = (markers: readonly Marker[]): Marker[] =>
+  [...markers].sort((a, b) => (a.festival.startDate ?? '9999').localeCompare(b.festival.startDate ?? '9999'));
+
 /** Your festivals in date order (undated last), for the journey line. */
-export function journeyOf(markers: readonly Marker[]): Marker[] {
-  return markers.filter((m) => m.going).sort((a, b) => (a.festival.startDate ?? '9999').localeCompare(b.festival.startDate ?? '9999'));
-}
+export const journeyOf = (markers: readonly Marker[]): Marker[] => inDateOrder(markers.filter((m) => m.going));
 
 /**
  * A path through points as gentle arcs (each leg bowing to its left by
