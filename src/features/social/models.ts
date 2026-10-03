@@ -89,6 +89,22 @@ export type Activity =
  * invite); only members see each other's picks.
  */
 /** An invitation to join a crew, sent in the app to someone you know there. They join from the crew page; joining or saying no removes it. */
+/** A sprout someone gave (`sprouts/{id}`; the id is made on the giver's phone). */
+export type Sprout = {
+  id: string;
+  kind: string;
+  /** Who gave it. */
+  from: string;
+  /** Who picked it up, once someone has. */
+  to?: string;
+  note?: string;
+  festivalId?: string;
+  /** When it reached Afterglow (ISO). */
+  createdAt: string;
+  claimedAt?: string;
+};
+export type SproutInput = { id: string; kind: string; note?: string; festivalId?: string };
+
 export type CrewInvite = {
   /** `crewId_to` */
   id: string;

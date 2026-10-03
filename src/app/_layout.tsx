@@ -47,6 +47,7 @@ import { ReactionsProvider } from '../state/reactions';
 import { SeenProvider } from '../state/seen';
 import { SetRemindersProvider } from '../state/setReminders';
 import { SocialProvider } from '../state/social';
+import { SproutsProvider } from '../state/sprouts';
 import { color } from '../theme/tokens';
 
 export default function RootLayout() {
@@ -78,6 +79,7 @@ export default function RootLayout() {
       <CrewChatProvider>
       <FestivalModeProvider>
       <FriendAddsProvider>
+      <SproutsProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -211,6 +213,8 @@ export default function RootLayout() {
         <Stack.Screen name="poster/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="my-code" options={{ presentation: 'modal' }} />
         <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="give-sprout" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="sprout/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }} />
       </Stack>
       <FirstRun />
@@ -231,6 +235,7 @@ export default function RootLayout() {
       <SecretStage />
       <OfflineNotice />
       <DialogHost />
+      </SproutsProvider>
       </FriendAddsProvider>
       </FestivalModeProvider>
       </CrewChatProvider>

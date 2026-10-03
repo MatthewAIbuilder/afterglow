@@ -1,5 +1,5 @@
 import type { PastEvent } from '../memories/past';
-import type { Activity, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
+import type { Activity, Comment, Crew, Sprout, SproutInput, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -239,6 +239,28 @@ export interface SocialService {
   /** Set the crew's meeting spot (any member), or clear it with an empty text. */
   setMeetSpot(crewId: string, text: string): Promise<MeetSpot | null>;
 
+  /**
+   * Give a sprout: saves the one whose code you're showing (its id was made
+   * on your phone). Needs your profile. Giving the same id again is the same
+   * as once.
+   */
+  giveSprout(input: SproutInput): Promise<void>;
+  /**
+   * Pick up a sprout someone gave you. `not-found` when it isn't there (yet:
+   * the giver may still be waiting for signal) or is more than 30 days old;
+   * `sprout-taken` when someone else picked it up. Picking up your own
+   * sprout again returns it.
+   */
+  claimSprout(id: string): Promise<Sprout>;
+  /** One sprout, if it exists (for its note, and whether it's been picked up). */
+  sprout(id: string): Promise<Sprout | null>;
+  /** Sprouts you gave, newest first. */
+  sproutsGiven(max: number): Promise<Sprout[]>;
+  /** Sprouts you picked up, newest first. */
+  sproutsReceived(max: number): Promise<Sprout[]>;
+  /** Take back a sprout nobody has picked up. */
+  takeBackSprout(id: string): Promise<void>;
+
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;
   setBlocked(uid: string, blocked: boolean): Promise<void>;
@@ -257,6 +279,7 @@ export type SocialErrorKind =
   | 'too-large'
   | 'crew-full'
   | 'not-invited'
+  | 'sprout-taken'
   | 'throwback-limit'
   | 'not-found'
   | 'network'
@@ -288,6 +311,7 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'too-large': 'That video is too big to share. Try a shorter clip.',
   'crew-full': 'That crew is full.',
   'not-invited': 'Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.',
+  'sprout-taken': 'Someone else already picked up this sprout.',
   'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
   'not-found': 'That doesn’t exist any more.',
   network: 'Couldn’t reach Afterglow. Check your connection and try again.',

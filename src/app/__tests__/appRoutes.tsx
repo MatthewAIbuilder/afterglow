@@ -9,6 +9,9 @@ import SoundScreen from '../(tabs)/sound';
 import TogetherScreen from '../(tabs)/together';
 import MyCodeScreen from '../my-code';
 import ScanScreen from '../scan';
+import GiveSproutScreen from '../give-sprout';
+import SproutScreen from '../sprout/[id]';
+import GardenScreen from '../garden';
 import AddFriendScreen from '../add/[handle]';
 import AccountScreen from '../account';
 import CameraScreen from '../camera';
@@ -80,6 +83,9 @@ export const APP_ROUTES = {
   '(tabs)/together': TogetherScreen,
   'my-code': MyCodeScreen,
   scan: ScanScreen,
+  'give-sprout': GiveSproutScreen,
+  'sprout/[id]': SproutScreen,
+  garden: GardenScreen,
   'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,
   'festival/[id]': FestivalScreen,
