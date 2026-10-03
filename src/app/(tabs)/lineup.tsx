@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { PageTitle } from '../../components/PageTitle';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -6,6 +7,8 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { FestivalPage } from '../../features/festivals/FestivalPage';
 import { lineupChoices } from '../../features/festivals/going';
+import { dateBlock } from '../../features/festivals/timeline';
+import { countdown } from '../../features/festivals/when';
 import { festivalShelf, isMany } from '../../features/festivals/shelves';
 import { useLoves } from '../../state/useLoves';
 import { TonightPlan } from '../../features/festivalMode/TonightPlan';
@@ -52,10 +55,13 @@ function FullLineup() {
   const header = (
     <View style={styles.header}>
       <Text style={styles.kicker}>{yours ? 'Your lineup' : 'Lineups'}</Text>
+      {/* Which festival: a card each, with its dates and how long until it. */}
       {festivals.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipsWrap}>
           {festivals.map((f) => {
             const on = f.id === festival.id;
+            const block = dateBlock(f);
+            const soon = countdown(f, today);
             return (
               <Pressable
                 key={f.id}
@@ -69,14 +75,36 @@ function FullLineup() {
                 accessibilityLabel={`Show the ${f.name} lineup`}
                 style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
               >
-                <Text style={[styles.chipText, on && { color: color.moon }]}>{f.name}</Text>
+                <Text style={[styles.chipWhen, on && { color: color.glow }]} numberOfLines={1}>
+                  {block ? `${block.month} ${block.days}` : 'Dates to come'}
+                </Text>
+                <Text style={[styles.chipText, on && { color: color.moon }]} numberOfLines={2}>
+                  {f.name}
+                </Text>
+                {soon && soon !== 'Over' ? (
+                  <Text style={styles.chipSoon} numberOfLines={1}>
+                    {soon}
+                  </Text>
+                ) : null}
               </Pressable>
             );
           })}
         </ScrollView>
       )}
       {!yours && (
-        <Text style={styles.nudge}>Tap “I’m going” on a festival and this tab becomes your lineup for it.</Text>
+        <View style={styles.nudgeCard}>
+          <Text style={styles.nudge}>Tap “I’m going” on a festival and this tab becomes your lineup for it.</Text>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.navigate('/festivals');
+            }}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.browse, pressed && { opacity: 0.8 }]}
+          >
+            <Text style={styles.browseText}>Browse festivals</Text>
+          </Pressable>
+        </View>
       )}
     </View>
   );
@@ -106,16 +134,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
   },
   chipsWrap: { flexGrow: 0, marginTop: space.md },
-  chips: { paddingHorizontal: space.xl, gap: space.sm },
+  chips: { paddingHorizontal: space.lg, gap: space.sm },
   chip: {
-    paddingHorizontal: space.md,
-    paddingVertical: 7,
-    borderRadius: radius.pill,
+    width: 150,
+    padding: space.md,
+    gap: 2,
+    borderRadius: radius.lg,
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
-  chipText: { ...type.label, color: color.moonDim },
-  nudge: { ...type.caption, color: color.moonFaint, marginTop: space.md, paddingHorizontal: space.xl },
+  chipOn: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.6)', borderWidth: 1 },
+  chipWhen: { ...type.caption, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: color.moonFaint },
+  chipText: { ...type.headline, fontSize: 15, lineHeight: 19, color: color.moonDim },
+  chipSoon: { ...type.caption, color: color.moonFaint },
+  nudgeCard: {
+    marginTop: space.md,
+    marginHorizontal: space.lg,
+    padding: space.lg,
+    gap: space.md,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(169,124,255,0.10)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(169,124,255,0.4)',
+  },
+  nudge: { ...type.body, color: color.moonDim },
+  browse: { alignSelf: 'flex-start', paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glow },
+  browseText: { ...type.label, color: color.night },
 });
