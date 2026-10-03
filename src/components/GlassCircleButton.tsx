@@ -5,15 +5,37 @@ import { haptic } from '../lib/haptics';
 import { color } from '../theme/tokens';
 
 /** Round glass button for back / close. */
-export function GlassCircleButton({ onPress, label, children }: { onPress: () => void; label: string; children: ReactNode }) {
+export function GlassCircleButton({
+  onPress,
+  onLongPress,
+  longPressLabel,
+  label,
+  hint,
+  children,
+}: {
+  onPress: () => void;
+  /** Held: something else (with `longPressLabel` as its screen-reader action). */
+  onLongPress?: () => void;
+  longPressLabel?: string;
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
   return (
     <Pressable
       onPress={() => {
         haptic.select();
         onPress();
       }}
+      onLongPress={onLongPress}
+      delayLongPress={450}
+      accessibilityActions={onLongPress && longPressLabel ? [{ name: 'longpress', label: longPressLabel }] : undefined}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'longpress') onLongPress?.();
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={hint}
       hitSlop={10}
       style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
     >

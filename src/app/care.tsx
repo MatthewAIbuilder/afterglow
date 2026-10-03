@@ -146,6 +146,7 @@ export default function CareScreen() {
         <HeartMark bloom={fromHeart} />
         <Text style={styles.title}>Look after yourself</Text>
         <Text style={styles.sub}>Private to you: kept only on this phone, never shared.</Text>
+        {Platform.OS !== 'web' ? <Text style={styles.tip}>Tip: hold the camera button to get back here quickly.</Text> : null}
 
         {/* Jump to a part of the page, each with what's there tonight. */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.jumpWrap} contentContainerStyle={styles.jump}>
@@ -406,6 +407,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.xl, alignSelf: 'center', width: '100%', maxWidth: 640 },
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  tip: { ...type.caption, color: '#FF9ECB', marginTop: space.xs },
   section: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xxl, marginBottom: space.sm },
   card: {
     flexDirection: 'row',

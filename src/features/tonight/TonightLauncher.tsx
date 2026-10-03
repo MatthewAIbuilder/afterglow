@@ -9,7 +9,7 @@ import { useTonight } from './useTonight';
 export const TONIGHT_KEY = 'tonightShown.v1';
 
 /** Tonight only opens over one of the five tabs, never in the middle of something (filming, tagging, a sheet). */
-const TABS = new Set(['/', '/lineup', '/sound', '/festivals', '/profile']);
+const TABS = new Set(['/', '/lineup', '/sound', '/festivals', '/together', '/profile']);
 
 /**
  * On a festival night, the first time you open the app that night, Tonight

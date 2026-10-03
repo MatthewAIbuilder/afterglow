@@ -1,7 +1,7 @@
 import { FriendsHub } from '../../features/friends/FriendsHub';
 import { useFestivalMode } from '../../state/festivalMode';
 
-/** Festival mode's Friends tab: your crew at the festival first, adding friends by code, then everything social. */
+/** The Friends tab: inviting friends, codes, crews and people (at a festival, your crew there first). */
 export default function FriendsTab() {
   const { active } = useFestivalMode();
   return <FriendsHub festival={active?.festival} inTab />;

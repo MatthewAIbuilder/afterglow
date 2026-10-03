@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { Alert, type AlertButton } from 'react-native';
+import { forgetCareTip } from '../../state/careTip';
 import { renderApp } from './appRoutes';
 
 /** The care guide's stopwatches, body checks and timing guide; festival mode's Profile and the held camera button. */
@@ -20,6 +21,7 @@ beforeEach(async () => {
   jest.useFakeTimers({ now: START });
   await AsyncStorage.clear();
   await AsyncStorage.setItem('welcomed.v1', 'true');
+  forgetCareTip();
 });
 afterEach(() => {
   jest.useRealTimers();
@@ -130,6 +132,8 @@ describe('festival mode', () => {
     expect(app.getByText('Your videos')).toBeTruthy();
     // No counts, shortcuts or tabs.
     expect(app.queryByRole('tab', { name: /Videos/ })).toBeNull();
+    // A tip above the camera button says what holding it does, until you have.
+    expect(app.getByText('Hold for Look after yourself', { includeHiddenElements: true })).toBeTruthy();
     // Held, the button turns into a heart that blooms; the page opens a moment later.
     await fireEvent(app.getByLabelText('Film a video'), 'pressIn');
     await fireEvent(app.getByLabelText('Film a video'), 'longPress');
@@ -137,5 +141,21 @@ describe('festival mode', () => {
     await flush();
     expect(app.getByText('Look after yourself')).toBeTruthy();
     expect(app.getAllByText('Stopwatches').length).toBeGreaterThan(0);
+    expect(app.queryByText('Hold for Look after yourself', { includeHiddenElements: true })).toBeNull();
+    expect(await AsyncStorage.getItem('careTip.v1')).toBe('1');
+  });
+});
+
+describe('the camera on Discover', () => {
+  it('teaches holding it once the other tips are done, and held it opens Look after yourself', async () => {
+    await AsyncStorage.setItem('hints.v1', JSON.stringify(['swipe', 'like', 'hold']));
+    const app = await renderApp('/');
+    await flush();
+    expect(app.getByLabelText('Tip: Press and hold the camera button to open Look after yourself')).toBeTruthy();
+    await fireEvent(app.getByLabelText('Open the camera to film a memory'), 'longPress');
+    await flush();
+    expect(app.getByText('Look after yourself')).toBeTruthy();
+    expect(app.getByText('Tip: hold the camera button to get back here quickly.')).toBeTruthy();
+    expect(await AsyncStorage.getItem('careTip.v1')).toBe('1');
   });
 });

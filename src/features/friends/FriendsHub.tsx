@@ -6,7 +6,7 @@ import { NightSky } from '../../components/NightSky';
 import { PageActions } from '../../components/PageActions';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
-import { ChevronIcon, PeopleIcon, PlusIcon, QrIcon, ScanIcon, SearchIcon, ShareIcon } from '../../components/TabIcons';
+import { ChevronIcon, PeopleIcon, PlusIcon, QrIcon, ScanIcon, SearchIcon } from '../../components/TabIcons';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import type { Festival } from '../../data/models';
 import { CrewWhereCard } from '../crews/CrewWhereCard';
@@ -15,17 +15,17 @@ import { CareButtons } from '../crews/CareButtons';
 import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
 import { MeetSpotCard } from '../crews/MeetSpotCard';
 import { FriendAddsList } from './FriendAddsList';
+import { InviteCard } from './InviteCard';
 import { accountsOff } from '../social/unavailable';
 import { firstName } from '../../features/crews/together';
 import { clock, updatePlace } from '../../features/crews/updates';
 import { FOLLOWING } from '../../features/discover/focus';
 import { groupFestivals } from '../../features/festivals/going';
 import { isOver } from '../../features/festivals/shelves';
-import { crewPeopleLine, followBack, goerSuggestions, inviteText, type GoerSuggestion } from '../../features/social/friends';
+import { crewPeopleLine, followBack, goerSuggestions, type GoerSuggestion } from '../../features/social/friends';
 import type { Profile } from '../../features/social/models';
 import { PersonRow } from '../../features/social/PersonRow';
 import { haptic } from '../../lib/haptics';
-import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
@@ -106,11 +106,6 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
     [goers, followedThen, social.blocked, meUid],
   );
 
-  const invite = () => {
-    haptic.select();
-    void shareMessage(inviteText(me?.handle, upcoming[0]), 'Join me on Afterglow');
-  };
-
   return (
     <View style={styles.root}>
       <PageTitle title="Friends" />
@@ -141,18 +136,26 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
         </View>
 
         {!social.availability.ok ? (
-          <Hero {...accountsOff(Platform.OS === 'web', 'Friends, crews and friend codes')} />
+          <>
+            <Hero {...accountsOff(Platform.OS === 'web', 'Friends, crews and friend codes')} />
+            <InviteCard festivals={upcoming} />
+          </>
         ) : !me ? (
-          <Hero
-            title="Festivals are better together"
-            body="Make a profile to follow friends and watch their videos, start a crew for a festival, see which sets you all want, and see where everyone is on the day."
-            action={social.user ? 'Finish your profile' : 'Create your profile'}
-            onAction={() => router.push(social.user ? '/profile-edit' : '/account')}
-            secondary={social.user ? undefined : 'I already have one: sign in'}
-            onSecondary={() => router.push('/account')}
-          />
+          <>
+            <Hero
+              title="Festivals are better together"
+              body="Make a profile to follow friends and watch their videos, start a crew for a festival, see which sets you all want, and see where everyone is on the day."
+              action={social.user ? 'Finish your profile' : 'Create your profile'}
+              onAction={() => router.push(social.user ? '/profile-edit' : '/account')}
+              secondary={social.user ? undefined : 'I already have one: sign in'}
+              onSecondary={() => router.push('/account')}
+            />
+            <InviteCard festivals={upcoming} />
+          </>
         ) : (
           <>
+            {/* Away from a festival, bringing friends in comes first. */}
+            {festival ? null : <InviteCard handle={me.handle} festivals={upcoming} />}
             {/* Adding friends face to face: show your code, or scan theirs. Works with no signal. */}
             <View style={styles.addRow}>
               <AddButton label="My code" a11y="Show my friend code" icon={<QrIcon color={color.moon} size={22} />} onPress={() => router.push('/my-code')} />
@@ -233,10 +236,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
               </Pressable>
             </Section>
 
-            <Pressable onPress={invite} accessibilityRole="button" accessibilityLabel="Invite friends to Afterglow" style={({ pressed }) => [styles.invite, pressed && styles.pressed]}>
-              <ShareIcon color={color.moon} size={16} />
-              <Text style={styles.inviteText}>Invite friends to Afterglow</Text>
-            </Pressable>
+            {festival ? <InviteCard handle={me.handle} festivals={upcoming} /> : null}
 
             {followers && followers.length ? (
               <Section title="Following you">
@@ -417,8 +417,6 @@ const styles = StyleSheet.create({
   fresh: { color: color.glow },
   faces: { flexDirection: 'row' },
   face: { borderRadius: 20, borderWidth: 2, borderColor: color.night },
-  invite: { marginTop: space.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.18)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)' },
-  inviteText: { ...type.headline, color: color.moon },
   why: { ...type.caption, color: color.moonFaint, marginLeft: 44 + space.md, marginTop: -6, marginBottom: space.xs },
   quiet: { ...type.body, color: color.moonDim, marginTop: space.xl },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },

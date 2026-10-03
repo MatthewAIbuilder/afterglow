@@ -17,6 +17,8 @@ import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
 import { byMonth, bySoonest, festivalShelf, isMany, isOver } from '../../features/festivals/shelves';
 import { NextUpCard } from '../../features/festivals/NextUpCard';
+import { LineupReadyCard } from '../../features/plan/LineupReadyCard';
+import { readyFestival } from '../../features/plan/ready';
 import { TimelineRow } from '../../features/festivals/TimelineRow';
 import { useLoves } from '../../state/useLoves';
 import { PlayIcon } from '../../features/discover/icons';
@@ -70,8 +72,10 @@ export default function FestivalsScreen() {
     return festivalShelf(festivals.filter((f) => !nearIds.has(f.id)), going, loves, today);
   }, [many, festivals, going, loves, today, near]);
   // The festival you're going to next leads the page; any others you're going to follow it.
-  const upNext = groups.going.find((f) => !isOver(f, today));
-  const alsoGoing = groups.going.filter((f) => f !== upNext);
+  // Set times out for one of them: your set-to-set plan leads instead.
+  const ready = readyFestival(groups.going, today);
+  const upNext = groups.going.find((f) => !isOver(f, today) && f !== ready);
+  const alsoGoing = groups.going.filter((f) => f !== upNext && f !== ready);
   // Everything else, soonest first, month by month: nothing hidden, a page at a time.
   const shownAbove = new Set([...(shelf?.festivals ?? []), ...near.map((n) => n.festival)].map((f) => f.id));
   const rest = bySoonest(groups.others.filter((f) => !shownAbove.has(f.id)), today);
@@ -144,8 +148,9 @@ export default function FestivalsScreen() {
           </View>
         ) : (
           <>
+            {ready ? <LineupReadyCard festival={ready} /> : null}
             {upNext ? <NextUpCard festival={upNext} /> : null}
-            {alsoGoing.length > 0 && <SectionHead title={upNext ? 'Also going' : 'Going'} />}
+            {alsoGoing.length > 0 && <SectionHead title={upNext || ready ? 'Also going' : 'Going'} />}
             {list(alsoGoing, true)}
             {nearby.status === 'on' && (many || near.length > 0) ? (
               <>

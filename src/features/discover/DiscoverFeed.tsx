@@ -31,6 +31,7 @@ import { useStoredFocus } from '../../state/discoverFocus';
 import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
 import { useHints } from '../../state/hints';
+import { markCareTipDone, useCareTip } from '../../state/careTip';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { color, motion, space, type } from '../../theme/tokens';
@@ -44,7 +45,7 @@ import { useTonight } from '../tonight/useTonight';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { useAddMemory } from '../memories/useAddMemory';
 import { useMemories } from '../../state/memories';
-import { alreadyKnown, currentHint } from './hints';
+import { alreadyKnown, CARE_HINT, currentHint } from './hints';
 import type { FeedPager } from './feedPager';
 import { defaultFocus } from '../festivals/links';
 import { SOUND_LABEL } from '../../data/models';
@@ -196,9 +197,11 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
   }, [ready, reactions, markDone]);
-  const next = ready && count > 0 && activeIndex < count ? currentHint(hintsDone) : undefined;
-  // Filming is in the phone app, so the website doesn't teach it.
-  const hint = next === 'hold' && Platform.OS === 'web' ? undefined : next;
+  // Once the three are done: holding the camera button opens Look after yourself.
+  const careTip = useCareTip();
+  const next = ready && count > 0 && activeIndex < count ? (currentHint(hintsDone) ?? (careTip ? CARE_HINT : undefined)) : undefined;
+  // Filming (and the camera button) is in the phone app, so the website doesn't teach it.
+  const hint = (next === 'hold' || next === 'care') && Platform.OS === 'web' ? undefined : next;
   // Press and hold a clip to add your own video: the third tip is done the first time you do.
   const addMemory = useAddMemory();
   const onHold = useCallback(() => {
@@ -211,6 +214,12 @@ export function DiscoverFeed() {
     haptic.tap();
     router.push('/camera');
   }, [markDone]);
+  // Held, the camera button opens Look after yourself (as festival mode's does).
+  const openCare = useCallback(() => {
+    markCareTipDone();
+    haptic.settle();
+    router.push('/care');
+  }, []);
   const peek = useSharedValue(0);
   const swipeToCamera = useMemo(
     () =>
@@ -474,7 +483,13 @@ export function DiscoverFeed() {
           <View style={styles.headerEnd}>
             {/* Film your own video (or swipe right). The camera needs the phone app. */}
             {Platform.OS !== 'web' ? (
-              <GlassCircleButton label="Open the camera to film a memory" onPress={openCamera}>
+              <GlassCircleButton
+                label="Open the camera to film a memory"
+                hint="Hold to open Look after yourself"
+                onPress={openCamera}
+                onLongPress={openCare}
+                longPressLabel="Look after yourself"
+              >
                 <CameraIcon color={color.moon} size={18} />
               </GlassCircleButton>
             ) : null}

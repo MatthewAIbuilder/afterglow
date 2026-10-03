@@ -36,9 +36,12 @@ describe('Friends', () => {
   it('signed out, says what friends are for and how to start', async () => {
     const app = await renderApp('/profile');
     await flush();
-    await fireEvent.press(app.getByLabelText('Friends'));
+    // Friends is a tab of its own now.
+    await fireEvent.press(app.getByRole('tab', { name: 'Friends' }));
     await flush();
     expect(app.getByText('Festivals are better together')).toBeTruthy();
+    // Inviting friends to the app works before you have a profile.
+    expect(app.getByLabelText('Invite friends to Afterglow')).toBeTruthy();
     await fireEvent.press(app.getByText('Create your profile'));
     await flush();
     expect(app.getAllByText(/community guidelines/i).length).toBeGreaterThan(0);
