@@ -276,7 +276,7 @@ service cloud.firestore {
           && updateId.matches('^[A-Za-z0-9_-]{6,64}$')
           && request.resource.data.keys().hasOnly(['uid', 'kind', 'atMs', 'sentAt', 'festivalId', 'artistId', 'stage', 'note', 'videoUrl', 'thumbUrl', 'videoPath', 'thumbPath', 'sharedId', 'durationSec', 'width', 'height', 'replyTo', 'lost', 'care'])
           && request.resource.data.uid == me()
-          && request.resource.data.kind in ['video', 'checkin', 'reply']
+          && request.resource.data.kind in ['video', 'checkin', 'reply', 'photo']
           && request.resource.data.atMs is number
           && request.resource.data.atMs <= request.time.toMillis() + 300000
           && request.resource.data.atMs >= request.time.toMillis() - 7 * 24 * 3600 * 1000
@@ -292,6 +292,8 @@ service cloud.firestore {
           && (!('videoUrl' in request.resource.data) || (request.resource.data.videoUrl is string && request.resource.data.videoUrl.size() <= 2000 && request.resource.data.videoUrl.matches('^https://.*')))
           && (!('thumbUrl' in request.resource.data) || (request.resource.data.thumbUrl is string && request.resource.data.thumbUrl.size() <= 2000 && request.resource.data.thumbUrl.matches('^https://.*')))
           && (request.resource.data.kind != 'video' || 'videoUrl' in request.resource.data)
+          // A photo (crews only): the picture, and no video.
+          && (request.resource.data.kind != 'photo' || ('thumbUrl' in request.resource.data && !('videoUrl' in request.resource.data)))
           // A reply has words and answers an update that's in this crew.
           && (request.resource.data.kind != 'reply' || (request.resource.data.replyTo is string
             && request.resource.data.replyTo.matches('^[A-Za-z0-9_-]{6,64}$')

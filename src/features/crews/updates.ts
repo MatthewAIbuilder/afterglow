@@ -110,6 +110,10 @@ export function updateLine(u: CrewUpdate, artistName?: string): string {
   if (u.lost) return `Can’t find the crew · ${clock(u.at)}`;
   if (u.care === 'help') return `Not feeling great · ${clock(u.at)}`;
   if (u.care === 'ok') return `I’m OK · ${clock(u.at)}`;
+  if (u.kind === 'photo') {
+    const where = updatePlace(u, artistName);
+    return `Photo ${clock(u.at)}${where ? ` · ${where}` : ''}`;
+  }
   const place = updatePlace(u, artistName);
   return `Updated ${clock(u.at)}${place ? ` · ${place}` : ''}`;
 }
@@ -214,7 +218,7 @@ export function cleanOutbox(raw: unknown, now: number): OutboxItem[] {
       i.crewIds.length > 0 &&
       i.crewIds.every((c) => typeof c === 'string') &&
       !!i.input &&
-      (i.input.kind === 'video' || i.input.kind === 'checkin' || (i.input.kind === 'reply' && typeof i.input.replyTo === 'string')) &&
+      (i.input.kind === 'video' || i.input.kind === 'checkin' || (i.input.kind === 'photo' && typeof i.input.thumbUri === 'string') || (i.input.kind === 'reply' && typeof i.input.replyTo === 'string')) &&
       typeof i.input.at === 'string' &&
       Number.isFinite(ms(i.input.at)) &&
       typeof i.input.festivalId === 'string' &&

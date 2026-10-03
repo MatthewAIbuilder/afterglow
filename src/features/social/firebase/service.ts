@@ -636,6 +636,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             if (!thumbUrl) thumbPath = undefined;
           }
         }
+        if (input.kind === 'photo' && !thumbUrl) {
+          // A photo for the crew only: uploaded to the crew's own folder.
+          if (!input.thumbUri) throw new SocialError('unknown');
+          thumbPath = `crews/${crewId}/${user.uid}/${input.id}.jpg`;
+          thumbUrl = await upload(thumbPath, input.thumbUri, 'image/jpeg', (s) => onProgress?.(s * 0.95));
+        }
         const data = {
           uid: user.uid,
           kind: input.kind,
