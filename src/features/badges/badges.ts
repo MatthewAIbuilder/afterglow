@@ -223,3 +223,9 @@ export function earnedLine(b: Badge): string {
   const when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   return `Earned ${when} · ${b.videos} ${b.videos === 1 ? 'video' : 'videos'}`;
 }
+
+/** The words that go with a shared badge: "I collected the Cyclops Cove 4 badge on Afterglow." and a link. */
+export function badgeShareText(festivalName: string, link: string, mine: boolean, handle?: string): string {
+  const who = mine ? 'I collected' : handle ? `@${handle} collected` : 'Collected:';
+  return `${who} the ${festivalName} badge on Afterglow. Only people who filmed there get one.\n${link}`;
+}

@@ -18,6 +18,7 @@ import { MeetSpotCard } from '../features/crews/MeetSpotCard';
 import { CrewWhereCard } from '../features/crews/CrewWhereCard';
 import { picksByDay } from '../features/plan/byDay';
 import { LiveNow } from '../features/plan/LiveNow';
+import { LiveCrowdRow } from '../features/festivals/LiveCrowdRow';
 import { useFestivalPlan } from '../features/plan/useFestivalPlan';
 import { TONIGHT } from '../features/discover/focus';
 import { tonightClips, tonightTitle } from '../features/tonight/tonight';
@@ -87,6 +88,8 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
   return (
     <>
       <FestivalModeCard festival={festival} />
+      <LiveCrowdRow festival={festival} inset={0} />
+
       <Section title={schedule ? 'Your route' : night ? `Your picks for ${night}` : 'Your picks'}>
         {schedule ? (
           <LiveNow festival={festival} schedule={schedule} route={route} />

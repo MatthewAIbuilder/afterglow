@@ -114,12 +114,25 @@ export default function BadgeScreen() {
             <Pressable
               onPress={() => {
                 haptic.select();
+                router.push({ pathname: '/badge-card/[id]', params: { id: festival.id, ...(whose ? { uid: whose } : {}) } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={mine ? 'Share your badge' : 'Share this badge'}
+              style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
+            >
+              <Text style={styles.primaryText}>{mine ? 'Share your badge' : 'Share'}</Text>
+            </Pressable>
+          ) : null}
+          {badge ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
                 router.push({ pathname: '/shared/[id]', params: { id: badge.firstId } });
               }}
               accessibilityRole="button"
-              style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryText}>Watch the video</Text>
+              <Text style={styles.secondaryText}>Watch the video</Text>
             </Pressable>
           ) : null}
           <Pressable

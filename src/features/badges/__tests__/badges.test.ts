@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
 import type { SharedMemory } from '../../social/models';
-import { cityOf, earnedBadges, earnedLine, filmedThere, hashOf, pinLook, ribbonText, themeOf, toCollect } from '../badges';
+import { badgeShareText, cityOf, earnedBadges, earnedLine, filmedThere, hashOf, pinLook, ribbonText, themeOf, toCollect } from '../badges';
 
 const fest = (id: string, extra: Partial<Festival> = {}): Festival =>
   ({ id, name: id === 'cc4' ? 'Cyclops Cove 4' : 'Eternal NYE 2026', dates: '', location: '', lineup: [], days: [], stages: [], startDate: '2026-12-04', endDate: '2026-12-06', ...extra }) as Festival;
@@ -62,5 +62,12 @@ describe('festival badges', () => {
     expect(ribbonText({})).toBeUndefined();
     // The city isn't repeated when it's already in the name.
     expect(pinLook({ id: 'acl', name: 'Austin City Limits 2026', location: 'Austin, Texas' }).rimText).toBe('AUSTIN CITY LIMITS');
+  });
+});
+
+describe('sharing a badge', () => {
+  it('says whose it is, with a link', () => {
+    expect(badgeShareText('Cyclops Cove 4', 'https://afterglowmusic.app/u/maya', true)).toBe('I collected the Cyclops Cove 4 badge on Afterglow. Only people who filmed there get one.\nhttps://afterglowmusic.app/u/maya');
+    expect(badgeShareText('Cyclops Cove 4', 'https://x', false, 'sam')).toMatch(/^@sam collected the Cyclops Cove 4 badge/);
   });
 });
