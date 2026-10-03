@@ -7,6 +7,7 @@ import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { FirstRun } from '../features/welcome/FirstRun';
+import { FounderClaim } from '../features/standing/FounderClaim';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
 import { CatalogProvider } from '../state/catalog';
@@ -77,6 +78,7 @@ export default function RootLayout() {
         <Stack.Screen name="memories" />
         <Stack.Screen name="memory/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="shared/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="badge/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal' }} />
         <Stack.Screen name="profile-edit" />
         <Stack.Screen name="u/[handle]" />
@@ -176,6 +178,7 @@ export default function RootLayout() {
         <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }} />
       </Stack>
       <FirstRun />
+      <FounderClaim />
       <TonightLauncher />
       <ReminderSync />
       <LikeSync />

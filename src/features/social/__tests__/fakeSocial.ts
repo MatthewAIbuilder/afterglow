@@ -1,4 +1,4 @@
-import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser } from '../models';
+import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX } from '../models';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -28,6 +28,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const network = { down: false };
   /** Each person's friend code (what their QR code carries). */
   const friendCodes = new Map<string, string>();
+  /** Founder numbers, in the order people claimed them, and flairs (set by hand, like the Firebase console). */
+  const founders = new Map<string, number>();
+  const flairs = new Map<string, Flair>();
+  const counter = { founders: 0 };
   /** Crew-only video files uploaded, as `crewId/uid/updateId`. */
   const crewFiles = new Set<string>();
   /** Each crew's meeting spot. */
@@ -113,6 +117,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.delete(u.uid);
       for (const [k, f] of follows) if (f.from === u.uid || f.to === u.uid) follows.delete(k);
       friendCodes.delete(u.uid);
+      founders.delete(u.uid);
       for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
       for (const [k, c] of comments) if (c.uid === u.uid || c.owner === u.uid) comments.delete(k);
       for (const id of [...crews.keys()]) leave(id, u.uid);
@@ -229,6 +234,23 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if ((blocks.get(uid) ?? []).includes(u.uid)) throw new SocialError('unknown');
       const k = `${u.uid}>${uid}`;
       if (!follows.has(k)) follows.set(k, { from: u.uid, to: uid, createdAt: `${now()}#${String(++n).padStart(6, '0')}` });
+    },
+    async claimFounder() {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      if (!profiles.has(u.uid)) throw new SocialError('unknown');
+      const had = founders.get(u.uid);
+      if (had) return had;
+      // The count only goes up: a founder who leaves never frees their number.
+      if (counter.founders >= FOUNDERS_MAX) return null;
+      const number = ++counter.founders;
+      founders.set(u.uid, number);
+      return number;
+    },
+    async standingOf(uid) {
+      const founder = founders.get(uid);
+      const flair = flairs.get(uid);
+      return { ...(founder ? { founder } : {}), ...(flair ? { flair } : {}) };
     },
     async setFriendCode(code) {
       if (network.down) throw new SocialError('network');
@@ -459,5 +481,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, friendCodes, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, counter, reports, currentUser: () => current };
 }

@@ -1,4 +1,7 @@
 import { Image } from 'expo-image';
+import { BadgesGrid } from '../../features/badges/BadgesGrid';
+import { useBadges } from '../../features/badges/useBadges';
+import { StandingAvatar, StandingCaption } from '../../features/standing/StandingAvatar';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -42,6 +45,7 @@ export default function PublicProfileScreen() {
   const social = useSocial();
   const catalog = useCatalog();
   const [profile, setProfile] = useState<Profile | null | undefined>();
+  const { badges } = useBadges(profile?.uid);
   const [memories, setMemories] = useState<SharedMemory[]>([]);
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
@@ -146,11 +150,12 @@ export default function PublicProfileScreen() {
     body = (
       <>
         <View style={styles.head}>
-          <View style={styles.avatar}>
-            {profile.avatarUrl ? <Image source={{ uri: profile.avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.initial}>{profile.displayName.slice(0, 1).toUpperCase()}</Text>}
+          <View style={styles.avatarWrap}>
+            <StandingAvatar uid={profile.uid} name={profile.displayName} url={profile.avatarUrl} size={96} />
           </View>
           <Text style={styles.name}>{profile.displayName}</Text>
           <Text style={styles.handle}>@{profile.handle}</Text>
+          <StandingCaption uid={profile.uid} align="center" />
           {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
           {goingLine(going) ? <Text style={styles.meta}>{goingLine(going)}</Text> : null}
           {profile.sounds.length ? (
@@ -205,6 +210,11 @@ export default function PublicProfileScreen() {
             ))}
           </View>
         )}
+        {badges.length ? (
+          <View style={styles.badges}>
+            <BadgesGrid badges={badges} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
+          </View>
+        ) : null}
         <Text style={styles.section}>{memories.length ? `Memories · ${memories.length}` : 'Memories'}</Text>
         {memories.length ? (
           <View style={[styles.grid, { gap }]}>
@@ -272,8 +282,8 @@ const styles = StyleSheet.create({
   actions: { position: 'absolute', right: space.lg, flexDirection: 'row', gap: space.sm },
   more: { ...type.caption, color: color.moon, letterSpacing: 1 },
   head: { alignItems: 'center', gap: space.xs },
-  avatar: { width: 96, height: 96, borderRadius: 48, overflow: 'hidden', backgroundColor: color.haze, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
-  initial: { ...type.largeTitle, color: color.moon },
+  avatarWrap: { marginBottom: space.sm },
+  badges: { marginHorizontal: -space.lg, marginTop: space.sm },
   name: { ...type.title, color: color.moon, textAlign: 'center' },
   handle: { ...type.body, color: color.moonDim },
   bio: { ...type.body, color: color.moon, textAlign: 'center', marginTop: space.sm },

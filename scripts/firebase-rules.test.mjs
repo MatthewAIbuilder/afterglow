@@ -400,6 +400,47 @@ await t('storage: your own profile photo only', async () => {
   await assertSucceeds(deleteObject(ref(A.storage(), 'avatars/uidA.jpg')));
 });
 
+await t('founders: numbered in order by the shared counter, never chosen, never changed', async () => {
+  const claimAs = async (ctx, uid, n, countAfter = n) => {
+    const db = ctx.firestore(); const b = writeBatch(db);
+    b.set(doc(db, 'counters', 'founders'), { count: countAfter });
+    b.set(doc(db, 'founders', uid), { number: n, at: serverTimestamp() });
+    return b.commit();
+  };
+  const F1 = env.authenticatedContext('uidF1'), F2 = env.authenticatedContext('uidF2'), F3 = env.authenticatedContext('uidF3');
+  // Needs a profile.
+  await assertFails(claimAs(F1, 'uidF1', 1));
+  await claim(F1, 'uidF1', 'fone'); await claim(F2, 'uidF2', 'ftwo'); await claim(F3, 'uidF3', 'fthree');
+  // Can't skip ahead or claim without the counter moving with it.
+  await assertFails(claimAs(F1, 'uidF1', 5));
+  await assertFails(setDoc(doc(F1.firestore(), 'founders', 'uidF1'), { number: 1, at: serverTimestamp() }));
+  await assertSucceeds(claimAs(F1, 'uidF1', 1));
+  // Not twice, and not for someone else.
+  await assertFails(claimAs(F1, 'uidF1', 2));
+  await assertFails(claimAs(F2, 'uidF3', 2));
+  await assertSucceeds(claimAs(F2, 'uidF2', 2));
+  // The counter can't be moved on its own, or backwards.
+  await assertFails(setDoc(doc(F3.firestore(), 'counters', 'founders'), { count: 3 }));
+  await assertFails(claimAs(F3, 'uidF3', 1, 1));
+  // Anyone can see a founder number; nobody changes it.
+  await assertSucceeds(getDoc(doc(anon.firestore(), 'founders', 'uidF1')));
+  await assertFails(updateDoc(doc(F1.firestore(), 'founders', 'uidF1'), { number: 99 }));
+  await assertFails(deleteDoc(doc(F2.firestore(), 'founders', 'uidF1')));
+  await assertSucceeds(deleteDoc(doc(F1.firestore(), 'founders', 'uidF1')));
+});
+await t('founders: no more than 100', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => setDoc(doc(ctx.firestore(), 'counters', 'founders'), { count: 100 }));
+  const F4 = env.authenticatedContext('uidF4');
+  await claim(F4, 'uidF4', 'ffour');
+  const db = F4.firestore(); const b = writeBatch(db);
+  b.set(doc(db, 'counters', 'founders'), { count: 101 });
+  b.set(doc(db, 'founders', 'uidF4'), { number: 101, at: serverTimestamp() });
+  await assertFails(b.commit());
+});
+await t('flairs: anyone can see them, nobody writes one from the app', async () => {
+  await assertSucceeds(getDoc(doc(anon.firestore(), 'flairs', 'uidA')));
+  await assertFails(setDoc(doc(A.firestore(), 'flairs', 'uidA'), { kind: 'artist', caption: 'Artist' }));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);
