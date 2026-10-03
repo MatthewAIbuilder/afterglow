@@ -456,6 +456,20 @@ await t('flairs: anyone can see them, nobody writes one from the app', async () 
   await assertSucceeds(getDoc(doc(anon.firestore(), 'plus', 'uidA')));
   await assertFails(setDoc(doc(A.firestore(), 'plus', 'uidA'), { active: true }));
 });
+await t('glow levels: your own, a whole number, server time, with a profile; anyone reads', async () => {
+  const L = env.authenticatedContext('uidL');
+  await claim(L, 'uidL', 'lumen');
+  await assertSucceeds(setDoc(doc(L.firestore(), 'levels', 'uidL'), { level: 4, at: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(anon.firestore(), 'levels', 'uidL')));
+  await assertFails(setDoc(doc(B.firestore(), 'levels', 'uidL'), { level: 9, at: serverTimestamp() }));
+  await assertFails(setDoc(doc(L.firestore(), 'levels', 'uidL'), { level: 2.5, at: serverTimestamp() }));
+  await assertFails(setDoc(doc(L.firestore(), 'levels', 'uidL'), { level: 1000, at: serverTimestamp() }));
+  await assertFails(setDoc(doc(L.firestore(), 'levels', 'uidL'), { level: 4, at: serverTimestamp(), glow: 9999 }));
+  await assertFails(setDoc(doc(L.firestore(), 'levels', 'uidL'), { level: 4, at: now }));
+  await assertFails(setDoc(doc(env.authenticatedContext('uidNobody').firestore(), 'levels', 'uidNobody'), { level: 4, at: serverTimestamp() }));
+  await assertFails(deleteDoc(doc(B.firestore(), 'levels', 'uidL')));
+  await assertSucceeds(deleteDoc(doc(L.firestore(), 'levels', 'uidL')));
+});
 const ADMIN = env.authenticatedContext('uidAdmin', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
 const NOT_VERIFIED = env.authenticatedContext('uidFake', { email: 'afterglowmusic.support@gmail.com', email_verified: false });
 const msg = (uid, over = {}) => ({ uid, topic: 'help', text: 'The map won’t load', status: 'open', createdAt: serverTimestamp(), ...over });

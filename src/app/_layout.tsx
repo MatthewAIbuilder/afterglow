@@ -10,6 +10,7 @@ import { ReminderSync } from '../features/notifications/ReminderSync';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
 import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
+import { LevelSync } from '../features/quests/LevelSync';
 import { QuestToast } from '../features/quests/QuestToast';
 import { WhatsNewLauncher } from '../features/whatsNew/WhatsNewLauncher';
 import { SecretStage } from '../features/secrets/SecretStage';
@@ -202,6 +203,7 @@ export default function RootLayout() {
       <WhatsNewLauncher />
       <QuestTracker />
       <DailyQuestTracker />
+      <LevelSync />
       <ReminderSync />
       <LikeSync />
       <QuestToast />

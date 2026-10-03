@@ -23,6 +23,14 @@ export function rememberStanding(uid: string, standing: Standing) {
   changed();
 }
 
+/** Change part of a standing already read (your own level, after publishing it). Nothing when it hasn't been read yet. */
+export function patchStanding(uid: string, patch: (s: Standing) => Standing) {
+  const hit = cache.get(uid);
+  if (!hit) return;
+  cache.set(uid, { at: hit.at, standing: patch(hit.standing) });
+  changed();
+}
+
 /** For tests: forget everything read. */
 export function forgetStandings() {
   cache.clear();

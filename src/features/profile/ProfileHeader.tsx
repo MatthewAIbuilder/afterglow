@@ -7,6 +7,7 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { type ProfileStat, shortCount } from './profileView';
 import { StandingAvatar, StandingCaption } from '../standing/StandingAvatar';
 import { SparkIcon } from '../quests/QuestRing';
+import { LEVEL_SHOWN_FROM, levelName } from '../quests/daily';
 import { ringOf } from '../standing/standing';
 import { useStanding } from '../standing/useStanding';
 import { SOUND_COLOR, withAlpha } from '../sound-map/colors';
@@ -39,7 +40,7 @@ type Props = {
   whose?: string;
   /** A quiet line under the bio ("Going to EDC Orlando 2026"). */
   note?: string;
-  /** Your glow level (your own profile only), as a gold pill that opens your quests. */
+  /** Your glow level, live from your quests, as a gold pill that opens them. Without it, the level their profile shows (if any). */
   level?: { level: number; name: string };
   onLevel?: () => void;
   /** Which counts can be tapped (all of them by default). */
@@ -57,6 +58,8 @@ const ORBIT_H = 236;
 export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable, level, onLevel }: Props) {
   const standing = useStanding(uid);
   const ringed = !!ringOf(standing);
+  // Your own level comes live from your quests; anyone else's from what their profile shows.
+  const shownLevel = level ?? (standing?.level && standing.level >= LEVEL_SHOWN_FROM ? { level: standing.level, name: levelName(standing.level) } : undefined);
   const { width } = useWindowDimensions();
   const orbitWidth = Math.min(width, 520);
   const social = stats.filter((s) => s.key === 'followers' || s.key === 'following');
@@ -91,20 +94,27 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
       </Text>
       {handle ? <Text style={styles.handle}>@{handle}</Text> : null}
       <StandingCaption standing={standing} align="center" />
-      {level ? (
+      {shownLevel && onLevel ? (
         <Pressable
           onPress={onLevel}
           accessibilityRole="button"
-          accessibilityLabel={`Glow level ${level.level}, ${level.name}. Opens your quests.`}
+          accessibilityLabel={`Glow level ${shownLevel.level}, ${shownLevel.name}. Opens your quests.`}
           hitSlop={6}
           style={({ pressed }) => [styles.level, pressed && { opacity: 0.75 }]}
           testID="profile-level"
         >
           <SparkIcon size={13} />
           <Text style={styles.levelText}>
-            Level {level.level} · {level.name}
+            Level {shownLevel.level} · {shownLevel.name}
           </Text>
         </Pressable>
+      ) : shownLevel ? (
+        <View style={styles.level} accessible accessibilityLabel={`Glow level ${shownLevel.level}, ${shownLevel.name}`} testID="profile-level">
+          <SparkIcon size={13} />
+          <Text style={styles.levelText}>
+            Level {shownLevel.level} · {shownLevel.name}
+          </Text>
+        </View>
       ) : null}
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
       {note ? <Text style={styles.note}>{note}</Text> : null}

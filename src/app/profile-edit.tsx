@@ -20,6 +20,9 @@ import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import type { CropShape } from '../features/profile/crop';
+import { useShowLevel, setShowLevel } from '../state/showLevel';
+import { useDailyQuests } from '../features/quests/useDailyQuests';
+import { LEVEL_SHOWN_FROM } from '../features/quests/daily';
 import { type CropSource, PhotoCropper } from '../features/profile/PhotoCropper';
 
 /**
@@ -40,6 +43,9 @@ export default function ProfileEditScreen() {
   const [bio, setBio] = useState(p?.bio ?? '');
   const [showFestivals, setShowFestivals] = useState(p?.showFestivals ?? false);
   const [showSound, setShowSound] = useState(p?.showSound ?? false);
+  // Applies at once (it isn't part of the saved profile): LevelSync sends or removes it.
+  const showLevel = useShowLevel();
+  const daily = useDailyQuests();
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState<string | undefined>();
   const [checked, setChecked] = useState<{ handle: string; ok: boolean }>();
@@ -236,6 +242,12 @@ export default function ProfileEditScreen() {
 
           <View style={styles.switches}>
             <SwitchRow label="Show festivals I’m going to" detail={showFestivals ? (goingLine(goingNames) ?? 'None yet. Tap I’m going on a festival.') : 'Hidden'} value={showFestivals} onChange={setShowFestivals} />
+            <SwitchRow
+              label="Show my glow level"
+              detail={showLevel === false ? 'Hidden' : daily.level.level >= LEVEL_SHOWN_FROM ? `Level ${daily.level.level} · ${daily.level.name}` : 'Shows once you reach level 2 in your quests'}
+              value={showLevel !== false}
+              onChange={setShowLevel}
+            />
             <SwitchRow label="Show my sound" detail={showSound ? (sounds.length ? sounds.join(', ') : 'Your top sounds, once you’ve reacted to some clips') : 'Hidden'} value={showSound} onChange={setShowSound} />
           </View>
 

@@ -387,6 +387,17 @@ export function levelOf(glow: number): Level {
   };
 }
 
+/** Levels from this one up show on your profile for others (everyone starts at 1, which says nothing). */
+export const LEVEL_SHOWN_FROM = 2;
+
+/** A level's name from its number alone (for someone else's profile, which only publishes the number). */
+export function levelName(level: number): string {
+  const n = Math.max(1, Math.floor(level));
+  if (n <= LEVELS.length) return LEVELS[n - 1].name;
+  const extra = n - LEVELS.length;
+  return `${LEVELS[LEVELS.length - 1].name} ${extra + 1}`;
+}
+
 /** Glow for each secret found. */
 export const SECRET_FIND_GLOW = 50;
 
