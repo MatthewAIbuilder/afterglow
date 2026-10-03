@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { toCollect } from '../badges/badges';
 import { useBadges } from '../badges/useBadges';
+import { useThrowbacks } from '../badges/useThrowbacks';
+import { pastKey } from '../memories/past';
 import { yourClipCount, yourClips } from '../discover/saved';
 import { groupFestivals } from '../festivals/going';
 import { useStanding } from '../standing/useStanding';
@@ -19,7 +21,7 @@ import { useSocial } from '../../state/social';
 import { useLoves } from '../../state/useLoves';
 import { useWeekends } from '../../state/weekends';
 import type { Unlock } from './BadgeCelebration';
-import { milestoneKey, milestones, pinKey, unclaimed } from './milestones';
+import { milestoneKey, milestones, pinKey, throwbackKey, unclaimed } from './milestones';
 import { citiesOf, passport as makePassport } from './passport';
 import { bestStreakOf } from '../quests/daily';
 import { useDailyQuests } from '../quests/useDailyQuests';
@@ -48,6 +50,8 @@ export function useProfileBadges() {
 
   // Festival pins: from the videos you've shared, filmed at a festival on its dates.
   const { badges } = useBadges(me?.uid);
+  // Throwbacks: past festivals added from your camera roll (yours even without a profile).
+  const throwbacks = useThrowbacks(undefined);
   const goingFestivals = useMemo(() => groupFestivals(catalog.festivals.map(forYou), going, today).going, [catalog.festivals, forYou, going, today]);
   const collect = useMemo(() => toCollect(goingFestivals, badges, today), [goingFestivals, badges, today]);
 
@@ -60,8 +64,9 @@ export function useProfileBadges() {
   const marks = useMemo(
     () =>
       milestones({
-        been: passport.been.length,
-        cities: citiesOf([...passport.been, ...passport.planning]),
+        // Past festivals count as festivals you've been to (each once), and their towns too.
+        been: passport.been.length + throwbacks.length,
+        cities: citiesOf([...passport.been, ...passport.planning], throwbacks.flatMap((t) => (t.past.city ? [t.past.city] : []))),
         moments: memories.length,
         kept,
         rated: Object.keys(ratings).length,
@@ -73,27 +78,31 @@ export function useProfileBadges() {
         streak: bestStreakOf(daily.book),
         glow: daily.level.glow,
       }),
-    [passport, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow],
+    [passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();
   const questList = useMemo(() => questBadges(quests.progress, quests.log), [quests.progress, quests.log]);
-  const earned = badges.length + marks.filter((m) => m.earned).length + questList.filter((m) => m.earned).length;
+  const earned = badges.length + throwbacks.length + marks.filter((m) => m.earned).length + questList.filter((m) => m.earned).length;
 
   // Earned but not claimed: a banner, a New tag, and the unlock when you claim one.
   const { claimed, claim } = useBadgeClaims();
   const unclaimedKeys = useMemo(
     () =>
       claimed
-        ? unclaimed([...badges.map((b) => pinKey(b.festivalId)), ...questList.filter((m) => m.earned).map((m) => milestoneKey(m.id)), ...marks.filter((m) => m.earned).map((m) => milestoneKey(m.id))], claimed)
+        ? unclaimed([...badges.map((b) => pinKey(b.festivalId)), ...throwbacks.map((t) => throwbackKey(t.key)), ...questList.filter((m) => m.earned).map((m) => milestoneKey(m.id)), ...marks.filter((m) => m.earned).map((m) => milestoneKey(m.id))], claimed)
         : [],
-    [claimed, badges, marks, questList],
+    [claimed, badges, throwbacks, marks, questList],
   );
   const [unlock, setUnlock] = useState<Unlock | undefined>();
   const unlockFor = (key: string): Unlock | undefined => {
     if (key.startsWith('pin:')) {
       const f = catalog.festival(key.slice(4));
       return f ? { kind: 'pin', festival: f } : undefined;
+    }
+    if (key.startsWith('past:')) {
+      const t = throwbacks.find((x) => throwbackKey(x.key) === key);
+      return t ? { kind: 'throwback', past: t.past } : undefined;
     }
     const m = [...questList, ...marks].find((x) => milestoneKey(x.id) === key);
     return m ? { kind: 'milestone', milestone: m } : undefined;
@@ -110,11 +119,11 @@ export function useProfileBadges() {
   };
   const finishUnlock = () => {
     if (!unlock) return;
-    claim(unlock.kind === 'pin' ? pinKey(unlock.festival.id) : milestoneKey(unlock.milestone.id));
+    claim(unlock.kind === 'pin' ? pinKey(unlock.festival.id) : unlock.kind === 'throwback' ? throwbackKey(pastKey(unlock.past)) : milestoneKey(unlock.milestone.id));
     setUnlock(undefined);
   };
 
-  return { badges, collect, passport, marks, questList, earned, kept, unclaimedKeys, unlock, setUnlock, claimNext, finishUnlock };
+  return { badges, throwbacks, collect, passport, marks, questList, earned, kept, unclaimedKeys, unlock, setUnlock, claimNext, finishUnlock };
 }
 
 export type ProfileBadges = ReturnType<typeof useProfileBadges>;

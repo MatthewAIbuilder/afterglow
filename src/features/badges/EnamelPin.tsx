@@ -390,7 +390,13 @@ export function EnamelPin({ look, size, locked, sheen }: Props) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   const u = (name: string) => `url(#${name}${id})`;
   const p = locked ? LOCKED : look.palette;
-  const metalStops = locked ? ['#C9C8D6', '#8C8AA3', '#55536A', '#B5B3C6', '#6E6C84'] : ['#FFF6CF', '#E8B84A', '#9C6B1F', '#F7D57A', '#B8862B'];
+  // Gold for festivals filmed live; rose gold for throwbacks (past festivals added from the camera roll).
+  const rose = !locked && look.finish === 'throwback';
+  const metalStops = locked
+    ? ['#C9C8D6', '#8C8AA3', '#55536A', '#B5B3C6', '#6E6C84']
+    : rose
+      ? ['#FFE8E0', '#E7A894', '#8E5244', '#F6C6B6', '#B3705F']
+      : ['#FFF6CF', '#E8B84A', '#9C6B1F', '#F7D57A', '#B8862B'];
   const seed = hashOf(look.rimText);
   // The name runs over the top of the rim, centred and sized to fit its band.
   const rimSize = fitSize(look.rimText, RIM_ROOM, RIM_SPACING, 6.2, 3.6);
@@ -439,8 +445,8 @@ export function EnamelPin({ look, size, locked, sheen }: Props) {
           ))}
         </LinearGradient>
         <LinearGradient id={`metalDark${id}`} x1="0" y1="1" x2="1" y2="0">
-          <Stop offset="0" stopColor={locked ? '#4A4860' : '#7A5214'} />
-          <Stop offset="1" stopColor={locked ? '#9896AE' : '#E3B24E'} />
+          <Stop offset="0" stopColor={locked ? '#4A4860' : rose ? '#6E3A30' : '#7A5214'} />
+          <Stop offset="1" stopColor={locked ? '#9896AE' : rose ? '#E2A391' : '#E3B24E'} />
         </LinearGradient>
         <LinearGradient id={`sky${id}`} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0.15" stopColor={p.sky[0]} />
@@ -477,7 +483,7 @@ export function EnamelPin({ look, size, locked, sheen }: Props) {
             const at = ribbonAt(mid);
             return (
               <G key={i} transform={`rotate(${at.deg} ${at.x} ${at.y})`}>
-                <SvgText x={at.x} y={at.y + CAP * ribbonSize} fontSize={ribbonSize} fontFamily={FONT} fontWeight="800" textAnchor="middle" fill={locked ? '#B5B3C6' : '#FFF6CF'}>
+                <SvgText x={at.x} y={at.y + CAP * ribbonSize} fontSize={ribbonSize} fontFamily={FONT} fontWeight="800" textAnchor="middle" fill={locked ? '#B5B3C6' : rose ? '#FFE8E0' : '#FFF6CF'}>
                   {c}
                 </SvgText>
               </G>

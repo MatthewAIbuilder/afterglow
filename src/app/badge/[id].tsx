@@ -7,7 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { CloseIcon } from '../../components/TabIcons';
-import { earnedLine, pinAbout, pinLook } from '../../features/badges/badges';
+import { THROWBACK, earnedLine, pinAbout, pinLook, throwbackAbout, throwbackLine, throwbackLook, throwbackShareText } from '../../features/badges/badges';
+import { useThrowbacks } from '../../features/badges/useThrowbacks';
+import { pastLabel } from '../../features/memories/past';
+import { shareMessage } from '../../lib/share';
+import { WEB_URL } from '../../config/app';
 import { EnamelPin } from '../../features/badges/EnamelPin';
 import { useBadges } from '../../features/badges/useBadges';
 import { whereWhen } from '../../features/festivals/format';
@@ -16,31 +20,8 @@ import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 
-/**
- * One festival pin, big: the shine follows the phone as you tilt it (or
- * sweeps across now and then, where there's no motion sensor). Collected:
- * when, and the video that earned it. Not yet: how to collect it.
- */
-export default function BadgeScreen() {
-  const { id, uid: whose } = useLocalSearchParams<{ id: string; uid?: string }>();
-  const insets = useSafeAreaInsets();
-  const catalog = useCatalog();
-  const social = useSocial();
-  const uid = whose ?? social.user?.uid;
-  const mine = !!uid && uid === social.user?.uid;
-  const festival = catalog.festival(id);
-  const { badges, loaded } = useBadges(uid);
-  const badge = badges.find((b) => b.festivalId === id);
-  const [owner, setOwner] = useState<string | undefined>();
-  useEffect(() => {
-    if (!uid || mine || !social.availability.ok) return;
-    social.service
-      .profileOf(uid)
-      .then((p) => setOwner(p?.handle))
-      .catch(() => {});
-  }, [uid, mine, social.service, social.availability.ok]);
-
-  // The shine: follows the tilt where there's a motion sensor, else a slow sweep.
+/** The shine on a big pin: follows the tilt where there's a motion sensor, else a slow sweep. */
+function usePinSheen() {
   const sheen = useSharedValue(-0.6);
   const reduce = useReducedMotion();
   useEffect(() => {
@@ -72,6 +53,42 @@ export default function BadgeScreen() {
       cancelAnimation(sheen);
     };
   }, [reduce, sheen]);
+
+  return sheen;
+}
+
+/**
+ * One festival pin, big: the shine follows the phone as you tilt it (or
+ * sweeps across now and then, where there's no motion sensor). Collected:
+ * when, and the video that earned it. Not yet: how to collect it.
+ */
+export default function BadgeScreen() {
+  const { id, uid: whose } = useLocalSearchParams<{ id: string; uid?: string }>();
+  // A throwback (a past festival from the camera roll) has its own page.
+  if (id?.startsWith(THROWBACK)) return <ThrowbackScreen pastKey={id.slice(THROWBACK.length)} whose={whose} />;
+  return <FestivalBadge id={id} whose={whose} />;
+}
+
+function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
+  const insets = useSafeAreaInsets();
+  const catalog = useCatalog();
+  const social = useSocial();
+  const uid = whose ?? social.user?.uid;
+  const mine = !!uid && uid === social.user?.uid;
+  const festival = catalog.festival(id);
+  const { badges, loaded } = useBadges(uid);
+  const badge = badges.find((b) => b.festivalId === id);
+  const [owner, setOwner] = useState<string | undefined>();
+  useEffect(() => {
+    if (!uid || mine || !social.availability.ok) return;
+    social.service
+      .profileOf(uid)
+      .then((p) => setOwner(p?.handle))
+      .catch(() => {});
+  }, [uid, mine, social.service, social.availability.ok]);
+
+  const sheen = usePinSheen();
+  const reduce = useReducedMotion();
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
   if (!festival) {
@@ -151,6 +168,99 @@ export default function BadgeScreen() {
     </View>
   );
 }
+
+/** A throwback pin: a past festival added from the camera roll, in rose gold. */
+function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }) {
+  const insets = useSafeAreaInsets();
+  const catalog = useCatalog();
+  const social = useSocial();
+  const uid = whose ?? social.user?.uid;
+  const mine = !whose || whose === social.user?.uid;
+  const badge = useThrowbacks(uid).find((t) => t.key === pastKey);
+  const sheen = usePinSheen();
+  const reduce = useReducedMotion();
+  const [owner, setOwner] = useState<string | undefined>();
+  useEffect(() => {
+    if (!uid || mine || !social.availability.ok) return;
+    social.service
+      .profileOf(uid)
+      .then((p) => setOwner(p?.handle))
+      .catch(() => {});
+  }, [uid, mine, social.service, social.availability.ok]);
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
+  if (!badge) {
+    return (
+      <View style={[styles.root, styles.center]}>
+        <Text style={styles.body}>That badge isn’t here any more.</Text>
+        <Pressable onPress={close} accessibilityRole="button">
+          <Text style={styles.link}>Close</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  const { past } = badge;
+  const look = throwbackLook(past);
+  const series = past.seriesId ? catalog.festival(past.seriesId) : undefined;
+  const handle = mine ? social.profile?.handle : owner;
+  return (
+    <View style={styles.root}>
+      <PageTitle title={`${pastLabel(past)} badge`} />
+      <NightSky />
+      <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} style={[styles.close, { top: insets.top + space.sm }]}>
+        <CloseIcon color={color.moon} size={18} />
+      </Pressable>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl }]}>
+        <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={`${pastLabel(past)} throwback badge`}>
+          <View style={[styles.glow, { backgroundColor: 'rgba(242,184,166,0.3)', shadowColor: ROSE }]} />
+          <EnamelPin look={look} size={260} sheen={sheen} />
+        </Animated.View>
+        <Text style={[styles.kicker, { color: ROSE }]}>{mine ? 'Throwback · in your collection' : handle ? `Throwback · @${handle}’s badge` : 'Throwback'}</Text>
+        <Text style={styles.title}>{pastLabel(past)}</Text>
+        {past.city ? <Text style={styles.meta}>{past.city}</Text> : null}
+        <Text style={[styles.earned, { color: ROSE }]}>{throwbackLine(badge)}</Text>
+        <Text style={styles.body}>{throwbackAbout(past)}</Text>
+        <View style={styles.actions}>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              void shareMessage(throwbackShareText(past, handle ? `${WEB_URL}/u/${handle}` : WEB_URL, mine, handle));
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={mine ? 'Share your throwback' : 'Share this throwback'}
+            style={({ pressed }) => [styles.primary, { backgroundColor: ROSE }, pressed && styles.pressed]}
+          >
+            <Text style={styles.primaryText}>{mine ? 'Share your throwback' : 'Share'}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              if (badge.shared) router.push({ pathname: '/shared/[id]', params: { id: badge.firstId } });
+              else router.push({ pathname: '/memory/[id]', params: { id: badge.firstId } });
+            }}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+          >
+            <Text style={styles.secondaryText}>Watch the video</Text>
+          </Pressable>
+          {series ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push(`/festival/${series.id}`);
+              }}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+            >
+              <Text style={styles.secondaryText}>See {series.name}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const ROSE = '#F2B8A6';
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },

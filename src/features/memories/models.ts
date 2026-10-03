@@ -1,3 +1,4 @@
+import type { PastEvent } from './past';
 /**
  * Memories: your own videos from festivals, kept on this phone and tagged
  * with where they're from (festival, night, artist). Plain data, so the list
@@ -24,6 +25,8 @@ export type Memory = {
   /** Where it was filmed, as a place name only. */
   place?: { city?: string; region?: string };
   festivalId?: string;
+  /** A festival from before Afterglow knew it ("EDC Orlando 2024"), instead of `festivalId`. */
+  past?: PastEvent;
   /** The festival day ("Friday"), when known. */
   night?: string;
   artistId?: string;
@@ -33,4 +36,4 @@ export type Memory = {
 };
 
 /** What the tagging sheet saves onto a memory. */
-export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId'>;
+export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'past'>;

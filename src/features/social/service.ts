@@ -1,3 +1,4 @@
+import type { PastEvent } from '../memories/past';
 import type { Activity, Comment, Crew, CrewInvite, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
@@ -17,6 +18,8 @@ export type ShareInput = {
   festivalId?: string;
   night?: string;
   artistId?: string;
+  /** A festival from before Afterglow, instead of `festivalId`. */
+  past?: PastEvent;
   capturedAt: string;
   durationSec?: number;
   width?: number;

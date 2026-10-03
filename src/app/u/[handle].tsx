@@ -48,7 +48,7 @@ export default function PublicProfileScreen() {
   const social = useSocial();
   const catalog = useCatalog();
   const [profile, setProfile] = useState<Profile | null | undefined>();
-  const { badges } = useBadges(profile?.uid);
+  const { badges, throwbacks } = useBadges(profile?.uid);
   const [memories, setMemories] = useState<SharedMemory[]>([]);
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
@@ -149,7 +149,12 @@ export default function PublicProfileScreen() {
       : []),
     { key: 'festivals', n: going.length, label: going.length === 1 ? 'Festival' : 'Festivals', a11y: `${going.length} ${going.length === 1 ? 'festival' : 'festivals'}` },
     { key: 'moments', n: memories.length, label: memories.length === 1 ? 'Moment' : 'Moments', a11y: `${memories.length} shared ${memories.length === 1 ? 'moment' : 'moments'}` },
-    { key: 'badges', n: badges.length, label: badges.length === 1 ? 'Badge' : 'Badges', a11y: `${badges.length} festival ${badges.length === 1 ? 'badge' : 'badges'}` },
+    {
+      key: 'badges',
+      n: badges.length + throwbacks.length,
+      label: badges.length + throwbacks.length === 1 ? 'Badge' : 'Badges',
+      a11y: `${badges.length + throwbacks.length} festival ${badges.length + throwbacks.length === 1 ? 'badge' : 'badges'}`,
+    },
   ];
 
   let body: React.ReactNode;
@@ -225,9 +230,9 @@ export default function PublicProfileScreen() {
             ))}
           </View>
         ) : null}
-        {badges.length ? (
+        {badges.length || throwbacks.length ? (
           <View style={styles.badges}>
-            <BadgesGrid badges={badges} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
+            <BadgesGrid badges={badges} throwbacks={throwbacks} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
           </View>
         ) : null}
         <Text style={styles.section}>{memories.length ? `Memories · ${memories.length}` : 'Memories'}</Text>

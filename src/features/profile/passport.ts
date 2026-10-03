@@ -71,8 +71,8 @@ export function passport({ festivals, going, memories, badges, loves, today }: I
 }
 
 /** Different towns among festivals you've been to or are going to. */
-export function citiesOf(stamps: readonly Stamp[]): number {
-  return new Set(stamps.map((s) => cityOf(s.festival.location)?.toLowerCase()).filter(Boolean)).size;
+export function citiesOf(stamps: readonly Stamp[], more: readonly string[] = []): number {
+  return new Set([...stamps.map((s) => cityOf(s.festival.location)?.toLowerCase()), ...more.map((c) => c.toLowerCase())].filter(Boolean)).size;
 }
 
 /** "3 moments · 2 artists filmed", "In 2 months · 4 you'd love". */

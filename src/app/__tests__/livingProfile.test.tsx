@@ -59,7 +59,7 @@ describe('the living profile', () => {
     expect(app.getByLabelText('Planning, 1')).toBeTruthy();
     expect(app.getByLabelText(/^Cyclops Cove 4, .*Boca Raton\. In 2 months/)).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Been there, 0'));
-    expect(app.getByText('Festivals you’ve been to collect here, with what you filmed.')).toBeTruthy();
+    expect(app.getByLabelText('Add a festival you went to before, with a video from your camera roll')).toBeTruthy();
   });
 
   it('lists Moments, Festivals, Badges and Saved, festival pins before milestones, and each milestone says what it is', async () => {

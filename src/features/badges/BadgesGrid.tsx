@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
-import { type Badge, pinLook } from './badges';
+import { type Badge, type ThrowbackBadge, pinLook, throwbackId, throwbackLook } from './badges';
+import { type PastEvent, pastLabel } from '../memories/past';
 import { EnamelPin } from './EnamelPin';
 import { NewTag } from '../profile/Milestones';
 
@@ -21,6 +22,10 @@ export function BadgesGrid({
   mine,
   isNew,
   onClaim,
+  throwbacks = [],
+  isNewThrowback,
+  onClaimThrowback,
+  onAddPast,
 }: {
   badges: Badge[];
   toCollect?: Festival[];
@@ -31,6 +36,12 @@ export function BadgesGrid({
   /** Collected but not claimed yet: glows New, and a tap claims it. */
   isNew?: (festivalId: string) => boolean;
   onClaim?: (festival: Festival) => void;
+  /** Past festivals added from the camera roll: rose gold pins. */
+  throwbacks?: readonly ThrowbackBadge[];
+  isNewThrowback?: (key: string) => boolean;
+  onClaimThrowback?: (past: PastEvent) => void;
+  /** Your own profile: add a video from a festival you went to before. */
+  onAddPast?: () => void;
 }) {
   const cols = 3;
   const cell = Math.floor((width - space.lg * 2 - space.md * (cols - 1)) / cols);
@@ -77,6 +88,8 @@ export function BadgesGrid({
             })}
           </View>
         </>
+      ) : throwbacks.length ? (
+        <Text style={[styles.hint, { marginTop: 0 }]}>{mine ? 'Film a set at a festival, on its dates, and share it: its gold pin joins your collection.' : 'Gold pins come from videos filmed at a festival, on its dates.'}</Text>
       ) : (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>{mine ? 'Collect a badge for every festival' : 'No badges yet'}</Text>
@@ -87,6 +100,60 @@ export function BadgesGrid({
           </Text>
         </View>
       )}
+      {throwbacks.length || onAddPast ? (
+        <>
+          <Text style={[styles.head, styles.roseHead, (earned.length > 0 || throwbacks.length === 0) && { marginTop: space.lg }]}>
+            {throwbacks.length ? `Throwbacks · ${throwbacks.length}` : 'Throwbacks'}
+          </Text>
+          <View style={styles.grid}>
+            {throwbacks.map((t) => {
+              const fresh = !!isNewThrowback?.(t.key) && !!onClaimThrowback;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={() => {
+                    if (fresh) {
+                      haptic.select();
+                      onClaimThrowback?.(t.past);
+                    } else open(throwbackId(t.key));
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={fresh ? `${pastLabel(t.past)} throwback badge, new. Tap to claim it` : `${pastLabel(t.past)} throwback badge. Opens the badge`}
+                  style={({ pressed }) => [styles.cell, { width: cell }, pressed && styles.pressed]}
+                >
+                  <EnamelPin look={throwbackLook(t.past)} size={cell} />
+                  {fresh ? <NewTag /> : null}
+                  <Text style={styles.name} numberOfLines={2}>
+                    {pastLabel(t.past)}
+                  </Text>
+                  {fresh ? <Text style={styles.claim}>Tap to claim</Text> : null}
+                </Pressable>
+              );
+            })}
+            {onAddPast ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  onAddPast();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Add a festival you went to before, with a video from your camera roll"
+                style={({ pressed }) => [styles.cell, { width: cell }, pressed && styles.pressed]}
+              >
+                <View style={[styles.addPin, { width: cell * 0.78, height: cell * 0.78, borderRadius: cell * 0.39, marginVertical: cell * 0.11 }]}>
+                  <Text style={styles.addPlus}>+</Text>
+                </View>
+                <Text style={[styles.name, styles.roseName]} numberOfLines={2}>
+                  Add a past festival
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+          {onAddPast && !throwbacks.length ? (
+            <Text style={styles.hint}>Been to festivals before Afterglow? Add a video from your camera roll and tag the festival: it gets a rose gold throwback badge.</Text>
+          ) : null}
+        </>
+      ) : null}
       {mine && toCollect.length ? (
         <>
           <Text style={[styles.head, { marginTop: space.lg }]}>To collect</Text>
@@ -120,6 +187,11 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
   name: { ...type.caption, color: color.moon, textAlign: 'center', fontWeight: '600' },
   lockedName: { color: color.moonFaint },
+  roseHead: { color: '#F2B8A6' },
+  roseName: { color: '#F2B8A6' },
+  addPin: { alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(242,184,166,0.7)', backgroundColor: 'rgba(242,184,166,0.06)' },
+  addPlus: { ...type.title, color: '#F2B8A6' },
+  hint: { ...type.caption, color: color.moonDim, marginTop: space.md, paddingHorizontal: space.xs },
   claim: { ...type.caption, fontSize: 11, color: '#FFE38A', marginTop: -2 },
   empty: { padding: space.xl, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   emptyTitle: { ...type.headline, color: color.moon },

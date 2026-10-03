@@ -65,6 +65,17 @@ await t('a handle is never reassigned by update', () => assertFails(setDoc(doc(B
 
 const mem = (id, uid, over = {}) => ({ uid, handle: uid === 'uidA' ? 'maya2' : 'bob', memoryId: 'm1', videoPath: `memories/${uid}/${id}.mov`, videoUrl: 'https://x/v.mov', capturedAt: now, createdAt: now, ...over });
 await t('A shares a memory pointing at its own files', () => assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'mem1'), mem('mem1', 'uidA', { thumbPath: 'memories/uidA/mem1.jpg', thumbUrl: 'https://x/t.jpg', festivalId: 'acl-26', durationSec: 42 }))));
+await t('throwbacks: a past festival with a name and year, never with a festival on Afterglow', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'tb1'), mem('tb1', 'uidA', { artistId: 'subtronics', pastName: 'EDC Orlando', pastYear: 2024, pastCity: 'Orlando', seriesId: 'edc-orlando-26' })));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'tb2'), mem('tb2', 'uidA', { pastName: 'Sunset Sessions', pastYear: 2023 })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb3'), mem('tb3', 'uidA', { pastName: 'EDC Orlando', pastYear: 2024, festivalId: 'acl-26' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb4'), mem('tb4', 'uidA', { pastName: 'EDC Orlando', pastYear: '2024' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb5'), mem('tb5', 'uidA', { pastName: 'EDC Orlando' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb6'), mem('tb6', 'uidA', { pastYear: 2024 })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb7'), mem('tb7', 'uidA', { pastName: 'x'.repeat(61), pastYear: 2024 })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb8'), mem('tb8', 'uidA', { seriesId: 'edc-orlando-26' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb9'), mem('tb9', 'uidA', { pastName: 'EDC Orlando', pastYear: 1980 })));
+});
 await t('A can’t point a memory at someone else’s files', () => assertFails(setDoc(doc(A.firestore(), 'memories', 'mem2'), mem('mem2', 'uidA', { videoPath: 'memories/uidB/mem2.mov' }))));
 await t('B can’t share as A', () => assertFails(setDoc(doc(B.firestore(), 'memories', 'mem3'), mem('mem3', 'uidA'))));
 await t('the handle on a memory must be the owner’s', () => assertFails(setDoc(doc(A.firestore(), 'memories', 'mem4'), mem('mem4', 'uidA', { handle: 'bob' }))));

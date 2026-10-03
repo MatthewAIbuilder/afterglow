@@ -221,6 +221,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         festivalId: input.festivalId,
         night: input.night,
         artistId: input.artistId,
+        past: input.festivalId ? undefined : input.past,
         capturedAt: input.capturedAt,
         durationSec: input.durationSec,
         width: input.width,
@@ -244,7 +245,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return [...memories.values()].filter((m) => m.uid === uid).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
     },
     async festivalMemories(festivalId, max) {
-      return [...memories.values()].filter((m) => m.festivalId === festivalId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+      return [...memories.values()].filter((m) => m.festivalId === festivalId || m.past?.seriesId === festivalId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
     async recentMemories(max) {
       return [...memories.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);

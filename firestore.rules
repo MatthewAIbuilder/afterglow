@@ -61,7 +61,7 @@ service cloud.firestore {
     match /memories/{id} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == me()
-        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
         && request.resource.data.handle == get(path('profiles', me())).data.handle
         && request.resource.data.videoPath.matches('^memories/' + me() + '/' + id + '[.](mp4|mov|m4v)$')
         && request.resource.data.videoUrl is string && request.resource.data.videoUrl.matches('^https://.*')
@@ -69,6 +69,13 @@ service cloud.firestore {
         && (!('thumbUrl' in request.resource.data) || (request.resource.data.thumbUrl is string && request.resource.data.thumbUrl.matches('^https://.*')))
         && shortOrAbsent(request.resource.data, 'festivalId', 100) && shortOrAbsent(request.resource.data, 'artistId', 100)
         && shortOrAbsent(request.resource.data, 'night', 40) && shortOrAbsent(request.resource.data, 'memoryId', 60)
+        // A throwback (a past festival, from the camera roll): a name and year, never with a festival on Afterglow.
+        && (!('pastName' in request.resource.data) || (!('festivalId' in request.resource.data)
+          && request.resource.data.pastName is string && request.resource.data.pastName.size() > 0 && request.resource.data.pastName.size() <= 60
+          && request.resource.data.pastYear is int && request.resource.data.pastYear >= 1990 && request.resource.data.pastYear <= 2100))
+        && (!('pastYear' in request.resource.data) || 'pastName' in request.resource.data)
+        && shortOrAbsent(request.resource.data, 'pastCity', 60) && shortOrAbsent(request.resource.data, 'seriesId', 100)
+        && (!('seriesId' in request.resource.data) || 'pastName' in request.resource.data)
         && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
         && (!('width' in request.resource.data) || (request.resource.data.width is number && request.resource.data.width <= 20000))
         && (!('height' in request.resource.data) || (request.resource.data.height is number && request.resource.data.height <= 20000))

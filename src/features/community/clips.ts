@@ -1,5 +1,6 @@
 import type { Clip, CommunityClipSource, Festival } from '../../data/models';
 import type { SharedMemory } from '../social/models';
+import { pastKey, pastLabel } from '../memories/past';
 
 /**
  * Community clips: memories people shared to their profiles, shown in
@@ -23,15 +24,17 @@ const HTTPS = /^https:\/\//;
 
 /** One shared memory as a feed clip, or undefined when it can't be one. */
 export function communityClip(m: SharedMemory, artists: ReadonlySet<string>): Clip | undefined {
-  if (!m.artistId || !artists.has(m.artistId) || !m.festivalId || !HTTPS.test(m.videoUrl) || !m.handle) return undefined;
+  // A throwback (a past festival) belongs with the same festival on Afterglow when there is one.
+  const festivalId = m.festivalId ?? m.past?.seriesId ?? (m.past ? `past:${pastKey(m.past)}` : undefined);
+  if (!m.artistId || !artists.has(m.artistId) || !festivalId || !HTTPS.test(m.videoUrl) || !m.handle) return undefined;
   const sec = m.durationSec && m.durationSec > 0 ? Math.min(180, Math.round(m.durationSec)) : DEFAULT_SEC;
   // Phones film upright unless the size says otherwise.
   const vertical = m.width && m.height ? m.height >= m.width : true;
   return {
     id: communityClipId(m.id),
     artistId: m.artistId,
-    festivalId: m.festivalId,
-    title: 'From the crowd',
+    festivalId,
+    title: m.festivalId || !m.past ? 'From the crowd' : `Throwback · ${pastLabel(m.past)}`,
     durationSec: sec,
     bpm: 0,
     source: {
@@ -68,7 +71,9 @@ export function communityClips(memories: SharedMemory[], f: CommunityFilter): Cl
   const newest = [...memories].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   for (const m of newest) {
     if (seen.has(m.id) || f.blocked.has(m.uid) || f.hidden.has(m.id) || m.uid === f.me) continue;
-    if (f.festival && (m.festivalId !== f.festival.id || !lineup!.has(m.artistId ?? ''))) continue;
+    // A festival's own videos, and throwbacks from its earlier years, of artists on its lineup.
+    const here = m.festivalId === f.festival?.id || (!m.festivalId && m.past?.seriesId === f.festival?.id);
+    if (f.festival && (!here || !lineup!.has(m.artistId ?? ''))) continue;
     const clip = communityClip(m, f.artists);
     if (!clip) continue;
     seen.add(m.id);
