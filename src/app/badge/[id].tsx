@@ -95,7 +95,7 @@ export default function BadgeScreen() {
       </Pressable>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl }]}>
         <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={`${festival.name} badge${collected ? '' : ', not collected yet'}`}>
-          {collected ? <View style={[styles.glow, { backgroundColor: `${look.enamel[0]}55`, shadowColor: look.enamel[1] }]} /> : null}
+          {collected ? <View style={[styles.glow, { backgroundColor: `${look.palette.ribbon}55`, shadowColor: look.palette.accent }]} /> : null}
           <EnamelPin look={look} size={260} locked={!collected} sheen={sheen} />
         </Animated.View>
         <Text style={styles.kicker}>{collected ? (mine ? 'In your collection' : owner ? `@${owner}’s badge` : 'Collected') : 'Not collected yet'}</Text>
