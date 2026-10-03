@@ -19,6 +19,8 @@ export type Profile = {
   displayName: string;
   bio: string;
   avatarUrl?: string;
+  /** A wide photo behind the top of your profile. */
+  coverUrl?: string;
   /** Festivals you're going to, shown only when you switch it on. */
   festivals: string[];
   /** Your top sounds, shown only when you switch it on. */

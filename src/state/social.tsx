@@ -34,6 +34,7 @@ type Ctx = {
   deleteAccount: (password: string) => Promise<void>;
   saveProfile: (input: ProfileInput) => Promise<Profile>;
   setAvatar: (uri: string | null) => Promise<void>;
+  setCover: (uri: string | null) => Promise<void>;
   /** Share a memory to your profile; `progress` shows how far along it is (0 to 1). */
   share: (memory: Memory) => Promise<void>;
   unshare: (memory: Memory) => Promise<void>;
@@ -150,6 +151,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     [service, user, mem],
   );
   const setAvatar = useCallback(async (uri: string | null) => setProfile(await service.setAvatar(uri)), [service]);
+  const setCover = useCallback(async (uri: string | null) => setProfile(await service.setCover(uri)), [service]);
 
   const inflight = useRef<Set<string>>(new Set());
   const share = useCallback(
@@ -223,8 +225,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
-    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
+    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

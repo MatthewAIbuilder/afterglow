@@ -50,8 +50,10 @@ await t('field limits: long name, long bio, extra field, bad avatar', async () =
   await assertFails(claim(C, 'uidC', 'cara', { bio: 'x'.repeat(161) }));
   await assertFails(claim(C, 'uidC', 'cara', { isAdmin: true }));
   await assertFails(claim(C, 'uidC', 'cara', { avatarUrl: 'http://x/a.jpg' }));
+  await assertFails(claim(C, 'uidC', 'cara', { coverUrl: 'http://x/c.jpg' }));
   await assertFails(claim(C, 'uidC', 'cara', { nameLower: 'someone else' }));
 });
+await t('a cover photo link must be https', () => assertSucceeds(claim(env.authenticatedContext('uidD'), 'uidD', 'dana', { coverUrl: 'https://x/c.jpg' })));
 await t('A moves to @maya2 (old handle released in the same write)', async () => {
   const db = A.firestore(); const b = writeBatch(db);
   b.delete(doc(db, 'handles', 'maya')); b.set(doc(db, 'handles', 'maya2'), { uid: 'uidA' }); b.set(doc(db, 'profiles', 'uidA'), profile('maya2'));
@@ -398,6 +400,10 @@ await t('storage: your own profile photo only', async () => {
   await assertSucceeds(uploadBytes(ref(A.storage(), 'avatars/uidA.jpg'), bytes(100), { contentType: 'image/jpeg' }));
   await assertFails(uploadBytes(ref(A.storage(), 'avatars/uidB.jpg'), bytes(100), { contentType: 'image/jpeg' }));
   await assertSucceeds(deleteObject(ref(A.storage(), 'avatars/uidA.jpg')));
+  // Cover photos: your own, JPEG only.
+  await assertSucceeds(uploadBytes(ref(A.storage(), 'covers/uidA.jpg'), bytes(100), { contentType: 'image/jpeg' }));
+  await assertFails(uploadBytes(ref(A.storage(), 'covers/uidB.jpg'), bytes(100), { contentType: 'image/jpeg' }));
+  await assertFails(uploadBytes(ref(A.storage(), 'covers/uidA.jpg'), bytes(100), { contentType: 'video/mp4' }));
 });
 
 await t('founders: numbered in order by the shared counter, never chosen, never changed', async () => {

@@ -10,6 +10,7 @@ import { useCrewUpdates } from '../../state/crewUpdates';
 import { FestivalProfile } from '../../features/festivalMode/FestivalProfile';
 import { useFestivalMode } from '../../state/festivalMode';
 import { Tabs } from '../../components/Tabs';
+import { ProfileCover } from '../../components/ProfileCover';
 import { toCollect } from '../../features/badges/badges';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
@@ -38,6 +39,9 @@ import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { color, space, type } from '../../theme/tokens';
+
+/** How far the cover photo reaches below the safe area. */
+const COVER_H = 210;
 
 type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
 
@@ -141,6 +145,7 @@ function FullProfile() {
       <PageTitle title="Profile" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
+        <ProfileCover url={me?.coverUrl} height={insets.top + COVER_H} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
             {me ? `@${me.handle}` : 'Profile'}

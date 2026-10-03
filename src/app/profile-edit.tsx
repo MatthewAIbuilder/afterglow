@@ -118,6 +118,28 @@ export default function ProfileEditScreen() {
     ]);
   };
 
+  const changeCover = () => {
+    if (!p) {
+      showAlert('Save your profile first', 'Then you can add a cover photo.');
+      return;
+    }
+    const pick = async () => {
+      const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [16, 9], quality: 0.8 });
+      if (r.canceled || !r.assets?.[0]) return;
+      try {
+        await social.setCover(r.assets[0].uri);
+        haptic.settle();
+      } catch (e) {
+        showAlert('Couldn’t update your cover', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      }
+    };
+    showAlert('Cover photo', 'A wide photo across the top of your profile: a crowd, a stage, a sunset.', [
+      { text: 'Choose a photo', onPress: () => void pick() },
+      ...(p.coverUrl ? [{ text: 'Remove cover', style: 'destructive' as const, onPress: () => void social.setCover(null).catch(() => {}) }] : []),
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const signOut = () => {
     showAlert('Sign out?', 'Your memories stay on this phone. Shared ones stay on your profile.', [
       { text: 'Cancel', style: 'cancel' },
@@ -159,6 +181,13 @@ export default function ProfileEditScreen() {
               {p?.avatarUrl ? <Image source={{ uri: p.avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.initial}>{(displayName || handle || '?').slice(0, 1).toUpperCase()}</Text>}
             </View>
             <Text style={styles.link}>{p?.avatarUrl ? 'Change photo' : 'Add photo'}</Text>
+          </Pressable>
+
+          <Pressable onPress={changeCover} accessibilityRole="button" accessibilityLabel={p?.coverUrl ? 'Change cover photo' : 'Add a cover photo'} style={styles.coverRow}>
+            <View style={styles.cover}>
+              {p?.coverUrl ? <Image source={{ uri: p.coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.coverHint}>Cover photo</Text>}
+            </View>
+            <Text style={styles.link}>{p?.coverUrl ? 'Change cover' : 'Add cover'}</Text>
           </Pressable>
 
           <Field label="Name">
@@ -281,6 +310,9 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   body: { ...type.body, color: color.moonDim },
+  coverRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
+  cover: { width: 112, height: 63, borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', justifyContent: 'center' },
+  coverHint: { ...type.caption, color: color.moonFaint },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
   avatar: { width: 72, height: 72, borderRadius: 36, overflow: 'hidden', backgroundColor: color.haze, alignItems: 'center', justifyContent: 'center' },
   initial: { ...type.title, color: color.moon },

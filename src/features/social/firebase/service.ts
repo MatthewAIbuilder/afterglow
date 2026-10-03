@@ -55,7 +55,7 @@ import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdat
  * when the build has no config.
  *
  * Layout:
- *   profiles/{uid}      handle, displayName, nameLower, bio, avatarUrl, festivals, sounds, createdAt, updatedAt
+ *   profiles/{uid}      handle, displayName, nameLower, bio, avatarUrl, coverUrl, festivals, sounds, createdAt, updatedAt
  *   handles/{handle}    { uid }: one owner per handle
  *   memories/{id}       uid, handle, videoPath, videoUrl, thumbPath, thumbUrl, festivalId, night, artistId, capturedAt, durationSec, width, height, createdAt
  *   blocks/{uid}        { uids: [...] }: only you can read or write yours
@@ -169,6 +169,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await deleteDoc(d.ref);
         }
         await removeFile(`avatars/${user.uid}.jpg`);
+        await removeFile(`covers/${user.uid}.jpg`);
         // Out of every crew (your picks go with you).
         for (const c of await service.myCrews()) await service.leaveCrew(c.id);
         // Follows and likes either way.
@@ -236,6 +237,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             displayName: input.displayName,
             bio: input.bio,
             avatarUrl: current?.avatarUrl,
+            coverUrl: current?.coverUrl,
             festivals: input.showFestivals ? published.festivals.slice(0, 50) : [],
             sounds: input.showSound ? published.sounds.slice(0, 3) : [],
             showFestivals: input.showFestivals,
@@ -243,8 +245,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             createdAt: current?.createdAt || at,
             updatedAt: at,
           };
-          const { uid: _uid, avatarUrl, ...fields } = next;
-          tx.set(profileRef, { ...fields, nameLower: next.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}) });
+          const { uid: _uid, avatarUrl, coverUrl, ...fields } = next;
+          tx.set(profileRef, { ...fields, nameLower: next.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
           return next;
         });
       }),
@@ -259,9 +261,24 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
         if (!current) throw new SocialError('no-profile');
         const updatedAt = now();
-        const { uid: _uid, avatarUrl: _old, ...fields } = current;
-        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}) });
+        const { uid: _uid, avatarUrl: _old, coverUrl, ...fields } = current;
+        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
         return { ...current, avatarUrl, updatedAt };
+      }),
+    setCover: (uri) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const path = `covers/${user.uid}.jpg`;
+        const coverUrl = uri ? await upload(path, uri, 'image/jpeg') : undefined;
+        if (!uri) await removeFile(path);
+        const profileRef = doc(db, 'profiles', user.uid);
+        const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
+        if (!current) throw new SocialError('no-profile');
+        const updatedAt = now();
+        const { uid: _uid, coverUrl: _old, avatarUrl, ...fields } = current;
+        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
+        return { ...current, coverUrl, updatedAt };
       }),
     searchProfiles: (raw) =>
       guard(async () => {

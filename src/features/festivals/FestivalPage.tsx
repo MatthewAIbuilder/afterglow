@@ -45,11 +45,12 @@ import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 import { coverPhotos } from './cover';
+import { CrowdVideos } from './CrowdVideos';
 import { FestivalCover } from './FestivalCover';
 
 type Order = 'match' | 'billing';
 /** The page's tabs: your plan, the whole lineup, and the practical things. */
-type Section = 'plan' | 'lineup' | 'info';
+type Section = 'plan' | 'lineup' | 'crowd' | 'info';
 
 type Props = {
   festival: Festival;
@@ -181,6 +182,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
             items={[
               { key: 'plan', label: 'For you' },
               { key: 'lineup', label: 'Lineup', count: festival.lineup.length },
+              { key: 'crowd', label: 'Videos' },
               { key: 'info', label: 'Info' },
             ]}
           />
@@ -259,6 +261,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
 
           </View>
         ) : null}
+
+        {tab === 'crowd' ? <CrowdVideos festival={festival} /> : null}
 
         {tab === 'info' ? (
           <View style={styles.infoTab}>
