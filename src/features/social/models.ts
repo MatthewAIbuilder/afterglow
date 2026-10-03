@@ -272,4 +272,41 @@ export type AdminCounts = {
   founders: number;
   supportOpen: number;
   reports: number;
+  /** Signed-in accounts that have opened the app since activity was first recorded (with or without a profile). */
+  accounts: number;
+  /** Reports not yet marked dealt with. */
+  reportsOpen: number;
+  supportTotal: number;
+  crewInvites: number;
+};
+
+/**
+ * When a signed-in account last used Afterglow, kept in `activity/{uid}`:
+ * only that account and the support account can read it. `days` are the
+ * phone's own calendar days it opened the app on (newest last, at most
+ * `ACTIVE_DAYS_KEPT`), so the dashboard can tell active from inactive and
+ * work out who came back. Nothing about what anyone did is in it.
+ */
+export type AdminPresence = {
+  uid: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  days: string[];
+  platform?: string;
+  version?: string;
+  hasProfile: boolean;
+};
+export const ACTIVE_DAYS_KEPT = 90;
+
+/** A shared video as the dashboard sees it: when, by whom, of whom, where. */
+export type AdminVideo = { createdAt: string; uid: string; handle?: string; artistId?: string; festivalId?: string; durationSec?: number };
+
+/** Moments things happened, newest first, for the dashboard's day-by-day charts. */
+export type AdminActivity = {
+  signups: string[];
+  videos: AdminVideo[];
+  comments: string[];
+  likes: string[];
+  follows: string[];
+  crews: string[];
 };

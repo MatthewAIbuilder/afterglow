@@ -9,6 +9,7 @@ import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { FounderClaim } from '../features/standing/FounderClaim';
+import { ActivityPing } from '../features/admin/ActivityPing';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
@@ -185,6 +186,7 @@ export default function RootLayout() {
       </Stack>
       <FirstRun />
       <FounderClaim />
+      <ActivityPing />
       <AdminReturnPill />
       <TonightLauncher />
       <QuestTracker />

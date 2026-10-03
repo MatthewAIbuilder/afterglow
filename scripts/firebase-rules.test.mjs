@@ -513,6 +513,20 @@ await t('crew invites: not to someone who blocked you; removed by the person inv
   await assertFails(deleteDoc(doc(C.firestore(), 'crewInvites', 'inv1_uidD')));
   await assertSucceeds(deleteDoc(doc(D.firestore(), 'crewInvites', 'inv1_uidD')));
 });
+const seen = (over = {}) => ({ firstSeenAt: now, lastSeenAt: now, days: ['2026-10-03'], platform: 'ios', version: 'Afterglow 1.0.0', hasProfile: true, ...over });
+await t('activity: you note when you open the app; only you and the support account read it', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'activity', 'uidA'), seen()));
+  await assertFails(setDoc(doc(A.firestore(), 'activity', 'uidB'), seen()));
+  await assertFails(setDoc(doc(A.firestore(), 'activity', 'uidA'), seen({ watched: 'everything' })));
+  await assertFails(setDoc(doc(A.firestore(), 'activity', 'uidA'), seen({ days: Array.from({ length: 91 }, (_, i) => `d${i}`) })));
+  await assertSucceeds(getDoc(doc(A.firestore(), 'activity', 'uidA')));
+  await assertFails(getDoc(doc(B.firestore(), 'activity', 'uidA')));
+  await assertFails(getDocs(collection(A.firestore(), 'activity')));
+  await assertSucceeds(getDocs(query(collection(ADMIN.firestore(), 'activity'), orderBy('lastSeenAt', 'desc'))));
+  await assertFails(getDocs(collection(NOT_VERIFIED.firestore(), 'activity')));
+  await assertSucceeds(getCountFromServer(collection(ADMIN.firestore(), 'crewInvites')));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'activity', 'uidA')));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

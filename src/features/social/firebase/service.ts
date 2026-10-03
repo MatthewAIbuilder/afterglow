@@ -43,6 +43,7 @@ import { firebaseConfigured } from '../../../config/social';
 import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
+import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { asSocialError, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 /**
@@ -201,6 +202,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         batch.delete(doc(db, 'friendCodes', user.uid));
         // A founder's number goes with them (the spot isn't given to anyone else).
         batch.delete(doc(db, 'founders', user.uid));
+        batch.delete(doc(db, 'activity', user.uid));
         await batch.commit();
         await deleteUser(user);
       }),
@@ -482,7 +484,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const { db } = fb();
         const count = async (q: Parameters<typeof getCountFromServer>[0]) => (await getCountFromServer(q)).data().count;
-        const [people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, supportOpen, reports, founders] = await Promise.all([
+        // A collection the rules don't let us count yet (not deployed) reads as 0 rather than failing the page.
+        const soft = (p: Promise<number>) => p.catch(() => 0);
+        const [people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, supportOpen, supportTotal, reports, reportsResolved, founders, accounts, crewInvites] = await Promise.all([
           count(collection(db, 'profiles')),
           count(query(collection(db, 'profiles'), where('createdAt', '>=', since))),
           count(collection(db, 'memories')),
@@ -492,23 +496,56 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           count(collection(db, 'comments')),
           count(collection(db, 'crews')),
           count(query(collection(db, 'support'), where('status', '==', 'open'))),
+          soft(count(collection(db, 'support'))),
           count(collection(db, 'reports')),
+          soft(count(query(collection(db, 'reports'), where('status', '==', 'resolved')))),
           getDoc(doc(db, 'counters', 'founders')).then((d) => Number((d.data() as { count?: unknown } | undefined)?.count) || 0),
+          soft(count(collection(db, 'activity'))),
+          soft(count(collection(db, 'crewInvites'))),
         ]);
-        return { people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, founders, supportOpen, reports };
+        return { people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, founders, supportOpen, supportTotal, reports, reportsOpen: Math.max(0, reports - reportsResolved), accounts, crewInvites };
       }),
     adminActivity: (since, max) =>
       guard(async () => {
         const { db } = fb();
-        const [p, m] = await Promise.all([
-          getDocs(query(collection(db, 'profiles'), where('createdAt', '>=', since), orderBy('createdAt', 'desc'), limit(max))),
-          getDocs(query(collection(db, 'memories'), where('createdAt', '>=', since), orderBy('createdAt', 'desc'), limit(max))),
+        const recent = (name: string) => getDocs(query(collection(db, name), where('createdAt', '>=', since), orderBy('createdAt', 'desc'), limit(max)));
+        const empty = { docs: [] as { data: () => unknown }[] };
+        const [p, m, c, l, f, cr] = await Promise.all([
+          recent('profiles'),
+          recent('memories'),
+          recent('comments').catch(() => empty),
+          recent('likes').catch(() => empty),
+          recent('follows').catch(() => empty),
+          recent('crews').catch(() => empty),
         ]);
         const at = (d: { data: () => unknown }) => (d.data() as { createdAt?: unknown }).createdAt;
+        const times = (snap: { docs: { data: () => unknown }[] }) => snap.docs.map(at).filter((x): x is string => typeof x === 'string');
+        const s = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
         return {
-          signups: p.docs.map(at).filter((x): x is string => typeof x === 'string'),
-          videos: m.docs.map(at).filter((x): x is string => typeof x === 'string'),
+          signups: times(p),
+          videos: m.docs.flatMap((d) => {
+            const o = d.data() as Record<string, unknown>;
+            const createdAt = s(o.createdAt);
+            const uid = s(o.uid);
+            if (!createdAt || !uid) return [];
+            return [{ createdAt, uid, handle: s(o.handle), artistId: s(o.artistId), festivalId: s(o.festivalId), durationSec: typeof o.durationSec === 'number' ? o.durationSec : undefined }];
+          }),
+          comments: times(c),
+          likes: times(l),
+          follows: times(f),
+          crews: times(cr),
         };
+      }),
+    adminPresence: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'activity'), orderBy('lastSeenAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => presenceFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    markActive: (input) =>
+      guard(async () => {
+        const ref_ = doc(fb().db, 'activity', me().uid);
+        const prev = presenceFromDoc(me().uid, (await getDoc(ref_)).data());
+        await setDoc(ref_, nextPresence(prev, input));
       }),
     adminFestivals: (ids) =>
       guard(async () => {

@@ -230,7 +230,7 @@ service cloud.firestore {
     // hasn't blocked them, as themselves, stamped with the server's time. Only the two of them can see it;
     // either can remove it (joining or saying no). Inviting again overwrites it.
     match /crewInvites/{id} {
-      allow read: if signedIn() && (resource.data.to == me() || resource.data.from == me());
+      allow read: if (signedIn() && (resource.data.to == me() || resource.data.from == me())) || isAdmin();
       allow create, update: if signedIn()
         && request.resource.data.keys().hasOnly(['crewId', 'festivalId', 'crewName', 'from', 'to', 'createdAt'])
         && request.resource.data.from == me() && request.resource.data.to is string && request.resource.data.to != me()
@@ -355,6 +355,23 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt'])
         && request.resource.data.status in ['open', 'resolved'];
+    }
+
+    // When an account last opened the app (the dashboard's active and inactive counts): only the days and
+    // times it opened, its platform and version, and whether it has a profile; never what anyone did.
+    // You write your own; only you and the support account read it; it goes with the account.
+    match /activity/{uid} {
+      allow get: if signedIn() && (me() == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['firstSeenAt', 'lastSeenAt', 'days', 'platform', 'version', 'hasProfile'])
+        && request.resource.data.firstSeenAt is string && request.resource.data.firstSeenAt.size() <= 40
+        && request.resource.data.lastSeenAt is string && request.resource.data.lastSeenAt.size() <= 40
+        && request.resource.data.days is list && request.resource.data.days.size() <= 90
+        && request.resource.data.hasProfile is bool
+        && shortOrAbsent(request.resource.data, 'platform', 20)
+        && shortOrAbsent(request.resource.data, 'version', 80);
+      allow delete: if signedIn() && me() == uid;
     }
 
     // Support messages: you write yours (as yourself, marked open, stamped with the server's time) and read

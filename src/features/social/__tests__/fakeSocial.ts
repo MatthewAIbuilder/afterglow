@@ -1,5 +1,6 @@
-import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
+import { nextPresence } from '../../admin/presence';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -45,6 +46,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Support messages, and which emails have been confirmed (the support account needs it). */
   const support = new Map<string, SupportMessage>();
   const verified = new Set<string>();
+  /** Each account's last-active record (`activity/{uid}`). */
+  const presence = new Map<string, AdminPresence>();
   const admin = () => !!current?.email && current.email === SUPPORT_EMAIL && verified.has(current.email);
   const needAdmin = () => {
     if (!admin()) throw new SocialError('unknown');
@@ -130,6 +133,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       for (const [k, f] of follows) if (f.from === u.uid || f.to === u.uid) follows.delete(k);
       friendCodes.delete(u.uid);
       founders.delete(u.uid);
+      presence.delete(u.uid);
       for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
       for (const [k, c] of comments) if (c.uid === u.uid || c.owner === u.uid) comments.delete(k);
       for (const id of [...crews.keys()]) leave(id, u.uid);
@@ -354,15 +358,37 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         crews: crews.size,
         founders: counter.founders,
         supportOpen: [...support.values()].filter((m) => m.status === 'open').length,
+        supportTotal: support.size,
         reports: reports.length,
+        reportsOpen: reports.filter((r) => r.status === 'open').length,
+        accounts: presence.size,
+        crewInvites: crewInvites.size,
       };
     },
     async adminActivity(since, max) {
       needAdmin();
+      const recent = (list: string[]) => list.filter((t) => t >= since).sort().reverse().slice(0, max);
       return {
-        signups: [...profiles.values()].map((p) => p.createdAt).filter((t) => t >= since).slice(0, max),
-        videos: [...memories.values()].map((m) => m.createdAt).filter((t) => t >= since).slice(0, max),
+        signups: recent([...profiles.values()].map((p) => p.createdAt)),
+        videos: [...memories.values()]
+          .filter((m) => m.createdAt >= since)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, max)
+          .map((m) => ({ createdAt: m.createdAt, uid: m.uid, handle: m.handle, artistId: m.artistId, festivalId: m.festivalId, durationSec: m.durationSec })),
+        comments: recent([...comments.values()].map((c) => c.createdAt)),
+        likes: recent([...likes.values()].map((l) => l.createdAt)),
+        follows: recent([...follows.values()].map((f) => f.createdAt)),
+        crews: recent([...crews.values()].map((c) => c.createdAt).filter((t): t is string => typeof t === 'string')),
       };
+    },
+    async adminPresence(max) {
+      needAdmin();
+      return [...presence.values()].sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt)).slice(0, max);
+    },
+    async markActive(input) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      presence.set(u.uid, { uid: u.uid, ...nextPresence(presence.get(u.uid), input) });
     },
     async adminFestivals(ids) {
       needAdmin();
@@ -620,5 +646,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, counter, reports, support, verified, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, counter, reports, support, verified, presence, currentUser: () => current };
 }

@@ -1,4 +1,4 @@
-import type { Activity, Comment, Crew, CrewInvite, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, ReportRecord, SupportMessage, SupportTopic } from './models';
+import type { Activity, Comment, Crew, CrewInvite, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -78,8 +78,12 @@ export interface SocialService {
   takeDown(kind: 'memory' | 'comment', id: string): Promise<void>;
   /** The headline numbers, counted on the server; `since` is a week ago. */
   adminCounts(since: string): Promise<AdminCounts>;
-  /** When each profile was made and each video shared since then, for the charts. */
-  adminActivity(since: string, max: number): Promise<{ signups: string[]; videos: string[] }>;
+  /** When profiles, videos, comments, likes, follows and crews were made since then (newest first, up to `max` each), for the charts. */
+  adminActivity(since: string, max: number): Promise<AdminActivity>;
+  /** Every account's last-active record, most recently active first, up to `max`. Support account only. */
+  adminPresence(max: number): Promise<AdminPresence[]>;
+  /** Notes that you opened the app now (your own `activity` record; merged with what's there). Never for the support account. */
+  markActive(input: { platform: string; version: string; hasProfile: boolean; now: Date }): Promise<void>;
   /** For each festival: how many show they're going, and how many videos were shared there. */
   adminFestivals(ids: string[]): Promise<Record<string, { going: number; videos: number }>>;
   /** Someone's founder number and flair, for their border and caption. */
