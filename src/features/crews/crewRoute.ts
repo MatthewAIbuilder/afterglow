@@ -1,6 +1,9 @@
+import { stageName } from '../../data/festival';
 import type { Artist, Festival, SetTime, TasteProfile } from '../../data/models';
+import { formatTime } from '../festivals/format';
 import { toMinutes } from '../plan/plan';
 import { clockTime, type DayRoute, festivalRoute, type RouteStop } from '../plan/route';
+import { cardSection, type CardLine, type PlanCard } from '../plan/share';
 
 /**
  * One route for the whole crew, set to set. Pure.
@@ -111,4 +114,23 @@ export function namesLine(who: readonly string[], me: string, nameOf: (uid: stri
   if (names.length <= 2) return names.join(' and ');
   if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]}`;
   return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
+}
+
+/**
+ * The crew's route as a picture to share: the crew's name, the festival, then
+ * each day set to set (a star on must-sees), with who splits off where after
+ * the day's sets. Undefined when no day has sets.
+ */
+export function crewRouteCard(festival: Festival, crewName: string, days: CrewDay[], me: string, nameOf: (uid: string) => string): PlanCard | undefined {
+  const sections = days.flatMap((d) => {
+    const lines: CardLine[] = [];
+    for (const s of d.stops) {
+      if (s.kind === 'set') lines.push({ time: formatTime(clockTime(s.from)), name: s.artist.name, where: stageName(festival, s.set.stageId), star: s.pinned });
+    }
+    for (const s of d.splits) lines.push({ time: formatTime(s.set.start), name: s.artist.name, where: `${namesLine(s.who, me, nameOf)} split off`, star: false });
+    return lines.length ? [cardSection(d.day, lines)] : [];
+  });
+  if (!sections.length) return undefined;
+  const subtitle = [`Our route at ${festival.name}`, festival.dates].filter(Boolean).join(' · ');
+  return { title: crewName, subtitle, sections };
 }

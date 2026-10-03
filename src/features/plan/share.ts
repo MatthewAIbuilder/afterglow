@@ -87,7 +87,7 @@ export type PlanCard = { title: string; subtitle: string; sections: CardSection[
 /** Lines per section on the card, so it fits on one image. */
 export const CARD_LINES = 7;
 
-const section = (heading: string, lines: CardLine[]): CardSection => ({
+export const cardSection = (heading: string, lines: CardLine[]): CardSection => ({
   heading,
   lines: lines.slice(0, CARD_LINES),
   more: Math.max(0, lines.length - CARD_LINES),
@@ -108,7 +108,7 @@ export function planCard(festival: Festival, picks: Pick[], route: DayRoute[] | 
           ? [{ time: formatTime(clockTime(s.from)), name: s.artist.name, where: stageName(festival, s.set.stageId), star: s.pinned }]
           : [],
       );
-      return lines.length ? [section(d.day, lines)] : [];
+      return lines.length ? [cardSection(d.day, lines)] : [];
     });
     return { title, subtitle, sections };
   }
@@ -116,14 +116,14 @@ export function planCard(festival: Festival, picks: Pick[], route: DayRoute[] | 
   if (lineupDays(festival).length) {
     const { days, noDay } = picksByDay(festival, picks);
     const sections = [
-      ...days.flatMap((d) => (d.planned.length ? [section(d.day, d.planned.map(line))] : [])),
-      ...(noDay.length ? [section('Day to come', noDay.map(line))] : []),
+      ...days.flatMap((d) => (d.planned.length ? [cardSection(d.day, d.planned.map(line))] : [])),
+      ...(noDay.length ? [cardSection('Day to come', noDay.map(line))] : []),
     ];
     return sections.length ? { title, subtitle, sections } : undefined;
   }
   const tier = (t: Pick['tier'], heading: string) => {
     const list = picks.filter((p) => p.tier === t);
-    return list.length ? [section(heading, list.map(line))] : [];
+    return list.length ? [cardSection(heading, list.map(line))] : [];
   };
   const sections = [...tier('must-see', 'Must see'), ...tier('strong', 'Strong match')];
   return sections.length ? { title, subtitle, sections } : undefined;

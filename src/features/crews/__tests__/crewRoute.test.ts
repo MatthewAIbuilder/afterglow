@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { MOCK_CATALOG } from '../../../data/mock';
-import { crewRoute, crewTaste, namesLine, STAR_PULL } from '../crewRoute';
+import { crewRoute, crewRouteCard, crewTaste, namesLine, STAR_PULL } from '../crewRoute';
 import { crewRouteText } from '../CrewRouteSection';
 
 const solstice = MOCK_CATALOG.festival('solstice-26')!;
@@ -40,6 +40,14 @@ describe('the crew route', () => {
     expect(text.split('\n')[0]).toBe('Bass crew at Solstice 2026, set to set');
     expect(text).toContain('★ SUBTRONICS, Bass Tent');
     expect(text).toContain('Split: You to ILLENIUM at 11:40 PM');
+    // The same route as a picture: the crew, the festival, then each day set to set.
+    const card = crewRouteCard(solstice, 'Bass crew', days.filter((d) => d.stops.length), 'me', nameOf)!;
+    expect(card.title).toBe('Bass crew');
+    expect(card.subtitle).toMatch(/^Our route at Solstice 2026/);
+    const fri = card.sections.find((x) => x.heading === 'Friday')!;
+    expect(fri.lines).toContainEqual(expect.objectContaining({ name: 'SUBTRONICS', where: 'Bass Tent', star: true }));
+    expect(fri.lines).toContainEqual({ time: '11:40 PM', name: 'ILLENIUM', where: 'You split off', star: false });
+    expect(crewRouteCard(solstice, 'Bass crew', [], 'me', nameOf)).toBeUndefined();
   });
 
   it('names people plainly', () => {

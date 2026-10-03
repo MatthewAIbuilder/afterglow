@@ -33,6 +33,7 @@ import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { showActionSheet } from '../../lib/dialog';
+import { goBack } from '../../lib/nav';
 import { shareMessage } from '../../lib/share';
 
 /**
@@ -153,8 +154,29 @@ export default function PublicProfileScreen() {
   ];
 
   let body: React.ReactNode;
-  if (!social.availability.ok || !social.user) {
-    body = <Text style={styles.body}>{social.availability.ok ? 'Sign in to see profiles.' : SOCIAL_ERROR_COPY.unavailable}</Text>;
+  if (!social.availability.ok) {
+    body = <Text style={styles.body}>{SOCIAL_ERROR_COPY.unavailable}</Text>;
+  } else if (!social.ready) {
+    // A link opened cold: wait for sign-in to be read back before asking for it.
+    body = <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
+  } else if (!social.user) {
+    // Most often someone opening a friend's invite: say whose it is and how to see it.
+    body = (
+      <View style={styles.invite}>
+        <Text style={styles.inviteTitle} accessibilityRole="header">
+          {handle ? `@${handle} is on Afterglow` : 'Profiles on Afterglow'}
+        </Text>
+        <Text style={styles.inviteBody}>
+          {handle ? `Sign in or make a profile to see @${handle}’s festivals and videos, and follow each other.` : 'Sign in to see profiles.'}
+        </Text>
+        <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={({ pressed }) => [styles.invitePrimary, pressed && { opacity: 0.8 }]}>
+          <Text style={styles.invitePrimaryText}>Sign in or join</Text>
+        </Pressable>
+        <Pressable onPress={() => router.replace('/')} accessibilityRole="button" hitSlop={8}>
+          <Text style={styles.link}>Look around first</Text>
+        </Pressable>
+      </View>
+    );
   } else if (profile === undefined) {
     body = <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
   } else if (!profile) {
@@ -276,7 +298,7 @@ export default function PublicProfileScreen() {
         {body}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={goBack}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
@@ -328,6 +350,11 @@ const styles = StyleSheet.create({
   tileLen: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   body: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.lg },
   center: { alignItems: 'center', gap: space.md },
+  invite: { alignItems: 'center', gap: space.md, marginTop: space.xxl, alignSelf: 'center', width: '100%', maxWidth: 520 },
+  inviteTitle: { ...type.title, color: color.moon, textAlign: 'center' },
+  inviteBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
+  invitePrimary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
+  invitePrimaryText: { ...type.headline, color: color.moon },
   link: { ...type.label, color: color.glow },
   pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
 });

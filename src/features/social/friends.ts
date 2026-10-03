@@ -47,12 +47,15 @@ export function goerSuggestions(
   return out;
 }
 
-/** What "Invite friends" sends: who you are and where to find you. */
+/**
+ * What "Invite friends" sends: who you are and where to find you. An invite
+ * to a festival links to that festival's page (where they can tap I'm going
+ * and find you); otherwise to your profile, or the app.
+ */
 export function inviteText(handle?: string, festival?: Festival): string {
   const where = festival ? ` Let's plan ${festival.name} together.` : ' Find your sets, plan festivals together and see where your crew is.';
-  return handle
-    ? `Join me on Afterglow, I'm @${handle}.${where}\n${WEB_URL}/u/${handle}`
-    : `Join me on Afterglow.${where}\n${WEB_URL}`;
+  const link = festival ? `${WEB_URL}/festival/${festival.id}` : handle ? `${WEB_URL}/u/${handle}` : WEB_URL;
+  return `${handle ? `Join me on Afterglow, I'm @${handle}.` : 'Join me on Afterglow.'}${where}\n${link}`;
 }
 
 /** "3 of you", "Just you so far". */

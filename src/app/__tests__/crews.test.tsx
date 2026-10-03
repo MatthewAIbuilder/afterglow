@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { Alert, type AlertButton } from 'react-native';
 import { router } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
 import { renderApp, showTab } from './appRoutes';
@@ -53,6 +54,13 @@ describe('festival crews', () => {
     expect(app.getByText('Our route')).toBeTruthy();
     expect(app.getByLabelText(/SUBTRONICS, Bass Tent, .*a must-see for the crew, starred by Maya and Sam$/)).toBeTruthy();
     expect(app.getByLabelText(/^You could split off for ILLENIUM at 11:40 PM, Main Stage/)).toBeTruthy();
+    // Sharing the route shows it as a picture first, with text as the second choice.
+    await fireEvent.press(app.getByLabelText('Share our route'));
+    await flush();
+    expect(app.getByLabelText("Bass crew's route at Solstice 2026")).toBeTruthy();
+    await fireEvent.press(app.getByLabelText("Share Bass crew's route at Solstice 2026 as an image"));
+    await flush();
+    expect(Sharing.shareAsync).toHaveBeenCalledWith('file:///tmp/plan.png', expect.objectContaining({ mimeType: 'image/png' }));
   });
 
   it('start a crew from a festival page, name it, and your stars reach it', async () => {

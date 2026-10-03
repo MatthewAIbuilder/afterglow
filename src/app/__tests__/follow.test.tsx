@@ -52,6 +52,17 @@ afterEach(() => {
 });
 
 describe('following people', () => {
+  it('a profile link opened signed out says whose it is and leads to sign in', async () => {
+    await person('maya');
+    await s().signOut();
+    const app = await renderApp('/u/maya');
+    await flush();
+    expect(app.getByText('@maya is on Afterglow')).toBeTruthy();
+    await fireEvent.press(app.getByText('Sign in or join'));
+    await flush();
+    expect(app.getByText('New here')).toBeTruthy();
+  });
+
   it('a profile says what you have in common', async () => {
     const maya = await s().signUp('maya@example.com', 'password123');
     await s().saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: true, showSound: false }, { festivals: ['cyclops-cove-4'], sounds: [] });

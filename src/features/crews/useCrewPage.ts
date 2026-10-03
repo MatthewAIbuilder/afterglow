@@ -24,6 +24,11 @@ export function useCrewPage(id: string) {
 
   const reload = useCallback(async () => {
     const n = ++run.current;
+    // Until sign-in has been read back (a link opened cold), keep loading rather than asking to sign in.
+    if (!social.ready) {
+      setPage({ status: 'loading' });
+      return;
+    }
     if (!uid) {
       setPage({ status: 'signed-out' });
       return;
@@ -47,7 +52,7 @@ export function useCrewPage(id: string) {
     } catch {
       if (n === run.current) setPage((p) => (p.status === 'ready' ? p : { status: 'failed' }));
     }
-  }, [id, uid, social.service]);
+  }, [id, uid, social.ready, social.service]);
 
   useFocusEffect(
     useCallback(() => {
