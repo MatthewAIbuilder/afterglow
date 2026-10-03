@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { CloseIcon } from '../../components/TabIcons';
-import { earnedLine, pinLook } from '../../features/badges/badges';
+import { earnedLine, pinAbout, pinLook } from '../../features/badges/badges';
 import { EnamelPin } from '../../features/badges/EnamelPin';
 import { useBadges } from '../../features/badges/useBadges';
 import { whereWhen } from '../../features/festivals/format';
@@ -102,6 +102,7 @@ export default function BadgeScreen() {
         <Text style={styles.title}>{festival.name}</Text>
         <Text style={styles.meta}>{whereWhen(festival)}</Text>
         {badge ? <Text style={styles.earned}>{earnedLine(badge)}</Text> : null}
+        {collected ? <Text style={styles.body}>{pinAbout(festival, true)}</Text> : null}
         {!collected && loaded ? (
           <Text style={styles.body}>
             {mine

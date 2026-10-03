@@ -5,6 +5,7 @@ import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { type Badge, pinLook } from './badges';
 import { EnamelPin } from './EnamelPin';
+import { NewTag } from '../profile/Milestones';
 
 /**
  * A collection of festival pins, three across: earned ones in gold with the
@@ -18,6 +19,8 @@ export function BadgesGrid({
   uid,
   width,
   mine,
+  isNew,
+  onClaim,
 }: {
   badges: Badge[];
   toCollect?: Festival[];
@@ -25,6 +28,9 @@ export function BadgesGrid({
   uid?: string;
   width: number;
   mine?: boolean;
+  /** Collected but not claimed yet: glows New, and a tap claims it. */
+  isNew?: (festivalId: string) => boolean;
+  onClaim?: (festival: Festival) => void;
 }) {
   const cols = 3;
   const cell = Math.floor((width - space.lg * 2 - space.md * (cols - 1)) / cols);
@@ -41,20 +47,34 @@ export function BadgesGrid({
             {earned.length} {earned.length === 1 ? 'badge' : 'badges'} collected
           </Text>
           <View style={styles.grid}>
-            {earned.map(({ b, f }) => (
-              <Pressable
-                key={b.festivalId}
-                onPress={() => open(b.festivalId)}
-                accessibilityRole="button"
-                accessibilityLabel={`${f.name} badge, collected. ${b.videos} ${b.videos === 1 ? 'video' : 'videos'} filmed there. Opens the badge`}
-                style={({ pressed }) => [styles.cell, { width: cell }, pressed && styles.pressed]}
-              >
-                <EnamelPin look={pinLook(f)} size={cell} />
-                <Text style={styles.name} numberOfLines={2}>
-                  {f.name}
-                </Text>
-              </Pressable>
-            ))}
+            {earned.map(({ b, f }) => {
+              const fresh = !!isNew?.(b.festivalId) && !!onClaim;
+              return (
+                <Pressable
+                  key={b.festivalId}
+                  onPress={() => {
+                    if (fresh) {
+                      haptic.select();
+                      onClaim?.(f);
+                    } else open(b.festivalId);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    fresh
+                      ? `${f.name} badge, new. Tap to claim it`
+                      : `${f.name} badge, collected. ${b.videos} ${b.videos === 1 ? 'video' : 'videos'} filmed there. Opens the badge`
+                  }
+                  style={({ pressed }) => [styles.cell, { width: cell }, pressed && styles.pressed]}
+                >
+                  <EnamelPin look={pinLook(f)} size={cell} />
+                  {fresh ? <NewTag /> : null}
+                  <Text style={styles.name} numberOfLines={2}>
+                    {f.name}
+                  </Text>
+                  {fresh ? <Text style={styles.claim}>Tap to claim</Text> : null}
+                </Pressable>
+              );
+            })}
           </View>
         </>
       ) : (
@@ -100,6 +120,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
   name: { ...type.caption, color: color.moon, textAlign: 'center', fontWeight: '600' },
   lockedName: { color: color.moonFaint },
+  claim: { ...type.caption, fontSize: 11, color: '#FFE38A', marginTop: -2 },
   empty: { padding: space.xl, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   emptyTitle: { ...type.headline, color: color.moon },
   emptyBody: { ...type.body, color: color.moonDim },

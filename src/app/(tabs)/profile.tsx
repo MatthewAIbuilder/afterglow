@@ -1,5 +1,5 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -21,8 +21,13 @@ import { Highlights } from '../../features/profile/Highlights';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
 import { CrewsList, SavedTab, VideosTab } from '../../features/profile/ProfileTabsContent';
 import { currentlyFeeling, favouriteArtists, ORBIT_MAX } from '../../features/profile/identity';
-import { milestones } from '../../features/profile/milestones';
-import { MilestonesSection } from '../../features/profile/Milestones';
+import { milestoneKey, milestones, pinKey, unclaimed } from '../../features/profile/milestones';
+import { MilestonesSection, NewTag } from '../../features/profile/Milestones';
+import { BadgeCelebration, type Unlock } from '../../features/profile/BadgeCelebration';
+import { useBadgeClaims } from '../../state/badgeClaims';
+import { useProfileShelves } from '../../state/profileShelves';
+import { useQuests } from '../../state/quests';
+import { questBadges } from '../../features/quests/quests';
 import { citiesOf, passport as makePassport } from '../../features/profile/passport';
 import { PassportTab } from '../../features/profile/PassportTab';
 import { YourArtistsRow } from '../../features/profile/YourArtistsRow';
@@ -54,6 +59,7 @@ import { color, space, type } from '../../theme/tokens';
 const COVER_H = 210;
 
 type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
+const TABS: Tab[] = ['videos', 'festivals', 'badges', 'saved'];
 
 /**
  * Profile, laid out like Instagram and TikTok: your photo and counts, name,
@@ -73,7 +79,20 @@ function FullProfile() {
   const { width } = useWindowDimensions();
   const catalog = useCatalog();
   const today = useToday();
-  const [tab, setTab] = useState<Tab>('videos');
+  // `?tab=badges` (a side quest notification) opens on that tab.
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<Tab>(() => (TABS.includes(params.tab as Tab) ? (params.tab as Tab) : 'videos'));
+  const [seenParam, setSeenParam] = useState(params.tab);
+  if (params.tab !== seenParam) {
+    setSeenParam(params.tab);
+    if (TABS.includes(params.tab as Tab)) setTab(params.tab as Tab);
+  }
+  const navigation = useNavigation();
+  useEffect(() => {
+    if (params.tab) navigation.setParams({ tab: undefined } as never);
+  }, [params.tab, navigation]);
+  // Rows you've tucked away (Your artists, Your festivals).
+  const shelves = useProfileShelves();
 
   const social = useSocial();
   const me = social.profile;
@@ -148,7 +167,42 @@ function FullProfile() {
       }),
     [mySet, memories.length, kept, ratings, catalog, standing?.founder],
   );
-  const earnedMarks = marks.filter((m) => m.earned).length;
+  // Side quests: done ones come from the log, so they stay done.
+  const quests = useQuests();
+  const questList = useMemo(() => questBadges(quests.progress, quests.log), [quests.progress, quests.log]);
+  const earnedMarks = marks.filter((m) => m.earned).length + questList.filter((m) => m.earned).length;
+
+  // Badges you've earned but not claimed: a banner, a New tag, and the unlock when you claim one.
+  const { claimed, claim } = useBadgeClaims();
+  const unclaimedKeys = useMemo(
+    () => (claimed ? unclaimed([...badges.map((b) => pinKey(b.festivalId)), ...questList.filter((m) => m.earned).map((m) => milestoneKey(m.id)), ...marks.filter((m) => m.earned).map((m) => milestoneKey(m.id))], claimed) : []),
+    [claimed, badges, marks, questList],
+  );
+  const [unlock, setUnlock] = useState<Unlock | undefined>();
+  const unlockFor = (key: string): Unlock | undefined => {
+    if (key.startsWith('pin:')) {
+      const f = catalog.festival(key.slice(4));
+      return f ? { kind: 'pin', festival: f } : undefined;
+    }
+    const m = [...questList, ...marks].find((x) => milestoneKey(x.id) === key);
+    return m ? { kind: 'milestone', milestone: m } : undefined;
+  };
+  const claimNext = () => {
+    for (const key of unclaimedKeys) {
+      const u = unlockFor(key);
+      if (u) {
+        setUnlock(u);
+        return;
+      }
+      claim(key);
+    }
+  };
+  const finishUnlock = () => {
+    if (!unlock) return;
+    const key = unlock.kind === 'pin' ? pinKey(unlock.festival.id) : milestoneKey(unlock.milestone.id);
+    claim(key);
+    setUnlock(undefined);
+  };
   const year = today.getFullYear();
   const yearCard = useYear(year);
   const highlights = profileHighlights({
@@ -236,9 +290,33 @@ function FullProfile() {
           ) : null}
         </ProfileHeader>
 
-        <YourArtistsRow favourites={favourites} />
+        {unclaimedKeys.length ? (
+          <Pressable
+            onPress={() => {
+              haptic.tap();
+              claimNext();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`You unlocked ${unclaimedKeys.length === 1 ? 'a badge' : `${unclaimedKeys.length} badges`}. Claim`}
+            style={({ pressed }) => [styles.unlocked, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+          >
+            <NewTag inline />
+            <Text style={styles.unlockedText}>
+              You unlocked {unclaimedKeys.length === 1 ? 'a badge' : `${unclaimedKeys.length} badges`}
+            </Text>
+            <Text style={styles.unlockedClaim}>Claim</Text>
+          </Pressable>
+        ) : null}
 
-        <Highlights items={highlights} onOpen={openHighlight} />
+        <YourArtistsRow favourites={favourites} hidden={shelves.hidden.has('artists')} onToggle={() => shelves.toggle('artists')} />
+
+        <Highlights
+          items={highlights}
+          onOpen={openHighlight}
+          festivalOf={catalog.festival}
+          hidden={shelves.hidden.has('festivals')}
+          onToggle={() => shelves.toggle('festivals')}
+        />
 
         <View style={styles.tabs}>
           <Tabs<Tab>
@@ -246,8 +324,8 @@ function FullProfile() {
             onChange={setTab}
             items={[
               { key: 'videos', label: 'Moments', count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
-              { key: 'badges', label: 'Badges', count: badges.length + earnedMarks, icon: (c) => <PinIcon color={c} size={17} /> },
               { key: 'festivals', label: 'Festivals', count: mySet.been.length + mySet.planning.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
+              { key: 'badges', label: 'Badges', count: badges.length + earnedMarks, icon: (c) => <PinIcon color={c} size={17} /> },
               { key: 'saved', label: 'Saved', count: kept, icon: (c) => <BookmarkIcon color={c} size={16} /> },
             ]}
           />
@@ -257,9 +335,34 @@ function FullProfile() {
           <VideosTab memories={videos} width={width} uriOf={uriOf} lookup={catalog} />
         ) : tab === 'badges' ? (
           <>
-            <MilestonesSection list={marks} />
             <Text style={styles.pinsHead}>Festival pins</Text>
-            <BadgesGrid badges={badges} toCollect={collect} festivalOf={catalog.festival} uid={me?.uid} width={width} mine />
+            <BadgesGrid
+              badges={badges}
+              toCollect={collect}
+              festivalOf={catalog.festival}
+              uid={me?.uid}
+              width={width}
+              mine
+              isNew={(id) => unclaimedKeys.includes(pinKey(id))}
+              onClaim={(f) => setUnlock({ kind: 'pin', festival: f })}
+            />
+            <View style={styles.milestones}>
+              <MilestonesSection
+                title="Side quests"
+                intro="Meet people, look out for your crew, catch the sunrise. Done at your festivals, on their nights."
+                showNext={false}
+                list={questList}
+                isNew={(m) => unclaimedKeys.includes(milestoneKey(m.id))}
+                onClaim={(m) => setUnlock({ kind: 'milestone', milestone: m })}
+              />
+            </View>
+            <View style={styles.milestones}>
+              <MilestonesSection
+                list={marks}
+                isNew={(m) => unclaimedKeys.includes(milestoneKey(m.id))}
+                onClaim={(m) => setUnlock({ kind: 'milestone', milestone: m })}
+              />
+            </View>
           </>
         ) : tab === 'festivals' ? (
           <PassportTab
@@ -278,6 +381,7 @@ function FullProfile() {
           <SavedTab clips={[...mine.saved, ...mine.liked].slice(0, 12)} clipCount={kept} followedCount={followedCount} artistOf={catalog.artist} width={width} />
         )}
       </ScrollView>
+      <BadgeCelebration unlock={unlock} onDone={finishUnlock} />
     </View>
   );
 }
@@ -305,5 +409,21 @@ const styles = StyleSheet.create({
   handle: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
   icon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   tabs: { marginTop: space.xl },
-  pinsHead: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xl, marginHorizontal: space.lg },
+  milestones: { marginTop: space.xl },
+  unlocked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginHorizontal: space.xl,
+    marginTop: space.lg,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,227,138,0.10)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,227,138,0.55)',
+  },
+  unlockedText: { ...type.label, color: color.moon, flex: 1 },
+  unlockedClaim: { ...type.headline, color: '#FFE38A' },
+  pinsHead: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.lg, marginHorizontal: space.lg + space.xs },
 });

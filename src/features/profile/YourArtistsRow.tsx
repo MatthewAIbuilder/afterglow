@@ -1,39 +1,23 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
-import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
 import { color, space, type } from '../../theme/tokens';
 import { HeartIcon } from '../discover/icons';
 import { mixColor, withAlpha } from '../sound-map/colors';
 import type { Favourite } from './identity';
+import { ShelfHead } from './ShelfHead';
 
 const FACE = 66;
 const WHY: Record<Favourite['why'], string> = { love: 'you love them', like: 'you like them', follow: 'you follow them', match: 'a strong match' };
 
 /** Your artists: the ones you love, like and follow, big faces in a row to swipe. */
-export function YourArtistsRow({ favourites }: { favourites: Favourite[] }) {
+export function YourArtistsRow({ favourites, hidden, onToggle }: { favourites: Favourite[]; hidden: boolean; onToggle: () => void }) {
   if (!favourites.length) return null;
   return (
     <View style={styles.root}>
-      <View style={styles.head}>
-        <Text style={styles.title} accessibilityRole="header">
-          Your artists
-        </Text>
-        <Pressable
-          onPress={() => {
-            haptic.select();
-            router.push('/your-artists');
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="See all your artists and where they play next"
-          hitSlop={8}
-          style={({ pressed }) => [styles.all, pressed && { opacity: 0.6 }]}
-        >
-          <Text style={styles.allText}>Where they play</Text>
-          <ChevronIcon color={color.moonFaint} size={10} />
-        </Pressable>
-      </View>
+      <ShelfHead title="Your artists" hidden={hidden} onToggle={onToggle} link="Where they play" onLink={() => router.push('/your-artists')} />
+      {hidden ? null : (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {favourites.map((f) => {
           const ring = f.artist.color ?? mixColor(f.artist.sound);
@@ -63,16 +47,13 @@ export function YourArtistsRow({ favourites }: { favourites: Favourite[] }) {
           );
         })}
       </ScrollView>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { marginTop: space.xl },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, marginBottom: space.sm },
-  title: { ...type.headline, color: color.moon },
-  all: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  allText: { ...type.caption, color: color.moonDim },
   row: { paddingHorizontal: space.xl, gap: space.md },
   item: { width: FACE + 10, alignItems: 'center' },
   ring: { borderRadius: (FACE + 6) / 2, borderWidth: 2, padding: 1, shadowOpacity: 0.55, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },

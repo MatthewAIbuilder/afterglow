@@ -6,6 +6,7 @@ import { LikeSync } from '../features/community/LikeSync';
 import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
+import { QuestTracker } from '../features/quests/QuestTracker';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { FounderClaim } from '../features/standing/FounderClaim';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
@@ -185,6 +186,7 @@ export default function RootLayout() {
       <FounderClaim />
       <AdminReturnPill />
       <TonightLauncher />
+      <QuestTracker />
       <ReminderSync />
       <LikeSync />
       <OfflineNotice />

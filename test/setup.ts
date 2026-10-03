@@ -46,7 +46,9 @@ jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock
 jest.mock('expo-haptics', () => ({
   selectionAsync: () => Promise.resolve(),
   impactAsync: () => Promise.resolve(),
+  notificationAsync: () => Promise.resolve(),
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Soft: 'soft' },
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
 }));
 jest.mock('react-native-webview', () => {
   const React = require('react');
