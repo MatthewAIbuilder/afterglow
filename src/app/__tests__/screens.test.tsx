@@ -52,12 +52,18 @@ describe('Welcome', () => {
   it('walks a newcomer from hello to their festival, then into Tune', async () => {
     const app = await firstRun();
     expect(app.getByText('Get started')).toBeTruthy();
+    expect(app.getByText('Your sound as a living map')).toBeTruthy();
     await fireEvent.press(app.getByText('Get started'));
     await settle();
     expect(app.getByText('Where are you going?')).toBeTruthy();
     expect(app.getByText('Not sure yet')).toBeTruthy();
     await fireEvent.press(app.getByLabelText(/^EDC Orlando 2026, /));
     await settle();
+    await fireEvent.press(app.getByText('Continue'));
+    await settle();
+    expect(app.getByText('Here’s what’s waiting')).toBeTruthy();
+    expect(app.getByText('Your first sprout')).toBeTruthy();
+    expect(app.getByText(/^EDC Orlando 2026/)).toBeTruthy();
     await fireEvent.press(app.getByText('Continue'));
     await settle();
     expect(app.getByText('Tell us what you love')).toBeTruthy();
@@ -73,6 +79,8 @@ describe('Welcome', () => {
     await fireEvent.press(app.getByText('Get started'));
     await settle();
     await fireEvent.press(app.getByLabelText(/^Cyclops Cove 4, /));
+    await settle();
+    await fireEvent.press(app.getByText('Continue'));
     await settle();
     await fireEvent.press(app.getByText('Continue'));
     await settle();
@@ -105,6 +113,9 @@ describe('Welcome', () => {
     await fireEvent.press(app.getByText('Get started'));
     await settle();
     await fireEvent.press(app.getByText('Not sure yet'));
+    await settle();
+    expect(app.getByText('A few things to find once you’re in.')).toBeTruthy();
+    await fireEvent.press(app.getByText('Continue'));
     await settle();
     expect(app.getByText('Pick artists you know')).toBeTruthy();
     await fireEvent.press(app.getByText('Start watching instead'));
