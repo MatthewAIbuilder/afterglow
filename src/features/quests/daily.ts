@@ -238,6 +238,10 @@ export type QuestBook = {
   lit: string[];
   /** Every bit of glow from daily and weekly quests, ever. */
   glow: number;
+  /** The most days in a row you ever finished all three (kept, so old streaks still count after their days are tidied away). */
+  bestStreak?: number;
+  /** Read back from an older book without id snapshots: the next look takes today's (and the week's) as the start. */
+  needsBase?: boolean;
 };
 
 export const HISTORY_DAYS = 60;
@@ -250,6 +254,7 @@ export function turnOver(book: QuestBook | undefined, now: number, counts: Count
   const week = questWeek(now);
   if (!book) return { day, base: counts, events: {}, done: [], week, weekBase: counts, weekDone: false, lit: [], glow: 0 };
   let next = book;
+  if (book.needsBase) next = { ...next, base: counts, weekBase: counts, needsBase: undefined };
   if (book.day !== day) next = { ...next, day, base: counts, events: {}, done: [], picks: undefined };
   if (book.week !== week) next = { ...next, week, weekBase: counts, weekDone: false };
   if (next !== book) next = { ...next, lit: next.lit.filter((d) => d >= shiftDay(day, HISTORY_DAYS)) };
@@ -283,7 +288,8 @@ export function settleQuests(
     }
   }
   if (picks.length && picks.every((p) => next.done.includes(p.id)) && !next.lit.includes(next.day)) {
-    next = { ...next, lit: [...next.lit, next.day].sort(), glow: next.glow + ALL_DONE_BONUS };
+    const lit = [...next.lit, next.day].sort();
+    next = { ...next, lit, glow: next.glow + ALL_DONE_BONUS, bestStreak: Math.max(next.bestStreak ?? 0, streakOf(lit, next.day)) };
     finished.push({ kind: 'all', glow: ALL_DONE_BONUS });
   }
   const weekly = weeklyPick(next.week);
@@ -420,9 +426,10 @@ export function cleanBook(raw: unknown): QuestBook | undefined {
     return out;
   };
   if (!isDay(b.day) || !isDay(b.week)) return undefined;
+  // An older book (counts as numbers) keeps its glow, streak and today's progress; only its snapshots start again.
   const base = counts(b.base);
   const weekBase = counts(b.weekBase);
-  if (!base || !weekBase) return undefined;
+  const needsBase = !base || !weekBase;
   const ids = new Set<string>(DAILY.map((d) => d.id));
   const events: Partial<Record<QuestEvent, number>> = {};
   if (b.events && typeof b.events === 'object')
@@ -432,15 +439,20 @@ export function cleanBook(raw: unknown): QuestBook | undefined {
     }
   return {
     day: b.day,
-    base,
+    base: base ?? NO_COUNTS,
     events,
     done: Array.isArray(b.done) ? (b.done.filter((d) => typeof d === 'string' && ids.has(d)) as DailyQuestId[]) : [],
     picks: Array.isArray(b.picks) && b.picks.length === 3 && b.picks.every((d) => typeof d === 'string' && ids.has(d)) ? (b.picks as DailyQuestId[]) : undefined,
     week: b.week,
-    weekBase,
+    weekBase: weekBase ?? NO_COUNTS,
     weekDone: b.weekDone === true,
     lit: Array.isArray(b.lit) ? [...new Set(b.lit.filter(isDay))].sort().slice(-HISTORY_DAYS) : [],
     glow: typeof b.glow === 'number' && Number.isFinite(b.glow) && b.glow > 0 ? Math.floor(b.glow) : 0,
+    ...(typeof b.bestStreak === 'number' && b.bestStreak > 0 ? { bestStreak: Math.floor(b.bestStreak) } : {}),
+    ...(needsBase ? { needsBase: true } : {}),
   };
 }
+
+/** Your best streak: the one kept in the book, or a longer one still in its history. */
+export const bestStreakOf = (book: Pick<QuestBook, 'lit' | 'bestStreak'> | undefined) => (book ? Math.max(book.bestStreak ?? 0, longestStreak(book.lit)) : 0);
 

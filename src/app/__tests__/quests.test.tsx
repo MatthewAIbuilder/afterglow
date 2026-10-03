@@ -96,3 +96,25 @@ describe('the quests tip', () => {
     expect(await AsyncStorage.getItem('questTip.v1')).toBe('1');
   });
 });
+
+describe('a new day', () => {
+  it('opening the map first thing still counts for today, and yesterday’s glow and streak stay', async () => {
+    const day = dayWith('map');
+    jest.useFakeTimers({ now: day });
+    const yesterday = new Date(day.getTime() - 24 * 3600_000);
+    const y = questDay(yesterday.getTime());
+    const empty = { likes: [], saves: [], through: [], rated: [], warm: [], follows: [], stars: [] };
+    await AsyncStorage.setItem(
+      'dailyQuests.v1',
+      JSON.stringify({ day: y, base: empty, events: {}, done: [], week: y, weekBase: empty, weekDone: false, lit: [y], glow: 120, bestStreak: 1 }),
+    );
+    const app = await renderApp('/festival-map');
+    await flush(20);
+    expect(app.getByTestId('quest-toast').props.accessibilityLabel).toMatch(/^Explorer\./);
+    const saved = JSON.parse((await AsyncStorage.getItem('dailyQuests.v1'))!);
+    expect(saved.day).toBe(questDay(day.getTime()));
+    expect(saved.done).toEqual(['map']);
+    expect(saved.glow).toBe(130);
+    expect(saved.lit).toEqual([y]);
+  });
+});

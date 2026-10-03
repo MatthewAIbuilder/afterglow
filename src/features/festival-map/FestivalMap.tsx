@@ -103,8 +103,9 @@ export function FestivalMap({
   // Frame every festival (and you) the first time; the drawable world reaches well beyond it.
   const points = useMemo(() => [...markers.map((m) => m.at), ...(here ? [project(here)] : [])], [markers, here]);
   // Framed once per `frameKey` (a filter, a tour): data arriving later (a place looked up) never yanks the map back.
-  const [framing, setFraming] = useState(() => ({ key: frameKey, frame: boxAround(points) }));
-  if (framing.key !== frameKey) setFraming({ key: frameKey, frame: boxAround(points) });
+  // Framed from nothing (places still being looked up)? Frame again once there's something to show.
+  const [framing, setFraming] = useState(() => ({ key: frameKey, frame: boxAround(points), from: points.length }));
+  if (framing.key !== frameKey || (framing.from === 0 && points.length > 0)) setFraming({ key: frameKey, frame: boxAround(points), from: points.length });
   const frame = framing.frame;
   const view = useMemo(() => fitView(frame, width * 0.9, areaH * 0.9), [frame, width, areaH]);
   const S = view.scale;
@@ -151,9 +152,11 @@ export function FestivalMap({
       ay.set(go(areaCy - s.y));
       z.set(go(1));
     }
+    // Back at the first zoom: the base dots show again.
+    baseOn.set(withTiming(1, { duration: 240 }));
     setDetail(undefined);
     setZoomStep(1);
-  }, [frame, width, areaH, view, toLayer, areaCx, areaCy, reduced, ax, ay, z, shown]);
+  }, [frame, width, areaH, view, toLayer, areaCx, areaCy, reduced, ax, ay, z, shown, baseOn]);
 
   const lastZoom = useSharedValue(1);
   const settle = useCallback(
@@ -290,8 +293,12 @@ export function FestivalMap({
   const trail = useMemo(() => (journey && journey.length > 1 ? arcPath(journey.map(toLayer)) : undefined), [journey, toLayer]);
 
   // "Show me": glide to where you are.
+  const answered = useRef(0);
   useEffect(() => {
-    if (toHere && here) glideTo(project(here));
+    // Only when asked (a new `toHere`), once you're known: never again on a filter change or a refreshed location.
+    if (!toHere || !here || answered.current === toHere) return;
+    answered.current = toHere;
+    glideTo(project(here));
   }, [toHere, here, glideTo]);
 
   const clusters = useMemo(() => clusterMarkers(markers, S * zoomStep, CLUSTER_PX), [markers, S, zoomStep]);

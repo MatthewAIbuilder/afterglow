@@ -118,6 +118,30 @@ export function useDailyQuests() {
   };
 }
 
+/**
+ * Whether This or that has enough pairs for you, worked out once for every
+ * screen that asks (the tracker, the ring, the toast, Profile) and again only
+ * when the catalogue, your ratings, reactions or festivals change.
+ */
+let setsMemo: { key: readonly unknown[]; enough: boolean } | undefined;
+function enoughSetsFor(
+  catalog: ReturnType<typeof useCatalog>,
+  ratings: Readonly<Record<string, unknown>>,
+  reactions: Readonly<Record<string, unknown>>,
+  going: readonly string[],
+): boolean {
+  const key = [catalog, ratings, reactions, going];
+  if (setsMemo && setsMemo.key.every((k, i) => k === key[i])) return setsMemo.enough;
+  const skip = new Set(Object.keys(ratings));
+  for (const id of Object.keys(reactions)) {
+    const c = catalog.clip(id);
+    if (c) skip.add(c.artistId);
+  }
+  const enough = thisOrThatPairs(catalog.clips, catalog.artist, { prefer: going, skip }).length >= ROUNDS_MIN;
+  setsMemo = { key, enough };
+  return enough;
+}
+
 /** Which quests make sense right now: starring sets needs a festival you're going to. */
 export function useQuestAvailability(): QuestAbility {
   const { going } = useGoing();
@@ -127,14 +151,7 @@ export function useQuestAvailability(): QuestAbility {
   // This or that leaves out artists you rated or reacted to, the same way its screen does.
   const { ratings } = useRatings();
   const { reactions } = useReactions();
-  const enoughSets = useMemo(() => {
-    const skip = new Set(Object.keys(ratings));
-    for (const id of Object.keys(reactions)) {
-      const c = catalog.clip(id);
-      if (c) skip.add(c.artistId);
-    }
-    return thisOrThatPairs(catalog.clips, catalog.artist, { prefer: going, skip }).length >= ROUNDS_MIN;
-  }, [ratings, reactions, catalog, going]);
+  const enoughSets = enoughSetsFor(catalog, ratings, reactions, going);
   return useMemo(() => ({ planning, enoughSets }), [planning, enoughSets]);
 }
 

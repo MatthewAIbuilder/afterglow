@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { cleanBook, type Finished, type QuestBook, type QuestEvent, withEvent } from '../features/quests/daily';
+import { cleanBook, type Finished, type QuestBook, type QuestEvent, questDay, withEvent } from '../features/quests/daily';
 
 const STORAGE_KEY = 'dailyQuests.v1';
 
@@ -25,8 +25,8 @@ function load() {
     .catch(() => undefined)
     .then((book) => {
       let next = state.book ?? book;
-      // Things counted while it loaded land on the book now.
-      if (next && pending.length) {
+      // Things counted while it loaded land on the book now, if it's today's (else the tracker's turnover takes them).
+      if (next && pending.length && next.day === questDay(Date.now())) {
         for (const e of pending) next = withEvent(next, e);
         pending = [];
         void save(next);
@@ -39,20 +39,30 @@ function load() {
 
 const save = (book: QuestBook) => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(book)).catch(() => {});
 
-/** The tracker writes the book back after a day turns over or a quest is done. */
-export function setQuestBook(book: QuestBook) {
+/**
+ * The tracker's update, worked out from the book as it is now (never a copy
+ * from an earlier render, so an event counted in between is kept). Events
+ * waiting for today's book land on it.
+ */
+export function updateQuestBook<T>(update: (book: QuestBook | undefined) => { book: QuestBook; extra: T }): T {
+  const { book, extra } = update(state.book);
   let next = book;
-  for (const e of pending) next = withEvent(next, e);
-  pending = [];
-  if (next === state.book) return;
-  state = { ...state, book: next };
-  void save(next);
-  emit();
+  if (pending.length && next.day === questDay(Date.now())) {
+    for (const e of pending) next = withEvent(next, e);
+    pending = [];
+  }
+  if (next !== state.book) {
+    state = { ...state, book: next };
+    void save(next);
+    emit();
+  }
+  return extra;
 }
 
 /** Something a quest counts just happened (opened the map, shared, …). */
 export function bumpQuestEvent(event: QuestEvent) {
-  if (!state.book) {
+  // No book yet, or still yesterday's (the day turned over a moment ago): it waits for today's.
+  if (!state.book || state.book.day !== questDay(Date.now())) {
     pending.push(event);
     return;
   }

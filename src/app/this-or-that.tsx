@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -221,6 +221,8 @@ function Finished({ liked, onDone, discover, bottom }: { liked: number; onDone: 
 }
 
 function NotEnough({ onPick }: { onPick: () => void }) {
+  // Too few sets left for you: if it's today's quest, it counts (you came to play), so it never blocks your streak.
+  useEffect(() => bumpQuestEvent('thisorthat'), []);
   return (
     <View style={styles.done}>
       <Text style={styles.doneTitle}>Not enough sets yet</Text>

@@ -12,6 +12,7 @@ import {
   dayStart,
   levelOf,
   longestStreak,
+  bestStreakOf,
   glowShareText,
   added,
   picksFor,
@@ -149,8 +150,15 @@ describe('the book', () => {
   it('reads a saved book back, or nothing when it’s broken', () => {
     const book = turnOver(undefined, now, NO_COUNTS);
     expect(cleanBook(JSON.parse(JSON.stringify({ ...book, done: ['like', 'nope'], glow: 12.7 })))).toEqual({ ...book, done: ['like'], glow: 12, picks: undefined });
-    // An old book that kept numbers reads as nothing (a fresh start).
-    expect(cleanBook({ ...book, base: { likes: 3 } })).toBeUndefined();
+    // An older book that kept numbers keeps its glow and streak; only its snapshots start again.
+    const old = cleanBook({ ...book, base: { likes: 3 }, glow: 300, lit: ['2026-10-02'], bestStreak: 9 })!;
+    expect(old.glow).toBe(300);
+    expect(old.lit).toEqual(['2026-10-02']);
+    expect(old.bestStreak).toBe(9);
+    expect(old.needsBase).toBe(true);
+    const fixed = turnOver(old, now + 60_000, { ...NO_COUNTS, likes: ['x'] });
+    expect(fixed.base.likes).toEqual(['x']);
+    expect(fixed.needsBase).toBeUndefined();
     expect(cleanBook({ day: 'x' })).toBeUndefined();
     expect(cleanBook(null)).toBeUndefined();
   });
@@ -178,6 +186,12 @@ describe('streaks and levels', () => {
 });
 
 describe('best streak', () => {
+  it('keeps the best streak once its days are tidied away', () => {
+    expect(bestStreakOf({ lit: [], bestStreak: 8 })).toBe(8);
+    expect(bestStreakOf({ lit: ['2026-10-01', '2026-10-02'] })).toBe(2);
+    expect(bestStreakOf(undefined)).toBe(0);
+  });
+
   it('finds the longest run of days', () => {
     expect(longestStreak(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-05', '2026-10-06'])).toBe(3);
     expect(longestStreak([])).toBe(0);

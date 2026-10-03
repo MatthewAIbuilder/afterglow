@@ -212,11 +212,15 @@ export function DiscoverFeed() {
     if (ready && alreadyKnown(0, reactions).length) markDone(['like']);
   }, [ready, reactions, markDone]);
   // Once the three are done: holding the camera button opens Look after yourself.
-  const careTip = useCareTip() && Platform.OS !== 'web';
-  // Then: the ring beside it holds your daily quests.
+  const careTipState = useCareTip();
+  const careTip = careTipState && Platform.OS !== 'web';
+  // Then: the ring beside it holds your daily quests. Neither shows until both are known, so they never swap.
   const questTip = useQuestTip();
+  const tipsKnown = careTipState !== undefined && questTip !== undefined;
   const next =
-    ready && count > 0 && activeIndex < count ? (currentHint(hintsDone) ?? (careTip ? CARE_HINT : questTip && !hereFestival ? QUESTS_HINT : undefined)) : undefined;
+    ready && count > 0 && activeIndex < count
+      ? (currentHint(hintsDone) ?? (!tipsKnown ? undefined : careTip ? CARE_HINT : questTip && !hereFestival ? QUESTS_HINT : undefined))
+      : undefined;
   // Filming (and the camera button) is in the phone app, so the website doesn't teach it.
   const hint = next === 'hold' && Platform.OS === 'web' ? undefined : next;
   // Press and hold a clip to add your own video: the third tip is done the first time you do.

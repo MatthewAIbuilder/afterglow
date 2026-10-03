@@ -21,7 +21,7 @@ import { useWeekends } from '../../state/weekends';
 import type { Unlock } from './BadgeCelebration';
 import { milestoneKey, milestones, pinKey, unclaimed } from './milestones';
 import { citiesOf, passport as makePassport } from './passport';
-import { longestStreak } from '../quests/daily';
+import { bestStreakOf } from '../quests/daily';
 import { useDailyQuests } from '../quests/useDailyQuests';
 
 /**
@@ -70,7 +70,7 @@ export function useProfileBadges() {
           return !!a && (a.sound.dubstep ?? 0) + (a.sound.riddim ?? 0) >= 0.5;
         }).length,
         founder: standing?.founder,
-        streak: daily.book ? longestStreak(daily.book.lit) : 0,
+        streak: bestStreakOf(daily.book),
         glow: daily.level.glow,
       }),
     [passport, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow],
