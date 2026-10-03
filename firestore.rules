@@ -308,6 +308,16 @@ service cloud.firestore {
         && d.createdAt is string && d.createdAt.size() <= 40;
     }
     function blockedBy(uid) { return exists(path('blocks', uid)) && me() in get(path('blocks', uid)).data.uids; }
+    // Crews are invite only. Joining writes `crews/{id}/joins/{you}` in the same transaction, saying you
+    // agreed to the crew chat rules, and you need either an invite sent to you in the app or the code
+    // from the crew's current invite link (which only members can read).
+    function joinedFairly(id) {
+      let joinPath = /databases/$(database)/documents/crews/$(id)/joins/$(me());
+      let invitePath = /databases/$(database)/documents/crews/$(id)/meta/invite;
+      return existsAfter(joinPath) && getAfter(joinPath).data.agreed == true
+        && (exists(path('crewInvites', id + '_' + me()))
+          || ('code' in getAfter(joinPath).data && exists(invitePath) && getAfter(joinPath).data.code == get(invitePath).data.code));
+    }
     // Crew invites sent in the app: `crewId_to`. A member of the crew invites someone with a profile who
     // hasn't blocked them, as themselves, stamped with the server's time. Only the two of them can see it;
     // either can remove it (joining or saying no). Inviting again overwrites it.
@@ -341,7 +351,7 @@ service cloud.firestore {
           (!(me() in resource.data.members)
             && request.resource.data.members == resource.data.members.concat([me()])
             && request.resource.data.owner == resource.data.owner && request.resource.data.name == resource.data.name
-            && exists(path('profiles', me())) && !blockedBy(resource.data.owner))
+            && exists(path('profiles', me())) && !blockedBy(resource.data.owner) && joinedFairly(id))
           // Leave: remove only yourself; an owner hands the crew to someone still in it.
           || (me() in resource.data.members
             && request.resource.data.members == resource.data.members.removeAll([me()])
@@ -365,7 +375,9 @@ service cloud.firestore {
       }
 
       // The crew's meeting spot ("by the big tree left of Main Stage"): read and set by any member, as
-      // themselves, stamped with the server's time. One document, `meet`.
+      // themselves, stamped with the server's time. One document, `meet`. And `invite`: the code in the
+      // crew's invite link, made by any member the first time it's asked for and changed only by the
+      // owner (a new link). Only members can read either.
       match /meta/{doc} {
         allow read: if signedIn() && me() in get(path('crews', id)).data.members;
         allow create, update: if signedIn() && doc == 'meet' && me() in get(path('crews', id)).data.members
@@ -373,7 +385,46 @@ service cloud.firestore {
           && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 80
           && request.resource.data.by == me()
           && request.resource.data.at == request.time;
-        allow delete: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create: if signedIn() && doc == 'invite' && me() in get(path('crews', id)).data.members
+          && request.resource.data.keys().hasOnly(['code', 'by', 'at'])
+          && request.resource.data.code is string && request.resource.data.code.matches('^[A-Za-z0-9]{12,40}$')
+          && request.resource.data.by == me() && request.resource.data.at == request.time;
+        allow update: if signedIn() && doc == 'invite' && get(path('crews', id)).data.owner == me()
+          && request.resource.data.keys().hasOnly(['code', 'by', 'at'])
+          && request.resource.data.code is string && request.resource.data.code.matches('^[A-Za-z0-9]{12,40}$')
+          && request.resource.data.by == me() && request.resource.data.at == request.time;
+        allow delete: if signedIn() && ((doc == 'meet' && me() in get(path('crews', id)).data.members)
+          || get(path('crews', id)).data.owner == me());
+      }
+
+      // How each member got in: that they agreed to the chat rules, and the link code they used (when
+      // they weren't invited in the app). Written only by that person; read by them and the owner.
+      match /joins/{uid} {
+        allow read: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
+        allow create, update: if signedIn() && me() == uid
+          && request.resource.data.keys().hasOnly(['agreed', 'code', 'at'])
+          && request.resource.data.agreed == true
+          && request.resource.data.at == request.time
+          && (!('code' in request.resource.data) || (request.resource.data.code is string && request.resource.data.code.size() <= 40));
+        allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
+      }
+
+      // The crew's chat: members read it and write as themselves. `atMs` is when it was written on the
+      // phone (no later than now, no older than a week); `sentAt` is the server's time. Never edited;
+      // removed by the writer or the owner. The support account can read and remove a reported one.
+      match /chat/{messageId} {
+        allow read: if (signedIn() && me() in get(path('crews', id)).data.members) || isAdmin();
+        allow create: if signedIn() && me() in get(path('crews', id)).data.members
+          && messageId.matches('^[A-Za-z0-9_-]{6,64}$')
+          && request.resource.data.keys().hasOnly(['uid', 'text', 'atMs', 'sentAt'])
+          && request.resource.data.uid == me()
+          && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 500
+          && request.resource.data.atMs is number
+          && request.resource.data.atMs <= request.time.toMillis() + 300000
+          && request.resource.data.atMs >= request.time.toMillis() - 7 * 24 * 3600 * 1000
+          && request.resource.data.sentAt == request.time;
+        allow update: if false;
+        allow delete: if (signedIn() && (resource.data.uid == me() || get(path('crews', id)).data.owner == me())) || isAdmin();
       }
 
       // Crew updates: where a member is and what they're seeing, from a video or a check-in. Members read
@@ -428,7 +479,7 @@ service cloud.firestore {
     match /reports/{id} {
       allow create: if signedIn() && request.resource.data.by == me()
         && request.resource.data.keys().hasOnly(['by', 'kind', 'targetId', 'ownerUid', 'reason', 'note', 'createdAt'])
-        && request.resource.data.kind in ['profile', 'memory', 'comment']
+        && request.resource.data.kind in ['profile', 'memory', 'comment', 'chat']
         && request.resource.data.targetId is string && request.resource.data.targetId.size() <= 128
         && request.resource.data.ownerUid is string && request.resource.data.ownerUid.size() <= 128
         && request.resource.data.reason in ['offensive', 'harassment', 'spam', 'not-theirs', 'other']

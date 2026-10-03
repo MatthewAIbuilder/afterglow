@@ -1,5 +1,5 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
@@ -44,6 +44,22 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const counter = { founders: 0 };
   /** Crew-only video files uploaded, as `crewId/uid/updateId`. */
   const crewFiles = new Set<string>();
+  /** Crew chat messages as `crewId/messageId`. */
+  const chat = new Map<string, CrewMessage>();
+  /** Crew invite link codes. */
+  const crewCodes = new Map<string, string>();
+  /** Who agreed to the chat rules when they joined or started a crew, as `crewId/uid`. */
+  const agreed = new Set<string>();
+  const chatWatchers = new Set<{ crewId: string; max: number; listener: (m: CrewMessage[]) => void }>();
+  const chatOf = (crewId: string, max: number) =>
+    [...chat.values()].filter((m) => m.crewId === crewId).sort((a, b) => b.sentAt.localeCompare(a.sentAt) || b.id.localeCompare(a.id)).slice(0, max);
+  const chatChanged = (crewId: string) => {
+    for (const w of chatWatchers) if (w.crewId === crewId) w.listener(chatOf(crewId, w.max));
+  };
+  const dropChat = (id: string, uid?: string) => {
+    for (const [k, m] of chat) if (k.startsWith(`${id}/`) && (!uid || m.uid === uid)) chat.delete(k);
+    chatChanged(id);
+  };
   /** Each crew's meeting spot. */
   const meets = new Map<string, MeetSpot>();
   const reports: { id: string; by: string; target: ReportTarget; reason: ReportReason; note?: string; createdAt: string; status: 'open' | 'resolved' }[] = [];
@@ -93,10 +109,13 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       crews.delete(id);
       dropPicks(id);
       dropUpdates(id);
+      dropChat(id);
+      crewCodes.delete(id);
       return;
     }
     dropPicks(id, uid);
     dropUpdates(id, uid);
+    dropChat(id, uid);
     crews.set(id, { ...c, members, owner: c.owner === uid ? members[0] : c.owner });
   };
 
@@ -364,7 +383,14 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async takeDown(kind, id) {
       needAdmin();
       if (kind === 'comment') comments.delete(id);
-      else memories.delete(id);
+      else if (kind === 'chat') {
+        chat.delete(id);
+        chatChanged(id.split('/')[0]);
+      } else memories.delete(id);
+    },
+    async reportedMessage(target) {
+      needAdmin();
+      return chat.get(target) ?? null;
     },
     async adminCounts(since) {
       needAdmin();
@@ -574,6 +600,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (crewNameProblem(raw)) throw new SocialError('unknown');
       const c: Crew = { id: `crew-${++n}`, festivalId, name: cleanCrewName(raw), owner: u.uid, members: [u.uid], createdAt: now() };
       crews.set(c.id, c);
+      agreed.add(`${c.id}/${u.uid}`);
       return c;
     },
     async crew(id) {
@@ -584,17 +611,31 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const u = me();
       return [...crews.values()].filter((c) => c.members.includes(u.uid));
     },
-    async joinCrew(id) {
+    async joinCrew(id, code) {
       const u = me();
       const c = crewOf(id);
       if (c.members.includes(u.uid)) return c;
       if (!profiles.has(u.uid)) throw new SocialError('no-profile');
+      // Invite only: an invite in the app, or the link's current code.
+      if (!crewInvites.has(`${id}_${u.uid}`) && (!code || crewCodes.get(id) !== code)) throw new SocialError('not-invited');
       if ((blocks.get(c.owner) ?? []).includes(u.uid)) throw new SocialError('unknown');
       if (c.members.length >= CREW_MAX) throw new SocialError('crew-full');
       const next = { ...c, members: [...c.members, u.uid] };
       crews.set(id, next);
+      agreed.add(`${id}/${u.uid}`);
       crewInvites.delete(`${id}_${u.uid}`);
       return next;
+    },
+    async crewInviteCode(crewId) {
+      memberOf(crewId);
+      if (!crewCodes.has(crewId)) crewCodes.set(crewId, `code${crewId.replace(/[^A-Za-z0-9]/g, '')}${++n}abcdefgh`);
+      return crewCodes.get(crewId)!;
+    },
+    async newCrewInviteCode(crewId) {
+      const c = memberOf(crewId);
+      if (c.owner !== me().uid) throw new SocialError('unknown');
+      crewCodes.set(crewId, `code${crewId.replace(/[^A-Za-z0-9]/g, '')}${++n}ijklmnop`);
+      return crewCodes.get(crewId)!;
     },
     async inviteToCrew(crewId, uid) {
       const u = me();
@@ -625,6 +666,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       crews.delete(id);
       dropPicks(id);
       dropUpdates(id);
+      dropChat(id);
+      crewCodes.delete(id);
       meets.delete(id);
     },
     async renameCrew(id, raw) {
@@ -639,6 +682,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (c.owner !== me().uid || uid === c.owner) throw new SocialError('unknown');
       dropPicks(id, uid);
       dropUpdates(id, uid);
+      dropChat(id, uid);
       const next = { ...c, members: c.members.filter((m) => m !== uid) };
       crews.set(id, next);
       return next;
@@ -697,6 +741,41 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
         .slice(0, max);
     },
+    async sendCrewMessages(crewId, inputs) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      const done: string[] = [];
+      for (const input of inputs) {
+        const key = `${crewId}/${input.id}`;
+        const text = input.text.trim().slice(0, CHAT_MAX);
+        if (!chat.has(key) && text) chat.set(key, { id: input.id, crewId, uid: me().uid, text, at: input.at, sentAt: now() });
+        if (chat.has(key)) done.push(input.id);
+      }
+      chatChanged(crewId);
+      return done;
+    },
+    watchCrewChat(crewId, max, listener, onError) {
+      try {
+        memberOf(crewId);
+      } catch (e) {
+        onError?.(e as SocialError);
+        return () => {};
+      }
+      const w = { crewId, max, listener };
+      chatWatchers.add(w);
+      listener(chatOf(crewId, max));
+      return () => {
+        chatWatchers.delete(w);
+      };
+    },
+    async deleteCrewMessage(crewId, id) {
+      const m = chat.get(`${crewId}/${id}`);
+      if (!m) return;
+      const c = crewOf(crewId);
+      if (m.uid !== me().uid && c.owner !== me().uid) throw new SocialError('unknown');
+      chat.delete(`${crewId}/${id}`);
+      chatChanged(crewId);
+    },
     async meetSpot(crewId) {
       if (network.down) throw new SocialError('network');
       memberOf(crewId);
@@ -737,5 +816,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
+  /** An invite link's code for a crew, as a member would share it (for tests). */
+  const codeOf = (crewId: string) => {
+    if (!crewCodes.has(crewId)) crewCodes.set(crewId, `code${crewId.replace(/[^A-Za-z0-9]/g, '')}${++n}abcdefgh`);
+    return crewCodes.get(crewId)!;
+  };
+  return { service, codeOf, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, chat, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
 }

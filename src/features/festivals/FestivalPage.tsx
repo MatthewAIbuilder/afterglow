@@ -35,6 +35,7 @@ import { useFollowedArtists } from '../../state/followedArtists';
 import { useCrews } from '../../state/crews';
 import { OfficialLinks } from './OfficialLinks';
 import { GetReadyCard } from '../prep/GetReadyCard';
+import { FestivalWeekCard } from '../festivalWeek/FestivalWeekCard';
 import { TryFestivalMode } from '../festivalMode/FestivalModeCard';
 import { useRecap } from '../recap/useRecap';
 import { CalendarPill } from '../calendar/CalendarPill';
@@ -193,6 +194,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           </View>
           {/* People you follow (and others) who show this festival on their profile. */}
           <FriendsGoing festivalId={whole.id} />
+          {/* The week before: a door a day. */}
+          <FestivalWeekCard festival={festival} />
           {/* While it's on: timers, water and check-ins, private to you. */}
           {onNow ? <CareCard /> : null}
         </View>

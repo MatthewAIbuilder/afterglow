@@ -175,6 +175,31 @@ export type CrewUpdateInput = Omit<CrewUpdate, 'crewId' | 'uid' | 'sentAt' | 'vi
   thumbUri?: string;
 };
 
+/**
+ * A message in a crew's chat. Crews are invite only, and joining one means
+ * agreeing to the chat rules (in the community guidelines). Like crew
+ * updates, two times: `at` is when you wrote it on your phone (festival signal
+ * can hold a message back), `sentAt` when it reached the crew (server time).
+ */
+export type CrewMessage = {
+  id: string;
+  crewId: string;
+  uid: string;
+  text: string;
+  /** When it was written on the phone (ISO 8601). */
+  at: string;
+  /** When it reached the crew (ISO 8601, from the server). */
+  sentAt: string;
+};
+
+/** What you send: the id is made on your phone, so sending again never doubles it. */
+export type CrewMessageInput = { id: string; text: string; at: string };
+
+/** Chat messages are at most this long. */
+export const CHAT_MAX = 500;
+/** A send that hasn't got through by now is treated as no signal (it's tried again, never doubled). */
+export const CHAT_SEND_TIMEOUT_MS = 12_000;
+
 /** A crew's meeting spot, in words ("by the big tree left of Main Stage"), and who set it when. */
 export type MeetSpot = { text: string; by: string; at: string };
 /** Meeting spots are at most this long. */
@@ -258,7 +283,8 @@ export type SupportMessage = {
 export type ReportRecord = {
   id: string;
   by: string;
-  kind: 'profile' | 'memory' | 'comment';
+  /** A chat message's target is `crewId/messageId`. */
+  kind: 'profile' | 'memory' | 'comment' | 'chat';
   targetId: string;
   ownerUid: string;
   reason: ReportReason;

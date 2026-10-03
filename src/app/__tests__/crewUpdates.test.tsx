@@ -50,7 +50,7 @@ async function crewWithNews() {
   await s().postCrewUpdate(crew.id, { id: 'u-video01', kind: 'video', at: at(15).toISOString(), festivalId: 'solstice-26', videoUrl: 'https://files.example/maya.mp4' });
   await s().signOut();
   await person('sam', 'Sam');
-  await s().joinCrew(crew.id);
+  await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
   jest.setSystemTime(at(17, 30));
   return crew;
 }

@@ -1,5 +1,6 @@
 import { APP_NAME, SUPPORT_EMAIL } from '../../config/app';
 import { GUIDELINES } from '../social/copy';
+import { CHAT_RULES } from '../crews/chat';
 
 /**
  * The Privacy Policy, Terms of Use and Community Guidelines, as plain data so
@@ -43,6 +44,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
               'If you turn on festivals near you, Afterglow asks for your location, rounds it to about a kilometre and keeps it on your phone (or in your browser) to show how far festivals are. Your phone’s maps service may be asked which town that is, and where a festival’s venue is. It isn’t sent to us, and you can turn it off on the Festivals tab.',
               'If you connect Spotify or Apple Music, your sign-in is kept in your phone’s secure storage and a summary of your library (which artists, not song titles or playlists) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
               'Reminders are scheduled on your phone. We don’t send push notifications.',
+              'Messages you write in a crew’s chat are seen only by the people in that crew, with when you wrote them and when they arrived; leaving the crew removes yours, ending it removes them all, and a reported message can be read by us to review it. Joining a crew also records that you agreed to its chat rules and how you were invited.',
               'Photos you send to a crew go only to the people in that crew, stored with the crew\u2019s updates; they never appear on Discover or your profile, and leaving the crew removes the ones you sent.',
               'When you’re signed in: the days and times you open the app, which kind of phone or the website, and the app version. This tells us how many people use Afterglow and keeps old versions in view; it never includes what you watch or do, and only you and Afterglow support can read it. It’s removed with your account.',
               'Switching accounts: if you save accounts for quick switching, their emails and names are kept on your phone, and their passwords only in your phone’s keychain (on the website, nothing is kept and you type the password each time). They never leave your phone.',
@@ -128,6 +130,14 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
         intro: 'Afterglow is for sharing the best moments of the festivals you love. Everyone agrees to these when they create a profile.',
         sections: [
           { paragraphs: GUIDELINES },
+          {
+            heading: 'Crew chats',
+            paragraphs: [
+              'Crews are invite only: you join one from an invite in the app or an invite link from someone in it. Starting or joining a crew means agreeing to these rules for its chat, as well as everything above.',
+              ...CHAT_RULES,
+              'Only the people in a crew can read its chat. The person who started the crew can remove messages and people. Report a message by holding it; reported messages are reviewed and can be removed.',
+            ],
+          },
           {
             heading: 'Reports and blocks',
             paragraphs: [

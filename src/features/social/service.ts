@@ -1,5 +1,5 @@
 import type { PastEvent } from '../memories/past';
-import type { Activity, Comment, Crew, CrewInvite, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
+import type { Activity, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -28,7 +28,7 @@ export type ShareInput = {
 
 export type FollowCounts = { followers: number; following: number };
 
-export type ReportTarget = { kind: 'profile' | 'memory' | 'comment'; id: string; ownerUid: string };
+export type ReportTarget = { kind: 'profile' | 'memory' | 'comment' | 'chat'; id: string; ownerUid: string };
 
 export interface SocialService {
   availability(): SocialAvailability;
@@ -78,7 +78,9 @@ export interface SocialService {
   /** Mark a report dealt with. */
   resolveReport(id: string): Promise<void>;
   /** Take down a shared video or a comment that breaks the guidelines. */
-  takeDown(kind: 'memory' | 'comment', id: string): Promise<void>;
+  takeDown(kind: 'memory' | 'comment' | 'chat', id: string): Promise<void>;
+  /** A reported crew chat message (`crewId/messageId`), for the support account to read. */
+  reportedMessage(target: string): Promise<CrewMessage | null>;
   /** The headline numbers, counted on the server; `since` is a week ago. */
   adminCounts(since: string): Promise<AdminCounts>;
   /** When profiles, videos, comments, likes, follows and crews were made since then (newest first, up to `max` each), for the charts. */
@@ -164,8 +166,18 @@ export interface SocialService {
   crew(id: string): Promise<Crew | null>;
   /** The crews you're in. */
   myCrews(): Promise<Crew[]>;
-  /** Join a crew (needs your profile; refused when it's full). Joining twice is the same as once. */
-  joinCrew(id: string): Promise<Crew>;
+  /**
+   * Join a crew. Crews are invite only: you need an invite sent to you in the
+   * app, or the code from an invite link (`code`). Joining means agreeing to
+   * the crew chat rules, and that's recorded with the join. Needs your
+   * profile; refused when the crew is full (`crew-full`) or without an invite
+   * (`not-invited`). Joining twice is the same as once.
+   */
+  joinCrew(id: string, code?: string): Promise<Crew>;
+  /** The code for a crew's invite link (members only); made the first time it's asked for. */
+  crewInviteCode(crewId: string): Promise<string>;
+  /** The owner makes a new invite link; the old one stops working. */
+  newCrewInviteCode(crewId: string): Promise<string>;
   /** Invite someone on Afterglow to a crew you're in (they need a profile; not if they've blocked you). Inviting again is the same as once. */
   inviteToCrew(crewId: string, uid: string): Promise<void>;
   /** Crew invites sent to you, newest first. */
@@ -198,6 +210,24 @@ export interface SocialService {
   deleteCrewUpdate(crewId: string, id: string): Promise<void>;
   /** Remove the crew-only video files you uploaded with these updates (after you've left or been taken out of the crew). */
   forgetCrewVideos(crewId: string, updateIds: readonly string[]): Promise<void>;
+  /**
+   * Send messages to a crew's chat (members only), all in one small write so
+   * a scrap of signal is enough. Each keeps `at`, when it was written; the
+   * crew sees that time. Ids are made on the phone, so sending again after a
+   * dropped connection never doubles a message. Resolves with the ids that
+   * are in the chat now. With no signal (or a write that doesn't get through
+   * within `CHAT_SEND_TIMEOUT_MS`) it throws `network`, and it's safe to try
+   * again.
+   */
+  sendCrewMessages(crewId: string, inputs: readonly CrewMessageInput[]): Promise<string[]>;
+  /**
+   * Follow a crew's chat: called with its newest `max` messages (newest
+   * first, by when they reached the crew) now and whenever they change.
+   * Returns a stop function.
+   */
+  watchCrewChat(crewId: string, max: number, listener: (messages: CrewMessage[]) => void, onError?: (e: SocialError) => void): () => void;
+  /** Remove a chat message: your own, or anyone's in a crew you own. */
+  deleteCrewMessage(crewId: string, id: string): Promise<void>;
   /** The crew's meeting spot, if one's set. Members only. */
   meetSpot(crewId: string): Promise<MeetSpot | null>;
   /** Set the crew's meeting spot (any member), or clear it with an empty text. */
@@ -220,6 +250,7 @@ export type SocialErrorKind =
   | 'no-profile'
   | 'too-large'
   | 'crew-full'
+  | 'not-invited'
   | 'throwback-limit'
   | 'not-found'
   | 'network'
@@ -250,6 +281,7 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'no-profile': 'Create your profile first.',
   'too-large': 'That video is too big to share. Try a shorter clip.',
   'crew-full': 'That crew is full.',
+  'not-invited': 'Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.',
   'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
   'not-found': 'That doesn’t exist any more.',
   network: 'Couldn’t reach Afterglow. Check your connection and try again.',

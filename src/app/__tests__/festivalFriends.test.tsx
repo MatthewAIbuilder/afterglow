@@ -42,7 +42,7 @@ describe('Friends at a festival', () => {
     const crew = await s().createCrew('cyclops-cove-4', 'Bass crew');
     await s().signOut();
     await person('maya', 'Maya');
-    await s().joinCrew(crew.id);
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     const app = await renderApp('/together');
     await flush();
     expect(app.getByText('At Cyclops Cove 4')).toBeTruthy();

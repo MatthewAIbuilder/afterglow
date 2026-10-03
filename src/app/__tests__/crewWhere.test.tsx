@@ -42,7 +42,7 @@ describe('where is the crew', () => {
     await s().postCrewUpdate(crew.id, { id: 'u-maya001', kind: 'checkin', at: at(21, 40).toISOString(), festivalId: 'cyclops-cove-4', stage: 'Main Stage', note: 'I’m here' });
     await s().signOut();
     await person('sam', 'Sam');
-    await s().joinCrew(crew.id);
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     jest.setSystemTime(at(22));
     const app = await renderApp('/tonight');
     await flush();

@@ -13,6 +13,7 @@ import { CrewWhereCard } from '../crews/CrewWhereCard';
 import { CheckInPanel } from '../crews/CheckInPanel';
 import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
 import { MeetSpotCard } from '../crews/MeetSpotCard';
+import { CrewChatCard } from '../crews/CrewChatCard';
 import { FriendAddsList } from './FriendAddsList';
 import { InviteCard } from './InviteCard';
 import { QuickActions } from './QuickActions';
@@ -32,6 +33,8 @@ import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
 import { useCrewUpdates } from '../../state/crewUpdates';
+import { useCrewChat } from '../../state/crewChat';
+import { unreadLine } from '../crews/chat';
 import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -55,6 +58,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
   const today = useToday();
   const { crews, crewsAt } = useCrews();
   const { stories, profileOf, ready: updatesReady } = useCrewUpdates();
+  const chat = useCrewChat();
   // At the festival: your crews there come first, with where everyone is.
   const here = festival && me ? crewsAt(festival.id) : [];
   const { going } = useGoing();
@@ -121,6 +125,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
         const who = news ? profileOf(news.uid) : undefined;
         const artist = news?.latest.artistId ? catalog.artist(news.latest.artistId)?.name : undefined;
         const place = news ? updatePlace(news.latest, artist) : '';
+        const unread = chat.unreadFor(c.id);
         return (
           <Pressable
             key={c.id}
@@ -129,7 +134,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
               router.push({ pathname: '/crew/[id]', params: { id: c.id } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${c.name}, ${festival?.name ?? 'a festival'}, ${crewPeopleLine(c.members.length)}${news ? `. Latest: ${who ? firstName(who.displayName) : 'a crewmate'} at ${clock(news.latest.at)}${place ? `, ${place}` : ''}` : ''}`}
+            accessibilityLabel={`${c.name}, ${festival?.name ?? 'a festival'}, ${crewPeopleLine(c.members.length)}${news ? `. Latest: ${who ? firstName(who.displayName) : 'a crewmate'} at ${clock(news.latest.at)}${place ? `, ${place}` : ''}` : ''}${unread ? `. ${unreadLine(unread)}` : ''}`}
             style={({ pressed }) => [styles.card, pressed && styles.pressed]}
           >
             <Faces uids={c.members.filter((m) => m !== meUid)} profileOf={profileOf} me={me} />
@@ -144,6 +149,11 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 <Text style={[styles.cardDetail, news.fresh && styles.fresh]} numberOfLines={1}>
                   {who ? firstName(who.displayName) : 'Crewmate'} · {clock(news.latest.at)}
                   {place ? ` · ${place}` : ''}
+                </Text>
+              ) : null}
+              {unread ? (
+                <Text style={[styles.cardDetail, styles.fresh]} numberOfLines={1}>
+                  {unreadLine(unread)}
                 </Text>
               ) : null}
             </View>
@@ -219,6 +229,9 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                     {/* A crewmate asking for help comes before anything else. */}
                     <CrewHelpAlerts festivalId={festival.id} />
                     {updatesReady ? <CheckInPanel festivalId={festival.id} /> : null}
+                    {here.map((c) => (
+                      <CrewChatCard key={`chat-${c.id}`} crew={c} nameOf={(u) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : 'Someone')} />
+                    ))}
                     <CrewWhereCard festival={festival} crews={here} />
                     {here.map((c) => (
                       <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={here.length > 1} />

@@ -87,7 +87,7 @@ export default function StartCrewScreen() {
   return (
     <ScrollView style={styles.root} contentContainerStyle={{ padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Start a crew</Text>
-      <Text style={styles.body}>Pick the festival. Then name your crew and send the invite: anyone with the link can join, up to 12 of you.</Text>
+      <Text style={styles.body}>Pick the festival. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.</Text>
       {yours.length ? (
         <>
           <Text style={styles.section}>You’re going to</Text>

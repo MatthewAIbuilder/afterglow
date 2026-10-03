@@ -17,6 +17,7 @@ import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
 import { byMonth, bySoonest, festivalShelf, isMany, isOver } from '../../features/festivals/shelves';
 import { NextUpCard } from '../../features/festivals/NextUpCard';
+import { FestivalWeekCard } from '../../features/festivalWeek/FestivalWeekCard';
 import { LineupReadyCard } from '../../features/plan/LineupReadyCard';
 import { readyFestival } from '../../features/plan/ready';
 import { TimelineRow } from '../../features/festivals/TimelineRow';
@@ -185,6 +186,8 @@ export default function FestivalsScreen() {
           <>
             {ready ? <LineupReadyCard festival={ready} /> : null}
             {upNext ? <NextUpCard festival={upNext} /> : null}
+            {/* The week before a festival you're going to: a door a day. */}
+            {[ready, upNext].map((f) => (f ? <FestivalWeekCard key={`week-${f.id}`} festival={f} showName /> : null))}
             {alsoGoing.length > 0 && <SectionHead title={upNext || ready ? 'Also going' : 'Going'} />}
             {list(alsoGoing, true)}
             {nearby.status === 'on' && (many || near.length > 0) ? (

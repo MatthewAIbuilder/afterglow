@@ -1,6 +1,6 @@
 import { cleanPast } from '../../memories/past';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
+import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -144,6 +144,17 @@ export function crewUpdateFromDoc(crewId: string, id: string, d: unknown): CrewU
   };
 }
 
+/** A crew chat message. `atMs` (when it was written) and words are required; a missing server time reads as that time. */
+export function crewMessageFromDoc(crewId: string, id: string, d: unknown): CrewMessage | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const uid = str(o.uid);
+  const text = str(o.text)?.trim();
+  const at = typeof o.atMs === 'number' && Number.isFinite(o.atMs) ? new Date(o.atMs).toISOString() : undefined;
+  if (!uid || !text || !at) return null;
+  return { id, crewId, uid, text: text.slice(0, CHAT_MAX), at, sentAt: timeOf(o.sentAt) ?? at };
+}
+
 /** A crew's meeting spot document; empty or malformed is none. */
 export function meetSpotFromDoc(d: unknown): MeetSpot | null {
   if (!d || typeof d !== 'object') return null;
@@ -247,7 +258,7 @@ export function supportFromDoc(id: string, d: unknown): SupportMessage | null {
 export function reportFromDoc(id: string, d: unknown): ReportRecord | null {
   if (!d || typeof d !== 'object') return null;
   const o = d as Record<string, unknown>;
-  const kind = o.kind === 'profile' || o.kind === 'memory' || o.kind === 'comment' ? o.kind : undefined;
+  const kind = o.kind === 'profile' || o.kind === 'memory' || o.kind === 'comment' || o.kind === 'chat' ? o.kind : undefined;
   const reason = REPORT_REASONS.find((r) => r.key === o.reason)?.key;
   const by = str(o.by);
   const targetId = str(o.targetId);

@@ -292,21 +292,77 @@ await t('crews: you list only crews you’re in', async () => {
   await assertFails(getDocs(query(collection(B.firestore(), 'crews'), where('members', 'array-contains', 'uidA'))));
   await assertFails(getDocs(collection(B.firestore(), 'crews')));
 });
-await t('crews: B joins, adding only itself', async () => {
-  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB', 'uidC'] }));
+// Joining: the crew update and your join record (agreeing to the chat rules, with the link's code) in one write.
+async function join(ctx, uid, crewId, members, joinData = { agreed: true, code: 'abcdefghijkl1234', at: serverTimestamp() }) {
+  const db = ctx.firestore(); const b = writeBatch(db);
+  if (joinData) b.set(doc(db, 'crews', crewId, 'joins', uid), joinData);
+  b.update(doc(db, 'crews', crewId), { members });
+  return b.commit();
+}
+await t('crew invite links: a member makes the link’s code; only members read it; only the owner changes it', async () => {
+  const inv = (db) => doc(db, 'crews', 'c1', 'meta', 'invite');
+  await assertFails(setDoc(inv(B.firestore()), { code: 'abcdefghijkl1234', by: 'uidB', at: serverTimestamp() }));
+  await assertFails(setDoc(inv(A.firestore()), { code: 'short', by: 'uidA', at: serverTimestamp() }));
+  await assertSucceeds(setDoc(inv(A.firestore()), { code: 'abcdefghijkl1234', by: 'uidA', at: serverTimestamp() }));
+  await assertFails(getDoc(inv(B.firestore())));
+  await assertSucceeds(getDoc(inv(A.firestore())));
+});
+await t('crews: invite only; B joins with the link’s code, agreeing to the chat rules, adding only itself', async () => {
+  await assertFails(join(B, 'uidB', 'c1', ['uidA', 'uidB'], null));
+  await assertFails(join(B, 'uidB', 'c1', ['uidA', 'uidB'], { agreed: true, at: serverTimestamp() }));
+  await assertFails(join(B, 'uidB', 'c1', ['uidA', 'uidB'], { agreed: true, code: 'wrongwrongwrong1', at: serverTimestamp() }));
+  await assertFails(join(B, 'uidB', 'c1', ['uidA', 'uidB'], { agreed: false, code: 'abcdefghijkl1234', at: serverTimestamp() }));
+  await assertFails(join(B, 'uidB', 'c1', ['uidA', 'uidB', 'uidC']));
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB'], name: 'Mine now' }));
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidB'] , owner: 'uidB' }));
-  await assertSucceeds(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB'] }));
+  await assertSucceeds(join(B, 'uidB', 'c1', ['uidA', 'uidB']));
+  await assertSucceeds(getDoc(doc(B.firestore(), 'crews', 'c1', 'joins', 'uidB')));
+  await assertSucceeds(getDoc(doc(A.firestore(), 'crews', 'c1', 'joins', 'uidB')));
 });
 await t('crews: not without a profile, not when full, not if the owner blocked you', async () => {
-  await assertFails(updateDoc(doc(C.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB', 'uidC'] }));
+  await assertFails(join(C, 'uidC', 'c1', ['uidA', 'uidB', 'uidC']));
   const full = Array.from({ length: 12 }, (_, i) => (i ? `u${i}` : 'uidA'));
   await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'crews', 'full'), crew({ members: full })));
-  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'full'), { members: [...full, 'uidB'] }));
+  await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'crews', 'full', 'meta', 'invite'), { code: 'abcdefghijkl1234', by: 'uidA', at: now }));
+  await assertFails(join(B, 'uidB', 'full', [...full, 'uidB']));
   await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'crews', 'c3'), crew()));
+  await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'crews', 'c3', 'meta', 'invite'), { code: 'abcdefghijkl1234', by: 'uidA', at: now }));
   await assertSucceeds(setDoc(doc(A.firestore(), 'blocks', 'uidA'), { uids: ['uidB'] }));
-  await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c3'), { members: ['uidA', 'uidB'] }));
+  await assertFails(join(B, 'uidB', 'c3', ['uidA', 'uidB']));
   await assertSucceeds(setDoc(doc(A.firestore(), 'blocks', 'uidA'), { uids: [] }));
+});
+const chatMsg = (over = {}) => ({ uid: 'uidB', text: 'Meet at the big tree?', atMs: Date.now(), sentAt: serverTimestamp(), ...over });
+await t('crew chat: members write as themselves, stamped with the server’s time; members read it; others can’t', async () => {
+  const at = (db, id) => doc(db, 'crews', 'c1', 'chat', id);
+  await assertSucceeds(setDoc(at(B.firestore(), 'm000001'), chatMsg()));
+  await assertSucceeds(setDoc(at(A.firestore(), 'm000002'), chatMsg({ uid: 'uidA', text: 'On my way' })));
+  await assertSucceeds(getDocs(query(collection(A.firestore(), 'crews', 'c1', 'chat'), orderBy('sentAt', 'desc'), limit(100))));
+  await assertFails(getDocs(collection(C.firestore(), 'crews', 'c1', 'chat')));
+  await assertFails(setDoc(at(C.firestore(), 'm000003'), chatMsg({ uid: 'uidC' })));
+  await assertFails(setDoc(at(B.firestore(), 'm000004'), chatMsg({ uid: 'uidA' })));
+  await assertFails(setDoc(at(B.firestore(), 'm000005'), chatMsg({ text: '' })));
+  await assertFails(setDoc(at(B.firestore(), 'm000006'), chatMsg({ text: 'x'.repeat(501) })));
+  await assertFails(setDoc(at(B.firestore(), 'm000007'), chatMsg({ sentAt: now })));
+  await assertFails(setDoc(at(B.firestore(), 'm000008'), chatMsg({ atMs: Date.now() + 3600 * 1000 })));
+  await assertFails(setDoc(at(B.firestore(), 'm000009'), chatMsg({ photo: 'x' })));
+  await assertFails(setDoc(at(B.firestore(), 'bad id!'), chatMsg()));
+});
+await t('crew chat: several waiting messages go in one write, each keeping when it was written', async () => {
+  const db = B.firestore(); const b = writeBatch(db);
+  b.set(doc(db, 'crews', 'c1', 'chat', 'mb00001'), chatMsg({ atMs: Date.now() - 40 * 60 * 1000 }));
+  b.set(doc(db, 'crews', 'c1', 'chat', 'mb00002'), chatMsg({ atMs: Date.now() - 20 * 60 * 1000, text: 'Still here' }));
+  await assertSucceeds(b.commit());
+  // Sending one again (an earlier try that did get through) is refused, never doubled.
+  await assertFails(setDoc(doc(db, 'crews', 'c1', 'chat', 'mb00001'), chatMsg()));
+});
+await t('crew chat: never edited; removed by the writer or the owner', async () => {
+  const at = (db, id) => doc(db, 'crews', 'c1', 'chat', id);
+  await assertFails(updateDoc(at(B.firestore(), 'm000001'), { text: 'changed' }));
+  await assertFails(deleteDoc(at(B.firestore(), 'm000002')));
+  await assertSucceeds(deleteDoc(at(A.firestore(), 'm000001')));
+  await assertSucceeds(setDoc(at(B.firestore(), 'm000010'), chatMsg()));
+  await assertSucceeds(deleteDoc(at(B.firestore(), 'm000010')));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'reports', 'rchat'), { by: 'uidB', kind: 'chat', targetId: 'c1/m000002', ownerUid: 'uidA', reason: 'harassment', note: '', createdAt: now }));
 });
 await t('crews: members share picks; others can’t read or write them', async () => {
   await assertSucceeds(setDoc(doc(B.firestore(), 'crews', 'c1', 'picks', 'uidB'), { artists: ['skrillex'], updatedAt: now }));
@@ -410,7 +466,7 @@ await t('crews: only the owner renames, removes people or deletes', async () => 
   await assertFails(getDocs(collection(B.firestore(), 'crews', 'c1', 'picks')));
 });
 await t('crews: leaving removes only yourself; an owner hands it on; the last one out deletes it', async () => {
-  await assertSucceeds(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA', 'uidB'] }));
+  await assertSucceeds(join(B, 'uidB', 'c1', ['uidA', 'uidB']));
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidB'] }));
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1'), { members: ['uidA'], owner: 'uidA', name: 'x' }));
   await assertFails(updateDoc(doc(A.firestore(), 'crews', 'c1'), { members: ['uidB'], owner: 'uidC' }));
@@ -560,6 +616,11 @@ await t('crew invites: a member invites someone with a profile; only the two of 
   await assertSucceeds(getDocs(query(collection(D.firestore(), 'crewInvites'), where('to', '==', 'uidD'))));
   await assertSucceeds(getDocs(query(collection(B.firestore(), 'crewInvites'), where('crewId', '==', 'inv1'), where('from', '==', 'uidB'))));
   await assertFails(getDocs(collection(C.firestore(), 'crewInvites')));
+});
+await t('crew invites: invited in the app, you join agreeing to the chat rules, no code needed', async () => {
+  await assertFails(join(D, 'uidD', 'inv1', ['uidB', 'uidD'], null));
+  await assertSucceeds(join(D, 'uidD', 'inv1', ['uidB', 'uidD'], { agreed: true, at: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(D.firestore(), 'crews', 'inv1'), { members: ['uidB'] }));
 });
 await t('crew invites: not to someone who blocked you; removed by the person invited', async () => {
   await assertSucceeds(setDoc(doc(D.firestore(), 'blocks', 'uidD'), { uids: ['uidB'] }));
