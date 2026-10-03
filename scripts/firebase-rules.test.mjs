@@ -453,6 +453,40 @@ await t('flairs: anyone can see them, nobody writes one from the app', async () 
   await assertSucceeds(getDoc(doc(anon.firestore(), 'flairs', 'uidA')));
   await assertFails(setDoc(doc(A.firestore(), 'flairs', 'uidA'), { kind: 'artist', caption: 'Artist' }));
 });
+const ADMIN = env.authenticatedContext('uidAdmin', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+const NOT_VERIFIED = env.authenticatedContext('uidFake', { email: 'afterglowmusic.support@gmail.com', email_verified: false });
+const msg = (uid, over = {}) => ({ uid, topic: 'help', text: 'The map won’t load', status: 'open', createdAt: serverTimestamp(), ...over });
+await t('support: you send messages as yourself, and read only yours', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'support', 's1'), msg('uidA', { handle: 'maya2', email: 'a@x.com', platform: 'ios' })));
+  await assertFails(setDoc(doc(A.firestore(), 'support', 's2'), msg('uidB')));
+  await assertFails(setDoc(doc(A.firestore(), 'support', 's3'), msg('uidA', { topic: 'rant' })));
+  await assertFails(setDoc(doc(A.firestore(), 'support', 's4'), msg('uidA', { status: 'answered' })));
+  await assertFails(setDoc(doc(A.firestore(), 'support', 's5'), msg('uidA', { text: 'x'.repeat(1001) })));
+  await assertSucceeds(getDoc(doc(A.firestore(), 'support', 's1')));
+  await assertFails(getDoc(doc(B.firestore(), 'support', 's1')));
+  await assertSucceeds(getDocs(query(collection(A.firestore(), 'support'), where('uid', '==', 'uidA'))));
+  await assertFails(getDocs(collection(B.firestore(), 'support')));
+  await assertFails(updateDoc(doc(A.firestore(), 'support', 's1'), { reply: 'self-answer', status: 'answered' }));
+});
+await t('support account: reads every message and replies, once its email is verified', async () => {
+  await assertSucceeds(getDocs(collection(ADMIN.firestore(), 'support')));
+  await assertFails(getDocs(collection(NOT_VERIFIED.firestore(), 'support')));
+  await assertSucceeds(updateDoc(doc(ADMIN.firestore(), 'support', 's1'), { reply: 'Try again now', repliedAt: '2026-10-03T10:00:00Z', status: 'answered' }));
+  await assertFails(updateDoc(doc(ADMIN.firestore(), 'support', 's1'), { text: 'changed' }));
+  await assertFails(updateDoc(doc(NOT_VERIFIED.firestore(), 'support', 's1'), { status: 'closed' }));
+});
+await t('support account: reads and resolves reports, takes down a video, counts crews', async () => {
+  await assertSucceeds(setDoc(doc(B.firestore(), 'reports', 'rep1'), { by: 'uidB', kind: 'memory', targetId: 'mem1', ownerUid: 'uidA', reason: 'spam', note: '', createdAt: now }));
+  await assertFails(getDoc(doc(B.firestore(), 'reports', 'rep1')));
+  await assertSucceeds(getDocs(collection(ADMIN.firestore(), 'reports')));
+  await assertSucceeds(updateDoc(doc(ADMIN.firestore(), 'reports', 'rep1'), { status: 'resolved', resolvedAt: now }));
+  await assertFails(updateDoc(doc(ADMIN.firestore(), 'reports', 'rep1'), { reason: 'other' }));
+  await assertFails(getDocs(collection(NOT_VERIFIED.firestore(), 'reports')));
+  await assertSucceeds(getCountFromServer(collection(ADMIN.firestore(), 'crews')));
+  await assertFails(getCountFromServer(collection(B.firestore(), 'crews')));
+  await assertFails(deleteDoc(doc(NOT_VERIFIED.firestore(), 'memories', 'mem8')));
+  await assertSucceeds(deleteDoc(doc(ADMIN.firestore(), 'memories', 'mem8')));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

@@ -1,4 +1,5 @@
-import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX } from '../models';
+import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { SUPPORT_EMAIL } from '../../../config/app';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -36,7 +37,14 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const crewFiles = new Set<string>();
   /** Each crew's meeting spot. */
   const meets = new Map<string, MeetSpot>();
-  const reports: { by: string; target: ReportTarget; reason: ReportReason; note?: string }[] = [];
+  const reports: { id: string; by: string; target: ReportTarget; reason: ReportReason; note?: string; createdAt: string; status: 'open' | 'resolved' }[] = [];
+  /** Support messages, and which emails have been confirmed (the support account needs it). */
+  const support = new Map<string, SupportMessage>();
+  const verified = new Set<string>();
+  const admin = () => !!current?.email && current.email === SUPPORT_EMAIL && verified.has(current.email);
+  const needAdmin = () => {
+    if (!admin()) throw new SocialError('unknown');
+  };
   const listeners = new Set<(u: SocialUser | null) => void>();
   let current: SocialUser | null = null;
   let n = 0;
@@ -90,14 +98,14 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (password.length < 6) throw new SocialError('weak-password');
       const uid = `uid-${++n}`;
       accounts.set(e, { uid, password });
-      current = { uid, email: e };
+      current = { uid, email: e, emailVerified: verified.has(e) };
       emit();
       return current;
     },
     async signIn(email, password) {
       const a = accounts.get(email.trim().toLowerCase());
       if (!a || a.password !== password) throw new SocialError('wrong-password');
-      current = { uid: a.uid, email: email.trim().toLowerCase() };
+      current = { uid: a.uid, email: email.trim().toLowerCase(), emailVerified: verified.has(email.trim().toLowerCase()) };
       emit();
       return current;
     },
@@ -260,6 +268,102 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const founder = founders.get(uid);
       const flair = flairs.get(uid);
       return { ...(founder ? { founder } : {}), ...(flair ? { flair } : {}) };
+    },
+    async sendVerification() {
+      me();
+    },
+    async reloadUser() {
+      if (!current) return null;
+      current = { ...current, emailVerified: !!current.email && verified.has(current.email) };
+      return current;
+    },
+    async contactSupport(input) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      const text = input.text.trim().slice(0, SUPPORT_MAX);
+      if (!text) throw new SocialError('unknown');
+      const p = profiles.get(u.uid);
+      const m: SupportMessage = {
+        id: `s${++n}`,
+        uid: u.uid,
+        topic: input.topic,
+        text,
+        status: 'open',
+        createdAt: `${now()}#${String(n).padStart(6, '0')}`,
+        ...(p ? { handle: p.handle, name: p.displayName } : {}),
+        ...(u.email ? { email: u.email } : {}),
+        ...(input.platform ? { platform: input.platform } : {}),
+        ...(input.version ? { version: input.version } : {}),
+      };
+      support.set(m.id, m);
+      return m;
+    },
+    async mySupport(max) {
+      const u = me();
+      return [...support.values()].filter((m) => m.uid === u.uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async supportInbox(max) {
+      needAdmin();
+      return [...support.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async answerSupport(id, reply) {
+      needAdmin();
+      const m = support.get(id);
+      if (!m) throw new SocialError('not-found');
+      support.set(id, { ...m, reply: reply.trim(), repliedAt: now(), status: 'answered' });
+    },
+    async setSupportStatus(id, status) {
+      needAdmin();
+      const m = support.get(id);
+      if (m) support.set(id, { ...m, status });
+    },
+    async reports(max) {
+      needAdmin();
+      return [...reports]
+        .reverse()
+        .slice(0, max)
+        .map((r) => ({ id: r.id, by: r.by, kind: r.target.kind, targetId: r.target.id, ownerUid: r.target.ownerUid, reason: r.reason, note: r.note ?? '', createdAt: r.createdAt, status: r.status }));
+    },
+    async resolveReport(id) {
+      needAdmin();
+      const r = reports.find((x) => x.id === id);
+      if (r) r.status = 'resolved';
+    },
+    async takeDown(kind, id) {
+      needAdmin();
+      if (kind === 'comment') comments.delete(id);
+      else memories.delete(id);
+    },
+    async adminCounts(since) {
+      needAdmin();
+      const all = [...profiles.values()];
+      const vids = [...memories.values()];
+      return {
+        people: all.length,
+        peopleThisWeek: all.filter((p) => p.createdAt >= since).length,
+        videos: vids.length,
+        videosThisWeek: vids.filter((m) => m.createdAt >= since).length,
+        follows: follows.size,
+        likes: likes.size,
+        comments: comments.size,
+        crews: crews.size,
+        founders: counter.founders,
+        supportOpen: [...support.values()].filter((m) => m.status === 'open').length,
+        reports: reports.length,
+      };
+    },
+    async adminActivity(since, max) {
+      needAdmin();
+      return {
+        signups: [...profiles.values()].map((p) => p.createdAt).filter((t) => t >= since).slice(0, max),
+        videos: [...memories.values()].map((m) => m.createdAt).filter((t) => t >= since).slice(0, max),
+      };
+    },
+    async adminFestivals(ids) {
+      needAdmin();
+      return Object.fromEntries(
+        ids.map((id) => [id, { going: [...profiles.values()].filter((p) => p.festivals.includes(id)).length, videos: [...memories.values()].filter((m) => m.festivalId === id).length }]),
+      );
     },
     async setFriendCode(code) {
       if (network.down) throw new SocialError('network');
@@ -480,7 +584,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       updates.delete(`${crewId}/${id}`);
     },
     async report(target, reason, note) {
-      reports.push({ by: me().uid, target, reason, note });
+      reports.push({ id: `r${++n}`, by: me().uid, target, reason, note, createdAt: `${now()}#${String(n).padStart(6, '0')}`, status: 'open' });
     },
     async blocked() {
       return current ? (blocks.get(current.uid) ?? []) : [];
@@ -491,5 +595,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, counter, reports, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, counter, reports, support, verified, currentUser: () => current };
 }

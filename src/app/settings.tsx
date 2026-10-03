@@ -22,6 +22,7 @@ import { useFollowedArtists } from '../state/followedArtists';
 import { useMemories } from '../state/memories';
 import { useMusic } from '../state/music';
 import { useReactions } from '../state/reactions';
+import { useMySupport } from '../state/supportSeen';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 
@@ -31,6 +32,8 @@ import { color, radius, space, type } from '../theme/tokens';
  * iOS settings, so the profile itself stays a profile.
  */
 export default function SettingsScreen() {
+  // Replies from support you haven't seen yet.
+  const support = useMySupport();
   const mode = useFestivalMode();
   const { going } = useGoing();
   const modeToday = useToday();
@@ -121,6 +124,7 @@ export default function SettingsScreen() {
         </Group>
 
         <Group title="About">
+          <Row label="Contact support" detail={support.unseen ? `${support.unseen} new ${support.unseen === 1 ? 'reply' : 'replies'}` : undefined} onPress={() => router.push('/support')} />
           <Row label="Privacy" onPress={() => router.push(legalPath('privacy') as never)} />
           <Row label="Terms" onPress={() => router.push(legalPath('terms') as never)} />
           <Row label="Community guidelines" onPress={() => router.push(legalPath('guidelines') as never)} />

@@ -1,4 +1,4 @@
-import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing } from './models';
+import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -53,6 +53,35 @@ export interface SocialService {
    * Needs your profile.
    */
   claimFounder(): Promise<number | null>;
+  /** Send the email that confirms your address (needed for the support account's dashboard). */
+  sendVerification(): Promise<void>;
+  /** Read your sign-in again (after confirming your email); you, or null when signed out. */
+  reloadUser(): Promise<SocialUser | null>;
+
+  /** Send a message to Afterglow support. */
+  contactSupport(input: { topic: SupportTopic; text: string; platform?: string; version?: string }): Promise<SupportMessage>;
+  /** Your own messages to support, newest first, with any replies. */
+  mySupport(max: number): Promise<SupportMessage[]>;
+
+  // The support account only (refused for anyone else):
+  /** Every support message, newest first. */
+  supportInbox(max: number): Promise<SupportMessage[]>;
+  /** Reply to a message (it becomes answered). */
+  answerSupport(id: string, reply: string): Promise<void>;
+  /** Mark a message closed, or open again. */
+  setSupportStatus(id: string, status: 'open' | 'closed'): Promise<void>;
+  /** Reports, newest first. */
+  reports(max: number): Promise<ReportRecord[]>;
+  /** Mark a report dealt with. */
+  resolveReport(id: string): Promise<void>;
+  /** Take down a shared video or a comment that breaks the guidelines. */
+  takeDown(kind: 'memory' | 'comment', id: string): Promise<void>;
+  /** The headline numbers, counted on the server; `since` is a week ago. */
+  adminCounts(since: string): Promise<AdminCounts>;
+  /** When each profile was made and each video shared since then, for the charts. */
+  adminActivity(since: string, max: number): Promise<{ signups: string[]; videos: string[] }>;
+  /** For each festival: how many show they're going, and how many videos were shared there. */
+  adminFestivals(ids: string[]): Promise<Record<string, { going: number; videos: number }>>;
   /** Someone's founder number and flair, for their border and caption. */
   standingOf(uid: string): Promise<Standing>;
   searchProfiles(query: string): Promise<Profile[]>;

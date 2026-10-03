@@ -10,7 +10,7 @@ import type { SoundTag } from '../../data/models';
  * ratings, reactions, music library, unshared memories, where you filmed)
  * stays private on your phone.
  */
-export type SocialUser = { uid: string; email?: string };
+export type SocialUser = { uid: string; email?: string; /** Whether the email address has been confirmed. */ emailVerified?: boolean };
 
 export type Profile = {
   uid: string;
@@ -195,3 +195,62 @@ export type Flair = { kind: FlairKind; caption: string };
 
 /** What sets a profile apart: founder number, and any flair. Anyone can see it; nobody can give it to themselves. */
 export type Standing = { founder?: number; flair?: Flair };
+
+/** What a support message is about. */
+export type SupportTopic = 'help' | 'bug' | 'idea' | 'festival' | 'other';
+export const SUPPORT_TOPICS: { key: SupportTopic; label: string }[] = [
+  { key: 'help', label: 'I need help' },
+  { key: 'bug', label: 'Something’s broken' },
+  { key: 'idea', label: 'An idea' },
+  { key: 'festival', label: 'A festival' },
+  { key: 'other', label: 'Something else' },
+];
+/** Support messages are at most this long. */
+export const SUPPORT_MAX = 1000;
+export type SupportStatus = 'open' | 'answered' | 'closed';
+
+/** A message to Afterglow support, and the reply when there is one. */
+export type SupportMessage = {
+  id: string;
+  uid: string;
+  handle?: string;
+  name?: string;
+  /** The sender's sign-in email, so support can also write back by email. */
+  email?: string;
+  topic: SupportTopic;
+  text: string;
+  platform?: string;
+  version?: string;
+  status: SupportStatus;
+  createdAt: string;
+  reply?: string;
+  repliedAt?: string;
+};
+
+/** A report, as the support account sees it. */
+export type ReportRecord = {
+  id: string;
+  by: string;
+  kind: 'profile' | 'memory' | 'comment';
+  targetId: string;
+  ownerUid: string;
+  reason: ReportReason;
+  note: string;
+  createdAt: string;
+  status: 'open' | 'resolved';
+};
+
+/** The dashboard's numbers, all counted on the server. */
+export type AdminCounts = {
+  people: number;
+  peopleThisWeek: number;
+  videos: number;
+  videosThisWeek: number;
+  follows: number;
+  likes: number;
+  comments: number;
+  crews: number;
+  founders: number;
+  supportOpen: number;
+  reports: number;
+};

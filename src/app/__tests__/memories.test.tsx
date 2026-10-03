@@ -318,7 +318,7 @@ describe('social profiles', () => {
     await flush();
     await fireEvent.press(app.getByLabelText('More: report or block'));
     await flush();
-    expect(mockSocial.reports).toEqual([{ by: 'uid-2', target: { kind: 'profile', id: 'uid-1', ownerUid: 'uid-1' }, reason: 'offensive', note: undefined }]);
+    expect(mockSocial.reports).toEqual([expect.objectContaining({ by: 'uid-2', target: { kind: 'profile', id: 'uid-1', ownerUid: 'uid-1' }, reason: 'offensive', note: undefined })]);
     const foundBefore = (await mockSocial.service.searchProfiles('ma')).some((p) => p.handle === 'maya');
 
     (Alert.alert as jest.Mock).mockRestore();

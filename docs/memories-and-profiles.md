@@ -199,3 +199,18 @@ Artists get a holographic pink-purple-blue ring, the team a purple one, partners
 ## Photos in crews
 
 Afterglow is video-only everywhere else; photos go only to crews. The check-in screen has "+ Add a photo" (Take a photo on phones, or Choose from Photos): the photo goes with that check-in (its words, stage and who's playing) as a crew update of kind `photo`, the picture in `thumbUrl` (Storage `crews/{crewId}/{uid}/{id}.jpg`, the crew's own folder). Rules: a photo update needs its picture and no video. Like any update it waits in the outbox for signal, keeping the time you tapped; the picked photo is first copied into the app's folder (`features/crews/photoFile.ts`) so it survives until it's sent, then that copy is removed. Leaving a crew removes the photos you sent there (they're remembered with your crew videos). Stories show it full screen with its words.
+## The support account (Afterglow HQ) and Contact support
+
+Signing in with **afterglowmusic.support@gmail.com** (`SUPPORT_EMAIL`) turns the app into a dashboard instead of the guest app: `(tabs)/_layout.tsx` redirects that account to `admin.tsx`. The database only opens to it once the email is confirmed: the rules' `isAdmin()` checks the token's email and `email_verified`. The dashboard asks to confirm first ("Send the email", then "I've confirmed it", which reloads the sign-in and its token).
+
+- **Overview** (`features/admin/AdminOverview.tsx`): this week in sentences ("12 new people this week, 3 more than the week before."), tiles (people, videos shared, crews, founders of 100, follows, likes, comments, reports), day-by-day bars for new people and shared videos over 14 days, and the soonest festivals with how many show they're going and videos shared there. Everything is counted on the server (`getCountFromServer`) from Afterglow's own data; nothing extra is collected about anyone.
+- **Support** (`AdminSupport.tsx`): every message, newest first, filtered Open / Answered / Closed / All, with who sent it, topic, phone and version; reply in place (the person sees it under Contact support), email them, close or reopen.
+- **Reports** (`AdminReports.tsx`): reported videos, comments and profiles with the reason and note; look at a video, take a video or comment down (asked first; files removed too), mark dealt with.
+- **View the app** shows the app as everyone sees it, with a "← Dashboard" pill to come back (`state/adminView.ts`, AsyncStorage `adminGuestView.v1`).
+
+People write in from **Settings → About → Contact support** (`support.tsx`): a topic (I need help / Something's broken / An idea / A festival / Something else) and up to 1000 characters, stored in Firestore `support/{id}` with their name, @handle and sign-in email so support can reply; they read only their own, and replies show under "Your messages". Settings says "1 new reply" (`state/supportSeen.ts`, AsyncStorage `supportSeen.v1`). Signed out, it offers an email instead.
+
+**Setting it up (once):**
+1. Deploy the rules and indexes from your PC, in the app folder: `npx firebase-tools@latest deploy --only firestore,storage`.
+2. In the app: Profile, then Create your profile, then New here. Use afterglowmusic.support@gmail.com and a password only you know. (If you already made an account with that email, choose Sign in instead.)
+3. The dashboard opens and asks you to confirm the email: tap **Send the email**, open that Gmail inbox (check spam), tap the link, come back and tap **I've confirmed it**.

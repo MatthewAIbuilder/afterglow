@@ -13,7 +13,9 @@ service firebase.storage {
           (file.matches('.*[.]jpg$') && request.resource.contentType == 'image/jpeg' && request.resource.size < 5 * 1024 * 1024)
           || (file.matches('.*[.](mp4|mov|m4v)$') && request.resource.contentType.matches('video/.*') && request.resource.size < 150 * 1024 * 1024)
         );
-      allow delete: if request.auth != null && request.auth.uid == uid;
+      // The support account can take down a video that breaks the guidelines.
+      allow delete: if request.auth != null && (request.auth.uid == uid
+        || (request.auth.token.email == 'afterglowmusic.support@gmail.com' && request.auth.token.email_verified == true));
     }
     // Videos sent to a crew only. Their links live only in the crew's updates, which only members can read
     // (firestore.rules); the file names are random. You add and remove only your own. Writing over your
