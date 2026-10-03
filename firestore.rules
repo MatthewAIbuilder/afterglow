@@ -30,7 +30,11 @@ service cloud.firestore {
     match /profiles/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['handle', 'displayName', 'nameLower', 'bio', 'avatarUrl', 'coverUrl', 'festivals', 'sounds', 'showFestivals', 'showSound', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['handle', 'displayName', 'nameLower', 'bio', 'avatarUrl', 'coverUrl', 'festivals', 'sounds', 'showFestivals', 'showSound', 'createdAt', 'updatedAt', 'instagram', 'snapchat', 'tiktok'])
+        // Usernames only (the app makes the links), in each service's own shape.
+        && (!('instagram' in request.resource.data) || (request.resource.data.instagram is string && request.resource.data.instagram.matches('^[a-z0-9._]{1,30}$')))
+        && (!('snapchat' in request.resource.data) || (request.resource.data.snapchat is string && request.resource.data.snapchat.matches('^[a-z][a-z0-9._-]{2,14}$')))
+        && (!('tiktok' in request.resource.data) || (request.resource.data.tiktok is string && request.resource.data.tiktok.matches('^[a-z0-9._]{2,24}$')))
         && validHandle(request.resource.data.handle)
         && request.resource.data.displayName is string && request.resource.data.displayName.size() > 0 && request.resource.data.displayName.size() <= 40
         && request.resource.data.nameLower == request.resource.data.displayName.lower()

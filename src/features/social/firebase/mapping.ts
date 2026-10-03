@@ -1,3 +1,4 @@
+import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
 import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
@@ -28,6 +29,7 @@ export function profileFromDoc(uid: string, d: unknown): Profile | null {
     sounds: strs(o.sounds, 3).filter((s): s is SoundTag => (SOUND_TAGS as readonly string[]).includes(s)),
     showFestivals: o.showFestivals === true,
     showSound: o.showSound === true,
+    ...(Object.keys(cleanSocials(o)).length ? { socials: cleanSocials(o) } : {}),
     createdAt: str(o.createdAt) ?? '',
     updatedAt: str(o.updatedAt) ?? '',
   };

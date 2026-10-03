@@ -1,3 +1,5 @@
+import { SocialLinks } from '../../components/SocialIcons';
+import type { Socials } from '../social/socials';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { ProfileIcon } from '../../components/TabIcons';
@@ -38,6 +40,8 @@ type Props = {
   /** Someone else's profile: their @handle under the name, and whose they are ("Maya's") in what's read out. */
   handle?: string;
   whose?: string;
+  /** Their Instagram, Snapchat and TikTok, as little icons under the bio. */
+  socials?: Socials;
   /** A quiet line under the bio ("Going to EDC Orlando 2026"). */
   note?: string;
   /** Your glow level, live from your quests, as a gold pill that opens them. Without it, the level their profile shows (if any). */
@@ -55,7 +59,7 @@ const ORBIT_H = 236;
  * round it), your name and bio, what you're feeling lately, the counts, your
  * sound as chips, and the buttons (passed as children).
  */
-export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable, level, onLevel }: Props) {
+export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable, level, onLevel, socials }: Props) {
   const standing = useStanding(uid);
   const ringed = !!ringOf(standing);
   // Your own level comes live from your quests; anyone else's from what their profile shows.
@@ -117,6 +121,7 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
         </View>
       ) : null}
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
+      <SocialLinks socials={socials} whose={name} />
       {note ? <Text style={styles.note}>{note}</Text> : null}
       {feeling ? (
         <View style={[styles.feeling, { borderColor: withAlpha(SOUND_COLOR[feeling], 0.5), backgroundColor: withAlpha(SOUND_COLOR[feeling], 0.12) }]}>

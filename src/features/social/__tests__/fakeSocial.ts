@@ -215,6 +215,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         sounds: input.showSound ? published.sounds : [],
         showFestivals: input.showFestivals,
         showSound: input.showSound,
+        ...((input.socials ?? before?.socials) && Object.keys(input.socials ?? before?.socials ?? {}).length ? { socials: input.socials ?? before?.socials } : {}),
         createdAt: before?.createdAt ?? at,
         updatedAt: at,
       };

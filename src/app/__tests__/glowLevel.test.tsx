@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { levelName } from '../../features/quests/daily';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetStandings } from '../../features/standing/useStanding';
@@ -72,5 +73,38 @@ describe('glow levels on profiles', () => {
     await flush();
     expect(mockSocial.levels.has(sam)).toBe(false);
     expect(await AsyncStorage.getItem('showLevel.v1')).toBe('0');
+  });
+
+  it('Instagram, Snapchat and TikTok: added in Edit profile, shown as icons that open the account', async () => {
+    await person('maya');
+    // Opened once your profile has loaded, as in the app.
+    const app = await renderApp('/settings');
+    await flush();
+    await act(async () => router.push('/profile-edit'));
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Instagram username'), 'https://www.instagram.com/Maya.Chen/');
+    await fireEvent.changeText(app.getByLabelText('TikTok username'), '@m');
+    await flush();
+    expect(app.getByText('instagram.com/maya.chen')).toBeTruthy();
+    expect(app.getByText(/^That doesn’t look like a TikTok username/)).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('TikTok username'), '@maya.dances');
+    await fireEvent.press(app.getByText('Save'));
+    await flush();
+    expect(mockSocial.profiles.get(mockSocial.currentUser()!.uid)?.socials).toEqual({ instagram: 'maya.chen', tiktok: 'maya.dances' });
+  });
+
+  it('someone’s socials show as little icons on their profile', async () => {
+    await person('maya');
+    await s().saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: false, showSound: false, socials: { instagram: 'maya.chen', snapchat: 'mayac' } }, { festivals: [], sounds: [] });
+    await s().signOut();
+    await person('sam');
+    const { Linking } = jest.requireActual<typeof import('react-native')>('react-native');
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const app = await renderApp('/u/maya');
+    await flush();
+    expect(app.queryByLabelText(/TikTok/)).toBeNull();
+    await fireEvent.press(app.getByLabelText('Maya on Instagram, @maya.chen. Opens Instagram.'));
+    expect(open).toHaveBeenCalledWith('https://instagram.com/maya.chen');
+    expect(app.getByLabelText('Maya on Snapchat, @mayac. Opens Snapchat.')).toBeTruthy();
   });
 });

@@ -200,6 +200,7 @@ function FullProfile() {
         </View>
 
         <ProfileHeader
+            socials={me?.socials}
           name={me?.displayName ?? 'You'}
           initial={!!me}
           bio={me ? me.bio : 'Your festivals, your videos and your sound.'}

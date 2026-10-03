@@ -53,6 +53,14 @@ await t('field limits: long name, long bio, extra field, bad avatar', async () =
   await assertFails(claim(C, 'uidC', 'cara', { coverUrl: 'http://x/c.jpg' }));
   await assertFails(claim(C, 'uidC', 'cara', { nameLower: 'someone else' }));
 });
+await t('profiles may carry Instagram, Snapchat and TikTok usernames, in each service’s shape, never links', async () => {
+  const E = env.authenticatedContext('uidE');
+  await assertSucceeds(claim(E, 'uidE', 'eve', { instagram: 'eve.c', snapchat: 'evec', tiktok: 'eve.dances' }));
+  await assertFails(claim(E, 'uidE', 'eve', { instagram: 'https://instagram.com/eve' }));
+  await assertFails(claim(E, 'uidE', 'eve', { snapchat: '1eve' }));
+  await assertFails(claim(E, 'uidE', 'eve', { tiktok: 'Eve' }));
+  await assertFails(claim(E, 'uidE', 'eve', { facebook: 'eve' }));
+});
 await t('a cover photo link must be https', () => assertSucceeds(claim(env.authenticatedContext('uidD'), 'uidD', 'dana', { coverUrl: 'https://x/c.jpg' })));
 await t('A moves to @maya2 (old handle released in the same write)', async () => {
   const db = A.firestore(); const b = writeBatch(db);

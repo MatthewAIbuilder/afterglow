@@ -291,6 +291,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           if (current && current.handle !== input.handle) tx.delete(doc(db, 'handles', current.handle));
           if (!owner.exists()) tx.set(handleRef, { uid: user.uid });
           const at = now();
+          // Left out of the input: keep the ones you have.
+          const socials = input.socials ?? current?.socials;
           const next: Profile = {
             uid: user.uid,
             handle: input.handle,
@@ -302,11 +304,13 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             sounds: input.showSound ? published.sounds.slice(0, 3) : [],
             showFestivals: input.showFestivals,
             showSound: input.showSound,
+            ...(socials && Object.keys(socials).length ? { socials } : {}),
             createdAt: current?.createdAt || at,
             updatedAt: at,
           };
-          const { uid: _uid, avatarUrl, coverUrl, ...fields } = next;
-          tx.set(profileRef, { ...fields, nameLower: next.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
+          const { uid: _uid, avatarUrl, coverUrl, socials: _s, ...fields } = next;
+          // Usernames are stored as their own fields (instagram, snapchat, tiktok).
+          tx.set(profileRef, { ...fields, ...(socials ?? {}), nameLower: next.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
           return next;
         });
       }),

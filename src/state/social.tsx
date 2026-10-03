@@ -132,7 +132,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   useEffect(() => {
     if (!profile || !publishedChanged(profile, published.festivals, published.sounds)) return;
     const t = setTimeout(() => {
-      const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound };
+      const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound, socials: profile.socials ?? {} };
       service
         .saveProfile(input, published)
         .then((p) => currentUid.current === p.uid && setProfile(p))

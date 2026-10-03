@@ -1,3 +1,4 @@
+import type { Socials } from './socials';
 import type { SoundTag } from '../../data/models';
 import type { PastEvent } from '../memories/past';
 
@@ -29,6 +30,8 @@ export type Profile = {
   /** Your switches, so the published lists can follow your plans without re-saving. */
   showFestivals: boolean;
   showSound: boolean;
+  /** Your Instagram, Snapchat and TikTok usernames, if you added them. */
+  socials?: Socials;
   createdAt: string;
   updatedAt: string;
 };
@@ -40,6 +43,8 @@ export type ProfileInput = {
   bio: string;
   showFestivals: boolean;
   showSound: boolean;
+  /** Left out: your current ones stay as they are. */
+  socials?: Socials;
 };
 
 /** A memory you shared, as others see it. Where you filmed it is never included. */
