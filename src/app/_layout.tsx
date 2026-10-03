@@ -17,6 +17,9 @@ import { SecretStage } from '../features/secrets/SecretStage';
 import { SunriseWatcher } from '../features/secrets/SunriseWatcher';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { FounderClaim } from '../features/standing/FounderClaim';
+import { ActivityPing } from '../features/admin/ActivityPing';
+import { SavedAccountSync } from '../features/accounts/SavedAccountSync';
+import { LivePatchSync } from '../features/admin/LivePatchSync';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
@@ -162,6 +165,16 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="switch-account"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.6, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: color.nightRaised },
+          }}
+        />
+        <Stack.Screen
           name="request"
           options={{
             presentation: 'formSheet',
@@ -198,6 +211,9 @@ export default function RootLayout() {
       </Stack>
       <FirstRun />
       <FounderClaim />
+      <ActivityPing />
+      <SavedAccountSync />
+      <LivePatchSync />
       <AdminReturnPill />
       <TonightLauncher />
       <WhatsNewLauncher />

@@ -6,6 +6,8 @@ import { NightSky } from '../components/NightSky';
 import { PageTitle } from '../components/PageTitle';
 import { Tabs } from '../components/Tabs';
 import { isSupportAccount } from '../features/admin/admin';
+import { AdminAccounts } from '../features/admin/AdminAccounts';
+import { AdminData } from '../features/admin/AdminData';
 import { AdminOverview } from '../features/admin/AdminOverview';
 import { AdminReports } from '../features/admin/AdminReports';
 import { AdminSupport } from '../features/admin/AdminSupport';
@@ -15,12 +17,13 @@ import { setGuestView } from '../state/adminView';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 
-type Section = 'overview' | 'support' | 'reports';
+type Section = 'overview' | 'data' | 'accounts' | 'support' | 'reports';
 
 /**
  * Afterglow HQ: what the support account sees instead of the app. How
- * Afterglow is doing (Overview), messages from people (Support) and what
- * they reported (Reports). "View the app" shows the app as everyone sees
+ * Afterglow is doing (Overview), lineups and set times to add (Data),
+ * privileges for other accounts (Accounts), messages from people (Support)
+ * and what they reported (Reports). "View the app" shows the app as everyone sees
  * it, with a pill back here. It opens only for the support email, once
  * that email is confirmed (the database checks it too).
  */
@@ -63,6 +66,9 @@ export default function AdminScreen() {
             <Pressable onPress={viewApp} accessibilityRole="button" accessibilityLabel="View the app as everyone sees it" style={({ pressed }) => [styles.pill, pressed && styles.pressed]}>
               <Text style={styles.pillText}>View the app</Text>
             </Pressable>
+            <Pressable onPress={() => router.push('/switch-account')} accessibilityRole="button" accessibilityLabel="Switch account" hitSlop={6}>
+              <Text style={styles.switchText}>Switch account</Text>
+            </Pressable>
             <Pressable onPress={signOut} accessibilityRole="button" hitSlop={6}>
               <Text style={styles.signOut}>Sign out</Text>
             </Pressable>
@@ -102,12 +108,24 @@ export default function AdminScreen() {
                 onChange={setTab}
                 items={[
                   { key: 'overview', label: 'Overview' },
+                  { key: 'data', label: 'Data' },
+                  { key: 'accounts', label: 'Accounts' },
                   { key: 'support', label: 'Support', count: open || undefined },
                   { key: 'reports', label: 'Reports' },
                 ]}
               />
             </View>
-            {tab === 'overview' ? <AdminOverview /> : tab === 'support' ? <AdminSupport onCount={onCount} /> : <AdminReports />}
+            {tab === 'overview' ? (
+              <AdminOverview />
+            ) : tab === 'data' ? (
+              <AdminData />
+            ) : tab === 'accounts' ? (
+              <AdminAccounts />
+            ) : tab === 'support' ? (
+              <AdminSupport onCount={onCount} />
+            ) : (
+              <AdminReports />
+            )}
           </>
         )}
       </ScrollView>
@@ -125,6 +143,7 @@ const styles = StyleSheet.create({
   pill: { paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.5)' },
   pillText: { ...type.label, color: color.moon },
   signOut: { ...type.caption, color: color.moonFaint },
+  switchText: { ...type.caption, color: color.glow },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   tabs: { marginBottom: space.lg },
   verify: { marginHorizontal: space.lg, padding: space.xl, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(255,184,107,0.08)', borderWidth: 1, borderColor: 'rgba(255,184,107,0.4)' },

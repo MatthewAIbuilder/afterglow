@@ -13,6 +13,7 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { BIO_MAX, normalizeHandle, profileProblems, suggestHandle } from '../features/social/validate';
 import { tasteMix } from '../features/taste/lean';
 import { haptic } from '../lib/haptics';
+import { forgetAccount } from '../state/savedAccounts';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
@@ -170,7 +171,9 @@ export default function ProfileEditScreen() {
 
   const deleteAccount = async () => {
     try {
+      const uid = social.user?.uid;
       await social.deleteAccount(password);
+      if (uid) void forgetAccount(uid);
       haptic.settle();
       showAlert('Account deleted', 'Your profile and everything you shared are gone. Your memories are still on this phone.');
       if (router.canGoBack()) router.back();

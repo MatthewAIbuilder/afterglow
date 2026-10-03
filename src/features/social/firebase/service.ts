@@ -40,11 +40,12 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { asSocialError, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { nextPresence, presenceFromDoc } from '../../admin/presence';
+import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -218,6 +219,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         batch.delete(doc(db, 'friendCodes', user.uid));
         // A founder's number goes with them (the spot isn't given to anyone else).
         batch.delete(doc(db, 'founders', user.uid));
+        batch.delete(doc(db, 'activity', user.uid));
         await batch.commit();
         // Once the profile is gone (the rules allow it only then), and never in the way of deleting the account.
         await deleteDoc(doc(db, 'usage', user.uid)).catch(() => {});
@@ -555,7 +557,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const { db } = fb();
         const count = async (q: Parameters<typeof getCountFromServer>[0]) => (await getCountFromServer(q)).data().count;
-        const [people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, supportOpen, reports, founders] = await Promise.all([
+        // A collection the rules don't let us count yet (not deployed) reads as 0 rather than failing the page.
+        const soft = (p: Promise<number>) => p.catch(() => 0);
+        const [people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, supportOpen, supportTotal, reports, reportsResolved, founders, accounts, crewInvites] = await Promise.all([
           count(collection(db, 'profiles')),
           count(query(collection(db, 'profiles'), where('createdAt', '>=', since))),
           count(collection(db, 'memories')),
@@ -565,23 +569,134 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           count(collection(db, 'comments')),
           count(collection(db, 'crews')),
           count(query(collection(db, 'support'), where('status', '==', 'open'))),
+          soft(count(collection(db, 'support'))),
           count(collection(db, 'reports')),
+          soft(count(query(collection(db, 'reports'), where('status', '==', 'resolved')))),
           getDoc(doc(db, 'counters', 'founders')).then((d) => Number((d.data() as { count?: unknown } | undefined)?.count) || 0),
+          soft(count(collection(db, 'activity'))),
+          soft(count(collection(db, 'crewInvites'))),
         ]);
-        return { people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, founders, supportOpen, reports };
+        return { people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, founders, supportOpen, supportTotal, reports, reportsOpen: Math.max(0, reports - reportsResolved), accounts, crewInvites };
       }),
     adminActivity: (since, max) =>
       guard(async () => {
         const { db } = fb();
-        const [p, m] = await Promise.all([
-          getDocs(query(collection(db, 'profiles'), where('createdAt', '>=', since), orderBy('createdAt', 'desc'), limit(max))),
-          getDocs(query(collection(db, 'memories'), where('createdAt', '>=', since), orderBy('createdAt', 'desc'), limit(max))),
+        const recent = (name: string) => getDocs(query(collection(db, name), where('createdAt', '>=', since), orderBy('createdAt', 'desc'), limit(max)));
+        const empty = { docs: [] as { data: () => unknown }[] };
+        const [p, m, c, l, f, cr] = await Promise.all([
+          recent('profiles'),
+          recent('memories'),
+          recent('comments').catch(() => empty),
+          recent('likes').catch(() => empty),
+          recent('follows').catch(() => empty),
+          recent('crews').catch(() => empty),
         ]);
         const at = (d: { data: () => unknown }) => (d.data() as { createdAt?: unknown }).createdAt;
+        const times = (snap: { docs: { data: () => unknown }[] }) => snap.docs.map(at).filter((x): x is string => typeof x === 'string');
+        const s = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
         return {
-          signups: p.docs.map(at).filter((x): x is string => typeof x === 'string'),
-          videos: m.docs.map(at).filter((x): x is string => typeof x === 'string'),
+          signups: times(p),
+          videos: m.docs.flatMap((d) => {
+            const o = d.data() as Record<string, unknown>;
+            const createdAt = s(o.createdAt);
+            const uid = s(o.uid);
+            if (!createdAt || !uid) return [];
+            return [{ createdAt, uid, handle: s(o.handle), artistId: s(o.artistId), festivalId: s(o.festivalId), durationSec: typeof o.durationSec === 'number' ? o.durationSec : undefined }];
+          }),
+          comments: times(c),
+          likes: times(l),
+          follows: times(f),
+          crews: times(cr),
         };
+      }),
+    adminPresence: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'activity'), orderBy('lastSeenAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => presenceFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    addDrop: (input, onProgress) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const ref_ = doc(collection(db, 'drops'));
+        const files = [];
+        for (const [i, f] of input.files.entries()) {
+          const name = f.name.replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80) || `file-${i + 1}`;
+          const path = `drops/${ref_.id}/${i + 1}-${name}`;
+          const blob = await (await fetch(f.uri)).blob();
+          if (blob.size > DROP_FILE_MAX) throw new SocialError('too-large');
+          const task = uploadBytesResumable(ref(fb().storage, path), blob, { contentType: f.type || blob.type || 'application/octet-stream' });
+          await new Promise<void>((resolve, reject) =>
+            task.on('state_changed', (s) => onProgress?.((i + (s.totalBytes ? s.bytesTransferred / s.totalBytes : 0)) / input.files.length), reject, () => resolve()),
+          );
+          files.push({ name: f.name.slice(0, 120), type: f.type || blob.type || '', size: blob.size, path, url: await getDownloadURL(task.snapshot.ref) });
+        }
+        const data = {
+          by: user.uid,
+          note: input.note.trim().slice(0, 500),
+          files,
+          status: 'waiting',
+          createdAt: serverTimestamp(),
+          ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+          ...(input.festivalName?.trim() ? { festivalName: input.festivalName.trim().slice(0, 120) } : {}),
+          ...(input.text?.trim() ? { text: input.text.trim().slice(0, 50_000) } : {}),
+        };
+        await setDoc(ref_, data);
+        return dropFromDoc(ref_.id, { ...data, createdAt: now() })!;
+      }),
+    drops: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'drops'), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => dropFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    setDropStatus: (id, status) => guard(async () => updateDoc(doc(fb().db, 'drops', id), { status })),
+    deleteDrop: (id) =>
+      guard(async () => {
+        const ref_ = doc(fb().db, 'drops', id);
+        const drop = dropFromDoc(id, (await getDoc(ref_)).data());
+        for (const f of drop?.files ?? []) await removeFile(f.path);
+        await deleteDoc(ref_);
+      }),
+    livePatches: () =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'published'), orderBy('publishedAt', 'asc'), limit(200)));
+        return snap.docs.map((d) => patchFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    publishPatch: (input) =>
+      guard(async () => {
+        const user = me();
+        const ref_ = doc(collection(fb().db, 'published'));
+        const data = { title: input.title.slice(0, 120), festivalId: input.festivalId, file: input.file, by: user.uid, publishedAt: serverTimestamp(), ...(input.dropId ? { dropId: input.dropId } : {}) };
+        await setDoc(ref_, data);
+        return patchFromDoc(ref_.id, { ...data, publishedAt: now() })!;
+      }),
+    unpublishPatch: (id) => guard(async () => deleteDoc(doc(fb().db, 'published', id))),
+    setPlus: (uid, plus) =>
+      guard(async () => {
+        const ref_ = doc(fb().db, 'plus', uid);
+        if (!plus) return deleteDoc(ref_);
+        await setDoc(ref_, { active: true, ...(plus.until ? { until: plus.until } : {}) });
+      }),
+    setFlair: (uid, flair) =>
+      guard(async () => {
+        const ref_ = doc(fb().db, 'flairs', uid);
+        if (!flair) return deleteDoc(ref_);
+        await setDoc(ref_, { kind: flair.kind, caption: flair.caption.trim().slice(0, 40) });
+      }),
+    privileged: () =>
+      guard(async () => {
+        const { db } = fb();
+        const [p, f] = await Promise.all([getDocs(query(collection(db, 'plus'), limit(500))), getDocs(query(collection(db, 'flairs'), limit(500)))]);
+        return privilegesFrom(
+          p.docs.map((d) => ({ id: d.id, data: d.data() })),
+          f.docs.map((d) => ({ id: d.id, data: d.data() })),
+        );
+      }),
+    markActive: (input) =>
+      guard(async () => {
+        const ref_ = doc(fb().db, 'activity', me().uid);
+        const prev = presenceFromDoc(me().uid, (await getDoc(ref_)).data());
+        await setDoc(ref_, nextPresence(prev, input));
       }),
     adminFestivals: (ids) =>
       guard(async () => {

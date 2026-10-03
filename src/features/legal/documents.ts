@@ -12,7 +12,7 @@ export type LegalSection = { heading?: string; paragraphs: string[] };
 export type LegalDocument = { id: LegalDoc; title: string; updated: string; intro: string; sections: LegalSection[] };
 
 /** When these words last changed (shown as "Last updated"). */
-export const LEGAL_UPDATED = 'September 30, 2026';
+export const LEGAL_UPDATED = 'October 3, 2026';
 
 export const LEGAL_DOCS: LegalDoc[] = ['privacy', 'terms', 'guidelines'];
 
@@ -44,6 +44,8 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
               'If you connect Spotify or Apple Music, your sign-in is kept in your phone’s secure storage and a summary of your library (which artists, not song titles or playlists) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
               'Reminders are scheduled on your phone. We don’t send push notifications.',
               'Photos you send to a crew go only to the people in that crew, stored with the crew\u2019s updates; they never appear on Discover or your profile, and leaving the crew removes the ones you sent.',
+              'When you’re signed in: the days and times you open the app, which kind of phone or the website, and the app version. This tells us how many people use Afterglow and keeps old versions in view; it never includes what you watch or do, and only you and Afterglow support can read it. It’s removed with your account.',
+              'Switching accounts: if you save accounts for quick switching, their emails and names are kept on your phone, and their passwords only in your phone’s keychain (on the website, nothing is kept and you type the password each time). They never leave your phone.',
               'Support messages: when you contact support in the app, we keep your message with your name, @handle and sign-in email so we can reply; only you and Afterglow support can read it.',
               'Founders and badges: if you were one of the first 100 people to make a profile, your founder number is public and shows on your profile. Your festival badges are worked out from the videos you share, so anyone who can see those videos can see your badges. Your glow level from daily quests (a single number) shows on your profile too, unless you switch it off in Edit profile; switching it off removes it.',
               'Look after yourself (stopwatches, including what you chose to time them for, water, food, check-ins and pulse checks) is kept only on your phone. Steps are read from your phone’s own motion counter, only after you ask, and are not stored. None of it is sent to us, shown on your profile or in recaps; it can be locked with Face ID, and Clear everything removes it. Only if you tap “I’m OK” or “Ask my crew for help” does your crew get that one check-in (not how you felt or anything else on the page), like any other crew update.',
@@ -63,7 +65,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
             paragraphs: [
               'Accounts, shared videos and the website are run on Google Firebase (Authentication, Cloud Firestore, Cloud Storage and Hosting), with data stored in the United States. Google processes it for us under its own terms.',
               'Clips in Discover play in YouTube’s own player, so YouTube (Google) receives what any embedded YouTube video receives and applies its own privacy policy. Spotify and Apple Music sign-ins happen on their own pages.',
-              'We don’t sell your data, show ads, or use advertising or analytics trackers.',
+              'We don’t sell your data, show ads, or use advertising or third-party analytics trackers.',
             ],
           },
           {
