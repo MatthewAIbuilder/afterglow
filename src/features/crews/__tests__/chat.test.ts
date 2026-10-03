@@ -4,6 +4,12 @@ import {
   CHAT_KEEP_MS,
   CHAT_REFUSED_TRIES,
   arrivedLate,
+  arrivedLateLine,
+  deliveryLine,
+  heldFor,
+  justArrivedLate,
+  lateNote,
+  waitingLine,
   chatLines,
   chatPreview,
   chatRows,
@@ -85,5 +91,23 @@ describe('crew chat', () => {
     expect(chatPreview(msg('a', 'maya', T(22), T(22), 'See you at\nMain Stage'), 'me', () => 'Maya')).toBe('Maya: See you at Main Stage');
     expect(chatPreview(msg('a', 'me', T(22), T(22), 'x'.repeat(80)), 'me', () => 'Maya')).toBe(`You: ${'x'.repeat(59)}…`);
     expect(chatPreview(undefined, 'me', () => '')).toBeUndefined();
+  });
+
+  it('says plainly when signal held something up', () => {
+    expect(heldFor(30_000)).toBe('1 min');
+    expect(heldFor(18 * 60_000)).toBe('18 min');
+    expect(heldFor(65 * 60_000)).toBe('1 h 5 min');
+    expect(heldFor(120 * 60_000)).toBe('2 h');
+    expect(waitingLine([])).toBeUndefined();
+    expect(waitingLine([{ at: iso(T(22, 2)) }])).toBe('Waiting for signal. Your message sends by itself as soon as there’s a bar, still marked 10:02 PM.');
+    expect(waitingLine([{ at: iso(T(22, 5)) }, { at: iso(T(22, 2)) }])).toBe('Waiting for signal. 2 messages send by themselves as soon as there’s a bar, still marked from 10:02 PM.');
+    expect(deliveryLine(1, 18 * 60_000)).toBe('Your message reached the crew, held up 18 min by signal.');
+    expect(deliveryLine(3, 65 * 60_000)).toBe('Your 3 messages reached the crew, held up 1 h 5 min by signal.');
+    const late = msg('m1', 'maya', T(22, 2), T(22, 20));
+    expect(lateNote(late)).toBe('Sent 10:02 PM · reached the crew 10:20 PM');
+    expect(arrivedLateLine(late, 'Maya')).toBe('Maya’s message from 10:02 PM just got through, held up 18 min by signal.');
+    const sent = [late, msg('m2', 'sam', T(22, 19)), msg('m3', 'me', T(21), T(22, 20)), msg('m4', 'maya', T(20), T(21))];
+    expect(justArrivedLate(sent, 'me', [], T(22, 25)).map((m) => m.id)).toEqual(['m1']);
+    expect(justArrivedLate(sent, 'me', ['maya'], T(22, 25))).toEqual([]);
   });
 });

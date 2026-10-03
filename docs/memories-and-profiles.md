@@ -132,6 +132,13 @@ Joining (or starting a crew) means agreeing to the crew chat rules (`CHAT_RULES`
 
 The app follows each of your crews' newest 150 messages live (`watchCrewChat`, a Firestore listener) in `state/crewChat.tsx`. Your messages go into an outbox on the phone (`crewChatOutbox.v1`) and send themselves when there's signal, keeping the time you wrote them. A message held back 10 minutes or more says when it reached the crew. When you last read each chat is kept in `crewChatRead.v1`; new messages show as "2 new messages" on the crew page's chat card, on the Friends tab's crews and as the glow dot on the Friends tab.
 
+Like check-ins, a message keeps the time it was written: that's what the crew sees, and it decides the order. The server's time only says when it got through. Sending is built for bad signal. `sendCrewMessages` writes all of a crew's waiting messages in one small batch with no read first. If it hasn't got through in 12 seconds, it counts as no signal and is tried again. Retries never double a message, because ids are made on the phone.
+
+The app says when signal held something up:
+- your messages still waiting show "Waiting for signal…" with Try now;
+- once they get through, "Your 2 messages reached the crew, held up 18 min by signal", plus a phone notification if they were held 10 minutes or more and you're not in that chat;
+- a crewmate's late message reads "Sent 7:30 PM · reached the crew 8:00 PM", and the chat points it out.
+
 The chat screen is `crew-chat/[id].tsx`:
 - the rules at the top;
 - day headings, with each person's messages grouped together;

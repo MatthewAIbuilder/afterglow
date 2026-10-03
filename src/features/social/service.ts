@@ -211,10 +211,15 @@ export interface SocialService {
   /** Remove the crew-only video files you uploaded with these updates (after you've left or been taken out of the crew). */
   forgetCrewVideos(crewId: string, updateIds: readonly string[]): Promise<void>;
   /**
-   * Send a message to a crew's chat (members only). Sending the same id again
-   * (a retry after a dropped connection) never doubles it.
+   * Send messages to a crew's chat (members only), all in one small write so
+   * a scrap of signal is enough. Each keeps `at`, when it was written; the
+   * crew sees that time. Ids are made on the phone, so sending again after a
+   * dropped connection never doubles a message. Resolves with the ids that
+   * are in the chat now. With no signal (or a write that doesn't get through
+   * within `CHAT_SEND_TIMEOUT_MS`) it throws `network`, and it's safe to try
+   * again.
    */
-  sendCrewMessage(crewId: string, input: CrewMessageInput): Promise<CrewMessage>;
+  sendCrewMessages(crewId: string, inputs: readonly CrewMessageInput[]): Promise<string[]>;
   /**
    * Follow a crew's chat: called with its newest `max` messages (newest
    * first, by when they reached the crew) now and whenever they change.

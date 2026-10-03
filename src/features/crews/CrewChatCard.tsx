@@ -14,8 +14,13 @@ export function CrewChatCard({ crew, nameOf }: { crew: Crew; nameOf: (uid: strin
   const me = useSocial().user?.uid;
   if (!chat.ready) return null;
   const unread = chat.unreadFor(crew.id);
+  const waiting = chat.waitingFor(crew.id).length;
   const preview = chatPreview(chat.latestFor(crew.id), me, nameOf);
-  const line = preview ?? 'Say hi to your crew. Only people in it can see the chat.';
+  const line = waiting
+    ? waiting === 1
+      ? '1 message waiting for signal. It sends by itself, keeping the time you wrote it.'
+      : `${waiting} messages waiting for signal. They send by themselves, keeping the time you wrote them.`
+    : (preview ?? 'Say hi to your crew. Only people in it can see the chat.');
   return (
     <Pressable
       onPress={() => {
@@ -34,7 +39,7 @@ export function CrewChatCard({ crew, nameOf }: { crew: Crew; nameOf: (uid: strin
           Crew chat
           {unread ? <Text style={styles.new}>{`  ${unreadLine(unread)}`}</Text> : null}
         </Text>
-        <Text style={styles.preview} numberOfLines={1}>
+        <Text style={[styles.preview, waiting > 0 && { color: '#FFB86B' }]} numberOfLines={waiting ? 2 : 1}>
           {line}
         </Text>
       </View>

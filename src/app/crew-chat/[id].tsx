@@ -7,7 +7,7 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
 import { ChevronIcon } from '../../components/TabIcons';
-import { CHAT_RULES, QUICK_MESSAGES, arrivedLate, chatRows, type ChatLine } from '../../features/crews/chat';
+import { CHAT_RULES, QUICK_MESSAGES, arrivedLate, arrivedLateLine, chatRows, deliveryLine, justArrivedLate, lateNote, waitingLine, type ChatLine } from '../../features/crews/chat';
 import { firstName } from '../../features/crews/together';
 import { clock } from '../../features/crews/updates';
 import { useCrewPage } from '../../features/crews/useCrewPage';
@@ -53,11 +53,20 @@ export default function CrewChatScreen() {
 
   // Reading the chat: now, and whenever something new arrives while it's open.
   const unread = chat.unreadFor(id);
-  const { markRead } = chat;
+  const { markRead, setOpenChat } = chat;
   useFocusEffect(
     useCallback(() => {
       markRead(id);
-    }, [markRead, id]),
+      setOpenChat(id);
+      return () => setOpenChat(undefined);
+    }, [markRead, setOpenChat, id]),
+  );
+  // Delays, said plainly: yours waiting, yours that got through late, and theirs that just got through late.
+  const waiting = waitingLine(chat.waitingFor(id).filter((o) => lines.some((l) => l.id === o.id && l.status === 'waiting')));
+  const delivery = chat.deliveryFor(id);
+  const lateIn = useMemo(
+    () => justArrivedLate(lines.filter((l) => l.status === 'sent'), me, [...social.blocked], now),
+    [lines, me, social.blocked, now],
   );
   useEffect(() => {
     if (unread) markRead(id);
@@ -134,7 +143,7 @@ export default function CrewChatScreen() {
           const { line, mine, first, last } = row;
           const p = profiles[line.uid];
           const late = line.status === 'sent' && arrivedLate(line);
-          const state = line.status === 'waiting' ? 'Waiting for signal' : line.status === 'failed' ? 'Not sent. Tap to try again' : late ? `Reached the crew ${clock(line.sentAt)}` : undefined;
+          const state = line.status === 'waiting' ? 'Waiting for signal' : line.status === 'failed' ? 'Not sent. Tap to try again' : undefined;
           return (
             <View key={row.key} style={[styles.row, mine ? styles.rowMine : styles.rowTheirs, first && styles.runStart]}>
               {!mine ? <View style={styles.avatarSlot}>{last ? <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={28} /> : null}</View> : null}
@@ -145,15 +154,19 @@ export default function CrewChatScreen() {
                   onLongPress={() => more(line)}
                   delayLongPress={350}
                   accessibilityRole="text"
-                  accessibilityLabel={`${mine ? 'You' : nameOf(line.uid)}, ${clock(line.at)}: ${line.text}${state ? `. ${state}` : ''}`}
+                  accessibilityLabel={`${mine ? 'You' : nameOf(line.uid)}, ${clock(line.at)}: ${line.text}${state ? `. ${state}` : ''}${late ? `. Reached the crew ${clock(line.sentAt)}` : ''}`}
                   accessibilityActions={[{ name: 'more', label: mine ? 'Delete' : crew?.owner === me ? 'Delete, report or block' : 'Report or block' }]}
                   onAccessibilityAction={() => more(line)}
                   style={[styles.bubble, mine ? styles.mine : styles.theirs, line.status !== 'sent' && styles.waiting, line.status === 'failed' && styles.failed]}
                 >
                   <Text style={styles.text}>{line.text}</Text>
                 </Pressable>
-                {last || state ? (
-                  <Text style={[styles.meta, state && line.status !== 'sent' ? { color: AMBER } : null]}>
+                {late ? (
+                  <Text style={[styles.meta, { color: AMBER }]} accessibilityLabel={`Held up by signal. ${lateNote(line)}`}>
+                    {lateNote(line)}
+                  </Text>
+                ) : last || state ? (
+                  <Text style={[styles.meta, state ? { color: AMBER } : null]}>
                     {clock(line.at)}
                     {state ? ` · ${state}` : ''}
                   </Text>
@@ -202,6 +215,31 @@ export default function CrewChatScreen() {
         >
           {body}
         </ScrollView>
+        {member && (waiting || delivery || lateIn.length) ? (
+          <View style={styles.notices}>
+            {lateIn.map((m) => (
+              <Text key={`late-${m.id}`} style={styles.noticeLate} accessibilityLiveRegion="polite">
+                {arrivedLateLine(m, nameOf(m.uid))} It’s up the chat at {clock(m.at)}.
+              </Text>
+            ))}
+            {delivery ? (
+              <Pressable onPress={() => chat.dismissDelivery(id)} accessibilityRole="button" accessibilityHint="Dismisses this note" style={styles.noticeSent}>
+                <Text style={styles.noticeSentText} accessibilityLiveRegion="polite">
+                  {deliveryLine(delivery.count, delivery.heldMs)} The crew sees the time you wrote {delivery.count === 1 ? 'it' : 'them'}.
+                </Text>
+                <Text style={styles.noticeClose}>×</Text>
+              </Pressable>
+            ) : null}
+            {waiting ? (
+              <View style={styles.noticeWaiting} accessible accessibilityLiveRegion="polite" accessibilityLabel={waiting}>
+                <Text style={styles.noticeWaitingText}>{waiting}</Text>
+                <Pressable onPress={() => chat.sendNow()} accessibilityRole="button" accessibilityLabel="Try sending now" hitSlop={8}>
+                  <Text style={styles.tryNow}>Try now</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
         {member ? (
           <View style={[styles.compose, { paddingBottom: insets.bottom + space.sm }]}>
             {!text ? (
@@ -241,6 +279,14 @@ export default function CrewChatScreen() {
 }
 
 const styles = StyleSheet.create({
+  notices: { paddingHorizontal: space.lg, paddingBottom: space.sm, gap: space.xs },
+  noticeLate: { ...type.caption, color: AMBER, lineHeight: 17 },
+  noticeSent: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, padding: space.sm, borderRadius: radius.sm, backgroundColor: 'rgba(169,124,255,0.14)' },
+  noticeSentText: { ...type.caption, color: color.moon, flex: 1, lineHeight: 17 },
+  noticeClose: { ...type.label, color: color.moonDim },
+  noticeWaiting: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: radius.sm, backgroundColor: 'rgba(255,184,107,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,184,107,0.5)' },
+  noticeWaitingText: { ...type.caption, color: AMBER, flex: 1, lineHeight: 17 },
+  tryNow: { ...type.label, color: color.moon },
   root: { flex: 1, backgroundColor: color.night },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingBottom: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
   title: { ...type.headline, color: color.moon },

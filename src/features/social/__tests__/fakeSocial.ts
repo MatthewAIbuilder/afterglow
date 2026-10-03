@@ -741,18 +741,18 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
         .slice(0, max);
     },
-    async sendCrewMessage(crewId, input) {
+    async sendCrewMessages(crewId, inputs) {
       if (network.down) throw new SocialError('network');
-      const c = memberOf(crewId);
-      const key = `${crewId}/${input.id}`;
-      const existing = chat.get(key);
-      if (existing) return existing;
-      const text = input.text.trim().slice(0, CHAT_MAX);
-      if (!text || !c) throw new SocialError('unknown');
-      const m: CrewMessage = { id: input.id, crewId, uid: me().uid, text, at: input.at, sentAt: now() };
-      chat.set(key, m);
+      memberOf(crewId);
+      const done: string[] = [];
+      for (const input of inputs) {
+        const key = `${crewId}/${input.id}`;
+        const text = input.text.trim().slice(0, CHAT_MAX);
+        if (!chat.has(key) && text) chat.set(key, { id: input.id, crewId, uid: me().uid, text, at: input.at, sentAt: now() });
+        if (chat.has(key)) done.push(input.id);
+      }
       chatChanged(crewId);
-      return m;
+      return done;
     },
     watchCrewChat(crewId, max, listener, onError) {
       try {

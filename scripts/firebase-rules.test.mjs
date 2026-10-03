@@ -347,6 +347,14 @@ await t('crew chat: members write as themselves, stamped with the server’s tim
   await assertFails(setDoc(at(B.firestore(), 'm000009'), chatMsg({ photo: 'x' })));
   await assertFails(setDoc(at(B.firestore(), 'bad id!'), chatMsg()));
 });
+await t('crew chat: several waiting messages go in one write, each keeping when it was written', async () => {
+  const db = B.firestore(); const b = writeBatch(db);
+  b.set(doc(db, 'crews', 'c1', 'chat', 'mb00001'), chatMsg({ atMs: Date.now() - 40 * 60 * 1000 }));
+  b.set(doc(db, 'crews', 'c1', 'chat', 'mb00002'), chatMsg({ atMs: Date.now() - 20 * 60 * 1000, text: 'Still here' }));
+  await assertSucceeds(b.commit());
+  // Sending one again (an earlier try that did get through) is refused, never doubled.
+  await assertFails(setDoc(doc(db, 'crews', 'c1', 'chat', 'mb00001'), chatMsg()));
+});
 await t('crew chat: never edited; removed by the writer or the owner', async () => {
   const at = (db, id) => doc(db, 'crews', 'c1', 'chat', id);
   await assertFails(updateDoc(at(B.firestore(), 'm000001'), { text: 'changed' }));

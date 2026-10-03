@@ -197,6 +197,8 @@ export type CrewMessageInput = { id: string; text: string; at: string };
 
 /** Chat messages are at most this long. */
 export const CHAT_MAX = 500;
+/** A send that hasn't got through by now is treated as no signal (it's tried again, never doubled). */
+export const CHAT_SEND_TIMEOUT_MS = 12_000;
 
 /** A crew's meeting spot, in words ("by the big tree left of Main Stage"), and who set it when. */
 export type MeetSpot = { text: string; by: string; at: string };

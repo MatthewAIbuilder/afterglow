@@ -41,7 +41,7 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
+import { CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
@@ -114,6 +114,21 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     }
   };
   const now = () => new Date().toISOString();
+  /** A write that hasn't got through by `ms` counts as no signal (Firestore keeps trying it in the background). */
+  const withTimeout = <T,>(p: Promise<T>, ms: number) =>
+    new Promise<T>((resolve, reject) => {
+      const t = setTimeout(() => reject(new SocialError('network')), ms);
+      p.then(
+        (v) => {
+          clearTimeout(t);
+          resolve(v);
+        },
+        (e) => {
+          clearTimeout(t);
+          reject(e);
+        },
+      );
+    });
 
   async function upload(path: string, uri: string, contentType: string, onProgress?: (s: number) => void) {
     const blob = await (await fetch(uri)).blob();
@@ -1076,21 +1091,28 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         );
         return snap.docs.map((d) => crewUpdateFromDoc(crewId, d.id, d.data())).filter((u): u is CrewUpdate => !!u);
       }),
-    sendCrewMessage: (crewId, input) =>
+    sendCrewMessages: (crewId, inputs) =>
       guard(async () => {
         const user = me();
-        const ref_ = doc(fb().db, 'crews', crewId, 'chat', input.id);
-        // A retry after a dropped connection: it already made it.
-        const existing = await getDoc(ref_);
-        if (existing.exists()) {
-          const done = crewMessageFromDoc(crewId, input.id, existing.data());
-          if (done) return done;
+        const { db } = fb();
+        const ready = inputs
+          .map((i) => ({ id: i.id, text: i.text.trim().slice(0, CHAT_MAX), atMs: Date.parse(i.at) }))
+          .filter((i) => i.text && Number.isFinite(i.atMs));
+        if (!ready.length) return [];
+        // One write for all of them: the least a weak connection has to carry.
+        const batch = writeBatch(db);
+        for (const i of ready) batch.set(doc(db, 'crews', crewId, 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
+        try {
+          await withTimeout(batch.commit(), CHAT_SEND_TIMEOUT_MS);
+          return ready.map((i) => i.id);
+        } catch (e) {
+          if ((e as { code?: string })?.code !== 'permission-denied') throw e;
+          // A message from an earlier try that did get through can't be written again: see which are there.
+          const there = await Promise.all(ready.map(async (i) => ((await getDoc(doc(db, 'crews', crewId, 'chat', i.id))).exists() ? i.id : null)));
+          const done = there.filter((x): x is string => !!x);
+          if (!done.length) throw e;
+          return done;
         }
-        const text = input.text.trim().slice(0, CHAT_MAX);
-        if (!text) throw new SocialError('unknown');
-        const data = { uid: user.uid, text, atMs: Date.parse(input.at), sentAt: serverTimestamp() };
-        await setDoc(ref_, data);
-        return crewMessageFromDoc(crewId, input.id, { ...data, sentAt: Date.now() })!;
       }),
     watchCrewChat(crewId, max, listener, onError) {
       if (!firebaseConfigured(config)) return () => {};

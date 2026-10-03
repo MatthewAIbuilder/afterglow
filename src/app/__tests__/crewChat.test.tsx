@@ -47,7 +47,7 @@ afterEach(() => {
 async function crewWithMessage() {
   const maya = await person('maya', 'Maya');
   const crew = await s().createCrew('solstice-26', 'Bass crew');
-  await s().sendCrewMessage(crew.id, { id: 'm-maya-001', text: 'Meet at the big tree?', at: at(19, 58).toISOString() });
+  await s().sendCrewMessages(crew.id, [{ id: 'm-maya-001', text: 'Meet at the big tree?', at: at(19, 58).toISOString() }]);
   await s().signOut();
   const sam = await person('sam', 'Sam');
   await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
@@ -89,6 +89,7 @@ describe('crew chat', () => {
     await fireEvent.press(app.getByLabelText('Send message'));
     await flush();
     expect(app.getByLabelText(/^You, 8:00 PM: Lost you, heading to the tree\. Waiting for signal$/)).toBeTruthy();
+    expect(app.getByLabelText('Waiting for signal. Your message sends by itself as soon as there’s a bar, still marked 8:00 PM.')).toBeTruthy();
     expect([...mockSocial.chat.values()].some((m) => m.uid === sam)).toBe(false);
     // Signal comes back 20 minutes later.
     jest.setSystemTime(at(20, 20));
@@ -97,8 +98,29 @@ describe('crew chat', () => {
     await flush();
     const sent = [...mockSocial.chat.values()].find((m) => m.uid === sam);
     expect(sent?.text).toBe('Lost you, heading to the tree');
-    // Marked when it was written, not when it got through.
+    // Marked when it was written, not when it got through, and you're told it was held up.
     expect(Math.abs(Date.parse(sent!.at) - at(20).getTime())).toBeLessThan(5000);
+    expect(app.getByText('Your message reached the crew, held up 20 min by signal. The crew sees the time you wrote it.')).toBeTruthy();
+    expect(app.queryByLabelText(/^Waiting for signal\./)).toBeNull();
+  });
+
+  it('a crewmate’s message held up by signal sits at the time it was written, and the chat points it out', async () => {
+    await person('maya', 'Maya');
+    const crew = await s().createCrew('solstice-26', 'Bass crew');
+    // Written at 7:30 PM with no signal; it only got through at 8:00 PM.
+    await s().sendCrewMessages(crew.id, [{ id: 'm-maya-late', text: 'At the tree now', at: at(19, 30).toISOString() }]);
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
+    await s().sendCrewMessages(crew.id, [{ id: 'm-sam-early', text: 'Where is everyone?', at: at(19, 45).toISOString() }]);
+    const app = await renderApp(`/crew-chat/${crew.id}`);
+    await flush();
+    expect(app.getByText('Maya’s message from 7:30 PM just got through, held up 30 min by signal. It’s up the chat at 7:30 PM.')).toBeTruthy();
+    expect(app.getByText('Sent 7:30 PM · reached the crew 8:00 PM')).toBeTruthy();
+    // In the order things were written: Maya's 7:30 PM before Sam's 7:45 PM.
+    const order = app.queryAllByLabelText(/^(Maya|You), /).map((n) => n.props.accessibilityLabel as string);
+    expect(order[0]).toMatch(/^Maya, 7:30 PM: At the tree now/);
+    expect(order[1]).toMatch(/^You, 7:45 PM: Where is everyone\?/);
   });
 
   it('hold a message to report it or block who wrote it; the starter can remove anyone’s', async () => {
@@ -118,7 +140,7 @@ describe('crew chat', () => {
     expect(mockSocial.reports.at(-1)).toMatchObject({ target: { kind: 'chat', id: `${crew.id}/m-maya-001` }, reason: 'spam' });
     await app.unmount();
     // As the crew's starter, Maya can remove Sam's message.
-    await s().sendCrewMessage(crew.id, { id: 'm-sam-0001', text: 'hi', at: at(20).toISOString() });
+    await s().sendCrewMessages(crew.id, [{ id: 'm-sam-0001', text: 'hi', at: at(20).toISOString() }]);
     await s().signOut();
     await as('maya');
     await s().deleteCrewMessage(crew.id, 'm-sam-0001');
@@ -127,11 +149,11 @@ describe('crew chat', () => {
 
   it('only people in the crew can read it; leaving takes your messages', async () => {
     const { crew } = await crewWithMessage();
-    await s().sendCrewMessage(crew.id, { id: 'm-sam-0002', text: 'See you there', at: at(20).toISOString() });
+    await s().sendCrewMessages(crew.id, [{ id: 'm-sam-0002', text: 'See you there', at: at(20).toISOString() }]);
     await s().leaveCrew(crew.id);
     expect(mockSocial.chat.has(`${crew.id}/m-sam-0002`)).toBe(false);
     expect(mockSocial.chat.has(`${crew.id}/m-maya-001`)).toBe(true);
-    await expect(s().sendCrewMessage(crew.id, { id: 'm-sam-0003', text: 'hello?', at: at(20).toISOString() })).rejects.toThrow();
+    await expect(s().sendCrewMessages(crew.id, [{ id: 'm-sam-0003', text: 'hello?', at: at(20).toISOString() }])).rejects.toThrow();
     const app = await renderApp(`/crew-chat/${crew.id}`);
     await flush();
     expect(app.getByText('Only people in this crew can read its chat.')).toBeTruthy();

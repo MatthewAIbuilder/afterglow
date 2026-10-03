@@ -3,7 +3,10 @@ import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import {
+  CHAT_LATE_MS,
   CHAT_WATCH,
+  DELAY_NOTICE_MS,
+  deliveryLine,
   chatLines,
   cleanChatOutbox,
   cleanChatRead,
@@ -20,6 +23,7 @@ import {
 import { isOffline } from '../features/offline/status';
 import type { CrewMessage } from '../features/social/models';
 import { socialErrorKind } from '../features/social/service';
+import { notifyNow } from '../lib/notifyNow';
 import { useNow } from '../lib/useNow';
 import { useCrews } from './crews';
 import { useSocial } from './social';
@@ -52,9 +56,21 @@ type Ctx = {
   retry: (id: string) => void;
   /** You've read a crew's chat up to now. */
   markRead: (crewId: string) => void;
+  /** Yours waiting for signal in a crew's chat, oldest first. */
+  waitingFor: (crewId: string) => ChatOutboxItem[];
+  /** Your messages that got through after being held up (the latest per crew). */
+  deliveryFor: (crewId: string) => Delivery | undefined;
+  dismissDelivery: (crewId: string) => void;
+  /** The chat on screen (so a delay isn't also sent as a notification). */
+  setOpenChat: (crewId: string | undefined) => void;
+  /** Try sending now (the chat's "Try now"). */
+  sendNow: () => void;
   /** Has this crew's chat been read from the server yet? */
   loaded: (crewId: string) => boolean;
 };
+
+/** Your messages that got through after waiting for signal. */
+export type Delivery = { crewId: string; count: number; heldMs: number; at: number };
 
 export const CHAT_OUTBOX_KEY = 'crewChatOutbox.v1';
 export const CHAT_READ_KEY = 'crewChatRead.v1';
@@ -119,24 +135,40 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
   }, [ready, crewKey, service, uid]);
   const byCrew = useMemo<Record<string, CrewMessage[]>>(() => (sent.uid === uid ? sent.byCrew : {}), [sent, uid]);
 
-  // --- Sending: oldest first, one at a time.
+  // --- Sending: each crew's waiting messages in one small write, oldest crew first.
   const sending = useRef(false);
   const [tick, setTick] = useState(0);
+  // Yours that got through after being held up, for the chat to say so.
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const openChat = useRef<string | undefined>(undefined);
   const flush = useCallback(async () => {
     if (!ready || sending.current) return;
     const due = dueMessages(outbox, Date.now()).filter((o) => crews.some((c) => c.id === o.crewId));
     if (!due.length) return;
     sending.current = true;
     try {
-      for (const item of due) {
+      const byCrew = new Map<string, ChatOutboxItem[]>();
+      for (const o of due) byCrew.set(o.crewId, [...(byCrew.get(o.crewId) ?? []), o]);
+      for (const [crewId, items] of byCrew) {
         try {
-          await service.sendCrewMessage(item.crewId, { id: item.id, text: item.text, at: item.at });
-          setOutbox((o) => messageSent(o, item.id));
+          const done = new Set(await service.sendCrewMessages(crewId, items.map((o) => ({ id: o.id, text: o.text, at: o.at }))));
+          const at = Date.now();
+          setOutbox((box) => box.filter((o) => !done.has(o.id)));
+          // Held up by signal: say so once they're through.
+          const held = items.filter((o) => done.has(o.id));
+          const heldMs = held.length ? at - Math.min(...held.map((o) => Date.parse(o.at))) : 0;
+          if (held.length && heldMs >= DELAY_NOTICE_MS) {
+            setDeliveries((d) => [...d.filter((x) => x.crewId !== crewId), { crewId, count: held.length, heldMs, at }]);
+            if (heldMs >= CHAT_LATE_MS && openChat.current !== crewId)
+              void notifyNow(`chat-sent:${crewId}:${at}`, 'Your messages got through', deliveryLine(held.length, heldMs), `/crew-chat/${crewId}`);
+          }
+          // Any the crew refused count towards giving up on them.
+          for (const o of items) if (!done.has(o.id)) setOutbox((box) => messageFailed(box, o.id, Date.now(), true));
         } catch (e) {
           const kind = socialErrorKind(e);
           const noSignal = kind === 'network' || kind === 'unavailable';
-          setOutbox((o) => messageFailed(o, item.id, Date.now(), !noSignal));
-          // No signal: the rest would fail too.
+          setOutbox((box) => items.reduce((b, o) => messageFailed(b, o.id, Date.now(), !noSignal), box));
+          // No signal: the other crews would fail too.
           if (noSignal) break;
         }
       }
@@ -189,6 +221,13 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
     },
     [service],
   );
+  const dismissDelivery = useCallback((crewId: string) => setDeliveries((d) => d.filter((x) => x.crewId !== crewId)), []);
+  const setOpenChat = useCallback((crewId: string | undefined) => {
+    openChat.current = crewId;
+  }, []);
+  const sendNow = useCallback(() => {
+    setOutbox((o) => o.map((x) => ({ ...x, nextAt: 0 })));
+  }, []);
   const markRead = useCallback((crewId: string) => {
     setRead((r) => ({ ...r, [crewId]: Date.now() }));
   }, []);
@@ -212,8 +251,13 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       retry,
       markRead,
       loaded: (crewId) => crewId in byCrew,
+      waitingFor: (crewId) => outbox.filter((o) => o.crewId === crewId),
+      deliveryFor: (crewId) => deliveries.find((d) => d.crewId === crewId),
+      dismissDelivery,
+      setOpenChat,
+      sendNow,
     };
-  }, [ready, byCrew, outbox, uid, blocked, now, read, crews, send, remove, retry, markRead]);
+  }, [ready, byCrew, outbox, uid, blocked, now, read, crews, send, remove, retry, markRead, deliveries, dismissDelivery, setOpenChat, sendNow]);
 
   return <CrewChatContext.Provider value={value}>{children}</CrewChatContext.Provider>;
 }
@@ -229,6 +273,11 @@ const OFF: Ctx = {
   retry: () => {},
   markRead: () => {},
   loaded: () => false,
+  waitingFor: () => [],
+  deliveryFor: () => undefined,
+  dismissDelivery: () => {},
+  setOpenChat: () => {},
+  sendNow: () => {},
 };
 
 /** Crew chats; outside the provider (some tests), nothing to read and nowhere to send. */

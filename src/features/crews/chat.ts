@@ -141,6 +141,57 @@ export function unreadCount(sent: readonly CrewMessage[], lastRead: number | und
 /** Did it arrive well after it was written? */
 export const arrivedLate = (m: Pick<CrewMessage, 'at' | 'sentAt'>) => ms(m.sentAt) - ms(m.at) >= CHAT_LATE_MS;
 
+/** A message held up this long tells you once it finally gets through. */
+export const DELAY_NOTICE_MS = 60_000;
+
+/** "18 min", "1 h 5 min": how long something was held up. */
+export function heldFor(heldMs: number): string {
+  const m = Math.max(1, Math.round(heldMs / 60_000));
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  return m % 60 ? `${h} h ${m % 60} min` : `${h} h`;
+}
+
+const clockOf = (t: number) => {
+  const d = new Date(t);
+  const h = d.getHours();
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(d.getMinutes()).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+};
+
+/** Under a late message: "Sent 8:02 PM · reached the crew 8:20 PM". */
+export const lateNote = (m: Pick<CrewMessage, 'at' | 'sentAt'>) => `Sent ${clockOf(ms(m.at))} · reached the crew ${clockOf(ms(m.sentAt))}`;
+
+/** Yours waiting for signal, as one line, saying they keep the time you wrote them. */
+export function waitingLine(waiting: readonly Pick<ChatOutboxItem, 'at'>[]): string | undefined {
+  if (!waiting.length) return undefined;
+  const first = Math.min(...waiting.map((w) => ms(w.at)));
+  return waiting.length === 1
+    ? `Waiting for signal. Your message sends by itself as soon as there’s a bar, still marked ${clockOf(first)}.`
+    : `Waiting for signal. ${waiting.length} messages send by themselves as soon as there’s a bar, still marked from ${clockOf(first)}.`;
+}
+
+/** Once yours finally got through: "Your 2 messages reached the crew, held up 18 min by signal." */
+export function deliveryLine(count: number, heldMs: number): string {
+  return `${count === 1 ? 'Your message' : `Your ${count} messages`} reached the crew, held up ${heldFor(heldMs)} by signal.`;
+}
+
+/**
+ * Crewmates' messages that just got through after being held up: arrived in
+ * the last `withinMs` but written `CHAT_LATE_MS` or more before. They slot in
+ * at the time they were written, higher up the chat, so they're pointed out.
+ */
+export function justArrivedLate(sent: readonly CrewMessage[], me: string | undefined, blocked: readonly string[], now: number, withinMs = 10 * 60_000): CrewMessage[] {
+  const block = new Set(blocked);
+  return sent
+    .filter((m) => m.uid !== me && !block.has(m.uid) && arrivedLate(m) && now - ms(m.sentAt) <= withinMs)
+    .sort((a, b) => ms(a.at) - ms(b.at));
+}
+
+/** "Maya’s message from 8:02 PM just got through, held up 18 min by signal." */
+export function arrivedLateLine(m: CrewMessage, name: string): string {
+  return `${name}’s message from ${clockOf(ms(m.at))} just got through, held up ${heldFor(ms(m.sentAt) - ms(m.at))} by signal.`;
+}
+
 /** A line in the chat list: a day heading, or a message with where it sits in its run. */
 export type ChatRow =
   | { kind: 'day'; key: string; label: string }
