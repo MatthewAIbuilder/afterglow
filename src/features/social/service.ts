@@ -247,7 +247,8 @@ export interface SocialService {
   giveSprout(input: SproutInput): Promise<void>;
   /**
    * Pick up a sprout someone gave you. `not-found` when it isn't there (yet:
-   * the giver may still be waiting for signal) or is more than 30 days old;
+   * the giver may still be waiting for signal); `sprout-gone` when it can't
+   * be picked up (more than 30 days old, or the giver blocked you);
    * `sprout-taken` when someone else picked it up. Picking up your own
    * sprout again returns it.
    */
@@ -258,7 +259,7 @@ export interface SocialService {
   sproutsGiven(max: number): Promise<Sprout[]>;
   /** Sprouts you picked up, newest first. */
   sproutsReceived(max: number): Promise<Sprout[]>;
-  /** Take back a sprout nobody has picked up. */
+  /** Take back a sprout nobody has picked up (one that isn't there is fine; `sprout-taken` once someone has it). */
   takeBackSprout(id: string): Promise<void>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
@@ -280,6 +281,7 @@ export type SocialErrorKind =
   | 'crew-full'
   | 'not-invited'
   | 'sprout-taken'
+  | 'sprout-gone'
   | 'throwback-limit'
   | 'not-found'
   | 'network'
@@ -312,6 +314,7 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'crew-full': 'That crew is full.',
   'not-invited': 'Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.',
   'sprout-taken': 'Someone else already picked up this sprout.',
+  'sprout-gone': 'This sprout can’t be picked up any more. Ask them for a new code.',
   'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
   'not-found': 'That doesn’t exist any more.',
   network: 'Couldn’t reach Afterglow. Check your connection and try again.',

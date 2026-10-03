@@ -26,7 +26,8 @@ import { color, radius, space, type } from '../../theme/tokens';
  */
 export default function SproutScreen() {
   const params = useLocalSearchParams<{ id: string; u?: string; h?: string; k?: string; n?: string }>();
-  const card = useMemo(() => sproutCardFrom(params), [params]);
+  const { id, u, h, k: kindParam, n } = params;
+  const card = useMemo(() => sproutCardFrom({ id, u, h, k: kindParam, n }), [id, u, h, kindParam, n]);
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const sprouts = useSprouts();
@@ -147,7 +148,7 @@ export default function SproutScreen() {
                 <Text style={styles.secondaryText}>Get the Afterglow app</Text>
               </Pressable>
             ) : (
-              <Text style={styles.hint}>Afterglow is coming to the App Store. Your garden lives in your account, so your sprout will be in the app too.</Text>
+              <Text style={styles.hint}>Afterglow is coming to the App Store. Create your free account here first: your sprout will be waiting in the app when you sign in.</Text>
             )
           ) : null}
         </>

@@ -22,6 +22,8 @@ export type Gift = {
   /** Someone picked it up. */
   claimedBy?: { uid: string; handle?: string; name?: string };
   claimedAt?: number;
+  /** Taken back, but it may already be on Afterglow: removed there once there's signal. */
+  takenBack?: boolean;
   tries: number;
   lastTry?: number;
 };
@@ -48,14 +50,16 @@ export const GIFTS_MAX = 300;
 const due = (x: { tries: number; lastTry?: number }, now: number) => !x.lastTry || now - x.lastTry >= retryDelay(x.tries);
 
 /** Gifts still to send, oldest first. */
-export const giftsToSend = (gifts: readonly Gift[], now: number) => gifts.filter((g) => !g.sent && due(g, now)).sort((a, b) => a.at - b.at);
+export const giftsToSend = (gifts: readonly Gift[], now: number) => gifts.filter((g) => !g.sent && !g.takenBack && due(g, now)).sort((a, b) => a.at - b.at);
+/** Gifts taken back that still need removing from Afterglow. */
+export const giftsToTakeBack = (gifts: readonly Gift[], now: number) => gifts.filter((g) => g.takenBack && due(g, now));
 /** Scans still to pick up for an account, oldest first. */
 export const claimsToSend = (claims: readonly Claim[], account: string, now: number) =>
   claims.filter((c) => c.state === 'waiting' && (!c.account || c.account === account) && due(c, now)).sort((a, b) => a.at - b.at);
 
 /** When the next waiting thing is due (ms), if any. */
 export function nextDue(gifts: readonly Gift[], claims: readonly Claim[]): number | undefined {
-  const times = [...gifts.filter((g) => !g.sent), ...claims.filter((c) => c.state === 'waiting')].map((x) => (x.lastTry ?? 0) + retryDelay(x.tries));
+  const times = [...gifts.filter((g) => !g.sent || g.takenBack), ...claims.filter((c) => c.state === 'waiting')].map((x) => (x.lastTry ?? 0) + retryDelay(x.tries));
   return times.length ? Math.min(...times) : undefined;
 }
 
@@ -91,6 +95,7 @@ export function cleanGifts(raw: unknown): Gift[] {
       ...(typeof g.account === 'string' ? { account: g.account } : {}),
       ...(g.claimedBy && typeof g.claimedBy.uid === 'string' ? { claimedBy: g.claimedBy } : {}),
       ...(typeof g.claimedAt === 'number' ? { claimedAt: g.claimedAt } : {}),
+      ...(g.takenBack === true ? { takenBack: true } : {}),
     }))
     .slice(0, GIFTS_MAX);
 }
@@ -108,7 +113,7 @@ export function cleanClaims(raw: unknown): Claim[] {
 export function claimLine(c: Claim): string {
   if (c.state === 'claimed') return 'In your garden';
   if (c.state === 'taken') return 'Someone else already picked this one up.';
-  if (c.state === 'gone') return 'This sprout couldn’t be found. Ask them for a new code.';
+  if (c.state === 'gone') return 'This sprout can’t be picked up. Ask them for a new code.';
   return c.account ? 'Saved on your phone. It joins your garden by itself once you’ve both had signal.' : 'Saved on this phone. Sign in to keep it.';
 }
 

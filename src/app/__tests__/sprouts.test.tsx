@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { Alert, type AlertButton } from 'react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { sproutLink } from '../../features/sprouts/sprouts';
 import { renderApp } from './appRoutes';
@@ -154,6 +155,55 @@ describe('sprouts', () => {
     await flush();
     expect(app.getByText('Your PLUR sprout')).toBeTruthy();
     expect(app.queryByText('Add to my garden')).toBeNull();
+  });
+
+  it('taking one back with no signal removes it from Afterglow once there’s signal, and gives the seed back', async () => {
+    await person('maya', 'Maya');
+    const app = await renderApp('/give-sprout');
+    await flush();
+    // The phone thinks it has signal, but nothing gets through.
+    mockSocial.network.down = true;
+    await fireEvent.press(app.getByText('Show the code'));
+    await flush(20);
+    const id = JSON.parse((await AsyncStorage.getItem('sprouts.v1')) ?? '{}').gifts[0].id as string;
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons?: AlertButton[]) => buttons?.find((b) => b.text === 'Take it back')?.onPress?.());
+    await fireEvent.press(app.getByText('Take it back'));
+    await flush();
+    alert.mockRestore();
+    expect(app.getByText('5 of 5 seeds left today')).toBeTruthy();
+    // The give got through after all (Firestore sends a write it gave up waiting for).
+    mockSocial.sprouts.set(id, { id, kind: 'seedling', from: mockSocial.currentUser()!.uid, createdAt: new Date().toISOString() });
+    mockSocial.network.down = false;
+    await settle(20_000);
+    await flush();
+    expect(mockSocial.sprouts.has(id)).toBe(false);
+  });
+
+  it('a sprout scanned while signed out that turns out to be your own isn’t picked up', async () => {
+    const maya = await mayaGives();
+    const app = await renderApp(routeOf(maya));
+    await flush();
+    await fireEvent.press(app.getByText('Create a free account'));
+    await flush();
+    await as('maya');
+    await flush(20);
+    expect(mockSocial.sprouts.get(ID)?.to).toBeUndefined();
+    expect(JSON.parse((await AsyncStorage.getItem('sprouts.v1')) ?? '{}').claims).toEqual([]);
+  });
+
+  it('someone the giver blocked is told it can’t be picked up', async () => {
+    const maya = await mayaGives();
+    const sam = await person('sam', 'Sam');
+    await s().signOut();
+    await as('maya');
+    await s().setBlocked(sam, true);
+    await s().signOut();
+    await as('sam');
+    const app = await renderApp(routeOf(maya));
+    await flush();
+    await fireEvent.press(app.getByText('Add to my garden'));
+    await flush();
+    expect(app.getByText('This sprout can’t be picked up. Ask them for a new code.')).toBeTruthy();
   });
 
   it('the Friends tab and Profile lead to sprouts', async () => {

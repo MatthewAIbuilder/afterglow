@@ -1009,12 +1009,16 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!s) throw new SocialError('not-found');
         if (s.to === user.uid || s.from === user.uid) return s;
         if (s.to) throw new SocialError('sprout-taken');
-        if (Date.now() - Date.parse(s.createdAt) > 30 * 86_400_000) throw new SocialError('not-found');
+        if (Date.now() - Date.parse(s.createdAt) > 30 * 86_400_000) throw new SocialError('sprout-gone');
         try {
           await updateDoc(ref, { to: user.uid, claimedAt: serverTimestamp() });
         } catch (e) {
-          const again = await read().catch(() => null);
-          if (again?.to && again.to !== user.uid) throw new SocialError('sprout-taken');
+          const again = await read().catch(() => undefined);
+          if (again === null) throw new SocialError('not-found');
+          if (again?.to === user.uid) return again;
+          if (again?.to) throw new SocialError('sprout-taken');
+          // Still there and nobody has it, but refused: the giver blocked you.
+          if (again && asSocialError(e).kind !== 'network') throw new SocialError('sprout-gone');
           throw e;
         }
         return (await read()) ?? { ...s, to: user.uid, claimedAt: now() };
@@ -1034,8 +1038,18 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     takeBackSprout: (id) =>
       guard(async () => {
-        me();
-        await deleteDoc(doc(fb().db, 'sprouts', id));
+        const user = me();
+        const ref = doc(fb().db, 'sprouts', id);
+        try {
+          // Writes from this phone go in order, so a give still waiting for signal lands before this.
+          await deleteDoc(ref);
+        } catch (e) {
+          const s = sproutFromDoc(id, (await getDoc(ref)).data());
+          if (!s) return;
+          if (s.to) throw new SocialError('sprout-taken');
+          if (s.from !== user.uid) throw new SocialError('not-found');
+          throw e;
+        }
       }),
     declineCrewInvite: (crewId) =>
       guard(async () => {

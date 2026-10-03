@@ -23,11 +23,11 @@ export function Sprout({ kind = 'seedling', stage = 3, size = 80, still, locked 
     if (reduce || still) return;
     // Each sprout sways at its own pace so a garden never moves in step.
     const ms = 1700 + ((kind.length * 137 + stage * 211) % 900);
-    sway.value = withRepeat(withSequence(withTiming(1, { duration: ms, easing: Easing.inOut(Easing.sin) }), withTiming(-1, { duration: ms, easing: Easing.inOut(Easing.sin) })), -1, true);
+    sway.set(withRepeat(withSequence(withTiming(1, { duration: ms, easing: Easing.inOut(Easing.sin) }), withTiming(-1, { duration: ms, easing: Easing.inOut(Easing.sin) })), -1, true));
     return () => cancelAnimation(sway);
   }, [reduce, still, kind, stage, sway]);
-  const top = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.value * 5}deg` }] }));
-  const body = useAnimatedStyle(() => ({ transform: [{ scaleY: 1 + sway.value * 0.015 }] }));
+  const top = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.get() * 5}deg` }] }));
+  const body = useAnimatedStyle(() => ({ transform: [{ scaleY: 1 + sway.get() * 0.015 }] }));
 
   const grey = locked;
   const [b1, b2] = grey ? ['#5A5870', '#3A3850'] : k.body;

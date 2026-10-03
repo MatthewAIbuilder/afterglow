@@ -859,6 +859,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!s) throw new SocialError('not-found');
       if (s.to === u.uid || s.from === u.uid) return s;
       if (s.to) throw new SocialError('sprout-taken');
+      if (Date.parse(now()) - Date.parse(s.createdAt) > 30 * 86_400_000 || (blocks.get(s.from) ?? []).includes(u.uid)) throw new SocialError('sprout-gone');
       const claimed = { ...s, to: u.uid, claimedAt: now() };
       sprouts.set(id, claimed);
       return claimed;
@@ -876,9 +877,11 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return [...sprouts.values()].filter((s) => s.to === u.uid).sort((a, b) => (b.claimedAt ?? '').localeCompare(a.claimedAt ?? '')).slice(0, max);
     },
     async takeBackSprout(id) {
+      if (network.down) throw new SocialError('network');
       const u = me();
       const s = sprouts.get(id);
-      if (s && s.from === u.uid && !s.to) sprouts.delete(id);
+      if (s?.to) throw new SocialError('sprout-taken');
+      if (s && s.from === u.uid) sprouts.delete(id);
     },
     async report(target, reason, note) {
       reports.push({ id: `r${++n}`, by: me().uid, target, reason, note, createdAt: `${now()}#${String(n).padStart(6, '0')}`, status: 'open' });

@@ -6,7 +6,7 @@ import { AppState } from 'react-native';
 import { isOffline } from '../features/offline/status';
 import { socialErrorKind } from '../features/social/service';
 import type { Sprout } from '../features/social/models';
-import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, giftsToSend, nextDue, queueClaim, tidy } from '../features/sprouts/outbox';
+import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, giftsToSend, giftsToTakeBack, nextDue, queueClaim, tidy } from '../features/sprouts/outbox';
 import {
   cleanBloomed,
   cleanSproutNote,
@@ -146,6 +146,17 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const [tick, setTick] = useState(0);
   const account = social.user?.uid;
   const ready = social.availability.ok && !!account && !!social.profile;
+  // The latest state and account, for async work that outlives a render.
+  const storedRef = useRef(stored);
+  const accountRef = useRef(account);
+  useEffect(() => {
+    storedRef.current = stored;
+    accountRef.current = account;
+  });
+  // Ids being sent or picked up right now, so nothing goes twice.
+  const inFlight = useRef(new Set<string>());
+  // Coming back to the app: a reason to read what's on Afterglow.
+  const [back, setBack] = useState(0);
 
   useEffect(() => {
     AsyncStorage.getItem(SPROUTS_KEY)
@@ -169,21 +180,28 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     if (loaded.current) AsyncStorage.setItem(SPROUTS_KEY, JSON.stringify(stored)).catch(() => {});
   }, [stored]);
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => s === 'active' && setTick((t) => t + 1));
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') return;
+      setTick((t) => t + 1);
+      setBack((b) => b + 1);
+    });
     return () => sub.remove();
   }, []);
 
-  const gifts = useMemo(() => (account ? stored.gifts.filter((g) => g.account === account).sort((a, b) => b.at - a.at) : []), [stored.gifts, account]);
+  const gifts = useMemo(() => (account ? stored.gifts.filter((g) => g.account === account && !g.takenBack).sort((a, b) => b.at - a.at) : []), [stored.gifts, account]);
   const claims = useMemo(() => stored.claims.filter((c) => !c.account || c.account === account), [stored.claims, account]);
 
   // ---- Sending ----------------------------------------------------------
   const sendGift = useCallback(
     async (g: Gift) => {
+      inFlight.current.add(g.id);
       try {
         await timeout(social.service.giveSprout({ id: g.id, kind: g.kind, ...(g.note ? { note: g.note } : {}), ...(g.festivalId ? { festivalId: g.festivalId } : {}) }), TRY_TIMEOUT_MS);
         setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, sent: true } : x)) }));
       } catch {
         setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
+      } finally {
+        inFlight.current.delete(g.id);
       }
     },
     [social.service, setStored],
@@ -204,6 +222,13 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     async (c: Claim, me: string): Promise<ClaimResult> => {
       const done = (state: Claim['state']) =>
         setStored((s) => ({ ...s, claims: s.claims.map((x) => (x.card.id === c.card.id ? { ...x, account: me, state, doneAt: Date.now() } : x)) }));
+      // Scanned while signed out, and it turns out to be one you gave: it's not yours to pick up.
+      if (c.card.from === me) {
+        setStored((s) => ({ ...s, claims: s.claims.filter((x) => x.card.id !== c.card.id) }));
+        return 'self';
+      }
+      if (inFlight.current.has(c.card.id)) return 'waiting';
+      inFlight.current.add(c.card.id);
       try {
         const sprout = await timeout(social.service.claimSprout(c.card.id), TRY_TIMEOUT_MS);
         addToGarden(c.card, sprout, me, Date.now());
@@ -211,17 +236,41 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
         if (c.tries > 0) void notifyNow(`sprout:${c.card.id}`, `Your sprout from ${c.card.name} is in your garden`, 'It went through once there was signal.', '/garden');
         return 'claimed';
       } catch (e) {
-        if (socialErrorKind(e) === 'sprout-taken') {
-          done('taken');
-          return 'taken';
+        const kind = socialErrorKind(e);
+        if (kind === 'sprout-taken' || kind === 'sprout-gone') {
+          done(kind === 'sprout-taken' ? 'taken' : 'gone');
+          return kind === 'sprout-taken' ? 'taken' : 'gone';
         }
         setStored((s) => ({ ...s, claims: s.claims.map((x) => (x.card.id === c.card.id ? { ...x, account: me, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
         return 'waiting';
+      } finally {
+        inFlight.current.delete(c.card.id);
       }
     },
     [social.service, addToGarden, setStored],
   );
 
+  const noteClaimedRef = useRef<(s: Sprout) => Promise<void>>(async () => {});
+  // A gift taken back that may already be on Afterglow: remove it there.
+  const removeGift = useCallback(
+    async (g: Gift) => {
+      inFlight.current.add(g.id);
+      try {
+        await timeout(social.service.takeBackSprout(g.id), TRY_TIMEOUT_MS);
+        setStored((s) => ({ ...s, gifts: s.gifts.filter((x) => x.id !== g.id) }));
+      } catch (e) {
+        if (socialErrorKind(e) === 'sprout-taken') {
+          // Someone picked it up first: it stays given.
+          setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, takenBack: undefined, sent: true } : x)) }));
+          const there = await social.service.sprout(g.id).catch(() => null);
+          if (there?.to) await noteClaimedRef.current(there);
+        } else setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
+      } finally {
+        inFlight.current.delete(g.id);
+      }
+    },
+    [social.service, setStored],
+  );
   const running = useRef(false);
   useEffect(() => {
     if (!hydrated || !account || !online || running.current) return;
@@ -231,23 +280,28 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       void Promise.resolve().then(() => setStored((s) => ({ ...s, ...tidy(s.gifts, s.claims, Date.now()) })));
       return;
     }
-    const gifts = ready ? giftsToSend(stored.gifts.filter((g) => g.account === account), t) : [];
-    const toClaim = claimsToSend(stored.claims, account, t);
-    if (!gifts.length && !toClaim.length) {
+    const mine = stored.gifts.filter((g) => g.account === account && !inFlight.current.has(g.id));
+    const gifts = ready ? giftsToSend(mine, t) : [];
+    const back = giftsToTakeBack(mine, t);
+    const toClaim = claimsToSend(stored.claims, account, t).filter((c) => !inFlight.current.has(c.card.id));
+    if (!gifts.length && !back.length && !toClaim.length) {
       const at = nextDue(ready ? stored.gifts.filter((g) => g.account === account) : [], stored.claims.filter((c) => !c.account || c.account === account));
       if (at === undefined) return;
       const timer = setTimeout(() => setTick((x) => x + 1), Math.max(500, at - t));
       return () => clearTimeout(timer);
     }
     running.current = true;
+    // Each step checks the account is still the one signed in (switching accounts stops the round).
+    const same = () => accountRef.current === account;
     (async () => {
-      for (const g of gifts) await sendGift(g);
-      for (const c of toClaim) await tryClaim(c, account);
+      for (const g of gifts) if (same()) await sendGift(g);
+      for (const g of back) if (same()) await removeGift(g);
+      for (const c of toClaim) if (same()) await tryClaim(c, account);
     })().finally(() => {
       running.current = false;
       setTick((x) => x + 1);
     });
-  }, [hydrated, account, ready, online, stored.gifts, stored.claims, sendGift, tryClaim, tick]);
+  }, [hydrated, account, ready, online, stored.gifts, stored.claims, sendGift, removeGift, tryClaim, tick]);
 
   // ---- Reading what's on Afterglow --------------------------------------
   const nameOf = useRef(new Map<string, { handle?: string; name?: string }>());
@@ -264,20 +318,20 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const noteClaimed = useCallback(
     async (s: Sprout) => {
       if (!s.to) return;
+      const was = storedRef.current.gifts.find((g) => g.id === s.id);
+      if (!was || was.claimedBy) return;
       const who = await whoIs(s.to);
-      let fresh = false;
       setStored((st) => ({
         ...st,
-        gifts: st.gifts.map((g) => {
-          if (g.id !== s.id || g.claimedBy) return g;
-          fresh = true;
-          return { ...g, sent: true, claimedBy: { uid: s.to!, ...who }, claimedAt: s.claimedAt ? Date.parse(s.claimedAt) : Date.now() };
-        }),
+        gifts: st.gifts.map((g) => (g.id === s.id && !g.claimedBy ? { ...g, sent: true, takenBack: undefined, claimedBy: { uid: s.to!, ...who }, claimedAt: s.claimedAt ? Date.parse(s.claimedAt) : Date.now() } : g)),
       }));
-      if (fresh && AppState.currentState !== 'active') void notifyNow(`sprout-given:${s.id}`, `${who.name ?? 'Someone'} picked up your sprout`, 'It’s growing in their garden now.', '/garden');
+      if (AppState.currentState !== 'active') void notifyNow(`sprout-given:${s.id}`, `${who.name ?? 'Someone'} picked up your sprout`, 'It’s growing in their garden now.', '/garden');
     },
     [whoIs, setStored],
   );
+  useEffect(() => {
+    noteClaimedRef.current = noteClaimed;
+  }, [noteClaimed]);
   const refresh = useCallback(async () => {
     if (!account || !social.availability.ok) return;
     const me = account;
@@ -290,7 +344,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   }, [account, social.availability.ok, social.service, noteClaimed, whoIs, addToGarden]);
   useEffect(() => {
     if (hydrated && account && online) void Promise.resolve().then(refresh);
-  }, [hydrated, account, online, refresh, tick]);
+  }, [hydrated, account, online, refresh, back]);
 
   const checkGift = useCallback(
     async (id: string) => {
@@ -312,39 +366,42 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       if (!social.user) return { problem: 'signed-out' };
       if (!social.profile) return { problem: 'needs-profile' };
       const t = Date.now();
-      const mine = stored.gifts.filter((g) => g.account === social.user!.uid).map((g) => g.at);
+      const mine = storedRef.current.gifts.filter((g) => g.account === social.user!.uid && !g.takenBack).map((g) => g.at);
       if (seedsLeft(mine, t, festivalDay) <= 0) return { problem: 'no-seeds' };
       const id = randomId();
       const words = note ? cleanSproutNote(note) : '';
       const gift: Gift = { id, kind, at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
+      storedRef.current = { ...storedRef.current, gifts: [gift, ...storedRef.current.gifts] };
       setStored((s) => ({ ...s, gifts: [gift, ...s.gifts] }));
       bumpQuestEvent('sprout');
       return { card: { id, kind, from: social.user.uid, handle: social.profile.handle, name: social.profile.displayName } };
     },
-    [social.user, social.profile, stored.gifts, festivalDay, tonight, setStored],
+    [social.user, social.profile, festivalDay, tonight, setStored],
   );
 
   const takeBack = useCallback(
     async (id: string): Promise<boolean> => {
-      const g = stored.gifts.find((x) => x.id === id);
+      const g = storedRef.current.gifts.find((x) => x.id === id);
       if (!g || g.claimedBy) return false;
-      if (g.sent) {
+      // Never tried: it's only on this phone.
+      if (!g.sent && g.tries === 0 && !inFlight.current.has(id)) {
+        setStored((s) => ({ ...s, gifts: s.gifts.filter((x) => x.id !== id) }));
+        return true;
+      }
+      if (online && !inFlight.current.has(id)) {
         // Picked up in the meantime? Then it stays given.
         const there = await social.service.sprout(id).catch(() => undefined);
         if (there?.to) {
           await noteClaimed(there);
           return false;
         }
-        try {
-          await social.service.takeBackSprout(id);
-        } catch {
-          return false;
-        }
       }
-      setStored((s) => ({ ...s, gifts: s.gifts.filter((x) => x.id !== id) }));
+      // It may be on Afterglow (or on its way): taken back now, removed there once there's signal.
+      setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === id ? { ...x, takenBack: true, tries: 0, lastTry: undefined } : x)) }));
+      setTick((t) => t + 1);
       return true;
     },
-    [stored.gifts, social.service, noteClaimed, setStored],
+    [online, social.service, noteClaimed, setStored, setTick],
   );
 
   // ---- Picking up -------------------------------------------------------
