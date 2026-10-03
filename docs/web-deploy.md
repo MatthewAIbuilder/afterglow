@@ -11,6 +11,7 @@ What works on the website: Discover (YouTube clips, likes, saves, skips, videos 
 1. Installs, type-checks and runs the tests.
 2. Builds the website (`npm run build:web`, into `dist/`), stamped with the commit it came from (shown at the bottom of Profile, like "Afterglow 1.0.0 · build 3f2a9c1").
 3. Deploys it: **live** from `main`, a **preview** for a pull request (a link is posted on the PR; it lasts 7 days).
+4. From `main` only: deploys the database and storage rules and indexes (`firestore.rules`, `storage.rules`, `firestore.indexes.json`) with the same key, so new features' rules go live with the app.
 
 Until the secrets below are added, steps 1 and 2 still run and the deploy is skipped. To republish without a new merge: GitHub → **Actions** → **Website** → **Run workflow** (on `main`).
 
@@ -81,6 +82,7 @@ Firebase console → **Authentication** → **Settings** → **Authorized domain
 | The Actions run is red at "Type-check" or "Tests" | Something in the code needs fixing: tell Claude which step failed. |
 | Green, but "Deploy" was skipped | The `FIREBASE_SERVICE_ACCOUNT` secret is missing or misspelled (step 2). |
 | "Check the Firebase key" fails, or Deploy says "Failed to authenticate" | The `FIREBASE_SERVICE_ACCOUNT` secret holds something else (for example the `.env` file's lines). Replace it with the whole `.json` key file from step 2: open it in Notepad, select all, copy, paste. |
+| "Database and storage rules" shows a yellow warning | The rules didn't deploy (the website still did). Run `npx firebase-tools@latest deploy --only firestore,storage` from your PC (`docs/firebase-setup.md`, step 5). If it keeps happening, the key needs the **Firebase Rules Admin** and **Cloud Datastore Index Admin** roles (Google Cloud console → IAM → the key's service account → Edit). |
 | Deploy fails with "permission denied" | The key is for a different project, or `EXPO_PUBLIC_FIREBASE_PROJECT_ID` is wrong. |
 | Deploy fails with "No currently active project" | Fixed: the project (`afterglowmusic`) is now in `.firebaserc` and the workflow. |
 | The site says profiles aren't available | A variable from step 3 is set but wrong; fix or delete it, then re-run the latest Actions run. |

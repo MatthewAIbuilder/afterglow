@@ -124,3 +124,18 @@ jobs:
           # The Firebase project (also in .firebaserc).
           projectId: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}
           channelId: ${{ github.event_name != 'pull_request' && 'live' || '' }}
+
+      # Database and storage rules (firestore.rules, storage.rules, firestore.indexes.json), so new
+      # features' rules go live with the app instead of waiting for a deploy from a PC. Never prints the key.
+      - name: Database and storage rules
+        if: env.CAN_DEPLOY == 'true' && github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$KEY" > "$RUNNER_TEMP/firebase-key.json"
+          trap 'rm -f "$RUNNER_TEMP/firebase-key.json"' EXIT
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json" npx --yes firebase-tools@14 deploy \
+            --only firestore:rules,firestore:indexes,storage \
+            --project "${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}" --non-interactive \
+            || { echo "::warning::Couldn't deploy the database and storage rules. Deploy them from your PC (docs/firebase-setup.md, step 5), or give the service account the Firebase Rules Admin and Cloud Datastore Index Admin roles."; exit 1; }
