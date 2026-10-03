@@ -130,7 +130,7 @@ describe('festival mode', () => {
     await flush();
     expect(app.getByText('At Cyclops Cove 4')).toBeTruthy();
     expect(app.getByText('Your videos')).toBeTruthy();
-    // No counts, shortcuts or tabs.
+    // No counts or shortcuts (just Moments and Badges).
     expect(app.queryByRole('tab', { name: /Videos/ })).toBeNull();
     // A tip above the camera button says what holding it does, until you have.
     expect(app.getByText('Hold for Look after yourself', { includeHiddenElements: true })).toBeTruthy();

@@ -280,11 +280,29 @@ function Member({
             crews
               .leave(crew.id)
               .then(() => (router.canGoBack() ? router.back() : router.replace('/')))
-              .catch((e) => showAlert('Couldn’t leave', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
+              .catch((e) => showAlert(last ? 'Couldn’t end the crew' : 'Couldn’t leave', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
           },
         },
       ],
     );
+  };
+
+  // The owner can end the crew for everyone (leaving would hand it on instead).
+  const endForAll = () => {
+    haptic.select();
+    showAlert('End this crew for everyone?', 'The crew, everyone’s picks, updates and the meeting spot are removed for all of you. This can’t be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'End crew',
+        style: 'destructive',
+        onPress: () => {
+          crews
+            .end(crew.id)
+            .then(() => (router.canGoBack() ? router.back() : router.replace('/')))
+            .catch((e) => showAlert('Couldn’t end the crew', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
+        },
+      },
+    ]);
   };
 
   const remove = (uid: string) => {
@@ -423,6 +441,11 @@ function Member({
       <Pressable onPress={leave} accessibilityRole="button" style={styles.leave}>
         <Text style={styles.danger}>{crew.members.length === 1 ? 'End this crew' : 'Leave this crew'}</Text>
       </Pressable>
+      {crew.owner === me && crew.members.length > 1 ? (
+        <Pressable onPress={endForAll} accessibilityRole="button" accessibilityLabel="End this crew for everyone" style={styles.endAll}>
+          <Text style={styles.danger}>End this crew for everyone</Text>
+        </Pressable>
+      ) : null}
     </>
   );
 }
@@ -432,6 +455,7 @@ const mineNote = (festivalName?: string) => (
 );
 
 const styles = StyleSheet.create({
+  endAll: { alignSelf: 'center', paddingVertical: space.sm },
   decline: { alignSelf: 'center', minHeight: 40, paddingHorizontal: space.lg, alignItems: 'center', justifyContent: 'center' },
   declineText: { ...type.label, color: color.moonDim },
   root: { flex: 1, backgroundColor: color.night },

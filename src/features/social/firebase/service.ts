@@ -133,6 +133,19 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     }
   }
 
+  /**
+   * The whole crew goes: what's in it first, as well as it can (a part the
+   * database won't let go of never stops the crew ending), then the crew.
+   */
+  async function endWholeCrew(id: string) {
+    const { db } = fb();
+    await removeUpdates(id).catch(() => {});
+    const picks = await getDocs(collection(db, 'crews', id, 'picks')).catch(() => null);
+    for (const d of picks?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+    await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
+    await deleteDoc(doc(db, 'crews', id));
+  }
+
   const service: SocialService = {
     availability: () => (firebaseConfigured(config) ? { ok: true } : { ok: false, reason: 'not-set-up' }),
 
@@ -714,20 +727,22 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!c || !c.members.includes(user.uid)) return;
         const members = c.members.filter((m) => m !== user.uid);
         if (!members.length) {
-          // The last one out: everyone's updates and picks, then the crew.
-          await removeUpdates(id);
-          const all = await getDocs(collection(db, 'crews', id, 'picks'));
-          const b = writeBatch(db);
-          for (const d of all.docs) b.delete(d.ref);
-          b.delete(doc(db, 'crews', id, 'meta', 'meet'));
-          b.delete(crewRef);
-          await b.commit();
+          // The last one out ends it.
+          await endWholeCrew(id);
           return;
         }
         // Your updates and picks go with you.
         await removeUpdates(id, user.uid).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', user.uid));
         await updateDoc(crewRef, { members, owner: c.owner === user.uid ? members[0] : c.owner });
+      }),
+    endCrew: (id) =>
+      guard(async () => {
+        const user = me();
+        const c = crewFromDoc(id, (await getDoc(doc(fb().db, 'crews', id))).data());
+        if (!c) return;
+        if (c.owner !== user.uid) throw new SocialError('unknown');
+        await endWholeCrew(id);
       }),
     renameCrew: (id, raw) =>
       guard(async () => {

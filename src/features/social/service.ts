@@ -151,6 +151,8 @@ export interface SocialService {
   declineCrewInvite(crewId: string): Promise<void>;
   /** Leave a crew, taking your picks with you. The last one out ends it; an owner who leaves hands it on. */
   leaveCrew(id: string): Promise<void>;
+  /** The owner ends the crew for everyone: everyone's picks, updates and the meeting spot go with it. */
+  endCrew(id: string): Promise<void>;
   /** The owner renames the crew. */
   renameCrew(id: string, name: string): Promise<Crew>;
   /** The owner removes someone from the crew (and their picks). */
