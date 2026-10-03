@@ -2,12 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { activityNotices } from '../features/notifications/activity';
+import { inviteNotices } from '../features/crews/invite';
+import { firstName } from '../features/crews/together';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
 import { clipNotices } from '../features/notifications/clipNews';
 import { lineupNotices } from '../features/notifications/lineupNews';
 import { recapNotices } from '../features/recap/recap';
 import { useRecapFestivals } from '../features/recap/useRecap';
-import type { Activity, Profile } from '../features/social/models';
+import type { Activity, CrewInvite, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
 import { useClipNews } from './clipNews';
@@ -99,21 +101,23 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   // Your activity: fetched when you sign in, when the app comes back, and when the bell's screen asks.
   const social = useSocial();
   const uid = social.user?.uid;
-  const [activity, setActivity] = useState<{ uid: string; items: Activity[]; people: Record<string, Profile | null>; videos: Record<string, string> }>();
+  const [activity, setActivity] = useState<{ uid: string; items: Activity[]; people: Record<string, Profile | null>; videos: Record<string, string>; invites: CrewInvite[] }>();
   const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setTick((t) => t + 1), []);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => st === 'active' && refresh());
     return () => sub.remove();
   }, [refresh]);
-  const { artist } = useCatalog();
+  const { artist, festival } = useCatalog();
   useEffect(() => {
     if (!uid || !social.availability.ok) return;
     let live = true;
     (async () => {
       try {
         const items = await social.service.activity(ACTIVITY_MAX);
-        const who = [...new Set(items.map((a) => a.from))];
+        // Crews you've been asked to join (they leave once you join or say no).
+        const invites = await social.service.crewInvites(ACTIVITY_MAX).catch(() => [] as CrewInvite[]);
+        const who = [...new Set([...items.map((a) => a.from), ...invites.map((i) => i.from)])];
         const people: Record<string, Profile | null> = {};
         await Promise.all(who.map(async (u) => (people[u] = await social.service.profileOf(u).catch(() => null))));
         // What your liked videos are of, from what you've shared.
@@ -124,7 +128,7 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
             if (name) videos[m.id] = `your video of ${name}`;
           }
         }
-        if (live) setActivity({ uid, items, people, videos });
+        if (live) setActivity({ uid, items, people, videos, invites });
       } catch {
         // Keep what was there; the next refresh tries again.
       }
@@ -144,10 +148,19 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
         : [],
     [activity, uid, social.blocked],
   );
+  const inviteList = useMemo(() => {
+    if (!activity || activity.uid !== uid) return [];
+    const nameOf = (u: string) => {
+      const p = activity.people[u];
+      return p ? firstName(p.displayName) : undefined;
+    };
+    const open = activity.invites.filter((i) => !social.blocked.has(i.from));
+    return inviteNotices(open, { nameOf, festivalName: (id) => festival(id)?.name });
+  }, [activity, uid, social.blocked, festival]);
   // Festivals that ended lately with a recap for you.
   const recapFestivals = useRecapFestivals();
   const recapList = useMemo(() => recapNotices(recapFestivals, today), [recapFestivals, today]);
-  const all = useMemo(() => [...recapList, ...list, ...lineupList, ...clipList, ...activityList], [recapList, list, lineupList, clipList, activityList]);
+  const all = useMemo(() => [...inviteList, ...recapList, ...list, ...lineupList, ...clipList, ...activityList], [inviteList, recapList, list, lineupList, clipList, activityList]);
 
   const value = useMemo<Ctx>(() => ({ list: all, refresh, read, markRead, hydrated }), [all, refresh, read, markRead, hydrated]);
   return <NoticesContext.Provider value={value}>{children}</NoticesContext.Provider>;

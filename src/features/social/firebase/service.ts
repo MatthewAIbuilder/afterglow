@@ -40,10 +40,10 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
-import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { asSocialError, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -183,6 +183,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           getDocs(query(collection(db, 'comments'), where('uid', '==', user.uid))),
           getDocs(query(collection(db, 'comments'), where('owner', '==', user.uid))),
           getDocs(query(collection(db, 'friendLinks'), where('from', '==', user.uid))),
+          getDocs(query(collection(db, 'crewInvites'), where('from', '==', user.uid))),
+          getDocs(query(collection(db, 'crewInvites'), where('to', '==', user.uid))),
         ]);
         const refs = snaps.flatMap((snap) => snap.docs.map((d) => d.ref));
         for (let i = 0; i < refs.length; i += 400) {
@@ -663,7 +665,45 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const members = [...c.members, user.uid];
           tx.update(crewRef, { members });
           return { ...c, members };
+        }).then(async (c) => {
+          // An invite to it is done with.
+          await deleteDoc(doc(db, 'crewInvites', `${id}_${user.uid}`)).catch(() => {});
+          return c;
         });
+      }),
+    inviteToCrew: (crewId, uid) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        if (uid === user.uid) return;
+        const c = crewFromDoc(crewId, (await getDoc(doc(db, 'crews', crewId))).data());
+        if (!c || !c.members.includes(user.uid)) throw new SocialError('not-found');
+        if (c.members.includes(uid)) return;
+        await setDoc(doc(db, 'crewInvites', `${crewId}_${uid}`), {
+          crewId,
+          festivalId: c.festivalId,
+          crewName: c.name.slice(0, 40),
+          from: user.uid,
+          to: uid,
+          createdAt: serverTimestamp(),
+        });
+      }),
+    crewInvites: (max) =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'crewInvites'), where('to', '==', user.uid), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => crewInviteFromDoc(d.id, d.data())).filter((i): i is CrewInvite => !!i);
+      }),
+    sentCrewInvites: (crewId) =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'crewInvites'), where('crewId', '==', crewId), where('from', '==', user.uid), limit(100)));
+        return snap.docs.map((d) => crewInviteFromDoc(d.id, d.data())?.to).filter((u): u is string => !!u);
+      }),
+    declineCrewInvite: (crewId) =>
+      guard(async () => {
+        const user = me();
+        await deleteDoc(doc(fb().db, 'crewInvites', `${crewId}_${user.uid}`));
       }),
     leaveCrew: (id) =>
       guard(async () => {

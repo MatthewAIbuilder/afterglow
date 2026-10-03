@@ -65,6 +65,8 @@ It should end with "Deploy complete!" (this also creates the indexes Afterglow n
 
 > **Updated 2026-10-02 (crew updates and comments):** the rules and indexes changed again. Run the deploy command above once more so crews can post updates and people can comment. Firebase builds the new comment indexes in a few minutes; comments may say they couldn't load until it's done.
 
+> **Updated 2026-10-03 (crew invites in the app):** a new `crewInvites` collection and index. Run the deploy command again (or let the automatic step do it once its key has the roles in `docs/web-deploy.md`).
+
 > **Updated 2026-10-02 (replies to crew updates):** one more small rules change, so crewmates can reply to each other's updates and a crew video that stopped half way can be sent again. Run the same deploy command again.
 
 ## 6. Try it (in Expo Go)

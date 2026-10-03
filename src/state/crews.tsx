@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { crewStars, firstName, picksChanged, type CrewStars } from '../features/crews/together';
-import type { Crew, CrewPicks, Profile } from '../features/social/models';
+import type { Crew, CrewInvite, CrewPicks, Profile } from '../features/social/models';
+import { openInvites } from '../features/crews/invite';
 import { usePlan } from './plan';
 import { useSocial } from './social';
 
@@ -25,10 +26,18 @@ type Ctx = {
   refresh: () => Promise<void>;
   /** First names of crewmates who starred this set at this festival (never you). */
   crewStarsFor: (festivalId: string, artistId: string) => string[];
+  /** Invites to crews you're not in yet, newest first (`openInvites`), and who sent them. */
+  invites: CrewInvite[];
+  inviters: Record<string, Profile>;
+  /** Say no to an invite: it goes for both of you. */
+  declineInvite: (crewId: string) => Promise<void>;
 };
 
 /** Your stars reach your crews this long after they settle. */
 export const CREW_SYNC_MS = 2000;
+
+/** How many invites are read at a time. */
+const INVITES_MAX = 30;
 
 const CrewsContext = createContext<Ctx | null>(null);
 
@@ -38,6 +47,9 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
   const uid = social.user?.uid;
   const active = social.availability.ok && !!uid;
   const [state, setState] = useState<{ uid?: string; crews: Crew[]; loaded: boolean }>({ crews: [], loaded: false });
+  // Invites sent to you (read with your crews), and the profiles of who sent them.
+  const [inviteState, setInviteState] = useState<{ uid?: string; list: CrewInvite[] }>({ list: [] });
+  const [inviters, setInviters] = useState<Record<string, Profile>>({});
   const currentUid = useRef<string | undefined>(undefined);
   useEffect(() => {
     currentUid.current = active ? uid : undefined;
@@ -47,6 +59,10 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!active || !uid) return;
+    service
+      .crewInvites(INVITES_MAX)
+      .then((list) => currentUid.current === uid && setInviteState({ uid, list }))
+      .catch(() => {});
     try {
       const crews = await service.myCrews();
       if (currentUid.current === uid) setState({ uid, crews, loaded: true });
@@ -63,6 +79,10 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       .myCrews()
       .then((list) => live && setState({ uid, crews: list, loaded: true }))
       .catch(() => live && setState({ uid, crews: [], loaded: true }));
+    service
+      .crewInvites(INVITES_MAX)
+      .then((list) => live && setInviteState({ uid, list }))
+      .catch(() => {});
     return () => {
       live = false;
     };
@@ -75,6 +95,34 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
 
   const crews = useMemo(() => (active && state.uid === uid ? state.crews : []), [active, state, uid]);
   const loaded = active && state.uid === uid && state.loaded;
+  const invites = useMemo(
+    () => (active && inviteState.uid === uid ? openInvites(inviteState.list, { myCrews: crews.map((c) => c.id), blocked: social.blocked }) : []),
+    [active, inviteState, uid, crews, social.blocked],
+  );
+  // Who invited you, read once each.
+  useEffect(() => {
+    const missing = [...new Set(invites.map((i) => i.from))].filter((u) => !inviters[u]);
+    if (!missing.length) return;
+    let live = true;
+    Promise.all(missing.map((u) => service.profileOf(u).catch(() => null))).then((found) => {
+      if (!live) return;
+      setInviters((prev) => {
+        const next = { ...prev };
+        for (const p of found) if (p) next[p.uid] = p;
+        return next;
+      });
+    });
+    return () => {
+      live = false;
+    };
+  }, [invites, inviters, service]);
+  const declineInvite = useCallback(
+    async (crewId: string) => {
+      setInviteState((s) => ({ ...s, list: s.list.filter((i) => i.crewId !== crewId) }));
+      await service.declineCrewInvite(crewId).catch(() => {});
+    },
+    [service],
+  );
 
   const put = useCallback((crew: Crew) => {
     setState((s) => ({ ...s, crews: [...s.crews.filter((c) => c.id !== crew.id), crew] }));
@@ -92,6 +140,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
     async (id: string) => {
       const crew = await service.joinCrew(id);
       put(crew);
+      setInviteState((s) => ({ ...s, list: s.list.filter((i) => i.crewId !== id) }));
       return crew;
     },
     [service, put],
@@ -184,8 +233,11 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       remove,
       refresh,
       crewStarsFor: (festivalId, artistId) => stars[festivalId]?.[artistId] ?? [],
+      invites,
+      inviters,
+      declineInvite,
     }),
-    [crews, loaded, create, join, leave, rename, remove, refresh, stars],
+    [crews, loaded, create, join, leave, rename, remove, refresh, stars, invites, inviters, declineInvite],
   );
   return <CrewsContext.Provider value={value}>{children}</CrewsContext.Provider>;
 }

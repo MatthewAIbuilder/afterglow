@@ -1,4 +1,4 @@
-import type { Activity, Comment, Crew, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, ReportRecord, SupportMessage, SupportTopic } from './models';
+import type { Activity, Comment, Crew, CrewInvite, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -141,6 +141,14 @@ export interface SocialService {
   myCrews(): Promise<Crew[]>;
   /** Join a crew (needs your profile; refused when it's full). Joining twice is the same as once. */
   joinCrew(id: string): Promise<Crew>;
+  /** Invite someone on Afterglow to a crew you're in (they need a profile; not if they've blocked you). Inviting again is the same as once. */
+  inviteToCrew(crewId: string, uid: string): Promise<void>;
+  /** Crew invites sent to you, newest first. */
+  crewInvites(max: number): Promise<CrewInvite[]>;
+  /** Who you've invited to a crew (uids). */
+  sentCrewInvites(crewId: string): Promise<string[]>;
+  /** Say no to an invite (or tidy one up after joining). */
+  declineCrewInvite(crewId: string): Promise<void>;
   /** Leave a crew, taking your picks with you. The last one out ends it; an owner who leaves hands it on. */
   leaveCrew(id: string): Promise<void>;
   /** The owner renames the crew. */

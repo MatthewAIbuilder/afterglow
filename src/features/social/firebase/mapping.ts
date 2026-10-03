@@ -1,5 +1,5 @@
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, REPORT_REASONS, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, REPORT_REASONS, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -93,6 +93,18 @@ function timeOf(v: unknown): string | undefined {
     return new Date((v as { toMillis: () => number }).toMillis()).toISOString();
   }
   return undefined;
+}
+
+/** A crew invite document; anything missing drops it. A missing server time (still being written) reads as now. */
+export function crewInviteFromDoc(id: string, d: unknown): CrewInvite | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const crewId = str(o.crewId);
+  const festivalId = str(o.festivalId);
+  const from = str(o.from);
+  const to = str(o.to);
+  if (!crewId || !festivalId || !from || !to) return null;
+  return { id, crewId, festivalId, crewName: (str(o.crewName) ?? '').slice(0, 40), from, to, at: timeOf(o.createdAt) ?? new Date().toISOString() };
 }
 
 /** A crew update document. `atMs` (when it happened on the phone) is required; a missing server time reads as that time. */
