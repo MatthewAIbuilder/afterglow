@@ -52,6 +52,8 @@ import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
 import { fillsScreen, MIN_PLAYER, tallLayout } from './videoLayout';
 import { shareMessage } from '../../lib/share';
+import { ToeGlyph } from '../toes/Toe';
+import { useToes } from '../toes/useToes';
 
 type Props = {
   clip: Clip;
@@ -98,6 +100,8 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   // Plays only while on screen, with Discover visible and the app in the foreground.
   const playing = shouldPlay({ active: isActive, live }, paused);
   const insets = useSafeAreaInsets();
+  // A double-tap leaves a toe print instead of a heart, for one person only.
+  const toes = useToes();
 
   // Real footage when the clip has playable media; the stage when it doesn't or the video fails.
   const media = useMemo(() => clipMedia(clip), [clip]);
@@ -381,7 +385,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       pointerEvents="none"
       style={[styles.burst, { left: burstAt.x - BURST / 2, top: burstAt.y - BURST / 2 }, burstStyle]}
     >
-      <HeartIcon color={color.glow} size={BURST} filled />
+      {toes ? <ToeGlyph size={BURST * 0.85} color={color.glow} /> : <HeartIcon color={color.glow} size={BURST} filled />}
     </Animated.View>
   );
 

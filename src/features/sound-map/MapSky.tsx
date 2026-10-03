@@ -16,6 +16,8 @@ import Svg, { Circle, Defs, Line, LinearGradient, RadialGradient, Stop } from 'r
 import type { Artist } from '../../data/models';
 import { mixColor } from './colors';
 import { heartColors, type Link, type Nebula, type Star, starfield } from './sky';
+import { toeConstellation } from '../toes/toes';
+import { useToes } from '../toes/useToes';
 
 /**
  * The sky around the bubbles, drawn in the map's world (it pans and zooms
@@ -234,7 +236,14 @@ export const Starfield = memo(function Starfield({
 }) {
   const W = width * 2.4;
   const H = height * 2.4;
-  const stars = useMemo(() => starfield(W, H, Math.round(Math.min(140, (width * height) / 3600))), [W, H, width, height]);
+  // For one person only: a footprint hides among the stars, off to one side.
+  const toes = useToes();
+  const stars = useMemo(() => {
+    const field = starfield(W, H, Math.round(Math.min(140, (width * height) / 3600)));
+    if (!toes) return field;
+    const print = toeConstellation(-width * 0.62, -height * 0.34, 120);
+    return [...field, ...print.toes.map((t) => ({ ...t, r: Math.max(1.3, t.r * 0.35), group: 1 as const })), ...print.sole.map((t) => ({ ...t, r: 0.9, group: 2 as const }))];
+  }, [W, H, width, height, toes]);
   const depth = useAnimatedStyle(() => ({
     transform: [{ translateX: tx.get() * 0.3 }, { translateY: ty.get() * 0.3 }, { scale: 1 + (scale.get() - 1) * 0.25 }],
   }));

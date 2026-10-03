@@ -1,5 +1,7 @@
 import { StyleSheet, useWindowDimensions } from 'react-native';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { toeConstellation } from '../features/toes/toes';
+import { useToes } from '../features/toes/useToes';
 import { color } from '../theme/tokens';
 
 /**
@@ -8,6 +10,9 @@ import { color } from '../theme/tokens';
  */
 export function NightSky() {
   const { width, height } = useWindowDimensions();
+  // For one person only: footprints drawn in faint stars, up in the haze and down in the dusk.
+  const toes = useToes();
+  const prints = toes ? [toeConstellation(width * 0.82, height * 0.13, 64), toeConstellation(width * 0.14, height * 0.86, 44)] : [];
   return (
     <Svg style={StyleSheet.absoluteFill} width={width} height={height} pointerEvents="none">
       <Defs>
@@ -28,6 +33,7 @@ export function NightSky() {
       <Rect width="100%" height="100%" fill="url(#haze)" />
       <Rect width="100%" height="100%" fill="url(#dusk)" />
       <Rect width="100%" height="100%" fill="url(#stage)" />
+      {prints.map((p, i) => [...p.toes, ...p.sole].map((st, j) => <Circle key={`${i}-${j}`} cx={st.x} cy={st.y} r={st.r} fill="#F3F0FF" fillOpacity={j < 5 ? 0.13 : 0.1} />))}
     </Svg>
   );
 }
