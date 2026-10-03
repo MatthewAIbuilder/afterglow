@@ -510,6 +510,15 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async leaveCrew(id) {
       leave(id, me().uid);
     },
+    async endCrew(id) {
+      const c = crews.get(id);
+      if (!c) return;
+      if (c.owner !== me().uid) throw new SocialError('unknown');
+      crews.delete(id);
+      dropPicks(id);
+      dropUpdates(id);
+      meets.delete(id);
+    },
     async renameCrew(id, raw) {
       const c = memberOf(id);
       if (c.owner !== me().uid || crewNameProblem(raw)) throw new SocialError('unknown');

@@ -10,8 +10,7 @@ import { PageTitle } from '../components/PageTitle';
 import { CHECK_INS, clock, cleanNote } from '../features/crews/updates';
 import { guessArtists, nightOf } from '../features/memories/guess';
 import { isOffline } from '../features/offline/status';
-import { LostButton } from '../features/crews/LostButton';
-import { CareButtons } from '../features/crews/CareButtons';
+import { StatusChips } from '../features/crews/CheckInPanel';
 import { CREW_NOTE_MAX } from '../features/social/models';
 import { showActionSheet, showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
@@ -130,10 +129,6 @@ export default function CheckInScreen() {
           {crews.map((c) => c.name).join(' and ')} {crews.length === 1 ? 'sees' : 'see'} the time you tap, even if the signal holds it back.
         </Text>
         {offline ? <Text style={[styles.offline, styles.pad]}>No signal right now: it’ll send itself later, marked with this moment.</Text> : null}
-        <View style={[styles.pad, { marginTop: space.md, gap: space.sm }]}>
-          <CareButtons festivalId={festival.id} />
-          <LostButton festivalId={festival.id} />
-        </View>
 
         {festivals.length > 1 ? (
           <Chips label="Festival">
@@ -205,6 +200,17 @@ export default function CheckInScreen() {
               <Text style={styles.quickText}>{words}</Text>
             </Pressable>
           ))}
+        </View>
+
+        <Text style={[styles.section, styles.pad]}>Let them know</Text>
+        <View style={styles.pad}>
+          <StatusChips
+            festivalId={festival.id}
+            onSent={(id) => {
+              haptic.settle();
+              setSent({ id, at: new Date() });
+            }}
+          />
         </View>
 
         <View style={[styles.own, styles.pad]}>
