@@ -31,7 +31,9 @@ Firebase console → your project → **Build → Hosting** → **Get started**.
 3. GitHub → your `afterglow` repository → **Settings** → **Secrets and variables** → **Actions** → **Secrets** tab → **New repository secret**. Name: `FIREBASE_SERVICE_ACCOUNT`. Value: paste. **Add secret**.
 4. Delete the downloaded file. It's a key to your Firebase project: never share it or put it in the code.
 
-### 3. Tell the build your Firebase settings
+### 3. Tell the build your Firebase settings (optional)
+
+The app already has Afterglow's own Firebase settings built in (`src/config/social.ts`), so the website has accounts without this step. Only add these to point a build at a different Firebase project.
 
 Same page → **Variables** tab → **New repository variable**, six times, with the same values as your `.env` file (saving them as secrets works too):
 
@@ -81,7 +83,7 @@ Firebase console → **Authentication** → **Settings** → **Authorized domain
 | "Check the Firebase key" fails, or Deploy says "Failed to authenticate" | The `FIREBASE_SERVICE_ACCOUNT` secret holds something else (for example the `.env` file's lines). Replace it with the whole `.json` key file from step 2: open it in Notepad, select all, copy, paste. |
 | Deploy fails with "permission denied" | The key is for a different project, or `EXPO_PUBLIC_FIREBASE_PROJECT_ID` is wrong. |
 | Deploy fails with "No currently active project" | Fixed: the project (`afterglowmusic`) is now in `.firebaserc` and the workflow. |
-| The site says profiles aren't available | A variable from step 3 is missing; re-run the latest Actions run after adding it. |
+| The site says profiles aren't available | A variable from step 3 is set but wrong; fix or delete it, then re-run the latest Actions run. |
 | Signing in fails on the website only | Add the domain to Authorized domains (step 6). |
 | The domain still shows an old page | DNS hasn't updated yet, or an old `A` record is still there (step 5.3). |
 | A clip never plays and shows the stage | That YouTube video doesn't allow embedding on websites, or YouTube is blocked on that network. |
