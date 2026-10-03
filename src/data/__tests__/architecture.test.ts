@@ -140,9 +140,10 @@ describe('architecture', () => {
   });
 
   it('keeps music credentials out of normal storage', () => {
-    // The secure store is used by the adapters' wiring only; anything that writes AsyncStorage never touches it.
+    // The secure store is used only by the two keychain files (music sign-ins, saved account passwords), neither of which touches AsyncStorage.
     const secure = all.filter((f) => imports(f.text).some((i) => i === 'expo-secure-store')).map((f) => f.path);
-    expect(secure).toEqual(['features/music/secrets.ts']);
+    expect(secure.sort()).toEqual(['features/accounts/vault.ts', 'features/music/secrets.ts']);
+    for (const f of all.filter((x) => secure.includes(x.path))) expect(imports(f.text).some((i) => i.includes('async-storage'))).toBe(false);
     const both = all
       .filter((f) => imports(f.text).some((i) => i.includes('async-storage')))
       .filter((f) => imports(f.text).some((i) => /music\/(secrets|spotify|apple)/.test(i)))

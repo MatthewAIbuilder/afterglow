@@ -48,6 +48,44 @@ async function supportAccount(verified = true) {
   await s().signUp(SUPPORT, 'password123');
 }
 
+describe('the dashboard numbers', () => {
+  it('counts who opened the app, who is active and what they shared, across every view', async () => {
+    // Maya opens the app today: the app notes it, and only it (not the support account).
+    await person('maya', 'Maya');
+    const app = await renderApp('/');
+    await flush();
+    expect([...mockSocial.presence.values()]).toEqual([expect.objectContaining({ hasProfile: true, platform: 'ios', days: ['2026-11-07'] })]);
+    await app.unmount();
+    // Someone who drifted away two months ago.
+    mockSocial.presence.set('old', { uid: 'old', firstSeenAt: new Date(2026, 7, 1).toISOString(), lastSeenAt: new Date(2026, 8, 1).toISOString(), days: ['2026-08-01', '2026-09-01'], platform: 'android', hasProfile: false });
+    await s().signOut();
+
+    await supportAccount();
+    const hq = await renderApp('/');
+    await flush();
+    expect(mockSocial.presence.size).toBe(2);
+    expect(hq.getByLabelText(/^Active today: 1/)).toBeTruthy();
+    expect(hq.getByLabelText(/^Inactive \(30\+ days\): 1\. 50% of accounts/)).toBeTruthy();
+    expect(hq.getByText('1 new person this week, 1 more than the week before.')).toBeTruthy();
+
+    await fireEvent.press(hq.getByRole('tab', { name: 'People' }));
+    await flush();
+    expect(hq.getByLabelText(/^Accounts: 2/)).toBeTruthy();
+    expect(hq.getByText('Who came back')).toBeTruthy();
+    expect(hq.getByLabelText('iPhone: 1, 100 percent')).toBeTruthy();
+
+    await fireEvent.press(hq.getByRole('tab', { name: '7 days' }));
+    await fireEvent.press(hq.getByRole('tab', { name: 'Content' }));
+    await flush();
+    expect(hq.getByText('Top sharers, 7 days')).toBeTruthy();
+    expect(hq.getByText('No videos shared in this time.')).toBeTruthy();
+
+    await fireEvent.press(hq.getByRole('tab', { name: 'Festivals' }));
+    await flush();
+    expect(hq.getByText(/People who show they’re going/)).toBeTruthy();
+  });
+});
+
 describe('contacting support', () => {
   it('someone writes in, support replies on the dashboard, and the reply comes back to them', async () => {
     await person('maya', 'Maya');
@@ -70,7 +108,7 @@ describe('contacting support', () => {
     await flush();
     expect(hq.getByText('Dashboard')).toBeTruthy();
     expect(hq.getByText('1 support message is waiting for a reply.')).toBeTruthy();
-    expect(hq.getByLabelText(/^People: 1/)).toBeTruthy();
+    expect(hq.getByLabelText(/^People with a profile: 1/)).toBeTruthy();
     await fireEvent.press(hq.getByRole('tab', { name: /^Support/ }));
     await flush();
     expect(hq.getByText('The map won’t load on my phone')).toBeTruthy();

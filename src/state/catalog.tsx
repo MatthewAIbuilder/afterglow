@@ -4,9 +4,12 @@ import { CATALOG_TIMEOUT_MS, CATALOG_URL } from '../config/data';
 import { BUILT_IN } from '../data/bundled';
 import { type Catalog, createCatalog, withoutClips } from '../data/catalog';
 import type { CatalogSource } from '../data/models';
+import { parseCatalogFile } from '../data/file';
+import { applyPatches, type Built } from '../data/merge';
 import { type FetchText, refreshCatalog, type TextStore } from '../data/remote';
 import { validateSnapshot } from '../data/validate';
 import { useClipFlags } from './clipFlags';
+import { useLivePatches } from './livePatches';
 
 /**
  * The catalogue the app is showing. Starts with what ships with the app (the
@@ -53,7 +56,7 @@ function report(problems: string[], from: string) {
 }
 
 export function CatalogProvider({ source, children }: { source?: CatalogSource; children: ReactNode }) {
-  const [catalog, setCatalog] = useState(builtInCatalog);
+  const [base, setBase] = useState<Built>(BUILT_IN);
 
   useEffect(() => {
     report(BUILT_IN.problems, 'catalogue/afterglow.json');
@@ -65,7 +68,9 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
       source
         .load()
         .then((snapshot) => {
-          if (!cancelled) setCatalog(createCatalog(validateSnapshot(snapshot).snapshot));
+          if (cancelled) return;
+          const checked = validateSnapshot(snapshot).snapshot;
+          setBase({ catalog: createCatalog(checked), snapshot: checked, problems: [], usedFile: true });
         })
         .catch(() => {});
     } else if (CATALOG_URL) {
@@ -75,7 +80,7 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
         fetchText,
         store: storeFor(CATALOG_URL.trim()),
         onCatalog: (built) => {
-          if (!cancelled) setCatalog(built.catalog);
+          if (!cancelled) setBase(built);
         },
         onProblems: (problems, from) => report(problems, from === 'online' ? CATALOG_URL : 'saved copy'),
       }).catch(() => {});
@@ -84,6 +89,15 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
       cancelled = true;
     };
   }, [source]);
+
+  // Lineups and set times published from HQ, on top (LivePatchSync reads them).
+  const patches = useLivePatches();
+  const catalog = useMemo(() => {
+    if (!patches.length) return base.catalog;
+    const built = applyPatches(base, patches, parseCatalogFile);
+    report(built.problems, 'published from HQ');
+    return built.catalog;
+  }, [base, patches]);
 
   // Pull to refresh: read the hosted catalogue again (new festivals and clips arrive each night).
   const refresh = useCallback(async () => {
@@ -94,7 +108,7 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
         base: BUILT_IN.snapshot,
         fetchText,
         store: storeFor(CATALOG_URL.trim()),
-        onCatalog: (built) => setCatalog(built.catalog),
+        onCatalog: (built) => setBase(built),
         onProblems: (problems, from) => report(problems, from === 'online' ? CATALOG_URL : 'saved copy'),
       }).catch(() => {});
     // Long enough for the spinner to read as "checked".

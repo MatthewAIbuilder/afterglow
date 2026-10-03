@@ -144,15 +144,49 @@ service cloud.firestore {
     }
     // Flairs: a special border and caption (artists, the team, partners), given out by hand in the Firebase
     // console. Anyone can see them; nobody can write one from the app.
-    // Afterglow Plus: given in the Firebase console for now (later by the App Store purchase, from a server).
-    // Anyone can see it (it decides whether someone's videos show the edge glow); nobody writes it from the app.
+    // Afterglow Plus: given from HQ (the support account) or the Firebase console (later by the App Store
+    // purchase, from a server). Anyone can see it (it decides whether someone's videos show the edge glow).
     match /plus/{uid} {
       allow read: if true;
-      allow write: if false;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['active', 'until'])
+        && request.resource.data.active == true && shortOrAbsent(request.resource.data, 'until', 40);
     }
     match /flairs/{uid} {
       allow read: if true;
-      allow write: if false;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['kind', 'caption'])
+        && request.resource.data.kind in ['artist', 'team', 'partner']
+        && request.resource.data.caption is string && request.resource.data.caption.size() > 0 && request.resource.data.caption.size() <= 40;
+    }
+
+    // HQ uploads (lineup and set-times pictures, PDFs and text for Afterglow to add): only the support account.
+    match /drops/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.by == me()
+        && request.resource.data.keys().hasOnly(['by', 'festivalId', 'festivalName', 'note', 'text', 'files', 'status', 'createdAt'])
+        && request.resource.data.status == 'waiting' && request.resource.data.createdAt == request.time
+        && request.resource.data.files is list && request.resource.data.files.size() <= 10
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && shortOrAbsent(request.resource.data, 'festivalId', 100) && shortOrAbsent(request.resource.data, 'festivalName', 120)
+        && shortOrAbsent(request.resource.data, 'text', 50000);
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['waiting', 'sent', 'done'];
+    }
+
+    // Catalogue updates published from HQ: every app reads them on top of its catalogue (they're public
+    // lineup facts); only the support account publishes or takes them down. Never edited.
+    match /published/{id} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.by == me()
+        && request.resource.data.keys().hasOnly(['title', 'festivalId', 'file', 'by', 'publishedAt', 'dropId'])
+        && request.resource.data.publishedAt == request.time
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+        && request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 100
+        && request.resource.data.file is string && request.resource.data.file.size() <= 800000
+        && shortOrAbsent(request.resource.data, 'dropId', 100);
+      allow update: if false;
     }
     // Glow levels from daily quests: your own, shown on your profile (switched off in Edit profile, which deletes it).
     // Anyone can see them; only you write yours, a whole number from 1 to 999, stamped with the server's time.
@@ -242,7 +276,7 @@ service cloud.firestore {
     // hasn't blocked them, as themselves, stamped with the server's time. Only the two of them can see it;
     // either can remove it (joining or saying no). Inviting again overwrites it.
     match /crewInvites/{id} {
-      allow read: if signedIn() && (resource.data.to == me() || resource.data.from == me());
+      allow read: if (signedIn() && (resource.data.to == me() || resource.data.from == me())) || isAdmin();
       allow create, update: if signedIn()
         && request.resource.data.keys().hasOnly(['crewId', 'festivalId', 'crewName', 'from', 'to', 'createdAt'])
         && request.resource.data.from == me() && request.resource.data.to is string && request.resource.data.to != me()
@@ -367,6 +401,23 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt'])
         && request.resource.data.status in ['open', 'resolved'];
+    }
+
+    // When an account last opened the app (the dashboard's active and inactive counts): only the days and
+    // times it opened, its platform and version, and whether it has a profile; never what anyone did.
+    // You write your own; only you and the support account read it; it goes with the account.
+    match /activity/{uid} {
+      allow get: if signedIn() && (me() == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['firstSeenAt', 'lastSeenAt', 'days', 'platform', 'version', 'hasProfile'])
+        && request.resource.data.firstSeenAt is string && request.resource.data.firstSeenAt.size() <= 40
+        && request.resource.data.lastSeenAt is string && request.resource.data.lastSeenAt.size() <= 40
+        && request.resource.data.days is list && request.resource.data.days.size() <= 90
+        && request.resource.data.hasProfile is bool
+        && shortOrAbsent(request.resource.data, 'platform', 20)
+        && shortOrAbsent(request.resource.data, 'version', 80);
+      allow delete: if signedIn() && me() == uid;
     }
 
     // Support messages: you write yours (as yourself, marked open, stamped with the server's time) and read
