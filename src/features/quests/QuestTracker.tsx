@@ -35,7 +35,7 @@ export function QuestTracker() {
   const { log, loaded } = useQuests();
   const { gifts, garden } = useSprouts();
   const sproutFacts = useMemo(
-    () => ({ gave: gifts.map((g) => ({ at: g.at, picked: !!g.claimedBy })), got: garden.filter((g) => g.from).map((g) => g.at) }),
+    () => ({ gave: gifts.map((g) => ({ at: g.at, picked: !!g.claimedBy })), got: garden.filter((g) => g.from).map((g) => g.scannedAt ?? g.at) }),
     [gifts, garden],
   );
   const now = useNow().getTime();

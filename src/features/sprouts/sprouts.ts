@@ -238,6 +238,8 @@ export type GardenSprout = {
   at: number;
   /** Picked up in the background (after signing in, or once there was signal): the bell says so. */
   late?: boolean;
+  /** When you scanned it, when that was before it reached you (side quests go by this). */
+  scannedAt?: number;
 };
 
 /** The sprout everyone starts with. */

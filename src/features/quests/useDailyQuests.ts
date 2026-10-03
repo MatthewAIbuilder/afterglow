@@ -4,7 +4,10 @@ import { useBadgeClaims } from '../../state/badgeClaims';
 import { useCrewChat } from '../../state/crewChat';
 import { useSocialMaybe } from '../../state/social';
 import { useWeekends } from '../../state/weekends';
-import { festivalWeek } from '../festivalWeek/week';
+import { DOORS, festivalWeek, isUnlocked } from '../festivalWeek/week';
+import { useAllOpenedDoors } from '../../state/festivalWeek';
+import { useCommunityClips } from '../../state/community';
+import { useCrews } from '../../state/crews';
 import { useCatalog } from '../../state/catalog';
 import { useQuestBook } from '../../state/dailyQuests';
 import { useFollowedArtists } from '../../state/followedArtists';
@@ -158,11 +161,27 @@ export function useQuestAvailability(): QuestAbility {
   const enoughSets = enoughSetsFor(catalog, ratings, reactions, going);
   const crew = useCrewChat().canChat;
   const { forYou } = useWeekends();
-  // A door ready today: a festival you're going to is in its festival week.
-  const door = useMemo(() => catalog.festivals.some((f) => going.includes(f.id) && !!festivalWeek(forYou(f), today)), [catalog.festivals, going, forYou, today]);
+  // A door ready today and not opened yet, at a festival you're going to.
+  const opened = useAllOpenedDoors();
+  const door = useMemo(
+    () =>
+      catalog.festivals.some((f) => {
+        if (!going.includes(f.id)) return false;
+        const week = festivalWeek(forYou(f), today);
+        return !!week && DOORS.some((d) => isUnlocked(d, week.until) && !(opened[f.id] ?? []).includes(d));
+      }),
+    [catalog.festivals, going, forYou, today, opened],
+  );
   const social = useSocialMaybe();
-  const crowd = !!social?.availability.ok && !!social?.user;
-  return useMemo(() => ({ planning, enoughSets, crew, door, crowd }), [planning, enoughSets, crew, door, crowd]);
+  const signedIn = !!social?.availability.ok && !!social?.user;
+  // In the crowd only when there are a couple of crowd videos to watch.
+  const crowdClips = useCommunityClips('mix');
+  const crowd = signedIn && crowdClips.length >= 2;
+  const sprout = signedIn && !!social?.profile;
+  const { hydrated: goingLoaded } = useGoing();
+  const { loaded: crewsLoaded } = useCrews();
+  const settled = goingLoaded && (!social?.availability.ok || social.ready) && (!signedIn || crewsLoaded);
+  return useMemo(() => ({ planning, enoughSets, crew, door, crowd, sprout, settled }), [planning, enoughSets, crew, door, crowd, sprout, settled]);
 }
 
 /** Where a quest's "Go" takes you. */

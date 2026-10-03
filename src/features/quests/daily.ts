@@ -104,7 +104,9 @@ const dateKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
 
 /** The quest day a moment belongs to ("2026-10-03"); days run 4 AM to 4 AM. */
 export function questDay(t: number): string {
-  const d = new Date(t - DAY_TURNS_AT * 3_600_000);
+  // By the clock on the wall, so it's 4 AM on the days the clocks change too.
+  const d = new Date(t);
+  if (d.getHours() < DAY_TURNS_AT) d.setDate(d.getDate() - 1);
   return dateKey(d);
 }
 
@@ -163,7 +165,19 @@ export function dailyPicks(day: string, can: (id: DailyQuestId) => boolean = () 
  * festival week door ready to open; In the crowd and Pass it on need you
  * signed in.
  */
-export type QuestAbility = { planning: boolean; enoughSets: boolean; crew?: boolean; door?: boolean; crowd?: boolean };
+export type QuestAbility = {
+  planning: boolean;
+  enoughSets: boolean;
+  crew?: boolean;
+  /** A festival week door ready to open today and not opened yet. */
+  door?: boolean;
+  /** Videos from the crowd there to watch. */
+  crowd?: boolean;
+  /** Signed in with a profile: you can give a sprout. */
+  sprout?: boolean;
+  /** Everything above has loaded (until then, the day's quests aren't drawn). */
+  settled?: boolean;
+};
 export const canDo =
   (a: QuestAbility) =>
   (id: DailyQuestId): boolean =>
@@ -175,9 +189,11 @@ export const canDo =
           ? !!a.crew
           : id === 'door'
             ? !!a.door
-            : id === 'crowd' || id === 'sprout'
+            : id === 'crowd'
               ? !!a.crowd
-              : true;
+              : id === 'sprout'
+                ? !!a.sprout
+                : true;
 
 /** Videos from the crowd on screen since a moment (their clip ids start with "community:"). */
 export const crowdSince = (seen: Readonly<Record<string, number>>, since: number) =>
@@ -232,7 +248,8 @@ export function dailyCurrent(spec: DailySpec, snap: QuestSnapshot, base: Counter
     share: () => events.share ?? 0,
     chat: () => events.chat ?? 0,
     door: () => events.door ?? 0,
-    crowd: () => crowdSince(snap.seen, since) + (events.crowd ?? 0),
+    // Each crowd video once: in Discover or on its own page, it's marked seen.
+    crowd: () => crowdSince(snap.seen, since),
     sprout: () => events.sprout ?? 0,
   }[spec.id]();
   return Math.min(spec.target, n);

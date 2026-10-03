@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
@@ -30,11 +30,8 @@ export default function MyCodeScreen() {
   const { myCard, codeSaved, theme, setTheme, newCode } = useFriendAdds();
   const size = Math.min(width - space.xl * 2 - 48, 300);
   const glow = CODE_THEMES[theme].glow;
-  // Trying every colour in one visit (the one you open on counts) is a secret.
+  // Trying every colour in one visit (the one showing when you start tapping counts) is a secret.
   const tried = useRef(new Set<string>());
-  useEffect(() => {
-    tried.current.add(theme);
-  }, [theme]);
 
   return (
     <View style={styles.root}>
@@ -92,6 +89,7 @@ export default function MyCodeScreen() {
                   onPress={() => {
                     haptic.select();
                     setTheme(t);
+                    tried.current.add(theme);
                     tried.current.add(t);
                     if (triedAll(tried.current, THEME_ORDER)) {
                       tried.current.clear();

@@ -88,12 +88,12 @@ describe('picking quests', () => {
     expect(canDo({ planning: true, enoughSets: true, crowd: true })('crowd')).toBe(true);
   });
 
-  it('In the crowd counts crowd videos on screen today and ones opened from a profile', () => {
+  it('In the crowd counts each crowd video seen today once', () => {
     const crowd = DAILY.find((q) => q.id === 'crowd')!;
     const since = at(2026, 10, 3, 4);
     const seen = { 'community:a': at(2026, 10, 3, 9), 'community:old': at(2026, 10, 2, 22), c1: at(2026, 10, 3, 10) };
     expect(dailyCurrent(crowd, snap({}, seen), NO_COUNTS, {}, since)).toBe(1);
-    expect(dailyCurrent(crowd, snap({}, seen), NO_COUNTS, { crowd: 1 }, since)).toBe(2);
+    expect(dailyCurrent(crowd, snap({}, { ...seen, 'community:b': at(2026, 10, 3, 11) }), NO_COUNTS, {}, since)).toBe(2);
     const sprout = DAILY.find((q) => q.id === 'sprout')!;
     expect(dailyCurrent(sprout, snap(), NO_COUNTS, { sprout: 1 }, since)).toBe(1);
     expect(canDo({ planning: true, enoughSets: true })('sprout')).toBe(false);

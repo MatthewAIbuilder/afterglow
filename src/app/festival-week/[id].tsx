@@ -14,7 +14,6 @@ import { useFestivalWeek } from '../../features/festivalWeek/useFestivalWeek';
 import type { Door, DoorAction } from '../../features/festivalWeek/week';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
-import { bumpQuestEvent } from '../../state/dailyQuests';
 import { openDoor } from '../../state/festivalWeek';
 import { useWeekends } from '../../state/weekends';
 import { color, motion, radius, space, type } from '../../theme/tokens';
@@ -50,7 +49,6 @@ function Week({ festival }: { festival: Festival }) {
     if (!d.opened) {
       haptic.celebrate();
       openDoor(festival.id, d.day);
-      bumpQuestEvent('door');
       setBurst((b) => b + 1);
     } else haptic.select();
     setChosen(d.day);

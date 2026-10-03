@@ -19,12 +19,12 @@ import { CloseIcon, CommentIcon } from '../../components/TabIcons';
 import { useCatalog } from '../../state/catalog';
 import { useCommunity } from '../../state/community';
 import { useReactions } from '../../state/reactions';
+import { useSeen } from '../../state/seen';
 import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
-import { bumpQuestEvent } from '../../state/dailyQuests';
 
 /**
  * A memory someone shared on their profile, full screen. Like it (the same
@@ -57,11 +57,13 @@ export default function SharedMemoryScreen() {
       .catch(() => setM(null));
   }, [id, social.service]);
   const me = social.user?.uid;
-  // Someone else's video counts towards the "In the crowd" daily quest.
-  const othersVideo = m && m.uid !== me ? m.id : undefined;
+  // Someone else's video, watched here, counts as seen (each video once), like one in Discover:
+  // that's what the "In the crowd" daily quest counts.
+  const { markSeen } = useSeen();
+  const othersVideo = m && me && m.uid !== me ? m.id : undefined;
   useEffect(() => {
-    if (othersVideo) bumpQuestEvent('crowd');
-  }, [othersVideo]);
+    if (othersVideo) markSeen(communityClipId(othersVideo));
+  }, [othersVideo, markSeen]);
   // How many comments, read each time you come back from them.
   useFocusEffect(
     useCallback(() => {
