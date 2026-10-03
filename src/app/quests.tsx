@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
@@ -14,6 +14,7 @@ import { type QuestRow, useDailyQuests, useQuestRoute } from '../features/quests
 import { haptic } from '../lib/haptics';
 import { useQuests } from '../state/quests';
 import { revealSecret, useSecrets } from '../state/secrets';
+import { setQuestReminder, useQuestReminder } from '../state/questReminder';
 import { secretsLine } from '../features/secrets/secrets';
 import { color, motion, radius, space, type } from '../theme/tokens';
 
@@ -32,6 +33,7 @@ export default function QuestsScreen() {
   const { log } = useQuests();
   const sideDone = QUESTS.filter((x) => log[x.id]).length;
   const secrets = useSecrets();
+  const nudge = useQuestReminder();
   const next = LEVELS[q.level.level] ?? undefined;
   const toNext = q.level.to - q.level.glow;
   const go = (to: string | undefined) => {
@@ -83,6 +85,26 @@ export default function QuestsScreen() {
         ) : (
           <Text style={styles.bonus}>Finish all three for +{ALL_DONE_BONUS} glow.</Text>
         )}
+
+        {/* An evening nudge, if you'd like one (phones only). */}
+        {Platform.OS !== 'web' ? (
+          <View style={styles.nudge}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>Remind me at 8 PM</Text>
+              <Text style={styles.sub}>Only on days you haven’t finished them.</Text>
+            </View>
+            <Switch
+              value={nudge.on}
+              onValueChange={(on) => {
+                haptic.select();
+                setQuestReminder(on);
+              }}
+              trackColor={{ true: QUEST_AMBER, false: 'rgba(243,240,255,0.18)' }}
+              accessibilityLabel="Remind me about my quests at 8 PM"
+              testID="quest-reminder"
+            />
+          </View>
+        ) : null}
 
         {q.weekly ? (
           <>
@@ -318,6 +340,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
   },
   rowTight: { marginTop: space.sm },
+  nudge: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginHorizontal: space.lg, marginTop: space.md, padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass },
   rowTitle: { ...type.headline, color: color.moon },
   how: { marginHorizontal: space.lg, marginTop: space.xl },
   howTitle: { ...type.label, color: color.moonDim },

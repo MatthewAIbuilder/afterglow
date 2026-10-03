@@ -67,3 +67,18 @@ describe('daily quests', () => {
     expect(app.getByTestId('quest-like').props.accessibilityLabel).toMatch(/0 of 3/);
   });
 });
+
+describe('the evening nudge', () => {
+  it('switching it on schedules one for 8 PM', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 3, 12) });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const notifications = require('expo-notifications');
+    const app = await renderApp('/quests');
+    await flush();
+    await fireEvent(app.getByTestId('quest-reminder'), 'valueChange', true);
+    await flush(30);
+    const ids = [...notifications.__scheduled.keys()] as string[];
+    expect(ids.some((id: string) => id.includes('quests:2026-10-03'))).toBe(true);
+    expect(await AsyncStorage.getItem('questReminder.v1')).toBe('true');
+  });
+});
