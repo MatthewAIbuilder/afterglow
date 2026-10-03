@@ -134,3 +134,14 @@ export function sproutNotices(gifts: readonly Gift[], now: number): Notice[] {
       href: '/garden',
     }));
 }
+
+/** "Your sprout bloomed into a Wanderer sprout", for the bell, for `SPROUT_NEWS_DAYS`. */
+export function bloomNotices(blooms: readonly { id: string; kind: SproutKind; at: number }[], now: number): Notice[] {
+  return blooms
+    .filter((b) => b.kind !== 'seedling' && now - b.at < SPROUT_NEWS_DAYS * 86_400_000)
+    .sort((a, b) => b.at - a.at)
+    .map((b) => {
+      const name = kindOf(b.kind).name;
+      return { id: `bloom:${b.id}`, kind: 'sprout' as const, title: `Your sprout bloomed into a ${name}`, body: `You can give ${name}s now.`, href: '/garden' };
+    });
+}

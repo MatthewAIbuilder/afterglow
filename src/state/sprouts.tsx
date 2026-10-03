@@ -53,6 +53,8 @@ type Stored = {
   garden: (GardenSprout & { account: string })[];
   /** Plain sprouts that bloomed, and what into. */
   bloomed: Record<string, SproutKind>;
+  /** When each bloomed (for the bell). */
+  bloomedAt?: Record<string, number>;
   /** When this phone's first sprout arrived. */
   starterAt?: number;
 };
@@ -71,6 +73,8 @@ type Ctx = {
   collected: Set<SproutKind>;
   /** Sprouts you've given (this account), newest first. */
   gifts: Gift[];
+  /** Your sprouts that bloomed, and when. */
+  blooms: { id: string; kind: SproutKind; at: number }[];
   /** Scans waiting or done (this account, or not signed in yet). */
   claims: Claim[];
   give: (kind: SproutKind, note?: string) => GiveResult;
@@ -102,6 +106,12 @@ function cleanGarden(raw: unknown): Stored['garden'] {
   );
 }
 
+function cleanTimes(raw: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'number' && v > 0 && k.length <= 64) out[k] = v;
+  return out;
+}
+
 function clean(raw: unknown): Stored {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   return {
@@ -109,6 +119,7 @@ function clean(raw: unknown): Stored {
     claims: cleanClaims(o.claims),
     garden: cleanGarden(o.garden),
     bloomed: cleanBloomed(o.bloomed),
+    bloomedAt: cleanTimes(o.bloomedAt),
     ...(typeof o.starterAt === 'number' ? { starterAt: o.starterAt } : {}),
   };
 }
@@ -167,6 +178,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           claims: [...cur.claims, ...s.claims.filter((c) => !cur.claims.some((x) => x.card.id === c.card.id))],
           garden: [...cur.garden, ...s.garden.filter((g) => !cur.garden.some((c) => c.id === g.id && c.account === g.account))],
           bloomed: { ...s.bloomed, ...cur.bloomed },
+          bloomedAt: { ...s.bloomedAt, ...cur.bloomedAt },
           starterAt: s.starterAt ?? cur.starterAt ?? Date.now(),
         }));
       })
@@ -448,14 +460,22 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   // Remember what each plain sprout bloomed into, so it stays that kind.
   useEffect(() => {
     const fresh = newlyBloomed(garden, stored.bloomed);
-    if (Object.keys(fresh).length) void Promise.resolve().then(() => setStored((s) => ({ ...s, bloomed: { ...fresh, ...s.bloomed } })));
+    if (!Object.keys(fresh).length) return;
+    const at = Date.now();
+    void Promise.resolve().then(() =>
+      setStored((s) => ({ ...s, bloomed: { ...fresh, ...s.bloomed }, bloomedAt: { ...Object.fromEntries(Object.keys(fresh).map((id) => [id, at])), ...s.bloomedAt } })),
+    );
   }, [garden, stored.bloomed]);
   const givable = useMemo(() => givableKinds(garden, stored.bloomed), [garden, stored.bloomed]);
+  const blooms = useMemo(
+    () => garden.flatMap((g) => (stored.bloomed[g.id] && stored.bloomedAt?.[g.id] ? [{ id: g.id, kind: stored.bloomed[g.id], at: stored.bloomedAt[g.id] }] : [])),
+    [garden, stored.bloomed, stored.bloomedAt],
+  );
   const collected = useMemo(() => collectedKinds(garden), [garden]);
 
   const value = useMemo<Ctx>(
-    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, claims, give, takeBack, claim, checkGift, refresh }),
-    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, claims, give, takeBack, claim, checkGift, refresh],
+    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, claims, give, takeBack, claim, checkGift, refresh }),
+    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, claims, give, takeBack, claim, checkGift, refresh],
   );
   return <SproutsContext.Provider value={value}>{children}</SproutsContext.Provider>;
 }

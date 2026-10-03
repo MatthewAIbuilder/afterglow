@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { sproutNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, giftsToSend, queueClaim, retryDelay, tidy, type Gift } from '../outbox';
+import { bloomNotices, sproutNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, giftsToSend, queueClaim, retryDelay, tidy, type Gift } from '../outbox';
 import {
   cleanBloomed,
   festivalDaysOf,
@@ -157,5 +157,11 @@ describe('the bell', () => {
       ['@jojo picked up your Sprout', 'It’s growing in their garden now.'],
       ['Sam picked up your PLUR sprout', 'With your note: “Hi”. It’s growing in their garden now.'],
     ]);
+  });
+
+  it('says when one of your sprouts bloomed', () => {
+    const now = at(10, 20);
+    const list = bloomNotices([{ id: 'a', kind: 'wanderer', at: at(10, 19) }, { id: 'b', kind: 'plur', at: at(9, 1) }], now);
+    expect(list.map((n) => [n.id, n.title, n.body])).toEqual([['bloom:a', 'Your sprout bloomed into a Wanderer sprout', 'You can give Wanderer sprouts now.']]);
   });
 });

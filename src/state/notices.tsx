@@ -8,7 +8,7 @@ import { cleanRead, notices, type Notice } from '../features/notifications/inbox
 import { clipNotices } from '../features/notifications/clipNews';
 import { lineupNotices } from '../features/notifications/lineupNews';
 import { recapNotices } from '../features/recap/recap';
-import { sproutNotices } from '../features/sprouts/outbox';
+import { bloomNotices, sproutNotices } from '../features/sprouts/outbox';
 import { useSprouts } from './sprouts';
 import { useRecapFestivals } from '../features/recap/useRecap';
 import type { Activity, CrewInvite, Profile } from '../features/social/models';
@@ -163,8 +163,8 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   const recapFestivals = useRecapFestivals();
   const recapList = useMemo(() => recapNotices(recapFestivals, today), [recapFestivals, today]);
   // Sprouts you gave that someone picked up.
-  const { gifts } = useSprouts();
-  const sproutList = useMemo(() => sproutNotices(gifts, today.getTime()), [gifts, today]);
+  const { gifts, blooms } = useSprouts();
+  const sproutList = useMemo(() => [...bloomNotices(blooms, today.getTime()), ...sproutNotices(gifts, today.getTime())], [blooms, gifts, today]);
   const all = useMemo(
     () => [...inviteList, ...recapList, ...list, ...lineupList, ...clipList, ...sproutList, ...activityList],
     [inviteList, recapList, list, lineupList, clipList, sproutList, activityList],

@@ -15,6 +15,10 @@
     "cleanUrls": true,
     "rewrites": [
       {
+        "source": "/sprout/**",
+        "destination": "/sprout.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
