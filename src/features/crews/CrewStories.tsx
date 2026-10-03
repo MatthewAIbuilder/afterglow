@@ -77,11 +77,13 @@ function StoryFace({ story, name, url, artist }: { story: Story; name?: string; 
         router.push({ pathname: '/crew-story', params: { uid: story.uid } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${who}, ${u.lost ? 'can’t find the crew,' : u.kind === 'reply' ? 'replied to you' : 'updated'} ${clock(u.at)}${place ? `, ${place}` : ''}${u.note ? `, “${u.note}”` : ''}${story.fresh ? '. New' : ''}`}
+      accessibilityLabel={`${who}, ${u.lost ? 'can’t find the crew,' : u.care === 'help' ? 'isn’t feeling great, asked for help' : u.care === 'ok' ? 'is OK,' : u.kind === 'reply' ? 'replied to you' : 'updated'} ${clock(u.at)}${place ? `, ${place}` : ''}${u.note ? `, “${u.note}”` : ''}${story.fresh ? '. New' : ''}`}
       style={({ pressed }) => [styles.item, pressed && styles.pressed]}
     >
-      {story.fresh ? (
-        <LinearGradient colors={u.lost ? ['#FFB86B', '#FF7E5F', '#FFB86B'] : ['#A97CFF', '#FF7EB6', '#FFB86B']} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={styles.ringGlow}>
+      {/* A call for help stays red until they say they're OK, seen or not. */}
+      {story.fresh || u.care === 'help' ? (
+        <LinearGradient
+          colors={u.care === 'help' ? ['#FF8A8A', '#FF5F7E', '#FF8A8A'] : u.care === 'ok' ? ['#5BE3B5', '#9ADF8F', '#5BE3B5'] : u.lost ? ['#FFB86B', '#FF7E5F', '#FFB86B'] : ['#A97CFF', '#FF7EB6', '#FFB86B']} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={styles.ringGlow}>
           <View style={styles.ringGap}>
             <PersonAvatar name={name} url={url} size={FACE} />
           </View>
@@ -91,7 +93,7 @@ function StoryFace({ story, name, url, artist }: { story: Story; name?: string; 
           <PersonAvatar name={name} url={url} size={FACE} />
         </View>
       )}
-      {u.kind === 'checkin' ? <View style={styles.badge} /> : null}
+      {u.kind === 'checkin' ? <View style={[styles.badge, u.care === 'help' && { backgroundColor: '#FF7A7A' }]} /> : null}
       <Text style={[styles.name, story.fresh && styles.nameFresh]} numberOfLines={1}>
         {who}
       </Text>

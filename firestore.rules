@@ -236,7 +236,7 @@ service cloud.firestore {
         allow read: if signedIn() && me() in get(path('crews', id)).data.members;
         allow create: if signedIn() && me() in get(path('crews', id)).data.members
           && updateId.matches('^[A-Za-z0-9_-]{6,64}$')
-          && request.resource.data.keys().hasOnly(['uid', 'kind', 'atMs', 'sentAt', 'festivalId', 'artistId', 'stage', 'note', 'videoUrl', 'thumbUrl', 'videoPath', 'thumbPath', 'sharedId', 'durationSec', 'width', 'height', 'replyTo', 'lost'])
+          && request.resource.data.keys().hasOnly(['uid', 'kind', 'atMs', 'sentAt', 'festivalId', 'artistId', 'stage', 'note', 'videoUrl', 'thumbUrl', 'videoPath', 'thumbPath', 'sharedId', 'durationSec', 'width', 'height', 'replyTo', 'lost', 'care'])
           && request.resource.data.uid == me()
           && request.resource.data.kind in ['video', 'checkin', 'reply']
           && request.resource.data.atMs is number
@@ -263,6 +263,8 @@ service cloud.firestore {
           && (request.resource.data.kind == 'reply' || !('replyTo' in request.resource.data))
           // "Can't find you": only on a check-in.
           && (!('lost' in request.resource.data) || (request.resource.data.lost == true && request.resource.data.kind == 'checkin'))
+          // "I'm OK" or "come find me": only on a check-in.
+          && (!('care' in request.resource.data) || (request.resource.data.care in ['ok', 'help'] && request.resource.data.kind == 'checkin'))
           && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
           && (!('width' in request.resource.data) || (request.resource.data.width is number && request.resource.data.width <= 20000))
           && (!('height' in request.resource.data) || (request.resource.data.height is number && request.resource.data.height <= 20000));

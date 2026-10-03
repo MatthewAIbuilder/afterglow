@@ -1,10 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { color, radius, space, type } from '../../theme/tokens';
-import { type Care, elapsed, feelingsBetween, HELP_MOODS, lastFeeling, type Mood, MOOD_LABEL, MOOD_TIP, nightStart } from './care';
+import { type Care, elapsed, feelingsBetween, HELP_MOODS, lastFeeling, type Mood, MOOD_LABEL, MOOD_LEVEL, MOOD_TIP, nightStart } from './care';
 import { FeelingGraph } from './FeelingGraph';
 import { FeelingChips, moodColor } from './feelings';
+import { CareButtons } from '../crews/CareButtons';
+import { careFor } from '../crews/care';
 
 const MIN = 60_000;
+/** After a check-in, telling your crew is offered for this long. */
+const CREW_OFFER_MS = 30 * MIN;
 
 /**
  * How are you feeling: the feelings to pick from, what to do about the one
@@ -12,7 +16,7 @@ const MIN = 60_000;
  * in twice. Check in now and then: it's the quickest way to notice things
  * changing.
  */
-export function FeelingCard({ care, now, onFeel }: { care: Care; now: number; onFeel: (m: Mood) => void }) {
+export function FeelingCard({ care, now, onFeel, crewFestival }: { care: Care; now: number; onFeel: (m: Mood) => void; crewFestival?: string }) {
   const last = lastFeeling(care, now);
   const tonight = feelingsBetween(care, nightStart(now), now);
   const careful = last && HELP_MOODS.includes(last.mood);
@@ -32,6 +36,13 @@ export function FeelingCard({ care, now, onFeel }: { care: Care; now: number; on
       ) : (
         <Text style={styles.intro}>Check in now and then. It’s the quickest way to notice when things change, for you or a friend.</Text>
       )}
+      {/* Just checked in, with a crew here: offer to tell them (never automatic). */}
+      {crewFestival && last && since !== undefined && since < CREW_OFFER_MS ? (
+        <View style={styles.crew}>
+          <Text style={styles.crewTitle}>Tell your crew?</Text>
+          <CareButtons festivalId={crewFestival} only={careFor(MOOD_LEVEL[last.mood])} />
+        </View>
+      ) : null}
       {stale ? <Text style={styles.nudge}>It’s been a while. How are you now?</Text> : null}
       <FeelingChips onPick={onFeel} current={since !== undefined && since < 2 * MIN ? last?.mood : undefined} />
       {tonight.length >= 2 ? (
@@ -56,5 +67,7 @@ const styles = StyleSheet.create({
   tip: { ...type.body, color: color.moonDim },
   nudge: { ...type.label, color: '#FFB86B' },
   graph: { gap: space.xs, marginTop: space.xs },
+  crew: { gap: space.sm },
+  crewTitle: { ...type.label, color: color.moonDim },
   graphTitle: { ...type.label, color: color.moonDim },
 });

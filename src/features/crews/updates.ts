@@ -108,6 +108,8 @@ export function updatePlace(u: Pick<CrewUpdate, 'stage' | 'note'>, artistName?: 
 export function updateLine(u: CrewUpdate, artistName?: string): string {
   if (isReply(u)) return `Replied ${clock(u.at)}`;
   if (u.lost) return `Can’t find the crew · ${clock(u.at)}`;
+  if (u.care === 'help') return `Not feeling great · ${clock(u.at)}`;
+  if (u.care === 'ok') return `I’m OK · ${clock(u.at)}`;
   const place = updatePlace(u, artistName);
   return `Updated ${clock(u.at)}${place ? ` · ${place}` : ''}`;
 }

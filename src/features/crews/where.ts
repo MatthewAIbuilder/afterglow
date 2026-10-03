@@ -40,7 +40,7 @@ export function crewWhere(
   const inCrew = new Map(here.map((c) => [c.id, new Set(c.members)]));
   const latest = new Map<string, CrewUpdate>();
   for (const u of [...updates].sort(byHappened)) {
-    if (isReply(u) || latest.has(u.uid) || !inCrew.get(u.crewId)?.has(u.uid)) continue;
+    if (isReply(u) || u.care || latest.has(u.uid) || !inCrew.get(u.crewId)?.has(u.uid)) continue;
     if (now - Date.parse(u.at) > UPDATES_WINDOW_MS) continue;
     latest.set(u.uid, u);
   }

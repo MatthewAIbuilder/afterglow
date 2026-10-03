@@ -326,6 +326,13 @@ await t('crew updates: “can’t find you” only on a check-in', async () => {
   await assertFails(setDoc(at('l000002'), update({ lost: false })));
   await assertFails(setDoc(at('l000003'), update({ lost: true, kind: 'video', videoUrl: 'https://x/v.mp4' })));
 });
+await t('crew updates: “I’m OK” and “come find me” only on a check-in', async () => {
+  const at = (id) => doc(B.firestore(), 'crews', 'c1', 'updates', id);
+  await assertSucceeds(setDoc(at('k000001'), update({ care: 'ok', note: 'I’m OK' })));
+  await assertSucceeds(setDoc(at('k000002'), update({ care: 'help', note: 'Not feeling great' })));
+  await assertFails(setDoc(at('k000003'), update({ care: 'fine' })));
+  await assertFails(setDoc(at('k000004'), update({ care: 'ok', kind: 'video', videoUrl: 'https://x/v.mp4' })));
+});
 await t('crew updates: never edited; removed by the author or the owner', async () => {
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1', 'updates', 'u000001'), { note: 'changed' }));
   await assertFails(deleteDoc(doc(C.firestore(), 'crews', 'c1', 'updates', 'u000001')));

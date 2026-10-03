@@ -121,6 +121,12 @@ Where your crew is, from the videos they film and quick check-ins, along the top
 
 **Find my crew.** Each crew can keep one meeting spot ("Big tree left of Main Stage"), set by any member on the crew page or on Tonight (`crews/{id}/meta/meet`, members only, 80 characters, who set it and when). "Can't find my crew" (Tonight and the check-in screen) sends a check-in marked lost ("Can’t find you. Heading to Big tree left of Main Stage"); it goes through the outbox like any check-in, so it waits for signal and keeps the time you tapped. Your crew sees it first in their stories with an amber ring. Nothing is tracked: it only says what you chose to send.
 
+### "I'm OK" and asking for help
+
+A check-in can carry `care: 'ok' | 'help'` (rules: only on check-ins). It's sent only when you tap it: on Look after yourself (offered for 30 minutes after you check in how you feel, picking the one that fits: okay or better offers "I'm OK", worse offers "Ask my crew for help"), Tonight, the Friends tab at a festival, and the check-in screen. Asking for help is confirmed first. Both go through the outbox, so they wait for signal and keep the time you tapped.
+
+For the crew (`features/crews/care.ts`): a call for help stays up until that person sends "I'm OK" or 3 hours pass (`CARE_WINDOW_MS`). `CrewHelpAlerts` shows it at the top of Tonight, the Friends tab and Look after yourself: who, when, where they last said they were, "See their update" and "On my way" (a reply). Their ring in the stories row stays red. Each phone nudges once per call with a local notification, only if notifications are already allowed (remembered in `crewCareNotified.v1`); there's no push from a server, so the nudge comes when the app next reads the crew (every minute while open, and on opening). Care check-ins never move anyone on Where's the crew.
+
 ## Friend codes
 
 Add a friend face to face by scanning their QR code (Friends → Scan a code, or festival mode's Friends tab). It's made for festival signal.

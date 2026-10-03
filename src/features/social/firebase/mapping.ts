@@ -119,6 +119,7 @@ export function crewUpdateFromDoc(crewId: string, id: string, d: unknown): CrewU
     ...(str(o.note) ? { note: str(o.note)!.slice(0, CREW_NOTE_MAX) } : {}),
     ...(kind === 'reply' ? { replyTo: str(o.replyTo) } : {}),
     ...(kind === 'checkin' && o.lost === true ? { lost: true } : {}),
+    ...(kind === 'checkin' && (o.care === 'ok' || o.care === 'help') ? { care: o.care } : {}),
     ...(videoUrl ? { videoUrl } : {}),
     ...(https(o.thumbUrl) ? { thumbUrl: https(o.thumbUrl) } : {}),
     ...(str(o.sharedId) ? { sharedId: str(o.sharedId) } : {}),

@@ -399,6 +399,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         ...(input.note ? { note: input.note.slice(0, CREW_NOTE_MAX) } : {}),
         ...(input.kind === 'reply' ? { replyTo: input.replyTo } : {}),
         ...(input.kind === 'checkin' && input.lost ? { lost: true } : {}),
+        ...(input.kind === 'checkin' && input.care ? { care: input.care } : {}),
         ...(input.kind === 'video' ? { videoUrl: input.videoUrl ?? `https://files.example/crews/${crewId}/${input.id}.mp4` } : {}),
         ...(input.thumbUrl || (uploaded && input.thumbUri) ? { thumbUrl: input.thumbUrl ?? `https://files.example/crews/${crewId}/${input.id}.jpg` } : {}),
         ...(input.sharedId ? { sharedId: input.sharedId } : {}),
