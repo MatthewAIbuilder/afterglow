@@ -24,11 +24,11 @@ const FRIENDS_READ = 30;
 const FACES = 6;
 
 /**
- * Your friends (people you follow) as a row of faces, then what they've been
- * up to: moments they shared, festivals they're going to, and whose taste is
+ * Your friends (people you follow) as a row of faces, then `between` (the
+ * Friends page puts your crews there), then what they've been up to: moments they shared, festivals they're going to, and whose taste is
  * close to yours. Read each time the Friends tab comes into view.
  */
-export function FriendsActivity() {
+export function FriendsActivity({ between }: { between?: React.ReactNode } = {}) {
   const social = useSocial();
   const me = social.profile;
   const catalog = useCatalog();
@@ -83,7 +83,8 @@ export function FriendsActivity() {
     [profiles, memories, upcoming, mix, going, social.blocked, nowMs],
   );
 
-  if (!me || !profiles?.length) return null;
+  // With no one followed yet, only what goes between (your crews) shows.
+  if (!me || !profiles?.length) return <>{between}</>;
   const shown = profiles.filter((p) => !social.blocked.has(p.uid));
   const more = social.following.size - Math.min(FACES, shown.length);
 
@@ -138,6 +139,8 @@ export function FriendsActivity() {
           </View>
         ) : null}
       </ScrollView>
+
+      {between}
 
       {items.length ? (
         <>

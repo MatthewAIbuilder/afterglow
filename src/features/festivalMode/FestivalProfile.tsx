@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -7,7 +7,8 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
 import { ProfileCover } from '../../components/ProfileCover';
-import { MenuIcon, QrIcon, ShareIcon } from '../../components/TabIcons';
+import { MenuIcon, PinIcon, QrIcon, ShareIcon, TilesIcon } from '../../components/TabIcons';
+import { Tabs } from '../../components/Tabs';
 import { WEB_URL } from '../../config/app';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
@@ -21,12 +22,17 @@ import { StandingAvatar, StandingCaption } from '../standing/StandingAvatar';
 import { ringOf } from '../standing/standing';
 import { useStanding } from '../standing/useStanding';
 import { videoGrid } from '../profile/profileView';
+import { BadgeCelebration } from '../profile/BadgeCelebration';
+import { BadgesPanel, ClaimBanner } from '../profile/BadgesPanel';
+import { useProfileBadges } from '../profile/useProfileBadges';
 
 /**
  * Profile in festival mode: just you. Your photo, name and bio (still
- * editable), sharing your profile or your friend code, and the videos you
- * filmed here first. Your videos live on this phone, so they're here with
- * no signal.
+ * editable), sharing your profile or your friend code, then Moments (the
+ * videos you filmed here first; they live on this phone, so they're here
+ * with no signal) and Badges (side quests first, since this is where
+ * they're earned, then pins and milestones, with the unlock when you claim
+ * one). `?tab=badges` opens on Badges (a side quest notification).
  */
 export function FestivalProfile({ festival }: { festival: Festival }) {
   const insets = useSafeAreaInsets();
@@ -40,6 +46,18 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
   const all = useMemo(() => videoGrid(memories), [memories]);
   const here = useMemo(() => all.filter((m) => m.festivalId === festival.id), [all, festival.id]);
   const shown = here.length ? here : all;
+  const b = useProfileBadges();
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<'moments' | 'badges'>(params.tab === 'badges' ? 'badges' : 'moments');
+  const [seenParam, setSeenParam] = useState(params.tab);
+  if (params.tab !== seenParam) {
+    setSeenParam(params.tab);
+    if (params.tab === 'badges') setTab('badges');
+  }
+  const navigation = useNavigation();
+  useEffect(() => {
+    if (params.tab) navigation.setParams({ tab: undefined } as never);
+  }, [params.tab, navigation]);
 
   const share = () => {
     if (!me) return;
@@ -116,17 +134,35 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
           ) : null}
         </View>
 
-        <View style={styles.videosHead}>
-          <Text style={styles.section}>{here.length ? `Your videos from ${festival.name}` : 'Your videos'}</Text>
-          {all.length ? (
-            <Pressable onPress={() => router.push('/memories')} accessibilityRole="button" accessibilityLabel="All your videos, by festival" hitSlop={8}>
-              <Text style={styles.link}>All ›</Text>
-            </Pressable>
-          ) : null}
+        <ClaimBanner b={b} />
+        <View style={styles.tabs}>
+          <Tabs<'moments' | 'badges'>
+            value={tab}
+            onChange={setTab}
+            items={[
+              { key: 'moments', label: 'Moments', count: all.length, icon: (c) => <TilesIcon color={c} size={16} /> },
+              { key: 'badges', label: 'Badges', count: b.earned, icon: (c) => <PinIcon color={c} size={17} /> },
+            ]}
+          />
         </View>
-        <VideosTab memories={shown} width={width} uriOf={uriOf} lookup={catalog} />
-        {Platform.OS !== 'web' && all.length ? <Text style={styles.note}>Your videos are on this phone, so they’re here without signal.</Text> : null}
+        {tab === 'badges' ? (
+          <BadgesPanel b={b} uid={me?.uid} width={width} questsFirst />
+        ) : (
+          <>
+            <View style={styles.videosHead}>
+              <Text style={styles.section}>{here.length ? `Your videos from ${festival.name}` : 'Your videos'}</Text>
+              {all.length ? (
+                <Pressable onPress={() => router.push('/memories')} accessibilityRole="button" accessibilityLabel="All your videos, by festival" hitSlop={8}>
+                  <Text style={styles.link}>All ›</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <VideosTab memories={shown} width={width} uriOf={uriOf} lookup={catalog} />
+            {Platform.OS !== 'web' && all.length ? <Text style={styles.note}>Your videos are on this phone, so they’re here without signal.</Text> : null}
+          </>
+        )}
       </ScrollView>
+      <BadgeCelebration unlock={b.unlock} onDone={b.finishUnlock} />
     </View>
   );
 }
@@ -184,7 +220,8 @@ const styles = StyleSheet.create({
   },
   codeText: { ...type.headline, color: color.night },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  videosHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, marginTop: space.xxl, marginBottom: space.sm },
+  tabs: { marginTop: space.xl },
+  videosHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, marginTop: space.lg, marginBottom: space.sm },
   section: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, flex: 1 },
   link: { ...type.label, color: color.glow },
   note: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.md, paddingHorizontal: space.xl },

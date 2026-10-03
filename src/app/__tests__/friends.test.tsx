@@ -63,10 +63,15 @@ describe('Friends', () => {
 
     const app = await renderApp('/friends');
     await flush();
-    expect(app.getByText('Following you')).toBeTruthy();
+    // One list: people who follow you first, then people going to your festivals.
+    expect(app.getByText('People you may know')).toBeTruthy();
     expect(app.getByLabelText('Maya, @maya')).toBeTruthy();
-    expect(app.getByText('Going to your festivals')).toBeTruthy();
+    expect(app.getByText('Follows you')).toBeTruthy();
     expect(app.getByText('Going to Cyclops Cove 4')).toBeTruthy();
+    // One row of quick actions instead of separate cards.
+    expect(app.getByLabelText('Find people')).toBeTruthy();
+    expect(app.getByLabelText('Show my friend code')).toBeTruthy();
+    expect(app.getByLabelText('Invite friends to Afterglow')).toBeTruthy();
     expect(app.getByLabelText('Jo, @jojo')).toBeTruthy();
     expect(maya).toBeTruthy();
 

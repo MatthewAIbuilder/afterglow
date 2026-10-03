@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { Alert } from 'react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
 import { renderApp } from './appRoutes';
@@ -110,6 +111,37 @@ describe('crew invites in the app', () => {
     expect(app.getByText('Maya invited you · Cyclops Cove 4')).toBeTruthy();
     expect(app.getByText('No thanks')).toBeTruthy();
     await app.unmount();
+  });
+});
+
+describe('ending a crew', () => {
+  it('the owner ends it for everyone; the last one out ends it too', async () => {
+    const { crew, sam } = await setUp();
+    await s().signOut();
+    await as('sam');
+    await s().joinCrew(crew.id);
+    await s().setCrewPicks(crew.id, ['subtronics']);
+    await s().signOut();
+    await as('maya');
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'End crew')?.onPress?.());
+    const app = await renderApp(`/crew/${crew.id}`);
+    await flush();
+    expect(mockSocial.crews.get(crew.id)?.members).toContain(sam);
+    await fireEvent.press(app.getByLabelText('End this crew for everyone'));
+    await flush();
+    expect(mockSocial.crews.has(crew.id)).toBe(false);
+    expect([...mockSocial.picks.keys()].some((k) => k.startsWith(`${crew.id}/`))).toBe(false);
+    await app.unmount();
+
+    const solo = await s().createCrew('cyclops-cove-4', 'Just me');
+    const page = await renderApp(`/crew/${solo.id}`);
+    await flush();
+    expect(page.queryByLabelText('End this crew for everyone')).toBeNull();
+    await fireEvent.press(page.getByText('End this crew'));
+    await flush();
+    alert.mockRestore();
+    expect(mockSocial.crews.has(solo.id)).toBe(false);
+    await page.unmount();
   });
 });
 
