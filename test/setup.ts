@@ -194,6 +194,26 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: jest.fn(async () => ({ canceled: true, assets: null })),
   launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
 }));
+// Framing photos: records each crop and hands back a "saved" file.
+jest.mock('expo-image-manipulator', () => {
+  const __calls: { uri: string; actions: unknown[] }[] = [];
+  return {
+    __calls,
+    SaveFormat: { JPEG: 'jpeg', PNG: 'png' },
+    ImageManipulator: {
+      manipulate: (uri: string) => {
+        const call = { uri, actions: [] as unknown[] };
+        __calls.push(call);
+        const ctx = {
+          crop: (rect: unknown) => (call.actions.push({ crop: rect }), ctx),
+          resize: (size: unknown) => (call.actions.push({ resize: size }), ctx),
+          renderAsync: async () => ({ saveAsync: async () => ({ uri: 'file:///framed.jpg', width: 1, height: 1 }) }),
+        };
+        return ctx;
+      },
+    },
+  };
+});
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },
   requestForegroundPermissionsAsync: jest.fn(async () => ({ granted: false })),

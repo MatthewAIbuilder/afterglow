@@ -147,7 +147,9 @@ describe('videos from the crowd on festival pages', () => {
 describe('cover photo', () => {
   it('can be added from Edit profile and shows across the top of your profile', async () => {
     const picker = jest.requireMock<{ launchImageLibraryAsync: jest.Mock }>('expo-image-picker');
-    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///cover.jpg' }] }));
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///cover.jpg', width: 3000, height: 4000 }] }));
+    const manipulator = jest.requireMock<{ __calls: { uri: string; actions: { crop?: { width: number; height: number } }[] }[] }>('expo-image-manipulator');
+    manipulator.__calls.length = 0;
     const uid = await person('maya', 'Maya');
     const app = await renderApp('/profile-edit');
     await flush();
@@ -155,8 +157,45 @@ describe('cover photo', () => {
     await fireEvent.press(app.getByLabelText('Add a cover photo'));
     await flush();
     alert.mockRestore();
+    // Framed in the app first: a wide crop of the tall photo, zoomable.
+    expect(app.getByText('Move and scale your cover')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Zoom in'));
+    await fireEvent.press(app.getByLabelText('Zoom out'));
+    await fireEvent.press(app.getByLabelText('Use this cover'));
+    await flush();
+    const crop = manipulator.__calls[0]?.actions[0]?.crop;
+    expect(manipulator.__calls[0]?.uri).toBe('file:///cover.jpg');
+    expect(crop?.width).toBe(3000);
+    expect((crop?.width ?? 0) / (crop?.height ?? 1)).toBeCloseTo(16 / 9, 1);
     expect(mockSocial.profiles.get(uid)?.coverUrl).toBe(`https://example.test/covers/${uid}.jpg`);
     expect(app.getByLabelText('Change cover photo')).toBeTruthy();
+  });
+
+  it('frames your profile photo in a circle, and cancelling changes nothing', async () => {
+    const picker = jest.requireMock<{ launchImageLibraryAsync: jest.Mock }>('expo-image-picker');
+    picker.launchImageLibraryAsync.mockImplementation(async () => ({ canceled: false, assets: [{ uri: 'file:///me.jpg', width: 1200, height: 800 }] }));
+    const manipulator = jest.requireMock<{ __calls: { actions: { crop?: { width: number; height: number } }[] }[] }>('expo-image-manipulator');
+    manipulator.__calls.length = 0;
+    const uid = await person('maya', 'Maya');
+    const app = await renderApp('/profile-edit');
+    await flush();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'Choose a photo')?.onPress?.());
+    await fireEvent.press(app.getByLabelText('Add a profile photo'));
+    await flush();
+    expect(app.getByText('Move and scale your photo')).toBeTruthy();
+    await fireEvent.press(app.getByText('Cancel'));
+    await flush();
+    expect(mockSocial.profiles.get(uid)?.avatarUrl).toBeUndefined();
+    await fireEvent.press(app.getByLabelText('Add a profile photo'));
+    await flush();
+    alert.mockRestore();
+    picker.launchImageLibraryAsync.mockReset();
+    picker.launchImageLibraryAsync.mockImplementation(async () => ({ canceled: true, assets: null }));
+    await fireEvent.press(app.getByLabelText('Use this photo'));
+    await flush();
+    const crop = manipulator.__calls[0]?.actions[0]?.crop;
+    expect(crop).toEqual(expect.objectContaining({ width: 800, height: 800 }));
+    expect(mockSocial.profiles.get(uid)?.avatarUrl).toBeTruthy();
   });
 });
 

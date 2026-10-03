@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image as RNImage, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
@@ -19,6 +19,8 @@ import { useSocial } from '../state/social';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
+import type { CropShape } from '../features/profile/crop';
+import { type CropSource, PhotoCropper } from '../features/profile/PhotoCropper';
 
 /**
  * Your profile, as others will see it: photo, name, @handle, a short bio,
@@ -42,6 +44,9 @@ export default function ProfileEditScreen() {
   const [problem, setProblem] = useState<string | undefined>();
   const [checked, setChecked] = useState<{ handle: string; ok: boolean }>();
   const [deleting, setDeleting] = useState(false);
+  // A picked photo waiting to be framed, then the one being uploaded.
+  const [cropping, setCropping] = useState<{ shape: CropShape; source: CropSource }>();
+  const [uploading, setUploading] = useState<CropShape>();
   const [password, setPassword] = useState('');
 
   const input = { handle, displayName, bio, showFestivals, showSound };
@@ -96,20 +101,30 @@ export default function ProfileEditScreen() {
     }
   };
 
+  const applyCrop = async (uri: string) => {
+    const shape = cropping?.shape;
+    setCropping(undefined);
+    if (!shape) return;
+    setUploading(shape);
+    try {
+      if (shape === 'avatar') await social.setAvatar(uri);
+      else await social.setCover(uri);
+      haptic.settle();
+    } catch (e) {
+      showAlert(shape === 'avatar' ? 'Couldn’t update your photo' : 'Couldn’t update your cover', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+    } finally {
+      setUploading(undefined);
+    }
+  };
+
   const changePhoto = () => {
     if (!p) {
       showAlert('Save your profile first', 'Then you can add a photo.');
       return;
     }
     const pick = async () => {
-      const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
-      if (r.canceled || !r.assets?.[0]) return;
-      try {
-        await social.setAvatar(r.assets[0].uri);
-        haptic.settle();
-      } catch (e) {
-        showAlert('Couldn’t update your photo', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
-      }
+      const picked = await pickToCrop();
+      if (picked) setCropping({ shape: 'avatar', source: picked });
     };
     showAlert('Profile photo', undefined, [
       { text: 'Choose a photo', onPress: () => void pick() },
@@ -124,14 +139,8 @@ export default function ProfileEditScreen() {
       return;
     }
     const pick = async () => {
-      const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [16, 9], quality: 0.8 });
-      if (r.canceled || !r.assets?.[0]) return;
-      try {
-        await social.setCover(r.assets[0].uri);
-        haptic.settle();
-      } catch (e) {
-        showAlert('Couldn’t update your cover', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
-      }
+      const picked = await pickToCrop();
+      if (picked) setCropping({ shape: 'cover', source: picked });
     };
     showAlert('Cover photo', 'A wide photo across the top of your profile: a crowd, a stage, a sunset.', [
       { text: 'Choose a photo', onPress: () => void pick() },
@@ -179,16 +188,19 @@ export default function ProfileEditScreen() {
           <Pressable onPress={changePhoto} accessibilityRole="button" accessibilityLabel={p?.avatarUrl ? 'Change profile photo' : 'Add a profile photo'} style={styles.avatarRow}>
             <View style={styles.avatar}>
               {p?.avatarUrl ? <Image source={{ uri: p.avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.initial}>{(displayName || handle || '?').slice(0, 1).toUpperCase()}</Text>}
+              {uploading === 'avatar' ? <View style={styles.uploading}><ActivityIndicator color={color.moon} /></View> : null}
             </View>
-            <Text style={styles.link}>{p?.avatarUrl ? 'Change photo' : 'Add photo'}</Text>
+            <Text style={styles.link}>{uploading === 'avatar' ? 'Uploading…' : p?.avatarUrl ? 'Change photo' : 'Add photo'}</Text>
           </Pressable>
 
           <Pressable onPress={changeCover} accessibilityRole="button" accessibilityLabel={p?.coverUrl ? 'Change cover photo' : 'Add a cover photo'} style={styles.coverRow}>
             <View style={styles.cover}>
               {p?.coverUrl ? <Image source={{ uri: p.coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.coverHint}>Cover photo</Text>}
+              {uploading === 'cover' ? <View style={styles.uploading}><ActivityIndicator color={color.moon} /></View> : null}
             </View>
-            <Text style={styles.link}>{p?.coverUrl ? 'Change cover' : 'Add cover'}</Text>
+            <Text style={styles.link}>{uploading === 'cover' ? 'Uploading…' : p?.coverUrl ? 'Change cover' : 'Add cover'}</Text>
           </Pressable>
+          <PhotoCropper source={cropping?.source} shape={cropping?.shape ?? 'avatar'} onDone={(uri) => void applyCrop(uri)} onCancel={() => setCropping(undefined)} />
 
           <Field label="Name">
             <TextInput value={displayName} onChangeText={setDisplayName} placeholder="Your name" placeholderTextColor={color.moonFaint} maxLength={60} accessibilityLabel="Name" style={styles.input} />
@@ -310,6 +322,7 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   body: { ...type.body, color: color.moonDim },
+  uploading: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,9,24,0.55)', alignItems: 'center', justifyContent: 'center' },
   coverRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
   cover: { width: 112, height: 63, borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', justifyContent: 'center' },
   coverHint: { ...type.caption, color: color.moonFaint },
@@ -358,3 +371,19 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.5 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });
+
+/** A photo from the library at full size, to be framed in the app (the system's own editor crops covers square on iPhone). */
+async function pickToCrop(): Promise<CropSource | undefined> {
+  const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 1 });
+  const a = r.canceled ? undefined : r.assets?.[0];
+  if (!a) return undefined;
+  if (a.width > 0 && a.height > 0) return { uri: a.uri, width: a.width, height: a.height };
+  // Some browsers don't say how big the photo is: measure it.
+  return new Promise((resolve) =>
+    RNImage.getSize(
+      a.uri,
+      (width, height) => resolve({ uri: a.uri, width, height }),
+      () => resolve(undefined),
+    ),
+  );
+}
