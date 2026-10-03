@@ -195,3 +195,19 @@ Storage: `memories/{uid}/{id}.(mp4|mov|m4v)` (video, under 150 MB) and `.jpg` st
 Artists get a holographic pink-purple-blue ring, the team a purple one, partners a green one. A flair is drawn instead of the gold founder ring; the founder caption still shows under it.
 
 **Festival badges.** Every festival has a collectible enamel pin (`features/badges/`): a gold shape, its own enamel colours and raised metal lines, its mark struck in gold, and a ribbon with the year, all worked out from the festival's id and name (`pinLook`), drawn in SVG (`EnamelPin`). You earn one by sharing a video tagged with the festival and filmed there, on its dates (from the video's own time; the morning after the last day counts). Badges are worked out from someone's shared videos (`earnedBadges`, `useBadges`), so anyone can see anyone's, and nothing new is stored. Profile has a Badges tab (yours, then dim silver "To collect" pins for festivals you're going to); public profiles show their badges above their memories; each opens `badge/[id]` (`?uid=` for someone else's), where the shine follows the phone's tilt.
+
+## The support account (Afterglow HQ) and Contact support
+
+Signing in with **afterglowmusic.support@gmail.com** (`SUPPORT_EMAIL`) turns the app into a dashboard instead of the guest app: `(tabs)/_layout.tsx` redirects that account to `admin.tsx`. The database only opens to it once the email is confirmed: the rules' `isAdmin()` checks the token's email and `email_verified`. The dashboard asks to confirm first ("Send the email", then "I've confirmed it", which reloads the sign-in and its token).
+
+- **Overview** (`features/admin/AdminOverview.tsx`): this week in sentences ("12 new people this week, 3 more than the week before."), tiles (people, videos shared, crews, founders of 100, follows, likes, comments, reports), day-by-day bars for new people and shared videos over 14 days, and the soonest festivals with how many show they're going and videos shared there. Everything is counted on the server (`getCountFromServer`) from Afterglow's own data; nothing extra is collected about anyone.
+- **Support** (`AdminSupport.tsx`): every message, newest first, filtered Open / Answered / Closed / All, with who sent it, topic, phone and version; reply in place (the person sees it under Contact support), email them, close or reopen.
+- **Reports** (`AdminReports.tsx`): reported videos, comments and profiles with the reason and note; look at a video, take a video or comment down (asked first; files removed too), mark dealt with.
+- **View the app** shows the app as everyone sees it, with a "← Dashboard" pill to come back (`state/adminView.ts`, AsyncStorage `adminGuestView.v1`).
+
+People write in from **Settings → About → Contact support** (`support.tsx`): a topic (I need help / Something's broken / An idea / A festival / Something else) and up to 1000 characters, stored in Firestore `support/{id}` with their name, @handle and sign-in email so support can reply; they read only their own, and replies show under "Your messages". Settings says "1 new reply" (`state/supportSeen.ts`, AsyncStorage `supportSeen.v1`). Signed out, it offers an email instead.
+
+**Setting it up (once):**
+1. Deploy the rules and indexes from your PC, in the app folder: `npx firebase-tools@latest deploy --only firestore,storage`.
+2. In the app: Profile, then Create your profile, then New here. Use afterglowmusic.support@gmail.com and a password only you know. (If you already made an account with that email, choose Sign in instead.)
+3. The dashboard opens and asks you to confirm the email: tap **Send the email**, open that Gmail inbox (check spam), tap the link, come back and tap **I've confirmed it**.

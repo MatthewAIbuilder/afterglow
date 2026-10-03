@@ -1,8 +1,15 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
+import { isSupportAccount } from '../../features/admin/admin';
+import { useGuestView } from '../../state/adminView';
+import { useSocial } from '../../state/social';
 import { GlassTabBar } from '../../components/GlassTabBar';
 import { color } from '../../theme/tokens';
 
 export default function TabLayout() {
+  // The support account gets its dashboard instead of the app (unless it chose to look at the app).
+  const { user } = useSocial();
+  const view = useGuestView();
+  if (isSupportAccount(user) && view.loaded && !view.guest) return <Redirect href="/admin" />;
   return (
     <Tabs
       tabBar={(props) => <GlassTabBar {...props} />}

@@ -9,6 +9,8 @@ import {
   initializeAuth,
   onAuthStateChanged,
   reauthenticateWithCredential,
+  reload,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -38,10 +40,10 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, FOUNDERS_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
-import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, standingFromDocs, videoType } from './mapping';
+import { asSocialError, commentFromDoc, crewFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -139,17 +141,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         listener(null);
         return () => {};
       }
-      return onAuthStateChanged(fb().auth, (u) => listener(u ? { uid: u.uid, email: u.email ?? undefined } : null));
+      return onAuthStateChanged(fb().auth, (u) => listener(u ? { uid: u.uid, email: u.email ?? undefined, emailVerified: u.emailVerified } : null));
     },
     signUp: (email, password) =>
       guard(async () => {
         const c = await createUserWithEmailAndPassword(fb().auth, email.trim(), password);
-        return { uid: c.user.uid, email: c.user.email ?? undefined };
+        return { uid: c.user.uid, email: c.user.email ?? undefined, emailVerified: c.user.emailVerified };
       }),
     signIn: (email, password) =>
       guard(async () => {
         const c = await signInWithEmailAndPassword(fb().auth, email.trim(), password);
-        return { uid: c.user.uid, email: c.user.email ?? undefined };
+        return { uid: c.user.uid, email: c.user.email ?? undefined, emailVerified: c.user.emailVerified };
       }),
     signOut: () => guard(() => signOut(fb().auth)),
     sendPasswordReset: (email) => guard(() => sendPasswordResetEmail(fb().auth, email.trim())),
@@ -409,6 +411,117 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const { db } = fb();
         const [f, fl] = await Promise.all([getDoc(doc(db, 'founders', uid)), getDoc(doc(db, 'flairs', uid))]);
         return standingFromDocs(f.data(), fl.data());
+      }),
+    sendVerification: () => guard(async () => sendEmailVerification(me() as FirebaseAuth.User)),
+    reloadUser: () =>
+      guard(async () => {
+        const u = fb().auth.currentUser;
+        if (!u) return null;
+        await reload(u);
+        // A fresh token carries the verified flag the rules check.
+        await u.getIdToken(true);
+        return { uid: u.uid, email: u.email ?? undefined, emailVerified: u.emailVerified };
+      }),
+
+    contactSupport: (input) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const text = input.text.trim().slice(0, SUPPORT_MAX);
+        if (!text) throw new SocialError('unknown');
+        const profile = profileFromDoc(user.uid, (await getDoc(doc(db, 'profiles', user.uid))).data());
+        const ref_ = doc(collection(db, 'support'));
+        const data = {
+          uid: user.uid,
+          topic: input.topic,
+          text,
+          status: 'open',
+          createdAt: serverTimestamp(),
+          ...(profile ? { handle: profile.handle, name: profile.displayName.slice(0, 60) } : {}),
+          ...(user.email ? { email: user.email.slice(0, 200) } : {}),
+          ...(input.platform ? { platform: input.platform.slice(0, 20) } : {}),
+          ...(input.version ? { version: input.version.slice(0, 80) } : {}),
+        };
+        await setDoc(ref_, data);
+        return supportFromDoc(ref_.id, { ...data, createdAt: now() })!;
+      }),
+    mySupport: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'support'), where('uid', '==', me().uid), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => supportFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
+      }),
+    supportInbox: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'support'), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => supportFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
+      }),
+    answerSupport: (id, reply) =>
+      guard(async () => {
+        await updateDoc(doc(fb().db, 'support', id), { reply: reply.trim().slice(0, 2000), repliedAt: now(), status: 'answered' });
+      }),
+    setSupportStatus: (id, status) => guard(async () => updateDoc(doc(fb().db, 'support', id), { status })),
+    reports: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'reports'), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => reportFromDoc(d.id, d.data())).filter((r): r is NonNullable<typeof r> => !!r);
+      }),
+    resolveReport: (id) => guard(async () => updateDoc(doc(fb().db, 'reports', id), { status: 'resolved', resolvedAt: now() })),
+    takeDown: (kind, id) =>
+      guard(async () => {
+        const { db } = fb();
+        if (kind === 'comment') return deleteDoc(doc(db, 'comments', id));
+        const ref_ = doc(db, 'memories', id);
+        const data = (await getDoc(ref_)).data() as { videoPath?: string; thumbPath?: string } | undefined;
+        await removeFile(data?.videoPath);
+        await removeFile(data?.thumbPath);
+        await deleteDoc(ref_);
+      }),
+    adminCounts: (since) =>
+      guard(async () => {
+        const { db } = fb();
+        const count = async (q: Parameters<typeof getCountFromServer>[0]) => (await getCountFromServer(q)).data().count;
+        const [people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, supportOpen, reports, founders] = await Promise.all([
+          count(collection(db, 'profiles')),
+          count(query(collection(db, 'profiles'), where('createdAt', '>=', since))),
+          count(collection(db, 'memories')),
+          count(query(collection(db, 'memories'), where('createdAt', '>=', since))),
+          count(collection(db, 'follows')),
+          count(collection(db, 'likes')),
+          count(collection(db, 'comments')),
+          count(collection(db, 'crews')),
+          count(query(collection(db, 'support'), where('status', '==', 'open'))),
+          count(collection(db, 'reports')),
+          getDoc(doc(db, 'counters', 'founders')).then((d) => Number((d.data() as { count?: unknown } | undefined)?.count) || 0),
+        ]);
+        return { people, peopleThisWeek, videos, videosThisWeek, follows, likes, comments, crews, founders, supportOpen, reports };
+      }),
+    adminActivity: (since, max) =>
+      guard(async () => {
+        const { db } = fb();
+        const [p, m] = await Promise.all([
+          getDocs(query(collection(db, 'profiles'), where('createdAt', '>=', since), orderBy('createdAt', 'desc'), limit(max))),
+          getDocs(query(collection(db, 'memories'), where('createdAt', '>=', since), orderBy('createdAt', 'desc'), limit(max))),
+        ]);
+        const at = (d: { data: () => unknown }) => (d.data() as { createdAt?: unknown }).createdAt;
+        return {
+          signups: p.docs.map(at).filter((x): x is string => typeof x === 'string'),
+          videos: m.docs.map(at).filter((x): x is string => typeof x === 'string'),
+        };
+      }),
+    adminFestivals: (ids) =>
+      guard(async () => {
+        const { db } = fb();
+        const out: Record<string, { going: number; videos: number }> = {};
+        await Promise.all(
+          ids.map(async (id) => {
+            const [going, videos] = await Promise.all([
+              getCountFromServer(query(collection(db, 'profiles'), where('festivals', 'array-contains', id))),
+              getCountFromServer(query(collection(db, 'memories'), where('festivalId', '==', id))),
+            ]);
+            out[id] = { going: going.data().count, videos: videos.data().count };
+          }),
+        );
+        return out;
       }),
     setFriendCode: (code) => guard(async () => setDoc(doc(fb().db, 'friendCodes', me().uid), { code, updatedAt: serverTimestamp() })),
     addFriend: (uid, code) =>
