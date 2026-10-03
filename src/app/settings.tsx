@@ -189,7 +189,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
   },
   divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
-  rowLabel: { ...type.body, color: color.moon, flex: 1 },
-  rowDetail: { ...type.body, color: color.moonDim, flexShrink: 1, maxWidth: '50%' },
+  // The label always reads in full; the detail gives way (it's a hint, the label is the thing).
+  rowLabel: { ...type.body, color: color.moon, flexShrink: 0, maxWidth: '72%' },
+  rowDetail: { ...type.body, color: color.moonDim, flex: 1, textAlign: 'right' },
   version: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.xxl },
 });

@@ -303,7 +303,8 @@ export function DiscoverFeed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewFocus]);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+  // Made once: the list doesn't allow this to change while it's on screen.
+  const [onViewableItemsChanged] = useState(() => ({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const index = viewableItems[0]?.index;
     if (index == null || index === activeRef.current) return;
     activeRef.current = index;
@@ -311,7 +312,7 @@ export function DiscoverFeed() {
     setActiveIndex(index);
     // You moved the feed yourself (a swipe, or Skip): the swipe tip is done.
     markDone(['swipe']);
-  }).current;
+  });
 
   // Opened from an artist page with a specific clip: jump straight to it,
   // once the feed for its festival is laid out.
@@ -322,8 +323,10 @@ export function DiscoverFeed() {
     if (index < 0 && requestedClip && !hereFestival && ((festival && festival.lineup.includes(requestedClip.artistId)) || (wide && isCommunityClip(requestedClip)))) return;
     if (index >= 0) {
       activeRef.current = index;
-      setActiveIndex(index);
-      requestAnimationFrame(() => scrollToPage(index, false));
+      requestAnimationFrame(() => {
+        setActiveIndex(index);
+        scrollToPage(index, false);
+      });
     }
     navigation.setParams({ clip: '' } as never);
     // Only a new request, or a new feed while one is waiting, should jump.

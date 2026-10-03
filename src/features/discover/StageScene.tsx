@@ -18,6 +18,23 @@ type Props = {
   reduceMotion: boolean;
 };
 
+/** Five light beams, the same for an artist every time (a seeded sequence from their id). */
+function beamsFor(artistId: string, width: number, bright: string) {
+  const state = { seed: [...artistId].reduce((h, c) => (h * 33 + c.charCodeAt(0)) % 10007, 17) };
+  const rand = () => {
+    state.seed = (state.seed * 9301 + 49297) % 233280;
+    return state.seed / 233280;
+  };
+  return Array.from({ length: 5 }, (_, i) => ({
+    x: width * (0.12 + (i / 4) * 0.76),
+    speed: 0.00035 + rand() * 0.0004,
+    phase: rand() * Math.PI * 2,
+    swing: 14 + rand() * 12,
+    tint: i % 2 === 0 ? bright : '#FFFFFF',
+    strength: i % 2 === 0 ? 0.32 : 0.14,
+  }));
+}
+
 /**
  * Placeholder "live set": a stage at night, drawn in code. Light beams sweep,
  * the stage glow pulses on the beat, a crowd stands in silhouette. Each artist
@@ -28,18 +45,7 @@ function StageSceneBase({ artistId, artistColor, bpm, width, height, clock, redu
   const beat = 60000 / bpm;
 
   // Deterministic beam layout per artist.
-  const beams = useMemo(() => {
-    let seed = [...artistId].reduce((h, c) => (h * 33 + c.charCodeAt(0)) % 10007, 17);
-    const rand = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
-    return Array.from({ length: 5 }, (_, i) => ({
-      x: width * (0.12 + (i / 4) * 0.76),
-      speed: 0.00035 + rand() * 0.0004,
-      phase: rand() * Math.PI * 2,
-      swing: 14 + rand() * 12,
-      tint: i % 2 === 0 ? bright : '#FFFFFF',
-      strength: i % 2 === 0 ? 0.32 : 0.14,
-    }));
-  }, [artistId, width, bright]);
+  const beams = useMemo(() => beamsFor(artistId, width, bright), [artistId, width, bright]);
 
   const crowd = useMemo(() => crowdPath(width, height, artistId), [width, height, artistId]);
 

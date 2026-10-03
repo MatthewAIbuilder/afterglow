@@ -29,6 +29,8 @@ export function Tabs<K extends string>({ items, value, onChange }: { items: TabI
     x.set(reduce ? to : withSpring(to, motion.snappy));
   }, [index, each, reduce, x]);
   const line = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
+  // Narrow tabs (four on a small phone) drop their icons so the words fit.
+  const tight = each > 0 && each < 96;
 
   return (
     <View style={styles.root} accessibilityRole="tablist" onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
@@ -48,7 +50,7 @@ export function Tabs<K extends string>({ items, value, onChange }: { items: TabI
             accessibilityLabel={t.count ? `${t.label}, ${t.count}` : t.label}
             style={styles.tab}
           >
-            {t.icon ? t.icon(tint) : null}
+            {t.icon && !tight ? t.icon(tint) : null}
             <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
               {t.label}
             </Text>
