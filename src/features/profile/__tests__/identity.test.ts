@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Artist, Festival } from '../../../data/models';
 import type { Memory } from '../../memories/models';
-import { currentlyFeeling, favouriteArtists, feelingLine, orbitPlaces } from '../identity';
+import { currentlyFeeling, favouriteArtists, feelingLine, filmedOrbit, orbitPlaces } from '../identity';
 import { milestones, nextMilestone, progressLine } from '../milestones';
 import { citiesOf, passport, stampLine } from '../passport';
 
@@ -94,5 +94,16 @@ describe('milestones', () => {
     expect(next.id).toBe('collector');
     expect(progressLine(next)).toBe('20 of 25');
     expect(milestones({ been: 0, cities: 0, moments: 0, kept: 0, rated: 0, bass: 0, founder: 23 })[0]).toMatchObject({ id: 'og', earned: true, how: 'One of the first 100 · #23' });
+  });
+});
+
+describe('someone else’s orbit', () => {
+  it('is the artists in the videos they shared, most filmed first, each once, known artists only', () => {
+    const known = new Map<string, Artist>(['a', 'b', 'c'].map((id) => [id, { id, name: id.toUpperCase(), sound: {} } as Artist]));
+    const of = (id: string) => known.get(id);
+    const orbit = filmedOrbit(['a', 'b', 'b', undefined, 'zz', 'c', 'b', 'c'], of);
+    expect(orbit.map((o) => o.artist.name)).toEqual(['B', 'C', 'A']);
+    expect(filmedOrbit(['a', 'b', 'c'], of, 2)).toHaveLength(2);
+    expect(filmedOrbit([], of)).toEqual([]);
   });
 });
