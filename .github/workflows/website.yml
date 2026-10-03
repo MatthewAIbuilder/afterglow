@@ -138,4 +138,4 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json" npx --yes firebase-tools@14 deploy \
             --only firestore:rules,firestore:indexes,storage \
             --project "${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}" --non-interactive \
-            || { echo "::warning::Couldn't deploy the database and storage rules. Deploy them from your PC (docs/firebase-setup.md, step 5), or give the service account the Firebase Rules Admin and Cloud Datastore Index Admin roles."; exit 1; }
+            || { echo "::warning::Couldn't deploy the database and storage rules. Deploy them from your PC (docs/firebase-setup.md, step 5), or give the service account the Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer roles (docs/web-deploy.md)."; exit 1; }
