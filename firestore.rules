@@ -20,6 +20,8 @@ service cloud.firestore {
       return h is string && h.matches('^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$') && !h.matches('.*[._][._].*') && !reserved(h);
     }
     function path(coll, id) { return /databases/$(database)/documents/$(coll)/$(id); }
+    // Afterglow Plus, given in the console: active (an end date isn't checked here).
+    function hasPlus(uid) { return exists(path('plus', uid)) && get(path('plus', uid)).data.active == true; }
     // An optional short text field: absent, or a string of at most `max` characters.
     function shortOrAbsent(data, field, max) { return !(field in data) || (data[field] is string && data[field].size() <= max); }
 
@@ -76,6 +78,11 @@ service cloud.firestore {
         && (!('pastYear' in request.resource.data) || 'pastName' in request.resource.data)
         && shortOrAbsent(request.resource.data, 'pastCity', 60) && shortOrAbsent(request.resource.data, 'seriesId', 100)
         && (!('seriesId' in request.resource.data) || 'pastName' in request.resource.data)
+        // Throwbacks are counted: the count moves on by one in the same write, and stops at 3 without Afterglow Plus.
+        && (!('pastName' in request.resource.data) || (
+          getAfter(path('usage', me())).data.memory == id
+          && getAfter(path('usage', me())).data.throwbacks == (exists(path('usage', me())) ? get(path('usage', me())).data.throwbacks : 0) + 1
+          && (getAfter(path('usage', me())).data.throwbacks <= 3 || hasPlus(me()))))
         && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
         && (!('width' in request.resource.data) || (request.resource.data.width is number && request.resource.data.width <= 20000))
         && (!('height' in request.resource.data) || (request.resource.data.height is number && request.resource.data.height <= 20000))
@@ -161,6 +168,28 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    // What your free plan has used: throwbacks shared (videos from past festivals). Read only by you; it moves only with
+    // a throwback shared (one more) or removed (one fewer) in the same write.
+    match /usage/{uid} {
+      allow read: if signedIn() && me() == uid;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['throwbacks', 'memory'])
+        && request.resource.data.throwbacks is int && request.resource.data.memory is string
+        && (
+          (request.resource.data.throwbacks == (resource == null ? 0 : resource.data.throwbacks) + 1
+            && !exists(path('memories', request.resource.data.memory))
+            && getAfter(path('memories', request.resource.data.memory)).data.uid == me()
+            && 'pastName' in getAfter(path('memories', request.resource.data.memory)).data)
+          || (resource != null && request.resource.data.throwbacks == resource.data.throwbacks - 1
+            && exists(path('memories', request.resource.data.memory))
+            && get(path('memories', request.resource.data.memory)).data.uid == me()
+            && 'pastName' in get(path('memories', request.resource.data.memory)).data
+            && !existsAfter(path('memories', request.resource.data.memory)))
+        );
+      // Only once your profile is gone (deleting your account), so the count can't be reset.
+      allow delete: if signedIn() && me() == uid && !exists(path('profiles', uid));
+    }
+
     // Glow levels from daily quests: your own, shown on your profile (switched off in Edit profile, which deletes it).
     // Anyone can see them; only you write yours, a whole number from 1 to 999, stamped with the server's time.
     match /levels/{uid} {

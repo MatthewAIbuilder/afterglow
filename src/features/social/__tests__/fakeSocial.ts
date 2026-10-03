@@ -1,3 +1,4 @@
+import { throwbackShares } from '../../memories/throwbackLimit';
 import { type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
@@ -37,6 +38,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Afterglow Plus members (set by hand, like the Firebase console). */
   const plus = new Set<string>();
   const levels = new Map<string, number>();
+  /** Throwbacks each account has shared (the free plan's count). */
+  const usage = new Map<string, number>();
   const counter = { founders: 0 };
   /** Crew-only video files uploaded, as `crewId/uid/updateId`. */
   const crewFiles = new Set<string>();
@@ -209,6 +212,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const p = profiles.get(u.uid);
       if (!p) throw new SocialError('no-profile');
       if ((opts.fileBytes?.(input.videoUri) ?? 0) > MAX_SHARE_BYTES) throw new SocialError('too-large');
+      const throwback = !input.festivalId && !!input.past;
+      if (throwback && !throwbackShares({ plus: plus.has(u.uid), used: usage.get(u.uid) ?? 0 }).canShare) throw new SocialError('throwback-limit');
+      if (throwback) usage.set(u.uid, (usage.get(u.uid) ?? 0) + 1);
       onProgress?.(0.5);
       const id = `shared-${++n}`;
       const m = {
@@ -238,6 +244,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!m) return;
       if (m.uid !== u.uid) throw new SocialError('not-signed-in');
       memories.delete(id);
+      if (m.past && !m.festivalId) usage.set(u.uid, Math.max(0, (usage.get(u.uid) ?? 0) - 1));
       for (const [k, l] of likes) if (l.memoryId === id) likes.delete(k);
       for (const [k, c] of comments) if (c.memoryId === id) comments.delete(k);
     },
@@ -277,6 +284,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const flair = flairs.get(uid);
       const level = levels.get(uid);
       return { ...(founder ? { founder } : {}), ...(flair ? { flair } : {}), ...(plus.has(uid) ? { plus: true } : {}), ...(level ? { level } : {}) };
+    },
+    async throwbackUsage() {
+      return usage.get(me().uid) ?? 0;
     },
     async setLevel(level) {
       const u = me();
@@ -638,5 +648,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       blocks.set(u.uid, on ? [...new Set([...list, uid])] : list.filter((x) => x !== uid));
     },
   };
-  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, levels, counter, reports, support, verified, currentUser: () => current };
+  return { service, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, picks, updates, crewFiles, meets, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, currentUser: () => current };
 }

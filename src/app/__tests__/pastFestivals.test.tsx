@@ -73,6 +73,7 @@ describe('past festivals', () => {
     await fireEvent.press(app.getByLabelText('SUBTRONICS'));
     expect(app.getByTestId('share-to-discover').props.value).toBe(true);
     expect(app.getByText(/^People discovering EDC Orlando 2024 can watch it/)).toBeTruthy();
+    expect(app.getByTestId('throwback-limit').props.children).toBe('3 of 3 free throwback shares left.');
     await fireEvent.press(app.getByLabelText('Save to Memories'));
     await flush();
     const saved = JSON.parse((await AsyncStorage.getItem('memories.v1')) ?? '[]');
@@ -119,4 +120,42 @@ describe('past festivals', () => {
     expect(app.getByLabelText(/^Lost Lands 2024, a throwback/)).toBeTruthy();
     expect(app.getByLabelText('Add a festival you went to before, with a video from your camera roll')).toBeTruthy();
   });
+
+  it('shares three throwbacks on the free plan; after that they stay in Memories with their badge', async () => {
+    const uid = mockSocial.currentUser()!.uid;
+    mockSocial.usage.set(uid, 3);
+    const app = await tagOldVideo();
+    expect(app.getByTestId('share-to-discover').props.value).toBe(false);
+    expect(app.getByTestId('share-to-discover').props.disabled).toBe(true);
+    expect(app.getByText(/the most on the free plan/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Save to Memories'));
+    await flush();
+    const saved = JSON.parse((await AsyncStorage.getItem('memories.v1')) ?? '[]');
+    expect(saved[0].past).toMatchObject({ name: 'Lost Lands', year: 2024 });
+    expect(await mockSocial.service.memoriesOf(uid)).toHaveLength(0);
+  });
+
+  it('with Afterglow Plus there is no limit', async () => {
+    const uid = mockSocial.currentUser()!.uid;
+    mockSocial.usage.set(uid, 3);
+    mockSocial.plus.add(uid);
+    const app = await tagOldVideo();
+    expect(app.getByTestId('share-to-discover').props.value).toBe(true);
+    expect(app.queryByTestId('throwback-limit')).toBeNull();
+  });
 });
+
+/** An old video from the camera roll, tagged Lost Lands 2024 with SUBTRONICS. */
+async function tagOldVideo() {
+  pickOldVideo();
+  const app = await renderApp('/');
+  await flush();
+  await act(async () => fireGestureHandler(getByGestureTestId('hold-c1'), [{ state: State.BEGAN }, { state: State.ACTIVE }, { state: State.END }]));
+  await flush();
+  await fireEvent.changeText(app.getByLabelText('Search for the festival'), 'lost lands');
+  await fireEvent.press(app.getByLabelText('Lost Lands 2024, Thornville'));
+  await fireEvent.changeText(app.getByLabelText('Search for the artist'), 'subtro');
+  await fireEvent.press(app.getByLabelText('SUBTRONICS'));
+  await flush();
+  return app;
+}

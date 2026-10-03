@@ -65,16 +65,46 @@ await t('a handle is never reassigned by update', () => assertFails(setDoc(doc(B
 
 const mem = (id, uid, over = {}) => ({ uid, handle: uid === 'uidA' ? 'maya2' : 'bob', memoryId: 'm1', videoPath: `memories/${uid}/${id}.mov`, videoUrl: 'https://x/v.mov', capturedAt: now, createdAt: now, ...over });
 await t('A shares a memory pointing at its own files', () => assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'mem1'), mem('mem1', 'uidA', { thumbPath: 'memories/uidA/mem1.jpg', thumbUrl: 'https://x/t.jpg', festivalId: 'acl-26', durationSec: 42 }))));
+// Throwbacks go with the free plan's count (usage/{uid}) in one write.
+const T = env.authenticatedContext('uidT');
+const memT = (id, over = {}) => ({ uid: 'uidT', handle: 'tara', memoryId: 'm1', videoPath: `memories/uidT/${id}.mov`, videoUrl: 'https://x/v.mov', capturedAt: now, createdAt: now, ...over });
+const shareTb = (id, n, over = {}, ctx = T) => {
+  const db = ctx.firestore(); const b = writeBatch(db);
+  b.set(doc(db, 'memories', id), memT(id, { pastName: 'EDC Orlando', pastYear: 2024, ...over }));
+  if (n !== undefined) b.set(doc(db, 'usage', 'uidT'), { throwbacks: n, memory: id });
+  return b.commit();
+};
 await t('throwbacks: a past festival with a name and year, never with a festival on Afterglow', async () => {
-  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'tb1'), mem('tb1', 'uidA', { artistId: 'subtronics', pastName: 'EDC Orlando', pastYear: 2024, pastCity: 'Orlando', seriesId: 'edc-orlando-26' })));
-  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'tb2'), mem('tb2', 'uidA', { pastName: 'Sunset Sessions', pastYear: 2023 })));
-  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb3'), mem('tb3', 'uidA', { pastName: 'EDC Orlando', pastYear: 2024, festivalId: 'acl-26' })));
-  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb4'), mem('tb4', 'uidA', { pastName: 'EDC Orlando', pastYear: '2024' })));
-  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb5'), mem('tb5', 'uidA', { pastName: 'EDC Orlando' })));
-  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb6'), mem('tb6', 'uidA', { pastYear: 2024 })));
-  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb7'), mem('tb7', 'uidA', { pastName: 'x'.repeat(61), pastYear: 2024 })));
-  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb8'), mem('tb8', 'uidA', { seriesId: 'edc-orlando-26' })));
-  await assertFails(setDoc(doc(A.firestore(), 'memories', 'tb9'), mem('tb9', 'uidA', { pastName: 'EDC Orlando', pastYear: 1980 })));
+  await claim(T, 'uidT', 'tara');
+  await assertSucceeds(shareTb('tb1', 1, { artistId: 'subtronics', pastCity: 'Orlando', seriesId: 'edc-orlando-26' }));
+  await assertSucceeds(shareTb('tb2', 2, { pastName: 'Sunset Sessions', pastYear: 2023 }));
+  await assertFails(shareTb('tb3', 3, { festivalId: 'acl-26' }));
+  await assertFails(shareTb('tb4', 3, { pastYear: '2024' }));
+  await assertFails(shareTb('tb7', 3, { pastName: 'x'.repeat(61) }));
+  await assertFails(shareTb('tb9', 3, { pastYear: 1980 }));
+  await assertFails(setDoc(doc(T.firestore(), 'memories', 'tb5'), memT('tb5', { pastYear: 2024 })));
+  await assertFails(setDoc(doc(T.firestore(), 'memories', 'tb8'), memT('tb8', { seriesId: 'edc-orlando-26' })));
+});
+await t('throwbacks: counted, three on the free plan, more with Plus, a place back when one is removed', async () => {
+  // Not counted, or counted wrongly: refused.
+  await assertFails(shareTb('tb10', undefined));
+  await assertFails(shareTb('tb10', 5));
+  await assertSucceeds(shareTb('tb10', 3));
+  await assertFails(shareTb('tb11', 4));
+  // The count can't be moved by itself, read by others, or reset while the profile is there.
+  await assertFails(setDoc(doc(T.firestore(), 'usage', 'uidT'), { throwbacks: 0, memory: 'tb10' }));
+  await assertFails(getDoc(doc(A.firestore(), 'usage', 'uidT')));
+  await assertFails(deleteDoc(doc(T.firestore(), 'usage', 'uidT')));
+  // Removing one gives its place back.
+  const db = T.firestore(); const b = writeBatch(db);
+  b.delete(doc(db, 'memories', 'tb10')); b.set(doc(db, 'usage', 'uidT'), { throwbacks: 2, memory: 'tb10' });
+  await assertSucceeds(b.commit());
+  await assertSucceeds(shareTb('tb12', 3));
+  // With Afterglow Plus there's no limit.
+  await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'plus', 'uidT'), { active: true }));
+  await assertSucceeds(shareTb('tb13', 4));
+  // Ordinary videos aren't counted.
+  await assertSucceeds(setDoc(doc(T.firestore(), 'memories', 'plain1'), memT('plain1', { festivalId: 'acl-26' })));
 });
 await t('A can’t point a memory at someone else’s files', () => assertFails(setDoc(doc(A.firestore(), 'memories', 'mem2'), mem('mem2', 'uidA', { videoPath: 'memories/uidB/mem2.mov' }))));
 await t('B can’t share as A', () => assertFails(setDoc(doc(B.firestore(), 'memories', 'mem3'), mem('mem3', 'uidA'))));

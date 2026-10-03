@@ -14,6 +14,8 @@ import type { MemoryTagInput } from '../features/memories/models';
 import { momentLine } from '../features/memories/organize';
 import { PastPicker } from '../features/memories/PastPicker';
 import { type PastEvent, pastLabel } from '../features/memories/past';
+import { throwbackSharesLine } from '../features/memories/throwbackLimit';
+import { useThrowbackShares } from '../features/memories/useThrowbackShares';
 import { festivalRoute } from '../features/plan/route';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
@@ -137,7 +139,11 @@ export default function MemoryTagScreen() {
     alreadyShared: !!existing?.sharedId,
   });
   const [shareChoice, setShareChoice] = useState<boolean | undefined>();
-  const shareOn = offer === 'ready' && (shareChoice ?? true);
+  // Throwbacks: a few free shares, as many as you like with Plus.
+  const throwback = !!tag.past && !tag.festivalId;
+  const throwbackLimit = useThrowbackShares(throwback && offer === 'ready');
+  const overLimit = throwback && !!throwbackLimit && !throwbackLimit.canShare;
+  const shareOn = offer === 'ready' && !overLimit && (shareChoice ?? true);
   // Send to my crew: your crews at this festival see it with the time you filmed it. On by default for a new video.
   const crewUpdates = useCrewUpdates();
   const { crewsAt } = useCrews();
@@ -145,7 +151,11 @@ export default function MemoryTagScreen() {
   const [crewChoice, setCrewChoice] = useState<boolean | undefined>();
   const crewOn = crewsHere.length > 0 && (crewChoice ?? !existing);
   const shareIt = (m: Parameters<typeof social.share>[0]) =>
-    void social.share(m).catch((e) => showAlert('Couldn’t share it to Discover', `${SOCIAL_ERROR_COPY[socialErrorKind(e)]} It’s saved in your Memories, so you can share it from there.`));
+    void social.share(m).catch((e) => {
+      const kind = socialErrorKind(e);
+      // The throwback limit's own words already say where it is.
+      showAlert('Couldn’t share it to Discover', kind === 'throwback-limit' ? SOCIAL_ERROR_COPY[kind] : `${SOCIAL_ERROR_COPY[kind]} It’s saved in your Memories, so you can share it from there.`);
+    });
 
   // Nothing to tag (opened without a video, or the memory was deleted): step back, unless we're already leaving
   // (saving clears the draft, and going back twice would close the screen underneath too).
@@ -417,7 +427,14 @@ export default function MemoryTagScreen() {
             <View style={styles.shareRow}>
               <View style={styles.shareText}>
                 <Text style={styles.shareTitle}>Share to Discover</Text>
-                <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name ?? (past ? pastLabel(past) : undefined), on: shareOn })}</Text>
+                {overLimit ? null : (
+                  <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name ?? (past ? pastLabel(past) : undefined), on: shareOn })}</Text>
+                )}
+                {throwback && offer === 'ready' && throwbackLimit && throwbackSharesLine(throwbackLimit) ? (
+                  <Text style={[styles.shareDetail, overLimit && styles.limit]} testID="throwback-limit">
+                    {throwbackSharesLine(throwbackLimit)}
+                  </Text>
+                ) : null}
                 {offer === 'needs-account' || offer === 'needs-profile' ? (
                   <Pressable
                     onPress={() => {
@@ -433,7 +450,7 @@ export default function MemoryTagScreen() {
               </View>
               <Switch
                 value={shareOn}
-                disabled={offer !== 'ready'}
+                disabled={offer !== 'ready' || overLimit}
                 onValueChange={(v) => {
                   haptic.select();
                   setShareChoice(v);
@@ -551,4 +568,5 @@ const styles = StyleSheet.create({
   shareTitle: { ...type.headline, color: color.moon },
   shareDetail: { ...type.caption, color: color.moonDim },
   shareLink: { marginTop: space.xs },
+  limit: { color: '#F2B8A6' },
 });

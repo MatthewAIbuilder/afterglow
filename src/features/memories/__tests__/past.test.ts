@@ -5,6 +5,8 @@ import { communityClip, communityClips } from '../../community/clips';
 import { crowdByNight } from '../../community/crowd';
 import type { SharedMemory } from '../../social/models';
 import { cleanMemories, tagMemory } from '../store';
+import { THROWBACKS_FREE, throwbackShares, throwbackSharesLine } from '../throwbackLimit';
+import { fakeSocial } from '../../social/__tests__/fakeSocial';
 import { cleanPast, cleanPastName, pastChoices, pastEventsOf, pastKey, pastLabel, pastYears, seriesName } from '../past';
 
 const festival = (id: string, name: string, location: string, lineup: string[] = []): Festival =>
@@ -124,5 +126,36 @@ describe('throwback badges', () => {
     expect(look.theme).toBe(live.theme);
     expect(look.palette).toEqual(live.palette);
     expect(pastPinFestival({ name: 'Sunset Sessions', year: 2023 }).id).toBe(pastPinFestival({ name: 'Sunset Sessions', year: 2019 }).id);
+  });
+});
+
+describe('throwback shares', () => {
+  it('three free, as many as you like with Plus', () => {
+    expect(THROWBACKS_FREE).toBe(3);
+    expect(throwbackShares({ plus: false, used: 1 })).toEqual({ canShare: true, left: 2 });
+    expect(throwbackShares({ plus: false, used: 3 })).toEqual({ canShare: false, left: 0 });
+    expect(throwbackShares({ plus: false, used: 9 })).toEqual({ canShare: false, left: 0 });
+    expect(throwbackShares({ plus: true, used: 9 })).toEqual({ canShare: true });
+    expect(throwbackSharesLine({ canShare: true, left: 2 })).toBe('2 of 3 free throwback shares left.');
+    expect(throwbackSharesLine({ canShare: true })).toBeUndefined();
+  });
+
+  it('the in-memory backend holds the line, and removing one gives its place back', async () => {
+    const f = fakeSocial();
+    await f.service.signUp('t@example.com', 'password123');
+    await f.service.saveProfile({ handle: 'tara', displayName: 'Tara', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    const share = (i: number) =>
+      f.service.shareMemory({ memoryId: `m${i}`, videoUri: `file:///m${i}.mov`, capturedAt: '2024-07-01T22:00:00.000Z', artistId: 'subtronics', past: { name: 'Lost Lands', year: 2024 } });
+    const first = await share(1);
+    await share(2);
+    await share(3);
+    await expect(share(4)).rejects.toMatchObject({ kind: 'throwback-limit' });
+    expect(await f.service.throwbackUsage()).toBe(3);
+    await f.service.unshareMemory(first.id);
+    expect(await f.service.throwbackUsage()).toBe(2);
+    await expect(share(5)).resolves.toBeTruthy();
+    // Ordinary videos aren't counted.
+    await f.service.shareMemory({ memoryId: 'x', videoUri: 'file:///x.mov', capturedAt: '2026-12-05T22:00:00.000Z', festivalId: 'cyclops-cove-4', artistId: 'subtronics' });
+    expect(await f.service.throwbackUsage()).toBe(3);
   });
 });
