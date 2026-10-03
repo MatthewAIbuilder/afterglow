@@ -6,11 +6,14 @@
 export type WhatsNewItem = { id: string; title: string; body: string; href?: string };
 
 export const WHATS_NEW: { key: string; items: WhatsNewItem[] } = {
-  key: '2026-10-04',
+  key: '2026-10-05',
   items: [
     { id: 'map', title: 'The festival map', body: 'Every festival glowing on a night-time world. Pinch around, find yourself, see your journey and every artist’s tour.', href: '/festival-map' },
     { id: 'quests', title: 'Daily quests', body: 'Three small quests a day, a weekly one, a streak and your glow level, with badges for keeping it up. The ring on Discover fills as you go.', href: '/quests' },
     { id: 'secrets', title: 'Secrets', body: 'Eight hidden things to find around the app. Hint: Discover likes a little movement.', href: '/secrets' },
+    { id: 'chat', title: 'Crew chat', body: 'Every crew has its own chat now, just for the people in it. Messages wait for signal and keep the time you wrote them. Crews are invite only.', href: '/together' },
+    { id: 'week', title: 'Festival week', body: 'In the week before a festival you’re going to, a door opens each day with one small thing to get you ready.', href: '/festivals' },
+    { id: 'throwbacks', title: 'Throwbacks', body: 'Add videos from festivals you went to before Afterglow, and collect a rose gold badge for each.', href: '/profile' },
     { id: 'calendar', title: 'Festival calendar', body: 'Flip through the months and see what’s on any day. Pull Festivals down to refresh.', href: '/festival-calendar' },
   ],
 };

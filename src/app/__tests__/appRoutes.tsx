@@ -29,6 +29,7 @@ import GoingScreen from '../going/[id]';
 import CrewScreen from '../crew/[id]';
 import CrewInviteScreen from '../crew-invite/[id]';
 import CrewChatScreen from '../crew-chat/[id]';
+import FestivalWeekScreen from '../festival-week/[id]';
 import PlanCardScreen from '../plan-card/[id]';
 import RecapScreen from '../recap/[id]';
 import PickArtistsScreen from '../pick-artists';
@@ -136,6 +137,7 @@ export const APP_ROUTES = {
   'crew/[id]': CrewScreen,
   'crew-invite/[id]': CrewInviteScreen,
   'crew-chat/[id]': CrewChatScreen,
+  'festival-week/[id]': FestivalWeekScreen,
 };
 
 export const renderApp = (initialUrl: string) => renderRouter(APP_ROUTES, { initialUrl });
