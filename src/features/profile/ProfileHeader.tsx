@@ -22,7 +22,8 @@ type Props = {
   stats: ProfileStat[];
   onStat?: (key: ProfileStat['key']) => void;
   /** Your top sounds, as small chips (tap: the full breakdown). */
-  sounds: { tag: SoundTag; percent: number }[];
+  /** Top sounds, as small chips (tap: the full breakdown). Someone else's come without percentages. */
+  sounds: { tag: SoundTag; percent?: number }[];
   onSounds?: () => void;
   /** The artists drifting round your photo, and where tapping them goes (My Sound). */
   orbit: Favourite[];
@@ -32,6 +33,13 @@ type Props = {
   children?: React.ReactNode;
   /** Your uid, for a founder's or flair's ring and caption. */
   uid?: string;
+  /** Someone else's profile: their @handle under the name, and whose they are ("Maya's") in what's read out. */
+  handle?: string;
+  whose?: string;
+  /** A quiet line under the bio ("Going to EDC Orlando 2026"). */
+  note?: string;
+  /** Which counts can be tapped (all of them by default). */
+  tappable?: ProfileStat['key'][];
 };
 
 const ORBIT_H = 236;
@@ -42,7 +50,7 @@ const ORBIT_H = 236;
  * round it), your name and bio, what you're feeling lately, the counts, your
  * sound as chips, and the buttons (passed as children).
  */
-export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid }: Props) {
+export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable }: Props) {
   const standing = useStanding(uid);
   const ringed = !!ringOf(standing);
   const { width } = useWindowDimensions();
@@ -62,9 +70,10 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
       )}
     </View>
   );
+  const owner = whose ?? 'Your';
   const orbitLabel = orbit.length
-    ? `Your sound universe: ${orbit.map((o) => o.artist.name).join(', ')}.${onOrbit ? ' Opens My Sound.' : ''}`
-    : `Your photo.${onOrbit ? ' Opens My Sound.' : ''}`;
+    ? `${owner} sound universe: ${orbit.map((o) => o.artist.name).join(', ')}.${onOrbit ? ' Opens My Sound.' : ''}`
+    : `${owner} photo.${onOrbit ? ' Opens My Sound.' : ''}`;
   return (
     <View style={styles.root}>
       <View style={styles.orbitWrap}>
@@ -76,8 +85,10 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
       <Text style={styles.name} accessibilityRole="header">
         {name}
       </Text>
+      {handle ? <Text style={styles.handle}>@{handle}</Text> : null}
       <StandingCaption standing={standing} align="center" />
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
+      {note ? <Text style={styles.note}>{note}</Text> : null}
       {feeling ? (
         <View style={[styles.feeling, { borderColor: withAlpha(SOUND_COLOR[feeling], 0.5), backgroundColor: withAlpha(SOUND_COLOR[feeling], 0.12) }]}>
           <View style={[styles.feelingDot, { backgroundColor: SOUND_COLOR[feeling], shadowColor: SOUND_COLOR[feeling] }]} />
@@ -85,8 +96,8 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
         </View>
       ) : null}
 
-      {social.length ? <StatRow stats={social} onStat={onStat} big /> : null}
-      <StatRow stats={mine} onStat={onStat} />
+      {social.length ? <StatRow stats={social} onStat={onStat} tappable={tappable} big /> : null}
+      <StatRow stats={mine} onStat={onStat} tappable={tappable} />
 
       {sounds.length > 0 ? (
         <Pressable
@@ -94,15 +105,17 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
             haptic.select();
             onSounds?.();
           }}
-          accessibilityRole="button"
-          accessibilityLabel={`Your sound: ${sounds.map((m) => `${SOUND_LABEL[m.tag]} ${m.percent} percent`).join(', ')}. Opens the full breakdown.`}
+          disabled={!onSounds}
+          accessibilityRole={onSounds ? 'button' : 'text'}
+          accessibilityLabel={`${owner} sound: ${sounds.map((m) => (m.percent !== undefined ? `${SOUND_LABEL[m.tag]} ${m.percent} percent` : SOUND_LABEL[m.tag])).join(', ')}.${onSounds ? ' Opens the full breakdown.' : ''}`}
           style={({ pressed }) => [styles.sounds, pressed && { opacity: 0.7 }]}
         >
           {sounds.map((m) => (
             <View key={m.tag} style={[styles.sound, { borderColor: withAlpha(SOUND_COLOR[m.tag], 0.45) }]}>
               <View style={[styles.soundDot, { backgroundColor: SOUND_COLOR[m.tag] }]} />
               <Text style={styles.soundText}>
-                {SOUND_LABEL[m.tag]} <Text style={styles.soundPct}>{m.percent}%</Text>
+                {SOUND_LABEL[m.tag]}
+                {m.percent !== undefined ? <Text style={styles.soundPct}> {m.percent}%</Text> : null}
               </Text>
             </View>
           ))}
@@ -116,20 +129,20 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
 
 const TAPPABLE: ProfileStat['key'][] = ['followers', 'following', 'festivals', 'moments', 'badges', 'artists'];
 
-function StatRow({ stats, onStat, big }: { stats: ProfileStat[]; onStat?: (key: ProfileStat['key']) => void; big?: boolean }) {
+function StatRow({ stats, onStat, big, tappable = TAPPABLE }: { stats: ProfileStat[]; onStat?: (key: ProfileStat['key']) => void; big?: boolean; tappable?: ProfileStat['key'][] }) {
   return (
     <View style={[styles.stats, big && styles.statsBig]} accessibilityRole="summary">
       {stats.map((s) => {
-        const tappable = !!onStat && TAPPABLE.includes(s.key);
+        const canTap = !!onStat && tappable.includes(s.key);
         return (
           <Pressable
             key={s.key}
-            disabled={!tappable}
+            disabled={!canTap}
             onPress={() => {
               haptic.select();
               onStat?.(s.key);
             }}
-            accessibilityRole={tappable ? 'button' : 'text'}
+            accessibilityRole={canTap ? 'button' : 'text'}
             accessibilityLabel={s.a11y}
             hitSlop={6}
             style={({ pressed }) => [styles.stat, pressed && { opacity: 0.6 }]}
@@ -186,6 +199,8 @@ const styles = StyleSheet.create({
   initial: { ...type.largeTitle, color: color.moon },
   name: { ...type.title, color: color.moon, marginTop: -space.xs, textAlign: 'center' },
   bio: { ...type.body, color: color.moonDim, marginTop: 4, textAlign: 'center' },
+  handle: { ...type.body, color: color.moonDim, marginTop: 2, textAlign: 'center' },
+  note: { ...type.caption, color: color.moonDim, marginTop: space.xs, textAlign: 'center' },
   feeling: {
     flexDirection: 'row',
     alignItems: 'center',

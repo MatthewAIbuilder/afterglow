@@ -72,12 +72,12 @@ describe('following people', () => {
     const { maya, sam } = await mayaAndSam();
     const app = await renderApp('/u/maya');
     await flush();
-    expect(app.getByText('0 followers')).toBeTruthy();
-    expect(app.getByText('0 following')).toBeTruthy();
+    expect(app.getByLabelText('0 followers. Opens the list.')).toBeTruthy();
+    expect(app.getByLabelText('0 following. Opens the list.')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Follow @maya'));
     await flush();
     expect(app.getByLabelText('Following @maya. Tap to unfollow.')).toBeTruthy();
-    expect(app.getByText('1 follower')).toBeTruthy();
+    expect(app.getByLabelText('1 follower. Opens the list.')).toBeTruthy();
     expect(await s().followers(maya, 10)).toEqual([sam]);
 
     await fireEvent.press(app.getByLabelText('1 follower. Opens the list.'));
@@ -93,7 +93,7 @@ describe('following people', () => {
     await flush();
     await fireEvent.press(app.getByLabelText('Following @maya. Tap to unfollow.'));
     await flush();
-    expect(app.getByText('0 followers')).toBeTruthy();
+    expect(app.getByLabelText('0 followers. Opens the list.')).toBeTruthy();
     expect(await s().followers(maya, 10)).toEqual([]);
   });
 

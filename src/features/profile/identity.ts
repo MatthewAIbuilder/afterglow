@@ -106,3 +106,22 @@ export function currentlyFeeling({ seen, reactions, artistOfClip, now }: Feeling
 
 /** "Currently feeling melodic bass". */
 export const feelingLine = (tag: SoundTag) => `Currently feeling ${SOUND_LABEL[tag].toLowerCase()}`;
+
+/**
+ * Who drifts round someone else's photo: the artists in the videos they've
+ * shared (the only taste of theirs Afterglow sees), most filmed first, each
+ * once. Unknown artists are left out.
+ */
+export function filmedOrbit(artistIds: readonly (string | undefined)[], artistOf: (id: string) => Artist | undefined, max = ORBIT_MAX): Favourite[] {
+  const count = new Map<string, number>();
+  const order: string[] = [];
+  for (const id of artistIds) {
+    if (!id || !artistOf(id)) continue;
+    if (!count.has(id)) order.push(id);
+    count.set(id, (count.get(id) ?? 0) + 1);
+  }
+  return order
+    .sort((a, b) => (count.get(b) ?? 0) - (count.get(a) ?? 0))
+    .slice(0, max)
+    .map((id) => ({ artist: artistOf(id)!, match: 1, why: 'match' as const }));
+}
