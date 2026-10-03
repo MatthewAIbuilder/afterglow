@@ -30,8 +30,8 @@ export const added = (now: readonly string[], base: readonly string[]) => {
 };
 
 /** Things counted as they happen. */
-export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble' | 'chat';
-export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble', 'chat'];
+export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble' | 'chat' | 'door' | 'crowd';
+export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble', 'chat', 'door', 'crowd'];
 
 export type DailyQuestId =
   | 'watch'
@@ -47,7 +47,9 @@ export type DailyQuestId =
   | 'stars'
   | 'map'
   | 'share'
-  | 'chat';
+  | 'chat'
+  | 'door'
+  | 'crowd';
 
 export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-love';
 
@@ -65,6 +67,7 @@ export const DAILY: readonly DailySpec[] = [
   { id: 'through', lane: 'watch', title: 'All the way', how: 'Watch 2 clips to the end', target: 2, glow: 25, go: '/' },
   { id: 'like', lane: 'watch', title: 'Feel it', how: 'Double-tap to like 3 clips', target: 3, glow: 15, go: '/' },
   { id: 'save', lane: 'watch', title: 'Keeper', how: 'Save a set to watch again', target: 1, glow: 15, go: '/' },
+  { id: 'crowd', lane: 'watch', title: 'In the crowd', how: 'Watch 2 videos filmed by people on Afterglow', target: 2, glow: 15, go: '/' },
   { id: 'sounds', lane: 'watch', title: 'Genre hopper', how: 'Watch sets from 3 different sounds', target: 3, glow: 25, go: '/discover-focus' },
   { id: 'rate', lane: 'taste', title: 'Taste test', how: 'Rate 5 artists', target: 5, glow: 25, go: '/pick-artists' },
   { id: 'warm', lane: 'taste', title: 'New love', how: 'Find an artist you love or like', target: 1, glow: 20, go: '/this-or-that' },
@@ -75,6 +78,7 @@ export const DAILY: readonly DailySpec[] = [
   { id: 'map', lane: 'plan', title: 'Explorer', how: 'Look around the festival map', target: 1, glow: 10, go: '/festival-map' },
   { id: 'share', lane: 'plan', title: 'Spread the glow', how: 'Share a set, a plan or a festival', target: 1, glow: 15 },
   { id: 'chat', lane: 'plan', title: 'Crew call', how: 'Send a message in your crew chat', target: 1, glow: 15, go: '/together' },
+  { id: 'door', lane: 'plan', title: 'Knock knock', how: 'Open today’s festival week door', target: 1, glow: 20, go: 'festival' },
 ];
 
 export const WEEKLY: readonly WeeklySpec[] = [
@@ -151,12 +155,30 @@ export function dailyPicks(day: string, can: (id: DailyQuestId) => boolean = () 
   return picks;
 }
 
-/** What's possible right now: starring sets needs a festival you're going to; This or that needs enough sets; Crew call needs a crew. */
-export type QuestAbility = { planning: boolean; enoughSets: boolean; crew?: boolean };
+/**
+ * What's possible right now: starring sets needs a festival you're going to;
+ * This or that needs enough sets; Crew call needs a crew; Knock knock needs a
+ * festival week door ready to open; In the crowd needs to be signed in.
+ */
+export type QuestAbility = { planning: boolean; enoughSets: boolean; crew?: boolean; door?: boolean; crowd?: boolean };
 export const canDo =
   (a: QuestAbility) =>
   (id: DailyQuestId): boolean =>
-    id === 'stars' ? a.planning : id === 'thisorthat' ? a.enoughSets : id === 'chat' ? !!a.crew : true;
+    id === 'stars'
+      ? a.planning
+      : id === 'thisorthat'
+        ? a.enoughSets
+        : id === 'chat'
+          ? !!a.crew
+          : id === 'door'
+            ? !!a.door
+            : id === 'crowd'
+              ? !!a.crowd
+              : true;
+
+/** Videos from the crowd on screen since a moment (their clip ids start with "community:"). */
+export const crowdSince = (seen: Readonly<Record<string, number>>, since: number) =>
+  Object.entries(seen).filter(([id, t]) => t >= since && id.startsWith('community:')).length;
 
 /** The day's picks: as fixed in the book, else drawn now. */
 export function picksFor(book: Pick<QuestBook, 'day' | 'picks'>, can: (id: DailyQuestId) => boolean): DailySpec[] {
@@ -206,6 +228,8 @@ export function dailyCurrent(spec: DailySpec, snap: QuestSnapshot, base: Counter
     map: () => events.map ?? 0,
     share: () => events.share ?? 0,
     chat: () => events.chat ?? 0,
+    door: () => events.door ?? 0,
+    crowd: () => crowdSince(snap.seen, since) + (events.crowd ?? 0),
   }[spec.id]();
   return Math.min(spec.target, n);
 }

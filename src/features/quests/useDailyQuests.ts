@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import { useNow } from '../../lib/useNow';
 import { useBadgeClaims } from '../../state/badgeClaims';
 import { useCrewChat } from '../../state/crewChat';
+import { useSocialMaybe } from '../../state/social';
+import { useWeekends } from '../../state/weekends';
+import { festivalWeek } from '../festivalWeek/week';
 import { useCatalog } from '../../state/catalog';
 import { useQuestBook } from '../../state/dailyQuests';
 import { useFollowedArtists } from '../../state/followedArtists';
@@ -154,7 +157,12 @@ export function useQuestAvailability(): QuestAbility {
   const { reactions } = useReactions();
   const enoughSets = enoughSetsFor(catalog, ratings, reactions, going);
   const crew = useCrewChat().canChat;
-  return useMemo(() => ({ planning, enoughSets, crew }), [planning, enoughSets, crew]);
+  const { forYou } = useWeekends();
+  // A door ready today: a festival you're going to is in its festival week.
+  const door = useMemo(() => catalog.festivals.some((f) => going.includes(f.id) && !!festivalWeek(forYou(f), today)), [catalog.festivals, going, forYou, today]);
+  const social = useSocialMaybe();
+  const crowd = !!social?.availability.ok && !!social?.user;
+  return useMemo(() => ({ planning, enoughSets, crew, door, crowd }), [planning, enoughSets, crew, door, crowd]);
 }
 
 /** Where a quest's "Go" takes you. */

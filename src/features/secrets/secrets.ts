@@ -3,7 +3,7 @@
  * moment (a light show, a rain of hearts, fireworks). Found ones are kept
  * and add to your glow; the rest show only a riddle. Pure.
  */
-export type SecretId = 'lightshow' | 'plur' | 'sunrise' | 'ringspin' | 'smallprint' | 'fireworks' | 'edge' | 'bassdrop';
+export type SecretId = 'lightshow' | 'plur' | 'sunrise' | 'ringspin' | 'smallprint' | 'fireworks' | 'edge' | 'bassdrop' | 'nightowl' | 'colours' | 'pinspin';
 
 /** What plays when a secret is found (or found again). */
 export type SecretEffect = 'lightshow' | 'hearts' | 'sunrise' | 'fireworks' | 'bassdrop' | 'sparkle';
@@ -19,6 +19,9 @@ export const SECRETS: readonly SecretSpec[] = [
   { id: 'fireworks', title: 'Fireworks', riddle: 'Festivals don’t mind being refreshed. Again. And again.', found: 'Pull Festivals to refresh three times in a row.', effect: 'fireworks' },
   { id: 'edge', title: 'Edge of the map', riddle: 'Get close enough on the festival map to read the street names.', found: 'Zoom the festival map down to the streets.', effect: 'sparkle' },
   { id: 'bassdrop', title: 'Bass drop', riddle: 'Hold on to My Sound.', found: 'Press and hold the My Sound title.', effect: 'bassdrop' },
+  { id: 'nightowl', title: 'Night owl', riddle: 'Still up when everyone else has gone home?', found: 'Open Afterglow between 2 and 4 in the morning.', effect: 'sparkle' },
+  { id: 'colours', title: 'True colours', riddle: 'Your friend code has a wardrobe. Try it all on.', found: 'Try every colour of your friend code in one go.', effect: 'hearts' },
+  { id: 'pinspin', title: 'Pin polish', riddle: 'A festival pin likes a little attention.', found: 'Tap a festival pin seven times.', effect: 'fireworks' },
 ];
 
 /** Glow for each secret found (counted in your glow level). */
@@ -36,6 +39,15 @@ export const isSunriseHour = (t: number) => {
   const h = new Date(t).getHours();
   return h >= 5 && h < 7;
 };
+
+/** Still going after the after-party: 2 to 4 in the morning, phone time. */
+export const isNightOwlHour = (t: number) => {
+  const h = new Date(t).getHours();
+  return h >= 2 && h < 4;
+};
+
+/** Every one of `all` has been tried. */
+export const triedAll = (tried: ReadonlySet<string>, all: readonly string[]) => all.every((x) => tried.has(x));
 
 /** An accelerometer reading, in g. */
 export type Accel = { x: number; y: number; z: number; t: number };
