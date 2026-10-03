@@ -196,8 +196,9 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   // Every time a clip comes into view it starts from the top.
   useEffect(() => {
     if (isActive) {
-      clock.value = 0;
-      setPaused(false);
+      clock.set(0);
+      // After this render, so coming into view never re-renders in the middle of one.
+      void Promise.resolve().then(() => setPaused(false));
     }
   }, [isActive, clock]);
 
@@ -239,8 +240,8 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
 
   const likeFromDoubleTap = (x: number, y: number) => {
     setBurstAt({ x, y });
-    burstScale.value = withSequence(withTiming(0, { duration: 0 }), withSpring(1, motion.bloom));
-    burstOpacity.value = withSequence(withTiming(1, { duration: 60 }), withDelay(420, withTiming(0, { duration: 260 })));
+    burstScale.set(withSequence(withTiming(0, { duration: 0 }), withSpring(1, motion.bloom)));
+    burstOpacity.set(withSequence(withTiming(1, { duration: 60 }), withDelay(420, withTiming(0, { duration: 260 }))));
     haptic.tap();
     if (!reaction.liked) setLiked(clip.id, true);
   };
@@ -354,14 +355,16 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       saved={reaction.saved}
       onLike={() => {
         const next = !reaction.liked;
-        next ? haptic.tap() : haptic.select();
+        if (next) haptic.tap();
+        else haptic.select();
         setLiked(clip.id, next);
       }}
       onSave={
         community
           ? undefined
           : () => {
-              reaction.saved ? haptic.select() : haptic.tap();
+              if (reaction.saved) haptic.select();
+              else haptic.tap();
               toggleSaved(clip.id);
             }
       }

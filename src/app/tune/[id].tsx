@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -53,6 +53,10 @@ type Step = { id: string; answer: Answer };
  * festival plan and My Sound; "don't know" changes nothing.
  */
 export default function TuneScreen() {
+  // Short phones (iPhone SE and the like): a smaller photo and name, so the card fits above the answers.
+  const screenH = useWindowDimensions().height;
+  const compact = screenH < 700;
+  const tiny = screenH < 620;
   // `then=festival`: opened from the welcome, so the festival page isn't underneath to go back to.
   const { id, then: after, day: dayParam } = useLocalSearchParams<{ id: string; then?: string; day?: string }>();
   const catalog = useCatalog();
@@ -153,8 +157,8 @@ export default function TuneScreen() {
         </GlassCircleButton>
       </View>
 
-      <View style={styles.head}>
-        <Text style={styles.title}>Tune your lineup</Text>
+      <View style={[styles.head, tiny && { marginTop: space.xs }]}>
+        <Text style={[styles.title, tiny && styles.titleTiny]}>Tune your lineup</Text>
         <Text style={styles.sub}>
           {festival.name}
           {day ? ` · ${day}` : ''}
@@ -193,8 +197,8 @@ export default function TuneScreen() {
             accessible
             accessibilityLabel={`${artist.name}. ${tags.map(([t]) => SOUND_LABEL[t]).join(', ') || 'Sound not known yet'}. ${match}.${likeLine ? ` ${likeLine}.` : ''}`}
           >
-            <ArtistAvatar artist={artist} size={148} />
-            <Text style={styles.name} numberOfLines={2}>
+            <ArtistAvatar artist={artist} size={tiny ? 60 : compact ? 92 : 148} />
+            <Text style={[styles.name, compact && styles.nameCompact, tiny && styles.nameTiny]} numberOfLines={2}>
               {artist.name}
             </Text>
             <Text style={styles.match}>{match}</Text>
@@ -203,7 +207,7 @@ export default function TuneScreen() {
                 {likeLine}
               </Text>
             ) : null}
-            {tags.length > 0 && (
+            {tags.length > 0 && !tiny && (
               <View style={styles.tags}>
                 {tags.map(([tag]) => (
                   <View key={tag} style={styles.tag}>
@@ -256,7 +260,7 @@ export default function TuneScreen() {
                 </View>
               ))}
             </View>
-            <View style={styles.lower}>
+            <View style={[styles.lower, tiny && { marginTop: -space.sm }]}>
               <Pressable
                 onPress={() => answer('unsure')}
                 accessibilityRole="button"
@@ -316,12 +320,16 @@ const styles = StyleSheet.create({
   undo: { ...type.label, color: color.moonDim },
   head: { paddingHorizontal: space.xl, marginTop: space.lg },
   title: { ...type.largeTitle, color: color.moon },
+  titleTiny: { fontSize: 26, lineHeight: 31 },
   sub: { ...type.body, color: color.moonDim, marginTop: space.xs, fontVariant: ['tabular-nums'] },
   track: { height: 2, borderRadius: 1, marginTop: space.lg, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' },
   fill: { height: 2, backgroundColor: color.glow },
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
+  // The card never spills over the answers: on a short screen it shrinks, and anything left is clipped.
+  stage: { flex: 1, minHeight: 0, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
   card: { alignItems: 'center', width: '100%' },
   name: { ...type.largeTitle, color: color.moon, marginTop: space.xl, textAlign: 'center' },
+  nameCompact: { fontSize: 24, lineHeight: 28, marginTop: space.md },
+  nameTiny: { fontSize: 21, lineHeight: 25, marginTop: space.sm },
   match: { ...type.headline, color: color.glow, marginTop: space.xs, fontVariant: ['tabular-nums'] },
   like: { ...type.body, color: color.moonDim, marginTop: space.xs, textAlign: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.lg },

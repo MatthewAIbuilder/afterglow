@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, Platform } from 'react-native';
 import { color, radius, space, type } from '../theme/tokens';
 import { CloseIcon, SearchIcon } from './TabIcons';
 
@@ -55,5 +55,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  input: { ...type.body, flex: 1, color: color.moon, paddingVertical: 0 },
+  // In a browser, no square focus outline inside the rounded field (the field itself shows focus).
+  input: { ...type.body, flex: 1, color: color.moon, paddingVertical: 0, ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}) },
 });

@@ -58,10 +58,13 @@ export default function MySoundScreen() {
   const { artists, festivals } = catalog;
   const live = useTaste();
   const liveRef = useRef(live);
-  liveRef.current = live;
   const [shown, setShown] = useState(live);
   const shownRef = useRef(shown);
-  shownRef.current = shown;
+  // The latest of both, for the reshape timer (kept after each render, never during it).
+  useEffect(() => {
+    liveRef.current = live;
+    shownRef.current = shown;
+  }, [live, shown]);
 
   const reshapeSoon = useCallback(() => {
     const t = setTimeout(() => {

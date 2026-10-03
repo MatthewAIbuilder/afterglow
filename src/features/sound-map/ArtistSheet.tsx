@@ -28,15 +28,13 @@ const SHEET_H = 380;
 export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
   // Keep the last artist rendered while the sheet animates away.
   const [shownId, setShownId] = useState<string | null>(artistId);
+  // A new artist shows at once; closing keeps the last one while the sheet slides away.
+  if (artistId && artistId !== shownId) setShownId(artistId);
   const offset = useSharedValue(SHEET_H + 80);
 
   useEffect(() => {
-    if (artistId) {
-      setShownId(artistId);
-      offset.value = withSpring(0, motion.snappy);
-    } else {
-      offset.value = withTiming(SHEET_H + 80, { duration: 220 });
-    }
+    if (artistId) offset.set(withSpring(0, motion.snappy));
+    else offset.set(withTiming(SHEET_H + 80, { duration: 220 }));
   }, [artistId, offset]);
 
   const { artists } = useCatalog();
@@ -57,20 +55,20 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
   const drag = Gesture.Pan()
     .activeOffsetY(8)
     .onChange((e) => {
-      offset.value = Math.max(-12, offset.value + e.changeY * (offset.value < 0 ? 0.3 : 1));
+      offset.set(Math.max(-12, offset.get() + e.changeY * (offset.get() < 0 ? 0.3 : 1)));
     })
     .onEnd((e) => {
-      if (offset.value > 90 || e.velocityY > 700) {
+      if (offset.get() > 90 || e.velocityY > 700) {
         runOnJS(haptic.soft)();
         runOnJS(onClose)();
       } else {
-        offset.value = withSpring(0, motion.snappy);
+        offset.set(withSpring(0, motion.snappy));
       }
     });
 
-  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }));
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
   const scrimStyle = useAnimatedStyle(() => ({
-    opacity: Math.max(0, 1 - offset.value / SHEET_H) * 0.5,
+    opacity: Math.max(0, 1 - offset.get() / SHEET_H) * 0.5,
   }));
 
   if (!artist) return null;
