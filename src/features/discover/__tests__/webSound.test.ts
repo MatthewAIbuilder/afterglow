@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { afterGesture, afterRefusal, autoplayVerdict, BUFFER_PATIENCE_MS, startMuted, YT_STATE } from '../webSound';
 
 describe('sound on the website', () => {
