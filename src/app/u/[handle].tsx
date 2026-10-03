@@ -15,6 +15,7 @@ import { SOUND_LABEL } from '../../data/models';
 import { clipLength } from '../../features/memories/organize';
 import { followersLabel, followingLabel, goingLine } from '../../features/social/copy';
 import { inCommon } from '../../features/social/common';
+import { matchLine, tasteMatch } from '../../features/social/match';
 import { isOver } from '../../features/festivals/shelves';
 import { tasteMix } from '../../features/taste/lean';
 import { useToday } from '../../lib/useToday';
@@ -94,7 +95,13 @@ export default function PublicProfileScreen() {
   const { taste, informed } = useTaste();
   const loves = useLoves();
   const today = useToday();
-  const mySounds = useMemo(() => tasteMix(catalog.artists, taste, informed).slice(0, 3).map((s) => s.tag), [catalog.artists, taste, informed]);
+  const myMix = useMemo(() => tasteMix(catalog.artists, taste, informed), [catalog.artists, taste, informed]);
+  const mySounds = useMemo(() => myMix.slice(0, 3).map((s) => s.tag), [myMix]);
+  // How alike your taste is, from the sounds they show (and a festival you're both going to).
+  const match = useMemo(
+    () => (profile && !mine ? tasteMatch(myMix, profile.sounds, profile.festivals.filter((f) => myGoing.includes(f)).length) : undefined),
+    [profile, mine, myMix, myGoing],
+  );
   const common = useMemo(
     () =>
       profile && !mine
@@ -200,9 +207,20 @@ export default function PublicProfileScreen() {
             </View>
           )}
         </View>
-        {common.length > 0 && (
-          <View style={styles.common} accessible accessibilityLabel={`In common. ${common.map((l) => l.text).join('. ')}.`}>
-            <Text style={styles.commonHead}>In common</Text>
+        {common.length > 0 || match !== undefined ? (
+          <View
+            style={styles.common}
+            accessible
+            accessibilityLabel={`${match !== undefined ? `${matchLine(match)}. ` : ''}In common. ${common.map((l) => l.text).join('. ')}.`}
+          >
+            <View style={styles.commonTop}>
+              <Text style={styles.commonHead}>In common</Text>
+              {match !== undefined ? (
+                <Text style={styles.match}>
+                  {match}%<Text style={styles.matchUnit}> taste match</Text>
+                </Text>
+              ) : null}
+            </View>
             {common.map((l) => (
               <View key={l.kind} style={styles.commonRow}>
                 <View style={styles.commonDot} />
@@ -210,7 +228,7 @@ export default function PublicProfileScreen() {
               </View>
             ))}
           </View>
-        )}
+        ) : null}
         {badges.length ? (
           <View style={styles.badges}>
             <BadgesGrid badges={badges} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
@@ -310,6 +328,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(169,124,255,0.35)',
     gap: space.sm,
   },
+  commonTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  match: { ...type.headline, fontSize: 20, color: color.moon, fontVariant: ['tabular-nums'] },
+  matchUnit: { ...type.caption, color: color.moonDim },
   commonHead: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 1 },
   commonRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
   commonDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: color.glow, marginTop: 8 },

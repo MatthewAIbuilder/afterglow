@@ -192,11 +192,16 @@ export function ribbonText(festival: Pick<Festival, 'startDate' | 'endDate' | 'w
 
 /** The town from a festival's place: "Sunset Cove Amphitheater, Boca Raton" -> "BOCA RATON". */
 export function cityOf(location: string | undefined): string | undefined {
+  return townOf(location)?.toUpperCase();
+}
+
+/** The town as written: "Sunset Cove Amphitheater, Boca Raton" -> "Boca Raton", "Austin, Texas" -> "Austin". */
+export function townOf(location: string | undefined): string | undefined {
   const parts = (location ?? '').split(',').map((p) => p.trim()).filter(Boolean);
   if (!parts.length) return undefined;
   // "Austin, Texas": the city comes first; "Venue, City": last.
   const city = parts.length > 1 && /^(texas|florida|california|nevada|arizona|colorado|georgia|illinois|new york|washington|oregon|tennessee|michigan|ohio|[A-Z]{2})$/i.test(parts[parts.length - 1]) ? parts[0] : parts[parts.length - 1];
-  return city.toUpperCase();
+  return city;
 }
 
 /** How a festival's pin looks: its scene from its name and place, colours and backing from its id. */

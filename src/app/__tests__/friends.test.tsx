@@ -86,4 +86,29 @@ describe('Friends', () => {
     expect(app.getByLabelText('Crew name').props.value).toBe('Cyclops Cove 4 crew');
     expect([...mockSocial.crews.values()][0]).toMatchObject({ festivalId: 'cyclops-cove-4', members: [sam] });
   });
+
+  it('shows your friends as faces with what they have been up to, and how alike your taste is', async () => {
+    const maya = await s().signUp('maya@example.com', 'password123');
+    await s().saveProfile(
+      { handle: 'maya', displayName: 'Maya', bio: '', showFestivals: true, showSound: true },
+      { festivals: ['cyclops-cove-4'], sounds: ['dubstep', 'riddim', 'melodic-bass'] },
+    );
+    await s().shareMemory({ memoryId: 'm1', videoUri: 'file:///m1.mp4', festivalId: 'cyclops-cove-4', artistId: 'subtronics', capturedAt: '2026-10-01T22:00:00Z' });
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().follow(maya.uid);
+
+    const app = await renderApp('/friends');
+    await flush();
+    expect(app.getByText('Your friends')).toBeTruthy();
+    expect(app.getByLabelText('Open Maya’s profile')).toBeTruthy();
+    expect(app.getByText('Recent activity')).toBeTruthy();
+    expect(app.getByText('Maya shared a moment of SUBTRONICS')).toBeTruthy();
+    expect(app.getByText('Maya is going to Cyclops Cove 4')).toBeTruthy();
+
+    // Her profile says how alike your taste is.
+    await fireEvent.press(app.getByLabelText('Open Maya’s profile'));
+    await flush();
+    expect(app.getByText(/taste match/)).toBeTruthy();
+  });
 });
