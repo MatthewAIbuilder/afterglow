@@ -108,7 +108,7 @@ export default function GardenScreen() {
             >
               <Sprout kind={s.shown} stage={s.stage} size={78} />
               <Text style={styles.tileName} numberOfLines={1}>
-                {nameOf(s)}
+                {nameOf(s).replace(/ sprout$/, '')}
               </Text>
               <Text style={styles.tileFrom} numberOfLines={1}>
                 {fromLine(s)}
