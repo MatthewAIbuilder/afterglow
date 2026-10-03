@@ -5,8 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
-import { MenuIcon, PeopleIcon, TilesIcon, BookmarkIcon, FestivalsIcon, PinIcon } from '../../components/TabIcons';
-import { useCrewUpdates } from '../../state/crewUpdates';
+import { MenuIcon, TilesIcon, BookmarkIcon, FestivalsIcon, PinIcon } from '../../components/TabIcons';
 import { FestivalProfile } from '../../features/festivalMode/FestivalProfile';
 import { useFestivalMode } from '../../state/festivalMode';
 import { Tabs } from '../../components/Tabs';
@@ -78,7 +77,6 @@ function FullProfile() {
   const { followed } = useFollowedArtists();
   const followedCount = followed.filter((id) => catalog.artist(id)).length;
   const { crews } = useCrews();
-  const freshCrew = useCrewUpdates().stories.some((s) => s.fresh);
 
   // Your sound as chips, from the live taste.
   const { taste, informed } = useTaste();
@@ -150,11 +148,6 @@ function FullProfile() {
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
             {me ? `@${me.handle}` : 'Profile'}
           </Text>
-          {/* Friends: crews, people to follow, invites. Signed out it explains what you get. */}
-          <IconButton label={freshCrew ? 'Friends, new from your crew' : 'Friends'} onPress={() => router.push('/friends')}>
-            <PeopleIcon color={color.moon} size={22} />
-            {freshCrew ? <View style={styles.dot} /> : null}
-          </IconButton>
           <IconButton label="Settings and more" onPress={() => router.push('/settings')}>
             <MenuIcon color={color.moon} size={22} />
           </IconButton>
@@ -178,7 +171,6 @@ function FullProfile() {
             <>
               <ProfileButton label="Edit profile" onPress={() => router.push('/profile-edit')} />
               <ProfileButton label="Share profile" onPress={() => void shareMessage(`@${me.handle} on Afterglow: ${WEB_URL}/u/${me.handle}`)} />
-              <ProfileButton label="Friends" onPress={() => router.push('/friends')} />
             </>
           ) : social.availability.ok && social.ready ? (
             <ProfileButton label={social.user ? 'Finish your profile' : 'Create your profile'} onPress={signIn} glow />
@@ -241,6 +233,5 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.xl, paddingRight: space.md, marginBottom: space.lg },
   handle: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
   icon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  dot: { position: 'absolute', top: 8, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow, borderWidth: 1.5, borderColor: color.night },
   tabs: { marginTop: space.xl },
 });

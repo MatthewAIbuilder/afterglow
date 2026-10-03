@@ -8,6 +8,7 @@ import { HeartBurst, HeartFace, HeartHalo } from './HeartHold';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraIcon } from '../features/camera/icons';
 import { useFestivalMode } from '../state/festivalMode';
+import { useCrewUpdates } from '../state/crewUpdates';
 import { markCareTipDone, useCareTip } from '../state/careTip';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../lib/haptics';
@@ -55,6 +56,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const hold = useSharedValue(0);
   const burst = useSharedValue(0);
   const order = active ? FESTIVAL_TABS : FULL_TABS;
+  // Something new from your crew: a glow dot on Friends.
+  const freshCrew = useCrewUpdates().stories.some((s) => s.fresh);
   const current = state.routes[state.index]?.name;
   // Switching modes while on a tab the other mode doesn't have: back to Discover.
   const hidden = hydrated && !!current && !order.includes(current);
@@ -93,7 +96,9 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           if (!route) return null;
           const focused = state.index === i;
           const { options } = descriptors[route.key];
-          const label = options.title ?? route.name;
+          const title = options.title ?? route.name;
+          const news = route.name === 'together' && freshCrew;
+          const label = news ? `${title}, new from your crew` : title;
           const Icon = ICONS[route.name] ?? DiscoverIcon;
           const tint = focused ? color.moon : color.moonFaint;
           return (
@@ -112,9 +117,12 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
               style={styles.item}
             >
               {focused && <View style={styles.activeBg} />}
-              <Icon color={focused ? color.glow : tint} size={24} />
+              <View>
+                <Icon color={focused ? color.glow : tint} size={24} />
+                {news ? <View style={styles.newsDot} /> : null}
+              </View>
               <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
-                {label}
+                {title}
               </Text>
             </Pressable>
           );
@@ -234,6 +242,7 @@ const styles = StyleSheet.create({
   },
   activeBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.14)' },
   label: { ...type.caption, fontSize: 11 },
+  newsDot: { position: 'absolute', top: -1, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow, borderWidth: 1.5, borderColor: color.night },
   test: {
     flexDirection: 'row',
     alignItems: 'center',
