@@ -11,19 +11,20 @@ import { SearchField } from '../../components/SearchField';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { NoticeBell } from '../../components/NoticeBell';
-import { ChevronIcon, GridIcon, ListIcon } from '../../components/TabIcons';
+import { GridIcon, ListIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
-import { byMonth, bySoonest, festivalShelf, isMany } from '../../features/festivals/shelves';
+import { byMonth, bySoonest, festivalShelf, isMany, isOver } from '../../features/festivals/shelves';
+import { NextUpCard } from '../../features/festivals/NextUpCard';
+import { TimelineRow } from '../../features/festivals/TimelineRow';
 import { useLoves } from '../../state/useLoves';
 import { PlayIcon } from '../../features/discover/icons';
 import { coverPhotos } from '../../features/festivals/cover';
 import { FestivalCover } from '../../features/festivals/FestivalCover';
 import { lineupReach } from '../../features/festivals/links';
 import { searchArtists, searchFestivals } from '../../features/festivals/search';
-import { whereWhen } from '../../features/festivals/format';
-import { distanceLabel, distanceShort, nearYou, reachLabel } from '../../features/festivals/near';
+import { distanceShort, nearYou, reachLabel } from '../../features/festivals/near';
 import { NearYouPrompt } from '../../features/festivals/NearYouPrompt';
 import { useNearby } from '../../state/nearby';
 import { countdown } from '../../features/festivals/when';
@@ -37,6 +38,8 @@ import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 
 const LOVE = 0.8;
+/** Tiles on the For you shelf are this big. */
+const SHELF_TILE = 168;
 /** With many festivals, "More festivals" shows this many at a time. */
 const MORE_PAGE = 20;
 
@@ -66,21 +69,21 @@ export default function FestivalsScreen() {
     const nearIds = new Set(near.map((n) => n.festival.id));
     return festivalShelf(festivals.filter((f) => !nearIds.has(f.id)), going, loves, today);
   }, [many, festivals, going, loves, today, near]);
-  const rest = useMemo(() => {
-    if (!shelf) return groups.others;
-    const shown = new Set([...shelf.festivals, ...near.map((n) => n.festival)].map((f) => f.id));
-    return bySoonest(groups.others.filter((f) => !shown.has(f.id)), today);
-  }, [shelf, near, groups.others, today]);
+  // The festival you're going to next leads the page; any others you're going to follow it.
+  const upNext = groups.going.find((f) => !isOver(f, today));
+  const alsoGoing = groups.going.filter((f) => f !== upNext);
+  // Everything else, soonest first, month by month: nothing hidden, a page at a time.
+  const shownAbove = new Set([...(shelf?.festivals ?? []), ...near.map((n) => n.festival)].map((f) => f.id));
+  const rest = bySoonest(groups.others.filter((f) => !shownAbove.has(f.id)), today);
   const [restShown, setRestShown] = useState(MORE_PAGE);
   // Find any artist or festival.
   const [query, setQuery] = useState('');
   const found = useMemo(() => searchArtists(catalog.artists, query), [catalog.artists, query]);
   const foundFestivals = useMemo(() => searchFestivals(festivals, query), [festivals, query]);
   const searching = query.trim().length > 0;
-  const [showMore, setShowMore] = useState(false);
-  // Big cards or square tiles, your choice.
+  // Rows on a timeline or square tiles, your choice.
   const { view, setView } = useFestivalsView();
-  const list = (fs: Festival[]) => <FestivalList festivals={fs} taste={taste} view={view} />;
+  const list = (fs: Festival[], isGoing = false) => <FestivalList festivals={fs} taste={taste} view={view} going={isGoing} />;
 
   return (
     <View style={styles.root}>
@@ -103,7 +106,6 @@ export default function FestivalsScreen() {
               <NoticeBell />
             </View>
           </View>
-          <Text style={styles.subtitle}>Lineups ranked by your sound.</Text>
           <View style={styles.searchWrap}>
             <SearchField
               value={query}
@@ -142,8 +144,9 @@ export default function FestivalsScreen() {
           </View>
         ) : (
           <>
-            {groups.going.length > 0 && <Text style={styles.section}>Going</Text>}
-            {list(groups.going)}
+            {upNext ? <NextUpCard festival={upNext} /> : null}
+            {alsoGoing.length > 0 && <SectionHead title={upNext ? 'Also going' : 'Going'} />}
+            {list(alsoGoing, true)}
             {nearby.status === 'on' && (many || near.length > 0) ? (
               <>
                 <View style={styles.nearHead}>
@@ -168,57 +171,51 @@ export default function FestivalsScreen() {
             ) : (
               many && <NearYouPrompt />
             )}
-            {shelf && shelf.festivals.length > 0 && <Text style={styles.section}>{shelf.title}</Text>}
-            {shelf && list(shelf.festivals)}
-            {/* Once you're going somewhere (or there are many), the rest wait behind "More festivals" so they stay out of the way. */}
-            {(groups.going.length > 0 || shelf) && rest.length > 0 && (
+            {/* With many festivals: a short shelf picked for you, to swipe through. */}
+            {shelf && shelf.festivals.length > 0 ? (
+              <>
+                <SectionHead title={shelf.title} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf} style={styles.shelfWrap}>
+                  {shelf.festivals.map((f) => (
+                    <FestivalTile key={f.id} festival={f} taste={taste} size={SHELF_TILE} />
+                  ))}
+                </ScrollView>
+              </>
+            ) : null}
+            {rest.length > 0 && <SectionHead title={groups.going.length || shelf ? 'All festivals' : 'Coming up'} count={rest.length} />}
+            {byMonth(rest.slice(0, restShown), today).map((g) => (
+              <View key={g.label}>
+                <Text style={[styles.section, styles.month]}>{g.label}</Text>
+                {list(g.festivals)}
+              </View>
+            ))}
+            {rest.length > restShown && (
               <Pressable
                 onPress={() => {
                   haptic.select();
-                  setShowMore((v) => !v);
+                  setRestShown((n) => n + MORE_PAGE);
                 }}
                 accessibilityRole="button"
-                accessibilityState={{ expanded: showMore }}
-                accessibilityLabel={`More festivals, ${rest.length}. ${showMore ? 'Hide them' : 'Show them'}`}
-                hitSlop={6}
-                style={({ pressed }) => [styles.moreRow, pressed && { opacity: 0.7 }]}
+                accessibilityLabel={`Show more festivals. ${rest.length - restShown} left`}
+                style={({ pressed }) => [styles.showMore, pressed && { opacity: 0.7 }]}
               >
-                <Text style={[styles.section, styles.moreText]}>More festivals</Text>
-                <Text style={styles.moreCount}>{rest.length}</Text>
-                <ChevronIcon color={color.moonFaint} size={12} direction={showMore ? 'up' : 'down'} />
+                <Text style={styles.showMoreText}>Show more · {rest.length - restShown} left</Text>
               </Pressable>
-            )}
-            {shelf ? (
-              showMore && (
-                <>
-                  {byMonth(rest.slice(0, restShown), today).map((g) => (
-                    <View key={g.label}>
-                      <Text style={[styles.section, styles.month]}>{g.label}</Text>
-                      {list(g.festivals)}
-                    </View>
-                  ))}
-                  {rest.length > restShown && (
-                    <Pressable
-                      onPress={() => {
-                        haptic.select();
-                        setRestShown((n) => n + MORE_PAGE);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Show more festivals. ${rest.length - restShown} left`}
-                      style={({ pressed }) => [styles.showMore, pressed && { opacity: 0.7 }]}
-                    >
-                      <Text style={styles.showMoreText}>Show more · {rest.length - restShown} left</Text>
-                    </Pressable>
-                  )}
-                </>
-              )
-            ) : (
-              (groups.going.length === 0 || showMore) && list(groups.others)
             )}
             <RequestRow />
           </>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+/** A section title, with how many when it helps. */
+function SectionHead({ title, count }: { title: string; count?: number }) {
+  return (
+    <View style={styles.sectionRow} accessibilityRole="header">
+      <Text style={[styles.section, styles.sectionTitle]}>{title}</Text>
+      {count ? <Text style={styles.sectionCount}>{count}</Text> : null}
     </View>
   );
 }
@@ -233,7 +230,7 @@ function ViewToggle({ value, onChange }: { value: FestivalsView; onChange: (v: F
         onChange(next);
       }}
       accessibilityRole="button"
-      accessibilityLabel={next === 'grid' ? 'Show festivals as tiles' : 'Show festivals as cards'}
+      accessibilityLabel={next === 'grid' ? 'Show festivals as tiles' : 'Show festivals as a list'}
       hitSlop={10}
       style={({ pressed }) => [styles.toggle, pressed && { transform: [{ scale: 0.92 }] }]}
     >
@@ -242,8 +239,9 @@ function ViewToggle({ value, onChange }: { value: FestivalsView; onChange: (v: F
   );
 }
 
-function FestivalList({ festivals, taste, view }: { festivals: Festival[]; taste: Record<string, number>; view: FestivalsView }) {
-  if (view === 'list') return festivals.map((f) => <FestivalCard key={f.id} festival={f} taste={taste} />);
+function FestivalList({ festivals, taste, view, going }: { festivals: Festival[]; taste: Record<string, number>; view: FestivalsView; going?: boolean }) {
+  if (!festivals.length) return null;
+  if (view === 'list') return festivals.map((f) => <TimelineRow key={f.id} festival={f} going={going} />);
   return (
     <View style={styles.grid}>
       {festivals.map((f) => (
@@ -284,10 +282,10 @@ function RequestRow({ name }: { name?: string }) {
 const COVER_HEIGHT = 128;
 
 /** The festival as a square tile: countdown, name, how many you'll love, and its clips. */
-function FestivalTile({ festival, taste }: { festival: Festival; taste: Record<string, number> }) {
+function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; taste: Record<string, number>; size?: number }) {
   const { artist: artistById, clips } = useCatalog();
   const { width } = useWindowDimensions();
-  const size = (width - space.lg * 2 - space.md) / 2;
+  const size = fixed ?? (width - space.lg * 2 - space.md) / 2;
   const reach = lineupReach(festival, clips);
   const today = useToday();
   const soon = countdown(festival, today);
@@ -360,90 +358,6 @@ function FestivalTile({ festival, taste }: { festival: Festival; taste: Record<s
   );
 }
 
-function FestivalCard({ festival, taste }: { festival: Festival; taste: Record<string, number> }) {
-  const { artist: artistById, clips } = useCatalog();
-  const reach = lineupReach(festival, clips);
-  const discover = () => {
-    haptic.tap();
-    router.navigate({ pathname: '/', params: { festival: festival.id } });
-  };
-  const ranked = festival.lineup
-    .map((id) => artistById(id))
-    .filter((a): a is Artist => !!a)
-    .sort((a, b) => (taste[b.id] ?? 0) - (taste[a.id] ?? 0));
-  const loved = ranked.filter((a) => (taste[a.id] ?? 0) >= LOVE).length;
-  const timesOut = !!festival.sets?.length;
-  const today = useToday();
-  const soon = countdown(festival, today);
-  const { distanceTo, units } = useNearby();
-  const away = distanceTo(festival);
-  const cover = coverPhotos(festival, artistById);
-
-  return (
-    <Pressable
-      onPress={() => {
-        haptic.select();
-        router.push(`/festival/${festival.id}`);
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={`${festival.name}, ${festival.dates}${soon ? `, ${soon}` : ''}, ${loved > 0 ? `${loved} of ${ranked.length} artists you'll love` : `${ranked.length} artists`}${timesOut ? ', set times are out' : ''}`}
-      // The clips button sits inside the card, so screen readers get it as an action on the card.
-      accessibilityActions={reach.clips > 0 ? [{ name: 'discover', label: 'Discover the lineup' }] : undefined}
-      onAccessibilityAction={(e) => {
-        if (e.nativeEvent.actionName === 'discover') discover();
-      }}
-      style={({ pressed }) => [styles.card, cover.length > 0 && styles.cardCovered, pressed && { transform: [{ scale: 0.985 }], opacity: 0.9 }]}
-    >
-      {/* The headliners' faces across the top, fading into the card under the name. */}
-      <FestivalCover photos={cover} style={styles.cover} />
-      {cover.length > 0 && <View style={styles.coverGlass} pointerEvents="none" />}
-      <View style={styles.cardTop}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{festival.name}</Text>
-          <Text style={styles.meta}>
-            {whereWhen(festival)}
-            {away !== undefined ? ` · ${distanceLabel(away, units)}` : ''}
-          </Text>
-        </View>
-        <ChevronIcon color={color.moonFaint} />
-      </View>
-
-      <View style={styles.cardBottom}>
-        <View style={styles.faces}>
-          {ranked.slice(0, 4).map((a, i) => (
-            <View key={a.id} style={[styles.face, { marginLeft: i === 0 ? 0 : -12, zIndex: 10 - i }]}>
-              <ArtistAvatar artist={a} size={38} />
-            </View>
-          ))}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.loved} numberOfLines={1}>
-            {loved > 0 ? `${loved} you'll love` : `${ranked.length} ${ranked.length === 1 ? 'act' : 'acts'}`}
-          </Text>
-          {/* One short line: when it is, and set times only once they're out (the festival page says the rest). */}
-          {soon || timesOut ? (
-            <Text style={[styles.status, timesOut && { color: color.glow }]} numberOfLines={1}>
-              {[soon, timesOut ? 'Set times out' : undefined].filter(Boolean).join(' · ')}
-            </Text>
-          ) : null}
-        </View>
-        {reach.clips > 0 && (
-          <Pressable
-            onPress={discover}
-            accessibilityRole="button"
-            accessibilityLabel={`Discover the ${festival.name} lineup, ${reach.clips} ${reach.clips === 1 ? 'clip' : 'clips'}`}
-            hitSlop={8}
-            style={({ pressed }) => [styles.clips, pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] }]}
-          >
-            <PlayIcon color={color.moon} size={12} />
-            <Text style={styles.clipsText}>{reach.clips}</Text>
-          </Pressable>
-        )}
-      </View>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl, marginBottom: space.xl },
@@ -460,7 +374,12 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   resultsHead: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.md, marginBottom: space.xs },
-  month: { marginTop: space.lg },
+  month: { marginTop: space.md, marginBottom: space.sm, fontSize: 12, color: color.glow },
+  sectionRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.lg },
+  sectionTitle: { ...type.headline, fontSize: 20, textTransform: 'none', letterSpacing: 0, color: color.moon, paddingRight: 0, marginBottom: space.sm },
+  sectionCount: { ...type.label, color: color.moonFaint, fontVariant: ['tabular-nums'] },
+  shelfWrap: { flexGrow: 0, marginBottom: space.md },
+  shelf: { paddingHorizontal: space.lg, gap: space.md },
   showMore: {
     alignSelf: 'center',
     marginTop: space.md,

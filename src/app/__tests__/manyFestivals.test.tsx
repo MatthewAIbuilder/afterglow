@@ -43,15 +43,15 @@ beforeEach(async () => {
 });
 
 describe('many festivals', () => {
-  it('the Festivals tab shows a short shelf, with the rest behind More festivals', async () => {
+  it('the Festivals tab shows a short shelf, then every festival a page at a time', async () => {
     const app = await renderApp('/festivals');
     await flush();
     expect(app.getByText(/^(For you|Coming up)$/)).toBeTruthy();
-    const more = app.getByLabelText(/^More festivals, \d+\. Show them$/);
-    expect(app.queryByText('Feed Fest 24')).toBeNull();
-    await fireEvent.press(more);
+    expect(app.getByText('All festivals')).toBeTruthy();
+    const before = app.getAllByText(/^Feed Fest \d+$/).length;
+    await fireEvent.press(app.getByLabelText(/^Show more festivals\. \d+ left$/));
     await flush();
-    expect(app.getByLabelText(/^Show more festivals\. \d+ left$/)).toBeTruthy();
+    expect(app.getAllByText(/^Feed Fest \d+$/).length).toBeGreaterThan(before);
     // Search still finds any of them.
     await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'Feed Fest 24');
     await flush();
@@ -73,7 +73,10 @@ describe('many festivals', () => {
     // Nearest first, with how far; Los Angeles is out of reach.
     expect(app.getByText('Feed Fest 0')).toBeTruthy();
     expect(app.getAllByText(/ (mi|km) away$/).length).toBeGreaterThanOrEqual(3);
-    expect(app.queryByText('Feed Fest 3')).toBeNull();
+    const order = app.getAllByText(/^(Near you|For you|Coming up|All festivals|Feed Fest 3)$/).map((t) => t.props.children as string);
+    const nearList = order.slice(order.indexOf('Near you') + 1);
+    const next = nearList.findIndex((t) => !t.startsWith('Feed'));
+    expect(next < 0 ? nearList : nearList.slice(0, next)).not.toContain('Feed Fest 3');
     // Kept on the phone, rounded.
     expect(JSON.parse((await AsyncStorage.getItem('nearYou.v1'))!)).toMatchObject({ lat: 28.54, lon: -81.38, label: 'Orlando' });
     await fireEvent.press(app.getByLabelText('Stop showing festivals near you'));

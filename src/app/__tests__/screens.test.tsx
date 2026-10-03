@@ -244,7 +244,7 @@ describe('Festivals', () => {
     await settle();
     await fireEvent.press(app.getByLabelText('Show festivals as tiles'));
     await settle();
-    expect(app.getByLabelText('Show festivals as cards')).toBeTruthy();
+    expect(app.getByLabelText('Show festivals as a list')).toBeTruthy();
     expect(app.getByLabelText(/^EDC Orlando 2026, Nov 6 to 8, /)).toBeTruthy();
     expect(await AsyncStorage.getItem('festivalsView.v1')).toBe('grid');
   });
@@ -289,16 +289,13 @@ describe('Festivals', () => {
 
     const list = await renderApp('/festivals');
     await settle();
+    // The one you're going to leads as Up next; every other festival follows, soonest first, month by month.
+    expect(list.getByLabelText(/^Up next: Horizon 2027, /)).toBeTruthy();
     const titles = () =>
-      list.getAllByText(/^(Going|More festivals|EDC Orlando 2026|Austin City Limits 2026|Cyclops Cove 4|Eternal NYE 2026|Countdown NYE 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
-    // The rest wait behind "More festivals" until you open it.
-    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
-    await fireEvent.press(list.getByLabelText('More festivals, 6. Show them'));
-    await settle();
-    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals', 'EDC Orlando 2026', 'Austin City Limits 2026', 'Cyclops Cove 4', 'Eternal NYE 2026', 'Countdown NYE 2026', 'Solstice 2026']);
-    await fireEvent.press(list.getByLabelText('More festivals, 6. Hide them'));
-    await settle();
-    expect(titles()).toEqual(['Going', 'Horizon 2027', 'More festivals']);
+      list.getAllByText(/^(All festivals|EDC Orlando 2026|Austin City Limits 2026|Cyclops Cove 4|Eternal NYE 2026|Countdown NYE 2026|Solstice 2026|Horizon 2027)$/).map((t) => t.props.children);
+    expect(titles()).toEqual(['Horizon 2027', 'All festivals', 'Austin City Limits 2026', 'EDC Orlando 2026', 'Cyclops Cove 4', 'Eternal NYE 2026', 'Countdown NYE 2026', 'Solstice 2026']);
+    expect(list.getByText('December')).toBeTruthy();
+    expect(list.getByText('Date to come')).toBeTruthy();
   });
 
   it('finds an artist on a big lineup', async () => {
