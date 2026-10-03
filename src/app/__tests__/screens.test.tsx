@@ -895,8 +895,8 @@ describe('Profile tab', () => {
     await settle();
     expect(app.getByLabelText('1 festival')).toBeTruthy();
     expect(app.getByLabelText('0 artists rated')).toBeTruthy();
-    // Videos first: nothing filmed yet, so it says what goes here.
-    expect(app.getByText('Your festival videos')).toBeTruthy();
+    // Moments first: nothing filmed yet, so it says what goes here.
+    expect(app.getByText('Your festival moments')).toBeTruthy();
     // Friends is its own tab now, so Profile has no Friends button.
     expect(app.getAllByLabelText(/^Friends/)).toHaveLength(1);
     expect(app.getByRole('tab', { name: 'Friends' })).toBeTruthy();
@@ -916,8 +916,10 @@ describe('Profile tab', () => {
     await settle();
     expect(app.getByLabelText(/^Your sound: .+ percent/)).toBeTruthy();
     await fireEvent.press(app.getByRole('tab', { name: 'Festivals, 1' }));
-    // The round shortcut and the row in the Festivals tab.
-    expect(app.getAllByLabelText(/^Austin City Limits 2026, Weekend 2 · /)).toHaveLength(2);
+    // The round shortcut, and its card in your festival passport.
+    expect(app.getByLabelText(/^Austin City Limits 2026, Weekend 2 · /)).toBeTruthy();
+    expect(app.getByLabelText('Planning, 1')).toBeTruthy();
+    expect(app.getByLabelText(/^Austin City Limits 2026, .*, Austin\. In \d+ days/)).toBeTruthy();
   });
 });
 

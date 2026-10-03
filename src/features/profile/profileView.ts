@@ -7,27 +7,35 @@ import type { Memory } from '../memories/models';
  * tabs, and your videos newest first. Pure.
  */
 
-export type ProfileStat = { key: 'festivals' | 'followers' | 'following' | 'rated' | 'kept'; n: number; label: string; a11y: string };
+export type ProfileStat = { key: 'festivals' | 'followers' | 'following' | 'artists' | 'moments' | 'badges'; n: number; label: string; a11y: string };
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /**
- * With a profile: festivals, followers, following (followers undefined
- * until they've loaded). Without one: festivals, artists rated, clips kept,
- * so the tab still says what you've built.
+ * The counts on your profile. With a profile: followers and following first
+ * (followers undefined until they've loaded). Then, for everyone, what
+ * you've built: festivals, artists rated, moments filmed and badges.
  */
-export function profileStats(input: { social: boolean; festivals: number; followers?: number; following: number; rated: number; kept: number }): ProfileStat[] {
-  const festivals: ProfileStat = { key: 'festivals', n: input.festivals, label: 'Festivals', a11y: plural(input.festivals, 'festival', 'festivals') };
-  if (input.social)
-    return [
-      festivals,
-      { key: 'followers', n: input.followers ?? 0, label: 'Followers', a11y: input.followers === undefined ? 'Followers' : plural(input.followers, 'follower', 'followers') },
-      { key: 'following', n: input.following, label: 'Following', a11y: `${input.following} following` },
-    ];
+export function profileStats(input: {
+  social: boolean;
+  festivals: number;
+  followers?: number;
+  following: number;
+  artists: number;
+  moments: number;
+  badges: number;
+}): ProfileStat[] {
+  const mine: ProfileStat[] = [
+    { key: 'festivals', n: input.festivals, label: 'Festivals', a11y: plural(input.festivals, 'festival', 'festivals') },
+    { key: 'artists', n: input.artists, label: 'Artists', a11y: plural(input.artists, 'artist rated', 'artists rated') },
+    { key: 'moments', n: input.moments, label: 'Moments', a11y: plural(input.moments, 'moment', 'moments') },
+    { key: 'badges', n: input.badges, label: 'Badges', a11y: plural(input.badges, 'badge', 'badges') },
+  ];
+  if (!input.social) return mine;
   return [
-    festivals,
-    { key: 'rated', n: input.rated, label: 'Rated', a11y: plural(input.rated, 'artist rated', 'artists rated') },
-    { key: 'kept', n: input.kept, label: 'Kept', a11y: plural(input.kept, 'clip kept', 'clips kept') },
+    { key: 'followers', n: input.followers ?? 0, label: 'Followers', a11y: input.followers === undefined ? 'Followers' : plural(input.followers, 'follower', 'followers') },
+    { key: 'following', n: input.following, label: 'Following', a11y: `${input.following} following` },
+    ...mine,
   ];
 }
 

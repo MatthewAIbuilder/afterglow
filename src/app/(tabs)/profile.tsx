@@ -19,7 +19,18 @@ import { groupFestivals } from '../../features/festivals/going';
 import { countdown } from '../../features/festivals/when';
 import { Highlights } from '../../features/profile/Highlights';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
-import { FestivalsTab, SavedTab, VideosTab } from '../../features/profile/ProfileTabsContent';
+import { CrewsList, SavedTab, VideosTab } from '../../features/profile/ProfileTabsContent';
+import { currentlyFeeling, favouriteArtists, ORBIT_MAX } from '../../features/profile/identity';
+import { milestones } from '../../features/profile/milestones';
+import { MilestonesSection } from '../../features/profile/Milestones';
+import { citiesOf, passport as makePassport } from '../../features/profile/passport';
+import { PassportTab } from '../../features/profile/PassportTab';
+import { YourArtistsRow } from '../../features/profile/YourArtistsRow';
+import { useStanding } from '../../features/standing/useStanding';
+import { isWarm } from '../../features/taste/ratings';
+import { useNow } from '../../lib/useNow';
+import { useLoves } from '../../state/useLoves';
+import { useSeen } from '../../state/seen';
 import { type Highlight, profileHighlights, profileStats, videoGrid } from '../../features/profile/profileView';
 import { useRecapFestivals, useYear } from '../../features/recap/useRecap';
 import { tasteMix } from '../../features/taste/lean';
@@ -97,6 +108,47 @@ function FullProfile() {
   const { badges } = useBadges(me?.uid);
   const collect = useMemo(() => toCollect(festivals.map((g) => g.festival), badges, today), [festivals, badges, today]);
   const recaps = useRecapFestivals();
+
+  // Who drifts round your photo and fills Your artists: the artists you love, like and follow.
+  const favourites = useMemo(
+    () => favouriteArtists({ artists: catalog.artists, taste, informed, ratings, followed }),
+    [catalog.artists, taste, informed, ratings, followed],
+  );
+  // The sound you've been feeling this week, from clips you enjoyed lately.
+  const { seen } = useSeen();
+  const now = useNow();
+  const nowMs = now.getTime();
+  const feeling = useMemo(
+    () => currentlyFeeling({ seen, reactions, artistOfClip: (id) => catalog.artist(pool.find(id)?.artistId ?? ''), now: nowMs }),
+    [seen, reactions, catalog, pool, nowMs],
+  );
+
+  // Your festival passport: planning and been there.
+  const loves = useLoves();
+  const mySet = useMemo(
+    () =>
+      makePassport({ festivals: catalog.festivals.map(forYou), going, memories, badges: badges.map((b) => b.festivalId), loves, today }),
+    [catalog.festivals, forYou, going, memories, badges, loves, today],
+  );
+  // Milestones, worked out on the phone.
+  const standing = useStanding(me?.uid);
+  const marks = useMemo(
+    () =>
+      milestones({
+        been: mySet.been.length,
+        cities: citiesOf([...mySet.been, ...mySet.planning]),
+        moments: memories.length,
+        kept,
+        rated: Object.keys(ratings).length,
+        bass: Object.entries(ratings).filter(([id, r]) => {
+          const a = isWarm(r) ? catalog.artist(id) : undefined;
+          return !!a && (a.sound.dubstep ?? 0) + (a.sound.riddim ?? 0) >= 0.5;
+        }).length,
+        founder: standing?.founder,
+      }),
+    [mySet, memories.length, kept, ratings, catalog, standing?.founder],
+  );
+  const earnedMarks = marks.filter((m) => m.earned).length;
   const year = today.getFullYear();
   const yearCard = useYear(year);
   const highlights = profileHighlights({
@@ -124,11 +176,12 @@ function FullProfile() {
 
   const stats = profileStats({
     social: !!me,
-    festivals: festivals.length,
+    festivals: mySet.been.length + mySet.planning.length,
     followers: followers?.uid === me?.uid ? followers?.n : undefined,
     following: social.following.size,
-    rated: Object.keys(ratings).length,
-    kept,
+    artists: Object.keys(ratings).length,
+    moments: memories.length,
+    badges: badges.length + earnedMarks,
   });
 
   const openHighlight = (h: Highlight) => {
@@ -162,10 +215,16 @@ function FullProfile() {
           stats={stats}
           onStat={(key) => {
             if (key === 'festivals') setTab('festivals');
+            else if (key === 'moments') setTab('videos');
+            else if (key === 'badges') setTab('badges');
+            else if (key === 'artists') router.push('/your-artists');
             else if (me) router.push({ pathname: '/follows/[handle]', params: { handle: me.handle, list: key } });
           }}
           sounds={sounds}
           onSounds={() => router.push('/your-sound')}
+          orbit={favourites.slice(0, ORBIT_MAX)}
+          onOrbit={() => router.navigate('/sound')}
+          feeling={feeling?.tag}
         >
           {me ? (
             <>
@@ -177,6 +236,8 @@ function FullProfile() {
           ) : null}
         </ProfileHeader>
 
+        <YourArtistsRow favourites={favourites} />
+
         <Highlights items={highlights} onOpen={openHighlight} />
 
         <View style={styles.tabs}>
@@ -184,9 +245,9 @@ function FullProfile() {
             value={tab}
             onChange={setTab}
             items={[
-              { key: 'videos', label: 'Videos', count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
-              { key: 'badges', label: 'Badges', count: badges.length, icon: (c) => <PinIcon color={c} size={17} /> },
-              { key: 'festivals', label: 'Festivals', count: festivals.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
+              { key: 'videos', label: 'Moments', count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
+              { key: 'badges', label: 'Badges', count: badges.length + earnedMarks, icon: (c) => <PinIcon color={c} size={17} /> },
+              { key: 'festivals', label: 'Festivals', count: mySet.been.length + mySet.planning.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
               { key: 'saved', label: 'Saved', count: kept, icon: (c) => <BookmarkIcon color={c} size={16} /> },
             ]}
           />
@@ -195,14 +256,24 @@ function FullProfile() {
         {tab === 'videos' ? (
           <VideosTab memories={videos} width={width} uriOf={uriOf} lookup={catalog} />
         ) : tab === 'badges' ? (
-          <BadgesGrid badges={badges} toCollect={collect} festivalOf={catalog.festival} uid={me?.uid} width={width} mine />
+          <>
+            <MilestonesSection list={marks} />
+            <Text style={styles.pinsHead}>Festival pins</Text>
+            <BadgesGrid badges={badges} toCollect={collect} festivalOf={catalog.festival} uid={me?.uid} width={width} mine />
+          </>
         ) : tab === 'festivals' ? (
-          <FestivalsTab
-            going={festivals}
+          <PassportTab
+            passport={mySet}
+            artistOf={catalog.artist}
+            loves={loves}
             recapIds={new Set(recaps.map((f) => f.id))}
-            crews={social.user ? crews.map((c) => ({ id: c.id, name: c.name, festival: catalog.festival(c.festivalId)?.name, people: c.members.length })) : []}
+            today={today}
             onFind={() => router.navigate('/festivals')}
-          />
+          >
+            <CrewsList
+              crews={social.user ? crews.map((c) => ({ id: c.id, name: c.name, festival: catalog.festival(c.festivalId)?.name, people: c.members.length })) : []}
+            />
+          </PassportTab>
         ) : (
           <SavedTab clips={[...mine.saved, ...mine.liked].slice(0, 12)} clipCount={kept} followedCount={followedCount} artistOf={catalog.artist} width={width} />
         )}
@@ -234,4 +305,5 @@ const styles = StyleSheet.create({
   handle: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
   icon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   tabs: { marginTop: space.xl },
+  pinsHead: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xl, marginHorizontal: space.lg },
 });

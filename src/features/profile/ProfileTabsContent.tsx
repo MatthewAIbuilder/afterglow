@@ -12,6 +12,7 @@ import { HeartIcon, PlayIcon } from '../discover/icons';
 import { posterUrl } from '../discover/youtube';
 import type { Memory } from '../memories/models';
 import { clipLength, memoryLine } from '../memories/organize';
+import { festivalMark } from './profileView';
 
 const GAP = 2;
 const COLUMNS = 3;
@@ -30,7 +31,7 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
         <View style={styles.emptyIcon}>
           <CameraIcon color={color.moon} size={26} />
         </View>
-        <Text style={styles.emptyTitle}>Your festival videos</Text>
+        <Text style={styles.emptyTitle}>Your festival moments</Text>
         <Text style={styles.emptyBody}>
           {canFilm
             ? 'Film a set, tag who was playing, and share it to Discover if you like.'
@@ -87,6 +88,8 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
           const untagged = !m.festivalId && !m.artistId;
           const [from, to] = artistColors(m.artistId ?? m.id);
           const length = clipLength(m.durationSec);
+          const artist = m.artistId ? lookup.artist(m.artistId)?.name : undefined;
+          const where = [m.festivalId ? festivalMark(lookup.festival(m.festivalId)?.name ?? '') : undefined, m.night].filter(Boolean).join(' · ');
           return (
             <Pressable
               key={m.id}
@@ -104,8 +107,22 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
               <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(3,2,10,0.65)']} style={styles.scrim} pointerEvents="none" />
               {length ? (
                 <View style={styles.length}>
-                  <PlayIcon color={color.moon} size={9} />
+                  <PlayIcon color={color.moon} size={8} />
                   <Text style={styles.lengthText}>{length}</Text>
+                </View>
+              ) : null}
+              {artist || where ? (
+                <View style={styles.momentLabel} pointerEvents="none">
+                  {artist ? (
+                    <Text style={styles.momentArtist} numberOfLines={1}>
+                      {artist}
+                    </Text>
+                  ) : null}
+                  {where ? (
+                    <Text style={styles.momentWhere} numberOfLines={1}>
+                      {where}
+                    </Text>
+                  ) : null}
                 </View>
               ) : null}
               {m.sharedId ? <View style={styles.sharedDot} /> : null}
@@ -122,58 +139,14 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
   );
 }
 
-export type FestivalLine = { festival: Festival; detail: string; over: boolean };
 export type CrewLine = { id: string; name: string; festival?: string; people: number };
 
-/** Festivals: where you're going, where you've been (with recaps), your crews. */
-export function FestivalsTab({ going, crews, recapIds, onFind }: { going: FestivalLine[]; crews: CrewLine[]; recapIds: ReadonlySet<string>; onFind: () => void }) {
-  const ahead = going.filter((g) => !g.over);
-  const been = going.filter((g) => g.over);
-  if (!going.length && !crews.length) {
-    return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>Where are you going?</Text>
-        <Text style={styles.emptyBody}>Tap I’m going on a festival to plan it here, with a countdown and your sets.</Text>
-        <Pressable
-          onPress={() => {
-            haptic.tap();
-            onFind();
-          }}
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.emptyButton, pressed && { opacity: 0.8 }]}
-        >
-          <Text style={styles.emptyButtonText}>Find festivals</Text>
-        </Pressable>
-      </View>
-    );
-  }
+/** Your crews, under the festival passport. */
+export function CrewsList({ crews }: { crews: CrewLine[] }) {
+  if (!crews.length) return null;
   return (
-    <View style={styles.list}>
-      {ahead.length ? <Text style={styles.listHead}>Going</Text> : null}
-      {ahead.map((g) => (
-        <Row
-          key={g.festival.id}
-          title={g.festival.name}
-          detail={g.detail}
-          glow
-          label={`${g.festival.name}, ${g.detail}`}
-          onPress={() => router.push(`/festival/${g.festival.id}`)}
-        />
-      ))}
-      {been.length ? <Text style={styles.listHead}>Been there</Text> : null}
-      {been.map((g) => {
-        const recap = recapIds.has(g.festival.id);
-        return (
-          <Row
-            key={g.festival.id}
-            title={g.festival.name}
-            detail={recap ? `${g.festival.dates} · Recap ready` : g.festival.dates}
-            label={recap ? `Your recap of ${g.festival.name}` : `${g.festival.name}, ${g.detail}`}
-            onPress={() => (recap ? router.push({ pathname: '/recap/[id]', params: { id: g.festival.id } }) : router.push(`/festival/${g.festival.id}`))}
-          />
-        );
-      })}
-      {crews.length ? <Text style={styles.listHead}>Crews</Text> : null}
+    <View style={[styles.list, { marginTop: space.lg }]}>
+      <Text style={styles.listHead}>Crews</Text>
       {crews.map((c) => (
         <Row
           key={c.id}
@@ -268,10 +241,13 @@ function Row({ title, detail, label, onPress, glow, icon }: { title: string; det
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
   tile: { overflow: 'hidden', backgroundColor: color.nightRaised },
-  scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '35%' },
-  length: { position: 'absolute', left: space.sm, bottom: space.sm, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
+  length: { position: 'absolute', right: space.sm, top: space.sm, flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, backgroundColor: 'rgba(3,2,10,0.55)' },
+  momentLabel: { position: 'absolute', left: space.sm, right: space.sm, bottom: space.sm },
+  momentArtist: { ...type.caption, color: color.moon, fontWeight: '700' },
+  momentWhere: { ...type.caption, fontSize: 11, color: color.moonDim },
   lengthText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
-  sharedDot: { position: 'absolute', right: space.sm, top: space.sm, width: 7, height: 7, borderRadius: 4, backgroundColor: color.glow },
+  sharedDot: { position: 'absolute', left: space.sm, top: space.sm + 2, width: 7, height: 7, borderRadius: 4, backgroundColor: color.glow },
   tag: { position: 'absolute', left: space.sm, top: space.sm, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.85)' },
   tagText: { ...type.caption, color: color.moon },
   newTile: { alignItems: 'center', justifyContent: 'center', gap: space.xs, backgroundColor: color.glass },

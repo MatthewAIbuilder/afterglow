@@ -16,6 +16,7 @@ import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
 import { MeetSpotCard } from '../crews/MeetSpotCard';
 import { FriendAddsList } from './FriendAddsList';
 import { InviteCard } from './InviteCard';
+import { FriendsActivity } from './FriendsActivity';
 import { accountsOff } from '../social/unavailable';
 import { firstName } from '../../features/crews/together';
 import { clock, updatePlace } from '../../features/crews/updates';
@@ -164,6 +165,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
               ) : null}
             </View>
             <FriendAddsList />
+            <FriendsActivity />
 
             {festival && here.length ? (
               <Section title={`At ${festival.name}`}>

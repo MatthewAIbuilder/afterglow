@@ -7,14 +7,17 @@ const fest = (id: string, name: string): Festival => ({ id, name, dates: '', loc
 const memory = (id: string, capturedAt: string, addedAt = capturedAt): Memory => ({ id, file: `${id}.mov`, capturedAt, addedAt });
 
 describe('profile view', () => {
-  it('counts festivals, followers and following with a profile; festivals, ratings and clips without', () => {
-    expect(profileStats({ social: true, festivals: 2, followers: 1, following: 12, rated: 5, kept: 3 }).map((s) => [s.label, s.n, s.a11y])).toEqual([
-      ['Festivals', 2, '2 festivals'],
+  it('counts followers and following with a profile, then festivals, artists, moments and badges for everyone', () => {
+    expect(profileStats({ social: true, festivals: 2, followers: 1, following: 12, artists: 5, moments: 3, badges: 1 }).map((s) => [s.label, s.n, s.a11y])).toEqual([
       ['Followers', 1, '1 follower'],
       ['Following', 12, '12 following'],
+      ['Festivals', 2, '2 festivals'],
+      ['Artists', 5, '5 artists rated'],
+      ['Moments', 3, '3 moments'],
+      ['Badges', 1, '1 badge'],
     ]);
-    expect(profileStats({ social: true, festivals: 1, following: 0, rated: 0, kept: 0 })[1].a11y).toBe('Followers');
-    expect(profileStats({ social: false, festivals: 1, following: 0, rated: 1, kept: 4 }).map((s) => s.a11y)).toEqual(['1 festival', '1 artist rated', '4 clips kept']);
+    expect(profileStats({ social: true, festivals: 1, following: 0, artists: 0, moments: 0, badges: 0 })[0].a11y).toBe('Followers');
+    expect(profileStats({ social: false, festivals: 1, following: 0, artists: 1, moments: 4, badges: 0 }).map((s) => s.a11y)).toEqual(['1 festival', '1 artist rated', '4 moments', '0 badges']);
   });
 
   it('keeps big counts short', () => {
