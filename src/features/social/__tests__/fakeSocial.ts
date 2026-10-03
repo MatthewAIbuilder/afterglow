@@ -702,6 +702,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       dropChat(id, uid);
       const next = { ...c, members: c.members.filter((m) => m !== uid) };
       crews.set(id, next);
+      // A new invite link: the old one stops working.
+      if (crewCodes.has(id)) crewCodes.set(id, `code${id.replace(/[^A-Za-z0-9]/g, '')}${++n}renewed1`);
+      agreed.delete(`${id}/${uid}`);
       return next;
     },
     async setCrewPicks(id, artists) {

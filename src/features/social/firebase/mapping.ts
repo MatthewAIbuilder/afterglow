@@ -111,6 +111,16 @@ export function crewInviteFromDoc(id: string, d: unknown): CrewInvite | null {
   return { id, crewId, festivalId, crewName: (str(o.crewName) ?? '').slice(0, 40), from, to, at: timeOf(o.createdAt) ?? new Date().toISOString() };
 }
 
+/**
+ * A profile as its Firestore fields: usernames as their own fields
+ * (instagram, snapchat, tiktok; the rules list no `socials`), no uid, the
+ * lowercase name for search, and photo links only when set.
+ */
+export function profileFields(p: Profile): Record<string, unknown> {
+  const { uid: _uid, avatarUrl, coverUrl, socials, ...fields } = p;
+  return { ...fields, ...(socials ?? {}), nameLower: p.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) };
+}
+
 /** A sprout document. */
 export function sproutFromDoc(id: string, d: unknown): Sprout | null {
   if (!d || typeof d !== 'object') return null;

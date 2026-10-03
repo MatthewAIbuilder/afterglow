@@ -60,6 +60,8 @@ export function readSocial(key: SocialKey, raw: string): string {
   const link = s.match(/^(?:https?:\/\/)?([^/\s]+)\/(.*)$/i);
   if (link && spec.hosts.includes(link[1].toLowerCase())) {
     const parts = link[2].split(/[?#]/)[0].split('/').filter(Boolean);
+    // A link to a post, reel or story isn't a profile: there's no username in it to take.
+    if (key === 'instagram' && ['p', 'reel', 'reels', 'stories', 'tv', 'explore'].includes(parts[0]?.toLowerCase() ?? '')) return '';
     // snapchat.com/add/<name>; the others put the name first (TikTok with an @).
     s = (key === 'snapchat' && parts[0]?.toLowerCase() === 'add' ? parts[1] : parts[0]) ?? '';
   }

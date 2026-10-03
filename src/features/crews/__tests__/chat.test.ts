@@ -60,13 +60,19 @@ describe('crew chat', () => {
   it('the chat reads in the order things were written, yours waiting included, never blocked people', () => {
     const sent = [msg('m2', 'sam', T(22, 10)), msg('m1', 'maya', T(22), T(22, 30)), msg('m3', 'bad', T(22, 1))];
     const lines = chatLines(sent, [out('m4', T(22, 5)), out('m2', T(22, 10))], 'c1', 'me', ['bad'], T(22, 40));
+    // m2 shows in the phone's copy of the chat, but Afterglow hasn't confirmed it yet: still waiting.
     expect(lines.map((l) => [l.id, l.status])).toEqual([
       ['m1', 'sent'],
       ['m4', 'waiting'],
-      ['m2', 'sent'],
+      ['m2', 'waiting'],
     ]);
     expect(arrivedLate(lines[0])).toBe(true);
-    expect(arrivedLate(lines[2])).toBe(false);
+    expect(chatLines(sent, [], 'c1', 'me', [], T(22, 40)).find((l) => l.id === 'm2')?.status).toBe('sent');
+  });
+
+  it('another account’s waiting messages on this phone are never shown as yours', () => {
+    const lines = chatLines([], [{ ...out('m9', T(22, 5)), uid: 'someone-else' }, { ...out('m8', T(22, 6)), uid: 'me' }], 'c1', 'me', [], T(22, 40));
+    expect(lines.map((l) => l.id)).toEqual(['m8']);
   });
 
   it('counts new messages from others since you last read it', () => {

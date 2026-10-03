@@ -1,3 +1,4 @@
+import { profileFields, profileFromDoc } from '../firebase/mapping';
 import { describe, expect, it } from '@jest/globals';
 import { cleanSocials, readSocial, socialA11y, socialProblem, socialUrl } from '../socials';
 import { cleanProfileInput, profileProblems } from '../validate';
@@ -40,5 +41,38 @@ describe('socials on profiles', () => {
     expect(profileProblems({ ...base, socials: { instagram: 'maya..x', snapchat: '', tiktok: '' } }).instagram).toBeDefined();
     expect(profileProblems({ ...base, socials: { instagram: '@maya', snapchat: '', tiktok: '' } })).toEqual({});
     expect(cleanProfileInput({ ...base, socials: { instagram: '@Maya', snapchat: '', tiktok: '' } }).socials).toEqual({ instagram: 'maya' });
+  });
+});
+
+describe('pasted links that aren’t profiles', () => {
+  it('a link to an Instagram post or reel gives no username', () => {
+    expect(readSocial('instagram', 'https://www.instagram.com/p/C1x2y3/')).toBe('');
+    expect(readSocial('instagram', 'instagram.com/reel/abc')).toBe('');
+    expect(readSocial('instagram', 'instagram.com/maya.chen/')).toBe('maya.chen');
+  });
+});
+
+describe('profile fields', () => {
+  it('stores usernames as their own fields (never a socials object), so the rules accept every profile write', () => {
+    const f = profileFields({
+      uid: 'u1',
+      handle: 'maya',
+      displayName: 'Maya Chen',
+      bio: '',
+      festivals: [],
+      sounds: [],
+      showFestivals: false,
+      showSound: false,
+      socials: { instagram: 'maya.chen', tiktok: 'maya' },
+      avatarUrl: 'https://x/a.jpg',
+      createdAt: 'a',
+      updatedAt: 'b',
+    });
+    expect(f).not.toHaveProperty('socials');
+    expect(f).not.toHaveProperty('uid');
+    expect(f).not.toHaveProperty('coverUrl');
+    expect(f).toMatchObject({ instagram: 'maya.chen', tiktok: 'maya', nameLower: 'maya chen', avatarUrl: 'https://x/a.jpg' });
+    // Read back, it's the same profile.
+    expect(profileFromDoc('u1', f)?.socials).toEqual({ instagram: 'maya.chen', tiktok: 'maya' });
   });
 });

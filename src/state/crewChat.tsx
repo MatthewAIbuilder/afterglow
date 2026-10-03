@@ -79,6 +79,8 @@ export type Delivery = { crewId: string; count: number; heldMs: number; at: numb
 
 export const CHAT_OUTBOX_KEY = 'crewChatOutbox.v1';
 export const CHAT_READ_KEY = 'crewChatRead.v1';
+/** Read times are kept per account: `uid/crewId`. */
+const readKey = (uid: string, crewId: string) => `${uid}/${crewId}`;
 
 const CrewChatContext = createContext<Ctx | null>(null);
 
@@ -102,10 +104,13 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       .then(([o, r]) => {
         if (!alive) return;
         try {
-          setOutbox(cleanChatOutbox(o ? JSON.parse(o) : []));
+          // Anything written while this loaded is kept too.
+          const stored = cleanChatOutbox(o ? JSON.parse(o) : []);
+          setOutbox((cur) => [...stored.filter((x) => !cur.some((c) => c.id === x.id)), ...cur]);
         } catch {}
         try {
-          setRead(cleanChatRead(r ? JSON.parse(r) : {}));
+          const stored = cleanChatRead(r ? JSON.parse(r) : {});
+          setRead((cur) => ({ ...stored, ...cur }));
         } catch {}
       })
       .finally(() => alive && setHydrated(true));
@@ -133,7 +138,8 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
         crewId,
         CHAT_WATCH,
         (messages) => setSent((s) => ({ uid, byCrew: { ...(s.uid === uid ? s.byCrew : {}), [crewId]: messages } })),
-        () => {},
+        // Refused (old rules, or no longer in the crew): show what there is rather than loading forever.
+        () => setSent((s) => ({ uid, byCrew: { ...(s.uid === uid ? s.byCrew : {}), [crewId]: (s.uid === uid ? s.byCrew[crewId] : undefined) ?? [] } })),
       ),
     );
     return () => stops.forEach((stop) => stop());
@@ -158,6 +164,10 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
     }
   }, [ready, service]);
   const byCrew = useMemo<Record<string, CrewMessage[]>>(() => (sent.uid === uid ? sent.byCrew : {}), [sent, uid]);
+  // Another account signing in starts with no read receipts or delivery notes of the last one's.
+  useEffect(() => {
+    receiptsDue.current.clear();
+  }, [uid]);
 
   // --- Sending: each crew's waiting messages in one small write, oldest crew first.
   const sending = useRef(false);
@@ -167,7 +177,8 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
   const openChat = useRef<string | undefined>(undefined);
   const flush = useCallback(async () => {
     if (!ready || sending.current) return;
-    const due = dueMessages(outbox, Date.now()).filter((o) => crews.some((c) => c.id === o.crewId));
+    // Only this account's (switching accounts never sends one account's words as another).
+    const due = dueMessages(outbox, Date.now()).filter((o) => (!o.uid || o.uid === uid) && crews.some((c) => c.id === o.crewId));
     if (!due.length) return;
     sending.current = true;
     try {
@@ -186,8 +197,8 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
             if (heldMs >= CHAT_LATE_MS && openChat.current !== crewId)
               void notifyNow(`chat-sent:${crewId}:${at}`, 'Your messages got through', deliveryLine(held.length, heldMs), `/crew-chat/${crewId}`);
           }
-          // Any the crew refused count towards giving up on them.
-          for (const o of items) if (!done.has(o.id)) setOutbox((box) => messageFailed(box, o.id, Date.now(), true));
+          // Any left over (sent with ones already there) try again on the usual wait.
+          for (const o of items) if (!done.has(o.id)) setOutbox((box) => messageFailed(box, o.id, Date.now(), false));
         } catch (e) {
           const kind = socialErrorKind(e);
           const noSignal = kind === 'network' || kind === 'unavailable';
@@ -200,7 +211,7 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       sending.current = false;
       setTick((t) => t + 1);
     }
-  }, [ready, outbox, crews, service]);
+  }, [ready, outbox, crews, service, uid]);
 
   useEffect(() => {
     if (online) void flush();
@@ -228,9 +239,9 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       const text = cleanMessage(raw);
       if (!text || !uid) return false;
       const now = Date.now();
-      setOutbox((o) => queueMessage(o, { id: messageId(now), crewId, text, at: new Date(now).toISOString(), tries: 0 }));
+      setOutbox((o) => queueMessage(o, { id: messageId(now), crewId, text, at: new Date(now).toISOString(), tries: 0, uid }));
       // Reading your own words counts as having read the chat.
-      setRead((r) => ({ ...r, [crewId]: now }));
+      setRead((r) => ({ ...r, [readKey(uid, crewId)]: now }));
       bumpQuestEvent('chat');
       return true;
     },
@@ -258,18 +269,21 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
   }, []);
   const markRead = useCallback(
     (crewId: string) => {
-      setRead((r) => ({ ...r, [crewId]: Date.now() }));
+      if (!uid) return;
+      // The phone's clock may be behind the server's: never mark read before the newest message there.
+      const newest = Math.max(0, ...(byCrew[crewId] ?? []).map((m) => Date.parse(m.sentAt)).filter(Number.isFinite));
+      setRead((r) => ({ ...r, [readKey(uid, crewId)]: Math.max(Date.now(), newest) }));
       receiptsDue.current.add(crewId);
       sendReceipts();
     },
-    [sendReceipts],
+    [sendReceipts, uid, byCrew],
   );
 
   const clock = useNow();
   const now = clock.getTime();
 
   const value = useMemo<Ctx>(() => {
-    const unreadFor = (crewId: string) => unreadCount(byCrew[crewId] ?? [], read[crewId], uid, blocked);
+    const unreadFor = (crewId: string) => unreadCount(byCrew[crewId] ?? [], uid ? read[readKey(uid, crewId)] : undefined, uid, blocked);
     return {
       ready,
       canChat: ready && crews.length > 0,
@@ -286,7 +300,7 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       markRead,
       readsFor: (crewId) => readsByCrew[crewId] ?? {},
       loaded: (crewId) => crewId in byCrew,
-      waitingFor: (crewId) => outbox.filter((o) => o.crewId === crewId),
+      waitingFor: (crewId) => outbox.filter((o) => o.crewId === crewId && (!o.uid || o.uid === uid)),
       deliveryFor: (crewId) => deliveries.find((d) => d.crewId === crewId),
       dismissDelivery,
       setOpenChat,

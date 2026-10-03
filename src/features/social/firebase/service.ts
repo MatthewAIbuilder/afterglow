@@ -46,7 +46,7 @@ import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
-import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -313,9 +313,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             createdAt: current?.createdAt || at,
             updatedAt: at,
           };
-          const { uid: _uid, avatarUrl, coverUrl, socials: _s, ...fields } = next;
-          // Usernames are stored as their own fields (instagram, snapchat, tiktok).
-          tx.set(profileRef, { ...fields, ...(socials ?? {}), nameLower: next.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
+          tx.set(profileRef, profileFields(next));
           return next;
         });
       }),
@@ -330,8 +328,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
         if (!current) throw new SocialError('no-profile');
         const updatedAt = now();
-        const { uid: _uid, avatarUrl: _old, coverUrl, ...fields } = current;
-        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
+        await setDoc(profileRef, profileFields({ ...current, avatarUrl, updatedAt }));
         return { ...current, avatarUrl, updatedAt };
       }),
     setCover: (uri) =>
@@ -345,8 +342,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const current = profileFromDoc(user.uid, (await getDoc(profileRef)).data());
         if (!current) throw new SocialError('no-profile');
         const updatedAt = now();
-        const { uid: _uid, coverUrl: _old, avatarUrl, ...fields } = current;
-        await setDoc(profileRef, { ...fields, nameLower: current.displayName.toLowerCase(), updatedAt, ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) });
+        await setDoc(profileRef, profileFields({ ...current, coverUrl, updatedAt }));
         return { ...current, coverUrl, updatedAt };
       }),
     searchProfiles: (raw) =>
@@ -479,7 +475,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     artistMemories: (artistId, max) =>
       guard(async () => {
-        const snap = await getDocs(query(collection(fb().db, 'memories'), where('artistId', '==', artistId), orderBy('createdAt', 'desc'), limit(max))).catch(() => undefined);
+        const snap = await getDocs(query(collection(fb().db, 'memories'), where('artistId', '==', artistId), orderBy('createdAt', 'desc'), limit(max))).catch((e: unknown) => {
+          // A database without the index yet just has none to show; anything else (no signal) is an error, so it's tried again.
+          if ((e as { code?: string })?.code === 'failed-precondition') return undefined;
+          throw e;
+        });
         return (snap?.docs ?? []).map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
       }),
     recentMemories: (max) =>
@@ -1106,6 +1106,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await deleteDoc(doc(db, 'crews', id, 'picks', uid));
         const members = c.members.filter((m) => m !== uid);
         await updateDoc(crewRef, { members });
+        // The invite link they came in with stops working, so they can't come straight back.
+        await setDoc(doc(db, 'crews', id, 'meta', 'invite'), { code: doc(collection(db, 'crews')).id, by: me().uid, at: serverTimestamp() }).catch(() => {});
+        await deleteDoc(doc(db, 'crews', id, 'joins', uid)).catch(() => {});
         return { ...c, members };
       }),
     setCrewPicks: (id, artists) =>
@@ -1209,6 +1212,15 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const there = await Promise.all(ready.map(async (i) => ((await getDoc(doc(db, 'crews', crewId, 'chat', i.id))).exists() ? i.id : null)));
           const done = there.filter((x): x is string => !!x);
           if (!done.length) throw e;
+          // The rest were refused only because they came with those: send them on their own.
+          const rest = ready.filter((i) => !done.includes(i.id));
+          if (rest.length) {
+            const again = writeBatch(db);
+            for (const i of rest) again.set(doc(db, 'crews', crewId, 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
+            await withTimeout(again.commit(), CHAT_SEND_TIMEOUT_MS)
+              .then(() => done.push(...rest.map((i) => i.id)))
+              .catch(() => {});
+          }
           return done;
         }
       }),
