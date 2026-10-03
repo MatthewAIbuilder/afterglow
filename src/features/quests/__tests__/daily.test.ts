@@ -12,6 +12,7 @@ import {
   dayStart,
   levelOf,
   longestStreak,
+  glowShareText,
   added,
   picksFor,
   questDay,
@@ -181,5 +182,14 @@ describe('best streak', () => {
     expect(longestStreak(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-05', '2026-10-06'])).toBe(3);
     expect(longestStreak([])).toBe(0);
     expect(longestStreak(['2026-09-30', '2026-10-01'])).toBe(2);
+  });
+});
+
+describe('sharing your glow', () => {
+  it('says your level, and a streak worth mentioning', () => {
+    expect(glowShareText(4, 'Neon', 5, 'https://afterglowmusic.app')).toBe(
+      'I’m glow level 4, Neon, on Afterglow.\n5 days in a row of daily quests.\nFind your festival sound:\nhttps://afterglowmusic.app',
+    );
+    expect(glowShareText(1, 'Spark', 1, 'u')).toBe('I’m glow level 1, Spark, on Afterglow.\nFind your festival sound:\nu');
   });
 });

@@ -7,11 +7,13 @@ import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
 import { ChevronIcon } from '../components/TabIcons';
-import { ALL_DONE_BONUS, dayLetter, LEVELS, MILESTONE_GLOW, SIDE_QUEST_GLOW } from '../features/quests/daily';
+import { ALL_DONE_BONUS, dayLetter, glowShareText, LEVELS, MILESTONE_GLOW, SIDE_QUEST_GLOW } from '../features/quests/daily';
 import { FlameIcon, LaneIcon, QUEST_AMBER, QUEST_GOLD, QuestRing, SparkIcon } from '../features/quests/QuestRing';
 import { QUESTS } from '../features/quests/quests';
 import { type QuestRow, useDailyQuests, useQuestRoute } from '../features/quests/useDailyQuests';
 import { haptic } from '../lib/haptics';
+import { shareMessage } from '../lib/share';
+import { WEB_URL } from '../config/app';
 import { useQuests } from '../state/quests';
 import { revealSecret, useSecrets } from '../state/secrets';
 import { setQuestReminder, useQuestReminder } from '../state/questReminder';
@@ -177,7 +179,10 @@ export default function QuestsScreen() {
           </Text>
         </View>
       </ScrollView>
-      <PageActions />
+      <PageActions
+        shareLabel="Share your glow level"
+        onShare={() => void shareMessage(glowShareText(q.level.level, q.level.name, q.streak, WEB_URL))}
+      />
     </View>
   );
 }

@@ -388,6 +388,14 @@ export const SECRET_FIND_GLOW = 50;
 export const totalGlow = (book: Pick<QuestBook, 'glow'> | undefined, sideQuests: number, milestones: number, secrets = 0) =>
   (book?.glow ?? 0) + sideQuests * SIDE_QUEST_GLOW + milestones * MILESTONE_GLOW + secrets * SECRET_FIND_GLOW;
 
+/** What sharing your level says. */
+export function glowShareText(level: number, name: string, streak: number, url: string): string {
+  const lines = [`I’m glow level ${level}, ${name}, on Afterglow.`];
+  if (streak > 1) lines.push(`${streak} days in a row of daily quests.`);
+  lines.push('Find your festival sound:', url);
+  return lines.join('\n');
+}
+
 /** "New quests in 5 h" / "in 40 min". */
 export function turnsOverIn(now: number): string {
   const next = dayStart(shiftDay(questDay(now), -1));
