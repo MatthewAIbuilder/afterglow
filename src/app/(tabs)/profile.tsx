@@ -45,6 +45,7 @@ import { useReactions } from '../../state/reactions';
 import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
+import { useMemoryPicker } from '../../features/memories/useAddMemory';
 import { color, space, type } from '../../theme/tokens';
 
 /** How far the cover photo reaches below the safe area. */
@@ -120,6 +121,8 @@ function FullProfile() {
   );
   // Pins, side quests and milestones, with what's waiting to be claimed.
   const b = useProfileBadges();
+  // Add a festival you went to before: a video from your camera roll, tagged with it.
+  const pickPast = useMemoryPicker();
   const { earned } = b;
   const mySet = b.passport;
   const recaps = useRecapFestivals();
@@ -265,6 +268,8 @@ function FullProfile() {
             recapIds={new Set(recaps.map((f) => f.id))}
             today={today}
             onFind={() => router.navigate('/festivals')}
+            throwbacks={b.throwbacks}
+            onAddPast={() => void pickPast('library')}
           >
             <CrewsList
               crews={social.user ? crews.map((c) => ({ id: c.id, name: c.name, festival: catalog.festival(c.festivalId)?.name, people: c.members.length })) : []}

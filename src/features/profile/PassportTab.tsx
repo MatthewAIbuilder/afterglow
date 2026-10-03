@@ -7,7 +7,8 @@ import { MapIcon } from '../../components/TabIcons';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
-import { pinLook, townOf } from '../badges/badges';
+import { type ThrowbackBadge, pinLook, throwbackId, throwbackLine, throwbackLook, townOf } from '../badges/badges';
+import { pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
 import { coverPhotos } from '../festivals/cover';
 import { FestivalCover } from '../festivals/FestivalCover';
@@ -25,6 +26,10 @@ type Props = {
   onFind: () => void;
   /** Shown under the stamps (your crews). */
   children?: React.ReactNode;
+  /** Past festivals from your camera roll, under Been there. */
+  throwbacks?: readonly ThrowbackBadge[];
+  /** Add a video from a festival you went to before. */
+  onAddPast?: () => void;
 };
 
 type Side = 'planning' | 'been';
@@ -34,16 +39,22 @@ type Side = 'planning' | 'been';
  * one you've been to, with the headliners' faces behind, your pin (or the
  * pin still to collect), what you filmed there or how many acts you'd love.
  */
-export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind, children }: Props) {
-  const [side, setSide] = useState<Side>(passport.planning.length || !passport.been.length ? 'planning' : 'been');
+export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind, children, throwbacks = [], onAddPast }: Props) {
+  const beenCount = passport.been.length + throwbacks.length;
+  const [side, setSide] = useState<Side>(passport.planning.length || !beenCount ? 'planning' : 'been');
   const stamps = side === 'planning' ? passport.planning : passport.been;
-  const empty = !passport.planning.length && !passport.been.length;
+  const empty = !passport.planning.length && !beenCount;
   return (
     <View style={styles.root}>
       {empty ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>Your festival passport</Text>
           <Text style={styles.emptyBody}>Tap I’m going on a festival and it gets a page here. Film a set there and you collect its pin.</Text>
+          {onAddPast ? (
+            <Pressable onPress={onAddPast} accessibilityRole="button" hitSlop={6}>
+              <Text style={styles.addPastLink}>Add a festival you went to before</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => {
               haptic.tap();
@@ -60,15 +71,31 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
           <FilterChips
             chips={[
               { key: 'planning', label: 'Planning', count: passport.planning.length, accessibilityLabel: `Planning, ${passport.planning.length}` },
-              { key: 'been', label: 'Been there', count: passport.been.length, accessibilityLabel: `Been there, ${passport.been.length}` },
+              { key: 'been', label: 'Been there', count: beenCount, accessibilityLabel: `Been there, ${beenCount}` },
             ]}
             value={side}
             onChange={(k) => k && setSide(k as Side)}
           />
           <View style={styles.cards}>
-            {stamps.length ? (
-              stamps.map((s) => <PassportCard key={s.festival.id} stamp={s} planning={side === 'planning'} artistOf={artistOf} loves={loves} recap={recapIds.has(s.festival.id)} today={today} />)
-            ) : (
+            {stamps.map((s) => (
+              <PassportCard key={s.festival.id} stamp={s} planning={side === 'planning'} artistOf={artistOf} loves={loves} recap={recapIds.has(s.festival.id)} today={today} />
+            ))}
+            {side === 'been' ? throwbacks.map((t) => <ThrowbackCard key={t.key} badge={t} />) : null}
+            {side === 'been' && onAddPast ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  onAddPast();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Add a festival you went to before, with a video from your camera roll"
+                style={({ pressed }) => [styles.addPast, pressed && { opacity: 0.8 }]}
+              >
+                <Text style={styles.addPastTitle}>+ Add a past festival</Text>
+                <Text style={styles.addPastBody}>A video from your camera roll, tagged with the festival and year, earns a rose gold throwback badge.</Text>
+              </Pressable>
+            ) : null}
+            {stamps.length || (side === 'been' && (throwbacks.length || onAddPast)) ? null : (
               <Text style={styles.none}>
                 {side === 'been' ? 'Festivals you’ve been to collect here, with what you filmed.' : 'Tap I’m going on a festival to plan it here.'}
               </Text>
@@ -148,7 +175,53 @@ function PassportCard({ stamp, planning, artistOf, loves, recap, today }: { stam
   );
 }
 
+/** A festival from before Afterglow: its rose gold pin, name and year, and how many videos. */
+function ThrowbackCard({ badge }: { badge: ThrowbackBadge }) {
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        router.push({ pathname: '/badge/[id]', params: { id: throwbackId(badge.key) } });
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`${pastLabel(badge.past)}, a throwback. ${throwbackLine(badge)}. Opens its badge`}
+      style={({ pressed }) => [styles.throwback, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+    >
+      <EnamelPin look={throwbackLook(badge.past)} size={76} />
+      <View style={styles.throwbackText}>
+        <Text style={styles.throwbackKicker}>THROWBACK</Text>
+        <Text style={styles.throwbackName} numberOfLines={2}>
+          {pastLabel(badge.past)}
+        </Text>
+        <Text style={styles.throwbackSub} numberOfLines={1}>
+          {[badge.past.city, `${badge.videos} ${badge.videos === 1 ? 'moment' : 'moments'}`].filter(Boolean).join(' · ')}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+const ROSE = '#F2B8A6';
+
 const styles = StyleSheet.create({
+  throwback: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.md,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(242,184,166,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(242,184,166,0.32)',
+  },
+  throwbackText: { flex: 1, gap: 2 },
+  throwbackKicker: { ...type.caption, fontSize: 10, letterSpacing: 1.5, color: ROSE, fontWeight: '700' },
+  throwbackName: { ...type.headline, color: color.moon },
+  throwbackSub: { ...type.caption, color: color.moonDim },
+  addPast: { padding: space.lg, gap: space.xs, borderRadius: radius.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(242,184,166,0.5)' },
+  addPastTitle: { ...type.headline, color: ROSE },
+  addPastBody: { ...type.caption, color: color.moonDim },
+  addPastLink: { ...type.label, color: ROSE, marginTop: space.sm },
   mapLink: { flexDirection: 'row', alignItems: 'center', gap: space.sm, alignSelf: 'center', paddingVertical: space.md, paddingHorizontal: space.lg },
   mapLinkText: { ...type.label, color: color.glow },
   root: { paddingTop: space.md },

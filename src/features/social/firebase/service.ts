@@ -346,6 +346,15 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             ...(input.festivalId ? { festivalId: input.festivalId } : {}),
             ...(input.night ? { night: input.night } : {}),
             ...(input.artistId ? { artistId: input.artistId } : {}),
+            // A past festival: its name, year, town and the same festival on Afterglow, as plain fields.
+            ...(!input.festivalId && input.past
+              ? {
+                  pastName: input.past.name,
+                  pastYear: input.past.year,
+                  ...(input.past.city ? { pastCity: input.past.city } : {}),
+                  ...(input.past.seriesId ? { seriesId: input.past.seriesId } : {}),
+                }
+              : {}),
             capturedAt: input.capturedAt,
             ...(input.durationSec ? { durationSec: input.durationSec } : {}),
             ...(input.width && input.height ? { width: input.width, height: input.height } : {}),
@@ -389,8 +398,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     festivalMemories: (festivalId, max) =>
       guard(async () => {
-        const snap = await getDocs(query(collection(fb().db, 'memories'), where('festivalId', '==', festivalId), orderBy('createdAt', 'desc'), limit(max)));
-        return snap.docs.map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
+        const memories = collection(fb().db, 'memories');
+        const [here, before] = await Promise.all([
+          getDocs(query(memories, where('festivalId', '==', festivalId), orderBy('createdAt', 'desc'), limit(max))),
+          // Throwbacks from earlier years of the same festival; a database without that index yet just has none.
+          getDocs(query(memories, where('seriesId', '==', festivalId), orderBy('createdAt', 'desc'), limit(max))).catch(() => undefined),
+        ]);
+        return [...here.docs, ...(before?.docs ?? [])]
+          .map((d) => memoryFromDoc(d.id, d.data()))
+          .filter((m): m is NonNullable<typeof m> => !!m)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, max);
       }),
     recentMemories: (max) =>
       guard(async () => {

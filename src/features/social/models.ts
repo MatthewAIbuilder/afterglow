@@ -1,4 +1,5 @@
 import type { SoundTag } from '../../data/models';
+import type { PastEvent } from '../memories/past';
 
 /**
  * Social profiles: what other Afterglow people can see about you. Plain
@@ -51,6 +52,8 @@ export type SharedMemory = {
   festivalId?: string;
   night?: string;
   artistId?: string;
+  /** A festival from before Afterglow ("EDC Orlando 2024"): a throwback, from the camera roll. */
+  past?: PastEvent;
   capturedAt: string;
   durationSec?: number;
   /** The video's size, so upright clips get a tall player. */

@@ -2,6 +2,7 @@ import type { Festival } from '../../data/models';
 import { festivalMark } from '../profile/profileView';
 import type { SharedMemory } from '../social/models';
 import { runsOf } from '../festivals/when';
+import { type PastEvent, pastKey } from '../memories/past';
 
 /**
  * Festival badges, pure: a collectible enamel pin for every festival, earned
@@ -97,6 +98,8 @@ export type PinLook = {
   ribbon?: string;
   /** For screen readers and small places: "CC4". */
   mark: string;
+  /** A throwback (a past festival added from your camera roll): rose gold instead of gold, "THROWBACK" on the ribbon. */
+  finish?: 'throwback';
 };
 
 /** Which scene: the first theme whose words appear in the festival's name or place. */
@@ -253,4 +256,66 @@ export function pinAbout(festival: Pick<Festival, 'name'>, collected: boolean): 
   return collected
     ? `Earned by filming a set at ${festival.name}, on its dates. Every festival has its own pin, drawn from its name and where it is.`
     : `Film a set at ${festival.name}, on its dates, to collect its pin. Every festival has its own, drawn from its name and where it is.`;
+}
+
+/**
+ * Throwback badges: festivals from before Afterglow, added with a video from
+ * your camera roll and tagged with that festival and year. Same scene as the
+ * festival's own pin (from its name and town, or the same festival on
+ * Afterglow), in rose gold, with "THROWBACK · 2024" on the ribbon: the gold
+ * ones stay for filming there, on its dates.
+ */
+export type ThrowbackBadge = {
+  key: string;
+  past: PastEvent;
+  /** When the first video was filmed (ISO). */
+  earnedAt: string;
+  videos: number;
+  /** The first video's id (a memory on the phone, or a shared video). */
+  firstId: string;
+};
+
+export function throwbackBadges(videos: readonly { id: string; capturedAt: string; past?: PastEvent }[]): ThrowbackBadge[] {
+  const byKey = new Map<string, { past: PastEvent; list: { id: string; capturedAt: string }[] }>();
+  for (const v of videos) {
+    if (!v.past) continue;
+    const k = pastKey(v.past);
+    const entry = byKey.get(k) ?? { past: v.past, list: [] };
+    entry.list.push(v);
+    byKey.set(k, entry);
+  }
+  return [...byKey.entries()]
+    .map(([key, { past, list }]) => {
+      const first = [...list].sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))[0];
+      return { key, past, earnedAt: first.capturedAt, videos: list.length, firstId: first.id };
+    })
+    .sort((a, b) => b.past.year - a.past.year || b.earnedAt.localeCompare(a.earnedAt));
+}
+
+/** A throwback badge's page id: "past:edc-orlando-2024". */
+export const THROWBACK = 'past:';
+export const throwbackId = (key: string) => `${THROWBACK}${key}`;
+
+/** The words that go with a shared throwback. */
+export function throwbackShareText(p: PastEvent, link: string, mine: boolean, handle?: string): string {
+  const who = mine ? 'I was at' : handle ? `@${handle} was at` : 'Throwback to';
+  return `${who} ${p.name} ${p.year}. A throwback badge on Afterglow.\n${link}`;
+}
+
+/** A past festival as a pin's festival: the same festival on Afterglow keeps its scene and colours. */
+export const pastPinFestival = (p: PastEvent) => ({ id: p.seriesId ?? `past-${pastKey({ name: p.name, year: 0 })}`, name: p.name, location: p.city ?? '' });
+
+export function throwbackLook(p: PastEvent): PinLook {
+  return { ...pinLook(pastPinFestival(p)), ribbon: `THROWBACK · ${p.year}`, finish: 'throwback' };
+}
+
+/** "Filmed Jul 14, 2024 · 3 videos". */
+export function throwbackLine(b: ThrowbackBadge): string {
+  const when = new Date(b.earnedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return `Filmed ${when} · ${b.videos} ${b.videos === 1 ? 'video' : 'videos'}`;
+}
+
+/** What a throwback pin is, in a sentence. */
+export function throwbackAbout(p: PastEvent): string {
+  return `A throwback to ${p.name} ${p.year}, added from a video in your camera roll. Rose gold for the festivals you went to before Afterglow; gold ones are for filming there live.`;
 }

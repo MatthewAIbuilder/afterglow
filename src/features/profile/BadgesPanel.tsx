@@ -4,7 +4,8 @@ import { haptic } from '../../lib/haptics';
 import { GlowLevelCard } from '../quests/GlowLevelCard';
 import { useCatalog } from '../../state/catalog';
 import { color, space, type } from '../../theme/tokens';
-import { type Milestone, milestoneKey, pinKey } from './milestones';
+import { type Milestone, milestoneKey, pinKey, throwbackKey } from './milestones';
+import { useMemoryPicker } from '../memories/useAddMemory';
 import { MilestonesSection, NewTag } from './Milestones';
 import type { ProfileBadges } from './useProfileBadges';
 
@@ -37,6 +38,7 @@ export function ClaimBanner({ b }: { b: ProfileBadges }) {
  */
 export function BadgesPanel({ b, uid, width, questsFirst = false }: { b: ProfileBadges; uid?: string; width: number; questsFirst?: boolean }) {
   const catalog = useCatalog();
+  const pick = useMemoryPicker();
   const isNewMark = (id: Milestone['id']) => b.unclaimedKeys.includes(milestoneKey(id));
   const quests = (
     <View style={styles.section}>
@@ -64,6 +66,10 @@ export function BadgesPanel({ b, uid, width, questsFirst = false }: { b: Profile
         mine
         isNew={(id) => b.unclaimedKeys.includes(pinKey(id))}
         onClaim={(f) => b.setUnlock({ kind: 'pin', festival: f })}
+        throwbacks={b.throwbacks}
+        isNewThrowback={(key) => b.unclaimedKeys.includes(throwbackKey(key))}
+        onClaimThrowback={(past) => b.setUnlock({ kind: 'throwback', past })}
+        onAddPast={() => void pick('library')}
       />
       {questsFirst ? null : quests}
       <View style={styles.section}>

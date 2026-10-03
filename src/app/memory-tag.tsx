@@ -12,6 +12,8 @@ import { festivalsAround, isMany } from '../features/festivals/shelves';
 import { artistConfidence, festivalConfidence, guessArtists, guessFestivals, reasonLine, type ArtistGuess } from '../features/memories/guess';
 import type { MemoryTagInput } from '../features/memories/models';
 import { momentLine } from '../features/memories/organize';
+import { PastPicker } from '../features/memories/PastPicker';
+import { type PastEvent, pastLabel } from '../features/memories/past';
 import { festivalRoute } from '../features/plan/route';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
@@ -30,6 +32,8 @@ import { useSocial } from '../state/social';
 
 /** Guesses shown as big rows before "Someone else". */
 const TOP_GUESSES = 3;
+/** A video filmed longer ago than this, matching nothing on Afterglow, is probably from a past festival. */
+const OLD_VIDEO_MS = 30 * 24 * 3600_000;
 
 /**
  * Tagging a memory: who was playing, at which festival and night. Opens on
@@ -83,6 +87,11 @@ export default function MemoryTagScreen() {
   const festivalSure = festivalConfidence(topFestival) !== 'maybe';
 
   const [festivalId, setFestivalId] = useState<string | undefined>(() => existing?.festivalId ?? (festivalSure ? topFestival?.festival.id : undefined));
+  // A festival from before Afterglow (a video from your camera roll): its name and year instead of a festival on Afterglow.
+  const capturedAt = existing?.capturedAt ?? (whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs).toISOString() : new Date().toISOString());
+  const [past, setPast] = useState<PastEvent | undefined>(existing?.past);
+  // Filmed a while ago, at nothing on Afterglow: open on finding the past festival.
+  const [pickingPast, setPickingPast] = useState(() => !existing && !guesses.length && whenMs !== undefined && Date.now() - whenMs > OLD_VIDEO_MS);
   const festival = festivalId ? catalog.festival(festivalId) : undefined;
   const guessedHere = guesses.find((g) => g.festival.id === festivalId);
   const [night, setNight] = useState<string | undefined>(() => existing?.night ?? (festivalSure ? topFestival?.night : undefined));
@@ -90,6 +99,8 @@ export default function MemoryTagScreen() {
   const pickFestival = (f: Festival | undefined) => {
     haptic.select();
     setFestivalId(f?.id);
+    setPast(undefined);
+    setPickingPast(false);
     setNight(f ? guesses.find((g) => g.festival.id === f.id)?.night : undefined);
     setArtistId(undefined);
     setTouchedArtist(false);
@@ -114,7 +125,7 @@ export default function MemoryTagScreen() {
   const pool: Artist[] = festival ? artistGuesses.map((g) => g.artist) : catalog.artists;
   const found = query.trim() ? pool.filter((a) => matchesName(a.name, query)).slice(0, 20) : [];
 
-  const tag: MemoryTagInput = { festivalId, night: festivalId ? night : undefined, artistId: chosenArtist };
+  const tag: MemoryTagInput = { festivalId, night: festivalId ? night : undefined, past: festivalId ? undefined : past, artistId: chosenArtist };
 
   // Share to Discover: on by default once it's tagged and you have a profile; always your choice.
   const social = useSocial();
@@ -122,7 +133,7 @@ export default function MemoryTagScreen() {
     available: social.availability.ok,
     signedIn: !!social.user,
     hasProfile: !!social.profile,
-    tagged: !!tag.festivalId && !!tag.artistId,
+    tagged: (!!tag.festivalId || !!tag.past) && !!tag.artistId,
     alreadyShared: !!existing?.sharedId,
   });
   const [shareChoice, setShareChoice] = useState<boolean | undefined>();
@@ -235,10 +246,21 @@ export default function MemoryTagScreen() {
 
         <Text style={styles.section}>Festival</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {past ? <Chip label={pastLabel(past)} on onPress={() => setPickingPast((v) => !v)} /> : null}
           {[...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals].map((f) => (
             <Chip key={f.id} label={f.name} on={f.id === festivalId} onPress={() => pickFestival(f.id === festivalId ? undefined : f)} />
           ))}
-          <Chip label="Not at a festival" on={!festivalId} onPress={() => pickFestival(undefined)} />
+          {past ? null : (
+            <Chip
+              label="A past festival…"
+              on={pickingPast}
+              onPress={() => {
+                haptic.select();
+                setPickingPast((v) => !v);
+              }}
+            />
+          )}
+          <Chip label="Not at a festival" on={!festivalId && !past} onPress={() => pickFestival(undefined)} />
           {many && !searchingFestival ? (
             <Chip
               label="Another festival…"
@@ -254,6 +276,23 @@ export default function MemoryTagScreen() {
           <View style={styles.festivalSearch}>
             <SearchField value={festivalQuery} onChange={setFestivalQuery} placeholder="Find the festival" label="Find the festival" />
           </View>
+        ) : null}
+
+        {pickingPast || past ? (
+          <PastPicker
+            capturedAt={capturedAt}
+            city={city}
+            value={past}
+            searching={pickingPast}
+            onSearch={() => setPickingPast(true)}
+            onChange={(p) => {
+              haptic.select();
+              setPast(p);
+              setFestivalId(undefined);
+              setNight(undefined);
+              if (p) setPickingPast(false);
+            }}
+          />
         ) : null}
 
         {festival && festival.days.length > 1 ? (
@@ -378,7 +417,7 @@ export default function MemoryTagScreen() {
             <View style={styles.shareRow}>
               <View style={styles.shareText}>
                 <Text style={styles.shareTitle}>Share to Discover</Text>
-                <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name, on: shareOn })}</Text>
+                <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name ?? (past ? pastLabel(past) : undefined), on: shareOn })}</Text>
                 {offer === 'needs-account' || offer === 'needs-profile' ? (
                   <Pressable
                     onPress={() => {

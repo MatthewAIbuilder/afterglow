@@ -12,6 +12,8 @@ export type CrowdNight = { night: string; videos: SharedMemory[] };
 
 /** "Other nights" for videos tagged with no night (or one the festival doesn't have). */
 export const OTHER_NIGHT = 'Other nights';
+/** Throwbacks from an earlier year of the festival: "In 2024". */
+export const yearTitle = (year: number) => `In ${year}`;
 
 export function crowdVideos(memories: readonly SharedMemory[], { blocked = [], hidden = [] }: { blocked?: readonly string[]; hidden?: readonly string[] } = {}): SharedMemory[] {
   const seen = new Set<string>();
@@ -25,11 +27,14 @@ export function crowdVideos(memories: readonly SharedMemory[], { blocked = [], h
 export function crowdByNight(memories: readonly SharedMemory[], festival: Pick<Festival, 'days'>, artistId?: string): CrowdNight[] {
   const list = artistId ? memories.filter((m) => m.artistId === artistId) : memories;
   const nights = new Map<string, SharedMemory[]>();
+  const years = new Set<number>();
   for (const m of list) {
-    const night = m.night && festival.days.includes(m.night) ? m.night : OTHER_NIGHT;
+    // Throwbacks from earlier years of the festival go under their year.
+    if (m.past && !m.festivalId) years.add(m.past.year);
+    const night = m.past && !m.festivalId ? yearTitle(m.past.year) : m.night && festival.days.includes(m.night) ? m.night : OTHER_NIGHT;
     nights.set(night, [...(nights.get(night) ?? []), m]);
   }
-  const order = [...festival.days, OTHER_NIGHT];
+  const order = [...festival.days, OTHER_NIGHT, ...[...years].sort((a, b) => b - a).map(yearTitle)];
   return order
     .filter((n) => nights.has(n))
     .map((night) => ({ night, videos: [...nights.get(night)!].sort((a, b) => b.capturedAt.localeCompare(a.capturedAt)) }));
