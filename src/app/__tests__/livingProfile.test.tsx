@@ -58,4 +58,58 @@ describe('the living profile', () => {
     await fireEvent.press(app.getByLabelText('Been there, 0'));
     expect(app.getByText('Festivals you’ve been to collect here, with what you filmed.')).toBeTruthy();
   });
+
+  it('lists Moments, Festivals, Badges and Saved, festival pins before milestones, and each milestone says what it is', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ subtronics: 'love', levity: 'love' }));
+    const app = await renderApp('/profile');
+    await flush();
+    const labels = app.getAllByRole('tab').map((t) => (t.props.accessibilityLabel as string).split(',')[0]);
+    const first = labels.indexOf('Moments');
+    expect(labels.slice(first, first + 4)).toEqual(['Moments', 'Festivals', 'Badges', 'Saved']);
+    await showTab(app, 'Badges');
+    const pins = app.getByText('Festival pins');
+    const milestones = app.getByText(/^Milestones · /);
+    expect(pins).toBeTruthy();
+    expect(milestones).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Basshead. Love 10 dubstep or riddim artists, 2 of 10'));
+    await flush();
+    expect(app.getByText('For loving or liking 10 artists whose sound is mostly dubstep or riddim.')).toBeTruthy();
+    expect(app.getByText('Still to earn')).toBeTruthy();
+    await fireEvent.press(app.getByText('Done'));
+    await flush();
+    expect(app.queryByText('Still to earn')).toBeNull();
+  });
+
+  it('asks you to claim a badge you earned, with the unlock, and remembers it', async () => {
+    jest.setSystemTime(new Date(2027, 0, 10, 12));
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    const app = await renderApp('/profile');
+    await flush();
+    await fireEvent.press(app.getByLabelText('You unlocked a badge. Claim'));
+    await flush();
+    expect(app.getByText('Badge unlocked')).toBeTruthy();
+    expect(app.getByText('First festival')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Add First festival to your collection'));
+    await flush();
+    expect(JSON.parse((await AsyncStorage.getItem('badgeClaims.v1'))!)).toEqual(['ms:first-festival']);
+    expect(app.queryByLabelText(/^You unlocked/)).toBeNull();
+  });
+
+  it('tucks away Your artists and Your festivals, and keeps them hidden', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ subtronics: 'love' }));
+    const app = await renderApp('/profile');
+    await flush();
+    expect(app.getByLabelText(/^SUBTRONICS, you love them\./)).toBeTruthy();
+    expect(app.getByLabelText(/^Cyclops Cove 4, In /)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Hide your artists'));
+    await fireEvent.press(app.getByLabelText('Hide your festivals'));
+    await flush();
+    expect(app.queryByLabelText(/^SUBTRONICS, you love them\./)).toBeNull();
+    expect(app.queryByLabelText(/^Cyclops Cove 4, In /)).toBeNull();
+    expect(JSON.parse((await AsyncStorage.getItem('profileShelves.v1'))!)).toEqual(['artists', 'festivals']);
+    await fireEvent.press(app.getByLabelText('Show your artists'));
+    await flush();
+    expect(app.getByLabelText(/^SUBTRONICS, you love them\./)).toBeTruthy();
+  });
 });

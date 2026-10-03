@@ -94,11 +94,20 @@ describe('festival badges', () => {
     await flush();
     expect(app.getByText('1 badge collected')).toBeTruthy();
     expect(app.getByLabelText(/^Eternal NYE 2026 badge, not collected yet/)).toBeTruthy();
+    // New: the first tap claims it, with the unlock.
+    await fireEvent.press(app.getByLabelText('Cyclops Cove 4 badge, new. Tap to claim it'));
+    await flush();
+    expect(app.getByText('Badge unlocked')).toBeTruthy();
+    expect(app.getByText(/^Earned by filming a set at Cyclops Cove 4, on its dates\./)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Add Cyclops Cove 4 to your collection'));
+    await flush();
+    expect(JSON.parse((await AsyncStorage.getItem('badgeClaims.v1'))!)).toEqual(['pin:cyclops-cove-4']);
     await fireEvent.press(app.getByLabelText(/^Cyclops Cove 4 badge, collected\. 1 video filmed there/));
     await flush();
     expect(app.getByText('In your collection')).toBeTruthy();
     expect(app.getByText('Earned Dec 5, 2026 · 1 video')).toBeTruthy();
     expect(app.getByText('Watch the video')).toBeTruthy();
+    expect(app.getByText(/^Earned by filming a set at Cyclops Cove 4/)).toBeTruthy();
     await app.unmount();
 
     await s().signOut();

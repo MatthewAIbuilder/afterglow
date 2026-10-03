@@ -234,3 +234,10 @@ export function badgeShareText(festivalName: string, link: string, mine: boolean
   const who = mine ? 'I collected' : handle ? `@${handle} collected` : 'Collected:';
   return `${who} the ${festivalName} badge on Afterglow. Only people who filmed there get one.\n${link}`;
 }
+
+/** What a festival pin is, in a sentence. */
+export function pinAbout(festival: Pick<Festival, 'name'>, collected: boolean): string {
+  return collected
+    ? `Earned by filming a set at ${festival.name}, on its dates. Every festival has its own pin, drawn from its name and where it is.`
+    : `Film a set at ${festival.name}, on its dates, to collect its pin. Every festival has its own, drawn from its name and where it is.`;
+}

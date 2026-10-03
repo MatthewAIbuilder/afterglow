@@ -1,5 +1,7 @@
-import { useId } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useId, useState } from 'react';
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { haptic } from '../../lib/haptics';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { color, radius, space, type } from '../../theme/tokens';
 import { type Milestone, type MilestoneId, nextMilestone, progressLine } from './milestones';
@@ -18,6 +20,8 @@ const COLORS: Record<MilestoneId, [string, string]> = {
   og: ['#FFE38A', '#C9962B'],
 };
 const LOCKED: [string, string] = ['#4A4760', '#26243A'];
+/** A milestone's two colours, for its unlock. */
+export const medalColors = (id: MilestoneId): [string, string] => COLORS[id];
 
 /** The glyph in the middle of a medal, drawn on a 24-unit grid. */
 function Glyph({ id, stroke }: { id: MilestoneId; stroke: string }) {
@@ -129,15 +133,30 @@ export function Medal({ milestone, size = 64 }: { milestone: Milestone; size?: n
 
 /**
  * Milestones on your Badges tab: the one you're closest to as a card with
- * its progress, then every milestone in a row to swipe.
+ * its progress, then every milestone in a row to swipe. Each opens a short
+ * description; one you've earned but not claimed glows "New" and claims.
  */
-export function MilestonesSection({ list }: { list: Milestone[] }) {
+export function MilestonesSection({ list, isNew, onClaim }: { list: Milestone[]; isNew?: (m: Milestone) => boolean; onClaim?: (m: Milestone) => void }) {
+  const [open, setOpen] = useState<Milestone | undefined>();
   const next = nextMilestone(list);
   const earned = list.filter((m) => m.earned).length;
+  const tap = (m: Milestone) => {
+    haptic.select();
+    if (isNew?.(m) && onClaim) onClaim(m);
+    else setOpen(m);
+  };
   return (
     <View style={styles.root}>
+      <Text style={styles.head}>
+        Milestones · {earned} of {list.length}
+      </Text>
       {next ? (
-        <View style={styles.next} accessible accessibilityLabel={`Your next badge: ${next.title}. ${next.how}. ${progressLine(next)}`}>
+        <Pressable
+          onPress={() => tap(next)}
+          style={({ pressed }) => [styles.next, pressed && { opacity: 0.85 }]}
+          accessibilityRole="button"
+          accessibilityLabel={`Your next badge: ${next.title}. ${next.how}. ${progressLine(next)}`}
+        >
           <Medal milestone={next} size={58} />
           <View style={{ flex: 1 }}>
             <Text style={styles.nextKicker}>Your next badge</Text>
@@ -152,35 +171,104 @@ export function MilestonesSection({ list }: { list: Milestone[] }) {
               </Text>
             </View>
           </View>
-        </View>
+        </Pressable>
       ) : null}
-      <Text style={styles.head}>
-        Milestones · {earned} of {list.length}
-      </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {list.map((m) => (
-          <View
-            key={m.id}
-            style={[styles.item, !m.earned && { opacity: 0.8 }]}
-            accessible
-            accessibilityLabel={`${m.title}. ${m.earned ? 'Earned' : `${m.how}, ${progressLine(m)}`}`}
-          >
-            <Medal milestone={m} />
-            <Text style={[styles.itemTitle, !m.earned && { color: color.moonDim }]} numberOfLines={2}>
-              {m.title}
-            </Text>
-            <Text style={styles.itemDetail} numberOfLines={1}>
-              {m.earned ? (m.id === 'og' ? m.how.split(' · ')[1] : 'Earned') : progressLine(m)}
-            </Text>
-          </View>
-        ))}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row} style={{ marginTop: space.lg }}>
+        {list.map((m) => {
+          const fresh = !!isNew?.(m);
+          return (
+            <Pressable
+              key={m.id}
+              onPress={() => tap(m)}
+              style={({ pressed }) => [styles.item, !m.earned && { opacity: 0.8 }, pressed && { transform: [{ scale: 0.95 }] }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${m.title}. ${fresh ? 'New badge, tap to claim' : m.earned ? 'Earned' : `${m.how}, ${progressLine(m)}`}`}
+            >
+              <Medal milestone={m} />
+              {fresh ? <NewTag /> : null}
+              <Text style={[styles.itemTitle, !m.earned && { color: color.moonDim }]} numberOfLines={2}>
+                {m.title}
+              </Text>
+              <Text style={[styles.itemDetail, fresh && { color: '#FFE38A' }]} numberOfLines={1}>
+                {fresh ? 'Tap to claim' : m.earned ? (m.id === 'og' ? m.how.split(' · ')[1] : 'Earned') : progressLine(m)}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
+      <MilestoneSheet milestone={open} onClose={() => setOpen(undefined)} />
     </View>
+  );
+}
+
+/** A small glowing "New" tag on a badge waiting to be claimed. */
+export function NewTag({ inline }: { inline?: boolean } = {}) {
+  const reduce = useReducedMotion();
+  const beat = useSharedValue(0);
+  useEffect(() => {
+    if (reduce) return;
+    beat.set(withRepeat(withTiming(1, { duration: 900, easing: Easing.inOut(Easing.sin) }), -1, true));
+    return () => cancelAnimation(beat);
+  }, [reduce, beat]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.08 * beat.get() }] }));
+  return (
+    <Animated.View style={[styles.newTag, inline && styles.newInline, style]} pointerEvents="none">
+      <Text style={styles.newText}>NEW</Text>
+    </Animated.View>
+  );
+}
+
+/** What a milestone is: the medal big, its name, a sentence about it, and how far along you are. */
+function MilestoneSheet({ milestone, onClose }: { milestone: Milestone | undefined; onClose: () => void }) {
+  return (
+    <Modal visible={!!milestone} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <Pressable style={styles.sheetScrim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close">
+        {milestone ? (
+          <Pressable style={styles.sheet} onPress={() => {}} accessible={false}>
+            <Medal milestone={milestone} size={120} />
+            <Text style={[styles.sheetKicker, milestone.earned && { color: '#FFE38A' }]}>{milestone.earned ? 'Earned' : 'Still to earn'}</Text>
+            <Text style={styles.sheetTitle} accessibilityRole="header">
+              {milestone.title}
+            </Text>
+            <Text style={styles.sheetAbout}>{milestone.about}</Text>
+            {milestone.earned ? null : (
+              <View style={styles.sheetProgress}>
+                <View style={styles.barRow}>
+                  <View style={styles.track}>
+                    <View style={[styles.fill, { width: `${Math.round((milestone.current / milestone.target) * 100)}%` }]} />
+                  </View>
+                  <Text style={styles.count}>{progressLine(milestone)}</Text>
+                </View>
+                <Text style={styles.nextHow}>{milestone.how}</Text>
+              </View>
+            )}
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.sheetButton, pressed && { opacity: 0.8 }]}
+            >
+              <Text style={styles.sheetButtonText}>Done</Text>
+            </Pressable>
+          </Pressable>
+        ) : null}
+      </Pressable>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   root: { paddingTop: space.lg },
+  newTag: { position: 'absolute', top: -2, right: 2, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: '#FFE38A', shadowColor: '#FFE38A', shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
+  newInline: { position: 'relative', top: 0, right: 0 },
+  newText: { ...type.caption, fontSize: 9, fontWeight: '800', color: color.night, letterSpacing: 0.6 },
+  sheetScrim: { flex: 1, backgroundColor: 'rgba(6,5,16,0.75)', alignItems: 'center', justifyContent: 'center', padding: space.xl },
+  sheet: { width: '100%', maxWidth: 380, alignItems: 'center', padding: space.xl, borderRadius: radius.lg + 4, backgroundColor: '#151230', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)' },
+  sheetKicker: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: space.md },
+  sheetTitle: { ...type.title, color: color.moon, marginTop: 2, textAlign: 'center' },
+  sheetAbout: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.sm },
+  sheetProgress: { alignSelf: 'stretch', marginTop: space.md, gap: 4 },
+  sheetButton: { marginTop: space.lg, alignSelf: 'stretch', minHeight: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  sheetButtonText: { ...type.headline, color: color.moon },
   halo: { position: 'absolute', shadowOpacity: 0.75, shadowRadius: 10, shadowOffset: { width: 0, height: 0 }, backgroundColor: 'rgba(0,0,0,0.01)' },
   next: {
     flexDirection: 'row',
@@ -200,7 +288,7 @@ const styles = StyleSheet.create({
   track: { flex: 1, height: 5, borderRadius: 3, backgroundColor: 'rgba(243,240,255,0.10)', overflow: 'hidden' },
   fill: { height: 5, borderRadius: 3, backgroundColor: color.glow },
   count: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
-  head: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xl, marginBottom: space.sm, marginHorizontal: space.xl },
+  head: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: space.md, marginHorizontal: space.lg + space.xs },
   row: { paddingHorizontal: space.lg, gap: space.md },
   item: { width: 76, alignItems: 'center' },
   itemTitle: { ...type.caption, color: color.moon, textAlign: 'center', marginTop: 6, fontWeight: '600' },
