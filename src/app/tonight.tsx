@@ -9,6 +9,7 @@ import { CloseIcon } from '../components/TabIcons';
 import type { Festival } from '../data/models';
 import { CameraIcon } from '../features/camera/icons';
 import { CareCard } from '../features/care/CareCard';
+import { SideQuestsCard } from '../features/quests/SideQuestsCard';
 import { FestivalModeCard } from '../features/festivalMode/FestivalModeCard';
 import { CrewLatest } from '../features/crews/CrewLatest';
 import { LostButton } from '../features/crews/LostButton';
@@ -142,6 +143,10 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
           )}
         </Section>
       ) : null}
+
+      <Section title="Tonight’s side quests">
+        <SideQuestsCard />
+      </Section>
 
       <Section title="Look after yourself">
         <CareCard />

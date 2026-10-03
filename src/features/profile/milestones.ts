@@ -1,3 +1,5 @@
+import type { QuestId } from '../quests/quests';
+
 /**
  * Milestone badges: a few quiet markers of your festival life, next to the
  * festival pins. Worked out on the phone from what you've done. Pure.
@@ -5,7 +7,9 @@
 export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og';
 
 export type Milestone = {
-  id: MilestoneId;
+  id: MilestoneId | QuestId;
+  /** A side quest (something you did at a festival), not a milestone. */
+  quest?: boolean;
   title: string;
   /** How you earn it, in a few words. */
   how: string;
@@ -78,7 +82,7 @@ export const progressLine = (m: Milestone) => `${m.current} of ${m.target}`;
 
 /** A badge's key in your claims: festival pins and milestones. */
 export const pinKey = (festivalId: string) => `pin:${festivalId}`;
-export const milestoneKey = (id: MilestoneId) => `ms:${id}`;
+export const milestoneKey = (id: MilestoneId | QuestId) => `ms:${id}`;
 
 /** Earned but not claimed yet, in the order given. */
 export function unclaimed(earned: readonly string[], claimed: ReadonlySet<string>): string[] {

@@ -113,7 +113,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
       </View>
 
       <Animated.View entering={reduce ? undefined : FadeInDown.delay(450).duration(420)} style={styles.words}>
-        <Text style={[styles.kicker, { color: c2 === '#FFFFFF' ? color.glow : '#FFE38A' }]}>Badge unlocked</Text>
+        <Text style={[styles.kicker, { color: '#FFE38A' }]}>{unlock.kind === 'milestone' && unlock.milestone.quest ? 'Side quest complete' : 'Badge unlocked'}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>

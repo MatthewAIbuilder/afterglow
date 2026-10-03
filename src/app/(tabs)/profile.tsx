@@ -1,5 +1,5 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -26,6 +26,8 @@ import { MilestonesSection, NewTag } from '../../features/profile/Milestones';
 import { BadgeCelebration, type Unlock } from '../../features/profile/BadgeCelebration';
 import { useBadgeClaims } from '../../state/badgeClaims';
 import { useProfileShelves } from '../../state/profileShelves';
+import { useQuests } from '../../state/quests';
+import { questBadges } from '../../features/quests/quests';
 import { citiesOf, passport as makePassport } from '../../features/profile/passport';
 import { PassportTab } from '../../features/profile/PassportTab';
 import { YourArtistsRow } from '../../features/profile/YourArtistsRow';
@@ -57,6 +59,7 @@ import { color, space, type } from '../../theme/tokens';
 const COVER_H = 210;
 
 type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
+const TABS: Tab[] = ['videos', 'festivals', 'badges', 'saved'];
 
 /**
  * Profile, laid out like Instagram and TikTok: your photo and counts, name,
@@ -76,7 +79,18 @@ function FullProfile() {
   const { width } = useWindowDimensions();
   const catalog = useCatalog();
   const today = useToday();
-  const [tab, setTab] = useState<Tab>('videos');
+  // `?tab=badges` (a side quest notification) opens on that tab.
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<Tab>(() => (TABS.includes(params.tab as Tab) ? (params.tab as Tab) : 'videos'));
+  const [seenParam, setSeenParam] = useState(params.tab);
+  if (params.tab !== seenParam) {
+    setSeenParam(params.tab);
+    if (TABS.includes(params.tab as Tab)) setTab(params.tab as Tab);
+  }
+  const navigation = useNavigation();
+  useEffect(() => {
+    if (params.tab) navigation.setParams({ tab: undefined } as never);
+  }, [params.tab, navigation]);
   // Rows you've tucked away (Your artists, Your festivals).
   const shelves = useProfileShelves();
 
@@ -153,13 +167,16 @@ function FullProfile() {
       }),
     [mySet, memories.length, kept, ratings, catalog, standing?.founder],
   );
-  const earnedMarks = marks.filter((m) => m.earned).length;
+  // Side quests: done ones come from the log, so they stay done.
+  const quests = useQuests();
+  const questList = useMemo(() => questBadges(quests.progress, quests.log), [quests.progress, quests.log]);
+  const earnedMarks = marks.filter((m) => m.earned).length + questList.filter((m) => m.earned).length;
 
   // Badges you've earned but not claimed: a banner, a New tag, and the unlock when you claim one.
   const { claimed, claim } = useBadgeClaims();
   const unclaimedKeys = useMemo(
-    () => (claimed ? unclaimed([...badges.map((b) => pinKey(b.festivalId)), ...marks.filter((m) => m.earned).map((m) => milestoneKey(m.id))], claimed) : []),
-    [claimed, badges, marks],
+    () => (claimed ? unclaimed([...badges.map((b) => pinKey(b.festivalId)), ...questList.filter((m) => m.earned).map((m) => milestoneKey(m.id)), ...marks.filter((m) => m.earned).map((m) => milestoneKey(m.id))], claimed) : []),
+    [claimed, badges, marks, questList],
   );
   const [unlock, setUnlock] = useState<Unlock | undefined>();
   const unlockFor = (key: string): Unlock | undefined => {
@@ -167,7 +184,7 @@ function FullProfile() {
       const f = catalog.festival(key.slice(4));
       return f ? { kind: 'pin', festival: f } : undefined;
     }
-    const m = marks.find((x) => milestoneKey(x.id) === key);
+    const m = [...questList, ...marks].find((x) => milestoneKey(x.id) === key);
     return m ? { kind: 'milestone', milestone: m } : undefined;
   };
   const claimNext = () => {
@@ -329,6 +346,16 @@ function FullProfile() {
               isNew={(id) => unclaimedKeys.includes(pinKey(id))}
               onClaim={(f) => setUnlock({ kind: 'pin', festival: f })}
             />
+            <View style={styles.milestones}>
+              <MilestonesSection
+                title="Side quests"
+                intro="Meet people, look out for your crew, catch the sunrise. Done at your festivals, on their nights."
+                showNext={false}
+                list={questList}
+                isNew={(m) => unclaimedKeys.includes(milestoneKey(m.id))}
+                onClaim={(m) => setUnlock({ kind: 'milestone', milestone: m })}
+              />
+            </View>
             <View style={styles.milestones}>
               <MilestonesSection
                 list={marks}

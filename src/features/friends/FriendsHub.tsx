@@ -16,6 +16,7 @@ import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
 import { MeetSpotCard } from '../crews/MeetSpotCard';
 import { FriendAddsList } from './FriendAddsList';
 import { InviteCard } from './InviteCard';
+import { SideQuestsCard } from '../quests/SideQuestsCard';
 import { FriendsActivity } from './FriendsActivity';
 import { accountsOff } from '../social/unavailable';
 import { firstName } from '../../features/crews/together';
@@ -176,6 +177,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 {here.map((c) => (
                   <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={here.length > 1} />
                 ))}
+                <SideQuestsCard max={2} />
               </Section>
             ) : null}
 

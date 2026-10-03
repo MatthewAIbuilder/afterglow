@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { router } from 'expo-router';
+import { forgetQuests } from '../../state/quests';
 import { renderApp, showTab } from './appRoutes';
 
 /** The living profile: the orbit, what you're feeling, your artists, milestones and the passport. */
@@ -18,6 +20,7 @@ beforeEach(async () => {
   jest.useFakeTimers({ now: NOW });
   await AsyncStorage.clear();
   await AsyncStorage.setItem('welcomed.v1', 'true');
+  forgetQuests();
 });
 
 describe('the living profile', () => {
@@ -111,5 +114,30 @@ describe('the living profile', () => {
     await fireEvent.press(app.getByLabelText('Show your artists'));
     await flush();
     expect(app.getByLabelText(/^SUBTRONICS, you love them\./)).toBeTruthy();
+  });
+
+  it('records a side quest as it happens and lets you claim it, with tonight’s side quests on Tonight', async () => {
+    jest.setSystemTime(new Date(2026, 11, 6, 7, 30));
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    await AsyncStorage.setItem('tonightShown.v1', 'cyclops-cove-4:2026-12-05');
+    const filmed = new Date(2026, 11, 6, 6, 10).toISOString();
+    await AsyncStorage.setItem('memories.v1', JSON.stringify([{ id: 'm1', file: 'm1.mov', capturedAt: filmed, addedAt: filmed, festivalId: 'cyclops-cove-4' }]));
+    const app = await renderApp('/profile?tab=badges');
+    await flush();
+    expect(JSON.parse((await AsyncStorage.getItem('quests.v1'))!)).toMatchObject({ sunrise: { festivalId: 'cyclops-cove-4' } });
+    expect(app.getByText(/^Side quests · 1 of 10$/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Sunrise set. New badge, tap to claim'));
+    await flush();
+    expect(app.getByText('Side quest complete')).toBeTruthy();
+    expect(app.getByText(/^For filming a moment at a festival between 5 and 8 in the morning\./)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Add Sunrise set to your collection'));
+    await flush();
+    expect(JSON.parse((await AsyncStorage.getItem('badgeClaims.v1'))!)).toContain('ms:sunrise');
+
+    await act(async () => router.push('/tonight'));
+    await flush();
+    expect(app.getByText('Tonight’s side quests')).toBeTruthy();
+    expect(app.getByText('1 of 10 done')).toBeTruthy();
+    expect(app.getByLabelText('PLUR trade. Swap friend codes with someone at a festival')).toBeTruthy();
   });
 });
