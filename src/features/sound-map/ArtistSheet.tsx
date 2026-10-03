@@ -12,7 +12,7 @@ import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { RateArtist } from '../taste/RateArtist';
 import { artistMix } from '../taste/lean';
-import { SOUND_COLOR, withAlpha } from './colors';
+import { SOUND_COLOR } from './colors';
 import { SoundSpectrum } from './SoundSpectrum';
 
 type Props = {
@@ -37,7 +37,7 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
     else offset.set(withTiming(SHEET_H + 80, { duration: 220 }));
   }, [artistId, offset]);
 
-  const { artists } = useCatalog();
+  const { artists, clipsOf } = useCatalog();
   const { similarity } = useTaste();
   const artist = artists.find((a) => a.id === shownId);
 
@@ -72,6 +72,7 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
   }));
 
   if (!artist) return null;
+  const firstClip = clipsOf(artist.id)[0];
   const pct = Math.round((taste[artist.id] ?? 0) * 100);
   const tags = (Object.entries(artist.sound) as [SoundTag, number][]).sort((p, q) => q[1] - p[1]);
 
@@ -90,47 +91,66 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
           <View style={styles.grabber} />
 
           <View style={styles.header}>
-            <ArtistAvatar artist={artist} size={64} />
+            <ArtistAvatar artist={artist} size={56} />
             <View style={styles.headerText}>
               <Text style={styles.name} numberOfLines={1}>
                 {artist.name}
               </Text>
-              <Text style={styles.match}>{pct}% match</Text>
+              <Text style={styles.match}>
+                {pct}% match
+                {tags.length ? (
+                  <Text style={styles.soundLine}>
+                    {'  ·  '}
+                    {tags.slice(0, 2).map(([tag], i) => (
+                      <Text key={tag} style={{ color: SOUND_COLOR[tag] }}>
+                        {i ? ', ' : ''}
+                        {SOUND_LABEL[tag]}
+                      </Text>
+                    ))}
+                  </Text>
+                ) : null}
+              </Text>
             </View>
           </View>
 
           {tags.length > 0 && (
             <View style={styles.spectrum}>
-              <SoundSpectrum shares={artistMix(artist)} label={`${artist.name}'s sound`} height={5} />
+              <SoundSpectrum shares={artistMix(artist)} label={`${artist.name}'s sound`} height={4} />
             </View>
           )}
-          <View style={styles.tags}>
-            {tags.map(([tag]) => (
-              <View key={tag} style={[styles.tag, { borderColor: withAlpha(SOUND_COLOR[tag], 0.45), backgroundColor: withAlpha(SOUND_COLOR[tag], 0.12) }]}>
-                <View style={[styles.tagDot, { backgroundColor: SOUND_COLOR[tag] }]} />
-                <Text style={styles.tagText}>{SOUND_LABEL[tag]}</Text>
-              </View>
-            ))}
+
+          {closest.length > 0 && <Text style={styles.body}>Sounds closest to {closest.join(' and ')}.</Text>}
+
+          <RateArtist artist={artist} compact />
+
+          <View style={styles.ctas}>
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                const id = artist.id;
+                onClose();
+                router.push(`/artist/${id}`);
+              }}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.cta, pressed && { opacity: 0.75 }]}
+            >
+              <Text style={styles.ctaText}>View artist</Text>
+            </Pressable>
+            {firstClip ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  onClose();
+                  router.navigate({ pathname: '/', params: { clip: firstClip.id } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Watch ${artist.name} in Discover`}
+                style={({ pressed }) => [styles.cta, styles.ctaQuiet, pressed && { opacity: 0.75 }]}
+              >
+                <Text style={styles.ctaText}>Watch</Text>
+              </Pressable>
+            ) : null}
           </View>
-
-          {closest.length > 0 && (
-            <Text style={styles.body}>Sounds closest to {closest.join(' and ')}.</Text>
-          )}
-
-          <RateArtist artist={artist} />
-
-          <Pressable
-            onPress={() => {
-              haptic.select();
-              const id = artist.id;
-              onClose();
-              router.push(`/artist/${id}`);
-            }}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.cta, pressed && { opacity: 0.75 }]}
-          >
-            <Text style={styles.ctaText}>View artist</Text>
-          </Pressable>
         </Animated.View>
       </GestureDetector>
     </View>
@@ -159,31 +179,20 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 3,
     backgroundColor: 'rgba(255,255,255,0.22)',
-    marginBottom: space.lg,
+    marginBottom: space.md,
   },
   header: { flexDirection: 'row', alignItems: 'center' },
   headerText: { marginLeft: space.lg, flex: 1 },
   name: { ...type.title, color: color.moon },
   match: { ...type.headline, color: color.glow, fontVariant: ['tabular-nums'], marginTop: 2 },
-  spectrum: { marginTop: space.xl },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
-  tagDot: { width: 6, height: 6, borderRadius: 3 },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    backgroundColor: color.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
-  },
-  tagText: { ...type.caption, color: color.moon },
-  body: { ...type.body, color: color.moonDim, marginTop: space.lg },
+  spectrum: { marginTop: space.lg },
+  soundLine: { ...type.caption, fontWeight: '600' },
+  body: { ...type.caption, color: color.moonDim, marginTop: space.md },
+  ctas: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
+  ctaQuiet: { backgroundColor: color.glass, borderColor: color.hairline },
   cta: {
-    marginTop: space.xl,
-    height: 48,
+    flex: 1,
+    height: 46,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
