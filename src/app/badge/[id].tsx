@@ -95,7 +95,7 @@ export default function BadgeScreen() {
       </Pressable>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl }]}>
         <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={`${festival.name} badge${collected ? '' : ', not collected yet'}`}>
-          {collected ? <View style={[styles.glow, { backgroundColor: `${look.enamel[0]}55`, shadowColor: look.enamel[1] }]} /> : null}
+          {collected ? <View style={[styles.glow, { backgroundColor: `${look.palette.ribbon}55`, shadowColor: look.palette.accent }]} /> : null}
           <EnamelPin look={look} size={260} locked={!collected} sheen={sheen} />
         </Animated.View>
         <Text style={styles.kicker}>{collected ? (mine ? 'In your collection' : owner ? `@${owner}’s badge` : 'Collected') : 'Not collected yet'}</Text>
@@ -114,12 +114,25 @@ export default function BadgeScreen() {
             <Pressable
               onPress={() => {
                 haptic.select();
+                router.push({ pathname: '/badge-card/[id]', params: { id: festival.id, ...(whose ? { uid: whose } : {}) } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={mine ? 'Share your badge' : 'Share this badge'}
+              style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
+            >
+              <Text style={styles.primaryText}>{mine ? 'Share your badge' : 'Share'}</Text>
+            </Pressable>
+          ) : null}
+          {badge ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
                 router.push({ pathname: '/shared/[id]', params: { id: badge.firstId } });
               }}
               accessibilityRole="button"
-              style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryText}>Watch the video</Text>
+              <Text style={styles.secondaryText}>Watch the video</Text>
             </Pressable>
           ) : null}
           <Pressable

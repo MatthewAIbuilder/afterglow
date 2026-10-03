@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
 import type { SharedMemory } from '../../social/models';
-import { earnedBadges, earnedLine, filmedThere, hashOf, pinLook, toCollect } from '../badges';
+import { badgeShareText, cityOf, earnedBadges, earnedLine, filmedThere, hashOf, pinLook, ribbonText, themeOf, toCollect } from '../badges';
 
 const fest = (id: string, extra: Partial<Festival> = {}): Festival =>
   ({ id, name: id === 'cc4' ? 'Cyclops Cove 4' : 'Eternal NYE 2026', dates: '', location: '', lineup: [], days: [], stages: [], startDate: '2026-12-04', endDate: '2026-12-06', ...extra }) as Festival;
@@ -44,9 +44,30 @@ describe('festival badges', () => {
 
   it('give every festival its own pin, the same every time', () => {
     expect(pinLook(cc4)).toEqual(pinLook(cc4));
-    expect(pinLook(cc4)).toMatchObject({ mark: 'CC4', year: '2026' });
     expect(hashOf('cc4')).not.toBe(hashOf('nye'));
-    const looks = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => JSON.stringify(pinLook(fest(id))));
-    expect(new Set(looks).size).toBeGreaterThan(4);
+    expect(pinLook({ ...cc4, location: 'Sunset Cove Amphitheater, Boca Raton' })).toMatchObject({ theme: 'eye', rimText: 'CYCLOPS COVE 4 · BOCA RATON', ribbon: 'DEC 4–6 · 2026', mark: 'CC4' });
+  });
+
+  it('pick a scene that says which festival it is', () => {
+    const t = (name: string, location = '') => themeOf({ id: name, name, location });
+    expect([t('Cyclops Cove 4'), t('EDC Orlando 2026'), t('Eternal NYE 2026'), t('Countdown NYE 2026'), t('Austin City Limits 2026'), t('Lost Lands 2027')]).toEqual(['eye', 'daisy', 'infinity', 'clock', 'skyline', 'lake']);
+    expect(t('Sun Fest', 'Miami Beach')).toBe('beach');
+    expect(t('Horizon 2027', 'Desert Valley')).toBe('desert');
+  });
+
+  it('put the town in the rim and the dates on the ribbon', () => {
+    expect([cityOf('Sunset Cove Amphitheater, Boca Raton'), cityOf('Austin, Texas'), cityOf('Lakeside Grounds'), cityOf(undefined)]).toEqual(['BOCA RATON', 'AUSTIN', 'LAKESIDE GROUNDS', undefined]);
+    expect(ribbonText({ startDate: '2026-12-31', endDate: '2027-01-01' })).toBe('DEC 31–JAN 1 · 2027');
+    expect(ribbonText({ startDate: '2026-11-07' })).toBe('NOV 7 · 2026');
+    expect(ribbonText({})).toBeUndefined();
+    // The city isn't repeated when it's already in the name.
+    expect(pinLook({ id: 'acl', name: 'Austin City Limits 2026', location: 'Austin, Texas' }).rimText).toBe('AUSTIN CITY LIMITS');
+  });
+});
+
+describe('sharing a badge', () => {
+  it('says whose it is, with a link', () => {
+    expect(badgeShareText('Cyclops Cove 4', 'https://afterglowmusic.app/u/maya', true)).toBe('I collected the Cyclops Cove 4 badge on Afterglow. Only people who filmed there get one.\nhttps://afterglowmusic.app/u/maya');
+    expect(badgeShareText('Cyclops Cove 4', 'https://x', false, 'sam')).toMatch(/^@sam collected the Cyclops Cove 4 badge/);
   });
 });

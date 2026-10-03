@@ -7,6 +7,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function me() { return request.auth.uid; }
+    // The Afterglow support account (the dashboard): only with that email, and only once it's verified.
+    function isAdmin() {
+      return signedIn() && request.auth.token.email == 'afterglowmusic.support@gmail.com' && request.auth.token.email_verified == true;
+    }
     function reserved(h) {
       return h in ['afterglow', 'admin', 'administrator', 'support', 'help', 'official', 'staff', 'moderator', 'mod', 'team', 'root', 'system', 'me', 'you', 'null', 'undefined']
         || h.matches('^afterglow.*');
@@ -71,7 +75,7 @@ service cloud.firestore {
         && request.resource.data.capturedAt is string && request.resource.data.capturedAt.size() <= 40
         && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
       allow update: if false;
-      allow delete: if signedIn() && resource.data.uid == me();
+      allow delete: if (signedIn() && resource.data.uid == me()) || isAdmin();
     }
 
     // Blocks: private to you.
@@ -201,7 +205,7 @@ service cloud.firestore {
         && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 300
         && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
       allow update: if false;
-      allow delete: if signedIn() && (resource.data.uid == me() || resource.data.owner == me());
+      allow delete: if (signedIn() && (resource.data.uid == me() || resource.data.owner == me())) || isAdmin();
     }
 
     // Festival crews: a few friends planning one festival. The id is the invite: anyone signed in who has it
@@ -218,7 +222,7 @@ service cloud.firestore {
     function blockedBy(uid) { return exists(path('blocks', uid)) && me() in get(path('blocks', uid)).data.uids; }
     match /crews/{id} {
       allow get: if signedIn();
-      allow list: if signedIn() && me() in resource.data.members;
+      allow list: if (signedIn() && me() in resource.data.members) || isAdmin();
       allow create: if signedIn() && crewShape(request.resource.data)
         && request.resource.data.owner == me() && request.resource.data.members == [me()]
         && exists(path('profiles', me()));
@@ -322,7 +326,31 @@ service cloud.firestore {
         && request.resource.data.ownerUid is string && request.resource.data.ownerUid.size() <= 128
         && request.resource.data.reason in ['offensive', 'harassment', 'spam', 'not-theirs', 'other']
         && request.resource.data.note is string && request.resource.data.note.size() <= 500;
-      allow read, update, delete: if false;
+      // Read and dealt with on the support account's dashboard.
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt'])
+        && request.resource.data.status in ['open', 'resolved'];
+    }
+
+    // Support messages: you write yours (as yourself, marked open, stamped with the server's time) and read
+    // only your own; the support account reads them all, replies, and closes them.
+    match /support/{id} {
+      allow create: if signedIn() && request.resource.data.uid == me()
+        && request.resource.data.keys().hasOnly(['uid', 'handle', 'name', 'email', 'topic', 'text', 'platform', 'version', 'status', 'createdAt'])
+        && request.resource.data.topic in ['help', 'bug', 'idea', 'festival', 'other']
+        && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time
+        && shortOrAbsent(request.resource.data, 'handle', 30)
+        && shortOrAbsent(request.resource.data, 'name', 60)
+        && shortOrAbsent(request.resource.data, 'email', 200)
+        && shortOrAbsent(request.resource.data, 'platform', 20)
+        && shortOrAbsent(request.resource.data, 'version', 80);
+      allow read: if signedIn() && (resource.data.uid == me() || isAdmin());
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'repliedAt'])
+        && request.resource.data.status in ['open', 'answered', 'closed']
+        && shortOrAbsent(request.resource.data, 'reply', 2000);
+      allow delete: if isAdmin();
     }
   }
 }

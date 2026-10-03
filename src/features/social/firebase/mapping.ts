@@ -1,5 +1,5 @@
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, type Profile, type SharedMemory, type Standing } from '../models';
+import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, REPORT_REASONS, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 
 /**
@@ -189,4 +189,49 @@ export function standingFromDocs(founder: unknown, flair: unknown): Standing {
   const kind = FLAIR_KINDS.find((k) => k === fl?.kind);
   const caption = typeof fl?.caption === 'string' ? fl.caption.trim().slice(0, 40) : '';
   return { ...(number ? { founder: number } : {}), ...(kind && caption ? { flair: { kind, caption } } : {}) };
+}
+
+/** A time written as ISO 8601 text, or by the server. */
+const whenOf = (v: unknown) => (typeof v === 'string' && Number.isFinite(Date.parse(v)) ? new Date(v).toISOString() : timeOf(v));
+
+const TOPICS: readonly SupportTopic[] = ['help', 'bug', 'idea', 'festival', 'other'];
+
+/** A support message from its document; anything malformed is null. */
+export function supportFromDoc(id: string, d: unknown): SupportMessage | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const uid = str(o.uid);
+  const text = str(o.text);
+  const topic = TOPICS.find((t) => t === o.topic);
+  const createdAt = whenOf(o.createdAt);
+  if (!uid || !text || !topic || !createdAt) return null;
+  const status = o.status === 'answered' || o.status === 'closed' ? o.status : 'open';
+  return {
+    id,
+    uid,
+    topic,
+    text: text.slice(0, 1000),
+    status,
+    createdAt,
+    ...(str(o.handle) ? { handle: str(o.handle) } : {}),
+    ...(str(o.name) ? { name: str(o.name) } : {}),
+    ...(str(o.email) ? { email: str(o.email) } : {}),
+    ...(str(o.platform) ? { platform: str(o.platform) } : {}),
+    ...(str(o.version) ? { version: str(o.version) } : {}),
+    ...(str(o.reply) ? { reply: str(o.reply) } : {}),
+    ...(whenOf(o.repliedAt) ? { repliedAt: whenOf(o.repliedAt) } : {}),
+  };
+}
+
+/** A report from its document; anything malformed is null. */
+export function reportFromDoc(id: string, d: unknown): ReportRecord | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const kind = o.kind === 'profile' || o.kind === 'memory' || o.kind === 'comment' ? o.kind : undefined;
+  const reason = REPORT_REASONS.find((r) => r.key === o.reason)?.key;
+  const by = str(o.by);
+  const targetId = str(o.targetId);
+  const createdAt = whenOf(o.createdAt);
+  if (!kind || !reason || !by || !targetId || !createdAt) return null;
+  return { id, by, kind, targetId, ownerUid: str(o.ownerUid) ?? '', reason, note: str(o.note) ?? '', createdAt, status: o.status === 'resolved' ? 'resolved' : 'open' };
 }

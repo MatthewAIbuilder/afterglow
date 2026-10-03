@@ -8,6 +8,7 @@ import { ReminderSync } from '../features/notifications/ReminderSync';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { FounderClaim } from '../features/standing/FounderClaim';
+import { AdminReturnPill } from '../features/admin/AdminReturnPill';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
 import { CatalogProvider } from '../state/catalog';
@@ -78,6 +79,9 @@ export default function RootLayout() {
         <Stack.Screen name="memories" />
         <Stack.Screen name="memory/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="shared/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="badge-card/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="admin" options={{ gestureEnabled: false, animation: 'fade' }} />
+        <Stack.Screen name="support" />
         <Stack.Screen name="badge/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal' }} />
         <Stack.Screen name="profile-edit" />
@@ -179,6 +183,7 @@ export default function RootLayout() {
       </Stack>
       <FirstRun />
       <FounderClaim />
+      <AdminReturnPill />
       <TonightLauncher />
       <ReminderSync />
       <LikeSync />

@@ -52,6 +52,9 @@ import SharedMemoryScreen from '../shared/[id]';
 import SoundScopeScreen from '../sound-scope';
 import TuneScreen from '../tune/[id]';
 import BadgeScreen from '../badge/[id]';
+import BadgeCardScreen from '../badge-card/[id]';
+import AdminScreen from '../admin';
+import SupportScreen from '../support';
 import PublicProfileScreen from '../u/[handle]';
 import WelcomeScreen from '../welcome';
 import YourSoundScreen from '../your-sound';
@@ -106,6 +109,9 @@ export const APP_ROUTES = {
   'profile-edit': ProfileEditScreen,
   'u/[handle]': PublicProfileScreen,
   'badge/[id]': BadgeScreen,
+  'badge-card/[id]': BadgeCardScreen,
+  admin: AdminScreen,
+  support: SupportScreen,
   people: PeopleScreen,
   search: SearchScreen,
   'legal/[doc]': LegalScreen,

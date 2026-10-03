@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { SharedMemory } from '../../social/models';
-import { crowdArtists, crowdByNight, crowdLine, crowdVideos, OTHER_NIGHT } from '../crowd';
+import { crowdArtists, crowdByNight, crowdLine, crowdVideos, liveCrowd, OTHER_NIGHT } from '../crowd';
 
 const m = (id: string, uid: string, night: string | undefined, at: number, artistId?: string): SharedMemory => ({
   id,
@@ -37,5 +37,13 @@ describe('videos from the crowd', () => {
       { artistId: 'subtronics', count: 2 },
     ]);
     expect(crowdLine(crowdVideos(list))).toBe('5 videos from 3 people');
+  });
+});
+
+describe('live from the crowd', () => {
+  it('keeps videos filmed in the last few hours, newest first', () => {
+    const now = new Date(2026, 11, 5, 23, 0).getTime();
+    const v = (id: string, minutesAgo: number): SharedMemory => ({ id, uid: 'u', handle: 'u', videoUrl: 'https://x/v.mp4', capturedAt: new Date(now - minutesAgo * 60_000).toISOString(), createdAt: new Date(now).toISOString() });
+    expect(liveCrowd([v('old', 200), v('a', 30), v('b', 5), v('future', -60)], now).map((m) => m.id)).toEqual(['b', 'a']);
   });
 });

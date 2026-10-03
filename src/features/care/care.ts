@@ -26,11 +26,17 @@ export type Care = {
   lock: boolean;
   /** Water reminders during a festival night, every this many minutes (off when missing). */
   waterEvery?: WaterEvery;
+  /** "How are you feeling?" reminders while a stopwatch runs, every this many minutes (off when missing). */
+  feelEvery?: FeelEvery;
 };
 
 /** How often water reminders can come. */
 export const WATER_EVERY = [45, 60, 90] as const;
 export type WaterEvery = (typeof WATER_EVERY)[number];
+
+/** How often "How are you feeling?" reminders can come while a stopwatch runs. */
+export const FEEL_EVERY = [30, 45, 60] as const;
+export type FeelEvery = (typeof FEEL_EVERY)[number];
 
 export const EMPTY_CARE: Care = { timers: [], log: [], lock: false };
 /** Most timers running at once. */
@@ -206,5 +212,6 @@ export function cleanCare(raw: unknown, now: number): Care {
     .sort((a, b) => a.at - b.at)
     .slice(-LOG_MAX);
   const waterEvery = WATER_EVERY.find((m) => m === o.waterEvery);
-  return { timers, log, lock: o.lock === true, ...(waterEvery ? { waterEvery } : {}) };
+  const feelEvery = FEEL_EVERY.find((m) => m === o.feelEvery);
+  return { timers, log, lock: o.lock === true, ...(waterEvery ? { waterEvery } : {}), ...(feelEvery ? { feelEvery } : {}) };
 }
