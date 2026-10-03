@@ -78,6 +78,7 @@ export default function RootLayout() {
         <Stack.Screen name="memories" />
         <Stack.Screen name="memory/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="shared/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+        <Stack.Screen name="badge-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="badge/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal' }} />
         <Stack.Screen name="profile-edit" />

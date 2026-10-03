@@ -51,3 +51,17 @@ export function crowdLine(memories: readonly SharedMemory[]): string {
   const people = new Set(memories.map((m) => m.uid)).size;
   return `${memories.length} ${memories.length === 1 ? 'video' : 'videos'} from ${people} ${people === 1 ? 'person' : 'people'}`;
 }
+
+/** "Live from the crowd" looks back this far. */
+export const LIVE_WINDOW_MS = 3 * 3600 * 1000;
+
+/** Videos filmed in the last few hours, newest filmed first, up to `max`. */
+export function liveCrowd(memories: readonly SharedMemory[], now: number, max = 12): SharedMemory[] {
+  return memories
+    .filter((m) => {
+      const t = Date.parse(m.capturedAt);
+      return t <= now + 5 * 60_000 && now - t <= LIVE_WINDOW_MS;
+    })
+    .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
+    .slice(0, max);
+}

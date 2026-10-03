@@ -1,23 +1,17 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { FilterChips } from '../../components/FilterChips';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
-import { useCommunity } from '../../state/community';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
-import { crowdArtists, crowdByNight, crowdLine, crowdVideos } from '../community/crowd';
-import type { SharedMemory } from '../social/models';
+import { crowdArtists, crowdByNight, crowdLine } from '../community/crowd';
+import { useFestivalCrowd } from './useFestivalCrowd';
 
-/** At most this many of a festival's videos are read. */
-export const CROWD_MAX = 120;
-const cache = new Map<string, { at: number; list: SharedMemory[] }>();
-const FRESH_MS = 3 * 60_000;
-/** For tests: forget what was read. */
-export const forgetCrowd = () => cache.clear();
+export { CROWD_MAX, forgetCrowd } from './useFestivalCrowd';
 
 /**
  * What people on Afterglow filmed at this festival, organised night by night
@@ -27,30 +21,9 @@ export const forgetCrowd = () => cache.clear();
  */
 export function CrowdVideos({ festival }: { festival: Festival }) {
   const social = useSocial();
-  const { hidden } = useCommunity();
   const catalog = useCatalog();
   const { width } = useWindowDimensions();
-  const signedIn = social.availability.ok && !!social.user;
-  const [read, setRead] = useState<{ id: string; list: SharedMemory[] } | 'failed' | undefined>();
-  useEffect(() => {
-    if (!signedIn) return;
-    const hit = cache.get(festival.id);
-    if (hit && Date.now() - hit.at < FRESH_MS) return;
-    let live = true;
-    social.service
-      .festivalMemories(festival.id, CROWD_MAX)
-      .then((list) => {
-        cache.set(festival.id, { at: Date.now(), list });
-        if (live) setRead({ id: festival.id, list });
-      })
-      .catch(() => live && setRead('failed'));
-    return () => {
-      live = false;
-    };
-  }, [signedIn, festival.id, social.service]);
-
-  const raw = read && read !== 'failed' && read.id === festival.id ? read.list : cache.get(festival.id)?.list;
-  const videos = useMemo(() => (raw ? crowdVideos(raw, { blocked: [...social.blocked], hidden: [...hidden] }) : undefined), [raw, social.blocked, hidden]);
+  const { videos, failed } = useFestivalCrowd(festival.id);
   const artists = useMemo(() => (videos ? crowdArtists(videos) : []), [videos]);
   const [artistId, setArtistId] = useState<string | undefined>();
   const picked = artists.some((a) => a.artistId === artistId) ? artistId : undefined;
@@ -65,7 +38,7 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
         action={{ label: 'Sign in', onPress: () => router.push('/account') }}
       />
     );
-  if (read === 'failed' && !videos) return <Note title="Couldn’t load the videos" body="Check your signal and try again in a moment." />;
+  if (failed && !videos) return <Note title="Couldn’t load the videos" body="Check your signal and try again in a moment." />;
   if (!videos) return <ActivityIndicator color={color.glow} style={{ marginTop: space.xl }} />;
   if (!videos.length)
     return (

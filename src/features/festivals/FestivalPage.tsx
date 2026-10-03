@@ -46,6 +46,7 @@ import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 import { coverPhotos } from './cover';
 import { CrowdVideos } from './CrowdVideos';
+import { LiveCrowdRow } from './LiveCrowdRow';
 import { FestivalCover } from './FestivalCover';
 
 type Order = 'match' | 'billing';
@@ -188,6 +189,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           />
         </View>
 
+        {/* While it's on: what people are filming there right now. */}
+        {tab === 'plan' && onNow ? <LiveCrowdRow festival={festival} /> : null}
         {tab === 'plan' ? <YourFestival festival={festival} /> : null}
 
         {tab === 'lineup' ? (

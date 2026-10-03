@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, Share } from 'react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
 import { forgetStandings } from '../../features/standing/useStanding';
@@ -148,5 +148,42 @@ describe('cover photo', () => {
     alert.mockRestore();
     expect(mockSocial.profiles.get(uid)?.coverUrl).toBe(`https://example.test/covers/${uid}.jpg`);
     expect(app.getByLabelText('Change cover photo')).toBeTruthy();
+  });
+});
+
+describe('sharing a badge', () => {
+  it('shows the badge as a story card and shares it as text with a link', async () => {
+    const shareSpy = jest.spyOn(Share, 'share').mockImplementation(async () => ({ action: 'sharedAction' }));
+    await person('maya', 'Maya');
+    await share('m1', 'cyclops-cove-4', new Date(2026, 11, 5, 22, 30));
+    const app = await renderApp('/badge/cyclops-cove-4');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Share your badge'));
+    await flush();
+    expect(app.getByLabelText('Cyclops Cove 4 badge, collected by Maya')).toBeTruthy();
+    expect(app.getByText('COLLECTED')).toBeTruthy();
+    await fireEvent.press(app.getByText('Share as text'));
+    await flush();
+    const message = (shareSpy.mock.calls[0]?.[0] as { message?: string })?.message ?? '';
+    expect(message).toContain('I collected the Cyclops Cove 4 badge on Afterglow.');
+    expect(message).toContain('https://afterglowmusic.app/u/maya');
+    shareSpy.mockRestore();
+  });
+});
+
+describe('live from the crowd', () => {
+  it('shows what people filmed in the last few hours while the festival is on', async () => {
+    jest.setSystemTime(new Date(2026, 11, 5, 23, 0));
+    await person('maya', 'Maya');
+    await s().shareMemory({ memoryId: 'l1', videoUri: 'file:///l1.mp4', festivalId: 'cyclops-cove-4', artistId: 'subtronics', capturedAt: new Date(2026, 11, 5, 22, 40).toISOString() });
+    await s().shareMemory({ memoryId: 'l2', videoUri: 'file:///l2.mp4', festivalId: 'cyclops-cove-4', capturedAt: new Date(2026, 11, 4, 22, 0).toISOString() });
+    await s().signOut();
+    await person('sam', 'Sam');
+    await AsyncStorage.setItem('tonightShown.v1', 'cyclops-cove-4:2026-12-05');
+    const app = await renderApp('/festival/cyclops-cove-4');
+    await flush();
+    expect(app.getByText('Live from the crowd')).toBeTruthy();
+    expect(app.getByLabelText('SUBTRONICS, filmed by @maya, 20 min ago')).toBeTruthy();
+    expect(app.queryAllByLabelText(/filmed by @maya, 1 day/)).toHaveLength(0);
   });
 });
