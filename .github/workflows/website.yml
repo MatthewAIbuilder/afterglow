@@ -115,8 +115,40 @@ jobs:
             exit 1
           fi
 
+      # Firebase allows only so many preview channels per site, and each lasts 7 days, so a busy week of
+      # pull requests fills them up ("channel quota reached"). Previews of pull requests that are closed
+      # are removed first. Never prints the key.
+      - name: Make room for the preview
+        if: env.CAN_DEPLOY == 'true' && github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GH_TOKEN: ${{ github.token }}
+          PROJECT: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}
+        run: |
+          printf '%s' "$KEY" > "$RUNNER_TEMP/firebase-key.json"
+          trap 'rm -f "$RUNNER_TEMP/firebase-key.json"' EXIT
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json"
+          open=$(gh pr list --repo "${{ github.repository }}" --state open --limit 200 --json number --jq '.[].number' | tr '\n' ' ')
+          npx --yes firebase-tools@14 hosting:channel:list --project "$PROJECT" --json > "$RUNNER_TEMP/channels.json"
+          # Channels are named pr<number>-<branch> by the deploy action; keep the open ones and anything else.
+          OPEN="$open" node -e '
+            const open = new Set(process.env.OPEN.trim().split(/\s+/).filter(Boolean));
+            const list = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result?.channels ?? [];
+            for (const c of list) {
+              const id = c.name.split("/").pop();
+              const m = /^pr(\d+)-/.exec(id);
+              if (m && !open.has(m[1])) console.log(id);
+            }' "$RUNNER_TEMP/channels.json" > "$RUNNER_TEMP/stale.txt"
+          echo "Removing $(wc -l < "$RUNNER_TEMP/stale.txt") previews of closed pull requests"
+          while read -r id; do
+            npx --yes firebase-tools@14 hosting:channel:delete "$id" --project "$PROJECT" --force --non-interactive < /dev/null || true
+          done < "$RUNNER_TEMP/stale.txt"
+
       - name: Deploy (live from main, a preview for pull requests)
         if: env.CAN_DEPLOY == 'true'
+        # A preview that can't be made (quota, a Firebase hiccup) is only a missing link on the PR; going live from main must succeed.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
