@@ -11,6 +11,7 @@ import {
   dayLetter,
   dayStart,
   levelOf,
+  longestStreak,
   added,
   picksFor,
   questDay,
@@ -172,5 +173,13 @@ describe('streaks and levels', () => {
     expect(levelOf(4000)).toMatchObject({ level: 11, name: 'Afterglow' });
     expect(levelOf(5300)).toMatchObject({ level: 12, name: 'Afterglow 2' });
     expect(totalGlow({ glow: 100 }, 2, 3)).toBe(100 + 300 + 225);
+  });
+});
+
+describe('best streak', () => {
+  it('finds the longest run of days', () => {
+    expect(longestStreak(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-05', '2026-10-06'])).toBe(3);
+    expect(longestStreak([])).toBe(0);
+    expect(longestStreak(['2026-09-30', '2026-10-01'])).toBe(2);
   });
 });

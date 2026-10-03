@@ -312,6 +312,18 @@ export function streakOf(lit: readonly string[], today: string): number {
   return n;
 }
 
+/** The most days in a row you ever finished all three (within the kept history). */
+export function longestStreak(lit: readonly string[]): number {
+  const days = [...new Set(lit)].sort();
+  let best = 0;
+  let run = 0;
+  for (let i = 0; i < days.length; i++) {
+    run = i > 0 && shiftDay(days[i], 1) === days[i - 1] ? run + 1 : 1;
+    best = Math.max(best, run);
+  }
+  return best;
+}
+
 /** The last seven days, oldest first, lit or not, for the streak row. */
 export function weekRow(lit: readonly string[], today: string): { day: string; lit: boolean; today: boolean }[] {
   const set = new Set(lit);

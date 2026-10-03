@@ -19,6 +19,9 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   basshead: ['#5B8CFF', '#2A2F9C'],
   road: ['#FF9E7A', '#A33F2C'],
   og: ['#FFE38A', '#C9962B'],
+  streak7: ['#FFB86B', '#C2477E'],
+  streak30: ['#FFD36E', '#E0567A'],
+  neon: ['#FF7EF0', '#5B3BC4'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -79,6 +82,18 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
           <Path d="M12 4.5 A7.5 7.5 0 0 1 19.5 12" {...p} strokeOpacity={0.5} />
         </G>
       );
+    case 'streak7':
+    case 'streak30':
+      // A flame.
+      return (
+        <G>
+          <Path d="M12 3 C12.8 7 18 9.6 18 14.5 A6 6 0 0 1 6 14.5 C6 11.8 7.4 10.2 8.6 9 C8.8 10.8 9.6 12 10.8 12.4 C10.2 9.2 11.2 6.2 12 3 Z" {...p} />
+          {id === 'streak30' ? <Path d="M12 13 C13.6 14.4 14.6 15.6 14.6 17 A2.6 2.6 0 0 1 9.4 17 C9.4 15.6 10.4 14.4 12 13 Z" {...p} /> : null}
+        </G>
+      );
+    case 'neon':
+      // A four-pointed spark.
+      return <Path d="M12 3 C12.6 8 16 11.4 21 12 C16 12.6 12.6 16 12 21 C11.4 16 8 12.6 3 12 C8 11.4 11.4 8 12 3 Z" {...p} />;
     case 'basshead':
       // A bass wave.
       return <Path d="M3 12 L6 12 L8 6 L11 18 L13.5 4 L16 20 L18 9 L19.5 12 L21 12" {...p} />;
