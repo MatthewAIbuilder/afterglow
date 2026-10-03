@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { bloomNotices, sproutNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, giftsToSend, queueClaim, retryDelay, tidy, type Gift } from '../outbox';
+import { bloomNotices, sproutNotices, wildNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, giftsToSend, queueClaim, retryDelay, tidy, type Gift } from '../outbox';
 import {
   cleanBloomed,
   festivalDaysOf,
@@ -16,6 +16,7 @@ import {
   seedsLine,
   sproutIdFrom,
   sproutLink,
+  wildKind,
   type Journey,
 } from '../sprouts';
 
@@ -163,5 +164,15 @@ describe('the bell', () => {
     const now = at(10, 20);
     const list = bloomNotices([{ id: 'a', kind: 'wanderer', at: at(10, 19) }, { id: 'b', kind: 'plur', at: at(9, 1) }], now);
     expect(list.map((n) => [n.id, n.title, n.body])).toEqual([['bloom:a', 'Your sprout bloomed into a Wanderer sprout', 'You can give Wanderer sprouts now.']]);
+  });
+
+  it('a wild sprout: a grown kind picked by the festival and night, and bell news', () => {
+    const k = wildKind('wild:cyclops-cove-4:2026-12-05');
+    expect(k).not.toBe('seedling');
+    expect(wildKind('wild:cyclops-cove-4:2026-12-05')).toBe(k);
+    const kinds = new Set(Array.from({ length: 30 }, (_, i) => wildKind(`wild:f:2026-12-${i}`)));
+    expect(kinds.size).toBeGreaterThan(3);
+    const list = wildNotices([{ id: 'wild:x:2026-10-19', kind: 'bass', from: '', at: at(10, 19), foundAt: 'Cove' }], at(10, 20));
+    expect(list[0].title).toBe('A wild Bass sprout appeared at Cove');
   });
 });

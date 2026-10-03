@@ -160,3 +160,18 @@ export function arrivalNotices(garden: readonly GardenSprout[], now: number): No
       href: '/garden',
     }));
 }
+
+/** "A wild Bass sprout at Cyclops Cove 4": a wild sprout appeared in your garden. */
+export function wildNotices(garden: readonly GardenSprout[], now: number): Notice[] {
+  return garden
+    .filter((g) => g.foundAt && now - g.at < SPROUT_NEWS_DAYS * 86_400_000)
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 10)
+    .map((g) => ({
+      id: `sprout-wild:${g.id}`,
+      kind: 'sprout' as const,
+      title: `A wild ${kindOf(g.kind).name} appeared at ${g.foundAt}`,
+      body: 'It’s in your garden. Every festival night brings a new one.',
+      href: '/garden',
+    }));
+}

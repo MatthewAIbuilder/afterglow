@@ -8,7 +8,7 @@ export type WhatsNewItem = { id: string; title: string; body: string; href?: str
 export const WHATS_NEW: { key: string; items: WhatsNewItem[] } = {
   key: '2026-10-05',
   items: [
-    { id: 'sprouts', title: 'Sprouts', body: 'Give people little sprouts at festivals: they scan your code, even without the app. Your sprouts grow as you go and bloom into new kinds you can give too.', href: '/garden' },
+    { id: 'sprouts', title: 'Sprouts', body: 'Give people little sprouts at festivals: they scan your code, even without the app. Your sprouts grow as you go and bloom into new kinds you can give too, and a wild one appears every festival night.', href: '/garden' },
     { id: 'map', title: 'The festival map', body: 'Every festival glowing on a night-time world. Pinch around, find yourself, see your journey and every artist’s tour.', href: '/festival-map' },
     { id: 'quests', title: 'Daily quests', body: 'Three small quests a day, a weekly one, a streak and your glow level, with badges for keeping it up. The ring on Discover fills as you go.', href: '/quests' },
     { id: 'secrets', title: 'Secrets', body: 'Eleven hidden things to find around the app. Hint: Discover likes a little movement.', href: '/secrets' },

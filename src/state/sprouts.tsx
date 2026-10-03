@@ -25,7 +25,10 @@ import {
   sproutIdFrom,
   type SproutKind,
   STARTER_ID,
+  WILD_PREFIX,
+  wildKind,
 } from '../features/sprouts/sprouts';
+import { tonightKey } from '../features/tonight/tonight';
 import { useTonight } from '../features/tonight/useTonight';
 import { topSound } from '../features/taste/thisOrThat';
 import { notifyNow } from '../lib/notifyNow';
@@ -59,6 +62,8 @@ type Stored = {
   bloomsShown?: string[];
   /** When this phone's first sprout arrived. */
   starterAt?: number;
+  /** Wild sprouts found at festivals (this phone). */
+  wild?: GardenSprout[];
 };
 
 type Ctx = {
@@ -77,8 +82,8 @@ type Ctx = {
   gifts: Gift[];
   /** Your sprouts that bloomed, and when. */
   blooms: { id: string; kind: SproutKind; at: number }[];
-  /** Blooms not yet celebrated in the garden, oldest first. */
-  newBlooms: { id: string; kind: SproutKind; at: number }[];
+  /** Blooms and wild finds not yet celebrated in the garden, oldest first. */
+  newBlooms: { id: string; kind: SproutKind; at: number; foundAt?: string }[];
   /** The garden celebrated this bloom. */
   bloomShown: (id: string) => void;
   /** Scans waiting or done (this account, or not signed in yet). */
@@ -128,6 +133,9 @@ function clean(raw: unknown): Stored {
     bloomedAt: cleanTimes(o.bloomedAt),
     bloomsShown: Array.isArray(o.bloomsShown) ? o.bloomsShown.filter((x): x is string => typeof x === 'string').slice(-200) : [],
     ...(typeof o.starterAt === 'number' ? { starterAt: o.starterAt } : {}),
+    wild: Array.isArray(o.wild)
+      ? o.wild.filter((g): g is GardenSprout => !!g && typeof g === 'object' && typeof g.id === 'string' && g.id.startsWith(WILD_PREFIX) && isKind(g.kind) && typeof g.at === 'number').slice(-500)
+      : [],
   };
 }
 
@@ -188,6 +196,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           bloomedAt: { ...s.bloomedAt, ...cur.bloomedAt },
           bloomsShown: [...new Set([...(s.bloomsShown ?? []), ...(cur.bloomsShown ?? [])])],
           starterAt: s.starterAt ?? cur.starterAt ?? Date.now(),
+          wild: [...(s.wild ?? []), ...(cur.wild ?? []).filter((w) => !(s.wild ?? []).some((x) => x.id === w.id))],
         }));
       })
       .catch(() => setStored((cur) => ({ ...cur, starterAt: cur.starterAt ?? Date.now() })))
@@ -464,8 +473,16 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const sprouts = useMemo<GardenSprout[]>(() => {
     const mine = account ? stored.garden.filter((g) => g.account === account) : [];
     const starter: GardenSprout[] = stored.starterAt ? [{ id: STARTER_ID, kind: 'seedling', from: '', name: 'Afterglow', at: stored.starterAt }] : [];
-    return [...mine, ...starter];
-  }, [stored.garden, stored.starterAt, account]);
+    return [...mine, ...(stored.wild ?? []), ...starter];
+  }, [stored.garden, stored.starterAt, stored.wild, account]);
+  // A wild sprout on each festival night you're at (once loaded, so one's never found twice).
+  const wildId = tonight ? `${WILD_PREFIX}${tonightKey(tonight.festival.id, tonight.at)}` : undefined;
+  const wildName = tonight?.festival.name;
+  useEffect(() => {
+    if (!hydrated || !wildId || !wildName || (stored.wild ?? []).some((w) => w.id === wildId)) return;
+    const found: GardenSprout = { id: wildId, kind: wildKind(wildId), from: '', name: wildName, foundAt: wildName, at: Date.now() };
+    void Promise.resolve().then(() => setStored((s) => ((s.wild ?? []).some((w) => w.id === wildId) ? s : { ...s, wild: [...(s.wild ?? []), found] })));
+  }, [hydrated, wildId, wildName, stored.wild, setStored]);
   const garden = useMemo(() => gardenOf(sprouts, journey, stored.bloomed, now), [sprouts, journey, stored.bloomed, now]);
   // Remember what each plain sprout bloomed into, so it stays that kind.
   useEffect(() => {
@@ -481,7 +498,14 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     () => garden.flatMap((g) => (stored.bloomed[g.id] && stored.bloomedAt?.[g.id] ? [{ id: g.id, kind: stored.bloomed[g.id], at: stored.bloomedAt[g.id] }] : [])),
     [garden, stored.bloomed, stored.bloomedAt],
   );
-  const newBlooms = useMemo(() => blooms.filter((b) => !(stored.bloomsShown ?? []).includes(b.id)).sort((a, b) => a.at - b.at), [blooms, stored.bloomsShown]);
+  // Blooms and wild finds not yet celebrated in the garden.
+  const newBlooms = useMemo(
+    () =>
+      [...blooms, ...(stored.wild ?? []).map((w) => ({ id: w.id, kind: w.kind, at: w.at, foundAt: w.foundAt }))]
+        .filter((b) => !(stored.bloomsShown ?? []).includes(b.id))
+        .sort((a, b) => a.at - b.at),
+    [blooms, stored.wild, stored.bloomsShown],
+  );
   const bloomShown = useCallback((id: string) => setStored((s) => ({ ...s, bloomsShown: [...(s.bloomsShown ?? []), id].slice(-200) })), [setStored]);
   const collected = useMemo(() => collectedKinds(garden), [garden]);
 

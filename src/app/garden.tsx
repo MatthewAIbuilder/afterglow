@@ -18,7 +18,8 @@ const TILE = 104;
 const GIVEN_SHOWN = 12;
 
 const day = (t: number) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-const fromLine = (s: GardenView) => (s.id === STARTER_ID ? 'Your first sprout' : `from ${s.name ?? (s.handle ? `@${s.handle}` : 'someone')}`);
+const fromLine = (s: GardenView) =>
+  s.id === STARTER_ID ? 'Your first sprout' : s.foundAt ? `Found at ${s.foundAt}` : `from ${s.name ?? (s.handle ? `@${s.handle}` : 'someone')}`;
 const nameOf = (s: GardenView) => (s.shown === 'seedling' ? 'Sprout' : kindOf(s.shown).name);
 
 /**
@@ -166,7 +167,7 @@ export default function GardenScreen() {
       </ScrollView>
       <SproutSheet sprout={open} onClose={() => setOpen(undefined)} />
       {/* A sprout that bloomed since you last looked gets its moment, one at a time. */}
-      <BadgeCelebration unlock={bloom && !open ? { kind: 'sprout', sprout: bloom.kind } : undefined} onDone={() => bloom && sprouts.bloomShown(bloom.id)} />
+      <BadgeCelebration unlock={bloom && !open ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt } : undefined} onDone={() => bloom && sprouts.bloomShown(bloom.id)} />
     </View>
   );
 }

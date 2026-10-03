@@ -231,6 +231,26 @@ describe('sprouts', () => {
     expect(app.getByText('Your sprout bloomed into a PLUR sprout')).toBeTruthy();
   });
 
+  it('on a festival night you’re at, a wild sprout appears in your garden, once', async () => {
+    jest.setSystemTime(new Date(2026, 11, 5, 22, 0));
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    await AsyncStorage.setItem('tonightShown.v1', JSON.stringify(['cyclops-cove-4:2026-12-05']));
+    const app = await renderApp('/garden');
+    await flush(20);
+    expect(app.getByText('A wild sprout appeared')).toBeTruthy();
+    await fireEvent.press(app.getByText('Lovely'));
+    await flush();
+    expect(app.getByLabelText(/, Found at Cyclops Cove 4\. In bloom\.$/)).toBeTruthy();
+    const stored = JSON.parse((await AsyncStorage.getItem('sprouts.v1')) ?? '{}');
+    expect(stored.wild).toHaveLength(1);
+    expect(stored.wild[0].id).toBe('wild:cyclops-cove-4:2026-12-05');
+    // Later the same night, still the one.
+    await settle(3_600_000);
+    await flush();
+    expect(JSON.parse((await AsyncStorage.getItem('sprouts.v1')) ?? '{}').wild).toHaveLength(1);
+    expect(app.queryByText('A wild sprout appeared')).toBeNull();
+  });
+
   it('the Friends tab and Profile lead to sprouts', async () => {
     await person('maya', 'Maya');
     const app = await renderApp('/together');

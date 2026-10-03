@@ -240,7 +240,25 @@ export type GardenSprout = {
   late?: boolean;
   /** When you scanned it, when that was before it reached you (side quests go by this). */
   scannedAt?: number;
+  /** A wild sprout: found at this festival (its name). */
+  foundAt?: string;
 };
+
+/**
+ * Wild sprouts: one appears in your garden on each night of a festival
+ * you're at (`wild:<festival>:<night>`), already grown, its kind picked for
+ * that festival and night (the same for everyone there that night).
+ */
+export const WILD_PREFIX = 'wild:';
+export function wildKind(nightId: string): SproutKind {
+  const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
+  let h = 2166136261;
+  for (let i = 0; i < nightId.length; i++) {
+    h ^= nightId.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return kinds[(h >>> 0) % kinds.length].id;
+}
 
 /** The sprout everyone starts with. */
 export const STARTER_ID = 'starter';

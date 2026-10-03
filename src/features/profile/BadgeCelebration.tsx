@@ -32,7 +32,7 @@ export type Unlock =
   | { kind: 'throwback'; past: PastEvent }
   | { kind: 'milestone'; milestone: Milestone }
   /** A sprout in your garden bloomed into a kind. */
-  | { kind: 'sprout'; sprout: SproutKind };
+  | { kind: 'sprout'; sprout: SproutKind; foundAt?: string };
 
 const RAYS = 18;
 const SPARKS = 26;
@@ -76,7 +76,9 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
       : unlock.kind === 'throwback'
         ? throwbackAbout(unlock.past)
         : unlock.kind === 'sprout'
-          ? `${kindOf(unlock.sprout).about} You can give ${kindOf(unlock.sprout).name}s now.`
+          ? unlock.foundAt
+            ? `${kindOf(unlock.sprout).about} Found at ${unlock.foundAt}: every festival night brings a new one.`
+            : `${kindOf(unlock.sprout).about} You can give ${kindOf(unlock.sprout).name}s now.`
           : unlock.milestone.about;
 
   const pop = useSharedValue(reduce ? 1 : 0);
@@ -149,7 +151,9 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
             : unlock.kind === 'throwback'
               ? 'Throwback unlocked'
               : unlock.kind === 'sprout'
-                ? 'Your sprout bloomed'
+                ? unlock.foundAt
+                  ? 'A wild sprout appeared'
+                  : 'Your sprout bloomed'
                 : 'Badge unlocked'}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {title}
