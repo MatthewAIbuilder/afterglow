@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -45,15 +45,31 @@ const BADGE = 190;
  * springs in with a little wobble before settling into a glow. Then what it
  * is and "Add to collection". With reduced motion: the badge and words, still.
  */
-export function BadgeCelebration({ unlock, onDone }: { unlock: Unlock | undefined; onDone: () => void }) {
+/**
+ * `id` names what's being celebrated, so one straight after another gets its own moment (and a quick
+ * double tap on the first never dismisses the next before it's seen).
+ */
+export function BadgeCelebration({ unlock, onDone, id }: { unlock: Unlock | undefined; onDone: () => void; id?: string }) {
   return (
     <Modal visible={!!unlock} transparent animationType="fade" statusBarTranslucent onRequestClose={onDone}>
-      {unlock ? <Burst unlock={unlock} onDone={onDone} /> : null}
+      {unlock ? <Burst key={id ?? unlockKey(unlock)} unlock={unlock} onDone={onDone} /> : null}
     </Modal>
   );
 }
 
+/** What an unlock is, as a key. */
+const unlockKey = (u: Unlock) =>
+  u.kind === 'pin' ? `pin:${u.festival.id}` : u.kind === 'throwback' ? `past:${pastLabel(u.past)}` : u.kind === 'milestone' ? `m:${u.milestone.id}` : `sprout:${u.sprout}:${u.foundAt ?? ''}`;
+
+/** A moment is ready to dismiss after this long (a double tap meant for the one before is ignored). */
+const ARM_MS = 400;
+
 function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setArmed(true), ARM_MS);
+    return () => clearTimeout(t);
+  }, []);
   const reduce = useReducedMotion();
   const { width } = useWindowDimensions();
   const look = unlock.kind === 'pin' ? pinLook(unlock.festival) : unlock.kind === 'throwback' ? throwbackLook(unlock.past) : undefined;
@@ -161,6 +177,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
         <Text style={styles.about}>{about}</Text>
         <Pressable
           onPress={() => {
+            if (!armed) return;
             haptic.select();
             onDone();
           }}

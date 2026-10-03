@@ -167,7 +167,7 @@ export default function GardenScreen() {
       </ScrollView>
       <SproutSheet sprout={open} onClose={() => setOpen(undefined)} />
       {/* A sprout that bloomed since you last looked gets its moment, one at a time. */}
-      <BadgeCelebration unlock={bloom && !open ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt } : undefined} onDone={() => bloom && sprouts.bloomShown(bloom.id)} />
+      <BadgeCelebration id={bloom?.id} unlock={bloom && !open ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt } : undefined} onDone={() => bloom && sprouts.bloomShown(bloom.id)} />
     </View>
   );
 }

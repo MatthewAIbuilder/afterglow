@@ -63,9 +63,9 @@ export function nextDue(gifts: readonly Gift[], claims: readonly Claim[]): numbe
   return times.length ? Math.min(...times) : undefined;
 }
 
-/** Keep a scan (once per sprout; scanning again changes nothing). */
+/** Keep a scan (once per sprout and account; scanning again changes nothing). */
 export function queueClaim(claims: readonly Claim[], card: SproutCard, account: string | undefined, now: number): Claim[] {
-  if (claims.some((c) => c.card.id === card.id)) return [...claims];
+  if (claims.some((c) => c.card.id === card.id && (!c.account || !account || c.account === account))) return [...claims];
   return [{ card, account, at: now, state: 'waiting', tries: 0 }, ...claims];
 }
 

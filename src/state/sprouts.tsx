@@ -47,7 +47,7 @@ import { useSocial } from './social';
  * soon as there's signal, trying again by themselves.
  */
 export type ClaimResult = 'claimed' | 'waiting' | 'self' | 'taken' | 'gone' | 'signed-out';
-export type GiveResult = { card: SproutCard } | { problem: 'no-seeds' | 'needs-profile' | 'signed-out' };
+export type GiveResult = { card: SproutCard } | { problem: 'no-seeds' | 'needs-profile' | 'signed-out' | 'loading' };
 
 type Stored = {
   gifts: Gift[];
@@ -99,6 +99,8 @@ type Ctx = {
 
 export const SPROUTS_KEY = 'sprouts.v1';
 const TRY_TIMEOUT_MS = 10_000;
+/** Celebrations already shown, kept at least as long as the wild sprouts and blooms they're for. */
+const SHOWN_MAX = 2000;
 const EMPTY: Stored = { gifts: [], claims: [], garden: [], bloomed: {} };
 
 function randomId(): string {
@@ -131,7 +133,7 @@ function clean(raw: unknown): Stored {
     garden: cleanGarden(o.garden),
     bloomed: cleanBloomed(o.bloomed),
     bloomedAt: cleanTimes(o.bloomedAt),
-    bloomsShown: Array.isArray(o.bloomsShown) ? o.bloomsShown.filter((x): x is string => typeof x === 'string').slice(-200) : [],
+    bloomsShown: Array.isArray(o.bloomsShown) ? o.bloomsShown.filter((x): x is string => typeof x === 'string').slice(-SHOWN_MAX) : [],
     ...(typeof o.starterAt === 'number' ? { starterAt: o.starterAt } : {}),
     wild: Array.isArray(o.wild)
       ? o.wild.filter((g): g is GardenSprout => !!g && typeof g === 'object' && typeof g.id === 'string' && g.id.startsWith(WILD_PREFIX) && isKind(g.kind) && typeof g.at === 'number').slice(-500)
@@ -184,10 +186,19 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   // Coming back to the app: a reason to read what's on Afterglow.
   const [back, setBack] = useState(0);
 
+  // A read that failed (not a broken file): nothing is saved over what's there this time.
+  const readFailed = useRef(false);
   useEffect(() => {
     AsyncStorage.getItem(SPROUTS_KEY)
+      .catch((e) => {
+        readFailed.current = true;
+        throw e;
+      })
       .then((raw) => {
-        const s = raw ? clean(JSON.parse(raw)) : EMPTY;
+        let s: Stored = EMPTY;
+        try {
+          s = raw ? clean(JSON.parse(raw)) : EMPTY;
+        } catch {}
         setStored((cur) => ({
           gifts: [...cur.gifts, ...s.gifts.filter((g) => !cur.gifts.some((c) => c.id === g.id))],
           claims: [...cur.claims, ...s.claims.filter((c) => !cur.claims.some((x) => x.card.id === c.card.id))],
@@ -206,7 +217,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       });
   }, []);
   useEffect(() => {
-    if (loaded.current) AsyncStorage.setItem(SPROUTS_KEY, JSON.stringify(stored)).catch(() => {});
+    if (loaded.current && !readFailed.current) AsyncStorage.setItem(SPROUTS_KEY, JSON.stringify(stored)).catch(() => {});
   }, [stored]);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
@@ -250,10 +261,10 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const tryClaim = useCallback(
     async (c: Claim, me: string): Promise<ClaimResult> => {
       const done = (state: Claim['state']) =>
-        setStored((s) => ({ ...s, claims: s.claims.map((x) => (x.card.id === c.card.id ? { ...x, account: me, state, doneAt: Date.now() } : x)) }));
+        setStored((s) => ({ ...s, claims: s.claims.map((x) => (x.card.id === c.card.id && (!x.account || x.account === me) ? { ...x, account: me, state, doneAt: Date.now() } : x)) }));
       // Scanned while signed out, and it turns out to be one you gave: it's not yours to pick up.
       if (c.card.from === me) {
-        setStored((s) => ({ ...s, claims: s.claims.filter((x) => x.card.id !== c.card.id) }));
+        setStored((s) => ({ ...s, claims: s.claims.filter((x) => !(x.card.id === c.card.id && (!x.account || x.account === me))) }));
         return 'self';
       }
       if (inFlight.current.has(c.card.id)) return 'waiting';
@@ -272,7 +283,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           done(kind === 'sprout-taken' ? 'taken' : 'gone');
           return kind === 'sprout-taken' ? 'taken' : 'gone';
         }
-        setStored((s) => ({ ...s, claims: s.claims.map((x) => (x.card.id === c.card.id ? { ...x, account: me, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
+        setStored((s) => ({ ...s, claims: s.claims.map((x) => (x.card.id === c.card.id && (!x.account || x.account === me) ? { ...x, account: me, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
         return 'waiting';
       } finally {
         inFlight.current.delete(c.card.id);
@@ -293,8 +304,8 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
         if (socialErrorKind(e) === 'sprout-taken') {
           // Someone picked it up first: it stays given.
           setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, takenBack: undefined, sent: true } : x)) }));
-          const there = await social.service.sprout(g.id).catch(() => null);
-          if (there?.to) await noteClaimedRef.current(there);
+          const there = await timeout(social.service.sprout(g.id), TRY_TIMEOUT_MS).catch(() => null);
+          if (there?.to) await timeout(noteClaimedRef.current(there), TRY_TIMEOUT_MS).catch(() => {});
         } else setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
       } finally {
         inFlight.current.delete(g.id);
@@ -316,7 +327,10 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     const back = giftsToTakeBack(mine, t);
     const toClaim = claimsToSend(stored.claims, account, t).filter((c) => !inFlight.current.has(c.card.id));
     if (!gifts.length && !back.length && !toClaim.length) {
-      const at = nextDue(ready ? stored.gifts.filter((g) => g.account === account) : [], stored.claims.filter((c) => !c.account || c.account === account));
+      const at = nextDue(
+        ready ? mine : [],
+        stored.claims.filter((c) => (!c.account || c.account === account) && !inFlight.current.has(c.card.id)),
+      );
       if (at === undefined) return;
       const timer = setTimeout(() => setTick((x) => x + 1), Math.max(500, at - t));
       return () => clearTimeout(timer);
@@ -339,7 +353,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const whoIs = useCallback(
     async (uid: string) => {
       if (!nameOf.current.has(uid)) {
-        const p = await social.service.profileOf(uid).catch(() => null);
+        const p = await timeout(social.service.profileOf(uid), TRY_TIMEOUT_MS).catch(() => null);
         nameOf.current.set(uid, p ? { handle: p.handle, name: p.displayName } : {});
       }
       return nameOf.current.get(uid)!;
@@ -396,6 +410,8 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     (kind: SproutKind, note?: string): GiveResult => {
       if (!social.user) return { problem: 'signed-out' };
       if (!social.profile) return { problem: 'needs-profile' };
+      // Seeds are counted from what's saved, so not before it's loaded.
+      if (!loaded.current) return { problem: 'loading' };
       const t = Date.now();
       const mine = storedRef.current.gifts.filter((g) => g.account === social.user!.uid && !g.takenBack).map((g) => g.at);
       if (seedsLeft(mine, t, festivalDay) <= 0) return { problem: 'no-seeds' };
@@ -421,7 +437,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       }
       if (online && !inFlight.current.has(id)) {
         // Picked up in the meantime? Then it stays given.
-        const there = await social.service.sprout(id).catch(() => undefined);
+        const there = await timeout(social.service.sprout(id), TRY_TIMEOUT_MS).catch(() => undefined);
         if (there?.to) {
           await noteClaimed(there);
           return false;
@@ -442,12 +458,12 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       if (me && card.from === me) return 'self';
       if (me && stored.garden.some((g) => g.id === card.id && g.account === me)) return 'claimed';
       const t = Date.now();
-      const existing = stored.claims.find((c) => c.card.id === card.id);
+      const existing = stored.claims.find((c) => c.card.id === card.id && (!c.account || c.account === me));
       if (existing && existing.state !== 'waiting') return existing.state === 'claimed' ? 'claimed' : existing.state;
-      setStored((s) => ({ ...s, claims: queueClaim(s.claims, card, me, t).map((c) => (c.card.id === card.id && me ? { ...c, account: me } : c)) }));
+      setStored((s) => ({ ...s, claims: queueClaim(s.claims, card, me, t).map((c) => (c.card.id === card.id && me && !c.account ? { ...c, account: me } : c)) }));
       if (!me) return 'signed-out';
       if (!online) {
-        setStored((s) => ({ ...s, claims: s.claims.map((c) => (c.card.id === card.id ? { ...c, tries: Math.max(1, c.tries), lastTry: t } : c)) }));
+        setStored((s) => ({ ...s, claims: s.claims.map((c) => (c.card.id === card.id && c.account === me ? { ...c, tries: Math.max(1, c.tries), lastTry: t } : c)) }));
         return 'waiting';
       }
       const item: Claim = existing ?? { card, account: me, at: t, state: 'waiting', tries: 0 };
@@ -506,7 +522,10 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
         .sort((a, b) => a.at - b.at),
     [blooms, stored.wild, stored.bloomsShown],
   );
-  const bloomShown = useCallback((id: string) => setStored((s) => ({ ...s, bloomsShown: [...(s.bloomsShown ?? []), id].slice(-200) })), [setStored]);
+  const bloomShown = useCallback(
+    (id: string) => setStored((s) => ((s.bloomsShown ?? []).includes(id) ? s : { ...s, bloomsShown: [...(s.bloomsShown ?? []), id].slice(-SHOWN_MAX) })),
+    [setStored],
+  );
   const collected = useMemo(() => collectedKinds(garden), [garden]);
 
   const value = useMemo<Ctx>(
