@@ -30,6 +30,7 @@ import type { Memory } from '../features/memories/models';
 import { isOffline } from '../features/offline/status';
 import type { CrewCare, CrewUpdate, CrewUpdateInput, MeetSpot, Profile } from '../features/social/models';
 import { notifyNow } from '../lib/notifyNow';
+import { forgetCrewPhoto, keepCrewPhoto } from '../features/crews/photoFile';
 import { firstName } from '../features/crews/together';
 import { socialErrorKind } from '../features/social/service';
 import { useNow } from '../lib/useNow';
@@ -80,6 +81,8 @@ type Ctx = {
   callLost: (festivalId: string) => string | false;
   /** "I'm OK" or "come find me" to every crew you're in at this festival; the update's id, or false. */
   sendCare: (festivalId: string, care: CrewCare) => string | false;
+  /** A photo to every crew you're in at this festival (crews only, never Discover); the update's id, or false. */
+  sendPhoto: (festivalId: string, photo: { uri: string; width?: number; height?: number }, words: { note?: string; stage?: string; artistId?: string }) => Promise<string | false>;
   /** Crewmates asking for help right now, newest first. */
   careAlerts: CrewUpdate[];
   /** Your own latest "I'm OK" / "come find me" (sent or waiting), while it's current. */
@@ -301,7 +304,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
           try {
             const posted = await service.postCrewUpdate(crewId, input);
             reached.push(crewId);
-            if (input.kind === 'video' && input.videoUri) setSentVideos((v) => withSentVideo(v, crewId, posted.id));
+            if ((input.kind === 'video' && input.videoUri) || input.kind === 'photo') setSentVideos((v) => withSentVideo(v, crewId, posted.id));
             setUpdates((s) => {
               const list = (s.byCrew[crewId] ?? []).filter((u) => u.id !== posted.id);
               return { uid: s.uid ?? uid, byCrew: { ...s.byCrew, [crewId]: [posted, ...list] } };
@@ -321,6 +324,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         const givenUp = refusedBy.length && (item.refused ?? 0) + 1 >= REFUSED_TRIES ? refusedBy : [];
         const notGoing = [...givenUp, ...item.crewIds.filter((id) => !crewIds.includes(id))];
         if (reached.length || notGoing.length) setOutbox((o) => delivered(delivered(o, item.id, reached), item.id, notGoing, false));
+        // A photo that's gone to every crew it can: its kept copy isn't needed any more.
+        if (item.input.kind === 'photo' && crewIds.every((c) => reached.includes(c) || notGoing.includes(c))) forgetCrewPhoto(item.input.thumbUri);
         // Nobody got it at all: say so, rather than let it look sent.
         if (givenUp.length && !reached.length && !item.reachedSome && givenUp.length === crewIds.length) setDropped((d) => [...d, item.id]);
         if (stop) {
@@ -405,6 +410,31 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
       const now = Date.now();
       const id = updateId(now);
       const input: CrewUpdateInput = { id, kind: 'checkin', care, at: new Date(now).toISOString(), festivalId, note: CARE_NOTE[care] };
+      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
+      return id;
+    },
+    [crewIdsAt, ready],
+  );
+
+  const sendPhoto = useCallback(
+    async (festivalId: string, photo: { uri: string; width?: number; height?: number }, words: { note?: string; stage?: string; artistId?: string }) => {
+      const crewIds = crewIdsAt(festivalId);
+      if (!ready || !crewIds.length) return false;
+      const now = Date.now();
+      const id = updateId(now);
+      const kept = await keepCrewPhoto(photo.uri, id);
+      const note = words.note ? cleanNote(words.note) : '';
+      const input: CrewUpdateInput = {
+        id,
+        kind: 'photo',
+        at: new Date(now).toISOString(),
+        festivalId,
+        thumbUri: kept,
+        ...(note ? { note } : {}),
+        ...(words.stage ? { stage: words.stage } : {}),
+        ...(words.artistId ? { artistId: words.artistId } : {}),
+        ...(photo.width && photo.height ? { width: Math.round(photo.width), height: Math.round(photo.height) } : {}),
+      };
       setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
       return id;
     },
@@ -529,8 +559,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, sendCare, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, sendCare, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }
@@ -547,6 +577,7 @@ const OFF: Ctx = {
   checkIn: () => false,
   callLost: () => false,
   sendCare: () => false,
+  sendPhoto: async () => false,
   careAlerts: [],
   myCare: undefined,
   meetSpotFor: () => undefined,

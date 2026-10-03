@@ -101,11 +101,12 @@ export function crewUpdateFromDoc(crewId: string, id: string, d: unknown): CrewU
   const o = d as Record<string, unknown>;
   const uid = str(o.uid);
   const festivalId = str(o.festivalId);
-  const kind = o.kind === 'video' || o.kind === 'checkin' || o.kind === 'reply' ? o.kind : undefined;
+  const kind = o.kind === 'video' || o.kind === 'checkin' || o.kind === 'reply' || o.kind === 'photo' ? o.kind : undefined;
   const at = typeof o.atMs === 'number' && Number.isFinite(o.atMs) ? new Date(o.atMs).toISOString() : undefined;
   if (!uid || !festivalId || !kind || !at) return null;
   const videoUrl = https(o.videoUrl);
   if (kind === 'video' && !videoUrl) return null;
+  if (kind === 'photo' && !https(o.thumbUrl)) return null;
   if (kind === 'reply' && (!str(o.replyTo) || !str(o.note))) return null;
   return {
     id,

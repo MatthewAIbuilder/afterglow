@@ -115,8 +115,12 @@ export type CrewUpdate = {
   id: string;
   crewId: string;
   uid: string;
-  /** A video, a check-in, or a reply to someone's update (`replyTo`, words in `note`). */
-  kind: 'video' | 'checkin' | 'reply';
+  /**
+   * A video, a check-in, a reply to someone's update (`replyTo`, words in
+   * `note`), or a photo (the picture in `thumbUrl`; photos only ever go to
+   * crews, never to Discover or profiles).
+   */
+  kind: 'video' | 'checkin' | 'reply' | 'photo';
   /** When it happened on the phone (ISO 8601). */
   at: string;
   /** When it reached the crew (ISO 8601, from the server). */

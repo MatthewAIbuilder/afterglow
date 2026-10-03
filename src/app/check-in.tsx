@@ -1,3 +1,5 @@
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -11,6 +13,7 @@ import { isOffline } from '../features/offline/status';
 import { LostButton } from '../features/crews/LostButton';
 import { CareButtons } from '../features/crews/CareButtons';
 import { CREW_NOTE_MAX } from '../features/social/models';
+import { showActionSheet, showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useCrews } from '../state/crews';
@@ -28,7 +31,7 @@ import { color, radius, space, type } from '../theme/tokens';
 export default function CheckInScreen() {
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
-  const { crewFestivals, checkIn, ready, outbox, dropped } = useCrewUpdates();
+  const { crewFestivals, checkIn, sendPhoto, ready, outbox, dropped } = useCrewUpdates();
   const { crewsAt } = useCrews();
   const { taste } = useTaste();
   const { mustSeesAt } = usePlan();
@@ -48,6 +51,28 @@ export default function CheckInScreen() {
   const [watching, setWatching] = useState(false);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState<{ id: string; at: Date } | undefined>();
+  // A photo for the crew (crews only: photos never go to Discover or profiles).
+  const [photo, setPhoto] = useState<{ uri: string; width?: number; height?: number } | undefined>();
+  const addPhoto = () => {
+    const camera = Platform.OS !== 'web';
+    const options = [...(camera ? ['Take a photo'] : []), 'Choose from Photos', 'Cancel'];
+    showActionSheet({ title: 'A photo for your crew', message: 'Only your crew sees it.', options, cancelButtonIndex: options.length - 1 }, async (i) => {
+      const choice = options[i];
+      if (choice === 'Cancel' || !choice) return;
+      try {
+        if (choice === 'Take a photo' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
+          showAlert('Camera is off for Afterglow', 'Turn it on in Settings to take a photo, or choose one from Photos.');
+          return;
+        }
+        const pick = choice === 'Take a photo' ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+        const r = await pick({ mediaTypes: ['images'], quality: 0.7 });
+        const a = r.canceled ? undefined : r.assets?.[0];
+        if (a) setPhoto({ uri: a.uri, width: a.width, height: a.height });
+      } catch {
+        showAlert('Couldn’t get that photo', 'Try again, or choose another one.');
+      }
+    });
+  };
 
   if (!ready || !festival) {
     return (
@@ -59,12 +84,13 @@ export default function CheckInScreen() {
   }
 
   const crews = crewsAt(festival.id);
-  const send = (words?: string) => {
-    const id = checkIn(festival.id, {
+  const send = async (words?: string) => {
+    const where = {
       note: words,
       stage: watching && playing?.stage ? playing.stage : stage,
       artistId: watching ? playing?.artist.id : undefined,
-    });
+    };
+    const id = photo ? await sendPhoto(festival.id, photo, where) : checkIn(festival.id, where);
     if (!id) return;
     haptic.settle();
     setSent({ id, at: new Date() });
@@ -146,12 +172,32 @@ export default function CheckInScreen() {
           </Chips>
         ) : null}
 
+        <Text style={[styles.section, styles.pad]}>Photo</Text>
+        <View style={styles.pad}>
+          {photo ? (
+            <View style={styles.photoRow}>
+              <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" accessibilityLabel="Your photo for the crew" />
+              <View style={{ flex: 1, gap: space.xs }}>
+                <Text style={styles.photoNote}>Goes with your check-in. Only your crew sees it.</Text>
+                <Pressable onPress={() => setPhoto(undefined)} accessibilityRole="button" accessibilityLabel="Remove the photo" hitSlop={8}>
+                  <Text style={styles.photoRemove}>Remove</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable onPress={addPhoto} accessibilityRole="button" accessibilityLabel="Add a photo for your crew" style={({ pressed }) => [styles.photoAdd, pressed && styles.pressed]}>
+              <Text style={styles.photoAddText}>+ Add a photo</Text>
+              <Text style={styles.photoNote}>Just for your crew, never on Discover or your profile.</Text>
+            </Pressable>
+          )}
+        </View>
+
         <Text style={[styles.section, styles.pad]}>Say</Text>
         <View style={[styles.quick, styles.pad]}>
           {CHECK_INS.map((words) => (
             <Pressable
               key={words}
-              onPress={() => send(words)}
+              onPress={() => void send(words)}
               accessibilityRole="button"
               accessibilityLabel={`Send “${words}” to your crew`}
               style={({ pressed }) => [styles.quickButton, pressed && styles.pressed]}
@@ -170,12 +216,12 @@ export default function CheckInScreen() {
             style={styles.input}
             accessibilityLabel="Your own words for your crew"
             returnKeyType="send"
-            onSubmitEditing={() => cleanNote(note) && send(note)}
+            onSubmitEditing={() => void (cleanNote(note) && send(note))}
           />
           <Pressable
-            onPress={() => send(cleanNote(note) || undefined)}
+            onPress={() => void send(cleanNote(note) || undefined)}
             accessibilityRole="button"
-            accessibilityLabel={cleanNote(note) ? 'Send to your crew' : 'Send where you are to your crew'}
+            accessibilityLabel={photo ? 'Send the photo to your crew' : cleanNote(note) ? 'Send to your crew' : 'Send where you are to your crew'}
             style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
           >
             <Text style={styles.primaryText}>Send</Text>
@@ -260,6 +306,12 @@ const styles = StyleSheet.create({
   },
   quickText: { ...type.headline, color: color.moon },
   own: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.xl },
+  photoAdd: { padding: space.lg, gap: 4, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(169,124,255,0.5)', backgroundColor: 'rgba(169,124,255,0.06)' },
+  photoAddText: { ...type.headline, color: color.glow },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  photo: { width: 84, height: 84, borderRadius: radius.md },
+  photoNote: { ...type.caption, color: color.moonDim },
+  photoRemove: { ...type.label, color: color.glow },
   input: {
     flex: 1,
     ...type.body,

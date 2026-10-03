@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -84,6 +85,10 @@ export default function CrewStoryScreen() {
       <PageTitle title={`${name}’s update`} />
       {u.kind === 'video' && u.videoUrl ? (
         <StoryVideo key={u.id} url={u.videoUrl} />
+      ) : u.kind === 'photo' && u.thumbUrl ? (
+        <View key={u.id} style={[StyleSheet.absoluteFill, styles.photoBack]} accessible accessibilityRole="image" accessibilityLabel={`Photo from ${name}${u.note ? `: ${u.note}` : ''}`}>
+          <Image source={{ uri: u.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="contain" transition={200} />
+        </View>
       ) : (
         <CheckInCard key={u.id} update={u} artist={artist} replyingTo={isReply(u) ? (yourUpdate ? `Replying to your ${clock(yourUpdate.at)} update${yourUpdate.note ? `, “${yourUpdate.note}”` : ''}` : 'Replying to your update') : undefined} />
       )}
@@ -125,7 +130,7 @@ export default function CrewStoryScreen() {
         </View>
       </View>
 
-      {u.kind === 'video' && u.note ? (
+      {(u.kind === 'video' || u.kind === 'photo') && u.note ? (
         <View style={[styles.caption, { top: insets.top + 110 }]} pointerEvents="none">
           <Text style={styles.captionText}>{u.note}</Text>
         </View>
@@ -160,6 +165,7 @@ function CheckInCard({ update: u, artist, replyingTo }: { update: CrewUpdate; ar
 }
 
 const styles = StyleSheet.create({
+  photoBack: { backgroundColor: '#000' },
   root: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center' },
   gone: { ...type.body, color: color.moonDim },

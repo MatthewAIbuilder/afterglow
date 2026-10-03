@@ -335,6 +335,12 @@ await t('crew updates: “I’m OK” and “come find me” only on a check-in'
   await assertFails(setDoc(at('k000003'), update({ care: 'fine' })));
   await assertFails(setDoc(at('k000004'), update({ care: 'ok', kind: 'video', videoUrl: 'https://x/v.mp4' })));
 });
+await t('crew updates: a photo for the crew has its picture and no video', async () => {
+  const at = (id) => doc(B.firestore(), 'crews', 'c1', 'updates', id);
+  await assertSucceeds(setDoc(at('p000001'), update({ kind: 'photo', thumbUrl: 'https://x/p.jpg', thumbPath: 'crews/c1/uidB/p000001.jpg' })));
+  await assertFails(setDoc(at('p000002'), update({ kind: 'photo' })));
+  await assertFails(setDoc(at('p000003'), update({ kind: 'photo', thumbUrl: 'https://x/p.jpg', videoUrl: 'https://x/v.mp4' })));
+});
 await t('crew updates: never edited; removed by the author or the owner', async () => {
   await assertFails(updateDoc(doc(B.firestore(), 'crews', 'c1', 'updates', 'u000001'), { note: 'changed' }));
   await assertFails(deleteDoc(doc(C.firestore(), 'crews', 'c1', 'updates', 'u000001')));

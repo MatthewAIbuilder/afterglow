@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { ActionSheetIOS, Alert } from 'react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
 import { renderApp } from './appRoutes';
@@ -272,6 +272,35 @@ describe('crew updates', () => {
     const hers = await renderApp('/');
     await flush();
     expect(hers.getByLabelText(/^Sam, can’t find the crew, 5:30 PM, “Can’t find you\. Heading to By the big tree left of Main Stage”\. New$/)).toBeTruthy();
+  });
+
+  it('sends a photo to the crew only, and it shows in their story', async () => {
+    const crew = await crewWithNews();
+    await as('sam');
+    const picker = jest.requireMock<{ launchImageLibraryAsync: jest.Mock }>('expo-image-picker');
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///crowd.jpg', width: 1200, height: 900 }] }));
+    const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation((o, pick) => pick(o.options.indexOf('Choose from Photos')));
+    const app = await renderApp('/check-in');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Add a photo for your crew'));
+    await flush();
+    sheet.mockRestore();
+    expect(app.getByLabelText('Your photo for the crew')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Your own words for your crew'), 'Look at this crowd');
+    await fireEvent.press(app.getByLabelText('Send the photo to your crew'));
+    await flush();
+    const photo = [...mockSocial.updates.values()].find((u) => u.kind === 'photo');
+    expect(photo).toMatchObject({ crewId: crew.id, note: 'Look at this crowd', thumbUrl: expect.stringContaining('https://'), width: 1200, height: 900 });
+    // Never on Discover or a profile.
+    expect([...mockSocial.memories.values()]).toHaveLength(0);
+    await app.unmount();
+
+    await s().signOut();
+    await as('maya');
+    const hers = await renderApp(`/crew-story?uid=${photo!.uid}`);
+    await flush();
+    expect(hers.getByLabelText('Photo from Sam: Look at this crowd')).toBeTruthy();
+    expect(hers.getAllByText(/^Photo 5:30 PM/).length).toBeGreaterThan(0);
   });
 
   it('nobody sees updates from a crew they are not in', async () => {
