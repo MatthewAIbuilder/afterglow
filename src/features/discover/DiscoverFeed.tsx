@@ -57,6 +57,8 @@ import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
 import { useFeedLive } from './useFeedLive';
 import { useRankedFeed } from './useRankedFeed';
+import { ToeGlyph } from '../toes/Toe';
+import { useToes } from '../toes/useToes';
 
 /**
  * Full-screen vertical feed. One clip per page. Only the clip on screen plays,
@@ -75,6 +77,7 @@ export function DiscoverFeed() {
   const width = Math.min(screen.width, FEED_MAX_WIDTH);
   const height = screen.height;
   const insets = useSafeAreaInsets();
+  const toes = useToes();
   const tabSpace = useTabBarSpace();
   const listRef = useAnimatedRef<FlatList<FeedItem>>();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -472,7 +475,7 @@ export function DiscoverFeed() {
           >
             <View style={styles.headerTitle}>
               <Text style={styles.festival} numberOfLines={1}>{tonightOn ? 'Tonight' : festival ? festival.name : followingFocus ? 'Following' : (soundLabel ?? 'Your mix')}</Text>
-              <ChevronIcon color={color.moonDim} size={13} direction="down" />
+              {toes ? <ToeGlyph size={12} color={color.moonDim} /> : <ChevronIcon color={color.moonDim} size={13} direction="down" />}
             </View>
             {/* Short, so the title never fights the buttons: the dates, or where the clips come from. */}
             <Text style={styles.dates} numberOfLines={1}>

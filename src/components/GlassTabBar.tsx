@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../lib/haptics';
 import { color, radius, space, type } from '../theme/tokens';
 import { DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
+import { HiddenToe } from '../features/toes/Toe';
 
 const ICONS: Record<string, typeof DiscoverIcon> = {
   index: DiscoverIcon,
@@ -86,6 +87,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       ) : null}
       {active ? <CareTip /> : null}
       {active ? <HeartHalo hold={hold} bottom={TAB_BAR_HEIGHT / 2} /> : null}
+      {/* A toe peeking over the top of the bar (one person's app only). */}
+      <HiddenToe size={13} opacity={0.4} turn={-14} style={styles.peek} />
       <View style={styles.pill}>
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, styles.tint]} />
@@ -219,6 +222,7 @@ function CameraTab({ hold, burst }: { hold: SharedValue<number>; burst: SharedVa
 }
 
 const styles = StyleSheet.create({
+  peek: { bottom: TAB_BAR_HEIGHT - 5, right: '23%' },
   wrap: { position: 'absolute', left: space.md, right: space.md, alignItems: 'center' },
   pill: {
     flexDirection: 'row',

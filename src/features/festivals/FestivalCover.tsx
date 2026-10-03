@@ -2,6 +2,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { color } from '../../theme/tokens';
+import { ToeGlyph } from '../toes/Toe';
+import { useToes } from '../toes/useToes';
 
 type Props = {
   photos: string[];
@@ -24,6 +26,7 @@ const NIGHT = 'rgba(10,9,24,1)';
  * photos.
  */
 export function FestivalCover({ photos, fade = 'card', tail = 120, style }: Props) {
+  const toes = useToes();
   if (!photos.length) return null;
   const page = fade === 'page';
   return (
@@ -46,6 +49,12 @@ export function FestivalCover({ photos, fade = 'card', tail = 120, style }: Prop
       </View>
       {/* Below the faces the night eases back into the sky, so the cover has no edge. */}
       {page ? <LinearGradient colors={[NIGHT, 'rgba(10,9,24,0)']} style={[styles.tail, { height: tail }]} /> : null}
+      {/* A toe tucked into the corner of the faces (one person's app only). */}
+      {toes ? (
+        <View style={[styles.toe, page && { bottom: tail + 10 }]}>
+          <ToeGlyph size={11} opacity={0.22} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -54,6 +63,7 @@ const fill = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as c
 
 const styles = StyleSheet.create({
   root: { overflow: 'hidden' },
+  toe: { position: 'absolute', right: 12, bottom: 10, transform: [{ rotate: '22deg' }] },
   faces: { ...fill, overflow: 'hidden', backgroundColor: color.night },
   row: { ...fill, flexDirection: 'row' },
   slice: { flex: 1, overflow: 'hidden' },

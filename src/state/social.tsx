@@ -237,6 +237,11 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }
 
+/** The social context, or null outside SocialProvider (for little touches that never need it). */
+export function useSocialMaybe() {
+  return useContext(SocialContext);
+}
+
 export function useSocial() {
   const ctx = useContext(SocialContext);
   if (!ctx) throw new Error('useSocial must be used inside SocialProvider');

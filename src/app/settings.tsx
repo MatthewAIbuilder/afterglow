@@ -25,6 +25,7 @@ import { useReactions } from '../state/reactions';
 import { useMySupport } from '../state/supportSeen';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { useToes } from '../features/toes/useToes';
 
 /**
  * Settings and more, from the menu on Profile: your account, the lists
@@ -32,6 +33,7 @@ import { color, radius, space, type } from '../theme/tokens';
  * iOS settings, so the profile itself stays a profile.
  */
 export default function SettingsScreen() {
+  const toes = useToes();
   // Replies from support you haven't seen yet.
   const support = useMySupport();
   const mode = useFestivalMode();
@@ -129,7 +131,7 @@ export default function SettingsScreen() {
           <Row label="Terms" onPress={() => router.push(legalPath('terms') as never)} />
           <Row label="Community guidelines" onPress={() => router.push(legalPath('guidelines') as never)} />
         </Group>
-        <Text style={styles.version}>{VERSION_LINE}</Text>
+        <Text style={styles.version}>{toes ? `${VERSION_LINE} · made with ten toes` : VERSION_LINE}</Text>
       </ScrollView>
     </View>
   );

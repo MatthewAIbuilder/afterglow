@@ -17,6 +17,8 @@ import type { SoundTag } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { mixColor, SOUND_COLOR, withAlpha } from '../sound-map/colors';
 import { type Favourite, orbitPlaces } from './identity';
+import { ToeGlyph } from '../toes/Toe';
+import { useToes } from '../toes/useToes';
 
 /** One turn of the orbit, slow enough to feel alive, never busy. */
 const TURN_MS = 90_000;
@@ -42,6 +44,7 @@ type Props = {
  */
 export function SoundOrbit({ width, height, artists, sounds, children, onPress, label }: Props) {
   const reduce = useReducedMotion();
+  const toes = useToes();
   const turn = useSharedValue(0);
   const bloom = useSharedValue(reduce ? 1 : 0);
   useEffect(() => {
@@ -73,6 +76,8 @@ export function SoundOrbit({ width, height, artists, sounds, children, onPress, 
         const a = artists[i];
         return <Moon key={a.artist.id} fav={a} place={p} turn={turn} bloom={bloom} cx={cx} cy={cy} rx={rx} ry={ry} index={i} count={places.length} />;
       })}
+      {/* For one person only: a toe rides the ring with their artists. */}
+      {toes ? <ToeMoon turn={turn} cx={cx} cy={cy} rx={rx} ry={ry} /> : null}
       <View style={styles.centre} pointerEvents="none">
         {children}
       </View>
@@ -135,6 +140,23 @@ function Moon({
   );
 }
 
+/** A small toe on the orbit, half a turn behind the first artist. */
+function ToeMoon({ turn, cx, cy, rx, ry }: { turn: SharedValue<number>; cx: number; cy: number; rx: number; ry: number }) {
+  const style = useAnimatedStyle(() => {
+    const angle = Math.PI * 0.62 + turn.get() * Math.PI * 2;
+    const near = (Math.sin(angle) + 1) / 2;
+    return {
+      opacity: 0.35 + 0.35 * near,
+      transform: [{ translateX: cx + Math.cos(angle) * rx * 0.93 - 7 }, { translateY: cy + Math.sin(angle) * ry * 0.93 - 8 }, { rotate: `${angle * 57.3 + 90}deg` }],
+    };
+  });
+  return (
+    <Animated.View style={[styles.toe, style]} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <ToeGlyph size={14} color="#FFD9E8" />
+    </Animated.View>
+  );
+}
+
 /** The soft light behind: a cloud in each of your top sounds' colours, and the faint ring the artists ride on. */
 function Glow({ width, height, sounds, rx, ry }: { width: number; height: number; sounds: SoundTag[]; rx: number; ry: number }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -170,6 +192,7 @@ function Glow({ width, height, sounds, rx, ry }: { width: number; height: number
 }
 
 const styles = StyleSheet.create({
+  toe: { position: 'absolute', left: 0, top: 0 },
   centre: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   moon: {
     position: 'absolute',
