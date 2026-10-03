@@ -16,7 +16,8 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import { NEAR_KM } from '../festivals/near';
 import type { Point } from '../festivals/near';
 import { haptic } from '../../lib/haptics';
 import { revealSecret } from '../../state/secrets';
@@ -28,6 +29,7 @@ import {
   type Marker,
   arcPath,
   boxAround,
+  reachEllipse,
   clusterMarkers,
   dotsPath,
   fitView,
@@ -308,6 +310,21 @@ export function FestivalMap({
                 return <Circle key={m.festival.id} cx={p.x} cy={p.y} r={r} fill={`url(#pool-${m.tone})`} />;
               })}
             <Path d={base} fill={color.moon} fillOpacity={0.2} />
+            {/* How far Near you reaches, around you. */}
+            {here ? (
+              <Ellipse
+                cx={toLayer(project(here)).x}
+                cy={toLayer(project(here)).y}
+                rx={reachEllipse(here, NEAR_KM).rx * S}
+                ry={reachEllipse(here, NEAR_KM).ry * S}
+                stroke="#6FC3FF"
+                strokeOpacity={0.45}
+                strokeWidth={1.2}
+                strokeDasharray="4 5"
+                fill="#6FC3FF"
+                fillOpacity={0.04}
+              />
+            ) : null}
             {trail ? <Journey key={trail.d} d={trail.d} length={trail.length} reduced={reduced} /> : null}
           </Svg>
         </Animated.View>

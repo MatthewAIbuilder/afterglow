@@ -250,3 +250,10 @@ export function arcPath(points: readonly MapPoint[], bend = 0.22): { d: string; 
   }
   return { d, length };
 }
+
+/** How far `km` reaches around a point, in map units across (rx) and up (ry): the Near you circle. */
+export function reachEllipse(at: Point, km: number): { rx: number; ry: number } {
+  const ry = km / 111.2;
+  const rx = (km / (111.2 * Math.max(0.05, Math.cos((at.lat * Math.PI) / 180)))) * LON_SCALE;
+  return { rx, ry };
+}

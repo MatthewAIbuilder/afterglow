@@ -16,6 +16,7 @@ import {
   unproject,
   arcPath,
   journeyOf,
+  reachEllipse,
 } from '../map';
 
 const fest = (id: string, extra: Partial<Festival> = {}): Festival =>
@@ -122,5 +123,15 @@ describe('your journey', () => {
     expect(path.d).toBe('M0 0Q5 -2.2 10 0Q12.2 5 10 10');
     expect(path.length).toBeGreaterThan(20);
     expect(arcPath([{ x: 1, y: 1 }]).length).toBe(0);
+  });
+});
+
+describe('near you on the map', () => {
+  it('draws your reach a bit wider than tall up north, as the map is', () => {
+    const r = reachEllipse({ lat: 38, lon: -90 }, 500);
+    expect(r.ry).toBeCloseTo(4.5, 1);
+    expect(r.rx).toBeCloseTo(r.ry, 1); // true scale at 38°N
+    const north = reachEllipse({ lat: 55, lon: 0 }, 500);
+    expect(north.rx).toBeGreaterThan(north.ry);
   });
 });

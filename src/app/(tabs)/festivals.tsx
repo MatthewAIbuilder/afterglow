@@ -11,7 +11,7 @@ import { SearchField } from '../../components/SearchField';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { NoticeBell } from '../../components/NoticeBell';
-import { GridIcon, ListIcon, MapIcon } from '../../components/TabIcons';
+import { CalendarIcon, GridIcon, ListIcon, MapIcon } from '../../components/TabIcons';
 import type { Artist, Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
@@ -222,7 +222,7 @@ export default function FestivalsScreen() {
                 </ScrollView>
               </>
             ) : null}
-            {rest.length > 0 && <SectionHead title={groups.going.length || shelf ? 'All festivals' : 'Coming up'} count={rest.length} />}
+            {rest.length > 0 && <SectionHead title={groups.going.length || shelf ? 'All festivals' : 'Coming up'} count={rest.length} calendar />}
             {byMonth(rest.slice(0, restShown), today).map((g) => (
               <View key={g.label}>
                 <Text style={[styles.section, styles.month]}>{g.label}</Text>
@@ -251,11 +251,28 @@ export default function FestivalsScreen() {
 }
 
 /** A section title, with how many when it helps. */
-function SectionHead({ title, count }: { title: string; count?: number }) {
+function SectionHead({ title, count, calendar }: { title: string; count?: number; calendar?: boolean }) {
   return (
-    <View style={styles.sectionRow} accessibilityRole="header">
-      <Text style={[styles.section, styles.sectionTitle]}>{title}</Text>
+    <View style={styles.sectionRow}>
+      <Text style={[styles.section, styles.sectionTitle]} accessibilityRole="header">
+        {title}
+      </Text>
       {count ? <Text style={styles.sectionCount}>{count}</Text> : null}
+      {calendar ? (
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            router.push('/festival-calendar');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="See festivals on a calendar"
+          hitSlop={10}
+          style={({ pressed }) => [styles.calLink, pressed && { opacity: 0.7 }]}
+        >
+          <CalendarIcon color={color.glow} size={14} />
+          <Text style={styles.calText}>Calendar</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -399,6 +416,8 @@ function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; ta
 }
 
 const styles = StyleSheet.create({
+  calLink: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 5 },
+  calText: { ...type.label, color: color.glow },
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl, marginBottom: space.xl },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

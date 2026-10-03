@@ -117,6 +117,7 @@ export default function RootLayout() {
         <Stack.Screen name="this-or-that" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="compare" />
         <Stack.Screen name="festival-map" />
+        <Stack.Screen name="festival-calendar" />
         <Stack.Screen name="quests" />
         <Stack.Screen name="secrets" />
         <Stack.Screen name="prep/[id]" />
