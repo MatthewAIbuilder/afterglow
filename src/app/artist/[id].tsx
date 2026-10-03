@@ -330,10 +330,11 @@ export default function ArtistScreen() {
 
         {/* Their sound as a mix, e.g. 80% melodic bass, 20% dubstep. */}
         {mix.length > 0 && (
-          <Section title="Their sound">
+          <Section title={artist.soundGuessed ? 'Their sound, a guess' : 'Their sound'}>
             <View style={styles.mix}>
               <SoundBreakdown shares={mix} />
             </View>
+            {artist.soundGuessed ? <Text style={styles.guess}>Guessed from the festivals they play and who they share bills with. Rate them to sharpen your matches.</Text> : null}
           </Section>
         )}
 
@@ -381,6 +382,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const styles = StyleSheet.create({
+  guess: { ...type.caption, color: color.moonDim, marginTop: space.sm },
   tourLink: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.md },
   tourText: { ...type.label, color: color.glow },
   root: { flex: 1, backgroundColor: color.night },

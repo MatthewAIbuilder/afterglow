@@ -129,6 +129,10 @@ data) loads straight from your PC.
 
 ---
 
+## The festival map
+
+On iPhone the festival map is Apple Maps, which needs nothing set up. An Android build would show Google Maps, which needs its own key (Expo Go brings one, a build of your own doesn't): create an API key for "Maps SDK for Android" in the Google Cloud console of the `afterglowmusic` project and add it to `app.json` as the `react-native-maps` plugin's `androidGoogleMapsApiKey`. Only needed once there's an Android build.
+
 ## Troubleshooting
 
 | What you see | Why | What to do |

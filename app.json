@@ -120,7 +120,8 @@
         {
           "motionPermission": "Afterglow counts your steps on a festival night in Look after yourself. Your steps stay on this phone."
         }
-      ]
+      ],
+      "react-native-maps"
     ],
     "scheme": "afterglow",
     "backgroundColor": "#0A0918",
