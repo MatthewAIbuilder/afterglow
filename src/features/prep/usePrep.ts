@@ -5,7 +5,11 @@ import { usePrepTicks } from '../../state/prep';
 import { useRatings } from '../../state/ratings';
 import { useSetReminders } from '../../state/setReminders';
 import { canRemindSets } from '../notifications/setReminders';
+import { SHOP_LINKS } from '../../config/partners';
+import { cleanShopLinks } from '../partners/partners';
 import { prepChecklist, prepProgress } from './checklist';
+
+const SHOP = cleanShopLinks(SHOP_LINKS);
 
 /** A festival's Get ready list, from what you've done in the app and what you've ticked. */
 export function usePrep(festival: Festival) {
@@ -24,6 +28,7 @@ export function usePrep(festival: Festival) {
         remindersPossible: canRemindSets(festival),
         remindersOn: reminders.on.has(festival.id),
         ticked,
+        shop: SHOP,
       }),
     [festival, ratings, mustSeesAt, reminders.on, ticked],
   );

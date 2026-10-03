@@ -25,8 +25,21 @@ export function contactParagraph(email: string = SUPPORT_EMAIL): string {
     : `Questions about this, or a request about your data: use Report on the profile or video concerned, or delete your account from Edit profile. A contact email will be listed here soon.`;
 }
 
-export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): LegalDocument {
+/** What the Terms say once the app has partner (affiliate) links, and only then. */
+export const PARTNER_TERMS =
+  'Some links to tickets, places to stay or things to pack are partner links: if you buy through them, Afterglow may earn a commission from the seller. It doesn’t change your price. What you buy is between you and the seller, under their terms.';
+
+/** What the Privacy Policy says about partner links, once there are any. */
+export const PARTNER_PRIVACY =
+  'Partner links (tickets, places to stay, things to pack) open the seller’s own site, which may note that you came from Afterglow so we can be paid a commission. We don’t send them anything about you, and we don’t see what you buy.';
+
+/**
+ * `partners`: the app has partner links (see features/partners), so the Terms
+ * and Privacy Policy say so. False until a real one is added.
+ */
+export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts: { partners?: boolean } = {}): LegalDocument {
   const contact = contactParagraph(email);
+  const partners = !!opts.partners;
   switch (id) {
     case 'privacy':
       return {
@@ -63,6 +76,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
             paragraphs: [
               'Accounts, shared videos and the website are run on Google Firebase (Authentication, Cloud Firestore, Cloud Storage and Hosting), with data stored in the United States. Google processes it for us under its own terms.',
               'Clips in Discover play in YouTube’s own player, so YouTube (Google) receives what any embedded YouTube video receives and applies its own privacy policy. Spotify and Apple Music sign-ins happen on their own pages.',
+              ...(partners ? [PARTNER_PRIVACY] : []),
               'We don’t sell your data, show ads, or use advertising or analytics trackers.',
             ],
           },
@@ -93,6 +107,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
               'You must be at least 13 to create a profile. Keep your sign-in to yourself; you’re responsible for what’s done with your account.',
               'Festival information (lineups, days, set times) comes from official sources but can change or be wrong. Check with the festival before you rely on it. Plans and routes are suggestions.',
               'Clips in Discover are official videos played in YouTube’s player and belong to their owners.',
+              ...(partners ? [PARTNER_TERMS] : []),
             ],
           },
           {

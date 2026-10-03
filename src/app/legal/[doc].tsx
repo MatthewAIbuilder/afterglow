@@ -5,6 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
+import { SHOP_LINKS } from '../../config/partners';
+import { hasPartnerLinks } from '../../features/partners/partners';
+import { useCatalog } from '../../state/catalog';
 import { isLegalDoc, LEGAL_DOCS, legalDocument, legalPath, type LegalDoc } from '../../features/legal/documents';
 import { color, space, type } from '../../theme/tokens';
 
@@ -19,7 +22,8 @@ export default function LegalScreen() {
   const { doc } = useLocalSearchParams<{ doc: string }>();
   const insets = useSafeAreaInsets();
   const id: LegalDoc = isLegalDoc(doc) ? doc : 'privacy';
-  const d = legalDocument(id);
+  const catalog = useCatalog();
+  const d = legalDocument(id, undefined, { partners: hasPartnerLinks(catalog.festivals, SHOP_LINKS) });
 
   return (
     <View style={styles.root}>

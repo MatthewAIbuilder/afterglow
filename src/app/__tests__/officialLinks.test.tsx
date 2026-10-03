@@ -24,3 +24,22 @@ describe('official links on a festival page', () => {
     expect(none.toJSON()).toBeNull();
   });
 });
+
+describe('partner links on a festival page', () => {
+  it('shows places to stay and says it may earn a commission', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const view = await render(<OfficialLinks festival={fest({ stay: 'https://stay.example.com' })} over={false} />);
+    await fireEvent.press(view.getByLabelText('Places to stay near F Fest. Opens in your browser.'));
+    expect(open).toHaveBeenCalledWith('https://stay.example.com');
+    expect(view.getByText(/may earn a commission/)).toBeTruthy();
+    open.mockRestore();
+  });
+
+  it('no notice for plain official links, nothing to stay once it’s over', async () => {
+    const plain = await render(<OfficialLinks festival={fest({ tickets: 'https://t.example.com' })} over={false} />);
+    expect(plain.queryByText(/commission/)).toBeNull();
+    const over = await render(<OfficialLinks festival={fest({ stay: 'https://stay.example.com', website: 'https://example.com' })} over />);
+    expect(over.queryByText('Places to stay ↗')).toBeNull();
+    expect(over.queryByText(/commission/)).toBeNull();
+  });
+});
