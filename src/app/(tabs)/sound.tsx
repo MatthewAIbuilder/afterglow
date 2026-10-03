@@ -22,6 +22,7 @@ import { leftToRate } from '../../features/festivals/tune';
 import { artistsOnMap, mapCandidates, SPARSE_MAP } from '../../features/sound-map/layout';
 import { SoundMap } from '../../features/sound-map/SoundMap';
 import { haptic } from '../../lib/haptics';
+import { bumpQuestEvent } from '../../state/dailyQuests';
 import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
 import { useRatings } from '../../state/ratings';
@@ -206,7 +207,11 @@ export default function MySoundScreen() {
           width={width}
           height={mapHeight}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={(id) => {
+            setSelectedId(id);
+            // Opening artists counts for the "Stargazer" daily quest.
+            if (id) bumpQuestEvent('bubble');
+          }}
           onBackgroundTap={close}
           onRegionTap={showSound}
           matchIds={search?.ids}

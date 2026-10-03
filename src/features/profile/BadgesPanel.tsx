@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BadgesGrid } from '../badges/BadgesGrid';
 import { haptic } from '../../lib/haptics';
+import { GlowLevelCard } from '../quests/GlowLevelCard';
 import { useCatalog } from '../../state/catalog';
 import { color, space, type } from '../../theme/tokens';
 import { type Milestone, milestoneKey, pinKey } from './milestones';
@@ -51,6 +52,7 @@ export function BadgesPanel({ b, uid, width, questsFirst = false }: { b: Profile
   );
   return (
     <>
+      <GlowLevelCard />
       {questsFirst ? quests : null}
       <Text style={styles.pinsHead}>Festival pins</Text>
       <BadgesGrid

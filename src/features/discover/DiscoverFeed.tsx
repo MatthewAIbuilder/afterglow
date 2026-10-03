@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { ChevronIcon, SearchIcon } from '../../components/TabIcons';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
+import { QuestButton } from '../quests/QuestButton';
 import { haptic } from '../../lib/haptics';
 import type { Clip, Festival } from '../../data/models';
 import { isCommunityClip } from '../community/clips';
@@ -484,6 +485,8 @@ export function DiscoverFeed() {
           </Pressable>
           )}
           <View style={styles.headerEnd}>
+            {/* Today's quests: a ring that fills as you go. */}
+            {!hereFestival ? <QuestButton /> : null}
             {/* Film your own video (or swipe right). The camera needs the phone app. */}
             {Platform.OS !== 'web' ? (
               <GlassCircleButton

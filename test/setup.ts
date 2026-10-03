@@ -300,3 +300,4 @@ jest.mock('expo-sensors', () => {
     },
   };
 });
+

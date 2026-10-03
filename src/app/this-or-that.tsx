@@ -18,6 +18,7 @@ import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useRatings } from '../state/ratings';
+import { bumpQuestEvent } from '../state/dailyQuests';
 import { useReactions } from '../state/reactions';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
@@ -59,6 +60,8 @@ export default function ThisOrThatScreen() {
     if (ids.length) haptic.tap();
     else haptic.select();
     setRound((r) => r + 1);
+    // Playing to the end counts for the "Head to head" daily quest.
+    if (round + 1 === pairs.length) bumpQuestEvent('thisorthat');
   };
 
   const close = () => router.back();

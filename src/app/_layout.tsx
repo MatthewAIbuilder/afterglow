@@ -7,6 +7,8 @@ import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
+import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
+import { QuestToast } from '../features/quests/QuestToast';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { FounderClaim } from '../features/standing/FounderClaim';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
@@ -111,6 +113,7 @@ export default function RootLayout() {
         <Stack.Screen name="this-or-that" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="compare" />
         <Stack.Screen name="festival-map" />
+        <Stack.Screen name="quests" />
         <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />
@@ -189,8 +192,10 @@ export default function RootLayout() {
       <AdminReturnPill />
       <TonightLauncher />
       <QuestTracker />
+      <DailyQuestTracker />
       <ReminderSync />
       <LikeSync />
+      <QuestToast />
       <OfflineNotice />
       <DialogHost />
       </FriendAddsProvider>

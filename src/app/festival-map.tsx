@@ -19,6 +19,7 @@ import { lovedLine, useFestivalSummary } from '../features/festivals/useFestival
 import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
+import { bumpQuestEvent } from '../state/dailyQuests';
 import { useGoing } from '../state/going';
 import { useLoves } from '../state/useLoves';
 import { useNearby } from '../state/nearby';
@@ -63,6 +64,8 @@ export default function FestivalMapScreen() {
     [all],
   );
   const unplaced = festivals.length - all.length;
+  // Looking around counts for the "Explorer" daily quest.
+  useEffect(() => bumpQuestEvent('map'), []);
 
   // The cards, in the same order as the lights.
   const [selected, setSelected] = useState<string | undefined>(params.focus && all.some((m) => m.festival.id === params.focus) ? params.focus : undefined);
