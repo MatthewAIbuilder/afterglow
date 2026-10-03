@@ -90,6 +90,8 @@ export const progressLine = (m: Milestone) => `${m.current} of ${m.target}`;
 /** A badge's key in your claims: festival pins and milestones. */
 export const pinKey = (festivalId: string) => `pin:${festivalId}`;
 export const milestoneKey = (id: MilestoneId | QuestId) => `ms:${id}`;
+/** A throwback pin's claim key, from its past event's key. */
+export const throwbackKey = (key: string) => `past:${key}`;
 
 /** Earned but not claimed yet, in the order given. */
 export function unclaimed(earned: readonly string[], claimed: ReadonlySet<string>): string[] {

@@ -1,3 +1,4 @@
+import type { PastEvent } from '../memories/past';
 import type { Activity, Comment, Crew, CrewInvite, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
@@ -17,6 +18,8 @@ export type ShareInput = {
   festivalId?: string;
   night?: string;
   artistId?: string;
+  /** A festival from before Afterglow, instead of `festivalId`. */
+  past?: PastEvent;
   capturedAt: string;
   durationSec?: number;
   width?: number;
@@ -102,6 +105,8 @@ export interface SocialService {
   adminFestivals(ids: string[]): Promise<Record<string, { going: number; videos: number }>>;
   /** Someone's founder number and flair, for their border and caption. */
   standingOf(uid: string): Promise<Standing>;
+  /** How many throwbacks (past festival videos) you've shared, which the free plan limits. */
+  throwbackUsage(): Promise<number>;
   /** Show your glow level on your profile (a number from 1), or take it off (null). */
   setLevel(level: number | null): Promise<void>;
   searchProfiles(query: string): Promise<Profile[]>;
@@ -215,6 +220,7 @@ export type SocialErrorKind =
   | 'no-profile'
   | 'too-large'
   | 'crew-full'
+  | 'throwback-limit'
   | 'not-found'
   | 'network'
   | 'unavailable'
@@ -244,6 +250,7 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'no-profile': 'Create your profile first.',
   'too-large': 'That video is too big to share. Try a shorter clip.',
   'crew-full': 'That crew is full.',
+  'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
   'not-found': 'That doesn’t exist any more.',
   network: 'Couldn’t reach Afterglow. Check your connection and try again.',
   unavailable: 'Profiles aren’t available in this version of Afterglow yet.',

@@ -12,6 +12,10 @@ import { festivalsAround, isMany } from '../features/festivals/shelves';
 import { artistConfidence, festivalConfidence, guessArtists, guessFestivals, reasonLine, type ArtistGuess } from '../features/memories/guess';
 import type { MemoryTagInput } from '../features/memories/models';
 import { momentLine } from '../features/memories/organize';
+import { PastPicker } from '../features/memories/PastPicker';
+import { type PastEvent, pastLabel } from '../features/memories/past';
+import { throwbackSharesLine } from '../features/memories/throwbackLimit';
+import { useThrowbackShares } from '../features/memories/useThrowbackShares';
 import { festivalRoute } from '../features/plan/route';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
@@ -30,6 +34,8 @@ import { useSocial } from '../state/social';
 
 /** Guesses shown as big rows before "Someone else". */
 const TOP_GUESSES = 3;
+/** A video filmed longer ago than this, matching nothing on Afterglow, is probably from a past festival. */
+const OLD_VIDEO_MS = 30 * 24 * 3600_000;
 
 /**
  * Tagging a memory: who was playing, at which festival and night. Opens on
@@ -83,6 +89,11 @@ export default function MemoryTagScreen() {
   const festivalSure = festivalConfidence(topFestival) !== 'maybe';
 
   const [festivalId, setFestivalId] = useState<string | undefined>(() => existing?.festivalId ?? (festivalSure ? topFestival?.festival.id : undefined));
+  // A festival from before Afterglow (a video from your camera roll): its name and year instead of a festival on Afterglow.
+  const capturedAt = existing?.capturedAt ?? (whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs).toISOString() : new Date().toISOString());
+  const [past, setPast] = useState<PastEvent | undefined>(existing?.past);
+  // Filmed a while ago, at nothing on Afterglow: open on finding the past festival.
+  const [pickingPast, setPickingPast] = useState(() => !existing && !guesses.length && whenMs !== undefined && Date.now() - whenMs > OLD_VIDEO_MS);
   const festival = festivalId ? catalog.festival(festivalId) : undefined;
   const guessedHere = guesses.find((g) => g.festival.id === festivalId);
   const [night, setNight] = useState<string | undefined>(() => existing?.night ?? (festivalSure ? topFestival?.night : undefined));
@@ -90,6 +101,8 @@ export default function MemoryTagScreen() {
   const pickFestival = (f: Festival | undefined) => {
     haptic.select();
     setFestivalId(f?.id);
+    setPast(undefined);
+    setPickingPast(false);
     setNight(f ? guesses.find((g) => g.festival.id === f.id)?.night : undefined);
     setArtistId(undefined);
     setTouchedArtist(false);
@@ -114,7 +127,7 @@ export default function MemoryTagScreen() {
   const pool: Artist[] = festival ? artistGuesses.map((g) => g.artist) : catalog.artists;
   const found = query.trim() ? pool.filter((a) => matchesName(a.name, query)).slice(0, 20) : [];
 
-  const tag: MemoryTagInput = { festivalId, night: festivalId ? night : undefined, artistId: chosenArtist };
+  const tag: MemoryTagInput = { festivalId, night: festivalId ? night : undefined, past: festivalId ? undefined : past, artistId: chosenArtist };
 
   // Share to Discover: on by default once it's tagged and you have a profile; always your choice.
   const social = useSocial();
@@ -122,11 +135,15 @@ export default function MemoryTagScreen() {
     available: social.availability.ok,
     signedIn: !!social.user,
     hasProfile: !!social.profile,
-    tagged: !!tag.festivalId && !!tag.artistId,
+    tagged: (!!tag.festivalId || !!tag.past) && !!tag.artistId,
     alreadyShared: !!existing?.sharedId,
   });
   const [shareChoice, setShareChoice] = useState<boolean | undefined>();
-  const shareOn = offer === 'ready' && (shareChoice ?? true);
+  // Throwbacks: a few free shares, as many as you like with Plus.
+  const throwback = !!tag.past && !tag.festivalId;
+  const throwbackLimit = useThrowbackShares(throwback && offer === 'ready');
+  const overLimit = throwback && !!throwbackLimit && !throwbackLimit.canShare;
+  const shareOn = offer === 'ready' && !overLimit && (shareChoice ?? true);
   // Send to my crew: your crews at this festival see it with the time you filmed it. On by default for a new video.
   const crewUpdates = useCrewUpdates();
   const { crewsAt } = useCrews();
@@ -134,7 +151,11 @@ export default function MemoryTagScreen() {
   const [crewChoice, setCrewChoice] = useState<boolean | undefined>();
   const crewOn = crewsHere.length > 0 && (crewChoice ?? !existing);
   const shareIt = (m: Parameters<typeof social.share>[0]) =>
-    void social.share(m).catch((e) => showAlert('Couldn’t share it to Discover', `${SOCIAL_ERROR_COPY[socialErrorKind(e)]} It’s saved in your Memories, so you can share it from there.`));
+    void social.share(m).catch((e) => {
+      const kind = socialErrorKind(e);
+      // The throwback limit's own words already say where it is.
+      showAlert('Couldn’t share it to Discover', kind === 'throwback-limit' ? SOCIAL_ERROR_COPY[kind] : `${SOCIAL_ERROR_COPY[kind]} It’s saved in your Memories, so you can share it from there.`);
+    });
 
   // Nothing to tag (opened without a video, or the memory was deleted): step back, unless we're already leaving
   // (saving clears the draft, and going back twice would close the screen underneath too).
@@ -235,10 +256,21 @@ export default function MemoryTagScreen() {
 
         <Text style={styles.section}>Festival</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {past ? <Chip label={pastLabel(past)} on onPress={() => setPickingPast((v) => !v)} /> : null}
           {[...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals].map((f) => (
             <Chip key={f.id} label={f.name} on={f.id === festivalId} onPress={() => pickFestival(f.id === festivalId ? undefined : f)} />
           ))}
-          <Chip label="Not at a festival" on={!festivalId} onPress={() => pickFestival(undefined)} />
+          {past ? null : (
+            <Chip
+              label="A past festival…"
+              on={pickingPast}
+              onPress={() => {
+                haptic.select();
+                setPickingPast((v) => !v);
+              }}
+            />
+          )}
+          <Chip label="Not at a festival" on={!festivalId && !past} onPress={() => pickFestival(undefined)} />
           {many && !searchingFestival ? (
             <Chip
               label="Another festival…"
@@ -254,6 +286,23 @@ export default function MemoryTagScreen() {
           <View style={styles.festivalSearch}>
             <SearchField value={festivalQuery} onChange={setFestivalQuery} placeholder="Find the festival" label="Find the festival" />
           </View>
+        ) : null}
+
+        {pickingPast || past ? (
+          <PastPicker
+            capturedAt={capturedAt}
+            city={city}
+            value={past}
+            searching={pickingPast}
+            onSearch={() => setPickingPast(true)}
+            onChange={(p) => {
+              haptic.select();
+              setPast(p);
+              setFestivalId(undefined);
+              setNight(undefined);
+              if (p) setPickingPast(false);
+            }}
+          />
         ) : null}
 
         {festival && festival.days.length > 1 ? (
@@ -378,7 +427,14 @@ export default function MemoryTagScreen() {
             <View style={styles.shareRow}>
               <View style={styles.shareText}>
                 <Text style={styles.shareTitle}>Share to Discover</Text>
-                <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name, on: shareOn })}</Text>
+                {overLimit ? null : (
+                  <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name ?? (past ? pastLabel(past) : undefined), on: shareOn })}</Text>
+                )}
+                {throwback && offer === 'ready' && throwbackLimit && throwbackSharesLine(throwbackLimit) ? (
+                  <Text style={[styles.shareDetail, overLimit && styles.limit]} testID="throwback-limit">
+                    {throwbackSharesLine(throwbackLimit)}
+                  </Text>
+                ) : null}
                 {offer === 'needs-account' || offer === 'needs-profile' ? (
                   <Pressable
                     onPress={() => {
@@ -394,7 +450,7 @@ export default function MemoryTagScreen() {
               </View>
               <Switch
                 value={shareOn}
-                disabled={offer !== 'ready'}
+                disabled={offer !== 'ready' || overLimit}
                 onValueChange={(v) => {
                   haptic.select();
                   setShareChoice(v);
@@ -512,4 +568,5 @@ const styles = StyleSheet.create({
   shareTitle: { ...type.headline, color: color.moon },
   shareDetail: { ...type.caption, color: color.moonDim },
   shareLink: { marginTop: space.xs },
+  limit: { color: '#F2B8A6' },
 });

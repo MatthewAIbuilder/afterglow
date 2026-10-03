@@ -89,6 +89,7 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
           place: draft.moment.place,
           festivalId: tag.festivalId,
           night: tag.festivalId ? tag.night : undefined,
+          past: tag.festivalId ? undefined : tag.past,
           artistId: tag.artistId,
         };
         setMemories((l) => addMemory(l, m));

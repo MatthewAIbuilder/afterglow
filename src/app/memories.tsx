@@ -29,7 +29,7 @@ export default function MemoriesScreen() {
   const add = useAddMemory();
   const lookup = useMemo(() => ({ festival: catalog.festival, artist: catalog.artist }), [catalog]);
   const sections = useMemo(() => organizeMemories(memories, lookup), [memories, lookup]);
-  const festivals = sections.filter((s) => s.festival).length;
+  const festivals = sections.filter((s) => s.festival || s.past).length;
 
   return (
     <View style={styles.root}>
@@ -92,11 +92,18 @@ function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n
       <View style={styles.pad}>
         <View style={[styles.sectionHead, untagged && styles.sectionHeadQuiet]}>
           {!untagged ? (
-            <LinearGradient colors={['rgba(107,63,224,0.35)', 'rgba(107,63,224,0)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <LinearGradient
+              colors={section.past ? ['rgba(242,184,166,0.28)', 'rgba(242,184,166,0)'] : ['rgba(107,63,224,0.35)', 'rgba(107,63,224,0)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
           ) : null}
           <Text style={styles.sectionTitle}>{section.title}</Text>
           <Text style={styles.sectionMeta}>
-            {[section.festival ? whereWhen(section.festival) : undefined, clipCount(section.count)].filter(Boolean).join(' · ')}
+            {[section.festival ? whereWhen(section.festival) : section.past ? ['Throwback', section.past.city].filter(Boolean).join(' · ') : undefined, clipCount(section.count)]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         </View>
       </View>

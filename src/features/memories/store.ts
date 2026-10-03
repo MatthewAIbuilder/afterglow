@@ -1,4 +1,5 @@
 import type { Memory, MemoryTagInput } from './models';
+import { cleanPast } from './past';
 
 /**
  * The list of memories and how it changes. Pure, so the rules are tested
@@ -10,7 +11,10 @@ export function addMemory(list: Memory[], m: Memory): Memory[] {
 }
 
 export function tagMemory(list: Memory[], id: string, tag: MemoryTagInput): Memory[] {
-  return list.map((m) => (m.id === id ? { ...m, festivalId: tag.festivalId, night: tag.festivalId ? tag.night : undefined, artistId: tag.artistId } : m));
+  // A festival on Afterglow or a past one, never both.
+  return list.map((m) =>
+    m.id === id ? { ...m, festivalId: tag.festivalId, night: tag.festivalId ? tag.night : undefined, past: tag.festivalId ? undefined : tag.past, artistId: tag.artistId } : m,
+  );
 }
 
 export function markShared(list: Memory[], id: string, shared: { id: string; by: string } | undefined): Memory[] {
@@ -56,6 +60,7 @@ export function cleanMemories(raw: unknown): Memory[] {
       height: num(o.height),
       place: place && (str(place.city) || str(place.region)) ? { city: str(place.city), region: str(place.region) } : undefined,
       festivalId: str(o.festivalId),
+      past: str(o.festivalId) ? undefined : cleanPast(o.past),
       night: str(o.night),
       artistId: str(o.artistId),
       sharedId: str(o.sharedId) && str(o.sharedBy) ? str(o.sharedId) : undefined,

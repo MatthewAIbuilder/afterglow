@@ -17,6 +17,7 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useMemories } from '../../state/memories';
 import { color, radius, space, type } from '../../theme/tokens';
+import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
 
 /**
@@ -46,7 +47,7 @@ export default function MemoryScreen() {
 
   const artist = m.artistId ? catalog.artist(m.artistId) : undefined;
   const festival = m.festivalId ? catalog.festival(m.festivalId) : undefined;
-  const where = [m.night, festival?.name].filter(Boolean).join(' · ');
+  const where = [m.night, festival?.name ?? (m.past ? `Throwback · ${pastLabel(m.past)}` : undefined)].filter(Boolean).join(' · ');
   const when = momentLine(new Date(m.capturedAt), m.place);
 
   const toggle = () => {

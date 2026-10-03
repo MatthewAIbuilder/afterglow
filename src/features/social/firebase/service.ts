@@ -43,6 +43,7 @@ import { firebaseConfigured } from '../../../config/social';
 import { CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
+import { throwbackShares } from '../../memories/throwbackLimit';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
@@ -220,6 +221,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         batch.delete(doc(db, 'founders', user.uid));
         batch.delete(doc(db, 'activity', user.uid));
         await batch.commit();
+        // Once the profile is gone (the rules allow it only then), and never in the way of deleting the account.
+        await deleteDoc(doc(db, 'usage', user.uid)).catch(() => {});
         await deleteUser(user);
       }),
 
@@ -348,12 +351,31 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             ...(input.festivalId ? { festivalId: input.festivalId } : {}),
             ...(input.night ? { night: input.night } : {}),
             ...(input.artistId ? { artistId: input.artistId } : {}),
+            // A past festival: its name, year, town and the same festival on Afterglow, as plain fields.
+            ...(!input.festivalId && input.past
+              ? {
+                  pastName: input.past.name,
+                  pastYear: input.past.year,
+                  ...(input.past.city ? { pastCity: input.past.city } : {}),
+                  ...(input.past.seriesId ? { seriesId: input.past.seriesId } : {}),
+                }
+              : {}),
             capturedAt: input.capturedAt,
             ...(input.durationSec ? { durationSec: input.durationSec } : {}),
             ...(input.width && input.height ? { width: input.width, height: input.height } : {}),
             createdAt: now(),
           };
-          await setDoc(memRef, shared);
+          if (!input.festivalId && input.past) {
+            // A throwback: counted, a few free and as many as you like with Plus (the rules hold the same line).
+            const usageRef = doc(db, 'usage', user.uid);
+            const used = Number((await getDoc(usageRef)).data()?.throwbacks) || 0;
+            const plus = standingFromDocs(undefined, undefined, (await getDoc(doc(db, 'plus', user.uid)).catch(() => undefined))?.data()).plus;
+            if (!throwbackShares({ plus: !!plus, used }).canShare) throw new SocialError('throwback-limit');
+            const b = writeBatch(db);
+            b.set(memRef, shared);
+            b.set(usageRef, { throwbacks: used + 1, memory: memRef.id });
+            await b.commit();
+          } else await setDoc(memRef, shared);
           onProgress?.(1);
           return memoryFromDoc(memRef.id, shared)!;
         } catch (e) {
@@ -369,7 +391,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const memRef = doc(fb().db, 'memories', id);
         const d = await getDoc(memRef);
         if (!d.exists()) return;
-        const data = d.data() as { uid?: string; videoPath?: string; thumbPath?: string };
+        const data = d.data() as { uid?: string; videoPath?: string; thumbPath?: string; pastName?: string };
         if (data.uid !== user.uid) throw new SocialError('not-signed-in');
         // Its likes and comments go with it.
         const said = await getDocs(query(collection(fb().db, 'comments'), where('memoryId', '==', id), where('owner', '==', user.uid)));
@@ -380,7 +402,15 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           for (const d of liked.docs.slice(i, i + 400)) b.delete(d.ref);
           await b.commit();
         }
-        await deleteDoc(memRef);
+        if (data.pastName) {
+          // A throwback gives its place back.
+          const usageRef = doc(fb().db, 'usage', user.uid);
+          const used = Number((await getDoc(usageRef)).data()?.throwbacks) || 0;
+          const b = writeBatch(fb().db);
+          b.delete(memRef);
+          if (used > 0) b.set(usageRef, { throwbacks: used - 1, memory: id });
+          await b.commit();
+        } else await deleteDoc(memRef);
         await removeFile(data.videoPath);
         await removeFile(data.thumbPath);
       }),
@@ -391,8 +421,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     festivalMemories: (festivalId, max) =>
       guard(async () => {
-        const snap = await getDocs(query(collection(fb().db, 'memories'), where('festivalId', '==', festivalId), orderBy('createdAt', 'desc'), limit(max)));
-        return snap.docs.map((d) => memoryFromDoc(d.id, d.data())).filter((m): m is NonNullable<typeof m> => !!m);
+        const memories = collection(fb().db, 'memories');
+        const [here, before] = await Promise.all([
+          getDocs(query(memories, where('festivalId', '==', festivalId), orderBy('createdAt', 'desc'), limit(max))),
+          // Throwbacks from earlier years of the same festival; a database without that index yet just has none.
+          getDocs(query(memories, where('seriesId', '==', festivalId), orderBy('createdAt', 'desc'), limit(max))).catch(() => undefined),
+        ]);
+        return [...here.docs, ...(before?.docs ?? [])]
+          .map((d) => memoryFromDoc(d.id, d.data()))
+          .filter((m): m is NonNullable<typeof m> => !!m)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, max);
       }),
     recentMemories: (max) =>
       guard(async () => {
@@ -437,6 +476,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           getDoc(doc(db, 'levels', uid)).catch(() => undefined),
         ]);
         return standingFromDocs(f.data(), fl.data(), pl.data(), lv?.data());
+      }),
+    throwbackUsage: () =>
+      guard(async () => {
+        const user = me();
+        return Number((await getDoc(doc(fb().db, 'usage', user.uid))).data()?.throwbacks) || 0;
       }),
     setLevel: (level) =>
       guard(async () => {

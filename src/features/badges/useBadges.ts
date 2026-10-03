@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import type { SharedMemory } from '../social/models';
-import { earnedBadges, type Badge } from './badges';
+import { earnedBadges, throwbackBadges, type Badge, type ThrowbackBadge } from './badges';
 
 /** Someone's shared videos stay fresh this long for their badges. */
 const FRESH_MS = 5 * 60_000;
@@ -15,7 +15,7 @@ export const forgetBadges = () => cache.clear();
  * festival and filmed there, on its dates). `loaded` once their videos have
  * been read; nothing when signed out or profiles aren't set up.
  */
-export function useBadges(uid: string | undefined): { badges: Badge[]; loaded: boolean } {
+export function useBadges(uid: string | undefined): { badges: Badge[]; throwbacks: ThrowbackBadge[]; loaded: boolean } {
   const social = useSocial();
   const catalog = useCatalog();
   const ok = social.availability.ok && !!social.user && !!uid;
@@ -38,5 +38,7 @@ export function useBadges(uid: string | undefined): { badges: Badge[]; loaded: b
   }, [ok, uid, social.service]);
   const memories = (read?.uid === uid ? read?.memories : undefined) ?? (uid ? cache.get(uid)?.memories : undefined);
   const badges = useMemo(() => (memories ? earnedBadges(memories, catalog.festival) : []), [memories, catalog.festival]);
-  return { badges, loaded: !!memories };
+  // Throwbacks they've shared: past festivals, from their camera roll.
+  const throwbacks = useMemo(() => (memories ? throwbackBadges(memories) : []), [memories]);
+  return { badges, throwbacks, loaded: !!memories };
 }

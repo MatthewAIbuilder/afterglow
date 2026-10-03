@@ -19,12 +19,13 @@ import Svg, { Defs, G, Path, RadialGradient, Stop } from 'react-native-svg';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
-import { pinAbout, pinLook } from '../badges/badges';
+import { pinAbout, pinLook, throwbackAbout, throwbackLook } from '../badges/badges';
+import { type PastEvent, pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
 import type { Milestone } from './milestones';
 import { Medal, medalColors } from './Milestones';
 
-export type Unlock = { kind: 'pin'; festival: Festival } | { kind: 'milestone'; milestone: Milestone };
+export type Unlock = { kind: 'pin'; festival: Festival } | { kind: 'throwback'; past: PastEvent } | { kind: 'milestone'; milestone: Milestone };
 
 const RAYS = 18;
 const SPARKS = 26;
@@ -48,11 +49,12 @@ export function BadgeCelebration({ unlock, onDone }: { unlock: Unlock | undefine
 function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
   const reduce = useReducedMotion();
   const { width } = useWindowDimensions();
-  const look = unlock.kind === 'pin' ? pinLook(unlock.festival) : undefined;
-  const [c1, c2] = unlock.kind === 'pin' && look ? [look.palette.accent, look.palette.ribbon] : unlock.kind === 'milestone' ? medalColors(unlock.milestone.id) : ['#A97CFF', '#FFB86B'];
+  const look = unlock.kind === 'pin' ? pinLook(unlock.festival) : unlock.kind === 'throwback' ? throwbackLook(unlock.past) : undefined;
+  const [c1, c2] =
+    unlock.kind === 'throwback' ? ['#F2B8A6', look?.palette.accent ?? '#FFB86B'] : look ? [look.palette.accent, look.palette.ribbon] : unlock.kind === 'milestone' ? medalColors(unlock.milestone.id) : ['#A97CFF', '#FFB86B'];
   const colors = [c1, c2, '#FFE38A', '#FFFFFF'];
-  const title = unlock.kind === 'pin' ? unlock.festival.name : unlock.milestone.title;
-  const about = unlock.kind === 'pin' ? pinAbout(unlock.festival, true) : unlock.milestone.about;
+  const title = unlock.kind === 'pin' ? unlock.festival.name : unlock.kind === 'throwback' ? pastLabel(unlock.past) : unlock.milestone.title;
+  const about = unlock.kind === 'pin' ? pinAbout(unlock.festival, true) : unlock.kind === 'throwback' ? throwbackAbout(unlock.past) : unlock.milestone.about;
 
   const pop = useSharedValue(reduce ? 1 : 0);
   const wobble = useSharedValue(0);
@@ -108,12 +110,12 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           ? null
           : Array.from({ length: SPARKS }, (_, i) => <Spark key={i} index={i} progress={sparks} color={colors[i % colors.length]} reach={field / 2 - 10} />)}
         <Animated.View style={badgeStyle}>
-          {unlock.kind === 'pin' && look ? <EnamelPin look={look} size={BADGE} /> : unlock.kind === 'milestone' ? <Medal milestone={unlock.milestone} size={BADGE * 0.8} /> : null}
+          {look ? <EnamelPin look={look} size={BADGE} /> : unlock.kind === 'milestone' ? <Medal milestone={unlock.milestone} size={BADGE * 0.8} /> : null}
         </Animated.View>
       </View>
 
       <Animated.View entering={reduce ? undefined : FadeInDown.delay(450).duration(420)} style={styles.words}>
-        <Text style={[styles.kicker, { color: '#FFE38A' }]}>{unlock.kind === 'milestone' && unlock.milestone.quest ? 'Side quest complete' : 'Badge unlocked'}</Text>
+        <Text style={[styles.kicker, { color: '#FFE38A' }]}>{unlock.kind === 'milestone' && unlock.milestone.quest ? 'Side quest complete' : unlock.kind === 'throwback' ? 'Throwback unlocked' : 'Badge unlocked'}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>

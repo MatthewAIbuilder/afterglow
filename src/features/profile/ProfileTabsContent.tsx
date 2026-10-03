@@ -85,11 +85,12 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
           </Pressable>
         ) : null}
         {memories.map((m) => {
-          const untagged = !m.festivalId && !m.artistId;
+          const untagged = !m.festivalId && !m.past && !m.artistId;
           const [from, to] = artistColors(m.artistId ?? m.id);
           const length = clipLength(m.durationSec);
           const artist = m.artistId ? lookup.artist(m.artistId)?.name : undefined;
-          const where = [m.festivalId ? festivalMark(lookup.festival(m.festivalId)?.name ?? '') : undefined, m.night].filter(Boolean).join(' · ');
+          // A throwback reads "EDC ’24", with a little rewind mark.
+          const where = m.past ? `↺ ${festivalMark(m.past.name)} ’${String(m.past.year).slice(2)}` : [m.festivalId ? festivalMark(lookup.festival(m.festivalId)?.name ?? '') : undefined, m.night].filter(Boolean).join(' · ');
           return (
             <Pressable
               key={m.id}

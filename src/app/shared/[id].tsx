@@ -22,6 +22,7 @@ import { useReactions } from '../../state/reactions';
 import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
 
 /**
@@ -149,7 +150,9 @@ export default function SharedMemoryScreen() {
       {m && !blocked ? (
         <View style={[styles.info, { paddingBottom: insets.bottom + space.lg }]}>
           <Text style={styles.artist}>{artist?.name ?? 'Festival moment'}</Text>
-          {[m.night, festival?.name].filter(Boolean).length ? <Text style={styles.where}>{[m.night, festival?.name].filter(Boolean).join(' · ')}</Text> : null}
+          {[m.night, festival?.name ?? (m.past ? `Throwback · ${pastLabel(m.past)}` : undefined)].filter(Boolean).length ? (
+            <Text style={styles.where}>{[m.night, festival?.name ?? (m.past ? `Throwback · ${pastLabel(m.past)}` : undefined)].filter(Boolean).join(' · ')}</Text>
+          ) : null}
           <Pressable onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: m.handle } })} accessibilityRole="button">
             <Text style={styles.by}>@{m.handle}</Text>
           </Pressable>
