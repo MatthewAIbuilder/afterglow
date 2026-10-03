@@ -24,6 +24,7 @@ import { TONIGHT } from '../features/discover/focus';
 import { tonightClips, tonightTitle } from '../features/tonight/tonight';
 import { useCatalog } from '../state/catalog';
 import { useTonight } from '../features/tonight/useTonight';
+import { Sprout } from '../features/sprouts/Sprout';
 import { haptic } from '../lib/haptics';
 import { useCrews } from '../state/crews';
 import { useCrewUpdates } from '../state/crewUpdates';
@@ -155,6 +156,9 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
           <Action label="Film" a11y="Film a video" onPress={() => router.push('/camera')} icon={<CameraIcon color={color.moon} size={20} />} />
         ) : null}
         {ready && crews.length ? <Action label="Check in" a11y="Check in with your crew" onPress={() => router.push('/check-in')} /> : null}
+        {ready ? (
+          <Action label="Sprout" a11y="Give someone a sprout" onPress={() => router.push('/give-sprout')} icon={<Sprout kind="seedling" stage={2} size={26} still />} />
+        ) : null}
         {previewable ? (
           <Action
             label="Preview"
@@ -209,9 +213,10 @@ const styles = StyleSheet.create({
   cardTitle: { ...type.headline, color: color.moon },
   cardBody: { ...type.body, color: color.moonDim },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  actions: { flexDirection: 'row', gap: space.sm, marginTop: space.xl },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xl },
   action: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '30%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
