@@ -6,6 +6,7 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
+import { ProfileCover } from '../../components/ProfileCover';
 import { MenuIcon, QrIcon, ShareIcon } from '../../components/TabIcons';
 import { WEB_URL } from '../../config/app';
 import type { Festival } from '../../data/models';
@@ -51,6 +52,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
       <PageTitle title="Profile" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
+        <ProfileCover url={me?.coverUrl} height={insets.top + 190} />
         <View style={styles.bar}>
           <Text style={styles.at} numberOfLines={1}>
             {me ? `@${me.handle}` : 'Profile'}

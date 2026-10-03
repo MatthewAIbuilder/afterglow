@@ -44,6 +44,8 @@ export interface SocialService {
   saveProfile(input: ProfileInput, published: { festivals: string[]; sounds: Profile['sounds'] }): Promise<Profile>;
   /** Replace (a local image uri) or remove (null) your profile photo. */
   setAvatar(uri: string | null): Promise<Profile>;
+  /** Set or remove the wide photo behind the top of your profile. */
+  setCover(uri: string | null): Promise<Profile>;
   handleAvailable(handle: string): Promise<boolean>;
   /**
    * Become one of the first FOUNDERS_MAX people, if there's a spot left: your

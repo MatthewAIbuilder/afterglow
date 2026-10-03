@@ -154,6 +154,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         displayName: input.displayName,
         bio: input.bio,
         avatarUrl: before?.avatarUrl,
+        coverUrl: before?.coverUrl,
         festivals: input.showFestivals ? published.festivals : [],
         sounds: input.showSound ? published.sounds : [],
         showFestivals: input.showFestivals,
@@ -169,6 +170,14 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const p = profiles.get(u.uid);
       if (!p) throw new SocialError('no-profile');
       const next = { ...p, avatarUrl: uri ? `https://example.test/avatars/${u.uid}.jpg` : undefined };
+      profiles.set(u.uid, next);
+      return next;
+    },
+    async setCover(uri) {
+      const u = me();
+      const p = profiles.get(u.uid);
+      if (!p) throw new SocialError('no-profile');
+      const next = { ...p, coverUrl: uri ? `https://example.test/covers/${u.uid}.jpg` : undefined };
       profiles.set(u.uid, next);
       return next;
     },

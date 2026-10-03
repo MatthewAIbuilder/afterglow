@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
 import { StandingAvatar, StandingCaption } from '../../features/standing/StandingAvatar';
+import { ProfileCover } from '../../components/ProfileCover';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -254,7 +255,12 @@ export default function PublicProfileScreen() {
     <View style={styles.root}>
       <PageTitle title={handle ? `@${handle}` : undefined} />
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>{body}</ScrollView>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>
+        <View style={{ marginHorizontal: -space.xl, marginTop: -(insets.top + 64) }}>
+          <ProfileCover url={profile && !blocked ? profile.coverUrl : undefined} height={insets.top + 64 + 150} />
+        </View>
+        {body}
+      </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
         <GlassCircleButton label="Back" onPress={() => router.back()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />

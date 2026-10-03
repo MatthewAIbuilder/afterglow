@@ -22,6 +22,7 @@ export function profileFromDoc(uid: string, d: unknown): Profile | null {
     displayName: str(o.displayName) ?? handle,
     bio: str(o.bio) ?? '',
     avatarUrl: https(o.avatarUrl),
+    coverUrl: https(o.coverUrl),
     festivals: strs(o.festivals, 50),
     sounds: strs(o.sounds, 3).filter((s): s is SoundTag => (SOUND_TAGS as readonly string[]).includes(s)),
     showFestivals: o.showFestivals === true,

@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
 import { forgetStandings } from '../../features/standing/useStanding';
 import { forgetBadges } from '../../features/badges/useBadges';
-import { renderApp } from './appRoutes';
+import { forgetCrowd } from '../../features/festivals/CrowdVideos';
+import { renderApp, showTab } from './appRoutes';
 
 /** Founders and festival badges through the real routes, with the in-memory backend. */
 let mockSocial = fakeSocial();
@@ -36,6 +38,7 @@ beforeEach(async () => {
   forgetGoers();
   forgetStandings();
   forgetBadges();
+  forgetCrowd();
   network.__setState({ isConnected: true, isInternetReachable: true });
 });
 afterEach(() => {
@@ -104,5 +107,46 @@ describe('festival badges', () => {
     await flush();
     expect(sams.getByLabelText(/^Cyclops Cove 4 badge, collected/)).toBeTruthy();
     expect(sams.queryByLabelText(/^Eternal NYE 2026 badge/)).toBeNull();
+  });
+});
+
+describe('videos from the crowd on festival pages', () => {
+  it('shows what people filmed there, night by night, and opens one', async () => {
+    await person('maya', 'Maya');
+    await s().shareMemory({ memoryId: 'x1', videoUri: 'file:///x1.mp4', festivalId: 'cyclops-cove-4', night: 'Saturday', artistId: 'subtronics', capturedAt: new Date(2026, 11, 5, 22).toISOString() });
+    await s().shareMemory({ memoryId: 'x2', videoUri: 'file:///x2.mp4', festivalId: 'cyclops-cove-4', night: 'Friday', capturedAt: new Date(2026, 11, 4, 23).toISOString() });
+    await s().signOut();
+    await person('sam', 'Sam');
+    const app = await renderApp('/festival/cyclops-cove-4');
+    await flush();
+    await showTab(app, 'Videos');
+    await flush();
+    expect(app.getByText('2 videos from 1 person')).toBeTruthy();
+    const nights = app.getAllByText(/^(Friday|Saturday) \d+$/).map((t) => t.props.children[0]);
+    expect(nights).toEqual(['Friday', 'Saturday']);
+    expect(app.getByLabelText('SUBTRONICS, filmed by @maya, Saturday')).toBeTruthy();
+  });
+
+  it('asks you to sign in first', async () => {
+    const app = await renderApp('/festival/cyclops-cove-4');
+    await flush();
+    await showTab(app, 'Videos');
+    expect(app.getByText('Sign in to see what people on Afterglow filmed here.')).toBeTruthy();
+  });
+});
+
+describe('cover photo', () => {
+  it('can be added from Edit profile and shows across the top of your profile', async () => {
+    const picker = jest.requireMock<{ launchImageLibraryAsync: jest.Mock }>('expo-image-picker');
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///cover.jpg' }] }));
+    const uid = await person('maya', 'Maya');
+    const app = await renderApp('/profile-edit');
+    await flush();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'Choose a photo')?.onPress?.());
+    await fireEvent.press(app.getByLabelText('Add a cover photo'));
+    await flush();
+    alert.mockRestore();
+    expect(mockSocial.profiles.get(uid)?.coverUrl).toBe(`https://example.test/covers/${uid}.jpg`);
+    expect(app.getByLabelText('Change cover photo')).toBeTruthy();
   });
 });
