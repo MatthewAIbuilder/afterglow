@@ -57,7 +57,11 @@ describe('Friends at a festival', () => {
     expect(app.queryByText('Ask my crew for help')).toBeNull();
     expect(app.getByLabelText('Check in with a stage, a photo or your own words')).toBeTruthy();
     expect(app.getAllByText('Side quests').length).toBeGreaterThan(0);
-    expect(app.getByText('Add friends')).toBeTruthy();
+    // At the festival: your code, scanning and finding people up top; no inviting or activity feed.
+    expect(app.getByLabelText('Show my friend code')).toBeTruthy();
+    expect(app.getByLabelText('Scan a friend\'s code')).toBeTruthy();
+    expect(app.queryByLabelText('Invite friends to Afterglow')).toBeNull();
+    expect(app.queryByText('People you may know')).toBeNull();
     await app.unmount();
   });
 

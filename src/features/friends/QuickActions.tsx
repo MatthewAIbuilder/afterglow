@@ -1,0 +1,82 @@
+import { router } from 'expo-router';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { QrIcon, ScanIcon, SearchIcon, ShareIcon } from '../../components/TabIcons';
+import type { Festival } from '../../data/models';
+import { showActionSheet } from '../../lib/dialog';
+import { haptic } from '../../lib/haptics';
+import { shareMessage } from '../../lib/share';
+import { color, space, type } from '../../theme/tokens';
+import { inviteText } from '../social/friends';
+
+/** How many of your festivals the Invite menu offers. */
+const INVITE_FESTIVALS = 3;
+
+/**
+ * The Friends page's one row of round buttons: find people, show your code,
+ * scan a friend's (phones), and invite friends to Afterglow (or to plan one
+ * of your festivals). At a festival, inviting gives way: what matters there
+ * is adding the people in front of you.
+ */
+export function QuickActions({ handle, festivals = [], atFestival = false }: { handle?: string; festivals?: readonly Festival[]; atFestival?: boolean }) {
+  const invite = () => {
+    const chips = festivals.slice(0, INVITE_FESTIVALS);
+    const send = (f?: Festival) => void shareMessage(inviteText(handle, f), 'Join me on Afterglow');
+    if (!chips.length) {
+      send();
+      return;
+    }
+    const options = ['Invite to Afterglow', ...chips.map((f) => `Invite to plan ${f.name}`), 'Cancel'];
+    showActionSheet({ title: 'Invite friends', options, cancelButtonIndex: options.length - 1 }, (i) => {
+      if (i === 0) send();
+      else if (i > 0 && i <= chips.length) send(chips[i - 1]);
+    });
+  };
+  const phone = Platform.OS !== 'web';
+  return (
+    <View style={styles.row}>
+      {atFestival ? null : <Action label="Find" a11y="Find people" icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />}
+      <Action label="My code" a11y="Show my friend code" icon={<QrIcon color={color.moon} size={22} />} onPress={() => router.push('/my-code')} />
+      {phone ? <Action label="Scan" a11y="Scan a friend's code" icon={<ScanIcon color={color.night} size={22} />} onPress={() => router.push('/scan')} glow /> : null}
+      {atFestival ? (
+        <Action label="Find" a11y="Find people" icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />
+      ) : (
+        <Action label="Invite" a11y="Invite friends to Afterglow" icon={<ShareIcon color={color.moon} size={19} />} onPress={invite} />
+      )}
+    </View>
+  );
+}
+
+function Action({ label, a11y, icon, onPress, glow }: { label: string; a11y: string; icon: React.ReactNode; onPress: () => void; glow?: boolean }) {
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.tap();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+    >
+      <View style={[styles.circle, glow && styles.glow]}>{icon}</View>
+      <Text style={styles.label}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', justifyContent: 'space-around', marginTop: space.lg, marginBottom: space.sm },
+  action: { alignItems: 'center', gap: space.xs, minWidth: 64 },
+  circle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  glow: { backgroundColor: color.glow, borderColor: color.glow, shadowColor: color.glow, shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
+  label: { ...type.caption, color: color.moon },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
+});
