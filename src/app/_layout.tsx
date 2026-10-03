@@ -9,6 +9,8 @@ import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
 import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
 import { QuestToast } from '../features/quests/QuestToast';
+import { SecretStage } from '../features/secrets/SecretStage';
+import { SunriseWatcher } from '../features/secrets/SunriseWatcher';
 import { FirstRun } from '../features/welcome/FirstRun';
 import { FounderClaim } from '../features/standing/FounderClaim';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
@@ -114,6 +116,7 @@ export default function RootLayout() {
         <Stack.Screen name="compare" />
         <Stack.Screen name="festival-map" />
         <Stack.Screen name="quests" />
+        <Stack.Screen name="secrets" />
         <Stack.Screen name="prep/[id]" />
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />
@@ -196,6 +199,8 @@ export default function RootLayout() {
       <ReminderSync />
       <LikeSync />
       <QuestToast />
+      <SunriseWatcher />
+      <SecretStage />
       <OfflineNotice />
       <DialogHost />
       </FriendAddsProvider>

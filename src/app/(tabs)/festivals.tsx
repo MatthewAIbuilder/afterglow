@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { PageTitle } from '../../components/PageTitle';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { ArtistRow } from '../../components/ArtistRow';
@@ -31,7 +31,8 @@ import { NearYouPrompt } from '../../features/festivals/NearYouPrompt';
 import { useNearby } from '../../state/nearby';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
-import { useCatalog } from '../../state/catalog';
+import { useCatalog, useCatalogRefresh } from '../../state/catalog';
+import { revealSecret } from '../../state/secrets';
 import { type FestivalsView, useFestivalsView } from '../../state/festivalsView';
 import { useGoing } from '../../state/going';
 import { useWeekends } from '../../state/weekends';
@@ -87,6 +88,24 @@ export default function FestivalsScreen() {
   const searching = query.trim().length > 0;
   // Rows on a timeline or square tiles, your choice.
   const { view, setView } = useFestivalsView();
+  // Pull to refresh: the latest festivals and clips. Three pulls in a row set off fireworks.
+  const refreshCatalog = useCatalogRefresh();
+  const [refreshing, setRefreshing] = useState(false);
+  const pulls = useRef<number[]>([]);
+  const pullToRefresh = () => {
+    haptic.soft();
+    const now = Date.now();
+    pulls.current = [...pulls.current.filter((t) => now - t < 20_000), now];
+    if (pulls.current.length >= 3) {
+      pulls.current = [];
+      revealSecret('fireworks');
+    }
+    setRefreshing(true);
+    void refreshCatalog().finally(() => {
+      setRefreshing(false);
+      haptic.settle();
+    });
+  };
   const list = (fs: Festival[], isGoing = false) => <FestivalList festivals={fs} taste={taste} view={view} going={isGoing} />;
 
   return (
@@ -101,6 +120,9 @@ export default function FestivalsScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={pullToRefresh} tintColor={color.glow} colors={[color.glow]} progressBackgroundColor={color.nightRaised} />
+        }
       >
         <View style={styles.header}>
           <View style={styles.titleRow}>

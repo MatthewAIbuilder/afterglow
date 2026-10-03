@@ -362,9 +362,12 @@ export function levelOf(glow: number): Level {
   };
 }
 
-/** All your glow: daily and weekly quests, plus side quests and milestones. */
-export const totalGlow = (book: Pick<QuestBook, 'glow'> | undefined, sideQuests: number, milestones: number) =>
-  (book?.glow ?? 0) + sideQuests * SIDE_QUEST_GLOW + milestones * MILESTONE_GLOW;
+/** Glow for each secret found. */
+export const SECRET_FIND_GLOW = 50;
+
+/** All your glow: daily and weekly quests, plus side quests, milestones and secrets. */
+export const totalGlow = (book: Pick<QuestBook, 'glow'> | undefined, sideQuests: number, milestones: number, secrets = 0) =>
+  (book?.glow ?? 0) + sideQuests * SIDE_QUEST_GLOW + milestones * MILESTONE_GLOW + secrets * SECRET_FIND_GLOW;
 
 /** "New quests in 5 h" / "in 40 min". */
 export function turnsOverIn(now: number): string {

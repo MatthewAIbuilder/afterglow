@@ -10,6 +10,7 @@ import { useQuests } from '../../state/quests';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
+import { useSecrets } from '../../state/secrets';
 import { isOver } from '../festivals/shelves';
 import { useToday } from '../../lib/useToday';
 import { isWarm } from '../taste/ratings';
@@ -79,6 +80,7 @@ export function useDailyQuests() {
   const now = useNow().getTime();
   const { log } = useQuests();
   const { claimed } = useBadgeClaims();
+  const secrets = useSecrets();
   const day = book?.day ?? questDay(now);
   // Cheap enough to work out on every render (the React Compiler keeps it steady).
   const picks = dailyPicks(day, canDo({ planning, enoughSets }));
@@ -97,7 +99,7 @@ export function useDailyQuests() {
   const sideDone = QUESTS.filter((q) => log[q.id]).length;
   const questKeys = new Set(QUESTS.map((q) => `ms:${q.id}`));
   const badgeCount = claimed ? [...claimed].filter((k) => !questKeys.has(k)).length : 0;
-  const glow = totalGlow(book, sideDone, badgeCount);
+  const glow = totalGlow(book, sideDone, badgeCount, Object.keys(secrets.found).length);
   return {
     ready: loaded && ready && !!book,
     book,

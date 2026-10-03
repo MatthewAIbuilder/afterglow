@@ -57,6 +57,8 @@ import { reasonNote } from '../recommend/copy';
 import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
 import { useFeedLive } from './useFeedLive';
+import { useShake } from '../secrets/useShake';
+import { revealSecret } from '../../state/secrets';
 import { useRankedFeed } from './useRankedFeed';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
@@ -84,6 +86,13 @@ export function DiscoverFeed() {
   const [activeIndex, setActiveIndex] = useState(0);
   const activeRef = useRef(0);
   const feedLive = useFeedLive();
+  // A secret: shake the phone on Discover for a light show (once every few seconds at most).
+  const lastShow = useRef(0);
+  useShake(feedLive, () => {
+    if (Date.now() - lastShow.current < 5000) return;
+    lastShow.current = Date.now();
+    revealSecret('lightshow');
+  });
 
   // Which festival's lineup you're discovering. Changes start the feed from the top.
   const { clip: requested, festival: focusParam } = useLocalSearchParams<{ clip?: string; festival?: string }>();

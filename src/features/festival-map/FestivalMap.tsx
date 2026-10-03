@@ -18,6 +18,7 @@ import Animated, {
 import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import type { Point } from '../festivals/near';
 import { haptic } from '../../lib/haptics';
+import { revealSecret } from '../../state/secrets';
 import { color, motion, type } from '../../theme/tokens';
 import {
   type Box,
@@ -141,6 +142,8 @@ export function FestivalMap({
   const settle = useCallback(
     (zoom: number, x: number, y: number) => {
       setZoomStep(Math.round(zoom * 4) / 4);
+      // A secret: as close as the map goes.
+      if (zoom >= MAX_ZOOM * 0.98) revealSecret('edge');
       if (zoom < DETAIL_AT) {
         setDetail(undefined);
         return;

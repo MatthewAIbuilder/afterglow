@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,8 @@ import { QUESTS } from '../features/quests/quests';
 import { type QuestRow, useDailyQuests, useQuestRoute } from '../features/quests/useDailyQuests';
 import { haptic } from '../lib/haptics';
 import { useQuests } from '../state/quests';
+import { revealSecret, useSecrets } from '../state/secrets';
+import { secretsLine } from '../features/secrets/secrets';
 import { color, motion, radius, space, type } from '../theme/tokens';
 
 /** Taps on the level ring that wake the secret. */
@@ -29,6 +31,7 @@ export default function QuestsScreen() {
   const route = useQuestRoute();
   const { log } = useQuests();
   const sideDone = QUESTS.filter((x) => log[x.id]).length;
+  const secrets = useSecrets();
   const next = LEVELS[q.level.level] ?? undefined;
   const toNext = q.level.to - q.level.glow;
   const go = (to: string | undefined) => {
@@ -43,7 +46,7 @@ export default function QuestsScreen() {
       <PageTitle title="Quests" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
-        <LevelHero level={q.level.level} name={q.level.name} progress={q.level.progress} glow={q.level.glow} />
+        <LevelHero level={q.level.level} name={q.level.name} progress={q.level.progress} />
         <Text style={styles.toNext}>
           {q.level.glow} glow · {toNext} to {next ? next.name : `level ${q.level.level + 1}`}
         </Text>
@@ -125,10 +128,26 @@ export default function QuestsScreen() {
           <ChevronIcon color={color.moonFaint} size={12} />
         </Pressable>
 
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            router.push('/secrets');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Secrets, ${secretsLine(Object.keys(secrets.found).length)}`}
+          style={({ pressed }) => [styles.row, styles.rowTight, pressed && { opacity: 0.7 }]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowTitle}>Secrets</Text>
+            <Text style={styles.sub}>{secretsLine(Object.keys(secrets.found).length)}</Text>
+          </View>
+          <ChevronIcon color={color.moonFaint} size={12} />
+        </Pressable>
+
         <View style={styles.how}>
           <Text style={styles.howTitle}>How glow works</Text>
           <Text style={styles.howText}>
-            Daily quests give 10 to 25 glow, finishing all three adds {ALL_DONE_BONUS}, the weekly quest 150, each side quest {SIDE_QUEST_GLOW} and each badge you claim {MILESTONE_GLOW}. Quests
+            Daily quests give 10 to 25 glow, finishing all three adds {ALL_DONE_BONUS}, the weekly quest 150, each side quest {SIDE_QUEST_GLOW} and each badge you claim {MILESTONE_GLOW} and each secret 50. Quests
             are counted on this phone, and a new set arrives at 4 AM.
           </Text>
         </View>
@@ -142,25 +161,24 @@ const streakLabel = (streak: number, done: number, of: number) =>
   `${streak > 0 ? `${streak}-day streak.` : 'No streak yet.'} ${done} of ${of} quests done today.`;
 
 /** The big ring with your level. Tapping it wobbles it; keep tapping and something happens. */
-function LevelHero({ level, name, progress, glow }: { level: number; name: string; progress: number; glow: number }) {
+function LevelHero({ level, name, progress }: { level: number; name: string; progress: number }) {
   const reduced = useReducedMotion();
   const taps = useRef(0);
-  const [secret, setSecret] = useState(false);
   const spin = useSharedValue(0);
   const pop = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.get()}deg` }, { scale: pop.get() }] }));
   const tap = () => {
     taps.current += 1;
-    if (reduced) return;
     if (taps.current >= SECRET_TAPS) {
       taps.current = 0;
-      haptic.celebrate();
-      setSecret(true);
+      revealSecret('ringspin');
+      if (reduced) return;
       spin.set(withSequence(withTiming(spin.get() + 720, { duration: 1400 })));
       pop.set(withSequence(withSpring(1.18, motion.bloom), withSpring(1, motion.gentle)));
       return;
     }
     haptic.soft();
+    if (reduced) return;
     pop.set(withSequence(withTiming(0.94, { duration: 80 }), withSpring(1, motion.bloom)));
   };
   return (
@@ -176,7 +194,6 @@ function LevelHero({ level, name, progress, glow }: { level: number; name: strin
       </Pressable>
       <Text style={styles.levelKicker}>Glow level</Text>
       <Text style={styles.levelName}>{name}</Text>
-      {secret ? <Text style={styles.secret}>You found the light inside the light. {glow} and counting.</Text> : null}
     </View>
   );
 }
@@ -230,7 +247,6 @@ const styles = StyleSheet.create({
   levelNum: { fontSize: 44, lineHeight: 50, fontWeight: '800', color: color.moon, letterSpacing: -1 },
   levelKicker: { ...type.caption, color: QUEST_GOLD, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: space.md },
   levelName: { ...type.largeTitle, color: color.moon },
-  secret: { ...type.caption, color: QUEST_GOLD, marginTop: space.xs, textAlign: 'center', paddingHorizontal: space.xl },
   toNext: { ...type.label, color: color.moonDim, textAlign: 'center', marginTop: space.xs, marginBottom: space.xl },
   card: {
     marginHorizontal: space.lg,
@@ -301,6 +317,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: color.glass,
   },
+  rowTight: { marginTop: space.sm },
   rowTitle: { ...type.headline, color: color.moon },
   how: { marginHorizontal: space.lg, marginTop: space.xl },
   howTitle: { ...type.label, color: color.moonDim },

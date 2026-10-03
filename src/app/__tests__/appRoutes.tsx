@@ -35,6 +35,7 @@ import ThisOrThatScreen from '../this-or-that';
 import CompareScreen from '../compare';
 import FestivalMapScreen from '../festival-map';
 import QuestsScreen from '../quests';
+import SecretsScreen from '../secrets';
 import PrepScreen from '../prep/[id]';
 import YourArtistsScreen from '../your-artists';
 import SettingsScreen from '../settings';
@@ -93,6 +94,7 @@ export const APP_ROUTES = {
   compare: CompareScreen,
   'festival-map': FestivalMapScreen,
   quests: QuestsScreen,
+  secrets: SecretsScreen,
   'prep/[id]': PrepScreen,
   'your-artists': YourArtistsScreen,
   settings: SettingsScreen,
