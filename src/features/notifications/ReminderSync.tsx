@@ -10,7 +10,7 @@ import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { festivalRoute } from '../plan/route';
 import { festivalReminders, reminderChanges, type Reminder } from './reminders';
-import { careReminders } from './careReminders';
+import { careReminders, feelReminders } from './careReminders';
 import { useCare } from '../../state/care';
 import { tonightFestival } from '../tonight/tonight';
 import { canRemindSets, setReminders, soonest } from './setReminders';
@@ -69,7 +69,7 @@ function PhoneReminders() {
           const now = new Date();
           const sets: Reminder[] = soonest(routes.flatMap(({ festival, route }) => setReminders(festival, route, now)));
           const water = careReminders(care, tonightFestival(festivals, going, now)?.festival.id, now);
-          const wanted = [...festivalReminders(festivals, going, now), ...sets, ...water];
+          const wanted = [...festivalReminders(festivals, going, now), ...sets, ...water, ...feelReminders(care, now)];
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           const { cancel, schedule } = reminderChanges(
             wanted,
@@ -97,14 +97,14 @@ function PhoneReminders() {
 
   // Only a change you make may ask for permission: going, or the set reminders switch. Not the sync when the app
   // opens, and not a route that moved because you liked something.
-  const asked = useRef<{ going: unknown; changed: number; water: unknown } | undefined>(undefined);
+  const asked = useRef<{ going: unknown; changed: number; water: unknown; feel: unknown } | undefined>(undefined);
 
   useEffect(() => {
     if (!hydrated || !weekendsLoaded || !setsLoaded || !careLoaded) return;
     const first = !asked.current;
     const mayAsk =
-      !first && (asked.current!.going !== going || asked.current!.changed !== changed || asked.current!.water !== care.waterEvery);
-    asked.current = { going, changed, water: care.waterEvery };
+      !first && (asked.current!.going !== going || asked.current!.changed !== changed || asked.current!.water !== care.waterEvery || asked.current!.feel !== care.feelEvery);
+    asked.current = { going, changed, water: care.waterEvery, feel: care.feelEvery };
     // Opening the app and your own changes sync at once; a route that moved (a burst of likes) a beat later, once.
     if (first || mayAsk) {
       sync(mayAsk);
@@ -112,7 +112,7 @@ function PhoneReminders() {
     }
     const t = setTimeout(() => sync(false), 600);
     return () => clearTimeout(t);
-  }, [going, hydrated, weekendsLoaded, setsLoaded, careLoaded, care.waterEvery, changed, sync]);
+  }, [going, hydrated, weekendsLoaded, setsLoaded, careLoaded, care.waterEvery, care.feelEvery, changed, sync]);
 
 
   // Opened from a reminder: go to that festival (once per reminder).

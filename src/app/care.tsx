@@ -8,7 +8,7 @@ import { PageTitle } from '../components/PageTitle';
 import { useLocalSearchParams } from 'expo-router';
 import { BodyCard } from '../features/care/BodyCard';
 import { BloomWash, HeartMark } from '../features/care/HeartIntro';
-import { countTonight, feelingsBetween, lastFeeling, regionOf, emergencyNumber, lastLine, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY } from '../features/care/care';
+import { countTonight, feelingsBetween, lastFeeling, regionOf, emergencyNumber, lastLine, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY, FEEL_EVERY } from '../features/care/care';
 import { FeelingCard } from '../features/care/FeelingCard';
 import { careFestival } from '../features/crews/care';
 import { CrewHelpAlerts } from '../features/crews/CrewHelpAlerts';
@@ -46,8 +46,9 @@ const region = () => {
 export default function CareScreen() {
   const insets = useSafeAreaInsets();
   // Opened by holding the camera button: the heart lands into place.
-  const fromHeart = useLocalSearchParams<{ from?: string }>().from === 'heart';
-  const { care, hydrated, start, stop, tookMore, log, undo, checkIn, setLock, setWaterEvery, clear } = useCare();
+  const params = useLocalSearchParams<{ from?: string; part?: string }>();
+  const fromHeart = params.from === 'heart';
+  const { care, hydrated, start, stop, tookMore, log, undo, checkIn, setLock, setWaterEvery, setFeelEvery, clear } = useCare();
   // Every second, for the stopwatches.
   const now = useNow(1000).getTime();
   const mixes = riskyMixes(care.timers.map((t) => t.guide).filter((g): g is string => !!g));
@@ -69,6 +70,16 @@ export default function CareScreen() {
     const y = spots.current[id];
     if (y !== undefined) scroller.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
   };
+  // Opened from a reminder ("How are you feeling?"): that part, once laid out.
+  const opened = params.part;
+  useEffect(() => {
+    if (!opened || !(PART_IDS as readonly string[]).includes(opened)) return;
+    const t = setTimeout(() => {
+      const y = spots.current[opened as PartId];
+      if (y !== undefined) scroller.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [opened]);
 
   // Face ID (or the passcode); a phone without either just opens.
   const askToUnlock = () =>
@@ -190,6 +201,23 @@ export default function CareScreen() {
             />
           ))}
           {care.timers.length < TIMERS_MAX ? <StartStopwatch onStart={start} /> : null}
+          {/* "How are you feeling?" on the phone while a stopwatch runs. */}
+          {Platform.OS !== 'web' && (care.timers.length || care.feelEvery) ? (
+            <View style={styles.remind}>
+              <Text style={styles.remindTitle}>Ask how I’m feeling</Text>
+              <ReminderChoice
+                options={FEEL_EVERY}
+                value={care.feelEvery}
+                onPick={setFeelEvery}
+                a11y={(label) => (label ? `Ask how I’m feeling ${label.toLowerCase()}` : 'Don’t ask how I’m feeling')}
+              />
+              <Text style={styles.note}>
+                {care.feelEvery
+                  ? 'While a stopwatch runs, until it should have worn off. Each check-in starts the clock again.'
+                  : 'A quiet nudge to check in, so your graph fills in. Nothing private shows on your lock screen.'}
+              </Text>
+            </View>
+          ) : null}
           {!care.timers.length ? <Text style={styles.note}>Start one when you take something. It tells you when it usually kicks in, and charts how you feel along the way.</Text> : null}
         </Part>
 
@@ -223,27 +251,12 @@ export default function CareScreen() {
           {Platform.OS !== 'web' ? (
             <View style={styles.remind}>
               <Text style={styles.remindTitle}>Remind me to drink water</Text>
-              <View style={styles.remindRow} accessibilityRole="radiogroup">
-                {([undefined, ...WATER_EVERY] as const).map((m) => {
-                  const on = care.waterEvery === m;
-                  const label = m === undefined ? 'Off' : m === 60 ? 'Every hour' : `Every ${m} min`;
-                  return (
-                    <Pressable
-                      key={m ?? 'off'}
-                      onPress={() => {
-                        haptic.select();
-                        setWaterEvery(m);
-                      }}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: on }}
-                      accessibilityLabel={m === undefined ? 'No water reminders' : `Water reminders ${label.toLowerCase()}`}
-                      style={({ pressed }) => [styles.remindChip, on && styles.remindChipOn, pressed && { opacity: 0.8 }]}
-                    >
-                      <Text style={[styles.remindChipText, on && { color: color.moon }]}>{label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <ReminderChoice
+                options={WATER_EVERY}
+                value={care.waterEvery}
+                onPick={setWaterEvery}
+                a11y={(label) => (label ? `Water reminders ${label.toLowerCase()}` : 'No water reminders')}
+              />
               <Text style={styles.note}>
                 {care.waterEvery
                   ? 'While a festival you’re going to is on, until 6 AM. Each water you log starts the clock again.'
@@ -309,7 +322,35 @@ export default function CareScreen() {
   );
 }
 
-type PartId = 'help' | 'feelings' | 'stopwatches' | 'water' | 'body' | 'guide';
+const PART_IDS = ['help', 'feelings', 'stopwatches', 'water', 'body', 'guide'] as const;
+type PartId = (typeof PART_IDS)[number];
+
+/** Off, then each "every N min" choice, as a row of chips. */
+function ReminderChoice<T extends number>({ options, value, onPick, a11y }: { options: readonly T[]; value: T | undefined; onPick: (v: T | undefined) => void; a11y: (label?: string) => string }) {
+  return (
+    <View style={styles.remindRow} accessibilityRole="radiogroup">
+      {([undefined, ...options] as const).map((m) => {
+        const on = value === m;
+        const label = m === undefined ? 'Off' : m === 60 ? 'Every hour' : `Every ${m} min`;
+        return (
+          <Pressable
+            key={m ?? 'off'}
+            onPress={() => {
+              haptic.select();
+              onPick(m);
+            }}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={a11y(m === undefined ? undefined : label)}
+            style={({ pressed }) => [styles.remindChip, on && styles.remindChipOn, pressed && { opacity: 0.8 }]}
+          >
+            <Text style={[styles.remindChipText, on && { color: color.moon }]}>{label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 /** One part of the page: a heading (when it has one), and where it starts for the jump chips. */
 function Part({ id, title, at, children }: { id: PartId; title?: string; at: (id: PartId, y: number) => void; children: React.ReactNode }) {

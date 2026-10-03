@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { cleanCare, EMPTY_CARE, type Care } from '../../care/care';
-import { careReminders } from '../careReminders';
+import { careReminders, FEEL_MAX, FEEL_UNGUIDED_MIN, feelReminders } from '../careReminders';
 
 const at = (h: number, m = 0, day = 5) => new Date(2026, 11, day, h, m);
 
@@ -32,5 +32,36 @@ describe('water reminders', () => {
   it('keeps only a valid choice when read back', () => {
     expect(cleanCare({ timers: [], log: [], waterEvery: 60 }, Date.now()).waterEvery).toBe(60);
     expect(cleanCare({ timers: [], log: [], waterEvery: 7 }, Date.now()).waterEvery).toBeUndefined();
+  });
+});
+
+describe('“How are you feeling?” reminders', () => {
+  const started = at(22).getTime();
+  const mdma: Care = { ...EMPTY_CARE, feelEvery: 45, timers: [{ id: 't', label: 'MDMA / molly', startedAt: started, guide: 'mdma' }] };
+
+  it('come while a stopwatch runs, until it should have worn off, and say nothing private', () => {
+    const list = feelReminders(mdma, at(22, 10));
+    expect(list[0].at).toEqual(at(22, 45));
+    // MDMA usually wears off by 6 h: none after 4 AM.
+    expect(list[list.length - 1].at.getTime()).toBeLessThanOrEqual(at(4, 0, 6).getTime());
+    expect(list.length).toBeLessThanOrEqual(FEEL_MAX);
+    expect(list[0]).toMatchObject({ title: 'How are you feeling?', href: '/care?part=feelings' });
+    expect(JSON.stringify(list)).not.toMatch(/MDMA|molly/i);
+    expect(list[0].id.startsWith('afterglow-remind:care:feel:')).toBe(true);
+  });
+
+  it('start again from each check-in, and stop with the stopwatches', () => {
+    const checked: Care = { ...mdma, log: [{ kind: 'checkin', mood: 'good', at: at(22, 40).getTime() }] };
+    expect(feelReminders(checked, at(22, 41))[0].at).toEqual(at(23, 25));
+    expect(feelReminders({ ...mdma, timers: [] }, at(22, 10))).toEqual([]);
+    expect(feelReminders({ ...mdma, feelEvery: undefined }, at(22, 10))).toEqual([]);
+    // Something not in the guide: for 6 hours.
+    const own = feelReminders({ ...EMPTY_CARE, feelEvery: 60, timers: [{ id: 'o', label: 'Something', startedAt: started }] }, at(22, 10));
+    expect(own[own.length - 1].at.getTime()).toBeLessThanOrEqual(started + FEEL_UNGUIDED_MIN * 60_000);
+  });
+
+  it('is kept when read back, and only as one of the choices', () => {
+    expect(cleanCare({ feelEvery: 30 }, at(22).getTime()).feelEvery).toBe(30);
+    expect(cleanCare({ feelEvery: 7 }, at(22).getTime()).feelEvery).toBeUndefined();
   });
 });

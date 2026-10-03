@@ -123,3 +123,31 @@ describe('water reminders', () => {
     expect([...notifications.__scheduled.keys()].filter((id) => id.includes('care:water'))).toEqual([]);
   });
 });
+
+describe('“How are you feeling?” reminders', () => {
+  it('can be switched on while a stopwatch runs, and stop with it', async () => {
+    const notifications = jest.requireMock<{ __scheduled: Map<string, unknown> }>('expo-notifications');
+    notifications.__scheduled.clear();
+    const app = await renderApp('/care');
+    await flush();
+    expect(app.queryByLabelText('Ask how I’m feeling every 45 min')).toBeNull();
+    await fireEvent.press(app.getByLabelText('Start a stopwatch'));
+    await fireEvent.press(app.getByLabelText(/^MDMA \/ molly\. Usually starts in/));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Ask how I’m feeling every 45 min'));
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    await flush();
+    expect((await saved()).feelEvery).toBe(45);
+    expect([...notifications.__scheduled.keys()].filter((id) => id.includes('care:feel:')).length).toBeGreaterThan(3);
+    const alerts = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'Stop')?.onPress?.());
+    await fireEvent.press(app.getByLabelText('Stop the MDMA / molly stopwatch'));
+    alerts.mockRestore();
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    await flush();
+    expect([...notifications.__scheduled.keys()].filter((id) => id.includes('care:feel:'))).toEqual([]);
+  });
+});
