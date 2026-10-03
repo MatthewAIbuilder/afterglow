@@ -10,10 +10,9 @@ TestFlight and then the App Store. It's written from what the app does today
    own name or a company's. The name shows on the App Store as the seller.
 2. **An Expo account** at expo.dev (free), signed in on your PC with
    `npx eas-cli@latest login`.
-3. **A bundle identifier**: the app's permanent ID. A good one is
-   `app.afterglowmusic` (it matches the afterglowmusic.app domain you own).
-   EAS asks for it on the first build and saves it; it can't be changed after
-   the app is in the store.
+3. **A bundle identifier**: the app's permanent ID, `app.afterglowmusic`
+   (chosen on 2026-10-03; it's in `app.json` for iPhone and Android). It
+   can't be changed after the app is in the store.
 
 ## Step 1: a build on your own iPhone (TestFlight)
 
@@ -47,10 +46,9 @@ In App Store Connect → your app:
 - **Subtitle** (30 characters): for example "Your festival, set to set".
 - **Category**: Music (secondary: Entertainment).
 - **Screenshots**: 6.9-inch iPhone screenshots are required. Discover, My
-  Sound, a festival page and Your festival make a good set. The app is set to
-  run on iPad too (`supportsTablet` in `app.json`), which means iPad
-  screenshots are required as well. If you'd rather not, ask me to switch iPad
-  off before the first build.
+  Sound, a festival page and Your festival make a good set. The app is
+  iPhone only (`supportsTablet` is off in `app.json`), so no iPad screenshots
+  are needed. (It still opens on an iPad, in an iPhone-sized window.)
 - **Privacy Policy URL**: https://afterglowmusic.app/legal/privacy
 - **Support URL**: https://afterglowmusic.app (or a page with the support
   email, afterglowmusic.support@gmail.com).
