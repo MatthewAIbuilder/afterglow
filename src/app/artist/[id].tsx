@@ -41,6 +41,7 @@ import { playingList } from '../../features/festivals/playing';
 import { useNearby } from '../../state/nearby';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
+import { useWeekends } from '../../state/weekends';
 import { usePlan } from '../../state/plan';
 import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
@@ -83,6 +84,7 @@ export default function ArtistScreen() {
   const { crewStarsFor } = useCrews();
   const { going } = useGoing();
   const today = useToday();
+  const { forYou } = useWeekends();
   const { distanceTo, units, placeOf } = useNearby();
   const { seen } = useSeen();
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
@@ -106,7 +108,8 @@ export default function ArtistScreen() {
   // Yours first, then near you (when it's on), then the soonest; what's over last.
   const playing = playingList(festivals, { going, today, distanceTo, nearKm: NEAR_KM });
   // Their next show, and what you've done with their music here.
-  const next = nextShow(festivals, artist.id, today);
+  // As each festival is for you: an artist on the other weekend of a two-weekend festival isn't your next show there.
+  const next = nextShow(festivals.map(forYou), artist.id, today);
   const story = artistStory({ artistId: artist.id, clips: catalog.clipsOf(artist.id), reactions, seen, memories, festivalOf: catalog.festival });
   const storyText = storyLines(story);
   // Their clips, ones you haven't watched first; then one each from artists who sound like them.
