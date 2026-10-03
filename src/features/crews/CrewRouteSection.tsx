@@ -8,7 +8,7 @@ import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { clockTime, stintLabel } from '../plan/route';
 import { crewRoute, type CrewDay, namesLine } from './crewRoute';
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  must: { borderColor: 'rgba(169,124,255,0.55)', backgroundColor: 'rgba(169,124,255,0.1)' },
+  must: { borderColor: glowA(0.55), backgroundColor: glowA(0.1) },
   time: { ...type.label, color: color.moonDim, width: 64, fontVariant: ['tabular-nums'] },
   name: { ...type.headline, color: color.moon },
   meta: { ...type.caption, color: color.moonDim, marginTop: 2 },

@@ -4,7 +4,7 @@ import { PeopleIcon, ShareIcon } from '../../components/TabIcons';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA, raisedA } from '../../theme/tokens';
 import { inviteText } from '../social/friends';
 
 /** How many of your festivals get their own "Invite to" chip. */
@@ -24,7 +24,7 @@ export function InviteCard({ handle, festivals }: { handle?: string; festivals: 
   return (
     <View style={styles.card}>
       <LinearGradient
-        colors={['rgba(169,124,255,0.30)', 'rgba(255,126,182,0.16)', 'rgba(111,195,255,0.10)']}
+        colors={[glowA(0.30), 'rgba(255,126,182,0.16)', 'rgba(111,195,255,0.10)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: color.glass,
     borderWidth: 1,
-    borderColor: 'rgba(169,124,255,0.45)',
+    borderColor: glowA(0.45),
     gap: space.md,
   },
   head: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
@@ -91,6 +91,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   label: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
   chips: { gap: space.sm },
-  chip: { maxWidth: 220, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(18,16,38,0.5)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.5)' },
+  chip: { maxWidth: 220, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: raisedA(0.5), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
   chipText: { ...type.label, color: color.moon },
 });

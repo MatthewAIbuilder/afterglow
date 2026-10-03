@@ -4,7 +4,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import { accountsOff } from '../social/unavailable';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 /**
  * Festival mode's Discover with nothing to watch yet: why (signed out, or no
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: color.moonDim, marginTop: space.md },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xl },
   button: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  primary: { backgroundColor: color.glowDeep, borderColor: 'rgba(169,124,255,0.6)' },
+  primary: { backgroundColor: color.glowDeep, borderColor: glowA(0.6) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   buttonText: { ...type.label, color: color.moon },
 });

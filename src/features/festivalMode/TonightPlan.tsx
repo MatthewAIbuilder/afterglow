@@ -9,7 +9,7 @@ import { PageTitle } from '../../components/PageTitle';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { useFestivalMode } from '../../state/festivalMode';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { lineupDays } from '../festivals/days';
 import { picksByDay } from '../plan/byDay';
 import { LiveNow } from '../plan/LiveNow';
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   chipsWrap: { marginTop: space.lg, marginHorizontal: -space.xl },
   chips: { gap: space.sm, paddingHorizontal: space.xl },
   chip: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.6)' },
+  chipOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.6) },
   chipText: { ...type.label, color: color.moonDim },
   chipTextOn: { color: color.moon },
   live: { marginTop: space.lg },
@@ -185,9 +185,9 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     paddingHorizontal: space.sm,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.45)',
+    borderColor: glowA(0.45),
   },
   actionText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

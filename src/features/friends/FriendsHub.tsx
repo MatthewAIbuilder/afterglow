@@ -37,7 +37,7 @@ import { useCrewChat } from '../../state/crewChat';
 import { unreadLine } from '../crews/chat';
 import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 
 /** How many of your festivals are asked who else is going. */
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   hero: { marginTop: space.xl, padding: space.xl, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', gap: space.md },
-  heroIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(169,124,255,0.16)' },
+  heroIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.16) },
   heroTitle: { ...type.title, color: color.moon, textAlign: 'center' },
   heroBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
   primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   section: { marginTop: space.xl, gap: space.sm },
   sectionTitle: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginLeft: space.xs },
   card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  startCard: { borderStyle: 'dashed', borderColor: 'rgba(169,124,255,0.45)' },
+  startCard: { borderStyle: 'dashed', borderColor: glowA(0.45) },
   plusCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glow },
   cardTitle: { ...type.headline, color: color.moon },
   cardDetail: { ...type.caption, color: color.moonDim, marginTop: 2 },

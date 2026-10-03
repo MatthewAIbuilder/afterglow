@@ -16,7 +16,7 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { openDoor } from '../../state/festivalWeek';
 import { useWeekends } from '../../state/weekends';
-import { color, motion, radius, space, type } from '../../theme/tokens';
+import { color, motion, radius, space, type, glowA } from '../../theme/tokens';
 
 const GOLD = '#FFD58A';
 
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   tileReady: { borderWidth: 1.5, borderColor: GOLD, backgroundColor: 'rgba(255,213,138,0.10)', shadowColor: GOLD, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
-  tileOpen: { backgroundColor: 'rgba(169,124,255,0.14)', borderColor: 'rgba(169,124,255,0.45)' },
+  tileOpen: { backgroundColor: glowA(0.14), borderColor: glowA(0.45) },
   tileChosen: { borderWidth: 1.5, borderColor: color.glow },
   tileLocked: { opacity: 0.45 },
   number: { ...type.largeTitle, color: color.moon, fontVariant: ['tabular-nums'] },

@@ -1,7 +1,7 @@
 import { StyleSheet, Text } from 'react-native';
 import Animated, { FadeIn, FadeOut, useReducedMotion } from 'react-native-reanimated';
 import { ChevronIcon } from '../../components/TabIcons';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA, raisedA } from '../../theme/tokens';
 import { HINT_COPY, HINT_SPOKEN, type Hint } from './hints';
 import { HeartIcon } from './icons';
 import { SparkIcon } from '../quests/QuestRing';
@@ -43,9 +43,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(18,16,38,0.55)',
+    backgroundColor: raisedA(0.55),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.35)',
+    borderColor: glowA(0.35),
   },
   text: { ...type.caption, color: color.moon },
 });

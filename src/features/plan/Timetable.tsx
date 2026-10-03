@@ -8,7 +8,7 @@ import { stageName } from '../../data/festival';
 import { formatTime } from '../festivals/format';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { catchLine, exploreLine, matchLabel, TIER_LABEL, verdictLines } from './copy';
 import { BoltIcon } from './icons';
 import { MustSeeToggle } from './MustSeeToggle';
@@ -280,7 +280,7 @@ function ClashCard({ festival, item }: { festival: Festival; item: Extract<Sched
   return (
     <View style={[styles.card, styles.clash]}>
       <LinearGradient
-        colors={['rgba(169,124,255,0.14)', 'rgba(169,124,255,0)']}
+        colors={[glowA(0.14), glowA(0)]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   modeItem: { paddingHorizontal: space.lg, paddingVertical: 6, borderRadius: radius.pill },
-  modeOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  modeOn: { backgroundColor: glowA(0.22) },
   days: {
     flexDirection: 'row',
     padding: 3,
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   dayItem: { flex: 1, alignItems: 'center', paddingVertical: space.sm, borderRadius: radius.pill },
-  dayOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  dayOn: { backgroundColor: glowA(0.22) },
   dayText: { ...type.label, color: color.moonDim },
   dayDot: { width: 4, height: 4, borderRadius: 2, marginTop: 4, backgroundColor: 'transparent' },
   summary: { ...type.caption, color: color.moonDim, marginTop: space.lg, marginBottom: space.md },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
     overflow: 'hidden',
   },
-  clash: { borderColor: 'rgba(169,124,255,0.4)', paddingTop: space.md },
+  clash: { borderColor: glowA(0.4), paddingTop: space.md },
   discover: {
     backgroundColor: 'transparent',
     borderStyle: 'dashed',

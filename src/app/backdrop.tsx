@@ -13,7 +13,7 @@ import { useStanding } from '../features/standing/useStanding';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, nightA } from '../theme/tokens';
 
 /** The "cover photo" choice: no animated background. */
 const PHOTO = 'photo';
@@ -89,7 +89,7 @@ export default function BackdropScreen() {
           ) : me?.coverUrl ? (
             <Image source={{ uri: me.coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
           ) : null}
-          <LinearGradient colors={['rgba(10,9,24,0)', 'rgba(10,9,24,0.85)']} locations={[0.5, 1]} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={[nightA(0), nightA(0.85)]} locations={[0.5, 1]} style={StyleSheet.absoluteFill} />
           <View style={styles.previewMe}>
             <View style={styles.previewAvatar}>
               {me?.avatarUrl ? <Image source={{ uri: me.avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.initial}>{(me?.displayName ?? '?').slice(0, 1).toUpperCase()}</Text>}
@@ -104,6 +104,10 @@ export default function BackdropScreen() {
             </View>
           </View>
         </View>
+
+        <Pressable onPress={() => router.push('/themes')} accessibilityRole="button" style={styles.themeLink}>
+          <Text style={styles.themeLinkText}>Want the whole app in a new look? App themes ›</Text>
+        </Pressable>
 
         <View style={[styles.grid, { gap: space.md }]}>
           <Tile
@@ -224,7 +228,9 @@ const styles = StyleSheet.create({
   initial: { ...type.headline, color: color.moon },
   previewName: { ...type.headline, color: color.moon },
   previewAbout: { ...type.caption, color: color.moonDim },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.xl },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.lg },
+  themeLink: { marginTop: space.lg, paddingVertical: space.xs },
+  themeLinkText: { ...type.label, color: color.glow },
   tile: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.nightRaised, borderWidth: 2, borderColor: 'transparent' },
   tileSelected: { borderColor: color.glow },
   plain: { backgroundColor: '#100d24' },
@@ -237,7 +243,7 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.4, color: '#1B1230' },
   check: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: color.glow, alignItems: 'center', justifyContent: 'center' },
   checkText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: 'rgba(10,9,24,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline, alignItems: 'center' },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: nightA(0.92), borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline, alignItems: 'center' },
   lockNote: { ...type.caption, color: '#FFD66B', marginBottom: space.sm },
   primary: { alignSelf: 'stretch', maxWidth: 600, height: 50, borderRadius: radius.pill, backgroundColor: color.glowDeep, alignItems: 'center', justifyContent: 'center' },
   primaryLocked: { backgroundColor: 'rgba(255,214,107,0.25)' },

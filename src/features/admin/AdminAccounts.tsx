@@ -5,7 +5,7 @@ import { SearchField } from '../../components/SearchField';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { FlairKind, Privileges, Profile } from '../social/models';
 import { FLAIR_KINDS } from '../social/models';
 import { StandingAvatar } from '../standing/StandingAvatar';
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   name: { ...type.headline, color: color.moon },
   handle: { ...type.label, color: color.moonDim, fontWeight: '500' },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  grant: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: 'rgba(169,124,255,0.08)', borderWidth: 1, borderColor: 'rgba(169,124,255,0.45)' },
+  grant: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: glowA(0.08), borderWidth: 1, borderColor: glowA(0.45) },
   grantHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.sm },
   close: { fontSize: 24, color: color.moonFaint, paddingHorizontal: 4 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },

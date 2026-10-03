@@ -20,7 +20,7 @@ import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
 import { useCrewChat } from '../../state/crewChat';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
 
 const AMBER = '#FFB86B';
 
@@ -281,7 +281,7 @@ export default function CrewChatScreen() {
 const styles = StyleSheet.create({
   notices: { paddingHorizontal: space.lg, paddingBottom: space.sm, gap: space.xs },
   noticeLate: { ...type.caption, color: AMBER, lineHeight: 17 },
-  noticeSent: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, padding: space.sm, borderRadius: radius.sm, backgroundColor: 'rgba(169,124,255,0.14)' },
+  noticeSent: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, padding: space.sm, borderRadius: radius.sm, backgroundColor: glowA(0.14) },
   noticeSentText: { ...type.caption, color: color.moon, flex: 1, lineHeight: 17 },
   noticeClose: { ...type.label, color: color.moonDim },
   noticeWaiting: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: radius.sm, backgroundColor: 'rgba(255,184,107,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,184,107,0.5)' },
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   failed: { borderWidth: 1, borderColor: AMBER, opacity: 0.8 },
   text: { ...type.body, color: color.moon },
   meta: { ...type.caption, fontSize: 11, color: color.moonFaint, marginHorizontal: space.sm },
-  compose: { paddingTop: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline, backgroundColor: 'rgba(10,9,24,0.92)', gap: space.sm },
+  compose: { paddingTop: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline, backgroundColor: nightA(0.92), gap: space.sm },
   quickRow: { gap: space.sm, paddingHorizontal: space.lg },
   chip: { alignSelf: 'flex-start', paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   chipText: { ...type.label, color: color.moon },

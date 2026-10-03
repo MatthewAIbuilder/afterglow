@@ -6,7 +6,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
-import { color, space, type } from '../../theme/tokens';
+import { color, space, type, nightA } from '../../theme/tokens';
 import { ago } from '../crews/updates';
 import { liveCrowd } from '../community/crowd';
 import { useFestivalCrowd } from './useFestivalCrowd';
@@ -74,8 +74,8 @@ const styles = StyleSheet.create({
   title: { ...type.headline, color: color.moon },
   count: { ...type.label, color: color.moonFaint },
   tile: { width: TILE_W, height: TILE_H, borderRadius: 14, overflow: 'hidden', backgroundColor: color.glass, borderWidth: 1.5, borderColor: 'rgba(255,77,109,0.6)' },
-  shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '50%', backgroundColor: 'rgba(10,9,24,0.5)' },
-  ago: { ...type.caption, fontSize: 10, color: color.moon, position: 'absolute', top: 6, left: 6, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6, overflow: 'hidden', backgroundColor: 'rgba(10,9,24,0.55)' },
+  shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '50%', backgroundColor: nightA(0.5) },
+  ago: { ...type.caption, fontSize: 10, color: color.moon, position: 'absolute', top: 6, left: 6, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6, overflow: 'hidden', backgroundColor: nightA(0.55) },
   info: { position: 'absolute', left: 6, right: 6, bottom: 6 },
   artist: { ...type.caption, fontWeight: '700', color: color.moon },
   handle: { ...type.caption, fontSize: 10, color: color.moonDim },

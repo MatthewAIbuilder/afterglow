@@ -32,7 +32,7 @@ import { WEB_URL } from '../../config/app';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { showActionSheet } from '../../lib/dialog';
 import { shareMessage } from '../../lib/share';
 
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.35)',
+    borderColor: glowA(0.35),
     gap: space.sm,
   },
   commonTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },

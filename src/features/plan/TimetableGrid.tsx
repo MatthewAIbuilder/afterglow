@@ -6,7 +6,7 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { StarIcon } from './icons';
 import { type GridBlock, gridDay, hourLabel } from './grid';
@@ -113,8 +113,8 @@ function Block({ festival, block: b, top, height, stage }: { festival: Festival;
 }
 
 const TONE = StyleSheet.create({
-  must: { backgroundColor: 'rgba(169,124,255,0.34)', borderColor: 'rgba(169,124,255,0.8)' },
-  strong: { backgroundColor: 'rgba(169,124,255,0.2)', borderColor: 'rgba(169,124,255,0.4)' },
+  must: { backgroundColor: glowA(0.34), borderColor: glowA(0.8) },
+  strong: { backgroundColor: glowA(0.2), borderColor: glowA(0.4) },
   some: { backgroundColor: color.glass, borderColor: color.hairline },
   new: { backgroundColor: 'transparent', borderColor: color.hairline, borderStyle: 'dashed' },
   low: { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'transparent' },

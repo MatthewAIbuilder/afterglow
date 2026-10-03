@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { artistColors } from '../../components/ArtistAvatar';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { Memory } from './models';
 import { clipLength } from './organize';
 
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: 3,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.85)',
+    backgroundColor: glowA(0.85),
   },
   badgeText: { ...type.caption, color: color.night, fontWeight: '700' },
   pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },

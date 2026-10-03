@@ -29,7 +29,7 @@ import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { FilterChips } from '../../components/FilterChips';
 import { lineupDays, playsOn } from '../../features/festivals/days';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 type Answer = Rating | 'unsure';
 
@@ -365,8 +365,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   pass: { backgroundColor: color.glass, borderColor: color.hairline },
-  love: { backgroundColor: 'rgba(169,124,255,0.2)', borderColor: 'rgba(169,124,255,0.45)' },
-  loveStrong: { backgroundColor: 'rgba(169,124,255,0.34)', borderColor: 'rgba(169,124,255,0.6)' },
+  love: { backgroundColor: glowA(0.2), borderColor: glowA(0.45) },
+  loveStrong: { backgroundColor: glowA(0.34), borderColor: glowA(0.6) },
   wide: { flex: 0, alignSelf: 'stretch' },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   choiceText: { ...type.headline, color: color.moonDim },

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useFestivalMode } from '../../state/festivalMode';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 /** What festival mode is, in a line. */
 export const MODE_PITCH = 'A simpler app while you’re here: videos filmed at the festival, your night planned out, the camera one tap away, and your friends.';
@@ -53,7 +53,7 @@ export function FestivalModeCard({ festival }: { festival: Festival }) {
     );
 
   return (
-    <LinearGradient colors={['rgba(169,124,255,0.28)', 'rgba(255,126,182,0.16)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
+    <LinearGradient colors={[glowA(0.28), 'rgba(255,126,182,0.16)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
       <Text style={styles.title}>Switch to festival mode?</Text>
       <Text style={styles.body}>{MODE_PITCH}</Text>
       <View style={styles.buttons}>
@@ -105,7 +105,7 @@ export function TryFestivalMode({ festival }: { festival: Festival }) {
 }
 
 const styles = StyleSheet.create({
-  card: { padding: space.lg, borderRadius: radius.lg, gap: space.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.5)', marginTop: space.lg },
+  card: { padding: space.lg, borderRadius: radius.lg, gap: space.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5), marginTop: space.lg },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim },
   buttons: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },

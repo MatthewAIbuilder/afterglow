@@ -19,7 +19,7 @@ import { useCrews } from '../state/crews';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { usePlan } from '../state/plan';
 import { useTaste } from '../state/taste';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 /**
  * Check in with your crew: one tap says where you are, stamped with the
@@ -299,20 +299,20 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  chipOn: { backgroundColor: 'rgba(169,124,255,0.2)', borderColor: 'rgba(169,124,255,0.55)' },
+  chipOn: { backgroundColor: glowA(0.2), borderColor: glowA(0.55) },
   chipText: { ...type.label, color: color.moonDim },
   quick: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   quickButton: {
     paddingHorizontal: space.lg,
     paddingVertical: space.md,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(169,124,255,0.14)',
+    backgroundColor: glowA(0.14),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   quickText: { ...type.headline, color: color.moon },
   own: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.xl },
-  photoAdd: { padding: space.lg, gap: 4, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(169,124,255,0.5)', backgroundColor: 'rgba(169,124,255,0.06)' },
+  photoAdd: { padding: space.lg, gap: 4, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: glowA(0.5), backgroundColor: glowA(0.06) },
   photoAddText: { ...type.headline, color: color.glow },
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   photo: { width: 84, height: 84, borderRadius: radius.md },

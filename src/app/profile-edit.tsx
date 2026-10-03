@@ -18,7 +18,7 @@ import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
 import { useTaste } from '../state/taste';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA, nightA } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import type { CropShape } from '../features/profile/crop';
 import { useShowLevel, setShowLevel } from '../state/showLevel';
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   body: { ...type.body, color: color.moonDim },
-  uploading: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,9,24,0.55)', alignItems: 'center', justifyContent: 'center' },
+  uploading: { ...StyleSheet.absoluteFill, backgroundColor: nightA(0.55), alignItems: 'center', justifyContent: 'center' },
   coverRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
   cover: { width: 112, height: 63, borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', justifyContent: 'center' },
   coverHint: { ...type.caption, color: color.moonFaint },
@@ -403,9 +403,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: space.md,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.3)',
+    backgroundColor: glowA(0.3),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.6)',
+    borderColor: glowA(0.6),
     marginTop: space.sm,
   },
   primaryText: { ...type.headline, color: color.moon },

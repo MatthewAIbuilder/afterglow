@@ -12,7 +12,7 @@ import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
 import { useCatalog } from '../state/catalog';
 import { useMusic } from '../state/music';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 
 /**
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  cardOn: { borderColor: 'rgba(169,124,255,0.4)' },
+  cardOn: { borderColor: glowA(0.4) },
   cardWarn: { borderColor: 'rgba(255,122,198,0.35)' },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   kicker: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  pillOn: { backgroundColor: 'rgba(169,124,255,0.14)', borderColor: 'rgba(169,124,255,0.4)' },
+  pillOn: { backgroundColor: glowA(0.14), borderColor: glowA(0.4) },
   pillWarn: { backgroundColor: 'rgba(255,122,198,0.1)', borderColor: 'rgba(255,122,198,0.35)' },
   pillText: { ...type.caption, color: color.moon },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: color.moonFaint },
@@ -269,9 +269,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm + 2,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   primaryText: { ...type.label, color: color.moon },
   secondary: { alignSelf: 'flex-start', paddingVertical: space.xs },

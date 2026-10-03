@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { haptic } from '../../lib/haptics';
-import { color, motion } from '../../theme/tokens';
+import { color, motion, raisedA } from '../../theme/tokens';
 import { QUEST_GOLD, QuestRing, SparkIcon } from './QuestRing';
 import { useDailyQuests } from './useDailyQuests';
 
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(18,16,38,0.4)',
+    backgroundColor: raisedA(0.4),
   },
   lit: { shadowColor: QUEST_GOLD, shadowOpacity: 0.6, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
   ring: { position: 'absolute', left: 0, top: 0 },

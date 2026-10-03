@@ -6,7 +6,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useRatings } from '../../state/ratings';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { otherFestivalsWithClips } from '../festivals/links';
 import { leftToRate } from '../festivals/tune';
 import { MIX } from './focus';
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  primary: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  primary: { backgroundColor: glowA(0.22), borderColor: glowA(0.45) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
   rowText: { ...type.headline, color: color.moon },
   detail: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },

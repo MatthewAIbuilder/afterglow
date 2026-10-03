@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { BEFORE_ANYTHING, GUIDE, GUIDE_NOTE, MIXES, guideEntry, rangeText } from './guide';
 
 /**
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   beforeTitle: { ...type.headline, color: color.moon, marginBottom: space.xs },
   note: { ...type.caption, color: color.moonFaint, marginVertical: space.xs },
   row: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
-  rowOn: { borderColor: 'rgba(169,124,255,0.45)' },
+  rowOn: { borderColor: glowA(0.45) },
   head: { flexDirection: 'row', alignItems: 'center', padding: space.lg, gap: space.md },
   name: { ...type.headline, color: color.moon },
   times: { ...type.caption, color: color.moonDim, marginTop: 2 },

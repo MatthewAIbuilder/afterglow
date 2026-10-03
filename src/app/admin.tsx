@@ -15,7 +15,7 @@ import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { setGuestView } from '../state/adminView';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 type Section = 'overview' | 'data' | 'accounts' | 'support' | 'reports';
 
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.caption, color: color.moonDim },
   headerButtons: { alignItems: 'flex-end', gap: space.sm },
-  pill: { paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.5)' },
+  pill: { paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
   pillText: { ...type.label, color: color.moon },
   signOut: { ...type.caption, color: color.moonFaint },
   switchText: { ...type.caption, color: color.glow },

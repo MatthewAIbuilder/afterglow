@@ -34,7 +34,8 @@ describe('secrets', () => {
     const app = await renderApp('/settings');
     await flush();
     expect(app.getByText('0 of 8 secrets found')).toBeTruthy();
-    const version = app.getByText(VERSION_LINE);
+    // The last "Afterglow" on the page (the App theme row says it too).
+    const version = app.getAllByText(VERSION_LINE).at(-1)!;
     for (let i = 0; i < 7; i++) {
       await fireEvent.press(version);
       await settle(100);

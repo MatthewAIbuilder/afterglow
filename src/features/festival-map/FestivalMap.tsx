@@ -7,7 +7,7 @@ import { NEAR_KM } from '../festivals/near';
 import type { Point } from '../festivals/near';
 import { haptic } from '../../lib/haptics';
 import { revealSecret } from '../../state/secrets';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, raisedA } from '../../theme/tokens';
 import {
   type Cluster,
   type MapPoint,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     borderWidth: 1,
     borderColor: color.hairline,
-    backgroundColor: 'rgba(18,16,38,0.5)',
+    backgroundColor: raisedA(0.5),
   },
   againText: { ...type.label, color: color.moon },
 });

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { MIX } from './focus';
 
 /**
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  primary: { backgroundColor: color.glowDeep, borderColor: 'rgba(169,124,255,0.6)' },
+  primary: { backgroundColor: color.glowDeep, borderColor: glowA(0.6) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   buttonText: { ...type.label, color: color.moon },
 });

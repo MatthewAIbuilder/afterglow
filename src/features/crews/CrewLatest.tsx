@@ -6,7 +6,7 @@ import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { Crew } from '../social/models';
 import { firstName } from './together';
 import { ago, lateLine, latestPerMember, outboxLine, repliesLine, updateLine } from './updates';
@@ -108,9 +108,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.45)',
+    borderColor: glowA(0.45),
   },
   buttonText: { ...type.label, color: color.moon },
 });

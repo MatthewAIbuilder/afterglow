@@ -15,7 +15,7 @@ import { useCatalog } from '../state/catalog';
 import { useCommunity } from '../state/community';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 /**
  * What Discover shows: your mix (a bit of everything), one sound from every
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  soundOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  soundOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.45) },
   soundText: { ...type.label, color: color.moonDim },
   soundCount: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
   row: {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  selected: { backgroundColor: 'rgba(169,124,255,0.16)', borderColor: 'rgba(169,124,255,0.45)' },
+  selected: { backgroundColor: glowA(0.16), borderColor: glowA(0.45) },
   muted: { opacity: 0.45 },
   pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
   rowText: { flex: 1 },

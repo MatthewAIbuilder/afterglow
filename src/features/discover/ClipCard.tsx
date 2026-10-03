@@ -32,7 +32,7 @@ import { describeSet } from '../festivals/format';
 import { festivalLine } from '../festivals/links';
 import { StarIcon } from '../plan/icons';
 import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
-import { color, motion, radius, space, type } from '../../theme/tokens';
+import { color, motion, radius, space, type, nightA } from '../../theme/tokens';
 import { ActionRail } from './ActionRail';
 import { AUTOPLAY_COUNTDOWN_SEC, countdownTick, passFinished } from './autoplay';
 import { UpNextPill } from './UpNextPill';
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(10,9,24,0.45)',
+    backgroundColor: nightA(0.45),
   },
   burst: { position: 'absolute', width: BURST, height: BURST },
   info: { position: 'absolute', left: space.xl, right: 96 },

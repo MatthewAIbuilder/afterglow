@@ -10,7 +10,7 @@ import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { countdown } from '../festivals/when';
 import { isOver } from '../festivals/shelves';
 import { activityText, friendActivity, shortAgo, type ActivityItem } from '../social/friendActivity';
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   facesWrap: { marginHorizontal: -space.xl, marginTop: space.sm },
   faces: { paddingHorizontal: space.xl, gap: space.md },
   face: { width: 62, alignItems: 'center' },
-  faceRing: { borderRadius: 31, padding: 2, borderWidth: 1.5, borderColor: 'rgba(169,124,255,0.6)' },
+  faceRing: { borderRadius: 31, padding: 2, borderWidth: 1.5, borderColor: glowA(0.6) },
   faceName: { ...type.caption, color: color.moon, marginTop: 4 },
   moreCircle: { width: 62, height: 62, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass },
   moreText: { ...type.headline, color: color.moon },

@@ -22,7 +22,7 @@ import { FilterChips } from '../components/FilterChips';
 import { runLabel } from '../features/festivals/weekend';
 import { useLoves } from '../state/useLoves';
 import { useWelcomed } from '../state/welcome';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 type Step = 'hello' | 'going' | 'taste';
 const STEPS: Step[] = ['hello', 'going', 'taste'];
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  festivalOn: { backgroundColor: 'rgba(169,124,255,0.14)', borderColor: 'rgba(169,124,255,0.5)' },
+  festivalOn: { backgroundColor: glowA(0.14), borderColor: glowA(0.5) },
   festivalName: { ...type.headline, color: color.moon },
   festivalMeta: { ...type.caption, color: color.moonDim, marginTop: 2 },
   check: {
@@ -292,9 +292,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: space.lg,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.28)',
+    backgroundColor: glowA(0.28),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.6)',
+    borderColor: glowA(0.6),
   },
   primaryText: { ...type.headline, color: color.moon },
   secondary: { alignItems: 'center', paddingVertical: space.sm },

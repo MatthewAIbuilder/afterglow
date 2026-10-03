@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from './service';
 import { showAlert } from '../../lib/dialog';
 
@@ -51,7 +51,7 @@ export function FollowButton({ uid, handle, compact = false, onChange }: { uid: 
 const styles = StyleSheet.create({
   pill: { minWidth: 120, alignItems: 'center', paddingHorizontal: space.xl, paddingVertical: space.sm + 2, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth },
   compact: { minWidth: 92, paddingHorizontal: space.md, paddingVertical: 6 },
-  off: { backgroundColor: color.glowDeep, borderColor: 'rgba(169,124,255,0.6)' },
+  off: { backgroundColor: color.glowDeep, borderColor: glowA(0.6) },
   on: { backgroundColor: color.glass, borderColor: color.hairline },
   label: { ...type.headline, color: color.moon },
   compactLabel: { ...type.label },

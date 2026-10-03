@@ -13,7 +13,7 @@ import { useAddMemory } from '../features/memories/useAddMemory';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useMemories } from '../state/memories';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA, glowDeepA } from '../theme/tokens';
 
 const TILE = 112;
 
@@ -93,7 +93,7 @@ function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n
         <View style={[styles.sectionHead, untagged && styles.sectionHeadQuiet]}>
           {!untagged ? (
             <LinearGradient
-              colors={section.past ? ['rgba(242,184,166,0.28)', 'rgba(242,184,166,0)'] : ['rgba(107,63,224,0.35)', 'rgba(107,63,224,0)']}
+              colors={section.past ? ['rgba(242,184,166,0.28)', 'rgba(242,184,166,0)'] : [glowDeepA(0.35), glowDeepA(0)]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
@@ -168,9 +168,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm + 2,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   primaryText: { ...type.label, color: color.moon },
   section: { marginTop: space.xxl },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
     gap: 2,
   },
-  sectionHeadQuiet: { borderColor: 'rgba(169,124,255,0.35)' },
+  sectionHeadQuiet: { borderColor: glowA(0.35) },
   sectionTitle: { ...type.title, color: color.moon },
   sectionMeta: { ...type.caption, color: color.moonDim },
   night: { marginTop: space.lg },

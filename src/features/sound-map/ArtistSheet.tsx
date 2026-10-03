@@ -7,7 +7,7 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTi
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { SOUND_LABEL, type SoundTag, type TasteProfile } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { color, motion, radius, space, type } from '../../theme/tokens';
+import { color, motion, radius, space, type, glowA, raisedA } from '../../theme/tokens';
 import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { RateArtist } from '../taste/RateArtist';
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  tint: { backgroundColor: 'rgba(18,16,38,0.55)' },
+  tint: { backgroundColor: raisedA(0.55) },
   grabber: {
     alignSelf: 'center',
     width: 36,
@@ -196,9 +196,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(169,124,255,0.22)',
+    backgroundColor: glowA(0.22),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.5)',
+    borderColor: glowA(0.5),
   },
   ctaText: { ...type.headline, color: color.moon },
 });

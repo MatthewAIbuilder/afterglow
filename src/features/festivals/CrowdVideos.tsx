@@ -7,7 +7,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, nightA } from '../../theme/tokens';
 import { crowdArtists, crowdByNight, crowdLine } from '../community/crowd';
 import { useFestivalCrowd } from './useFestivalCrowd';
 
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   nightCount: { ...type.label, color: color.moonFaint },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   tile: { borderRadius: 6, overflow: 'hidden', backgroundColor: color.glass },
-  shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%', backgroundColor: 'rgba(10,9,24,0.45)' },
+  shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%', backgroundColor: nightA(0.45) },
   tileInfo: { position: 'absolute', left: 6, right: 6, bottom: 6 },
   tileArtist: { ...type.caption, fontWeight: '700', color: color.moon },
   tileHandle: { ...type.caption, fontSize: 11, color: color.moonDim },

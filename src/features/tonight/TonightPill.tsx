@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { tonightTitle, type Tonight } from './tonight';
 
 /** Its height, so Discover keeps videos clear of it. */
@@ -41,9 +41,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.2)',
+    backgroundColor: glowA(0.2),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.55)',
+    borderColor: glowA(0.55),
     maxWidth: '100%',
   },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.glow, shadowColor: color.glow, shadowOpacity: 1, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },

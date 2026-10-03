@@ -7,7 +7,7 @@ import { CalendarIcon, MapIcon } from '../components/TabIcons';
 import { WHATS_NEW } from '../features/whatsNew/whatsNew';
 import { QUEST_GOLD, SparkIcon } from '../features/quests/QuestRing';
 import { haptic } from '../lib/haptics';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA, nightA } from '../theme/tokens';
 
 const ICONS: Record<string, React.ReactNode> = {
   map: <MapIcon color={color.glow} size={22} />,
@@ -87,11 +87,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  icon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(169,124,255,0.14)' },
+  icon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.14) },
   cardTitle: { ...type.headline, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: 2 },
   try: { ...type.label, color: color.glow, marginTop: space.sm },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: 'rgba(10,9,24,0.9)' },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: nightA(0.9) },
   done: { paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow, alignItems: 'center' },
   doneText: { ...type.headline, color: color.night },
 });

@@ -46,7 +46,7 @@ import { useGoing } from '../../state/going';
 import { useLineupNews } from '../../state/lineupNews';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
 import { coverPhotos } from './cover';
 import { CrowdVideos } from './CrowdVideos';
 import { LiveCrowdRow } from './LiveCrowdRow';
@@ -581,12 +581,12 @@ const styles = StyleSheet.create({
     paddingRight: space.lg,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   tune: { backgroundColor: color.glass, borderColor: color.hairline },
-  goingOn: { backgroundColor: 'rgba(169,124,255,0.32)', borderColor: 'rgba(169,124,255,0.55)' },
+  goingOn: { backgroundColor: glowA(0.32), borderColor: glowA(0.55) },
   discoverText: { ...type.label, color: color.moon },
   discoverCount: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   posterWrap: {
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   },
   poster: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   siteWrap: { aspectRatio: 4 / 3 },
-  siteShade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,9,24,0.45)' },
+  siteShade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: nightA(0.45) },
   posterHint: {
     position: 'absolute',
     right: space.md,
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(10,9,24,0.6)',
+    backgroundColor: nightA(0.6),
   },
   posterHintText: { ...type.caption, color: color.moon },
   source: { marginTop: space.xl, paddingVertical: space.sm, alignSelf: 'flex-start' },
@@ -633,13 +633,13 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  chipOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.45) },
   chipText: { ...type.caption, color: color.moonDim },
   chipCount: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
   lineupHead: { marginTop: space.md, marginBottom: space.md, flexDirection: 'row', alignItems: 'center' },
   segment: { flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: color.glass },
   segItem: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill },
-  segOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  segOn: { backgroundColor: glowA(0.22) },
   segText: { ...type.caption, color: color.moonDim },
 });

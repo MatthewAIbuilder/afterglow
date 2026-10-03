@@ -15,7 +15,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
-import { motion } from '../../theme/tokens';
+import { motion, glowA, nightA } from '../../theme/tokens';
 import { LOCK_DISTANCE, lockProgress, RECORD_MAX_SEC } from './record';
 
 const SIZE = 100;
@@ -206,7 +206,7 @@ export function RecordButton({
         <View style={styles.center} pointerEvents="none">
           <Animated.View style={[styles.disc, discStyle]}>
             <LinearGradient
-              colors={recording ? ['rgba(255,255,255,0.9)', 'rgba(255,214,236,0.8)'] : ['rgba(169,124,255,0.5)', 'rgba(255,126,182,0.4)', 'rgba(111,195,255,0.4)']}
+              colors={recording ? ['rgba(255,255,255,0.9)', 'rgba(255,214,236,0.8)'] : [glowA(0.5), 'rgba(255,126,182,0.4)', 'rgba(111,195,255,0.4)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.fill}
@@ -258,6 +258,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: RECORD_COLORS[0],
     borderWidth: 2,
-    borderColor: 'rgba(10,9,24,0.6)',
+    borderColor: nightA(0.6),
   },
 });

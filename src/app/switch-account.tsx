@@ -11,7 +11,7 @@ import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { forgetAccount, useSavedAccounts } from '../state/savedAccounts';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 /**
  * Switch account: the accounts saved on this phone, one tap to move between
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginBottom: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  rowOn: { borderColor: 'rgba(169,124,255,0.55)', backgroundColor: 'rgba(169,124,255,0.1)' },
+  rowOn: { borderColor: glowA(0.55), backgroundColor: glowA(0.1) },
   rowTitle: { ...type.headline, color: color.moon },
   rowDetail: { ...type.caption, color: color.moonDim },
   check: { width: 24, height: 24, borderRadius: 12, backgroundColor: color.glow, alignItems: 'center', justifyContent: 'center' },

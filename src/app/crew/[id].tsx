@@ -27,7 +27,7 @@ import { useCrews } from '../../state/crews';
 import { usePlan } from '../../state/plan';
 import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 /**
  * A festival crew. Someone who opens an invite sees the crew and who's in it,
@@ -515,14 +515,14 @@ const styles = StyleSheet.create({
   editRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.md },
   quietButton: { paddingHorizontal: space.lg, paddingVertical: space.sm },
   quietText: { ...type.headline, color: color.moonDim },
-  smallPrimary: { paddingHorizontal: space.xl, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.3)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.6)' },
+  smallPrimary: { paddingHorizontal: space.xl, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: glowA(0.3), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.6) },
   primary: {
     alignItems: 'center',
     paddingVertical: space.md,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.3)',
+    backgroundColor: glowA(0.3),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.6)',
+    borderColor: glowA(0.6),
     marginTop: space.sm,
   },
   inviteRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },

@@ -28,7 +28,7 @@ import { useGoing } from '../state/going';
 import { useLoves } from '../state/useLoves';
 import { useNearby } from '../state/nearby';
 import { useWeekends } from '../state/weekends';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, nightA, raisedA } from '../theme/tokens';
 
 const CARD_GAP = 12;
 const CARDS_H = 132;
@@ -135,7 +135,7 @@ export default function FestivalMapScreen() {
       {/* The header fades into the map, so the lights glide under it. */}
       <View style={[styles.header, { paddingTop: insets.top + space.sm }]} pointerEvents="box-none">
         <LinearGradient
-          colors={['rgba(10,9,24,0.94)', 'rgba(10,9,24,0.86)', 'rgba(10,9,24,0)']}
+          colors={[nightA(0.94), nightA(0.86), nightA(0)]}
           locations={[0, 0.7, 1]}
           style={styles.scrim}
           pointerEvents="none"
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderWidth: 1,
     borderColor: color.hairline,
-    backgroundColor: 'rgba(18,16,38,0.55)',
+    backgroundColor: raisedA(0.55),
     justifyContent: 'space-between',
   },
   cardRow: { flexDirection: 'row', gap: space.md, alignItems: 'center' },

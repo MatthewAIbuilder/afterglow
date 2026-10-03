@@ -16,7 +16,7 @@ import { ShareToProfile } from '../../features/social/ShareToProfile';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useMemories } from '../../state/memories';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
 
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  actionGlow: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.5)' },
+  actionGlow: { backgroundColor: glowA(0.22), borderColor: glowA(0.5) },
   actionText: { ...type.label, color: color.moon },
   quiet: { color: color.moonDim },
   pressed: { opacity: 0.75, transform: [{ scale: 0.97 }] },

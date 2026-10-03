@@ -31,7 +31,7 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA, nightA, raisedA } from '../../theme/tokens';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Festival } from '../../data/types';
 import type { TasteSummary } from '../../features/taste/engine';
@@ -225,7 +225,7 @@ export default function MySoundScreen() {
 
       {/* And a soft fade at the bottom, under the tab bar. */}
       <LinearGradient
-        colors={['rgba(10,9,24,0)', 'rgba(10,9,24,0.85)', 'rgba(10,9,24,0.97)']}
+        colors={[nightA(0), nightA(0.85), nightA(0.97)]}
         locations={[0, 0.55, 1]}
         style={[styles.bottomScrim, { height: tabSpace + SCRIM_FADE }]}
         pointerEvents="none"
@@ -240,7 +240,7 @@ export default function MySoundScreen() {
 
       {/* A soft scrim under the header: bubbles glide beneath it rather than being cut off. */}
       <LinearGradient
-        colors={['rgba(10,9,24,0.98)', 'rgba(10,9,24,0.98)', 'rgba(10,9,24,0)']}
+        colors={[nightA(0.98), nightA(0.98), nightA(0)]}
         locations={[0, mapTop / (mapTop + SCRIM_FADE), 1]}
         style={[styles.scrim, { height: mapTop + SCRIM_FADE }]}
         pointerEvents="none"
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   chipTextOn: { color: color.night, fontWeight: '600' },
   moreChip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   day: { height: 28, justifyContent: 'center', paddingHorizontal: space.md, borderRadius: radius.pill },
-  dayOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  dayOn: { backgroundColor: glowA(0.22) },
   dayText: { ...type.caption, color: color.moonDim },
   dayTextOn: { color: color.moon, fontWeight: '600' },
   summary: {
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     padding: space.lg,
     gap: space.md,
     borderRadius: radius.lg,
-    backgroundColor: 'rgba(18,16,38,0.82)',
+    backgroundColor: raisedA(0.82),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
@@ -690,9 +690,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   sparseButtonText: { ...type.label, color: color.moon },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

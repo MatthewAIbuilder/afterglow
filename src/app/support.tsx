@@ -14,7 +14,7 @@ import { useNow } from '../lib/useNow';
 import { VERSION_LINE } from '../lib/version';
 import { useSocial } from '../state/social';
 import { useMySupport } from '../state/supportSeen';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 /**
  * Contact support: pick what it's about, write it, send. Replies come back
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: color.moonDim },
   topics: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
   topic: { paddingHorizontal: space.md, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  topicOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.6)' },
+  topicOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.6) },
   topicText: { ...type.label, color: color.moonDim },
   input: { ...type.body, color: color.moon, minHeight: 140, textAlignVertical: 'top', padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   count: { ...type.caption, color: color.moonFaint, alignSelf: 'flex-end', marginTop: -space.sm },
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   card: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   cardMeta: { ...type.caption, color: color.moonFaint },
   cardText: { ...type.body, color: color.moon },
-  reply: { padding: space.md, gap: 2, borderRadius: radius.md, backgroundColor: 'rgba(169,124,255,0.14)' },
+  reply: { padding: space.md, gap: 2, borderRadius: radius.md, backgroundColor: glowA(0.14) },
   replyLabel: { ...type.caption, color: color.glow },
   replyText: { ...type.body, color: color.moon },
   waiting: { ...type.caption, color: color.moonDim },

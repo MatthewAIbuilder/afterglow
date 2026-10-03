@@ -12,7 +12,7 @@ import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useWeekends } from '../../state/weekends';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { shareMessage } from '../../lib/share';
 
 /**
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   heading: { ...type.title, color: color.moon },
   modes: { flexDirection: 'row', alignSelf: 'flex-start', padding: 3, borderRadius: radius.pill, backgroundColor: color.glass },
   mode: { paddingHorizontal: space.lg, paddingVertical: 6, borderRadius: radius.pill },
-  modeOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  modeOn: { backgroundColor: glowA(0.22) },
   modeText: { ...type.label, color: color.moonDim },
   content: { paddingHorizontal: space.xl, paddingTop: space.md, gap: space.md },
   empty: { ...type.body, color: color.moonDim },

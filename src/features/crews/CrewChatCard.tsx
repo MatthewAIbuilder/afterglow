@@ -4,7 +4,7 @@ import { ChevronIcon, CommentIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
 import { useCrewChat } from '../../state/crewChat';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { Crew } from '../social/models';
 import { chatPreview, unreadLine } from './chat';
 
@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  cardNew: { borderColor: 'rgba(169,124,255,0.55)', backgroundColor: 'rgba(169,124,255,0.10)' },
-  icon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(169,124,255,0.14)' },
+  cardNew: { borderColor: glowA(0.55), backgroundColor: glowA(0.10) },
+  icon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.14) },
   iconNew: { backgroundColor: color.glowDeep },
   title: { ...type.headline, color: color.moon },
   new: { ...type.label, color: color.glow },
