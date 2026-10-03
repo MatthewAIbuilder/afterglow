@@ -897,6 +897,9 @@ describe('Profile tab', () => {
     expect(app.getByLabelText('0 artists rated')).toBeTruthy();
     // Videos first: nothing filmed yet, so it says what goes here.
     expect(app.getByText('Your festival videos')).toBeTruthy();
+    // Friends is its own tab now, so Profile has no Friends button.
+    expect(app.getAllByLabelText(/^Friends/)).toHaveLength(1);
+    expect(app.getByRole('tab', { name: 'Friends' })).toBeTruthy();
     await fireEvent.press(app.getByRole('tab', { name: 'Saved' }));
     expect(app.getByLabelText('Your clips, 0')).toBeTruthy();
     // Everything else is behind the menu.
