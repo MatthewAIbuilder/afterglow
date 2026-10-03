@@ -12,7 +12,7 @@ import { topSound } from '../taste/thisOrThat';
  * worked out on the phone from what you actually did, at a festival you're
  * going to, on its nights. Pure.
  */
-export type QuestId = 'plur' | 'wavelength' | 'fam' | 'crew4' | 'sync' | 'lookout' | 'beacon' | 'sunrise' | 'everynight' | 'stages';
+export type QuestId = 'plur' | 'wavelength' | 'fam' | 'crew4' | 'sync' | 'lookout' | 'beacon' | 'sunrise' | 'everynight' | 'stages' | 'sproutswap' | 'sproutlove';
 
 export type QuestSpec = { id: QuestId; title: string; how: string; about: string; target: number; kind: 'connect' | 'adventure' };
 
@@ -30,6 +30,8 @@ export const QUESTS: readonly QuestSpec[] = [
   { id: 'crew4', kind: 'connect', target: 4, title: 'Squad up', how: 'Go with a crew of 4 or more', about: 'For being at a festival with a crew of at least 4 on Afterglow.' },
   { id: 'sync', kind: 'connect', target: 1, title: 'In sync', how: 'Post from the same set as a crewmate', about: 'For you and a crewmate posting from the same stage or set within half an hour of each other.' },
   { id: 'lookout', kind: 'connect', target: 1, title: 'Looking out', how: 'Answer a crewmate who asks for help', about: 'For replying when someone in your crew asked for help. Festivals are better when everyone gets home.' },
+  { id: 'sproutswap', kind: 'connect', target: 2, title: 'Sprout swap', how: 'Give a sprout and get one on the same night', about: 'For giving someone a sprout and being given one, on the same night of a festival. A little rave tradition.' },
+  { id: 'sproutlove', kind: 'connect', target: 5, title: 'Spread the love', how: 'Give 5 sprouts at one festival', about: 'For giving 5 sprouts that people picked up, all at the same festival.' },
   { id: 'beacon', kind: 'connect', target: 1, title: 'Beacon', how: 'Set a meeting spot for your crew', about: 'For picking a meeting spot for your crew, so nobody stays lost for long.' },
   { id: 'sunrise', kind: 'adventure', target: 1, title: 'Sunrise set', how: 'Film a moment at a festival after 5 AM', about: 'For filming a moment at a festival between 5 and 8 in the morning. You stayed for the sunrise.' },
   { id: 'everynight', kind: 'adventure', target: 2, title: 'Every night', how: 'Film a moment on every night of a festival', about: 'For filming at least one moment on every night of a festival with two or more nights.' },
@@ -55,6 +57,8 @@ export type QuestInput = {
   updates: readonly CrewUpdate[];
   /** Crews whose meeting spot you set. */
   spotsSetByMe: number;
+  /** Sprouts you gave (when, and whether someone picked it up) and ones you picked up (when they reached you). */
+  sprouts?: { gave: readonly { at: number; picked: boolean }[]; got: readonly number[] };
   now: number;
 };
 
@@ -200,6 +204,31 @@ export function questProgress(i: QuestInput): Record<QuestId, QuestProgress> {
   const hop = [...byNight.values()].find((e) => e.stages.size >= 3);
   const stagesBest = [...byNight.values()].reduce((m, e) => Math.max(m, e.stages.size), 0);
   done('stages', Math.min(3, stagesBest), hop && { at: hop.at || i.now, festivalId: hop.festivalId });
+
+  // Sprouts at a festival: a swap on one night, and 5 given there.
+  const gave = (i.sprouts?.gave ?? []).map((g) => ({ ...g, festival: festivalAt(i.festivals, g.at) })).filter((g) => g.festival);
+  const got = (i.sprouts?.got ?? []).map((t) => ({ at: t, festival: festivalAt(i.festivals, t) })).filter((g) => g.festival);
+  const swapNights = new Map<string, { gave?: number; got?: number; festivalId: string }>();
+  for (const g of gave) {
+    const k = `${g.festival!.id}:${nightKey(g.at)}`;
+    const e = swapNights.get(k) ?? { festivalId: g.festival!.id };
+    e.gave = Math.min(e.gave ?? g.at, g.at);
+    swapNights.set(k, e);
+  }
+  for (const g of got) {
+    const k = `${g.festival!.id}:${nightKey(g.at)}`;
+    const e = swapNights.get(k) ?? { festivalId: g.festival!.id };
+    e.got = Math.min(e.got ?? g.at, g.at);
+    swapNights.set(k, e);
+  }
+  const swap = [...swapNights.values()].find((e) => e.gave && e.got);
+  const swapBest = [...swapNights.values()].reduce((m, e) => Math.max(m, (e.gave ? 1 : 0) + (e.got ? 1 : 0)), 0);
+  done('sproutswap', swap ? 2 : swapBest, swap && { at: Math.max(swap.gave!, swap.got!), festivalId: swap.festivalId });
+  const picked = new Map<string, number[]>();
+  for (const g of gave) if (g.picked) picked.set(g.festival!.id, [...(picked.get(g.festival!.id) ?? []), g.at]);
+  const loveBest = [...picked.entries()].sort((a, b) => b[1].length - a[1].length)[0];
+  const loveDone = loveBest && loveBest[1].length >= 5 ? { at: [...loveBest[1]].sort((a, b) => a - b)[4], festivalId: loveBest[0] } : undefined;
+  done('sproutlove', Math.min(5, loveBest?.[1].length ?? 0), loveDone);
 
   return out;
 }

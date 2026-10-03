@@ -36,6 +36,8 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   sunrise: ['#FFD27A', '#E0567A'],
   everynight: ['#8FA2FF', '#3A2A8C'],
   stages: ['#9EF0A8', '#2F8A6E'],
+  sproutswap: ['#8FF0B4', '#7A3CC8'],
+  sproutlove: ['#9EF2C0', '#E0567A'],
 };
 const LOCKED: [string, string] = ['#4A4760', '#26243A'];
 /** A milestone's two colours, for its unlock. */
@@ -210,6 +212,25 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
         <G>
           <Path d="M15.5 4.5 A7.5 7.5 0 1 0 19.5 15 A6 6 0 0 1 15.5 4.5 Z" {...p} />
           <Path d="M19 4 L19 7 M17.5 5.5 L20.5 5.5" {...p} />
+        </G>
+      );
+    case 'sproutswap':
+      // Two sprouts leaning together.
+      return (
+        <G>
+          <Path d="M8 21 C8 16 9 13 11 11" {...p} />
+          <Path d="M16 21 C16 16 15 13 13 11" {...p} />
+          <Path d="M10 13 C7 12 5 9 5 6.5 C8 6.5 10 9 10 13" {...p} />
+          <Path d="M14 13 C17 12 19 9 19 6.5 C16 6.5 14 9 14 13" {...p} />
+        </G>
+      );
+    case 'sproutlove':
+      // A sprout with a heart for a bloom.
+      return (
+        <G>
+          <Path d="M12 21 L12 12" {...p} />
+          <Path d="M12 16 C9 16 6.5 14.5 6 12 C9 11.8 11 13.5 12 16" {...p} />
+          <Path d="M12 9.5 C9.2 7.6 8 6.3 8 5 A2 2 0 0 1 12 4.4 A2 2 0 0 1 16 5 C16 6.3 14.8 7.6 12 9.5 Z" {...p} />
         </G>
       );
     case 'stages':

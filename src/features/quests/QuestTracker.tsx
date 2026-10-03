@@ -10,6 +10,7 @@ import { useGoing } from '../../state/going';
 import { useMemories } from '../../state/memories';
 import { recordQuests, setQuestProgress, useQuests } from '../../state/quests';
 import { useSocial } from '../../state/social';
+import { useSprouts } from '../../state/sprouts';
 import { useLoves } from '../../state/useLoves';
 import { useWeekends } from '../../state/weekends';
 import { newlyDone, QUESTS, questProgress } from './quests';
@@ -32,6 +33,11 @@ export function QuestTracker() {
   const { crews } = useCrews();
   const crewUpdates = useCrewUpdates();
   const { log, loaded } = useQuests();
+  const { gifts, garden } = useSprouts();
+  const sproutFacts = useMemo(
+    () => ({ gave: gifts.map((g) => ({ at: g.at, picked: !!g.claimedBy })), got: garden.filter((g) => g.from).map((g) => g.at) }),
+    [gifts, garden],
+  );
   const now = useNow().getTime();
 
   // The sounds friends you scanned show on their profiles, read once each.
@@ -65,9 +71,10 @@ export function QuestTracker() {
         crews,
         updates,
         spotsSetByMe,
+        sprouts: sproutFacts,
         now,
       }),
-    [festivals, catalog.artists, friends, sounds, loves, me, memories, crews, updates, spotsSetByMe, now],
+    [festivals, catalog.artists, friends, sounds, loves, me, memories, crews, updates, spotsSetByMe, sproutFacts, now],
   );
 
   useEffect(() => {

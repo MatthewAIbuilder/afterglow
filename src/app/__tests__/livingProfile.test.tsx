@@ -125,7 +125,7 @@ describe('the living profile', () => {
     const app = await renderApp('/profile?tab=badges');
     await flush();
     expect(JSON.parse((await AsyncStorage.getItem('quests.v1'))!)).toMatchObject({ sunrise: { festivalId: 'cyclops-cove-4' } });
-    expect(app.getByText(/^Side quests · 1 of 10$/)).toBeTruthy();
+    expect(app.getByText(/^Side quests · 1 of 12$/)).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Sunrise set. New badge, tap to claim'));
     await flush();
     expect(app.getByText('Side quest complete')).toBeTruthy();
@@ -137,7 +137,7 @@ describe('the living profile', () => {
     await act(async () => router.push('/tonight'));
     await flush();
     expect(app.getByText('Tonight’s side quests')).toBeTruthy();
-    expect(app.getByText('1 of 10 done')).toBeTruthy();
+    expect(app.getByText('1 of 12 done')).toBeTruthy();
     expect(app.getByLabelText('PLUR trade. Swap friend codes with someone at a festival')).toBeTruthy();
   });
 });
