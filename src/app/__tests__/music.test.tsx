@@ -124,7 +124,8 @@ describe('Music connections', () => {
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
-    expect(sound.getByText(/^Shaped by your Spotify library\. Leaning [a-z ]+\.$/)).toBeTruthy();
+    expect(sound.getByText('From your Spotify library')).toBeTruthy();
+    expect(sound.getByText(/^Leaning [a-z ]+$/)).toBeTruthy();
   });
 
   it('a sign-in that didn’t finish says why, and leaves nothing connected', async () => {
@@ -238,7 +239,7 @@ describe('My Sound with connected music', () => {
   it('offers to connect when you have nothing yet', async () => {
     const app = await renderApp('/sound');
     await settle();
-    expect(app.getByText('Connect Spotify to start your map from what you already play.')).toBeTruthy();
+    expect(app.getByText(/Connect Spotify to start your map from what you already play./)).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Connect your music'));
     await settle();
     expect(app.getByText('Music connections')).toBeTruthy();

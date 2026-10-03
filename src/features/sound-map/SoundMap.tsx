@@ -2,11 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
   runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDecay,
+  withRepeat,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import type { Artist, SoundTag, TasteProfile } from '../../data/types';
 import { SOUND_LABEL } from '../../data/types';
@@ -35,12 +39,23 @@ type Props = {
   similarity?: (a: Artist, b: Artist) => number;
   /** Artists you love (or like): a small heart on their bubble. */
   loved?: ReadonlySet<string>;
+  /** Told when you move the map away from its framing (true), and when it's back (false). */
+  onMoved?: (moved: boolean) => void;
+  /** Change it to glide back to the framing (the recentre button). */
+  recenter?: number;
 };
+
+/** How far the drag trails (px per px/s of finger speed), and the most it trails. */
+const LAG = 0.012;
+const MAX_LAG = 16;
+const lagSpring = { damping: 14, stiffness: 120, mass: 0.7 };
+/** One loop of the map's clock: every bubble bobs and sways on it. */
+const CLOCK_MS = 24000;
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.4;
 
-export function SoundMap({ artists, taste, width, height, selectedId, onSelect, onBackgroundTap, onRegionTap, matchIds, similarity, loved }: Props) {
+export function SoundMap({ artists, taste, width, height, selectedId, onSelect, onBackgroundTap, onRegionTap, matchIds, similarity, loved, onMoved, recenter }: Props) {
   const layout = useMemo(() => computeLayout(artists, taste), [artists, taste]);
   // The sky around the bubbles: each sound's nebula, and lines between artists who sound alike.
   const skies = useMemo(() => nebulae(layout), [layout]);
@@ -73,14 +88,41 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
   const cy = 0;
 
   const scale = useSharedValue(fitScale);
-  // Finger velocity, read by each bubble to lag behind and wobble into place.
-  const velX = useSharedValue(0);
-  const velY = useSharedValue(0);
+  // How far the whole universe trails your finger; each bubble trails by its weight.
+  const lagX = useSharedValue(0);
+  const lagY = useSharedValue(0);
+  // One clock for every bubble's float (much lighter than a loop per bubble).
+  const reduceMotion = useReducedMotion();
+  const clock = useSharedValue(0);
+  useEffect(() => {
+    if (reduceMotion) return;
+    clock.set(withRepeat(withTiming(1, { duration: CLOCK_MS, easing: Easing.linear }), -1, false));
+  }, [clock, reduceMotion]);
+  const moved = useCallback((on: boolean) => onMoved?.(on), [onMoved]);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   // Once you move the map yourself, it stays where you put it; until then it reframes as it reshapes
   // (your ratings load a moment after the first frame, and taste changes reshape it).
   const touched = useSharedValue(false);
+  const touch = () => {
+    'worklet';
+    if (!touched.get()) {
+      touched.set(true);
+      runOnJS(moved)(true);
+    }
+  };
+  // Back to the framing (the recentre button).
+  const firstRecenter = useRef(recenter);
+  useEffect(() => {
+    if (recenter === firstRecenter.current) return;
+    touched.set(false);
+    scale.set(withSpring(fitScale, motion.gentle));
+    tx.set(withSpring(0, motion.gentle));
+    ty.set(withSpring(0, motion.gentle));
+    moved(false);
+    // Only a new press of the button should move the camera.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recenter]);
   useEffect(() => {
     if (touched.get() || matchIds) return;
     scale.set(withSpring(fitScale, motion.gentle));
@@ -90,33 +132,37 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitScale]);
 
-  // How far you can wander before the map gently holds you back.
-  const limitX = width * 0.9;
-  const limitY = height * 0.9;
+  // How far you can wander: until the farthest artist reaches the middle of the screen, never off into empty sky.
+  const reachX = useMemo(() => Math.max(0, ...layout.bubbles.map((b) => Math.abs(b.x) + b.r)), [layout]);
+  const reachY = useMemo(() => Math.max(0, ...layout.bubbles.map((b) => Math.abs(b.y) + b.r)), [layout]);
 
   const pan = Gesture.Pan()
     .averageTouches(true)
     .onStart(() => {
-      touched.set(true);
+      touch();
     })
     .onChange((e) => {
       tx.set(tx.get() + e.changeX);
       ty.set(ty.get() + e.changeY);
-      velX.set(e.velocityX);
-      velY.set(e.velocityY);
+      const clamp = (v: number) => Math.max(-MAX_LAG, Math.min(MAX_LAG, v));
+      lagX.set(withSpring(clamp(-e.velocityX * LAG), lagSpring));
+      lagY.set(withSpring(clamp(-e.velocityY * LAG), lagSpring));
     })
     .onFinalize(() => {
-      velX.set(0);
-      velY.set(0);
+      lagX.set(withSpring(0, lagSpring));
+      lagY.set(withSpring(0, lagSpring));
     })
     .onEnd((e) => {
-      tx.set(withDecay({ velocity: e.velocityX, clamp: [-limitX, limitX], rubberBandEffect: true }));
-      ty.set(withDecay({ velocity: e.velocityY, clamp: [-limitY, limitY], rubberBandEffect: true }));
+      const limitX = Math.max(width * 0.25, reachX * scale.get());
+      const limitY = Math.max(height * 0.25, reachY * scale.get());
+      const fling = (v: number) => Math.max(-2600, Math.min(2600, v));
+      tx.set(withDecay({ velocity: fling(e.velocityX), deceleration: 0.996, clamp: [-limitX, limitX], rubberBandEffect: true, rubberBandFactor: 0.7 }));
+      ty.set(withDecay({ velocity: fling(e.velocityY), deceleration: 0.996, clamp: [-limitY, limitY], rubberBandEffect: true, rubberBandFactor: 0.7 }));
     });
 
   const pinch = Gesture.Pinch()
     .onStart(() => {
-      touched.set(true);
+      touch();
     })
     .onChange((e) => {
       const next = Math.min(MAX_ZOOM * 1.15, Math.max(MIN_ZOOM * 0.85, scale.get() * e.scaleChange));
@@ -144,6 +190,7 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
       tx.set(withSpring(0, motion.gentle));
       ty.set(withSpring(0, motion.gentle));
       runOnJS(haptic.settle)();
+      runOnJS(moved)(false);
     });
 
   // A search glides the map to its matches (or back to everyone when it ends).
@@ -190,7 +237,10 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
       return;
     }
     haptic.tap();
-    touched.set(true);
+    if (!touched.get()) {
+      touched.set(true);
+      moved(true);
+    }
     onSelect(hit.artist.id);
     setSpark((last) => ({ key: (last?.key ?? 0) + 1, x: hit.x, y: hit.y, r: hit.r, color: hit.artist.color ? artistColors(hit.artist.id, hit.artist.color)[1] : mixColor(hit.artist.sound) }));
     // Glide the chosen artist into the space above the sheet.
@@ -249,8 +299,11 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
                 onSelect={onSelect}
                 searching={!!matchIds}
                 matched={!!matchIds?.has(b.artist.id)}
-                velX={velX}
-                velY={velY}
+                lagX={lagX}
+                lagY={lagY}
+                clock={clock}
+                scale={scale}
+                detailAt={fitScale * 1.3}
                 loved={!!loved?.has(b.artist.id)}
               />
             ))}

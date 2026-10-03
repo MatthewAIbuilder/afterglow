@@ -565,7 +565,11 @@ describe('My Sound', () => {
     await settle();
     // The title, and the tab bar's label.
     expect(app.getAllByText('My Sound').length).toBeGreaterThan(0);
-    expect(app.getByText(/Bigger means a closer match/)).toBeTruthy();
+    expect(app.getByText('A first guess at your sound')).toBeTruthy();
+    // Nothing of yours yet: the quickest ways to a real map, and no menu.
+    expect(app.getByText('Make this map yours')).toBeTruthy();
+    expect(app.getByLabelText('Pick artists you know')).toBeTruthy();
+    expect(app.getByLabelText('Play this or that')).toBeTruthy();
     expect(app.queryByLabelText(/^More: /)).toBeNull();
   });
 
@@ -582,7 +586,9 @@ describe('My Sound', () => {
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
-    expect(app.getByText(/^Shaped by your 1 rated artist\. Leaning [a-z ]+\.$/)).toBeTruthy();
+    expect(app.getByText(/^Leaning [a-z ]+$/)).toBeTruthy();
+    expect(app.getByText('From 1 rated artist')).toBeTruthy();
+    expect(app.queryByText('Make this map yours')).toBeNull();
   });
 
   it('narrows the map to one festival, and offers to rate a sparse lineup', async () => {
@@ -602,6 +608,21 @@ describe('My Sound', () => {
     await fireEvent.press(app.getByLabelText(/^Tune your lineup\. Rate 110 artists/));
     await settle();
     expect(app.getByText('Tune your lineup')).toBeTruthy();
+  });
+
+  it('puts the festivals you are going to one tap away, and watches an artist from the sheet', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['solstice-26']));
+    const app = await renderApp('/sound');
+    await settle();
+    expect(app.getByLabelText('Your sound across every artist').props.accessibilityState).toEqual({ selected: true });
+    await fireEvent.press(app.getByLabelText('Your sound at Solstice 2026'));
+    await settle();
+    expect(app.getByLabelText('Your sound at Solstice 2026').props.accessibilityState).toEqual({ selected: true });
+    await fireEvent(app.getByLabelText(/^ILLENIUM, \d+ percent match$/), 'accessibilityTap');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Watch ILLENIUM in Discover'));
+    await settle();
+    expect(app.queryByLabelText('Watch ILLENIUM in Discover')).toBeNull();
   });
 
   it('opens on a festival from a link', async () => {
@@ -652,14 +673,14 @@ describe('My Sound', () => {
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
-    expect(app.getByText(/^Shaped by your 1 like and 1 rated artist\. Leaning [a-z ]+\.$/)).toBeTruthy();
+    expect(app.getByText('From 1 rated artist and 1 like')).toBeTruthy();
     jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Start over')));
     await fireEvent.press(app.getByLabelText(/^More: /));
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
     expect(alert).toHaveBeenCalledTimes(1);
-    expect(app.getByText(/^Bigger means a closer match/)).toBeTruthy();
+    expect(app.getByText('A first guess at your sound')).toBeTruthy();
     expect(app.queryByLabelText(/^More: /)).toBeNull();
     await settle();
     expect(JSON.parse((await AsyncStorage.getItem('reactions.v1')) ?? 'null')).toEqual({});
@@ -986,7 +1007,7 @@ describe('Sound breakdowns', () => {
   it('breaks your sound down from My Sound, for everyone or one festival', async () => {
     const app = await renderApp('/sound');
     await settle();
-    await fireEvent.press(app.getByLabelText('Your sound, as a breakdown'));
+    await fireEvent.press(app.getByLabelText(/^Your sound: /));
     await settle();
     expect(app.getByText('Your sound')).toBeTruthy();
     expect(app.getByText(/A first guess/)).toBeTruthy();

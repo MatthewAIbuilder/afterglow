@@ -1,17 +1,6 @@
 import { memo, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  type SharedValue,
-  Easing,
-  useAnimatedReaction,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { mixColor, withAlpha } from './colors';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
@@ -27,16 +16,20 @@ type Props = {
   /** A search is on: matches pop out, everyone else fades back. */
   searching?: boolean;
   matched?: boolean;
-  /** Pan velocity of the map, px/s. */
-  velX: SharedValue<number>;
-  velY: SharedValue<number>;
+  /** How far the map's drag is trailing (px, shared by every bubble): bigger bubbles trail further. */
+  lagX: SharedValue<number>;
+  lagY: SharedValue<number>;
+  /** One slow clock for the whole map (0 to 1, repeating): each bubble bobs and sways on it at its own phase. */
+  clock: SharedValue<number>;
+  /** The map's zoom, and the zoom at which every name shows: smaller names fade in as you zoom in. */
+  scale: SharedValue<number>;
+  detailAt: number;
   /** You love or like them: a small glowing heart on the bubble. */
   loved?: boolean;
 };
 
-// How far a bubble trails the finger, and the cap on that trail.
-const LAG = 0.011;
-const MAX_LAG = 14;
+/** Only the strongest few show their match under the name; the rest show it once selected, matched or zoomed in. */
+export const PCT_LABELS = 6;
 const LABEL_W = 150;
 const D = MAX_R * 2; // bubbles render at full size and scale down, so size can animate
 const GLOW = MAX_R * 2.5;
@@ -47,16 +40,12 @@ const MATCH = 2.8;
 // How the map reshapes when your taste changes: unhurried, one soft overshoot.
 const reshape = { damping: 16, stiffness: 70, mass: 1.1 };
 
-function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matched, velX, velY, loved }: Props) {
+function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matched, lagX, lagY, clock, scale, detailAt, loved }: Props) {
   const { artist, affinity, x, y, r } = placed;
   const reduceMotion = useReducedMotion();
 
   const bloom = useSharedValue(reduceMotion ? 1 : 0);
-  const drift = useSharedValue(0.5);
-  const driftX = useSharedValue(0.5);
   const focus = useSharedValue(1);
-  const lagX = useSharedValue(0);
-  const lagY = useSharedValue(0);
 
   // Position and size are animated, so a change in taste glides rather than jumps.
   const px = useSharedValue(x);
@@ -65,40 +54,23 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
 
   useEffect(() => {
     const cfg = reduceMotion ? { duration: 0 } : null;
-    px.value = cfg ? x : withSpring(x, reshape);
-    py.value = cfg ? y : withSpring(y, reshape);
-    pr.value = cfg ? r : withSpring(r, reshape);
+    px.set(cfg ? x : withSpring(x, reshape));
+    py.set(cfg ? y : withSpring(y, reshape));
+    pr.set(cfg ? r : withSpring(r, reshape));
   }, [x, y, r, px, py, pr, reduceMotion]);
 
-  // Bigger bubbles are heavier: they trail a little further and settle slower,
-  // so the constellation moves like a loose group rather than a flat image.
+  // Bigger bubbles are heavier: they trail the drag a little further, so the
+  // universe moves like a loose group rather than a flat image.
   const weight = r / MAX_R;
-  const lagSpring = { damping: 9 + weight * 3, stiffness: 150 - weight * 40, mass: 0.5 + weight * 0.6 };
-  const reach = LAG * (0.6 + weight * 0.6);
-
-  useAnimatedReaction(
-    () => [velX.value, velY.value] as const,
-    ([vx, vy]) => {
-      if (reduceMotion) return;
-      const clamp = (v: number) => Math.max(-MAX_LAG, Math.min(MAX_LAG, v));
-      lagX.value = withSpring(clamp(-vx * reach), lagSpring);
-      lagY.value = withSpring(clamp(-vy * reach), lagSpring);
-    },
-  );
+  const reach = 0.55 + weight * 0.7;
+  // Each bubble floats at its own phase on the map's one clock (whole turns per loop, so it never jumps).
+  const phase = (index * 2.39996) % (Math.PI * 2);
+  const still = !!reduceMotion;
 
   useEffect(() => {
     if (reduceMotion) return;
     // The one orchestrated moment: the universe blooms out from you, strongest matches first.
-    bloom.value = withDelay(120 + index * 70, withSpring(1, motion.bloom));
-    drift.value = withDelay(
-      index * 180,
-      withRepeat(withTiming(1, { duration: 3200 + (index % 4) * 450, easing: Easing.inOut(Easing.sin) }), -1, true),
-    );
-    // A slower sway across, out of step with the bob, so each bubble floats on its own.
-    driftX.value = withDelay(
-      index * 110,
-      withRepeat(withTiming(1, { duration: 4700 + (index % 5) * 600, easing: Easing.inOut(Easing.sin) }), -1, true),
-    );
+    bloom.set(withDelay(100 + Math.min(index, 30) * 45, withSpring(1, motion.bloom)));
     // Only on first mount; later changes in rank should not replay the bloom.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -106,47 +78,63 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
   useEffect(() => {
     const isSelected = selectedId === artist.id;
     if (selectedId !== null) {
-      focus.value = withSpring(isSelected ? 2 : 0, motion.snappy);
+      focus.set(withSpring(isSelected ? 2 : 0, motion.snappy));
       return;
     }
     // A search match pops: a springy grow past the selected size, with its own glow.
-    if (searching) focus.value = matched ? (reduceMotion ? MATCH : withSpring(MATCH, motion.bloom)) : withSpring(0, motion.snappy);
-    else focus.value = withSpring(1, motion.snappy);
+    if (searching) focus.set(matched ? (reduceMotion ? MATCH : withSpring(MATCH, motion.bloom)) : withSpring(0, motion.snappy));
+    else focus.set(withSpring(1, motion.snappy));
   }, [selectedId, artist.id, focus, searching, matched, reduceMotion]);
 
   const anchorStyle = useAnimatedStyle(() => {
-    const p = bloom.value;
-    const f = focus.value; // 0 dimmed, 1 normal, 2 selected
+    const p = bloom.get();
+    const f = focus.get(); // 0 dimmed, 1 normal, 2 selected
+    const t = clock.get() * Math.PI * 2;
+    const bob = still ? 0 : Math.sin(t * 6 + phase) * 3;
+    const sway = still ? 0 : Math.sin(t * 5 + phase * 1.7) * 2.5;
     return {
       opacity: Math.min(1, p) * (f < 1 ? 0.28 + 0.72 * f : 1),
       transform: [
-        { translateX: px.value * p + (driftX.value - 0.5) * 5 + lagX.value },
-        { translateY: py.value * p + (drift.value - 0.5) * 6 + lagY.value },
+        { translateX: px.get() * p + sway + lagX.get() * reach },
+        { translateY: py.get() * p + bob + lagY.get() * reach },
       ],
     };
   });
 
   const bodyStyle = useAnimatedStyle(() => {
-    const f = focus.value;
-    const s = (pr.value / MAX_R) * bloom.value * (f > 1 ? 1 + 0.07 * (f - 1) : 1);
+    const f = focus.get();
+    const s = (pr.get() / MAX_R) * bloom.get() * (f > 1 ? 1 + 0.07 * (f - 1) : 1);
     return { transform: [{ scale: s }] };
   });
 
   // The extra glow of a search match.
   const matchGlowStyle = useAnimatedStyle(() => {
-    const f = focus.value;
+    const f = focus.get();
     return { opacity: f > 2 ? Math.min(1, (f - 2) / (MATCH - 2)) : 0 };
   });
 
   // The heart sits on the bubble's upper right edge, whatever its size.
   const heartStyle = useAnimatedStyle(() => {
-    const rr = pr.value * bloom.value;
-    return { opacity: Math.min(1, bloom.value), transform: [{ translateX: rr * 0.72 - 9 }, { translateY: -rr * 0.72 - 9 }] };
+    const rr = pr.get() * bloom.get();
+    return { opacity: Math.min(1, bloom.get()), transform: [{ translateX: rr * 0.72 - 9 }, { translateY: -rr * 0.72 - 9 }] };
   });
 
-  const labelStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: pr.value * bloom.value + LABEL_OFFSET }],
-  }));
+  // index is the bloom order: strongest match first. The strongest always show their name;
+  // the rest fade in as you zoom in (or when chosen or found), so the map stays calm from afar.
+  const prominent = index < FULL_LABELS;
+  const showPct = index < PCT_LABELS || selectedId === artist.id || !!matched;
+  const pinned = prominent || selectedId === artist.id || !!matched;
+  const labelStyle = useAnimatedStyle(() => {
+    const zoomed = Math.max(0, Math.min(1, (scale.get() - detailAt * 0.85) / (detailAt * 0.15)));
+    return {
+      opacity: pinned ? 1 : zoomed,
+      transform: [{ translateY: pr.get() * bloom.get() + LABEL_OFFSET }],
+    };
+  });
+  const pctStyle = useAnimatedStyle(() => {
+    const zoomed = Math.max(0, Math.min(1, (scale.get() - detailAt * 1.05) / (detailAt * 0.2)));
+    return { opacity: showPct ? 1 : zoomed };
+  });
 
   const glowStrength = Math.pow(affinity, 3) * 0.75;
   // Their own light when their photo gives them a colour, else the colour of their sound.
@@ -154,8 +142,6 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
   const glowColor = artist.color ? artistColors(artist.id, artist.color)[1] : soundTone;
   const gid = `g-${artist.id}`;
   const pct = Math.round(affinity * 100);
-  // index is the bloom order: strongest match first. Only the strongest get a full label; the rest a smaller, dimmer name.
-  const prominent = index < FULL_LABELS;
 
   return (
     <Animated.View
@@ -176,6 +162,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
         </Svg>
       </Animated.View>
 
+      {searching ? (
       <Animated.View style={[styles.glow, bodyStyle, matchGlowStyle]} pointerEvents="none">
         <Svg width={GLOW} height={GLOW}>
           <Defs>
@@ -187,6 +174,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
           <Circle cx={GLOW / 2} cy={GLOW / 2} r={GLOW / 2} fill={`url(#${gid}-m)`} />
         </Svg>
       </Animated.View>
+      ) : null}
 
       <Animated.View style={[styles.body, bodyStyle]}>
         <ArtistAvatar artist={artist} size={D} />
@@ -207,7 +195,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
         <Text style={[styles.name, !prominent && styles.nameSmall]} numberOfLines={1}>
           {artist.name}
         </Text>
-        {prominent || selectedId === artist.id || matched ? <Text style={styles.pct}>{pct}%</Text> : null}
+        <Animated.Text style={[styles.pct, pctStyle]}>{pct}%</Animated.Text>
       </Animated.View>
     </Animated.View>
   );

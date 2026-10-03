@@ -272,3 +272,14 @@ export function ScanIcon({ color, size = 20 }: P) {
     </Svg>
   );
 }
+
+/** Back to the centre: a ring with a dot and four ticks. */
+export function LocateIcon({ color, size = 18 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={6.5} stroke={color} strokeWidth={1.8} />
+      <Circle cx={12} cy={12} r={2.2} fill={color} />
+      <Path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
