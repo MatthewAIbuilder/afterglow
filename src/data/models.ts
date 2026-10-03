@@ -43,6 +43,12 @@ export type Artist = {
   /** How much of each sound this artist carries, 0 to 1. */
   sound: Partial<Record<SoundTag, number>>;
   /**
+   * The sound is Afterglow's guess, from the festivals they play and who
+   * they're billed with (`withGuessedSounds` in data/soundGuess.ts), not
+   * tags anyone set: said so on their page, and trusted a little less.
+   */
+  soundGuessed?: boolean;
+  /**
    * The artists playing together in a b2b ("SUBTRONICS B2B CRANKDAT"), in
    * name order, with their own photos: worked out from the name for b2b acts
    * without a photo of their own (`withMembers` in data/members.ts).

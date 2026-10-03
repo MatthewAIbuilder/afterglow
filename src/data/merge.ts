@@ -1,4 +1,5 @@
 import { type Catalog, createCatalog } from './catalog';
+import { withGuessedSounds } from './soundGuess';
 import type { ParsedFile } from './file';
 import { siteName } from './import/sitePicture';
 import { withMembers } from './members';
@@ -107,7 +108,10 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
     ),
     file.blockedVideos,
   );
-  const { snapshot, problems } = validateSnapshot(combined);
+  const checked = validateSnapshot(combined);
+  // Sounds for artists who came without any, guessed from the company they keep.
+  const snapshot = withGuessedSounds(checked.snapshot);
+  const problems = checked.problems;
   const all = [...file.problems, ...problems];
   if (snapshot.festivals.length === 0 || snapshot.clips.length === 0) {
     all.push('After checking, the file leaves no festival with clips to show, so the app kept the data it had.');

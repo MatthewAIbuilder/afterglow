@@ -257,3 +257,22 @@ export function reachEllipse(at: Point, km: number): { rx: number; ry: number } 
   const rx = (km / (111.2 * Math.max(0.05, Math.cos((at.lat * Math.PI) / 180)))) * LON_SCALE;
   return { rx, ry };
 }
+
+/** A region of the world as native maps take it: a centre and how many degrees it spans. */
+export type Region = { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
+
+/** The region covering a box. */
+export function regionOf(box: Box): Region {
+  const c = unproject({ x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2 });
+  return { latitude: c.lat, longitude: c.lon, latitudeDelta: Math.max(0.01, box.y1 - box.y0), longitudeDelta: Math.max(0.01, (box.x1 - box.x0) / LON_SCALE) };
+}
+
+/** Pixels per map unit when this region fills `width` pixels across: how festival lights cluster at that zoom. */
+export const pxPerUnit = (region: Pick<Region, 'longitudeDelta'>, width: number) => width / (Math.max(1e-6, region.longitudeDelta) * LON_SCALE);
+
+/** Every festival's name shows once the map spans fewer degrees across than this. */
+export const NAMES_DELTA = 9;
+/** Zoomed in this far (degrees across), you're at street level: the "Edge of the map" secret. */
+export const STREET_DELTA = 0.02;
+/** How far in a single festival frames: a city and its surroundings. */
+export const SINGLE_DELTA = 3;

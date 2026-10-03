@@ -26,6 +26,8 @@ export const SOUNDS_LIKE_MIN = 0.4;
  * counts (say, ones you love or strongly match). Empty when none are close.
  */
 export function soundsLike(artist: Artist, artists: Artist[], liked: (a: Artist) => boolean, similarity: Similarity) {
+  // Naming who they sound like needs a sound someone set, not a guess.
+  if (artist.soundGuessed) return [];
   return mostSimilar(
     artist,
     artists.filter((a) => a.id !== artist.id && liked(a)),

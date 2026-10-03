@@ -17,7 +17,7 @@ export const SECRETS: readonly SecretSpec[] = [
   { id: 'ringspin', title: 'Light inside the light', riddle: 'Your level wants attention. Lots of it.', found: 'Tap your glow level seven times.', effect: 'sparkle' },
   { id: 'smallprint', title: 'Small print', riddle: 'The small print hides something.', found: 'Tap the version line in Settings seven times.', effect: 'fireworks' },
   { id: 'fireworks', title: 'Fireworks', riddle: 'Festivals don’t mind being refreshed. Again. And again.', found: 'Pull Festivals to refresh three times in a row.', effect: 'fireworks' },
-  { id: 'edge', title: 'Edge of the map', riddle: 'Go as close as the festival map lets you.', found: 'Zoom the festival map all the way in.', effect: 'sparkle' },
+  { id: 'edge', title: 'Edge of the map', riddle: 'Get close enough on the festival map to read the street names.', found: 'Zoom the festival map down to the streets.', effect: 'sparkle' },
   { id: 'bassdrop', title: 'Bass drop', riddle: 'Hold on to My Sound.', found: 'Press and hold the My Sound title.', effect: 'bassdrop' },
 ];
 

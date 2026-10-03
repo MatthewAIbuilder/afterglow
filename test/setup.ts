@@ -312,3 +312,26 @@ jest.mock('expo-sensors', () => {
   };
 });
 
+
+// Native maps (the festival map on phones): a plain view that remembers the camera moves asked of it.
+jest.mock('react-native-maps', () => {
+  const React = require('react');
+  const { Pressable, View } = require('react-native');
+  const calls: { method: string; args: unknown[] }[] = [];
+  const MapView = React.forwardRef((props: { children?: unknown; onMapReady?: () => void; testID?: string }, ref: unknown) => {
+    React.useImperativeHandle(ref, () => ({
+      fitToCoordinates: (...args: unknown[]) => calls.push({ method: 'fitToCoordinates', args }),
+      animateToRegion: (...args: unknown[]) => calls.push({ method: 'animateToRegion', args }),
+      animateCamera: (...args: unknown[]) => calls.push({ method: 'animateCamera', args }),
+    }));
+    React.useEffect(() => {
+      props.onMapReady?.();
+      // Only on mount, like the real map.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return React.createElement(View, { ...props, testID: props.testID ?? 'native-map' }, props.children);
+  });
+  const Marker = (props: { children?: unknown; onPress?: () => void }) => React.createElement(Pressable, { onPress: props.onPress }, props.children);
+  const Nothing = () => null;
+  return { __esModule: true, default: MapView, Marker, Polyline: Nothing, Circle: Nothing, __calls: calls };
+});

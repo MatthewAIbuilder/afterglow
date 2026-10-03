@@ -77,4 +77,23 @@ describe('the festival map', () => {
     expect(app.getByLabelText('You are here, roughly')).toBeTruthy();
     expect(app.getByLabelText('Show where I am')).toBeTruthy();
   });
+
+  it('moves like a real map: Show all brings every festival back, and the streets hold a secret', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const maps = require('react-native-maps');
+    const app = await renderApp('/festival-map');
+    await flush();
+    // Framed once on opening.
+    expect(maps.__calls.some((c: { method: string }) => c.method === 'fitToCoordinates')).toBe(true);
+    expect(app.queryByLabelText('Show all these festivals again')).toBeNull();
+    await fireEvent(app.getByTestId('festival-map'), 'touchStart');
+    maps.__calls.length = 0;
+    await fireEvent.press(app.getByLabelText('Show all these festivals again'));
+    expect(maps.__calls.map((c: { method: string }) => c.method)).toEqual(['fitToCoordinates']);
+    expect(app.queryByLabelText('Show all these festivals again')).toBeNull();
+    // All the way down to the streets.
+    await fireEvent(app.getByTestId('native-map'), 'regionChangeComplete', { latitude: 26.4, longitude: -80.1, latitudeDelta: 0.008, longitudeDelta: 0.01 });
+    await flush();
+    expect(JSON.parse((await AsyncStorage.getItem('secrets.v1')) ?? '{}')).toHaveProperty('edge');
+  });
 });

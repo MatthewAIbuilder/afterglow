@@ -45,9 +45,8 @@ describe('EDC Orlando 2026', () => {
     // Close EDC sounds join (the map's limit may go to even closer artists from other festivals).
     const edcLineup = catalog.festival('edc-orlando-26')!.lineup;
     expect(onMap.filter((a) => edcLineup.includes(a.id) && !(a.id in MOCK_TASTE)).length).toBeGreaterThan(0);
-    // Artists with no sound yet never join through similarity alone.
+    // Artists with no sound at all (not even a guess) never join through similarity alone.
     const noSound = catalog.artists.filter((a) => Object.keys(a.sound).length === 0).map((a) => a.id);
-    expect(noSound.length).toBeGreaterThan(0);
     for (const a of onMap) expect(noSound).not.toContain(a.id);
     // Best matches first, and the map lays out cleanly.
     for (let i = 1; i < onMap.length; i++) expect(taste[onMap[i - 1].id]).toBeGreaterThanOrEqual(taste[onMap[i].id]);
