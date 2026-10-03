@@ -35,6 +35,7 @@ const PERIOD: Record<BackdropId, number> = {
   vortex: 40_000,
   panda: 20_000,
   frog: 16_000,
+  toes: 14_000,
 };
 
 export function AnimatedBackdrop({ id, width, height, still }: { id: BackdropId; width: number; height: number; still?: boolean }) {
@@ -832,6 +833,164 @@ function FrogPond({ t, w, h }: SceneProps) {
   );
 }
 
+/** The sole of a foot (the hidden toes' own outline), without its toes. */
+const SOLE =
+  'M7.2 9.6c-1.6 1.6-2.2 4.4-1.9 7.2.3 2.6 1.1 4.6 1.3 6.6.2 2 1.6 3.6 3.6 3.6s3.4-1.4 3.6-3.4c.2-1.8.8-3.2 2-4.8 1.6-2.2 2.8-4.4 2.4-6.6-.4-2.2-2.4-3.4-5-3.6-2.4-.2-4.6.2-6 1z';
+/** Each toe on the 24 × 28 foot: centre and size, big toe first. */
+const TOES = [
+  { x: 6.4, y: 5.4, rx: 2.3, ry: 2.6 },
+  { x: 10.6, y: 3.6, rx: 1.6, ry: 1.9 },
+  { x: 14, y: 3.7, rx: 1.4, ry: 1.6 },
+  { x: 17, y: 5, rx: 1.2, ry: 1.4 },
+  { x: 19.3, y: 7.2, rx: 1, ry: 1.15 },
+];
+
+/** A footprint pressed into the sand: darker sand with a soft lit edge. */
+function Print({ size, flip }: { size: number; flip?: boolean }) {
+  return (
+    <View style={{ transform: [{ scaleX: flip ? -1 : 1 }] }}>
+      <Svg width={size} height={size * (28 / 24)} viewBox="0 0 24 28">
+        <Path d={SOLE} fill="#9C5A4A" fillOpacity={0.55} stroke="#FFD9B8" strokeOpacity={0.35} strokeWidth={0.6} />
+        {TOES.map((o, i) => (
+          <Ellipse key={i} cx={o.x} cy={o.y} rx={o.rx} ry={o.ry} fill="#9C5A4A" fillOpacity={0.55} stroke="#FFD9B8" strokeOpacity={0.35} strokeWidth={0.5} />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
+/** Footprints appear one after another along the sand, stay a while, then the tide smooths them away. */
+function Step({ t, at, i, n, size, flip }: { t: SharedValue<number>; at: ViewStyle; i: number; n: number; size: number; flip: boolean }) {
+  const style = useAnimatedStyle(() => {
+    const p = t.get();
+    const start = (i / n) * 0.62;
+    const appear = Math.min(1, Math.max(0, (p - start) / 0.04));
+    const wash = p > 0.82 ? Math.max(0, 1 - (p - 0.82) / 0.12) : 1;
+    return { opacity: appear * wash, transform: [{ scale: 0.85 + 0.15 * appear }] };
+  });
+  return (
+    <Animated.View style={[styles.abs, at, style]}>
+      <Print size={size} flip={flip} />
+    </Animated.View>
+  );
+}
+
+/** A happy foot with each toe wiggling on its own beat, toenails painted. */
+function WigglyFoot({ t, size }: { t: SharedValue<number>; size: number }) {
+  const s = size / 24;
+  return (
+    <View style={{ width: size, height: size * (28 / 24) }}>
+      <Svg width={size} height={size * (28 / 24)} viewBox="0 0 24 28" style={StyleSheet.absoluteFill}>
+        <Path d={SOLE} fill="#FFC9A8" />
+        <Ellipse cx={11} cy={17} rx={3.4} ry={5.2} fill="#FFDCC4" opacity={0.7} />
+        <Ellipse cx={8.2} cy={19} rx={1.6} ry={1} fill="#FF9EC7" opacity={0.55} />
+      </Svg>
+      {TOES.map((o, i) => (
+        <Osc key={i} t={t} at={{ left: (o.x - o.rx) * s, top: (o.y - o.ry) * s }} rotate={[14, 4, i * 0.12]} y={[size * 0.025, 4, i * 0.12 + 0.25]}>
+          <Svg width={o.rx * 2 * s} height={o.ry * 2 * s} viewBox={`0 0 ${o.rx * 2} ${o.ry * 2}`}>
+            <Ellipse cx={o.rx} cy={o.ry} rx={o.rx} ry={o.ry} fill="#FFC9A8" />
+            <Ellipse cx={o.rx} cy={o.ry * 0.62} rx={o.rx * 0.55} ry={o.ry * 0.38} fill={['#FF7EB6', '#A97CFF', '#6FC3FF', '#FFB86B', '#7CFFB2'][i]} />
+            <Ellipse cx={o.rx * 0.82} cy={o.ry * 0.5} rx={o.rx * 0.16} ry={o.ry * 0.12} fill="#FFFFFF" opacity={0.75} />
+          </Svg>
+        </Osc>
+      ))}
+    </View>
+  );
+}
+
+function ToeBeach({ t, w, h }: SceneProps) {
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const sea = h * 0.46;
+  const sand = h * 0.6;
+  const steps = useMemo(() => {
+    const n = 9;
+    return Array.from({ length: n }, (_, i) => {
+      const f = i / (n - 1);
+      return { x: w * (0.08 + 0.8 * f), y: sand + h * (0.04 + 0.1 * Math.sin(f * Math.PI)) + (i % 2 ? h * 0.05 : 0), flip: i % 2 === 1 };
+    });
+  }, [w, h, sand]);
+  const constellation = useMemo(() => {
+    const u = Math.min(9, h * 0.035);
+    const raw = [
+      { x: -1.9, y: -4.2, r: 0.62 },
+      { x: -0.5, y: -4.6, r: 0.46 },
+      { x: 0.75, y: -4.35, r: 0.4 },
+      { x: 1.8, y: -3.75, r: 0.34 },
+      { x: 2.6, y: -2.9, r: 0.28 },
+      ...[[-2.2, -2.4], [-0.6, -2.9], [1.0, -2.6], [2.3, -1.6], [2.4, 0.2], [1.9, 2.0], [1.6, 3.6], [0.5, 4.7], [-0.9, 4.6], [-1.7, 3.4], [-1.6, 1.6], [-2.0, 0]].map(([x, y]) => ({ x, y, r: 0.12 })),
+    ];
+    return raw.map((p) => ({ x: w * 0.16 + p.x * u, y: h * 0.2 + p.y * u, r: Math.max(1, p.r * u * 0.45) }));
+  }, [w, h]);
+  const sun = Math.min(w * 0.42, h * 0.5);
+  return (
+    <>
+      <Sky colors={['#1b0d3a', '#4a1650', '#b8406a', '#ff9a6b']} locations={[0, 0.25, 0.38, 0.46]} />
+      <Stars t={t} w={w} h={h * 0.3} n={22} seed={95} color="#FFE7F3" />
+      {/* A footprint drawn in stars. */}
+      {constellation.map((c, i) => (
+        <Osc key={`c${i}`} t={t} at={{ left: c.x - c.r, top: c.y - c.r }} opacity={0.75} flicker={[0.25, 2 + (i % 3), i * 0.07]}>
+          <View style={{ width: c.r * 2, height: c.r * 2, borderRadius: c.r, backgroundColor: '#FFF2D9', shadowColor: '#FFD9B8', shadowOpacity: 1, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } }} />
+        </Osc>
+      ))}
+      {/* The sun, half sunk into the sea. */}
+      <Osc t={t} at={{ left: w * 0.62 - sun / 2, top: sea - sun * 0.55 }} y={[2, 1, 0]} scale={[0.02, 1, 0.2]}>
+        <View style={{ width: sun, height: sun * 0.55, overflow: 'hidden' }}>
+          <Svg width={sun} height={sun}>
+            <Defs>
+              <SvgGradient id={`sun${id}`} x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#FFE9A8" />
+                <Stop offset="0.6" stopColor="#FF9A6B" />
+              </SvgGradient>
+            </Defs>
+            <Circle cx={sun / 2} cy={sun / 2} r={sun / 2} fill={`url(#sun${id})`} />
+          </Svg>
+        </View>
+      </Osc>
+      <Osc t={t} at={{ left: w * 0.62 - sun, top: sea - sun * 0.8 }} opacity={0.6} flicker={[0.12, 1, 0]}>
+        <Glow size={sun * 2} color="#FFB86B" squash={0.8} />
+      </Osc>
+      {/* The sea, with the sun's light shimmering on it. */}
+      <View style={[styles.abs, { left: 0, right: 0, top: sea, height: sand - sea + h * 0.04 }]}>
+        <LinearGradient colors={['#6a2a6e', '#3a2a7a', '#2a4f8f']} style={StyleSheet.absoluteFill} />
+      </View>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <Osc key={`g${i}`} t={t} at={{ left: w * 0.62 - 30 + (i % 2 ? 14 : -10) * i * 0.4, top: sea + 4 + i * ((sand - sea) / 5.5), width: 60 - i * 6, height: 2 }} x={[6, 2, i * 0.2]} opacity={0.55} flicker={[0.35, 3, i * 0.15]}>
+          <View style={{ flex: 1, borderRadius: 1, backgroundColor: '#FFE1B0' }} />
+        </Osc>
+      ))}
+      {/* Sand, and the tide lapping at it. */}
+      <View style={[styles.abs, { left: 0, right: 0, top: sand, bottom: 0 }]}>
+        <LinearGradient colors={['#e8a77e', '#c97a62', '#5a2e48']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+      </View>
+      <Osc t={t} at={{ left: -w * 0.1, top: sand - 8, width: w * 1.2, height: 18 }} y={[4, 1, 0]} x={[w * 0.03, 1, 0.25]} opacity={0.8}>
+        <Svg width={w * 1.2} height={18}>
+          <Path d={wavePath(w * 1.2, w / 3, 6, 18)} fill="#FFF1E6" fillOpacity={0.3} />
+        </Svg>
+      </Osc>
+      {steps.map((st, i) => (
+        <Step key={`s${i}`} t={t} at={{ left: st.x, top: st.y }} i={i} n={steps.length} size={Math.min(18, h * 0.065)} flip={st.flip} />
+      ))}
+      {/* A happy foot peeking in at the bottom left, toes wiggling. */}
+      <Osc t={t} at={{ left: -w * 0.03, top: h * 0.6 }} rotate={[3, 1, 0]} y={[3, 2, 0.3]}>
+        <View style={{ transform: [{ rotate: '28deg' }] }}>
+          <WigglyFoot t={t} size={Math.min(82, h * 0.3)} />
+        </View>
+      </Osc>
+      {/* Little toe prints of light drifting up now and then. */}
+      {[0.3, 0.7, 0.85].map((x, i) => (
+        <Travel key={`l${i}`} t={t} at={{ left: w * x, top: h * 0.7 }} dx={0} dy={-h * 0.5} k={2} phase={i * 0.33} window={0.35} peak={0.75} sway={[8, 3, i * 0.2]}>
+          <Svg width={12} height={14} viewBox="0 0 24 28">
+            <Path d={SOLE} fill="#FFE1F0" />
+            {TOES.map((o, j) => (
+              <Ellipse key={j} cx={o.x} cy={o.y} rx={o.rx} ry={o.ry} fill="#FFE1F0" />
+            ))}
+          </Svg>
+        </Travel>
+      ))}
+    </>
+  );
+}
+
 const SCENES: Record<BackdropId, (p: SceneProps) => React.ReactElement> = {
   aurora: Aurora,
   starfield: Starfield,
@@ -847,6 +1006,7 @@ const SCENES: Record<BackdropId, (p: SceneProps) => React.ReactElement> = {
   vortex: Vortex,
   panda: Panda,
   frog: FrogPond,
+  toes: ToeBeach,
 };
 
 const styles = StyleSheet.create({

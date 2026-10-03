@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { BACKDROPS, backdropChoices, canUse, cleanBackdrop, FROG_FRIENDS, madeFor, NO_BACKDROP, PANDA_FRIENDS, shownBackdrop } from '../backdrops';
+import { BACKDROPS, backdropChoices, canUse, cleanBackdrop, FROG_FRIENDS, madeFor, NO_BACKDROP, PANDA_FRIENDS, shownBackdrop, TOE_BEACH_FRIENDS } from '../backdrops';
+import { TOE_FRIENDS } from '../../toes/toes';
 import { publicOrbit } from '../identity';
 import type { Artist } from '../../../data/models';
 
@@ -32,6 +33,10 @@ describe('profile backgrounds', () => {
     expect(backdropChoices(panda).some((b) => b.id === 'frog')).toBe(false);
     expect(shownBackdrop(undefined, panda, false)).toBe('panda');
     expect(shownBackdrop(undefined, frog, false)).toBe('frog');
+    // The toe beach goes to the same person as the hidden toes.
+    expect(TOE_BEACH_FRIENDS).toEqual(TOE_FRIENDS);
+    expect(shownBackdrop(undefined, TOE_FRIENDS[0], false)).toBe('toes');
+    expect(shownBackdrop('toes', panda, true)).toBe('panda');
     // Someone else can't show them, even by writing the name.
     expect(shownBackdrop('panda', 'someone', true)).toBeUndefined();
     expect(shownBackdrop('frog', panda, true)).toBe('panda');

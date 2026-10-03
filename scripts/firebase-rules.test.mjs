@@ -45,9 +45,10 @@ await t('at most 6 favourite artists, and a background is a style name', async (
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'https://x.test/a.gif' })));
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { showArtists: 'yes' })));
 });
-await t('the panda garden and frog pond are only for the two profiles made for them', async () => {
+await t('the panda garden, frog pond and toe beach are only for the profiles made for them', async () => {
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'panda' })));
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'frog' })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'toes' })));
   await assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'none' })));
   await assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya')));
 });

@@ -1,9 +1,11 @@
 /**
  * Animated backgrounds for the top of a profile, in place of a cover photo.
  * Each is drawn in code (no images), loops seamlessly, and stays still with
- * reduced motion. A few are free; the rest come with Afterglow Plus. One is
- * made for a single person (the panda garden, the frog pond) and nobody else can choose it. Pure.
+ * reduced motion. A few are free; the rest come with Afterglow Plus. A few
+ * are made for one person each (the panda garden, the frog pond, the toe
+ * beach) and nobody else can choose them. Pure.
  */
+import { TOE_FRIENDS } from '../toes/toes';
 
 export type BackdropId =
   | 'aurora'
@@ -19,7 +21,8 @@ export type BackdropId =
   | 'prism'
   | 'vortex'
   | 'panda'
-  | 'frog';
+  | 'frog'
+  | 'toes';
 
 export type Backdrop = {
   id: BackdropId;
@@ -38,6 +41,9 @@ export const PANDA_FRIENDS: readonly string[] = ['8EEXIUNCQghOnejeAOygGMSl6Bp1']
 /** Whose profile gets the frog pond. */
 export const FROG_FRIENDS: readonly string[] = ['6i9w14pQcdR05jYEUvPmadkQ6NZ2'];
 
+/** Whose profile gets the toe beach: the same account the hidden toes are for. */
+export const TOE_BEACH_FRIENDS: readonly string[] = TOE_FRIENDS;
+
 export const BACKDROPS: readonly Backdrop[] = [
   { id: 'aurora', name: 'Aurora', about: 'Northern lights rippling across the sky', plus: false },
   { id: 'starfield', name: 'Starfield', about: 'Twinkling stars and the odd shooting star', plus: false },
@@ -53,6 +59,7 @@ export const BACKDROPS: readonly Backdrop[] = [
   { id: 'vortex', name: 'Vortex', about: 'Rings of light turning around the centre', plus: true },
   { id: 'panda', name: 'Panda garden', about: 'Made just for you: pandas, bamboo and falling blossoms', plus: false, only: PANDA_FRIENDS },
   { id: 'frog', name: 'Frog pond', about: 'Made just for you: frogs on lily pads, fireflies and a green glow', plus: false, only: FROG_FRIENDS },
+  { id: 'toes', name: 'Toe beach', about: 'Made just for you: footprints in the sand, wiggling toes and a sunset', plus: false, only: TOE_BEACH_FRIENDS },
 ];
 
 const BY_ID = new Map(BACKDROPS.map((b) => [b.id, b]));

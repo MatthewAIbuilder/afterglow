@@ -43,12 +43,13 @@ service cloud.firestore {
         && (!('coverUrl' in request.resource.data) || (request.resource.data.coverUrl is string && request.resource.data.coverUrl.size() <= 2000 && request.resource.data.coverUrl.matches('^https://.*')))
         && request.resource.data.createdAt is string && request.resource.data.updatedAt is string
         // Favourite artists round your photo (up to 6 ids), and an animated background: a style name, the
-        // panda garden and the frog pond only on the two profiles they were made for.
+        // panda garden, the frog pond and the toe beach only on the profiles they were made for.
         && (!('artists' in request.resource.data) || (request.resource.data.artists is list && request.resource.data.artists.size() <= 6))
         && (!('showArtists' in request.resource.data) || request.resource.data.showArtists is bool)
         && (!('backdrop' in request.resource.data) || (request.resource.data.backdrop is string && request.resource.data.backdrop.matches('^[a-z-]{1,20}$')
           && (request.resource.data.backdrop != 'panda' || uid == '8EEXIUNCQghOnejeAOygGMSl6Bp1')
-          && (request.resource.data.backdrop != 'frog' || uid == '6i9w14pQcdR05jYEUvPmadkQ6NZ2')))
+          && (request.resource.data.backdrop != 'frog' || uid == '6i9w14pQcdR05jYEUvPmadkQ6NZ2')
+          && (request.resource.data.backdrop != 'toes' || uid == 'QdMqoH4PeEfvkBmiKAzdnWyBUlL2')))
         && getAfter(path('handles', request.resource.data.handle)).data.uid == uid;
       allow delete: if signedIn() && me() == uid;
     }
