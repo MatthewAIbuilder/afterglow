@@ -20,6 +20,8 @@ export function FeedHint({ hint }: { hint: Hint }) {
     >
       {hint === 'swipe' ? (
         <ChevronIcon color={color.glow} size={11} direction="up" />
+      ) : hint === 'care' ? (
+        <HeartIcon color="#FF7EB6" size={12} filled />
       ) : hint === 'hold' ? (
         <ChevronIcon color={color.glow} size={11} direction="right" />
       ) : (

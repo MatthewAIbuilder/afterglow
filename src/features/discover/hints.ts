@@ -2,15 +2,21 @@
  * First-time tips in Discover, one at a time, each gone for good once you've
  * done the thing it teaches. Pure: what you've done is passed in.
  */
-export type Hint = 'swipe' | 'like' | 'hold';
+export type Hint = 'swipe' | 'like' | 'hold' | 'care';
 
 export const HINTS: readonly Hint[] = ['swipe', 'like', 'hold'];
+/**
+ * After those, holding the camera button for Look after yourself. Kept apart
+ * (`state/careTip.ts`), since festival mode's camera button teaches it too.
+ */
+export const CARE_HINT: Hint = 'care';
 
 /** Short, beside its icon, so it fits next to the festival name. */
 export const HINT_COPY: Record<Hint, string> = {
   swipe: 'Swipe up',
   like: 'Double-tap',
   hold: 'Swipe right to film',
+  care: 'Hold the camera for care',
 };
 
 /** The whole tip, for screen readers. */
@@ -18,6 +24,7 @@ export const HINT_SPOKEN: Record<Hint, string> = {
   swipe: 'Swipe up for the next clip',
   like: 'Double-tap a clip to like it',
   hold: 'Swipe right, or tap the camera button, to film your own video',
+  care: 'Press and hold the camera button to open Look after yourself',
 };
 
 /** The tip to show now: the first one you haven't done yet, if any. */

@@ -859,25 +859,32 @@ describe('Discover', () => {
   });
 });
 
-describe('Lineup tab', () => {
-  it('shows every lineup with a nudge until you pick a festival', async () => {
-    const app = await renderApp('/lineup');
+describe('Tab bar', () => {
+  it('has Festivals second and Friends fourth, with no Lineup tab outside festival mode', async () => {
+    const app = await renderApp('/festivals');
     await settle();
-    expect(app.getByText('Lineups')).toBeTruthy();
-    expect(app.getByText(/Tap “I’m going” on a festival/)).toBeTruthy();
-    expect(app.getByRole('tab', { name: /^Lineup, \d+$/ })).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Show the Horizon 2027 lineup'));
-    await settle();
-    expect(app.getAllByText('Horizon 2027').length).toBeGreaterThan(1);
+    const tabs = app.getAllByRole('tab').map((t) => t.props.accessibilityLabel);
+    expect(tabs).toEqual(['Discover', 'Festivals', 'My Sound', 'Friends', 'Profile']);
   });
 
-  it('becomes your lineup for the festival you are going to', async () => {
-    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
-    const app = await renderApp('/lineup');
+  it('leads Festivals with your set-to-set plan once set times are out for a festival you are going to', async () => {
+    // Solstice's demo lineup has set times.
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['solstice-26']));
+    const app = await renderApp('/festivals');
     await settle();
-    expect(app.getByText('Your lineup')).toBeTruthy();
+    expect(app.getByText('Your lineup is ready')).toBeTruthy();
+    expect(app.getByText(/, set to set$/)).toBeTruthy();
+    await fireEvent.press(app.getByText('See your whole route'));
+    await settle();
+    expect(app.getAllByText('Solstice 2026').length).toBeGreaterThan(0);
+  });
+
+  it('keeps the usual up-next card while set times are still to come', async () => {
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
+    const app = await renderApp('/festivals');
+    await settle();
+    expect(app.queryByText('Your lineup is ready')).toBeNull();
     expect(app.getByText('EDC Orlando 2026')).toBeTruthy();
-    expect(app.queryByLabelText(/^Show the /)).toBeNull();
   });
 });
 
