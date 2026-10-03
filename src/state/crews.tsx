@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { crewStars, firstName, picksChanged, type CrewStars } from '../features/crews/together';
+import { crewPath, crewStars, firstName, picksChanged, type CrewStars } from '../features/crews/together';
+import { WEB_URL } from '../config/app';
 import type { Crew, CrewInvite, CrewPicks, Profile } from '../features/social/models';
 import { openInvites } from '../features/crews/invite';
 import { usePlan } from './plan';
@@ -19,7 +20,12 @@ type Ctx = {
   loaded: boolean;
   crewsAt: (festivalId: string) => Crew[];
   create: (festivalId: string, name: string) => Promise<Crew>;
-  join: (id: string) => Promise<Crew>;
+  /** Join a crew you were invited to (in the app, or with an invite link's `code`). */
+  join: (id: string, code?: string) => Promise<Crew>;
+  /** The link that lets friends join a crew you're in (its code made the first time). */
+  inviteLink: (id: string) => Promise<string>;
+  /** The owner makes a new invite link; the old one stops working. */
+  newInviteLink: (id: string) => Promise<string>;
   leave: (id: string) => Promise<void>;
   /** The owner ends the crew for everyone. */
   end: (id: string) => Promise<void>;
@@ -139,14 +145,16 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
     [service, put],
   );
   const join = useCallback(
-    async (id: string) => {
-      const crew = await service.joinCrew(id);
+    async (id: string, code?: string) => {
+      const crew = await service.joinCrew(id, code);
       put(crew);
       setInviteState((s) => ({ ...s, list: s.list.filter((i) => i.crewId !== id) }));
       return crew;
     },
     [service, put],
   );
+  const inviteLink = useCallback(async (id: string) => `${WEB_URL}${crewPath(id, await service.crewInviteCode(id))}`, [service]);
+  const newInviteLink = useCallback(async (id: string) => `${WEB_URL}${crewPath(id, await service.newCrewInviteCode(id))}`, [service]);
   const leave = useCallback(
     async (id: string) => {
       await service.leaveCrew(id);
@@ -238,6 +246,8 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       crewsAt: (festivalId) => crews.filter((c) => c.festivalId === festivalId),
       create,
       join,
+      inviteLink,
+      newInviteLink,
       leave,
       end,
       rename,
@@ -248,7 +258,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       inviters,
       declineInvite,
     }),
-    [crews, loaded, create, join, leave, end, rename, remove, refresh, stars, invites, inviters, declineInvite],
+    [crews, loaded, create, join, inviteLink, newInviteLink, leave, end, rename, remove, refresh, stars, invites, inviters, declineInvite],
   );
   return <CrewsContext.Provider value={value}>{children}</CrewsContext.Provider>;
 }

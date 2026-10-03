@@ -115,6 +115,38 @@ The person invited sees it in the bell ("Maya invited you to Bass crew"), at the
 
 A crew link opened by someone new shows the crew first: the first-run welcome waits until they reach one of the tabs.
 
+### Invite only, and the chat rules
+
+Crews are invite only. You can join a crew in two ways: someone in it invites you in the app (`crewInvites/{crewId}_{you}`), or they send you its invite link, `https://afterglowmusic.app/crew/<id>?code=<code>`. The code lives in `crews/{id}/meta/invite`, which only members can read. Any member can make it the first time it's needed. Only the owner can change it ("Make a new invite link"), and the old link then stops working.
+
+Joining (or starting a crew) means agreeing to the crew chat rules (`CHAT_RULES` in `features/crews/chat.ts`, also on the Community Guidelines page). The join writes `crews/{id}/joins/{you}` (`agreed: true`, the server time and, for a link, its `code`) in the same transaction as adding you to `members`. The rules refuse a join without that record, and also refuse it without an in-app invite or the link's current code (`joinedFairly` in `firestore.rules`). Someone who opens a crew without either sees "This crew is invite only". People already in a crew before this change stay in it.
+
+### Crew chat
+
+`crews/{id}/chat/{messageId}` holds `uid`, `text` (1 to 500), `atMs` (when it was written on the phone) and `sentAt` (server time):
+- Members read it and write as themselves.
+- A message is never edited.
+- The writer or the crew's owner can remove it.
+- The support account can read and remove a message that was reported (reports have `kind: 'chat'` and the target `crewId/messageId`).
+- Leaving or being removed takes your messages with you, and ending the crew removes them all.
+
+The app follows each of your crews' newest 150 messages live (`watchCrewChat`, a Firestore listener) in `state/crewChat.tsx`. Your messages go into an outbox on the phone (`crewChatOutbox.v1`) and send themselves when there's signal, keeping the time you wrote them. A message held back 10 minutes or more says when it reached the crew. When you last read each chat is kept in `crewChatRead.v1`; new messages show as "2 new messages" on the crew page's chat card, on the Friends tab's crews and as the glow dot on the Friends tab.
+
+Like check-ins, a message keeps the time it was written: that's what the crew sees, and it decides the order. The server's time only says when it got through. Sending is built for bad signal. `sendCrewMessages` writes all of a crew's waiting messages in one small batch with no read first. If it hasn't got through in 12 seconds, it counts as no signal and is tried again. Retries never double a message, because ids are made on the phone.
+
+The app says when signal held something up:
+- your messages still waiting show "Waiting for signal…" with Try now;
+- once they get through, "Your 2 messages reached the crew, held up 18 min by signal", plus a phone notification if they were held 10 minutes or more and you're not in that chat;
+- a crewmate's late message reads "Sent 7:30 PM · reached the crew 8:00 PM", and the chat points it out.
+
+The chat screen is `crew-chat/[id].tsx`:
+- the rules at the top;
+- day headings, with each person's messages grouped together;
+- quick messages ("On my way", "Where are you?"…);
+- hold a message to delete it, or to report it or block whoever wrote it.
+
+At a festival, the Friends tab shows each crew's chat card under Check in.
+
 ## Crew updates
 
 Where your crew is, from the videos they film and quick check-ins, along the top of Discover like stories.

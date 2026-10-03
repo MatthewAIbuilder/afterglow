@@ -119,7 +119,7 @@ describe('ending a crew', () => {
     const { crew, sam } = await setUp();
     await s().signOut();
     await as('sam');
-    await s().joinCrew(crew.id);
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     await s().setCrewPicks(crew.id, ['subtronics']);
     await s().signOut();
     await as('maya');

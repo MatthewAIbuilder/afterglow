@@ -29,6 +29,7 @@ import { ClipNewsProvider } from '../state/clipNews';
 import { CommunityProvider } from '../state/community';
 import { CrewsProvider } from '../state/crews';
 import { CrewUpdatesProvider } from '../state/crewUpdates';
+import { CrewChatProvider } from '../state/crewChat';
 import { FestivalModeProvider } from '../state/festivalMode';
 import { FriendAddsProvider } from '../state/friendAdds';
 import { FollowedArtistsProvider } from '../state/followedArtists';
@@ -74,6 +75,7 @@ export default function RootLayout() {
       <NoticesProvider>
       <CrewsProvider>
       <CrewUpdatesProvider>
+      <CrewChatProvider>
       <FestivalModeProvider>
       <FriendAddsProvider>
       <StatusBar style="light" />
@@ -106,6 +108,8 @@ export default function RootLayout() {
         <Stack.Screen name="going/[id]" />
         <Stack.Screen name="crew/[id]" />
         <Stack.Screen name="crew-invite/[id]" />
+        <Stack.Screen name="crew-chat/[id]" />
+        <Stack.Screen name="festival-week/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="likes/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="comments/[id]"
@@ -230,6 +234,7 @@ export default function RootLayout() {
       <DialogHost />
       </FriendAddsProvider>
       </FestivalModeProvider>
+      </CrewChatProvider>
       </CrewUpdatesProvider>
       </CrewsProvider>
       </NoticesProvider>

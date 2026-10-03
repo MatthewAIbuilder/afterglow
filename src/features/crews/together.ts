@@ -67,7 +67,8 @@ export function sharedCountLine(together: Together): string | undefined {
 export const firstName = (displayName: string) => displayName.trim().split(/\s+/)[0] || displayName;
 
 /** The address that opens a crew (in the app, or on the website). */
-export const crewPath = (id: string) => `/crew/${id}`;
+/** A crew's page; with its invite link's code, the link that lets someone join. */
+export const crewPath = (id: string, code?: string) => (code ? `/crew/${id}?code=${encodeURIComponent(code)}` : `/crew/${id}`);
 
 /** Whether the picks you'd publish differ from the ones last published (order doesn't matter). */
 export function picksChanged(next: readonly string[], last: readonly string[] | undefined): boolean {
