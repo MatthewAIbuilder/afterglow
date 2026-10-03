@@ -110,7 +110,8 @@ export default function ArtistScreen() {
   // Their next show, and what you've done with their music here.
   // As each festival is for you: an artist on the other weekend of a two-weekend festival isn't your next show there.
   const next = nextShow(festivals.map(forYou), artist.id, today);
-  const story = artistStory({ artistId: artist.id, clips: catalog.clipsOf(artist.id), reactions, seen, memories, festivalOf: catalog.festival });
+  // Their clips, crowd videos you reacted to included.
+  const story = artistStory({ artistId: artist.id, clips: tasteClips.filter((c) => c.artistId === artist.id), reactions, seen, memories, festivalOf: catalog.festival });
   const storyText = storyLines(story);
   // Their clips, ones you haven't watched first; then one each from artists who sound like them.
   const clips = theirClips(catalog.clipsOf(artist.id), seen);

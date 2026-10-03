@@ -175,6 +175,8 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
   // Yours that got through after being held up, for the chat to say so.
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const openChat = useRef<string | undefined>(undefined);
+  // Waiting messages deleted while they were being sent: taken back as soon as they land.
+  const cancelled = useRef(new Set<string>());
   const flush = useCallback(async () => {
     if (!ready || sending.current) return;
     // Only this account's (switching accounts never sends one account's words as another).
@@ -189,6 +191,8 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
           const done = new Set(await service.sendCrewMessages(crewId, items.map((o) => ({ id: o.id, text: o.text, at: o.at }))));
           const at = Date.now();
           setOutbox((box) => box.filter((o) => !done.has(o.id)));
+          for (const id of done)
+            if (cancelled.current.delete(id)) void service.deleteCrewMessage(crewId, id).catch(() => {});
           // Held up by signal: say so once they're through.
           const held = items.filter((o) => done.has(o.id));
           const heldMs = held.length ? at - Math.min(...held.map((o) => Date.parse(o.at))) : 0;
@@ -253,6 +257,7 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
   const remove = useCallback(
     async (crewId: string, line: ChatLine) => {
       if (line.status !== 'sent') {
+        if (sending.current) cancelled.current.add(line.id);
         setOutbox((o) => messageSent(o, line.id));
         return;
       }
