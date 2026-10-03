@@ -147,10 +147,11 @@ function StoryVideo({ url }: { url: string }) {
 /** A check-in, as a card of its own: their words big, where and when beneath. */
 function CheckInCard({ update: u, artist, replyingTo }: { update: CrewUpdate; artist?: string; replyingTo?: string }) {
   return (
-    <LinearGradient colors={['#2A1C5C', '#120E2A', '#0A0918']} style={[StyleSheet.absoluteFill, styles.center]}>
+    <LinearGradient colors={u.care === 'help' ? ['#4A1C2C', '#1E0E18', '#0A0918'] : u.care === 'ok' ? ['#123A30', '#0E1A1A', '#0A0918'] : ['#2A1C5C', '#120E2A', '#0A0918']} style={[StyleSheet.absoluteFill, styles.center]}>
       <View style={styles.card}>
         {replyingTo ? <Text style={styles.cardReplying}>{replyingTo}</Text> : null}
         {u.lost ? <Text style={styles.cardLost}>Can’t find the crew</Text> : null}
+        {u.care === 'help' ? <Text style={[styles.cardLost, { color: 'rgba(255,150,150,0.95)' }]}>Not feeling great</Text> : null}
         <Text style={styles.cardWords}>{u.note ?? 'Checked in'}</Text>
         {u.stage || artist ? <Text style={styles.cardPlace}>{[u.stage, artist].filter(Boolean).join(' · ')}</Text> : null}
       </View>

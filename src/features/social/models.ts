@@ -128,6 +128,8 @@ export type CrewUpdate = {
   replyTo?: string;
   /** A check-in that says "Can't find you": the crew should look out for you (or head to the meeting spot). */
   lost?: boolean;
+  /** A check-in about how you are: "I'm OK", or "not feeling great, come find me". Sent only when you tap it. */
+  care?: CrewCare;
   videoUrl?: string;
   thumbUrl?: string;
   /** When the video was also shared to Discover: that copy's id. */
@@ -136,6 +138,9 @@ export type CrewUpdate = {
   width?: number;
   height?: number;
 };
+
+/** How a crewmate says they are, when they choose to: fine, or would like someone to come. */
+export type CrewCare = 'ok' | 'help';
 
 /** What you send: the id is made on your phone, so sending again after a dropped connection never doubles it. */
 export type CrewUpdateInput = Omit<CrewUpdate, 'crewId' | 'uid' | 'sentAt' | 'videoUrl' | 'thumbUrl'> & {

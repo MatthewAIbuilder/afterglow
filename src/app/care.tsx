@@ -10,6 +10,10 @@ import { BodyCard } from '../features/care/BodyCard';
 import { BloomWash, HeartMark } from '../features/care/HeartIntro';
 import { countTonight, feelingsBetween, lastFeeling, regionOf, emergencyNumber, lastLine, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY } from '../features/care/care';
 import { FeelingCard } from '../features/care/FeelingCard';
+import { careFestival } from '../features/crews/care';
+import { CrewHelpAlerts } from '../features/crews/CrewHelpAlerts';
+import { useTonight } from '../features/tonight/useTonight';
+import { useCrewUpdates } from '../state/crewUpdates';
 import { GuideList } from '../features/care/GuideList';
 import { riskyMixes } from '../features/care/guide';
 import { StartStopwatch } from '../features/care/StartStopwatch';
@@ -51,6 +55,10 @@ export default function CareScreen() {
   const canLock = Platform.OS !== 'web';
   const locked = canLock && hydrated && care.lock && !unlocked;
   const help = needsHelp(care, now);
+  // Your crew at the festival on now, to tell how you are (only when you tap).
+  const tonight = useTonight();
+  const crewUpdates = useCrewUpdates();
+  const crewAt = crewUpdates.ready ? careFestival(tonight?.festival.id, crewUpdates.crewFestivals) : undefined;
   // Where each part of the page starts, for the jump chips.
   const scroller = useRef<ScrollView>(null);
   const spots = useRef<Partial<Record<PartId, number>>>({});
@@ -147,6 +155,8 @@ export default function CareScreen() {
           ))}
         </ScrollView>
 
+        <CrewHelpAlerts />
+
         {help ? (
           <Part id="help" at={at}>
             <Help number={number} first />
@@ -155,7 +165,7 @@ export default function CareScreen() {
 
         {/* How you're feeling, near the top: check in often. */}
         <Part id="feelings" title="How are you feeling?" at={at}>
-          <FeelingCard care={care} now={now} onFeel={checkIn} />
+          <FeelingCard care={care} now={now} onFeel={checkIn} crewFestival={crewAt} />
         </Part>
 
         {/* Stopwatches: from the timing guide, or your own words, each with how you've felt since. */}

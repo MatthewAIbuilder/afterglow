@@ -11,6 +11,8 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import type { Festival } from '../../data/models';
 import { CrewWhereCard } from '../crews/CrewWhereCard';
 import { LostButton } from '../crews/LostButton';
+import { CareButtons } from '../crews/CareButtons';
+import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
 import { MeetSpotCard } from '../crews/MeetSpotCard';
 import { FriendAddsList } from './FriendAddsList';
 import { accountsOff } from '../social/unavailable';
@@ -162,7 +164,9 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
 
             {festival && here.length ? (
               <Section title={`At ${festival.name}`}>
+                <CrewHelpAlerts festivalId={festival.id} />
                 <CrewWhereCard festival={festival} crews={here} />
+                {updatesReady ? <CareButtons festivalId={festival.id} /> : null}
                 {updatesReady ? <LostButton festivalId={festival.id} /> : null}
                 {here.map((c) => (
                   <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={here.length > 1} />

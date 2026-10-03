@@ -9,6 +9,7 @@ import { CHECK_INS, clock, cleanNote } from '../features/crews/updates';
 import { guessArtists, nightOf } from '../features/memories/guess';
 import { isOffline } from '../features/offline/status';
 import { LostButton } from '../features/crews/LostButton';
+import { CareButtons } from '../features/crews/CareButtons';
 import { CREW_NOTE_MAX } from '../features/social/models';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
@@ -103,7 +104,8 @@ export default function CheckInScreen() {
           {crews.map((c) => c.name).join(' and ')} {crews.length === 1 ? 'sees' : 'see'} the time you tap, even if the signal holds it back.
         </Text>
         {offline ? <Text style={[styles.offline, styles.pad]}>No signal right now: it’ll send itself later, marked with this moment.</Text> : null}
-        <View style={[styles.pad, { marginTop: space.md }]}>
+        <View style={[styles.pad, { marginTop: space.md, gap: space.sm }]}>
+          <CareButtons festivalId={festival.id} />
           <LostButton festivalId={festival.id} />
         </View>
 

@@ -25,9 +25,12 @@ import {
   type SentVideos,
   type Story,
 } from '../features/crews/updates';
+import { CARE_NOTE, careAlerts as alertsOf, cleanNotified, helpBody, helpTitle, myCare as myCareOf, toNotify, withNotified } from '../features/crews/care';
 import type { Memory } from '../features/memories/models';
 import { isOffline } from '../features/offline/status';
-import type { CrewUpdate, CrewUpdateInput, MeetSpot, Profile } from '../features/social/models';
+import type { CrewCare, CrewUpdate, CrewUpdateInput, MeetSpot, Profile } from '../features/social/models';
+import { notifyNow } from '../lib/notifyNow';
+import { firstName } from '../features/crews/together';
 import { socialErrorKind } from '../features/social/service';
 import { useNow } from '../lib/useNow';
 import { useToday } from '../lib/useToday';
@@ -75,6 +78,12 @@ type Ctx = {
   setMeetSpot: (crewId: string, text: string) => Promise<void>;
   /** "Can't find you": a check-in to every crew you're in at this festival, waiting for signal like any other. */
   callLost: (festivalId: string) => string | false;
+  /** "I'm OK" or "come find me" to every crew you're in at this festival; the update's id, or false. */
+  sendCare: (festivalId: string, care: CrewCare) => string | false;
+  /** Crewmates asking for help right now, newest first. */
+  careAlerts: CrewUpdate[];
+  /** Your own latest "I'm OK" / "come find me" (sent or waiting), while it's current. */
+  myCare: CrewUpdate | undefined;
   /** Answer a crewmate's update, in its crew only; waits for signal like a check-in. False when you can't. */
   reply: (update: CrewUpdate, note: string) => boolean;
   /** The replies to an update, oldest first, with yours still waiting for signal at the end. */
@@ -94,6 +103,7 @@ export const SEEN_KEY = 'crewSeen.v1';
 export const SENT_VIDEOS_KEY = 'crewVideos.v1';
 /** How often crews' updates are read while the app is open. */
 export const POLL_MS = 60_000;
+const NOTIFIED_KEY = 'crewCareNotified.v1';
 
 const CrewUpdatesContext = createContext<Ctx | null>(null);
 
@@ -388,6 +398,19 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     [crewIdsAt, ready, meets, uid],
   );
 
+  const sendCare = useCallback(
+    (festivalId: string, care: CrewCare) => {
+      const crewIds = crewIdsAt(festivalId);
+      if (!ready || !crewIds.length) return false;
+      const now = Date.now();
+      const id = updateId(now);
+      const input: CrewUpdateInput = { id, kind: 'checkin', care, at: new Date(now).toISOString(), festivalId, note: CARE_NOTE[care] };
+      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
+      return id;
+    },
+    [crewIdsAt, ready],
+  );
+
   const meetSpotFor = useCallback((crewId: string) => (meets.uid === uid ? (meets.byCrew[crewId] ?? undefined) : undefined), [meets, uid]);
   const setMeetSpot = useCallback(
     async (crewId: string, text: string) => {
@@ -477,11 +500,37 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     [profilesVersion],
   );
 
+  const careAlerts = useMemo(() => alertsOf(all, live, { me: uid, blocked: [...social.blocked], now }), [all, live, uid, social.blocked, now]);
+  const myCare = useMemo(() => {
+    const waiting = outbox.filter((o) => o.input.care).map((o) => ({ ...o.input, crewId: o.crewIds[0], uid: uid ?? '', sentAt: o.input.at }) as CrewUpdate);
+    return myCareOf([...all, ...waiting], uid, now);
+  }, [all, outbox, uid, now]);
+
+  // A nudge on this phone, once per call for help (only if notifications are already allowed).
+  const [notified, setNotified] = useState<string[] | undefined>();
+  useEffect(() => {
+    AsyncStorage.getItem(NOTIFIED_KEY)
+      .then((raw) => setNotified(cleanNotified(raw ? JSON.parse(raw) : [])))
+      .catch(() => setNotified([]));
+  }, []);
+  useEffect(() => {
+    if (!notified) return;
+    const fresh = toNotify(careAlerts, notified);
+    if (!fresh.length) return;
+    for (const u of fresh) {
+      const name = (profileOf(u.uid) ? firstName(profileOf(u.uid)!.displayName) : 'Someone in your crew');
+      void notifyNow(`crew-help:${u.id}`, helpTitle(name), helpBody(u), `/crew-story?uid=${encodeURIComponent(u.uid)}`);
+    }
+    const next = withNotified(notified, fresh.map((u) => u.id));
+    Promise.resolve().then(() => setNotified(next));
+    AsyncStorage.setItem(NOTIFIED_KEY, JSON.stringify(next)).catch(() => {});
+  }, [careAlerts, notified, profileOf]);
+
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, sendCare, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, sendCare, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }
@@ -497,6 +546,9 @@ const OFF: Ctx = {
   profileOf: () => undefined,
   checkIn: () => false,
   callLost: () => false,
+  sendCare: () => false,
+  careAlerts: [],
+  myCare: undefined,
   meetSpotFor: () => undefined,
   setMeetSpot: async () => {},
   reply: () => false,

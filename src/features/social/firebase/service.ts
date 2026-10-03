@@ -603,6 +603,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           ...(input.note ? { note: input.note.slice(0, CREW_NOTE_MAX) } : {}),
           ...(input.kind === 'reply' && input.replyTo ? { replyTo: input.replyTo } : {}),
           ...(input.kind === 'checkin' && input.lost ? { lost: true } : {}),
+          ...(input.kind === 'checkin' && input.care ? { care: input.care } : {}),
           ...(videoUrl ? { videoUrl } : {}),
           ...(thumbUrl ? { thumbUrl } : {}),
           ...(videoPath ? { videoPath } : {}),
