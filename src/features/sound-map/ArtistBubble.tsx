@@ -2,10 +2,11 @@ import { memo, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
-import { mixColor, withAlpha } from './colors';
+import { mixColor } from './colors';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { color, motion, type } from '../../theme/tokens';
 import { FULL_LABELS, LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
+import { OrbGlass, OrbHalo, PlanetFace } from './Orb';
 
 type Props = {
   placed: PlacedArtist;
@@ -28,8 +29,6 @@ type Props = {
   loved?: boolean;
 };
 
-/** Only the strongest few show their match under the name; the rest show it once selected, matched or zoomed in. */
-export const PCT_LABELS = 6;
 const LABEL_W = 150;
 const D = MAX_R * 2; // bubbles render at full size and scale down, so size can animate
 const GLOW = MAX_R * 2.5;
@@ -122,7 +121,8 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
   // index is the bloom order: strongest match first. The strongest always show their name;
   // the rest fade in as you zoom in (or when chosen or found), so the map stays calm from afar.
   const prominent = index < FULL_LABELS;
-  const showPct = index < PCT_LABELS || selectedId === artist.id || !!matched;
+  // The match shows only once you pick them: the size already says it, and numbers make the universe a chart.
+  const showPct = selectedId === artist.id;
   const pinned = prominent || selectedId === artist.id || !!matched;
   const labelStyle = useAnimatedStyle(() => {
     const zoomed = Math.max(0, Math.min(1, (scale.get() - detailAt * 0.85) / (detailAt * 0.15)));
@@ -131,10 +131,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
       transform: [{ translateY: pr.get() * bloom.get() + LABEL_OFFSET }],
     };
   });
-  const pctStyle = useAnimatedStyle(() => {
-    const zoomed = Math.max(0, Math.min(1, (scale.get() - detailAt * 1.05) / (detailAt * 0.2)));
-    return { opacity: showPct ? 1 : zoomed };
-  });
+  const pctStyle = useAnimatedStyle(() => ({ opacity: showPct ? 1 : 0 }));
 
   const glowStrength = Math.pow(affinity, 3) * 0.75;
   // Their own light when their photo gives them a colour, else the colour of their sound.
@@ -177,9 +174,10 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
       ) : null}
 
       <Animated.View style={[styles.body, bodyStyle]}>
-        <ArtistAvatar artist={artist} size={D} />
-        {/* A rim of their sound's colour, so you can tell sounds apart at a glance. */}
-        <View style={[styles.rim, { borderColor: withAlpha(soundTone, 0.75) }]} pointerEvents="none" />
+        {/* An atmosphere in their sound's colour (so sounds tell apart at a glance), the face (their photo, or a planet banded in their sound), and glass over it. */}
+        <OrbHalo size={D} tone={soundTone} id={artist.id} />
+        <View style={styles.face}>{artist.imageUrl || (artist.members && artist.members.length > 1) ? <ArtistAvatar artist={artist} size={D} /> : <PlanetFace artist={artist} size={D} />}</View>
+        <OrbGlass size={D} tone={soundTone} id={artist.id} />
       </Animated.View>
 
       {loved ? (
@@ -207,7 +205,7 @@ const styles = StyleSheet.create({
   anchor: { position: 'absolute', left: 0, top: 0, width: 0, height: 0 },
   glow: { position: 'absolute', left: -GLOW / 2, top: -GLOW / 2, width: GLOW, height: GLOW },
   body: { position: 'absolute', left: -D / 2, top: -D / 2, width: D, height: D },
-  rim: { position: 'absolute', top: -2, left: -2, right: -2, bottom: -2, borderRadius: D / 2 + 2, borderWidth: 5 },
+  face: { width: D, height: D, borderRadius: D / 2, overflow: 'hidden' },
   heart: {
     position: 'absolute',
     left: 0,

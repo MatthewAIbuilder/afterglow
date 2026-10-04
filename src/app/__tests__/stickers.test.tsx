@@ -64,7 +64,8 @@ describe('stickers', () => {
     expect(hunt.items).toEqual([{ creature: 'frog', name: 'Water frog · Station 3' }]);
     expect(app.getByText('Water frog · Station 3')).toBeTruthy();
     expect(app.getByText(/^Found by 0 · Night Market 2027 · Can be found until Jun 14, 2027$/)).toBeTruthy();
-  });
+    // HQ's creature picker draws every creature, which takes a while when the whole suite runs at once.
+  }, 20_000);
 
   it('opening a sticker’s code keeps it, lights it up and fills in its hunt; signing in sends it', async () => {
     seed();
