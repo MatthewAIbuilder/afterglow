@@ -381,6 +381,25 @@ describe('Festivals', () => {
     share.mockRestore();
   });
 
+  it('shares your must-sees, each with why, before set times', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ wooli: 'love' }));
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    const app = await renderApp('/plan-card/edc-orlando-26');
+    await settle();
+    // Before set times it opens on your must-sees.
+    expect(app.getByRole('tab', { name: 'Must-sees' }).props.accessibilityState).toEqual({ selected: true });
+    expect(app.getByLabelText(/^My must-sees at EDC Orlando 2026: .*WOOLI, You love them\./)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Share your must-sees as text'));
+    const { message } = share.mock.calls[0][0] as { message: string };
+    expect(message).toMatch(/^My must-sees at EDC Orlando 2026:\n1\. /);
+    expect(message).toContain('WOOLI · You love them.');
+    expect(message).toMatch(/Made with Afterglow · https:\/\/afterglowmusic\.app$/);
+    // Your plan and the lineup poster are a tap away.
+    await fireEvent.press(app.getByRole('tab', { name: 'Your plan' }));
+    expect(app.getByLabelText('Share your plan as text')).toBeTruthy();
+    share.mockRestore();
+  });
+
   it('opens a warm-up playlist of live sets from your artists on YouTube', async () => {
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love', subtronics: 'love', excision: 'like' }));
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
