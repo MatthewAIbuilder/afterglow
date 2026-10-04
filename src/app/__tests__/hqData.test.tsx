@@ -13,6 +13,15 @@ import { renderApp, showTab } from './appRoutes';
 let mockSocial = fakeSocial();
 jest.mock('../../features/social/services', () => ({ defaultSocialService: () => mockSocial.service }));
 
+// Photo reading runs in the browser (readPhoto.web.ts); here it hands back what recognition would read.
+jest.mock('../../features/admin/readPhoto', () => ({
+  canReadPhotos: true,
+  readPhotoText: jest.fn(async (_p: unknown, _s: unknown, progress?: (n: number) => void) => {
+    progress?.(0.5);
+    return 'FRIDAY\nMain Stage\n10:00 PM - 11:30 PM SUBTRONICS';
+  }),
+}));
+
 const picker = jest.requireMock<{ __state: { next: { uri: string; name: string; mimeType?: string; size?: number }[] } }>('expo-document-picker').__state;
 const settle = (ms = 50) =>
   act(async () => {
@@ -88,6 +97,20 @@ describe('HQ data', () => {
     await fireEvent.press(again.getByLabelText('Take down Cyclops Cove 4, set times'));
     await flush();
     expect(mockSocial.patches.size).toBe(0);
+  });
+
+  it('reads a photo of set times into the box, to check and read', async () => {
+    const app = await hq();
+    await showTab(app, 'Data');
+    await fireEvent.changeText(app.getByLabelText('Find a festival'), 'Cyclops');
+    await fireEvent.press(app.getByText('Cyclops Cove 4'));
+    picker.next = [{ uri: 'file:///timetable.png', name: 'timetable.png', mimeType: 'image/png' }];
+    await fireEvent.press(app.getByText('Read a photo of set times'));
+    await flush();
+    expect(app.getByLabelText('Lineup or set times as text').props.value).toBe('FRIDAY\nMain Stage\n10:00 PM - 11:30 PM SUBTRONICS');
+    await fireEvent.press(app.getByText('Read the text'));
+    expect(app.getByText('Cyclops Cove 4, set times')).toBeTruthy();
+    expect(app.getByText(/1 set time/)).toBeTruthy();
   });
 
   it('keeps pictures and PDFs in the inbox and hands them to a Claude Code session', async () => {
