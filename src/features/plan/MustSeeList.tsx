@@ -8,7 +8,8 @@ import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 import { exploreLine, matchLabel, moreToExplore, TIER_HINT, TIER_LABEL } from './copy';
 import { MustSeeToggle } from './MustSeeToggle';
-import { EXPLORE_SHOWN, exploreReason, TIER_AT, type Pick, type Tier } from './plan';
+import { usePickReasons } from './usePickReasons';
+import { EXPLORE_SHOWN, exploreReason, type Pick, type Tier } from './plan';
 
 const TIERS: Tier[] = ['must-see', 'strong', 'explore'];
 
@@ -17,6 +18,7 @@ const TIERS: Tier[] = ['must-see', 'strong', 'explore'];
 export function MustSeeList({ festivalId, picks }: { festivalId: string; picks: Pick[] }) {
   const reduceMotion = useReducedMotion();
   const { similarity } = useTaste();
+  const reason = usePickReasons();
   const groups = TIERS.map((tier) => {
     const all = picks.filter((p) => p.tier === tier);
     const shown = tier === 'explore' ? all.slice(0, EXPLORE_SHOWN) : all;
@@ -46,13 +48,7 @@ export function MustSeeList({ festivalId, picks }: { festivalId: string; picks: 
                 festivalId={festivalId}
                 pick={p}
                 rank={picks.indexOf(p) + 1}
-                note={
-                  p.tier === 'explore'
-                    ? exploreLine(exploreReason(p, picks, similarity))
-                    : p.pinned && p.match < TIER_AT.mustSee
-                      ? 'You starred this one.'
-                      : undefined
-                }
+                note={p.tier === 'explore' ? exploreLine(exploreReason(p, picks, similarity)) : reason(p)}
               />
             </Animated.View>
           ))}

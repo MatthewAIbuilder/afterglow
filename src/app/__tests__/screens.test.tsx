@@ -276,6 +276,13 @@ describe('Festivals', () => {
     expect(app.getAllByText('Sunset set').length).toBeGreaterThan(0);
   });
 
+  it('says why each pick is on your list', async () => {
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ wooli: 'love' }));
+    const app = await renderApp('/festival/edc-orlando-26');
+    await settle();
+    expect(app.getByLabelText(/WOOLI, \d+% match\. You love them\./)).toBeTruthy();
+  });
+
   it('opens Austin City Limits with the poster’s day and weekend for each act', async () => {
     const app = await renderApp('/festival/acl-26');
     await settle();
