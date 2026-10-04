@@ -572,7 +572,7 @@ describe('Artist', () => {
 
 describe('My Sound', () => {
   it('draws the map', async () => {
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     // The title, and the tab bar's label.
     expect(app.getAllByText('My Sound').length).toBeGreaterThan(0);
@@ -585,7 +585,7 @@ describe('My Sound', () => {
   });
 
   it('rates an artist from the map, which reshapes when the sheet closes', async () => {
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     await fireEvent(app.getByLabelText(/^ILLENIUM, \d+ percent match$/), 'accessibilityTap');
     await settle();
@@ -603,7 +603,7 @@ describe('My Sound', () => {
   });
 
   it('narrows the map to one festival, and offers to rate a sparse lineup', async () => {
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     expect(app.getByLabelText('Your sound across every artist. Choose a festival')).toBeTruthy();
     expect(app.queryByText(/on your map (yet|so far)/)).toBeNull();
@@ -623,7 +623,7 @@ describe('My Sound', () => {
 
   it('puts the festivals you are going to one tap away, and watches an artist from the sheet', async () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['solstice-26']));
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     expect(app.getByLabelText('Your sound across every artist').props.accessibilityState).toEqual({ selected: true });
     await fireEvent.press(app.getByLabelText('Your sound at Solstice 2026'));
@@ -643,7 +643,7 @@ describe('My Sound', () => {
   });
 
   it('searches the map for a sound or an artist, bringing matches onto it', async () => {
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     await fireEvent.press(app.getByLabelText('Search your map for an artist or a sound'));
     await settle();
@@ -679,7 +679,7 @@ describe('My Sound', () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
       buttons?.find((b) => b.style === 'destructive')?.onPress?.();
     });
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     await act(async () => {
       jest.advanceTimersByTime(500);
@@ -704,7 +704,7 @@ describe('My Sound', () => {
 describe('Your clips', () => {
   it('opens your clips from My Sound, and unsaves with an undo', async () => {
     await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c1: { liked: false, saved: true, skipped: false } }));
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Your clips · 1')));
     await fireEvent.press(app.getByLabelText(/^More: your clips \(1\)/));
@@ -728,7 +728,7 @@ describe('Your clips', () => {
         c2: { liked: true, saved: false, skipped: false },
       }),
     );
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     // Saved and liked counts once.
     jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Your clips · 2')));
@@ -1006,7 +1006,7 @@ describe('Sound breakdowns', () => {
 
   it('shows your sound as a line of colour on My Sound, which opens the breakdown', async () => {
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love' }));
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     const spectrum = app.getByLabelText(/^Your sound: [A-Z][a-z -]+ \d+ percent/);
     await fireEvent.press(spectrum);
@@ -1016,7 +1016,7 @@ describe('Sound breakdowns', () => {
   });
 
   it('breaks your sound down from My Sound, for everyone or one festival', async () => {
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     await fireEvent.press(app.getByLabelText(/^Your sound: /));
     await settle();

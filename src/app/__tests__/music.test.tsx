@@ -119,7 +119,7 @@ describe('Music connections', () => {
     // No credentials in normal storage.
     expect(JSON.stringify(saved)).not.toMatch(/token/i);
 
-    const sound = await renderApp('/sound');
+    const sound = await renderApp('/sound?view=map');
     await settle();
     await act(async () => {
       jest.advanceTimersByTime(500);
@@ -237,7 +237,7 @@ describe('Music connections', () => {
 
 describe('My Sound with connected music', () => {
   it('offers to connect when you have nothing yet', async () => {
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     expect(app.getByText(/Connect Spotify to start your map from what you already play./)).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Connect your music'));
@@ -250,7 +250,7 @@ describe('My Sound with connected music', () => {
       'musicLibrary.v1',
       JSON.stringify({ spotify: { provider: 'spotify', connected: true, syncing: false, snapshot: snapshot('spotify', ['Subtronics', 'Nobody On A Lineup']) } }),
     );
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     expect(app.getByText('Only 1 of your Spotify artists plays Afterglow’s lineups so far. React to clips to place more.')).toBeTruthy();
   });
@@ -272,7 +272,7 @@ describe('My Sound with connected music', () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
       buttons?.find((b) => b.style === 'destructive')?.onPress?.();
     });
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await settle();
     jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Start over')));
     await fireEvent.press(app.getByLabelText(/^More: /));

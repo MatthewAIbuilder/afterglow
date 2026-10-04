@@ -25,7 +25,7 @@ beforeEach(async () => {
 
 describe('tapping a sound on My Sound', () => {
   it('lights up that sound, then opens Discover on it', async () => {
-    const app = await renderApp('/sound');
+    const app = await renderApp('/sound?view=map');
     await flush();
     const regions = app.getAllByLabelText(REGION);
     // A sound name with enough clips to watch.

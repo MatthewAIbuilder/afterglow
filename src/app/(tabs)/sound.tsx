@@ -38,6 +38,7 @@ import type { TasteSummary } from '../../features/taste/engine';
 import { soundLean, tasteMix } from '../../features/taste/lean';
 import { isWarm } from '../../features/taste/ratings';
 import { SoundSpectrum } from '../../features/sound-map/SoundSpectrum';
+import { SoundOverview } from '../../features/sound-map/SoundOverview';
 import { musicNote, type MusicNote } from '../../features/music/copy';
 import { PROVIDER_NAME } from '../../features/music/models';
 import { useMusic } from '../../state/music';
@@ -83,13 +84,16 @@ export default function MySoundScreen() {
   const [scopeId, setScopeId] = useState<string | undefined>();
   // One day of that festival's lineup, when the poster or set times say who plays when.
   const [day, setDay] = useState<string | undefined>();
-  const { festival: festivalParam } = useLocalSearchParams<{ festival?: string }>();
+  const { festival: festivalParam, view: viewParam } = useLocalSearchParams<{ festival?: string; view?: string }>();
+  // The overview (your sound, a guide to every sound, tips) or the bubble map. A festival or `view=map` opens the map.
+  const [view, setView] = useState<'overview' | 'map'>(viewParam === 'map' || festivalParam ? 'map' : 'overview');
   const navigation = useNavigation();
   // `everyone` (from the scope picker) goes back to the whole map; a festival id narrows it.
   const asked = festivalParam === EVERYONE ? EVERYONE : festivalParam && catalog.festival(festivalParam) ? festivalParam : undefined;
   const [lastAsked, setLastAsked] = useState<string | undefined>();
   if (asked && asked !== lastAsked) {
     setLastAsked(asked);
+    setView('map');
     setScopeId(asked === EVERYONE ? undefined : asked);
     setDay(undefined);
     setSelectedId(null);
@@ -192,7 +196,64 @@ export default function MySoundScreen() {
     setLastKey(mapKey);
     setMoved(false);
   }
+  const watchable = useMemo(() => new Set(soundChoices(catalog.clips, catalog.artist).map((c) => c.tag)), [catalog]);
+  const openMap = useCallback(() => setView('map'), []);
   const openBreakdown = useCallback(() => router.push({ pathname: '/your-sound', params: scope ? { festival: scope.id } : {} }), [scope]);
+
+  const summaryCard = (
+    <SoundSummary
+      headline={leanLine(lean, shaped)}
+      basis={basisLine({ ...shown.summary, rated: shown.rated, libraries: shown.importing.map((p) => PROVIDER_NAME[p]) })}
+      shares={mix}
+      shaped={shaped}
+      scopeName={scope?.name}
+      onPress={openBreakdown}
+    />
+  );
+  const titleRow = (
+    <View style={styles.titleRow} pointerEvents="box-none">
+      {/* A secret: hold the title for a bass drop. */}
+      <Pressable onLongPress={() => revealSecret('bassdrop')} delayLongPress={700} accessibilityRole="header" accessibilityLabel="My Sound">
+        <Text style={styles.title}>My Sound</Text>
+      </Pressable>
+      <View style={styles.actions} pointerEvents="box-none">
+        {view === 'overview' || searchOpen ? null : (
+          <GlassCircleButton label="Search your map for an artist or a sound" onPress={() => setSearchOpen(true)}>
+            <SearchIcon color={color.moon} size={18} />
+          </GlassCircleButton>
+        )}
+        {shaped ? <SoundMenu onCleared={reshapeSoon} scopeId={scope?.id} /> : null}
+      </View>
+    </View>
+  );
+  const toggle = <ViewToggle view={view} onChange={(v) => {
+    setSelectedId(null);
+    setView(v);
+  }} />;
+
+  if (view === 'overview') {
+    return (
+      <View style={styles.root}>
+        <PageTitle title="My Sound" />
+        <NightSky />
+        <ScrollView contentContainerStyle={[styles.overview, { paddingTop: insets.top + space.lg, paddingBottom: tabSpace + space.xl }]}>
+          {titleRow}
+          {toggle}
+          {summaryCard}
+          <SoundOverview
+            shares={mix}
+            artists={artists}
+            taste={shown.taste}
+            watchable={watchable}
+            shaped={shaped}
+            canConnect={note?.action === 'connect'}
+            hasFestivals={hasScopes}
+            onOpenMap={openMap}
+          />
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -251,29 +312,9 @@ export default function MySoundScreen() {
         pointerEvents="box-none"
         onLayout={(e) => setHeaderH(Math.round(e.nativeEvent.layout.height))}
       >
-        <View style={styles.titleRow} pointerEvents="box-none">
-          {/* A secret: hold the title for a bass drop. */}
-          <Pressable onLongPress={() => revealSecret('bassdrop')} delayLongPress={700} accessibilityRole="header" accessibilityLabel="My Sound">
-            <Text style={styles.title}>My Sound</Text>
-          </Pressable>
-          <View style={styles.actions} pointerEvents="box-none">
-            {searchOpen ? null : (
-              <GlassCircleButton label="Search your map for an artist or a sound" onPress={() => setSearchOpen(true)}>
-                <SearchIcon color={color.moon} size={18} />
-              </GlassCircleButton>
-            )}
-            {shaped ? <SoundMenu onCleared={reshapeSoon} scopeId={scope?.id} /> : null}
-          </View>
-        </View>
-
-        <SoundSummary
-          headline={leanLine(lean, shaped)}
-          basis={basisLine({ ...shown.summary, rated: shown.rated, libraries: shown.importing.map((p) => PROVIDER_NAME[p]) })}
-          shares={mix}
-          shaped={shaped}
-          scopeName={scope?.name}
-          onPress={openBreakdown}
-        />
+        {titleRow}
+        {toggle}
+        {summaryCard}
 
         {searchOpen ? (
           <View style={styles.searchRow}>
@@ -315,6 +356,38 @@ export default function MySoundScreen() {
 
       {/* The sheet shows the live match, so a rating there shows its effect straight away. */}
       <ArtistSheet artistId={selectedId} taste={live.taste} bottomInset={tabSpace} onClose={close} />
+    </View>
+  );
+}
+
+/** Overview or map: a quiet two-way switch under the title. */
+function ViewToggle({ view, onChange }: { view: 'overview' | 'map'; onChange: (v: 'overview' | 'map') => void }) {
+  return (
+    <View style={styles.toggle} accessibilityRole="tablist">
+      {(
+        [
+          ['overview', 'Overview'],
+          ['map', 'Map'],
+        ] as const
+      ).map(([v, label]) => {
+        const on = view === v;
+        return (
+          <Pressable
+            key={v}
+            onPress={() => {
+              if (on) return;
+              haptic.select();
+              onChange(v);
+            }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={v === 'map' ? 'Bubble map' : 'Overview'}
+            style={[styles.toggleItem, on && styles.toggleOn]}
+          >
+            <Text style={[styles.toggleText, on && styles.toggleTextOn]}>{label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -700,6 +773,12 @@ const styles = StyleSheet.create({
   },
   sparseButtonText: { ...type.label, color: color.moon },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  overview: { paddingHorizontal: space.xl },
+  toggle: { flexDirection: 'row', alignSelf: 'flex-start', padding: 3, marginTop: space.md, marginBottom: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  toggleItem: { paddingHorizontal: space.lg, paddingVertical: 7, borderRadius: radius.pill },
+  toggleOn: { backgroundColor: 'rgba(169,124,255,0.28)' },
+  toggleText: { ...type.label, color: color.moonDim },
+  toggleTextOn: { color: color.moon },
   title: { ...type.largeTitle, color: color.moon },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   spectrum: { marginTop: space.sm, height: 6 },
