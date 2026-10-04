@@ -6,7 +6,7 @@ import { mixColor } from './colors';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { color, motion, type } from '../../theme/tokens';
 import { FULL_LABELS, LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
-import { OrbGlass, OrbHalo, PlanetFace } from './Orb';
+import { OrbGlass, PlanetFace } from './Orb';
 
 type Props = {
   placed: PlacedArtist;
@@ -174,8 +174,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
       ) : null}
 
       <Animated.View style={[styles.body, bodyStyle]}>
-        {/* An atmosphere in their sound's colour (so sounds tell apart at a glance), the face (their photo, or a planet banded in their sound), and glass over it. */}
-        <OrbHalo size={D} tone={soundTone} id={artist.id} />
+        {/* The face (their photo, or a planet banded in their sound), then glass over it with an atmosphere in their sound's colour around it (so sounds tell apart at a glance). */}
         <View style={styles.face}>{artist.imageUrl || (artist.members && artist.members.length > 1) ? <ArtistAvatar artist={artist} size={D} /> : <PlanetFace artist={artist} size={D} />}</View>
         <OrbGlass size={D} tone={soundTone} id={artist.id} />
       </Animated.View>

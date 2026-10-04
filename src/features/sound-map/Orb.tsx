@@ -20,12 +20,28 @@ function soundBands(sound: Artist['sound']): string[] {
   return tags.length ? tags.map(([t]) => SOUND_COLOR[t]) : [NO_SOUND_COLOR];
 }
 
+/**
+ * Light over the orb's face, and its atmosphere: a soft ring in its sound's
+ * colour just outside the edge (in place of a hard ring). One drawing for
+ * both, laid over the face; the atmosphere starts at the edge, so it never
+ * covers the face. A map of 40 bubbles draws a lot less this way.
+ */
 export function OrbGlass({ size, tone, id }: { size: number; tone: string; id: string }) {
   const g = `og-${safe(id)}`;
   const c = size / 2;
+  const outer = size * 1.22;
+  const pad = (outer - size) / 2;
+  const edge = size / outer;
   return (
-    <Svg width={size} height={size} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
+    <Svg width={outer} height={outer} style={{ position: 'absolute', left: -pad, top: -pad }} pointerEvents="none">
       <Defs>
+        {/* The atmosphere. */}
+        <RadialGradient id={`${g}h`} cx="50%" cy="50%" r="50%">
+          <Stop offset={String(edge)} stopColor={tone} stopOpacity={0} />
+          <Stop offset={String(edge + 0.012)} stopColor={tone} stopOpacity={0.7} />
+          <Stop offset={String(edge + 0.045)} stopColor={tone} stopOpacity={0.35} />
+          <Stop offset="1" stopColor={tone} stopOpacity={0} />
+        </RadialGradient>
         {/* The night side of the sphere. */}
         <RadialGradient id={`${g}s`} cx="36%" cy="30%" r="78%">
           <Stop offset="0.45" stopColor="#05040C" stopOpacity={0} />
@@ -43,32 +59,15 @@ export function OrbGlass({ size, tone, id }: { size: number; tone: string; id: s
           <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
         </RadialGradient>
       </Defs>
-      <Circle cx={c} cy={c} r={c} fill={`url(#${g}s)`} />
-      <Circle cx={c} cy={c} r={c} fill={`url(#${g}r)`} />
-      <Ellipse cx={size * 0.34} cy={size * 0.25} rx={size * 0.2} ry={size * 0.11} fill={`url(#${g}g)`} transform={`rotate(-32 ${size * 0.34} ${size * 0.25})`} />
-      <Circle cx={size * 0.22} cy={size * 0.42} r={size * 0.018} fill="#FFFFFF" opacity={0.55} />
-      {/* A thin bright edge, like glass. */}
-      <Circle cx={c} cy={c} r={c - size * 0.008} fill="none" stroke="#FFFFFF" strokeOpacity={0.12} strokeWidth={size * 0.012} />
-    </Svg>
-  );
-}
-
-/** A soft atmosphere around the orb, in its sound's colour (in place of a hard ring). */
-export function OrbHalo({ size, tone, id }: { size: number; tone: string; id: string }) {
-  const g = `oh-${safe(id)}`;
-  const outer = size * 1.22;
-  const c = outer / 2;
-  return (
-    <Svg width={outer} height={outer} style={{ position: 'absolute', left: (size - outer) / 2, top: (size - outer) / 2 }} pointerEvents="none">
-      <Defs>
-        <RadialGradient id={g} cx="50%" cy="50%" r="50%">
-          <Stop offset={String(size / outer - 0.04)} stopColor={tone} stopOpacity={0} />
-          <Stop offset={String(size / outer)} stopColor={tone} stopOpacity={0.7} />
-          <Stop offset={String(size / outer + 0.03)} stopColor={tone} stopOpacity={0.35} />
-          <Stop offset="1" stopColor={tone} stopOpacity={0} />
-        </RadialGradient>
-      </Defs>
-      <Circle cx={c} cy={c} r={c} fill={`url(#${g})`} />
+      <Circle cx={outer / 2} cy={outer / 2} r={outer / 2} fill={`url(#${g}h)`} />
+      <G transform={`translate(${pad} ${pad})`}>
+        <Circle cx={c} cy={c} r={c} fill={`url(#${g}s)`} />
+        <Circle cx={c} cy={c} r={c} fill={`url(#${g}r)`} />
+        <Ellipse cx={size * 0.34} cy={size * 0.25} rx={size * 0.2} ry={size * 0.11} fill={`url(#${g}g)`} transform={`rotate(-32 ${size * 0.34} ${size * 0.25})`} />
+        <Circle cx={size * 0.22} cy={size * 0.42} r={size * 0.018} fill="#FFFFFF" opacity={0.55} />
+        {/* A thin bright edge, like glass. */}
+        <Circle cx={c} cy={c} r={c - size * 0.008} fill="none" stroke="#FFFFFF" strokeOpacity={0.12} strokeWidth={size * 0.012} />
+      </G>
     </Svg>
   );
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, type ReactNode } from 'react';
 import { Circle, Ellipse, G, Line, Path, Rect } from 'react-native-svg';
 import type { ArtistLook, Creature, Palette } from './artistLook';
 
@@ -189,8 +189,28 @@ function Glow({ x, y, r, color }: { x: number; y: number; r: number; color: stri
   );
 }
 
-/** Its mirror image across the middle. */
-const mirror = (node: ReactNode) => <G transform="translate(100 0) scale(-1 1)">{node}</G>;
+/**
+ * The same drawing with its vinyl light turned the other way round: shading
+ * gradients follow the shape, so a mirrored part would be lit from the top
+ * right. Its shade, highlight and rim fills swap to their mirrored twins
+ * (`<name>m`, which Collectible.tsx defines), so both halves are lit from the
+ * top left. Works through parts drawn with V, VE, Tube (their `f`) and plain
+ * shapes alike.
+ */
+const FLIPPED = /_(vs|vh|vr)\)$/;
+const flipFill = (fill: string) => fill.replace(FLIPPED, '_$1m)');
+function relight(node: ReactNode): ReactNode {
+  if (!isValidElement(node)) return node;
+  const props = node.props as { f?: Fills; fill?: unknown; children?: ReactNode };
+  const next: Record<string, unknown> = {};
+  if (props.f && typeof props.f === 'object') next.f = { ...props.f, shade: flipFill(props.f.shade), hi: flipFill(props.f.hi), rim: flipFill(props.f.rim) };
+  if (typeof props.fill === 'string' && FLIPPED.test(props.fill)) next.fill = flipFill(props.fill);
+  if (props.children !== undefined) next.children = Children.map(props.children, relight);
+  return Object.keys(next).length ? cloneElement(node, next) : node;
+}
+
+/** Its mirror image across the middle, lit from the same side. */
+const mirror = (node: ReactNode) => <G transform="translate(100 0) scale(-1 1)">{relight(node)}</G>;
 const both = (node: ReactNode) => (
   <G>
     {node}

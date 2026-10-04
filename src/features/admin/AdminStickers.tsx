@@ -160,7 +160,7 @@ export function AdminStickers() {
           <View style={{ flex: 1 }}>
             <Text style={styles.rowTitle}>{h.name}</Text>
             <Text style={styles.rowSub}>
-              Hunt · {h.items.length} {h.items.length === 1 ? 'sticker' : 'stickers'}
+              Hunt · {live(h)} {live(h) === 1 ? 'sticker' : 'stickers'}
               {h.until ? ` · ${untilLine(h.until)}` : ''}
             </Text>
           </View>
@@ -230,3 +230,6 @@ const styles = StyleSheet.create({
   danger: { ...type.caption, color: '#FF8A8A' },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });
+
+/** A hunt's stickers still out there (taken-down ones left out). */
+const live = (h: Hunt) => h.items.filter((i) => !i.gone).length;

@@ -1108,7 +1108,21 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const snap = await getDocs(query(collection(fb().db, 'stickers'), orderBy('createdAt', 'desc'), limit(max)));
         return snap.docs.map((d) => stickerFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
       }),
-    deleteSticker: (code) => guard(async () => deleteDoc(doc(fb().db, 'stickers', code))),
+    // Taking a sticker down marks its place in its hunt as gone, so the hunt can still be finished.
+    deleteSticker: (code) =>
+      guard(async () => {
+        const { db } = fb();
+        const ref_ = doc(db, 'stickers', code);
+        await runTransaction(db, async (tx) => {
+          const s = stickerFromDoc(code, (await tx.get(ref_)).data());
+          if (s?.huntId && s.slot !== undefined) {
+            const huntRef = doc(db, 'hunts', s.huntId);
+            const h = huntFromDoc(s.huntId, (await tx.get(huntRef)).data());
+            if (h && h.items[s.slot]) tx.update(huntRef, { items: h.items.map((it, i) => (i === s.slot ? { ...it, gone: true } : it)) });
+          }
+          tx.delete(ref_);
+        });
+      }),
     addHunt: (input) =>
       guard(async () => {
         const user = me();

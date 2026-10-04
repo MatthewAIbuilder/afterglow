@@ -25,7 +25,8 @@ const LOCKED: Palette = { light: '#A3A1B6', mid: '#76748C', deep: '#4A4860', alt
  * Hidden from screen readers (the label around it says what it is).
  */
 export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FROM, locked }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean }) {
-  const uid = `c${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  // Ends with `_`, so a fill's name ends `_vs`, `_vh` … (creatures.tsx's `mirror` reads them).
+  const uid = `c${useId().replace(/[^a-zA-Z0-9]/g, '')}_`;
   const p = locked ? LOCKED : look.palette;
   const reduce = useReducedMotion();
   const moving = !reduce && !still && !locked;
@@ -139,6 +140,21 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
         <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
       </RadialGradient>
       <LinearGradient id={`${uid}vr`} x1="0" y1="0" x2="0.3" y2="1">
+        <Stop offset="0.74" stopColor={p.glow} stopOpacity={0} />
+        <Stop offset="1" stopColor={p.glow} stopOpacity={locked ? 0.15 : 0.6} />
+      </LinearGradient>
+      {/* The same light, mirrored: for a part drawn mirrored (creatures.tsx `mirror`), so it's still lit from the top left. */}
+      <LinearGradient id={`${uid}vsm`} x1="0.85" y1="0" x2="0.25" y2="1">
+        <Stop offset="0" stopColor="#000000" stopOpacity={0} />
+        <Stop offset="0.5" stopColor="#000000" stopOpacity={0.04} />
+        <Stop offset="1" stopColor="#120820" stopOpacity={0.5} />
+      </LinearGradient>
+      <RadialGradient id={`${uid}vhm`} cx="70%" cy="22%" r="62%">
+        <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.62} />
+        <Stop offset="0.38" stopColor="#FFFFFF" stopOpacity={0.16} />
+        <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+      </RadialGradient>
+      <LinearGradient id={`${uid}vrm`} x1="1" y1="0" x2="0.7" y2="1">
         <Stop offset="0.74" stopColor={p.glow} stopOpacity={0} />
         <Stop offset="1" stopColor={p.glow} stopOpacity={locked ? 0.15 : 0.6} />
       </LinearGradient>
