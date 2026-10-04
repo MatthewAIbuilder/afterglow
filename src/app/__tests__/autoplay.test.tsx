@@ -36,6 +36,18 @@ async function watchToTheEnd() {
   return { app, start, end, say };
 }
 
+describe('sound', () => {
+  it('Discover plays with sound on a silenced iPhone, and the clip on screen starts unmuted', async () => {
+    const injected = jest.requireMock<{ __injected: string[] }>('react-native-webview').__injected;
+    injected.length = 0;
+    const audio = jest.requireMock<{ setAudioModeAsync: jest.Mock }>('expo-audio');
+    await watchToTheEnd();
+    expect(audio.setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: true, interruptionMode: 'doNotMix' });
+    // YouTube remembers a mute across players: coming on screen unmutes before it plays.
+    expect(injected).toContain('window.afterglow && window.afterglow.restart(true, true); true;');
+  });
+});
+
 describe('playing the next clip', () => {
   it('counts down once a clip is watched to the end, then moves on without counting a skip', async () => {
     const { app } = await watchToTheEnd();

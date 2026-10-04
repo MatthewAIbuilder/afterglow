@@ -58,7 +58,8 @@ function YouTubePlayerBase({
     lastTime.current = null;
     if (cameActive) {
       progress.set(0);
-      command(`restart(${wantPlaying})`);
+      // With sound: the app can always play sound, and a mute from an earlier clip mustn't carry over.
+      command(`restart(${wantPlaying}, true)`);
     } else {
       command(wantPlaying ? 'play()' : 'pause()');
     }

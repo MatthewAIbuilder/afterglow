@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import type { Clip, Festival } from '../../data/models';
 import { useCatalog } from '../../state/catalog';
 import { useRatings } from '../../state/ratings';
@@ -31,8 +31,11 @@ export function useRankedFeed(
   /** For Tonight's preview: the festival on now (as it is for you) and tonight's night. */
   tonight?: { festival: Festival; night?: string },
 ): FeedItem[] | null {
-  const { reactions, hydrated: reactionsReady } = useReactions();
-  const { seen, hydrated: seenReady } = useSeen();
+  // What you just did reaches the ranking a moment later (deferred), so a swipe never waits for a re-rank.
+  const { reactions: reactionsNow, hydrated: reactionsReady } = useReactions();
+  const { seen: seenNow, hydrated: seenReady } = useSeen();
+  const reactions = useDeferredValue(reactionsNow);
+  const seen = useDeferredValue(seenNow);
   const { taste, informed, similarity } = useTaste();
   const catalog = useCatalog();
   const { ratings } = useRatings();
@@ -50,11 +53,12 @@ export function useRankedFeed(
     return community.length ? [...official, ...community] : official;
   }, [focus, catalog, community, tonight]);
 
-  // Re-rank when an input changes, during render (no extra pass through an effect).
+  // Re-rank when an input changes, during render (no extra pass through an effect). Moving
+  // through the feed alone doesn't: where you are only decides what stays put at the next re-rank.
   const [state, setState] = useState<{ feed: FeedItem[] | null; inputs: readonly unknown[] }>({ feed: null, inputs: [] });
-  const inputs = [ready, taste, informed, reactions, seen, activeIndex, clips, catalog.artists, similarity, ratings, focus] as const;
+  const inputs = [ready, taste, informed, reactions, seen, clips, catalog.artists, similarity, ratings, focus] as const;
   if (ready && inputs.some((v, i) => v !== state.inputs[i])) {
-    const keep = state.feed && focus === state.inputs[10] ? state.feed.slice(0, activeIndex + 2).map((it) => it.clip.id) : [];
+    const keep = state.feed && focus === state.inputs[9] ? state.feed.slice(0, activeIndex + 2).map((it) => it.clip.id) : [];
     const ranked = rankFeed({
       clips,
       artists: catalog.artists,

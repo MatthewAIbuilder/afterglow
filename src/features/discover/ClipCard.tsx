@@ -74,9 +74,11 @@ type Props = {
   bottomSpace: number;
   /** Lets a vertical swipe on the video move the feed. */
   pager: FeedPager;
-  onSkip: () => void;
+  /** Where it is in the feed: handed back to `onSkip` and `onNext`, so the feed can pass the same functions to every clip. */
+  index: number;
+  onSkip: (index: number) => void;
   /** Move on to the next clip by itself (after a clip is watched to the end), without counting it as a skip. */
-  onNext?: () => void;
+  onNext?: (index: number) => void;
   /** Press and hold: add your own video. */
   onHold?: () => void;
   /** Extra room under the header (your crew's stories), so nothing ever sits over the player. */
@@ -89,7 +91,7 @@ const HOLD_MS = 450;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, onSkip, onNext, onHold, topExtra = 0 }: Props) {
+function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, index, onSkip, onNext, onHold, topExtra = 0 }: Props) {
   const catalog = useCatalog();
   const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
@@ -223,10 +225,10 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
     const t = setTimeout(() => {
       const step = countdownTick(upNext);
       setUpNext(step === 'next' ? null : step);
-      if (step === 'next') onNextRef.current?.();
+      if (step === 'next') onNextRef.current?.(index);
     }, 1000);
     return () => clearTimeout(t);
-  }, [upNext, playing]);
+  }, [upNext, playing, index]);
   const upNextPill = upNext !== null ? <UpNextPill left={upNext} onStay={stay} /> : null;
 
   const progressStyle = useAnimatedStyle(() => ({
@@ -375,7 +377,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       onSkip={() => {
         haptic.soft();
         markSkipped(clip.id);
-        onSkip();
+        onSkip(index);
       }}
     />
   );

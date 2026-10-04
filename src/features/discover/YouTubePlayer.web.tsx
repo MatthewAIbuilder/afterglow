@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
 }
 
 type PlayerWindow = Window & {
-  afterglow?: { play(): void; pause(): void; restart(play: boolean): void };
+  afterglow?: { play(): void; pause(): void; restart(play: boolean, sound?: boolean): void };
   player?: { mute?: () => void; playVideo?: () => void };
 };
 
@@ -81,7 +81,10 @@ function YouTubePlayerBase({ media, active, live, paused, progress, onPausedChan
     lastState.current = undefined;
     if (cameActive) {
       progress.set(0);
-      command((a) => a.restart(wantPlaying));
+      // Coming on screen with sound allowed: unmute (YouTube remembers a mute across players, and this one may have been muted before).
+      const withSound = wantPlaying && !startMuted(sound);
+      if (withSound) muted.current = false;
+      command((a) => a.restart(wantPlaying, withSound));
     } else {
       command((a) => (wantPlaying ? a.play() : a.pause()));
     }

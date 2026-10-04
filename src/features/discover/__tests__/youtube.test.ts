@@ -100,7 +100,9 @@ describe('playerHtml', () => {
 
   it('restarts the section playing or paused, as asked', () => {
     const html = playerHtml(source, 'https://example.test');
-    expect(html).toMatch(/restart: function \(play\)/);
+    expect(html).toMatch(/restart: function \(play, sound\)/);
+    // Coming on screen with sound unmutes first: YouTube remembers a mute across players.
+    expect(html).toMatch(/if \(sound && player.unMute\) player.unMute\(\);/);
     expect(html).toContain('if (play) player.playVideo(); else player.pauseVideo();');
   });
 });
