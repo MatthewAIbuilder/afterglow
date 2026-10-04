@@ -35,8 +35,8 @@ export type Hunt = {
   name: string;
   until?: number;
   festivalId?: string;
-  /** Its stickers in order (no codes: those are on the stickers). */
-  items: { creature: string; name: string }[];
+  /** Its stickers in order (no codes: those are on the stickers). `gone`: taken down, so it no longer counts unless you found it. */
+  items: { creature: string; name: string; gone?: true }[];
 };
 
 /** What HQ fills in to make a sticker (the code is made on the phone). */
@@ -122,9 +122,14 @@ export function readFindLink(text: string): FindCard | undefined {
 /** Whether it can still be found at `at` (no end date: always). */
 export const stillOpen = (s: Pick<Sticker, 'until'>, at: number) => s.until === undefined || at <= s.until;
 
-/** Keep a scan, once per sticker and account. Scanning again changes nothing. */
+/**
+ * Keep a scan, once per sticker and account. Scanning again changes nothing.
+ * Signed in, a signed-out scan of it counts too (it becomes yours); signed
+ * out, only another signed-out scan does (someone else's find on this phone
+ * isn't yours).
+ */
 export function queueFind(finds: readonly Find[], card: FindCard, account: string | undefined, now: number): Find[] {
-  if (finds.some((f) => f.code === card.code && (!f.account || !account || f.account === account))) return [...finds];
+  if (finds.some((f) => f.code === card.code && (!f.account || f.account === account))) return [...finds];
   return [{ code: card.code, name: card.name, creature: card.creature, at: now, ...(account ? { account } : {}), state: 'checking' as const, sent: false, tries: 0 }, ...finds].slice(0, FINDS_MAX);
 }
 
@@ -170,7 +175,9 @@ export const findsFor = (finds: readonly Find[], account?: string) => finds.filt
 /** Only the ones that count. */
 export const foundOnly = (finds: readonly Find[]) => finds.filter((f) => f.state === 'found');
 
-export type HuntProgress = { hunt: Hunt; found: boolean[]; count: number; done: boolean };
+export type HuntProgress = { hunt: Hunt; found: boolean[]; count: number; total: number; done: boolean };
+/** Whether a hunt's sticker counts for you: still out there, or one you found before it was taken down. */
+export const counts = (hunt: Hunt, found: readonly boolean[], i: number) => !hunt.items[i]?.gone || !!found[i];
 /** How far you are with each hunt you've found something from, finished ones last. */
 export function huntProgress(finds: readonly Find[], hunts: Record<string, Hunt>): HuntProgress[] {
   const out: HuntProgress[] = [];
@@ -179,23 +186,30 @@ export function huntProgress(finds: readonly Find[], hunts: Record<string, Hunt>
     if (!mine.length) continue;
     const found = hunt.items.map((_, i) => mine.some((f) => f.slot === i));
     const count = found.filter(Boolean).length;
-    out.push({ hunt, found, count, done: count === hunt.items.length && count > 0 });
+    const total = hunt.items.filter((_, i) => counts(hunt, found, i)).length;
+    out.push({ hunt, found, count, total, done: count === total && count > 0 });
   }
   return out.sort((a, b) => Number(a.done) - Number(b.done) || b.count - a.count);
 }
 
 /** "3 of 6 found", "All 6 found". */
-export const huntLine = (p: Pick<HuntProgress, 'count' | 'done'> & { hunt: Pick<Hunt, 'items'> }) =>
-  p.done ? `All ${p.hunt.items.length} found` : `${p.count} of ${p.hunt.items.length} found`;
+export const huntLine = (p: Pick<HuntProgress, 'count' | 'total' | 'done'>) => (p.done ? `All ${p.total} found` : `${p.count} of ${p.total} found`);
 
 const day = (t: number) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+/**
+ * The day an end date was set for, wherever you are: end dates last until
+ * that day is over everywhere (see parseEndDate), so its day is the UTC date
+ * 12 hours before. (Older ones, set at the end of the day on HQ's phone, read
+ * the same for HQ anywhere from UTC−12 to just under UTC+12.)
+ */
+const endDay = (t: number) => new Date(t - 12 * 3_600_000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 /** "Can be found until Oct 12, 2026", or nothing without an end date. */
-export const untilLine = (until?: number) => (until === undefined ? '' : `Can be found until ${day(until)}`);
+export const untilLine = (until?: number) => (until === undefined ? '' : `Can be found until ${endDay(until)}`);
 
 /** What a find says while it waits or once it's done. */
 export function findLine(f: Find): string {
   if (f.state === 'gone') return 'This code isn’t an Afterglow sticker any more.';
-  if (f.state === 'ended') return f.until ? `This one could only be found until ${day(f.until)}.` : 'This one can’t be found any more.';
+  if (f.state === 'ended') return f.until ? `This one could only be found until ${endDay(f.until)}.` : 'This one can’t be found any more.';
   if (f.state === 'checking') return 'Saved on your phone. It’s checked as soon as there’s signal.';
   return `Found ${day(f.at)}`;
 }
@@ -246,19 +260,24 @@ export function cleanHunt(id: string, raw: unknown): Hunt | undefined {
   const name = cleanName(o.name, HUNT_NAME_MAX);
   if (!name || !Array.isArray(o.items)) return undefined;
   const items = o.items
-    .filter((i): i is { creature: string; name: string } => !!i && typeof i === 'object' && typeof (i as { creature?: unknown }).creature === 'string')
-    .map((i) => ({ creature: stickerLook(i.creature) ? i.creature : 'wisp', name: cleanName(i.name) || 'A sticker' }))
+    .filter((i): i is { creature: string; name: string; gone?: unknown } => !!i && typeof i === 'object' && typeof (i as { creature?: unknown }).creature === 'string')
+    .map((i) => ({ creature: stickerLook(i.creature) ? i.creature : 'wisp', name: cleanName(i.name) || 'A sticker', ...(i.gone === true ? { gone: true as const } : {}) }))
     .slice(0, HUNT_MAX_ITEMS);
   return { id, name, items, ...(num(o.until) !== undefined ? { until: num(o.until) } : {}), ...(typeof o.festivalId === 'string' ? { festivalId: o.festivalId } : {}) };
 }
 
-/** An end date typed in HQ ("2027-06-14"): the end of that day, phone time. Empty is no end date; anything else is `bad`. */
+/**
+ * An end date typed in HQ ("2027-06-14"): until that day is over everywhere
+ * (its end in the last time zone, UTC−12), so a sticker never stops early
+ * wherever the festival is, whatever time zone HQ's phone is in. Empty is no
+ * end date; anything else is `bad`.
+ */
 export function parseEndDate(text: string): number | undefined | 'bad' {
   const t = text.trim();
   if (!t) return undefined;
   const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
   if (!m) return 'bad';
   const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const end = new Date(y, mo - 1, d, 23, 59, 59, 999);
-  return end.getFullYear() === y && end.getMonth() === mo - 1 && end.getDate() === d ? end.getTime() : 'bad';
+  const end = new Date(Date.UTC(y, mo - 1, d, 23, 59, 59, 999));
+  return end.getUTCFullYear() === y && end.getUTCMonth() === mo - 1 && end.getUTCDate() === d ? end.getTime() + 12 * 3_600_000 : 'bad';
 }

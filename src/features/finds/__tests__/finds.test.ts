@@ -17,9 +17,11 @@ import {
   huntProgress,
   missed,
   nextFindDue,
+  parseEndDate,
   queueFind,
   readFindLink,
   retryDelay,
+  untilLine,
 } from '../finds';
 
 const card = { code: 'ferris2027', creature: 'ferris', name: 'Ferris wheel · Night Market' };
@@ -61,6 +63,12 @@ describe('finding stickers', () => {
     expect(one).toEqual([{ ...card, at: t0, account: 'me', state: 'checking', sent: false, tries: 0 }]);
     expect(queueFind(one, card, 'me', t0 + 5)).toHaveLength(1);
     expect(queueFind(one, card, 'other', t0 + 5)).toHaveLength(2);
+    // Signed out, someone else's find on this phone isn't yours: it's kept as a new one.
+    expect(queueFind(one, card, undefined, t0 + 5)).toHaveLength(2);
+    // Signed in, your own signed-out scan of it already counts.
+    const signedOut = queueFind([], card, undefined, t0);
+    expect(queueFind(signedOut, card, undefined, t0 + 5)).toHaveLength(1);
+    expect(queueFind(signedOut, card, 'me', t0 + 5)).toHaveLength(1);
   });
 
   it('takes Afterglow’s copy, and an end date counts from when you scanned', () => {
@@ -109,6 +117,31 @@ describe('hunts', () => {
     expect(done.done).toBe(true);
     expect(huntLine(done)).toBe('All 3 found');
     expect(huntProgress([], { nightmkt27: hunt })).toEqual([]);
+  });
+
+  it('end dates last until the day is over everywhere, and read back as that day', () => {
+    expect(parseEndDate('2027-06-14')).toBe(Date.UTC(2027, 5, 15, 11, 59, 59, 999));
+    expect(parseEndDate('2027-02-30')).toBe('bad');
+    expect(parseEndDate('soon')).toBe('bad');
+    expect(parseEndDate('  ')).toBeUndefined();
+    expect(untilLine(parseEndDate('2027-06-14') as number)).toBe('Can be found until Jun 14, 2027');
+    // One set the old way (the end of the day on HQ's phone: London, Los Angeles) reads the same.
+    expect(untilLine(Date.UTC(2027, 5, 14, 23, 59) - 1 * 3_600_000)).toBe('Can be found until Jun 14, 2027');
+    expect(untilLine(Date.UTC(2027, 5, 14, 23, 59) + 7 * 3_600_000)).toBe('Can be found until Jun 14, 2027');
+  });
+
+  it('a sticker taken down stops counting, unless you found it first', () => {
+    const down: Hunt = { ...hunt, items: hunt.items.map((it, i) => (i === 1 ? { ...it, gone: true as const } : it)) };
+    const [p] = huntProgress([found(0), found(2)], { nightmkt27: down });
+    expect(p).toMatchObject({ count: 2, total: 2, done: true });
+    expect(huntLine(p)).toBe('All 2 found');
+    const [early] = huntProgress([found(0), found(1)], { nightmkt27: down });
+    expect(early).toMatchObject({ count: 2, total: 3, done: false });
+    expect(huntLine(early)).toBe('2 of 3 found');
+    expect(cleanHunt('nightmkt27', { name: 'N', items: [{ creature: 'ferris', name: 'F', gone: true }, { creature: 'frog', name: 'G', gone: 'yes' }] })?.items).toEqual([
+      { creature: 'ferris', name: 'F', gone: true },
+      { creature: 'frog', name: 'G' },
+    ]);
   });
 
   it('reads back only real hunts and finds', () => {

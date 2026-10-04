@@ -741,6 +741,10 @@ await t('stickers: made in HQ, read by anyone, found once each before their end 
   await assertSucceeds(setDoc(doc(H.firestore(), 'stickers', 'ferris2027'), sticker({ huntId: 'nightmkt27', slot: 0 })));
   await assertSucceeds(updateDoc(doc(H.firestore(), 'hunts', 'nightmkt27'), { items: [{ creature: 'ferris', name: 'Ferris wheel' }] }));
   await assertFails(updateDoc(doc(H.firestore(), 'hunts', 'nightmkt27'), { items: [] }));
+  // Taking a sticker down marks its place gone (same length).
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'hunts', 'nightmkt27'), { items: [{ creature: 'ferris', name: 'Ferris wheel', gone: true }] }));
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'hunts', 'nightmkt27'), { items: [{ creature: 'ferris', name: 'Ferris wheel' }] }));
+  await assertFails(updateDoc(doc(A.firestore(), 'hunts', 'nightmkt27'), { items: [{ creature: 'ferris', name: 'Ferris wheel', gone: true }] }));
   await assertFails(setDoc(doc(A.firestore(), 'stickers', 'mysticker1'), sticker({ by: 'uidA' })));
   await assertFails(setDoc(doc(H.firestore(), 'stickers', 'BAD CODE'), sticker()));
   await assertFails(setDoc(doc(H.firestore(), 'stickers', 'nohuntslot'), sticker({ huntId: 'nightmkt27' })));

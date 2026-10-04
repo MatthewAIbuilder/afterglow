@@ -403,11 +403,12 @@ service cloud.firestore {
         && (!('until' in request.resource.data) || request.resource.data.until is timestamp)
         && shortOrAbsent(request.resource.data, 'festivalId', 120)
         && request.resource.data.by == me() && request.resource.data.createdAt == request.time;
-      // Stickers join the end of it.
+      // Stickers join the end of it; one taken down stays in its place, marked gone.
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items'])
         && request.resource.data.items is list && request.resource.data.items.size() <= 24
-        && request.resource.data.items.size() == resource.data.items.size() + 1;
+        && (request.resource.data.items.size() == resource.data.items.size() + 1
+          || request.resource.data.items.size() == resource.data.items.size());
     }
     // Finds: you found a sticker (once each), before its end date (sent up to 3 days later).
     match /finds/{id} {

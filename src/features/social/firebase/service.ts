@@ -46,6 +46,7 @@ import { CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_M
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
+import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
@@ -1070,7 +1071,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           if ((await getDoc(ref_).catch(() => null))?.exists()) return;
           const s = stickerFromDoc(code, (await getDoc(doc(fb().db, 'stickers', code))).data());
           if (!s) throw new SocialError('not-found');
-          if (s.until !== undefined) throw new SocialError('sticker-ended');
+          // Refused for being too late, or for some other reason (kept and tried again).
+          if (s.until !== undefined && (at > s.until || Date.now() > s.until + FIND_GRACE_DAYS * 86_400_000)) throw new SocialError('sticker-ended');
           throw e;
         }
       }),
@@ -1106,7 +1108,21 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const snap = await getDocs(query(collection(fb().db, 'stickers'), orderBy('createdAt', 'desc'), limit(max)));
         return snap.docs.map((d) => stickerFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
       }),
-    deleteSticker: (code) => guard(async () => deleteDoc(doc(fb().db, 'stickers', code))),
+    // Taking a sticker down marks its place in its hunt as gone, so the hunt can still be finished.
+    deleteSticker: (code) =>
+      guard(async () => {
+        const { db } = fb();
+        const ref_ = doc(db, 'stickers', code);
+        await runTransaction(db, async (tx) => {
+          const s = stickerFromDoc(code, (await tx.get(ref_)).data());
+          if (s?.huntId && s.slot !== undefined) {
+            const huntRef = doc(db, 'hunts', s.huntId);
+            const h = huntFromDoc(s.huntId, (await tx.get(huntRef)).data());
+            if (h && h.items[s.slot]) tx.update(huntRef, { items: h.items.map((it, i) => (i === s.slot ? { ...it, gone: true } : it)) });
+          }
+          tx.delete(ref_);
+        });
+      }),
     addHunt: (input) =>
       guard(async () => {
         const user = me();

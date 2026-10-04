@@ -6,8 +6,8 @@ Collectibles people get by scanning a code: hand out stickers at a festival (the
 
 1. Sign in with the support account and open **Stickers** in HQ.
 2. Optional: make a **hunt** first, e.g. "Night Market 2027". A hunt is a set to collect ("find all 6"). Give it an end date if it should stop after the weekend.
-3. Make a **sticker**: give it a name ("Ferris wheel · Night Market"), pick a creature, choose its hunt (or "No hunt"), and optionally an end date (year-month-day, like 2027-06-14; it can be found until the end of that day).
-4. Each sticker row shows how many people found it, with **Print**, **Link** (share its link) and **Take down** (its code stops working; people who found it keep it).
+3. Make a **sticker**: give it a name ("Ferris wheel · Night Market"), pick a creature, choose its hunt (or "No hunt"), and optionally an end date (year-month-day, like 2027-06-14; it can be found until that day is over everywhere in the world, so it never stops early wherever the festival is).
+4. Each sticker row shows how many people found it, with **Print**, **Link** (share its link) and **Take down** (its code stops working; people who found it keep it, and its hunt can still be finished without it).
 
 The creatures are the six festival places (Ferris wheel, Rail rider, Sunrise, Camp lantern, Confetti popper, Water frog) and the sound creatures. Artists' hand-made creatures aren't offered: a physical sticker with an artist's name or creature needs their (or the festival's) permission first.
 

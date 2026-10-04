@@ -99,9 +99,18 @@ export default function MySoundScreen() {
     setSelectedId(null);
   }
   if (!festivalParam && lastAsked) setLastAsked(undefined);
+  // `view=map` opens the map even when the tab is already open (a quest, your profile's orbit).
+  const [lastView, setLastView] = useState(viewParam);
+  if (viewParam !== lastView) {
+    setLastView(viewParam);
+    if (viewParam === 'map') setView('map');
+  }
   useEffect(() => {
     if (festivalParam) navigation.setParams({ festival: '' } as never);
   }, [festivalParam, navigation]);
+  useEffect(() => {
+    if (viewParam) navigation.setParams({ view: '' } as never);
+  }, [viewParam, navigation]);
   // The festival as it is for you: for one run over several weekends, only your weekend's acts.
   const { forYou } = useWeekends();
   const scopeWhole = scopeId ? catalog.festival(scopeId) : undefined;
@@ -144,6 +153,9 @@ export default function MySoundScreen() {
   const lean = useMemo(() => soundLean(artists, shown.taste, shown.informed), [artists, shown]);
   // Your sound as one line of colour, for whoever the map shows (the same pull as the breakdown).
   const mix = useMemo(() => tasteMix(candidates, shown.taste, shown.informed), [candidates, shown]);
+  // The overview is always about you across everyone, whatever festival the map is showing.
+  const everyone = useMemo(() => (scope ? mapCandidates(artists, undefined) : candidates), [scope, artists, candidates]);
+  const mixAll = useMemo(() => (everyone === candidates ? mix : tasteMix(everyone, shown.taste, shown.informed)), [everyone, candidates, mix, shown]);
   // Artists you love or like wear a small heart on the map.
   const { ratings: rated } = useRatings();
   const loved = useMemo(() => new Set(Object.keys(rated).filter((id) => isWarm(rated[id]))), [rated]);
@@ -198,15 +210,15 @@ export default function MySoundScreen() {
   }
   const watchable = useMemo(() => new Set(soundChoices(catalog.clips, catalog.artist).map((c) => c.tag)), [catalog]);
   const openMap = useCallback(() => setView('map'), []);
-  const openBreakdown = useCallback(() => router.push({ pathname: '/your-sound', params: scope ? { festival: scope.id } : {} }), [scope]);
+  const openBreakdown = useCallback(() => router.push({ pathname: '/your-sound', params: scope && view === 'map' ? { festival: scope.id } : {} }), [scope, view]);
 
   const summaryCard = (
     <SoundSummary
       headline={leanLine(lean, shaped)}
       basis={basisLine({ ...shown.summary, rated: shown.rated, libraries: shown.importing.map((p) => PROVIDER_NAME[p]) })}
-      shares={mix}
+      shares={view === 'overview' ? mixAll : mix}
       shaped={shaped}
-      scopeName={scope?.name}
+      scopeName={view === 'overview' ? undefined : scope?.name}
       onPress={openBreakdown}
     />
   );
@@ -228,6 +240,9 @@ export default function MySoundScreen() {
   );
   const toggle = <ViewToggle view={view} onChange={(v) => {
     setSelectedId(null);
+    // The map comes back framed on your top matches, not searching.
+    setMoved(false);
+    closeSearch();
     setView(v);
   }} />;
 
@@ -241,7 +256,7 @@ export default function MySoundScreen() {
           {toggle}
           {summaryCard}
           <SoundOverview
-            shares={mix}
+            shares={mixAll}
             artists={artists}
             taste={shown.taste}
             watchable={watchable}

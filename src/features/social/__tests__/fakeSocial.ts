@@ -923,6 +923,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async deleteSticker(code) {
       needAdmin();
+      const s = stickers.get(code);
+      const h = s?.huntId ? hunts.get(s.huntId) : undefined;
+      if (h && s?.slot !== undefined && h.items[s.slot]) hunts.set(h.id, { ...h, items: h.items.map((it, i) => (i === s.slot ? { ...it, gone: true as const } : it)) });
       stickers.delete(code);
     },
     async addHunt(input) {

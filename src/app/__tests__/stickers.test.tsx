@@ -59,7 +59,7 @@ describe('stickers', () => {
     await flush();
     const [sticker] = [...mockSocial.stickers.values()];
     const [hunt] = [...mockSocial.hunts.values()];
-    expect(sticker).toMatchObject({ name: 'Water frog · Station 3', creature: 'frog', huntId: hunt.id, slot: 0, until: new Date(2027, 5, 14, 23, 59, 59, 999).getTime() });
+    expect(sticker).toMatchObject({ name: 'Water frog · Station 3', creature: 'frog', huntId: hunt.id, slot: 0, until: Date.UTC(2027, 5, 15, 11, 59, 59, 999) });
     expect(sticker.code).toMatch(/^[a-z2-9]{10}$/);
     expect(hunt.items).toEqual([{ creature: 'frog', name: 'Water frog · Station 3' }]);
     expect(app.getByText('Water frog · Station 3')).toBeTruthy();
@@ -88,6 +88,23 @@ describe('stickers', () => {
     expect(app.getByLabelText('Night Market 2027: 1 of 2 found.')).toBeTruthy();
   });
 
+  it('a send that’s refused for another reason is tried again, not dropped', async () => {
+    seed();
+    await s().signUp('maya@example.com', 'password123');
+    const real = s().recordFind;
+    const spy = jest.spyOn(s(), 'recordFind').mockImplementationOnce(async () => {
+      throw new Error('quota');
+    });
+    const app = await renderApp(link());
+    await flush();
+    expect(app.getByText('YOU FOUND')).toBeTruthy();
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockImplementation(real);
+    await settle(20_000);
+    await flush();
+    expect([...mockSocial.finds.keys()]).toEqual([expect.stringMatching(/_ferris2027$/)]);
+  });
+
   it('with no signal, keeps the scan and checks it once there’s signal', async () => {
     seed();
     network.__setState({ isConnected: false, isInternetReachable: false });
@@ -101,7 +118,7 @@ describe('stickers', () => {
   });
 
   it('an ended sticker isn’t kept, and a code that isn’t one says so', async () => {
-    seed(new Date(2026, 9, 5).getTime());
+    seed(Date.UTC(2026, 9, 6, 11, 59, 59, 999));
     const app = await renderApp(link());
     await flush();
     expect(app.getByText('NOT THIS TIME')).toBeTruthy();

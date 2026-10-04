@@ -20,7 +20,7 @@ import {
   queueFind,
 } from '../features/finds/finds';
 import { isOffline } from '../features/offline/status';
-import { socialErrorKind } from '../features/social/service';
+import { SocialError, socialErrorKind } from '../features/social/service';
 import { notifyNow } from '../lib/notifyNow';
 import { useSocial } from './social';
 
@@ -50,12 +50,14 @@ type Ctx = {
 };
 
 export const FINDS_KEY = 'finds.v1';
-const TRY_TIMEOUT_MS = 10_000;
+// Longer than the backend's own wait for a send, so its answer (sent before, ended) comes first.
+const TRY_TIMEOUT_MS = 15_000;
 const EMPTY: Stored = { finds: [], hunts: {} };
 
 const timeout = <T,>(p: Promise<T>, ms: number) =>
   new Promise<T>((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    // No answer in time counts as no signal, so it's tried again later.
+    const t = setTimeout(() => reject(new SocialError('network', 'timeout')), ms);
     p.then(
       (v) => {
         clearTimeout(t);
@@ -124,7 +126,12 @@ export function FindsProvider({ children }: { children: ReactNode }) {
     void Promise.resolve().then(() => setStored((s) => ({ ...s, finds: adopt(s.finds, account) })));
   }, [hydrated, account, stored.finds]);
 
-  const update = useCallback((f: Find, next: (x: Find) => Find) => setStored((s) => ({ ...s, finds: s.finds.map((x) => (x.code === f.code && x.account === f.account ? next(x) : x)) })), []);
+  // A signed-out find may have become an account's while it was being checked: still the same find.
+  const update = useCallback(
+    (f: Find, next: (x: Find) => Find) =>
+      setStored((s) => ({ ...s, finds: s.finds.map((x) => (x.code === f.code && (x.account === f.account || (!f.account && x.account === accountRef.current)) ? next(x) : x)) })),
+    [],
+  );
 
   const loadHunt = useCallback(
     async (id: string) => {
@@ -165,8 +172,9 @@ export function FindsProvider({ children }: { children: ReactNode }) {
         update(f, (x) => ({ ...x, sent: true }));
       } catch (e) {
         const kind = socialErrorKind(e);
-        // Refused (not just no signal): it stays in your collection on this phone; don't keep asking.
-        if (kind === 'sticker-ended' || kind === 'not-found' || kind === 'unknown') update(f, (x) => ({ ...x, sent: true }));
+        // Refused for good (ended, or no such sticker): it stays in your collection on this phone; don't keep asking.
+        // Anything else (no signal, a slow answer, a refusal that may pass) is tried again later.
+        if (kind === 'sticker-ended' || kind === 'not-found') update(f, (x) => ({ ...x, sent: true }));
         else update(f, (x) => missed(x, Date.now()));
       } finally {
         inFlight.current.delete(key);
@@ -212,6 +220,7 @@ export function FindsProvider({ children }: { children: ReactNode }) {
   // A hunt that couldn't be read when its sticker was found: try again once each time the app has signal.
   const triedHunts = useRef(new Set<string>());
   useEffect(() => {
+    if (!online) triedHunts.current.clear();
     if (!hydrated || !online) return;
     for (const f of stored.finds)
       if (f.state === 'found' && f.huntId && !stored.hunts[f.huntId] && !triedHunts.current.has(f.huntId)) {

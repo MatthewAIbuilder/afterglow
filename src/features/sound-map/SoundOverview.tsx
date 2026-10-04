@@ -50,9 +50,11 @@ export function SoundOverview({
 
   return (
     <View style={styles.wrap}>
-      <Section title={shaped ? 'Your sounds' : 'Where you might start'} sub={shaped ? 'What you lean towards, and what makes each one tick.' : 'A first guess. Like, skip and rate and these become yours.'}>
-        {yours.map((t, i) => card(t, undefined, i === 0))}
-      </Section>
+      {yours.length ? (
+        <Section title={shaped ? 'Your sounds' : 'Where you might start'} sub={shaped ? 'What you lean towards, and what makes each one tick.' : 'A first guess. Like, skip and rate and these become yours.'}>
+          {yours.map((t, i) => card(t, undefined, i === 0))}
+        </Section>
+      ) : null}
 
       <Section title="Sounds to try next" sub="Close to yours, so there’s a good chance you’ll love them.">
         {next.map((t) => card(t, closeTo(t, yours)))}
