@@ -9,7 +9,9 @@ import type { Sprout } from '../features/social/models';
 import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, giftsToSend, giftsToTakeBack, nextDue, queueClaim, tidy } from '../features/sprouts/outbox';
 import {
   cleanBloomed,
+  cleanSproutArtist,
   cleanSproutNote,
+  type SproutArtist,
   collectedKinds,
   festivalDaysOf,
   garden as gardenOf,
@@ -38,6 +40,7 @@ import { useCatalog } from './catalog';
 import { bumpQuestEvent } from './dailyQuests';
 import { useGoing } from './going';
 import { useMemories } from './memories';
+import { artistSprouts, type ArtistSprout, cleanShown, newArtistSprouts, shownMark } from '../features/sprouts/artistSprouts';
 import { useSeen } from './seen';
 import { useSocial } from './social';
 
@@ -48,7 +51,7 @@ import { useSocial } from './social';
  * soon as there's signal, trying again by themselves.
  */
 export type ClaimResult = 'claimed' | 'waiting' | 'self' | 'taken' | 'gone' | 'signed-out';
-export type GiveResult = { card: SproutCard } | { problem: 'no-seeds' | 'needs-profile' | 'signed-out' | 'loading' };
+export type GiveResult = { card: SproutCard } | { problem: 'no-seeds' | 'needs-profile' | 'signed-out' | 'loading' | 'not-yours' };
 
 type Stored = {
   gifts: Gift[];
@@ -61,6 +64,8 @@ type Stored = {
   bloomedAt?: Record<string, number>;
   /** Blooms already celebrated in the garden. */
   bloomsShown?: string[];
+  /** Artist sprouts celebrated, per artist: the level shown plus one. */
+  artistShown?: Record<string, number>;
   /** When this phone's first sprout arrived. */
   starterAt?: number;
   /** Wild sprouts found at festivals (this phone). */
@@ -89,9 +94,16 @@ type Ctx = {
   newBlooms: { id: string; kind: SproutKind; at: number; foundAt?: string }[];
   /** The garden celebrated this bloom. */
   bloomShown: (id: string) => void;
+  /** Artist sprouts you've earned by filming them, most filmed first. */
+  artists: ArtistSprout[];
+  /** Artist sprouts new or levelled up since the garden last showed them, first earned first. */
+  newArtists: ArtistSprout[];
+  /** The garden celebrated this artist sprout at its level. */
+  artistShown: (s: ArtistSprout) => void;
   /** Scans waiting or done (this account, or not signed in yet). */
   claims: Claim[];
-  give: (kind: SproutKind, note?: string) => GiveResult;
+  /** Give a sprout: a kind, or (with `artist`) the sprout of an artist you've filmed. */
+  give: (kind: SproutKind, note?: string, artist?: SproutArtist) => GiveResult;
   takeBack: (id: string) => Promise<boolean>;
   claim: (card: SproutCard) => Promise<ClaimResult>;
   /** Read one gift again (while its code is showing): has someone picked it up? */
@@ -119,7 +131,11 @@ function cleanGarden(raw: unknown): Stored['garden'] {
   return raw.filter(
     (g): g is Stored['garden'][number] =>
       !!g && typeof g === 'object' && typeof g.id === 'string' && isKind(g.kind) && typeof g.from === 'string' && typeof g.at === 'number' && typeof g.account === 'string',
-  );
+  ).map((g) => {
+    const { artist, ...rest } = g;
+    const a = cleanSproutArtist(artist);
+    return a ? { ...rest, artist: a } : rest;
+  });
 }
 
 function cleanTimes(raw: unknown, zeroOk = false): Record<string, number> {
@@ -137,6 +153,7 @@ function clean(raw: unknown): Stored {
     bloomed: cleanBloomed(o.bloomed),
     bloomedAt: cleanTimes(o.bloomedAt),
     bloomsShown: Array.isArray(o.bloomsShown) ? o.bloomsShown.filter((x): x is string => typeof x === 'string').slice(-SHOWN_MAX) : [],
+    ...(o.artistShown && typeof o.artistShown === 'object' ? { artistShown: cleanShown(o.artistShown) } : {}),
     ...(typeof o.starterAt === 'number' ? { starterAt: o.starterAt } : {}),
     ...(o.goingSince && typeof o.goingSince === 'object' ? { goingSince: cleanTimes(o.goingSince, true) } : {}),
     wild: Array.isArray(o.wild)
@@ -180,6 +197,8 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const ready = social.availability.ok && !!account && !!social.profile;
   // The latest state and account, for async work that outlives a render.
   const storedRef = useRef(stored);
+  // Artist sprouts you've earned, for `give` (filled once the list is worked out below).
+  const artistsRef = useRef<ArtistSprout[]>([]);
   const accountRef = useRef(account);
   useEffect(() => {
     storedRef.current = stored;
@@ -210,6 +229,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           bloomed: { ...s.bloomed, ...cur.bloomed },
           bloomedAt: { ...s.bloomedAt, ...cur.bloomedAt },
           bloomsShown: [...new Set([...(s.bloomsShown ?? []), ...(cur.bloomsShown ?? [])])],
+          ...(s.artistShown || cur.artistShown ? { artistShown: { ...s.artistShown, ...cur.artistShown } } : {}),
           starterAt: s.starterAt ?? cur.starterAt ?? Date.now(),
           ...(s.goingSince || cur.goingSince ? { goingSince: { ...cur.goingSince, ...s.goingSince } } : {}),
           wild: [...(s.wild ?? []), ...(cur.wild ?? []).filter((w) => !(s.wild ?? []).some((x) => x.id === w.id))],
@@ -241,7 +261,16 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     async (g: Gift) => {
       inFlight.current.add(g.id);
       try {
-        await timeout(social.service.giveSprout({ id: g.id, kind: g.kind, ...(g.note ? { note: g.note } : {}), ...(g.festivalId ? { festivalId: g.festivalId } : {}) }), TRY_TIMEOUT_MS);
+        await timeout(
+          social.service.giveSprout({
+            id: g.id,
+            kind: g.kind,
+            ...(g.note ? { note: g.note } : {}),
+            ...(g.festivalId ? { festivalId: g.festivalId } : {}),
+            ...(g.artist ? { artistId: g.artist.id, artistName: g.artist.name } : {}),
+          }),
+          TRY_TIMEOUT_MS,
+        );
         setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, sent: true } : x)) }));
       } catch {
         setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
@@ -257,7 +286,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       setStored((s) => {
         if (s.garden.some((g) => g.id === card.id && g.account === me)) return s;
         const kind = sprout && isKind(sprout.kind) ? sprout.kind : card.kind;
-        const entry = { id: card.id, kind, from: card.from, handle: card.handle, name: card.name, at, account: me, ...(sprout?.note ? { note: sprout.note } : {}), ...(late ? { late: true } : {}), ...(scannedAt && scannedAt < at ? { scannedAt } : {}) };
+        // An artist's sprout: the artist the server has, else the one in the code.
+        const artist = cleanSproutArtist(sprout?.artistId ? { id: sprout.artistId, name: sprout.artistName } : card.artist);
+        const entry = { id: card.id, kind, from: card.from, handle: card.handle, name: card.name, at, account: me, ...(artist ? { artist } : {}), ...(sprout?.note ? { note: sprout.note } : {}), ...(late ? { late: true } : {}), ...(scannedAt && scannedAt < at ? { scannedAt } : {}) };
         return { ...s, garden: [entry, ...s.garden] };
       }),
     [setStored],
@@ -424,9 +455,11 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     festivalDay,
   );
   const give = useCallback(
-    (kind: SproutKind, note?: string): GiveResult => {
+    (kind: SproutKind, note?: string, artist?: SproutArtist): GiveResult => {
       if (!social.user) return { problem: 'signed-out' };
       if (!social.profile) return { problem: 'needs-profile' };
+      // Only artists you've filmed.
+      if (artist && !artistsRef.current.some((a) => a.artistId === artist.id)) return { problem: 'not-yours' };
       // Seeds are counted from what's saved, so not before it's loaded.
       if (!loaded.current) return { problem: 'loading' };
       const t = Date.now();
@@ -434,11 +467,11 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       if (seedsLeft(mine, t, festivalDay) <= 0) return { problem: 'no-seeds' };
       const id = randomId();
       const words = note ? cleanSproutNote(note) : '';
-      const gift: Gift = { id, kind, at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
+      const gift: Gift = { id, kind, ...(artist ? { artist } : {}), at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
       storedRef.current = { ...storedRef.current, gifts: [gift, ...storedRef.current.gifts] };
       setStored((s) => ({ ...s, gifts: [gift, ...s.gifts] }));
       bumpQuestEvent('sprout');
-      return { card: { id, kind, from: social.user.uid, handle: social.profile.handle, name: social.profile.displayName } };
+      return { card: { id, kind, from: social.user.uid, handle: social.profile.handle, name: social.profile.displayName, ...(artist ? { artist } : {}) } };
     },
     [social.user, social.profile, festivalDay, tonight, setStored],
   );
@@ -545,9 +578,31 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   );
   const collected = useMemo(() => collectedKinds(garden), [garden]);
 
+  // Artist sprouts: one per artist you've filmed, levelling up with more videos.
+  const { hydrated: memoriesLoaded } = useMemories();
+  const artists = useMemo(() => artistSprouts(memories, (id) => !!catalog.artist(id)), [memories, catalog]);
+  useEffect(() => {
+    artistsRef.current = artists;
+  }, [artists]);
+  // The first time this runs, sprouts from videos you already had are taken as seen (no burst of celebrations).
+  useEffect(() => {
+    if (!hydrated || !memoriesLoaded || stored.artistShown) return;
+    const seen = Object.fromEntries(artists.map((a) => [a.artistId, shownMark(a)]));
+    void Promise.resolve().then(() => setStored((s) => (s.artistShown ? s : { ...s, artistShown: seen })));
+  }, [hydrated, memoriesLoaded, stored.artistShown, artists, setStored]);
+  const newArtists = useMemo(
+    () => (stored.artistShown ? newArtistSprouts(artists, stored.artistShown).sort((a, b) => a.firstAt - b.firstAt) : []),
+    [artists, stored.artistShown],
+  );
+  const artistShown = useCallback(
+    (a: ArtistSprout) =>
+      setStored((s) => ((s.artistShown?.[a.artistId] ?? 0) >= shownMark(a) ? s : { ...s, artistShown: { ...s.artistShown, [a.artistId]: shownMark(a) } })),
+    [setStored],
+  );
+
   const value = useMemo<Ctx>(
-    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, claims, give, takeBack, claim, checkGift, refresh }),
-    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, claims, give, takeBack, claim, checkGift, refresh],
+    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, give, takeBack, claim, checkGift, refresh }),
+    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, give, takeBack, claim, checkGift, refresh],
   );
   return <SproutsContext.Provider value={value}>{children}</SproutsContext.Provider>;
 }

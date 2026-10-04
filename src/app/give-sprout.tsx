@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,11 @@ import { FriendQR } from '../features/friends/FriendQR';
 import { accountsOff } from '../features/social/unavailable';
 import { SPROUT_DOTS, SPROUT_GLOW, SPROUT_GREEN } from '../features/sprouts/look';
 import { Sprout } from '../features/sprouts/Sprout';
-import { kindOf, seedsLine, SPROUT_NOTE_MAX, type SproutCard, type SproutKind, sproutLink } from '../features/sprouts/sprouts';
+import { SproutOf } from '../features/sprouts/SproutOf';
+import { artistLook } from '../features/sprouts/artistLook';
+import { tierLabel } from '../features/sprouts/artistSprouts';
+import { kindOf, seedsLine, SPROUT_NOTE_MAX, type SproutArtist, type SproutCard, type SproutKind, sproutLink, sproutName } from '../features/sprouts/sprouts';
+import { useCatalog } from '../state/catalog';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
@@ -33,7 +37,14 @@ export default function GiveSproutScreen() {
   const { width } = useWindowDimensions();
   const social = useSocial();
   const sprouts = useSprouts();
+  const catalog = useCatalog();
+  const params = useLocalSearchParams<{ artist?: string }>();
   const [kind, setKind] = useState<SproutKind>('seedling');
+  // An artist's sprout (one you've filmed), chosen here or from the garden.
+  const [artistId, setArtistId] = useState<string | undefined>(typeof params.artist === 'string' ? params.artist : undefined);
+  const earned = artistId ? sprouts.artists.find((a) => a.artistId === artistId) : undefined;
+  const artistOf = (id: string) => catalog.artist(id);
+  const chosen: SproutArtist | undefined = earned && artistOf(earned.artistId) ? { id: earned.artistId, name: artistOf(earned.artistId)!.name } : undefined;
   const [note, setNote] = useState('');
   const [card, setCard] = useState<SproutCard>();
   const [problem, setProblem] = useState<string>();
@@ -54,9 +65,17 @@ export default function GiveSproutScreen() {
   }, [picked]);
 
   const show = () => {
-    const r = sprouts.give(kind, note);
+    const r = sprouts.give(chosen ? 'seedling' : kind, note, chosen);
     if ('problem' in r) {
-      setProblem(r.problem === 'no-seeds' ? 'No seeds left today. New ones at 4 AM.' : 'Make your profile to give sprouts.');
+      setProblem(
+        r.problem === 'no-seeds'
+          ? 'No seeds left today. New ones at 4 AM.'
+          : r.problem === 'loading'
+            ? 'One moment, your garden is still loading.'
+            : r.problem === 'not-yours'
+              ? 'Film this artist’s set to grow their sprout first.'
+              : 'Make your profile to give sprouts.',
+      );
       return;
     }
     haptic.settle();
@@ -120,9 +139,15 @@ export default function GiveSproutScreen() {
         ) : card ? (
           <>
             <LinearGradient colors={[...SPROUT_GLOW]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ring}>
-              <View style={styles.card} accessible accessibilityRole="image" accessibilityLabel={`A code for your ${kindOf(card.kind).name}. Someone scans it to pick it up.`}>
-                <FriendQR value={sproutLink(card)} size={size} theme="aurora" dots={SPROUT_DOTS} centre={(s) => <Sprout kind={card.kind} stage={card.kind === 'seedling' ? 2 : 3} size={s} still />} />
-                <Text style={styles.cardName}>{kindOf(card.kind).name}</Text>
+              <View style={styles.card} accessible accessibilityRole="image" accessibilityLabel={`A code for your ${sproutName(card)}. Someone scans it to pick it up.`}>
+                <FriendQR
+                  value={sproutLink(card)}
+                  size={size}
+                  theme="aurora"
+                  dots={SPROUT_DOTS}
+                  centre={(s) => <SproutOf kind={card.kind} artist={card.artist} stage={card.kind === 'seedling' ? 2 : 3} size={s} still />}
+                />
+                <Text style={styles.cardName}>{sproutName(card)}</Text>
                 <Text style={styles.cardFrom}>from @{card.handle}</Text>
               </View>
             </LinearGradient>
@@ -157,9 +182,21 @@ export default function GiveSproutScreen() {
         ) : (
           <>
             <View style={styles.hero}>
-              <Sprout kind={kind} stage={kind === 'seedling' ? 2 : 3} size={150} />
-              <Text style={styles.heroName}>{k.name}</Text>
-              <Text style={styles.body}>{k.about}</Text>
+              {chosen && earned ? (
+                <>
+                  <SproutOf artist={chosen} tier={earned.tier} size={150} />
+                  <Text style={styles.heroName}>{chosen.name} sprout</Text>
+                  <Text style={styles.body}>
+                    {artistLook(artistOf(chosen.id) ?? { id: chosen.id, name: chosen.name }).theme}. {tierLabel(earned)} of them filmed. The one you give stays yours too.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Sprout kind={kind} stage={kind === 'seedling' ? 2 : 3} size={150} />
+                  <Text style={styles.heroName}>{k.name}</Text>
+                  <Text style={styles.body}>{k.about}</Text>
+                </>
+              )}
             </View>
             {sprouts.givable.length > 1 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kinds} accessibilityRole="radiogroup">
@@ -169,11 +206,12 @@ export default function GiveSproutScreen() {
                     onPress={() => {
                       haptic.select();
                       setKind(id);
+                      setArtistId(undefined);
                     }}
                     accessibilityRole="radio"
-                    accessibilityState={{ selected: id === kind }}
+                    accessibilityState={{ selected: !chosen && id === kind }}
                     accessibilityLabel={kindOf(id).name}
-                    style={[styles.kind, id === kind && styles.kindOn]}
+                    style={[styles.kind, !chosen && id === kind && styles.kindOn]}
                   >
                     <Sprout kind={id} stage={id === 'seedling' ? 2 : 3} size={44} still />
                     <Text style={styles.kindName} numberOfLines={1}>
@@ -185,6 +223,36 @@ export default function GiveSproutScreen() {
             ) : (
               <Text style={styles.hint}>Grow your sprouts into new kinds, and you can give those too.</Text>
             )}
+            {sprouts.artists.length ? (
+              <>
+                <Text style={styles.rowTitle}>Artist sprouts</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kinds} accessibilityRole="radiogroup">
+                  {sprouts.artists.flatMap((a) => {
+                    const artist = artistOf(a.artistId);
+                    if (!artist) return [];
+                    const on = chosen?.id === a.artistId;
+                    return [
+                      <Pressable
+                        key={a.artistId}
+                        onPress={() => {
+                          haptic.select();
+                          setArtistId(a.artistId);
+                        }}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: on }}
+                        accessibilityLabel={`${artist.name} sprout, ${tierLabel(a)}`}
+                        style={[styles.kind, on && styles.kindOn]}
+                      >
+                        <Sprout artist={artistLook(artist)} tier={a.tier} stage={3} size={44} still />
+                        <Text style={styles.kindName} numberOfLines={1}>
+                          {artist.name}
+                        </Text>
+                      </Pressable>,
+                    ];
+                  })}
+                </ScrollView>
+              </>
+            ) : null}
             <TextInput
               value={note}
               onChangeText={setNote}
@@ -214,6 +282,7 @@ export default function GiveSproutScreen() {
 }
 
 const styles = StyleSheet.create({
+  rowTitle: { ...type.label, color: color.moonDim, alignSelf: 'flex-start' },
   root: { flex: 1, backgroundColor: color.night },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, paddingBottom: space.md },
   title: { ...type.title, color: color.moon, flex: 1 },

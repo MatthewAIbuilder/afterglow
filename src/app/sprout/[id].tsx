@@ -12,7 +12,10 @@ import { accountsOff } from '../../features/social/unavailable';
 import { SPROUT_GREEN } from '../../features/sprouts/look';
 import { claimLine } from '../../features/sprouts/outbox';
 import { Sprout } from '../../features/sprouts/Sprout';
-import { giftTitle, kindOf, sproutCardFrom } from '../../features/sprouts/sprouts';
+import { giftTitle, kindOf, sproutCardFrom, sproutName } from '../../features/sprouts/sprouts';
+import { SproutOf } from '../../features/sprouts/SproutOf';
+import { artistLook } from '../../features/sprouts/artistLook';
+import { useCatalog } from '../../state/catalog';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import { useSprouts } from '../../state/sprouts';
@@ -25,9 +28,10 @@ import { color, radius, space, type } from '../../theme/tokens';
  * in. Works with no signal: it joins your garden once there is.
  */
 export default function SproutScreen() {
-  const params = useLocalSearchParams<{ id: string; u?: string; h?: string; k?: string; n?: string }>();
-  const { id, u, h, k: kindParam, n } = params;
-  const card = useMemo(() => sproutCardFrom({ id, u, h, k: kindParam, n }), [id, u, h, kindParam, n]);
+  const params = useLocalSearchParams<{ id: string; u?: string; h?: string; k?: string; n?: string; a?: string; an?: string }>();
+  const { id, u, h, k: kindParam, n, a, an } = params;
+  const card = useMemo(() => sproutCardFrom({ id, u, h, k: kindParam, n, a, an }), [id, u, h, kindParam, n, a, an]);
+  const catalog = useCatalog();
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const sprouts = useSprouts();
@@ -96,18 +100,20 @@ export default function SproutScreen() {
       <View style={styles.stage}>
         <Animated.View style={[styles.halo, haloStyle]} pointerEvents="none" />
         <Animated.View style={sproutStyle}>
-          <Sprout kind={card.kind} stage={card.kind === 'seedling' ? 2 : 3} size={170} />
+          <SproutOf kind={card.kind} artist={card.artist} stage={card.kind === 'seedling' ? 2 : 3} size={170} />
         </Animated.View>
         <View style={styles.ground} />
         {celebrate ? <ConfettiBurst key={celebrate} spread={150} /> : null}
       </View>
       <Text style={styles.kicker}>{mine ? 'YOUR SPROUT' : 'A SPROUT FOR YOU'}</Text>
       <Text style={styles.title} accessibilityRole="header">
-        {mine ? `Your ${k.name}` : giftTitle(card)}
+        {mine ? `Your ${sproutName(card)}` : giftTitle(card)}
       </Text>
       <Text style={styles.from}>@{card.handle}</Text>
       {note ? <Text style={styles.note}>“{note}”</Text> : null}
-      <Text style={styles.body}>{k.about}</Text>
+      <Text style={styles.body}>
+        {card.artist ? `${artistLook(catalog.artist(card.artist.id) ?? { id: card.artist.id, name: card.artist.name }).theme}, grown by filming ${card.artist.name} live.` : k.about}
+      </Text>
 
       {mine ? (
         <Text style={styles.body}>Show the code to someone so they can scan it.</Text>

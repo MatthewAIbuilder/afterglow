@@ -123,7 +123,7 @@ export function useProfileBadges() {
     }
   };
   const finishUnlock = () => {
-    if (!unlock || unlock.kind === 'sprout') return setUnlock(undefined);
+    if (!unlock || unlock.kind === 'sprout' || unlock.kind === 'artistSprout') return setUnlock(undefined);
     claim(unlock.kind === 'pin' ? pinKey(unlock.festival.id) : unlock.kind === 'throwback' ? throwbackKey(pastKey(unlock.past)) : milestoneKey(unlock.milestone.id));
     setUnlock(undefined);
   };

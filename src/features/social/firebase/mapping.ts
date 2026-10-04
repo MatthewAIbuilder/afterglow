@@ -132,10 +132,13 @@ export function sproutFromDoc(id: string, d: unknown): Sprout | null {
   const note = str(o.note);
   const festivalId = str(o.festivalId);
   const claimedAt = timeOf(o.claimedAt);
+  const artistId = str(o.artistId);
+  const artistName = str(o.artistName);
   return {
     id,
     kind,
     from,
+    ...(artistId && artistName ? { artistId, artistName: artistName.slice(0, 60) } : {}),
     createdAt: timeOf(o.createdAt) ?? new Date().toISOString(),
     ...(to ? { to } : {}),
     ...(note ? { note: note.slice(0, 60) } : {}),
