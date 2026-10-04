@@ -39,6 +39,55 @@ const LOOKS: Record<SproutKind, Look> = {
 const GREY: Look = { body: ['#7C7A92', '#5A5870', '#3A3850'], leaf: ['#7A7890', '#4A4860'], face: 'smile', leafShape: 'round' };
 const INK = '#0E2A1A';
 
+/** Vinyl light for every part (the same as the collectibles): shade, bounce light in the kind's colour, highlight, a glossy eye. */
+function vinylDefs(id: string, rim: string) {
+  return [
+    <LinearGradient key="vs" id={`vs-${id}`} x1="0.15" y1="0" x2="0.75" y2="1">
+      <Stop offset="0" stopColor="#000000" stopOpacity={0} />
+      <Stop offset="0.5" stopColor="#000000" stopOpacity={0.04} />
+      <Stop offset="1" stopColor="#0A1A12" stopOpacity={0.45} />
+    </LinearGradient>,
+    <RadialGradient key="vh" id={`vh-${id}`} cx="30%" cy="22%" r="62%">
+      <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.6} />
+      <Stop offset="0.38" stopColor="#FFFFFF" stopOpacity={0.15} />
+      <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+    </RadialGradient>,
+    <LinearGradient key="vr" id={`vr-${id}`} x1="0" y1="0" x2="0.3" y2="1">
+      <Stop offset="0.72" stopColor={rim} stopOpacity={0} />
+      <Stop offset="1" stopColor={rim} stopOpacity={0.55} />
+    </LinearGradient>,
+    <RadialGradient key="sp" id={`sp-${id}`} cx="50%" cy="50%" r="50%">
+      <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
+      <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity={0.5} />
+      <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+    </RadialGradient>,
+    <RadialGradient key="ey" id={`ey-${id}`} cx="45%" cy="62%" r="62%">
+      <Stop offset="0" stopColor="#3A4A44" />
+      <Stop offset="0.55" stopColor="#10201A" />
+      <Stop offset="1" stopColor="#040A07" />
+    </RadialGradient>,
+  ];
+}
+
+/** A shape with the vinyl light over it. */
+function Vy({ d, fill, id, opacity, stroke }: { d: string; fill: string; id: string; opacity?: number; stroke?: string }) {
+  return (
+    <G opacity={opacity}>
+      <Path d={d} fill={fill} stroke={stroke} strokeWidth={stroke ? 0.6 : undefined} strokeOpacity={0.5} />
+      <Path d={d} fill={`url(#vs-${id})`} />
+      <Path d={d} fill={`url(#vr-${id})`} />
+      <Path d={d} fill={`url(#vh-${id})`} />
+    </G>
+  );
+}
+
+/** A glossy spot where the light hits. */
+const Spot = ({ x, y, rx, ry, id, turn = -28 }: { x: number; y: number; rx: number; ry: number; id: string; turn?: number }) => <Ellipse cx={x} cy={y} rx={rx} ry={ry} fill={`url(#sp-${id})`} transform={`rotate(${turn} ${x} ${y})`} />;
+
+/** A circle as a path, for Vy. */
+const circleD = (x: number, y: number, r: number) => `M${x - r} ${y} A${r} ${r} 0 1 0 ${x + r} ${y} A${r} ${r} 0 1 0 ${x - r} ${y}Z`;
+
+
 /**
  * A little sprout friend. A seed peeking out of the soil, then a shoot,
  * then leafy, then in bloom: each kind with its own face, leaves, colours
@@ -139,23 +188,25 @@ function Plant({
               <Stop offset="0" stopColor={look.leaf[0]} />
               <Stop offset="1" stopColor={look.leaf[1]} />
             </LinearGradient>
+            {vinylDefs(id, accent)}
           </Defs>
-          <Path d={`M${bx} ${stemBase + 2} Q${bx - 2} ${(stemBase + stemTop) / 2} ${bx} ${stemTop}`} stroke={look.leaf[1]} strokeWidth={seed ? 2.4 : 3.2} strokeLinecap="round" fill="none" />
+          <Path d={`M${bx} ${stemBase + 2} Q${bx - 2} ${(stemBase + stemTop) / 2} ${bx} ${stemTop}`} stroke={look.leaf[1]} strokeWidth={seed ? 2.6 : 3.6} strokeLinecap="round" fill="none" />
+          <Path d={`M${bx - 0.8} ${stemBase} Q${bx - 2.8} ${(stemBase + stemTop) / 2} ${bx - 0.8} ${stemTop + 2}`} stroke={look.leaf[0]} strokeWidth={seed ? 0.8 : 1.1} strokeLinecap="round" fill="none" opacity={0.8} />
           {seed ? (
-            <Path d={leafPath('round', bx, stemTop + 1, 1, leafScale)} fill={`url(#leaf-${id})`} />
+            <Vy d={leafPath('round', bx, stemTop + 1, 1, leafScale)} fill={`url(#leaf-${id})`} id={id} />
           ) : (
             <G>
-              <Path d={leafPath(look.leafShape, bx, stemTop + 2, -1, leafScale)} fill={`url(#leaf-${id})`} stroke={look.leaf[1]} strokeWidth={0.6} strokeOpacity={0.5} />
-              <Path d={leafPath(look.leafShape, bx, stemTop + 2, 1, leafScale)} fill={`url(#leaf-${id})`} stroke={look.leaf[1]} strokeWidth={0.6} strokeOpacity={0.5} />
+              <Vy d={leafPath(look.leafShape, bx, stemTop + 2, -1, leafScale)} fill={`url(#leaf-${id})`} id={id} stroke={look.leaf[1]} />
+              <Vy d={leafPath(look.leafShape, bx, stemTop + 2, 1, leafScale)} fill={`url(#leaf-${id})`} id={id} stroke={look.leaf[1]} />
               <Path d={veinPath(bx, stemTop + 2, -1, leafScale)} stroke={look.leaf[1]} strokeWidth={0.9} opacity={0.55} fill="none" strokeLinecap="round" />
               <Path d={veinPath(bx, stemTop + 2, 1, leafScale)} stroke={look.leaf[1]} strokeWidth={0.9} opacity={0.55} fill="none" strokeLinecap="round" />
               {/* A shine along each leaf. */}
-              <Path d={shinePath(bx, stemTop + 2, -1, leafScale)} stroke="#FFFFFF" strokeWidth={1.1} opacity={0.35} fill="none" strokeLinecap="round" />
-              <Path d={shinePath(bx, stemTop + 2, 1, leafScale)} stroke="#FFFFFF" strokeWidth={1.1} opacity={0.35} fill="none" strokeLinecap="round" />
+              <Path d={shinePath(bx, stemTop + 2, -1, leafScale)} stroke="#FFFFFF" strokeWidth={1.4} opacity={0.6} fill="none" strokeLinecap="round" />
+              <Path d={shinePath(bx, stemTop + 2, 1, leafScale)} stroke="#FFFFFF" strokeWidth={1.1} opacity={0.4} fill="none" strokeLinecap="round" />
             </G>
           )}
-          {stage >= 2 ? <Path d={leafPath(look.leafShape, bx - 1, stemTop + 12, -1, leafScale * 0.55)} fill={`url(#leaf-${id})`} /> : null}
-          {dressed ? <Bloom kind={kind} x={bx} y={stemTop - 4} color={accent} grey={locked} /> : null}
+          {stage >= 2 ? <Vy d={leafPath(look.leafShape, bx - 1, stemTop + 12, -1, leafScale * 0.55)} fill={`url(#leaf-${id})`} id={id} /> : null}
+          {dressed ? <Bloom kind={kind} x={bx} y={stemTop - 4} color={accent} grey={locked} id={id} /> : null}
         </Svg>
       </Animated.View>
 
@@ -169,21 +220,27 @@ function Plant({
               <Stop offset="1" stopColor={look.body[2]} />
             </RadialGradient>
             <LinearGradient id={`soil-${id}`} x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#6B4A35" />
+              <Stop offset="0" stopColor="#7A5640" />
               <Stop offset="1" stopColor="#3A271C" />
             </LinearGradient>
+            {vinylDefs(id, accent)}
           </Defs>
-          <Path d={beanPath(bx, by, brx, bry)} fill={`url(#body-${id})`} stroke={look.body[2]} strokeWidth={1.2} strokeOpacity={0.7} />
-          {/* Gloss on top, a rim of light below. */}
-          <Ellipse cx={bx - brx * 0.32} cy={by - bry * 0.52} rx={brx * 0.32} ry={bry * 0.18} fill="#FFFFFF" opacity={0.42} />
-          <Circle cx={bx - brx * 0.62} cy={by - bry * 0.22} r={1.4} fill="#FFFFFF" opacity={0.5} />
-          <Path d={`M${bx - brx * 0.7} ${by + bry * 0.42} Q${bx} ${by + bry * 0.78} ${bx + brx * 0.7} ${by + bry * 0.42}`} stroke="#FFFFFF" strokeWidth={1} opacity={0.18} fill="none" strokeLinecap="round" />
-          <FaceOf face={dressed || stage >= 1 ? look.face : 'smile'} x={bx} y={by + (seed ? -5 : 1)} s={seed ? 0.75 : 1} blush={!locked} />
-          {dressed ? <Wear kind={kind} x={bx} y={by} rx={brx} ry={bry} color={accent} grey={locked} /> : null}
+          {/* Little feet, then the body: one glossy vinyl bean. */}
+          {seed ? null : (
+            <G>
+              <Vy d={circleD(bx - 8, by + bry * 0.72, 4.2)} fill={look.body[2]} id={id} />
+              <Vy d={circleD(bx + 8, by + bry * 0.72, 4.2)} fill={look.body[2]} id={id} />
+            </G>
+          )}
+          <Vy d={beanPath(bx, by, brx, bry)} fill={`url(#body-${id})`} id={id} />
+          <Spot x={bx - brx * 0.36} y={by - bry * 0.55} rx={brx * 0.34} ry={bry * 0.17} id={id} />
+          <Circle cx={bx - brx * 0.66} cy={by - bry * 0.2} r={1.2} fill="#FFFFFF" opacity={0.6} />
+          <FaceOf face={dressed || stage >= 1 ? look.face : 'smile'} x={bx} y={by + (seed ? -5 : 1)} s={seed ? 0.75 : 1} blush={!locked} eye={`url(#ey-${id})`} />
+          {dressed ? <Wear kind={kind} x={bx} y={by} rx={brx} ry={bry} color={accent} grey={locked} id={id} /> : null}
           {/* A seed sits in a little mound of soil. */}
           {seed ? (
             <G>
-              <Path d="M20 94 Q24 84 36 85 Q50 82 64 85 Q76 84 80 94 Z" fill={`url(#soil-${id})`} />
+              <Vy d="M20 94 Q24 84 36 85 Q50 82 64 85 Q76 84 80 94 Z" fill={`url(#soil-${id})`} id={id} />
               <Path d="M30 86.5 Q50 83 70 86.5" stroke="#8A6A52" strokeWidth={0.8} opacity={0.6} fill="none" strokeLinecap="round" />
               <Circle cx={33} cy={89} r={1.2} fill="#8A6A52" />
               <Circle cx={62} cy={88.5} r={1} fill="#8A6A52" />
@@ -250,7 +307,16 @@ function sparklePath(cx: number, cy: number, r: number) {
 }
 
 /** The face: eyes, mouth and blush, drawn around (x, y), the middle of the eyes. */
-function FaceOf({ face, x, y, s, blush }: { face: Face; x: number; y: number; s: number; blush: boolean }) {
+function FaceOf({ face, x, y, s, blush, eye = INK }: { face: Face; x: number; y: number; s: number; blush: boolean; eye?: string }) {
+  /** A glossy eye: a dark dome, a big window catchlight, a small one, a glint along the bottom. */
+  const glossy = (cx: number, r: number) => (
+    <G>
+      <Circle cx={cx} cy={y} r={r} fill={eye} />
+      <Ellipse cx={cx - r * 0.3} cy={y - r * 0.34} rx={r * 0.38} ry={r * 0.28} fill="#FFFFFF" transform={`rotate(-20 ${cx - r * 0.3} ${y - r * 0.34})`} />
+      <Circle cx={cx + r * 0.36} cy={y + r * 0.32} r={r * 0.15} fill="#FFFFFF" opacity={0.85} />
+      <Path d={`M${cx - r * 0.55} ${y + r * 0.5} Q${cx} ${y + r * 0.88} ${cx + r * 0.55} ${y + r * 0.5}`} stroke="#FFFFFF" strokeWidth={r * 0.14} opacity={0.25} fill="none" strokeLinecap="round" />
+    </G>
+  );
   const ex = 6.5 * s;
   const mouthY = y + 5.5 * s;
   const eyes = (() => {
@@ -273,8 +339,7 @@ function FaceOf({ face, x, y, s, blush }: { face: Face; x: number; y: number; s:
       case 'wink':
         return (
           <G>
-            <Circle cx={x - ex} cy={y} r={2.5 * s} fill={INK} />
-            <Circle cx={x - ex + 0.8 * s} cy={y - 0.9 * s} r={0.9 * s} fill="#FFFFFF" />
+            {glossy(x - ex, 2.9 * s)}
             <Path d={`M${x + ex - 2.6 * s} ${y + 0.4 * s} Q${x + ex} ${y - 1.8 * s} ${x + ex + 2.6 * s} ${y + 0.4 * s}`} stroke={INK} strokeWidth={1.7 * s} fill="none" strokeLinecap="round" />
           </G>
         );
@@ -284,6 +349,8 @@ function FaceOf({ face, x, y, s, blush }: { face: Face; x: number; y: number; s:
           <G>
             <Rect x={x - ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={6 * s} rx={2.6 * s} fill="#141024" />
             <Rect x={x + ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={6 * s} rx={2.6 * s} fill="#141024" />
+            <Rect x={x - ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={3 * s} rx={2.6 * s} fill="#FFFFFF" opacity={0.12} />
+            <Rect x={x + ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={3 * s} rx={2.6 * s} fill="#FFFFFF" opacity={0.12} />
             <Path d={`M${x - ex + 4.6 * s} ${y - 1 * s} L${x + ex - 4.6 * s} ${y - 1 * s}`} stroke="#141024" strokeWidth={1.6 * s} />
             <Path d={`M${x - ex - 2.6 * s} ${y - 1.4 * s} L${x - ex - 0.6 * s} ${y - 1.4 * s}`} stroke="#5BE3B5" strokeWidth={1.1 * s} strokeLinecap="round" />
             <Path d={`M${x + ex - 2.6 * s} ${y - 1.4 * s} L${x + ex - 0.6 * s} ${y - 1.4 * s}`} stroke="#5BE3B5" strokeWidth={1.1 * s} strokeLinecap="round" />
@@ -292,8 +359,8 @@ function FaceOf({ face, x, y, s, blush }: { face: Face; x: number; y: number; s:
       case 'sparkle':
         return (
           <G>
-            <Circle cx={x - ex} cy={y} r={2.9 * s} fill={INK} />
-            <Circle cx={x + ex} cy={y} r={2.9 * s} fill={INK} />
+            <Circle cx={x - ex} cy={y} r={3.2 * s} fill={eye} />
+            <Circle cx={x + ex} cy={y} r={3.2 * s} fill={eye} />
             <Path d={sparklePath(x - ex + 0.9 * s, y - 0.9 * s, 1.6 * s)} fill="#FFFFFF" />
             <Path d={sparklePath(x + ex + 0.9 * s, y - 0.9 * s, 1.6 * s)} fill="#FFFFFF" />
             <Circle cx={x - ex - 1 * s} cy={y + 1.2 * s} r={0.55 * s} fill="#FFFFFF" />
@@ -303,10 +370,8 @@ function FaceOf({ face, x, y, s, blush }: { face: Face; x: number; y: number; s:
       default:
         return (
           <G>
-            <Circle cx={x - ex} cy={y} r={2.5 * s} fill={INK} />
-            <Circle cx={x + ex} cy={y} r={2.5 * s} fill={INK} />
-            <Circle cx={x - ex + 0.8 * s} cy={y - 0.9 * s} r={0.9 * s} fill="#FFFFFF" />
-            <Circle cx={x + ex + 0.8 * s} cy={y - 0.9 * s} r={0.9 * s} fill="#FFFFFF" />
+            {glossy(x - ex, 2.9 * s)}
+            {glossy(x + ex, 2.9 * s)}
           </G>
         );
     }
@@ -345,7 +410,7 @@ const DARKS = new Set(['#22305C', '#141024', '#2A2638', '#3A3458']);
 const toner = (grey?: boolean) => (c: string) => (!grey ? c : DARKS.has(c) ? '#46445C' : c === '#FFFFFF' ? '#9A98B0' : '#7C7A92');
 
 /** What a bloomed sprout wears on its body. */
-function Wear({ kind, x, y, rx, ry, color, grey }: { kind: SproutKind; x: number; y: number; rx: number; ry: number; color: string; grey?: boolean }) {
+function Wear({ kind, x, y, rx, ry, color, grey, id }: { kind: SproutKind; x: number; y: number; rx: number; ry: number; color: string; grey?: boolean; id: string }) {
   const t = toner(grey);
   switch (kind) {
     case 'bass':
@@ -355,6 +420,10 @@ function Wear({ kind, x, y, rx, ry, color, grey }: { kind: SproutKind; x: number
           <Path d={`M${x - rx - 1} ${y - 2} C${x - rx - 1} ${y - ry * 1.55} ${x + rx + 1} ${y - ry * 1.55} ${x + rx + 1} ${y - 2}`} stroke={t('#22305C')} strokeWidth={3} fill="none" strokeLinecap="round" />
           <Rect x={x - rx - 5} y={y - 6} width={8} height={12} rx={3.5} fill={color} stroke={t('#22305C')} strokeWidth={1.4} />
           <Rect x={x + rx - 3} y={y - 6} width={8} height={12} rx={3.5} fill={color} stroke={t('#22305C')} strokeWidth={1.4} />
+          <Rect x={x - rx - 5} y={y - 6} width={8} height={12} rx={3.5} fill={`url(#vh-${id})`} />
+          <Rect x={x + rx - 3} y={y - 6} width={8} height={12} rx={3.5} fill={`url(#vh-${id})`} />
+          <Rect x={x - rx - 5} y={y - 6} width={8} height={12} rx={3.5} fill={`url(#vs-${id})`} />
+          <Rect x={x + rx - 3} y={y - 6} width={8} height={12} rx={3.5} fill={`url(#vs-${id})`} />
           <Path d={`M${x - rx - 2.5} ${y - 2} L${x - rx - 2.5} ${y + 2}`} stroke={t('#FFFFFF')} strokeWidth={1} opacity={0.6} strokeLinecap="round" />
         </G>
       );
@@ -364,7 +433,14 @@ function Wear({ kind, x, y, rx, ry, color, grey }: { kind: SproutKind; x: number
         <G>
           {['#FF7EB6', '#FFD58A', '#6EE7A0', '#6FC3FF', '#A97CFF', '#FF7EB6', '#FFD58A'].map((c) => t(c)).map((c, i) => {
             const at = (i - 3) / 3.4;
-            return <Circle key={i} cx={x + at * rx * 0.86} cy={y + ry * 0.55 + Math.abs(at) * -2.2} r={2.1} fill={c} stroke={t('#FFFFFF')} strokeWidth={0.5} strokeOpacity={0.6} />;
+            const bx2 = x + at * rx * 0.86;
+            const by2 = y + ry * 0.55 + Math.abs(at) * -2.2;
+            return (
+              <G key={i}>
+                <Vy d={circleD(bx2, by2, 2.2)} fill={c} id={id} />
+                <Circle cx={bx2 - 0.7} cy={by2 - 0.8} r={0.6} fill="#FFFFFF" opacity={0.9} />
+              </G>
+            );
           })}
         </G>
       );
@@ -372,7 +448,7 @@ function Wear({ kind, x, y, rx, ry, color, grey }: { kind: SproutKind; x: number
       // A little bandana knotted at the side.
       return (
         <G>
-          <Path d={`M${x - rx * 0.92} ${y - ry * 0.55} Q${x} ${y - ry * 0.9} ${x + rx * 0.92} ${y - ry * 0.55} L${x + rx * 0.8} ${y - ry * 0.33} Q${x} ${y - ry * 0.66} ${x - rx * 0.8} ${y - ry * 0.33} Z`} fill={color} />
+          <Vy d={`M${x - rx * 0.92} ${y - ry * 0.55} Q${x} ${y - ry * 0.9} ${x + rx * 0.92} ${y - ry * 0.55} L${x + rx * 0.8} ${y - ry * 0.33} Q${x} ${y - ry * 0.66} ${x - rx * 0.8} ${y - ry * 0.33} Z`} fill={color} id={id} />
           <Path d={`M${x + rx * 0.86} ${y - ry * 0.45} l5 -3 l-1 5 Z M${x + rx * 0.86} ${y - ry * 0.45} l6 2 l-4 3 Z`} fill={color} />
           <Circle cx={x - rx * 0.3} cy={y - ry * 0.62} r={0.9} fill={t('#FFFFFF')} opacity={0.8} />
           <Circle cx={x + rx * 0.3} cy={y - ry * 0.6} r={0.9} fill={t('#FFFFFF')} opacity={0.8} />
@@ -396,22 +472,22 @@ function Wear({ kind, x, y, rx, ry, color, grey }: { kind: SproutKind; x: number
 }
 
 /** What a bloomed sprout wears on top. */
-function Bloom({ kind, x, y, color, grey }: { kind: SproutKind; x: number; y: number; color: string; grey?: boolean }) {
+function Bloom({ kind, x, y, color, grey, id }: { kind: SproutKind; x: number; y: number; color: string; grey?: boolean; id: string }) {
   const t = toner(grey);
   const cy = y - 4;
   switch (kind) {
     case 'plur':
       return (
         <G>
-          <Path d={`M${x} ${cy + 9} C${x - 15} ${cy - 1} ${x - 9} ${cy - 15} ${x} ${cy - 7} C${x + 9} ${cy - 15} ${x + 15} ${cy - 1} ${x} ${cy + 9} Z`} fill={color} stroke={t('#FFFFFF')} strokeOpacity={0.5} strokeWidth={0.8} />
-          <Ellipse cx={x - 4.5} cy={cy - 5} rx={2.6} ry={1.6} fill={t('#FFFFFF')} opacity={0.55} />
+          <Vy d={`M${x} ${cy + 9} C${x - 15} ${cy - 1} ${x - 9} ${cy - 15} ${x} ${cy - 7} C${x + 9} ${cy - 15} ${x + 15} ${cy - 1} ${x} ${cy + 9} Z`} fill={color} id={id} />
+          <Spot x={x - 5} y={cy - 5} rx={3} ry={1.6} id={id} />
         </G>
       );
     case 'wanderer':
       return (
         <G>
-          <Path d={starPath(x, cy, 11, 4.8)} fill={color} stroke={t('#FFFFFF')} strokeOpacity={0.55} strokeWidth={0.8} strokeLinejoin="round" />
-          <Circle cx={x - 2.4} cy={cy - 2.6} r={1.6} fill={t('#FFFFFF')} opacity={0.6} />
+          <Vy d={starPath(x, cy, 11, 5.4)} fill={color} id={id} />
+          <Spot x={x - 2.6} y={cy - 2.8} rx={2.4} ry={1.3} id={id} />
         </G>
       );
     case 'melody':
@@ -430,17 +506,21 @@ function Bloom({ kind, x, y, color, grey }: { kind: SproutKind; x: number; y: nu
               opacity={0.95}
             />
           ))}
-          <Circle cx={x} cy={cy} r={4} fill={t('#FFE9A8')} />
-          <Circle cx={x - 1.2} cy={cy - 1.2} r={1.2} fill={t('#FFFFFF')} opacity={0.7} />
+          {[0, 72, 144, 216, 288].map((a) => (
+            <Ellipse key={`h${a}`} cx={x + Math.sin((a * Math.PI) / 180) * 7} cy={cy - Math.cos((a * Math.PI) / 180) * 7} rx={4.4} ry={5.6} fill={`url(#vh-${id})`} transform={`rotate(${a} ${x + Math.sin((a * Math.PI) / 180) * 7} ${cy - Math.cos((a * Math.PI) / 180) * 7})`} />
+          ))}
+          <Vy d={circleD(x, cy, 4.2)} fill={t('#FFE9A8')} id={id} />
+          <Spot x={x - 1.4} y={cy - 1.6} rx={1.6} ry={1} id={id} />
         </G>
       );
     case 'bass':
       // A speaker cone with sound rings.
       return (
         <G>
-          <Circle cx={x} cy={cy} r={8} fill={t('#22305C')} />
-          <Circle cx={x} cy={cy} r={6} fill={color} />
-          <Circle cx={x} cy={cy} r={2.4} fill={t('#22305C')} />
+          <Vy d={circleD(x, cy, 8)} fill={t('#22305C')} id={id} />
+          <Vy d={circleD(x, cy, 6)} fill={color} id={id} />
+          <Vy d={circleD(x, cy, 2.4)} fill={t('#22305C')} id={id} />
+          <Spot x={x - 3} y={cy - 3} rx={2} ry={1} id={id} />
           <Path d={`M${x - 12} ${cy - 6} q-3.5 6 0 12 M${x + 12} ${cy - 6} q3.5 6 0 12`} stroke={color} strokeWidth={1.6} fill="none" strokeLinecap="round" opacity={0.85} />
           <Path d={`M${x - 15.5} ${cy - 8} q-4.5 8 0 16 M${x + 15.5} ${cy - 8} q4.5 8 0 16`} stroke={color} strokeWidth={1.2} fill="none" strokeLinecap="round" opacity={0.5} />
         </G>
@@ -449,7 +529,7 @@ function Bloom({ kind, x, y, color, grey }: { kind: SproutKind; x: number; y: nu
       // A spinning record.
       return (
         <G>
-          <Circle cx={x} cy={cy} r={9} fill={t('#141024')} />
+          <Vy d={circleD(x, cy, 9)} fill={t('#141024')} id={id} />
           <Circle cx={x} cy={cy} r={7} fill="none" stroke={t('#3A3458')} strokeWidth={0.6} />
           <Circle cx={x} cy={cy} r={5} fill="none" stroke={t('#3A3458')} strokeWidth={0.6} />
           <Circle cx={x} cy={cy} r={3.2} fill={color} />
@@ -469,14 +549,15 @@ function Bloom({ kind, x, y, color, grey }: { kind: SproutKind; x: number; y: nu
               strokeLinecap="round"
             />
           ))}
-          <Circle cx={x} cy={cy} r={6.5} fill={color} />
-          <Circle cx={x} cy={cy} r={3.5} fill={t('#FFFFFF')} opacity={0.8} />
+          <Vy d={circleD(x, cy, 6.5)} fill={color} id={id} />
+          <Circle cx={x} cy={cy} r={3.5} fill={t('#FFFFFF')} opacity={0.7} />
+          <Spot x={x - 2.2} y={cy - 2.4} rx={2} ry={1.1} id={id} />
         </G>
       );
     case 'sunrise':
       return (
         <G>
-          <Path d={`M${x - 10} ${cy + 4} A10 10 0 0 1 ${x + 10} ${cy + 4} Z`} fill={color} />
+          <Vy d={`M${x - 10} ${cy + 4} A10 10 0 0 1 ${x + 10} ${cy + 4} Z`} fill={color} id={id} />
           <Path d={`M${x - 6} ${cy + 4} A6 6 0 0 1 ${x + 6} ${cy + 4} Z`} fill={t('#FFD58A')} />
           {[-70, -35, 0, 35, 70].map((a) => (
             <Path

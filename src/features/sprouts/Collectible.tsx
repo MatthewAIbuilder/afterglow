@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useId } from 'react';
 import { View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 import { type ArtistLook, hashOf, mix, type Palette } from './artistLook';
 import { DRAW, type Fills, star } from './creatures';
 
@@ -26,7 +26,20 @@ export function Collectible({ look, size = 80, tier = 0, still, locked }: { look
   const moving = !reduce && !still && !locked;
   const s = size / 100;
 
-  const fills: Fills = { body: `url(#${uid}b)`, round: `url(#${uid}r)`, alt: `url(#${uid}a)`, white: `url(#${uid}w)`, iris: `url(#${uid}i)`, holo: `url(#${uid}h)` };
+  const fills: Fills = {
+    body: `url(#${uid}b)`,
+    round: `url(#${uid}r)`,
+    alt: `url(#${uid}a)`,
+    white: `url(#${uid}w)`,
+    iris: `url(#${uid}i)`,
+    holo: `url(#${uid}h)`,
+    shade: `url(#${uid}vs)`,
+    hi: `url(#${uid}vh)`,
+    rim: `url(#${uid}vr)`,
+    spec: `url(#${uid}sp)`,
+    ball: `url(#${uid}ey)`,
+    ao: `url(#${uid}ao)`,
+  };
   const art = DRAW[look.creature](p, fills, look.extra);
 
   const bob = useSharedValue(0);
@@ -104,6 +117,36 @@ export function Collectible({ look, size = 80, tier = 0, still, locked }: { look
         <Stop offset="0" stopColor={mix(p.deep, NIGHT, locked ? 0.75 : 0.55)} />
         <Stop offset="1" stopColor={NIGHT} />
       </RadialGradient>
+      {/* Vinyl: the same soft light on every part. A key light from the top left, shade towards the bottom right, light bouncing back off the tile, a glossy highlight. */}
+      <LinearGradient id={`${uid}vs`} x1="0.15" y1="0" x2="0.75" y2="1">
+        <Stop offset="0" stopColor="#000000" stopOpacity={0} />
+        <Stop offset="0.5" stopColor="#000000" stopOpacity={0.04} />
+        <Stop offset="1" stopColor="#120820" stopOpacity={0.5} />
+      </LinearGradient>
+      <RadialGradient id={`${uid}vh`} cx="30%" cy="22%" r="62%">
+        <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.62} />
+        <Stop offset="0.38" stopColor="#FFFFFF" stopOpacity={0.16} />
+        <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+      </RadialGradient>
+      <LinearGradient id={`${uid}vr`} x1="0" y1="0" x2="0.3" y2="1">
+        <Stop offset="0.74" stopColor={p.glow} stopOpacity={0} />
+        <Stop offset="1" stopColor={p.glow} stopOpacity={locked ? 0.15 : 0.6} />
+      </LinearGradient>
+      <RadialGradient id={`${uid}sp`} cx="50%" cy="50%" r="50%">
+        <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
+        <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity={0.55} />
+        <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+      </RadialGradient>
+      <RadialGradient id={`${uid}ey`} cx="45%" cy="62%" r="62%">
+        <Stop offset="0" stopColor="#4A3D6E" />
+        <Stop offset="0.55" stopColor="#1A1230" />
+        <Stop offset="1" stopColor="#06040C" />
+      </RadialGradient>
+      <RadialGradient id={`${uid}ao`} cx="50%" cy="50%" r="50%">
+        <Stop offset="0" stopColor="#000000" stopOpacity={0.6} />
+        <Stop offset="0.6" stopColor="#000000" stopOpacity={0.22} />
+        <Stop offset="1" stopColor="#000000" stopOpacity={0} />
+      </RadialGradient>
       <RadialGradient id={`${uid}g`} cx="50%" cy="50%" r="50%">
         <Stop offset="0" stopColor={p.glow} stopOpacity={locked ? 0.15 : 0.55} />
         <Stop offset="0.6" stopColor={p.glow} stopOpacity={locked ? 0.05 : 0.16} />
@@ -144,6 +187,8 @@ export function Collectible({ look, size = 80, tier = 0, still, locked }: { look
           <>
             <Circle cx={50} cy={50} r={48} fill={`url(#${uid}t)`} />
             <Circle cx={50} cy={50} r={44} fill={`url(#${uid}g)`} />
+            {/* The floor it stands on: a soft shadow under it. */}
+            {art.ground === null ? null : <Ellipse cx={(art.ground ?? [50, 88, 24])[0]} cy={(art.ground ?? [50, 88, 24])[1]} rx={(art.ground ?? [50, 88, 24])[2]} ry={(art.ground ?? [50, 88, 24])[2] * 0.2} fill={`url(#${uid}ao)`} />}
             {locked ? null : (
               <>
                 <Path d={star(18 + (pace % 9), 24, 1.3)} fill="#FFFFFF" opacity={0.5} />
