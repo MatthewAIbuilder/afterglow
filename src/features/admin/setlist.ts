@@ -41,7 +41,7 @@ const WEEKDAY = [
 ] as const;
 const DAY_NAME = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const STAGE_WORDS = /\b(stage|tent|arena|pavilion|dome|grove|garden|hangar|warehouse|room|field|cove|lounge|deck|terrace)\b/i;
+export const STAGE_WORDS = /\b(stage|tent|arena|pavilion|dome|grove|garden|hangar|warehouse|room|field|cove|lounge|deck|terrace|meadow|pod|grounds)\b/i;
 const BULLET = /^\s*(?:[-*•·◦▪►>]+|\d{1,3}[.)])\s+/;
 const SPLIT = /\s+(?:[•·|\/]|\*)\s+/;
 
