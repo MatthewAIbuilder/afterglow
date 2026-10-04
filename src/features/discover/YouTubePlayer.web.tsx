@@ -4,23 +4,33 @@ import type { EngineProps } from './ClipPlayer';
 import type { YouTubeMedia } from './media';
 import { canCountWatch, playedSpan, readPlayerReport, shouldPlay } from './playback';
 import { clipProgress, parsePlayerMessage, PLAYER_STATE, playerHtml } from './youtube';
+import { afterRefusal, AUTOPLAY_CHECK_MS, AUTOPLAY_GRACE_MS, autoplayVerdict, afterGesture, type SoundMemory, startMuted } from './webSound';
 
 /** Give up if the player hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
-/** Browsers only let video start with sound after you've interacted with the page; if a play hasn't started by then, play muted. */
-const AUTOPLAY_GRACE_MS = 1500;
+
+/** Whether the browser refused sound since the page was last touched (shared by every clip on the page). */
+let sound: SoundMemory = { refused: false };
+if (typeof window !== 'undefined') {
+  const touched = () => {
+    sound = afterGesture();
+  };
+  for (const e of ['pointerdown', 'keydown', 'touchend']) window.addEventListener(e, touched, { capture: true, passive: true });
+}
 
 type PlayerWindow = Window & {
   afterglow?: { play(): void; pause(): void; restart(play: boolean): void };
-  player?: { mute?: () => void; playVideo?: () => void; getPlayerState?: () => number };
+  player?: { mute?: () => void; playVideo?: () => void };
 };
 
 /**
  * YouTube's official embedded player in a browser: the same player page as
  * the phone (youtube.ts), in a same-origin frame instead of a web view, with
  * the same rules for what plays and what counts as watched. If the browser
- * won't start a clip with sound yet, it plays muted (YouTube's own controls
- * can turn the sound on). Only ClipPlayer uses this (Metro picks it on web).
+ * refuses to start a clip with sound (no tap on the page yet), it plays muted
+ * (YouTube's own controls can turn the sound on), and later clips start muted
+ * at once until you touch the page again. A clip that's only slow to load is
+ * left to load with its sound. Only ClipPlayer uses this (Metro picks it on web).
  */
 function YouTubePlayerBase({ media, active, live, paused, progress, onPausedChange, onPlayed, onReady, onStarted, onFail }: EngineProps<YouTubeMedia>) {
   const { source } = media;
@@ -38,6 +48,7 @@ function YouTubePlayerBase({ media, active, live, paused, progress, onPausedChan
   const isPlaying = useRef(false);
   const lastTime = useRef<number | null>(null);
   const muted = useRef(false);
+  const lastState = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (ready) return;
@@ -58,6 +69,16 @@ function YouTubePlayerBase({ media, active, live, paused, progress, onPausedChan
     const cameActive = active && !wasActive.current;
     wasActive.current = active;
     lastTime.current = null;
+    const muteNow = () => {
+      const p = win()?.player;
+      if (!p?.mute || !p.playVideo) return false;
+      muted.current = true;
+      p.mute();
+      return true;
+    };
+    // The browser refused sound a moment ago and the page hasn't been touched since: start muted straight away.
+    if (wantPlaying && !muted.current && startMuted(sound)) muteNow();
+    lastState.current = undefined;
     if (cameActive) {
       progress.set(0);
       command((a) => a.restart(wantPlaying));
@@ -65,15 +86,22 @@ function YouTubePlayerBase({ media, active, live, paused, progress, onPausedChan
       command((a) => (wantPlaying ? a.play() : a.pause()));
     }
     if (!wantPlaying || muted.current) return;
-    // Not started with sound (no tap on the page yet): start muted instead.
-    const t = setTimeout(() => {
-      const p = win()?.player;
-      if (isPlaying.current || !p?.mute || !p.playVideo) return;
-      muted.current = true;
+    // Still not playing: a slow video keeps loading with its sound; a refusal plays muted instead.
+    const askedAt = Date.now();
+    let t: ReturnType<typeof setTimeout>;
+    const check = () => {
+      const verdict = autoplayVerdict(lastState.current, Date.now() - askedAt);
+      if (verdict === 'loading') {
+        t = setTimeout(check, AUTOPLAY_CHECK_MS);
+        return;
+      }
+      if (verdict !== 'refused' || isPlaying.current) return;
+      sound = afterRefusal();
+      if (!muteNow()) return;
       lastCommandAt.current = Date.now();
-      p.mute();
-      p.playVideo();
-    }, AUTOPLAY_GRACE_MS);
+      win()?.player?.playVideo?.();
+    };
+    t = setTimeout(check, AUTOPLAY_GRACE_MS);
     return () => clearTimeout(t);
   }, [ready, active, wantPlaying, progress, command]);
 
@@ -99,6 +127,7 @@ function YouTubePlayerBase({ media, active, live, paused, progress, onPausedChan
         lastTime.current = m.time;
         if (span) c.onPlayed?.(span.from, span.to);
       } else if (m.type === 'state') {
+        lastState.current = m.state;
         isPlaying.current = m.state === PLAYER_STATE.playing;
         if (isPlaying.current) c.onStarted();
         const report = m.state === PLAYER_STATE.playing ? 'playing' : m.state === PLAYER_STATE.paused ? 'paused' : undefined;

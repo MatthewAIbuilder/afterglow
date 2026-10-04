@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import Animated, {
   runOnJS,
   type SharedValue,
@@ -14,6 +14,9 @@ import type { ClipMedia } from './media';
 import { NativeVideoPlayer } from './NativeVideoPlayer';
 import { POSTER_MAX_WAIT_MS, showPoster } from './playback';
 import { YouTubePlayer } from './YouTubePlayer';
+
+/** How long a browser waits before loading the player of a clip next to the one on screen. */
+export const NEAR_LOAD_DELAY_MS = 900;
 
 type Common = {
   media: ClipMedia;
@@ -56,8 +59,17 @@ export type EngineProps<M extends ClipMedia = ClipMedia> = Omit<Common, 'media'>
  * picks the player for the clip's provider. Discover never deals with a
  * provider directly, so a native video player can later slot in here.
  */
-function ClipPlayerBase({ load, ...props }: ClipPlayerProps) {
+function ClipPlayerBase({ load: near, ...props }: ClipPlayerProps) {
   const { media, live } = props;
+  // In a browser, starting a YouTube player is heavy work: the clips next door wait a moment so a swipe lands smoothly.
+  const waitToLoad = Platform.OS === 'web' && !props.active;
+  const [mayLoad, setMayLoad] = useState(!waitToLoad);
+  useEffect(() => {
+    if (!near || mayLoad || !waitToLoad) return;
+    const t = setTimeout(() => setMayLoad(true), NEAR_LOAD_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [near, mayLoad, waitToLoad]);
+  const load = near && (mayLoad || !waitToLoad);
   const reduceMotion = useReducedMotion();
   const [ready, setReady] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
