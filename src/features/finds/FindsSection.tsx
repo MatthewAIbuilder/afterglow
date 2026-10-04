@@ -26,14 +26,24 @@ export function FindsSection() {
       </Text>
       <Text style={styles.sub}>Scanned at festivals. Each one lives here for good.</Text>
       {hunts.map((p) => (
-        <View key={p.hunt.id} style={[styles.hunt, p.done && styles.huntDone]} accessible accessibilityLabel={`${p.hunt.name}: ${huntLine(p)}.`}>
+        <Pressable
+          key={p.hunt.id}
+          onPress={() => {
+            haptic.select();
+            router.push({ pathname: '/hunt/[id]', params: { id: p.hunt.id } });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`${p.hunt.name}: ${huntLine(p)}.`}
+          accessibilityHint={p.done ? 'Opens a card to share' : 'Opens the hunt'}
+          style={({ pressed }) => [styles.hunt, p.done && styles.huntDone, pressed && styles.pressed]}
+        >
           <Text style={styles.huntName}>{p.hunt.name}</Text>
           <Text style={[styles.huntLine, p.done && { color: '#FFD24A' }]}>
             {huntLine(p)}
             {!p.done && p.hunt.until ? ` · ${untilLine(p.hunt.until)}` : ''}
           </Text>
           <HuntRow hunt={p.hunt} found={p.found} size={40} />
-        </View>
+        </Pressable>
       ))}
       <View style={styles.grid}>
         {shown.map((f) => (
