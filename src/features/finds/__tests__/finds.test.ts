@@ -13,7 +13,9 @@ import {
   findsToCheck,
   findsToSend,
   type Hunt,
+  huntDateLine,
   huntLine,
+  huntShareText,
   huntProgress,
   missed,
   nextFindDue,
@@ -117,6 +119,9 @@ describe('hunts', () => {
     expect(done.done).toBe(true);
     expect(huntLine(done)).toBe('All 3 found');
     expect(huntProgress([], { nightmkt27: hunt })).toEqual([]);
+    expect(huntShareText(p, 'https://afterglowmusic.app')).toBe('I’ve found 2 of 3 stickers in the Night Market 2027 hunt on Afterglow. https://afterglowmusic.app');
+    expect(huntDateLine(p)).toMatch(/^Latest find /);
+    expect(huntDateLine(done)).toMatch(/^Finished /);
   });
 
   it('end dates last until the day is over everywhere, and read back as that day', () => {

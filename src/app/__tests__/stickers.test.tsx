@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { Share } from 'react-native';
 import { findLink } from '../../features/finds/finds';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { renderApp } from './appRoutes';
@@ -126,6 +127,26 @@ describe('stickers', () => {
     await act(async () => router.push(link('nosuchcode')));
     await flush();
     expect(app.getByText('This code isn’t an Afterglow sticker any more.')).toBeTruthy();
+  });
+
+  it('finishing a hunt opens a card to share', async () => {
+    seed();
+    mockSocial.stickers.set('frog2027aa', { code: 'frog2027aa', name: 'Water frog', creature: 'frog', huntId: 'nightmkt27', slot: 1 });
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'dismissedAction' } as never);
+    const app = await renderApp(link());
+    await flush();
+    expect(app.getByText('See the hunt')).toBeTruthy();
+    await act(async () => router.push(link('frog2027aa', 'frog', 'Water frog')));
+    await flush();
+    expect(app.getByText('HUNT COMPLETE')).toBeTruthy();
+    await fireEvent.press(app.getByText('Share your hunt'));
+    await flush();
+    expect(app.getByLabelText('Night Market 2027: All 2 found.')).toBeTruthy();
+    expect(app.getByText(/^Finished Oct 10, 2026$/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Share your hunt as text'));
+    await flush();
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ message: 'I found all 2 stickers in the Night Market 2027 hunt on Afterglow. https://afterglowmusic.app' }));
+    share.mockRestore();
   });
 
   it('a link edited to another creature still gets the real one', async () => {
