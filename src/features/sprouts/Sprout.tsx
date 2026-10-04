@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import type { ArtistLook } from './artistLook';
-import { Collectible } from './Collectible';
+import { Collectible, MOVES_FROM } from './Collectible';
 import { kindOf, type SproutKind, type Stage } from './sprouts';
 
 /**
@@ -94,7 +94,8 @@ const circleD = (x: number, y: number, r: number) => `M${x - r} ${y} A${r} ${r} 
  * and what it wears (PLUR a heart and kandi, Bass headphones, Melody a
  * flower crown, Groove sunglasses, Spotlight a halo of light, Sunrise a
  * rising sun, Wanderer a star and a bandana, Groove a record and a chain). Bloomed sprouts glow softly and sparkle.
- * Sways gently unless motion is reduced or `still`. Hidden from screen
+ * Sways gently unless motion is reduced or `still` (small ones are still
+ * unless `still={false}`). Hidden from screen
  * readers (the label around it says what it is).
  *
  * An artist's passes `artist` (their look, from `artistLook`) and is drawn as
@@ -108,7 +109,7 @@ function Plant({
   kind = 'seedling',
   stage = 3,
   size = 80,
-  still,
+  still = size < MOVES_FROM,
   locked,
 }: {
   kind?: SproutKind;

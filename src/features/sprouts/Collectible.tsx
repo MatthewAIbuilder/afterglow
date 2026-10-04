@@ -9,6 +9,9 @@ import { DRAW, type Fills, star } from './creatures';
 export const TIER_COLOR = ['', '#D08A4E', '#D6DDEA', '#FFD24A'] as const;
 
 const NIGHT = '#07060F';
+/** Sprouts and collectibles this big or bigger move by themselves; smaller ones are still unless `still={false}`. */
+export const MOVES_FROM = 100;
+
 /** A locked one: the same creature as a grey figure, still. */
 const LOCKED: Palette = { light: '#A3A1B6', mid: '#76748C', deep: '#4A4860', alt: '#8E8CA4', altDeep: '#57556C', accent: '#B4B2C6', glow: '#6E6C84' };
 
@@ -16,10 +19,12 @@ const LOCKED: Palette = { light: '#A3A1B6', mid: '#76748C', deep: '#4A4860', alt
  * An artist's collectible: their creature (creatures.tsx), glowing on a dark
  * round tile with a ring in bronze, silver or gold for its `tier`. It floats,
  * blinks, and its flames, wings or tentacles move, unless motion is reduced,
- * it's `still`, or `locked` (a grey figure of what you could earn). Hidden
- * from screen readers (the label around it says what it is).
+ * it's `still`, or `locked` (a grey figure of what you could earn). Small
+ * ones (under `MOVES_FROM`) are still unless told otherwise, so a grid or a
+ * list of them scrolls smoothly; a still one is drawn as a single picture.
+ * Hidden from screen readers (the label around it says what it is).
  */
-export function Collectible({ look, size = 80, tier = 0, still, locked }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean }) {
+export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FROM, locked }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean }) {
   const uid = `c${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const p = locked ? LOCKED : look.palette;
   const reduce = useReducedMotion();
@@ -179,28 +184,49 @@ export function Collectible({ look, size = 80, tier = 0, still, locked }: { look
   const eyes = art.eyes;
   const ring = tier ? TIER_COLOR[tier] : locked ? '#4A4860' : p.glow;
 
-  return (
-    <View style={{ width: size, height: size, overflow: 'hidden' }} accessible={false} importantForAccessibility="no-hide-descendants" pointerEvents="none">
-      {/* The tile: night, the creature's glow, a few far stars and its ring. */}
-      <View style={fill}>
+  /* The tile: night, the creature's glow, a few far stars and its ring. */
+  const tile = (
+    <>
+      <Circle cx={50} cy={50} r={48} fill={`url(#${uid}t)`} />
+      <Circle cx={50} cy={50} r={44} fill={`url(#${uid}g)`} />
+      {/* The floor it stands on: a soft shadow under it. */}
+      {art.ground === null ? null : <Ellipse cx={(art.ground ?? [50, 88, 24])[0]} cy={(art.ground ?? [50, 88, 24])[1]} rx={(art.ground ?? [50, 88, 24])[2]} ry={(art.ground ?? [50, 88, 24])[2] * 0.2} fill={`url(#${uid}ao)`} />}
+      {locked ? null : (
+        <>
+          <Path d={star(18 + (pace % 9), 24, 1.3)} fill="#FFFFFF" opacity={0.5} />
+          <Path d={star(82 - (pace % 7), 76, 1.1)} fill="#FFFFFF" opacity={0.4} />
+          <Circle cx={74} cy={14 + (pace % 6)} r={0.7} fill="#FFFFFF" opacity={0.5} />
+        </>
+      )}
+      <Circle cx={50} cy={50} r={47.5} fill="none" stroke={ring} strokeWidth={tier ? 2.6 : 1} opacity={tier ? 0.95 : 0.45} />
+      {tier === 3 && !locked ? <Circle cx={50} cy={50} r={45.4} fill="none" stroke="#FFF3B0" strokeWidth={0.6} opacity={0.6} /> : null}
+    </>
+  );
+  const box = { width: size, height: size, overflow: 'hidden' as const };
+
+  // Still: every part in one picture, much lighter to draw than the moving layers.
+  if (!moving) {
+    return (
+      <View style={box} accessible={false} importantForAccessibility="no-hide-descendants" pointerEvents="none">
         {layer(
           <>
-            <Circle cx={50} cy={50} r={48} fill={`url(#${uid}t)`} />
-            <Circle cx={50} cy={50} r={44} fill={`url(#${uid}g)`} />
-            {/* The floor it stands on: a soft shadow under it. */}
-            {art.ground === null ? null : <Ellipse cx={(art.ground ?? [50, 88, 24])[0]} cy={(art.ground ?? [50, 88, 24])[1]} rx={(art.ground ?? [50, 88, 24])[2]} ry={(art.ground ?? [50, 88, 24])[2] * 0.2} fill={`url(#${uid}ao)`} />}
-            {locked ? null : (
-              <>
-                <Path d={star(18 + (pace % 9), 24, 1.3)} fill="#FFFFFF" opacity={0.5} />
-                <Path d={star(82 - (pace % 7), 76, 1.1)} fill="#FFFFFF" opacity={0.4} />
-                <Circle cx={74} cy={14 + (pace % 6)} r={0.7} fill="#FFFFFF" opacity={0.5} />
-              </>
-            )}
-            <Circle cx={50} cy={50} r={47.5} fill="none" stroke={ring} strokeWidth={tier ? 2.6 : 1} opacity={tier ? 0.95 : 0.45} />
-            {tier === 3 && !locked ? <Circle cx={50} cy={50} r={45.4} fill="none" stroke="#FFF3B0" strokeWidth={0.6} opacity={0.6} /> : null}
+            {tile}
+            {art.back}
+            {art.sway}
+            {art.flickerOver ? null : art.flicker}
+            {art.body}
+            {eyes?.el}
+            {art.flickerOver ? art.flicker : null}
+            {art.front}
           </>,
         )}
       </View>
+    );
+  }
+
+  return (
+    <View style={box} accessible={false} importantForAccessibility="no-hide-descendants" pointerEvents="none">
+      <View style={fill}>{layer(tile)}</View>
       <Animated.View style={[fill, floatStyle]}>
         {art.back ? <View style={fill}>{layer(art.back)}</View> : null}
         {art.sway ? around(art.sway, art.pivot ?? [50, 50], swayStyle, 'sway') : null}
