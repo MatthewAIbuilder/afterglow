@@ -88,6 +88,23 @@ describe('stickers', () => {
     expect(app.getByLabelText('Night Market 2027: 1 of 2 found.')).toBeTruthy();
   });
 
+  it('a send that’s refused for another reason is tried again, not dropped', async () => {
+    seed();
+    await s().signUp('maya@example.com', 'password123');
+    const real = s().recordFind;
+    const spy = jest.spyOn(s(), 'recordFind').mockImplementationOnce(async () => {
+      throw new Error('quota');
+    });
+    const app = await renderApp(link());
+    await flush();
+    expect(app.getByText('YOU FOUND')).toBeTruthy();
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockImplementation(real);
+    await settle(20_000);
+    await flush();
+    expect([...mockSocial.finds.keys()]).toEqual([expect.stringMatching(/_ferris2027$/)]);
+  });
+
   it('with no signal, keeps the scan and checks it once there’s signal', async () => {
     seed();
     network.__setState({ isConnected: false, isInternetReachable: false });

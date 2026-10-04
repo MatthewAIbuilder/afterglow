@@ -78,6 +78,11 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       cancelAnimation(sway);
       cancelAnimation(flick);
       cancelAnimation(blink);
+      // Back to rest, so a stopped one never freezes mid-blink or off-centre.
+      bob.set(0);
+      sway.set(0);
+      flick.set(1);
+      blink.set(1);
     };
   }, [moving, pace, bob, sway, flick, blink]);
 

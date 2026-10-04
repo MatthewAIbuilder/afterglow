@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { renderApp } from './appRoutes';
 
 /** My Sound opens on the overview (your sound, a guide to each sound, tips), with the bubble map a toggle away. */
@@ -45,6 +46,21 @@ describe('My Sound overview', () => {
 
   it('a festival opens straight on the map', async () => {
     const app = await renderApp('/sound?festival=edc-orlando-26');
+    await flush();
+    expect(app.getByLabelText('Bubble map').props.accessibilityState).toEqual({ selected: true });
+    expect(app.getAllByLabelText(/^Your sound at /).length).toBeGreaterThan(0);
+    // The overview is about you across everyone, not the festival the map shows.
+    await fireEvent.press(app.getByLabelText('Overview'));
+    await flush();
+    expect(app.queryByLabelText(/^Your sound at /)).toBeNull();
+    expect(app.getByLabelText(/^Your sound: /)).toBeTruthy();
+  });
+
+  it('a quest or your profile can open the map while the overview is showing', async () => {
+    const app = await renderApp('/sound');
+    await flush();
+    expect(app.getByLabelText('Overview').props.accessibilityState).toEqual({ selected: true });
+    await act(async () => router.navigate({ pathname: '/sound', params: { view: 'map' } }));
     await flush();
     expect(app.getByLabelText('Bubble map').props.accessibilityState).toEqual({ selected: true });
   });

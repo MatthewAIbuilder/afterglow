@@ -218,7 +218,7 @@ function FullProfile() {
           sounds={sounds}
           onSounds={() => router.push('/your-sound')}
           orbit={favourites.slice(0, ORBIT_MAX)}
-          onOrbit={() => router.navigate('/sound')}
+          onOrbit={() => router.navigate({ pathname: '/sound', params: { view: 'map' } })}
           feeling={feeling?.tag}
           level={quests.ready ? quests.level : undefined}
           onLevel={() => router.push('/quests')}

@@ -46,6 +46,7 @@ import { CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_M
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
+import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
@@ -1070,7 +1071,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           if ((await getDoc(ref_).catch(() => null))?.exists()) return;
           const s = stickerFromDoc(code, (await getDoc(doc(fb().db, 'stickers', code))).data());
           if (!s) throw new SocialError('not-found');
-          if (s.until !== undefined) throw new SocialError('sticker-ended');
+          // Refused for being too late, or for some other reason (kept and tried again).
+          if (s.until !== undefined && (at > s.until || Date.now() > s.until + FIND_GRACE_DAYS * 86_400_000)) throw new SocialError('sticker-ended');
           throw e;
         }
       }),

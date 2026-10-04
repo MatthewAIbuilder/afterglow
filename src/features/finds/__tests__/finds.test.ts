@@ -61,6 +61,12 @@ describe('finding stickers', () => {
     expect(one).toEqual([{ ...card, at: t0, account: 'me', state: 'checking', sent: false, tries: 0 }]);
     expect(queueFind(one, card, 'me', t0 + 5)).toHaveLength(1);
     expect(queueFind(one, card, 'other', t0 + 5)).toHaveLength(2);
+    // Signed out, someone else's find on this phone isn't yours: it's kept as a new one.
+    expect(queueFind(one, card, undefined, t0 + 5)).toHaveLength(2);
+    // Signed in, your own signed-out scan of it already counts.
+    const signedOut = queueFind([], card, undefined, t0);
+    expect(queueFind(signedOut, card, undefined, t0 + 5)).toHaveLength(1);
+    expect(queueFind(signedOut, card, 'me', t0 + 5)).toHaveLength(1);
   });
 
   it('takes Afterglow’s copy, and an end date counts from when you scanned', () => {

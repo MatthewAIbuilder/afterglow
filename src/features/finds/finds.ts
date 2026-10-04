@@ -122,9 +122,14 @@ export function readFindLink(text: string): FindCard | undefined {
 /** Whether it can still be found at `at` (no end date: always). */
 export const stillOpen = (s: Pick<Sticker, 'until'>, at: number) => s.until === undefined || at <= s.until;
 
-/** Keep a scan, once per sticker and account. Scanning again changes nothing. */
+/**
+ * Keep a scan, once per sticker and account. Scanning again changes nothing.
+ * Signed in, a signed-out scan of it counts too (it becomes yours); signed
+ * out, only another signed-out scan does (someone else's find on this phone
+ * isn't yours).
+ */
 export function queueFind(finds: readonly Find[], card: FindCard, account: string | undefined, now: number): Find[] {
-  if (finds.some((f) => f.code === card.code && (!f.account || !account || f.account === account))) return [...finds];
+  if (finds.some((f) => f.code === card.code && (!f.account || f.account === account))) return [...finds];
   return [{ code: card.code, name: card.name, creature: card.creature, at: now, ...(account ? { account } : {}), state: 'checking' as const, sent: false, tries: 0 }, ...finds].slice(0, FINDS_MAX);
 }
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -142,6 +142,7 @@ function Plant({
     return () => {
       cancelAnimation(sway);
       cancelAnimation(twinkle);
+      sway.set(0);
     };
   }, [moving, bloom, kind, pace, stage, sway, twinkle]);
   const top = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.get() * 5}deg` }] }));
@@ -152,7 +153,8 @@ function Plant({
   // Locked: a grey silhouette of what it will be (its leaves and what it wears), so there's something to collect.
   const look = locked ? { ...GREY, leafShape: own.leafShape } : own;
   const accent = locked ? '#8A88A0' : k.accent;
-  const id = `${kind}-${stage}-${locked ? 'g' : 'c'}`;
+  // Each sprout's own gradient names: on the website two the same would share (and can lose) their colours.
+  const id = `${kind}-${stage}-${locked ? 'g' : 'c'}-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const seed = stage === 0;
   // The body: a seed sits low and small in its mound; later stages stand up.
   const bx = 50;

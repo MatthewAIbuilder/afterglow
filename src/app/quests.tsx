@@ -44,7 +44,9 @@ export default function QuestsScreen() {
   const go = (to: string | undefined) => {
     if (!to) return;
     haptic.select();
-    if (to === '/' || to === '/sound' || to === '/festivals') router.navigate(to);
+    // Stargazer is about the bubble map, so it opens there.
+    if (to === '/sound') router.navigate({ pathname: '/sound', params: { view: 'map' } });
+    else if (to === '/' || to === '/festivals') router.navigate(to);
     else router.push(to as never);
   };
 
