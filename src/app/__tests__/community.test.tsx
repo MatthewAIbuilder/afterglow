@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { ActionSheetIOS, Alert, type AlertButton } from 'react-native';
+import { NEAR_LOAD_DELAY_MS } from '../../features/discover/ClipPlayer';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { renderApp } from './appRoutes';
 
@@ -72,6 +73,8 @@ describe('community clips in Discover', () => {
     const app = await openFeed();
     expect(app.getByLabelText(CREDIT)).toBeTruthy();
     expect(app.getByText('From the crowd')).toBeTruthy();
+    // The clip next to the one on screen loads its player once a swipe would have settled.
+    await settle(NEAR_LOAD_DELAY_MS);
     expect(app.getByTestId('video-view')).toBeTruthy();
     // Every clip can be liked; community clips can't be saved (they aren't Afterglow's to keep).
     expect(app.queryAllByLabelText('Save')).toHaveLength(app.getAllByLabelText('Like').length - 1);

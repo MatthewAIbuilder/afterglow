@@ -63,6 +63,7 @@ import { revealSecret } from '../../state/secrets';
 import { useRankedFeed } from './useRankedFeed';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
+import { allowClipSound } from '../../lib/audioSession';
 
 /**
  * Full-screen vertical feed. One clip per page. Only the clip on screen plays,
@@ -121,6 +122,8 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (decided && focusId) saveFocus(focusId);
   }, [decided, focusId, saveFocus]);
+  // Clips play with sound even with the iPhone's silent switch on (crowd videos always did).
+  useEffect(() => allowClipSound(), []);
   // Festival mode: only videos people filmed at the festival you're at (your own choice of focus is kept for later).
   const hereFestival = useFestivalMode().active?.festival;
   const viewFocus = hereFestival ? hereFocus(hereFestival.id) : focusId;
@@ -412,8 +415,9 @@ export function DiscoverFeed() {
               isNear={Math.abs(index - activeIndex) <= 1}
               bottomSpace={tabSpace}
               pager={pager}
-              onSkip={() => skipFrom(index)}
-              onNext={() => skipFrom(index)}
+              index={index}
+              onSkip={skipFrom}
+              onNext={skipFrom}
               onHold={onHold}
               topExtra={storiesSpace}
             />

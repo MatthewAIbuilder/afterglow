@@ -22,7 +22,7 @@ const imports = (text: string) => [...text.matchAll(/from '([^']+)'/g)].map((m) 
 
 describe('architecture', () => {
   it('only the data layer and the catalogue provider read mock data', () => {
-    const allowed = new Set(['state/catalog.tsx', 'state/taste.ts']);
+    const allowed = new Set(['state/catalog.tsx', 'state/taste.tsx']);
     const offenders = all
       .filter((f) => !f.path.startsWith('data/') && !allowed.has(f.path))
       .filter((f) => imports(f.text).some((i) => /data\/mock/.test(i)))

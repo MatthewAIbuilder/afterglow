@@ -15,8 +15,12 @@ import { NativeVideoPlayer } from './NativeVideoPlayer';
 import { POSTER_MAX_WAIT_MS, showPoster } from './playback';
 import { YouTubePlayer } from './YouTubePlayer';
 
-/** How long a browser waits before loading the player of a clip next to the one on screen. */
-export const NEAR_LOAD_DELAY_MS = 900;
+/**
+ * How long to wait before loading the player of a clip next to the one on
+ * screen: so a swipe's snap never shares its frames with a new player
+ * starting up (a browser needs longer).
+ */
+export const NEAR_LOAD_DELAY_MS = Platform.OS === 'web' ? 900 : 450;
 
 type Common = {
   media: ClipMedia;
@@ -62,7 +66,7 @@ export type EngineProps<M extends ClipMedia = ClipMedia> = Omit<Common, 'media'>
 function ClipPlayerBase({ load: near, ...props }: ClipPlayerProps) {
   const { media, live } = props;
   // In a browser, starting a YouTube player is heavy work: the clips next door wait a moment so a swipe lands smoothly.
-  const waitToLoad = Platform.OS === 'web' && !props.active;
+  const waitToLoad = !props.active;
   const [mayLoad, setMayLoad] = useState(!waitToLoad);
   // Once a clip has been on screen it stays loaded while near: swiping on never throws it away.
   if (props.active && !mayLoad) setMayLoad(true);
