@@ -111,6 +111,9 @@ export default function FindScreen() {
           <Text style={styles.boxTitle}>{hunt.name}</Text>
           <Text style={styles.hint}>{huntLine(progress)}{hunt.until ? ` · ${untilLine(hunt.until)}` : ''}</Text>
           <HuntRow hunt={hunt} found={progress.found} size={44} />
+          <Pressable onPress={() => router.push({ pathname: '/hunt/[id]', params: { id: hunt.id } })} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+            <Text style={styles.secondaryText}>{progress.done ? 'Share your hunt' : 'See the hunt'}</Text>
+          </Pressable>
         </View>
       ) : null}
 

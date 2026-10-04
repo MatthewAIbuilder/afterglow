@@ -12,6 +12,7 @@ import ScanScreen from '../scan';
 import GiveSproutScreen from '../give-sprout';
 import SproutScreen from '../sprout/[id]';
 import FindScreen from '../find/[code]';
+import HuntScreen from '../hunt/[id]';
 import StickerSheetScreen from '../sticker-sheet';
 import GardenScreen from '../garden';
 import AddFriendScreen from '../add/[handle]';
@@ -88,6 +89,7 @@ export const APP_ROUTES = {
   'give-sprout': GiveSproutScreen,
   'sprout/[id]': SproutScreen,
   'find/[code]': FindScreen,
+  'hunt/[id]': HuntScreen,
   'sticker-sheet': StickerSheetScreen,
   garden: GardenScreen,
   'add/[handle]': AddFriendScreen,
