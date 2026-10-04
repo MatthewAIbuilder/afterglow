@@ -175,7 +175,8 @@ export const findsFor = (finds: readonly Find[], account?: string) => finds.filt
 /** Only the ones that count. */
 export const foundOnly = (finds: readonly Find[]) => finds.filter((f) => f.state === 'found');
 
-export type HuntProgress = { hunt: Hunt; found: boolean[]; count: number; total: number; done: boolean };
+/** `last`: when you found your latest one (the day you finished, once it's done). */
+export type HuntProgress = { hunt: Hunt; found: boolean[]; count: number; total: number; done: boolean; last: number };
 /** Whether a hunt's sticker counts for you: still out there, or one you found before it was taken down. */
 export const counts = (hunt: Hunt, found: readonly boolean[], i: number) => !hunt.items[i]?.gone || !!found[i];
 /** How far you are with each hunt you've found something from, finished ones last. */
@@ -187,13 +188,19 @@ export function huntProgress(finds: readonly Find[], hunts: Record<string, Hunt>
     const found = hunt.items.map((_, i) => mine.some((f) => f.slot === i));
     const count = found.filter(Boolean).length;
     const total = hunt.items.filter((_, i) => counts(hunt, found, i)).length;
-    out.push({ hunt, found, count, total, done: count === total && count > 0 });
+    out.push({ hunt, found, count, total, done: count === total && count > 0, last: Math.max(...mine.map((f) => f.at)) });
   }
   return out.sort((a, b) => Number(a.done) - Number(b.done) || b.count - a.count);
 }
 
 /** "3 of 6 found", "All 6 found". */
 export const huntLine = (p: Pick<HuntProgress, 'count' | 'total' | 'done'>) => (p.done ? `All ${p.total} found` : `${p.count} of ${p.total} found`);
+
+/** What goes out when you share a hunt: how far you got, and where to find Afterglow. */
+export function huntShareText(p: Pick<HuntProgress, 'count' | 'total' | 'done'> & { hunt: Pick<Hunt, 'name'> }, webUrl: string): string {
+  const what = p.done ? `I found all ${p.total} stickers in the ${p.hunt.name} hunt on Afterglow.` : `I’ve found ${p.count} of ${p.total} stickers in the ${p.hunt.name} hunt on Afterglow.`;
+  return `${what} ${webUrl}`;
+}
 
 const day = (t: number) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 /**
@@ -281,3 +288,6 @@ export function parseEndDate(text: string): number | undefined | 'bad' {
   const end = new Date(Date.UTC(y, mo - 1, d, 23, 59, 59, 999));
   return end.getUTCFullYear() === y && end.getUTCMonth() === mo - 1 && end.getUTCDate() === d ? end.getTime() + 12 * 3_600_000 : 'bad';
 }
+
+/** "Finished Oct 10, 2026" for a finished hunt, else "Latest find Oct 9, 2026". */
+export const huntDateLine = (p: Pick<HuntProgress, 'done' | 'last'>) => `${p.done ? 'Finished' : 'Latest find'} ${day(p.last)}`;
