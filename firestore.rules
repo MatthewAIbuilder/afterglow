@@ -351,11 +351,15 @@ service cloud.firestore {
       allow list: if signedIn() && (resource.data.from == me() || resource.data.to == me());
       allow create: if signedIn()
         && id.matches('^[a-z0-9]{12,40}$')
-        && request.resource.data.keys().hasOnly(['from', 'kind', 'note', 'festivalId', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['from', 'kind', 'note', 'festivalId', 'artistId', 'artistName', 'createdAt'])
         && request.resource.data.from == me()
         && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise']
         && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 60))
         && (!('festivalId' in request.resource.data) || (request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 120))
+        // An artist's sprout names the artist (id and name, together).
+        && (('artistId' in request.resource.data) == ('artistName' in request.resource.data))
+        && (!('artistId' in request.resource.data) || (request.resource.data.artistId is string && request.resource.data.artistId.matches('^[a-z0-9][a-z0-9-]{0,79}$')))
+        && (!('artistName' in request.resource.data) || (request.resource.data.artistName is string && request.resource.data.artistName.size() >= 1 && request.resource.data.artistName.size() <= 60))
         && request.resource.data.createdAt == request.time
         && exists(path('profiles', me()));
       allow update: if signedIn()

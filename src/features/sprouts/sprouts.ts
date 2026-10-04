@@ -71,23 +71,38 @@ export function sproutIdFrom(bytes: ArrayLike<number>): string {
 }
 export const isSproutId = (id: unknown): id is string => typeof id === 'string' && ID.test(id);
 
+/** An artist's sprout: which artist (their name travels with it, for screens that can't look them up). */
+export type SproutArtist = { id: string; name: string };
+const ARTIST_ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
+const ARTIST_NAME_MAX = 60;
+/** An artist from a link or saved data, or undefined if it isn't one. */
+export function cleanSproutArtist(raw: unknown): SproutArtist | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const o = raw as Record<string, unknown>;
+  if (typeof o.id !== 'string' || !ARTIST_ID.test(o.id)) return undefined;
+  const name = typeof o.name === 'string' ? o.name.replace(/\s+/g, ' ').trim().slice(0, ARTIST_NAME_MAX) : '';
+  return name ? { id: o.id, name } : undefined;
+}
+
 /** What a sprout code says: enough to show it with no signal. */
-export type SproutCard = { id: string; kind: SproutKind; from: string; handle: string; name: string };
+export type SproutCard = { id: string; kind: SproutKind; from: string; handle: string; name: string; artist?: SproutArtist };
 
 export function sproutLink(card: SproutCard, base = WEB_URL): string {
   const name = card.name.trim().slice(0, NAME_MAX);
-  const q = `u=${encodeURIComponent(card.from)}&h=${encodeURIComponent(card.handle)}&k=${card.kind}${name ? `&n=${encodeURIComponent(name)}` : ''}`;
+  const artist = card.artist ? `&a=${encodeURIComponent(card.artist.id)}&an=${encodeURIComponent(card.artist.name)}` : '';
+  const q = `u=${encodeURIComponent(card.from)}&h=${encodeURIComponent(card.handle)}&k=${card.kind}${name ? `&n=${encodeURIComponent(name)}` : ''}${artist}`;
   return `${base.replace(/\/+$/, '')}/sprout/${card.id}?${q}`;
 }
 
 /** A card from a link's parts, or the route params of `/sprout/[id]`. */
-export function sproutCardFrom(parts: { id?: unknown; u?: unknown; h?: unknown; k?: unknown; n?: unknown }): SproutCard | undefined {
+export function sproutCardFrom(parts: { id?: unknown; u?: unknown; h?: unknown; k?: unknown; n?: unknown; a?: unknown; an?: unknown }): SproutCard | undefined {
   const id = typeof parts.id === 'string' ? parts.id : '';
   const from = typeof parts.u === 'string' ? parts.u : '';
   const handle = typeof parts.h === 'string' ? parts.h.trim().toLowerCase().replace(/^@/, '') : '';
   if (!isSproutId(id) || !UID.test(from) || !HANDLE.test(handle)) return undefined;
   const name = typeof parts.n === 'string' ? parts.n.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX) : '';
-  return { id, from, handle, name: name || handle, kind: isKind(parts.k) ? parts.k : 'seedling' };
+  const artist = cleanSproutArtist({ id: parts.a, name: parts.an });
+  return { id, from, handle, name: name || handle, kind: isKind(parts.k) ? parts.k : 'seedling', ...(artist ? { artist } : {}) };
 }
 
 /** A scanned code, if it's an Afterglow sprout (from any Afterglow address, or `afterglow://sprout/…`). */
@@ -104,14 +119,17 @@ export function readSproutLink(text: string): SproutCard | undefined {
       return undefined;
     }
   }
-  return sproutCardFrom({ id: m[1], u: params.u, h: params.h, k: params.k, n: params.n });
+  return sproutCardFrom({ id: m[1], u: params.u, h: params.h, k: params.k, n: params.n, a: params.a, an: params.an });
 }
 
+/** A sprout's name: "PLUR sprout", or an artist's ("SUBTRONICS sprout"). */
+export const sproutName = (s: { kind: SproutKind; artist?: SproutArtist }) => (s.artist ? `${s.artist.name} sprout` : kindOf(s.kind).name);
+const an = (name: string) => (/^[AEIOU]/i.test(name) ? 'an' : 'a');
+/** "a PLUR sprout", "an ILLENIUM sprout". */
+export const aSprout = (s: { kind: SproutKind; artist?: SproutArtist }) => `${an(sproutName(s))} ${sproutName(s)}`;
+
 /** "Maya gave you a PLUR sprout". */
-export const giftTitle = (card: Pick<SproutCard, 'name' | 'kind'>) => {
-  const k = kindOf(card.kind);
-  return `${card.name} gave you ${/^[AEIOU]/.test(k.name) ? 'an' : 'a'} ${k.name}`;
-};
+export const giftTitle = (card: Pick<SproutCard, 'name' | 'kind' | 'artist'>) => `${card.name} gave you ${aSprout(card)}`;
 
 /** A sprout cleaned up for its note. */
 export const cleanSproutNote = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, SPROUT_NOTE_MAX);
@@ -246,6 +264,8 @@ export type GardenSprout = {
   scannedAt?: number;
   /** A wild sprout: found at this festival (its name). */
   foundAt?: string;
+  /** An artist's sprout someone gave you. */
+  artist?: SproutArtist;
 };
 
 /**
@@ -278,7 +298,8 @@ export function garden(sprouts: readonly GardenSprout[], journey: Journey, bloom
   return [...sprouts]
     .sort((a, b) => b.at - a.at)
     .map((s) => {
-      if (s.kind !== 'seedling') return { ...s, shown: s.kind, stage: 3 as Stage };
+      // Given sprouts arrive grown, an artist's included.
+      if (s.kind !== 'seedling' || s.artist) return { ...s, shown: s.kind, stage: 3 as Stage };
       const growth = growthOf(journey, s.at, now);
       const shown = bloomed[s.id] ?? (growth.stage === 3 ? growth.leaning : 'seedling');
       return { ...s, growth, shown, stage: bloomed[s.id] ? 3 : growth.stage };

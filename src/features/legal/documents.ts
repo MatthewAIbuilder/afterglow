@@ -60,7 +60,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
               'Only if you switch them on: the festivals you’re going to and your top three sounds are shown on your profile.',
               'Videos you choose to share to your profile, with the festival, night and artist you tagged (for a festival from before Afterglow, the name, year and town you gave it; we also count how many of those you’ve shared, since the free plan shares up to three). Anyone signed in can watch them. Afterglow doesn’t add where you filmed, but a video file can carry its own details from your phone.',
               'Who you follow, the shared videos you like, festival crews you join and the sets you star at that crew’s festival (seen only by the crew), people you block (seen only by you) and reports you send (seen only by us).',
-              'Sprouts you give: who gave it, its kind and any note, the festival it was given at, and once someone picks it up, who and when. Anyone with its code can see who it’s from. Sprouts you pick up are kept the same way. Your garden’s growth is worked out on your phone.',
+              'Sprouts you give: who gave it, its kind (or, for an artist’s sprout, the artist) and any note, the festival it was given at, and once someone picks it up, who and when. Anyone with its code can see who it’s from. Sprouts you pick up are kept the same way. Your garden’s growth is worked out on your phone.',
             ],
           },
           {

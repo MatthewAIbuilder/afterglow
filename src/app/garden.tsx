@@ -9,7 +9,11 @@ import { PageTitle } from '../components/PageTitle';
 import { SPROUT_GREEN } from '../features/sprouts/look';
 import { claimLine } from '../features/sprouts/outbox';
 import { Sprout } from '../features/sprouts/Sprout';
-import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
+import { SproutOf } from '../features/sprouts/SproutOf';
+import { ArtistSproutsSection } from '../features/sprouts/ArtistSproutsSection';
+import { artistLook } from '../features/sprouts/artistLook';
+import { useCatalog } from '../state/catalog';
+import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
 import { haptic } from '../lib/haptics';
 import { useSprouts } from '../state/sprouts';
 import { color, radius, space, type } from '../theme/tokens';
@@ -37,8 +41,14 @@ export default function GardenScreen() {
       void refresh();
     }, [refresh]),
   );
+  const catalog = useCatalog();
   const waiting = sprouts.claims.filter((c) => c.state === 'waiting');
   const bloom = sprouts.newBlooms[0];
+  // After blooms, a new or levelled-up artist sprout gets its moment.
+  const fresh = bloom ? undefined : sprouts.newArtists[0];
+  const freshArtist = fresh ? catalog.artist(fresh.artistId) : undefined;
+  const plain = sprouts.garden.filter((g) => !g.artist);
+  const givenArtists = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: fromLine(g).replace(/^from /, ''), at: g.at }] : []));
   const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
   const collected = kinds.filter((k) => sprouts.collected.has(k.id)).length;
 
@@ -51,7 +61,7 @@ export default function GardenScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Your garden
         </Text>
-        <Text style={styles.sub}>{gardenLine(sprouts.garden)}</Text>
+        <Text style={styles.sub}>{gardenLine(plain)}</Text>
 
         <View style={styles.seedCard}>
           <Text style={styles.seeds}>{seedsLine(sprouts.seeds, sprouts.festivalDay)}</Text>
@@ -86,9 +96,9 @@ export default function GardenScreen() {
           <View style={styles.section}>
             {waiting.map((c) => (
               <View key={c.card.id} style={styles.waitRow}>
-                <Sprout kind={c.card.kind} stage={0} size={36} still />
+                <SproutOf kind={c.card.kind} artist={c.card.artist} stage={0} size={36} still />
                 <Text style={styles.waitText}>
-                  A sprout from {c.card.name}. {claimLine(c)}
+                  {c.card.artist ? `A ${sproutName(c.card)}` : 'A sprout'} from {c.card.name}. {claimLine(c)}
                 </Text>
               </View>
             ))}
@@ -96,7 +106,7 @@ export default function GardenScreen() {
         ) : null}
 
         <View style={styles.grid}>
-          {sprouts.garden.map((s) => (
+          {plain.map((s) => (
             <Pressable
               key={s.id}
               onPress={() => {
@@ -123,6 +133,8 @@ export default function GardenScreen() {
           ))}
         </View>
         <Text style={styles.hint}>{GROW_TIPS[0]} Sprouts you give help yours grow too.</Text>
+
+        <ArtistSproutsSection earned={sprouts.artists} given={givenArtists} canGive={sprouts.ready} />
 
         <View style={styles.section}>
           <Text style={styles.h2}>
@@ -153,9 +165,9 @@ export default function GardenScreen() {
             <Text style={styles.h2}>Given · {sprouts.gifts.length}</Text>
             {sprouts.gifts.slice(0, GIVEN_SHOWN).map((g) => (
               <View key={g.id} style={styles.givenRow}>
-                <Sprout kind={g.kind} stage={g.kind === 'seedling' ? 2 : 3} size={40} still />
+                <SproutOf kind={g.kind} artist={g.artist} stage={g.kind === 'seedling' ? 2 : 3} size={40} still />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.givenName}>{kindOf(g.kind).name}</Text>
+                  <Text style={styles.givenName}>{sproutName(g)}</Text>
                   <Text style={[styles.givenState, g.claimedBy ? { color: SPROUT_GREEN } : !g.sent ? styles.amberText : null]}>
                     {g.claimedBy ? `Picked up by ${g.claimedBy.name ?? (g.claimedBy.handle ? `@${g.claimedBy.handle}` : 'someone')}` : g.sent ? 'Not picked up yet' : 'Waiting for signal'} · {day(g.at)}
                   </Text>
@@ -167,7 +179,22 @@ export default function GardenScreen() {
       </ScrollView>
       <SproutSheet sprout={open} onClose={() => setOpen(undefined)} />
       {/* A sprout that bloomed since you last looked gets its moment, one at a time. */}
-      <BadgeCelebration id={bloom?.id} unlock={bloom && !open ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt } : undefined} onDone={() => bloom && sprouts.bloomShown(bloom.id)} />
+      <BadgeCelebration
+        id={bloom?.id ?? (fresh ? `artist:${fresh.artistId}:${fresh.tier}` : undefined)}
+        unlock={
+          open
+            ? undefined
+            : bloom
+              ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt }
+              : fresh && freshArtist
+                ? { kind: 'artistSprout', name: freshArtist.name, look: artistLook(freshArtist), tier: fresh.tier, videos: fresh.videos }
+                : undefined
+        }
+        onDone={() => {
+          if (bloom) sprouts.bloomShown(bloom.id);
+          else if (fresh) sprouts.artistShown(fresh);
+        }}
+      />
     </View>
   );
 }

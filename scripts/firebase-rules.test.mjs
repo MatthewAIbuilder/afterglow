@@ -722,6 +722,16 @@ await t('sprouts: given as yourself, picked up once, by anyone else not blocked,
   await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), { from: 'uidA', kind: 'seedling', createdAt: new Date(Date.now() - 31 * 86400_000) }));
   await assertFails(updateDoc(doc(B.firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), { to: 'uidB', claimedAt: serverTimestamp() }));
 });
+await t('sprouts: an artist sprout names its artist, both id and name, in shape', async () => {
+  await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'profiles', 'uidA'), { handle: 'aa', displayName: 'A' }));
+  const A = env.authenticatedContext('uidA');
+  const sprout = (extra = {}) => ({ from: 'uidA', kind: 'seedling', createdAt: serverTimestamp(), ...extra });
+  await assertSucceeds(setDoc(doc(A.firestore(), 'sprouts', 'artistaaaaaaaaaaaaaa'), sprout({ artistId: 'subtronics', artistName: 'SUBTRONICS' })));
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'artistbbbbbbbbbbbbbb'), sprout({ artistId: 'subtronics' })));
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'artistcccccccccccccc'), sprout({ artistName: 'SUBTRONICS' })));
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'artistdddddddddddddd'), sprout({ artistId: 'Bad Id!', artistName: 'X' })));
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'artisteeeeeeeeeeeeee'), sprout({ artistId: 'x', artistName: 'y'.repeat(61) })));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

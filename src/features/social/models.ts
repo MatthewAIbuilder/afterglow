@@ -99,11 +99,14 @@ export type Sprout = {
   to?: string;
   note?: string;
   festivalId?: string;
+  /** An artist's sprout: which artist. */
+  artistId?: string;
+  artistName?: string;
   /** When it reached Afterglow (ISO). */
   createdAt: string;
   claimedAt?: string;
 };
-export type SproutInput = { id: string; kind: string; note?: string; festivalId?: string };
+export type SproutInput = { id: string; kind: string; note?: string; festivalId?: string; artistId?: string; artistName?: string };
 
 export type CrewInvite = {
   /** `crewId_to` */

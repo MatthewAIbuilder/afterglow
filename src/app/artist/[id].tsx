@@ -47,6 +47,7 @@ import { useGoing } from '../../state/going';
 import { useRatings } from '../../state/ratings';
 import { useToday } from '../../lib/useToday';
 import { artistStory, hasStory, nextShow, nextShowLine, storyLines } from '../../features/artists/story';
+import { ArtistSproutCard } from '../../features/sprouts/ArtistSproutCard';
 import { ArtistCrowdRow } from '../../features/artists/ArtistCrowdRow';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
@@ -250,6 +251,10 @@ export default function ArtistScreen() {
             </View>
           </Section>
         ) : null}
+
+        <Section title="Their sprout">
+          <ArtistSproutCard artist={artist} />
+        </Section>
 
         {festivals.length > 0 && (
           <Section title="Playing">

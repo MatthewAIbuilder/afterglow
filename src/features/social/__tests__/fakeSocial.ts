@@ -853,7 +853,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         if (there.from === u.uid) return;
         throw new SocialError('unknown');
       }
-      sprouts.set(input.id, { id: input.id, kind: input.kind, from: u.uid, createdAt: now(), ...(input.note ? { note: input.note } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}) });
+      sprouts.set(input.id, { id: input.id, kind: input.kind, from: u.uid, createdAt: now(), ...(input.note ? { note: input.note } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName } : {}) });
     },
     async claimSprout(id) {
       if (network.down) throw new SocialError('network');

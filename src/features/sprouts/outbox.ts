@@ -1,5 +1,5 @@
 import type { Notice } from '../notifications/inbox';
-import { type GardenSprout, isKind, kindOf, isSproutId, type SproutCard, type SproutKind, SPROUT_KEEP_DAYS, SPROUT_NOTE_MAX } from './sprouts';
+import { cleanSproutArtist, type GardenSprout, isKind, kindOf, isSproutId, type SproutArtist, type SproutCard, type SproutKind, sproutName, SPROUT_KEEP_DAYS, SPROUT_NOTE_MAX } from './sprouts';
 
 /**
  * Giving and picking up sprouts with bad signal, pure. A sprout you give is
@@ -11,6 +11,8 @@ import { type GardenSprout, isKind, kindOf, isSproutId, type SproutCard, type Sp
 export type Gift = {
   id: string;
   kind: SproutKind;
+  /** An artist's sprout (one you earned by filming them). */
+  artist?: SproutArtist;
   note?: string;
   festivalId?: string;
   /** When you gave it (phone time). */
@@ -86,6 +88,7 @@ export function cleanGifts(raw: unknown): Gift[] {
     .map((g) => ({
       id: g.id,
       kind: g.kind,
+      ...(cleanSproutArtist(g.artist) ? { artist: cleanSproutArtist(g.artist) } : {}),
       at: g.at,
       sent: g.sent === true,
       tries: typeof g.tries === 'number' ? g.tries : 0,
@@ -106,7 +109,11 @@ export function cleanClaims(raw: unknown): Claim[] {
   return raw.filter(
     (c): c is Claim =>
       !!c && typeof c === 'object' && !!c.card && isSproutId(c.card.id) && isKind(c.card.kind) && typeof c.card.from === 'string' && typeof c.at === 'number' && STATES.includes(c.state),
-  );
+  ).map((c) => {
+    const { artist, ...card } = c.card;
+    const a = cleanSproutArtist(artist);
+    return { ...c, card: a ? { ...card, artist: a } : card };
+  });
 }
 
 /** What a scan says once it's done, or while it waits. */
@@ -129,7 +136,7 @@ export function sproutNotices(gifts: readonly Gift[], now: number): Notice[] {
     .map((g) => ({
       id: `sprout:${g.id}`,
       kind: 'sprout' as const,
-      title: `${g.claimedBy!.name ?? (g.claimedBy!.handle ? `@${g.claimedBy!.handle}` : 'Someone')} picked up your ${kindOf(g.kind).name}`,
+      title: `${g.claimedBy!.name ?? (g.claimedBy!.handle ? `@${g.claimedBy!.handle}` : 'Someone')} picked up your ${sproutName(g)}`,
       body: g.note ? `With your note: “${g.note}”. It’s growing in their garden now.` : 'It’s growing in their garden now.',
       href: '/garden',
     }));
@@ -155,7 +162,7 @@ export function arrivalNotices(garden: readonly GardenSprout[], now: number): No
     .map((g) => ({
       id: `sprout-in:${g.id}`,
       kind: 'sprout' as const,
-      title: `Your ${kindOf(g.kind).name} from ${g.name ?? (g.handle ? `@${g.handle}` : 'a friend')} is in your garden`,
+      title: `Your ${sproutName(g)} from ${g.name ?? (g.handle ? `@${g.handle}` : 'a friend')} is in your garden`,
       body: g.note ? `“${g.note}”` : 'It grows as you go: festival days, sets, videos and sprouts you give.',
       href: '/garden',
     }));

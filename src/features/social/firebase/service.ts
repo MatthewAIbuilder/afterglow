@@ -988,6 +988,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
               kind: input.kind,
               ...(input.note ? { note: input.note.slice(0, 60) } : {}),
               ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+              ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName.slice(0, 60) } : {}),
               createdAt: serverTimestamp(),
             }),
             CHAT_SEND_TIMEOUT_MS,

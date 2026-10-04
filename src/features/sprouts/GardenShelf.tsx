@@ -5,14 +5,24 @@ import { useSprouts } from '../../state/sprouts';
 import { radius, space, type } from '../../theme/tokens';
 import { ShelfHead } from '../profile/ShelfHead';
 import { SPROUT_GREEN } from './look';
-import { Sprout } from './Sprout';
-import { gardenLine, kindOf } from './sprouts';
+import { SproutOf } from './SproutOf';
+import { gardenLine, sproutName } from './sprouts';
+import { useCatalog } from '../../state/catalog';
 
 const SHOWN = 8;
 
 /** Your garden on your profile: your sprouts swaying in a row, and a tile to give one. */
 export function GardenShelf({ hidden, onToggle }: { hidden: boolean; onToggle: () => void }) {
-  const { garden } = useSprouts();
+  const { garden, artists } = useSprouts();
+  const catalog = useCatalog();
+  // Your artist sprouts first (most filmed), then the rest of your garden.
+  const items = [
+    ...artists.flatMap((a) => {
+      const artist = catalog.artist(a.artistId);
+      return artist ? [{ id: `artist:${a.artistId}`, label: `${artist.name} sprout`, el: <SproutOf artist={{ id: artist.id, name: artist.name }} tier={a.tier} size={62} /> }] : [];
+    }),
+    ...garden.map((s) => ({ id: s.id, label: s.shown === 'seedling' && !s.artist ? 'Sprout' : sproutName({ kind: s.shown, artist: s.artist }), el: <SproutOf kind={s.shown} artist={s.artist} stage={s.stage} size={62} /> })),
+  ].slice(0, SHOWN);
   const open = (to: '/garden' | '/give-sprout') => {
     haptic.select();
     router.push(to);
@@ -22,15 +32,15 @@ export function GardenShelf({ hidden, onToggle }: { hidden: boolean; onToggle: (
       <ShelfHead title="Your garden" hidden={hidden} onToggle={onToggle} link={gardenLine(garden)} onLink={() => open('/garden')} />
       {hidden ? null : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-          {garden.slice(0, SHOWN).map((s) => (
+          {items.map((s) => (
             <Pressable
               key={s.id}
               onPress={() => open('/garden')}
               accessibilityRole="button"
-              accessibilityLabel={`${s.shown === 'seedling' ? 'Sprout' : kindOf(s.shown).name}. Opens your garden.`}
+              accessibilityLabel={`${s.label}. Opens your garden.`}
               style={({ pressed }) => [styles.item, pressed && styles.pressed]}
             >
-              <Sprout kind={s.shown} stage={s.stage} size={62} />
+              {s.el}
             </Pressable>
           ))}
           <Pressable onPress={() => open('/give-sprout')} accessibilityRole="button" accessibilityLabel="Give someone a sprout" style={({ pressed }) => [styles.give, pressed && styles.pressed]}>
