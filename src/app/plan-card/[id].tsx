@@ -8,6 +8,10 @@ import { useFestivalPlan } from '../../features/plan/useFestivalPlan';
 import { CARD_MAX_WIDTH, PosterCard, sharePoster } from '../../features/plan/PosterCard';
 import { LineupPosterCard } from '../../features/plan/LineupPosterCard';
 import { lineupPoster, lineupPosterText } from '../../features/plan/lineupPoster';
+import { mustSeeCard, mustSeeText } from '../../features/plan/mustSeeCard';
+import { MustSeeCardView } from '../../features/plan/MustSeeCardView';
+import { usePickReasons } from '../../features/plan/usePickReasons';
+import { APP_NAME, WEB_URL } from '../../config/app';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
@@ -17,10 +21,10 @@ import { shareMessage } from '../../lib/share';
 import { goBack } from '../../lib/nav';
 
 /**
- * Share your plan: a poster-like card of it (the route once set times are
- * out, your picks before), or your lineup as a festival poster, as an image
- * or as plain text. A modal over the
- * festival page.
+ * Share your plan: your must-sees (your top picks and why), a poster-like
+ * card of it (the route once set times are out, your picks before), or your
+ * lineup as a festival poster, as an image or as plain text. A modal over the
+ * festival page. Opens on your day once set times are out, else your must-sees.
  */
 export default function PlanCardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,12 +36,19 @@ export default function PlanCardScreen() {
 }
 
 function PlanCardView({ festival }: { festival: Festival }) {
-  const { card, text: planText, picks } = useFestivalPlan(festival);
-  // Your plan as a list, or your lineup as a festival poster.
+  const { card, text: planText, picks, route } = useFestivalPlan(festival);
+  // Your must-sees, your plan as a list, or your lineup as a festival poster.
   const poster = useMemo(() => lineupPoster(festival, picks), [festival, picks]);
-  const [mode, setMode] = useState<'plan' | 'poster'>('plan');
+  const reason = usePickReasons();
+  const mustSees = useMemo(() => mustSeeCard(festival, picks, reason), [festival, picks, reason]);
+  const hasDay = !!route?.some((d) => d.stops.length);
+  const modes = [...(mustSees ? (['mustsee'] as const) : []), ...(card ? (['plan'] as const) : []), ...(poster ? (['poster'] as const) : [])];
+  const [chosen, setMode] = useState<Mode | undefined>();
+  const mode: Mode = chosen ?? (hasDay || !mustSees ? 'plan' : 'mustsee');
   const showPoster = mode === 'poster' && !!poster;
-  const text = showPoster ? lineupPosterText(poster) : planText;
+  const showMustSees = mode === 'mustsee' && !!mustSees;
+  const text = showPoster ? lineupPosterText(poster) : showMustSees ? mustSeeText(mustSees, APP_NAME, WEB_URL) : planText;
+  const what = showPoster ? 'lineup poster' : showMustSees ? 'must-sees' : 'plan';
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const cardRef = useRef<View>(null);
@@ -47,7 +58,7 @@ function PlanCardView({ festival }: { festival: Festival }) {
     if (busy) return;
     haptic.tap();
     setBusy(true);
-    await sharePoster(cardRef, showPoster ? `My ${festival.name} lineup` : `My ${festival.name}`);
+    await sharePoster(cardRef, showPoster ? `My ${festival.name} lineup` : showMustSees ? `My must-sees at ${festival.name}` : `My ${festival.name}`);
     setBusy(false);
   };
 
@@ -60,9 +71,9 @@ function PlanCardView({ festival }: { festival: Festival }) {
         </GlassCircleButton>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
-        {poster && card ? (
+        {modes.length > 1 ? (
           <View style={styles.modes} accessibilityRole="tablist">
-            {(['plan', 'poster'] as const).map((m) => (
+            {modes.map((m) => (
               <Pressable
                 key={m}
                 onPress={() => {
@@ -73,7 +84,7 @@ function PlanCardView({ festival }: { festival: Festival }) {
                 accessibilityState={{ selected: mode === m }}
                 style={[styles.mode, mode === m && styles.modeOn]}
               >
-                <Text style={[styles.modeText, mode === m && { color: color.moon }]}>{m === 'plan' ? 'Your plan' : 'Lineup poster'}</Text>
+                <Text style={[styles.modeText, mode === m && { color: color.moon }]}>{MODE_LABEL[m]}</Text>
               </Pressable>
             ))}
           </View>
@@ -81,6 +92,10 @@ function PlanCardView({ festival }: { festival: Festival }) {
         {showPoster ? (
           <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
             <LineupPosterCard poster={poster} />
+          </View>
+        ) : showMustSees ? (
+          <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
+            <MustSeeCardView card={mustSees} />
           </View>
         ) : card ? (
           <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
@@ -90,12 +105,12 @@ function PlanCardView({ festival }: { festival: Festival }) {
           <Text style={styles.empty}>Like a few clips or rate some artists and your plan will be ready to share.</Text>
         )}
         {/* A picture needs the phone (the card is captured natively); the website shares the text. */}
-        {(card || showPoster) && Platform.OS !== 'web' ? (
+        {(card || showPoster || showMustSees) && Platform.OS !== 'web' ? (
           <Pressable
             onPress={shareImage}
             disabled={busy}
             accessibilityRole="button"
-            accessibilityLabel={showPoster ? 'Share your lineup poster as an image' : 'Share your plan as an image'}
+            accessibilityLabel={`Share your ${what} as an image`}
             style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
           >
             <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
@@ -108,7 +123,7 @@ function PlanCardView({ festival }: { festival: Festival }) {
               void shareMessage(text);
             }}
             accessibilityRole="button"
-            accessibilityLabel={showPoster ? 'Share your lineup as text' : 'Share your plan as text'}
+            accessibilityLabel={showPoster ? 'Share your lineup as text' : `Share your ${what} as text`}
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
           >
             <Text style={styles.buttonText}>Share as text</Text>
@@ -118,6 +133,9 @@ function PlanCardView({ festival }: { festival: Festival }) {
     </View>
   );
 }
+
+type Mode = 'mustsee' | 'plan' | 'poster';
+const MODE_LABEL: Record<Mode, string> = { mustsee: 'Must-sees', plan: 'Your plan', poster: 'Lineup poster' };
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
