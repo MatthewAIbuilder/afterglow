@@ -35,7 +35,14 @@ export type Creature =
   | 'fox'
   | 'dragon'
   | 'bear'
-  | 'wisp';
+  | 'wisp'
+  // Festival places, for stickers (features/finds).
+  | 'ferris'
+  | 'rail'
+  | 'sunrise'
+  | 'lantern'
+  | 'confetti'
+  | 'frog';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -162,8 +169,32 @@ export function artistLook(a: ArtistLike): ArtistLook {
 /** Which artists have a hand-made collectible (folded names). */
 export const SIGNATURE_NAMES = Object.keys(SIGNATURES);
 
+/** Festival-place creatures, for stickers you find in the wild (features/finds). */
+const PLACES: Record<PlaceCreature, Spec> = {
+  ferris: { creature: 'ferris', palette: P('#FFE9F4', '#FF7EB6', '#B03A7A', '#7FD3FF', '#3A6AC8', '#FFE36B', '#FF7EB6'), name: 'The Ferris wheel', theme: 'A Ferris wheel that lights up the night' },
+  rail: { creature: 'rail', palette: P('#E9FFF4', '#5BE3B5', '#1F8C6A', '#D6DAE4', '#6A7086', '#FF5FCB', '#5BE3B5'), name: 'The Rail rider', theme: 'Front row on the rail, glow sticks up' },
+  sunrise: { creature: 'sunrise', palette: P('#FFF6D0', '#FFC24A', '#E8742A', '#FFB070', '#2E2458', '#FF8A5C', '#FFB347'), name: 'The Sunrise', theme: 'Still dancing when the sun comes up' },
+  lantern: { creature: 'lantern', palette: P('#FFF4D6', '#FFCF6B', '#B8761E', '#6A4C36', '#2E2018', '#FFE9A0', '#FFC861'), name: 'The Camp lantern', theme: 'A lantern that keeps the campsite cosy' },
+  confetti: { creature: 'confetti', palette: P('#F2E8FF', '#A97CFF', '#5A3EB0', '#FF7EB6', '#5BE3B5', '#FFE36B', '#A97CFF'), name: 'The Confetti popper', theme: 'A burst of confetti at the drop' },
+  frog: { creature: 'frog', palette: P('#DFFFD0', '#6CD85A', '#2A8A2E', '#BFEFFF', '#3A9AE0', '#FFFFFF', '#6CD85A'), name: 'The Water frog', theme: 'A frog that reminds you to drink water' },
+};
+export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog';
+export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];
+
+/** The sound creatures (no artist's identity), which stickers can use too. */
+export const SOUND_CREATURES: readonly Creature[] = [...new Set(Object.values(SOUND).map((s) => s.creature))];
+
+/** A sticker's creature: a festival place, or a sound creature in its own colours. Never an artist's hand-made one. */
+export function stickerLook(creature: string): ArtistLook | undefined {
+  const place = PLACES[creature as PlaceCreature];
+  if (place) return { ...place, accent: place.palette.glow, signature: false };
+  const sound = Object.values(SOUND).find((s) => s.creature === creature);
+  return sound ? { ...sound, accent: sound.palette.glow, signature: false } : undefined;
+}
+
 /** Every look, for galleries and tests. */
 export const ALL_LOOKS: readonly ArtistLook[] = [
   ...Object.values(SIGNATURES).map((s) => ({ ...s, accent: s.palette.glow, signature: true })),
   ...Object.values(SOUND).map((s) => ({ ...s, accent: s.palette.glow, signature: false })),
+  ...Object.values(PLACES).map((s) => ({ ...s, accent: s.palette.glow, signature: false })),
 ];

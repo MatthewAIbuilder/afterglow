@@ -1,0 +1,37 @@
+import { StyleSheet, Text, View } from 'react-native';
+import { type as typeScale } from '../../theme/tokens';
+import { FriendQR } from '../friends/FriendQR';
+import { Collectible } from '../sprouts/Collectible';
+import { findLink, lookOf, type Sticker } from './finds';
+
+/** A printed sticker's size in CSS pixels (96 to the inch): 3 by 3.75 inches. */
+export const STICKER_W = 288;
+export const STICKER_H = 360;
+
+/**
+ * One printed sticker: the creature on its night tile, its name, and its
+ * code on a white square (with the creature in the middle) so any phone
+ * camera reads it.
+ */
+export function StickerCard({ sticker }: { sticker: Pick<Sticker, 'code' | 'name' | 'creature'> }) {
+  const look = lookOf(sticker.creature);
+  return (
+    <View style={styles.sticker} accessible accessibilityLabel={`${sticker.name} sticker`}>
+      <Collectible look={look} size={132} still />
+      <Text style={[styles.name, { color: look.accent }]} numberOfLines={2}>
+        {sticker.name}
+      </Text>
+      <View style={styles.qr}>
+        <FriendQR value={findLink(sticker)} size={140} theme="glow" centre={(s) => <Collectible look={look} size={s} still />} />
+      </View>
+      <Text style={styles.scan}>Scan to collect · afterglowmusic.app</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  sticker: { width: STICKER_W, height: STICKER_H, borderRadius: 28, backgroundColor: '#0A0918', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 14, borderWidth: 2, borderColor: 'rgba(169,124,255,0.45)' },
+  name: { ...typeScale.headline, textAlign: 'center' },
+  qr: { padding: 6, borderRadius: 14, backgroundColor: '#FBF9FF' },
+  scan: { ...typeScale.caption, fontSize: 11, color: 'rgba(243,240,255,0.75)' },
+});

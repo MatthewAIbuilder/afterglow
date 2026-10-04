@@ -11,6 +11,7 @@ import { claimLine } from '../features/sprouts/outbox';
 import { Sprout } from '../features/sprouts/Sprout';
 import { SproutOf } from '../features/sprouts/SproutOf';
 import { ArtistSproutsSection } from '../features/sprouts/ArtistSproutsSection';
+import { FindsSection } from '../features/finds/FindsSection';
 import { artistLook } from '../features/sprouts/artistLook';
 import { useCatalog } from '../state/catalog';
 import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
@@ -134,6 +135,7 @@ export default function GardenScreen() {
         </View>
         <Text style={styles.hint}>{GROW_TIPS[0]} Sprouts you give help yours grow too.</Text>
 
+        <FindsSection />
         <ArtistSproutsSection earned={sprouts.artists} given={givenArtists} canGive={sprouts.ready} />
 
         <View style={styles.section}>
