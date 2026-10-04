@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { Share } from 'react-native';
 import { findLink } from '../../features/finds/finds';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { renderApp } from './appRoutes';
@@ -131,7 +132,7 @@ describe('stickers', () => {
   it('finishing a hunt opens a card to share', async () => {
     seed();
     mockSocial.stickers.set('frog2027aa', { code: 'frog2027aa', name: 'Water frog', creature: 'frog', huntId: 'nightmkt27', slot: 1 });
-    const share = jest.spyOn(require('react-native').Share, 'share').mockResolvedValue({ action: 'dismissedAction' } as never);
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'dismissedAction' } as never);
     const app = await renderApp(link());
     await flush();
     expect(app.getByText('See the hunt')).toBeTruthy();
