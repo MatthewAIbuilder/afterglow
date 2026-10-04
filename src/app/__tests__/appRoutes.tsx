@@ -11,6 +11,8 @@ import MyCodeScreen from '../my-code';
 import ScanScreen from '../scan';
 import GiveSproutScreen from '../give-sprout';
 import SproutScreen from '../sprout/[id]';
+import FindScreen from '../find/[code]';
+import StickerSheetScreen from '../sticker-sheet';
 import GardenScreen from '../garden';
 import AddFriendScreen from '../add/[handle]';
 import AccountScreen from '../account';
@@ -85,6 +87,8 @@ export const APP_ROUTES = {
   scan: ScanScreen,
   'give-sprout': GiveSproutScreen,
   'sprout/[id]': SproutScreen,
+  'find/[code]': FindScreen,
+  'sticker-sheet': StickerSheetScreen,
   garden: GardenScreen,
   'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,

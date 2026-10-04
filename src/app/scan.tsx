@@ -9,6 +9,7 @@ import { PersonAvatar } from '../components/PersonAvatar';
 import { CloseIcon, QrIcon } from '../components/TabIcons';
 import { type FriendCard, readFriendLink } from '../features/friends/qr';
 import { readSproutLink } from '../features/sprouts/sprouts';
+import { readFindLink } from '../features/finds/finds';
 import { haptic } from '../lib/haptics';
 import { type AddResult, useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
@@ -41,12 +42,19 @@ export default function ScanScreen() {
     if (sprout) {
       // A sprout someone's giving you: its own page picks it up.
       haptic.settle();
-      router.replace({ pathname: '/sprout/[id]', params: { id: sprout.id, u: sprout.from, h: sprout.handle, k: sprout.kind, n: sprout.name } });
+      router.replace({ pathname: '/sprout/[id]', params: { id: sprout.id, u: sprout.from, h: sprout.handle, k: sprout.kind, n: sprout.name, ...(sprout.artist ? { a: sprout.artist.id, an: sprout.artist.name } : {}) } });
+      return;
+    }
+    const sticker = readFindLink(text);
+    if (sticker) {
+      // A sticker in the wild: its own page keeps it.
+      haptic.settle();
+      router.replace({ pathname: '/find/[code]', params: { code: sticker.code, c: sticker.creature, n: sticker.name } });
       return;
     }
     const card = readFriendLink(text);
     if (!card) {
-      setNote('That isn’t an Afterglow friend code or sprout.');
+      setNote('That isn’t an Afterglow friend code, sprout or sticker.');
       setTimeout(() => {
         lastText.current = undefined;
         setNote(undefined);

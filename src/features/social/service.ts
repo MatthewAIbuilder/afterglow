@@ -1,4 +1,5 @@
 import type { PastEvent } from '../memories/past';
+import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
 import type { Activity, Comment, Crew, Sprout, SproutInput, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
@@ -262,6 +263,24 @@ export interface SocialService {
   /** Take back a sprout nobody has picked up (one that isn't there is fine; `sprout-taken` once someone has it). */
   takeBackSprout(id: string): Promise<void>;
 
+  /** A sticker by its code, or null. Anyone can read one, signed in or not. */
+  sticker(code: string): Promise<Sticker | null>;
+  /** A hunt, or null. Anyone can read one. */
+  hunt(id: string): Promise<Hunt | null>;
+  /** Tell Afterglow you found a sticker (scanned at `at`, ms). Again is the same as once. `sticker-ended` when its end date had passed. */
+  recordFind(code: string, at: number): Promise<void>;
+  /** HQ: make a sticker (added to the end of its hunt, if any). Support account only. */
+  addSticker(input: StickerInput): Promise<Sticker>;
+  stickers(max: number): Promise<Sticker[]>;
+  /** Take a sticker's code down (its place in a hunt stays). */
+  deleteSticker(code: string): Promise<void>;
+  addHunt(input: HuntInput): Promise<Hunt>;
+  hunts(max: number): Promise<Hunt[]>;
+  /** A hunt goes; its stickers stay as stickers on their own. */
+  deleteHunt(id: string): Promise<void>;
+  /** How many people have found a sticker. */
+  stickerFinds(code: string): Promise<number>;
+
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;
   setBlocked(uid: string, blocked: boolean): Promise<void>;
@@ -283,6 +302,7 @@ export type SocialErrorKind =
   | 'sprout-taken'
   | 'sprout-gone'
   | 'throwback-limit'
+  | 'sticker-ended'
   | 'not-found'
   | 'network'
   | 'unavailable'
@@ -316,6 +336,7 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'sprout-taken': 'Someone else already picked up this sprout.',
   'sprout-gone': 'This sprout can’t be picked up any more. Ask them for a new code.',
   'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
+  'sticker-ended': 'This sticker can’t be found any more.',
   'not-found': 'That doesn’t exist any more.',
   network: 'Couldn’t reach Afterglow. Check your connection and try again.',
   unavailable: 'Profiles aren’t available in this version of Afterglow yet.',

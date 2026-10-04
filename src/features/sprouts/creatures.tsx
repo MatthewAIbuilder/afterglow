@@ -1226,6 +1226,259 @@ const wisp: Draw = (p, f) => ({
   ]),
 });
 
+const ferris: Draw = (p, f) => ({
+  back: <Path d="M50 46 L33 88 M50 46 L67 88 M26 88 L74 88" stroke={p.altDeep} strokeWidth={2.6} strokeLinecap="round" fill="none" />,
+  sway: (
+    <G>
+      <Circle cx={50} cy={46} r={28} fill="none" stroke={p.mid} strokeWidth={2.6} />
+      <Circle cx={50} cy={46} r={24} fill="none" stroke={p.light} strokeWidth={0.6} opacity={0.6} />
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = (i * 45 * Math.PI) / 180;
+        const x = 50 + Math.cos(a) * 28;
+        const y = 46 + Math.sin(a) * 28;
+        const lx = 50 + Math.cos(a + Math.PI / 8) * 28;
+        const ly = 46 + Math.sin(a + Math.PI / 8) * 28;
+        return (
+          <G key={i}>
+            <Line x1={50} y1={46} x2={x} y2={y} stroke={p.light} strokeWidth={0.9} opacity={0.7} />
+            <Line x1={x} y1={y} x2={x} y2={y + 3} stroke={p.light} strokeWidth={0.8} />
+            <Rect x={x - 3.6} y={y + 2.6} width={7.2} height={6} rx={2} fill={i % 2 ? p.alt : p.accent} />
+            <Rect x={x - 2.4} y={y + 3.6} width={4.8} height={2} rx={0.8} fill="#FFFFFF" opacity={0.55} />
+            <Circle cx={lx} cy={ly} r={1.2} fill={p.accent} />
+          </G>
+        );
+      })}
+    </G>
+  ),
+  pivot: [50, 46],
+  flicker: sparkles(p.accent, [
+    [16, 20, 2.4],
+    [86, 26, 2],
+    [84, 74, 2.2],
+  ]),
+  flickerOver: true,
+  body: (
+    <G>
+      <Circle cx={50} cy={46} r={10} fill={f.round} stroke={p.deep} strokeWidth={0.8} />
+      <Path d="M43.5 42 Q45.5 38.5 49 38" stroke="#FFFFFF" strokeWidth={1.2} opacity={0.6} fill="none" strokeLinecap="round" />
+      <Path d="M47.5 49.4 Q50 51.4 52.5 49.4" stroke={INK} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [43, 41, 14, 7],
+    el: (
+      <G>
+        <Dot x={46.6} y={44.6} r={1.7} />
+        <Dot x={53.4} y={44.6} r={1.7} />
+      </G>
+    ),
+  },
+});
+
+const rail: Draw = (p, f) => ({
+  body: (
+    <G>
+      <Path d="M39 52 L29 31 M61 52 L71 31" stroke={p.mid} strokeWidth={5.5} strokeLinecap="round" />
+      <Circle cx={28.5} cy={30} r={3.4} fill={p.mid} />
+      <Circle cx={71.5} cy={30} r={3.4} fill={p.mid} />
+      <Ellipse cx={50} cy={56} rx={17} ry={16} fill={f.round} />
+      <Path d="M38 48 Q41 42 47 41" stroke="#FFFFFF" strokeWidth={1.8} opacity={0.6} fill="none" strokeLinecap="round" />
+      <Path d="M45.5 56 Q50 61.5 54.5 56Z" fill={INK} />
+      <Circle cx={41} cy={56} r={2.2} fill={p.accent} opacity={0.35} />
+      <Circle cx={59} cy={56} r={2.2} fill={p.accent} opacity={0.35} />
+    </G>
+  ),
+  eyes: {
+    box: [40, 46, 20, 8],
+    el: (
+      <G>
+        <Dot x={45} y={50} r={2.4} />
+        <Dot x={55} y={50} r={2.4} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Path d="M27 31 L21 17 M73 31 L79 17" stroke={p.accent} strokeWidth={7} strokeLinecap="round" opacity={0.25} />
+      <Path d="M27 31 L21 17 M73 31 L79 17" stroke={p.accent} strokeWidth={3.2} strokeLinecap="round" />
+      <Path d="M26.4 29 L22.4 19.6 M73.6 29 L77.6 19.6" stroke="#FFFFFF" strokeWidth={1} strokeLinecap="round" opacity={0.8} />
+    </G>
+  ),
+  flickerOver: true,
+  front: (
+    <G>
+      <Rect x={22} y={68} width={4.5} height={18} rx={1} fill={p.altDeep} />
+      <Rect x={73.5} y={68} width={4.5} height={18} rx={1} fill={p.altDeep} />
+      <Rect x={14} y={63} width={72} height={7.5} rx={3.75} fill={f.alt} />
+      <Path d="M18 65.4 L82 65.4" stroke="#FFFFFF" strokeWidth={1} opacity={0.6} strokeLinecap="round" />
+      <Path d="M27 76 L73 76" stroke={p.altDeep} strokeWidth={2} />
+    </G>
+  ),
+});
+
+const sunrise: Draw = (p, f) => ({
+  flicker: (
+    <G>
+      {Array.from({ length: 9 }, (_, i) => {
+        const a = ((-170 + i * 20) * Math.PI) / 180;
+        return <Path key={i} d={flame(50 + Math.cos(a) * 23, 62 + Math.sin(a) * 23, 50 + Math.cos(a) * 37, 62 + Math.sin(a) * 37, 3.6)} fill={p.alt} />;
+      })}
+    </G>
+  ),
+  body: (
+    <G>
+      <Circle cx={50} cy={62} r={20} fill={f.round} />
+      <Path d="M37 54 Q40 47 47 45" stroke="#FFFFFF" strokeWidth={2} opacity={0.6} fill="none" strokeLinecap="round" />
+      <Path d="M46 62 Q50 65.5 54 62" stroke={INK} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+      <Circle cx={41.5} cy={61} r={2.4} fill={p.accent} opacity={0.5} />
+      <Circle cx={58.5} cy={61} r={2.4} fill={p.accent} opacity={0.5} />
+    </G>
+  ),
+  eyes: {
+    box: [41, 52, 18, 8],
+    el: (
+      <G>
+        <Dot x={44.6} y={56} r={2.2} />
+        <Dot x={55.4} y={56} r={2.2} />
+      </G>
+    ),
+  },
+  front: (
+    <G>
+      <Path d="M9.6 72 Q22 64 40 72 Q58 80 76 70 Q85 66 91.4 70 A46 46 0 0 1 9.6 72Z" fill={p.altDeep} opacity={0.75} />
+      <Path d="M17 82 Q34 74 56 82 Q72 87 84.9 80 A46 46 0 0 1 17 82Z" fill={p.altDeep} />
+    </G>
+  ),
+});
+
+const lantern: Draw = (p, f) => ({
+  back: (
+    <G>
+      <Path d="M40 31 Q50 15 60 31" stroke={p.alt} strokeWidth={2} fill="none" />
+      <Circle cx={50} cy={20} r={2} fill="none" stroke={p.alt} strokeWidth={1.4} />
+    </G>
+  ),
+  flicker: (
+    <G>
+      <Circle cx={50} cy={60} r={16} fill={p.accent} opacity={0.35} />
+      <Path d={flame(50, 68, 50, 52, 5.5)} fill={p.accent} />
+      <Path d={flame(50, 68, 50, 58.5, 2.6)} fill="#FFFFFF" />
+    </G>
+  ),
+  body: (
+    <G>
+      <Path d="M36 35 L64 35 L60 29.5 L40 29.5Z" fill={f.alt} />
+      <Rect x={36} y={35} width={28} height={36} rx={9} fill={f.round} opacity={0.55} stroke={p.alt} strokeWidth={1.5} />
+      <Path d="M40 41 Q41 38 44 37.5" stroke="#FFFFFF" strokeWidth={1.4} opacity={0.7} fill="none" strokeLinecap="round" />
+      <Path d="M38 71 L62 71 L59.5 77 L40.5 77Z" fill={f.alt} />
+      <Path d="M47 50.6 Q50 53 53 50.6" stroke={INK} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [41, 42, 18, 8],
+    el: (
+      <G>
+        <Dot x={44.6} y={46} r={2.1} />
+        <Dot x={55.4} y={46} r={2.1} />
+      </G>
+    ),
+  },
+  front: (
+    <G>
+      <Glow x={24} y={60} r={1.3} color={p.accent} />
+      <Glow x={77} y={48} r={1.1} color={p.accent} />
+      <Glow x={72} y={78} r={1.2} color={p.accent} />
+    </G>
+  ),
+});
+
+const confetti: Draw = (p, f) => {
+  const bits: [number, number, number, string][] = [
+    [30, 32, 20, p.alt],
+    [40, 22, -30, p.accent],
+    [50, 15, 10, p.altDeep],
+    [60, 23, 40, p.light],
+    [70, 31, -15, p.alt],
+    [35, 41, 60, p.accent],
+    [65, 40, -50, p.altDeep],
+    [45, 31, 30, p.light],
+    [56, 33, -20, p.alt],
+    [24, 22, 15, p.altDeep],
+    [77, 20, -35, p.accent],
+  ];
+  return {
+    body: (
+      <G>
+        <Path d="M34 46 L66 46 L52.5 86 Q50 89.5 47.5 86Z" fill={f.body} />
+        <Path d="M44 69 L58.5 67.5 M47 79 L55 78" stroke={p.alt} strokeWidth={2.6} strokeLinecap="round" />
+        <Ellipse cx={50} cy={46} rx={16} ry={4} fill={p.light} />
+        <Ellipse cx={50} cy={46} rx={12} ry={2.4} fill={p.deep} />
+        <Path d="M47 60.5 Q50 63 53 60.5" stroke={INK} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+      </G>
+    ),
+    eyes: {
+      box: [42, 52, 16, 8],
+      el: (
+        <G>
+          <Dot x={45.5} y={56} r={2.1} />
+          <Dot x={54.5} y={56} r={2.1} />
+        </G>
+      ),
+    },
+    flicker: (
+      <G>
+        <Path d="M45 44 C40 36 47 32 42 24" stroke={p.accent} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+        <Path d="M55 44 C60 36 53 30 59 22" stroke={p.alt} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+        {bits.map(([x, y, rot, c], i) => (
+          <Rect key={i} x={x - 2} y={y - 1.2} width={4} height={2.4} rx={0.6} fill={c} transform={`rotate(${rot} ${x} ${y})`} />
+        ))}
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
+const frog: Draw = (p, f) => ({
+  body: (
+    <G>
+      <Circle cx={38} cy={46} r={8} fill={f.round} />
+      <Circle cx={62} cy={46} r={8} fill={f.round} />
+      <Ellipse cx={50} cy={64} rx={22} ry={17} fill={f.round} />
+      <Ellipse cx={50} cy={71} rx={13} ry={9} fill={p.light} opacity={0.7} />
+      <Path d="M33 56 Q36 50 42 49" stroke="#FFFFFF" strokeWidth={1.6} opacity={0.5} fill="none" strokeLinecap="round" />
+      <Path d="M38 61 Q50 69 62 61" stroke={INK} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+      <Ellipse cx={36} cy={80} rx={6} ry={3} fill={p.mid} />
+      <Ellipse cx={64} cy={80} rx={6} ry={3} fill={p.mid} />
+    </G>
+  ),
+  eyes: {
+    box: [29, 39, 42, 14],
+    el: (
+      <G>
+        <Circle cx={38} cy={46} r={5.4} fill="#FFFFFF" />
+        <Circle cx={62} cy={46} r={5.4} fill="#FFFFFF" />
+        <Dot x={38.6} y={46.4} r={3.3} />
+        <Dot x={61.4} y={46.4} r={3.3} />
+      </G>
+    ),
+  },
+  front: (
+    <G>
+      <Path d="M67 58 C71.5 64 73.5 67.5 73.5 71 A6.5 6.5 0 0 1 60.5 71 C60.5 67.5 62.5 64 67 58Z" fill={f.alt} stroke={p.altDeep} strokeWidth={0.6} />
+      <Ellipse cx={64.6} cy={68.4} rx={1.4} ry={2.4} fill="#FFFFFF" opacity={0.8} />
+      <Ellipse cx={60.5} cy={74} rx={3.6} ry={2.6} fill={p.mid} />
+      <Ellipse cx={73.5} cy={74} rx={3.6} ry={2.6} fill={p.mid} />
+    </G>
+  ),
+  flicker: (
+    <G>
+      <Glow x={80} y={52} r={1.2} color={p.alt} />
+      <Glow x={22} y={40} r={1} color={p.alt} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -1255,4 +1508,10 @@ export const DRAW: Record<Creature, Draw> = {
   dragon,
   bear,
   wisp,
+  ferris,
+  rail,
+  sunrise,
+  lantern,
+  confetti,
+  frog,
 };

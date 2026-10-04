@@ -32,6 +32,7 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  Timestamp,
   updateDoc,
   where,
   writeBatch,
@@ -46,7 +47,7 @@ import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
-import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -258,6 +259,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await batch.commit();
         // Once the profile is gone (the rules allow it only then), and never in the way of deleting the account.
         await deleteDoc(doc(db, 'usage', user.uid)).catch(() => {});
+        // Stickers you found go too.
+        const finds = await getDocs(query(collection(db, 'finds'), where('uid', '==', user.uid), limit(500))).catch(() => null);
+        for (const d of finds?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
         // Sprouts you gave and picked up go too (the rules allow it once the profile is gone).
         for (const field of ['from', 'to'] as const) {
           const snap = await getDocs(query(collection(db, 'sprouts'), where(field, '==', user.uid), limit(500))).catch(() => null);
@@ -1052,6 +1056,78 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           throw e;
         }
       }),
+    sticker: (code) => guard(async () => stickerFromDoc(code, (await getDoc(doc(fb().db, 'stickers', code))).data())),
+    hunt: (id) => guard(async () => huntFromDoc(id, (await getDoc(doc(fb().db, 'hunts', id))).data())),
+    recordFind: (code, at) =>
+      guard(async () => {
+        const user = me();
+        const ref_ = doc(fb().db, 'finds', `${user.uid}_${code}`);
+        try {
+          await withTimeout(setDoc(ref_, { uid: user.uid, code, at: Timestamp.fromMillis(at), createdAt: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
+        } catch (e) {
+          if (e instanceof SocialError && e.kind === 'network') throw e;
+          // Sent before and the answer was lost: it's already there.
+          if ((await getDoc(ref_).catch(() => null))?.exists()) return;
+          const s = stickerFromDoc(code, (await getDoc(doc(fb().db, 'stickers', code))).data());
+          if (!s) throw new SocialError('not-found');
+          if (s.until !== undefined) throw new SocialError('sticker-ended');
+          throw e;
+        }
+      }),
+    addSticker: (input) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const ref_ = doc(db, 'stickers', input.code);
+        return runTransaction(db, async (tx) => {
+          let slot: number | undefined;
+          if (input.huntId) {
+            const huntRef = doc(db, 'hunts', input.huntId);
+            const h = huntFromDoc(input.huntId, (await tx.get(huntRef)).data());
+            if (!h) throw new SocialError('not-found');
+            slot = h.items.length;
+            tx.update(huntRef, { items: [...h.items, { creature: input.creature, name: input.name.slice(0, 40) }] });
+          }
+          const data = {
+            name: input.name.trim().slice(0, 40),
+            creature: input.creature,
+            ...(input.huntId && slot !== undefined ? { huntId: input.huntId, slot } : {}),
+            ...(input.until !== undefined ? { until: Timestamp.fromMillis(input.until) } : {}),
+            ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+            by: user.uid,
+            createdAt: serverTimestamp(),
+          };
+          tx.set(ref_, data);
+          return stickerFromDoc(input.code, { ...data, until: input.until, createdAt: Date.now() })!;
+        });
+      }),
+    stickers: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'stickers'), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => stickerFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    deleteSticker: (code) => guard(async () => deleteDoc(doc(fb().db, 'stickers', code))),
+    addHunt: (input) =>
+      guard(async () => {
+        const user = me();
+        const data = {
+          name: input.name.trim().slice(0, 40),
+          items: [],
+          ...(input.until !== undefined ? { until: Timestamp.fromMillis(input.until) } : {}),
+          ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+          by: user.uid,
+          createdAt: serverTimestamp(),
+        };
+        await setDoc(doc(fb().db, 'hunts', input.id), data);
+        return huntFromDoc(input.id, { ...data, until: input.until })!;
+      }),
+    hunts: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'hunts'), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => huntFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    deleteHunt: (id) => guard(async () => deleteDoc(doc(fb().db, 'hunts', id))),
+    stickerFinds: (code) => guard(async () => (await getCountFromServer(query(collection(fb().db, 'finds'), where('code', '==', code)))).data().count),
     declineCrewInvite: (crewId) =>
       guard(async () => {
         const user = me();

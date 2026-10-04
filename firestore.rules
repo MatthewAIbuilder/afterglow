@@ -375,6 +375,56 @@ service cloud.firestore {
         || ((resource.data.from == me() || resource.data.get('to', '') == me()) && !exists(path('profiles', me())))
       );
     }
+    // Stickers you find in the wild: made in HQ, readable by anyone with the
+    // code (the website shows one before you sign in), listed only in HQ.
+    function stickerShape(d) {
+      return d.keys().hasOnly(['name', 'creature', 'huntId', 'slot', 'until', 'festivalId', 'by', 'createdAt'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 40
+        && d.creature is string && d.creature.matches('^[a-z]{2,20}$')
+        && (('huntId' in d) == ('slot' in d))
+        && (!('huntId' in d) || (d.huntId is string && d.huntId.matches('^[a-z0-9]{6,24}$') && d.slot is int && d.slot >= 0 && d.slot < 24))
+        && (!('until' in d) || d.until is timestamp)
+        && shortOrAbsent(d, 'festivalId', 120)
+        && d.by == me() && d.createdAt == request.time;
+    }
+    match /stickers/{code} {
+      allow get: if true;
+      allow list, delete: if isAdmin();
+      allow create: if isAdmin() && code.matches('^[a-z0-9]{6,24}$') && stickerShape(request.resource.data);
+    }
+    // A hunt: its stickers' creatures and names in order (no codes).
+    match /hunts/{id} {
+      allow get: if true;
+      allow list, delete: if isAdmin();
+      allow create: if isAdmin() && id.matches('^[a-z0-9]{6,24}$')
+        && request.resource.data.keys().hasOnly(['name', 'items', 'until', 'festivalId', 'by', 'createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40
+        && request.resource.data.items == []
+        && (!('until' in request.resource.data) || request.resource.data.until is timestamp)
+        && shortOrAbsent(request.resource.data, 'festivalId', 120)
+        && request.resource.data.by == me() && request.resource.data.createdAt == request.time;
+      // Stickers join the end of it.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items'])
+        && request.resource.data.items is list && request.resource.data.items.size() <= 24
+        && request.resource.data.items.size() == resource.data.items.size() + 1;
+    }
+    // Finds: you found a sticker (once each), before its end date (sent up to 3 days later).
+    match /finds/{id} {
+      allow get, list: if (signedIn() && resource.data.uid == me()) || isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'code', 'at', 'createdAt'])
+        && request.resource.data.uid == me()
+        && request.resource.data.code is string && request.resource.data.code.matches('^[a-z0-9]{6,24}$')
+        && id == me() + '_' + request.resource.data.code
+        && request.resource.data.at is timestamp
+        && request.resource.data.createdAt == request.time
+        && exists(path('stickers', request.resource.data.code))
+        && (!('until' in get(path('stickers', request.resource.data.code)).data)
+          || (request.resource.data.at <= get(path('stickers', request.resource.data.code)).data.until
+            && request.time < get(path('stickers', request.resource.data.code)).data.until + duration.value(3, 'd')));
+      allow delete: if (signedIn() && resource.data.uid == me()) || isAdmin();
+    }
     match /crews/{id} {
       allow get: if signedIn();
       allow list: if (signedIn() && me() in resource.data.members) || isAdmin();

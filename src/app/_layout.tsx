@@ -48,6 +48,7 @@ import { SeenProvider } from '../state/seen';
 import { SetRemindersProvider } from '../state/setReminders';
 import { SocialProvider } from '../state/social';
 import { SproutsProvider } from '../state/sprouts';
+import { FindsProvider } from '../state/finds';
 import { color } from '../theme/tokens';
 
 export default function RootLayout() {
@@ -74,6 +75,7 @@ export default function RootLayout() {
       <ClipNewsProvider>
       <SocialProvider>
       <SproutsProvider>
+      <FindsProvider>
       <NoticesProvider>
       <CrewsProvider>
       <CrewUpdatesProvider>
@@ -241,6 +243,7 @@ export default function RootLayout() {
       </CrewUpdatesProvider>
       </CrewsProvider>
       </NoticesProvider>
+      </FindsProvider>
       </SproutsProvider>
       </SocialProvider>
       </ClipNewsProvider>

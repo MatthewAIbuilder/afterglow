@@ -2,6 +2,7 @@ import { throwbackShares } from '../../memories/throwbackLimit';
 import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
+import type { Hunt, Sticker } from '../../finds/finds';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -82,6 +83,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const presence = new Map<string, AdminPresence>();
   /** HQ uploads, published catalogue updates, and when Plus ends for those given it with an end. */
   const drops = new Map<string, Drop>();
+  const stickers = new Map<string, Sticker>();
+  const hunts = new Map<string, Hunt>();
+  /** Who found what: `${uid}_${code}` → when they scanned it. */
+  const finds = new Map<string, number>();
   const patches = new Map<string, LivePatch>();
   const plusUntil = new Map<string, string>();
   const admin = () => !!current?.email && current.email === SUPPORT_EMAIL && verified.has(current.email);
@@ -179,6 +184,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       for (const id of [...crews.keys()]) leave(id, u.uid);
       for (const [k, i] of crewInvites) if (i.from === u.uid || i.to === u.uid) crewInvites.delete(k);
       for (const [k, sp] of sprouts) if (sp.from === u.uid || sp.to === u.uid) sprouts.delete(k);
+      for (const k of [...finds.keys()]) if (k.startsWith(`${u.uid}_`)) finds.delete(k);
       accounts.delete(u.email ?? '');
       current = null;
       emit();
@@ -879,6 +885,65 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const u = me();
       return [...sprouts.values()].filter((s) => s.to === u.uid).sort((a, b) => (b.claimedAt ?? '').localeCompare(a.claimedAt ?? '')).slice(0, max);
     },
+    async sticker(code) {
+      if (network.down) throw new SocialError('network');
+      return stickers.get(code) ?? null;
+    },
+    async hunt(id) {
+      if (network.down) throw new SocialError('network');
+      return hunts.get(id) ?? null;
+    },
+    async recordFind(code, at) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      if (finds.has(`${u.uid}_${code}`)) return;
+      const s = stickers.get(code);
+      if (!s) throw new SocialError('not-found');
+      if (s.until !== undefined && (at > s.until || Date.parse(now()) > s.until + 3 * 86_400_000)) throw new SocialError('sticker-ended');
+      finds.set(`${u.uid}_${code}`, at);
+    },
+    async addSticker(input) {
+      me();
+      needAdmin();
+      if (network.down) throw new SocialError('network');
+      let slot: number | undefined;
+      if (input.huntId) {
+        const h = hunts.get(input.huntId);
+        if (!h) throw new SocialError('not-found');
+        slot = h.items.length;
+        hunts.set(h.id, { ...h, items: [...h.items, { creature: input.creature, name: input.name }] });
+      }
+      const s: Sticker = { code: input.code, name: input.name, creature: input.creature, createdAt: Date.now() + ++n, ...(input.huntId ? { huntId: input.huntId, slot } : {}), ...(input.until !== undefined ? { until: input.until } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}) };
+      stickers.set(input.code, s);
+      return s;
+    },
+    async stickers(max) {
+      needAdmin();
+      return [...stickers.values()].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)).slice(0, max);
+    },
+    async deleteSticker(code) {
+      needAdmin();
+      stickers.delete(code);
+    },
+    async addHunt(input) {
+      needAdmin();
+      if (network.down) throw new SocialError('network');
+      const h: Hunt = { id: input.id, name: input.name, items: [], ...(input.until !== undefined ? { until: input.until } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}) };
+      hunts.set(input.id, h);
+      return h;
+    },
+    async hunts(max) {
+      needAdmin();
+      return [...hunts.values()].reverse().slice(0, max);
+    },
+    async deleteHunt(id) {
+      needAdmin();
+      hunts.delete(id);
+    },
+    async stickerFinds(code) {
+      needAdmin();
+      return [...finds.keys()].filter((k) => k.endsWith(`_${code}`)).length;
+    },
     async takeBackSprout(id) {
       if (network.down) throw new SocialError('network');
       const u = me();
@@ -908,5 +973,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
+  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
 }
