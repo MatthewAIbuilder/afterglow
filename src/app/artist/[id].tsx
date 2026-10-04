@@ -252,7 +252,7 @@ export default function ArtistScreen() {
           </Section>
         ) : null}
 
-        <Section title="Their sprout">
+        <Section title="Their collectible">
           <ArtistSproutCard artist={artist} />
         </Section>
 

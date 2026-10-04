@@ -123,8 +123,8 @@ export function readSproutLink(text: string): SproutCard | undefined {
   return sproutCardFrom({ id: m[1], u: params.u, h: params.h, k: params.k, n: params.n, a: params.a, an: params.an });
 }
 
-/** A sprout's name: "PLUR sprout", or an artist's ("SUBTRONICS sprout"). */
-export const sproutName = (s: { kind: SproutKind; artist?: SproutArtist }) => (s.artist ? `${s.artist.name} sprout` : kindOf(s.kind).name);
+/** A sprout's name: "PLUR sprout", or an artist's collectible ("SUBTRONICS collectible"). */
+export const sproutName = (s: { kind: SproutKind; artist?: SproutArtist }) => (s.artist ? `${s.artist.name} collectible` : kindOf(s.kind).name);
 const an = (name: string) => (/^[AEIOU]/i.test(name) ? 'an' : 'a');
 /** "a PLUR sprout", "an ILLENIUM sprout". */
 export const aSprout = (s: { kind: SproutKind; artist?: SproutArtist }) => `${an(sproutName(s))} ${sproutName(s)}`;

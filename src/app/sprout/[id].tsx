@@ -33,6 +33,7 @@ export default function SproutScreen() {
   const { id, u, h, k: kindParam, n, a, an } = params;
   const card = useMemo(() => sproutCardFrom({ id, u, h, k: kindParam, n, a, an }), [id, u, h, kindParam, n, a, an]);
   const catalog = useCatalog();
+  const look = (a: { id: string; name: string }) => artistLook(catalog.artist(a.id) ?? a);
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const sprouts = useSprouts();
@@ -106,14 +107,14 @@ export default function SproutScreen() {
         <View style={styles.ground} />
         {celebrate ? <ConfettiBurst key={celebrate} spread={150} /> : null}
       </View>
-      <Text style={styles.kicker}>{mine ? 'YOUR SPROUT' : 'A SPROUT FOR YOU'}</Text>
+      <Text style={styles.kicker}>{card?.artist ? (mine ? 'YOUR COLLECTIBLE' : 'A COLLECTIBLE FOR YOU') : mine ? 'YOUR SPROUT' : 'A SPROUT FOR YOU'}</Text>
       <Text style={styles.title} accessibilityRole="header">
         {mine ? `Your ${sproutName(card)}` : giftTitle(card)}
       </Text>
       <Text style={styles.from}>@{card.handle}</Text>
       {note ? <Text style={styles.note}>“{note}”</Text> : null}
       <Text style={styles.body}>
-        {card.artist ? `${artistLook(catalog.artist(card.artist.id) ?? { id: card.artist.id, name: card.artist.name }).theme}, grown by filming ${card.artist.name} live.` : k.about}
+        {card.artist ? `${look(card.artist).name}: ${look(card.artist).theme.toLowerCase()}, earned by filming ${card.artist.name} live.` : k.about}
       </Text>
 
       {mine ? (

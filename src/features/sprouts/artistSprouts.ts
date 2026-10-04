@@ -1,8 +1,9 @@
 /**
- * Artist sprouts you've earned. Pure. Every artist you've filmed (a video in
- * your Memories tagged with them, festival or throwback) gives you their
- * sprout; filming more of them levels it up: bronze at 3 videos, silver at
- * 6, gold at 10.
+ * Artist collectibles you've earned (called artist sprouts in the code: they
+ * live in the garden and are given like sprouts). Pure. Every artist you've
+ * filmed (a video in your Memories tagged with them, festival or throwback)
+ * gives you their collectible; filming more of them levels it up: bronze at
+ * 3 videos, silver at 6, gold at 10.
  */
 export const TIER_AT = [1, 3, 6, 10] as const;
 export const TIER_NAME = ['', 'Bronze', 'Silver', 'Gold'] as const;
@@ -84,7 +85,7 @@ export function cleanShown(raw: unknown): Record<string, number> {
 
 /** "Artist sprouts · 4", "12 artists filmed, 2 at gold". */
 export function artistGardenLine(list: readonly ArtistSprout[]): string {
-  if (!list.length) return 'Film a set and that artist’s sprout grows in your garden.';
+  if (!list.length) return 'Film a set and that artist’s collectible joins your garden.';
   const gold = list.filter((s) => s.tier === 3).length;
   return `${list.length} ${list.length === 1 ? 'artist' : 'artists'} filmed${gold ? `, ${gold} at gold` : ''}`;
 }

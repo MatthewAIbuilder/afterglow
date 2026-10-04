@@ -46,16 +46,16 @@ describe('artist sprouts', () => {
     await celebrated({});
     const app = await renderApp('/garden');
     await flush();
-    expect(app.getByText('Artist sprout unlocked')).toBeTruthy();
-    expect(app.getAllByText('SUBTRONICS sprout').length).toBeGreaterThan(0);
-    expect(app.getByText(/^A cyclops sprout, grown from your video of SUBTRONICS/)).toBeTruthy();
+    expect(app.getByText('Artist collectible unlocked')).toBeTruthy();
+    expect(app.getAllByText('SUBTRONICS · The Watcher').length).toBeGreaterThan(0);
+    expect(app.getByText(/^A big eye with wriggling tentacles, earned with your video of SUBTRONICS/)).toBeTruthy();
     await settle(500);
     await fireEvent.press(app.getByText('Lovely'));
     await flush();
-    expect(app.queryByText('Artist sprout unlocked')).toBeNull();
-    expect(app.getByText('Artist sprouts · 1')).toBeTruthy();
-    expect(app.getByLabelText('SUBTRONICS sprout, 2 videos.')).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('SUBTRONICS sprout, 2 videos.'));
+    expect(app.queryByText('Artist collectible unlocked')).toBeNull();
+    expect(app.getByText('Artist collectibles · 1')).toBeTruthy();
+    expect(app.getByLabelText('SUBTRONICS collectible, 2 videos.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('SUBTRONICS collectible, 2 videos.'));
     await flush();
     expect(app.getByText('1 more video of them for bronze. First filmed Sep 20, 2026.')).toBeTruthy();
   });
@@ -65,7 +65,7 @@ describe('artist sprouts', () => {
     await celebrated({ subtronics: 1 });
     const app = await renderApp('/garden');
     await flush();
-    expect(app.getByText('Artist sprout levelled up')).toBeTruthy();
+    expect(app.getByText('Collectible levelled up')).toBeTruthy();
     expect(app.getByText(/^Bronze now: you’ve filmed SUBTRONICS 3 times/)).toBeTruthy();
   });
 
@@ -73,23 +73,23 @@ describe('artist sprouts', () => {
     await filmed('subtronics', 1);
     const app = await renderApp('/garden');
     await flush();
-    expect(app.queryByText('Artist sprout unlocked')).toBeNull();
-    expect(app.getByLabelText('SUBTRONICS sprout, 1 video.')).toBeTruthy();
+    expect(app.queryByText('Artist collectible unlocked')).toBeNull();
+    expect(app.getByLabelText('SUBTRONICS collectible, 1 video.')).toBeTruthy();
   });
 
   it('with none yet, the garden shows signature sprouts to aim for', async () => {
     const app = await renderApp('/garden');
     await flush();
-    expect(app.getByText('Film a set and that artist’s sprout grows in your garden.')).toBeTruthy();
-    expect(app.getByLabelText(/^SUBTRONICS: a cyclops sprout\. Film their set to grow it\.$/)).toBeTruthy();
+    expect(app.getByText('Film a set and that artist’s collectible joins your garden.')).toBeTruthy();
+    expect(app.getByLabelText(/^SUBTRONICS: The Watcher, a big eye with wriggling tentacles\. Film their set to earn it\.$/)).toBeTruthy();
   });
 
   it('an artist page shows their sprout, and how to grow it', async () => {
     const app = await renderApp('/artist/subtronics');
     await flush();
-    expect(app.getByText('Their sprout')).toBeTruthy();
-    expect(app.getByText('A cyclops sprout')).toBeTruthy();
-    expect(app.getByText('Film their set and it grows in your garden.')).toBeTruthy();
+    expect(app.getByText('THEIR COLLECTIBLE')).toBeTruthy();
+    expect(app.getByText('The Watcher')).toBeTruthy();
+    expect(app.getByText('Film their set to earn it for your garden.')).toBeTruthy();
   });
 
   it('can be given, and lands in their garden as that artist’s sprout', async () => {
@@ -97,11 +97,11 @@ describe('artist sprouts', () => {
     await filmed('subtronics', 3);
     const app = await renderApp('/give-sprout?artist=subtronics');
     await flush();
-    expect(app.getAllByText('SUBTRONICS sprout').length).toBeGreaterThan(0);
-    expect(app.getByText(/^A cyclops sprout\. Bronze · 3 videos of them filmed/)).toBeTruthy();
+    expect(app.getAllByText('SUBTRONICS collectible').length).toBeGreaterThan(0);
+    expect(app.getByText(/^The Watcher: a big eye with wriggling tentacles\. Bronze · 3 videos of them filmed/)).toBeTruthy();
     await fireEvent.press(app.getByText('Show the code'));
     await flush();
-    expect(app.getByLabelText('A code for your SUBTRONICS sprout. Someone scans it to pick it up.')).toBeTruthy();
+    expect(app.getByLabelText('A code for your SUBTRONICS collectible. Someone scans it to pick it up.')).toBeTruthy();
     const [given] = [...mockSocial.sprouts.values()];
     expect(given).toMatchObject({ artistId: 'subtronics', artistName: 'SUBTRONICS' });
     // Sam picks it up from the link.
@@ -109,12 +109,12 @@ describe('artist sprouts', () => {
     await person('sam', 'Sam');
     await act(async () => router.push(`/sprout/${given.id}?u=${given.from}&h=maya&k=seedling&n=Maya&a=subtronics&an=SUBTRONICS`));
     await flush();
-    expect(app.getByText('Maya gave you a SUBTRONICS sprout')).toBeTruthy();
+    expect(app.getByText('Maya gave you a SUBTRONICS collectible')).toBeTruthy();
     await fireEvent.press(app.getByText('Add to my garden'));
     await flush();
     await act(async () => router.push('/garden'));
     await flush();
-    expect(app.getByLabelText('SUBTRONICS sprout, from Maya.')).toBeTruthy();
+    expect(app.getByLabelText('SUBTRONICS collectible, from Maya.')).toBeTruthy();
   });
 
   it('a link edited to name an artist still gives the plain sprout that was given', async () => {
@@ -130,7 +130,7 @@ describe('artist sprouts', () => {
     await act(async () => router.push('/garden'));
     await flush();
     expect(app.getByLabelText('PLUR sprout, from Maya. In bloom.')).toBeTruthy();
-    expect(app.queryByLabelText('SUBTRONICS sprout, from Maya.')).toBeNull();
+    expect(app.queryByLabelText('SUBTRONICS collectible, from Maya.')).toBeNull();
   });
 
   it('only artists you filmed can be given', async () => {
@@ -138,7 +138,7 @@ describe('artist sprouts', () => {
     const app = await renderApp('/give-sprout?artist=subtronics');
     await flush();
     // Not filmed: it offers a plain sprout instead.
-    expect(app.queryByText('SUBTRONICS sprout')).toBeNull();
+    expect(app.queryByText('SUBTRONICS collectible')).toBeNull();
     expect(app.getAllByText('Sprout').length).toBeGreaterThan(0);
   });
 });

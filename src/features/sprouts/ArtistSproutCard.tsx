@@ -9,16 +9,16 @@ import { tierLabel, tierLine } from './artistSprouts';
 import { Sprout } from './Sprout';
 
 /**
- * An artist's sprout on their page: yours with its level and what's next,
- * or a grey silhouette and how to grow it (film their set). Opens your garden.
+ * An artist's collectible on their page: yours with its level and what's
+ * next, or a grey figure and how to earn it (film their set). Opens your garden.
  */
 export function ArtistSproutCard({ artist }: { artist: Pick<Artist, 'id' | 'name' | 'sound' | 'color'> }) {
   const { artists } = useSprouts();
   const mine = artists.find((a) => a.artistId === artist.id);
   const look = artistLook(artist);
   const label = mine
-    ? `Your ${artist.name} sprout: ${look.theme.toLowerCase()}. ${tierLabel(mine)}. ${tierLine(mine.videos)}. Opens your garden.`
-    : `${artist.name}'s sprout: ${look.theme.toLowerCase()}. Film their set to grow it. Opens your garden.`;
+    ? `Your ${artist.name} collectible, ${look.name}: ${look.theme.toLowerCase()}. ${tierLabel(mine)}. ${tierLine(mine.videos)}. Opens your garden.`
+    : `${artist.name}'s collectible, ${look.name}: ${look.theme.toLowerCase()}. Film their set to earn it. Opens your garden.`;
   return (
     <Pressable
       onPress={() => {
@@ -31,9 +31,10 @@ export function ArtistSproutCard({ artist }: { artist: Pick<Artist, 'id' | 'name
     >
       <Sprout artist={look} tier={mine?.tier ?? 0} stage={3} size={68} locked={!mine} still={!mine} />
       <View style={styles.text}>
-        <Text style={[styles.kicker, { color: mine ? look.accent : color.moonFaint }]}>{mine ? 'YOUR SPROUT' : 'THEIR SPROUT'}</Text>
-        <Text style={styles.title}>{look.theme}</Text>
-        <Text style={styles.sub}>{mine ? `${tierLabel(mine)} · ${tierLine(mine.videos)}` : 'Film their set and it grows in your garden.'}</Text>
+        <Text style={[styles.kicker, { color: mine ? look.accent : color.moonFaint }]}>{mine ? 'YOUR COLLECTIBLE' : 'THEIR COLLECTIBLE'}</Text>
+        <Text style={styles.title}>{look.name}</Text>
+        <Text style={styles.sub}>{look.theme}</Text>
+        <Text style={styles.sub}>{mine ? `${tierLabel(mine)} · ${tierLine(mine.videos)}` : 'Film their set to earn it for your garden.'}</Text>
       </View>
     </Pressable>
   );
