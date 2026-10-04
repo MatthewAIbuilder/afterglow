@@ -21,6 +21,7 @@ import { agoShort } from './admin';
 import { buildDraft, type Draft, draftLine, type LineupMode, websiteUpdate } from './draft';
 import { claudeBrief, DROP_STATUS_LABEL, dropFor, fileSummary, fileSummaryLine, looksLikeCatalogFile, sizeLabel } from './drops';
 import { refreshLivePatches } from './LivePatchSync';
+import { canReadPhotos, readPhotoText } from './readPhoto';
 import { readSetList } from './setlist';
 
 type Picked = { uri: string; name: string; type: string; size?: number };
@@ -138,6 +139,32 @@ export function AdminData() {
         preview,
       }),
     );
+  };
+
+  // A photo of set times (or a lineup), read in the browser into the text box, to check before reading.
+  const [reading, setReading] = useState<number | undefined>();
+  const readPhoto = async () => {
+    const r = await DocumentPicker.getDocumentAsync({ type: ['image/*'], copyToCacheDirectory: true }).catch(() => undefined);
+    const asset = r && !r.canceled ? r.assets[0] : undefined;
+    if (!asset) return;
+    haptic.select();
+    setReading(0);
+    try {
+      const photo = (asset as { file?: Blob }).file ?? asset.uri;
+      const known = festival?.stages.map((st) => st.name) ?? [];
+      const found = await readPhotoText(photo, known, (p) => setReading(p));
+      if (!found.trim()) {
+        showAlert('No text found', 'Try a sharper picture, or crop it to one day or one stage.');
+        return;
+      }
+      setText((t) => (t.trim() ? `${t.trim()}\n\n${found}` : found));
+      setReview(undefined);
+      haptic.settle();
+    } catch (e) {
+      showAlert('Couldn’t read the photo', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setReading(undefined);
+    }
   };
 
   const pick = async () => {
@@ -287,6 +314,20 @@ export function AdminData() {
             ]}
           />
         ) : null}
+        {canReadPhotos ? (
+          <>
+            <Button
+              label={reading !== undefined ? `Reading the photo… ${Math.round(reading * 100)}%` : 'Read a photo of set times'}
+              onPress={() => void readPhoto()}
+              disabled={reading !== undefined}
+            />
+            <Text style={styles.small}>
+              Its text lands in the box above to check first. Grids are read stage by stage; for a big one, crop it to one day at a time and read each picture in turn.
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.small}>To read a photo of set times, open HQ on the website on a computer.</Text>
+        )}
         <Button label="Read the text" onPress={read} disabled={!text.trim()} primary />
 
         <Text style={[styles.cardTitle, { marginTop: space.lg }]}>Pictures and PDFs</Text>
