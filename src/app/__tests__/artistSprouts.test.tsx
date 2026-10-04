@@ -117,6 +117,22 @@ describe('artist sprouts', () => {
     expect(app.getByLabelText('SUBTRONICS sprout, from Maya.')).toBeTruthy();
   });
 
+  it('a link edited to name an artist still gives the plain sprout that was given', async () => {
+    await person('maya', 'Maya');
+    await s().giveSprout({ id: 'abcdefghijkmnpqrstuv', kind: 'plur' });
+    await s().signOut();
+    await person('sam', 'Sam');
+    const maya = [...mockSocial.sprouts.values()][0].from;
+    const app = await renderApp(`/sprout/abcdefghijkmnpqrstuv?u=${maya}&h=maya&k=plur&n=Maya&a=subtronics&an=SUBTRONICS`);
+    await flush();
+    await fireEvent.press(app.getByText('Add to my garden'));
+    await flush();
+    await act(async () => router.push('/garden'));
+    await flush();
+    expect(app.getByLabelText('PLUR sprout, from Maya. In bloom.')).toBeTruthy();
+    expect(app.queryByLabelText('SUBTRONICS sprout, from Maya.')).toBeNull();
+  });
+
   it('only artists you filmed can be given', async () => {
     await person('maya', 'Maya');
     const app = await renderApp('/give-sprout?artist=subtronics');

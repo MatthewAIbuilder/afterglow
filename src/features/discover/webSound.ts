@@ -14,18 +14,22 @@ export const AUTOPLAY_GRACE_MS = 1200;
 export const AUTOPLAY_CHECK_MS = 400;
 /** A video still loading after this long is a slow connection, not a refusal: leave it be. */
 export const BUFFER_PATIENCE_MS = 10000;
+/** A play the player hasn't answered yet (or still calls unstarted) gets this long before it counts as refused. */
+export const UNSTARTED_PATIENCE_MS = 3000;
 
 export type AutoplayVerdict = 'started' | 'loading' | 'refused' | 'give-up';
 
 /**
  * Where a play stands, from the last state the player reported and how long
  * ago it was asked to play: playing (or looped round) is started; still
- * loading waits (up to `BUFFER_PATIENCE_MS`, then it's left alone); anything
- * else (never started, cued, or paused by the browser) is a refusal.
+ * loading waits (up to `BUFFER_PATIENCE_MS`, then it's left alone); no
+ * answer yet, or still unstarted, waits up to `UNSTARTED_PATIENCE_MS`; cued,
+ * or paused by the browser, is a refusal.
  */
 export function autoplayVerdict(lastState: number | undefined, waitedMs: number): AutoplayVerdict {
   if (lastState === YT_STATE.playing || lastState === YT_STATE.ended) return 'started';
   if (lastState === YT_STATE.buffering) return waitedMs < BUFFER_PATIENCE_MS ? 'loading' : 'give-up';
+  if (lastState === undefined || lastState === YT_STATE.unstarted) return waitedMs < UNSTARTED_PATIENCE_MS ? 'loading' : 'refused';
   return 'refused';
 }
 

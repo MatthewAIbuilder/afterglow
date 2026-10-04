@@ -53,8 +53,9 @@ export default function WelcomeScreen() {
 
   const picked = welcomeFestival(catalog.festivals, going);
   // Small screens (iPhone SE): a smaller picture on the first step.
-  const { height } = useWindowDimensions();
-  const compact = height < 700;
+  const { height, fontScale } = useWindowDimensions();
+  // Small screens, or larger text: a smaller picture, and the first step scrolls if it still doesn't fit.
+  const compact = height < 700 || fontScale > 1.15;
   const pickedSoon = picked ? countdown(picked, today) : undefined;
   const waitingLine = picked
     ? `${picked.name}${pickedSoon ? ` · ${pickedSoon}` : ''}. A few things to make the most of it.`
@@ -115,8 +116,8 @@ export default function WelcomeScreen() {
 
       <Animated.View key={step} entering={reduceMotion ? undefined : FadeIn.duration(360)} style={styles.body}>
         {step === 'hello' ? (
-          <View style={styles.center}>
-            <HeroOrb size={compact ? 170 : 220} />
+          <ScrollView contentContainerStyle={styles.centerScroll} showsVerticalScrollIndicator={false} bounces={false}>
+            <HeroOrb size={compact ? (height < 620 ? 140 : 170) : 220} />
             <Text style={[styles.brand, { marginTop: compact ? space.lg : space.xl }]}>{APP_NAME}</Text>
             <Text style={styles.lead}>Find your sets, see your sound, go with your people.</Text>
             <View style={styles.promises}>
@@ -131,7 +132,7 @@ export default function WelcomeScreen() {
                 </Animated.View>
               ))}
             </View>
-          </View>
+          </ScrollView>
         ) : step === 'going' ? (
           <ScrollView
             contentContainerStyle={styles.scroll}
@@ -291,6 +292,7 @@ const styles = StyleSheet.create({
   skip: { ...type.label, color: color.moonDim },
   body: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: space.xxl },
+  centerScroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: space.xxl, paddingVertical: space.md },
   centerText: { textAlign: 'center' },
   brand: { ...type.largeTitle, fontSize: 44, lineHeight: 50, color: color.moon, letterSpacing: -1.2 },
   lead: { ...type.body, fontSize: 17, lineHeight: 24, color: color.moonDim, textAlign: 'center', marginTop: space.sm },

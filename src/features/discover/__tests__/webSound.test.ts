@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { afterGesture, afterRefusal, autoplayVerdict, BUFFER_PATIENCE_MS, startMuted, YT_STATE } from '../webSound';
+import { afterGesture, afterRefusal, autoplayVerdict, BUFFER_PATIENCE_MS, startMuted, UNSTARTED_PATIENCE_MS, YT_STATE } from '../webSound';
 
 describe('sound on the website', () => {
   it('counts a playing (or looped) clip as started', () => {
@@ -14,8 +14,11 @@ describe('sound on the website', () => {
   });
 
   it('treats a clip that never started, or was paused by the browser, as refused', () => {
-    expect(autoplayVerdict(undefined, 1500)).toBe('refused');
-    expect(autoplayVerdict(YT_STATE.unstarted, 1500)).toBe('refused');
+    // No answer yet, or still unstarted: a moment's patience first.
+    expect(autoplayVerdict(undefined, 1500)).toBe('loading');
+    expect(autoplayVerdict(YT_STATE.unstarted, 1500)).toBe('loading');
+    expect(autoplayVerdict(undefined, UNSTARTED_PATIENCE_MS)).toBe('refused');
+    expect(autoplayVerdict(YT_STATE.unstarted, UNSTARTED_PATIENCE_MS)).toBe('refused');
     expect(autoplayVerdict(YT_STATE.cued, 1500)).toBe('refused');
     expect(autoplayVerdict(YT_STATE.paused, 1500)).toBe('refused');
   });

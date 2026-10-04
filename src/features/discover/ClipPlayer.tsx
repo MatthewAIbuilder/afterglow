@@ -64,6 +64,8 @@ function ClipPlayerBase({ load: near, ...props }: ClipPlayerProps) {
   // In a browser, starting a YouTube player is heavy work: the clips next door wait a moment so a swipe lands smoothly.
   const waitToLoad = Platform.OS === 'web' && !props.active;
   const [mayLoad, setMayLoad] = useState(!waitToLoad);
+  // Once a clip has been on screen it stays loaded while near: swiping on never throws it away.
+  if (props.active && !mayLoad) setMayLoad(true);
   useEffect(() => {
     if (!near || mayLoad || !waitToLoad) return;
     const t = setTimeout(() => setMayLoad(true), NEAR_LOAD_DELAY_MS);

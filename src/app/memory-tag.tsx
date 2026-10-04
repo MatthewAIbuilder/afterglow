@@ -168,8 +168,9 @@ export default function MemoryTagScreen() {
     goBack();
   };
   useEffect(() => {
-    if (missing && !leaving.current) goBack();
-  }, [missing]);
+    // Wait for your memories to load (a link straight here on a cold start) before deciding there's nothing to tag.
+    if (missing && mem.hydrated && !leaving.current) goBack();
+  }, [missing, mem.hydrated]);
 
   const player = useVideoPlayer(videoUri ?? null, (p) => {
     p.loop = true;

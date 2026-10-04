@@ -87,6 +87,8 @@ describe('artist sprout codes', () => {
 
   it('drop a broken artist', () => {
     expect(cleanSproutArtist({ id: 'Bad Id', name: 'x' })).toBeUndefined();
+    // Ids a catalogue file may use.
+    expect(cleanSproutArtist({ id: 'DJ_Snake.2', name: 'DJ Snake' })).toEqual({ id: 'DJ_Snake.2', name: 'DJ Snake' });
     expect(cleanSproutArtist({ id: 'ok', name: '  ' })).toBeUndefined();
     expect(readSproutLink('https://afterglowmusic.app/sprout/abcdefghijkmnpqrstuv?u=uid1&h=maya&k=plur&a=Bad%20Id&an=X')?.artist).toBeUndefined();
   });

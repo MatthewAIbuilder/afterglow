@@ -101,7 +101,7 @@ export function Sprout({
 
   const own: Look = artist ?? LOOKS[kind] ?? LOOKS.seedling;
   // Locked: a grey silhouette of what it will be (its leaves and what it wears), so there's something to collect.
-  const look = locked ? { ...GREY, leafShape: own.leafShape } : own;
+  const look = locked ? { ...GREY, leafShape: own.leafShape, ...(artist ? { face: own.face } : {}) } : own;
   const accent = locked ? '#8A88A0' : artist ? artist.accent : k.accent;
   const id = `${artist ? `a${artist.accent.slice(1)}${artist.top}${artist.wear}${artist.face}` : kind}-${stage}-${locked ? 'g' : 'c'}`;
   const seed = stage === 0;

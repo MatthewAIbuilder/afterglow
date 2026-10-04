@@ -122,6 +122,11 @@ function YouTubePlayerBase({ media, active, live, paused, progress, onPausedChan
         c.onReady();
       } else if (m.type === 'error') c.onFail();
       else if (m.type === 'time') {
+        // You turned the sound on with YouTube's own button: that counts as a tap, so the next clips try with sound again.
+        if (m.muted === false && muted.current) {
+          muted.current = false;
+          sound = afterGesture();
+        }
         progress.set(clipProgress(m.time, source, m.duration));
         const span = playedSpan(lastTime.current, m.time, canCountWatch({ active: c.active, live: c.live }, isPlaying.current), source.start);
         lastTime.current = m.time;

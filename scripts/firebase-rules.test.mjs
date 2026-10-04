@@ -730,6 +730,7 @@ await t('sprouts: an artist sprout names its artist, both id and name, in shape'
   await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'artistbbbbbbbbbbbbbb'), sprout({ artistId: 'subtronics' })));
   await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'artistcccccccccccccc'), sprout({ artistName: 'SUBTRONICS' })));
   await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'artistdddddddddddddd'), sprout({ artistId: 'Bad Id!', artistName: 'X' })));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'sprouts', 'artistffffffffffffff'), sprout({ artistId: 'DJ_Snake.2', artistName: 'DJ Snake' })));
   await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'artisteeeeeeeeeeeeee'), sprout({ artistId: 'x', artistName: 'y'.repeat(61) })));
 });
 console.log(`\n${pass} passed, ${fail} failed`);
