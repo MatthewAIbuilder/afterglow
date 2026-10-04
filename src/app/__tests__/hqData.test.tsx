@@ -90,6 +90,28 @@ describe('HQ data', () => {
     expect(mockSocial.patches.size).toBe(0);
   });
 
+  it('sets a festival’s official page to watch every night', async () => {
+    const app = await hq();
+    await showTab(app, 'Data');
+    await fireEvent.changeText(app.getByLabelText('Find a festival'), 'Cyclops');
+    await fireEvent.press(app.getByText('Cyclops Cove 4'));
+    await fireEvent.changeText(app.getByLabelText('Official page'), 'not a page');
+    answerAlerts();
+    await fireEvent.press(app.getByText('Watch this page'));
+    expect(Alert.alert).toHaveBeenCalledWith('Check the address', expect.any(String));
+    await fireEvent.changeText(app.getByLabelText('Official page'), 'https://cyclopscove.com/lineup');
+    await fireEvent.press(app.getByText('Watch this page'));
+    expect(app.getByText('Cyclops Cove 4, official page')).toBeTruthy();
+    answerAlerts('Publish');
+    await fireEvent.press(app.getByText('Publish to everyone'));
+    await flush();
+    const [patch] = [...mockSocial.patches.values()];
+    const festival = JSON.parse(patch.file).festivals[0];
+    expect(festival).toMatchObject({ id: 'cyclops-cove-4', website: 'https://cyclopscove.com/lineup' });
+    // Everything else it had is kept.
+    expect(festival.lineup.length).toBeGreaterThan(1);
+  });
+
   it('keeps pictures and PDFs in the inbox and hands them to a Claude Code session', async () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
     const app = await hq();
