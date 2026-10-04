@@ -205,3 +205,33 @@ and adds it to the published `catalogue.json` as `sitePictures`.
   official site links to the catalogue. EDMTrain's festivals only link to
   EDMTrain, so they don't get one.
 
+
+## Festival news by email (page watch)
+
+Every night, after the website is built, Afterglow looks at the official
+page of every upcoming festival that has one, and compares it with the night
+before (`scripts/page-watch.ts`, logic in `src/data/import/pageWatch.ts`).
+When something is new, it opens a GitHub issue titled "Festival news" and
+GitHub emails it to you. It lists, per festival:
+
+- new names on the page that Afterglow knows but that aren't on the lineup
+  yet (a lineup drop or an addition),
+- "Set times may be out" when the page starts talking about set times and
+  lists times,
+- a new share picture (often a new lineup poster), with its link.
+
+Nothing is taken from the pages: you bring the news in from **Afterglow HQ →
+Data** (paste the lineup or set times, or read a photo of them), then close
+the issue.
+
+To watch a festival, give it its official page: **HQ → Data**, pick the
+festival, paste its page into **Official page** (the lineup or set-times
+page is best, starting with https://), tap **Watch this page**, then
+**Publish to everyone**. The link also shows on the festival's page. The
+first night only takes a first look; news is reported from the second night
+on. Pages that build their lineup with scripts or only show it as a picture
+can only be noticed through their share picture.
+
+If no emails arrive: GitHub → your profile picture → Settings →
+Notifications, and check that "Issues" emails are on for repositories you
+own. Tonight's look is published as `/page-watch.json` on the website.

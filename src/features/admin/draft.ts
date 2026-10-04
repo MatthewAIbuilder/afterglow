@@ -63,6 +63,22 @@ export function festivalToFile(f: Festival): FileFestival {
   };
 }
 
+/**
+ * A festival's official page, as an update to publish: shown on its page,
+ * and looked at every night for news (scripts/page-watch.ts). Undefined when
+ * it isn't a secure web address.
+ */
+export function websiteUpdate(festival: Festival, url: string, today: string): object | undefined {
+  let u: URL;
+  try {
+    u = new URL(url.trim());
+  } catch {
+    return undefined;
+  }
+  if (u.protocol !== 'https:' || !u.hostname.includes('.')) return undefined;
+  return { version: 1, mode: 'add', updated: today, artists: [], festivals: [{ ...festivalToFile(festival), website: u.toString() }], clips: [] };
+}
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 

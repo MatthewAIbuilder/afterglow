@@ -18,7 +18,7 @@ import { formatTime } from '../festivals/format';
 import { matchesName } from '../festivals/search';
 import { DROP_FILES_MAX, type Drop } from '../social/models';
 import { agoShort } from './admin';
-import { buildDraft, type Draft, draftLine, type LineupMode } from './draft';
+import { buildDraft, type Draft, draftLine, type LineupMode, websiteUpdate } from './draft';
 import { claudeBrief, DROP_STATUS_LABEL, dropFor, fileSummary, fileSummaryLine, looksLikeCatalogFile, sizeLabel } from './drops';
 import { refreshLivePatches } from './LivePatchSync';
 import { canReadPhotos, readPhotoText } from './readPhoto';
@@ -83,6 +83,31 @@ export function AdminData() {
     const built = buildCatalog(snapshot, parsed);
     const s = fileSummary(parsed, catalog);
     return { title, festivalId: s.festivalId ?? '', file, problems: built.problems, ok: built.usedFile && !!s.festivalId, ...extra, ...(fromDrop ? { dropId: fromDrop } : {}) };
+  };
+
+  // The festival's official page: shown on its page, and looked at every night for news (an email when there is some).
+  const [site, setSite] = useState('');
+  const [siteFor, setSiteFor] = useState<string | undefined>();
+  if (festival && siteFor !== festival.id) {
+    setSiteFor(festival.id);
+    setSite(festival.links?.website ?? '');
+  }
+  const watchSite = () => {
+    if (!festival) return;
+    const file = websiteUpdate(festival, site, today());
+    if (!file) {
+      showAlert('Check the address', 'Paste the festival’s own page, starting with https://');
+      return;
+    }
+    haptic.select();
+    setReview(
+      check(JSON.stringify(file), `${festival.name}, official page`, {
+        line: 'Shown on its page. Afterglow looks at it every night and emails you when there are new names, set times or a new poster.',
+        notes: [],
+        unread: [],
+        preview: [],
+      }),
+    );
   };
 
   const read = () => {
@@ -219,6 +244,9 @@ export function AdminData() {
             <Pressable onPress={() => setFestival(undefined)} accessibilityRole="button" hitSlop={8}>
               <Text style={styles.link}>Change</Text>
             </Pressable>
+            <Field value={site} onChange={setSite} url label="Official page" placeholder="Its official page, like https://orlando.edc.com" />
+            <Text style={styles.small}>Afterglow looks at it every night and emails you when there are new names, set times or a new poster.</Text>
+            <Button label={festival.links?.website ? 'Change the page' : 'Watch this page'} onPress={watchSite} disabled={!site.trim() || site.trim() === festival.links?.website} />
           </View>
         ) : fresh ? (
           <View style={styles.form}>
@@ -486,8 +514,18 @@ export function AdminData() {
 /** "2027-09-17" if it's written like a date, else nothing. */
 const day = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? v.trim() : undefined);
 
-function Field({ value, onChange, label, placeholder }: { value: string; onChange: (t: string) => void; label: string; placeholder: string }) {
-  return <TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={color.moonFaint} accessibilityLabel={label} style={[styles.input, { flex: 1 }]} />;
+function Field({ value, onChange, label, placeholder, url }: { value: string; onChange: (t: string) => void; label: string; placeholder: string; url?: boolean }) {
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChange}
+      placeholder={placeholder}
+      placeholderTextColor={color.moonFaint}
+      accessibilityLabel={label}
+      style={[styles.input, { flex: 1 }]}
+      {...(url ? { keyboardType: 'url' as const, autoCapitalize: 'none' as const, autoCorrect: false } : {})}
+    />
+  );
 }
 
 function Button({ label, onPress, disabled, primary }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
