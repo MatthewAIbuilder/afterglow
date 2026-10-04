@@ -460,11 +460,11 @@ function NewcomerNote({ scopeId, connect, bottom }: { scopeId?: string; connect?
     </Pressable>
   );
   return (
-    <View style={[styles.sparse, { bottom }]} pointerEvents="box-none">
-      <Text style={styles.noteTitle}>Make this map yours</Text>
-      <Text style={styles.sparseText}>
-        Pick a few artists you love and it rearranges around you.{connect ? ` ${connect}` : ''}
+    <View style={[styles.sparse, styles.slim, { bottom }]} pointerEvents="box-none" accessible={false}>
+      <Text style={styles.slimTitle} accessibilityLabel={`Make this map yours. Pick a few artists you love and it rearranges around you.${connect ? ` ${connect}` : ''}`}>
+        Make this map yours
       </Text>
+      {connect ? <Text style={styles.slimText}>{connect}</Text> : null}
       <View style={styles.noteButtons}>
         {button('Pick artists', 'Pick artists you know', () => router.push(scopeId ? { pathname: '/pick-artists', params: { festivals: scopeId } } : '/pick-artists'), true)}
         {button('This or that', 'Play this or that', () => router.push('/this-or-that'))}
@@ -685,6 +685,10 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   sparseText: { ...type.body, color: color.moonDim },
+  // The newcomer note: a slim strip, so the map stays the star.
+  slim: { paddingVertical: space.md, paddingHorizontal: space.md, gap: space.sm, backgroundColor: 'rgba(18,16,38,0.72)' },
+  slimTitle: { ...type.label, color: color.moonDim, paddingHorizontal: space.xs },
+  slimText: { ...type.caption, color: color.moonDim, paddingHorizontal: space.xs },
   sparseButton: {
     alignSelf: 'flex-start',
     paddingHorizontal: space.lg,
