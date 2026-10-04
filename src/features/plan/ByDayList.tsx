@@ -5,6 +5,7 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { picksByDay } from './byDay';
 import { exploreLine, TIER_LABEL } from './copy';
 import { PickRow } from './MustSeeList';
+import { usePickReasons } from './usePickReasons';
 import { exploreReason, type Pick } from './plan';
 
 /**
@@ -14,6 +15,7 @@ import { exploreReason, type Pick } from './plan';
  */
 export function ByDayList({ festival, picks }: { festival: Festival; picks: Pick[] }) {
   const { similarity } = useTaste();
+  const reason = usePickReasons();
   const { days, noDay } = picksByDay(festival, picks);
   return (
     <View>
@@ -26,7 +28,7 @@ export function ByDayList({ festival, picks }: { festival: Festival; picks: Pick
             </Text>
           </View>
           {d.planned.map((p) => (
-            <PickRow key={p.artist.id} festivalId={festival.id} pick={p} note={p.pinned ? 'You starred this one.' : TIER_LABEL[p.tier]} />
+            <PickRow key={p.artist.id} festivalId={festival.id} pick={p} note={reason(p)} />
           ))}
           {d.explore.length > 0 && (
             <>
@@ -49,7 +51,7 @@ export function ByDayList({ festival, picks }: { festival: Festival; picks: Pick
             <Text style={styles.dayName}>Day to come</Text>
           </View>
           {noDay.map((p) => (
-            <PickRow key={p.artist.id} festivalId={festival.id} pick={p} note={TIER_LABEL[p.tier]} />
+            <PickRow key={p.artist.id} festivalId={festival.id} pick={p} note={p.tier === 'explore' ? TIER_LABEL[p.tier] : reason(p)} />
           ))}
         </View>
       )}

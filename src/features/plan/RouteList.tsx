@@ -7,6 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { MustSeeToggle } from './MustSeeToggle';
+import { usePickReasons } from './usePickReasons';
 import { clockTime, type DayRoute, type RouteStop, stintLabel } from './route';
 
 const at = (min: number) => formatTime(clockTime(min));
@@ -19,6 +20,7 @@ const SHORT_BREAK = 20;
  * dashed; breaks are quiet.
  */
 export function RouteList({ festival, route }: { festival: Festival; route: DayRoute }) {
+  const reason = usePickReasons();
   if (!route.stops.length) return <Text style={styles.summary}>Nothing on this day.</Text>;
   const sets = route.stops.filter((s): s is RouteStop => s.kind === 'set');
   const first = route.stops[0];
@@ -56,7 +58,7 @@ export function RouteList({ festival, route }: { festival: Festival; route: DayR
                     : `Break until ${at(stop.to)}. Nothing on for you.`}
                 </Text>
               ) : (
-                <StopCard festival={festival} stop={stop} walkFrom={prev && prev.set.stageId !== stop.set.stageId ? prev : undefined} />
+                <StopCard festival={festival} stop={stop} reason={reason(stop)} walkFrom={prev && prev.set.stageId !== stop.set.stageId ? prev : undefined} />
               )}
             </View>
           </View>
@@ -66,7 +68,7 @@ export function RouteList({ festival, route }: { festival: Festival; route: DayR
   );
 }
 
-function StopCard({ festival, stop, walkFrom }: { festival: Festival; stop: RouteStop; walkFrom?: RouteStop }) {
+function StopCard({ festival, stop, reason, walkFrom }: { festival: Festival; stop: RouteStop; reason: string; walkFrom?: RouteStop }) {
   const stage = stageName(festival, stop.set.stageId);
   const pct = `${Math.round(stop.match * 100)}%`;
   const stint = stintLabel(stop);
@@ -80,7 +82,7 @@ function StopCard({ festival, stop, walkFrom }: { festival: Festival; stop: Rout
       accessibilityRole="button"
       accessibilityLabel={`${at(stop.from)} to ${at(stop.to)}, ${stop.artist.name} at ${stage}, ${stint.toLowerCase()}${
         stop.known ? `, ${pct} match` : ', new to you'
-      }${stop.pinned ? ', one of your must sees' : ''}${walkFrom ? `. Walk over from ${stageName(festival, walkFrom.set.stageId)}` : ''}`}
+      }${stop.pinned ? ', one of your must sees' : ''}${walkFrom ? `. Walk over from ${stageName(festival, walkFrom.set.stageId)}` : ''}. ${reason}`}
       style={({ pressed }) => [styles.card, !stop.known && styles.discovery, stop.pinned && styles.mustSee, pressed && { opacity: 0.7 }]}
     >
       {walkFrom ? <Text style={styles.walk}>Head to {stage}{stop.walk ? ` · ${stop.walk} min walk` : ''}</Text> : null}
@@ -96,6 +98,10 @@ function StopCard({ festival, stop, walkFrom }: { festival: Festival; stop: Rout
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
             {stint}, {stop.to < stop.setEnd ? 'leave at' : 'until'} {at(stop.to)}
+          </Text>
+          {/* Why it's on your day, in your own signals. */}
+          <Text style={styles.reason} numberOfLines={2}>
+            {reason}
           </Text>
         </View>
         <View style={styles.side}>
@@ -175,6 +181,7 @@ const styles = StyleSheet.create({
   label: { ...type.caption, color: color.moonDim, marginBottom: 1 },
   name: { ...type.headline, color: color.moon },
   meta: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  reason: { ...type.caption, color: color.moonFaint, marginTop: 4 },
   side: { alignItems: 'center', marginRight: -6 },
   match: { ...type.label, color: color.moonDim, fontVariant: ['tabular-nums'] },
   also: {
