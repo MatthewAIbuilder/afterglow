@@ -24,6 +24,7 @@ import { useGoing } from '../../state/going';
 import { useTaste } from '../../state/taste';
 import { useLoves } from '../../state/useLoves';
 import { FollowButton } from '../../features/social/FollowButton';
+import { CloseFriendToggle } from '../../features/friends/CloseFriendToggle';
 import type { Profile, SharedMemory } from '../../features/social/models';
 import { askBlock, askReport } from '../../features/social/moderation';
 import { SOCIAL_ERROR_COPY, socialErrorKind, type FollowCounts } from '../../features/social/service';
@@ -206,6 +207,8 @@ export default function PublicProfileScreen() {
                   handle={profile.handle}
                   onChange={(on) => setCounts((c) => (c ? { ...c, followers: Math.max(0, c.followers + (on ? 1 : -1)) } : c))}
                 />
+                {/* A close friend comes first on your Friends tab. Only you see it. */}
+                <CloseFriendToggle uid={profile.uid} name={profile.displayName} />
               </View>
             )}
           </ProfileHeader>
@@ -309,7 +312,7 @@ const styles = StyleSheet.create({
   actions: { position: 'absolute', right: space.lg, flexDirection: 'row', gap: space.sm },
   more: { ...type.caption, color: color.moon, letterSpacing: 1 },
   headWrap: { marginHorizontal: -space.xl },
-  follow: { flex: 1, alignItems: 'center' },
+  follow: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: space.sm },
   badges: { marginHorizontal: -space.lg, marginTop: space.sm },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.xxl, marginBottom: space.md },
   common: {
