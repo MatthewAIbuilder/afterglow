@@ -53,12 +53,13 @@ jest.mock('expo-haptics', () => ({
 jest.mock('react-native-webview', () => {
   const React = require('react');
   const { View } = require('react-native');
-  // A plain view that also takes the player's commands (ignored), so tests can drive it through onMessage.
+  // A plain view that also takes the player's commands (kept in `__injected`), so tests can drive it through onMessage.
+  const injected: string[] = [];
   const WebView = React.forwardRef((props: object, ref: unknown) => {
-    React.useImperativeHandle(ref, () => ({ injectJavaScript: () => {}, reload: () => {} }));
+    React.useImperativeHandle(ref, () => ({ injectJavaScript: (js: string) => void injected.push(js), reload: () => {} }));
     return React.createElement(View, props);
   });
-  return { WebView };
+  return { WebView, __injected: injected };
 });
 
 // Local notifications: an in-memory schedule the tests can read, with permission granted.
@@ -239,6 +240,7 @@ jest.mock('expo-media-library', () => ({
   ),
 }));
 jest.mock('expo-video-thumbnails', () => ({ getThumbnailAsync: jest.fn(async () => ({ uri: 'file:///cache/still.jpg', width: 90, height: 160 })) }));
+jest.mock('expo-audio', () => ({ setAudioModeAsync: jest.fn(() => Promise.resolve()) }));
 jest.mock('expo-video', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   return {

@@ -32,6 +32,7 @@ import { CrewUpdatesProvider } from '../state/crewUpdates';
 import { CrewChatProvider } from '../state/crewChat';
 import { FestivalModeProvider } from '../state/festivalMode';
 import { FriendAddsProvider } from '../state/friendAdds';
+import { TasteProvider } from '../state/taste';
 import { FollowedArtistsProvider } from '../state/followedArtists';
 import { GoingProvider } from '../state/going';
 import { LineupNewsProvider } from '../state/lineupNews';
@@ -82,6 +83,7 @@ export default function RootLayout() {
       <CrewChatProvider>
       <FestivalModeProvider>
       <FriendAddsProvider>
+      <TasteProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -237,6 +239,7 @@ export default function RootLayout() {
       <SecretStage />
       <OfflineNotice />
       <DialogHost />
+      </TasteProvider>
       </FriendAddsProvider>
       </FestivalModeProvider>
       </CrewChatProvider>

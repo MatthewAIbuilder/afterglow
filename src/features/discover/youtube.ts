@@ -103,7 +103,8 @@ window.afterglow = {
   play: function () { if (player && player.playVideo) player.playVideo(); },
   pause: function () { if (player && player.pauseVideo) player.pauseVideo(); },
   // Back to the top of the clip, then play or stay paused (seeking alone would start a cued video).
-  restart: function (play) { if (player && player.seekTo) { player.seekTo(C.start, true); if (play) player.playVideo(); else player.pauseVideo(); } }
+  // With sound, unmute first: YouTube remembers a mute across every player, so one muted clip would mute the next.
+  restart: function (play, sound) { if (player && player.seekTo) { if (sound && player.unMute) player.unMute(); player.seekTo(C.start, true); if (play) player.playVideo(); else player.pauseVideo(); } }
 };
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
