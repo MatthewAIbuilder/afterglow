@@ -24,6 +24,7 @@ import { useSocial } from '../state/social';
 import { useTaste } from '../state/taste';
 import { useWeekends } from '../state/weekends';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /**
  * Search everything from Discover: people (when profiles are on and you're
@@ -97,7 +98,7 @@ export default function SearchScreen() {
         <View style={{ flex: 1 }}>
           <SearchField value={query} onChange={setQuery} placeholder={canFindPeople ? 'Artists, festivals or @people' : 'Artists or festivals'} label="Search Afterglow" autoFocus />
         </View>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Close search" hitSlop={10}>
+        <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel="Close search" hitSlop={10}>
           <Text style={styles.cancel}>Cancel</Text>
         </Pressable>
       </View>

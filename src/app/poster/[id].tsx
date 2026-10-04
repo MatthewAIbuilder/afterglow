@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -8,6 +8,7 @@ import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { CloseIcon } from '../../components/TabIcons';
 import { useCatalog } from '../../state/catalog';
 import { color, motion, space } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /** Full-screen lineup poster. Pinch to zoom, drag to read, double-tap to zoom in or out. */
 export default function PosterScreen() {
@@ -80,7 +81,7 @@ export default function PosterScreen() {
         </Animated.View>
       </GestureDetector>
       <View style={[styles.close, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Close poster" onPress={() => router.back()}>
+        <GlassCircleButton label="Close poster" onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>

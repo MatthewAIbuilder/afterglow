@@ -8,6 +8,7 @@ import { WHATS_NEW } from '../features/whatsNew/whatsNew';
 import { QUEST_GOLD, SparkIcon } from '../features/quests/QuestRing';
 import { haptic } from '../lib/haptics';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 const ICONS: Record<string, React.ReactNode> = {
   map: <MapIcon color={color.glow} size={22} />,
@@ -26,7 +27,7 @@ export default function WhatsNewScreen() {
       router.replace(href as never);
       return;
     }
-    router.back();
+    goBack();
     setTimeout(() => router.push(href as never), 250);
   };
   return (
@@ -60,7 +61,7 @@ export default function WhatsNewScreen() {
         <Pressable
           onPress={() => {
             haptic.tap();
-            if (router.canGoBack()) router.back();
+            if (router.canGoBack()) goBack();
             else router.replace('/');
           }}
           accessibilityRole="button"

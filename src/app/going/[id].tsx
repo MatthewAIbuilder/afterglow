@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
@@ -9,6 +9,7 @@ import { useGoers } from '../../features/social/useGoers';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /**
  * Who's going to a festival: people you follow, then others on Afterglow,
@@ -50,7 +51,7 @@ export default function GoingScreen() {
         )}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

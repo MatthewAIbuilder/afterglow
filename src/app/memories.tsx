@@ -14,6 +14,7 @@ import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useMemories } from '../state/memories';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 const TILE = 112;
 
@@ -70,7 +71,7 @@ export default function MemoriesScreen() {
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

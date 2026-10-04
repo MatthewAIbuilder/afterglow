@@ -20,6 +20,7 @@ import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useMemories } from '../state/memories';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /**
  * The camera: film a moment at a festival. Reached by swiping right on
@@ -120,7 +121,7 @@ function Camera() {
   }, []);
 
   // Leaving runs the cleanup above, which stops and throws away a recording in progress.
-  const close = useCallback(() => router.back(), []);
+  const close = useCallback(() => goBack(), []);
 
   // Swipe left to go back to Discover, the way you came.
   const swipeBack = useMemo(
@@ -280,7 +281,7 @@ function OnlyInApp() {
       </View>
       <Text style={styles.permTitle}>Filming is in the app</Text>
       <Text style={styles.permBody}>Record festival moments with the Afterglow app on your phone. They show up on your profile when you share them.</Text>
-      <Pressable onPress={() => router.back()} accessibilityRole="button" style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}>
+      <Pressable onPress={() => goBack()} accessibilityRole="button" style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}>
         <Text style={styles.permButtonText}>Back to Discover</Text>
       </Pressable>
     </View>

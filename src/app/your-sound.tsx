@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SOUND_LABEL } from '../data/models';
 import { mapCandidates } from '../features/sound-map/layout';
@@ -11,6 +11,7 @@ import { useCatalog } from '../state/catalog';
 import { useTaste } from '../state/taste';
 import { useWeekends } from '../state/weekends';
 import { color, space, type } from '../theme/tokens';
+import { SheetClose } from '../components/SheetClose';
 
 /**
  * Your sound as a breakdown: how much of your taste is each sound, from the
@@ -32,28 +33,31 @@ export default function YourSoundScreen() {
   const yours = summary.likes + summary.saves + summary.skips + summary.watched + rated > 0;
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
-      <Text style={styles.title}>{festival ? `Your sound at ${festival.name}` : 'Your sound'}</Text>
-      <Text style={styles.body}>
-        {yours
-          ? 'What your likes, saves, ratings and watching add up to, from the artists you match best.'
-          : 'A first guess from where everyone starts. Like clips or rate artists and it becomes yours.'}
-      </Text>
-      {mix.length > 0 ? (
-        <>
-          <Text style={[styles.headline, { color: SOUND_COLOR[mix[0].tag] }]} accessibilityRole="header">
-            {mix[0].percent}% {SOUND_LABEL[mix[0].tag].toLowerCase()}
-          </Text>
-          <SoundBreakdown shares={mix} colored />
-        </>
-      ) : (
-        <Text style={styles.empty}>
-          {festival
-            ? `Nothing on the ${festival.name} lineup matches you strongly yet. Tune your lineup to change that.`
-            : 'Nothing matches you strongly yet. Like a few clips and your sound shows here.'}
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
+        <Text style={styles.title}>{festival ? `Your sound at ${festival.name}` : 'Your sound'}</Text>
+        <Text style={styles.body}>
+          {yours
+            ? 'What your likes, saves, ratings and watching add up to, from the artists you match best.'
+            : 'A first guess from where everyone starts. Like clips or rate artists and it becomes yours.'}
         </Text>
-      )}
-    </ScrollView>
+        {mix.length > 0 ? (
+          <>
+            <Text style={[styles.headline, { color: SOUND_COLOR[mix[0].tag] }]} accessibilityRole="header">
+              {mix[0].percent}% {SOUND_LABEL[mix[0].tag].toLowerCase()}
+            </Text>
+            <SoundBreakdown shares={mix} colored />
+          </>
+        ) : (
+          <Text style={styles.empty}>
+            {festival
+              ? `Nothing on the ${festival.name} lineup matches you strongly yet. Tune your lineup to change that.`
+              : 'Nothing matches you strongly yet. Like a few clips and your sound shows here.'}
+          </Text>
+        )}
+      </ScrollView>
+      <SheetClose />
+    </View>
   );
 }
 

@@ -23,6 +23,7 @@ import { searchSecret } from '../../features/secrets/secrets';
 import { revealSecret } from '../../state/secrets';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 const AMBER = '#FFB86B';
 
@@ -197,7 +198,7 @@ export default function CrewChatScreen() {
       <NightSky />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[styles.head, { paddingTop: insets.top + space.sm }]}>
-          <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? router.back() : crew ? router.replace({ pathname: '/crew/[id]', params: { id } }) : router.replace('/'))}>
+          <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : crew ? router.replace({ pathname: '/crew/[id]', params: { id } }) : router.replace('/'))}>
             <ChevronIcon color={color.moon} direction="left" size={18} />
           </GlassCircleButton>
           <Pressable

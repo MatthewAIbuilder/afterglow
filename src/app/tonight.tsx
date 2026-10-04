@@ -30,6 +30,7 @@ import { useCrews } from '../state/crews';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /** Picks shown for tonight before set times are out. */
 const TONIGHT_PICKS = 6;
@@ -56,7 +57,7 @@ export default function TonightScreen() {
               {tonight ? tonightTitle(tonight) : 'No festival tonight'}
             </Text>
           </View>
-          <GlassCircleButton label="Close" onPress={() => router.back()}>
+          <GlassCircleButton label="Close" onPress={() => goBack()}>
             <CloseIcon color={color.moon} size={18} />
           </GlassCircleButton>
         </View>

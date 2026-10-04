@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useCatalog } from '../../state/catalog';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /**
  * Your recap of a festival that's over: your artists there, your nights, your
@@ -32,7 +33,7 @@ export default function RecapScreen() {
       <PageTitle title={festival ? `Your ${festival.name}` : 'Your recap'} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
         <Text style={styles.heading}>Your recap</Text>
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>

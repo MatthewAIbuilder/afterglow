@@ -1,7 +1,6 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import type { Artist, Festival, TasteProfile } from '../data/types';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -20,6 +19,8 @@ import { useCrewUpdates } from '../state/crewUpdates';
 import { usePlan } from '../state/plan';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
+import { SheetClose } from '../components/SheetClose';
 
 /**
  * Check in with your crew: one tap says where you are, stamped with the
@@ -78,6 +79,7 @@ export default function CheckInScreen() {
       <View style={[styles.root, { paddingTop: space.xl }]}>
         <Text style={styles.title}>Check in with your crew</Text>
         <Text style={styles.body}>Start or join a crew for a festival you’re going to, and you can tell them where you are from here.</Text>
+        <SheetClose />
       </View>
     );
   }
@@ -113,7 +115,7 @@ export default function CheckInScreen() {
               ? `No signal right now. It sends itself as soon as there is, still marked ${marked}, so your crew knows when you were there.`
               : `The signal’s slow. It keeps trying by itself, still marked ${marked}. You can close this.`}
         </Text>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+        <Pressable onPress={() => goBack()} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
           <Text style={styles.primaryText}>Done</Text>
         </Pressable>
       </View>
@@ -234,6 +236,7 @@ export default function CheckInScreen() {
           </Pressable>
         </View>
       </ScrollView>
+      <SheetClose />
     </KeyboardAvoidingView>
   );
 }

@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { PersonRow } from '../../features/social/PersonRow';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/service';
 import { useSocial } from '../../state/social';
 import { color, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /** Lists show the newest this many. */
 const LIST_MAX = 100;
@@ -62,7 +63,7 @@ export default function LikesScreen() {
         </View>
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

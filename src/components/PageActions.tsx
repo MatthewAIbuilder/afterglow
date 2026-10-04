@@ -26,7 +26,8 @@ export function PageActions({ onShare, shareLabel }: { onShare?: () => void; sha
   );
 }
 
+// Above the page's own content, wherever a screen draws them (a page's scroll view would otherwise sit on top and take the taps).
 const styles = StyleSheet.create({
-  left: { position: 'absolute', left: space.lg },
-  right: { position: 'absolute', right: space.lg },
+  left: { position: 'absolute', left: space.lg, zIndex: 20, elevation: 20 },
+  right: { position: 'absolute', right: space.lg, zIndex: 20, elevation: 20 },
 });

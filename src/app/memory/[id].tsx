@@ -19,6 +19,8 @@ import { useMemories } from '../../state/memories';
 import { color, radius, space, type } from '../../theme/tokens';
 import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
+import { goBack } from '../../lib/nav';
+import { SheetClose } from '../../components/SheetClose';
 
 /**
  * One memory, full screen, with sound. Tap to pause. Below it: who, where
@@ -41,9 +43,15 @@ export default function MemoryScreen() {
 
   // Deleted (here or elsewhere): step back.
   useEffect(() => {
-    if (!m && router.canGoBack()) router.back();
+    if (!m && router.canGoBack()) goBack();
   }, [m]);
-  if (!m) return <View style={styles.root} />;
+  // A memory that isn't on this phone (removed, or a link from elsewhere): a way out.
+  if (!m)
+    return (
+      <View style={styles.root}>
+        <SheetClose fullScreen />
+      </View>
+    );
 
   const artist = m.artistId ? catalog.artist(m.artistId) : undefined;
   const festival = m.festivalId ? catalog.festival(m.festivalId) : undefined;
@@ -89,7 +97,7 @@ export default function MemoryScreen() {
       <LinearGradient colors={['rgba(3,2,10,0)', 'rgba(3,2,10,0.85)']} style={styles.scrim} pointerEvents="none" />
 
       <View style={[styles.close, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={16} />
         </GlassCircleButton>
       </View>

@@ -7,6 +7,7 @@ import { NightSky } from '../../components/NightSky';
 import { ChevronIcon } from '../../components/TabIcons';
 import { isLegalDoc, LEGAL_DOCS, legalDocument, legalPath, type LegalDoc } from '../../features/legal/documents';
 import { color, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 const SHORT: Record<LegalDoc, string> = { privacy: 'Privacy', terms: 'Terms', guidelines: 'Community guidelines' };
 
@@ -56,7 +57,7 @@ export default function LegalScreen() {
         </View>
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

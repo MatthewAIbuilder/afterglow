@@ -12,6 +12,7 @@ import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useRatings } from '../state/ratings';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /**
  * Pick the artists you know: tap everyone you love in a grid of faces from
@@ -59,7 +60,7 @@ export default function PickArtistsScreen() {
     if (params.then === 'discover') {
       const f = watchFestival(chosen.length === catalog.festivals.length ? undefined : chosen[0], catalog.clips);
       router.dismissTo(f ? { pathname: '/', params: { festival: f.id } } : '/');
-    } else if (router.canGoBack()) router.back();
+    } else if (router.canGoBack()) goBack();
     else router.replace('/sound');
   };
 

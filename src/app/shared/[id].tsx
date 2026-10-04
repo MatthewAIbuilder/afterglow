@@ -25,6 +25,7 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
+import { goBack } from '../../lib/nav';
 
 /**
  * A memory someone shared on their profile, full screen. Like it (the same
@@ -134,7 +135,7 @@ export default function SharedMemoryScreen() {
             if (local) await social.unshare(local);
             else await social.service.unshareMemory(m.id);
             haptic.settle();
-            router.back();
+            goBack();
           } catch (e) {
             showAlert('Couldn’t remove it', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
           }
@@ -151,7 +152,7 @@ export default function SharedMemoryScreen() {
       {m === null || blocked ? <Text style={[styles.center, styles.gone]}>{blocked ? 'You blocked this person.' : 'This video isn’t available any more.'}</Text> : null}
       <LinearGradient colors={['rgba(3,2,10,0)', 'rgba(3,2,10,0.85)']} style={styles.scrim} pointerEvents="none" />
       <View style={[styles.close, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={16} />
         </GlassCircleButton>
       </View>

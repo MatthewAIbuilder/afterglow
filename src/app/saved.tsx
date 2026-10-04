@@ -18,6 +18,7 @@ import { useCatalog } from '../state/catalog';
 import { useClipPool } from '../state/community';
 import { useReactions } from '../state/reactions';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 type Shelf = 'saved' | 'liked';
 
@@ -64,7 +65,7 @@ export default function YourClipsScreen() {
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

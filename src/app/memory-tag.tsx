@@ -31,6 +31,8 @@ import { useCrews } from '../state/crews';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { useSocial } from '../state/social';
+import { goBack } from '../lib/nav';
+import { SheetClose } from '../components/SheetClose';
 
 /** Guesses shown as big rows before "Someone else". */
 const TOP_GUESSES = 3;
@@ -163,10 +165,10 @@ export default function MemoryTagScreen() {
   const leaving = useRef(false);
   const leave = () => {
     leaving.current = true;
-    router.back();
+    goBack();
   };
   useEffect(() => {
-    if (missing && !leaving.current && router.canGoBack()) router.back();
+    if (missing && !leaving.current) goBack();
   }, [missing]);
 
   const player = useVideoPlayer(videoUri ?? null, (p) => {
@@ -207,7 +209,7 @@ export default function MemoryTagScreen() {
           onPress: () => {
             leaving.current = true;
             mem.setDraft(undefined);
-            router.back();
+            goBack();
           },
         },
       ]);
@@ -215,10 +217,15 @@ export default function MemoryTagScreen() {
     }
     leaving.current = true;
     if (draft) mem.setDraft(undefined);
-    router.back();
+    goBack();
   };
 
-  if (missing) return <View style={styles.root} />;
+  if (missing)
+    return (
+      <View style={styles.root}>
+        <SheetClose />
+      </View>
+    );
   const aspect = (existing?.width ?? draft?.width ?? 9) / (existing?.height ?? draft?.height ?? 16);
   const videoH = Math.min(height * 0.34, 300);
   const top = artistGuesses.slice(0, TOP_GUESSES);

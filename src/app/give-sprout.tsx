@@ -22,6 +22,7 @@ import { shareMessage } from '../lib/share';
 import { useSocial } from '../state/social';
 import { useSprouts } from '../state/sprouts';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /** While a code is showing, it's checked this often to see if someone picked it up. */
 const CHECK_MS = 4000;
@@ -118,7 +119,7 @@ export default function GiveSproutScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Give a sprout
         </Text>
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={18} />
         </GlassCircleButton>
       </View>

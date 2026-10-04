@@ -12,6 +12,7 @@ import { haptic } from '../lib/haptics';
 import { forgetAccount, useSavedAccounts } from '../state/savedAccounts';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { SheetClose } from '../components/SheetClose';
 
 /**
  * Switch account: the accounts saved on this phone, one tap to move between
@@ -41,6 +42,7 @@ export default function SwitchAccountScreen() {
       <View style={[styles.root, { padding: space.xl }]}>
         <Text style={styles.title}>Switch account</Text>
         <Text style={styles.body}>Accounts are in the full version of Afterglow.</Text>
+        <SheetClose />
       </View>
     );
   }
@@ -132,106 +134,109 @@ export default function SwitchAccountScreen() {
   );
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title} accessibilityRole="header">
-        Switch account
-      </Text>
-      <Text style={styles.body}>
-        {KEEPS_PASSWORDS ? 'Accounts saved on this phone, one tap apart. Passwords stay in the phone’s keychain.' : 'Accounts saved in this browser. You’ll type the password each time.'}
-      </Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title} accessibilityRole="header">
+          Switch account
+        </Text>
+        <Text style={styles.body}>
+          {KEEPS_PASSWORDS ? 'Accounts saved on this phone, one tap apart. Passwords stay in the phone’s keychain.' : 'Accounts saved in this browser. You’ll type the password each time.'}
+        </Text>
 
-      {!saved ? <ActivityIndicator color={color.glow} style={{ marginTop: space.lg }} /> : null}
-      {saved?.map((a) => {
-        const current = a.uid === me?.uid;
-        return (
-          <View key={a.uid}>
-            <Pressable
-              onPress={() => void tap(a)}
-              disabled={current}
-              accessibilityRole="button"
-              accessibilityLabel={current ? `${accountTitle(a)}, signed in` : `Switch to ${accountTitle(a)}`}
-              accessibilityActions={[{ name: 'remove', label: 'Remove from this phone' }]}
-              onAccessibilityAction={(e) => e.nativeEvent.actionName === 'remove' && remove(a)}
-              style={({ pressed }) => [styles.row, current && styles.rowOn, pressed && styles.pressed]}
-            >
-              <PersonAvatar name={a.name ?? a.handle ?? a.email} url={a.avatarUrl} size={44} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle} numberOfLines={1}>
-                  {accountTitle(a)}
-                </Text>
-                {accountDetail(a) ? (
-                  <Text style={styles.rowDetail} numberOfLines={1}>
-                    {accountDetail(a)}
+        {!saved ? <ActivityIndicator color={color.glow} style={{ marginTop: space.lg }} /> : null}
+        {saved?.map((a) => {
+          const current = a.uid === me?.uid;
+          return (
+            <View key={a.uid}>
+              <Pressable
+                onPress={() => void tap(a)}
+                disabled={current}
+                accessibilityRole="button"
+                accessibilityLabel={current ? `${accountTitle(a)}, signed in` : `Switch to ${accountTitle(a)}`}
+                accessibilityActions={[{ name: 'remove', label: 'Remove from this phone' }]}
+                onAccessibilityAction={(e) => e.nativeEvent.actionName === 'remove' && remove(a)}
+                style={({ pressed }) => [styles.row, current && styles.rowOn, pressed && styles.pressed]}
+              >
+                <PersonAvatar name={a.name ?? a.handle ?? a.email} url={a.avatarUrl} size={44} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>
+                    {accountTitle(a)}
                   </Text>
-                ) : null}
-              </View>
-              {busy === a.uid ? (
-                <ActivityIndicator color={color.glow} />
-              ) : current ? (
-                <View style={styles.check}>
-                  <CheckIcon color={color.night} size={14} />
+                  {accountDetail(a) ? (
+                    <Text style={styles.rowDetail} numberOfLines={1}>
+                      {accountDetail(a)}
+                    </Text>
+                  ) : null}
                 </View>
-              ) : (
-                <Pressable onPress={() => remove(a)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Remove ${accountTitle(a)} from this phone`}>
-                  <Text style={styles.remove}>×</Text>
-                </Pressable>
-              )}
-            </Pressable>
-            {asking === a.uid ? passwordForm(a) : null}
+                {busy === a.uid ? (
+                  <ActivityIndicator color={color.glow} />
+                ) : current ? (
+                  <View style={styles.check}>
+                    <CheckIcon color={color.night} size={14} />
+                  </View>
+                ) : (
+                  <Pressable onPress={() => remove(a)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Remove ${accountTitle(a)} from this phone`}>
+                    <Text style={styles.remove}>×</Text>
+                  </Pressable>
+                )}
+              </Pressable>
+              {asking === a.uid ? passwordForm(a) : null}
+            </View>
+          );
+        })}
+
+        {/* The account you're in isn't saved yet: save it, so you can come back to it. */}
+        {saved && me?.email && !meSaved ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Save {me.email}</Text>
+            <Text style={styles.body}>So you can switch back to it in one tap.</Text>
+            {asking === 'me' ? (
+              passwordForm()
+            ) : (
+              <Pressable onPress={() => ask('me')} accessibilityRole="button" style={({ pressed }) => [styles.primary, styles.cardButton, pressed && styles.pressed]}>
+                <Text style={styles.primaryText}>Save this account</Text>
+              </Pressable>
+            )}
           </View>
-        );
-      })}
+        ) : null}
+        {savedNote ? <Text style={styles.note}>Saved. Hold the Profile tab any time to switch.</Text> : null}
 
-      {/* The account you're in isn't saved yet: save it, so you can come back to it. */}
-      {saved && me?.email && !meSaved ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Save {me.email}</Text>
-          <Text style={styles.body}>So you can switch back to it in one tap.</Text>
-          {asking === 'me' ? (
-            passwordForm()
-          ) : (
-            <Pressable onPress={() => ask('me')} accessibilityRole="button" style={({ pressed }) => [styles.primary, styles.cardButton, pressed && styles.pressed]}>
-              <Text style={styles.primaryText}>Save this account</Text>
-            </Pressable>
-          )}
-        </View>
-      ) : null}
-      {savedNote ? <Text style={styles.note}>Saved. Hold the Profile tab any time to switch.</Text> : null}
+        {asking === 'new' ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Add an account</Text>
+            {passwordForm()}
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => {
+              setEmail('');
+              ask('new');
+            }}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.add, pressed && styles.pressed]}
+          >
+            <Text style={styles.addPlus}>+</Text>
+            <Text style={styles.addText}>Add an account</Text>
+          </Pressable>
+        )}
 
-      {asking === 'new' ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Add an account</Text>
-          {passwordForm()}
-        </View>
-      ) : (
-        <Pressable
-          onPress={() => {
-            setEmail('');
-            ask('new');
-          }}
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.add, pressed && styles.pressed]}
-        >
-          <Text style={styles.addPlus}>+</Text>
-          <Text style={styles.addText}>Add an account</Text>
-        </Pressable>
-      )}
-
-      {me ? (
-        <Pressable
-          onPress={() =>
-            void social.signOut().then(() => {
-              if (router.canDismiss()) router.dismissAll();
-              router.replace('/');
-            })
-          }
-          accessibilityRole="button"
-          style={styles.signOut}
-        >
-          <Text style={styles.signOutText}>Sign out</Text>
-        </Pressable>
-      ) : null}
-    </ScrollView>
+        {me ? (
+          <Pressable
+            onPress={() =>
+              void social.signOut().then(() => {
+                if (router.canDismiss()) router.dismissAll();
+                router.replace('/');
+              })
+            }
+            accessibilityRole="button"
+            style={styles.signOut}
+          >
+            <Text style={styles.signOutText}>Sign out</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+      <SheetClose />
+    </View>
   );
 }
 

@@ -13,6 +13,7 @@ import { haptic } from '../lib/haptics';
 import { type AddResult, useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /** A code that isn't a friend code says so for this long before scanning carries on. */
 const NOT_A_CODE_MS = 2500;
@@ -103,7 +104,7 @@ export default function ScanScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Scan a code
         </Text>
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={18} />
         </GlassCircleButton>
       </View>
@@ -181,7 +182,7 @@ function ResultCard({ card, outcome, onAgain }: { card: FriendCard; outcome: Add
       <Pressable onPress={onAgain} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
         <Text style={styles.secondaryText}>Scan another</Text>
       </Pressable>
-      <Pressable onPress={() => router.back()} accessibilityRole="button" hitSlop={8}>
+      <Pressable onPress={() => goBack()} accessibilityRole="button" hitSlop={8}>
         <Text style={styles.link}>Done</Text>
       </Pressable>
     </View>
