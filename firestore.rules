@@ -358,7 +358,7 @@ service cloud.firestore {
         && (!('festivalId' in request.resource.data) || (request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 120))
         // An artist's sprout names the artist (id and name, together).
         && (('artistId' in request.resource.data) == ('artistName' in request.resource.data))
-        && (!('artistId' in request.resource.data) || (request.resource.data.artistId is string && request.resource.data.artistId.matches('^[a-z0-9][a-z0-9-]{0,79}$')))
+        && (!('artistId' in request.resource.data) || (request.resource.data.artistId is string && request.resource.data.artistId.matches('^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$')))
         && (!('artistName' in request.resource.data) || (request.resource.data.artistName is string && request.resource.data.artistName.size() >= 1 && request.resource.data.artistName.size() <= 60))
         && request.resource.data.createdAt == request.time
         && exists(path('profiles', me()));

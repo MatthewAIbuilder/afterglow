@@ -13,18 +13,18 @@ import { Sprout } from './Sprout';
 const TILE = 104;
 const day = (t: number) => (t ? new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
-/** Artist sprouts someone gave you: the artist and who from. */
+/** Artist collectibles someone gave you: the artist and who from. */
 export type GivenArtistSprout = { id: string; artist: { id: string; name: string }; from: string; at: number };
 
 /**
- * The garden's artist sprouts: one for every artist you've filmed, levelled
- * up by filming them more (bronze, silver, gold), and the ones friends gave
- * you. With none yet, a few signature sprouts as grey silhouettes to aim for.
+ * The garden's artist collectibles: one for every artist you've filmed,
+ * levelled up by filming them more (bronze, silver, gold), and the ones
+ * friends gave you. With none yet, a few hand-made ones as grey figures to aim for.
  */
 export function ArtistSproutsSection({ earned, given, canGive }: { earned: ArtistSprout[]; given: GivenArtistSprout[]; canGive: boolean }) {
   const catalog = useCatalog();
   const [open, setOpen] = useState<{ artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }>();
-  // A few signature sprouts from artists on Afterglow, to show what's out there.
+  // A few hand-made collectibles from artists on Afterglow, to show what's out there.
   const teasers = useMemo(() => {
     const byName = new Map(catalog.artists.map((a) => [foldName(a.name), a]));
     return SIGNATURE_NAMES.map((n) => byName.get(n)).filter((a): a is Artist => !!a).slice(0, 4);
@@ -34,7 +34,7 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
   return (
     <View style={styles.section}>
       <Text style={styles.h2} accessibilityRole="header">
-        Artist sprouts{earned.length || given.length ? ` · ${earned.length + given.length}` : ''}
+        Artist collectibles{earned.length || given.length ? ` · ${earned.length + given.length}` : ''}
       </Text>
       <Text style={styles.sub}>{artistGardenLine(earned)}</Text>
       {earned.length || given.length ? (
@@ -50,7 +50,7 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
                   setOpen({ artist, sprout: s });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${artist.name} sprout, ${tierLabel(s)}.`}
+                accessibilityLabel={`${artist.name} collectible, ${tierLabel(s)}.`}
                 style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
               >
                 <Sprout artist={artistLook(artist)} tier={s.tier} stage={3} size={78} />
@@ -73,7 +73,7 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
                   setOpen({ artist, given: g });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${nameOf(g.artist.id, g.artist.name)} sprout, from ${g.from}.`}
+                accessibilityLabel={`${nameOf(g.artist.id, g.artist.name)} collectible, from ${g.from}.`}
                 style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
               >
                 <Sprout artist={artistLook(artist)} stage={3} size={78} />
@@ -92,7 +92,7 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
           {teasers.map((a) => {
             const look = artistLook(a);
             return (
-              <View key={a.id} style={styles.teaser} accessible accessibilityLabel={`${a.name}: ${look.theme.toLowerCase()}. Film their set to grow it.`}>
+              <View key={a.id} style={styles.teaser} accessible accessibilityLabel={`${a.name}: ${look.name}, ${look.theme.toLowerCase()}. Film their set to earn it.`}>
                 <Sprout artist={look} stage={3} size={56} locked still />
                 <Text style={styles.teaserName} numberOfLines={1}>
                   {a.name}
@@ -118,7 +118,8 @@ function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist: Artist
         {a && look ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
             <Sprout artist={look} tier={s?.tier ?? 0} stage={3} size={160} />
-            <Text style={[styles.sheetName, { color: look.accent }]}>{a.name} sprout</Text>
+            <Text style={[styles.sheetName, { color: look.accent }]}>{look.name}</Text>
+            <Text style={styles.label}>{a.name}</Text>
             <Text style={styles.body}>{look.theme}.</Text>
             {s ? (
               <>
@@ -141,7 +142,7 @@ function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist: Artist
                     router.push({ pathname: '/give-sprout', params: { artist: a.id } });
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={`Give someone a ${a.name} sprout`}
+                  accessibilityLabel={`Give someone a ${a.name} collectible`}
                   style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
                 >
                   <Text style={styles.primaryText}>Give one</Text>

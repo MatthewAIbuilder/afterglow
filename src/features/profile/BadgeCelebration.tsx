@@ -35,7 +35,7 @@ export type Unlock =
   | { kind: 'milestone'; milestone: Milestone }
   /** A sprout in your garden bloomed into a kind. */
   | { kind: 'sprout'; sprout: SproutKind; foundAt?: string }
-  /** An artist's sprout, earned by filming them or levelled up. */
+  /** An artist's collectible, earned by filming them or levelled up. */
   | { kind: 'artistSprout'; name: string; look: ArtistLook; tier: Tier; videos: number };
 
 const RAYS = 18;
@@ -87,7 +87,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           : unlock.kind === 'sprout'
             ? [kindOf(unlock.sprout).body[0], kindOf(unlock.sprout).accent]
             : unlock.kind === 'artistSprout'
-              ? [unlock.look.body[1], unlock.look.accent]
+              ? [unlock.look.palette.mid, unlock.look.accent]
               : ['#A97CFF', '#FFB86B'];
   const colors = [c1, c2, '#FFE38A', '#FFFFFF'];
   const title =
@@ -98,7 +98,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
         : unlock.kind === 'sprout'
           ? kindOf(unlock.sprout).name
           : unlock.kind === 'artistSprout'
-            ? `${unlock.name} sprout`
+            ? `${unlock.name} · ${unlock.look.name}`
             : unlock.milestone.title;
   const about =
     unlock.kind === 'pin'
@@ -112,7 +112,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           : unlock.kind === 'artistSprout'
             ? unlock.tier
               ? `${TIER_NAME[unlock.tier]} now: you’ve filmed ${unlock.name} ${unlock.videos} times. ${unlock.tier < 3 ? `${tierLine(unlock.videos)}.` : ''}`.trim()
-              : `${unlock.look.theme}, grown from your video of ${unlock.name}. Give one to someone, or film them again: ${tierLine(unlock.videos)}.`
+              : `${unlock.look.theme}, earned with your video of ${unlock.name}. Give one to someone, or film them again: ${tierLine(unlock.videos)}.`
             : unlock.milestone.about;
 
   const pop = useSharedValue(reduce ? 1 : 0);
@@ -192,8 +192,8 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
                   : 'Your sprout bloomed'
                 : unlock.kind === 'artistSprout'
                   ? unlock.tier
-                    ? 'Artist sprout levelled up'
-                    : 'Artist sprout unlocked'
+                    ? 'Collectible levelled up'
+                    : 'Artist collectible unlocked'
                   : 'Badge unlocked'}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {title}

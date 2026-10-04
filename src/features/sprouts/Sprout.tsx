@@ -12,8 +12,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { type ArtistLook, type Face, type LeafShape } from './artistLook';
-import { ARTIST_FACES, ArtistBack, ArtistFace, ArtistTop, ArtistWear } from './ArtistParts';
+import type { ArtistLook } from './artistLook';
+import { Collectible } from './Collectible';
 import { kindOf, type SproutKind, type Stage } from './sprouts';
 
 /**
@@ -22,6 +22,8 @@ import { kindOf, type SproutKind, type Stage } from './sprouts';
  * Every kind is a green sprout at heart; the tints, faces and little
  * accessories are what make them collectible.
  */
+type Face = 'smile' | 'joy' | 'bliss' | 'wink' | 'shades' | 'sparkle' | 'sleepy' | 'cool';
+type LeafShape = 'round' | 'heart' | 'pointed' | 'jagged' | 'petal' | 'wide';
 type Look = { body: [string, string, string]; leaf: [string, string]; face: Face; leafShape: LeafShape };
 
 const LOOKS: Record<SproutKind, Look> = {
@@ -46,28 +48,25 @@ const INK = '#0E2A1A';
  * Sways gently unless motion is reduced or `still`. Hidden from screen
  * readers (the label around it says what it is).
  *
- * An artist's sprout passes `artist` (their look, from `artistLook`): its
- * colours, face, leaves, what sits on top and what it wears, with a ring in
- * bronze, silver or gold for its `tier` (how many of their sets you filmed).
+ * An artist's passes `artist` (their look, from `artistLook`) and is drawn as
+ * their collectible instead (Collectible.tsx), with `tier` for its level.
  */
-export const TIER_COLOR = ['', '#D08A4E', '#D6DDEA', '#FFD24A'] as const;
+export function Sprout({ artist, tier, ...props }: { kind?: SproutKind; stage?: Stage; size?: number; still?: boolean; locked?: boolean; artist?: ArtistLook; tier?: 0 | 1 | 2 | 3 }) {
+  return artist ? <Collectible look={artist} tier={tier} size={props.size} still={props.still} locked={props.locked} /> : <Plant {...props} />;
+}
 
-export function Sprout({
+function Plant({
   kind = 'seedling',
   stage = 3,
   size = 80,
   still,
   locked,
-  artist,
-  tier = 0,
 }: {
   kind?: SproutKind;
   stage?: Stage;
   size?: number;
   still?: boolean;
   locked?: boolean;
-  artist?: ArtistLook;
-  tier?: 0 | 1 | 2 | 3;
 }) {
   const k = kindOf(kind);
   const reduce = useReducedMotion();
@@ -76,7 +75,7 @@ export function Sprout({
   const twinkle = useSharedValue(0.6);
   const bloom = stage === 3 && !locked;
   // Each sprout's own pace, so a garden never moves in step.
-  const pace = artist ? artist.accent.charCodeAt(2) + artist.face.length : kind.length;
+  const pace = kind.length;
   useEffect(() => {
     if (!moving) return;
     // Each sprout sways at its own pace so a garden never moves in step.
@@ -99,11 +98,11 @@ export function Sprout({
   const body = useAnimatedStyle(() => ({ transform: [{ scaleY: 1 + sway.get() * 0.018 }, { scaleX: 1 - sway.get() * 0.008 }] }));
   const sparkle = useAnimatedStyle(() => ({ opacity: twinkle.get() }));
 
-  const own: Look = artist ?? LOOKS[kind] ?? LOOKS.seedling;
+  const own: Look = LOOKS[kind] ?? LOOKS.seedling;
   // Locked: a grey silhouette of what it will be (its leaves and what it wears), so there's something to collect.
   const look = locked ? { ...GREY, leafShape: own.leafShape } : own;
-  const accent = locked ? '#8A88A0' : artist ? artist.accent : k.accent;
-  const id = `${artist ? `a${artist.accent.slice(1)}${artist.top}${artist.wear}${artist.face}` : kind}-${stage}-${locked ? 'g' : 'c'}`;
+  const accent = locked ? '#8A88A0' : k.accent;
+  const id = `${kind}-${stage}-${locked ? 'g' : 'c'}`;
   const seed = stage === 0;
   // The body: a seed sits low and small in its mound; later stages stand up.
   const bx = 50;
@@ -114,8 +113,7 @@ export function Sprout({
   const stemBase = by - bry * 0.82;
   const stemTop = [stemBase - 8, 37, 31, 29][stage];
   const leafScale = [0.45, 0.8, 1, 1.08][stage];
-  const dressed = stage === 3 && (!!artist || kind !== 'seedling');
-  const artistFace = !!artist && ARTIST_FACES.includes(look.face);
+  const dressed = stage === 3 && kind !== 'seedling';
 
   return (
     <View style={{ width: size, height: size }} accessible={false} importantForAccessibility="no-hide-descendants">
@@ -128,14 +126,7 @@ export function Sprout({
             <Stop offset="1" stopColor={accent} stopOpacity={0} />
           </RadialGradient>
         </Defs>
-        {bloom ? <Circle cx={50} cy={kind === 'seedling' && !artist ? 56 : 50} r={46} fill={`url(#aura-${id})`} /> : null}
-        {tier > 0 && !locked ? (
-          <G>
-            <Circle cx={50} cy={52} r={45} fill="none" stroke={TIER_COLOR[tier]} strokeWidth={5} opacity={0.18} />
-            <Circle cx={50} cy={52} r={45} fill="none" stroke={TIER_COLOR[tier]} strokeWidth={1.8} opacity={0.9} />
-          </G>
-        ) : null}
-        {artist && dressed ? <ArtistBack back={locked ? 'none' : artist.back} x={bx} y={by} accent={accent} /> : null}
+        {bloom ? <Circle cx={50} cy={kind === 'seedling' ? 56 : 50} r={46} fill={`url(#aura-${id})`} /> : null}
         {kind === 'spotlight' && bloom ? <Path d="M50 4 L30 70 L70 70 Z" fill={accent} opacity={0.12} /> : null}
         <Ellipse cx={50} cy={93} rx={seed ? 24 : 20} ry={3.6} fill="rgba(0,0,0,0.35)" />
       </Svg>
@@ -164,7 +155,7 @@ export function Sprout({
             </G>
           )}
           {stage >= 2 ? <Path d={leafPath(look.leafShape, bx - 1, stemTop + 12, -1, leafScale * 0.55)} fill={`url(#leaf-${id})`} /> : null}
-          {dressed ? artist ? <ArtistTop top={artist.top} x={bx} y={stemTop - 4} accent={accent} /> : <Bloom kind={kind} x={bx} y={stemTop - 4} color={accent} grey={locked} /> : null}
+          {dressed ? <Bloom kind={kind} x={bx} y={stemTop - 4} color={accent} grey={locked} /> : null}
         </Svg>
       </Animated.View>
 
@@ -187,14 +178,8 @@ export function Sprout({
           <Ellipse cx={bx - brx * 0.32} cy={by - bry * 0.52} rx={brx * 0.32} ry={bry * 0.18} fill="#FFFFFF" opacity={0.42} />
           <Circle cx={bx - brx * 0.62} cy={by - bry * 0.22} r={1.4} fill="#FFFFFF" opacity={0.5} />
           <Path d={`M${bx - brx * 0.7} ${by + bry * 0.42} Q${bx} ${by + bry * 0.78} ${bx + brx * 0.7} ${by + bry * 0.42}`} stroke="#FFFFFF" strokeWidth={1} opacity={0.18} fill="none" strokeLinecap="round" />
-          {artist && dressed ? <ArtistWear wear={artist.wear} x={bx} y={by} rx={brx} ry={bry} accent={accent} layer="under" /> : null}
-          {artistFace ? (
-            <ArtistFace face={look.face} x={bx} y={by + 1} s={1} accent={locked ? '#8A88A0' : accent} />
-          ) : (
-            <FaceOf face={dressed || stage >= 1 ? look.face : 'smile'} x={bx} y={by + (seed ? -5 : 1)} s={seed ? 0.75 : 1} blush={!locked} />
-          )}
-          {artist && dressed ? <ArtistWear wear={artist.wear} x={bx} y={by} rx={brx} ry={bry} accent={accent} layer="over" /> : null}
-          {!artist && dressed ? <Wear kind={kind} x={bx} y={by} rx={brx} ry={bry} color={accent} grey={locked} /> : null}
+          <FaceOf face={dressed || stage >= 1 ? look.face : 'smile'} x={bx} y={by + (seed ? -5 : 1)} s={seed ? 0.75 : 1} blush={!locked} />
+          {dressed ? <Wear kind={kind} x={bx} y={by} rx={brx} ry={bry} color={accent} grey={locked} /> : null}
           {/* A seed sits in a little mound of soil. */}
           {seed ? (
             <G>

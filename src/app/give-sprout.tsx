@@ -45,6 +45,10 @@ export default function GiveSproutScreen() {
   const [artistId, setArtistId] = useState<string | undefined>(typeof params.artist === 'string' ? params.artist : undefined);
   const earned = artistId ? sprouts.artists.find((a) => a.artistId === artistId) : undefined;
   const artistOf = (id: string) => catalog.artist(id);
+  const lookOf = (a: SproutArtist) => {
+    const l = artistLook(artistOf(a.id) ?? a);
+    return `${l.name}: ${l.theme.toLowerCase()}`;
+  };
   const chosen: SproutArtist | undefined = earned && artistOf(earned.artistId) ? { id: earned.artistId, name: artistOf(earned.artistId)!.name } : undefined;
   const [note, setNote] = useState('');
   const [card, setCard] = useState<SproutCard>();
@@ -74,7 +78,7 @@ export default function GiveSproutScreen() {
           : r.problem === 'loading'
             ? 'One moment, your garden is still loading.'
             : r.problem === 'not-yours'
-              ? 'Film this artist’s set to grow their sprout first.'
+              ? 'Film this artist’s set to earn their collectible first.'
               : 'Make your profile to give sprouts.',
       );
       return;
@@ -186,9 +190,9 @@ export default function GiveSproutScreen() {
               {chosen && earned ? (
                 <>
                   <SproutOf artist={chosen} tier={earned.tier} size={150} />
-                  <Text style={styles.heroName}>{chosen.name} sprout</Text>
+                  <Text style={styles.heroName}>{sproutName({ kind: 'seedling', artist: chosen })}</Text>
                   <Text style={styles.body}>
-                    {artistLook(artistOf(chosen.id) ?? { id: chosen.id, name: chosen.name }).theme}. {tierLabel(earned)} of them filmed. The one you give stays yours too.
+                    {lookOf(chosen)}. {tierLabel(earned)} of them filmed. The one you give stays yours too.
                   </Text>
                 </>
               ) : (
@@ -226,7 +230,7 @@ export default function GiveSproutScreen() {
             )}
             {sprouts.artists.length ? (
               <>
-                <Text style={styles.rowTitle}>Artist sprouts</Text>
+                <Text style={styles.rowTitle}>Artist collectibles</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kinds} accessibilityRole="radiogroup">
                   {sprouts.artists.flatMap((a) => {
                     const artist = artistOf(a.artistId);
@@ -241,7 +245,7 @@ export default function GiveSproutScreen() {
                         }}
                         accessibilityRole="radio"
                         accessibilityState={{ selected: on }}
-                        accessibilityLabel={`${artist.name} sprout, ${tierLabel(a)}`}
+                        accessibilityLabel={`${artist.name} collectible, ${tierLabel(a)}`}
                         style={[styles.kind, on && styles.kindOn]}
                       >
                         <Sprout artist={artistLook(artist)} tier={a.tier} stage={3} size={44} still />

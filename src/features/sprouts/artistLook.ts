@@ -1,104 +1,101 @@
 import type { SoundTag } from '../../data/models';
 
 /**
- * How an artist's sprout looks. Pure. A few big names have a hand-made
- * signature sprout inspired by their world (a cyclops, a phoenix, a lion's
- * mane), never their logos; everyone else gets one built from their sound
- * (which accessory pool, which leaves) and their photo's colour (the tint),
- * picked by a hash of their id so each artist's sprout is their own and the
- * same for everyone.
+ * How an artist's collectible looks. Pure. A small glowing creature on a dark
+ * round tile: the big names have a hand-made one inspired by their world (an
+ * eye with tentacles, a phoenix, a lion), never their logos; everyone else
+ * gets their sound's creature (a bass beast for dubstep, a moth for melodic
+ * bass, a disco cat for house…) in their own colours, from their photo.
  */
-export type Face = 'smile' | 'joy' | 'bliss' | 'wink' | 'shades' | 'sparkle' | 'sleepy' | 'cool' | 'cyclops' | 'hollow' | 'glasses' | 'alien' | 'stitched' | 'fang';
-export type LeafShape = 'round' | 'heart' | 'pointed' | 'jagged' | 'petal' | 'wide';
-/** What sits on top of the stem. */
-export type Top = 'none' | 'phoenix' | 'pumpkin' | 'halo' | 'cake' | 'crown' | 'tree' | 'cream' | 'balloons' | 'bolt' | 'flower' | 'stars' | 'feather' | 'record' | 'note' | 'heart' | 'star' | 'daisy' | 'speaker' | 'moon';
-/** What it wears on its body. */
-export type Wear =
-  | 'none'
-  | 'horns'
-  | 'wings'
-  | 'fringe'
-  | 'wool'
-  | 'devil'
-  | 'helmet'
-  | 'bunny'
-  | 'stitches'
-  | 'snake'
-  | 'antennae'
+export type Creature =
+  | 'eye'
+  | 'phoenix'
+  | 'lion'
+  | 'ghost'
+  | 'pumpkin'
+  | 'sheep'
+  | 'twin'
+  | 'astronaut'
+  | 'rabbit'
+  | 'spirit'
+  | 'crystal'
+  | 'skull'
+  | 'serpent'
+  | 'alien'
   | 'monster'
-  | 'mask'
-  | 'hood'
-  | 'headphones'
-  | 'cap'
-  | 'chain'
-  | 'bow'
-  | 'beanie'
-  | 'mohawk'
-  | 'scarf';
-/** Drawn behind the body. */
-export type Back = 'none' | 'mane' | 'glow-ring';
+  | 'sloth'
+  | 'reaper'
+  | 'jelly'
+  | 'beast'
+  | 'bot'
+  | 'wolf'
+  | 'moth'
+  | 'cat'
+  | 'owl'
+  | 'fox'
+  | 'dragon'
+  | 'bear'
+  | 'wisp';
+
+/** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
+export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
 
 export type ArtistLook = {
-  body: [string, string, string];
-  leaf: [string, string];
-  face: Face;
-  leafShape: LeafShape;
-  top: Top;
-  wear: Wear;
-  back: Back;
+  creature: Creature;
+  palette: Palette;
+  /** The colour that stands for it in the app (names, borders). */
   accent: string;
   /** Hand-made for this artist. */
   signature: boolean;
-  /** One line on what it is: "A cyclops sprout". */
+  /** Its name: "The Watcher". */
+  name: string;
+  /** One line on what it is: "A big eye with wriggling tentacles". */
   theme: string;
+  /** A little extra: a crown, or fangs. */
+  extra?: 'crown' | 'fangs';
 };
 
-type Spec = Omit<ArtistLook, 'signature' | 'back'> & { back?: Back };
+type Spec = Omit<ArtistLook, 'signature' | 'accent'> & { accent?: string };
 
-const GREEN: [string, string, string] = ['#B6F7CF', '#5BD48E', '#1F8C50'];
-const LEAF: [string, string] = ['#8FF0B4', '#239255'];
+const P = (light: string, mid: string, deep: string, alt: string, altDeep: string, accent: string, glow: string): Palette => ({ light, mid, deep, alt, altDeep, accent, glow });
 
-/** Signature sprouts, by folded artist name. */
+/** Hand-made collectibles, by folded artist name. */
 const SIGNATURES: Record<string, Spec> = {
-  subtronics: { body: ['#E6FFB0', '#9BE84E', '#3E8F1A'], leaf: ['#C8F78A', '#4C9A22'], face: 'cyclops', leafShape: 'jagged', top: 'bolt', wear: 'horns', accent: '#B36BFF', theme: 'A cyclops sprout' },
-  illenium: { body: ['#FFE6B8', '#FFA35C', '#C2462A'], leaf: ['#FFC46B', '#D9532B'], face: 'bliss', leafShape: 'petal', top: 'phoenix', wear: 'wings', accent: '#FF6A3D', theme: 'A phoenix sprout' },
-  skrillex: { body: GREEN, leaf: LEAF, face: 'glasses', leafShape: 'jagged', top: 'none', wear: 'fringe', accent: '#FF3D7F', theme: 'A sprout with the swoop' },
-  zedsdead: { body: ['#FAF8FF', '#D4D0EC', '#8C88B8'], leaf: ['#C9C6E6', '#6E6A9A'], face: 'hollow', leafShape: 'pointed', top: 'moon', wear: 'none', accent: '#9BE84E', theme: 'A ghostly sprout' },
-  rlgrime: { body: GREEN, leaf: ['#9FE07A', '#3E7D2A'], face: 'fang', leafShape: 'pointed', top: 'pumpkin', wear: 'none', accent: '#FF8A1F', theme: 'A Halloween sprout' },
-  wooli: { body: ['#FFFFFF', '#ECE6D6', '#B8AE92'], leaf: LEAF, face: 'joy', leafShape: 'round', top: 'none', wear: 'wool', accent: '#E8D9B0', theme: 'A woolly sprout' },
-  sevenlions: { body: ['#FFF1C2', '#F2C46B', '#B07A24'], leaf: ['#E8F08A', '#8A9A2E'], face: 'cool', leafShape: 'pointed', top: 'none', wear: 'none', back: 'mane', accent: '#E89A2E', theme: 'A lion sprout' },
-  slander: { body: GREEN, leaf: LEAF, face: 'wink', leafShape: 'round', top: 'halo', wear: 'devil', accent: '#FFD58A', theme: 'Half angel, half devil' },
-  spacelaces: { body: ['#D8F4FF', '#7FC8F0', '#2D6FA8'], leaf: ['#9FE6FF', '#2A7FA8'], face: 'sparkle', leafShape: 'wide', top: 'stars', wear: 'helmet', accent: '#7FD3FF', theme: 'An astronaut sprout' },
-  steveaoki: { body: GREEN, leaf: LEAF, face: 'joy', leafShape: 'round', top: 'cake', wear: 'none', accent: '#FF85C8', theme: 'A cake sprout' },
-  troyboi: { body: GREEN, leaf: LEAF, face: 'cool', leafShape: 'wide', top: 'crown', wear: 'chain', accent: '#FFD24A', theme: 'A royal sprout' },
-  alisonwonderland: { body: ['#FFF4FA', '#F7C6E0', '#C27BA6'], leaf: LEAF, face: 'sparkle', leafShape: 'heart', top: 'none', wear: 'bunny', accent: '#FF85C8', theme: 'A Wonderland bunny' },
-  ofthetrees: { body: ['#E9E1C6', '#A99A6A', '#5E5230'], leaf: ['#9FD68A', '#3E7D2A'], face: 'bliss', leafShape: 'wide', top: 'tree', wear: 'none', accent: '#7FD87A', theme: 'A forest sprout' },
-  sanholo: { body: ['#E8FFFB', '#B9A8FF', '#FF9EDB'], leaf: ['#BFF5FF', '#8A7CFF'], face: 'sparkle', leafShape: 'petal', top: 'star', wear: 'none', back: 'glow-ring', accent: '#9FF0FF', theme: 'A holographic sprout' },
-  zomboy: { body: ['#D6EBAE', '#8DB060', '#4C6B2C'], leaf: ['#B6D98A', '#4E7A2E'], face: 'stitched', leafShape: 'jagged', top: 'none', wear: 'stitches', accent: '#A6E05A', theme: 'A zombie sprout' },
-  marshmello: { body: ['#FFFFFF', '#F3F0F8', '#C9C4D8'], leaf: LEAF, face: 'joy', leafShape: 'round', top: 'heart', wear: 'none', accent: '#FFB1DA', theme: 'A marshmallow sprout' },
-  djsnake: { body: GREEN, leaf: LEAF, face: 'wink', leafShape: 'pointed', top: 'none', wear: 'snake', accent: '#3FC8A0', theme: 'A sprout with a snake friend' },
-  atliens: { body: ['#D2FFE6', '#4FE39A', '#118A55'], leaf: ['#9FF7C6', '#118A55'], face: 'alien', leafShape: 'wide', top: 'none', wear: 'antennae', accent: '#6CFF9E', theme: 'An alien sprout' },
-  tokimonsta: { body: ['#E4D8FF', '#A98CFF', '#5B3FB0'], leaf: LEAF, face: 'fang', leafShape: 'heart', top: 'flower', wear: 'monster', accent: '#FF85C8', theme: 'A little monster' },
-  sloth: { body: ['#EEDCC2', '#B8936A', '#6B4A2E'], leaf: ['#A6D98A', '#4C7A34'], face: 'sleepy', leafShape: 'round', top: 'none', wear: 'mask', accent: '#C9A57E', theme: 'A sloth sprout' },
-  whippedcream: { body: GREEN, leaf: LEAF, face: 'joy', leafShape: 'round', top: 'cream', wear: 'none', accent: '#FFE0EC', theme: 'A whipped cream sprout' },
-  reaper: { body: ['#D8D4E8', '#8E88AA', '#3E3A58'], leaf: ['#A8A2C8', '#4A4668'], face: 'hollow', leafShape: 'pointed', top: 'moon', wear: 'hood', accent: '#B9B3DA', theme: 'A reaper sprout' },
-  levity: { body: GREEN, leaf: LEAF, face: 'joy', leafShape: 'round', top: 'balloons', wear: 'none', accent: '#6FC3FF', theme: 'A floating sprout' },
-  ghengar: { body: ['#E4D8FF', '#9A7CE0', '#4A2E8A'], leaf: ['#C6B2FF', '#5A3EA0'], face: 'fang', leafShape: 'jagged', top: 'moon', wear: 'devil', accent: '#B36BFF', theme: 'A spooky sprout' },
+  subtronics: { creature: 'eye', palette: P('#F4FFE0', '#B6F05A', '#3F8F1A', '#C9A2FF', '#5B2BB0', '#B36BFF', '#9BE84E'), name: 'The Watcher', theme: 'A big eye with wriggling tentacles' },
+  illenium: { creature: 'phoenix', palette: P('#FFF3D6', '#FF9A4A', '#C2362A', '#FFE08A', '#FF5A2A', '#FFD36B', '#FF7A3D'), name: 'The Phoenix', theme: 'A phoenix with flaming wings' },
+  sevenlions: { creature: 'lion', palette: P('#FFF1C9', '#F2B84B', '#A8661C', '#FFB347', '#B8541A', '#FFE9A8', '#F2A23A'), name: 'The Lion', theme: 'A lion with a glowing mane' },
+  zedsdead: { creature: 'ghost', palette: P('#FFFFFF', '#DCD8F2', '#8C88B8', '#9BE84E', '#3E8F1A', '#B6FF6A', '#9BE84E'), name: 'The Ghost', theme: 'A friendly ghost with glowing eyes' },
+  ghengar: { creature: 'ghost', palette: P('#F1E8FF', '#A98CF0', '#4A2E8A', '#FF6AD5', '#7A1E6A', '#FF8AE0', '#A06BFF'), name: 'The Phantom', theme: 'A grinning phantom', extra: 'fangs' },
+  rlgrime: { creature: 'pumpkin', palette: P('#FFD9A0', '#FF8A1F', '#A8400C', '#8FD65A', '#2E6A1E', '#FFE36B', '#FF8A1F'), name: 'The Lantern', theme: 'A pumpkin lit from inside' },
+  wooli: { creature: 'sheep', palette: P('#FFFFFF', '#EDE7DA', '#B3A88E', '#4A3F5C', '#241C30', '#FFE9B0', '#E8D9B0'), name: 'The Woolly', theme: 'A fluffy ram with curly horns' },
+  slander: { creature: 'twin', palette: P('#FFF8E8', '#FFE2A8', '#E0B060', '#FF5A6E', '#8A1830', '#FFD58A', '#FFC86B'), name: 'Halo and horns', theme: 'Half angel, half devil' },
+  spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: 'The Astronaut', theme: 'A little astronaut lost in space' },
+  alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: 'The White Rabbit', theme: 'A white rabbit, always late' },
+  ofthetrees: { creature: 'spirit', palette: P('#F4F8EA', '#D6DEC4', '#8A9472', '#8FD67A', '#2E6A2A', '#E9FFB0', '#7FD87A'), name: 'The Forest spirit', theme: 'A spirit of the forest' },
+  sanholo: { creature: 'crystal', palette: P('#F2FFFD', '#B9A8FF', '#6A4FD0', '#FF9EDB', '#3FC8E0', '#9FF0FF', '#B99CFF'), name: 'The Prism', theme: 'A holographic crystal' },
+  zomboy: { creature: 'skull', palette: P('#F4F7E8', '#C9D6A8', '#5E7A3A', '#A6E05A', '#2E4A1A', '#B6FF5A', '#A6E05A'), name: 'The Undead', theme: 'A stitched-up skull with a green glow' },
+  djsnake: { creature: 'serpent', palette: P('#C8FFE8', '#3FC8A0', '#0F6A58', '#FFE9A8', '#C9A050', '#FF5F8F', '#3FC8A0'), name: 'The Serpent', theme: 'A coiled serpent' },
+  atliens: { creature: 'alien', palette: P('#D9FFEA', '#5BE3A0', '#118A55', '#0E1A14', '#000000', '#6CFF9E', '#6CFF9E'), name: 'The Visitor', theme: 'A visitor from another planet' },
+  tokimonsta: { creature: 'monster', palette: P('#EEE4FF', '#A98CFF', '#5B3FB0', '#FF85C8', '#C23A8A', '#FFD24A', '#A98CFF'), name: 'The Little monster', theme: 'A little monster with a flower' },
+  sloth: { creature: 'sloth', palette: P('#F2E4CC', '#B8936A', '#6B4A2E', '#8FD67A', '#5A3A22', '#2E2018', '#C9A57E'), name: 'The Sloth', theme: 'A sloth hanging around' },
+  reaper: { creature: 'reaper', palette: P('#A8A2C8', '#5A5480', '#1E1A34', '#E8E4F8', '#8E88AA', '#B9F3FF', '#8FA6FF'), name: 'The Reaper', theme: 'A hooded reaper under the moon' },
+  levity: { creature: 'jelly', palette: P('#E8F8FF', '#6FC3FF', '#2A6AC8', '#B9F3FF', '#4A8AE8', '#FFFFFF', '#6FC3FF'), name: 'The Floater', theme: 'A jellyfish floating by' },
+  troyboi: { creature: 'cat', palette: P('#FFF2D6', '#D9A66B', '#7A4E26', '#2A2030', '#0E0A14', '#FFD24A', '#FFD24A'), name: 'The King cat', theme: 'A cat with a crown', extra: 'crown' },
 };
 
-/** Accessory pools by sound, for everyone without a signature. */
-const POOLS: Record<SoundTag | 'none', { tops: Top[]; wears: Wear[]; leaf: LeafShape; faces: Face[]; tint: string }> = {
-  dubstep: { tops: ['bolt', 'speaker', 'none'], wears: ['headphones', 'cap', 'none'], leaf: 'jagged', faces: ['cool', 'fang', 'wink'], tint: '#5B8CFF' },
-  riddim: { tops: ['bolt', 'speaker', 'none'], wears: ['headphones', 'mohawk', 'cap'], leaf: 'jagged', faces: ['cool', 'fang', 'shades'], tint: '#3FC8C0' },
-  trap: { tops: ['bolt', 'star', 'none'], wears: ['cap', 'chain', 'headphones'], leaf: 'pointed', faces: ['cool', 'wink', 'shades'], tint: '#FF5F8F' },
-  'melodic-bass': { tops: ['flower', 'stars', 'feather', 'moon'], wears: ['none', 'scarf', 'headphones'], leaf: 'petal', faces: ['bliss', 'sparkle', 'joy'], tint: '#A97CFF' },
-  house: { tops: ['record', 'note', 'none'], wears: ['chain', 'none', 'cap'], leaf: 'wide', faces: ['shades', 'joy', 'cool'], tint: '#FFA86B' },
-  techno: { tops: ['record', 'speaker', 'none'], wears: ['none', 'headphones', 'chain'], leaf: 'wide', faces: ['shades', 'cool', 'smile'], tint: '#8FA6D6' },
-  pop: { tops: ['heart', 'star', 'flower'], wears: ['bow', 'none', 'scarf'], leaf: 'heart', faces: ['joy', 'sparkle', 'wink'], tint: '#FF85C8' },
-  indie: { tops: ['daisy', 'note', 'moon'], wears: ['beanie', 'scarf', 'none'], leaf: 'round', faces: ['smile', 'sleepy', 'bliss'], tint: '#7FD8A4' },
-  rock: { tops: ['bolt', 'star', 'none'], wears: ['mohawk', 'chain', 'none'], leaf: 'pointed', faces: ['cool', 'wink', 'fang'], tint: '#FF7A5C' },
-  'hip-hop': { tops: ['crown', 'star', 'note'], wears: ['cap', 'chain', 'none'], leaf: 'wide', faces: ['cool', 'shades', 'smile'], tint: '#FFC861' },
-  none: { tops: ['star', 'flower', 'note', 'daisy'], wears: ['none', 'beanie', 'scarf'], leaf: 'round', faces: ['smile', 'joy', 'wink'], tint: '#A97CFF' },
+/** One creature per sound, in the artist's colours, for everyone without a signature. */
+const SOUND: Record<SoundTag | 'none', Spec> = {
+  dubstep: { creature: 'beast', palette: P('#C9D8FF', '#5B8CFF', '#1E3A9A', '#F2EEE0', '#9A8E70', '#7FF0FF', '#5B8CFF'), name: 'The Bass beast', theme: 'A horned bass beast' },
+  riddim: { creature: 'bot', palette: P('#D6FFFB', '#3FC8C0', '#136A78', '#13202A', '#060A10', '#6CFFE0', '#3FC8C0'), name: 'The Riddim bot', theme: 'A little robot that loves a wobble' },
+  trap: { creature: 'wolf', palette: P('#FFD6E2', '#FF5F8F', '#8A1E48', '#FFF4F8', '#C9A8B8', '#FFE36B', '#FF5F8F'), name: 'The Night wolf', theme: 'A wolf with glowing eyes' },
+  'melodic-bass': { creature: 'moth', palette: P('#F1E8FF', '#A97CFF', '#4A2E9A', '#FFC6F0', '#FF85C8', '#FFF2B0', '#A97CFF'), name: 'The Moth', theme: 'A moth drawn to the lights' },
+  house: { creature: 'cat', palette: P('#FFE6D2', '#FFA86B', '#A84E1E', '#2A2030', '#0E0A14', '#FFE36B', '#FFA86B'), name: 'The Disco cat', theme: 'A cat in shades under the mirror ball' },
+  techno: { creature: 'owl', palette: P('#DCE6FA', '#8FA6D6', '#3A4A78', '#F2F6FF', '#5A6A90', '#FF5A5A', '#8FA6D6'), name: 'The Night owl', theme: 'An owl that stays up till sunrise' },
+  pop: { creature: 'jelly', palette: P('#FFE8F4', '#FF85C8', '#B83A8A', '#FFD6EC', '#FF6AB0', '#FFFFFF', '#FF85C8'), name: 'The Jelly', theme: 'A sparkly jellyfish' },
+  indie: { creature: 'fox', palette: P('#FFE2CC', '#F08A4A', '#9A3E16', '#FFFFFF', '#E8DCD0', '#7FD8A4', '#F08A4A'), name: 'The Fox', theme: 'A curious fox' },
+  rock: { creature: 'dragon', palette: P('#FFD6CC', '#FF7A5C', '#9A2A1E', '#FFE0A8', '#C98A3A', '#FFD24A', '#FF7A5C'), name: 'The Dragon', theme: 'A small dragon breathing sparks' },
+  'hip-hop': { creature: 'bear', palette: P('#FFEED0', '#E0A85A', '#7A4A1E', '#FFE08A', '#C9961E', '#FFF6D0', '#FFC861'), name: 'The Bear', theme: 'A bear with a gold chain' },
+  none: { creature: 'wisp', palette: P('#F4ECFF', '#B99CFF', '#5A3EB0', '#FFF2B0', '#FFC861', '#FFFFFF', '#B99CFF'), name: 'The Wisp', theme: 'A little light that follows the music' },
 };
 
 /** Names folded for matching: lower case, letters and digits only. */
@@ -127,55 +124,46 @@ export function mix(a: string, b: string, t: number): string {
   return toHex(x.map((v, i) => v + (y[i] - v) * t));
 }
 const isHex = (c: unknown): c is string => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
+/** How light a colour is, 0 to 1. */
+const lightness = (c: string) => {
+  const [r, g, b] = hex(c);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+};
+/** A photo's colour, lifted so a dark one still glows on the night tile. */
+const lift = (c: string) => {
+  const l = lightness(c);
+  return l < 0.45 ? mix(c, '#FFFFFF', Math.min(0.5, 0.45 - l + 0.1)) : c;
+};
 
 type ArtistLike = { id: string; name: string; sound?: Partial<Record<SoundTag, number>>; color?: string };
 
 /** The artist's main sound, or none when they have no sound tags. */
-function mainSound(a: ArtistLike): SoundTag | 'none' {
+export function mainSound(a: Pick<ArtistLike, 'sound'>): SoundTag | 'none' {
   let best: SoundTag | 'none' = 'none';
   let w = 0;
   for (const [k, v] of Object.entries(a.sound ?? {}) as [SoundTag, number][]) if (v > w) [best, w] = [k, v];
   return best;
 }
 
-export function artistLook(a: ArtistLike): ArtistLook {
-  const sig = SIGNATURES[foldName(a.name)];
-  if (sig) return { back: 'none', ...sig, signature: true };
-  const sound = mainSound(a);
-  const pool = POOLS[sound];
-  const h = hashOf(a.id);
-  const tint = isHex(a.color) ? a.color : pool.tint;
-  // The body stays a sprout green, tinted towards the artist; the accent is their colour.
-  const body: [string, string, string] = [mix(GREEN[0], tint, 0.25), mix(GREEN[1], tint, 0.42), mix(GREEN[2], tint, 0.4)];
-  const top = pool.tops[h % pool.tops.length];
-  const wear = pool.wears[(h >>> 4) % pool.wears.length];
-  return {
-    body,
-    leaf: [mix(LEAF[0], tint, 0.15), mix(LEAF[1], tint, 0.15)],
-    face: pool.faces[(h >>> 8) % pool.faces.length],
-    leafShape: pool.leaf,
-    top: top === 'none' && wear === 'none' ? 'star' : top,
-    wear,
-    back: 'none',
-    accent: tint,
-    signature: false,
-    theme: THEME[sound],
-  };
+/** Their sound's creature in their colours: the body and glow take their colour; the eyes and details stay the creature's own. */
+function tinted(p: Palette, tint: string): Palette {
+  const t = lift(tint);
+  return { ...p, light: mix(p.light, t, 0.2), mid: mix(p.mid, t, 0.6), deep: mix(p.deep, t, 0.45), glow: t };
 }
 
-const THEME: Record<SoundTag | 'none', string> = {
-  dubstep: 'A heavy sprout',
-  riddim: 'A riddim sprout',
-  trap: 'A trap sprout',
-  'melodic-bass': 'A dreamy sprout',
-  house: 'A groovy sprout',
-  techno: 'A late-night sprout',
-  pop: 'A sparkly sprout',
-  indie: 'A cosy sprout',
-  rock: 'A loud sprout',
-  'hip-hop': 'A fresh sprout',
-  none: 'Their own sprout',
-};
+export function artistLook(a: ArtistLike): ArtistLook {
+  const sig = SIGNATURES[foldName(a.name)];
+  if (sig) return { ...sig, accent: sig.accent ?? sig.palette.glow, signature: true };
+  const spec = SOUND[mainSound(a)];
+  const palette = isHex(a.color) ? tinted(spec.palette, a.color) : spec.palette;
+  return { ...spec, palette, accent: palette.glow, signature: false };
+}
 
-/** Which artists have a hand-made signature sprout (folded names). */
+/** Which artists have a hand-made collectible (folded names). */
 export const SIGNATURE_NAMES = Object.keys(SIGNATURES);
+
+/** Every look, for galleries and tests. */
+export const ALL_LOOKS: readonly ArtistLook[] = [
+  ...Object.values(SIGNATURES).map((s) => ({ ...s, accent: s.palette.glow, signature: true })),
+  ...Object.values(SOUND).map((s) => ({ ...s, accent: s.palette.glow, signature: false })),
+];

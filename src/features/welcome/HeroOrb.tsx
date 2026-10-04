@@ -55,26 +55,26 @@ export function HeroOrb({ size = 220 }: { size?: number }) {
     <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="welcome-orb">
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Defs>
-          <RadialGradient id="halo" cx="50%" cy="50%" r="50%">
+          <RadialGradient id="welcome-halo" cx="50%" cy="50%" r="50%">
             <Stop offset="0" stopColor="#FF7EB6" stopOpacity={0.35} />
             <Stop offset="0.55" stopColor="#A97CFF" stopOpacity={0.14} />
             <Stop offset="1" stopColor="#A97CFF" stopOpacity={0} />
           </RadialGradient>
         </Defs>
-        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill="url(#halo)" />
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill="url(#welcome-halo)" />
         <Ellipse cx={size / 2} cy={size / 2} rx={orbit} ry={orbit} fill="none" stroke="rgba(243,240,255,0.12)" strokeWidth={1} />
       </Svg>
       <Animated.View style={[styles.center, sphere]}>
         <Svg width={core} height={core}>
           <Defs>
-            <RadialGradient id="sphere" cx="38%" cy="32%" r="75%">
+            <RadialGradient id="welcome-sphere" cx="38%" cy="32%" r="75%">
               <Stop offset="0" stopColor="#FFD7A8" />
               <Stop offset="0.35" stopColor="#FF7EB6" />
               <Stop offset="0.75" stopColor="#8A5CFF" />
               <Stop offset="1" stopColor="#3A1E8C" />
             </RadialGradient>
           </Defs>
-          <Circle cx={core / 2} cy={core / 2} r={core / 2 - 1} fill="url(#sphere)" />
+          <Circle cx={core / 2} cy={core / 2} r={core / 2 - 1} fill="url(#welcome-sphere)" />
           <Circle cx={core / 2} cy={core / 2} r={core / 2 - 1.5} fill="none" stroke="rgba(255,214,250,0.7)" strokeWidth={1.5} />
           <Ellipse cx={core * 0.38} cy={core * 0.3} rx={core * 0.16} ry={core * 0.09} fill="rgba(255,255,255,0.35)" />
         </Svg>

@@ -73,7 +73,8 @@ export const isSproutId = (id: unknown): id is string => typeof id === 'string' 
 
 /** An artist's sprout: which artist (their name travels with it, for screens that can't look them up). */
 export type SproutArtist = { id: string; name: string };
-const ARTIST_ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
+/** The ids catalogue files allow (letters, digits, - _ .), as the database rules check them. */
+const ARTIST_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/;
 const ARTIST_NAME_MAX = 60;
 /** An artist from a link or saved data, or undefined if it isn't one. */
 export function cleanSproutArtist(raw: unknown): SproutArtist | undefined {
@@ -122,8 +123,8 @@ export function readSproutLink(text: string): SproutCard | undefined {
   return sproutCardFrom({ id: m[1], u: params.u, h: params.h, k: params.k, n: params.n, a: params.a, an: params.an });
 }
 
-/** A sprout's name: "PLUR sprout", or an artist's ("SUBTRONICS sprout"). */
-export const sproutName = (s: { kind: SproutKind; artist?: SproutArtist }) => (s.artist ? `${s.artist.name} sprout` : kindOf(s.kind).name);
+/** A sprout's name: "PLUR sprout", or an artist's collectible ("SUBTRONICS collectible"). */
+export const sproutName = (s: { kind: SproutKind; artist?: SproutArtist }) => (s.artist ? `${s.artist.name} collectible` : kindOf(s.kind).name);
 const an = (name: string) => (/^[AEIOU]/i.test(name) ? 'an' : 'a');
 /** "a PLUR sprout", "an ILLENIUM sprout". */
 export const aSprout = (s: { kind: SproutKind; artist?: SproutArtist }) => `${an(sproutName(s))} ${sproutName(s)}`;
@@ -321,7 +322,7 @@ export function givableKinds(view: readonly GardenView[], bloomed: Readonly<Reco
 }
 
 /** Kinds you've collected (received or grown), for the collection row. */
-export const collectedKinds = (view: readonly GardenView[]) => new Set(view.filter((s) => s.stage === 3 || s.kind !== 'seedling').map((s) => s.shown));
+export const collectedKinds = (view: readonly GardenView[]) => new Set(view.filter((s) => !s.artist && (s.stage === 3 || s.kind !== 'seedling')).map((s) => s.shown));
 
 /** "4 sprouts · 2 kinds". */
 export function gardenLine(view: readonly GardenView[]): string {

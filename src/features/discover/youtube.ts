@@ -37,7 +37,7 @@ export function watchUrl(source: YouTubeClipSource) {
 export type PlayerMessage =
   | { type: 'ready' }
   | { type: 'state'; state: number }
-  | { type: 'time'; time: number; duration?: number }
+  | { type: 'time'; time: number; duration?: number; muted?: boolean }
   | { type: 'error'; code: number };
 
 /** YouTube player states we react to. */
@@ -49,7 +49,7 @@ export function parsePlayerMessage(raw: string): PlayerMessage | undefined {
     if (m?.type === 'ready') return { type: 'ready' };
     if (m?.type === 'state' && typeof m.state === 'number') return { type: 'state', state: m.state };
     if (m?.type === 'time' && typeof m.time === 'number')
-      return { type: 'time', time: m.time, duration: typeof m.duration === 'number' ? m.duration : undefined };
+      return { type: 'time', time: m.time, duration: typeof m.duration === 'number' ? m.duration : undefined, ...(typeof m.muted === 'boolean' ? { muted: m.muted } : {}) };
     if (m?.type === 'error' && typeof m.code === 'number') return { type: 'error', code: m.code };
   } catch {}
   return undefined;
@@ -81,7 +81,7 @@ function tick() {
   if (!player || !player.getCurrentTime) return;
   var t = player.getCurrentTime();
   if (t >= C.end - 0.25 || t < C.start - 1) { player.seekTo(C.start, true); t = C.start; }
-  send({ type: 'time', time: t, duration: player.getDuration ? player.getDuration() : undefined });
+  send({ type: 'time', time: t, duration: player.getDuration ? player.getDuration() : undefined, muted: player.isMuted ? player.isMuted() : undefined });
 }
 function onYouTubeIframeAPIReady() {
   player = new YT.Player('player', {

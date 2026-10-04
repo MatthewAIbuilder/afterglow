@@ -287,7 +287,8 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
         if (s.garden.some((g) => g.id === card.id && g.account === me)) return s;
         const kind = sprout && isKind(sprout.kind) ? sprout.kind : card.kind;
         // An artist's sprout: the artist the server has, else the one in the code.
-        const artist = cleanSproutArtist(sprout?.artistId ? { id: sprout.artistId, name: sprout.artistName } : card.artist);
+        // What the server has wins; the code's artist only counts when the server couldn't be read (a link can be edited).
+        const artist = sprout ? (sprout.artistId ? cleanSproutArtist({ id: sprout.artistId, name: sprout.artistName }) : undefined) : cleanSproutArtist(card.artist);
         const entry = { id: card.id, kind, from: card.from, handle: card.handle, name: card.name, at, account: me, ...(artist ? { artist } : {}), ...(sprout?.note ? { note: sprout.note } : {}), ...(late ? { late: true } : {}), ...(scannedAt && scannedAt < at ? { scannedAt } : {}) };
         return { ...s, garden: [entry, ...s.garden] };
       }),
@@ -458,8 +459,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     (kind: SproutKind, note?: string, artist?: SproutArtist): GiveResult => {
       if (!social.user) return { problem: 'signed-out' };
       if (!social.profile) return { problem: 'needs-profile' };
-      // Only artists you've filmed.
-      if (artist && !artistsRef.current.some((a) => a.artistId === artist.id)) return { problem: 'not-yours' };
+      // Only artists you've filmed, and only an artist the database will take.
+      const cleanArtist = artist ? cleanSproutArtist(artist) : undefined;
+      if (artist && (!cleanArtist || !artistsRef.current.some((a) => a.artistId === artist.id))) return { problem: 'not-yours' };
       // Seeds are counted from what's saved, so not before it's loaded.
       if (!loaded.current) return { problem: 'loading' };
       const t = Date.now();
@@ -467,11 +469,11 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       if (seedsLeft(mine, t, festivalDay) <= 0) return { problem: 'no-seeds' };
       const id = randomId();
       const words = note ? cleanSproutNote(note) : '';
-      const gift: Gift = { id, kind, ...(artist ? { artist } : {}), at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
+      const gift: Gift = { id, kind, ...(cleanArtist ? { artist: cleanArtist } : {}), at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
       storedRef.current = { ...storedRef.current, gifts: [gift, ...storedRef.current.gifts] };
       setStored((s) => ({ ...s, gifts: [gift, ...s.gifts] }));
       bumpQuestEvent('sprout');
-      return { card: { id, kind, from: social.user.uid, handle: social.profile.handle, name: social.profile.displayName, ...(artist ? { artist } : {}) } };
+      return { card: { id, kind, from: social.user.uid, handle: social.profile.handle, name: social.profile.displayName, ...(cleanArtist ? { artist: cleanArtist } : {}) } };
     },
     [social.user, social.profile, festivalDay, tonight, setStored],
   );
@@ -587,9 +589,10 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   // The first time this runs, sprouts from videos you already had are taken as seen (no burst of celebrations).
   useEffect(() => {
     if (!hydrated || !memoriesLoaded || stored.artistShown) return;
-    const seen = Object.fromEntries(artists.map((a) => [a.artistId, shownMark(a)]));
+    // Every artist you've filmed, known to this catalogue or not yet (the hosted one may arrive a moment later).
+    const seen = Object.fromEntries(artistSprouts(memories).map((a) => [a.artistId, shownMark(a)]));
     void Promise.resolve().then(() => setStored((s) => (s.artistShown ? s : { ...s, artistShown: seen })));
-  }, [hydrated, memoriesLoaded, stored.artistShown, artists, setStored]);
+  }, [hydrated, memoriesLoaded, stored.artistShown, memories, setStored]);
   const newArtists = useMemo(
     () => (stored.artistShown ? newArtistSprouts(artists, stored.artistShown).sort((a, b) => a.firstAt - b.firstAt) : []),
     [artists, stored.artistShown],

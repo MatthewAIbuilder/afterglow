@@ -29,7 +29,7 @@ export function GardenShelf({ hidden, onToggle }: { hidden: boolean; onToggle: (
   };
   return (
     <View style={styles.wrap}>
-      <ShelfHead title="Your garden" hidden={hidden} onToggle={onToggle} link={gardenLine(garden)} onLink={() => open('/garden')} />
+      <ShelfHead title="Your garden" hidden={hidden} onToggle={onToggle} link={gardenLine(garden.filter((s) => !s.artist))} onLink={() => open('/garden')} />
       {hidden ? null : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
           {items.map((s) => (

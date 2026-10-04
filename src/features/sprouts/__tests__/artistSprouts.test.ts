@@ -1,29 +1,35 @@
 import { describe, expect, it } from '@jest/globals';
-import { artistLook, foldName, mix } from '../artistLook';
+import { ALL_LOOKS, artistLook, foldName, mix } from '../artistLook';
+import { DRAW } from '../creatures';
 import { artistGardenLine, artistSprouts, cleanShown, newArtistSprouts, shownMark, tierFor, tierLabel, tierLine, toNextTier } from '../artistSprouts';
 import { aSprout, cleanSproutArtist, giftTitle, readSproutLink, sproutLink, sproutName } from '../sprouts';
 
 const at = (d: number) => new Date(2026, 9, d).toISOString();
 
-describe('artist sprout looks', () => {
-  it('gives the big names their signature sprout, by name', () => {
-    expect(artistLook({ id: 'subtronics', name: 'SUBTRONICS' })).toMatchObject({ signature: true, face: 'cyclops', theme: 'A cyclops sprout' });
-    expect(artistLook({ id: 'x', name: 'Illenium' })).toMatchObject({ signature: true, top: 'phoenix', wear: 'wings' });
-    expect(artistLook({ id: 'x', name: 'Seven Lions' }).back).toBe('mane');
+describe('artist collectible looks', () => {
+  it('gives the big names their hand-made creature, by name', () => {
+    expect(artistLook({ id: 'subtronics', name: 'SUBTRONICS' })).toMatchObject({ signature: true, creature: 'eye', name: 'The Watcher', theme: 'A big eye with wriggling tentacles' });
+    expect(artistLook({ id: 'x', name: 'Illenium' })).toMatchObject({ signature: true, creature: 'phoenix' });
+    expect(artistLook({ id: 'x', name: 'Seven Lions' }).creature).toBe('lion');
     expect(foldName('RÜFÜS DU SOL')).toBe('rufusdusol');
   });
 
-  it('builds everyone else one from their sound and colour, the same every time', () => {
+  it('gives everyone else their sound’s creature in their colour, the same every time', () => {
     const a = { id: 'wooli-x', name: 'Someone New', sound: { riddim: 1 }, color: '#FF0000' };
     const look = artistLook(a);
     expect(look.signature).toBe(false);
-    expect(look.leafShape).toBe('jagged');
-    expect(look.accent).toBe('#FF0000');
-    expect(look.theme).toBe('A riddim sprout');
+    expect(look.creature).toBe('bot');
+    expect(look.name).toBe('The Riddim bot');
+    // Their colour, lifted a little so it glows on the night tile.
+    expect(look.accent).not.toBe(artistLook({ ...a, color: '#0000FF' }).accent);
+    expect(look.palette.glow).toBe(look.accent);
     expect(artistLook(a)).toEqual(look);
-    // Never a bare sprout: something on top when it wears nothing.
-    expect(look.top !== 'none' || look.wear !== 'none').toBe(true);
-    expect(artistLook({ id: 'n', name: 'No Tags' }).theme).toBe('Their own sprout');
+    expect(artistLook({ id: 'n', name: 'No Tags' }).creature).toBe('wisp');
+    expect(artistLook({ id: 'h', name: 'Housey', sound: { house: 0.8, techno: 0.3 } }).creature).toBe('cat');
+  });
+
+  it('every creature has a drawing', () => {
+    for (const l of ALL_LOOKS) expect(typeof DRAW[l.creature]).toBe('function');
   });
 
   it('mixes colours', () => {
@@ -80,13 +86,15 @@ describe('artist sprout codes', () => {
     const link = sproutLink(card);
     expect(link).toContain('&a=subtronics&an=SUBTRONICS');
     expect(readSproutLink(link)).toEqual(card);
-    expect(sproutName(card)).toBe('SUBTRONICS sprout');
-    expect(giftTitle(card)).toBe('Maya gave you a SUBTRONICS sprout');
-    expect(aSprout({ kind: 'seedling', artist: { id: 'illenium', name: 'ILLENIUM' } })).toBe('an ILLENIUM sprout');
+    expect(sproutName(card)).toBe('SUBTRONICS collectible');
+    expect(giftTitle(card)).toBe('Maya gave you a SUBTRONICS collectible');
+    expect(aSprout({ kind: 'seedling', artist: { id: 'illenium', name: 'ILLENIUM' } })).toBe('an ILLENIUM collectible');
   });
 
   it('drop a broken artist', () => {
     expect(cleanSproutArtist({ id: 'Bad Id', name: 'x' })).toBeUndefined();
+    // Ids a catalogue file may use.
+    expect(cleanSproutArtist({ id: 'DJ_Snake.2', name: 'DJ Snake' })).toEqual({ id: 'DJ_Snake.2', name: 'DJ Snake' });
     expect(cleanSproutArtist({ id: 'ok', name: '  ' })).toBeUndefined();
     expect(readSproutLink('https://afterglowmusic.app/sprout/abcdefghijkmnpqrstuv?u=uid1&h=maya&k=plur&a=Bad%20Id&an=X')?.artist).toBeUndefined();
   });
