@@ -27,6 +27,7 @@ import { useShowLevel, setShowLevel } from '../state/showLevel';
 import { useDailyQuests } from '../features/quests/useDailyQuests';
 import { LEVEL_SHOWN_FROM } from '../features/quests/daily';
 import { type CropSource, PhotoCropper } from '../features/profile/PhotoCropper';
+import { goBack } from '../lib/nav';
 
 /**
  * Your profile, as others will see it: photo, name, @handle, a short bio,
@@ -103,7 +104,7 @@ export default function ProfileEditScreen() {
     try {
       await social.saveProfile(input);
       haptic.settle();
-      router.back();
+      goBack();
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
@@ -166,7 +167,7 @@ export default function ProfileEditScreen() {
         text: 'Sign out',
         onPress: () =>
           void social.signOut().then(() => {
-            if (router.canGoBack()) router.back();
+            if (router.canGoBack()) goBack();
           }),
       },
     ]);
@@ -179,7 +180,7 @@ export default function ProfileEditScreen() {
       if (uid) void forgetAccount(uid);
       haptic.settle();
       showAlert('Account deleted', 'Your profile and everything you shared are gone. Your memories are still on this phone.');
-      if (router.canGoBack()) router.back();
+      if (router.canGoBack()) goBack();
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     }
@@ -322,7 +323,7 @@ export default function ProfileEditScreen() {
         </View>
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

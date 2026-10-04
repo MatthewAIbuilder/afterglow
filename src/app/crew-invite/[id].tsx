@@ -17,6 +17,7 @@ import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /**
  * Invite people you know on Afterglow to a crew: people you follow and who
@@ -176,7 +177,7 @@ export default function CrewInviteScreen() {
         ) : null}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

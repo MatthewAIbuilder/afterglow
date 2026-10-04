@@ -20,6 +20,7 @@ import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import { useSprouts } from '../../state/sprouts';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /**
  * A sprout someone gave you: what you see after scanning its code, in the
@@ -169,7 +170,7 @@ function Shell({ children, insets }: { children: React.ReactNode; insets: { top:
       <PageTitle title="A sprout for you" />
       <NightSky />
       <Pressable
-        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}
         accessibilityRole="button"
         accessibilityLabel="Close"
         hitSlop={10}

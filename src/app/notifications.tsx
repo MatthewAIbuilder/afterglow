@@ -9,6 +9,7 @@ import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /** Notifications: news about the festivals you're going to, new followers and likes on your videos. Opening it marks everything read. */
 export default function NotificationsScreen() {
@@ -70,7 +71,7 @@ export default function NotificationsScreen() {
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

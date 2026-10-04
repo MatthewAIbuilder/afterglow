@@ -22,6 +22,7 @@ import { bumpQuestEvent } from '../state/dailyQuests';
 import { useReactions } from '../state/reactions';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /**
  * This or that: two live sets, tap the one you'd rather hear, about eight
@@ -64,7 +65,7 @@ export default function ThisOrThatScreen() {
     if (round + 1 === pairs.length) bumpQuestEvent('thisorthat');
   };
 
-  const close = () => router.back();
+  const close = () => goBack();
   const finish = () => {
     haptic.settle();
     if (then === 'discover') router.dismissTo('/');

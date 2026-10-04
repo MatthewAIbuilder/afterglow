@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /**
  * Your year on Afterglow: your festivals, top artists, sound and the numbers,
@@ -33,7 +34,7 @@ export default function YearScreen() {
       <PageTitle title={`Your ${year}`} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
         <Text style={styles.heading}>Your year</Text>
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>

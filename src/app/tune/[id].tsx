@@ -30,6 +30,7 @@ import { useWeekends } from '../../state/weekends';
 import { FilterChips } from '../../components/FilterChips';
 import { lineupDays, playsOn } from '../../features/festivals/days';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 type Answer = Rating | 'unsure';
 
@@ -156,7 +157,7 @@ export default function TuneScreen() {
         ) : (
           <View />
         )}
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
@@ -296,7 +297,7 @@ export default function TuneScreen() {
         ) : (
           <>
             <Pressable
-              onPress={() => (after === 'festival' ? router.replace(`/festival/${festival.id}`) : router.back())}
+              onPress={() => (after === 'festival' ? router.replace(`/festival/${festival.id}`) : goBack())}
               accessibilityRole="button"
               style={({ pressed }) => [styles.choice, styles.love, styles.wide, pressed && styles.pressed]}
             >

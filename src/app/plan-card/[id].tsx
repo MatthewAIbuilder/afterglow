@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { useCatalog } from '../../state/catalog';
 import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
 import { shareMessage } from '../../lib/share';
+import { goBack } from '../../lib/nav';
 
 /**
  * Share your plan: a poster-like card of it (the route once set times are
@@ -54,7 +55,7 @@ function PlanCardView({ festival }: { festival: Festival }) {
     <View style={styles.root}>
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
         <Text style={styles.heading}>Share your plan</Text>
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>

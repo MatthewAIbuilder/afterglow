@@ -14,6 +14,7 @@ import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /** At most this many comments are read. */
 const COMMENTS_SHOWN = 200;
@@ -100,7 +101,7 @@ export default function CommentsScreen() {
         <Text style={styles.title} accessibilityRole="header">
           {list ? commentsLabel(shown.length) : 'Comments'}
         </Text>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" hitSlop={8}>
+        <Pressable onPress={() => goBack()} accessibilityRole="button" hitSlop={8}>
           <Text style={styles.done}>Done</Text>
         </Pressable>
       </View>

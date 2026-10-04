@@ -11,6 +11,8 @@ import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
+import { goBack } from '../lib/nav';
+import { SheetClose } from '../components/SheetClose';
 
 /**
  * Create your Afterglow profile, or sign back in. Email and password (kept
@@ -47,7 +49,7 @@ export default function AccountScreen() {
       haptic.settle();
       // New accounts go straight on to making the profile.
       if (create) router.replace('/profile-edit');
-      else router.back();
+      else goBack();
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
@@ -73,6 +75,7 @@ export default function AccountScreen() {
       <View style={[styles.root, styles.pad, { paddingTop: space.xxl }]}>
         <Text style={styles.title}>Profiles</Text>
         <Text style={styles.body}>{SOCIAL_ERROR_COPY.unavailable}</Text>
+        <SheetClose />
       </View>
     );
   }
@@ -176,6 +179,7 @@ export default function AccountScreen() {
           </Pressable>
         ) : null}
       </ScrollView>
+      <SheetClose />
     </KeyboardAvoidingView>
   );
 }

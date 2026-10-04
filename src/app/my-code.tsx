@@ -17,6 +17,7 @@ import { useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
 import { accountsOff } from '../features/social/unavailable';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /**
  * Your friend code: a QR code a friend scans to become friends both ways,
@@ -40,7 +41,7 @@ export default function MyCodeScreen() {
         <Text style={styles.title} accessibilityRole="header">
           My code
         </Text>
-        <GlassCircleButton label="Close" onPress={() => router.back()}>
+        <GlassCircleButton label="Close" onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={18} />
         </GlassCircleButton>
       </View>

@@ -28,6 +28,7 @@ import { usePlan } from '../../state/plan';
 import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /**
  * A festival crew. Someone who opens an invite sees the crew and who's in it,
@@ -82,7 +83,7 @@ export default function CrewScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
@@ -182,7 +183,7 @@ function Invite({ crew, profiles, code, onJoined }: { crew: Crew; profiles: Reco
               onPress={() => {
                 haptic.select();
                 void declineInvite(crew.id);
-                if (router.canGoBack()) router.back();
+                if (router.canGoBack()) goBack();
                 else router.replace('/together');
               }}
               accessibilityRole="button"
@@ -302,7 +303,7 @@ function Member({
           onPress: () => {
             crews
               .leave(crew.id)
-              .then(() => (router.canGoBack() ? router.back() : router.replace('/')))
+              .then(() => (router.canGoBack() ? goBack() : router.replace('/')))
               .catch((e) => showAlert(last ? 'Couldn’t end the crew' : 'Couldn’t leave', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
           },
         },
@@ -321,7 +322,7 @@ function Member({
         onPress: () => {
           crews
             .end(crew.id)
-            .then(() => (router.canGoBack() ? router.back() : router.replace('/')))
+            .then(() => (router.canGoBack() ? goBack() : router.replace('/')))
             .catch((e) => showAlert('Couldn’t end the crew', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
         },
       },

@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,8 @@ import { haptic } from '../lib/haptics';
 import { useRequests } from '../state/requests';
 import { color, radius, space, type } from '../theme/tokens';
 import { shareMessage } from '../lib/share';
+import { goBack } from '../lib/nav';
+import { SheetClose } from '../components/SheetClose';
 
 /**
  * Request a festival that isn't in the app yet: its name and, if you have
@@ -53,75 +55,78 @@ export default function RequestScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}
-      keyboardShouldPersistTaps="handled"
-    >
-      {sent ? (
-        <View style={styles.done} accessible accessibilityLiveRegion="polite">
-          <View style={styles.check}>
-            <CheckIcon color={color.moon} size={22} />
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={styles.root}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {sent ? (
+          <View style={styles.done} accessible accessibilityLiveRegion="polite">
+            <View style={styles.check}>
+              <CheckIcon color={color.moon} size={22} />
+            </View>
+            <Text style={styles.title}>Thanks for asking</Text>
+            <Text style={styles.body}>
+              {sent} is on the list. When its lineup is in, it’ll show up on your Festivals tab.
+            </Text>
+            <Pressable
+              onPress={() => goBack()}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+            >
+              <Text style={styles.buttonText}>Done</Text>
+            </Pressable>
           </View>
-          <Text style={styles.title}>Thanks for asking</Text>
-          <Text style={styles.body}>
-            {sent} is on the list. When its lineup is in, it’ll show up on your Festivals tab.
-          </Text>
-          <Pressable
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-          >
-            <Text style={styles.buttonText}>Done</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <>
-          <Text style={styles.title}>Request a festival</Text>
-          <Text style={styles.body}>Tell us which one you’re going to and we’ll add its lineup.</Text>
+        ) : (
+          <>
+            <Text style={styles.title}>Request a festival</Text>
+            <Text style={styles.body}>Tell us which one you’re going to and we’ll add its lineup.</Text>
 
-          <Text style={styles.label}>Festival</Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="Name and year, like Lost Lands 2027"
-            placeholderTextColor={color.moonFaint}
-            accessibilityLabel="Festival name"
-            autoFocus={!typed}
-            autoCapitalize="words"
-            returnKeyType="next"
-            maxLength={80}
-            style={styles.input}
-          />
-          <Text style={styles.label}>Link to the lineup (optional)</Text>
-          <TextInput
-            value={link}
-            onChangeText={setLink}
-            placeholder="Website or lineup post"
-            placeholderTextColor={color.moonFaint}
-            accessibilityLabel="Link to the lineup, optional"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            returnKeyType="send"
-            onSubmitEditing={send}
-            maxLength={300}
-            style={styles.input}
-          />
+            <Text style={styles.label}>Festival</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Name and year, like Lost Lands 2027"
+              placeholderTextColor={color.moonFaint}
+              accessibilityLabel="Festival name"
+              autoFocus={!typed}
+              autoCapitalize="words"
+              returnKeyType="next"
+              maxLength={80}
+              style={styles.input}
+            />
+            <Text style={styles.label}>Link to the lineup (optional)</Text>
+            <TextInput
+              value={link}
+              onChangeText={setLink}
+              placeholder="Website or lineup post"
+              placeholderTextColor={color.moonFaint}
+              accessibilityLabel="Link to the lineup, optional"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              returnKeyType="send"
+              onSubmitEditing={send}
+              maxLength={300}
+              style={styles.input}
+            />
 
-          <Pressable
-            onPress={send}
-            disabled={!request}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !request }}
-            accessibilityLabel={request ? `Send request for ${request.name}` : 'Send request. Type a festival name first'}
-            style={({ pressed }) => [styles.button, !request && styles.disabled, pressed && styles.pressed]}
-          >
-            <Text style={styles.buttonText}>Send request</Text>
-          </Pressable>
-        </>
-      )}
-    </ScrollView>
+            <Pressable
+              onPress={send}
+              disabled={!request}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !request }}
+              accessibilityLabel={request ? `Send request for ${request.name}` : 'Send request. Type a festival name first'}
+              style={({ pressed }) => [styles.button, !request && styles.disabled, pressed && styles.pressed]}
+            >
+              <Text style={styles.buttonText}>Send request</Text>
+            </Pressable>
+          </>
+        )}
+      </ScrollView>
+      <SheetClose />
+    </View>
   );
 }
 

@@ -21,6 +21,7 @@ import { revealSecret } from '../../state/secrets';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /** The shine on a big pin: follows the tilt where there's a motion sensor, else a slow sweep. */
 /** Tapping a pin seven times in a row polishes it: a secret. */
@@ -104,7 +105,7 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
   const pinTap = usePinTaps();
   const reduce = useReducedMotion();
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
+  const close = () => (router.canGoBack() ? goBack() : router.replace('/profile'));
   if (!festival) {
     return (
       <View style={[styles.root, styles.center]}>
@@ -204,7 +205,7 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
       .then((p) => setOwner(p?.handle))
       .catch(() => {});
   }, [uid, mine, social.service, social.availability.ok]);
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
+  const close = () => (router.canGoBack() ? goBack() : router.replace('/profile'));
   if (!badge) {
     return (
       <View style={[styles.root, styles.center]}>

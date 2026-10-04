@@ -17,6 +17,7 @@ import { useCatalog } from '../../state/catalog';
 import { openDoor } from '../../state/festivalWeek';
 import { useWeekends } from '../../state/weekends';
 import { color, motion, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 const GOLD = '#FFD58A';
 
@@ -82,7 +83,7 @@ function Week({ festival }: { festival: Festival }) {
         ) : null}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace({ pathname: '/festival/[id]', params: { id: festival.id } }))}>
+        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : router.replace({ pathname: '/festival/[id]', params: { id: festival.id } }))}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

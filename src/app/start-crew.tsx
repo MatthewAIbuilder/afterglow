@@ -18,6 +18,7 @@ import { useCrews } from '../state/crews';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { SheetClose } from '../components/SheetClose';
 
 /** At most this many festivals are listed while searching. */
 const LIST_MAX = 20;
@@ -85,22 +86,25 @@ export default function StartCrewScreen() {
   };
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={{ padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Start a crew</Text>
-      <Text style={styles.body}>Pick the festival. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.</Text>
-      {yours.length ? (
-        <>
-          <Text style={styles.section}>You’re going to</Text>
-          {yours.map(row)}
-        </>
-      ) : (
-        <Text style={styles.quiet}>Not going anywhere yet? Pick any festival below, or tap I’m going on a festival’s page first.</Text>
-      )}
-      <Text style={styles.section}>{yours.length ? 'Another festival' : 'Coming up'}</Text>
-      <SearchField value={query} onChange={setQuery} placeholder="Find a festival" label="Find a festival for your crew" />
-      {others.map(row)}
-      {q && !others.length ? <Text style={styles.quiet}>No festival matches “{q}”.</Text> : null}
-    </ScrollView>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.root} contentContainerStyle={{ padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Start a crew</Text>
+        <Text style={styles.body}>Pick the festival. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.</Text>
+        {yours.length ? (
+          <>
+            <Text style={styles.section}>You’re going to</Text>
+            {yours.map(row)}
+          </>
+        ) : (
+          <Text style={styles.quiet}>Not going anywhere yet? Pick any festival below, or tap I’m going on a festival’s page first.</Text>
+        )}
+        <Text style={styles.section}>{yours.length ? 'Another festival' : 'Coming up'}</Text>
+        <SearchField value={query} onChange={setQuery} placeholder="Find a festival" label="Find a festival for your crew" />
+        {others.map(row)}
+        {q && !others.length ? <Text style={styles.quiet}>No festival matches “{q}”.</Text> : null}
+      </ScrollView>
+      <SheetClose />
+    </View>
   );
 }
 

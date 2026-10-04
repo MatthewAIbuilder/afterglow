@@ -34,6 +34,7 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { showActionSheet } from '../../lib/dialog';
 import { shareMessage } from '../../lib/share';
+import { goBack } from '../../lib/nav';
 
 /**
  * Someone's festival profile (or yours, as others see it): photo, name,
@@ -282,7 +283,7 @@ export default function PublicProfileScreen() {
         {body}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

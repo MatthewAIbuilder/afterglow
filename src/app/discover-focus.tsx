@@ -16,6 +16,8 @@ import { useCommunity } from '../state/community';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
+import { SheetClose } from '../components/SheetClose';
 
 /**
  * What Discover shows: your mix (a bit of everything), one sound from every
@@ -74,145 +76,148 @@ export default function DiscoverFocusScreen() {
   };
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
-      <Text style={styles.title}>What to discover</Text>
-      <Text style={styles.body}>Focus on a festival to shape your plan for it, or mix it up.</Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
+        <Text style={styles.title}>What to discover</Text>
+        <Text style={styles.body}>Focus on a festival to shape your plan for it, or mix it up.</Text>
 
-      <View style={styles.list}>
-        {tonight && tonightSets > 0
-          ? row(
-              TONIGHT,
-              'Tonight',
-              `${tonight.night ? `${tonight.night} at ` : ''}${tonight.festival.name} · ${tonightSets} ${tonightSets === 1 ? 'artist' : 'artists'}, in set order`,
-              current === TONIGHT,
-              () => pick(TONIGHT),
-              <View style={[styles.mixIcon, styles.tonightIcon]}>
-                <PlayIcon color={color.night} size={14} />
-              </View>,
-            )
-          : null}
-        {row(MIX, 'Your mix', 'A bit of everything, from every lineup', current === MIX, () => pick(MIX), (
-          <View style={styles.mixIcon}>
-            <PlayIcon color={color.moon} size={14} />
-          </View>
-        ))}
-        {social.availability.ok &&
-          row(
-            FOLLOWING,
-            'Following',
-            !social.user
-              ? 'Sign in to follow people and see their videos'
-              : social.following.size
-                ? `Videos from the ${social.following.size === 1 ? 'person' : `${social.following.size} people`} you follow`
-                : 'Follow people to see their videos here',
-            current === FOLLOWING,
-            () => pick(FOLLOWING),
+        <View style={styles.list}>
+          {tonight && tonightSets > 0
+            ? row(
+                TONIGHT,
+                'Tonight',
+                `${tonight.night ? `${tonight.night} at ` : ''}${tonight.festival.name} · ${tonightSets} ${tonightSets === 1 ? 'artist' : 'artists'}, in set order`,
+                current === TONIGHT,
+                () => pick(TONIGHT),
+                <View style={[styles.mixIcon, styles.tonightIcon]}>
+                  <PlayIcon color={color.night} size={14} />
+                </View>,
+              )
+            : null}
+          {row(MIX, 'Your mix', 'A bit of everything, from every lineup', current === MIX, () => pick(MIX), (
             <View style={styles.mixIcon}>
-              <ProfileIcon color={color.moon} size={15} />
-            </View>,
-          )}
-      </View>
+              <PlayIcon color={color.moon} size={14} />
+            </View>
+          ))}
+          {social.availability.ok &&
+            row(
+              FOLLOWING,
+              'Following',
+              !social.user
+                ? 'Sign in to follow people and see their videos'
+                : social.following.size
+                  ? `Videos from the ${social.following.size === 1 ? 'person' : `${social.following.size} people`} you follow`
+                  : 'Follow people to see their videos here',
+              current === FOLLOWING,
+              () => pick(FOLLOWING),
+              <View style={styles.mixIcon}>
+                <ProfileIcon color={color.moon} size={15} />
+              </View>,
+            )}
+        </View>
 
-      {sounds.length > 1 && (
-        <>
-          <Text style={styles.section}>By sound</Text>
-          <View style={styles.sounds}>
-            {sounds.map(({ tag, clips }) => {
-              const on = current === soundFocus(tag);
-              return (
-                <Pressable
-                  key={tag}
-                  onPress={() => pick(soundFocus(tag))}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${SOUND_LABEL[tag]}, ${clips} clips from every lineup`}
-                  accessibilityState={{ selected: on }}
-                  style={({ pressed }) => [styles.sound, on && styles.soundOn, pressed && styles.pressed]}
-                >
-                  <Text style={[styles.soundText, on && { color: color.moon }]}>{SOUND_LABEL[tag]}</Text>
-                  <Text style={styles.soundCount}>{clips}</Text>
-                </Pressable>
-              );
-            })}
+        {sounds.length > 1 && (
+          <>
+            <Text style={styles.section}>By sound</Text>
+            <View style={styles.sounds}>
+              {sounds.map(({ tag, clips }) => {
+                const on = current === soundFocus(tag);
+                return (
+                  <Pressable
+                    key={tag}
+                    onPress={() => pick(soundFocus(tag))}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${SOUND_LABEL[tag]}, ${clips} clips from every lineup`}
+                    accessibilityState={{ selected: on }}
+                    style={({ pressed }) => [styles.sound, on && styles.soundOn, pressed && styles.pressed]}
+                  >
+                    <Text style={[styles.soundText, on && { color: color.moon }]}>{SOUND_LABEL[tag]}</Text>
+                    <Text style={styles.soundCount}>{clips}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {choices.going.length > 0 && (
+          <>
+            <Text style={styles.section}>Going</Text>
+            <View style={styles.list}>{choices.going.map(festivalRow)}</View>
+          </>
+        )}
+        {choices.others.length > 0 && (
+          <>
+            <Text style={styles.section}>{choices.going.length ? 'More festivals' : 'Festivals'}</Text>
+            <View style={styles.list}>{choices.others.map(festivalRow)}</View>
+          </>
+        )}
+        {choices.going.length === 0 && (
+          <Text style={styles.hint}>Mark the festivals you’re going to on the Festivals tab and they’ll show up first.</Text>
+        )}
+
+        {social.availability.ok && (
+          <View style={styles.switchRow}>
+            <View style={styles.rowText}>
+              <Text style={styles.rowTitle}>Videos from the crowd</Text>
+              <Text style={styles.switchDetail}>
+                {!social.user
+                  ? 'Sign in on your profile to see videos people shared from the festival.'
+                  : community.enabled
+                    ? 'Videos people shared from the festival, beside the official clips.'
+                    : 'Only official clips.'}
+              </Text>
+            </View>
+            <Switch
+              value={community.enabled}
+              onValueChange={(v) => {
+                haptic.select();
+                community.setEnabled(v);
+              }}
+              trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
+              accessibilityLabel="Videos from the crowd"
+              testID="community-switch"
+            />
           </View>
-        </>
-      )}
+        )}
 
-      {choices.going.length > 0 && (
-        <>
-          <Text style={styles.section}>Going</Text>
-          <View style={styles.list}>{choices.going.map(festivalRow)}</View>
-        </>
-      )}
-      {choices.others.length > 0 && (
-        <>
-          <Text style={styles.section}>{choices.going.length ? 'More festivals' : 'Festivals'}</Text>
-          <View style={styles.list}>{choices.others.map(festivalRow)}</View>
-        </>
-      )}
-      {choices.going.length === 0 && (
-        <Text style={styles.hint}>Mark the festivals you’re going to on the Festivals tab and they’ll show up first.</Text>
-      )}
-
-      {social.availability.ok && (
         <View style={styles.switchRow}>
           <View style={styles.rowText}>
-            <Text style={styles.rowTitle}>Videos from the crowd</Text>
+            <Text style={styles.rowTitle}>Play the next clip</Text>
             <Text style={styles.switchDetail}>
-              {!social.user
-                ? 'Sign in on your profile to see videos people shared from the festival.'
-                : community.enabled
-                  ? 'Videos people shared from the festival, beside the official clips.'
-                  : 'Only official clips.'}
+              {autoplay.enabled ? 'When you’ve watched a clip to the end, the next one starts after a short countdown.' : 'Clips loop until you swipe.'}
             </Text>
           </View>
           <Switch
-            value={community.enabled}
+            value={autoplay.enabled}
             onValueChange={(v) => {
               haptic.select();
-              community.setEnabled(v);
+              autoplay.setEnabled(v);
             }}
             trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
-            accessibilityLabel="Videos from the crowd"
-            testID="community-switch"
+            accessibilityLabel="Play the next clip"
+            testID="autoplay-switch"
           />
         </View>
-      )}
 
-      <View style={styles.switchRow}>
-        <View style={styles.rowText}>
-          <Text style={styles.rowTitle}>Play the next clip</Text>
-          <Text style={styles.switchDetail}>
-            {autoplay.enabled ? 'When you’ve watched a clip to the end, the next one starts after a short countdown.' : 'Clips loop until you swipe.'}
-          </Text>
-        </View>
-        <Switch
-          value={autoplay.enabled}
-          onValueChange={(v) => {
-            haptic.select();
-            autoplay.setEnabled(v);
-          }}
-          trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
-          accessibilityLabel="Play the next clip"
-          testID="autoplay-switch"
-        />
-      </View>
-
-      {currentFestival && (
-        <Pressable
-          onPress={() => {
-            haptic.select();
-            router.back();
-            router.push(`/festival/${currentFestival.id}`);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${currentFestival.name}, its lineup and your plan`}
-          style={({ pressed }) => [styles.link, pressed && { opacity: 0.7 }]}
-        >
-          <Text style={styles.linkText}>Open {currentFestival.name}</Text>
-          <ChevronIcon color={color.moonDim} size={12} />
-        </Pressable>
-      )}
-    </ScrollView>
+        {currentFestival && (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              goBack();
+              router.push(`/festival/${currentFestival.id}`);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${currentFestival.name}, its lineup and your plan`}
+            style={({ pressed }) => [styles.link, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.linkText}>Open {currentFestival.name}</Text>
+            <ChevronIcon color={color.moonDim} size={12} />
+          </Pressable>
+        )}
+      </ScrollView>
+      <SheetClose />
+    </View>
   );
 }
 

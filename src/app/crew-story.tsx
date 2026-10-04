@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -18,6 +18,7 @@ import { useCatalog } from '../state/catalog';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { goBack } from '../lib/nav';
 
 /**
  * A crewmate's story, full screen: their latest update first, then earlier
@@ -48,7 +49,7 @@ export default function CrewStoryScreen() {
     return (
       <View style={[styles.root, styles.center]}>
         <Text style={styles.gone}>That update isn’t here any more.</Text>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" style={styles.closeText}>
+        <Pressable onPress={() => goBack()} accessibilityRole="button" style={styles.closeText}>
           <Text style={styles.link}>Close</Text>
         </Pressable>
       </View>
@@ -77,7 +78,7 @@ export default function CrewStoryScreen() {
     if (nextUid && stories.some((s) => s.uid === nextUid)) {
       setWho(nextUid);
       setI(0);
-    } else router.back();
+    } else goBack();
   };
 
   return (
@@ -124,7 +125,7 @@ export default function CrewStoryScreen() {
               </Text>
             ) : null}
           </View>
-          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} style={styles.close}>
+          <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} style={styles.close}>
             <CloseIcon color={color.moon} size={18} />
           </Pressable>
         </View>

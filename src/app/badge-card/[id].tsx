@@ -17,6 +17,7 @@ import { shareMessage } from '../../lib/share';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { goBack } from '../../lib/nav';
 
 /**
  * Share a badge: the badge as a story-shaped picture (on phones) or as words
@@ -49,7 +50,7 @@ export default function BadgeCardScreen() {
   const who = mine ? social.profile : person;
   const link = who ? `${WEB_URL}/u/${who.handle}` : `${WEB_URL}/festival/${festival.id}`;
   const cardWidth = Math.min(BADGE_CARD_WIDTH, width - space.xl * 2);
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
+  const close = () => (router.canGoBack() ? goBack() : router.replace('/profile'));
 
   return (
     <View style={styles.root}>

@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +13,7 @@ import { useCatalog } from '../state/catalog';
 import { useMusic } from '../state/music';
 import { color, radius, space, type } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
+import { goBack } from '../lib/nav';
 
 /**
  * Music connections: connect Spotify (or, later, Apple Music) so Afterglow
@@ -84,7 +84,7 @@ export default function MusicScreen() {
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => router.back()}>
+        <GlassCircleButton label="Back" onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

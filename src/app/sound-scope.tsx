@@ -16,6 +16,7 @@ import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { color, radius, space, type } from '../theme/tokens';
+import { SheetClose } from '../components/SheetClose';
 
 /**
  * Which lineup My Sound shows: everyone, or one festival (the ones you're
@@ -75,35 +76,38 @@ export default function SoundScopeScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.root}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
-      <Text style={styles.title}>Show my sound for</Text>
-      <View style={styles.list}>
-        {row(EVERYONE, 'Everyone', 'Every artist the app knows', !current, 'Your sound across every artist')}
-      </View>
-      {groups.going.length > 0 && (
-        <>
-          <Text style={styles.section}>Going</Text>
-          <View style={styles.list}>{groups.going.map(festivalRow)}</View>
-        </>
-      )}
-      {many && (
-        <View style={styles.search}>
-          <SearchField value={query} onChange={setQuery} placeholder="Find a festival" label="Find a festival" />
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={styles.root}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
+        <Text style={styles.title}>Show my sound for</Text>
+        <View style={styles.list}>
+          {row(EVERYONE, 'Everyone', 'Every artist the app knows', !current, 'Your sound across every artist')}
         </View>
-      )}
-      {others.length > 0 ? (
-        <>
-          <Text style={styles.section}>{query.trim() ? 'Matches' : groups.going.length ? 'More festivals' : 'Festivals'}</Text>
-          <View style={styles.list}>{others.map(festivalRow)}</View>
-        </>
-      ) : query.trim() ? (
-        <Text style={styles.none}>No festival matches “{query.trim()}”.</Text>
-      ) : null}
-    </ScrollView>
+        {groups.going.length > 0 && (
+          <>
+            <Text style={styles.section}>Going</Text>
+            <View style={styles.list}>{groups.going.map(festivalRow)}</View>
+          </>
+        )}
+        {many && (
+          <View style={styles.search}>
+            <SearchField value={query} onChange={setQuery} placeholder="Find a festival" label="Find a festival" />
+          </View>
+        )}
+        {others.length > 0 ? (
+          <>
+            <Text style={styles.section}>{query.trim() ? 'Matches' : groups.going.length ? 'More festivals' : 'Festivals'}</Text>
+            <View style={styles.list}>{others.map(festivalRow)}</View>
+          </>
+        ) : query.trim() ? (
+          <Text style={styles.none}>No festival matches “{query.trim()}”.</Text>
+        ) : null}
+      </ScrollView>
+      <SheetClose />
+    </View>
   );
 }
 
