@@ -1,5 +1,5 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type DirectChat, directRoom, isDirectRoom, otherInRoom, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -111,6 +111,21 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     const c = crewOf(id);
     if (!c.members.includes(me().uid)) throw new SocialError('unknown');
     return c;
+  };
+  // 1-to-1 chats: rooms like crews' (`dm_<a>_<b>`), between two people who follow each other.
+  const dms = new Map<string, DirectChat>();
+  const dmWatchers = new Set<{ uid: string; listener: (chats: DirectChat[]) => void }>();
+  const dmsOf = (uid: string) => [...dms.values()].filter((d) => d.members.includes(uid));
+  const mutual = (a: string, b: string) => follows.has(`${a}>${b}`) && follows.has(`${b}>${a}`);
+  const blockedBy = (who: string, uid: string) => (blocks.get(who) ?? []).includes(uid);
+  /** In this chat room: a crew you're in, or your 1-to-1 chat (and, to write, still friends both ways and not blocked). */
+  const inRoom = (id: string, writing = false) => {
+    if (!isDirectRoom(id)) return void memberOf(id);
+    const d = dms.get(id);
+    const u = me().uid;
+    if (!d || !d.members.includes(u)) throw new SocialError('unknown');
+    const other = otherInRoom(id, u);
+    if (writing && (!mutual(u, other) || blockedBy(other, u))) throw new SocialError('unknown');
   };
   const dropPicks = (id: string, uid?: string) => {
     for (const k of picks.keys()) if (k.startsWith(`${id}/`) && (!uid || k === `${id}/${uid}`)) picks.delete(k);
@@ -769,7 +784,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async sendCrewMessages(crewId, inputs) {
       if (network.down) throw new SocialError('network');
-      memberOf(crewId);
+      inRoom(crewId, true);
       const done: string[] = [];
       for (const input of inputs) {
         const key = `${crewId}/${input.id}`;
@@ -782,7 +797,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     watchCrewChat(crewId, max, listener, onError) {
       try {
-        memberOf(crewId);
+        inRoom(crewId);
       } catch (e) {
         onError?.(e as SocialError);
         return () => {};
@@ -796,13 +811,13 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async markCrewChatRead(crewId) {
       if (network.down) throw new SocialError('network');
-      memberOf(crewId);
+      inRoom(crewId);
       reads.set(`${crewId}/${me().uid}`, now());
       readsChanged(crewId);
     },
     watchCrewReads(crewId, listener, onError) {
       try {
-        memberOf(crewId);
+        inRoom(crewId);
       } catch (e) {
         onError?.(e as SocialError);
         return () => {};
@@ -817,10 +832,29 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async deleteCrewMessage(crewId, id) {
       const m = chat.get(`${crewId}/${id}`);
       if (!m) return;
-      const c = crewOf(crewId);
-      if (m.uid !== me().uid && c.owner !== me().uid) throw new SocialError('unknown');
+      const owner = isDirectRoom(crewId) ? undefined : crewOf(crewId).owner;
+      if (m.uid !== me().uid && owner !== me().uid) throw new SocialError('unknown');
       chat.delete(`${crewId}/${id}`);
       chatChanged(crewId);
+    },
+    async openDirectChat(uid) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      if (uid === u.uid || !mutual(u.uid, uid) || blockedBy(uid, u.uid)) throw new SocialError('unknown');
+      const id = directRoom(u.uid, uid);
+      if (!dms.has(id)) {
+        dms.set(id, { id, members: [u.uid, uid].sort() as [string, string] });
+        for (const w of dmWatchers) w.listener(dmsOf(w.uid));
+      }
+      return id;
+    },
+    watchDirectChats(listener) {
+      const w = { uid: me().uid, listener };
+      dmWatchers.add(w);
+      listener(dmsOf(w.uid));
+      return () => {
+        dmWatchers.delete(w);
+      };
     },
     async meetSpot(crewId) {
       if (network.down) throw new SocialError('network');
@@ -976,5 +1010,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
+  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, currentUser: () => current };
 }

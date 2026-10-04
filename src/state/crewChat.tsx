@@ -21,7 +21,7 @@ import {
   type ChatOutboxItem,
 } from '../features/crews/chat';
 import { isOffline } from '../features/offline/status';
-import type { CrewMessage } from '../features/social/models';
+import { type CrewMessage, type DirectChat, isDirectRoom } from '../features/social/models';
 import { socialErrorKind } from '../features/social/service';
 import { notifyNow } from '../lib/notifyNow';
 import { bumpQuestEvent } from './dailyQuests';
@@ -68,6 +68,10 @@ type Ctx = {
   setOpenChat: (crewId: string | undefined) => void;
   /** Try sending now (the chat's "Try now"). */
   sendNow: () => void;
+  /** Your 1-to-1 chats (rooms the functions above take, like a crew's id). */
+  directChats: DirectChat[];
+  /** Open (or start) the 1-to-1 chat with a friend who follows you back; its room id. */
+  openDirect: (uid: string) => Promise<string>;
   /** When each crewmate last read this chat (uid -> ISO, server time). */
   readsFor: (crewId: string) => Record<string, string>;
   /** Has this crew's chat been read from the server yet? */
@@ -125,12 +129,26 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
     if (hydrated) void AsyncStorage.setItem(CHAT_READ_KEY, JSON.stringify(read)).catch(() => {});
   }, [read, hydrated]);
 
-  // --- Each crew's chat, followed live.
+  // --- Your 1-to-1 chats: rooms like crews, followed live.
+  const [direct, setDirect] = useState<{ uid?: string; chats: DirectChat[] }>({ chats: [] });
+  useEffect(() => {
+    if (!ready) return;
+    return service.watchDirectChats(
+      (chats) => setDirect({ uid, chats }),
+      () => setDirect((d) => ({ uid, chats: d.uid === uid ? d.chats : [] })),
+    );
+  }, [ready, service, uid]);
+  const directChats = useMemo(() => (direct.uid === uid ? direct.chats : []), [direct, uid]);
+  const openDirect = useCallback(async (other: string) => {
+    const id = await service.openDirectChat(other);
+    setDirect((d) => (d.uid === uid && d.chats.some((c) => c.id === id) ? d : { uid, chats: [...(d.uid === uid ? d.chats : []), { id, members: [uid ?? '', other].sort() as [string, string] }] }));
+    return id;
+  }, [service, uid]);
+
+  // --- Each crew's (and 1-to-1) chat, followed live.
   const [sent, setSent] = useState<{ uid?: string; byCrew: Record<string, CrewMessage[]> }>({ byCrew: {} });
-  const crewKey = crews
-    .map((c) => c.id)
-    .sort()
-    .join(',');
+  const rooms = useMemo(() => [...crews.map((c) => c.id), ...directChats.map((d) => d.id)], [crews, directChats]);
+  const crewKey = [...rooms].sort().join(',');
   useEffect(() => {
     if (!ready || !crewKey) return;
     const stops = crewKey.split(',').map((crewId) =>
@@ -180,7 +198,7 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
   const flush = useCallback(async () => {
     if (!ready || sending.current) return;
     // Only this account's (switching accounts never sends one account's words as another).
-    const due = dueMessages(outbox, Date.now()).filter((o) => (!o.uid || o.uid === uid) && crews.some((c) => c.id === o.crewId));
+    const due = dueMessages(outbox, Date.now()).filter((o) => (!o.uid || o.uid === uid) && rooms.includes(o.crewId));
     if (!due.length) return;
     sending.current = true;
     try {
@@ -199,7 +217,7 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
           if (held.length && heldMs >= DELAY_NOTICE_MS) {
             setDeliveries((d) => [...d.filter((x) => x.crewId !== crewId), { crewId, count: held.length, heldMs, at }]);
             if (heldMs >= CHAT_LATE_MS && openChat.current !== crewId)
-              void notifyNow(`chat-sent:${crewId}:${at}`, 'Your messages got through', deliveryLine(held.length, heldMs), `/crew-chat/${crewId}`);
+              void notifyNow(`chat-sent:${crewId}:${at}`, 'Your messages got through', deliveryLine(held.length, heldMs).replace('reached the crew', isDirectRoom(crewId) ? 'got through' : 'reached the crew'), `/crew-chat/${crewId}`);
           }
           // Any left over (sent with ones already there) try again on the usual wait.
           for (const o of items) if (!done.has(o.id)) setOutbox((box) => messageFailed(box, o.id, Date.now(), false));
@@ -215,7 +233,7 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       sending.current = false;
       setTick((t) => t + 1);
     }
-  }, [ready, outbox, crews, service, uid]);
+  }, [ready, outbox, rooms, service, uid]);
 
   useEffect(() => {
     if (online) void flush();
@@ -291,18 +309,20 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
     const unreadFor = (crewId: string) => unreadCount(byCrew[crewId] ?? [], uid ? read[readKey(uid, crewId)] : undefined, uid, blocked);
     return {
       ready,
-      canChat: ready && crews.length > 0,
+      canChat: ready && rooms.length > 0,
       linesFor: (crewId) => chatLines(byCrew[crewId] ?? [], outbox, crewId, uid, blocked, now),
       latestFor: (crewId) => {
         const list = (byCrew[crewId] ?? []).filter((m) => !blocked.includes(m.uid));
         return [...list].sort((a, b) => b.at.localeCompare(a.at))[0];
       },
       unreadFor,
-      unreadTotal: crews.reduce((n, c) => n + unreadFor(c.id), 0),
+      unreadTotal: rooms.reduce((n, id) => n + unreadFor(id), 0),
       send,
       remove,
       retry,
       markRead,
+      directChats,
+      openDirect,
       readsFor: (crewId) => readsByCrew[crewId] ?? {},
       loaded: (crewId) => crewId in byCrew,
       waitingFor: (crewId) => outbox.filter((o) => o.crewId === crewId && (!o.uid || o.uid === uid)),
@@ -311,7 +331,7 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       setOpenChat,
       sendNow,
     };
-  }, [ready, byCrew, readsByCrew, outbox, uid, blocked, now, read, crews, send, remove, retry, markRead, deliveries, dismissDelivery, setOpenChat, sendNow]);
+  }, [ready, byCrew, readsByCrew, outbox, uid, blocked, now, read, rooms, directChats, openDirect, send, remove, retry, markRead, deliveries, dismissDelivery, setOpenChat, sendNow]);
 
   return <CrewChatContext.Provider value={value}>{children}</CrewChatContext.Provider>;
 }
@@ -328,6 +348,10 @@ const OFF: Ctx = {
   retry: () => {},
   markRead: () => {},
   readsFor: () => ({}),
+  directChats: [],
+  openDirect: async () => {
+    throw new Error('Chats aren’t available here.');
+  },
   loaded: () => false,
   waitingFor: () => [],
   deliveryFor: () => undefined,

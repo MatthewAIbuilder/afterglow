@@ -25,6 +25,8 @@ import { useTaste } from '../../state/taste';
 import { useLoves } from '../../state/useLoves';
 import { FollowButton } from '../../features/social/FollowButton';
 import { CloseFriendToggle } from '../../features/friends/CloseFriendToggle';
+import { openChatWith } from '../../features/friends/openChat';
+import { useCrewChat } from '../../state/crewChat';
 import type { Profile, SharedMemory } from '../../features/social/models';
 import { askBlock, askReport } from '../../features/social/moderation';
 import { SOCIAL_ERROR_COPY, socialErrorKind, type FollowCounts } from '../../features/social/service';
@@ -48,6 +50,7 @@ export default function PublicProfileScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const social = useSocial();
+  const chat = useCrewChat();
   const catalog = useCatalog();
   const [profile, setProfile] = useState<Profile | null | undefined>();
   const { badges, throwbacks } = useBadges(profile?.uid);
@@ -207,6 +210,20 @@ export default function PublicProfileScreen() {
                   handle={profile.handle}
                   onChange={(on) => setCounts((c) => (c ? { ...c, followers: Math.max(0, c.followers + (on ? 1 : -1)) } : c))}
                 />
+                {/* Message a friend (made the first time; only friends both ways). */}
+                {social.following.has(profile.uid) ? (
+                  <Pressable
+                    onPress={() => {
+                      haptic.tap();
+                      void openChatWith(chat.openDirect, profile.uid, (profile.displayName.trim().split(/\s+/)[0] || profile.displayName));
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Message ${profile.displayName}`}
+                    style={({ pressed }) => [styles.message, pressed && { opacity: 0.8 }]}
+                  >
+                    <Text style={styles.messageText}>Message</Text>
+                  </Pressable>
+                ) : null}
                 {/* A close friend comes first on your Friends tab. Only you see it. */}
                 <CloseFriendToggle uid={profile.uid} name={profile.displayName} />
               </View>
@@ -313,6 +330,8 @@ const styles = StyleSheet.create({
   more: { ...type.caption, color: color.moon, letterSpacing: 1 },
   headWrap: { marginHorizontal: -space.xl },
   follow: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: space.sm },
+  message: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  messageText: { ...type.headline, color: color.moon },
   badges: { marginHorizontal: -space.lg, marginTop: space.sm },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.xxl, marginBottom: space.md },
   common: {

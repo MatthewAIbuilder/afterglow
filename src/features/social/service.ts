@@ -1,6 +1,6 @@
 import type { PastEvent } from '../memories/past';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
-import type { Activity, Comment, Crew, Sprout, SproutInput, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
+import type { Activity, Comment, Crew, Sprout, SproutInput, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, DirectChat, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -235,6 +235,14 @@ export interface SocialService {
   watchCrewReads(crewId: string, listener: (reads: Record<string, string>) => void, onError?: (e: SocialError) => void): () => void;
   /** Remove a chat message: your own, or anyone's in a crew you own. */
   deleteCrewMessage(crewId: string, id: string): Promise<void>;
+  /**
+   * Open the 1-to-1 chat with a friend (made the first time): only between two
+   * people who follow each other, and not if they've blocked you. Returns its
+   * room id, which the crew chat functions above take.
+   */
+  openDirectChat(uid: string): Promise<string>;
+  /** Follow your 1-to-1 chats, now and whenever one starts. Returns a stop function. */
+  watchDirectChats(listener: (chats: DirectChat[]) => void, onError?: (e: SocialError) => void): () => void;
   /** The crew's meeting spot, if one's set. Members only. */
   meetSpot(crewId: string): Promise<MeetSpot | null>;
   /** Set the crew's meeting spot (any member), or clear it with an empty text. */
