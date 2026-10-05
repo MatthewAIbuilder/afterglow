@@ -89,6 +89,7 @@ jest.mock('expo-local-authentication', () => {
   return {
     __state: state,
     hasHardwareAsync: jest.fn(async () => true),
+    isEnrolledAsync: jest.fn(async () => true),
     authenticateAsync: jest.fn(async () => state.result),
   };
 });

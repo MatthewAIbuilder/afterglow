@@ -11,7 +11,8 @@ import { cardLine, needsHelp } from './care';
 export function CareCard() {
   const { care } = useCare();
   const now = useNow(30_000).getTime();
-  const line = cardLine(care, now);
+  // Locked with Face ID: nothing of what's running shows outside the page.
+  const line = care.lock ? 'Private. Tap to open' : cardLine(care, now);
   const help = needsHelp(care, now);
   return (
     <Pressable
