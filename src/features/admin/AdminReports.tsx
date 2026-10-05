@@ -53,6 +53,25 @@ export function AdminReports() {
       showAlert('Couldn’t read it', 'Check the signal and try again.');
     }
   };
+  // A comment: read it before taking it down.
+  const readComment = async (r: ReportRecord) => {
+    try {
+      const c = await service.reportedComment(r.targetId);
+      showAlert(c ? `@${c.handle}’s comment` : 'The comment', c ? `“${c.text}”` : 'It’s already gone.');
+    } catch {
+      showAlert('Couldn’t read it', 'Check the signal and try again.');
+    }
+  };
+  // A profile: open it (reports name the account, the page goes by @handle).
+  const openProfile = async (r: ReportRecord) => {
+    try {
+      const p = await service.profileOf(r.targetId);
+      if (p) router.push({ pathname: '/u/[handle]', params: { handle: p.handle } });
+      else showAlert('The profile', 'It’s already gone.');
+    } catch {
+      showAlert('Couldn’t open it', 'Check the signal and try again.');
+    }
+  };
   const takeDown = (r: ReportRecord) => {
     if (r.kind === 'profile') return;
     showAlert(r.kind === 'memory' ? 'Take this video down?' : r.kind === 'chat' ? 'Remove this message?' : 'Remove this comment?', 'It’s removed for everyone, and the report is marked dealt with.', [
@@ -93,6 +112,16 @@ export function AdminReports() {
             <View style={styles.actions}>
               {r.kind === 'memory' ? (
                 <Pressable onPress={() => router.push({ pathname: '/shared/[id]', params: { id: r.targetId } })} accessibilityRole="button" hitSlop={6}>
+                  <Text style={styles.link}>Look at it</Text>
+                </Pressable>
+              ) : null}
+              {r.kind === 'comment' ? (
+                <Pressable onPress={() => void readComment(r)} accessibilityRole="button" accessibilityLabel="Read the comment" hitSlop={6}>
+                  <Text style={styles.link}>Read it</Text>
+                </Pressable>
+              ) : null}
+              {r.kind === 'profile' ? (
+                <Pressable onPress={() => void openProfile(r)} accessibilityRole="button" accessibilityLabel="Look at the profile" hitSlop={6}>
                   <Text style={styles.link}>Look at it</Text>
                 </Pressable>
               ) : null}

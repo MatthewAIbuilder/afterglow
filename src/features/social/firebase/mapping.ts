@@ -1,7 +1,7 @@
 import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
+import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportReply, type SupportTopic } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 import { cleanHunt, cleanName, type Hunt, isHuntId, type Sticker } from '../../finds/finds';
 
@@ -276,6 +276,7 @@ export function supportFromDoc(id: string, d: unknown): SupportMessage | null {
   const createdAt = whenOf(o.createdAt);
   if (!uid || !text || !topic || !createdAt) return null;
   const status = o.status === 'answered' || o.status === 'closed' ? o.status : 'open';
+  const replies = supportReplies(o);
   return {
     id,
     uid,
@@ -290,7 +291,23 @@ export function supportFromDoc(id: string, d: unknown): SupportMessage | null {
     ...(str(o.version) ? { version: str(o.version) } : {}),
     ...(str(o.reply) ? { reply: str(o.reply) } : {}),
     ...(whenOf(o.repliedAt) ? { repliedAt: whenOf(o.repliedAt) } : {}),
+    ...(replies.length ? { replies } : {}),
   };
+}
+
+/** A support message's replies, oldest first; one answered before replies were a list has its one reply. */
+function supportReplies(o: Record<string, unknown>): SupportReply[] {
+  if (Array.isArray(o.replies)) {
+    return o.replies.flatMap((r) => {
+      const x = r as Record<string, unknown> | null;
+      const text = str(x?.text);
+      const at = whenOf(x?.at);
+      return text ? [{ text: text.slice(0, 2000), ...(at ? { at } : {}) }] : [];
+    });
+  }
+  const reply = str(o.reply);
+  const at = whenOf(o.repliedAt);
+  return reply ? [{ text: reply, ...(at ? { at } : {}) }] : [];
 }
 
 /** A report from its document; anything malformed is null. */

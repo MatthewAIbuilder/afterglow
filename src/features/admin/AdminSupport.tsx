@@ -6,8 +6,8 @@ import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
-import type { SupportMessage } from '../social/models';
-import { agoShort, inFilter, type SupportFilter, topicLabel } from './admin';
+import { repliesOf, type SupportMessage } from '../social/models';
+import { agoShort, inFilter, mailtoLink, type SupportFilter, topicLabel } from './admin';
 
 /**
  * Support messages, newest first: who sent it, what about, when, from which
@@ -64,6 +64,8 @@ function SupportCard({ message: m, onChanged }: { message: SupportMessage; onCha
   const [reply, setReply] = useState('');
   const [busy, setBusy] = useState(false);
   const now = useNow().getTime();
+  // Only for an address that looks like one, written safely into the link.
+  const mail = m.email ? mailtoLink(m.email, 'Afterglow support') : undefined;
   const send = async () => {
     if (!reply.trim()) return;
     setBusy(true);
@@ -102,12 +104,12 @@ function SupportCard({ message: m, onChanged }: { message: SupportMessage; onCha
         {m.platform ? <Text style={styles.meta}>{[m.platform, m.version].filter(Boolean).join(' · ')}</Text> : null}
       </View>
       <Text style={styles.text}>{m.text}</Text>
-      {m.reply ? (
-        <View style={styles.replied}>
-          <Text style={styles.repliedLabel}>You replied{m.repliedAt ? ` ${agoShort(m.repliedAt, now)}` : ''}</Text>
-          <Text style={styles.repliedText}>{m.reply}</Text>
+      {repliesOf(m).map((r, i) => (
+        <View key={i} style={styles.replied}>
+          <Text style={styles.repliedLabel}>You replied{r.at ? ` ${agoShort(r.at, now)}` : ''}</Text>
+          <Text style={styles.repliedText}>{r.text}</Text>
         </View>
-      ) : null}
+      ))}
       {m.status !== 'closed' ? (
         <View style={styles.replyRow}>
           <TextInput
@@ -126,8 +128,8 @@ function SupportCard({ message: m, onChanged }: { message: SupportMessage; onCha
         </View>
       ) : null}
       <View style={styles.actions}>
-        {m.email ? (
-          <Pressable onPress={() => void Linking.openURL(`mailto:${m.email}?subject=${encodeURIComponent('Afterglow support')}`)} accessibilityRole="button" accessibilityLabel={`Email ${m.email}`} hitSlop={6}>
+        {mail ? (
+          <Pressable onPress={() => void Linking.openURL(mail).catch(() => {})} accessibilityRole="button" accessibilityLabel={`Email ${m.email}`} hitSlop={6}>
             <Text style={styles.link}>Email {m.email}</Text>
           </Pressable>
         ) : (

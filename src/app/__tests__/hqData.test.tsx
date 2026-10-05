@@ -117,8 +117,9 @@ describe('HQ data', () => {
     const [patch] = [...mockSocial.patches.values()];
     const festival = JSON.parse(patch.file).festivals[0];
     expect(festival).toMatchObject({ id: 'cyclops-cove-4', website: 'https://cyclopscove.com/lineup' });
-    // Everything else it had is kept.
-    expect(festival.lineup.length).toBeGreaterThan(1);
+    // Only the page: everything else stays the catalogue's own.
+    expect(festival.lineup).toBeUndefined();
+    expect(festival.sets).toBeUndefined();
   });
 
   it('reads a photo of set times into the box, to check and read', async () => {
@@ -205,6 +206,42 @@ describe('HQ accounts', () => {
     await fireEvent.press(app.getByText('Save privileges'));
     await flush();
     expect(await s().standingOf(maya)).toEqual({});
+  });
+
+  it('waits for the privileges list before opening anyone, and saves only what was changed', async () => {
+    await s().signUp('maya@example.com', 'password123');
+    await s().saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    const maya = mockSocial.currentUser()!.uid;
+    await s().signOut();
+    mockSocial.verified.add(SUPPORT);
+    await s().signUp(SUPPORT, 'password123');
+    await s().setFlair(maya, { kind: 'team', caption: 'Afterglow team' });
+    // The first read fails: it says so, with Try again, rather than "No one yet".
+    const privileged = jest.spyOn(mockSocial.service, 'privileged').mockRejectedValueOnce(new Error('offline'));
+    const app = await renderApp('/');
+    await flush();
+    await showTab(app, 'Accounts');
+    await flush();
+    expect(app.getByText('Couldn’t read who has privileges. Check the signal.')).toBeTruthy();
+    expect(app.queryByText('No one yet.')).toBeNull();
+    await fireEvent.changeText(app.getByLabelText('Find someone by name or @handle'), 'maya');
+    await settle(400);
+    await flush();
+    await fireEvent.press(app.getByLabelText(/^Maya, @maya\./));
+    // No panel to save from until it's known what Maya already has.
+    expect(app.queryByText('Save privileges')).toBeNull();
+    expect(app.getByText('Maya’s privileges couldn’t be read yet.')).toBeTruthy();
+    await fireEvent.press(app.getByText('Try again'));
+    await flush();
+    expect(privileged).toHaveBeenCalledTimes(2);
+    // Giving Plus leaves the Team flair alone.
+    const setFlair = jest.spyOn(mockSocial.service, 'setFlair');
+    await fireEvent(app.getByLabelText('Afterglow Plus'), 'valueChange', true);
+    answerAlerts();
+    await fireEvent.press(app.getByText('Save privileges'));
+    await flush();
+    expect(setFlair).not.toHaveBeenCalled();
+    expect(await s().standingOf(maya)).toMatchObject({ plus: true, flair: { kind: 'team', caption: 'Afterglow team' } });
   });
 
   it('nobody else can upload, publish or give privileges', async () => {

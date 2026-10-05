@@ -1,6 +1,6 @@
 import { type Catalog, createCatalog } from './catalog';
 import { withGuessedSounds } from './soundGuess';
-import type { ParsedFile } from './file';
+import type { FestivalParts, ParsedFile } from './file';
 import { siteName } from './import/sitePicture';
 import { withMembers } from './members';
 import type { ArtistSimilarity, CatalogSnapshot, Festival } from './models';
@@ -120,32 +120,83 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
   return { catalog: createCatalog(snapshot), snapshot, problems: all, usedFile: true };
 }
 
+/** What an older, whole update may change on a festival that's already in the catalogue: its lineup and set times, days and stages. */
+const PATCHED_FESTIVAL_FIELDS = ['lineup', 'sets', 'days', 'stages', 'artistDays'] as const;
+
+/** Set a field, or take it away when there's nothing to set. */
+function put<K extends keyof Festival>(f: Festival, k: K, v: Festival[K] | undefined) {
+  if (v === undefined) delete f[k];
+  else f[k] = v;
+}
+
 /**
- * Catalogue updates published from HQ, applied one after another (oldest
- * first) on top of the catalogue. One that can't be used is skipped, never
- * breaking the rest. Pure.
+ * A festival with an update's additions joined on: new acts (and their
+ * notes, days and weekends), days and stages it didn't have, and sets (one
+ * replaces that act's set that day). Acts with a set join the lineup. Pure.
  */
-/** What a published update may change on a festival that's already in the catalogue: its lineup and set times, days and stages, and its links. */
-const PATCHED_FESTIVAL_FIELDS = ['lineup', 'sets', 'days', 'stages', 'artistDays', 'links'] as const;
+export function withAdditions(f: Festival, add: NonNullable<FestivalParts['add']>): Festival {
+  const lineup = [...f.lineup];
+  for (const a of [...add.lineup, ...(add.sets ?? []).map((x) => x.artistId)]) if (!lineup.includes(a)) lineup.push(a);
+  const out: Festival = {
+    ...f,
+    lineup,
+    days: [...f.days, ...add.days.filter((d) => !f.days.includes(d))],
+    stages: [...f.stages, ...add.stages.filter((st) => !f.stages.some((x) => x.id === st.id))],
+  };
+  if (add.notes) out.notes = { ...f.notes, ...add.notes };
+  if (add.artistDays) out.artistDays = { ...f.artistDays, ...add.artistDays };
+  if (add.artistWeekends) out.artistWeekends = { ...f.artistWeekends, ...add.artistWeekends };
+  if (add.sets?.length) {
+    const sets = [...(f.sets ?? [])];
+    for (const x of add.sets) {
+      const i = sets.findIndex((y) => y.artistId === x.artistId && y.day === x.day);
+      if (i >= 0) sets[i] = x;
+      else sets.push(x);
+    }
+    out.sets = sets;
+  }
+  return out;
+}
 
 /**
  * A published update made safe to lay over the catalogue: it only ever adds
  * ("replace" would empty everyone's catalogue), artists already there keep
  * their own record (photo, colour, sounds; an update's new acts are bare),
- * and a festival already there takes only its lineup, set times, days,
- * stages and links from it, so later fixes to its dates or poster still
- * reach everyone. Pure.
+ * and a festival already there takes only what the update changes: one
+ * written in part (`festivalParts`) changes only the parts it writes and
+ * joins on its additions; an older, whole one takes its lineup, set times,
+ * days and stages. Links change one by one. So later fixes to the catalogue
+ * still reach everyone, and taking an update down undoes only it. An update
+ * that changes part of a festival no longer on Afterglow is left out. Pure.
  */
 export function asPatch(parsed: ParsedFile, current: CatalogSnapshot): ParsedFile {
   if (!parsed.snapshot) return { ...parsed, mode: 'add' };
   const artistIds = new Set(current.artists.map((a) => a.id));
   const festivals = new Map(current.festivals.map((f) => [f.id, f]));
-  const patched = parsed.snapshot.festivals.map((f) => {
+  const patched = parsed.snapshot.festivals.flatMap((f): Festival[] => {
+    const parts = parsed.festivalParts?.[f.id];
     const was = festivals.get(f.id);
-    if (!was) return f;
+    if (!was) {
+      if (parts && !parts.given.includes('lineup')) return [];
+      return [parts?.add ? withAdditions(f, parts.add) : f];
+    }
     const out: Festival = { ...was };
-    for (const k of PATCHED_FESTIVAL_FIELDS) if (f[k] !== undefined) (out as Record<string, unknown>)[k] = f[k];
-    return out;
+    if (parts) {
+      if (parts.given.includes('lineup')) {
+        out.lineup = f.lineup;
+        put(out, 'notes', f.notes);
+        put(out, 'artistDays', f.artistDays);
+        put(out, 'artistWeekends', f.artistWeekends);
+      }
+      if (parts.given.includes('days')) out.days = f.days;
+      if (parts.given.includes('stages')) out.stages = f.stages;
+      if (parts.given.includes('sets')) put(out, 'sets', f.sets);
+    } else {
+      for (const k of PATCHED_FESTIVAL_FIELDS) if (f[k] !== undefined) (out as Record<string, unknown>)[k] = f[k];
+    }
+    // Links one by one: setting the official page never takes away the tickets link.
+    if (f.links) out.links = { ...was.links, ...f.links };
+    return [parts?.add ? withAdditions(out, parts.add) : out];
   });
   return {
     ...parsed,
@@ -154,6 +205,11 @@ export function asPatch(parsed: ParsedFile, current: CatalogSnapshot): ParsedFil
   };
 }
 
+/**
+ * Catalogue updates published from HQ, applied one after another (oldest
+ * first) on top of the catalogue. One that can't be used is skipped, never
+ * breaking the rest. Pure.
+ */
 export function applyPatches(base: Built, patches: readonly { file: string }[], parse: (text: string) => ParsedFile): Built {
   let built = base;
   const problems: string[] = [];

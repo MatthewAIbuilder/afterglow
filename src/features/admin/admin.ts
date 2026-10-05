@@ -76,4 +76,12 @@ export function agoShort(iso: string, now: number): string {
 /** Replies you haven't seen yet: answered after the last time you looked. */
 export const unseenReplies = (mine: readonly SupportMessage[], seenAt: number) => mine.filter((m) => m.reply && m.repliedAt && Date.parse(m.repliedAt) > seenAt).length;
 
+/** A mailto link for an address that looks like one (no spaces, brackets or extra @), encoded; undefined otherwise. */
+export function mailtoLink(email: string, subject: string): string | undefined {
+  const e = email.trim();
+  if (e.length > 254 || !/^[^\s@<>()[\]\\,;:"'?&#%/]+@[^\s@<>()[\]\\,;:"'?&#%/]+\.[A-Za-z]{2,}$/.test(e)) return undefined;
+  const at = e.lastIndexOf('@');
+  return `mailto:${encodeURIComponent(e.slice(0, at))}@${encodeURIComponent(e.slice(at + 1))}?subject=${encodeURIComponent(subject)}`;
+}
+
 export { DAY };
