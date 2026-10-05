@@ -43,7 +43,7 @@ export function OfficialLinks({ festival, over }: { festival: Festival; over: bo
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm, marginBottom: space.md },
   link: {
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
