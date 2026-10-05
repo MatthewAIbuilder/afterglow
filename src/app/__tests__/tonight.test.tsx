@@ -61,4 +61,15 @@ describe('Tonight', () => {
     await flush();
     expect(app.queryByLabelText(/^Tonight:/)).toBeNull();
   });
+
+  it('between festivals, says which of yours is next and opens it', async () => {
+    jest.setSystemTime(new Date(2026, 9, 20, 21, 0));
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    const app = await renderApp('/tonight');
+    await flush();
+    expect(app.getByText('No festival tonight')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText(/^Your next festival: Cyclops Cove 4, .*\. Open$/));
+    await flush();
+    expect(app.getAllByText('Cyclops Cove 4').length).toBeGreaterThan(0);
+  });
 });

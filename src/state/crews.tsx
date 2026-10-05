@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { crewPath, crewStars, firstName, picksChanged, type CrewStars } from '../features/crews/together';
+import { crewPath, crewStars, distinctNames, picksChanged, type CrewStars } from '../features/crews/together';
 import { WEB_URL } from '../config/app';
 import type { Crew, CrewInvite, CrewPicks, Profile } from '../features/social/models';
 import { openInvites } from '../features/crews/invite';
@@ -222,8 +222,8 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       );
       const missing = [...new Set(crews.flatMap((c) => c.members))].filter((m) => m !== uid && !profiles.current.has(m));
       await Promise.all(missing.map(async (m) => profiles.current.set(m, await service.profileOf(m).catch(() => null))));
-      const names: Record<string, string> = {};
-      for (const [m, p] of profiles.current) if (p) names[m] = firstName(p.displayName);
+      // First names, told apart when two people share one ("Sam K." and "Sam R.").
+      const names = distinctNames([...profiles.current].flatMap(([m, p]) => (p ? [{ uid: m, displayName: p.displayName }] : [])));
       if (live) setCrewData({ uid, list, names });
     })();
     return () => {

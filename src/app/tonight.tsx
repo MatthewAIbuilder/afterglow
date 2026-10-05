@@ -23,6 +23,11 @@ import { useFestivalPlan } from '../features/plan/useFestivalPlan';
 import { TONIGHT } from '../features/discover/focus';
 import { tonightClips, tonightTitle } from '../features/tonight/tonight';
 import { useCatalog } from '../state/catalog';
+import { useGoing } from '../state/going';
+import { useWeekends } from '../state/weekends';
+import { useToday } from '../lib/useToday';
+import { bySoonest, isOver } from '../features/festivals/shelves';
+import { countdown } from '../features/festivals/when';
 import { useTonight } from '../features/tonight/useTonight';
 import { Sprout } from '../features/sprouts/Sprout';
 import { haptic } from '../lib/haptics';
@@ -64,10 +69,57 @@ export default function TonightScreen() {
         {tonight ? (
           <TonightBody festival={tonight.festival} night={tonight.night} />
         ) : (
-          <Text style={styles.quiet}>Tonight opens here while a festival you’re going to is on.</Text>
+          <NextUp />
         )}
       </ScrollView>
     </View>
+  );
+}
+
+/** Between festivals: the next one you're going to and how long until it, or a way to find one. */
+function NextUp() {
+  const { festivals, festival } = useCatalog();
+  const { going } = useGoing();
+  const { forYou } = useWeekends();
+  const today = useToday();
+  const next = bySoonest(
+    going.map(festival).filter((f): f is Festival => !!f && !isOver(f, today)),
+    today,
+  )[0];
+  const f = next ? forYou(next) : undefined;
+  const soon = f ? countdown(f, today) : undefined;
+  return (
+    <>
+      <Text style={styles.quiet}>Tonight opens here while a festival you’re going to is on: where to be, what’s next, your crew and looking after yourself, all in one place.</Text>
+      {f ? (
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            router.push({ pathname: '/festival/[id]', params: { id: f.id } });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Your next festival: ${f.name}${soon ? `, ${soon}` : ''}. Open`}
+          style={({ pressed }) => [styles.next, pressed && { opacity: 0.8 }]}
+        >
+          <Text style={styles.nextKicker}>Your next festival</Text>
+          <Text style={styles.nextName}>{f.name}</Text>
+          <Text style={styles.nextWhen}>{[soon, f.dates].filter(Boolean).join(' · ')}</Text>
+        </Pressable>
+      ) : festivals.length ? (
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            router.navigate('/festivals');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Find a festival to go to"
+          style={({ pressed }) => [styles.next, pressed && { opacity: 0.8 }]}
+        >
+          <Text style={styles.nextName}>Find a festival</Text>
+          <Text style={styles.nextWhen}>Tap I’m going on one and its nights open here.</Text>
+        </Pressable>
+      ) : null}
+    </>
   );
 }
 
@@ -207,6 +259,18 @@ const styles = StyleSheet.create({
   kicker: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 1.4 },
   title: { ...type.largeTitle, color: color.moon, marginTop: 2 },
   quiet: { ...type.body, color: color.moonDim, marginTop: space.md },
+  next: {
+    marginTop: space.xl,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(169,124,255,0.10)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(169,124,255,0.4)',
+    gap: 4,
+  },
+  nextKicker: { ...type.caption, color: color.glow, textTransform: 'uppercase', letterSpacing: 0.8 },
+  nextName: { ...type.title, color: color.moon },
+  nextWhen: { ...type.body, color: color.moonDim },
   section: { marginTop: space.xl, gap: space.sm },
   sectionTitle: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
   link: { ...type.label, color: color.glow, marginTop: space.xs },

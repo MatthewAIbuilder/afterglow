@@ -66,6 +66,31 @@ export function sharedCountLine(together: Together): string | undefined {
 /** A member's first name from their display name (or handle). */
 export const firstName = (displayName: string) => displayName.trim().split(/\s+/)[0] || displayName;
 
+/**
+ * First names for a set of people, told apart when two share one: "Sam K."
+ * and "Sam R." (the first letter of their last name), or "Sam" and "Sam 2"
+ * when there isn't one. Pure.
+ */
+export function distinctNames(people: readonly { uid: string; displayName: string }[]): Record<string, string> {
+  const count = new Map<string, number>();
+  for (const p of people) count.set(firstName(p.displayName), (count.get(firstName(p.displayName)) ?? 0) + 1);
+  const out: Record<string, string> = {};
+  const used = new Set<string>();
+  for (const p of [...people].sort((a, b) => a.uid.localeCompare(b.uid))) {
+    const n = firstName(p.displayName);
+    if ((count.get(n) ?? 0) < 2) {
+      out[p.uid] = n;
+      continue;
+    }
+    const last = p.displayName.trim().split(/\s+/).slice(1).pop();
+    let name = last ? `${n} ${last[0].toUpperCase()}.` : n;
+    for (let i = 2; used.has(name); i++) name = `${n} ${i}`;
+    used.add(name);
+    out[p.uid] = name;
+  }
+  return out;
+}
+
 /** The address that opens a crew (in the app, or on the website). */
 /** A crew's page; with its invite link's code, the link that lets someone join. */
 export const crewPath = (id: string, code?: string) => (code ? `/crew/${id}?code=${encodeURIComponent(code)}` : `/crew/${id}`);
