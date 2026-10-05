@@ -23,6 +23,7 @@ import {
 import { isOffline } from '../features/offline/status';
 import { type CrewMessage, type DirectChat, isDirectRoom } from '../features/social/models';
 import { socialErrorKind } from '../features/social/service';
+import { MessagesOffError } from '../features/friends/openChat';
 import { notifyNow } from '../lib/notifyNow';
 import { bumpQuestEvent } from './dailyQuests';
 import { useNow } from '../lib/useNow';
@@ -143,10 +144,21 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
   }, [ready, service, uid]);
   const directChats = useMemo(() => (direct.uid === uid ? direct.chats : []), [direct, uid]);
   const openDirect = useCallback(async (other: string) => {
-    const id = await service.openDirectChat(other);
+    let id: string;
+    try {
+      id = await service.openDirectChat(other);
+    } catch (e) {
+      // Refused although you do follow each other: the database isn't ready for messages yet (its rules need an
+      // update), so it's not on them to follow you back.
+      if (socialErrorKind(e) !== 'network' && uid && social.following.has(other)) {
+        const theirs = await service.following(other, 1000).catch(() => [] as string[]);
+        if (theirs.includes(uid)) throw new MessagesOffError();
+      }
+      throw e;
+    }
     setDirect((d) => (d.uid === uid && d.chats.some((c) => c.id === id) ? d : { uid, chats: [...(d.uid === uid ? d.chats : []), { id, members: [uid ?? '', other].sort() as [string, string] }] }));
     return id;
-  }, [service, uid]);
+  }, [service, uid, social.following]);
 
   // --- Each crew's (and 1-to-1) chat, followed live.
   const [sent, setSent] = useState<{ uid?: string; byCrew: Record<string, CrewMessage[]> }>({ byCrew: {} });

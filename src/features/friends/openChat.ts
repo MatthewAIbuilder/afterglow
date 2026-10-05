@@ -2,6 +2,13 @@ import { router } from 'expo-router';
 import { showAlert } from '../../lib/dialog';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../social/service';
 
+/** You follow each other, but the database refused the chat: messages aren't switched on there yet. */
+export class MessagesOffError extends Error {
+  constructor() {
+    super('messages-off');
+  }
+}
+
 /**
  * The 1-to-1 chat with a friend, made the first time: only between two
  * people who follow each other. When it can't be had, says why (they don't
@@ -11,6 +18,10 @@ export async function directRoomWith(open: (uid: string) => Promise<string>, uid
   try {
     return await open(uid);
   } catch (e) {
+    if (e instanceof MessagesOffError) {
+      showAlert('Messages aren’t ready yet', `You and ${name} follow each other, but Afterglow can’t start chats just yet: its database needs an update first. Try again later.`);
+      return undefined;
+    }
     const kind = socialErrorKind(e);
     showAlert(
       kind === 'network' ? 'No signal' : `You can’t message ${name} yet`,
