@@ -69,4 +69,19 @@ describe('set reminders', () => {
     expect(kept).toHaveLength(SET_REMINDERS_MAX);
     expect(kept[0].id).toBe(`x${SET_REMINDERS_MAX + 4}`);
   });
+
+  it('keeps to the clock when the clocks change during the festival', () => {
+    const tz = process.env.TZ;
+    process.env.TZ = 'America/New_York';
+    try {
+      // US clocks go back an hour early on Sunday 1 November 2026.
+      const halloween: Festival = { ...fest, dates: 'Oct 31 to Nov 1', startDate: '2026-10-31', endDate: '2026-11-01', sets: [{ artistId: 'b', day: 'Saturday', stageId: 'bass', start: '21:00', end: '22:00' }] };
+      const r = festivalRoute({ festival: halloween, artists: ARTISTS, taste: { b: 0.8 }, informed: { b: true } });
+      const [sunday] = setReminders(halloween, r, new Date(2026, 9, 1));
+      expect(sunday.at.getHours()).toBe(20);
+      expect(sunday.at.getMinutes()).toBe(60 - SET_LEAD_MIN);
+    } finally {
+      process.env.TZ = tz;
+    }
+  });
 });
