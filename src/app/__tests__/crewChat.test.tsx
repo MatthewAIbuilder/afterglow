@@ -2,8 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { ActionSheetIOS } from 'react-native';
+import { ActionSheetIOS, Alert } from 'react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
+import { directRoom } from '../../features/social/models';
 import { forgetGoers } from '../../features/social/useGoers';
 import { renderApp } from './appRoutes';
 
@@ -190,5 +191,54 @@ describe('crew chat', () => {
     await flush();
     expect(app.getByText('Only people in this crew can read its chat.')).toBeTruthy();
     expect(app.queryByLabelText('Message your crew')).toBeNull();
+  });
+});
+
+describe('checking in from the crew chat', () => {
+  it('opens with the quick check-ins; “I’m here” goes to the crew like any check-in, then folds to a small pill', async () => {
+    const { crew } = await crewWithMessage();
+    const app = await renderApp(`/crew-chat/${crew.id}`);
+    await flush();
+    // Open as the chat opens: one row, the quick messages after it.
+    expect(app.getByLabelText('Hide check-ins')).toBeTruthy();
+    expect(app.getByLabelText('I’m OK. Tell my crew')).toBeTruthy();
+    expect(app.getByLabelText('Can’t find my crew. Tell them')).toBeTruthy();
+    expect(app.getByLabelText('Check in with a stage, a photo or your own words')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Send “I’m here” to your crew'));
+    await flush();
+    expect([...mockSocial.updates.values()].some((u) => u.note === 'I’m here' && u.crewId === crew.id && u.at.startsWith(at(20).toISOString().slice(0, 16)))).toBe(true);
+    expect(app.getByText('Sent “I’m here” · 8:00 PM')).toBeTruthy();
+    // Folded: a small pill leading the quick messages; the note fades once it's through.
+    expect(app.getByLabelText('Check in with your crew')).toBeTruthy();
+    expect(app.getByLabelText('Send “On my way”')).toBeTruthy();
+    await settle(6000);
+    expect(app.queryByText('Sent “I’m here” · 8:00 PM')).toBeNull();
+    // Need help is asked first, the same as on the Friends tab.
+    await fireEvent.press(app.getByLabelText('Check in with your crew'));
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.find((b) => b.text === 'Ask my crew')?.onPress?.());
+    await fireEvent.press(app.getByLabelText('Not feeling great. Ask my crew to come find me'));
+    await flush();
+    expect(alert).toHaveBeenCalledWith('Ask your crew to come find you?', expect.any(String), expect.any(Array));
+    expect([...mockSocial.updates.values()].some((u) => u.care === 'help' && u.crewId === crew.id)).toBe(true);
+    await app.unmount();
+  });
+
+  it('folds away once you send a message, and isn’t in 1-to-1 chats', async () => {
+    const { crew, maya, sam } = await crewWithMessage();
+    const app = await renderApp(`/crew-chat/${crew.id}`);
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Message your crew'), 'Hey');
+    await fireEvent.press(app.getByLabelText('Send message'));
+    await flush();
+    expect(app.queryByLabelText('Hide check-ins')).toBeNull();
+    expect(app.getByLabelText('Check in with your crew')).toBeTruthy();
+    await app.unmount();
+
+    const dm = await renderApp(`/crew-chat/${directRoom(maya, sam)}`);
+    await flush();
+    expect(dm.getByLabelText('Send “On my way”')).toBeTruthy();
+    expect(dm.queryByLabelText('Check in with your crew')).toBeNull();
+    expect(dm.queryByLabelText('Send “I’m here” to your crew')).toBeNull();
+    await dm.unmount();
   });
 });
