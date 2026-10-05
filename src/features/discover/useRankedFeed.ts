@@ -56,9 +56,11 @@ export function useRankedFeed(
   // Re-rank when an input changes, during render (no extra pass through an effect). Moving
   // through the feed alone doesn't: where you are only decides what stays put at the next re-rank.
   const [state, setState] = useState<{ feed: FeedItem[] | null; inputs: readonly unknown[] }>({ feed: null, inputs: [] });
-  const inputs = [ready, taste, informed, reactions, seen, clips, catalog.artists, similarity, ratings, focus] as const;
+  // The focus by name: a festival is a new object each time the catalogue is rebuilt (the nightly file, an HQ update).
+  const focusKey = typeof focus === 'string' || !focus ? focus : focus.id;
+  const inputs = [ready, taste, informed, reactions, seen, clips, catalog.artists, similarity, ratings, focus, focusKey] as const;
   if (ready && inputs.some((v, i) => v !== state.inputs[i])) {
-    const keep = state.feed && focus === state.inputs[9] ? state.feed.slice(0, activeIndex + 2).map((it) => it.clip.id) : [];
+    const keep = state.feed && focusKey === state.inputs[10] ? state.feed.slice(0, activeIndex + 2).map((it) => it.clip.id) : [];
     const ranked = rankFeed({
       clips,
       artists: catalog.artists,

@@ -127,6 +127,12 @@ export function DiscoverFeed() {
   // Festival mode: only videos people filmed at the festival you're at (your own choice of focus is kept for later).
   const hereFestival = useFestivalMode().active?.festival;
   const viewFocus = hereFestival ? hereFocus(hereFestival.id) : focusId;
+  // A new feed (festival mode switching on or off changes it without a new focus): the first clip plays.
+  const [shownFocus, setShownFocus] = useState(viewFocus);
+  if (shownFocus !== viewFocus) {
+    setShownFocus(viewFocus);
+    setActiveIndex(0);
+  }
   // Tonight's preview: who plays tonight at the festival you're at, in set order. Over (or never on): the festival logic below takes over.
   const tonight = useTonight();
   const tonightKey = tonight ? `${tonight.festival.id}|${tonight.night ?? ''}` : '';
