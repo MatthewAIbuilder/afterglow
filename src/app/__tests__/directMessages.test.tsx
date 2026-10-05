@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Alert } from 'react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
+import { SocialError } from '../../features/social/service';
 import { renderApp } from './appRoutes';
 
 /** 1-to-1 messages between friends, through the real routes, with the in-memory backend. */
@@ -114,5 +115,17 @@ describe('1-to-1 messages', () => {
     await s().signOut();
     await as('sam');
     await expect(s().sendCrewMessages(room, [{ id: 'm-sam-001', text: 'Hey', at: new Date().toISOString() }])).rejects.toBeTruthy();
+  });
+
+  it('when you do follow each other but the database refuses the chat, says it isn’t ready rather than blaming them', async () => {
+    await friends();
+    jest.spyOn(s(), 'openDirectChat').mockRejectedValue(new SocialError('unknown'));
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const app = await renderApp('/u/maya');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Message Maya Lin'));
+    await flush();
+    expect(alert).toHaveBeenCalledWith('Messages aren’t ready yet', expect.stringMatching(/follow each other/));
+    expect(alert).not.toHaveBeenCalledWith('You can’t message Maya yet', expect.anything());
   });
 });
