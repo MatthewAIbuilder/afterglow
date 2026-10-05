@@ -19,6 +19,7 @@ import { mixColor, SOUND_COLOR, withAlpha } from '../sound-map/colors';
 import { type Favourite, orbitPlaces } from './identity';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
+import { color } from '../../theme/tokens';
 
 /** One turn of the orbit, slow enough to feel alive, never busy. */
 const TURN_MS = 90_000;
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0A0918',
+    backgroundColor: color.night,
     shadowOpacity: 0.7,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },

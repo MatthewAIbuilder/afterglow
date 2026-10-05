@@ -125,3 +125,31 @@ export function filmedOrbit(artistIds: readonly (string | undefined)[], artistOf
     .slice(0, max)
     .map((id) => ({ artist: artistOf(id)!, match: 1, why: 'match' as const }));
 }
+
+/**
+ * Who drifts round someone else's photo: the favourite artists their profile
+ * shows (best first), then the artists in the videos they've shared, each
+ * once, up to `max`. Artists not on Afterglow are left out.
+ */
+export function publicOrbit(
+  favourites: readonly string[],
+  filmed: readonly (string | undefined)[],
+  artistOf: (id: string) => Artist | undefined,
+  max = ORBIT_MAX,
+): Favourite[] {
+  const out: Favourite[] = [];
+  const seen = new Set<string>();
+  for (const id of favourites) {
+    const artist = artistOf(id);
+    if (!artist || seen.has(id) || out.length >= max) continue;
+    seen.add(id);
+    out.push({ artist, match: 1, why: 'love' });
+  }
+  for (const f of filmedOrbit(filmed, artistOf, max)) {
+    if (out.length >= max) break;
+    if (seen.has(f.artist.id)) continue;
+    seen.add(f.artist.id);
+    out.push(f);
+  }
+  return out;
+}

@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
-import { color } from '../../theme/tokens';
+import { color, nightA } from '../../theme/tokens';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
 
@@ -18,7 +18,7 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const NIGHT = 'rgba(10,9,24,1)';
+const NIGHT = nightA(1);
 
 /**
  * Headliners' faces side by side, each in its own slice with a thin line of
@@ -42,13 +42,13 @@ export function FestivalCover({ photos, fade = 'card', tail = 120, style }: Prop
         {/* Night over the faces, so they read as a mood rather than a contact sheet and text stays readable. */}
         <View style={styles.tint} />
         <LinearGradient
-          colors={page ? ['rgba(10,9,24,0.3)', 'rgba(10,9,24,0.62)', NIGHT] : ['rgba(10,9,24,0.05)', 'rgba(10,9,24,0.55)', NIGHT]}
+          colors={page ? [nightA(0.3), nightA(0.62), NIGHT] : [nightA(0.05), nightA(0.55), NIGHT]}
           locations={[0, 0.5, 1]}
           style={StyleSheet.absoluteFill}
         />
       </View>
       {/* Below the faces the night eases back into the sky, so the cover has no edge. */}
-      {page ? <LinearGradient colors={[NIGHT, 'rgba(10,9,24,0)']} style={[styles.tail, { height: tail }]} /> : null}
+      {page ? <LinearGradient colors={[NIGHT, nightA(0)]} style={[styles.tail, { height: tail }]} /> : null}
       {/* A toe tucked into the corner of the faces (one person's app only). */}
       {toes ? (
         <View style={[styles.toe, page && { bottom: tail + 10 }]}>
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   faces: { ...fill, overflow: 'hidden', backgroundColor: color.night },
   row: { ...fill, flexDirection: 'row' },
   slice: { flex: 1, overflow: 'hidden' },
-  line: { borderLeftWidth: 1.5, borderLeftColor: 'rgba(10,9,24,0.9)' },
+  line: { borderLeftWidth: 1.5, borderLeftColor: nightA(0.9) },
   tint: { ...fill, backgroundColor: 'rgba(42,24,92,0.22)' },
   tail: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });

@@ -38,6 +38,20 @@ await t('B can’t write a profile with a handle it doesn’t own', () => assert
 await t('B claims @bob', () => assertSucceeds(claim(B, 'uidB', 'bob')));
 await t('B can’t write A’s profile', () => assertFails(setDoc(doc(B.firestore(), 'profiles', 'uidA'), profile('maya'))));
 await t('B can read A’s profile', () => assertSucceeds(getDoc(doc(B.firestore(), 'profiles', 'uidA'))));
+await t('A shows favourite artists and an animated background', () =>
+  assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { artists: ['subtronics', 'levity'], showArtists: true, backdrop: 'aurora' }))));
+await t('at most 6 favourite artists, and a background is a style name', async () => {
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { artists: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'https://x.test/a.gif' })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { showArtists: 'yes' })));
+});
+await t('the panda garden, frog pond and toe beach are only for the profiles made for them', async () => {
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'panda' })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'frog' })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'toes' })));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'none' })));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya')));
+});
 await t('reserved and malformed handles refused', async () => {
   await assertFails(claim(env.authenticatedContext('uidC'), 'uidC', 'admin'));
   await assertFails(claim(env.authenticatedContext('uidC'), 'uidC', 'a..b'));

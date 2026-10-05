@@ -21,7 +21,7 @@ import { useRatings } from '../state/ratings';
 import { bumpQuestEvent } from '../state/dailyQuests';
 import { useReactions } from '../state/reactions';
 import { useTaste } from '../state/taste';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
 /**
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   round: { paddingHorizontal: space.xl, gap: space.sm, alignSelf: 'center', width: '100%', maxWidth: 560 },
   or: { ...type.label, color: color.moonFaint, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 2 },
   card: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  cardOn: { borderColor: 'rgba(169,124,255,0.6)' },
+  cardOn: { borderColor: glowA(0.6) },
   player: { aspectRatio: 16 / 9, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center', padding: space.lg },
   quiet: { ...type.caption, color: color.moonDim, textAlign: 'center' },

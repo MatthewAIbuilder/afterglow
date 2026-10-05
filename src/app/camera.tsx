@@ -19,7 +19,7 @@ import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useMemories } from '../state/memories';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA, raisedA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
 /**
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.xs + 2,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(18,16,38,0.45)',
+    backgroundColor: raisedA(0.45),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
@@ -331,9 +331,9 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.45)',
+    borderColor: glowA(0.45),
   },
   permTitle: { ...type.title, color: color.moon, marginTop: space.lg, textAlign: 'center' },
   permBody: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center', maxWidth: 320 },
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(18,16,38,0.5)',
+    backgroundColor: raisedA(0.5),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },

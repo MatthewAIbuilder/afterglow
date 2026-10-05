@@ -22,7 +22,7 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
@@ -290,6 +290,6 @@ const styles = StyleSheet.create({
   action: { paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   actionText: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   like: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  liked: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.5)' },
+  liked: { backgroundColor: glowA(0.22), borderColor: glowA(0.5) },
   note: { ...type.caption, color: color.moonDim, marginTop: space.sm },
 });

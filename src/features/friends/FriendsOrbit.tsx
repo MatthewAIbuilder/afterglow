@@ -6,7 +6,7 @@ import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { PersonAvatar } from '../../components/PersonAvatar';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, space, type } from '../../theme/tokens';
+import { color, space, type, glowA } from '../../theme/tokens';
 import type { Profile } from '../social/models';
 import { ringPlaces, splitOrbit } from './orbit';
 
@@ -182,7 +182,7 @@ function Glow({ width, height, cx, cy, inner, outer }: { width: number; height: 
         <Ellipse cx={cx} cy={cy} rx={width / 2} ry={height / 2} fill={`url(#a${id})`} />
         <Ellipse cx={cx + width * 0.12} cy={cy + height * 0.1} rx={width * 0.32} ry={height * 0.3} fill={`url(#b${id})`} />
         <Ellipse cx={cx} cy={cy} rx={outer.x} ry={outer.y} stroke="rgba(243,240,255,0.07)" strokeWidth={1} strokeDasharray="2 6" fill="none" />
-        <Ellipse cx={cx} cy={cy} rx={inner.x} ry={inner.y} stroke="rgba(169,124,255,0.22)" strokeWidth={1} fill="none" />
+        <Ellipse cx={cx} cy={cy} rx={inner.x} ry={inner.y} stroke={glowA(0.22)} strokeWidth={1} fill="none" />
       </Svg>
     </View>
   );

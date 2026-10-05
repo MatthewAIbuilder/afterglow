@@ -13,6 +13,7 @@ import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
 import { LevelSync } from '../features/quests/LevelSync';
 import { QuestToast } from '../features/quests/QuestToast';
 import { WhatsNewLauncher } from '../features/whatsNew/WhatsNewLauncher';
+import { ThemeKeeper } from '../features/themes/ThemeKeeper';
 import { SecretStage } from '../features/secrets/SecretStage';
 import { SunriseWatcher } from '../features/secrets/SunriseWatcher';
 import { FirstRun } from '../features/welcome/FirstRun';
@@ -107,6 +108,8 @@ export default function RootLayout() {
         <Stack.Screen name="badge/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal' }} />
         <Stack.Screen name="profile-edit" />
+        <Stack.Screen name="backdrop" />
+        <Stack.Screen name="themes" />
         <Stack.Screen name="u/[handle]" />
         <Stack.Screen name="people" />
         <Stack.Screen name="search" options={{ animation: 'fade' }} />
@@ -235,6 +238,7 @@ export default function RootLayout() {
       <AdminReturnPill />
       <TonightLauncher />
       <WhatsNewLauncher />
+      <ThemeKeeper />
       <QuestTracker />
       <DailyQuestTracker />
       <LevelSync />

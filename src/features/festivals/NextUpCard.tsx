@@ -4,7 +4,7 @@ import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { CountUp } from '../../components/CountUp';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { PlayIcon } from '../discover/icons';
 import { FestivalCover } from './FestivalCover';
 import { whereWhen } from './format';
@@ -111,14 +111,14 @@ const styles = StyleSheet.create({
     marginBottom: space.xl,
     padding: space.xl,
     borderRadius: radius.lg + 4,
-    backgroundColor: 'rgba(169,124,255,0.10)',
+    backgroundColor: glowA(0.10),
     borderWidth: 1,
-    borderColor: 'rgba(169,124,255,0.35)',
+    borderColor: glowA(0.35),
     overflow: 'hidden',
   },
   covered: { paddingTop: COVER - space.xl * 2, backgroundColor: color.night },
   live: { borderColor: 'rgba(255,126,182,0.55)' },
-  glass: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(169,124,255,0.10)' },
+  glass: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: glowA(0.10) },
   cover: { position: 'absolute', top: 0, left: 0, right: 0, height: COVER },
   pressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
   topRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },

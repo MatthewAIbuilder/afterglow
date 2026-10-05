@@ -6,7 +6,7 @@ import { FilterChips } from '../../components/FilterChips';
 import { MapIcon } from '../../components/TabIcons';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { type ThrowbackBadge, pinLook, throwbackId, throwbackLine, throwbackLook, townOf } from '../badges/badges';
 import { pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: color.night,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
     padding: space.lg,
     justifyContent: 'space-between',
   },

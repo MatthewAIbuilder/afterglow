@@ -6,7 +6,7 @@ import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { haptic } from '../../lib/haptics';
 import { useTaste } from '../../state/taste';
 import { CrewStarsLine, crewStarsSaid, useCrewStars } from './CrewStars';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { exploreLine, matchLabel, moreToExplore, TIER_HINT, TIER_LABEL } from './copy';
 import { MustSeeToggle } from './MustSeeToggle';
 import { usePickReasons } from './usePickReasons';
@@ -32,7 +32,7 @@ export function MustSeeList({ festivalId, picks }: { festivalId: string; picks: 
         <View key={g.tier} style={[styles.group, g.tier === 'must-see' && styles.feature]}>
           {g.tier === 'must-see' ? (
             <LinearGradient
-              colors={['rgba(169,124,255,0.16)', 'rgba(169,124,255,0)']}
+              colors={[glowA(0.16), glowA(0)]}
               style={StyleSheet.absoluteFill}
               pointerEvents="none"
             />
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.28)',
+    borderColor: glowA(0.28),
   },
   tier: { ...type.label, color: color.moon },
   hint: { ...type.caption, color: color.moonFaint, marginTop: 2, marginBottom: space.xs },

@@ -13,6 +13,8 @@ const p = (uid: string, name: string): Profile => ({
   sounds: [],
   showFestivals: true,
   showSound: false,
+  artists: [],
+  showArtists: true,
   createdAt: '',
   updatedAt: '',
 });

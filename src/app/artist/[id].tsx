@@ -52,7 +52,7 @@ import { ArtistCrowdRow } from '../../features/artists/ArtistCrowdRow';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
 
 const HERO = 132;
 
@@ -137,7 +137,7 @@ export default function ArtistScreen() {
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <Image source={{ uri: backdrop }} style={[styles.photoGlow, { height: insets.top + 56 + HERO + 260 }]} contentFit="cover" blurRadius={45} transition={400} />
           <LinearGradient
-            colors={['rgba(10,9,24,0.3)', 'rgba(10,9,24,0.72)', 'rgba(10,9,24,0.95)', 'rgba(10,9,24,0.97)']}
+            colors={[nightA(0.3), nightA(0.72), nightA(0.95), nightA(0.97)]}
             locations={[0, 0.2, 0.42, 1]}
             style={StyleSheet.absoluteFill}
           />
@@ -435,7 +435,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   nextShow: { alignSelf: 'stretch', marginTop: space.lg, paddingVertical: space.md, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', gap: 2 },
-  nextShowGoing: { borderColor: 'rgba(169,124,255,0.55)', backgroundColor: 'rgba(169,124,255,0.10)' },
+  nextShowGoing: { borderColor: glowA(0.55), backgroundColor: glowA(0.10) },
   nextKicker: { ...type.caption, fontSize: 10, letterSpacing: 1.5, fontWeight: '700', color: color.glow },
   nextName: { ...type.headline, color: color.moon },
   nextLine: { ...type.caption, color: color.moonDim },
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  mustSeeOn: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.4)' },
+  mustSeeOn: { backgroundColor: glowA(0.18), borderColor: glowA(0.4) },
   mustSeeText: { ...type.label, color: color.moonDim },
   listenPill: {
     flexDirection: 'row',
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   rowMeta: { ...type.caption, color: color.moonDim, marginTop: 2 },
   thumb: { width: 52, height: 64, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   similar: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
-  playMark: { width: 28, height: 28, borderRadius: 14, paddingLeft: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(10,9,24,0.5)' },
+  playMark: { width: 28, height: 28, borderRadius: 14, paddingLeft: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: nightA(0.5) },
   alsoRow: { paddingHorizontal: space.xl, gap: space.md },
   also: { width: 168 },
   alsoStill: { width: 168, height: 94, borderRadius: radius.md },

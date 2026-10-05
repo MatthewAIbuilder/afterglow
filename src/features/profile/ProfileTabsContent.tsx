@@ -6,7 +6,7 @@ import { artistColors } from '../../components/ArtistAvatar';
 import { BookmarkIcon, ChevronIcon, PlusIcon } from '../../components/TabIcons';
 import type { Artist, Clip, Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { CameraIcon } from '../camera/icons';
 import { HeartIcon, PlayIcon } from '../discover/icons';
 import { posterUrl } from '../discover/youtube';
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   momentWhere: { ...type.caption, fontSize: 11, color: color.moonDim },
   lengthText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   sharedDot: { position: 'absolute', left: space.sm, top: space.sm + 2, width: 7, height: 7, borderRadius: 4, backgroundColor: color.glow },
-  tag: { position: 'absolute', left: space.sm, top: space.sm, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.85)' },
+  tag: { position: 'absolute', left: space.sm, top: space.sm, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: glowA(0.85) },
   tagText: { ...type.caption, color: color.moon },
   newTile: { alignItems: 'center', justifyContent: 'center', gap: space.xs, backgroundColor: color.glass },
   newPlus: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: color.hairline },

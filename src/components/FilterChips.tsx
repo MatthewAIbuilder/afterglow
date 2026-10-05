@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { haptic } from '../lib/haptics';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 export type Chip = { key: string | undefined; label: string; count?: number; accessibilityLabel: string };
 
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.45)' },
+  chipOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.45) },
   text: { ...type.caption, color: color.moonDim },
   count: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
 });

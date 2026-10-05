@@ -21,7 +21,7 @@ import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
 import { useTaste } from '../state/taste';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA, nightA } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import type { CropShape } from '../features/profile/crop';
 import { useShowLevel, setShowLevel } from '../state/showLevel';
@@ -29,11 +29,14 @@ import { useDailyQuests } from '../features/quests/useDailyQuests';
 import { LEVEL_SHOWN_FROM } from '../features/quests/daily';
 import { type CropSource, PhotoCropper } from '../features/profile/PhotoCropper';
 import { goBack } from '../lib/nav';
+import { AnimatedBackdrop } from '../features/profile/AnimatedBackdrop';
+import { backdropOf, shownBackdrop } from '../features/profile/backdrops';
+import { useStanding } from '../features/standing/useStanding';
 
 /**
  * Your profile, as others will see it: photo, name, @handle, a short bio,
- * and two switches for what else to show (festivals you're going to, your
- * top sounds). Also where you sign out or delete your account.
+ * an animated background, and switches for what else to show (favourite
+ * artists, festivals you're going to, your top sounds). Also where you sign out or delete your account.
  */
 export default function ProfileEditScreen() {
   const insets = useSafeAreaInsets();
@@ -48,6 +51,9 @@ export default function ProfileEditScreen() {
   const [bio, setBio] = useState(p?.bio ?? '');
   const [showFestivals, setShowFestivals] = useState(p?.showFestivals ?? false);
   const [showSound, setShowSound] = useState(p?.showSound ?? false);
+  const [showArtists, setShowArtists] = useState(p?.showArtists ?? true);
+  const standing = useStanding(p?.uid);
+  const backdrop = backdropOf(p ? shownBackdrop(p.backdrop, p.uid, !!standing?.plus) : undefined);
   const [socials, setSocials] = useState<Record<SocialKey, string>>({ instagram: p?.socials?.instagram ?? '', snapchat: p?.socials?.snapchat ?? '', tiktok: p?.socials?.tiktok ?? '' });
   // Your profile arriving after the screen opened (right after launch, a switch of account): fill the form from it, once.
   const [seededFor, setSeededFor] = useState(p?.uid);
@@ -59,6 +65,7 @@ export default function ProfileEditScreen() {
     setShowFestivals(p.showFestivals);
     setShowSound(p.showSound);
     setSocials({ instagram: p.socials?.instagram ?? '', snapchat: p.socials?.snapchat ?? '', tiktok: p.socials?.tiktok ?? '' });
+    setShowArtists(p.showArtists ?? true);
   }
   // Applies at once (it isn't part of the saved profile): LevelSync sends or removes it.
   const showLevel = useShowLevel();
@@ -72,7 +79,7 @@ export default function ProfileEditScreen() {
   const [uploading, setUploading] = useState<CropShape>();
   const [password, setPassword] = useState('');
 
-  const input = { handle, displayName, bio, showFestivals, showSound, socials };
+  const input = { handle, displayName, bio, showFestivals, showSound, showArtists, socials };
   const problems = profileProblems(input);
   const h = normalizeHandle(handle);
 
@@ -131,8 +138,12 @@ export default function ProfileEditScreen() {
     setSaving(true);
     setProblem(undefined);
     try {
-      await social.saveProfile(input);
+      const saved = await social.saveProfile(input);
       haptic.settle();
+      // Saved, but the database isn't ready for socials yet (its rules need updating): say so rather than drop them quietly.
+      const wanted = SOCIALS.some((s) => readSocial(s.key, socials[s.key]));
+      if (wanted && !Object.keys(saved.socials ?? {}).length)
+        showAlert('Saved, without your socials', 'Your profile is saved, but Instagram, Snapchat and TikTok can’t be added just yet: Afterglow’s database needs an update first. Try again later.');
       goBack();
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
@@ -242,6 +253,20 @@ export default function ProfileEditScreen() {
             </View>
             <Text style={styles.link}>{uploading === 'cover' ? 'Uploading…' : p?.coverUrl ? 'Change cover' : 'Add cover'}</Text>
           </Pressable>
+          <Pressable
+            onPress={() => (p ? router.push('/backdrop') : showAlert('Save your profile first', 'Then you can choose a background.'))}
+            accessibilityRole="button"
+            accessibilityLabel={`Profile background: ${backdrop?.name ?? 'cover photo'}. Change it`}
+            style={styles.coverRow}
+          >
+            <View style={styles.cover}>
+              {backdrop ? <AnimatedBackdrop id={backdrop.id} width={112} height={63} still /> : <Text style={styles.coverHint}>Animated</Text>}
+            </View>
+            <View style={{ flexShrink: 1 }}>
+              <Text style={styles.link}>{backdrop ? `Background · ${backdrop.name}` : 'Animated background'}</Text>
+              <Text style={styles.rowNote}>{backdrop ? 'Shows in place of your cover photo' : 'Aurora, lasers, a sunset grid and more'}</Text>
+            </View>
+          </Pressable>
           <PhotoCropper source={cropping?.source} shape={cropping?.shape ?? 'avatar'} onDone={(uri) => void applyCrop(uri)} onCancel={() => setCropping(undefined)} />
 
           <Field label="Name">
@@ -309,6 +334,18 @@ export default function ProfileEditScreen() {
               detail={showLevel === false ? 'Hidden' : daily.level.level >= LEVEL_SHOWN_FROM ? `Level ${daily.level.level} · ${daily.level.name}` : 'Shows once you reach level 2 in your quests'}
               value={showLevel !== false}
               onChange={setShowLevel}
+            />
+            <SwitchRow
+              label="Show my favourite artists"
+              detail={showArtists ? 'Round your photo on your profile' : 'Hidden'}
+              value={showArtists}
+              onChange={setShowArtists}
+            />
+            <SwitchRow
+              label="Show my favourite artists"
+              detail={showArtists ? 'They drift round your photo on your profile' : 'Hidden'}
+              value={showArtists}
+              onChange={setShowArtists}
             />
             <SwitchRow label="Show my sound" detail={showSound ? (sounds.length ? sounds.join(', ') : 'Your top sounds, once you’ve reacted to some clips') : 'Hidden'} value={showSound} onChange={setShowSound} />
           </View>
@@ -397,10 +434,11 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon },
   body: { ...type.body, color: color.moonDim },
   retry: { ...type.headline, color: color.glow },
-  uploading: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,9,24,0.55)', alignItems: 'center', justifyContent: 'center' },
+  uploading: { ...StyleSheet.absoluteFill, backgroundColor: nightA(0.55), alignItems: 'center', justifyContent: 'center' },
   coverRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
   cover: { width: 112, height: 63, borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', justifyContent: 'center' },
   coverHint: { ...type.caption, color: color.moonFaint },
+  rowNote: { ...type.caption, color: color.moonFaint, marginTop: 2 },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
   avatar: { width: 72, height: 72, borderRadius: 36, overflow: 'hidden', backgroundColor: color.haze, alignItems: 'center', justifyContent: 'center' },
   initial: { ...type.title, color: color.moon },
@@ -433,9 +471,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: space.md,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.3)',
+    backgroundColor: glowA(0.3),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.6)',
+    borderColor: glowA(0.6),
     marginTop: space.sm,
   },
   primaryText: { ...type.headline, color: color.moon },

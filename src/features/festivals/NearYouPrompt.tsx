@@ -1,7 +1,7 @@
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { useNearby } from '../../state/nearby';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 /**
  * "Festivals near you": an offer on the Festivals tab to use your location.
@@ -73,9 +73,9 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm + 2,
     paddingHorizontal: space.lg,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.5)',
+    borderColor: glowA(0.5),
   },
   buttonText: { ...type.label, color: color.moon },
   link: { ...type.label, color: color.glow },

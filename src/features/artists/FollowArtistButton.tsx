@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useFollowedArtists } from '../../state/followedArtists';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 /**
  * Follow / Following for an artist: news when they're added to a lineup.
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
   pill: { minWidth: 120, alignItems: 'center', paddingHorizontal: space.xl, paddingVertical: space.sm + 2, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth },
   compact: { minWidth: 92, paddingHorizontal: space.md, paddingVertical: 6 },
   row: { minWidth: 104, minHeight: 40, justifyContent: 'center', paddingVertical: 0, paddingHorizontal: space.lg },
-  off: { backgroundColor: color.glowDeep, borderColor: 'rgba(169,124,255,0.6)' },
+  off: { backgroundColor: color.glowDeep, borderColor: glowA(0.6) },
   on: { backgroundColor: color.glass, borderColor: color.hairline },
   label: { ...type.headline, color: color.moon },
   compactLabel: { ...type.label },

@@ -27,16 +27,22 @@ export type Profile = {
   festivals: string[];
   /** Your top sounds, shown only when you switch it on. */
   sounds: SoundTag[];
+  /** Your favourite artists (ids, best first), shown round your photo unless you switch it off. */
+  artists: string[];
   /** Your switches, so the published lists can follow your plans without re-saving. */
   showFestivals: boolean;
   showSound: boolean;
   /** Your Instagram, Snapchat and TikTok usernames, if you added them. */
   socials?: Socials;
+  /** On unless you switch it off (profiles from before it existed count as on). */
+  showArtists: boolean;
+  /** An animated background in place of the cover photo (`BACKDROPS` id). */
+  backdrop?: string;
   createdAt: string;
   updatedAt: string;
 };
 
-/** What you edit. `showFestivals` / `showSound` decide whether those lists are published at all. */
+/** What you edit. `showFestivals` / `showSound` / `showArtists` decide whether those lists are published at all. */
 export type ProfileInput = {
   handle: string;
   displayName: string;
@@ -45,7 +51,15 @@ export type ProfileInput = {
   showSound: boolean;
   /** Left out: your current ones stay as they are. */
   socials?: Socials;
+  /** Show your favourite artists round your photo; on when left out. */
+  showArtists?: boolean;
 };
+
+/** What your profile publishes when switched on, kept current with your plans and taste. */
+export type Published = { festivals: string[]; sounds: SoundTag[]; artists?: string[] };
+
+/** How many favourite artists a profile shows round its photo. */
+export const ARTISTS_SHOWN = 6;
 
 /** A memory you shared, as others see it. Where you filmed it is never included. */
 export type SharedMemory = {

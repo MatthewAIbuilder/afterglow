@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { showAlert } from "../../lib/dialog";
 import { haptic } from "../../lib/haptics";
 import { useCrewUpdates } from "../../state/crewUpdates";
-import { color, radius, space, type } from "../../theme/tokens";
+import { color, glowA, radius, space, type } from "../../theme/tokens";
 import { isOffline } from "../offline/status";
 import { CHECK_INS, clock } from "./updates";
 
@@ -243,9 +243,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md + 2,
     paddingVertical: space.sm + 2,
     borderRadius: radius.md,
-    backgroundColor: "rgba(169,124,255,0.14)",
+    backgroundColor: glowA(0.14),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(169,124,255,0.4)",
+    borderColor: glowA(0.4),
   },
   chipText: { ...type.label, fontSize: 14, color: color.moon },
   asked: { ...type.caption, color: RED },

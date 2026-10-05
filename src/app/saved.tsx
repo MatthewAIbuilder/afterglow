@@ -17,7 +17,7 @@ import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useClipPool } from '../state/community';
 import { useReactions } from '../state/reactions';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, nightA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
 type Shelf = 'saved' | 'liked';
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(10,9,24,0.55)',
+    backgroundColor: nightA(0.55),
   },
   text: { flex: 1 },
   name: { ...type.headline, color: color.moon },

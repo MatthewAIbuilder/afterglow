@@ -1,4 +1,4 @@
-import { profileFields, profileFromDoc } from '../firebase/mapping';
+import { profileFields, profileFromDoc, profileToDoc } from '../firebase/mapping';
 import { describe, expect, it } from '@jest/globals';
 import { cleanSocials, readSocial, socialA11y, socialProblem, socialUrl } from '../socials';
 import { cleanProfileInput, profileProblems } from '../validate';
@@ -63,6 +63,8 @@ describe('profile fields', () => {
       sounds: [],
       showFestivals: false,
       showSound: false,
+      artists: [],
+      showArtists: true,
       socials: { instagram: 'maya.chen', tiktok: 'maya' },
       avatarUrl: 'https://x/a.jpg',
       createdAt: 'a',
@@ -74,5 +76,9 @@ describe('profile fields', () => {
     expect(f).toMatchObject({ instagram: 'maya.chen', tiktok: 'maya', nameLower: 'maya chen', avatarUrl: 'https://x/a.jpg' });
     // Read back, it's the same profile.
     expect(profileFromDoc('u1', f)?.socials).toEqual({ instagram: 'maya.chen', tiktok: 'maya' });
+    // For a database still on the older rules, the newer fields (socials among them) are left out, so the rest still saves.
+    const older = profileToDoc(profileFromDoc('u1', f)!, true);
+    for (const k of ['instagram', 'snapchat', 'tiktok', 'artists', 'showArtists', 'backdrop']) expect(older).not.toHaveProperty(k);
+    expect(older).toMatchObject({ handle: 'maya', nameLower: 'maya chen' });
   });
 });

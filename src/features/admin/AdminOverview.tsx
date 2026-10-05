@@ -5,7 +5,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { isOver } from '../festivals/shelves';
 import type { AdminActivity, AdminCounts, AdminPresence } from '../social/models';
 import { FOUNDERS_MAX } from '../social/models';
@@ -364,11 +364,11 @@ const styles = StyleSheet.create({
   seg: { flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   segSmall: { alignSelf: 'center', minWidth: 260 },
   segItem: { flexGrow: 1, flexBasis: 0, minHeight: 34, paddingHorizontal: space.sm, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
-  segOn: { backgroundColor: 'rgba(169,124,255,0.28)' },
+  segOn: { backgroundColor: glowA(0.28) },
   segText: { ...type.label, color: color.moonDim },
   segTextSmall: { ...type.caption, color: color.moonDim, paddingHorizontal: space.xs },
   segTextOn: { color: color.moon },
-  summary: { padding: space.lg, gap: 4, borderRadius: radius.lg, backgroundColor: 'rgba(169,124,255,0.12)', borderWidth: 1, borderColor: 'rgba(169,124,255,0.35)' },
+  summary: { padding: space.lg, gap: 4, borderRadius: radius.lg, backgroundColor: glowA(0.12), borderWidth: 1, borderColor: glowA(0.35) },
   summaryKicker: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 1 },
   summaryLine: { ...type.headline, color: color.moon },
   activeNote: { padding: space.md, gap: 2, borderRadius: radius.lg, backgroundColor: 'rgba(255,184,107,0.08)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,184,107,0.45)' },

@@ -1,15 +1,22 @@
 import { Platform } from 'react-native';
+import { DEFAULT_THEME, isThemeId, PALETTES, rgbaOf, type ThemeId } from './palettes';
+import { readStoredTheme } from './storedTheme';
 
 /**
  * Design tokens. Every screen pulls from here so the look stays consistent
- * and can be retuned in one place.
+ * and can be retuned in one place. The night and glow colours come from the
+ * app theme (`palettes.ts`), read once as the app starts.
  *
  * Direction: festival glow at night. A deep violet-ink sky, moonlight text,
  * one purple glow used sparingly for "this matters" moments.
  */
+/** The theme the app wears this time it runs (chosen on Settings → App theme; a new one applies on restart). */
+export const THEME_ID: ThemeId = startingTheme();
+const palette = PALETTES[THEME_ID];
+
 export const color = {
-  night: '#0A0918', // app background
-  nightRaised: '#121026', // sheets, raised surfaces (under blur)
+  night: palette.night, // app background
+  nightRaised: palette.nightRaised, // sheets, raised surfaces (under blur)
   glass: 'rgba(255,255,255,0.06)',
   hairline: 'rgba(255,255,255,0.10)',
 
@@ -17,12 +24,23 @@ export const color = {
   moonDim: 'rgba(243,240,255,0.62)', // secondary text
   moonFaint: 'rgba(243,240,255,0.36)', // tertiary text, region labels
 
-  glow: '#A97CFF', // the accent: matches, active states
-  glowDeep: '#6B3FE0',
-  haze: '#3A2380', // large background light
-  dusk: '#1C2A6B', // cool counter-light
-  stage: '#FF7AC6', // warm stage light, background only, very faint
-} as const;
+  glow: palette.glow, // the accent: matches, active states
+  glowDeep: palette.glowDeep,
+  haze: palette.haze, // large background light
+  dusk: palette.dusk, // cool counter-light
+  stage: palette.stage, // warm stage light, background only, very faint
+};
+
+/** The accent, the deeper accent, the night and raised surfaces at an opacity, in the theme's colours. */
+export const glowA = (alpha: number) => rgbaOf(palette.glow, alpha);
+export const glowDeepA = (alpha: number) => rgbaOf(palette.glowDeep, alpha);
+export const nightA = (alpha: number) => rgbaOf(palette.night, alpha);
+export const raisedA = (alpha: number) => rgbaOf(palette.nightRaised, alpha);
+
+function startingTheme(): ThemeId {
+  const id = readStoredTheme();
+  return isThemeId(id) ? id : DEFAULT_THEME;
+}
 
 const system = Platform.select({ ios: 'System', default: undefined });
 

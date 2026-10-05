@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { type CareTimer, elapsed, type FeelingPoint, lastDose, type Mood } from './care';
 import { FeelingGraph } from './FeelingGraph';
 import { FeelingChips } from './feelings';
@@ -85,7 +85,7 @@ export function StopwatchCard({
               <View style={[styles.seg, { flex: marks.onset, backgroundColor: 'rgba(255,255,255,0.12)' }]} />
               <View style={[styles.seg, { flex: marks.peak - marks.onset, backgroundColor: 'rgba(255,184,107,0.55)' }]} />
               <View style={[styles.seg, { flex: marks.end - marks.peak, backgroundColor: 'rgba(255,126,182,0.7)' }]} />
-              <View style={[styles.seg, { flex: 1 - marks.end, backgroundColor: 'rgba(169,124,255,0.4)' }]} />
+              <View style={[styles.seg, { flex: 1 - marks.end, backgroundColor: glowA(0.4) }]} />
             </View>
             <View style={[styles.marker, { left: `${Math.min(99, phase.progress * 100)}%` }]}>
               <LinearGradient colors={['#FFFFFF', '#E9DFFF']} style={styles.markerDot} />
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.45)',
+    borderColor: glowA(0.45),
   },
   cardDone: { borderColor: color.hairline, opacity: 0.85 },
   top: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   feelTitle: { ...type.label, color: color.moonDim },
   feelLink: { ...type.label, color: color.glow },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
-  action: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.18)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)' },
+  action: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: glowA(0.18), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45) },
   actionText: { ...type.label, color: color.moon },
   stop: { backgroundColor: 'transparent', borderColor: color.hairline },
   stopText: { ...type.label, color: color.moonDim },

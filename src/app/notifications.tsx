@@ -8,7 +8,7 @@ import { ChevronIcon } from '../components/TabIcons';
 import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
 /** Notifications: news about the festivals you're going to, new followers and likes on your videos. Opening it marks everything read. */
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  rowNew: { backgroundColor: 'rgba(169,124,255,0.14)', borderColor: 'rgba(169,124,255,0.4)' },
+  rowNew: { backgroundColor: glowA(0.14), borderColor: glowA(0.4) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow },
   text: { flex: 1 },

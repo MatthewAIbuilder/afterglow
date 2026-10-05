@@ -23,7 +23,7 @@ import { useGoing } from '../state/going';
 import { useMemories } from '../state/memories';
 import { usePlan } from '../state/plan';
 import { useTaste } from '../state/taste';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { shareDetail, shareOffer } from '../features/social/shareChoice';
 import { clock } from '../features/crews/updates';
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  chipOn: { backgroundColor: 'rgba(169,124,255,0.2)', borderColor: 'rgba(169,124,255,0.55)' },
+  chipOn: { backgroundColor: glowA(0.2), borderColor: glowA(0.55) },
   chipText: { ...type.label, color: color.moonDim },
   chipTextOn: { color: color.moon },
   rows: { gap: space.sm, paddingHorizontal: space.xl },
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  choiceOn: { borderColor: 'rgba(169,124,255,0.6)', backgroundColor: 'rgba(169,124,255,0.12)' },
+  choiceOn: { borderColor: glowA(0.6), backgroundColor: glowA(0.12) },
   choiceText: { flex: 1, gap: 2 },
   choiceName: { ...type.headline, color: color.moon },
   choiceWhy: { ...type.caption, color: color.moonDim },

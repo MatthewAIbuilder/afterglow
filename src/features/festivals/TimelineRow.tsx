@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { distanceLabel } from './near';
 import { PlayIcon } from '../discover/icons';
 import { isOver } from './shelves';
@@ -112,9 +112,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(169,124,255,0.14)',
+    backgroundColor: glowA(0.14),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   blockGoing: { backgroundColor: color.glow, borderColor: color.glow },
   blockLive: { borderColor: '#FF7EB6', borderWidth: 1.5 },
@@ -134,9 +134,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm + 2,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   face: { borderRadius: 16, borderWidth: 2, borderColor: color.night },

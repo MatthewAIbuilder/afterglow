@@ -13,7 +13,7 @@ import { readFindLink } from '../features/finds/finds';
 import { haptic } from '../lib/haptics';
 import { type AddResult, useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
 /** A code that isn't a friend code says so for this long before scanning carries on. */
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   pill: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.35)' },
   pillText: { ...type.headline, color: color.moon },
   cardWrap: { flex: 1, justifyContent: 'center', paddingHorizontal: space.xl, gap: space.md, alignSelf: 'center', width: '100%', maxWidth: 520 },
-  card: { padding: space.xl, borderRadius: radius.lg, backgroundColor: color.nightRaised, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)', alignItems: 'center', gap: space.sm },
+  card: { padding: space.xl, borderRadius: radius.lg, backgroundColor: color.nightRaised, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45), alignItems: 'center', gap: space.sm },
   cardWaiting: { borderStyle: 'dashed', borderColor: 'rgba(255,184,107,0.7)' },
   cardTitle: { ...type.title, color: color.moon, textAlign: 'center' },
   handle: { ...type.body, color: color.moonDim },

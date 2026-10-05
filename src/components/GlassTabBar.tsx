@@ -13,7 +13,7 @@ import { useCrewUpdates } from '../state/crewUpdates';
 import { markCareTipDone, useCareTip } from '../state/careTip';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../lib/haptics';
-import { color, motion, radius, space, type } from '../theme/tokens';
+import { color, motion, radius, space, type, glowA, raisedA } from '../theme/tokens';
 import { DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
 import { HiddenToe } from '../features/toes/Toe';
 
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  tint: { backgroundColor: 'rgba(18,16,38,0.45)' },
+  tint: { backgroundColor: raisedA(0.45) },
   item: {
     flex: 1,
     alignItems: 'center',
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     gap: 2,
   },
-  glider: { position: 'absolute', top: 6, bottom: 6, left: 6, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.14)' },
+  glider: { position: 'absolute', top: 6, bottom: 6, left: 6, borderRadius: radius.pill, backgroundColor: glowA(0.14) },
   label: { ...type.caption, fontSize: 11 },
   newsDot: { position: 'absolute', top: -1, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow, borderWidth: 1.5, borderColor: color.night },
   test: {
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(18,16,38,0.85)',
+    backgroundColor: raisedA(0.85),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,126,182,0.6)',
   },
@@ -303,9 +303,9 @@ const styles = StyleSheet.create({
   testText: { ...type.caption, color: color.moon },
   testEnd: { ...type.caption, color: '#FF7EB6', fontWeight: '700' },
   tip: { alignItems: 'center', marginBottom: 4 },
-  tipBubble: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: 'rgba(18,16,38,0.92)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,126,182,0.6)' },
+  tipBubble: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: raisedA(0.92), borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,126,182,0.6)' },
   tipText: { ...type.caption, color: color.moon },
-  tipArrow: { width: 10, height: 10, marginTop: -5, transform: [{ rotate: '45deg' }], backgroundColor: 'rgba(18,16,38,0.92)', borderRightWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,126,182,0.6)' },
+  tipArrow: { width: 10, height: 10, marginTop: -5, transform: [{ rotate: '45deg' }], backgroundColor: raisedA(0.92), borderRightWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,126,182,0.6)' },
   cameraFill: { borderRadius: 25 },
   camera: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', shadowColor: '#FF7EB6', shadowOpacity: 0.6, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
 });

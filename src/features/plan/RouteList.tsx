@@ -6,7 +6,7 @@ import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { MustSeeToggle } from './MustSeeToggle';
 import { usePickReasons } from './usePickReasons';
@@ -216,9 +216,9 @@ const styles = StyleSheet.create({
     padding: space.md,
     gap: space.sm,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(169,124,255,0.08)',
+    backgroundColor: glowA(0.08),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.35)',
+    borderColor: glowA(0.35),
   },
   meetsTitle: { ...type.label, color: color.glow },
   meetRow: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  mustSee: { borderColor: 'rgba(169,124,255,0.45)', backgroundColor: 'rgba(169,124,255,0.10)' },
+  mustSee: { borderColor: glowA(0.45), backgroundColor: glowA(0.10) },
   discovery: { backgroundColor: 'transparent', borderStyle: 'dashed', borderWidth: 1 },
   walk: { ...type.caption, color: color.glow, marginBottom: space.xs },
   line1: { flexDirection: 'row', alignItems: 'center', gap: space.sm + 2 },

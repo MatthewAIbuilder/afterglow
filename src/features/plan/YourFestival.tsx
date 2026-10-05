@@ -9,7 +9,7 @@ import { lineupDays } from '../festivals/days';
 import { isLive } from '../festivals/when';
 import { setTimesExpected } from '../festivals/setTimes';
 import { useGoing } from '../../state/going';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { festivalNight } from './live';
 import { LiveNow } from './LiveNow';
 import { ByDayList } from './ByDayList';
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   toggleItem: { paddingHorizontal: space.lg, paddingVertical: 6, borderRadius: radius.pill },
-  toggleOn: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  toggleOn: { backgroundColor: glowA(0.22) },
   toggleText: { ...type.label, color: color.moonDim },
   root: { marginTop: space.lg, marginHorizontal: space.lg },
   head: { paddingHorizontal: space.sm },

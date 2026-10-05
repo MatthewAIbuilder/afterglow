@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../../components/TabIcons';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { useFestivalWeek } from './useFestivalWeek';
 
 const GOLD = '#FFD58A';
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   doors: { flexDirection: 'row', gap: 6 },
   door: { flex: 1, maxWidth: 34, aspectRatio: 0.8, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   doorReady: { borderWidth: 1, borderColor: GOLD, backgroundColor: 'rgba(255,213,138,0.12)' },
-  doorOpen: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.45)' },
+  doorOpen: { backgroundColor: glowA(0.18), borderColor: glowA(0.45) },
   doorText: { ...type.label, color: color.moonDim, fontVariant: ['tabular-nums'] },
   line: { ...type.label, color: color.moonDim },
 });

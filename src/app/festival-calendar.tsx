@@ -27,7 +27,7 @@ import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useLoves } from '../state/useLoves';
 import { useWeekends } from '../state/weekends';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 const GOING = '#FF9AD5';
 
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   week: { flexDirection: 'row' },
   weekday: { flex: 1, textAlign: 'center', ...type.caption, color: color.moonFaint, paddingVertical: space.xs },
   cell: { flex: 1, aspectRatio: 0.9, margin: 2, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  cellOn: { backgroundColor: 'rgba(169,124,255,0.1)' },
+  cellOn: { backgroundColor: glowA(0.1) },
   cellMine: { backgroundColor: 'rgba(255,154,213,0.14)' },
   cellChosen: { backgroundColor: color.glow },
   cellToday: { borderWidth: 1.5, borderColor: color.moon },

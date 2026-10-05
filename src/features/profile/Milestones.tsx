@@ -3,7 +3,7 @@ import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, 
 import { haptic } from '../../lib/haptics';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { type Milestone, type MilestoneId, nextMilestone, progressLine } from './milestones';
 import type { QuestId } from '../quests/quests';
 
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   newInline: { position: 'relative', top: 0, right: 0 },
   newText: { ...type.caption, fontSize: 9, fontWeight: '800', color: color.night, letterSpacing: 0.6 },
   sheetScrim: { flex: 1, backgroundColor: 'rgba(6,5,16,0.75)', alignItems: 'center', justifyContent: 'center', padding: space.xl },
-  sheet: { width: '100%', maxWidth: 380, alignItems: 'center', padding: space.xl, borderRadius: radius.lg + 4, backgroundColor: '#151230', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)' },
+  sheet: { width: '100%', maxWidth: 380, alignItems: 'center', padding: space.xl, borderRadius: radius.lg + 4, backgroundColor: '#151230', borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45) },
   sheetKicker: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: space.md },
   sheetTitle: { ...type.title, color: color.moon, marginTop: 2, textAlign: 'center' },
   sheetAbout: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.sm },
@@ -462,9 +462,9 @@ const styles = StyleSheet.create({
     marginHorizontal: space.lg,
     padding: space.lg,
     borderRadius: radius.lg,
-    backgroundColor: 'rgba(169,124,255,0.10)',
+    backgroundColor: glowA(0.10),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.45)',
+    borderColor: glowA(0.45),
   },
   nextKicker: { ...type.caption, color: color.glow, textTransform: 'uppercase', letterSpacing: 0.8 },
   nextTitle: { ...type.headline, color: color.moon, marginTop: 2 },

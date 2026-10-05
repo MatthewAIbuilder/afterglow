@@ -39,7 +39,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
           {
             heading: 'What stays on your device',
             paragraphs: [
-              'Your taste: the clips you like, save, skip and watch, the artists you rate, the festivals you’re going to, the sets you star, your recent searches and what you’ve seen in Discover. These are kept on your phone (or in your browser on the website) and aren’t sent to us, except the two things you can choose to share below: the festivals you’re going to (if you show them on your profile) and the sets you star at a festival whose crew you’ve joined.',
+              'Your taste: the clips you like, save, skip and watch, the artists you rate, the festivals you’re going to, the sets you star, your recent searches and what you’ve seen in Discover. These are kept on your phone (or in your browser on the website) and aren’t sent to us, except what you can choose to share below: your favourite artists (shown on your profile unless you switch it off), the festivals you’re going to (if you show them on your profile) and the sets you star at a festival whose crew you’ve joined.',
               'Your memories (videos you add) stay on your phone until you choose to share one. When you add a video, Afterglow may read when and where it was filmed to guess the festival and set. Only the city and region are kept, on your phone; exact coordinates are not stored.',
               'If you turn on festivals near you, Afterglow asks for your location, rounds it to about a kilometre and keeps it on your phone (or in your browser) to show how far festivals are. Your phone’s maps service may be asked which town that is, and where a festival’s venue is. It isn’t sent to us, and you can turn it off on the Festivals tab.',
               'If you connect Spotify or Apple Music, your sign-in is kept in your phone’s secure storage and a summary of your library (which artists, not song titles or playlists) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
@@ -57,7 +57,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
             heading: 'What you share with an account',
             paragraphs: [
               'Creating a profile is optional. If you do, we store your email address and password sign-in (through Google Firebase Authentication), and your profile: name, @handle, bio, photo and any Instagram, Snapchat or TikTok usernames you add (shown as links to those accounts). Anyone signed in to Afterglow can see your profile.',
-              'Only if you switch them on: the festivals you’re going to and your top three sounds are shown on your profile.',
+              'Only if you switch them on: the festivals you’re going to and your top three sounds are shown on your profile. Your favourite artists (up to six, worked out from the artists you love, like or follow) and the animated background you pick are shown unless you switch them off.',
               'Videos you choose to share to your profile, with the festival, night and artist you tagged (for a festival from before Afterglow, the name, year and town you gave it; we also count how many of those you’ve shared, since the free plan shares up to three). Anyone signed in can watch them. Afterglow doesn’t add where you filmed, but a video file can carry its own details from your phone.',
               'Who you follow, the shared videos you like, festival crews you join and the sets you star at that crew’s festival (seen only by the crew), people you block (seen only by you) and reports you send (seen only by us).',
               'Sprouts you give: who gave it, its kind (or, for an artist’s collectible, the artist) and any note, the festival it was given at, and once someone picks it up, who and when. Anyone with its code can see who it’s from. Sprouts you pick up are kept the same way. Your garden’s growth is worked out on your phone.',
@@ -77,7 +77,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
             heading: 'Your choices',
             paragraphs: [
               'Delete your account any time from Profile → Edit profile → Delete account. Your profile, handle, shared videos, follows, likes, crew memberships, 1-to-1 messages and support messages are removed. What’s on your phone stays there until you delete the app or use Start over on My Sound.',
-              'Remove a shared video from your profile at any time; its file is deleted. Switch off showing your festivals or sound in Edit profile. Block anyone, and they can no longer follow you, like your videos or join a crew you started.',
+              'Remove a shared video from your profile at any time; its file is deleted. Switch off showing your festivals, sound or favourite artists in Edit profile. Block anyone, and they can no longer follow you, like your videos or join a crew you started.',
             ],
           },
           {

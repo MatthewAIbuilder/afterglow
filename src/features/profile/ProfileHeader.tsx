@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { ProfileIcon } from '../../components/TabIcons';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { type ProfileStat, shortCount } from './profileView';
 import { StandingAvatar, StandingCaption } from '../standing/StandingAvatar';
 import { SparkIcon } from '../quests/QuestRing';
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: color.night,
     borderWidth: 2,
-    borderColor: 'rgba(169,124,255,0.7)',
+    borderColor: glowA(0.7),
     shadowColor: color.glow,
     shadowOpacity: 0.6,
     shadowRadius: 18,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  buttonGlow: { backgroundColor: color.glowDeep, borderColor: 'rgba(169,124,255,0.6)' },
+  buttonGlow: { backgroundColor: color.glowDeep, borderColor: glowA(0.6) },
   buttonText: { ...type.label, color: color.moon },
   buttonTextGlow: { color: color.moon },
 });

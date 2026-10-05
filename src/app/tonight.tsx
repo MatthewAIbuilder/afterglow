@@ -34,7 +34,7 @@ import { haptic } from '../lib/haptics';
 import { useCrews } from '../state/crews';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
 /** Picks shown for tonight before set times are out. */
@@ -263,9 +263,9 @@ const styles = StyleSheet.create({
     marginTop: space.xl,
     padding: space.lg,
     borderRadius: radius.lg,
-    backgroundColor: 'rgba(169,124,255,0.10)',
+    backgroundColor: glowA(0.10),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
     gap: 4,
   },
   nextKicker: { ...type.caption, color: color.glow, textTransform: 'uppercase', letterSpacing: 0.8 },
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   section: { marginTop: space.xl, gap: space.sm },
   sectionTitle: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
   link: { ...type.label, color: color.glow, marginTop: space.xs },
-  card: { padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.4)', gap: space.xs },
+  card: { padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.4), gap: space.xs },
   cardTitle: { ...type.headline, color: color.moon },
   cardBody: { ...type.body, color: color.moonDim },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
@@ -288,9 +288,9 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingVertical: space.md,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.45)',
+    borderColor: glowA(0.45),
   },
   actionText: { ...type.headline, color: color.moon },
   footnote: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.lg },

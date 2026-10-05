@@ -2,7 +2,7 @@ import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { haptic } from '../lib/haptics';
-import { color } from '../theme/tokens';
+import { color, raisedA } from '../theme/tokens';
 
 /** Round glass button for back / close. */
 export function GlassCircleButton({
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(18,16,38,0.4)',
+    backgroundColor: raisedA(0.4),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },

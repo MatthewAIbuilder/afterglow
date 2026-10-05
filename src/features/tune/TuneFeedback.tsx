@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import { color, motion, radius, space, type } from '../../theme/tokens';
+import { color, motion, radius, space, type, glowA } from '../../theme/tokens';
 import type { Rating } from '../taste/ratings';
 
 /** Every this many answers, a little celebration. */
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     paddingHorizontal: space.lg,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.22)',
+    backgroundColor: glowA(0.22),
     borderWidth: 1,
     borderColor: color.glow,
     alignItems: 'center',

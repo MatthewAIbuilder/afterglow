@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Artist, ArtistMember } from '../data/types';
 import { paletteFrom } from '../theme/artistColor';
-import { color } from '../theme/tokens';
+import { color, nightA } from '../theme/tokens';
 
 // Stable per-artist gradient so monograms are distinguishable but on-palette.
 const PAIRS: [string, string][] = [
@@ -30,7 +30,7 @@ const initialsOf = (name: string) =>
     .slice(0, 2);
 
 // A touch of night at the bottom, so bright photos sit in the dark theme.
-const nightShade = <LinearGradient colors={['rgba(10,9,24,0)', 'rgba(10,9,24,0.32)']} start={{ x: 0.5, y: 0.45 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />;
+const nightShade = <LinearGradient colors={[nightA(0), nightA(0.32)]} start={{ x: 0.5, y: 0.45 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />;
 
 export function ArtistAvatar({ artist, size }: { artist: Artist; size: number }) {
   const ring = { width: size, height: size, borderRadius: size / 2 };
@@ -89,5 +89,5 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   initials: { color: color.moon, fontWeight: '700', letterSpacing: -0.5, opacity: 0.92 },
   slice: { position: 'absolute', top: 0, overflow: 'hidden' },
-  line: { position: 'absolute', top: 0, backgroundColor: 'rgba(10,9,24,0.85)' },
+  line: { position: 'absolute', top: 0, backgroundColor: nightA(0.85) },
 });
