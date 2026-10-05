@@ -83,6 +83,28 @@ describe('profile backgrounds', () => {
     expect(app.getByLabelText('Maya’s sound universe: SUBTRONICS, LEVITY.')).toBeTruthy();
   });
 
+  it('your profile swaps between your cover photo and background in one tap, and back', async () => {
+    const uid = await person('sam', 'Sam');
+    await s().setCover('file:///cover.jpg');
+    await s().setBackdrop('aurora');
+    const app = await renderApp('/profile');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Show your cover photo instead'));
+    await flush();
+    expect(mockSocial.profiles.get(uid)?.backdrop).toBeUndefined();
+    await fireEvent.press(app.getByLabelText('Show Aurora instead'));
+    await flush();
+    expect(mockSocial.profiles.get(uid)?.backdrop).toBe('aurora');
+  });
+
+  it('no swap without a cover photo', async () => {
+    await person('sam', 'Sam');
+    await s().setBackdrop('aurora');
+    const app = await renderApp('/profile');
+    await flush();
+    expect(app.queryByLabelText('Show your cover photo instead')).toBeNull();
+  });
+
   it('favourite artists stay hidden when switched off', async () => {
     await person('maya', 'Maya');
     await s().saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: false, showSound: false, showArtists: false }, { festivals: [], sounds: [], artists: ['subtronics'] });
