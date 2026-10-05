@@ -33,13 +33,15 @@ export function loadScouted(): Promise<void> {
 /** What the server says is live for an account now; returns the festivals that are newly live. Load first. */
 export function setScouted(uid: string, live: readonly string[]): string[] {
   const all = byAccount ?? {};
+  // The first look on this phone (a new phone, a reinstall): note what's live without thanking again.
+  const first = !(uid in all);
   const before = all[uid] ?? [];
   const fresh = live.filter((id) => !before.includes(id));
-  if (!fresh.length) return [];
+  if (!fresh.length && !first) return [];
   byAccount = { ...all, [uid]: [...before, ...fresh] };
   listeners.forEach((l) => l());
   AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(byAccount)).catch(() => {});
-  return fresh;
+  return first ? [] : fresh;
 }
 
 /** For tests: forget what's loaded. */

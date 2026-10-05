@@ -13,6 +13,7 @@ import { accountsOff } from '../../features/social/unavailable';
 import { haptic } from '../../lib/haptics';
 import { goBack } from '../../lib/nav';
 import { useCatalog } from '../../state/catalog';
+import { loadScouted, setScouted } from '../../state/scouted';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -53,6 +54,9 @@ export default function SendSetTimesScreen() {
     setProblem(undefined);
     try {
       await social.service.sendSetTimes(festival.id, { text: text.trim() || undefined, photo: photo?.data });
+      // From now on this phone thanks you when they go live (even the first time it looks).
+      const uid = social.user?.uid;
+      if (uid) void loadScouted().then(() => setScouted(uid, []));
       haptic.settle();
       setSent(true);
     } catch (e) {

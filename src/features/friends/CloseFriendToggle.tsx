@@ -14,8 +14,9 @@ import { StarIcon } from '../plan/icons';
 export function CloseFriendToggle({ uid, name }: { uid: string; name: string }) {
   const social = useSocial();
   const me = social.user?.uid;
-  const { ids, set } = useCloseFriends(me);
-  if (!me || uid === me || !social.following.has(uid)) return null;
+  const { ids, ready, set } = useCloseFriends(me);
+  // Hidden until your saved list is read, so a quick tap never writes over it.
+  if (!me || !ready || uid === me || !social.following.has(uid)) return null;
   const on = ids.includes(uid);
   return (
     <Pressable

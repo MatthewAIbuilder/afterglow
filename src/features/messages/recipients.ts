@@ -20,6 +20,8 @@ export function orderRecipients(input: {
   crews: readonly Room[];
   closeFriends: readonly string[];
   friends: readonly string[];
+  /** The friends list is read: past 1-to-1 chats with people who are no longer friends both ways are left out. */
+  friendsKnown?: boolean;
   blocked: ReadonlySet<string>;
 }): Recipient[] {
   const out: Recipient[] = [];
@@ -35,7 +37,9 @@ export function orderRecipients(input: {
     out.push({ key: `c:${id}`, kind: 'crew', crewId: id });
   };
   const talked = [
-    ...input.directChats.filter((d) => d.latestAt).map((d) => ({ at: d.latestAt!, add: () => person(otherInRoom(d.id, input.me)) })),
+    ...input.directChats
+      .filter((d) => d.latestAt && (!input.friendsKnown || input.friends.includes(otherInRoom(d.id, input.me))))
+      .map((d) => ({ at: d.latestAt!, add: () => person(otherInRoom(d.id, input.me)) })),
     ...input.crews.filter((c) => c.latestAt).map((c) => ({ at: c.latestAt!, add: () => crew(c.id) })),
   ].sort((a, b) => b.at.localeCompare(a.at));
   for (const t of talked) t.add();

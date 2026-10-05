@@ -86,11 +86,15 @@ export function FestivalMap({
   // Moved by hand since it was last framed: offer to show everything again.
   const [moved, setMoved] = useState(false);
   const duration = reduced ? 0 : GLIDE_MS;
+  // Touched since the last move settled: the move was yours, so the cards follow what's in view.
+  // The map's own moves (framing, gliding to a festival or to you) clear it.
+  const touched = useRef(false);
 
   const frameAll = useCallback(
     (animated: boolean) => {
       const m = map.current;
       if (!m) return;
+      touched.current = false;
       if (points.length > 1) {
         m.fitToCoordinates(points.map(toLatLng), { edgePadding: { top: 36, right: 56, bottom: 36, left: 56 }, animated });
       } else {
@@ -121,7 +125,9 @@ export function FestivalMap({
     if (!ready || !selected || selected === lastGlide.current) return;
     lastGlide.current = selected;
     const m = markers.find((k) => k.festival.id === selected);
-    if (m) map.current?.animateCamera({ center: toLatLng(m.at) }, { duration });
+    if (!m) return;
+    touched.current = false;
+    map.current?.animateCamera({ center: toLatLng(m.at) }, { duration });
   }, [ready, selected, markers, duration]);
 
   // "Show me": glide to where you are, only when asked.
@@ -129,13 +135,12 @@ export function FestivalMap({
   useEffect(() => {
     if (!ready || !toHere || !here || answered.current === toHere) return;
     answered.current = toHere;
+    touched.current = false;
     const span = Math.min(region.longitudeDelta, 10);
     map.current?.animateToRegion({ ...pointLatLng(here), latitudeDelta: span * 0.8, longitudeDelta: span }, duration);
   }, [ready, toHere, here, region.longitudeDelta, duration]);
 
   const street = useRef(false);
-  // Touched since the last move settled: the move was yours, so the cards follow what's in view.
-  const touched = useRef(false);
   const onRegion = useCallback((r: Region) => {
     if (touched.current) {
       touched.current = false;
@@ -159,79 +164,81 @@ export function FestivalMap({
   const trail = useMemo(() => (journey && journey.length > 1 ? journey.map(toLatLng) : undefined), [journey]);
 
   return (
-    <View
-      style={StyleSheet.absoluteFill}
-      testID={testID}
-      onTouchStart={() => {
-        touched.current = true;
-        if (!moved) setMoved(true);
-      }}
-    >
-      <MapView
-        ref={map}
+    <View style={StyleSheet.absoluteFill}>
+      <View
         style={StyleSheet.absoluteFill}
-        initialRegion={first}
-        userInterfaceStyle="dark"
-        mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
-        customMapStyle={NIGHT_STYLE}
-        mapPadding={{ top: area.top, right: 0, bottom: area.bottom, left: 0 }}
-        showsPointsOfInterests={false}
-        showsBuildings={false}
-        showsTraffic={false}
-        showsIndoors={false}
-        showsCompass={false}
-        toolbarEnabled={false}
-        pitchEnabled={false}
-        rotateEnabled={false}
-        moveOnMarkerPress={false}
-        onMapReady={() => setReady(true)}
-        onRegionChangeComplete={onRegion}
+        testID={testID}
+        onTouchStart={() => {
+          touched.current = true;
+          if (!moved) setMoved(true);
+        }}
       >
-        {/* How far Near you reaches, around you. */}
-        {here ? (
-          <Circle center={pointLatLng(here)} radius={NEAR_KM * 1000} strokeColor="rgba(111,195,255,0.5)" strokeWidth={1.2} fillColor="rgba(111,195,255,0.05)" lineDashPattern={[6, 6]} />
-        ) : null}
-        {trail ? (
-          <>
-            <Polyline coordinates={trail} geodesic strokeColor="rgba(255,154,213,0.28)" strokeWidth={8} lineCap="round" />
-            <Polyline coordinates={trail} geodesic strokeColor="#FF9AD5" strokeWidth={2} lineCap="round" />
-          </>
-        ) : null}
-        {/* A fanned-out light keeps a thread back to the real spot. */}
-        {fanned.map((m) => (
-          <Polyline key={`thread-${m.festival.id}`} coordinates={[pointLatLng(m.point), toLatLng(m.at)]} strokeColor="rgba(243,240,255,0.22)" strokeWidth={1} />
-        ))}
-        {here ? (
-          <Marker coordinate={pointLatLng(here)} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={1}>
-            <HereDot reduced={reduced} />
-          </Marker>
-        ) : null}
-        {clusters.map((c) => (
-          <Light
-            key={c.lead.festival.id}
-            cluster={c}
-            chosen={c.members.some((m) => m.festival.id === selected)}
-            named={allNamed || c.lead.tone === 'going'}
-            reduced={reduced}
-            onPress={() => {
-              haptic.select();
-              lastGlide.current = c.lead.festival.id;
-              onSelect(c.lead.festival.id);
-              const at = toLatLng(c.at);
-              // A cluster opens up: festivals at one spot fan out; others are framed until they split.
-              if (c.members.length > 1 && sameSpot(c.members)) {
-                const spot = pointLatLng(c.members[0].point);
-                map.current?.animateToRegion({ ...spot, latitudeDelta: SPREAD_ZOOM * 0.8, longitudeDelta: SPREAD_ZOOM }, duration);
-              } else if (c.members.length > 1) {
-                map.current?.fitToCoordinates(
-                  c.members.map((m) => pointLatLng(m.point)),
-                  { edgePadding: { top: 80, right: 80, bottom: 80, left: 80 }, animated: !reduced },
-                );
-              } else map.current?.animateCamera({ center: at }, { duration });
-            }}
-          />
-        ))}
-      </MapView>
+        <MapView
+          ref={map}
+          style={StyleSheet.absoluteFill}
+          initialRegion={first}
+          userInterfaceStyle="dark"
+          mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+          customMapStyle={NIGHT_STYLE}
+          mapPadding={{ top: area.top, right: 0, bottom: area.bottom, left: 0 }}
+          showsPointsOfInterests={false}
+          showsBuildings={false}
+          showsTraffic={false}
+          showsIndoors={false}
+          showsCompass={false}
+          toolbarEnabled={false}
+          pitchEnabled={false}
+          rotateEnabled={false}
+          moveOnMarkerPress={false}
+          onMapReady={() => setReady(true)}
+          onRegionChangeComplete={onRegion}
+        >
+          {/* How far Near you reaches, around you. */}
+          {here ? (
+            <Circle center={pointLatLng(here)} radius={NEAR_KM * 1000} strokeColor="rgba(111,195,255,0.5)" strokeWidth={1.2} fillColor="rgba(111,195,255,0.05)" lineDashPattern={[6, 6]} />
+          ) : null}
+          {trail ? (
+            <>
+              <Polyline coordinates={trail} geodesic strokeColor="rgba(255,154,213,0.28)" strokeWidth={8} lineCap="round" />
+              <Polyline coordinates={trail} geodesic strokeColor="#FF9AD5" strokeWidth={2} lineCap="round" />
+            </>
+          ) : null}
+          {/* A fanned-out light keeps a thread back to the real spot. */}
+          {fanned.map((m) => (
+            <Polyline key={`thread-${m.festival.id}`} coordinates={[pointLatLng(m.point), toLatLng(m.at)]} strokeColor="rgba(243,240,255,0.22)" strokeWidth={1} />
+          ))}
+          {here ? (
+            <Marker coordinate={pointLatLng(here)} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={1}>
+              <HereDot reduced={reduced} />
+            </Marker>
+          ) : null}
+          {clusters.map((c) => (
+            <Light
+              key={c.lead.festival.id}
+              cluster={c}
+              chosen={c.members.some((m) => m.festival.id === selected)}
+              named={allNamed || c.lead.tone === 'going'}
+              reduced={reduced}
+              onPress={() => {
+                haptic.select();
+                lastGlide.current = c.lead.festival.id;
+                onSelect(c.lead.festival.id);
+                const at = toLatLng(c.at);
+                // A cluster opens up: festivals at one spot fan out; others are framed until they split.
+                if (c.members.length > 1 && sameSpot(c.members)) {
+                  const spot = pointLatLng(c.members[0].point);
+                  map.current?.animateToRegion({ ...spot, latitudeDelta: SPREAD_ZOOM * 0.8, longitudeDelta: SPREAD_ZOOM }, duration);
+                } else if (c.members.length > 1) {
+                  map.current?.fitToCoordinates(
+                    c.members.map((m) => pointLatLng(m.point)),
+                    { edgePadding: { top: 80, right: 80, bottom: 80, left: 80 }, animated: !reduced },
+                  );
+                } else map.current?.animateCamera({ center: at }, { duration });
+              }}
+            />
+          ))}
+        </MapView>
+      </View>
       {moved && markers.length ? (
         <View style={[styles.again, { top: area.top + space.sm }]} pointerEvents="box-none">
           <Pressable

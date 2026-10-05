@@ -790,6 +790,8 @@ await t('1-to-1 chats: only friends both ways, only the two of them, not once bl
   // Only the two of them.
   await assertSucceeds(getDoc(doc(Q.firestore(), 'dms', 'uidP_uidQ')));
   await assertFails(getDoc(doc(R.firestore(), 'dms', 'uidP_uidQ')));
+  // Not even whether a chat between others exists.
+  await assertFails(getDoc(doc(R.firestore(), 'dms', 'uidP_uidS')));
   await assertSucceeds(getDocs(query(collection(P.firestore(), 'dms'), where('members', 'array-contains', 'uidP'))));
   await assertSucceeds(setDoc(doc(P.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm1abcdef'), msg('uidP')));
   await assertSucceeds(setDoc(doc(Q.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm2abcdef'), msg('uidQ')));

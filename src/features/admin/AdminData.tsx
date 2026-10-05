@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FilterChips } from '../../components/FilterChips';
 import { SearchField } from '../../components/SearchField';
@@ -25,7 +25,7 @@ import { canReadPhotos, readPhotoText } from './readPhoto';
 import { readSetList } from './setlist';
 
 type Picked = { uri: string; name: string; type: string; size?: number };
-type Review = { title: string; festivalId: string; file: string; line: string; notes: string[]; unread: string[]; preview: string[]; problems: string[]; ok: boolean; dropId?: string };
+type Review = { title: string; festivalId: string; file: string; line: string; notes: string[]; unread: string[]; preview: string[]; problems: string[]; ok: boolean; dropId?: string; setTimes?: boolean };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -74,7 +74,9 @@ export function AdminData() {
 
   // Set times fans sent, waiting to be checked.
   const [tips, setTips] = useState<SetTimesTip[] | undefined>();
-  const [fromTip, setFromTip] = useState<string | undefined>();
+  // The fan's tip being read: only a publish for that same festival marks it live.
+  const [fromTip, setFromTip] = useState<{ id: string; festivalId: string } | undefined>();
+  const readingTip = useRef<string | undefined>(undefined);
   const loadTips = useCallback(() => {
     social.service
       .setTimesTips(30)
@@ -87,8 +89,13 @@ export function AdminData() {
   const readTip = async (t: SetTimesTip) => {
     haptic.select();
     const f = catalog.festival(t.festivalId);
-    if (f) setFestival(f);
-    setFromTip(t.id);
+    if (!f) {
+      showAlert('That festival isn’t on Afterglow any more', 'Decline this one, or add the festival first.');
+      return;
+    }
+    setFestival(f);
+    setFromTip({ id: t.id, festivalId: t.festivalId });
+    readingTip.current = t.id;
     setFromDrop(undefined);
     setReview(undefined);
     setText(t.text ?? '');
@@ -100,7 +107,8 @@ export function AdminData() {
     setReading(0);
     try {
       const found = await readPhotoText(t.photo, f?.stages.map((st) => st.name) ?? [], (p) => setReading(p));
-      if (found.trim()) setText((x) => (x.trim() ? `${x.trim()}\n\n${found}` : found));
+      // Only if this is still the tip being read (another may have been opened meanwhile).
+      if (found.trim() && readingTip.current === t.id) setText((x) => (x.trim() ? `${x.trim()}\n\n${found}` : found));
     } catch (e) {
       showAlert('Couldn’t read the photo', e instanceof Error ? e.message : 'Try again.');
     } finally {
@@ -118,7 +126,7 @@ export function AdminData() {
     const parsed = parseCatalogFile(file);
     const built = buildCatalog(snapshot, parsed);
     const s = fileSummary(parsed, catalog);
-    return { title, festivalId: s.festivalId ?? '', file, problems: built.problems, ok: built.usedFile && !!s.festivalId, ...extra, ...(fromDrop ? { dropId: fromDrop } : {}) };
+    return { title, festivalId: s.festivalId ?? '', file, problems: built.problems, ok: built.usedFile && !!s.festivalId, setTimes: !!s.sets, ...extra, ...(fromDrop ? { dropId: fromDrop } : {}) };
   };
 
   // The festival's official page: shown on its page, and looked at every night for news (an email when there is some).
@@ -238,7 +246,8 @@ export function AdminData() {
             await social.service.publishPatch({ title: review.title, festivalId: review.festivalId, file: review.file, ...(review.dropId ? { dropId: review.dropId } : {}) });
             if (review.dropId) await social.service.setDropStatus(review.dropId, 'done').catch(() => {});
             // From a fan: they're thanked, and their screenshot is dropped.
-            if (fromTip) await social.service.markSetTimesLive(fromTip).catch(() => {});
+            // Only set times for the tip's own festival count as the tip going live.
+            if (fromTip && fromTip.festivalId === review.festivalId && review.setTimes) await social.service.markSetTimesLive(fromTip.id).catch(() => {});
             haptic.settle();
             refreshLivePatches();
             setReview(undefined);
@@ -276,7 +285,7 @@ export function AdminData() {
           <Text style={styles.cardTitle}>Set times from fans · {tips.length}</Text>
           <Text style={styles.small}>Nothing here is public. Read one, check it, and publish: the sender is thanked and earns Set scout.</Text>
           {tips.map((t) => (
-            <View key={t.id} style={[styles.tip, fromTip === t.id && styles.tipOn]}>
+            <View key={t.id} style={[styles.tip, fromTip?.id === t.id && styles.tipOn]}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={styles.optionName} numberOfLines={1}>
                   {nameOf(t.festivalId) ?? t.festivalId}
@@ -305,7 +314,7 @@ export function AdminData() {
                             void social.service
                               .declineSetTimes(t.id)
                               .then(() => {
-                                if (fromTip === t.id) setFromTip(undefined);
+                                if (fromTip?.id === t.id) setFromTip(undefined);
                                 loadTips();
                               })
                               .catch(() => {}),

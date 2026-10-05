@@ -232,12 +232,14 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
   }, [active, uid, crews, service]);
   const stars = useMemo<CrewStars>(() => {
     if (!active || crewData.uid !== uid) return {};
-    return crewStars(crewData.list, {
+    // Only crews you're still in (leaving one stops its stars at once).
+    const current = new Set(crews.map((c) => c.id));
+    return crewStars(crewData.list.filter((x) => current.has(x.crew.id)), {
       me: uid,
       blocked: social.blocked,
       nameOf: (m) => crewData.names[m],
     });
-  }, [active, crewData, uid, social.blocked]);
+  }, [active, crewData, crews, uid, social.blocked]);
 
   const value = useMemo<Ctx>(
     () => ({

@@ -502,7 +502,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const u = me();
       if (network.down) throw new SocialError('network');
       const id = `${u.uid}_${festivalId}`;
-      if (setTimes.has(id)) throw new SocialError('already-sent');
+      if (setTimes.get(id)?.status === 'new') throw new SocialError('already-sent');
       const text = tip.text?.trim();
       setTimes.set(id, { id, uid: u.uid, festivalId, status: 'new', at: `${now()}#${String(++n).padStart(6, '0')}`, ...(text ? { text } : {}), ...(tip.photo ? { photo: tip.photo } : {}) });
     },
@@ -870,7 +870,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async openDirectChat(uid) {
       const u = me();
       if (network.down) throw new SocialError('network');
-      if (uid === u.uid || !mutual(u.uid, uid) || blockedBy(uid, u.uid)) throw new SocialError('unknown');
+      if (uid === u.uid || !mutual(u.uid, uid) || blockedBy(uid, u.uid) || blockedBy(u.uid, uid)) throw new SocialError('unknown');
       const id = directRoom(u.uid, uid);
       if (!dms.has(id)) {
         dms.set(id, { id, members: [u.uid, uid].sort() as [string, string] });

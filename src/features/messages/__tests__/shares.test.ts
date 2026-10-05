@@ -61,5 +61,16 @@ describe('who "Send to" offers', () => {
       blocked: new Set(['x']),
     });
     expect(list.map((r) => r.key)).toEqual(['c:crew1', 'p:a', 'p:c', 'p:b', 'p:d', 'c:crew2']);
+    // Once the friends list is read, a past chat with someone no longer a friend both ways isn't offered.
+    const later = orderRecipients({
+      me: 'me',
+      directChats: [{ id: 'dm_gone_me', latestAt: '2026-10-05T13:00:00Z' }],
+      crews: [],
+      closeFriends: [],
+      friends: ['b'],
+      friendsKnown: true,
+      blocked: new Set(),
+    });
+    expect(later.map((r) => r.key)).toEqual(['p:b']);
   });
 });

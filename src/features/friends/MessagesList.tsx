@@ -74,6 +74,8 @@ export function MessagesList({ skipCrews = [] }: { skipCrews?: readonly string[]
         const unread = chat.unreadFor(r.id);
         const latest = chat.latestFor(r.id);
         const p = r.kind === 'direct' ? profiles[r.other] : undefined;
+        // Someone whose account is gone: their chat goes too.
+        if (r.kind === 'direct' && p === null) return null;
         const name = r.kind === 'direct' ? (p?.displayName ?? ' ') : r.crew.name;
         const fest = r.kind === 'crew' ? festival(r.crew.festivalId)?.name : undefined;
         const preview =
