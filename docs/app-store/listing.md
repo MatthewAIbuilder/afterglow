@@ -98,7 +98,7 @@ Apple's questionnaire (2025 version), answered from what the app has:
 | Question | Answer | Why |
 | --- | --- | --- |
 | Parental controls | No | |
-| Age assurance | No | Sign-up has an "I'm 13 or older" checkbox, which isn't age assurance |
+| Age assurance | No | Sign-up has an "I'm 18 or older" checkbox, which isn't age assurance |
 | Unrestricted web access | No | Links open in the browser sheet; there's no general web browser |
 | User-generated content | **Yes** | Videos, photos (crews only), comments, profiles, crew chat, 1-to-1 messages |
 | Messaging and chat | **Yes** | Crew chat and 1-to-1 messages between people who follow each other |
@@ -116,14 +116,12 @@ Apple's questionnaire (2025 version), answered from what the app has:
 Expected result: **18+** under Apple's current tiers (17+ before them),
 because of frequent drug references.
 
-**Your decision (with a lawyer)**:
-- Whether to keep the timing guide in the first release. With it, the rating
-  is 18+ and guideline 1.4.3 gets a close look; without it (water, feelings,
-  pulse and get help stay) the rating could be 12+ or 13+. The guide's
-  figures still need checking against DanceSafe or TripSit by someone
-  qualified either way (see `docs/app-store.md`).
-- The app's own minimum age (13 at sign-up) is lower than an 18+ rating. Decide
-  whether sign-up should say 18 (or 17) to match.
+**Decided (2026-10-05)**: the timing guide stays and the app is rated 18+;
+sign-up, the Terms and the Privacy Policy say 18 or older to match. Still to
+do before launch:
+- Guideline 1.4.3 gets a close look: the guide's figures need checking
+  against DanceSafe or TripSit by someone qualified (see `docs/app-store.md`),
+  ideally with a lawyer's read of the care section.
 - User content and messaging mean Apple expects reports to be dealt with
   within 24 hours: someone has to read Firestore → `reports` (and Afterglow
   HQ → Reports) every day.

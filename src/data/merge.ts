@@ -91,7 +91,12 @@ export type Built = { catalog: Catalog; snapshot: CatalogSnapshot; problems: str
  * replacing) the base, checked. A file that can't be used, or that would
  * leave the app with no festival to show, keeps the base as it is.
  */
-export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined): Built {
+/**
+ * `needClips`: a file that leaves no clip is refused (a broken hosted file must
+ * never empty Discover). The bundled catalogue passes false: its real festivals
+ * have no clips of their own (they arrive with the hosted file each night).
+ */
+export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined, { needClips = true }: { needClips?: boolean } = {}): Built {
   const fallback = () => {
     const snapshot = validateSnapshot(base).snapshot;
     return { catalog: createCatalog(snapshot), snapshot };
@@ -113,7 +118,7 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
   const snapshot = withGuessedSounds(checked.snapshot);
   const problems = checked.problems;
   const all = [...file.problems, ...problems];
-  if (snapshot.festivals.length === 0 || snapshot.clips.length === 0) {
+  if (snapshot.festivals.length === 0 || (needClips && snapshot.clips.length === 0)) {
     all.push('After checking, the file leaves no festival with clips to show, so the app kept the data it had.');
     return { ...fallback(), problems: all, usedFile: false };
   }
