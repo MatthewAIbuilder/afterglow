@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  type SharedValue,
   Easing,
   runOnJS,
   useAnimatedStyle,
@@ -17,7 +18,7 @@ import { SOUND_LABEL } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { motion, type } from '../../theme/tokens';
 import { ArtistBubble } from './ArtistBubble';
-import { computeLayout, fitScale as frameScale, regionAt } from './layout';
+import { computeLayout, DETAIL_MIN, frameMap, regionAt, type RegionLabel } from './layout';
 import { mixColor, SOUND_COLOR } from './colors';
 import { artistColors } from '../../components/ArtistAvatar';
 import { Constellation, HeartHalo, NebulaCloud, ReshapeRipple, SparkBurst, Starfield } from './MapSky';
@@ -82,8 +83,16 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     [layout],
   );
 
-  // Frame the heart of your universe (your strongest matches), keeping your top match dead centre.
-  const fitScale = useMemo(() => frameScale(layout, width, height), [layout, width, height]);
+  // Open on the whole universe: every sound's group in view, as big as fits.
+  const framing = useMemo(() => frameMap(layout, width, height), [layout, width, height]);
+  const fitScale = framing.scale;
+  const homeX = framing.x;
+  const homeY = framing.y;
+  // Every name shows from here in (zoomed out, only each sound's strongest and your top few).
+  const detailAt = Math.max(DETAIL_MIN, fitScale * 1.4);
+  // You can zoom out a little past the framing, never further.
+  const minZoom = Math.min(MIN_ZOOM, fitScale * 0.85);
+  const leaders = useMemo(() => new Set(layout.leaders), [layout]);
   const cx = 0;
   const cy = 0;
 
@@ -99,8 +108,8 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     clock.set(withRepeat(withTiming(1, { duration: CLOCK_MS, easing: Easing.linear }), -1, false));
   }, [clock, reduceMotion]);
   const moved = useCallback((on: boolean) => onMoved?.(on), [onMoved]);
-  const tx = useSharedValue(0);
-  const ty = useSharedValue(0);
+  const tx = useSharedValue(homeX);
+  const ty = useSharedValue(homeY);
   // Once you move the map yourself, it stays where you put it; until then it reframes as it reshapes
   // (your ratings load a moment after the first frame, and taste changes reshape it).
   const touched = useSharedValue(false);
@@ -117,8 +126,8 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     if (recenter === firstRecenter.current) return;
     touched.set(false);
     scale.set(withSpring(fitScale, motion.gentle));
-    tx.set(withSpring(0, motion.gentle));
-    ty.set(withSpring(0, motion.gentle));
+    tx.set(withSpring(homeX, motion.gentle));
+    ty.set(withSpring(homeY, motion.gentle));
     moved(false);
     // Only a new press of the button should move the camera.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,11 +135,11 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
   useEffect(() => {
     if (touched.get() || matchIds) return;
     scale.set(withSpring(fitScale, motion.gentle));
-    tx.set(withSpring(0, motion.gentle));
-    ty.set(withSpring(0, motion.gentle));
+    tx.set(withSpring(homeX, motion.gentle));
+    ty.set(withSpring(homeY, motion.gentle));
     // Only a new framing should move the camera.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fitScale]);
+  }, [fitScale, homeX, homeY]);
 
   // How far you can wander: until the farthest artist reaches the middle of the screen, never off into empty sky.
   const reachX = useMemo(() => Math.max(0, ...layout.bubbles.map((b) => Math.abs(b.x) + b.r)), [layout]);
@@ -165,7 +174,7 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
       touch();
     })
     .onChange((e) => {
-      const next = Math.min(MAX_ZOOM * 1.15, Math.max(MIN_ZOOM * 0.85, scale.get() * e.scaleChange));
+      const next = Math.min(MAX_ZOOM * 1.15, Math.max(minZoom * 0.85, scale.get() * e.scaleChange));
       const ratio = next / scale.get();
       // Keep the point under your fingers fixed while zooming.
       const fx = e.focalX - width / 2;
@@ -175,20 +184,37 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
       scale.set(next);
     })
     .onEnd(() => {
-      if (scale.get() > MAX_ZOOM || scale.get() < MIN_ZOOM) {
-        scale.set(withSpring(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, scale.get())), motion.snappy));
+      if (scale.get() > MAX_ZOOM || scale.get() < minZoom) {
+        scale.set(withSpring(Math.min(MAX_ZOOM, Math.max(minZoom, scale.get())), motion.snappy));
         runOnJS(haptic.settle)();
       }
     });
 
+  // Double-tap: zoomed out, zoom in on that spot (every name shows); zoomed in, back to the whole map.
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
-    .onEnd((_e, ok) => {
+    .onEnd((e, ok) => {
       if (!ok) return;
+      const s0 = scale.get();
+      if (s0 < detailAt * 0.95) {
+        const next = Math.min(MAX_ZOOM, detailAt * 1.1);
+        const ratio = next / s0;
+        const fx = e.x - width / 2;
+        const fy = e.y - height / 2;
+        if (!touched.get()) {
+          touched.set(true);
+          runOnJS(moved)(true);
+        }
+        tx.set(withSpring(fx - (fx - tx.get()) * ratio, motion.gentle));
+        ty.set(withSpring(fy - (fy - ty.get()) * ratio, motion.gentle));
+        scale.set(withSpring(next, motion.gentle));
+        runOnJS(haptic.select)();
+        return;
+      }
       touched.set(false);
       scale.set(withSpring(fitScale, motion.gentle));
-      tx.set(withSpring(0, motion.gentle));
-      ty.set(withSpring(0, motion.gentle));
+      tx.set(withSpring(homeX, motion.gentle));
+      ty.set(withSpring(homeY, motion.gentle));
       runOnJS(haptic.settle)();
       runOnJS(moved)(false);
     });
@@ -202,8 +228,8 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
     const hits = matchIds ? layout.bubbles.filter((b) => matchIds.has(b.artist.id)) : [];
     if (!hits.length) {
       scale.set(withSpring(fitScale, motion.gentle));
-      tx.set(withSpring(0, motion.gentle));
-      ty.set(withSpring(0, motion.gentle));
+      tx.set(withSpring(homeX, motion.gentle));
+      ty.set(withSpring(homeY, motion.gentle));
       return;
     }
     const minX = Math.min(...hits.map((b) => b.x - b.r));
@@ -277,17 +303,7 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
           <Constellation links={links} artist={artistOf} selectedId={selectedId} dimmed={!!matchIds} ox={ox} oy={oy} delay={linkDelay} fadeKey={fadeKey} />
           {layout.bubbles[0] ? <HeartHalo skies={skies} r={layout.bubbles[0].r} ox={ox} oy={oy} /> : null}
           {layout.regions.map((r) => (
-            <Text
-              key={r.tag}
-              style={[styles.region, { left: ox + r.x - 60, top: oy + r.y - 8, color: SOUND_COLOR[r.tag], textShadowColor: SOUND_COLOR[r.tag] }]}
-              pointerEvents="none"
-              accessible={!!onRegionTap}
-              accessibilityRole={onRegionTap ? 'button' : undefined}
-              accessibilityLabel={onRegionTap ? `${SOUND_LABEL[r.tag]}. Show these artists` : undefined}
-              onAccessibilityTap={onRegionTap ? () => onRegionTap(r.tag) : undefined}
-            >
-              {SOUND_LABEL[r.tag]}
-            </Text>
+            <RegionName key={r.tag} region={r} ox={ox} oy={oy} scale={scale} tappable={!!onRegionTap} onTap={onRegionTap} />
           ))}
           <View style={{ position: 'absolute', left: ox, top: oy }}>
             {layout.bubbles.map((b) => (
@@ -303,8 +319,9 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
                 lagY={lagY}
                 clock={clock}
                 scale={scale}
-                detailAt={fitScale * 1.3}
+                detailAt={detailAt}
                 loved={!!loved?.has(b.artist.id)}
+                lead={leaders.has(b.artist.id)}
               />
             ))}
           </View>
@@ -312,6 +329,26 @@ export function SoundMap({ artists, taste, width, height, selectedId, onSelect, 
         </Animated.View>
       </View>
     </GestureDetector>
+  );
+}
+
+/** Zoomed out, a sound's name grows back against the zoom (up to this much) so it reads like a place name on a map. */
+const REGION_MAX_GROW = 2.2;
+
+/** A sound's name beside its group, in its own colour; it stays readable however far out you zoom. */
+function RegionName({ region: r, ox, oy, scale, tappable, onTap }: { region: RegionLabel; ox: number; oy: number; scale: SharedValue<number>; tappable: boolean; onTap?: (tag: SoundTag) => void }) {
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: Math.min(REGION_MAX_GROW, Math.max(1, 0.85 / scale.get())) }] }));
+  return (
+    <Animated.Text
+      style={[styles.region, { left: ox + r.x - 60, top: oy + r.y - 9, color: SOUND_COLOR[r.tag], textShadowColor: SOUND_COLOR[r.tag] }, style]}
+      pointerEvents="none"
+      accessible={tappable}
+      accessibilityRole={tappable ? 'button' : undefined}
+      accessibilityLabel={tappable ? `${SOUND_LABEL[r.tag]}. Show these artists` : undefined}
+      onAccessibilityTap={onTap ? () => onTap(r.tag) : undefined}
+    >
+      {SOUND_LABEL[r.tag]}
+    </Animated.Text>
   );
 }
 
@@ -324,10 +361,12 @@ const styles = StyleSheet.create({
     width: 120,
     textAlign: 'center',
     ...type.caption,
-    fontWeight: '600',
-    letterSpacing: 1.2,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
-    opacity: 0.85,
+    opacity: 0.95,
     textShadowRadius: 10,
     textShadowOffset: { width: 0, height: 0 },
   },
