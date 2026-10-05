@@ -53,7 +53,9 @@ import { color, space, type } from '../../theme/tokens';
 
 /** How far the cover photo reaches below the safe area. */
 /** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
-const COVER_H = 400;
+const COVER_H = 300;
+/** Where the top starts fading out: just past the middle of the orbit. */
+const COVER_SOLID = 150;
 
 type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
 const TABS: Tab[] = ['videos', 'festivals', 'badges', 'saved'];
@@ -194,7 +196,7 @@ function FullProfile() {
       <PageTitle title="Profile" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
-        <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} fadeFrom={0.72} />
+        <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} fadeFrom={(insets.top + COVER_SOLID) / (insets.top + COVER_H)} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
             {me ? `@${me.handle}` : 'Profile'}
@@ -238,7 +240,7 @@ function FullProfile() {
         </ProfileHeader>
 
         {/* Swap between your cover photo and background, in the corner just under the orbit. */}
-        {me ? <CoverSwap me={me} shown={backdrop} style={{ top: Math.round((insets.top + COVER_H) * 0.72) - 46, right: space.lg }} /> : null}
+        {me ? <CoverSwap me={me} shown={backdrop} style={{ top: insets.top + 205, right: space.lg }} /> : null}
 
         <ClaimBanner b={b} />
 
