@@ -17,11 +17,20 @@ const finishedListeners = new Set<(f: Finished[]) => void>();
 let loading: Promise<void> | undefined;
 /** Events counted before the book loaded, added once it has. */
 let pending: QuestEvent[] = [];
+/** The saved book was read (or there was none): saving is safe. After a read that failed, this session stays in memory. */
+let writable = false;
 const emit = () => listeners.forEach((l) => l(state));
 
 function load() {
   loading ??= AsyncStorage.getItem(STORAGE_KEY)
-    .then((raw) => (raw ? cleanBook(JSON.parse(raw)) : undefined))
+    .then((raw) => {
+      writable = true;
+      try {
+        return raw ? cleanBook(JSON.parse(raw)) : undefined;
+      } catch {
+        return undefined;
+      }
+    })
     .catch(() => undefined)
     .then((book) => {
       let next = state.book ?? book;
@@ -37,7 +46,10 @@ function load() {
   return loading;
 }
 
-const save = (book: QuestBook) => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(book)).catch(() => {});
+const save = async (book: QuestBook) => {
+  if (!writable) return;
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(book)).catch(() => {});
+};
 
 /**
  * The tracker's update, worked out from the book as it is now (never a copy
@@ -88,6 +100,7 @@ export function forgetDailyQuests() {
   state = { loaded: false };
   loading = undefined;
   pending = [];
+  writable = false;
   listeners.clear();
   finishedListeners.clear();
 }

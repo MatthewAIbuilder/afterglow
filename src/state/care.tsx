@@ -33,21 +33,39 @@ export function CareProvider({ children }: { children: ReactNode }) {
   const [care, setCare] = useState<Care>(EMPTY_CARE);
   const [hydrated, setHydrated] = useState(false);
   const ready = useRef(false);
+  // Saved only once what's on the phone has been read, and never after a read that failed (that session stays in memory).
+  const writable = useRef(false);
+  // Changes made before the read finished: applied on top of what was saved, then saved.
+  const early = useRef<((c: Care) => Care)[]>([]);
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
-        if (raw) setCare((now) => (now === EMPTY_CARE ? cleanCare(JSON.parse(raw), Date.now()) : now));
+        let base: Care = EMPTY_CARE;
+        try {
+          if (raw) base = cleanCare(JSON.parse(raw), Date.now());
+        } catch {
+          // Unreadable: start again.
+        }
+        for (const f of early.current) base = f(base);
+        const changed = early.current.length > 0;
+        early.current = [];
+        writable.current = true;
+        setCare(base);
+        if (changed) AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(base)).catch(() => {});
       })
-      .catch(() => {})
+      .catch(() => {
+        early.current = [];
+      })
       .finally(() => {
         ready.current = true;
         setHydrated(true);
       });
   }, []);
   const update = useCallback((next: (c: Care) => Care) => {
+    if (!ready.current) early.current.push(next);
     setCare((c) => {
       const out = next(c);
-      if (out !== c && ready.current) AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(out)).catch(() => {});
+      if (out !== c && writable.current) AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(out)).catch(() => {});
       return out;
     });
   }, []);

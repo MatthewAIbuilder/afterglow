@@ -27,6 +27,10 @@ type Ctx = {
   user: SocialUser | null;
   /** Your profile once loaded; null when you're signed in but haven't made one. */
   profile: Profile | null;
+  /** Whether your profile has been read: "loading" (or signed out), "ready" (profile is the answer), or "failed" (no signal: don't treat it as no profile). */
+  profileStatus: 'loading' | 'ready' | 'failed';
+  /** Read your profile again (after it failed). */
+  reloadProfile: () => void;
   service: SocialService;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -75,6 +79,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<SocialUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileStatus, setProfileStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [blocked, setBlockedIds] = useState<ReadonlySet<string>>(new Set());
   const [following, setFollowingIds] = useState<ReadonlySet<string>>(new Set());
   const [sharing, setSharing] = useState<Record<string, number>>({});
@@ -90,13 +95,18 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         setUser(u);
         setReady(true);
         setProfile(null);
+        setProfileStatus('loading');
         setBlockedIds(new Set());
         setFollowingIds(new Set());
         if (!u) return;
         service
           .profileOf(u.uid)
-          .then((p) => currentUid.current === u.uid && setProfile(p))
-          .catch(() => {});
+          .then((p) => {
+            if (currentUid.current !== u.uid) return;
+            setProfile(p);
+            setProfileStatus('ready');
+          })
+          .catch(() => currentUid.current === u.uid && setProfileStatus('failed'));
         service
           .blocked()
           .then((ids) => currentUid.current === u.uid && setBlockedIds(new Set(ids)))
@@ -108,6 +118,20 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
       }),
     [service],
   );
+
+  const reloadProfile = useCallback(() => {
+    const uid = currentUid.current;
+    if (!uid) return;
+    setProfileStatus('loading');
+    service
+      .profileOf(uid)
+      .then((p) => {
+        if (currentUid.current !== uid) return;
+        setProfile(p);
+        setProfileStatus('ready');
+      })
+      .catch(() => currentUid.current === uid && setProfileStatus('failed'));
+  }, [service]);
 
   // What your profile may publish, from your plans and your live taste.
   const { going } = useGoing();
@@ -232,8 +256,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
-    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
+    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }
