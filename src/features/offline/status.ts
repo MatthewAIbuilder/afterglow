@@ -16,6 +16,6 @@ export const BACK_ONLINE_MS = 2500;
 export type Notice = 'offline' | 'back' | undefined;
 
 export const NOTICE_TEXT: Record<'offline' | 'back', string> = {
-  offline: 'No signal · your plan, lineups and route still work',
+  offline: 'No signal · your plan, crew and lineups still work',
   back: 'Back online',
 };

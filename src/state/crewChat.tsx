@@ -27,6 +27,7 @@ import { notifyNow } from '../lib/notifyNow';
 import { bumpQuestEvent } from './dailyQuests';
 import { useNow } from '../lib/useNow';
 import { useCrews } from './crews';
+import { rememberLastKnown, useLastKnown } from './lastKnown';
 import { useSocial } from './social';
 
 /**
@@ -74,8 +75,10 @@ type Ctx = {
   openDirect: (uid: string) => Promise<string>;
   /** When each crewmate last read this chat (uid -> ISO, server time). */
   readsFor: (crewId: string) => Record<string, string>;
-  /** Has this crew's chat been read from the server yet? */
+  /** Has this crew's chat been read from the server yet (or is there no signal to read it with)? */
   loaded: (crewId: string) => boolean;
+  /** When a chat was last read from the server (kept on this phone), and whether it's being followed live right now. */
+  readFor: (crewId: string) => { at?: number; live: boolean };
 };
 
 /** Your messages that got through after waiting for signal. */
@@ -155,7 +158,11 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       service.watchCrewChat(
         crewId,
         CHAT_WATCH,
-        (messages) => setSent((s) => ({ uid, byCrew: { ...(s.uid === uid ? s.byCrew : {}), [crewId]: messages } })),
+        (messages) => {
+          setSent((s) => ({ uid, byCrew: { ...(s.uid === uid ? s.byCrew : {}), [crewId]: messages } }));
+          // Kept on this phone, so the chat still reads with no signal.
+          if (uid) rememberLastKnown(uid, { chat: { [crewId]: { value: messages, at: Date.now() } } });
+        },
         // Refused (old rules, or no longer in the crew): show what there is rather than loading forever.
         () => setSent((s) => ({ uid, byCrew: { ...(s.uid === uid ? s.byCrew : {}), [crewId]: (s.uid === uid ? s.byCrew[crewId] : undefined) ?? [] } })),
       ),
@@ -181,7 +188,14 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       service.markCrewChatRead(crewId).catch(() => receiptsDue.current.add(crewId));
     }
   }, [ready, service]);
-  const byCrew = useMemo<Record<string, CrewMessage[]>>(() => (sent.uid === uid ? sent.byCrew : {}), [sent, uid]);
+  // Chats not read yet this time (no signal on opening) show what this phone last read.
+  const keptChat = useLastKnown(uid)?.chat;
+  const liveByCrew = useMemo<Record<string, CrewMessage[]>>(() => (sent.uid === uid ? sent.byCrew : {}), [sent, uid]);
+  const byCrew = useMemo<Record<string, CrewMessage[]>>(() => {
+    const out: Record<string, CrewMessage[]> = {};
+    for (const [room, k] of Object.entries(keptChat ?? {})) out[room] = k.value;
+    return { ...out, ...liveByCrew };
+  }, [keptChat, liveByCrew]);
   // Another account signing in starts with no read receipts or delivery notes of the last one's.
   useEffect(() => {
     receiptsDue.current.clear();
@@ -331,14 +345,15 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
       directChats,
       openDirect,
       readsFor: (crewId) => readsByCrew[crewId] ?? {},
-      loaded: (crewId) => crewId in byCrew,
+      loaded: (crewId) => crewId in byCrew || !online,
+      readFor: (crewId) => ({ at: keptChat?.[crewId]?.at, live: crewId in liveByCrew && online }),
       waitingFor: (crewId) => outbox.filter((o) => o.crewId === crewId && (!o.uid || o.uid === uid)),
       deliveryFor: (crewId) => deliveries.find((d) => d.crewId === crewId),
       dismissDelivery,
       setOpenChat,
       sendNow,
     };
-  }, [ready, byCrew, readsByCrew, outbox, uid, blocked, now, read, rooms, directChats, openDirect, send, remove, retry, markRead, deliveries, dismissDelivery, setOpenChat, sendNow]);
+  }, [ready, byCrew, liveByCrew, keptChat, online, readsByCrew, outbox, uid, blocked, now, read, rooms, directChats, openDirect, send, remove, retry, markRead, deliveries, dismissDelivery, setOpenChat, sendNow]);
 
   return <CrewChatContext.Provider value={value}>{children}</CrewChatContext.Provider>;
 }
@@ -360,6 +375,7 @@ const OFF: Ctx = {
     throw new Error('Chats aren’t available here.');
   },
   loaded: () => false,
+  readFor: () => ({ live: false }),
   waitingFor: () => [],
   deliveryFor: () => undefined,
   dismissDelivery: () => {},

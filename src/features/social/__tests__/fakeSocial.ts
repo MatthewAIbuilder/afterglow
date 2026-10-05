@@ -32,7 +32,11 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Crew updates as `crewId/updateId`. */
   const updates = new Map<string, CrewUpdate>();
   /** Switch the "network" off to see what happens with no signal: crew updates fail to send. */
-  const network = { down: false };
+  const network = { down: false, noReads: false };
+  /** `network.noReads`: reads get nothing too, like opening the app in airplane mode (profiles, crews, stars, chats). */
+  const readable = () => {
+    if (network.noReads) throw new SocialError('network');
+  };
   /** Each person's friend code (what their QR code carries). */
   const friendCodes = new Map<string, string>();
   /** Founder numbers, in the order people claimed them, and flairs (set by hand, like the Firebase console). */
@@ -207,6 +211,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       emit();
     },
     async profileOf(uid) {
+      readable();
       return profiles.get(uid) ?? null;
     },
     async profileByHandle(handle) {
@@ -597,6 +602,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       follows.delete(`${uid}>${me().uid}`);
     },
     async following(uid, max) {
+      readable();
       return [...follows.values()].filter((f) => f.from === uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max).map((f) => f.to);
     },
     async followers(uid, max) {
@@ -672,10 +678,12 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return c;
     },
     async crew(id) {
+      readable();
       me();
       return crews.get(id) ?? null;
     },
     async myCrews() {
+      readable();
       const u = me();
       return [...crews.values()].filter((c) => c.members.includes(u.uid));
     },
@@ -714,6 +722,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       crewInvites.set(`${crewId}_${uid}`, { id: `${crewId}_${uid}`, crewId, festivalId: c.festivalId, crewName: c.name, from: u.uid, to: uid, at: now() });
     },
     async crewInvites(max) {
+      readable();
       const u = me();
       return [...crewInvites.values()].filter((i) => i.to === u.uid).sort((a, b) => b.at.localeCompare(a.at)).slice(0, max);
     },
@@ -764,6 +773,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       picks.set(`${id}/${uid}`, { uid, artists: [...new Set(artists)].slice(0, CREW_PICKS_MAX), updatedAt: now() });
     },
     async crewPicks(id) {
+      readable();
       memberOf(id);
       return [...picks.entries()].filter(([k]) => k.startsWith(`${id}/`)).map(([, p]) => p);
     },
@@ -805,6 +815,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return u;
     },
     async crewUpdates(crewId, sinceMs, max) {
+      readable();
       if (network.down) throw new SocialError('network');
       memberOf(crewId);
       return [...updates.values()]
@@ -834,7 +845,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       }
       const w = { crewId, max, listener };
       chatWatchers.add(w);
-      listener(chatOf(crewId, max));
+      // Nothing read yet with no signal: Firestore stays quiet until it has something.
+      if (!network.noReads) listener(chatOf(crewId, max));
       return () => {
         chatWatchers.delete(w);
       };
@@ -887,6 +899,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       };
     },
     async meetSpot(crewId) {
+      readable();
       if (network.down) throw new SocialError('network');
       memberOf(crewId);
       return meets.get(crewId) ?? null;
@@ -1022,6 +1035,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       reports.push({ id: `r${++n}`, by: me().uid, target, reason, note, createdAt: `${now()}#${String(n).padStart(6, '0')}`, status: 'open' });
     },
     async blocked() {
+      readable();
       return current ? (blocks.get(current.uid) ?? []) : [];
     },
     async setBlocked(uid, on) {
