@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -7,10 +6,15 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useCrewChat } from '../../state/crewChat';
 import { useCrews } from '../../state/crews';
+import { useCrewUpdates } from '../../state/crewUpdates';
+import { useNow } from '../../lib/useNow';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { chatPreview, unreadLine } from '../crews/chat';
 import { otherInRoom, type Crew, type Profile } from '../social/models';
+import { CrewOrb } from './CrewOrb';
+import { chatTime } from './orbit';
+import { SectionHeader } from './SectionHeader';
 
 /** Chats shown before "Show all". */
 const SHOWN = 5;
@@ -21,8 +25,9 @@ type Row = { id: string; latestAt?: string } & ({ kind: 'direct'; other: string 
 /**
  * All your chats on the Friends tab, in one place: 1-to-1 chats and your
  * crews' chats, the latest first, each with its last message and how many
- * are new. Crews you haven't chatted in yet come after. Nobody you've
- * blocked. `skipCrews`: crews already shown as cards (festival mode).
+ * are new, the way a messages app lists them: one glass card, a crew's
+ * picture made of its people's faces, the time on the right. Crews you
+ * haven't chatted in yet come after. Nobody you've blocked. `skipCrews`: crews already shown as cards (festival mode).
  */
 export function MessagesList({ skipCrews = [] }: { skipCrews?: readonly string[] }) {
   const social = useSocial();
@@ -31,6 +36,8 @@ export function MessagesList({ skipCrews = [] }: { skipCrews?: readonly string[]
   const { crews } = useCrews();
   const { festival } = useCatalog();
   const [all, setAll] = useState(false);
+  const { profileOf: crewProfileOf } = useCrewUpdates();
+  const now = useNow();
   const skip = skipCrews.join('|');
   const rows = useMemo((): Row[] => {
     if (!me) return [];
@@ -64,91 +71,107 @@ export function MessagesList({ skipCrews = [] }: { skipCrews?: readonly string[]
     return p ? firstName(p.displayName) : 'Someone';
   };
   const shown = all ? rows : rows.slice(0, SHOWN);
+  const nowMs = now.getTime();
 
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.title} accessibilityRole="header">
-        Chats
-      </Text>
-      {shown.map((r) => {
-        const unread = chat.unreadFor(r.id);
-        const latest = chat.latestFor(r.id);
-        const p = r.kind === 'direct' ? profiles[r.other] : undefined;
-        // Someone whose account is gone: their chat goes too.
-        if (r.kind === 'direct' && p === null) return null;
-        const name = r.kind === 'direct' ? (p?.displayName ?? ' ') : r.crew.name;
-        const fest = r.kind === 'crew' ? festival(r.crew.festivalId)?.name : undefined;
-        const preview =
-          (r.kind === 'direct' ? chatPreview(latest, me, () => (p ? firstName(p.displayName) : 'Someone')) : chatPreview(latest, me, nameOf)) ??
-          'Say hi to your crew. Only people in it can see the chat.';
-        return (
-          <Pressable
-            key={r.id}
-            onPress={() => {
-              haptic.select();
-              router.push({ pathname: '/crew-chat/[id]', params: { id: r.id } });
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={`${r.kind === 'crew' ? `${name} crew chat` : (p?.displayName ?? 'Someone')}${unread ? `, ${unreadLine(unread)}` : ''}. ${preview}`}
-            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-          >
-            {r.kind === 'direct' ? <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={44} /> : <CrewBadge name={r.crew.name} />}
-            <View style={styles.text}>
-              <Text style={styles.name} numberOfLines={1}>
-                {name}
-                {fest ? <Text style={styles.fest}>{`  ${fest}`}</Text> : null}
-              </Text>
-              <Text style={[styles.preview, unread ? styles.unread : null]} numberOfLines={1}>
-                {preview}
-              </Text>
-            </View>
-            {unread ? (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unread}</Text>
+    <View>
+      <SectionHeader
+        title="Chats"
+        action={rows.length > SHOWN ? (all ? 'Show fewer' : 'Show all') : undefined}
+        actionLabel={all ? 'Show fewer chats' : `Show all ${rows.length} chats`}
+        onAction={() => setAll((a) => !a)}
+      />
+      <View style={styles.list}>
+        {shown.map((r, i) => {
+          const unread = chat.unreadFor(r.id);
+          const latest = chat.latestFor(r.id);
+          const p = r.kind === 'direct' ? profiles[r.other] : undefined;
+          // Someone whose account is gone: their chat goes too.
+          if (r.kind === 'direct' && p === null) return null;
+          const name = r.kind === 'direct' ? (p?.displayName ?? ' ') : r.crew.name;
+          const fest = r.kind === 'crew' ? festival(r.crew.festivalId)?.name : undefined;
+          const preview =
+            (r.kind === 'direct' ? chatPreview(latest, me, () => (p ? firstName(p.displayName) : 'Someone')) : chatPreview(latest, me, nameOf)) ??
+            'Say hi to your crew. Only people in it can see the chat.';
+          const at = latest?.sentAt ? Date.parse(latest.sentAt) : NaN;
+          const when = Number.isFinite(at) ? chatTime(at, nowMs) : undefined;
+          const faces =
+            r.kind === 'crew'
+              ? r.crew.members
+                  .filter((m) => m !== me)
+                  .map((m) => crewProfileOf(m))
+                  .filter((x): x is Profile => !!x)
+                  .map((x) => ({ name: x.displayName, url: x.avatarUrl }))
+              : [];
+          return (
+            <Pressable
+              key={r.id}
+              onPress={() => {
+                haptic.select();
+                router.push({ pathname: '/crew-chat/[id]', params: { id: r.id } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${r.kind === 'crew' ? `${name} crew chat` : (p?.displayName ?? 'Someone')}${unread ? `, ${unreadLine(unread)}` : ''}. ${preview}`}
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            >
+              {i > 0 ? <View style={styles.divider} /> : null}
+              {r.kind === 'direct' ? (
+                <View style={[styles.personRing, unread ? styles.personRingNew : null]}>
+                  <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={AVATAR - 6} />
+                </View>
+              ) : (
+                <CrewOrb name={r.crew.name} people={faces} total={Math.max(0, r.crew.members.length - 1)} size={AVATAR} />
+              )}
+              <View style={styles.text}>
+                <View style={styles.top}>
+                  <Text style={[styles.name, unread ? styles.nameNew : null]} numberOfLines={1}>
+                    {name}
+                  </Text>
+                  {when ? <Text style={[styles.when, unread ? styles.whenNew : null]}>{when}</Text> : null}
+                </View>
+                {fest ? (
+                  <Text style={styles.fest} numberOfLines={1}>
+                    {fest}
+                  </Text>
+                ) : null}
+                <View style={styles.bottom}>
+                  <Text style={[styles.preview, unread ? styles.unread : null]} numberOfLines={1}>
+                    {preview}
+                  </Text>
+                  {unread ? (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unread}</Text>
+                    </View>
+                  ) : null}
+                </View>
               </View>
-            ) : null}
-          </Pressable>
-        );
-      })}
-      {rows.length > SHOWN ? (
-        <Pressable
-          onPress={() => {
-            haptic.select();
-            setAll((a) => !a);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={all ? 'Show fewer chats' : `Show all ${rows.length} chats`}
-          hitSlop={8}
-        >
-          <Text style={styles.more}>{all ? 'Show fewer' : `Show all ${rows.length} chats`}</Text>
-        </Pressable>
-      ) : null}
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
-/** A crew's chat: its first letter in the night glow. */
-function CrewBadge({ name }: { name: string }) {
-  return (
-    <LinearGradient colors={[color.glowDeep, color.haze]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.crew}>
-      <Text style={styles.crewLetter}>{name.trim().charAt(0).toUpperCase() || '·'}</Text>
-    </LinearGradient>
-  );
-}
+const AVATAR = 52;
 
 const styles = StyleSheet.create({
-  wrap: { gap: space.xs },
-  title: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: space.xs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
-  text: { flex: 1 },
-  name: { ...type.headline, color: color.moon },
-  fest: { ...type.caption, color: color.moonFaint },
-  preview: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  list: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, paddingHorizontal: space.md },
+  divider: { position: 'absolute', top: 0, right: 0, left: AVATAR + space.md * 2, height: StyleSheet.hairlineWidth, backgroundColor: color.hairline },
+  text: { flex: 1, gap: 2 },
+  top: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
+  bottom: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  name: { ...type.headline, color: color.moon, flex: 1 },
+  nameNew: { fontWeight: '700' },
+  when: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
+  whenNew: { color: color.glow },
+  fest: { ...type.caption, color: color.glow, opacity: 0.85 },
+  preview: { ...type.body, color: color.moonDim, flex: 1 },
   unread: { color: color.moon },
-  badge: { minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: radius.pill, backgroundColor: color.glow, alignItems: 'center', justifyContent: 'center' },
+  badge: { minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: radius.pill, backgroundColor: color.glow, alignItems: 'center', justifyContent: 'center' },
   badgeText: { ...type.caption, color: color.night, fontWeight: '700' },
-  crew: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  crewLetter: { ...type.headline, color: color.moon },
-  more: { ...type.label, color: color.glow, paddingVertical: space.xs },
-  pressed: { opacity: 0.7 },
+  personRing: { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(243,240,255,0.16)' },
+  personRingNew: { borderColor: color.glow },
+  pressed: { backgroundColor: 'rgba(255,255,255,0.04)' },
 });

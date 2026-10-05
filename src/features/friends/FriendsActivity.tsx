@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useCallback, useMemo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PersonAvatar } from '../../components/PersonAvatar';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
@@ -17,18 +17,15 @@ import { activityText, friendActivity, shortAgo, type ActivityItem } from '../so
 import type { Profile, SharedMemory } from '../social/models';
 import { tasteMix } from '../taste/lean';
 import { useToday } from '../../lib/useToday';
-
-/** How many of the people you follow are read for the row and the activity. */
-const FRIENDS_READ = 30;
-/** Faces in the row before "+N". */
-const FACES = 6;
+import { SectionHeader } from './SectionHeader';
 
 /**
- * Your friends (people you follow) as a row of faces, then `between` (the
- * Friends page puts your crews there), then what they've been up to: moments they shared, festivals they're going to, and whose taste is
- * close to yours. Read each time the Friends tab comes into view.
+ * What the people you follow have been up to: moments they shared, festivals
+ * they're going to, and whose taste is close to yours, after `between` (the
+ * Friends page puts your crews there). `profiles` and `memories` come from
+ * `useFriendsCircle`.
  */
-export function FriendsActivity({ between }: { between?: React.ReactNode } = {}) {
+export function FriendsActivity({ between, profiles, memories }: { between?: React.ReactNode; profiles: Profile[] | undefined; memories: SharedMemory[] }) {
   const social = useSocial();
   const me = social.profile;
   const catalog = useCatalog();
@@ -37,38 +34,6 @@ export function FriendsActivity({ between }: { between?: React.ReactNode } = {})
   const { going } = useGoing();
   const { taste, informed } = useTaste();
   const mix = useMemo(() => tasteMix(catalog.artists, taste, informed), [catalog.artists, taste, informed]);
-
-  const [profiles, setProfiles] = useState<Profile[] | undefined>();
-  const [memories, setMemories] = useState<SharedMemory[]>([]);
-  const followingRef = useRef(social.following);
-  useEffect(() => {
-    followingRef.current = social.following;
-  }, [social.following]);
-  const followingKey = [...social.following].sort().join('|');
-  useFocusEffect(
-    useCallback(() => {
-      if (!me) return;
-      let live = true;
-      const uids = [...followingRef.current].slice(0, FRIENDS_READ);
-      if (!uids.length) {
-        setProfiles([]);
-        setMemories([]);
-        return;
-      }
-      Promise.all(uids.map((u) => social.service.profileOf(u).catch(() => null))).then(
-        (list) => live && setProfiles(list.filter((p): p is Profile => !!p)),
-      );
-      social.service
-        .memoriesBy(uids, 20)
-        .then((list) => live && setMemories(list))
-        .catch(() => {});
-      return () => {
-        live = false;
-      };
-      // followingKey stands for who you follow.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [me?.uid, social.service, followingKey]),
-  );
 
   const upcoming = useCallback(
     (id: string): Festival | undefined => {
@@ -85,8 +50,6 @@ export function FriendsActivity({ between }: { between?: React.ReactNode } = {})
 
   // With no one followed yet, only what goes between (your crews) shows.
   if (!me || !profiles?.length) return <>{between}</>;
-  const shown = profiles.filter((p) => !social.blocked.has(p.uid));
-  const more = social.following.size - Math.min(FACES, shown.length);
 
   const open = (item: ActivityItem) => {
     haptic.select();
@@ -97,54 +60,11 @@ export function FriendsActivity({ between }: { between?: React.ReactNode } = {})
 
   return (
     <View>
-      <View style={styles.head}>
-        <Text style={styles.title}>Your friends</Text>
-        <Pressable
-          onPress={() => {
-            haptic.select();
-            router.push({ pathname: '/follows/[handle]', params: { handle: me.handle, list: 'following' } });
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`See all ${social.following.size} people you follow`}
-          hitSlop={8}
-        >
-          <Text style={styles.seeAll}>See all</Text>
-        </Pressable>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faces} style={styles.facesWrap}>
-        {shown.slice(0, FACES).map((p) => (
-          <Pressable
-            key={p.uid}
-            onPress={() => {
-              haptic.select();
-              router.push({ pathname: '/u/[handle]', params: { handle: p.handle } });
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={`Open ${p.displayName}’s profile`}
-            style={({ pressed }) => [styles.face, pressed && { opacity: 0.7 }]}
-          >
-            <View style={styles.faceRing}>
-              <PersonAvatar name={p.displayName} url={p.avatarUrl} size={54} />
-            </View>
-            <Text style={styles.faceName} numberOfLines={1}>
-              {p.displayName.split(' ')[0]}
-            </Text>
-          </Pressable>
-        ))}
-        {more > 0 ? (
-          <View style={styles.face} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <View style={[styles.faceRing, styles.moreCircle]}>
-              <Text style={styles.moreText}>+{more}</Text>
-            </View>
-          </View>
-        ) : null}
-      </ScrollView>
-
       {between}
 
       {items.length ? (
         <>
-          <Text style={styles.sectionTitle}>Recent activity</Text>
+          <SectionHeader title="Recent activity" />
           <View style={styles.list}>
             {items.map((item) => {
               const text = activityText(item, (id) => catalog.artist(id)?.name);
@@ -187,17 +107,6 @@ export function FriendsActivity({ between }: { between?: React.ReactNode } = {})
 }
 
 const styles = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.xl },
-  title: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginLeft: space.xs },
-  seeAll: { ...type.caption, color: color.glow },
-  facesWrap: { marginHorizontal: -space.xl, marginTop: space.sm },
-  faces: { paddingHorizontal: space.xl, gap: space.md },
-  face: { width: 62, alignItems: 'center' },
-  faceRing: { borderRadius: 31, padding: 2, borderWidth: 1.5, borderColor: 'rgba(169,124,255,0.6)' },
-  faceName: { ...type.caption, color: color.moon, marginTop: 4 },
-  moreCircle: { width: 62, height: 62, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass },
-  moreText: { ...type.headline, color: color.moon },
-  sectionTitle: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginLeft: space.xs, marginTop: space.xl, marginBottom: space.sm },
   list: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
   rowText: { ...type.body, color: color.moon },

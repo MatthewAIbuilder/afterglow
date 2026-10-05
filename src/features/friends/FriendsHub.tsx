@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../../components/NightSky';
 import { PageActions } from '../../components/PageActions';
 import { PageTitle } from '../../components/PageTitle';
-import { PersonAvatar } from '../../components/PersonAvatar';
 import { ChevronIcon, PeopleIcon, PlusIcon } from '../../components/TabIcons';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import type { Festival } from '../../data/models';
@@ -18,7 +17,12 @@ import { CrewChatCard } from '../crews/CrewChatCard';
 import { FriendAddsList } from './FriendAddsList';
 import { InviteCard } from './InviteCard';
 import { QuickActions } from './QuickActions';
-import { CloseFriendsRow } from './CloseFriendsRow';
+import { FriendsCircle } from './FriendsCircle';
+import { CrewOrb } from './CrewOrb';
+import { SectionHeader } from './SectionHeader';
+import { useFriendsCircle } from './useFriendsCircle';
+import { LinearGradient } from 'expo-linear-gradient';
+import { countdown } from '../festivals/when';
 import { MessagesList } from './MessagesList';
 import { SideQuestsCard } from '../quests/SideQuestsCard';
 import { FriendsActivity } from './FriendsActivity';
@@ -65,6 +69,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
   // At the festival: your crews there come first, with where everyone is.
   const here = festival && me ? crewsAt(festival.id) : [];
   const { going } = useGoing();
+  const circle = useFriendsCircle();
 
   // Your festivals still to come, soonest first: for crews and for who else is going.
   const upcoming = useMemo(
@@ -129,6 +134,9 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
         const artist = news?.latest.artistId ? catalog.artist(news.latest.artistId)?.name : undefined;
         const place = news ? updatePlace(news.latest, artist) : '';
         const unread = chat.unreadFor(c.id);
+        const when = festival ? (isOver(festival, today) ? 'Over' : countdown(festival, today)) : undefined;
+        const mates = c.members.filter((m) => m !== meUid);
+        const faces = (mates.length ? mates.map((m) => profileOf(m)) : [me]).filter((p): p is Profile => !!p).map((p) => ({ name: p.displayName, url: p.avatarUrl }));
         return (
           <Pressable
             key={c.id}
@@ -138,10 +146,11 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
             }}
             accessibilityRole="button"
             accessibilityLabel={`${c.name}, ${festival?.name ?? 'a festival'}, ${crewPeopleLine(c.members.length)}${news ? `. Latest: ${who ? firstName(who.displayName) : 'a crewmate'} at ${clock(news.latest.at)}${place ? `, ${place}` : ''}` : ''}${unread ? `. ${unreadLine(unread)}` : ''}`}
-            style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.crewCard, pressed && styles.pressed]}
           >
-            <Faces uids={c.members.filter((m) => m !== meUid)} profileOf={profileOf} me={me} />
-            <View style={{ flex: 1 }}>
+            <LinearGradient colors={['rgba(107,63,224,0.28)', 'rgba(107,63,224,0.04)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <CrewOrb name={c.name} people={faces} total={mates.length || 1} size={64} />
+            <View style={styles.crewText}>
               <Text style={styles.cardTitle} numberOfLines={1}>
                 {c.name}
               </Text>
@@ -154,11 +163,18 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                   {place ? ` · ${place}` : ''}
                 </Text>
               ) : null}
-              {unread ? (
-                <Text style={[styles.cardDetail, styles.fresh]} numberOfLines={1}>
-                  {unreadLine(unread)}
-                </Text>
-              ) : null}
+              <View style={styles.chips}>
+                {when ? (
+                  <View style={styles.chip}>
+                    <Text style={styles.chipText}>{when}</Text>
+                  </View>
+                ) : null}
+                {unread ? (
+                  <View style={[styles.chip, styles.chipNew]}>
+                    <Text style={[styles.chipText, styles.chipNewText]}>{unreadLine(unread)}</Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
             <ChevronIcon color={color.moonFaint} size={12} />
           </Pressable>
@@ -225,7 +241,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
               <>
                 {/* At the festival: add the people in front of you, then your crew. */}
                 <QuickActions handle={me.handle} atFestival />
-                <CloseFriendsRow />
+                <FriendsCircle profiles={circle.profiles} close={circle.close} />
                 <MessagesList skipCrews={here.map((c) => c.id)} />
                 <CrewInvitesCard />
                 <FriendAddsList />
@@ -271,13 +287,13 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
             ) : (
               <>
                 <QuickActions handle={me.handle} festivals={upcoming} />
-                {/* Your closest people first: only you see who's on the list. */}
-                <CloseFriendsRow />
+                {/* Your people as an orbit: close friends on the inner ring (only you see who's on it). */}
+                <FriendsCircle profiles={circle.profiles} close={circle.close} />
                 <MessagesList />
                 {/* Someone asked you to join their crew: that's the first thing to answer. */}
                 <CrewInvitesCard />
                 <FriendAddsList />
-                <FriendsActivity between={crewsSection} />
+                <FriendsActivity between={crewsSection} profiles={circle.profiles} memories={circle.memories} />
 
                 {mayKnow.length ? (
                   <Section title="People you may know">
@@ -355,7 +371,7 @@ function Hero({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <SectionHeader title={title} />
       {children}
     </View>
   );
@@ -379,20 +395,6 @@ function Row({ label, detail, onPress }: { label: string; detail?: string; onPre
   );
 }
 
-/** Up to three crewmates' faces, overlapping; you when it's just you. */
-function Faces({ uids, profileOf, me }: { uids: string[]; profileOf: (uid: string) => Profile | undefined; me: Profile }) {
-  const shown = uids.length ? uids.slice(0, 3).map((u) => profileOf(u)) : [me];
-  return (
-    <View style={styles.faces}>
-      {shown.map((p, i) => (
-        <View key={i} style={[styles.face, { marginLeft: i ? -14 : 0, zIndex: 3 - i }]}>
-          <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={36} />
-        </View>
-      ))}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   more: { alignSelf: 'flex-start', paddingVertical: space.sm },
   atFestival: { ...type.label, color: color.glow, marginTop: -space.sm },
@@ -408,16 +410,20 @@ const styles = StyleSheet.create({
   primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
   primaryText: { ...type.headline, color: color.moon },
   link: { ...type.label, color: color.glow },
-  section: { marginTop: space.xl, gap: space.sm },
-  sectionTitle: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginLeft: space.xs },
+  section: { gap: space.sm },
+  crewCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.28)', overflow: 'hidden' },
+  crewText: { flex: 1, gap: 1 },
+  chips: { flexDirection: 'row', gap: space.xs, marginTop: space.xs },
+  chip: { paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: 'rgba(243,240,255,0.08)' },
+  chipText: { ...type.caption, color: color.moonDim },
+  chipNew: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  chipNewText: { color: color.moon },
   card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   startCard: { borderStyle: 'dashed', borderColor: 'rgba(169,124,255,0.45)' },
   plusCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glow },
   cardTitle: { ...type.headline, color: color.moon },
   cardDetail: { ...type.caption, color: color.moonDim, marginTop: 2 },
   fresh: { color: color.glow },
-  faces: { flexDirection: 'row' },
-  face: { borderRadius: 20, borderWidth: 2, borderColor: color.night },
   why: { ...type.caption, color: color.moonFaint, marginLeft: 44 + space.md, marginTop: -6, marginBottom: space.xs },
   quiet: { ...type.body, color: color.moonDim, marginTop: space.xl },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },

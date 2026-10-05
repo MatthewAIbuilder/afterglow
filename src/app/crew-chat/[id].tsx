@@ -28,6 +28,8 @@ import { goBack } from '../../lib/nav';
 import { WEB_URL } from '../../config/app';
 import { ShareCard } from '../../features/messages/ShareCard';
 import { LastUpdated } from '../../features/offline/LastUpdated';
+import { CrewOrb } from '../../features/friends/CrewOrb';
+import { useCrewUpdates } from '../../state/crewUpdates';
 import { isOffline } from '../../features/offline/status';
 import { parseShare, shareNoun } from '../../features/messages/shares';
 
@@ -48,6 +50,7 @@ export default function CrewChatScreen() {
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const me = social.user?.uid;
+  const { profileOf: crewProfileOf } = useCrewUpdates();
   const chat = useCrewChat();
   const offline = isOffline(useNetworkState());
   const { page } = useCrewPage(id);
@@ -269,11 +272,24 @@ export default function CrewChatScreen() {
             </Pressable>
           ) : (
           <Pressable
-            style={{ flex: 1 }}
+            style={styles.dmHead}
             onPress={() => crew && router.push({ pathname: '/crew/[id]', params: { id } })}
             accessibilityRole="button"
             accessibilityLabel={crew ? `${crew.name}. Open the crew.` : 'Crew chat'}
           >
+            {crew ? (
+              <CrewOrb
+                name={crew.name}
+                people={crew.members
+                  .filter((m) => m !== me)
+                  .map((m) => crewProfileOf(m))
+                  .filter((x): x is Profile => !!x)
+                  .map((x) => ({ name: x.displayName, url: x.avatarUrl }))}
+                total={Math.max(0, crew.members.length - 1)}
+                size={38}
+              />
+            ) : null}
+            <View style={{ flex: 1 }}>
             <Text style={styles.title} numberOfLines={1}>
               {crew?.name ?? 'Crew chat'}
             </Text>
@@ -283,6 +299,7 @@ export default function CrewChatScreen() {
                 {festival ? ` · ${festival.name}` : ''}
               </Text>
             ) : null}
+            </View>
           </Pressable>
           )}
         </View>
