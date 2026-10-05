@@ -55,7 +55,7 @@ export function festivalReminders(festivals: Festival[], going: Going, now: Date
     ];
     for (const p of planned) {
       if (p.at.getTime() <= now.getTime()) continue;
-      out.push({ id: `${REMINDER_PREFIX}${f.id}:${p.start}:${p.key}:${timesOut ? 'times' : 'lineup'}`, festivalId: f.id, at: p.at, title: p.title, body: p.body });
+      out.push({ id: `${REMINDER_PREFIX}${f.id}:${p.start}:${p.key}:${timesOut ? 'times' : 'lineup'}:${p.at.getTime()}`, festivalId: f.id, at: p.at, title: p.title, body: p.body });
     }
   }
   return out.sort((a, b) => a.at.getTime() - b.at.getTime());

@@ -13,6 +13,11 @@ const fromIso = (iso: string) => {
 };
 const fromDate = (date: Date) => dayNumber(date.getFullYear(), date.getMonth() + 1, date.getDate());
 
+/** Until this hour, a festival night is still the night before (sets run past midnight). */
+export const NIGHT_ENDS_HOUR = 6;
+/** Still last night's festival: past midnight, before the night ends, the day after `endIso`. */
+export const stillLastNight = (endIso: string, today: Date) => today.getHours() < NIGHT_ENDS_HOUR && fromIso(endIso) === fromDate(today) - 1;
+
 /** Whole days from today until the festival starts: 0 on the first day, negative once it's begun. */
 export function daysUntil(festival: Festival, today: Date): number | undefined {
   if (!festival.startDate) return undefined;
@@ -33,7 +38,10 @@ export function isLive(festival: Festival, today: Date): boolean {
     return festival.weekends.some((r) => fromIso(r.start) <= t && t <= fromIso(r.end) + 1);
   }
   const until = daysUntil(festival, today);
-  return until !== undefined && until <= 0 && until >= -festival.days.length;
+  if (until === undefined || until > 0) return false;
+  // From the first day to the day after the last: its dates when it has them, else a day per listed day.
+  const span = festival.endDate ? fromIso(festival.endDate) - fromIso(festival.startDate!) + 1 : festival.days.length;
+  return until >= -Math.max(1, span);
 }
 
 /** The festival's runs in order: its weekends, or one run from start to end. None without dates. */
@@ -51,7 +59,8 @@ export function runsOf(festival: Festival): Run[] {
 export function nextRun(festival: Festival, today: Date) {
   const runs = runsOf(festival);
   const t = fromDate(today);
-  const index = runs.findIndex((r) => fromIso(r.end) >= t);
+  // The last night's sets after midnight still count as that run.
+  const index = runs.findIndex((r) => fromIso(r.end) >= t || stillLastNight(r.end, today));
   if (index < 0) return undefined;
   return { run: runs[index], index, count: runs.length, until: fromIso(runs[index].start) - t };
 }
