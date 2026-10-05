@@ -64,6 +64,8 @@ export default function RootLayout() {
       <ReactionsProvider>
       <CommunityProvider>
       <RatingsProvider>
+      {/* Taste is worked out once, here, for every provider and screen below (Social and Notices use it too). */}
+      <TasteProvider>
       <FollowedArtistsProvider>
       <PlanProvider>
       <SetRemindersProvider>
@@ -84,7 +86,6 @@ export default function RootLayout() {
       <CrewChatProvider>
       <FestivalModeProvider>
       <FriendAddsProvider>
-      <TasteProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
@@ -244,7 +245,6 @@ export default function RootLayout() {
       <SecretStage />
       <OfflineNotice />
       <DialogHost />
-      </TasteProvider>
       </FriendAddsProvider>
       </FestivalModeProvider>
       </CrewChatProvider>
@@ -265,6 +265,7 @@ export default function RootLayout() {
       </SetRemindersProvider>
       </PlanProvider>
       </FollowedArtistsProvider>
+      </TasteProvider>
       </RatingsProvider>
       </CommunityProvider>
       </ReactionsProvider>

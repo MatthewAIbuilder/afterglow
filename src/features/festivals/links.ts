@@ -21,7 +21,25 @@ export const playsAt = (festival: Festival, artistId: string) => festival.lineup
 export const festivalsOf = (festivals: Festival[], artistId: string) => festivals.filter((f) => playsAt(f, artistId));
 
 /** Clips of artists on the festival's lineup, in catalogue order. */
-export const lineupClips = (festival: Festival, clips: Clip[]) => clips.filter((c) => playsAt(festival, c.artistId));
+export const lineupClips = (festival: Festival, clips: Clip[]) => {
+  const on = new Set(festival.lineup);
+  return clips.filter((c) => on.has(c.artistId));
+};
+
+/**
+ * How many clips each festival's lineup has, counted from one pass over the
+ * clips (asking every festival about every clip took seconds with a big
+ * catalogue). Same numbers as `lineupClips(f, clips).length`.
+ */
+function lineupClipCounts(festivals: Festival[], clips: Clip[]): number[] {
+  const perArtist = new Map<string, number>();
+  for (const c of clips) perArtist.set(c.artistId, (perArtist.get(c.artistId) ?? 0) + 1);
+  return festivals.map((f) => {
+    let n = 0;
+    for (const id of new Set(f.lineup)) n += perArtist.get(id) ?? 0;
+    return n;
+  });
+}
 
 /**
  * The festival Discover opens on: the one with the most clips to show (the
@@ -31,8 +49,9 @@ export const lineupClips = (festival: Festival, clips: Clip[]) => clips.filter((
 export function defaultFocus(festivals: Festival[], clips: Clip[]): Festival | undefined {
   let best: Festival | undefined;
   let most = 0;
-  for (const f of festivals) {
-    const n = lineupClips(f, clips).length;
+  const counts = lineupClipCounts(festivals, clips);
+  for (const [i, f] of festivals.entries()) {
+    const n = counts[i];
     if (n > most) {
       best = f;
       most = n;
@@ -90,9 +109,10 @@ export function lineupReach(festival: Festival, clips: Clip[]) {
 
 /** Other festivals worth discovering next: ones with clips to show, most clips first. */
 export function otherFestivalsWithClips(festivals: Festival[], clips: Clip[], currentId: string | undefined, max = 2) {
-  return festivals
-    .filter((f) => f.id !== currentId)
-    .map((f, i) => ({ f, i, n: lineupClips(f, clips).length }))
+  const others = festivals.filter((f) => f.id !== currentId);
+  const counts = lineupClipCounts(others, clips);
+  return others
+    .map((f, i) => ({ f, i, n: counts[i] }))
     .filter((x) => x.n > 0)
     .sort((a, b) => b.n - a.n || a.i - b.i)
     .slice(0, max)

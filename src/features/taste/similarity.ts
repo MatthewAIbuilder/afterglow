@@ -12,21 +12,25 @@ export const GUESS_TRUST = 0.8;
  */
 export function soundSimilarity(a: Artist, b: Artist) {
   const trust = a.soundGuessed || b.soundGuessed ? GUESS_TRUST : 1;
-  const tags = new Set([...Object.keys(a.sound), ...Object.keys(b.sound)]) as Set<SoundTag>;
+  // Every tag either has, a's first and then b's others (the same order, so the same sums, as a set of
+  // both): without building that set, since this runs for thousands of pairs each time taste is worked out.
   let dot = 0;
   let na = 0;
   let nb = 0;
-  for (const t of tags) {
-    const x = a.sound[t] ?? 0;
-    const y = b.sound[t] ?? 0;
+  for (const t in a.sound) {
+    const x = a.sound[t as SoundTag] ?? 0;
+    const y = b.sound[t as SoundTag] ?? 0;
     dot += x * y;
     na += x * x;
     nb += y * y;
   }
+  for (const t in b.sound) {
+    if (Object.prototype.hasOwnProperty.call(a.sound, t)) continue;
+    const y = b.sound[t as SoundTag] ?? 0;
+    nb += y * y;
+  }
   return na && nb ? (trust * dot) / Math.sqrt(na * nb) : 0;
 }
-
-const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 
 /**
  * Similarity that prefers what a source knows (e.g. listening data) and falls
@@ -34,12 +38,20 @@ const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
  */
 export function similarityWith(provided: readonly ArtistSimilarity[] = []): Similarity {
   if (provided.length === 0) return soundSimilarity;
-  const known = new Map<string, number>();
+  // Looked up by one artist and then the other (both ways round), so asking needs no new text for each pair.
+  const known = new Map<string, Map<string, number>>();
+  const put = (a: string, b: string, score: number) => {
+    let row = known.get(a);
+    if (!row) known.set(a, (row = new Map()));
+    row.set(b, score);
+  };
   for (const s of provided) {
     if (s.artistId === s.otherId || !Number.isFinite(s.score)) continue;
-    known.set(pairKey(s.artistId, s.otherId), Math.min(1, Math.max(0, s.score)));
+    const score = Math.min(1, Math.max(0, s.score));
+    put(s.artistId, s.otherId, score);
+    put(s.otherId, s.artistId, score);
   }
-  return (a, b) => known.get(pairKey(a.id, b.id)) ?? soundSimilarity(a, b);
+  return (a, b) => known.get(a.id)?.get(b.id) ?? soundSimilarity(a, b);
 }
 
 /**

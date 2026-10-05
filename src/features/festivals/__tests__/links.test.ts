@@ -87,4 +87,12 @@ describe('festival and artist relationships', () => {
     const empty: Festival = { ...horizon, id: 'empty', lineup: ['nobody'] };
     expect(otherFestivalsWithClips([empty, ...FESTIVALS], CLIPS, undefined, 5).map((f) => f.id)).toEqual(['solstice-26', 'horizon-27']);
   });
+
+  it('counts a lineup’s clips the same way everywhere, an artist listed twice once', () => {
+    const twice: Festival = { ...horizon, id: 'twice', lineup: [...horizon.lineup, ...horizon.lineup] };
+    expect(lineupClips(twice, CLIPS)).toEqual(lineupClips(horizon, CLIPS));
+    // Ties go to the first given, so a doubled lineup must not count for more.
+    expect(defaultFocus([horizon, twice], CLIPS)?.id).toBe('horizon-27');
+    expect(otherFestivalsWithClips([horizon, twice], CLIPS, undefined, 2).map((f) => f.id)).toEqual(['horizon-27', 'twice']);
+  });
 });

@@ -31,10 +31,12 @@ export function useFestivalSummary(festival: Festival) {
   );
   const loved = ranked.filter((a) => (taste[a.id] ?? 0) >= LOVE).length;
   const cover = useMemo(() => coverPhotos(festival, artistById), [festival, artistById]);
+  // Goes through every clip: once per festival and catalogue, not on every redraw of the card.
+  const reach = useMemo(() => lineupReach(festival, clips), [festival, clips]);
   return {
     ranked,
     loved,
-    reach: lineupReach(festival, clips),
+    reach,
     soon: countdown(festival, today),
     timesOut: !!festival.sets?.length,
     away: distanceTo(festival),

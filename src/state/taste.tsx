@@ -2,7 +2,7 @@ import { createContext, type ReactNode, useContext, useDeferredValue, useMemo } 
 import { MOCK_TASTE } from '../data/mock';
 import { rememberedClips } from '../features/community/clips';
 import { computeTaste, startingPrior } from '../features/taste/engine';
-import { similarityWith } from '../features/taste/similarity';
+import { similarityWith, soundSimilarity } from '../features/taste/similarity';
 import { useCatalog } from './catalog';
 import { useCommunityArtists } from './community';
 import { useMusic } from './music';
@@ -27,7 +27,9 @@ function useLiveTaste(enabled: boolean, defer: boolean) {
   const { artists, clips, similarities } = useCatalog();
   // A connected music library: its own capped layer in the engine (see IMPORT_WEIGHT).
   const { imported, importing } = useMusic();
-  const similarity = useMemo(() => similarityWith(similarities), [similarities]);
+  // Only when this one works the taste out: every row on screen asks for the taste, and building the
+  // lookup of thousands of pairs for each of them made long lists slow to open.
+  const similarity = useMemo(() => (enabled ? similarityWith(similarities) : soundSimilarity), [enabled, similarities]);
   // Community clips you reacted to count for their artist even after they've left the feed.
   const artistOf = useCommunityArtists();
   const allClips = useMemo(() => {
