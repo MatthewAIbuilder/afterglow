@@ -5,7 +5,7 @@ import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg'
 import { mixColor } from './colors';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { color, motion, type } from '../../theme/tokens';
-import { FULL_LABELS, LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
+import { LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
 import { OrbGlass, PlanetFace } from './Orb';
 
 type Props = {
@@ -27,7 +27,16 @@ type Props = {
   detailAt: number;
   /** You love or like them: a small glowing heart on the bubble. */
   loved?: boolean;
+  /** Keeps a name even with the whole map in view (their sound's strongest, or one of your top few). */
+  lead?: boolean;
 };
+
+/** Names never shrink below this on screen (as a share of their size at zoom 1), so they stay readable zoomed out. */
+const NAME_FLOOR = 0.82;
+/** ...and grow at most this much to get there. */
+const NAME_MAX_GROW = 1.8;
+/** A label line's height, so a grown name stays just under its bubble. */
+const NAME_H = 18;
 
 const LABEL_W = 150;
 const D = MAX_R * 2; // bubbles render at full size and scale down, so size can animate
@@ -39,7 +48,7 @@ const MATCH = 2.8;
 // How the map reshapes when your taste changes: unhurried, one soft overshoot.
 const reshape = { damping: 16, stiffness: 70, mass: 1.1 };
 
-function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matched, lagX, lagY, clock, scale, detailAt, loved }: Props) {
+function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matched, lagX, lagY, clock, scale, detailAt, loved, lead = false }: Props) {
   const { artist, affinity, x, y, r } = placed;
   const reduceMotion = useReducedMotion();
 
@@ -118,17 +127,20 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
     return { opacity: Math.min(1, bloom.get()), transform: [{ translateX: rr * 0.72 - 9 }, { translateY: -rr * 0.72 - 9 }] };
   });
 
-  // index is the bloom order: strongest match first. The strongest always show their name;
-  // the rest fade in as you zoom in (or when chosen or found), so the map stays calm from afar.
-  const prominent = index < FULL_LABELS;
+  // Each sound's strongest artist and your top few always show their name; the rest fade in as
+  // you zoom in (or when chosen or found), so the whole map reads calmly from afar.
+  const prominent = lead;
   // The match shows only once you pick them: the size already says it, and numbers make the universe a chart.
   const showPct = selectedId === artist.id;
   const pinned = prominent || selectedId === artist.id || !!matched;
   const labelStyle = useAnimatedStyle(() => {
-    const zoomed = Math.max(0, Math.min(1, (scale.get() - detailAt * 0.85) / (detailAt * 0.15)));
+    const z = scale.get();
+    const zoomed = Math.max(0, Math.min(1, (z - detailAt * 0.85) / (detailAt * 0.15)));
+    // Zoomed out, the name grows back against the zoom, so it stays readable over a small bubble.
+    const grow = Math.min(NAME_MAX_GROW, Math.max(1, NAME_FLOOR / z));
     return {
       opacity: pinned ? 1 : zoomed,
-      transform: [{ translateY: pr.get() * bloom.get() + LABEL_OFFSET }],
+      transform: [{ translateY: pr.get() * bloom.get() + LABEL_OFFSET + ((grow - 1) * NAME_H) / 2 }, { scale: grow }],
     };
   });
   const pctStyle = useAnimatedStyle(() => ({ opacity: showPct ? 1 : 0 }));

@@ -34,17 +34,26 @@ const RING_PLACE: Record<SoundTag, number> = {
   house: 5,
   pop: 5.5,
 };
-const MIN_R = 30;
-export const MAX_R = 78;
-const GAP = 22;
+const MIN_R = 26;
+export const MAX_R = 64;
+const GAP = 12;
 /** Extra room between artists of different sounds (the channels between groups). */
-const GROUP_SPACE = 30;
+const GROUP_SPACE = 16;
+/** How far a sound's cluster sits from you (times its rough size), and how tight its spiral is. */
+const DIST_K = 0.7;
+const RHO_K = 0.95;
 /** The golden angle: a sunflower's spiral, so a cluster packs evenly round its heart. */
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 export const LABEL_OFFSET = 8; // space between bubble and name
 /** Two sound names closer than this (across, down) would print over each other. */
 const REGION_GAP = { x: 72, y: 22 };
 const LABEL_H = 32; // name + percentage
+/** How far above its group's top bubble a sound's name sits. */
+const REGION_ABOVE = 16;
+/** How much bigger than its size at zoom 1 a sound's name is drawn when the whole map is in view (room is kept for it). */
+const REGION_GROW_ROOM = 2.2;
+/** Roughly how wide each sound's name is at zoom 1 (uppercase, spaced). */
+const SOUND_NAME_W: Partial<Record<SoundTag, number>> = { 'melodic-bass': 120, dubstep: 84, riddim: 70, trap: 52, 'hip-hop': 72, techno: 74, indie: 58, house: 62, pop: 40, rock: 50 };
 
 export type PlacedArtist = {
   artist: Artist;
@@ -59,6 +68,8 @@ export type RegionLabel = { tag: SoundTag; x: number; y: number };
 export type MapLayout = {
   bubbles: PlacedArtist[];
   regions: RegionLabel[];
+  /** Who keeps a name when the whole map is in view: each sound's strongest artist, and your top few. */
+  leaders: string[];
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 };
 
@@ -118,31 +129,33 @@ function footprint(name: string, r: number): Part[] {
   ];
 }
 
-/** The strongest matches that get a full label, and that the map's first view frames. */
-export const FULL_LABELS = 12;
+/** Your top few always keep their name on the map, beside each sound's strongest artist. */
+export const TOP_NAMED = 3;
+
+/** Zoomed out this far or more, the map shows only its leaders' names; closer in, everyone's. */
+export const DETAIL_MIN = 0.72;
+
+export type Framing = { scale: number; x: number; y: number };
 
 /**
- * The zoom that frames the map's heart: your strongest `core` matches, with
- * room for their labels, keeping your top match dead centre (the map opens
- * centred on it). Never below `min`, so bubbles stay readable; the rest of
- * a big map is a swipe away. Pure.
+ * How the map opens: the whole of it in view (the camera on the middle of
+ * everyone, which is near your top match), as big as fits, but never below
+ * `min` so bubbles stay recognisable (a very big map is then a swipe from its
+ * edges) and never above `max`. `x`, `y`: the camera's shift (screen points)
+ * from your top match. Pure.
  */
-export function fitScale(
-  layout: MapLayout,
-  width: number,
-  height: number,
-  { core = FULL_LABELS, min = 0.5, max = 1.1 }: { core?: number; min?: number; max?: number } = {},
-): number {
-  const heart = [...layout.bubbles].sort((a, b) => b.affinity - a.affinity).slice(0, core);
-  if (!heart.length) return max;
-  const halfW = Math.max(1, ...heart.map((b) => Math.abs(b.x) + b.r));
-  const halfH = Math.max(1, ...heart.map((b) => Math.max(Math.abs(b.y - b.r), Math.abs(b.y + b.r + LABEL_OFFSET + LABEL_H))));
-  const s = Math.min((width / 2 - 12) / halfW, (height / 2 - 12) / halfH);
-  return Math.min(max, Math.max(min, s));
+export function frameMap(layout: MapLayout, width: number, height: number, { min = 0.38, max = 1.1 }: { min?: number; max?: number } = {}): Framing {
+  if (!layout.bubbles.length) return { scale: max, x: 0, y: 0 };
+  const { minX, maxX, minY, maxY } = layout.bounds;
+  const s = Math.min(max, Math.max(min, Math.min((width - 24) / Math.max(1, maxX - minX), (height - 24) / Math.max(1, maxY - minY))));
+  return { scale: s, x: -((minX + maxX) / 2) * s, y: -((minY + maxY) / 2) * s };
 }
 
+/** The zoom that frames the whole map (see frameMap). */
+export const fitScale = (layout: MapLayout, width: number, height: number, opts?: { min?: number; max?: number }) => frameMap(layout, width, height, opts).scale;
+
 /** Most bubbles on the map at once: enough to feel like a universe, few enough to stay calm and fast. */
-export const MAP_MAX = 40;
+export const MAP_MAX = 26;
 
 /**
  * Who is on the map: artists the app knows something about (a starting
@@ -167,7 +180,7 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
   const ranked = [...artists]
     .map((artist) => ({ artist, affinity: taste[artist.id] ?? 0 }))
     .sort((a, b) => b.affinity - a.affinity);
-  if (ranked.length === 0) return { bubbles: [], regions: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 } };
+  if (ranked.length === 0) return { bubbles: [], regions: [], leaders: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 } };
 
   const top = ranked[0];
   const topR = bubbleRadius(top.affinity);
@@ -206,13 +219,13 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
       // How much room the cluster needs, roughly: the area of its bubbles (and their labels).
       const size = Math.sqrt(g.list.reduce((sum, o) => sum + (o.r + GAP) * (o.r + GAP + LABEL_H * 0.6), 0));
       const angle = wedges[i] + turn;
-      const dist = topR + GAP * 4 + size * 1.25;
+      const dist = topR + GAP * 2 + size * DIST_K;
       const cx = Math.cos(angle) * dist;
       const cy = Math.sin(angle) * dist;
       const step = g.list.reduce((sum, o) => sum + o.r, 0) / g.list.length + GAP;
       g.list.forEach((o, k) => {
         // A sunflower spiral round the cluster's heart: strongest first, at the middle.
-        const rho = step * 1.1 * Math.sqrt(k);
+        const rho = step * RHO_K * Math.sqrt(k);
         const theta = angle + k * GOLDEN;
         home.set(o.artist.id, { x: cx + Math.cos(theta) * rho, y: cy + Math.sin(theta) * rho });
       });
@@ -272,55 +285,55 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
   let maxX = -Infinity;
   let minY = Infinity;
   let maxY = -Infinity;
-  let reach = 0;
   for (const n of nodes) {
     for (const p of n.parts) {
       minX = Math.min(minX, n.x + p.dx - p.r);
       maxX = Math.max(maxX, n.x + p.dx + p.r);
       minY = Math.min(minY, n.y + p.dy - p.r);
       maxY = Math.max(maxY, n.y + p.dy + p.r);
-      reach = Math.max(reach, Math.hypot(n.x + p.dx, n.y + p.dy) + p.r);
     }
   }
 
-  // Faint region names sit just outside the constellation, in the direction
-  // of the artists they describe.
-  const groups = new Map<SoundTag, { x: number; y: number }>();
+  // Each sound's name sits on top of its own group, over the middle of it, so it reads like a place
+  // name on a map (and stays inside the map's frame). Biggest groups first; a name that would print
+  // over a bigger group's is left out.
+  const byTag = new Map<SoundTag, Node[]>();
   for (const node of nodes) {
-    if (node.pinned) continue; // the centre is you, not a region
-    const strongest = (Object.entries(node.artist.sound) as [SoundTag, number][]).sort((p, q) => q[1] - p[1])[0];
-    if (!strongest) continue;
-    const tag = strongest[0];
-    const len = Math.hypot(node.x, node.y);
-    const dir = len > 1 ? { x: node.x / len, y: node.y / len } : { x: Math.cos(angleOf(tag)), y: Math.sin(angleOf(tag)) };
-    const g = groups.get(tag) ?? { x: 0, y: 0 };
-    groups.set(tag, { x: g.x + dir.x, y: g.y + dir.y });
+    const tag = mainTag(node.artist);
+    if (node.pinned || tag === NO_TAG) continue;
+    byTag.set(tag as SoundTag, [...(byTag.get(tag as SoundTag) ?? []), node]);
   }
-  // Strongest regions first (most artists pulling that way); a label that would sit on top of a
-  // stronger one is left out, so neighbouring sounds never print over each other.
-  const placed = [...groups.entries()]
-    .map(([tag, g]) => ({ tag, a: Math.atan2(g.y, g.x), weight: Math.hypot(g.x, g.y) }))
-    .sort((p, q) => q.weight - p.weight);
   const kept: RegionLabel[] = [];
-  for (const { tag, a } of placed) {
-    // Just beyond that sound's own group (not the whole map), so the name sits by its artists.
-    const ux = Math.cos(a);
-    const uy = Math.sin(a);
-    let own = 0;
-    for (const node of nodes) {
-      if (node.pinned || mainTag(node.artist) !== tag) continue;
-      for (const p of node.parts) own = Math.max(own, (node.x + p.dx) * ux + (node.y + p.dy) * uy + p.r);
+  for (const [tag, list] of [...byTag.entries()].sort((p, q) => q[1].length - p[1].length)) {
+    const x = list.reduce((sum, n) => sum + n.x, 0) / list.length;
+    let y = Math.min(...list.map((n) => n.y - n.r)) - REGION_ABOVE;
+    // Zoomed out the name is drawn bigger (see SoundMap), so it needs this much room: up until it's clear of every bubble.
+    const half = { x: (SOUND_NAME_W[tag] ?? 90) * REGION_GROW_ROOM * 0.5, y: 9 * REGION_GROW_ROOM };
+    const blocked = (yy: number) => nodes.some((n) => Math.abs(n.x - x) < half.x + n.r && Math.abs(n.y - yy) < half.y + n.r);
+    for (let i = 0; i < 40 && blocked(y); i++) y -= 6;
+    if (blocked(y)) {
+      // No room above: below the group instead, else no name for it.
+      y = Math.max(...list.map((n) => n.y + n.r)) + LABEL_OFFSET + LABEL_H + REGION_ABOVE;
+      for (let i = 0; i < 40 && blocked(y); i++) y += 6;
+      if (blocked(y)) continue;
     }
-    const out = (own || reach) + 26;
-    const x = ux * out;
-    const y = uy * out;
     if (kept.some((r) => Math.abs(r.x - x) < REGION_GAP.x && Math.abs(r.y - y) < REGION_GAP.y)) continue;
     kept.push({ tag, x, y });
   }
-  // In the order the map meets them, as before.
-  const regions = [...groups.keys()].flatMap((tag) => kept.filter((r) => r.tag === tag));
+  // In ring order, as the map meets them.
+  const regions = kept.sort((p, q) => norm(angleOf(p.tag)) - norm(angleOf(q.tag)));
+  // The frame takes in the names too.
+  for (const r of regions) {
+    minY = Math.min(minY, r.y - REGION_HIT.y);
+    minX = Math.min(minX, r.x - REGION_HIT.x / 2);
+    maxX = Math.max(maxX, r.x + REGION_HIT.x / 2);
+  }
 
-  return { bubbles, regions, bounds: { minX, maxX, minY, maxY } };
+  // Each sound's strongest artist, and your top few, keep their names when the map is zoomed out.
+  const leaders = new Set(ranked.slice(0, TOP_NAMED).map((o) => o.artist.id));
+  for (const g of ordered) if (g.list[0]) leaders.add(g.list[0].artist.id);
+
+  return { bubbles, regions, leaders: [...leaders], bounds: { minX, maxX, minY, maxY } };
 }
 
 /** Cosine similarity of sound profiles. Lives in taste/similarity; re-exported so existing imports keep working. */
