@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
+import { LastUpdated } from '../offline/LastUpdated';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -58,7 +59,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
   const me = social.profile;
   const catalog = useCatalog();
   const today = useToday();
-  const { crews, crewsAt } = useCrews();
+  const { crews, crewsAt, confirmed: crewsConfirmed, keptAt: crewsKeptAt } = useCrews();
   const { stories, profileOf, ready: updatesReady } = useCrewUpdates();
   const chat = useCrewChat();
   // At the festival: your crews there come first, with where everyone is.
@@ -241,6 +242,9 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                       <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={here.length > 1} />
                     ))}
                   </>
+                ) : !crewsConfirmed && crewsKeptAt === undefined && social.user ? (
+                  // No signal and nothing kept on this phone yet: say so, rather than offer a new crew.
+                  <LastUpdated live={false} />
                 ) : (
                   <Pressable
                     onPress={() => {

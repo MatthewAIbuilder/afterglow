@@ -1,3 +1,4 @@
+import { useNetworkState } from 'expo-network';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -26,6 +27,8 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { WEB_URL } from '../../config/app';
 import { ShareCard } from '../../features/messages/ShareCard';
+import { LastUpdated } from '../../features/offline/LastUpdated';
+import { isOffline } from '../../features/offline/status';
 import { parseShare, shareNoun } from '../../features/messages/shares';
 
 const AMBER = '#FFB86B';
@@ -46,6 +49,7 @@ export default function CrewChatScreen() {
   const social = useSocial();
   const me = social.user?.uid;
   const chat = useCrewChat();
+  const offline = isOffline(useNetworkState());
   const { page } = useCrewPage(id);
   const catalog = useCatalog();
   const now = useNow().getTime();
@@ -173,8 +177,10 @@ export default function CrewChatScreen() {
             <Text style={styles.rulesLink}>Community guidelines</Text>
           </Pressable>
         </View>
+        {/* No signal: the chat as this phone last read it, said plainly (yours still send by themselves). */}
+        {offline ? <LastUpdated at={chat.readFor(id).at} live={false} /> : null}
         {!chat.loaded(id) && !lines.length ? <ActivityIndicator color={color.glow} /> : null}
-        {chat.loaded(id) && !lines.length ? <Text style={[styles.quiet, styles.center]}>{direct ? `No messages yet. Say hi to ${otherName}.` : 'No messages yet. Say hi to your crew.'}</Text> : null}
+        {chat.loaded(id) && !lines.length && !offline ? <Text style={[styles.quiet, styles.center]}>{direct ? `No messages yet. Say hi to ${otherName}.` : 'No messages yet. Say hi to your crew.'}</Text> : null}
         {rows.map((row) => {
           if (row.kind === 'day')
             return (

@@ -1,4 +1,5 @@
 import { BlurView } from 'expo-blur';
+import { useNetworkState } from 'expo-network';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -17,6 +18,7 @@ import { type WhenFilter, WHEN_LABEL, filterWhen, inView, inViewLine, searchMark
 import { TONE_COLOR } from '../features/festival-map/tones';
 import { type MapFilter, type Marker, type Region, filterMarkers, inDateOrder, journeyOf, mapMarkers, unplacedLine } from '../features/festival-map/map';
 import { whereWhen } from '../features/festivals/format';
+import { isOffline } from '../features/offline/status';
 import { distanceLabel } from '../features/festivals/near';
 import { lovedOn, whenRank } from '../features/festivals/shelves';
 import { dateBlock } from '../features/festivals/timeline';
@@ -143,6 +145,8 @@ export default function FestivalMapScreen() {
     }
   };
 
+  // On phones the streets underneath come from Apple or Google Maps: with no signal only what was seen before shows.
+  const offline = isOffline(useNetworkState()) && Platform.OS !== 'web';
   const headerH = insets.top + (touring ? 64 : 112);
   const cardsSpace = cards.length ? CARDS_H + insets.bottom + space.lg : insets.bottom;
   const chips = [
@@ -202,7 +206,13 @@ export default function FestivalMapScreen() {
               {touring ? `${touring.name} on tour` : 'Festival map'}
             </Text>
             <Text style={styles.sub}>
-              {touring ? tourLine(markers.length) : view ? `${inViewLine(cards.length)} · ${markers.length} in all` : subLine(markers.length, filter)}
+              {offline
+                ? 'No signal · the streets may not load, the festivals still show'
+                : touring
+                  ? tourLine(markers.length)
+                  : view
+                    ? `${inViewLine(cards.length)} · ${markers.length} in all`
+                    : subLine(markers.length, filter)}
             </Text>
           </View>
         )}

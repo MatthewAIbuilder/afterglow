@@ -37,7 +37,10 @@ import {
   updateDoc,
   where,
   writeBatch,
+  type DocumentData,
+  type DocumentReference,
   type Firestore,
+  type Query,
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
@@ -144,6 +147,23 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         },
       );
     });
+
+  /** A read with no answer by then counts as no signal, so nothing waits forever on festival signal. */
+  const READ_TIMEOUT_MS = 12_000;
+  /**
+   * A query read from the server. With no signal Firestore answers from its
+   * memory instead (empty on a fresh start), which would look like "you have
+   * no crews": that counts as no signal, so the app shows what it kept.
+   */
+  const serverDocs = async (q: Query<DocumentData>) => {
+    const snap = await withTimeout(getDocs(q), READ_TIMEOUT_MS);
+    if (snap.metadata.fromCache) throw new SocialError('network');
+    return snap;
+  };
+  /** A document read that gives up after READ_TIMEOUT_MS (Firestore already fails one it can't reach). */
+  const readDoc = (r: DocumentReference<DocumentData>) => withTimeout(getDoc(r), READ_TIMEOUT_MS);
+  /** Snapshots made from an empty memory with no signal say nothing yet: they're skipped, so what was kept stays. */
+  const nothingYet = (snap: { empty: boolean; metadata: { fromCache: boolean } }) => snap.empty && snap.metadata.fromCache;
 
   async function upload(path: string, uri: string, contentType: string, onProgress?: (s: number) => void) {
     const blob = await (await fetch(uri)).blob();
@@ -288,7 +308,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await deleteUser(user);
       }),
 
-    profileOf: (uid) => guard(async () => profileFromDoc(uid, (await getDoc(doc(fb().db, 'profiles', uid))).data())),
+    profileOf: (uid) => guard(async () => profileFromDoc(uid, (await readDoc(doc(fb().db, 'profiles', uid))).data())),
     profileByHandle: (handle) =>
       guard(async () => {
         const hdoc = await getDoc(doc(fb().db, 'handles', normalizeHandle(handle)));
@@ -776,7 +796,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     livePatches: () =>
       guard(async () => {
         // The newest 200 (so a new update always reaches phones), applied oldest first.
-        const snap = await getDocs(query(collection(fb().db, 'published'), orderBy('publishedAt', 'desc'), limit(200)));
+        // From the server only: an empty answer from memory with no signal would take every update off this phone.
+        const snap = await serverDocs(query(collection(fb().db, 'published'), orderBy('publishedAt', 'desc'), limit(200)));
         return snap.docs
           .map((d) => patchFromDoc(d.id, d.data()))
           .filter((x): x is NonNullable<typeof x> => !!x)
@@ -851,7 +872,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     removeFollower: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${uid}_${me().uid}`))),
     following: (uid, max) =>
       guard(async () => {
-        const snap = await getDocs(query(collection(fb().db, 'follows'), where('from', '==', uid), orderBy('createdAt', 'desc'), limit(max)));
+        const snap = await serverDocs(query(collection(fb().db, 'follows'), where('from', '==', uid), orderBy('createdAt', 'desc'), limit(max)));
         return snap.docs.map((d) => (d.data() as { to?: unknown }).to).filter((x): x is string => typeof x === 'string');
       }),
     followers: (uid, max) =>
@@ -955,11 +976,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await setDoc(doc(fb().db, 'crews', crewRef.id, 'joins', user.uid), { agreed: true, at: serverTimestamp() }).catch(() => {});
         return { id: crewRef.id, ...data };
       }),
-    crew: (id) => guard(async () => crewFromDoc(id, (await getDoc(doc(fb().db, 'crews', id))).data())),
+    crew: (id) => guard(async () => crewFromDoc(id, (await readDoc(doc(fb().db, 'crews', id))).data())),
     myCrews: () =>
       guard(async () => {
         const user = me();
-        const snap = await getDocs(query(collection(fb().db, 'crews'), where('members', 'array-contains', user.uid), limit(50)));
+        const snap = await serverDocs(query(collection(fb().db, 'crews'), where('members', 'array-contains', user.uid), limit(50)));
         return snap.docs.map((d) => crewFromDoc(d.id, d.data())).filter((c): c is Crew => !!c);
       }),
     joinCrew: (id, code) =>
@@ -1028,7 +1049,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     crewInvites: (max) =>
       guard(async () => {
         const user = me();
-        const snap = await getDocs(query(collection(fb().db, 'crewInvites'), where('to', '==', user.uid), orderBy('createdAt', 'desc'), limit(max)));
+        const snap = await serverDocs(query(collection(fb().db, 'crewInvites'), where('to', '==', user.uid), orderBy('createdAt', 'desc'), limit(max)));
         return snap.docs.map((d) => crewInviteFromDoc(d.id, d.data())).filter((i): i is CrewInvite => !!i);
       }),
     sentCrewInvites: (crewId) =>
@@ -1266,7 +1287,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     crewPicks: (id) =>
       guard(async () => {
-        const snap = await getDocs(collection(fb().db, 'crews', id, 'picks'));
+        const snap = await serverDocs(collection(fb().db, 'crews', id, 'picks'));
         return snap.docs.map((d) => crewPicksFromDoc(d.id, d.data())).filter((p): p is CrewPicks => !!p);
       }),
 
@@ -1335,7 +1356,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     crewUpdates: (crewId, sinceMs, max) =>
       guard(async () => {
-        const snap = await getDocs(
+        const snap = await serverDocs(
           query(collection(fb().db, 'crews', crewId, 'updates'), where('atMs', '>=', sinceMs), orderBy('atMs', 'desc'), limit(max)),
         );
         return snap.docs.map((d) => crewUpdateFromDoc(crewId, d.id, d.data())).filter((u): u is CrewUpdate => !!u);
@@ -1376,7 +1397,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       if (!firebaseConfigured(config)) return () => {};
       return onSnapshot(
         query(collection(fb().db, ...room(crewId), 'chat'), orderBy('sentAt', 'desc'), limit(max)),
-        (snap) => listener(snap.docs.map((d) => crewMessageFromDoc(crewId, d.id, d.data({ serverTimestamps: 'estimate' }))).filter((m): m is CrewMessage => !!m)),
+        (snap) => !nothingYet(snap) && listener(snap.docs.map((d) => crewMessageFromDoc(crewId, d.id, d.data({ serverTimestamps: 'estimate' }))).filter((m): m is CrewMessage => !!m)),
         (e) => onError?.(asSocialError(e)),
       );
     },
@@ -1390,6 +1411,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       return onSnapshot(
         collection(fb().db, ...room(crewId), 'reads'),
         (snap) => {
+          if (nothingYet(snap)) return;
           const reads: Record<string, string> = {};
           for (const d of snap.docs) {
             const at = readTime(d.data({ serverTimestamps: 'estimate' }).at);
@@ -1422,6 +1444,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       return onSnapshot(
         query(collection(fb().db, 'dms'), where('members', 'array-contains', user.uid), limit(200)),
         (snap) =>
+          !nothingYet(snap) &&
           listener(
             snap.docs.flatMap((d) => {
               const members = d.data().members;
@@ -1432,7 +1455,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       );
     },
     meetSpot: (crewId) =>
-      guard(async () => meetSpotFromDoc((await getDoc(doc(fb().db, 'crews', crewId, 'meta', 'meet'))).data())),
+      guard(async () => meetSpotFromDoc((await readDoc(doc(fb().db, 'crews', crewId, 'meta', 'meet'))).data())),
     setMeetSpot: (crewId, raw) =>
       guard(async () => {
         const user = me();
@@ -1487,7 +1510,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const user = fb().auth.currentUser;
         if (!user) return [];
-        const d = await getDoc(doc(fb().db, 'blocks', user.uid));
+        const d = await readDoc(doc(fb().db, 'blocks', user.uid));
         const uids = d.exists() ? (d.data() as { uids?: unknown }).uids : [];
         return Array.isArray(uids) ? uids.filter((x): x is string => typeof x === 'string') : [];
       }),

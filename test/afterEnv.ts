@@ -9,6 +9,7 @@ import { forgetShowLevel } from '../src/state/showLevel';
 import { forgetCloseFriends } from '../src/state/closeFriends';
 import { forgetBadgeClaims } from '../src/state/badgeClaims';
 import { forgetScouted } from '../src/state/scouted';
+import { forgetLastKnown } from '../src/state/lastKnown';
 
 // Shared stores (daily quests, secrets, tips): start every test with fresh ones.
 beforeEach(() => {
@@ -22,4 +23,5 @@ beforeEach(() => {
   forgetCloseFriends();
   forgetBadgeClaims();
   forgetScouted();
+  forgetLastKnown();
 });

@@ -1,9 +1,12 @@
+import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { crewPath, crewStars, distinctNames, picksChanged, type CrewStars } from '../features/crews/together';
 import { WEB_URL } from '../config/app';
 import type { Crew, CrewInvite, CrewPicks, Profile } from '../features/social/models';
 import { openInvites } from '../features/crews/invite';
+import { isOffline } from '../features/offline/status';
+import { lastKnownFor, rememberLastKnown } from './lastKnown';
 import { usePlan } from './plan';
 import { useSocial } from './social';
 
@@ -20,6 +23,8 @@ type Ctx = {
   loaded: boolean;
   /** Your crews were read from the server this session (not a list left empty by a failed read): safe to tidy against. */
   confirmed: boolean;
+  /** When the crews shown are this phone's copy (no signal on opening): when they were last read. */
+  keptAt?: number;
   crewsAt: (festivalId: string) => Crew[];
   create: (festivalId: string, name: string) => Promise<Crew>;
   /** Join a crew you were invited to (in the app, or with an invite link's `code`). */
@@ -56,7 +61,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
   const { service } = social;
   const uid = social.user?.uid;
   const active = social.availability.ok && !!uid;
-  const [state, setState] = useState<{ uid?: string; crews: Crew[]; loaded: boolean; confirmed?: boolean }>({ crews: [], loaded: false });
+  const [state, setState] = useState<{ uid?: string; crews: Crew[]; loaded: boolean; confirmed?: boolean; keptAt?: number }>({ crews: [], loaded: false });
   // Invites sent to you (read with your crews), and the profiles of who sent them.
   const [inviteState, setInviteState] = useState<{ uid?: string; list: CrewInvite[] }>({ list: [] });
   const [inviters, setInviters] = useState<Record<string, Profile>>({});
@@ -75,20 +80,34 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
     try {
       const crews = await service.myCrews();
-      if (currentUid.current === uid) setState({ uid, crews, loaded: true, confirmed: true });
+      if (currentUid.current === uid) {
+        setState({ uid, crews, loaded: true, confirmed: true });
+        rememberLastKnown(uid, { crews: { value: crews, at: Date.now() } });
+      }
     } catch {
-      if (currentUid.current === uid) setState((s) => (s.uid === uid ? { ...s, loaded: true } : { uid, crews: [], loaded: true }));
+      // No answer: keep what's shown, or this phone's copy (never "no crews").
+      const kept = (await lastKnownFor(uid))?.crews;
+      if (currentUid.current === uid)
+        setState((s) => (s.uid === uid && (s.confirmed || !kept) ? { ...s, loaded: true } : { uid, crews: kept?.value ?? [], loaded: true, keptAt: kept?.at }));
     }
   }, [active, uid, service]);
 
-  // Load on sign-in and whenever the app comes back (someone may have joined or left).
+  // Load on sign-in and whenever the app comes back (someone may have joined or left), and when signal comes back.
   useEffect(() => {
     if (!active || !uid) return;
     let live = true;
     service
       .myCrews()
-      .then((list) => live && setState({ uid, crews: list, loaded: true, confirmed: true }))
-      .catch(() => live && setState({ uid, crews: [], loaded: true }));
+      .then((list) => {
+        if (!live) return;
+        setState({ uid, crews: list, loaded: true, confirmed: true });
+        rememberLastKnown(uid, { crews: { value: list, at: Date.now() } });
+      })
+      .catch(async () => {
+        // No signal on opening: your crews as this phone last read them.
+        const kept = (await lastKnownFor(uid))?.crews;
+        if (live) setState({ uid, crews: kept?.value ?? [], loaded: true, keptAt: kept?.at });
+      });
     service
       .crewInvites(INVITES_MAX)
       .then((list) => live && setInviteState({ uid, list }))
@@ -102,10 +121,18 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
     const sub = AppState.addEventListener('change', (s) => s === 'active' && refresh());
     return () => sub.remove();
   }, [active, refresh]);
+  const offline = isOffline(useNetworkState());
+  const unconfirmed = active && !!uid && state.uid === uid && state.loaded && !state.confirmed;
+  useEffect(() => {
+    if (offline || !unconfirmed) return;
+    const t = setTimeout(() => void refresh(), 0);
+    return () => clearTimeout(t);
+  }, [offline, unconfirmed, refresh]);
 
   const crews = useMemo(() => (active && state.uid === uid ? state.crews : []), [active, state, uid]);
   const loaded = active && state.uid === uid && state.loaded;
   const confirmed = loaded && !!state.confirmed;
+  const keptAt = loaded && !state.confirmed ? state.keptAt : undefined;
   const invites = useMemo(
     () => (active && inviteState.uid === uid ? openInvites(inviteState.list, { myCrews: crews.map((c) => c.id), blocked: social.blocked }) : []),
     [active, inviteState, uid, crews, social.blocked],
@@ -214,17 +241,44 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
 
   // Your crewmates' stars, for showing across the app: read whenever your crews are (sign-in, coming
   // back to the app, joining or leaving), with their names (profiles read once per session).
+  // With no signal, each crew's stars and each crewmate's name come from this phone's copy (state/lastKnown).
   const profiles = useRef(new Map<string, Profile | null>());
+  const keptPeople = useRef(new Set<string>());
   const [crewData, setCrewData] = useState<{ uid?: string; list: { crew: Crew; picks: CrewPicks[] }[]; names: Record<string, string> }>({ list: [], names: {} });
+  const [picksTick, setPicksTick] = useState(0);
   useEffect(() => {
     if (!active || !uid || !crews.length) return;
     let live = true;
     (async () => {
+      const kept = await lastKnownFor(uid);
+      const read: Record<string, CrewPicks[]> = {};
       const list = await Promise.all(
-        crews.map(async (crew) => ({ crew, picks: await service.crewPicks(crew.id).catch(() => [] as CrewPicks[]) })),
+        crews.map(async (crew) => {
+          const picks = await service.crewPicks(crew.id).catch(() => undefined);
+          if (picks) read[crew.id] = picks;
+          return { crew, picks: picks ?? kept?.picks?.[crew.id] ?? [] };
+        }),
       );
       const missing = [...new Set(crews.flatMap((c) => c.members))].filter((m) => m !== uid && !profiles.current.has(m));
-      await Promise.all(missing.map(async (m) => profiles.current.set(m, await service.profileOf(m).catch(() => null))));
+      const people: Record<string, Profile> = {};
+      await Promise.all(
+        missing.map(async (m) => {
+          try {
+            const p = await service.profileOf(m);
+            profiles.current.set(m, p);
+            keptPeople.current.delete(m);
+            if (p) people[m] = p;
+          } catch {
+            // No answer: this phone's copy for now, read again next time.
+            const k = kept?.people?.[m];
+            if (k) {
+              profiles.current.set(m, k);
+              keptPeople.current.add(m);
+            }
+          }
+        }),
+      );
+      if (Object.keys(read).length || Object.keys(people).length) rememberLastKnown(uid, { picks: read, people });
       // First names, told apart when two people share one ("Sam K." and "Sam R.").
       const names = distinctNames([...profiles.current].flatMap(([m, p]) => (p ? [{ uid: m, displayName: p.displayName }] : [])));
       if (live) setCrewData({ uid, list, names });
@@ -232,7 +286,17 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
     return () => {
       live = false;
     };
-  }, [active, uid, crews, service]);
+  }, [active, uid, crews, service, picksTick]);
+  // Signal back: read the stars again (a copy from this phone is only for now).
+  const wasOffline = useRef(false);
+  useEffect(() => {
+    if (offline) wasOffline.current = true;
+    else if (wasOffline.current) {
+      wasOffline.current = false;
+      for (const m of keptPeople.current) profiles.current.delete(m);
+      setPicksTick((n) => n + 1);
+    }
+  }, [offline]);
   const stars = useMemo<CrewStars>(() => {
     if (!active || crewData.uid !== uid) return {};
     // Only crews you're still in (leaving one stops its stars at once).
@@ -249,6 +313,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       crews,
       loaded,
       confirmed,
+      keptAt,
       crewsAt: (festivalId) => crews.filter((c) => c.festivalId === festivalId),
       create,
       join,
@@ -264,7 +329,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       inviters,
       declineInvite,
     }),
-    [crews, loaded, confirmed, create, join, inviteLink, newInviteLink, leave, end, rename, remove, refresh, stars, invites, inviters, declineInvite],
+    [crews, loaded, confirmed, keptAt, create, join, inviteLink, newInviteLink, leave, end, rename, remove, refresh, stars, invites, inviters, declineInvite],
   );
   return <CrewsContext.Provider value={value}>{children}</CrewsContext.Provider>;
 }
