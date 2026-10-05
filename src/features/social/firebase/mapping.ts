@@ -3,7 +3,7 @@ import { cleanPast } from '../../memories/past';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
 import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
-import { cleanHunt, cleanName, type Hunt, isHuntId, type Sticker } from '../../finds/finds';
+import { cleanHunt, cleanName, type Hunt, isHuntId, isStickerCode, type Sticker } from '../../finds/finds';
 
 /**
  * Database documents to the app's shapes, without trusting them: a field of
@@ -371,6 +371,14 @@ const millisOf = (v: unknown) => {
   return t ? Date.parse(t) : undefined;
 };
 
+/** One of your finds from its document (`finds/<uid>_<code>`): its code and when you scanned it. */
+export function accountFindFromDoc(d: unknown): { code: string; at: number } | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as { code?: unknown; at?: unknown };
+  const at = millisOf(o.at);
+  return isStickerCode(o.code) && at !== undefined ? { code: o.code, at } : null;
+}
+
 /** A sticker from its document. */
 export function stickerFromDoc(code: string, d: unknown): Sticker | null {
   if (!d || typeof d !== 'object') return null;
@@ -380,6 +388,8 @@ export function stickerFromDoc(code: string, d: unknown): Sticker | null {
   if (!name || !creature) return null;
   const until = millisOf(o.until);
   const createdAt = millisOf(o.createdAt);
+  // Taken down: a time from the server (or now, for a write still on its way).
+  const takenDownAt = o.takenDown === true ? (millisOf(o.takenDownAt) ?? Date.now()) : undefined;
   const slot = typeof o.slot === 'number' ? o.slot : undefined;
   return {
     code,
@@ -389,6 +399,7 @@ export function stickerFromDoc(code: string, d: unknown): Sticker | null {
     ...(until !== undefined ? { until } : {}),
     ...(str(o.festivalId) ? { festivalId: str(o.festivalId) } : {}),
     ...(createdAt !== undefined ? { createdAt } : {}),
+    ...(takenDownAt !== undefined ? { takenDownAt } : {}),
   };
 }
 

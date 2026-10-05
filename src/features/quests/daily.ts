@@ -303,6 +303,8 @@ export function turnOver(book: QuestBook | undefined, now: number, counts: Count
   if (!book) return { day, base: counts, events: {}, done: [], week, weekBase: counts, weekDone: false, lit: [], glow: 0 };
   let next = book;
   if (book.needsBase) next = { ...next, base: counts, weekBase: counts, needsBase: undefined };
+  // The clock (or time zone) went back a day: keep today as it is, so its quests can't be done again.
+  if (day < book.day) return next;
   if (book.day !== day) next = { ...next, day, base: counts, events: {}, done: [], picks: undefined };
   if (book.week !== week) next = { ...next, week, weekBase: counts, weekDone: false };
   if (next !== book) next = { ...next, lit: next.lit.filter((d) => d >= shiftDay(day, HISTORY_DAYS)) };
@@ -448,6 +450,22 @@ export function levelName(level: number): string {
 
 /** Glow for each secret found. */
 export const SECRET_FIND_GLOW = 50;
+
+/**
+ * How many claimed badges count for glow: not side quests (they count as side
+ * quests), and a throwback only while you still have it (`past:` keys come
+ * and go as memories are tagged, so a claim alone would count again and
+ * again). `throwbacks`: the throwback keys you have now.
+ */
+export function badgeGlowCount(claimed: Iterable<string> | undefined, sideQuestKeys: ReadonlySet<string>, throwbacks: ReadonlySet<string>): number {
+  let n = 0;
+  for (const k of claimed ?? []) {
+    if (sideQuestKeys.has(k)) continue;
+    if (k.startsWith('past:') && !throwbacks.has(k)) continue;
+    n++;
+  }
+  return n;
+}
 
 /** All your glow: daily and weekly quests, plus side quests, milestones and secrets. */
 export const totalGlow = (book: Pick<QuestBook, 'glow'> | undefined, sideQuests: number, milestones: number, secrets = 0) =>
