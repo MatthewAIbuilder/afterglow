@@ -1,12 +1,25 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCatalogSettled } from '../state/catalog';
 import { color, space, type } from '../theme/tokens';
 import { NightSky } from './NightSky';
 import { PageActions } from './PageActions';
 import { HiddenToe } from '../features/toes/Toe';
 
 /** A link to something that isn't on Afterglow (any more): say so, and offer a way on. */
-export function Missing({ title, line }: { title: string; line: string }) {
+export function Missing({ title, line, wait = true }: { title: string; line: string; wait?: boolean }) {
+  // Opened fresh from a link: the newest festivals and artists come with the hosted catalogue, so wait for it first.
+  const settled = useCatalogSettled();
+  if (wait && !settled)
+    return (
+      <View style={styles.root}>
+        <NightSky />
+        <View style={styles.body}>
+          <ActivityIndicator color={color.moonDim} accessibilityLabel="Loading" />
+        </View>
+        <PageActions />
+      </View>
+    );
   return (
     <View style={styles.root}>
       <NightSky />

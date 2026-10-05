@@ -1,11 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { useVideoPlayer, VideoView, type VideoPlayer } from 'expo-video';
 import { EdgeGlow } from '../../components/EdgeGlow';
 import { showsGlow } from '../../features/standing/standing';
 import { useStanding } from '../../features/standing/useStanding';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import type { SharedMemory } from '../../features/social/models';
@@ -51,13 +51,16 @@ export default function SharedMemoryScreen() {
   // Whether your like was already counted when the number loaded, so liking here moves it by one.
   const [countedMine, setCountedMine] = useState(false);
 
+  const me = social.user?.uid;
+  // Videos are for people with an account: signed out, it asks you to sign in rather than calling it gone.
+  const signedOut = social.ready && !me;
   useEffect(() => {
+    if (!me) return;
     social.service
       .sharedMemory(id)
       .then(setM)
       .catch(() => setM(null));
-  }, [id, social.service]);
-  const me = social.user?.uid;
+  }, [id, me, social.service]);
   // Someone else's video, watched here, counts as seen (each video once), like one in Discover:
   // that's what the "In the crowd" daily quest counts.
   const { markSeen } = useSeen();
@@ -97,10 +100,22 @@ export default function SharedMemoryScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, me, social.service]);
 
+  // Browsers only start a video by itself when it's muted: there it starts quiet, and a tap brings the sound.
+  const [quiet, setQuiet] = useState(Platform.OS === 'web');
   const player = useVideoPlayer(m?.videoUrl ?? null, (p) => {
     p.loop = true;
+    p.muted = Platform.OS === 'web';
     p.play();
   });
+  const tapVideo = () => {
+    haptic.select();
+    if (quiet) {
+      soundOn(player);
+      setQuiet(false);
+      player.play();
+    } else if (player.playing) player.pause();
+    else player.play();
+  };
 
   const blocked = !!m && social.blocked.has(m.uid);
   const mine = !!m && m.uid === social.user?.uid;
@@ -147,8 +162,22 @@ export default function SharedMemoryScreen() {
   return (
     <View style={styles.root}>
       {m && !blocked ? <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} /> : null}
+      {m && !blocked ? (
+        <Pressable onPress={tapVideo} style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={quiet ? 'Turn the sound on' : 'Play or pause'}>
+          {quiet ? <Text style={[styles.center, styles.sound]}>Tap for sound</Text> : null}
+        </Pressable>
+      ) : null}
       {m && !blocked && showsGlow(filmer) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label /> : null}
-      {m === undefined ? <ActivityIndicator color={color.glow} style={styles.center} /> : null}
+      {signedOut ? (
+        <View style={[styles.center, styles.signIn]}>
+          <Text style={styles.gone}>Sign in to watch videos from the crowd.</Text>
+          <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={styles.action}>
+            <Text style={styles.actionText}>Sign in or create a free account</Text>
+          </Pressable>
+        </View>
+      ) : m === undefined ? (
+        <ActivityIndicator color={color.glow} style={styles.center} />
+      ) : null}
       {m === null || blocked ? <Text style={[styles.center, styles.gone]}>{blocked ? 'You blocked this person.' : 'This video isn’t available any more.'}</Text> : null}
       <LinearGradient colors={['rgba(3,2,10,0)', 'rgba(3,2,10,0.85)']} style={styles.scrim} pointerEvents="none" />
       <View style={[styles.close, { top: insets.top + space.sm }]}>
@@ -215,10 +244,16 @@ export default function SharedMemoryScreen() {
   );
 }
 
+const soundOn = (p: VideoPlayer) => {
+  p.muted = false;
+};
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
   center: { position: 'absolute', top: '45%', alignSelf: 'center' },
-  gone: { ...type.body, color: color.moonDim },
+  gone: { ...type.body, color: color.moonDim, textAlign: 'center' },
+  signIn: { alignItems: 'center', gap: space.md, paddingHorizontal: space.xl },
+  sound: { ...type.label, color: color.moon, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(3,2,10,0.55)', overflow: 'hidden' },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '40%' },
   close: { position: 'absolute', left: space.lg },
   info: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, gap: 2 },

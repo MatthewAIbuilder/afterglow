@@ -91,7 +91,7 @@ export default function ThisOrThatScreen() {
       </View>
 
       {pairs.length < ROUNDS_MIN ? (
-        <NotEnough onPick={() => router.replace('/pick-artists')} />
+        <NotEnough onPick={() => router.replace(then ? { pathname: '/pick-artists', params: { then } } : '/pick-artists')} />
       ) : round < pairs.length ? (
         <Round key={round} a={pairs[round].a} b={pairs[round].b} onAnswer={answer} bottom={insets.bottom} />
       ) : (

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { isSupportAccount } from '../features/admin/admin';
 import type { Memory } from '../features/memories/models';
 import type { Profile, ProfileInput, ReportReason, SocialUser } from '../features/social/models';
 import { publishedChanged } from '../features/social/publish';
@@ -153,8 +154,9 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   );
 
   // Keep "Going to" and "My sound" current (a few seconds after they settle, only when they changed).
+  // Never on the support account: plans and taste are this phone's, so switching to HQ would publish yours there.
   useEffect(() => {
-    if (!profile || !publishedChanged(profile, published.festivals, published.sounds)) return;
+    if (!profile || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds)) return;
     const t = setTimeout(() => {
       const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound, socials: profile.socials ?? {} };
       service
@@ -163,7 +165,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         .catch(() => {});
     }, 3000);
     return () => clearTimeout(t);
-  }, [profile, published, service]);
+  }, [profile, published, service, user]);
 
   const signUp = useCallback(async (email: string, password: string) => void (await service.signUp(email, password)), [service]);
   const signIn = useCallback(async (email: string, password: string) => void (await service.signIn(email, password)), [service]);

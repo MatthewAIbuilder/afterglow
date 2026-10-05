@@ -42,10 +42,12 @@
         height: 100%;
         flex: 1;
       }
-      /* Text fields show focus with their own rounded border, not the browser's square outline. */
+      /* The field you're typing in shows a soft rounded glow, not the browser's square outline. */
       input:focus,
       textarea:focus {
-        outline: none;
+        outline: 2px solid rgba(169, 124, 255, 0.55);
+        outline-offset: 2px;
+        border-radius: 6px;
       }
     </style>
   </head>

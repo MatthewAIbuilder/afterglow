@@ -98,3 +98,13 @@ describe('finding a festival', () => {
     expect(searchFestivals(festivals, '  ')).toEqual([]);
   });
 });
+
+describe('letters without a plain form', () => {
+  it('finds Ł, ß, Æ and names in other alphabets', () => {
+    expect(matchesName('Łódź Festival', 'lodz')).toBe(true);
+    expect(matchesName('Straße', 'strasse')).toBe(true);
+    expect(matchesName('Æther', 'aether')).toBe(true);
+    expect(matchesName('Кино', 'кин')).toBe(true);
+    expect(matchesName('Кино', 'abc')).toBe(false);
+  });
+});

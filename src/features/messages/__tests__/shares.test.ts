@@ -41,6 +41,7 @@ describe('shares in chats', () => {
 
   it('says what was sent, and where it opens', () => {
     expect(all.map(shareNoun)).toEqual(['a festival', 'must-sees', 'an artist', 'a live set', 'a profile']);
+    expect(shareRoute(all[1])).toEqual({ pathname: '/festival/[id]', params: { id: 'edc-orlando-26', must: 'subtronics,fred-again' } });
     expect(shareRoute(all[3])).toEqual({ pathname: '/', params: { clip: 'clip_42' } });
     expect(shareRoute(all[4])).toEqual({ pathname: '/u/[handle]', params: { handle: 'maya.lin' } });
   });

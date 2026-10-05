@@ -164,8 +164,20 @@ export default function PublicProfileScreen() {
   ];
 
   let body: React.ReactNode;
-  if (!social.availability.ok || !social.user) {
-    body = <Text style={styles.body}>{social.availability.ok ? 'Sign in to see profiles.' : SOCIAL_ERROR_COPY.unavailable}</Text>;
+  if (!social.availability.ok) {
+    body = <Text style={styles.body}>{SOCIAL_ERROR_COPY.unavailable}</Text>;
+  } else if (!social.user) {
+    body = social.ready ? (
+      <View style={[styles.center, styles.signIn]}>
+        <Text style={styles.signInTitle}>{`@${handle} is on Afterglow`}</Text>
+        <Text style={styles.body}>Sign in to see their profile, the festivals they’re going to and their videos.</Text>
+        <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={styles.signInButton}>
+          <Text style={styles.signInText}>Sign in or create a free account</Text>
+        </Pressable>
+      </View>
+    ) : (
+      <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />
+    );
   } else if (profile === undefined) {
     body = <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
   } else if (!profile) {
@@ -359,5 +371,9 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.lg },
   center: { alignItems: 'center', gap: space.md },
   link: { ...type.label, color: color.glow },
+  signIn: { paddingTop: space.xxxl * 2 },
+  signInTitle: { ...type.title, color: color.moon, textAlign: 'center' },
+  signInButton: { marginTop: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow },
+  signInText: { ...type.headline, color: color.night },
   pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
 });

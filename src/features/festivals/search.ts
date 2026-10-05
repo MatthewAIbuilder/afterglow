@@ -6,10 +6,13 @@ import { SOUND_TAGS, type Artist, type Festival, type SoundTag } from '../../dat
  * "contra" finds CØNTRA and "kiki" finds KI/KI.
  */
 
+/** Letters that don't break down into a plain letter and an accent. */
+const LETTERS: Record<string, string> = { Ø: 'o', ø: 'o', Ł: 'l', ł: 'l', Đ: 'd', đ: 'd', Æ: 'ae', æ: 'ae', Œ: 'oe', œ: 'oe', ß: 'ss', Þ: 'th', þ: 'th' };
+
 /** Lowercase letters and digits, words separated by single spaces. */
 export function normalize(text: string) {
   return text
-    .replace(/[Øø]/g, 'o')
+    .replace(/[ØøŁłĐđÆæŒœßÞþ]/g, (c) => LETTERS[c])
     .replace(/&/g, ' and ')
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
@@ -21,7 +24,8 @@ export function normalize(text: string) {
 /** Does the name contain what was typed? An empty search matches everyone. */
 export function matchesName(name: string, query: string) {
   const q = normalize(query);
-  if (!q) return true;
+  // Typed in another alphabet (Cyrillic, Japanese…): match it as written.
+  if (!q) return !query.trim() || name.toLowerCase().includes(query.trim().toLowerCase());
   const n = normalize(name);
   return n.includes(q) || n.replace(/ /g, '').includes(q.replace(/ /g, ''));
 }
@@ -67,7 +71,7 @@ export function nameRank(name: string, q: string) {
 
 export function searchArtists(artists: Artist[], query: string, max = 30): Artist[] {
   const q = normalize(query);
-  if (!q) return [];
+  if (!query.trim()) return [];
   return artists
     .filter((a) => matchesName(a.name, query))
     .map((a, i) => ({ a, i, r: nameRank(a.name, q) }))
@@ -82,7 +86,7 @@ export function searchArtists(artists: Artist[], query: string, max = 30): Artis
  */
 export function searchFestivals(festivals: Festival[], query: string): Festival[] {
   const q = normalize(query);
-  if (!q) return [];
+  if (!query.trim()) return [];
   return festivals
     .map((f, i) => ({ f, i, r: matchesName(f.name, query) ? nameRank(f.name, q) : matchesName(f.location, query) ? 3 : -1 }))
     .filter((x) => x.r >= 0)

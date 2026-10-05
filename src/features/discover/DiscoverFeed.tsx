@@ -25,7 +25,7 @@ import { QuestButton } from '../quests/QuestButton';
 import { haptic } from '../../lib/haptics';
 import type { Clip, Festival } from '../../data/models';
 import { isCommunityClip } from '../community/clips';
-import { useCatalog } from '../../state/catalog';
+import { useCatalog, useCatalogSettled } from '../../state/catalog';
 import { useClipPool, useCommunityFeed } from '../../state/community';
 import { useSocial } from '../../state/social';
 import { useStoredFocus } from '../../state/discoverFocus';
@@ -102,6 +102,7 @@ export function DiscoverFeed() {
   // even when the app starts on a link (the global router isn't ready yet then).
   const navigation = useNavigation();
   const catalog = useCatalog();
+  const catalogSettled = useCatalogSettled();
   const { going, hydrated: goingLoaded } = useGoing();
   const { stored, save: saveFocus } = useStoredFocus();
   // Undecided until the saved focus and your festivals have loaded; then what you picked last, or where you're going.
@@ -358,6 +359,8 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (!requested || !feed) return;
     const index = feed.findIndex((it) => it.clip.id === requested);
+    // A clip only the hosted catalogue has (a shared link opened fresh): wait for it.
+    if (index < 0 && !requestedClip && !catalogSettled) return;
     // Still waiting for the clip to join the feed (its festival's feed, or a video from the crowd being added).
     if (index < 0 && requestedClip && !hereFestival && ((festival && festival.lineup.includes(requestedClip.artistId)) || (wide && isCommunityClip(requestedClip)))) return;
     if (index >= 0) {
@@ -370,7 +373,7 @@ export function DiscoverFeed() {
     navigation.setParams({ clip: '' } as never);
     // Only a new request, or a new feed while one is waiting, should jump.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requested, feed]);
+  }, [requested, feed, catalogSettled]);
 
   const skipFrom = useCallback(
     (index: number) => {

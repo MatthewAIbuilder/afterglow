@@ -27,8 +27,22 @@ describe('new sets news', () => {
     let m = trackClips(EMPTY_CLIP_MEMORY, [clip('1', 'a')], 0);
     m = trackClips(m, [clip('2', 'a')], 1);
     expect(trackClips(m, [], 1 + CLIP_NEWS_DAYS * DAY).news).toEqual([]);
+    // Ids that left the catalogue go first once it's full.
+    const many = Array.from({ length: CLIP_SEEN_MAX }, (_, i) => clip(`x${i}`, 'a'));
+    const full = trackClips(EMPTY_CLIP_MEMORY, many, 2);
+    const next = trackClips(full, [clip('y1', 'a'), clip('y2', 'a'), ...many.slice(10)], 3);
+    expect(next.seen).toHaveLength(CLIP_SEEN_MAX);
+    expect(next.seen).not.toContain('x0');
+    expect(next.seen).toContain('x10');
+  });
+
+  it('a catalogue bigger than the memory settles instead of being news again', () => {
     const many = Array.from({ length: CLIP_SEEN_MAX + 10 }, (_, i) => clip(`x${i}`, 'a'));
-    expect(trackClips(m, many, 2).seen).toHaveLength(CLIP_SEEN_MAX);
+    const once = trackClips(EMPTY_CLIP_MEMORY, many, 1);
+    expect(once.seen).toHaveLength(CLIP_SEEN_MAX + 10);
+    const again = trackClips(once, many, 2);
+    expect(again).toBe(once);
+    expect(cleanClipMemory(JSON.parse(JSON.stringify(once))).seen).toHaveLength(CLIP_SEEN_MAX + 10);
   });
 
   it('the bell names artists you’d love whose new sets you haven’t watched', () => {

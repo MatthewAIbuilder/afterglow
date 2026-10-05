@@ -39,7 +39,7 @@ export default function SearchScreen() {
   const { going } = useGoing();
   const { forYou } = useWeekends();
   const social = useSocial();
-  const { recents, remember, forget, clear } = useRecentSearches();
+  const { recents, remember, forget, clear } = useRecentSearches(social.user?.uid);
   const [query, setQuery] = useState('');
   // A secret word: "plur" rains hearts (once per time you type it).
   const secretWord = searchSecret(query);

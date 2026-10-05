@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { BUILT_IN } from '../../../data/bundled';
-import { addRecent, cleanRecents, liveRecents, RECENTS_MAX, removeRecent, searchCatalog, searchesPeople, topArtists } from '../universal';
+import { addRecent, cleanRecents, liveRecents, recentsFor, RECENTS_MAX, removeRecent, searchCatalog, searchesPeople, topArtists } from '../universal';
 
 const catalog = BUILT_IN.catalog;
 
@@ -38,5 +38,18 @@ describe('search everything', () => {
     const artists = catalog.artists.slice(0, 3);
     const taste = { [artists[0].id]: 0.5, [artists[1].id]: 0.9, [artists[2].id]: 0.99 };
     expect(topArtists(artists, taste, { [artists[0].id]: true, [artists[1].id]: true }).map((a) => a.id)).toEqual([artists[1].id, artists[0].id]);
+  });
+});
+
+describe('recents per account', () => {
+  it('shows people only to the account that looked them up', () => {
+    const list = cleanRecents([
+      { kind: 'person', id: 'maya', label: 'Maya', by: 'u1' },
+      { kind: 'person', id: 'old', label: 'Old' },
+      { kind: 'festival', id: 'f', label: 'F' },
+    ]);
+    expect(recentsFor(list, 'u1').map((r) => r.id)).toEqual(['maya', 'f']);
+    expect(recentsFor(list, 'u2').map((r) => r.id)).toEqual(['f']);
+    expect(recentsFor(list, undefined).map((r) => r.id)).toEqual(['f']);
   });
 });

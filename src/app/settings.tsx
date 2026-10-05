@@ -57,7 +57,7 @@ export default function SettingsScreen() {
   const { followed } = useFollowedArtists();
   const followedCount = followed.filter((id) => catalog.artist(id)).length;
   const { state: music } = useMusic();
-  const connected = (Object.keys(music) as (keyof typeof music)[]).map((p) => PROVIDER_NAME[p]).join(', ');
+  const connected = (Object.keys(music) as (keyof typeof music)[]).filter((p) => music[p]?.connected).map((p) => PROVIDER_NAME[p]).join(', ');
   const year = useToday().getFullYear();
   const yearCard = useYear(year);
 
