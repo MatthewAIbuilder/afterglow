@@ -41,6 +41,7 @@ describe('shares in chats', () => {
 
   it('says what was sent, and where it opens', () => {
     expect(all.map(shareNoun)).toEqual(['a festival', 'must-sees', 'an artist', 'a live set', 'a profile']);
+    expect(shareRoute(all[1])).toEqual({ pathname: '/festival/[id]', params: { id: 'edc-orlando-26', must: 'subtronics,fred-again' } });
     expect(shareRoute(all[3])).toEqual({ pathname: '/', params: { clip: 'clip_42' } });
     expect(shareRoute(all[4])).toEqual({ pathname: '/u/[handle]', params: { handle: 'maya.lin' } });
   });
@@ -61,5 +62,16 @@ describe('who "Send to" offers', () => {
       blocked: new Set(['x']),
     });
     expect(list.map((r) => r.key)).toEqual(['c:crew1', 'p:a', 'p:c', 'p:b', 'p:d', 'c:crew2']);
+    // Once the friends list is read, a past chat with someone no longer a friend both ways isn't offered.
+    const later = orderRecipients({
+      me: 'me',
+      directChats: [{ id: 'dm_gone_me', latestAt: '2026-10-05T13:00:00Z' }],
+      crews: [],
+      closeFriends: [],
+      friends: ['b'],
+      friendsKnown: true,
+      blocked: new Set(),
+    });
+    expect(later.map((r) => r.key)).toEqual(['p:b']);
   });
 });

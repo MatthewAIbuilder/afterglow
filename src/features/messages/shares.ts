@@ -90,7 +90,7 @@ export function shareNoun(share: ChatShare): string {
 export function shareRoute(share: ChatShare) {
   switch (share.kind) {
     case 'festival':
-      return { pathname: '/festival/[id]' as const, params: { id: share.id } };
+      return { pathname: '/festival/[id]' as const, params: share.picks?.length ? { id: share.id, must: share.picks.slice(0, SHARE_PICKS_MAX).join(',') } : { id: share.id } };
     case 'artist':
       return { pathname: '/artist/[id]' as const, params: { id: share.id } };
     case 'clip':

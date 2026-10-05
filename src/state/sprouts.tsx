@@ -308,6 +308,11 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       inFlight.current.add(c.card.id);
       try {
         const sprout = await timeout(social.service.claimSprout(c.card.id), TRY_TIMEOUT_MS);
+        // The server says you gave it (whatever the link said): it isn't yours to pick up.
+        if (sprout.from === me) {
+          setStored((s) => ({ ...s, claims: s.claims.filter((x) => !(x.card.id === c.card.id && (!x.account || x.account === me))) }));
+          return 'self';
+        }
         // Scanned while signed out, or waiting for signal: it arrives in the background, so say so.
         const late = c.tries > 0 || !c.account;
         addToGarden(c.card, sprout, me, Date.now(), late, c.at);

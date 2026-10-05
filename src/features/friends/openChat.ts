@@ -14,7 +14,7 @@ export async function directRoomWith(open: (uid: string) => Promise<string>, uid
     const kind = socialErrorKind(e);
     showAlert(
       kind === 'network' ? 'No signal' : `You can’t message ${name} yet`,
-      kind === 'network' ? SOCIAL_ERROR_COPY.network : `You can message friends who follow you back. Once ${name} follows you too, you can chat.`,
+      kind === 'network' ? SOCIAL_ERROR_COPY.network : `You can message people you follow who follow you back. Once ${name} follows you too, you can chat.`,
     );
     return undefined;
   }

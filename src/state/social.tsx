@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { isSupportAccount } from '../features/admin/admin';
 import type { Memory } from '../features/memories/models';
 import type { Profile, ProfileInput, ReportReason, SocialUser } from '../features/social/models';
 import { publishedChanged } from '../features/social/publish';
@@ -27,6 +28,10 @@ type Ctx = {
   user: SocialUser | null;
   /** Your profile once loaded; null when you're signed in but haven't made one. */
   profile: Profile | null;
+  /** Whether your profile has been read: "loading" (or signed out), "ready" (profile is the answer), or "failed" (no signal: don't treat it as no profile). */
+  profileStatus: 'loading' | 'ready' | 'failed';
+  /** Read your profile again (after it failed). */
+  reloadProfile: () => void;
   service: SocialService;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -75,6 +80,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<SocialUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileStatus, setProfileStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [blocked, setBlockedIds] = useState<ReadonlySet<string>>(new Set());
   const [following, setFollowingIds] = useState<ReadonlySet<string>>(new Set());
   const [sharing, setSharing] = useState<Record<string, number>>({});
@@ -90,13 +96,18 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         setUser(u);
         setReady(true);
         setProfile(null);
+        setProfileStatus('loading');
         setBlockedIds(new Set());
         setFollowingIds(new Set());
         if (!u) return;
         service
           .profileOf(u.uid)
-          .then((p) => currentUid.current === u.uid && setProfile(p))
-          .catch(() => {});
+          .then((p) => {
+            if (currentUid.current !== u.uid) return;
+            setProfile(p);
+            setProfileStatus('ready');
+          })
+          .catch(() => currentUid.current === u.uid && setProfileStatus('failed'));
         service
           .blocked()
           .then((ids) => currentUid.current === u.uid && setBlockedIds(new Set(ids)))
@@ -108,6 +119,20 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
       }),
     [service],
   );
+
+  const reloadProfile = useCallback(() => {
+    const uid = currentUid.current;
+    if (!uid) return;
+    setProfileStatus('loading');
+    service
+      .profileOf(uid)
+      .then((p) => {
+        if (currentUid.current !== uid) return;
+        setProfile(p);
+        setProfileStatus('ready');
+      })
+      .catch(() => currentUid.current === uid && setProfileStatus('failed'));
+  }, [service]);
 
   // What your profile may publish, from your plans and your live taste.
   const { going } = useGoing();
@@ -129,8 +154,9 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   );
 
   // Keep "Going to" and "My sound" current (a few seconds after they settle, only when they changed).
+  // Never on the support account: plans and taste are this phone's, so switching to HQ would publish yours there.
   useEffect(() => {
-    if (!profile || !publishedChanged(profile, published.festivals, published.sounds)) return;
+    if (!profile || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds)) return;
     const t = setTimeout(() => {
       const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound, socials: profile.socials ?? {} };
       service
@@ -139,7 +165,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         .catch(() => {});
     }, 3000);
     return () => clearTimeout(t);
-  }, [profile, published, service]);
+  }, [profile, published, service, user]);
 
   const signUp = useCallback(async (email: string, password: string) => void (await service.signUp(email, password)), [service]);
   const signIn = useCallback(async (email: string, password: string) => void (await service.signIn(email, password)), [service]);
@@ -232,8 +258,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
-    [availability, ready, user, profile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
+    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

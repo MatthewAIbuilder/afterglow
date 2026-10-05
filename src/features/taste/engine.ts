@@ -178,20 +178,28 @@ export function computeTaste(
   for (const [id, r] of Object.entries(ratings)) {
     if (known.has(id) && isRating(r)) direct[id] = (direct[id] ?? 0) + RATING_WEIGHT[r];
   }
+  // What you said yourself (reactions and ratings), before quieter watch behaviour joins it.
+  const explicit: Record<string, number> = { ...direct };
   for (const [id, p] of Object.entries(passive)) {
     direct[id] = (direct[id] ?? 0) + Math.min(WATCH_CAP.up, Math.max(WATCH_CAP.down, p));
   }
 
   // Direct signal plus spill-over from similar artists.
+  const spilled = (from: Record<string, number>, a: (typeof artists)[number]) => {
+    let s = from[a.id] ?? 0;
+    for (const b of artists) {
+      if (b.id === a.id || !from[b.id]) continue;
+      const sim = similarity(a, b);
+      if (sim >= SPILL_MIN_SIMILARITY) s += from[b.id] * sim * SPILL;
+    }
+    return s;
+  };
   const signal: Record<string, number> = {};
   for (const a of artists) {
-    let s = direct[a.id] ?? 0;
-    for (const b of artists) {
-      if (b.id === a.id || !direct[b.id]) continue;
-      const sim = similarity(a, b);
-      if (sim >= SPILL_MIN_SIMILARITY) s += direct[b.id] * sim * SPILL;
-    }
-    signal[a.id] = s;
+    const all = spilled(direct, a);
+    // Passive signal never outweighs explicit: watching similar artists can't lift one you skipped or passed on
+    // above where what you said put it.
+    signal[a.id] = (explicit[a.id] ?? 0) < 0 ? Math.min(all, spilled(explicit, a)) : all;
   }
 
   // The imported layer: its own signal, spill and cap, added on top.

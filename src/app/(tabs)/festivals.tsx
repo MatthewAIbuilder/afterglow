@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   },
   resultsHead: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.md, marginBottom: space.xs },
   month: { marginTop: space.md, marginBottom: space.sm, fontSize: 12, color: color.glow },
-  sectionRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.lg },
+  sectionRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.lg, paddingRight: space.xl },
   sectionTitle: { ...type.headline, fontSize: 20, textTransform: 'none', letterSpacing: 0, color: color.moon, paddingRight: 0, marginBottom: space.sm },
   sectionCount: { ...type.label, color: color.moonFaint, fontVariant: ['tabular-nums'] },
   shelfWrap: { flexGrow: 0, marginBottom: space.md },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Crew } from '../../social/models';
-import { crewMembersLine, crewStars, crewTogether, firstName, picksChanged, sharedCountLine, starsLine, starsShort, whoLine } from '../together';
+import { crewMembersLine, crewStars, crewTogether, distinctNames, firstName, picksChanged, sharedCountLine, starsLine, starsShort, whoLine } from '../together';
 
 const lineup = ['a', 'b', 'c', 'd'];
 const pick = (uid: string, artists: string[]) => ({ uid, artists, updatedAt: '' });
@@ -72,5 +72,19 @@ describe('crewmates’ stars across the app', () => {
     expect(starsShort(['Maya', 'Sam', 'Jo', 'Al'])).toBe('★ Maya, Sam +2');
     expect(starsLine(['Maya'])).toBe('Maya starred this in your crew');
     expect(starsLine(['Maya', 'Sam', 'Jo'])).toBe('Maya, Sam and 1 other starred this in your crew');
+  });
+});
+
+describe('telling crewmates apart', () => {
+  it('first names, with a last initial (or a number) only when two share one', () => {
+    expect(
+      distinctNames([
+        { uid: 'a', displayName: 'Sam Kim' },
+        { uid: 'b', displayName: 'Sam Reyes' },
+        { uid: 'c', displayName: 'Maya' },
+        { uid: 'd', displayName: 'Jo' },
+        { uid: 'e', displayName: 'Jo' },
+      ]),
+    ).toEqual({ a: 'Sam K.', b: 'Sam R.', c: 'Maya', d: 'Jo', e: 'Jo 2' });
   });
 });

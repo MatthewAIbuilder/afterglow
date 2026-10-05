@@ -64,9 +64,10 @@ function PhoneReminders() {
   const routes = useMemo(
     () =>
       festivals
-        .filter((f) => remindSets.has(f.id) && canRemindSets(f))
+        // Only festivals you're still going to (stop going and their set reminders go too).
+        .filter((f) => going.includes(f.id) && remindSets.has(f.id) && canRemindSets(f))
         .map((f) => ({ festival: f, route: festivalRoute({ festival: f, artists, taste, informed, pinned: mustSeesAt(f.id) }) })),
-    [festivals, remindSets, artists, taste, informed, mustSeesAt],
+    [festivals, going, remindSets, artists, taste, informed, mustSeesAt],
   );
   const sync = useCallback(
     (mayAsk: boolean) => {

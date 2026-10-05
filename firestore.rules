@@ -454,7 +454,8 @@ service cloud.firestore {
     // read receipts are like a crew chat's; writing needs you to still be friends both ways and not blocked.
     // The support account can read and remove a reported message.
     match /dms/{id} {
-      allow get: if signedIn() && (resource == null || me() in resource.data.members);
+      // Only the two named in the id may even ask whether it exists.
+      allow get: if signedIn() && me() in id.split('_');
       allow list: if signedIn() && me() in resource.data.members;
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['members', 'createdAt'])

@@ -1,6 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { AppState, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
@@ -81,11 +81,18 @@ export default function CareScreen() {
     return () => clearTimeout(t);
   }, [opened]);
 
-  // Face ID (or the passcode); a phone without either just opens.
+  // Face ID (or the passcode); a phone without either set up just opens (the lock can't work there, and you're never locked out).
   const askToUnlock = () =>
-    LocalAuthentication.hasHardwareAsync()
-      .then((has) => (has ? LocalAuthentication.authenticateAsync({ promptMessage: 'Open Look after yourself' }).then((r) => r.success) : true))
+    Promise.all([LocalAuthentication.hasHardwareAsync(), LocalAuthentication.isEnrolledAsync()])
+      .then(([has, enrolled]) => (has && enrolled ? LocalAuthentication.authenticateAsync({ promptMessage: 'Open Look after yourself' }).then((r) => r.success) : true))
       .catch(() => true);
+  // Leaving the app locks it again.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'background') setUnlocked(false);
+    });
+    return () => sub.remove();
+  }, []);
   const unlock = () => {
     void askToUnlock().then((ok) => ok && setUnlocked(true));
   };

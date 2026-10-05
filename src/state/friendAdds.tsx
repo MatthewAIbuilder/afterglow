@@ -89,6 +89,11 @@ export function FriendAddsProvider({ children }: { children: ReactNode }) {
   const online = !isOffline(net);
   const [tick, setTick] = useState(0);
   const account = social.user?.uid;
+  // The account signed in right now (a switch mid-send stops the rest going out as someone else).
+  const accountRef = useRef(account);
+  useEffect(() => {
+    accountRef.current = account;
+  }, [account]);
   const ready = social.availability.ok && !!account && !!social.profile;
 
   useEffect(() => {
@@ -176,7 +181,11 @@ export function FriendAddsProvider({ children }: { children: ReactNode }) {
     }
     running.current = true;
     (async () => {
-      for (const a of due) await tryOne(a);
+      for (const a of due) {
+        // Switched account meanwhile: the rest wait for their own account.
+        if (accountRef.current !== a.account) break;
+        await tryOne(a);
+      }
     })().finally(() => {
       running.current = false;
       setTick((x) => x + 1);

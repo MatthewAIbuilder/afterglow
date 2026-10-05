@@ -229,7 +229,8 @@ describe('crew updates', () => {
     const samUid = mockSocial.currentUser()!.uid;
     mockSocial.crewFiles.add(`${crew.id}/${samUid}/u-video77`);
     mockSocial.crewFiles.add(`${other.id}/${samUid}/u-video88`);
-    await AsyncStorage.setItem('crewVideos.v1', JSON.stringify({ [crew.id]: ['u-video77'], [other.id]: ['u-video88'] }));
+    // Kept per account ("<uid>:<crewId>"); one from before that (no account) is left alone.
+    await AsyncStorage.setItem('crewVideos.v1', JSON.stringify({ [`${samUid}:${crew.id}`]: ['u-video77'], [`${samUid}:${other.id}`]: ['u-video88'], [crew.id]: ['old'] }));
     // Maya, the owner, takes Sam out of the first crew.
     await s().signOut();
     await as('maya');
@@ -239,7 +240,7 @@ describe('crew updates', () => {
     await renderApp('/');
     await flush();
     expect([...mockSocial.crewFiles]).toEqual([`${other.id}/${samUid}/u-video88`]);
-    expect(JSON.parse((await AsyncStorage.getItem('crewVideos.v1'))!)).toEqual({ [other.id]: ['u-video88'] });
+    expect(JSON.parse((await AsyncStorage.getItem('crewVideos.v1'))!)).toEqual({ [`${samUid}:${other.id}`]: ['u-video88'], [crew.id]: ['old'] });
   });
 
   it('a meeting spot any member can set, and “Can’t find you” pointing at it', async () => {

@@ -50,7 +50,7 @@ export type FestivalGuess = {
 const SCORE: Record<FestivalReason, number> = { date: 4, city: 2, region: 1, going: 1 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
-/** The calendar date a festival night belongs to: before noon counts as the night before. */
+/** The calendar date a festival night belongs to: before 7 AM counts as the night before. */
 function nightDate(when: Date): string {
   const d = new Date(when.getFullYear(), when.getMonth(), when.getDate());
   if (when.getHours() * 60 + when.getMinutes() < DAY_BREAK) d.setDate(d.getDate() - 1);

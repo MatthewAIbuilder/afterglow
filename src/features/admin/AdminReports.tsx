@@ -7,7 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
-import { REPORT_REASONS, type ReportRecord } from '../social/models';
+import { isDirectRoom, REPORT_REASONS, type ReportRecord } from '../social/models';
 import { agoShort } from './admin';
 
 /**
@@ -85,7 +85,7 @@ export function AdminReports() {
         shown.map((r) => (
           <View key={r.id} style={[styles.card, r.status === 'open' && styles.cardOpen]}>
             <View style={styles.head}>
-              <Text style={styles.what}>{r.kind === 'memory' ? 'A video' : r.kind === 'comment' ? 'A comment' : r.kind === 'chat' ? 'A crew chat message' : 'A profile'}</Text>
+              <Text style={styles.what}>{r.kind === 'memory' ? 'A video' : r.kind === 'comment' ? 'A comment' : r.kind === 'chat' ? (isDirectRoom(r.targetId) ? 'A 1-to-1 message' : 'A crew chat message') : 'A profile'}</Text>
               <Text style={styles.when}>{agoShort(r.createdAt, now)}</Text>
             </View>
             <Text style={styles.reason}>{REPORT_REASONS.find((x) => x.key === r.reason)?.label}</Text>

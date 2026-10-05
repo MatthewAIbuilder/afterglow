@@ -73,10 +73,11 @@ export default function SendScreen() {
             crews: crews.map((c) => ({ id: c.id, latestAt: chat.latestFor(c.id)?.sentAt })),
             closeFriends: closeFriends.ids.filter((id) => social.following.has(id)),
             friends,
+            friendsKnown: !!followers && followers.uid === me,
             blocked: social.blocked,
           })
         : [],
-    [me, chat, crews, closeFriends.ids, friends, social.following, social.blocked],
+    [me, chat, crews, closeFriends.ids, friends, followers, social.following, social.blocked],
   );
 
   const [profiles, setProfiles] = useState<Record<string, Profile | null>>({});

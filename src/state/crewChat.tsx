@@ -306,7 +306,14 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
   const now = clock.getTime();
 
   const value = useMemo<Ctx>(() => {
-    const unreadFor = (crewId: string) => unreadCount(byCrew[crewId] ?? [], uid ? read[readKey(uid, crewId)] : undefined, uid, blocked);
+    // Read on this phone, or (another phone, the website, a reinstall) your read mark on the server: whichever is later.
+    const lastRead = (crewId: string) => {
+      if (!uid) return undefined;
+      const here = read[readKey(uid, crewId)];
+      const there = Date.parse(readsByCrew[crewId]?.[uid] ?? '');
+      return Number.isFinite(there) ? Math.max(here ?? 0, there) : here;
+    };
+    const unreadFor = (crewId: string) => unreadCount(byCrew[crewId] ?? [], lastRead(crewId), uid, blocked);
     return {
       ready,
       canChat: ready && rooms.length > 0,

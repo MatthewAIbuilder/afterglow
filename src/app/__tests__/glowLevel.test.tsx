@@ -107,4 +107,18 @@ describe('glow levels on profiles', () => {
     expect(open).toHaveBeenCalledWith('https://instagram.com/maya.chen');
     expect(app.getByLabelText('Maya on Snapchat, @mayac. Opens Snapchat.')).toBeTruthy();
   });
+
+  it('Edit profile never shows a blank form when your profile couldn’t be read (saving it would replace yours)', async () => {
+    await person('sam');
+    const read = jest.spyOn(mockSocial.service, 'profileOf').mockRejectedValueOnce(new Error('No signal'));
+    const app = await renderApp('/profile-edit');
+    await flush();
+    expect(app.getByText('Your profile couldn’t be loaded. Check the signal and try again.')).toBeTruthy();
+    expect(app.queryByText('Create profile')).toBeNull();
+    await fireEvent.press(app.getByLabelText('Try loading your profile again'));
+    await flush();
+    expect(app.getByText('Save')).toBeTruthy();
+    expect(app.getByDisplayValue('sam')).toBeTruthy();
+    read.mockRestore();
+  });
 });

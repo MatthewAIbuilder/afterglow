@@ -127,6 +127,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     const t = v as { toDate?: () => Date } | null;
     return t?.toDate ? t.toDate().toISOString() : undefined;
   };
+  /** Sending set times (perhaps with a screenshot) gives up after this long with no signal. */
+  const SET_TIMES_SEND_TIMEOUT_MS = 20_000;
   /** A write that hasn't got through by `ms` counts as no signal (Firestore keeps trying it in the background). */
   const withTimeout = <T,>(p: Promise<T>, ms: number) =>
     new Promise<T>((resolve, reject) => {
@@ -232,6 +234,13 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await removeFile(`covers/${user.uid}.jpg`);
         // Out of every crew (your picks go with you).
         for (const c of await service.myCrews()) await service.leaveCrew(c.id);
+        // Your 1-to-1 messages and read marks go too (the other person keeps theirs).
+        const rooms = await getDocs(query(collection(db, 'dms'), where('members', 'array-contains', user.uid))).catch(() => null);
+        for (const r of rooms?.docs ?? []) {
+          const said = await getDocs(query(collection(r.ref, 'chat'), where('uid', '==', user.uid), limit(500))).catch(() => null);
+          for (const d of said?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+          await deleteDoc(doc(r.ref, 'reads', user.uid)).catch(() => {});
+        }
         // Follows and likes either way.
         const snaps = await Promise.all([
           getDocs(query(collection(db, 'follows'), where('from', '==', user.uid))),
@@ -736,12 +745,19 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const ref_ = doc(fb().db, 'setTimes', `${user.uid}_${festivalId}`);
         const text = tip.text?.trim().slice(0, TIP_TEXT_MAX);
         const data = { uid: user.uid, festivalId, status: 'new', createdAt: serverTimestamp(), ...(text ? { text } : {}), ...(tip.photo ? { photo: tip.photo } : {}) };
+        // With no signal Firestore would wait for good; a screenshot gets a little longer than a chat message.
+        const send = () => withTimeout(setDoc(ref_, data), SET_TIMES_SEND_TIMEOUT_MS);
         try {
-          await setDoc(ref_, data);
+          await send();
         } catch (e) {
-          // One waiting per festival: the record is already there (and only HQ may change it).
-          if ((await getDoc(ref_).catch(() => null))?.exists()) throw new SocialError('already-sent');
-          throw e;
+          if (e instanceof SocialError) throw e;
+          // One waiting per festival: the record is already there (and only HQ may change it)…
+          const was = await getDoc(ref_).catch(() => null);
+          if (!was?.exists()) throw e;
+          if (was.data()?.status !== 'live') throw new SocialError('already-sent');
+          // …unless the last one already went live: clear it and send this one.
+          await deleteDoc(ref_);
+          await send();
         }
       }),
     mySetTimes: () =>
@@ -759,8 +775,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     declineSetTimes: (id) => guard(async () => deleteDoc(doc(fb().db, 'setTimes', id))),
     livePatches: () =>
       guard(async () => {
-        const snap = await getDocs(query(collection(fb().db, 'published'), orderBy('publishedAt', 'asc'), limit(200)));
-        return snap.docs.map((d) => patchFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+        // The newest 200 (so a new update always reaches phones), applied oldest first.
+        const snap = await getDocs(query(collection(fb().db, 'published'), orderBy('publishedAt', 'desc'), limit(200)));
+        return snap.docs
+          .map((d) => patchFromDoc(d.id, d.data()))
+          .filter((x): x is NonNullable<typeof x> => !!x)
+          .reverse();
       }),
     publishPatch: (input) =>
       guard(async () => {

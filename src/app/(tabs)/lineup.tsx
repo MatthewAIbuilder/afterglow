@@ -100,6 +100,7 @@ function FullLineup() {
               router.navigate('/festivals');
             }}
             accessibilityRole="button"
+            accessibilityLabel="Browse festivals"
             style={({ pressed }) => [styles.browse, pressed && { opacity: 0.8 }]}
           >
             <Text style={styles.browseText}>Browse festivals</Text>

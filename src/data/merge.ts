@@ -3,7 +3,7 @@ import { withGuessedSounds } from './soundGuess';
 import type { ParsedFile } from './file';
 import { siteName } from './import/sitePicture';
 import { withMembers } from './members';
-import type { ArtistSimilarity, CatalogSnapshot } from './models';
+import type { ArtistSimilarity, CatalogSnapshot, Festival } from './models';
 import { validateSnapshot } from './validate';
 
 /**
@@ -125,11 +125,40 @@ export function buildCatalog(base: CatalogSnapshot, file: ParsedFile | undefined
  * first) on top of the catalogue. One that can't be used is skipped, never
  * breaking the rest. Pure.
  */
+/** What a published update may change on a festival that's already in the catalogue: its lineup and set times, days and stages, and its links. */
+const PATCHED_FESTIVAL_FIELDS = ['lineup', 'sets', 'days', 'stages', 'artistDays', 'links'] as const;
+
+/**
+ * A published update made safe to lay over the catalogue: it only ever adds
+ * ("replace" would empty everyone's catalogue), artists already there keep
+ * their own record (photo, colour, sounds; an update's new acts are bare),
+ * and a festival already there takes only its lineup, set times, days,
+ * stages and links from it, so later fixes to its dates or poster still
+ * reach everyone. Pure.
+ */
+export function asPatch(parsed: ParsedFile, current: CatalogSnapshot): ParsedFile {
+  if (!parsed.snapshot) return { ...parsed, mode: 'add' };
+  const artistIds = new Set(current.artists.map((a) => a.id));
+  const festivals = new Map(current.festivals.map((f) => [f.id, f]));
+  const patched = parsed.snapshot.festivals.map((f) => {
+    const was = festivals.get(f.id);
+    if (!was) return f;
+    const out: Festival = { ...was };
+    for (const k of PATCHED_FESTIVAL_FIELDS) if (f[k] !== undefined) (out as Record<string, unknown>)[k] = f[k];
+    return out;
+  });
+  return {
+    ...parsed,
+    mode: 'add',
+    snapshot: { ...parsed.snapshot, artists: parsed.snapshot.artists.filter((a) => !artistIds.has(a.id)), festivals: patched },
+  };
+}
+
 export function applyPatches(base: Built, patches: readonly { file: string }[], parse: (text: string) => ParsedFile): Built {
   let built = base;
   const problems: string[] = [];
   for (const p of patches) {
-    const next = buildCatalog(built.snapshot, parse(p.file));
+    const next = buildCatalog(built.snapshot, asPatch(parse(p.file), built.snapshot));
     problems.push(...next.problems);
     if (next.usedFile) built = next;
   }

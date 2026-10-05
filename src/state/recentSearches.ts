@@ -1,12 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { addRecent, cleanRecents, removeRecent, type Recent } from '../features/search/universal';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { addRecent, cleanRecents, recentsFor, removeRecent, type Recent } from '../features/search/universal';
 
 const STORAGE_KEY = 'recentSearches.v1';
 
-/** What you opened from search lately, kept on this phone only. `recents` is undefined until loaded. */
-export function useRecentSearches() {
-  const [recents, setRecents] = useState<Recent[] | undefined>();
+/**
+ * What you opened from search lately, kept on this phone only. `recents` is
+ * undefined until loaded. People you looked up stay with the account that
+ * looked (`uid`): after a switch or sign-out they aren't shown.
+ */
+export function useRecentSearches(uid: string | undefined) {
+  const [list, setList] = useState<Recent[] | undefined>();
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -15,17 +19,26 @@ export function useRecentSearches() {
       .catch(() => [])
       .then((stored: Recent[]) => {
         loaded.current = true;
-        setRecents((current) => (current ? current : stored));
+        // Anything opened before the read finished goes on top of what was saved.
+        setList((current) => (current ? [...current].reverse().reduce(addRecent, stored) : stored));
       });
   }, []);
 
   useEffect(() => {
-    if (!loaded.current || !recents) return;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(recents)).catch(() => {});
-  }, [recents]);
+    if (!loaded.current || !list) return;
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(list)).catch(() => {});
+  }, [list]);
 
-  const remember = useCallback((item: Recent) => setRecents((list) => addRecent(list ?? [], item)), []);
-  const forget = useCallback((item: Recent) => setRecents((list) => removeRecent(list ?? [], item)), []);
-  const clear = useCallback(() => setRecents([]), []);
+  const remember = useCallback(
+    (item: Recent) => {
+      if (item.kind === 'person' && !uid) return;
+      setList((l) => addRecent(l ?? [], item.kind === 'person' ? { ...item, by: uid } : item));
+    },
+    [uid],
+  );
+  const forget = useCallback((item: Recent) => setList((l) => removeRecent(l ?? [], item)), []);
+  // Clears what this account sees; other accounts' people stay theirs.
+  const clear = useCallback(() => setList((l) => (l ?? []).filter((r) => r.kind === 'person' && r.by !== uid)), [uid]);
+  const recents = useMemo(() => (list ? recentsFor(list, uid) : undefined), [list, uid]);
   return { recents, remember, forget, clear };
 }

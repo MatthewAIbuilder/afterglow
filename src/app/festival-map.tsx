@@ -2,7 +2,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, type NativeScrollEvent, type NativeSyntheticEvent, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, type NativeScrollEvent, type NativeSyntheticEvent, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../components/ArtistAvatar';
 import { FilterChips } from '../components/FilterChips';
@@ -113,16 +113,29 @@ export default function FestivalMapScreen() {
     },
     [cards, step],
   );
-  // Opening on a festival: bring its card round once the list is there.
+  // Whenever the cards change (opening on a festival, moving the map, a filter), keep the chosen one in view, or start from the first.
+  const cardsKey = cards.map((m) => m.festival.id).join('|');
+  const selectedRef = useRef(selected);
   useEffect(() => {
-    if (!selected) return;
-    const i = cards.findIndex((m) => m.festival.id === selected);
-    if (i > 0) setTimeout(() => list.current?.scrollToOffset({ offset: i * step, animated: false }), 0);
-    // Only the first time.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const onCardsSettled = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = Math.round(e.nativeEvent.contentOffset.x / step);
+    selectedRef.current = selected;
+  }, [selected]);
+  useEffect(() => {
+    const i = cardsKey.split('|').indexOf(selectedRef.current ?? '');
+    const t = setTimeout(() => list.current?.scrollToOffset({ offset: Math.max(0, i) * step, animated: false }), 0);
+    return () => clearTimeout(t);
+  }, [cardsKey, step]);
+  // The website's lists don't say when a swipe has settled: wait for the scrolling to stop.
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(settleTimer.current), []);
+  const onCardsScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (Platform.OS !== 'web') return;
+    const x = e.nativeEvent.contentOffset.x;
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => settleAt(x), 160);
+  };
+  const onCardsSettled = (e: NativeSyntheticEvent<NativeScrollEvent>) => settleAt(e.nativeEvent.contentOffset.x);
+  const settleAt = (x: number) => {
+    const i = Math.round(x / step);
     const m = cards[Math.max(0, Math.min(cards.length - 1, i))];
     if (m && m.festival.id !== selected) {
       haptic.select();
@@ -281,6 +294,8 @@ export default function FestivalMapScreen() {
             ItemSeparatorComponent={Gap}
             getItemLayout={(_, index) => ({ length: step, offset: step * index, index })}
             onMomentumScrollEnd={onCardsSettled}
+            onScroll={onCardsScroll}
+            scrollEventThrottle={32}
             renderItem={({ item }) => <MapCard marker={item} width={cardW} chosen={item.festival.id === selected} onFocus={() => choose(item.festival.id)} />}
           />
         </View>

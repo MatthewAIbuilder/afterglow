@@ -58,12 +58,14 @@ export function setReminders(festival: Festival, route: DayRoute[], now: Date): 
       afterBreak = false;
       if (!moving) continue;
       const leave = stop.from - walk;
-      const at = new Date(midnight.getTime() + (leave - SET_LEAD_MIN) * 60_000);
+      // Clock time on that day (a clock change in the night is the date's to handle, not a fixed count of minutes).
+      const at = new Date(midnight.getFullYear(), midnight.getMonth(), midnight.getDate(), 0, leave - SET_LEAD_MIN);
       if (at.getTime() <= now.getTime()) continue;
       const stage = festival.stages.find((s) => s.id === stop.set.stageId)?.name ?? 'the stage';
       const time = formatTime(clockTime(stop.from));
       out.push({
-        id: `${SET_PREFIX}${festival.id}:${day.day}:${stop.artist.id}:${leave}`,
+        // The time is in the id: if it moves (another time zone, a clock change), the old one goes and the new one is set.
+        id: `${SET_PREFIX}${festival.id}:${day.day}:${stop.artist.id}:${leave}:${at.getTime()}`,
         festivalId: festival.id,
         at,
         title: `${stop.pinned ? '★ ' : ''}${stop.artist.name} at ${time}`,

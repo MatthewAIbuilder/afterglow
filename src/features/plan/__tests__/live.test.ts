@@ -53,8 +53,9 @@ const at = (day: number, h: number, m = 0) => new Date(2026, 10, day, h, m);
 const names = (list?: { artist: Artist }[]) => list?.map((p) => p.artist.id);
 
 describe('which festival night it is', () => {
-  it('runs noon to noon, from the first date', () => {
-    expect(festivalNight(festival, at(6, 11, 59))).toBeUndefined();
+  it('runs 7 AM to 7 AM, from the first date (a daytime festival’s midday sets are on their own day)', () => {
+    expect(festivalNight(festival, at(6, 6, 59))).toBeUndefined();
+    expect(festivalNight(festival, at(6, 7))).toEqual({ day: 'Friday', minute: 420 });
     expect(festivalNight(festival, at(6, 12))).toEqual({ day: 'Friday', minute: 720 });
     expect(festivalNight(festival, at(6, 23, 30))).toEqual({ day: 'Friday', minute: 1410 });
     // 1 AM on Saturday's date is still Friday night, past 24:00.

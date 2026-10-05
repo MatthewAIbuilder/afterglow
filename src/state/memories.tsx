@@ -40,6 +40,12 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
   const [hydrated, setHydrated] = useState(false);
   const [draft, setDraft] = useState<PickedVideo | undefined>();
   const loaded = useRef(false);
+  // The memories as they are now, and whether one is being kept right now: the start-up tidy-up never takes their files.
+  const current = useRef<Memory[]>([]);
+  useEffect(() => {
+    current.current = memories;
+  }, [memories]);
+  const keeping = useRef(false);
 
   useEffect(() => {
     AsyncStorage.getItem(MEMORIES_STORAGE_KEY)
@@ -49,8 +55,8 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
         setMemories((current) => [...current, ...saved.filter((m) => !current.some((c) => c.id === m.id))]);
         // Files no memory points to (the app closed mid-save, or a delete was interrupted) are tidied away,
         // but only when the saved list read back whole: a damaged list must never cost you a video.
-        if (Array.isArray(parsed) && parsed.length === saved.length) {
-          const used = new Set(saved.flatMap((m) => [m.file, m.thumb]));
+        if (Array.isArray(parsed) && parsed.length === saved.length && !keeping.current) {
+          const used = new Set([...saved, ...current.current].flatMap((m) => [m.file, m.thumb]));
           void files.remove(files.list().filter((n) => !used.has(n)));
         }
       })
@@ -66,7 +72,6 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
     AsyncStorage.setItem(MEMORIES_STORAGE_KEY, JSON.stringify(memories)).catch(() => {});
   }, [memories]);
 
-  const keeping = useRef(false);
   const keepDraft = useCallback(
     async (tag: MemoryTagInput) => {
       if (!draft || keeping.current) return undefined;

@@ -20,7 +20,9 @@ export default function NotificationsScreen() {
   useEffect(() => refresh(), [refresh]);
   // What was new when you opened this keeps its glow for this visit.
   const [fresh, setFresh] = useState<ReadonlySet<string> | undefined>();
-  if (hydrated && !fresh) setFresh(new Set(list.filter((n) => !read.has(n.id)).map((n) => n.id)));
+  // Anything that arrives while you're here (the refresh, a follow) is new too, before it's marked read.
+  const unread = hydrated ? list.filter((n) => !read.has(n.id) && !fresh?.has(n.id)).map((n) => n.id) : [];
+  if (hydrated && (!fresh || unread.length)) setFresh(new Set([...(fresh ?? []), ...unread]));
   useEffect(() => {
     if (fresh) markRead(list.map((n) => n.id));
   }, [fresh, list, markRead]);

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image as RNImage, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
+import { PageActions } from '../components/PageActions';
 import { NightSky } from '../components/NightSky';
 import { ChevronIcon } from '../components/TabIcons';
 import { SOUND_LABEL } from '../data/models';
@@ -48,6 +49,17 @@ export default function ProfileEditScreen() {
   const [showFestivals, setShowFestivals] = useState(p?.showFestivals ?? false);
   const [showSound, setShowSound] = useState(p?.showSound ?? false);
   const [socials, setSocials] = useState<Record<SocialKey, string>>({ instagram: p?.socials?.instagram ?? '', snapchat: p?.socials?.snapchat ?? '', tiktok: p?.socials?.tiktok ?? '' });
+  // Your profile arriving after the screen opened (right after launch, a switch of account): fill the form from it, once.
+  const [seededFor, setSeededFor] = useState(p?.uid);
+  if (p && seededFor !== p.uid) {
+    setSeededFor(p.uid);
+    setDisplayName(p.displayName);
+    setHandle(p.handle);
+    setBio(p.bio);
+    setShowFestivals(p.showFestivals);
+    setShowSound(p.showSound);
+    setSocials({ instagram: p.socials?.instagram ?? '', snapchat: p.socials?.snapchat ?? '', tiktok: p.socials?.tiktok ?? '' });
+  }
   // Applies at once (it isn't part of the saved profile): LevelSync sends or removes it.
   const showLevel = useShowLevel();
   const daily = useDailyQuests();
@@ -89,6 +101,23 @@ export default function ProfileEditScreen() {
       <View style={[styles.root, { paddingTop: insets.top + 80, paddingHorizontal: space.xl }]}>
         <NightSky />
         <Text style={styles.body}>Sign in to edit your profile.</Text>
+      </View>
+    );
+  }
+
+  // Until your profile has been read, the form waits: saving a blank one would replace the real one.
+  if (social.profileStatus !== 'ready') {
+    const failed = social.profileStatus === 'failed';
+    return (
+      <View style={[styles.root, { paddingTop: insets.top + 80, paddingHorizontal: space.xl, gap: space.lg }]}>
+        <NightSky />
+        <Text style={styles.body}>{failed ? 'Your profile couldn’t be loaded. Check the signal and try again.' : 'Loading your profile…'}</Text>
+        {failed ? (
+          <Pressable onPress={social.reloadProfile} accessibilityRole="button" accessibilityLabel="Try loading your profile again" hitSlop={8}>
+            <Text style={styles.retry}>Try again</Text>
+          </Pressable>
+        ) : null}
+        <PageActions />
       </View>
     );
   }
@@ -367,6 +396,7 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   body: { ...type.body, color: color.moonDim },
+  retry: { ...type.headline, color: color.glow },
   uploading: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,9,24,0.55)', alignItems: 'center', justifyContent: 'center' },
   coverRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.md },
   cover: { width: 112, height: 63, borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', justifyContent: 'center' },

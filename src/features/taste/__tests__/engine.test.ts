@@ -147,4 +147,18 @@ describe('taste engine', () => {
       expect(taste['john-summit']).toBeCloseTo(MOCK_TASTE['john-summit']);
     });
   });
+
+  it('watching artists with the same sound never lifts one you skipped above where the skip put it', () => {
+    const ids = ['x', 'a', 'b', 'c', 'd'];
+    const artists = ids.map((id) => ({ id, name: id.toUpperCase(), sound: { riddim: 1 } }));
+    const clips = ids.map((id) => ({ id: `clip-${id}`, artistId: id, festivalId: 'f', title: 'Set', durationSec: 60, bpm: 140 })) as Clip[];
+    const skipped = { 'clip-x': { ...none, skipped: true } };
+    const skipOnly = computeTaste({}, artists, clips, skipped).taste.x;
+    const watchedOthers = computeTaste({}, artists, clips, {
+      ...skipped,
+      ...Object.fromEntries(['a', 'b', 'c', 'd'].map((id) => [`clip-${id}`, { ...none, watched: 'replayed' as const }])),
+    }).taste;
+    expect(watchedOthers.x).toBeLessThanOrEqual(skipOnly);
+    expect(watchedOthers.a).toBeGreaterThan(0.5);
+  });
 });

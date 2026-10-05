@@ -113,13 +113,9 @@ jobs:
         env:
           FIREBASE_PROJECT_ID: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID }}
           FIREBASE_API_KEY: ${{ vars.EXPO_PUBLIC_FIREBASE_API_KEY || secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           rm -f /tmp/page-watch.md
           npx --yes tsx@4 scripts/page-watch.ts dist /tmp/page-watch.md || echo "::warning::Page watch was skipped tonight."
-          if [ -f /tmp/page-watch.md ]; then
-            gh issue create --repo "$GITHUB_REPOSITORY" --title "Festival news: $(date -u +'%b %-d')" --body-file /tmp/page-watch.md || echo "::warning::Couldn't open the heads-up issue."
-          fi
 
       - name: Check the Firebase key
         if: env.CAN_DEPLOY == 'true'
@@ -173,6 +169,17 @@ jobs:
           # The Firebase project (also in .firebaserc).
           projectId: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}
           channelId: ${{ github.event_name != 'pull_request' && 'live' || '' }}
+
+      # The page watch's news, only once tonight's look is live: otherwise tomorrow compares with the
+      # old look and opens the same issue (and email) again.
+      - name: Festival news heads-up
+        if: env.CAN_DEPLOY == 'true' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f /tmp/page-watch.md ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "Festival news: $(date -u +'%b %-d')" --body-file /tmp/page-watch.md || echo "::warning::Couldn't open the heads-up issue."
+          fi
 
       # Database and storage rules (firestore.rules, storage.rules, firestore.indexes.json), so new
       # features' rules go live with the app instead of waiting for a deploy from a PC. Never prints the key.

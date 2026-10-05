@@ -5,7 +5,7 @@ import { FESTIVALS } from '../../../data/mock/festivals';
 import { MOCK_TASTE } from '../../../data/mock/tasteProfile';
 import type { Artist, Festival, SetTime, TasteProfile } from '../../../data/types';
 import { computeTaste } from '../../taste/engine';
-import { buildSchedule, rankLineup, type ScheduleItem } from '../plan';
+import { buildSchedule, rankLineup, toMinutes, type ScheduleItem } from '../plan';
 
 const artist = (id: string, sound: Artist['sound'] = { dubstep: 1 }): Artist => ({ id, name: id.toUpperCase(), sound });
 
@@ -214,5 +214,25 @@ describe('mock festivals', () => {
     expect(verdict(0)?.kind === 'clash' && verdict(0)?.verdict.kind).toBe('close');
     const sat = verdict(1);
     expect(sat?.kind === 'clash' && sat.verdict.kind === 'clear' && sat.verdict.pick.artist.id).toBe('levity');
+  });
+});
+
+describe('an artist who plays twice', () => {
+  it('both sets are on the plan, each on its own day, and the second can clash', () => {
+    const f = fest([set('bolt', 'Friday', '22:00', '23:00'), set('bolt', 'Saturday', '21:00', '22:00'), set('ace', 'Saturday', '21:30', '22:30')]);
+    const schedule = buildSchedule(f, rankLineup({ festival: f, artists: ARTS, taste: TASTE }));
+    const kinds = (d: number) => schedule.days[d].items.map((i) => i.kind);
+    expect(kinds(0)).toEqual(['set']);
+    expect(kinds(1)).toEqual(['clash']);
+    expect(ids(schedule.unscheduled)).not.toContain('bolt');
+  });
+});
+
+describe('the festival clock', () => {
+  it('sets after midnight and until dawn belong to the night before; daytime sets stay at the start of their day', () => {
+    expect(toMinutes('01:10')).toBe(25 * 60 + 10);
+    expect(toMinutes('06:30')).toBe(30 * 60 + 30);
+    expect(toMinutes('11:30')).toBe(11 * 60 + 30);
+    expect(toMinutes('23:40')).toBe(23 * 60 + 40);
   });
 });

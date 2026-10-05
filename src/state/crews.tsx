@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { crewPath, crewStars, firstName, picksChanged, type CrewStars } from '../features/crews/together';
+import { crewPath, crewStars, distinctNames, picksChanged, type CrewStars } from '../features/crews/together';
 import { WEB_URL } from '../config/app';
 import type { Crew, CrewInvite, CrewPicks, Profile } from '../features/social/models';
 import { openInvites } from '../features/crews/invite';
@@ -18,6 +18,8 @@ type Ctx = {
   /** The crews you're in (empty while signed out). */
   crews: Crew[];
   loaded: boolean;
+  /** Your crews were read from the server this session (not a list left empty by a failed read): safe to tidy against. */
+  confirmed: boolean;
   crewsAt: (festivalId: string) => Crew[];
   create: (festivalId: string, name: string) => Promise<Crew>;
   /** Join a crew you were invited to (in the app, or with an invite link's `code`). */
@@ -54,7 +56,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
   const { service } = social;
   const uid = social.user?.uid;
   const active = social.availability.ok && !!uid;
-  const [state, setState] = useState<{ uid?: string; crews: Crew[]; loaded: boolean }>({ crews: [], loaded: false });
+  const [state, setState] = useState<{ uid?: string; crews: Crew[]; loaded: boolean; confirmed?: boolean }>({ crews: [], loaded: false });
   // Invites sent to you (read with your crews), and the profiles of who sent them.
   const [inviteState, setInviteState] = useState<{ uid?: string; list: CrewInvite[] }>({ list: [] });
   const [inviters, setInviters] = useState<Record<string, Profile>>({});
@@ -73,7 +75,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
     try {
       const crews = await service.myCrews();
-      if (currentUid.current === uid) setState({ uid, crews, loaded: true });
+      if (currentUid.current === uid) setState({ uid, crews, loaded: true, confirmed: true });
     } catch {
       if (currentUid.current === uid) setState((s) => (s.uid === uid ? { ...s, loaded: true } : { uid, crews: [], loaded: true }));
     }
@@ -85,7 +87,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
     let live = true;
     service
       .myCrews()
-      .then((list) => live && setState({ uid, crews: list, loaded: true }))
+      .then((list) => live && setState({ uid, crews: list, loaded: true, confirmed: true }))
       .catch(() => live && setState({ uid, crews: [], loaded: true }));
     service
       .crewInvites(INVITES_MAX)
@@ -103,6 +105,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
 
   const crews = useMemo(() => (active && state.uid === uid ? state.crews : []), [active, state, uid]);
   const loaded = active && state.uid === uid && state.loaded;
+  const confirmed = loaded && !!state.confirmed;
   const invites = useMemo(
     () => (active && inviteState.uid === uid ? openInvites(inviteState.list, { myCrews: crews.map((c) => c.id), blocked: social.blocked }) : []),
     [active, inviteState, uid, crews, social.blocked],
@@ -222,8 +225,8 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       );
       const missing = [...new Set(crews.flatMap((c) => c.members))].filter((m) => m !== uid && !profiles.current.has(m));
       await Promise.all(missing.map(async (m) => profiles.current.set(m, await service.profileOf(m).catch(() => null))));
-      const names: Record<string, string> = {};
-      for (const [m, p] of profiles.current) if (p) names[m] = firstName(p.displayName);
+      // First names, told apart when two people share one ("Sam K." and "Sam R.").
+      const names = distinctNames([...profiles.current].flatMap(([m, p]) => (p ? [{ uid: m, displayName: p.displayName }] : [])));
       if (live) setCrewData({ uid, list, names });
     })();
     return () => {
@@ -232,17 +235,20 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
   }, [active, uid, crews, service]);
   const stars = useMemo<CrewStars>(() => {
     if (!active || crewData.uid !== uid) return {};
-    return crewStars(crewData.list, {
+    // Only crews you're still in (leaving one stops its stars at once).
+    const current = new Set(crews.map((c) => c.id));
+    return crewStars(crewData.list.filter((x) => current.has(x.crew.id)), {
       me: uid,
       blocked: social.blocked,
       nameOf: (m) => crewData.names[m],
     });
-  }, [active, crewData, uid, social.blocked]);
+  }, [active, crewData, crews, uid, social.blocked]);
 
   const value = useMemo<Ctx>(
     () => ({
       crews,
       loaded,
+      confirmed,
       crewsAt: (festivalId) => crews.filter((c) => c.festivalId === festivalId),
       create,
       join,
@@ -258,7 +264,7 @@ export function CrewsProvider({ children }: { children: ReactNode }) {
       inviters,
       declineInvite,
     }),
-    [crews, loaded, create, join, inviteLink, newInviteLink, leave, end, rename, remove, refresh, stars, invites, inviters, declineInvite],
+    [crews, loaded, confirmed, create, join, inviteLink, newInviteLink, leave, end, rename, remove, refresh, stars, invites, inviters, declineInvite],
   );
   return <CrewsContext.Provider value={value}>{children}</CrewsContext.Provider>;
 }

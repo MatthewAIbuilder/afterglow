@@ -57,6 +57,8 @@ function report(problems: string[], from: string) {
 
 export function CatalogProvider({ source, children }: { source?: CatalogSource; children: ReactNode }) {
   const [base, setBase] = useState<Built>(BUILT_IN);
+  // Whether the hosted file has been tried (arrived, or failed): until then a link to something only it has isn't missing yet.
+  const [settled, setSettled] = useState(!source && !CATALOG_URL);
 
   useEffect(() => {
     report(BUILT_IN.problems, 'catalogue/afterglow.json');
@@ -72,7 +74,8 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
           const checked = validateSnapshot(snapshot).snapshot;
           setBase({ catalog: createCatalog(checked), snapshot: checked, problems: [], usedFile: true });
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => !cancelled && setSettled(true));
     } else if (CATALOG_URL) {
       refreshCatalog({
         url: CATALOG_URL,
@@ -83,7 +86,9 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
           if (!cancelled) setBase(built);
         },
         onProblems: (problems, from) => report(problems, from === 'online' ? CATALOG_URL : 'saved copy'),
-      }).catch(() => {});
+      })
+        .catch(() => {})
+        .finally(() => !cancelled && setSettled(true));
     }
     return () => {
       cancelled = true;
@@ -121,9 +126,18 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
   const shown = useMemo(() => withoutClips(catalog, hidden), [catalog, hidden]);
   return (
     <CatalogRefreshContext.Provider value={refresh}>
-      <CatalogContext.Provider value={shown}>{children}</CatalogContext.Provider>
+      <CatalogSettledContext.Provider value={settled}>
+        <CatalogContext.Provider value={shown}>{children}</CatalogContext.Provider>
+      </CatalogSettledContext.Provider>
     </CatalogRefreshContext.Provider>
   );
+}
+
+const CatalogSettledContext = createContext(true);
+
+/** False while the hosted catalogue is still on its way (a link opened fresh may need it). */
+export function useCatalogSettled() {
+  return useContext(CatalogSettledContext);
 }
 
 const CatalogRefreshContext = createContext<() => Promise<void>>(async () => {});

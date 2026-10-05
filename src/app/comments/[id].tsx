@@ -34,19 +34,26 @@ export default function CommentsScreen() {
   const [list, setList] = useState<Comment[] | undefined>();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  // Couldn't be read (no signal): not the same as a video that's gone.
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!id || !social.availability.ok || !social.user) return;
     let live = true;
-    Promise.all([social.service.sharedMemory(id).catch(() => null), social.service.comments(id, COMMENTS_SHOWN).catch(() => [])]).then(([v, c]) => {
-      if (!live) return;
-      setVideo(v);
-      setList(c);
-    });
+    Promise.all([social.service.sharedMemory(id), social.service.comments(id, COMMENTS_SHOWN)]).then(
+      ([v, c]) => {
+        if (!live) return;
+        setFailed(false);
+        setVideo(v);
+        setList(c);
+      },
+      () => live && setFailed(true),
+    );
     return () => {
       live = false;
     };
-  }, [id, social.availability.ok, social.user, social.service]);
+  }, [id, social.availability.ok, social.user, social.service, attempt]);
 
   const shown = (list ?? []).filter((c) => !social.blocked.has(c.uid));
   const problem = text.trim() ? commentProblem(text) : undefined;
@@ -109,6 +116,11 @@ export default function CommentsScreen() {
         {!social.user ? <Text style={styles.quiet}>Sign in to read and write comments.</Text> : null}
         {social.user && list === undefined ? <ActivityIndicator color={color.glow} /> : null}
         {video === null ? <Text style={styles.quiet}>This video isn’t available any more.</Text> : null}
+        {failed && video === undefined ? (
+          <Pressable onPress={() => setAttempt((n) => n + 1)} accessibilityRole="button" accessibilityLabel="Couldn’t load the comments. Try again" hitSlop={8}>
+            <Text style={styles.quiet}>Couldn’t load the comments. Check the signal and tap to try again.</Text>
+          </Pressable>
+        ) : null}
         {list && !shown.length && video ? <Text style={styles.quiet}>No comments yet. Say something nice.</Text> : null}
         {shown.map((c) => (
           <Pressable

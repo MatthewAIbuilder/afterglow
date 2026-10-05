@@ -115,7 +115,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const { service } = social;
   const uid = social.user?.uid;
   const ready = social.availability.ok && !!uid && !!social.profile;
-  const { crews } = useCrews();
+  const { crews, confirmed: crewsConfirmed } = useCrews();
   const catalog = useCatalog();
   const mem = useMemories();
   const today = useToday();
@@ -126,6 +126,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
 
   // --- Your outbox and what you've seen, kept on this phone.
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
+  // Yours: what this account wrote (the outbox on this phone can hold another account's too).
+  const myOutbox = useMemo(() => outbox.filter((o) => o.uid === uid), [outbox, uid]);
   const [seen, setSeen] = useState<Record<string, number>>({});
   const [sentVideos, setSentVideos] = useState<SentVideos>({});
   // Updates given up on this session (a crew kept refusing them), so a screen never says they were sent.
@@ -169,17 +171,20 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewKey = crews.map((c) => c.id).join('|');
   useEffect(() => {
     if (!ready || !uid || !online || !hydrated || tidying.current) return;
-    const gone = Object.keys(sentVideos).filter((id) => !crews.some((c) => c.id === id));
+    // Only this account's videos (kept as "<uid>:<crewId>"; older ones without an account are left alone).
+    const mine = `${uid}:`;
+    const gone = Object.keys(sentVideos).filter((k) => k.startsWith(mine) && !crews.some((c) => `${mine}${c.id}` === k));
     if (!gone.length) return;
     tidying.current = true;
     (async () => {
-      for (const crewId of gone) {
+      for (const key of gone) {
+        const crewId = key.slice(mine.length);
         try {
           const crew = await service.crew(crewId);
           if (crew && crew.members.includes(uid)) continue;
-          await service.forgetCrewVideos(crewId, sentVideos[crewId] ?? []);
+          await service.forgetCrewVideos(crewId, sentVideos[key] ?? []);
           setSentVideos((v) => {
-            const { [crewId]: _gone, ...rest } = v;
+            const { [key]: _gone, ...rest } = v;
             return rest;
           });
         } catch {
@@ -263,10 +268,13 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const [retryTick, setRetryTick] = useState(0);
 
   const flush = useCallback(async () => {
-    if (sending.current || !ready || !uid || !online || !hydrated) return;
+    // Only once your crews have really been read: a list still loading (or left empty by a failed read) would throw the queue away.
+    if (sending.current || !ready || !uid || !online || !hydrated || !crewsConfirmed) return;
     sending.current = true;
     try {
       for (const item of outboxRef.current) {
+        // Only what this account wrote (another account on this phone sends its own).
+        if (item.uid !== uid) continue;
         // Only crews you're still in.
         const crewIds = item.crewIds.filter((id) => crewsRef.current.some((c) => c.id === id && c.members.includes(uid)));
         if (!crewIds.length) {
@@ -304,7 +312,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
           try {
             const posted = await service.postCrewUpdate(crewId, input);
             reached.push(crewId);
-            if ((input.kind === 'video' && input.videoUri) || input.kind === 'photo') setSentVideos((v) => withSentVideo(v, crewId, posted.id));
+            if ((input.kind === 'video' && input.videoUri) || input.kind === 'photo') setSentVideos((v) => withSentVideo(v, `${uid}:${crewId}`, posted.id));
             setUpdates((s) => {
               const list = (s.byCrew[crewId] ?? []).filter((u) => u.id !== posted.id);
               return { uid: s.uid ?? uid, byCrew: { ...s.byCrew, [crewId]: [posted, ...list] } };
@@ -341,7 +349,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     } finally {
       sending.current = false;
     }
-  }, [ready, uid, online, hydrated, service, mem]);
+  }, [ready, uid, online, hydrated, service, mem, crewsConfirmed]);
 
   // Try whenever something could have changed: new items, signal back, a share finishing, the retry timer.
   const sharingKey = Object.keys(social.sharing).join('|');
@@ -376,10 +384,10 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         ...(words.stage ? { stage: words.stage } : {}),
         ...(words.artistId ? { artistId: words.artistId } : {}),
       };
-      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
+      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now, uid }));
       return id;
     },
-    [crewIdsAt, ready],
+    [crewIdsAt, ready, uid],
   );
 
   const callLost = useCallback(
@@ -397,7 +405,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         festivalId,
         note: cleanNote(spot ? `Can’t find you. Heading to ${spot.text}` : 'Can’t find you'),
       };
-      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
+      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now, uid }));
       return id;
     },
     [crewIdsAt, ready, meets, uid],
@@ -410,10 +418,10 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
       const now = Date.now();
       const id = updateId(now);
       const input: CrewUpdateInput = { id, kind: 'checkin', care, at: new Date(now).toISOString(), festivalId, note: CARE_NOTE[care] };
-      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
+      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now, uid }));
       return id;
     },
-    [crewIdsAt, ready],
+    [crewIdsAt, ready, uid],
   );
 
   const sendPhoto = useCallback(
@@ -435,10 +443,10 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         ...(words.artistId ? { artistId: words.artistId } : {}),
         ...(photo.width && photo.height ? { width: Math.round(photo.width), height: Math.round(photo.height) } : {}),
       };
-      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now }));
+      setOutbox((o) => enqueue(o, { id, crewIds, input, tries: 0, queuedAt: now, uid }));
       return id;
     },
-    [crewIdsAt, ready],
+    [crewIdsAt, ready, uid],
   );
 
   const meetSpotFor = useCallback((crewId: string) => (meets.uid === uid ? (meets.byCrew[crewId] ?? undefined) : undefined), [meets, uid]);
@@ -458,7 +466,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
       const now = Date.now();
       const id = updateId(now);
       const input: CrewUpdateInput = { id, kind: 'reply', at: new Date(now).toISOString(), festivalId: target.festivalId, replyTo: target.id, note };
-      setOutbox((o) => enqueue(o, { id, crewIds: [target.crewId], input, tries: 0, queuedAt: now }));
+      setOutbox((o) => enqueue(o, { id, crewIds: [target.crewId], input, tries: 0, queuedAt: now, uid }));
       return true;
     },
     [crews, ready, uid],
@@ -484,10 +492,10 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         ...(m.durationSec ? { durationSec: Math.round(m.durationSec) } : {}),
         ...(m.width && m.height ? { width: m.width, height: m.height } : {}),
       };
-      setOutbox((o) => enqueue(o, { id, crewIds, input, memoryId: m.id, tries: 0, queuedAt: now }));
+      setOutbox((o) => enqueue(o, { id, crewIds, input, memoryId: m.id, tries: 0, queuedAt: now, uid }));
       return true;
     },
-    [crewIdsAt, ready, catalog],
+    [crewIdsAt, ready, catalog, uid],
   );
 
   const markSeen = useCallback((story: Story) => setSeen((s) => seenStory(s, story)), []);
@@ -516,12 +524,12 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const repliesFor = useCallback(
     (target: CrewUpdate) => {
       const sent = repliesTo(updates.uid === uid ? (updates.byCrew[target.crewId] ?? []) : [], target, [...social.blocked]);
-      const pending = outbox
+      const pending = myOutbox
         .filter((o) => o.input.kind === 'reply' && o.input.replyTo === target.id && o.crewIds.includes(target.crewId) && !sent.some((r) => r.id === o.id))
         .map((o) => ({ ...o.input, crewId: target.crewId, uid: uid ?? '', sentAt: o.input.at }) as CrewUpdate);
       return [...sent.map((r) => ({ reply: r, waiting: false })), ...pending.map((r) => ({ reply: r, waiting: true }))];
     },
-    [updates, uid, outbox, social.blocked],
+    [updates, uid, myOutbox, social.blocked],
   );
   const profileOf = useCallback(
     (m: string) => profiles.current.get(m),
@@ -532,9 +540,9 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
 
   const careAlerts = useMemo(() => alertsOf(all, live, { me: uid, blocked: [...social.blocked], now }), [all, live, uid, social.blocked, now]);
   const myCare = useMemo(() => {
-    const waiting = outbox.filter((o) => o.input.care).map((o) => ({ ...o.input, crewId: o.crewIds[0], uid: uid ?? '', sentAt: o.input.at }) as CrewUpdate);
+    const waiting = myOutbox.filter((o) => o.input.care).map((o) => ({ ...o.input, crewId: o.crewIds[0], uid: uid ?? '', sentAt: o.input.at }) as CrewUpdate);
     return myCareOf([...all, ...waiting], uid, now);
-  }, [all, outbox, uid, now]);
+  }, [all, myOutbox, uid, now]);
 
   // A nudge on this phone, once per call for help (only if notifications are already allowed).
   const [notified, setNotified] = useState<string[] | undefined>();
@@ -559,8 +567,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, outbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox: myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }

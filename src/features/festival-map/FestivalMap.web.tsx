@@ -1,6 +1,6 @@
 import './leaflet.css';
 import L from 'leaflet';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { NEAR_KM, type Point } from '../festivals/near';
@@ -89,7 +89,8 @@ export function FestivalMap({
   useEffect(() => {
     const el = host.current as unknown as HTMLDivElement | null;
     if (!el) return;
-    const m = L.map(el, { zoomControl: false, attributionControl: true, worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomSnap: 0.25, wheelPxPerZoomLevel: 90 });
+    // No zoom animation: the lights are drawn over the map and would lag behind a scaling map, then jump.
+    const m = L.map(el, { zoomControl: false, attributionControl: true, worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomSnap: 0.25, wheelPxPerZoomLevel: 90, zoomAnimation: false });
     L.tileLayer(TILES, { attribution: CREDIT, subdomains: 'abcd', maxZoom: 19, detectRetina: true }).addTo(m);
     m.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
     m.setView([30, -95], 4);
@@ -224,8 +225,8 @@ export function FestivalMap({
                 <Light
                   key={c.lead.festival.id}
                   cluster={c}
-                  x={p.x}
-                  y={p.y}
+                  x={Math.round(p.x)}
+                  y={Math.round(p.y)}
                   chosen={c.members.some((k) => k.festival.id === selected)}
                   named={allNamed || c.lead.tone === 'going'}
                   onPress={() => {
@@ -271,8 +272,15 @@ export function FestivalMap({
 const LIGHT = 44;
 const BOX_W = 160;
 
-/** A festival's light: a glowing core in its colour, a halo, a ring when chosen; a count for several; its name under it. */
-function Light({ cluster, x, y, chosen, named, onPress }: { cluster: Cluster; x: number; y: number; chosen: boolean; named: boolean; onPress: () => void }) {
+/**
+ * A festival's light: a glowing core in its colour, a halo, a ring when chosen; a count for several; its name under it.
+ * Drawn again only when it moves or changes (dragging the map redraws the lights on every frame).
+ */
+const Light = memo(LightView, (a, b) =>
+  a.x === b.x && a.y === b.y && a.chosen === b.chosen && a.named === b.named && a.cluster.lead === b.cluster.lead && a.cluster.members.length === b.cluster.members.length,
+);
+
+function LightView({ cluster, x, y, chosen, named, onPress }: { cluster: Cluster; x: number; y: number; chosen: boolean; named: boolean; onPress: () => void }) {
   const { lead, members } = cluster;
   const tone = lead.tone;
   const tint = TONE_COLOR[tone];

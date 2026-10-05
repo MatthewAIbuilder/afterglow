@@ -1,6 +1,6 @@
 import type { Festival } from '../../data/models';
 import { searchFestivals } from './search';
-import { daysUntil } from './when';
+import { daysUntil, stillLastNight } from './when';
 
 /**
  * Keeping long festival lists short. Pure. With a handful of festivals every
@@ -22,7 +22,8 @@ export function whenRank(f: Festival, today: Date): number {
   const until = daysUntil(f, today);
   if (until === undefined) return Number.MAX_SAFE_INTEGER - 1;
   const end = daysUntil({ ...f, startDate: f.endDate ?? f.startDate }, today)!;
-  return end < 0 ? Number.MAX_SAFE_INTEGER : until;
+  // Over once its last night has ended (sets after midnight still count).
+  return end < 0 && !stillLastNight(f.endDate ?? f.startDate!, today) ? Number.MAX_SAFE_INTEGER : until;
 }
 
 export const isOver = (f: Festival, today: Date) => whenRank(f, today) === Number.MAX_SAFE_INTEGER;

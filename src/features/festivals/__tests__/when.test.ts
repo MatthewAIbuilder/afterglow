@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { countdown, daysUntil, setLine } from '../when';
+import { whenRank } from '../shelves';
+import { countdown, daysUntil, isLive, setLine } from '../when';
 
 const edc: Festival = {
   id: 'edc',
@@ -63,5 +64,21 @@ describe('festival countdown', () => {
     expect(setLine(undefined, 'Sunset set')).toBe('Sunset set');
     expect(setLine('Friday 9:00 PM, Main Stage', undefined)).toBe('Friday 9:00 PM, Main Stage');
     expect(setLine(undefined, undefined)).toBeUndefined();
+  });
+});
+
+describe('the last night, after midnight', () => {
+  it('a festival without listed days is on from its first date to the morning after its last', () => {
+    expect(isLive(edc, day(2026, 11, 5))).toBe(false);
+    expect(isLive(edc, day(2026, 11, 7))).toBe(true);
+    expect(isLive(edc, day(2026, 11, 9, 2))).toBe(true);
+    expect(isLive(edc, day(2026, 11, 10))).toBe(false);
+  });
+
+  it('closing sets after midnight still count as happening now, not over', () => {
+    expect(countdown(edc, day(2026, 11, 9, 1))).toBe('Happening now');
+    expect(whenRank(edc, day(2026, 11, 9, 1))).toBeLessThan(Number.MAX_SAFE_INTEGER);
+    expect(countdown(edc, day(2026, 11, 9, 9))).toBe('Over');
+    expect(whenRank(edc, day(2026, 11, 9, 9))).toBe(Number.MAX_SAFE_INTEGER);
   });
 });

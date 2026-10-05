@@ -125,6 +125,19 @@ describe('published updates', () => {
     expect(out.problems.length).toBeGreaterThan(0);
     expect(applyPatches(base, [], parseCatalogFile).catalog).toBe(base.catalog);
   });
+
+  it('only ever add, and never mask an artist’s own record or a festival’s later dates', () => {
+    const base = buildCatalog(MOCK_SNAPSHOT, undefined);
+    const known = MOCK_SNAPSHOT.artists[0];
+    // A "replace" file is laid over as an addition: everyone else stays.
+    const replace = { mode: 'replace', festivals: [{ ...festivalToFile(festival), name: 'Renamed', dates: 'Jan 1 to 2', lineup: [known.id], sets: [] }], artists: [{ id: known.id, name: 'Bare' }] };
+    const out = applyPatches(base, [{ file: JSON.stringify(replace) }], parseCatalogFile);
+    expect(out.catalog.festivals.length).toBe(base.catalog.festivals.length);
+    // The festival takes its lineup from the update, not its name or dates; the artist keeps their own record.
+    expect(out.catalog.festival(festival.id)?.lineup[0]).toBe(known.id);
+    expect(out.catalog.festival(festival.id)?.name).toBe(festival.name);
+    expect(out.catalog.artist(known.id)?.name).toBe(known.name);
+  });
 });
 
 describe('the inbox', () => {

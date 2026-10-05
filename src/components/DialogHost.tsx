@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { closeDialog, subscribeDialogs, type WebDialog } from '../lib/dialog';
 import { color, radius, space, type } from '../theme/tokens';
 
@@ -31,6 +31,11 @@ export function DialogHost() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [d]);
+  // In a browser, keyboard focus moves into the dialog, onto its first button.
+  const first = useRef<View>(null);
+  useEffect(() => {
+    if (d && Platform.OS === 'web') (first.current as unknown as { focus?: () => void } | null)?.focus?.();
+  }, [d]);
   if (!d) return null;
   const dismiss = () => d.cancelable && closeDialog(d.id);
   // Like the system's: two buttons side by side with Cancel on the left; otherwise a list with Cancel last.
@@ -42,14 +47,17 @@ export function DialogHost() {
   return (
     // Over everything: it comes last in the root layout.
     <View style={styles.layer}>
-      <Pressable style={styles.backdrop} onPress={dismiss} accessibilityLabel="Close" accessibilityRole="button">
-        <Pressable style={[styles.card, d.sheet && styles.sheet]} onPress={() => {}} accessibilityRole="alert" accessibilityViewIsModal>
+      {/* The dimmed page behind: tapping it cancels. A sibling of the card, so the card's buttons aren't inside another button. */}
+      <Pressable style={styles.backdrop} onPress={dismiss} accessibilityLabel="Close" accessibilityRole="button" focusable={false} />
+      <View style={styles.middle} pointerEvents="box-none">
+        <View style={[styles.card, d.sheet && styles.sheet]} accessibilityRole="alert" accessibilityViewIsModal aria-modal>
           {d.title ? <Text style={styles.title}>{d.title}</Text> : null}
           {d.message ? <Text style={styles.message}>{d.message}</Text> : null}
           <View style={[styles.buttons, row && styles.row]}>
             {buttons.map((b, i) => (
               <Pressable
                 key={`${b.text}-${i}`}
+                ref={i === 0 ? first : undefined}
                 onPress={() => closeDialog(d.id, b)}
                 accessibilityRole="button"
                 style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
@@ -63,15 +71,16 @@ export function DialogHost() {
               </Pressable>
             ))}
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   layer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(3,2,10,0.62)', alignItems: 'center', justifyContent: 'center', padding: space.xl },
+  backdrop: { ...StyleSheet.absoluteFill as object, backgroundColor: 'rgba(3,2,10,0.62)' },
+  middle: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl },
   card: {
     width: '100%',
     maxWidth: 340,

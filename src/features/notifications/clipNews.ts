@@ -8,7 +8,9 @@ import type { Notice } from './inbox';
  * the phone by remembering every clip id seen. Pure.
  *
  * Like lineup news, the first look only takes note, and a clip is announced
- * once: the memory keeps up to CLIP_SEEN_MAX ids, oldest dropped first.
+ * once: past CLIP_SEEN_MAX ids, the oldest that have left the catalogue are
+ * dropped first; clips still in it are never forgotten (or they'd be news
+ * again on the next look).
  */
 export type ClipNewsItem = {
   /** Clips that arrived together, in catalogue order. */
@@ -30,8 +32,10 @@ export const EMPTY_CLIP_MEMORY: ClipMemory = { seen: [], news: [] };
 export const CLIP_NEWS_DAYS = 14;
 /** At most this many arrivals are kept. */
 export const CLIP_NEWS_MAX = 30;
-/** At most this many clip ids are remembered. */
+/** Ids past this many are dropped, oldest first, if they've left the catalogue. */
 export const CLIP_SEEN_MAX = 5000;
+/** A saved memory is never read back longer than this. */
+const CLIP_SEEN_HARD_MAX = 50000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Only official clips count: community videos come and go and are never news. */
@@ -52,9 +56,17 @@ export function trackClips(memory: ClipMemory, clips: Clip[], now: number): Clip
   }
   const kept = memory.news.filter((n) => now - n.at < CLIP_NEWS_DAYS * DAY_MS);
   if (!fresh.length && kept.length === memory.news.length) return memory;
-  const seen = fresh.length ? [...memory.seen, ...fresh].slice(-CLIP_SEEN_MAX) : memory.seen;
+  const seen = fresh.length ? trimSeen([...memory.seen, ...fresh], clips) : memory.seen;
   const news = !firstLook && fresh.length ? [...kept, { clips: fresh, at: now }] : kept;
   return { seen, news: news.slice(-CLIP_NEWS_MAX) };
+}
+
+/** Drops the oldest ids that have left the catalogue until the memory fits. */
+function trimSeen(seen: string[], clips: Clip[]): string[] {
+  let over = seen.length - CLIP_SEEN_MAX;
+  if (over <= 0) return seen;
+  const current = new Set(clips.map((c) => c.id));
+  return seen.filter((id) => !(over > 0 && !current.has(id) && over--));
 }
 
 const names = (list: string[]) => (list.length === 1 ? list[0] : list.length === 2 ? `${list[0]} and ${list[1]}` : `${list[0]}, ${list[1]} and ${list.length - 2} more you’d love`);
@@ -106,5 +118,5 @@ export function cleanClipMemory(raw: unknown): ClipMemory {
         return clips.length ? [{ clips, at: x.at }] : [];
       })
     : [];
-  return { seen: strs(o.seen).slice(-CLIP_SEEN_MAX), news: news.slice(-CLIP_NEWS_MAX) };
+  return { seen: strs(o.seen).slice(-CLIP_SEEN_HARD_MAX), news: news.slice(-CLIP_NEWS_MAX) };
 }

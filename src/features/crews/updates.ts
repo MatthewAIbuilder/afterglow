@@ -161,6 +161,8 @@ export type OutboxItem = {
   reachedSome?: boolean;
   /** When it was put in the outbox (ms). */
   queuedAt: number;
+  /** The account that wrote it: only that account ever sends it (older items without one are held until they expire). */
+  uid?: string;
 };
 
 /** Updates still waiting after this long are dropped: old news by then. */
