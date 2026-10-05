@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { PageTitle } from '../../components/PageTitle';
@@ -71,30 +71,28 @@ export default function BadgeCardScreen() {
           />
         </View>
         <View style={styles.buttons}>
-          {Platform.OS !== 'web' ? (
-            <Pressable
-              onPress={async () => {
-                haptic.select();
-                setBusy(true);
-                await sharePoster(ref, `${festival.name} badge`);
-                setBusy(false);
-              }}
-              disabled={busy}
-              accessibilityRole="button"
-              style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
-            >
-              <Text style={styles.primaryText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
-            </Pressable>
-          ) : null}
+          <Pressable
+            onPress={async () => {
+              haptic.select();
+              setBusy(true);
+              await sharePoster(ref, `${festival.name} badge`, badgeShareText(festival.name, link, mine, who?.handle));
+              setBusy(false);
+            }}
+            disabled={busy}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
+          >
+            <Text style={styles.primaryText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+          </Pressable>
           <Pressable
             onPress={() => {
               haptic.select();
               void shareMessage(badgeShareText(festival.name, link, mine, who?.handle), `${festival.name} badge`);
             }}
             accessibilityRole="button"
-            style={({ pressed }) => [Platform.OS === 'web' ? styles.primary : styles.secondary, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
           >
-            <Text style={Platform.OS === 'web' ? styles.primaryText : styles.secondaryText}>Share as text</Text>
+            <Text style={styles.secondaryText}>Share as text</Text>
           </Pressable>
         </View>
       </ScrollView>

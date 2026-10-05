@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { CloseIcon } from '../../components/TabIcons';
@@ -107,8 +107,7 @@ function PlanCardView({ festival }: { festival: Festival }) {
         ) : (
           <Text style={styles.empty}>Like a few clips or rate some artists and your plan will be ready to share.</Text>
         )}
-        {/* A picture needs the phone (the card is captured natively); the website shares the text. */}
-        {(card || showPoster || showMustSees) && Platform.OS !== 'web' ? (
+        {card || showPoster || showMustSees ? (
           <Pressable
             onPress={shareImage}
             disabled={busy}

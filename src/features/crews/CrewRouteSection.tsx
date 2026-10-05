@@ -5,13 +5,13 @@ import { FilterChips } from '../../components/FilterChips';
 import { stageName } from '../../data/festival';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { shareMessage } from '../../lib/share';
 import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { clockTime, stintLabel } from '../plan/route';
-import { crewRoute, type CrewDay, namesLine } from './crewRoute';
+import { PictureShareSheet } from '../plan/PictureShareSheet';
+import { crewRoute, crewRouteCard, type CrewDay, namesLine } from './crewRoute';
 
 const at = (min: number) => formatTime(clockTime(min));
 
@@ -42,12 +42,15 @@ export function CrewRouteSection({
   );
   const withSets = days.filter((d) => d.stops.length);
   const [picked, setPicked] = useState<string | undefined>();
+  const [sharing, setSharing] = useState(false);
+  const card = sharing ? crewRouteCard(festival, crewName, withSets, me, nameOf) : undefined;
   const day = withSets.find((d) => d.day === picked) ?? withSets[0];
   if (!day) return null;
 
+  // The route goes out as a picture, with the text as a second choice.
   const share = () => {
     haptic.select();
-    void shareMessage(crewRouteText(festival, crewName, withSets, me, nameOf), `${crewName} at ${festival.name}`);
+    setSharing(true);
   };
 
   return (
@@ -68,6 +71,17 @@ export function CrewRouteSection({
         />
       ) : null}
       <DayList festival={festival} day={day} me={me} nameOf={nameOf} />
+      {card ? (
+        <PictureShareSheet
+          visible
+          onClose={() => setSharing(false)}
+          heading="Share our route"
+          card={card}
+          text={crewRouteText(festival, crewName, withSets, me, nameOf)}
+          shareTitle={`${crewName} at ${festival.name}`}
+          label={`${crewName}'s route at ${festival.name}`}
+        />
+      ) : null}
     </View>
   );
 }

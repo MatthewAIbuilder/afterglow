@@ -1,10 +1,11 @@
-import * as Sharing from 'expo-sharing';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { RefObject } from 'react';
-import { Share, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
-import { captureRef } from 'react-native-view-shot';
 import { APP_NAME } from '../../config/app';
+import { pictureName } from '../../lib/pictureName';
+import type { ShareOutcome } from '../../lib/share';
+import { sharePicture } from '../../lib/sharePicture';
 import { color, radius, space, type } from '../../theme/tokens';
 import type { PlanCard } from './share';
 
@@ -16,18 +17,12 @@ import type { PlanCard } from './share';
 /** The card keeps a phone's proportions on a wide screen. */
 export const CARD_MAX_WIDTH = 420;
 
-/** Capture the card and open the share sheet with the picture. Phones only (the website shares text). */
-export async function sharePoster(ref: RefObject<View | null>, title: string): Promise<void> {
-  try {
-    const uri = await captureRef(ref, { format: 'png', quality: 1, result: 'tmpfile' });
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: title });
-    } else {
-      await Share.share({ url: uri });
-    }
-  } catch {
-    // Cancelled or not possible here: nothing to do.
-  }
+/**
+ * Capture the card and share it as a picture: the share sheet on phones; on
+ * the website the browser's share sheet, or a download where it has none.
+ */
+export function sharePoster(ref: RefObject<View | null>, title: string, text?: string): Promise<ShareOutcome> {
+  return sharePicture(ref, { title, fileName: pictureName(title), text });
 }
 
 /** The picture: night gradient, festival name, then each day (or tier) with its sets. */

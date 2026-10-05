@@ -43,7 +43,9 @@ describe('the friends hub', () => {
   });
 
   it('writes the invite with your handle and the festival', () => {
-    expect(inviteText('maya', f('cc4'))).toBe("Join me on Afterglow, I'm @maya. Let's plan CC4 together.\nhttps://afterglowmusic.app/u/maya");
+    expect(inviteText('maya', f('cc4'))).toBe("Join me on Afterglow, I'm @maya. Let's plan CC4 together.\nhttps://afterglowmusic.app/festival/cc4");
+    expect(inviteText('maya')).toMatch(/\nhttps:\/\/afterglowmusic\.app\/u\/maya$/);
+    expect(inviteText()).toMatch(/\nhttps:\/\/afterglowmusic\.app$/);
     expect(inviteText()).toMatch(/^Join me on Afterglow\. Find your sets/);
     expect([crewPeopleLine(1), crewPeopleLine(4)]).toEqual(['Just you so far', '4 of you']);
   });

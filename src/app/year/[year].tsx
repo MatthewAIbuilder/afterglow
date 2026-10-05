@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { PageTitle } from '../../components/PageTitle';
@@ -44,23 +44,21 @@ export default function YearScreen() {
             <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
               <PosterCard card={card} label={`${card.title} on Afterglow`} />
             </View>
-            {Platform.OS !== 'web' ? (
-              <Pressable
-                onPress={async () => {
-                  if (busy) return;
-                  haptic.tap();
-                  setBusy(true);
-                  await sharePoster(cardRef, `My ${year} on Afterglow`);
-                  setBusy(false);
-                }}
-                disabled={busy}
-                accessibilityRole="button"
-                accessibilityLabel="Share your year as an image"
-                style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
-              >
-                <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              onPress={async () => {
+                if (busy) return;
+                haptic.tap();
+                setBusy(true);
+                await sharePoster(cardRef, `My ${year} on Afterglow`);
+                setBusy(false);
+              }}
+              disabled={busy}
+              accessibilityRole="button"
+              accessibilityLabel="Share your year as an image"
+              style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
+            >
+              <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+            </Pressable>
             <Pressable
               onPress={() => {
                 haptic.select();
