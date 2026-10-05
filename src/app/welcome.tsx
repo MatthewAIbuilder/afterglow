@@ -12,7 +12,7 @@ import { whereWhen } from '../features/festivals/format';
 import { festivalShelf, isMany, pickerList } from '../features/festivals/shelves';
 import { countdown } from '../features/festivals/when';
 import { ROUNDS_MIN, thisOrThatPairs } from '../features/taste/thisOrThat';
-import { watchFestival, welcomeFestival } from '../features/welcome/firstRun';
+import { watchFestival, welcomeChoices, welcomeFestival } from '../features/welcome/firstRun';
 import { HeroOrb } from '../features/welcome/HeroOrb';
 import { Waiting } from '../features/welcome/Waiting';
 import { haptic } from '../lib/haptics';
@@ -65,7 +65,7 @@ export default function WelcomeScreen() {
   const many = isMany(catalog.festivals);
   const [query, setQuery] = useState('');
   const shelf = many ? festivalShelf(catalog.festivals, going, loves, today).festivals : [];
-  const choices = many ? pickerList(catalog.festivals, going, query, shelf) : catalog.festivals;
+  const choices = many ? pickerList(catalog.festivals, going, query, shelf) : welcomeChoices(catalog.festivals, going, today);
 
   const next = (s: Step) => {
     haptic.select();
