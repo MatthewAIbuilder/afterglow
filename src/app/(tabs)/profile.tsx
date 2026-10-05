@@ -1,5 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
+import { CoverSwap } from '../../features/profile/CoverSwap';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -235,6 +236,9 @@ function FullProfile() {
             <ProfileButton label={social.user ? 'Finish your profile' : 'Create your profile'} onPress={signIn} glow />
           ) : null}
         </ProfileHeader>
+
+        {/* Swap between your cover photo and background, in the corner just under the orbit. */}
+        {me ? <CoverSwap me={me} shown={backdrop} style={{ top: Math.round((insets.top + COVER_H) * 0.72) - 46, right: space.lg }} /> : null}
 
         <ClaimBanner b={b} />
 
