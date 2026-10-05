@@ -97,7 +97,8 @@ upload ever warns about a missing reason, it names the API: add it there.
   Apple won't ask on each upload.
 - **Age rating**: answer the questionnaire honestly. Afterglow has user
   content (videos, comments, profiles) and is about nightlife and festivals;
-  expect a rating of 13+ or higher. Sign-up already says "I'm 13 or older".
+  the timing guide in Look after yourself means frequent drug references, so
+  the rating is 18+ (decided 2026-10-05; sign-up says "I'm 18 or older").
 - **Sign-in for the reviewer**: App Review needs a test account. Make one in
   the app (for example `appreview@…` with a password you'll share only in App
   Store Connect → App Review Information), follow a couple of people and share
