@@ -28,6 +28,8 @@ export type Sticker = {
   until?: number;
   festivalId?: string;
   createdAt?: number;
+  /** HQ took it down then (ms): scans from before still count. */
+  takenDownAt?: number;
 };
 
 export type Hunt = {
@@ -135,7 +137,8 @@ export function queueFind(finds: readonly Find[], card: FindCard, account: strin
 
 /** A find once Afterglow's copy of its sticker is read (null: there's no such sticker). */
 export function checked(f: Find, sticker: Sticker | null, now: number): Find {
-  if (!sticker) return { ...f, state: 'gone', lastTry: now };
+  // Taken down: gone, unless you scanned it before then.
+  if (!sticker || (sticker.takenDownAt !== undefined && f.at > sticker.takenDownAt)) return { ...f, state: 'gone', lastTry: now };
   const own = {
     ...f,
     name: sticker.name,
@@ -166,9 +169,64 @@ export function nextFindDue(finds: readonly Find[], account?: string): number | 
 /** A try that didn't reach Afterglow (no signal): try again later. */
 export const missed = (f: Find, now: number): Find => ({ ...f, tries: f.tries + 1, lastTry: now });
 
-/** Finds made signed out go to the first account that signs in. */
-export const adopt = (finds: readonly Find[], account: string): Find[] =>
-  finds.some((f) => !f.account) ? finds.map((f) => (f.account ? f : { ...f, account })).filter((f, i, all) => all.findIndex((g) => g.code === f.code && g.account === f.account) === i) : [...finds];
+/** How good a find's state is, when two copies of one meet: found beats waiting, which beats ended or gone. */
+const RANK: Record<FindState, number> = { found: 3, checking: 2, ended: 1, gone: 0 };
+/**
+ * One find from two copies of the same sticker for one account: the better
+ * state (the account's own on a tie), sent if either got through, and the
+ * earliest scan (it was found then).
+ */
+export function better(own: Find, other: Find): Find {
+  const win = RANK[other.state] > RANK[own.state] ? other : own;
+  const sent = win.state === 'found' && ((own.state === 'found' && own.sent) || (other.state === 'found' && other.sent));
+  return { ...win, account: own.account ?? other.account, at: Math.min(own.at, other.at), sent: sent || win.sent };
+}
+
+/**
+ * Finds made signed out go to the first account that signs in. A sticker the
+ * account already has keeps the account's copy unless the other is better
+ * (a later re-scan never replaces a confirmed find, nor marks it ended).
+ */
+export function adopt(finds: readonly Find[], account: string): Find[] {
+  if (!finds.some((f) => !f.account)) return [...finds];
+  const out: Find[] = [];
+  // The account's own (and other accounts') first, so they win ties.
+  for (const f of [...finds.filter((x) => x.account), ...finds.filter((x) => !x.account)]) {
+    const mine = f.account ? f : { ...f, account };
+    const i = out.findIndex((g) => g.code === mine.code && g.account === mine.account);
+    if (i < 0) out.push(mine);
+    else out[i] = better(out[i], mine);
+  }
+  return out;
+}
+
+/** What Afterglow says an account found (its own record of it). */
+export type AccountFind = { code: string; at: number };
+
+/**
+ * Finds kept on the account (from another phone, or before a reinstall)
+ * brought onto this phone as found and sent, with their stickers as read
+ * (`stickerOf`; one that can't be read isn't added). Ones already here become
+ * found and sent too, keeping the earliest scan. Unchanged: the same array.
+ */
+export function withAccountFinds(finds: readonly Find[], account: string, remote: readonly AccountFind[], stickerOf: (code: string) => Sticker | null | undefined): readonly Find[] {
+  let out: Find[] | undefined;
+  for (const r of remote) {
+    const list = out ?? finds;
+    const i = list.findIndex((f) => f.code === r.code && f.account === account);
+    const have = i >= 0 ? list[i] : undefined;
+    if (have && have.state === 'found' && have.sent && have.at <= r.at) continue;
+    const s = stickerOf(r.code);
+    let next: Find;
+    if (have) next = { ...have, ...(s ? { name: s.name, creature: s.creature, ...(s.huntId ? { huntId: s.huntId, slot: s.slot } : {}) } : {}), state: 'found', sent: true, at: Math.min(have.at, r.at), tries: 0, lastTry: undefined, until: undefined };
+    else if (s) next = { code: r.code, name: s.name, creature: s.creature, ...(s.huntId ? { huntId: s.huntId, slot: s.slot } : {}), at: r.at, account, state: 'found', sent: true, tries: 0 };
+    else continue;
+    out = [...list];
+    if (i >= 0) out[i] = next;
+    else out.unshift(next);
+  }
+  return out ? out.slice(0, FINDS_MAX) : finds;
+}
 
 /** The finds an account sees (its own and any made signed out), newest first. */
 export const findsFor = (finds: readonly Find[], account?: string) => finds.filter((f) => !f.account || f.account === account).sort((a, b) => b.at - a.at);

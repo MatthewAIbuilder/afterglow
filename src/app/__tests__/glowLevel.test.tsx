@@ -75,6 +75,49 @@ describe('glow levels on profiles', () => {
     expect(await AsyncStorage.getItem('showLevel.v1')).toBe('0');
   });
 
+  it('a new phone at level 1 never removes the level an account already shows', async () => {
+    const sam = await person('sam');
+    mockSocial.levels.set(sam, 5);
+    const set = jest.spyOn(mockSocial.service, 'setLevel');
+    await renderApp('/profile-edit');
+    await flush();
+    await settle(3500);
+    await flush();
+    expect(mockSocial.levels.get(sam)).toBe(5);
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it('never lowers the level an account shows; only the switch takes it off', async () => {
+    const sam = await person('sam');
+    mockSocial.levels.set(sam, 5);
+    // Level 2 on this phone, lower than the 5 shown: left alone.
+    await AsyncStorage.setItem('secrets.v1', JSON.stringify({ lightshow: 1, plur: 2 }));
+    const app = await renderApp('/profile-edit');
+    await flush();
+    await settle(3500);
+    await flush();
+    expect(mockSocial.levels.get(sam)).toBe(5);
+    await fireEvent(app.getByLabelText('Show my glow level'), 'valueChange', false);
+    await flush();
+    await settle(3500);
+    await flush();
+    expect(mockSocial.levels.has(sam)).toBe(false);
+  });
+
+  it('never puts your level on the support account', async () => {
+    mockSocial.verified.add('afterglowmusic.support@gmail.com');
+    const hq = await s().signUp('afterglowmusic.support@gmail.com', 'password123');
+    await s().saveProfile({ handle: 'hqteam', displayName: 'HQ', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    await AsyncStorage.setItem('secrets.v1', JSON.stringify({ lightshow: 1, plur: 2 }));
+    const set = jest.spyOn(mockSocial.service, 'setLevel');
+    await renderApp('/profile-edit');
+    await flush();
+    await settle(3500);
+    await flush();
+    expect(mockSocial.levels.has(hq.uid)).toBe(false);
+    expect(set).not.toHaveBeenCalled();
+  });
+
   it('Instagram, Snapchat and TikTok: added in Edit profile, shown as icons that open the account', async () => {
     await person('maya');
     // Opened once your profile has loaded, as in the app.

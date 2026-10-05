@@ -171,7 +171,7 @@ export default function GardenScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.givenName}>{sproutName(g)}</Text>
                   <Text style={[styles.givenState, g.claimedBy ? { color: SPROUT_GREEN } : !g.sent ? styles.amberText : null]}>
-                    {g.claimedBy ? `Picked up by ${g.claimedBy.name ?? (g.claimedBy.handle ? `@${g.claimedBy.handle}` : 'someone')}` : g.sent ? 'Not picked up yet' : 'Waiting for signal'} · {day(g.at)}
+                    {g.claimedBy ? `Picked up by ${g.claimedBy.name ?? (g.claimedBy.handle ? `@${g.claimedBy.handle}` : 'someone')}` : g.sent ? 'Not picked up yet' : g.failed ? 'Couldn’t be sent, so your seed is back' : 'Waiting for signal'} · {day(g.at)}
                   </Text>
                 </View>
               </View>

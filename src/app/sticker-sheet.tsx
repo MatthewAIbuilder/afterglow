@@ -48,7 +48,7 @@ export default function StickerSheetScreen() {
       try {
         if (code) {
           const s = await social.service.sticker(code);
-          if (on) setStickers(s ? Array.from({ length: COPIES }, () => s) : []);
+          if (on) setStickers(s && s.takenDownAt === undefined ? Array.from({ length: COPIES }, () => s) : []);
         } else if (hunt) {
           const all = await social.service.stickers(200);
           if (on) setStickers(all.filter((s) => s.huntId === hunt).sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0)));

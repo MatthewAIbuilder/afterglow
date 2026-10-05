@@ -975,7 +975,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (network.down) throw new SocialError('network');
       if (finds.has(`${u.uid}_${code}`)) return;
       const s = stickers.get(code);
-      if (!s) throw new SocialError('not-found');
+      if (!s || (s.takenDownAt !== undefined && (at > s.takenDownAt || Date.parse(now()) > s.takenDownAt + 3 * 86_400_000))) throw new SocialError('not-found');
       if (s.until !== undefined && (at > s.until || Date.parse(now()) > s.until + 3 * 86_400_000)) throw new SocialError('sticker-ended');
       finds.set(`${u.uid}_${code}`, at);
     },
@@ -996,14 +996,20 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async stickers(max) {
       needAdmin();
-      return [...stickers.values()].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)).slice(0, max);
+      return [...stickers.values()].filter((s) => s.takenDownAt === undefined).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)).slice(0, max);
     },
     async deleteSticker(code) {
       needAdmin();
       const s = stickers.get(code);
       const h = s?.huntId ? hunts.get(s.huntId) : undefined;
       if (h && s?.slot !== undefined && h.items[s.slot]) hunts.set(h.id, { ...h, items: h.items.map((it, i) => (i === s.slot ? { ...it, gone: true as const } : it)) });
-      stickers.delete(code);
+      // Kept, marked taken down: scans from before still count.
+      if (s) stickers.set(code, { ...s, takenDownAt: Date.parse(now()) });
+    },
+    async myFinds(max) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      return [...finds].filter(([k]) => k.startsWith(`${u.uid}_`)).slice(0, max).map(([k, at]) => ({ code: k.slice(u.uid.length + 1), at }));
     },
     async addHunt(input) {
       needAdmin();

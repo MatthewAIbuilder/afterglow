@@ -89,6 +89,38 @@ describe('stickers', () => {
     expect(app.getByLabelText('Night Market 2027: 1 of 2 found.')).toBeTruthy();
   });
 
+  it('stickers kept on your account come back on a new phone', async () => {
+    seed();
+    const u = await s().signUp('maya@example.com', 'password123');
+    mockSocial.finds.set(`${u.uid}_ferris2027`, T.getTime() - 86_400_000);
+    const app = await renderApp('/garden');
+    await flush();
+    expect(app.getByText('Stickers you’ve found · 1')).toBeTruthy();
+    expect(app.getByLabelText('Night Market 2027: 1 of 2 found.')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('finds.v1')) ?? '{}').finds).toEqual([
+      expect.objectContaining({ code: 'ferris2027', account: u.uid, state: 'found', sent: true, at: T.getTime() - 86_400_000 }),
+    ]);
+  });
+
+  it('a scan from before a sticker was taken down still counts once there’s signal; one after doesn’t', async () => {
+    seed();
+    const u = await s().signUp('maya@example.com', 'password123');
+    network.__setState({ isConnected: false, isInternetReachable: false });
+    const app = await renderApp(link());
+    await flush();
+    expect(app.getByText('SAVED')).toBeTruthy();
+    // HQ takes it down while this phone has no signal.
+    mockSocial.stickers.set('ferris2027', { ...mockSocial.stickers.get('ferris2027')!, takenDownAt: T.getTime() + 1000 });
+    await act(async () => network.__setState({ isConnected: true, isInternetReachable: true }));
+    await flush();
+    expect(app.getByText('YOU FOUND')).toBeTruthy();
+    expect(mockSocial.finds.get(`${u.uid}_ferris2027`)).toBe(T.getTime());
+    mockSocial.stickers.set('frog2027aa', { code: 'frog2027aa', name: 'Water frog', creature: 'frog', takenDownAt: T.getTime() - 1000 });
+    await act(async () => router.push(link('frog2027aa', 'frog', 'Water frog')));
+    await flush();
+    expect(app.getByText('This code isn’t an Afterglow sticker any more.')).toBeTruthy();
+  });
+
   it('a send that’s refused for another reason is tried again, not dropped', async () => {
     seed();
     await s().signUp('maya@example.com', 'password123');
