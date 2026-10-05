@@ -3,6 +3,7 @@ import {
   ALL_DONE_BONUS,
   DAILY,
   NO_COUNTS,
+  type QuestBook,
   type QuestSnapshot,
   canDo,
   cleanBook,
@@ -15,6 +16,7 @@ import {
   bestStreakOf,
   glowShareText,
   added,
+  badgeGlowCount,
   picksFor,
   questDay,
   questWeek,
@@ -150,6 +152,22 @@ describe('the book', () => {
     expect(tomorrow.base.likes).toHaveLength(9);
     expect(tomorrow.glow).toBe(80);
     expect(tomorrow.lit).toEqual(['2026-10-03']);
+  });
+
+  it('keeps today as it is when the clock or time zone goes back a day', () => {
+    const today: QuestBook = { ...turnOver(undefined, now, NO_COUNTS), done: ['like'], picks: ['like', 'rate', 'map'], glow: 30 };
+    const back = turnOver(today, at(2026, 10, 2, 15), { ...NO_COUNTS, likes: ids(4) });
+    expect(back).toBe(today);
+    // Once the clock is right again, it's still the same day: the done quest stays done.
+    expect(turnOver(back, now + 60_000, NO_COUNTS)).toBe(today);
+  });
+
+  it('counts claimed badges for glow once, and throwbacks only while you have them', () => {
+    const side = new Set(['ms:sprout-swap']);
+    const claimed = new Set(['pin:edc', 'ms:ten-sets', 'ms:sprout-swap', 'past:edc-orlando-2024', 'past:edc-orlando-2023', 'past:sunset-sessions-2022']);
+    expect(badgeGlowCount(claimed, side, new Set(['past:edc-orlando-2024']))).toBe(3);
+    expect(badgeGlowCount(claimed, side, new Set(['past:edc-orlando-2024', 'past:edc-orlando-2023', 'past:sunset-sessions-2022']))).toBe(5);
+    expect(badgeGlowCount(undefined, side, new Set())).toBe(0);
   });
 
   it('finishes quests once, adds their glow, and the bonus for all three', () => {

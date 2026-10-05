@@ -28,6 +28,10 @@ export type Gift = {
   takenBack?: boolean;
   tries: number;
   lastTry?: number;
+  /** Tries Afterglow refused (not just no signal). */
+  refused?: number;
+  /** Refused too often: never sent, and its seed is back. */
+  failed?: true;
 };
 
 export type ClaimState = 'waiting' | 'claimed' | 'taken' | 'gone';
@@ -49,10 +53,23 @@ export const CLAIM_KEEP_MS = 3 * 24 * 3_600_000;
 const GIFT_KEEP_MS = SPROUT_KEEP_DAYS * 24 * 3_600_000;
 export const GIFTS_MAX = 300;
 
+/** A gift refused this many times (not for want of signal) is given up, and its seed given back. */
+export const GIFT_REFUSED_MAX = 5;
+
+/** A try that didn't go through: no signal (tried again), or refused (given up after `GIFT_REFUSED_MAX`). */
+export function giftTried(g: Gift, refused: boolean, now: number): Gift {
+  const r = (g.refused ?? 0) + (refused ? 1 : 0);
+  const next: Gift = { ...g, tries: g.tries + 1, lastTry: now, ...(r ? { refused: r } : {}) };
+  return r >= GIFT_REFUSED_MAX ? { ...next, failed: true } : next;
+}
+
+/** Gifts that use up a seed: given, not taken back, not given up. */
+export const seedGifts = (gifts: readonly Gift[]) => gifts.filter((g) => !g.takenBack && !g.failed);
+
 const due = (x: { tries: number; lastTry?: number }, now: number) => !x.lastTry || now - x.lastTry >= retryDelay(x.tries);
 
 /** Gifts still to send, oldest first. */
-export const giftsToSend = (gifts: readonly Gift[], now: number) => gifts.filter((g) => !g.sent && !g.takenBack && due(g, now)).sort((a, b) => a.at - b.at);
+export const giftsToSend = (gifts: readonly Gift[], now: number) => gifts.filter((g) => !g.sent && !g.takenBack && !g.failed && due(g, now)).sort((a, b) => a.at - b.at);
 /** Gifts taken back that still need removing from Afterglow. */
 export const giftsToTakeBack = (gifts: readonly Gift[], now: number) => gifts.filter((g) => g.takenBack && due(g, now));
 /** Scans still to pick up for an account, oldest first. */
@@ -61,7 +78,7 @@ export const claimsToSend = (claims: readonly Claim[], account: string, now: num
 
 /** When the next waiting thing is due (ms), if any. */
 export function nextDue(gifts: readonly Gift[], claims: readonly Claim[]): number | undefined {
-  const times = [...gifts.filter((g) => !g.sent || g.takenBack), ...claims.filter((c) => c.state === 'waiting')].map((x) => (x.lastTry ?? 0) + retryDelay(x.tries));
+  const times = [...gifts.filter((g) => (!g.sent && !g.failed) || g.takenBack), ...claims.filter((c) => c.state === 'waiting')].map((x) => (x.lastTry ?? 0) + retryDelay(x.tries));
   return times.length ? Math.min(...times) : undefined;
 }
 
@@ -99,6 +116,8 @@ export function cleanGifts(raw: unknown): Gift[] {
       ...(g.claimedBy && typeof g.claimedBy.uid === 'string' ? { claimedBy: g.claimedBy } : {}),
       ...(typeof g.claimedAt === 'number' ? { claimedAt: g.claimedAt } : {}),
       ...(g.takenBack === true ? { takenBack: true } : {}),
+      ...(typeof g.refused === 'number' && g.refused > 0 ? { refused: g.refused } : {}),
+      ...(g.failed === true ? { failed: true as const } : {}),
     }))
     .slice(0, GIFTS_MAX);
 }
