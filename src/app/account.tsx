@@ -153,7 +153,7 @@ export default function AccountScreen() {
               style={styles.agree}
             >
               <View style={[styles.box, agreed && styles.boxOn]}>{agreed ? <CheckIcon color={color.night} size={14} /> : null}</View>
-              <Text style={styles.agreeText}>I’m 13 or older and agree to the community guidelines, Terms and Privacy Policy</Text>
+              <Text style={styles.agreeText}>I’m 18 or older and agree to the community guidelines, Terms and Privacy Policy</Text>
             </Pressable>
             <LegalLinks docs={['terms', 'privacy']} />
           </View>
