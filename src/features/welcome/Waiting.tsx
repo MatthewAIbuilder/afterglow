@@ -76,7 +76,7 @@ export function Waiting() {
       key: 'care',
       title: 'Look after yourself',
       body: web
-        ? 'A private page for festival nights: timers, water, how you feel and help close by. It stays on your device.'
+        ? 'A private page for festival nights: timers, water, how you feel and help close by. It’s in Settings, and stays on your device.'
         : 'Hold the camera button for a private page: timers, water, how you feel and help close by. It stays on your phone.',
       icon: <HeartGlyph />,
       tint: PINK,

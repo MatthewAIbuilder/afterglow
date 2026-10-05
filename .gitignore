@@ -48,3 +48,6 @@ yarn-error.*
 # Windows
 Thumbs.db
 desktop.ini
+
+# App Store screenshots made on a computer (npm run shots); the GitHub job attaches them to its run instead.
+docs/app-store/screenshots/
