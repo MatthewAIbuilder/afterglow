@@ -68,5 +68,9 @@ export function calendarMonths(festivals: readonly Festival[], today: Date): Mon
   return months;
 }
 
-/** "3 festivals in November" / "No festivals in March yet". */
-export const monthLine = (n: number, m: Month) => (n === 0 ? `No festivals in ${MONTH_NAMES[m.month]} yet` : n === 1 ? `1 festival in ${MONTH_NAMES[m.month]}` : `${n} festivals in ${MONTH_NAMES[m.month]}`);
+/** "3 festivals in November" / "No festivals in March yet"; with a reach, "2 festivals within 100 mi in November". */
+export function monthLine(n: number, m: Month, where = ''): string {
+  const w = where ? ` ${where}` : '';
+  const month = MONTH_NAMES[m.month];
+  return n === 0 ? `No festivals${w} in ${month} yet` : n === 1 ? `1 festival${w} in ${month}` : `${n} festivals${w} in ${month}`;
+}

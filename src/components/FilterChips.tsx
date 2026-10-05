@@ -6,19 +6,22 @@ export type Chip = { key: string | undefined; label: string; count?: number; acc
 
 /**
  * A horizontal row of filter chips; the first is usually "All". Tapping the
- * chosen chip again goes back to the first.
+ * chosen chip again goes back to the first (unless `sticky`: one is always chosen).
  */
 export function FilterChips({
   chips,
   value,
   onChange,
   inset = space.xl,
+  sticky = false,
 }: {
   chips: Chip[];
   value: string | undefined;
   onChange: (key: string | undefined) => void;
   /** Side padding, so the row lines up with the page. */
   inset?: number;
+  /** Tapping the chosen chip leaves it chosen. */
+  sticky?: boolean;
 }) {
   return (
     <ScrollView
@@ -34,6 +37,7 @@ export function FilterChips({
           <Pressable
             key={c.key ?? 'all'}
             onPress={() => {
+              if (on && sticky) return;
               haptic.select();
               onChange(on ? chips[0]?.key : c.key);
             }}

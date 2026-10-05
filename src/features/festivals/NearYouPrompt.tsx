@@ -1,4 +1,4 @@
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { useNearby } from '../../state/nearby';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
@@ -7,7 +7,7 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
  * "Festivals near you": an offer on the Festivals tab to use your location.
  * Nothing is asked until you tap, and the answer stays on this phone.
  */
-export function NearYouPrompt() {
+export function NearYouPrompt({ style }: { style?: StyleProp<ViewStyle> } = {}) {
   const { status, turnOn } = useNearby();
   const web = Platform.OS === 'web';
   const denied = status === 'denied';
@@ -21,7 +21,7 @@ export function NearYouPrompt() {
   const locating = status === 'locating';
 
   return (
-    <View style={styles.card} accessibilityRole="summary">
+    <View style={[styles.card, style]} accessibilityRole="summary">
       <Text style={styles.title}>Festivals near you</Text>
       <Text style={styles.body}>{body}</Text>
       <View style={styles.row}>

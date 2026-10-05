@@ -33,4 +33,37 @@ describe('the festival calendar', () => {
     expect(app.getByText('In November')).toBeTruthy();
     expect(app.getByLabelText(/^6 November, EDC Orlando 2026/)).toBeTruthy();
   });
+
+  it('opens on what’s near you, with a state or everywhere a tap away', async () => {
+    await AsyncStorage.setItem('nearYou.v1', JSON.stringify({ lat: 28.54, lon: -81.38, label: 'Orlando', at: Date.now() }));
+    const app = await renderApp('/festival-calendar');
+    await flush();
+    // Austin is too far from Orlando.
+    expect(app.getByText(/^No festivals within 100 mi in October yet$/)).toBeTruthy();
+    expect(app.queryByLabelText(/^Austin City Limits 2026/)).toBeNull();
+    await fireEvent.press(app.getByLabelText('Within 500 mi of Orlando'));
+    await flush();
+    expect(app.queryByLabelText(/^Austin City Limits 2026/)).toBeNull();
+    await fireEvent.press(app.getByText('Everywhere'));
+    await flush();
+    expect(app.getByText('1 festival in October')).toBeTruthy();
+    expect(app.getByLabelText(/^Austin City Limits 2026/)).toBeTruthy();
+    await fireEvent.press(app.getByText('By state'));
+    await flush();
+    expect(app.getByLabelText('Texas, 1 festival')).toBeTruthy();
+    expect(app.getByText('1 festival in Texas in October')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('calendarReach.v1'))!)).toEqual({ kind: 'state', code: 'TX' });
+  });
+
+  it('jumps to a month from the title', async () => {
+    const { ActionSheetIOS } = jest.requireActual<typeof import('react-native')>('react-native');
+    const sheet = jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation((o, pick) => pick(o.options.indexOf('December')));
+    const app = await renderApp('/festival-calendar');
+    await flush();
+    await fireEvent.press(app.getByLabelText(/^October, /));
+    await flush();
+    expect(sheet).toHaveBeenCalled();
+    expect(app.getByText('In December')).toBeTruthy();
+    sheet.mockRestore();
+  });
 });
