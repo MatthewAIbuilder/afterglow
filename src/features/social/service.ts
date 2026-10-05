@@ -1,6 +1,6 @@
 import type { PastEvent } from '../memories/past';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
-import type { Activity, Comment, Crew, Sprout, SproutInput, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic } from './models';
+import type { Activity, Comment, Crew, Sprout, SproutInput, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SetTimesTip, SupportMessage, SupportTopic } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -93,6 +93,16 @@ export interface SocialService {
   drops(max: number): Promise<Drop[]>;
   setDropStatus(id: string, status: DropStatus): Promise<void>;
   deleteDrop(id: string): Promise<void>;
+  /** Set times sent by a fan for a festival: text and/or a shrunk photo. One waiting per festival per person ('already-sent'). */
+  sendSetTimes(festivalId: string, tip: { text?: string; photo?: string }): Promise<void>;
+  /** The set times you've sent, waiting or live. */
+  mySetTimes(): Promise<SetTimesTip[]>;
+  /** HQ: set times fans sent, oldest first. Support account only. */
+  setTimesTips(max: number): Promise<SetTimesTip[]>;
+  /** HQ: they're live (thanks the sender; the photo is dropped). Support account only. */
+  markSetTimesLive(id: string): Promise<void>;
+  /** HQ: not used (the sender can send again). Support account only. */
+  declineSetTimes(id: string): Promise<void>;
   /** Catalogue updates published from HQ: anyone may read them (every app applies them); only the support account writes them. */
   livePatches(): Promise<LivePatch[]>;
   publishPatch(input: { title: string; festivalId: string; file: string; dropId?: string }): Promise<LivePatch>;
@@ -303,6 +313,7 @@ export type SocialErrorKind =
   | 'sprout-gone'
   | 'throwback-limit'
   | 'sticker-ended'
+  | 'already-sent'
   | 'not-found'
   | 'network'
   | 'unavailable'
@@ -334,6 +345,7 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'crew-full': 'That crew is full.',
   'not-invited': 'Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.',
   'sprout-taken': 'Someone else already picked up this sprout.',
+  'already-sent': 'You’ve already sent set times for this festival. We’ll look at them soon.',
   'sprout-gone': 'This sprout can’t be picked up any more. Ask them for a new code.',
   'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
   'sticker-ended': 'This sticker can’t be found any more.',

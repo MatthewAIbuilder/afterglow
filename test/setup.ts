@@ -216,7 +216,7 @@ jest.mock('expo-image-manipulator', () => {
         const ctx = {
           crop: (rect: unknown) => (call.actions.push({ crop: rect }), ctx),
           resize: (size: unknown) => (call.actions.push({ resize: size }), ctx),
-          renderAsync: async () => ({ saveAsync: async () => ({ uri: 'file:///framed.jpg', width: 1, height: 1 }) }),
+          renderAsync: async () => ({ saveAsync: async (o?: { base64?: boolean }) => ({ uri: 'file:///framed.jpg', width: 1, height: 1, ...(o?.base64 ? { base64: 'QUFBQQ==' } : {}) }) }),
         };
         return ctx;
       },

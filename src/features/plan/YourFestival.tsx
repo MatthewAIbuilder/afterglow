@@ -65,6 +65,20 @@ export function YourFestival({ festival }: { festival: Festival }) {
           ) : null}
         </View>
         {expected ? <Text style={styles.expected}>{expected}</Text> : null}
+        {/* Fans often see set times first: they can send them in, for HQ to check and publish. */}
+        {!festival.sets?.length && (expected || isLive(festival, today)) ? (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/send-set-times/[id]', params: { id: festival.id } });
+            }}
+            accessibilityRole="button"
+            hitSlop={6}
+            style={({ pressed }) => [styles.tipLink, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={styles.tipText}>Seen the set times? Send them to us</Text>
+          </Pressable>
+        ) : null}
         {warmup ? (
           <Pressable
             onPress={() => {
@@ -136,6 +150,8 @@ function Toggle({ byDay, onChange }: { byDay: boolean; onChange: (v: boolean) =>
 
 const styles = StyleSheet.create({
   expected: { ...type.caption, color: color.glow, marginTop: space.sm },
+  tipLink: { alignSelf: 'flex-start', marginTop: space.xs },
+  tipText: { ...type.caption, color: color.moonDim, textDecorationLine: 'underline' },
   toggle: {
     flexDirection: 'row',
     alignSelf: 'flex-start',

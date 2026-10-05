@@ -192,6 +192,26 @@ service cloud.firestore {
         && request.resource.data.status in ['waiting', 'sent', 'done'];
     }
 
+    // Set times a fan sent for a festival (text and/or a shrunk photo), for HQ to check before anything
+    // is published. One waiting per festival per person; the sender reads their own (to be thanked once
+    // live) and can take it back; only HQ marks it live (dropping the photo) or declines it.
+    match /setTimes/{id} {
+      allow get, list: if (signedIn() && resource.data.uid == me()) || isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'festivalId', 'text', 'photo', 'status', 'createdAt'])
+        && request.resource.data.uid == me()
+        && request.resource.data.festivalId is string && request.resource.data.festivalId.size() >= 1 && request.resource.data.festivalId.size() <= 100
+        && id == me() + '_' + request.resource.data.festivalId
+        && request.resource.data.status == 'new' && request.resource.data.createdAt == request.time
+        && ('text' in request.resource.data || 'photo' in request.resource.data)
+        && (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 20000))
+        && (!('photo' in request.resource.data) || (request.resource.data.photo is string && request.resource.data.photo.size() <= 900000
+          && request.resource.data.photo.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$')));
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'photo'])
+        && request.resource.data.status == 'live' && !('photo' in request.resource.data);
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == me());
+    }
+
     // Catalogue updates published from HQ: every app reads them on top of its catalogue (they're public
     // lineup facts); only the support account publishes or takes them down. Never edited.
     match /published/{id} {

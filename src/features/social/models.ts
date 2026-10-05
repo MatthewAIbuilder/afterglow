@@ -399,6 +399,18 @@ export const DROP_TEXT_MAX = 50_000;
 export const DROP_NOTE_MAX = 500;
 
 /**
+ * Set times a fan sent for a festival that has none yet: pasted text or a
+ * photo of the timetable (shrunk on the phone, as a JPEG data address). Only
+ * HQ sees them; HQ reads them, checks and publishes, then marks them live
+ * (dropping the photo), which thanks the sender. One waiting per festival
+ * per person (`id` is `<uid>_<festivalId>`).
+ */
+export type SetTimesTip = { id: string; uid: string; festivalId: string; text?: string; photo?: string; status: 'new' | 'live'; at: string };
+export const TIP_TEXT_MAX = 20_000;
+/** A photo's data address, in characters (fits well inside a database record). */
+export const TIP_PHOTO_MAX = 900_000;
+
+/**
  * A catalogue update published from HQ: the same file format as
  * catalogue/afterglow.json, for one festival. Every app reads these on top
  * of its catalogue, so it shows within minutes, until it's taken down.

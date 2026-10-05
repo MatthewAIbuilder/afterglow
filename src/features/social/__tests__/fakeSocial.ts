@@ -1,5 +1,5 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
+import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type SetTimesTip, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -88,6 +88,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Who found what: `${uid}_${code}` → when they scanned it. */
   const finds = new Map<string, number>();
   const patches = new Map<string, LivePatch>();
+  const setTimes = new Map<string, SetTimesTip>();
   const plusUntil = new Map<string, string>();
   const admin = () => !!current?.email && current.email === SUPPORT_EMAIL && verified.has(current.email);
   const needAdmin = () => {
@@ -185,6 +186,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       for (const [k, i] of crewInvites) if (i.from === u.uid || i.to === u.uid) crewInvites.delete(k);
       for (const [k, sp] of sprouts) if (sp.from === u.uid || sp.to === u.uid) sprouts.delete(k);
       for (const k of [...finds.keys()]) if (k.startsWith(`${u.uid}_`)) finds.delete(k);
+      for (const [k, t] of [...setTimes.entries()]) if (t.uid === u.uid) setTimes.delete(k);
       accounts.delete(u.email ?? '');
       current = null;
       emit();
@@ -480,6 +482,34 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async deleteDrop(id) {
       needAdmin();
       drops.delete(id);
+    },
+    async sendSetTimes(festivalId, tip) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      const id = `${u.uid}_${festivalId}`;
+      if (setTimes.has(id)) throw new SocialError('already-sent');
+      const text = tip.text?.trim();
+      setTimes.set(id, { id, uid: u.uid, festivalId, status: 'new', at: `${now()}#${String(++n).padStart(6, '0')}`, ...(text ? { text } : {}), ...(tip.photo ? { photo: tip.photo } : {}) });
+    },
+    async mySetTimes() {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      return [...setTimes.values()].filter((t) => t.uid === u.uid);
+    },
+    async setTimesTips(max) {
+      needAdmin();
+      return [...setTimes.values()].filter((t) => t.status === 'new').sort((a, b) => a.at.localeCompare(b.at)).slice(0, max);
+    },
+    async markSetTimesLive(id) {
+      needAdmin();
+      const t = setTimes.get(id);
+      if (!t) return;
+      const { photo: _gone, ...rest } = t;
+      setTimes.set(id, { ...rest, status: 'live' });
+    },
+    async declineSetTimes(id) {
+      needAdmin();
+      setTimes.delete(id);
     },
     async livePatches() {
       if (network.down) throw new SocialError('network');
@@ -976,5 +1006,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, currentUser: () => current };
+  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, setTimes, currentUser: () => current };
 }
