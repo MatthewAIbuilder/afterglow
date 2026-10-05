@@ -46,7 +46,8 @@ const OLD_VIDEO_MS = 30 * 24 * 3600_000;
  * short search to change. The same sheet retags a saved memory (`id`).
  */
 export default function MemoryTagScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  // `fresh`: a video just filmed, already kept untagged (so it's never lost) and tagged here for the first time.
+  const { id, fresh: freshParam } = useLocalSearchParams<{ id?: string; fresh?: string }>();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const catalog = useCatalog();
@@ -56,6 +57,9 @@ export default function MemoryTagScreen() {
   const mem = useMemories();
   const existing = id ? mem.memories.find((m) => m.id === id) : undefined;
   const draft = existing ? undefined : mem.draft;
+  const fresh = !!existing && freshParam === '1';
+  // Retagging something already saved, rather than tagging a new video.
+  const retagging = !!existing && !fresh;
 
   // When it was filmed, as a number so it's stable between renders.
   const whenMs = existing ? Date.parse(existing.capturedAt) : draft?.moment.when?.getTime();
@@ -95,7 +99,7 @@ export default function MemoryTagScreen() {
   const capturedAt = existing?.capturedAt ?? (whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs).toISOString() : new Date().toISOString());
   const [past, setPast] = useState<PastEvent | undefined>(existing?.past);
   // Filmed a while ago, at nothing on Afterglow: open on finding the past festival.
-  const [pickingPast, setPickingPast] = useState(() => !existing && !guesses.length && whenMs !== undefined && Date.now() - whenMs > OLD_VIDEO_MS);
+  const [pickingPast, setPickingPast] = useState(() => !retagging && !guesses.length && whenMs !== undefined && Date.now() - whenMs > OLD_VIDEO_MS);
   const festival = festivalId ? catalog.festival(festivalId) : undefined;
   const guessedHere = guesses.find((g) => g.festival.id === festivalId);
   const [night, setNight] = useState<string | undefined>(() => existing?.night ?? (festivalSure ? topFestival?.night : undefined));
@@ -121,7 +125,7 @@ export default function MemoryTagScreen() {
 
   // The artist: yours when retagging, otherwise the top guess when it's a confident one, until you choose.
   const [artistId, setArtistId] = useState<string | undefined>(existing?.artistId);
-  const [touchedArtist, setTouchedArtist] = useState(!!existing);
+  const [touchedArtist, setTouchedArtist] = useState(retagging);
   const chosenArtist = touchedArtist ? artistId : artistSure !== 'maybe' ? artistGuesses[0]?.artist.id : undefined;
 
   const [query, setQuery] = useState('');
@@ -138,7 +142,8 @@ export default function MemoryTagScreen() {
     signedIn: !!social.user,
     hasProfile: !!social.profile,
     tagged: (!!tag.festivalId || !!tag.past) && !!tag.artistId,
-    alreadyShared: !!existing?.sharedId,
+    // Already on Discover, or on its way there.
+    alreadyShared: !!existing?.sharedId || (!!existing && (social.waiting.has(existing.id) || existing.id in social.sharing)),
   });
   const [shareChoice, setShareChoice] = useState<boolean | undefined>();
   // Throwbacks: a few free shares, as many as you like with Plus.
@@ -151,7 +156,8 @@ export default function MemoryTagScreen() {
   const { crewsAt } = useCrews();
   const crewsHere = festivalId && crewUpdates.ready ? crewsAt(festivalId) : [];
   const [crewChoice, setCrewChoice] = useState<boolean | undefined>();
-  const crewOn = crewsHere.length > 0 && (crewChoice ?? !existing);
+  const crewOn = crewsHere.length > 0 && (crewChoice ?? !retagging);
+  // With no signal it waits on the phone and goes by itself (Memories says "Waiting for signal"): no alert for that.
   const shareIt = (m: Parameters<typeof social.share>[0]) =>
     void social.share(m).catch((e) => {
       const kind = socialErrorKind(e);
@@ -178,7 +184,10 @@ export default function MemoryTagScreen() {
     p.play();
   });
 
+  // One save at a time: a second tap while the video is being kept would find nothing left to keep.
+  const [saving, setSaving] = useState(false);
   const save = async () => {
+    if (saving || leaving.current) return;
     if (existing) {
       mem.tag(existing.id, tag);
       haptic.settle();
@@ -187,7 +196,9 @@ export default function MemoryTagScreen() {
       leave();
       return;
     }
+    setSaving(true);
     const kept = await mem.keepDraft(tag);
+    setSaving(false);
     if (!kept) {
       showAlert('Couldn’t save this video', 'There may not be enough space on your phone. Try again.');
       return;
@@ -201,15 +212,16 @@ export default function MemoryTagScreen() {
   };
 
   const cancel = () => {
-    if (draft?.source === 'camera') {
-      showAlert('Discard this video?', 'You just recorded it, and it isn’t saved anywhere else.', [
+    if (fresh || draft?.source === 'camera') {
+      showAlert('Discard this video?', 'You just recorded it. Discarding deletes it from your Memories, and it isn’t saved anywhere else.', [
         { text: 'Keep editing', style: 'cancel' },
         {
           text: 'Discard',
           style: 'destructive',
           onPress: () => {
             leaving.current = true;
-            mem.setDraft(undefined);
+            if (fresh && existing) void mem.remove(existing.id);
+            else mem.setDraft(undefined);
             goBack();
           },
         },
@@ -241,10 +253,10 @@ export default function MemoryTagScreen() {
           <Text style={styles.barButton}>Cancel</Text>
         </Pressable>
         <Text style={styles.barTitle} accessibilityRole="header">
-          {existing ? 'Tag memory' : 'New memory'}
+          {retagging ? 'Tag memory' : 'New memory'}
         </Text>
-        <Pressable onPress={() => void save()} hitSlop={10} accessibilityRole="button" accessibilityLabel="Save to Memories">
-          <Text style={[styles.barButton, styles.save]}>Save</Text>
+        <Pressable onPress={() => void save()} disabled={saving} hitSlop={10} accessibilityRole="button" accessibilityLabel="Save to Memories" accessibilityState={{ disabled: saving, busy: saving }}>
+          <Text style={[styles.barButton, styles.save, saving && styles.saving]}>Save</Text>
         </Pressable>
       </View>
 
@@ -429,6 +441,16 @@ export default function MemoryTagScreen() {
             </View>
           </>
         ) : null}
+        {offer === 'hidden' && existing && social.availability.ok && (existing.sharedId || social.waiting.has(existing.id)) ? (
+          <>
+            <Text style={styles.section}>Discover</Text>
+            <Text style={[styles.shareDetail, styles.sharedNote]} testID="shared-note">
+              {existing.sharedId
+                ? 'It’s already on Discover. The copy there keeps the tags it was shared with; changes here are for your Memories.'
+                : 'Waiting for signal to share it to Discover. It goes by itself, with the tags you save here.'}
+            </Text>
+          </>
+        ) : null}
         {offer !== 'hidden' ? (
           <>
             <Text style={styles.section}>Discover</Text>
@@ -521,6 +543,7 @@ const styles = StyleSheet.create({
   barTitle: { ...type.headline, color: color.moon },
   barButton: { ...type.body, color: color.moonDim },
   save: { color: color.glow, fontWeight: '600' },
+  saving: { opacity: 0.5 },
   videoWrap: { alignItems: 'center', gap: space.sm, paddingTop: space.sm },
   video: { borderRadius: radius.md, backgroundColor: color.night, overflow: 'hidden' },
   when: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
@@ -577,4 +600,5 @@ const styles = StyleSheet.create({
   shareDetail: { ...type.caption, color: color.moonDim },
   shareLink: { marginTop: space.xs },
   limit: { color: '#F2B8A6' },
+  sharedNote: { paddingHorizontal: space.xl },
 });

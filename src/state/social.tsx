@@ -1,13 +1,17 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AppState } from 'react-native';
 import { isSupportAccount } from '../features/admin/admin';
 import { isOffline } from '../features/offline/status';
 import type { Memory } from '../features/memories/models';
 import type { Profile, ProfileInput, ReportReason, SocialUser } from '../features/social/models';
 import { publishedChanged } from '../features/social/publish';
-import { SocialError, type ReportTarget, type SocialAvailability, type SocialService } from '../features/social/service';
+import { SOCIAL_ERROR_COPY, SocialError, socialErrorKind, type ReportTarget, type SocialAvailability, type SocialService } from '../features/social/service';
+import { cleanShareOutbox, queueShare, sharesOf, shareRetryDelay, shareTried, unqueueShare, type ShareItem } from '../features/social/shareOutbox';
 import { defaultSocialService } from '../features/social/services';
 import { tasteMix } from '../features/taste/lean';
+import { showAlert } from '../lib/dialog';
 import { useCatalog } from './catalog';
 import { useGoing } from './going';
 import { forgetLastKnownAccount, lastKnownFor, rememberLastKnown } from './lastKnown';
@@ -45,10 +49,15 @@ type Ctx = {
   /** Read your sign-in again (after confirming your email). */
   refreshUser: () => Promise<void>;
   setCover: (uri: string | null) => Promise<void>;
-  /** Share a memory to your profile; `progress` shows how far along it is (0 to 1). */
-  share: (memory: Memory) => Promise<void>;
+  /**
+   * Share a memory to your profile; `sharing` shows how far along it is (0 to 1). With no signal it's kept
+   * on the phone and sent by itself later ("waiting"); a refusal throws (and it's not kept).
+   */
+  share: (memory: Memory) => Promise<'shared' | 'waiting'>;
   unshare: (memory: Memory) => Promise<void>;
   sharing: Record<string, number>;
+  /** Memories waiting for signal to be shared (this account's). */
+  waiting: ReadonlySet<string>;
   blocked: ReadonlySet<string>;
   /** Blocking also ends follows both ways. */
   setBlocked: (uid: string, blocked: boolean) => Promise<void>;
@@ -74,6 +83,9 @@ const withId = (s: ReadonlySet<string>, id: string, on: boolean) => {
   return next;
 };
 
+/** Videos waiting for signal to be shared to Discover (memory ids and whose they are, never the video). */
+export const SHARE_OUTBOX_KEY = 'shareOutbox.v1';
+
 /** Only this many of your top sounds are shown. */
 const SOUNDS_SHOWN = 3;
 
@@ -89,6 +101,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const [blocked, setBlockedIds] = useState<ReadonlySet<string>>(new Set());
   const [following, setFollowingIds] = useState<ReadonlySet<string>>(new Set());
   const [sharing, setSharing] = useState<Record<string, number>>({});
+  // Videos waiting for signal to be shared to Discover (see the outbox below).
+  const [outbox, setOutbox] = useState<ShareItem[]>([]);
   const mem = useMemories();
 
   // Sign-in state, then your profile and blocks whenever the account changes. An answer that arrives after
@@ -239,6 +253,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
       if (uid) {
         mem.forgetShares(uid);
         forgetLastKnownAccount(uid);
+        setOutbox((o) => o.filter((i) => i.uid !== uid));
       }
     },
     [service, user, mem],
@@ -250,12 +265,44 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   }, [service]);
   const setCover = useCallback(async (uri: string | null) => keepProfile(await service.setCover(uri)), [service, keepProfile]);
 
+  // --- Sharing to Discover, through an outbox kept on the phone (`shareOutbox.v1`): a share asked for with no
+  // signal waits there and goes by itself, oldest first, once there's signal or the app comes back.
+  const outboxWritable = useRef(false);
+  const [outboxTry, setOutboxTry] = useState(0);
+  useEffect(() => {
+    if (outboxWritable.current) return;
+    let live = true;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    AsyncStorage.getItem(SHARE_OUTBOX_KEY)
+      .then((raw) => {
+        if (!live) return;
+        const saved = cleanShareOutbox(raw ? JSON.parse(raw) : []);
+        outboxWritable.current = true;
+        setOutbox((now) => saved.reduce((l, i) => queueShare(l, i), now));
+      })
+      .catch(() => {
+        // Never written over until it's been read; try again shortly.
+        if (live) retry = setTimeout(() => setOutboxTry((t) => t + 1), 5_000);
+      });
+    return () => {
+      live = false;
+      if (retry) clearTimeout(retry);
+    };
+  }, [outboxTry]);
+  useEffect(() => {
+    if (outboxWritable.current) AsyncStorage.setItem(SHARE_OUTBOX_KEY, JSON.stringify(outbox)).catch(() => {});
+  }, [outbox]);
+  const outboxRef = useRef(outbox);
+  const memoriesRef = useRef(mem.memories);
+  useEffect(() => {
+    outboxRef.current = outbox;
+    memoriesRef.current = mem.memories;
+  }, [outbox, mem.memories]);
+
   const inflight = useRef<Set<string>>(new Set());
-  const share = useCallback(
-    async (m: Memory) => {
-      if (!user) throw new SocialError('not-signed-in');
-      if (!profile) throw new SocialError('no-profile');
-      if (inflight.current.has(m.id) || (m.sharedId && m.sharedBy === user.uid)) return;
+  /** Upload one memory now; throws what the service says. */
+  const upload = useCallback(
+    async (m: Memory, uid: string) => {
       inflight.current.add(m.id);
       setSharing((s) => ({ ...s, [m.id]: 0 }));
       try {
@@ -275,13 +322,107 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
           },
           (p) => setSharing((s) => (m.id in s ? { ...s, [m.id]: p } : s)),
         );
-        mem.setShared(m.id, { id: shared.id, by: user.uid });
+        // Deleted from the phone while it was uploading: take the Discover copy down again, so nothing
+        // stays public that you can no longer see or remove.
+        if (mem.wasRemoved(m.id)) {
+          await service.unshareMemory(shared.id).catch(() => {});
+          return;
+        }
+        mem.setShared(m.id, { id: shared.id, by: uid });
       } finally {
         inflight.current.delete(m.id);
         setSharing(({ [m.id]: _done, ...rest }) => rest);
       }
     },
-    [service, user, profile, mem],
+    [service, mem],
+  );
+
+  const [shareTick, setShareTick] = useState(0);
+  const later = useCallback((tries: number) => setTimeout(() => setShareTick((t) => t + 1), shareRetryDelay(tries)), []);
+  const share = useCallback(
+    async (m: Memory): Promise<'shared' | 'waiting'> => {
+      if (!user) throw new SocialError('not-signed-in');
+      if (!profile) throw new SocialError('no-profile');
+      if (m.sharedId && m.sharedBy === user.uid) return 'shared';
+      const uid = user.uid;
+      if (inflight.current.has(m.id)) return 'shared';
+      // Kept first, so closing the app (or losing signal) never loses the share.
+      setOutbox((o) => queueShare(o, { memoryId: m.id, uid, at: Date.now() }));
+      if (offline) return 'waiting';
+      try {
+        await upload(m, uid);
+        setOutbox((o) => unqueueShare(o, m.id, uid));
+        return 'shared';
+      } catch (e) {
+        if (socialErrorKind(e) === 'network') {
+          setOutbox((o) => shareTried(o, m.id, uid));
+          later(0);
+          return 'waiting';
+        }
+        // Refused: it isn't kept for later; the caller says why.
+        setOutbox((o) => unqueueShare(o, m.id, uid));
+        throw e;
+      }
+    },
+    [user, profile, offline, upload, later],
+  );
+
+  // Send what's waiting, oldest first, whenever there's a chance. No signal stops the queue (nothing else
+  // would get through); a refusal lets that one go with a plain message and carries on with the rest.
+  const flushing = useRef(false);
+  const flushShares = useCallback(async () => {
+    const uid = user?.uid;
+    if (flushing.current || !uid || !profile || !mem.hydrated || offline) return;
+    flushing.current = true;
+    try {
+      for (const item of sharesOf(outboxRef.current, uid)) {
+        if (currentUid.current !== uid) break;
+        if (inflight.current.has(item.memoryId)) continue;
+        const m = memoriesRef.current.find((x) => x.id === item.memoryId);
+        if (!m || (m.sharedId && m.sharedBy === uid)) {
+          // Deleted from the phone, or already shared.
+          setOutbox((o) => unqueueShare(o, item.memoryId, uid));
+          continue;
+        }
+        try {
+          await upload(m, uid);
+          setOutbox((o) => unqueueShare(o, item.memoryId, uid));
+        } catch (e) {
+          const kind = socialErrorKind(e);
+          if (kind === 'network') {
+            setOutbox((o) => shareTried(o, item.memoryId, uid));
+            later(item.tries + 1);
+            break;
+          }
+          setOutbox((o) => unqueueShare(o, item.memoryId, uid));
+          if (currentUid.current === uid) {
+            showAlert(
+              'Couldn’t share it to Discover',
+              kind === 'throwback-limit' ? SOCIAL_ERROR_COPY[kind] : `${SOCIAL_ERROR_COPY[kind]} It’s saved in your Memories, so you can share it from there.`,
+            );
+          }
+        }
+      }
+    } finally {
+      flushing.current = false;
+    }
+  }, [user, profile, mem.hydrated, offline, upload, later]);
+  const waitingCount = sharesOf(outbox, user?.uid).length;
+  useEffect(() => {
+    if (waitingCount) void flushShares();
+  }, [waitingCount, shareTick, flushShares]);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') {
+        setShareTick((t) => t + 1);
+        if (!outboxWritable.current) setOutboxTry((t) => t + 1);
+      }
+    });
+    return () => sub.remove();
+  }, []);
+  const waiting = useMemo<ReadonlySet<string>>(
+    () => new Set(sharesOf(outbox, user?.uid).map((i) => i.memoryId).filter((id) => !(id in sharing))),
+    [outbox, user?.uid, sharing],
   );
   const unshare = useCallback(
     async (m: Memory) => {
@@ -323,8 +464,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
-    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, blocked, setBlocked, following, setFollowing, noteFollowing, report],
+    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }
