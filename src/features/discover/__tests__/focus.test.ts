@@ -21,21 +21,16 @@ const clips = [clip('c1', 'x', 'a'), clip('c2', 'y', 'a'), clip('c3', 'z', 'b')]
 const today = new Date(2026, 8, 29);
 
 describe('Discover focus', () => {
-  it('opens on what you picked last, if it still has clips', () => {
-    expect(startFocus(festivals, clips, [], 'b')).toBe('b');
-    expect(startFocus(festivals, clips, [], MIX)).toBe(MIX);
-    expect(startFocus(festivals, clips, [], 'c')).toBe('a');
-    expect(startFocus(festivals, clips, [], 'gone')).toBe('a');
-  });
-
-  it('otherwise opens on a festival you are going to with clips, then the one with the most', () => {
-    expect(startFocus(festivals, clips, ['c', 'b'], null)).toBe('b');
-    expect(startFocus(festivals, clips, ['c'], null)).toBe('a');
-    expect(startFocus(festivals, clips, [])).toBe('a');
+  it('opens on your mix, even when you last picked a festival', () => {
+    expect(startFocus(null)).toBe(MIX);
+    expect(startFocus()).toBe(MIX);
+    expect(startFocus(MIX)).toBe(MIX);
+    expect(startFocus('b')).toBe(MIX);
+    expect(startFocus('gone')).toBe(MIX);
   });
 
   it('Following: remembered like the mix, kept for a video from the crowd, left for an official clip', () => {
-    expect(startFocus(festivals, clips, [], FOLLOWING)).toBe(FOLLOWING);
+    expect(startFocus(FOLLOWING)).toBe(FOLLOWING);
     expect(nextDiscoverFocus('a', { festival: FOLLOWING }, festivals)).toBe(FOLLOWING);
     const crowd: Clip = {
       ...clip('community:s1', 'z', 'b'),
@@ -88,8 +83,8 @@ describe('Discover focus', () => {
     expect(soundOf('sound:polka')).toBeUndefined();
     expect(soundOf(MIX)).toBeUndefined();
     expect(isWide('sound:house')).toBe(true);
-    expect(startFocus(festivals, clips, [], 'sound:house')).toBe('sound:house');
-    expect(startFocus(festivals, clips, [], 'sound:polka')).not.toBe('sound:polka');
+    expect(startFocus('sound:house')).toBe('sound:house');
+    expect(startFocus('sound:polka')).toBe(MIX);
     expect(nextDiscoverFocus('a', { festival: 'sound:trap' }, festivals)).toBe('sound:trap');
     // A clip link from a sound goes to the mix, which has every clip.
     expect(nextDiscoverFocus('sound:trap', { clip: clips[0] }, festivals)).toBe(MIX);
