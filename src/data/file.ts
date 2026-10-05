@@ -28,6 +28,13 @@ import { SOUND_TAGS } from './models';
  *                   "seconds"?, "bpm"? }],
  *   "similar"?:  [{ "artist", "other", "score": 0.8 }]
  * }
+ *
+ * An update published from HQ may write a festival already on Afterglow
+ * with only what it changes: its id, name and dates, then any of "lineup",
+ * "days", "stages", "sets", "website" or "tickets" (each replacing that part
+ * whole), and "add": { "lineup"?, "days"?, "stages"?, "sets"? } (joined to
+ * what the festival has; a set replaces that act's set that day). Anything
+ * left out keeps the catalogue's own (`festivalParts`, `asPatch` in merge.ts).
  */
 
 export const FILE_VERSION = 1;
@@ -54,7 +61,18 @@ export type ParsedFile = {
   colors?: Record<string, string>;
   /** YouTube videos never to show (wrong artist, not a set), by video id: their clips are left out wherever they come from. */
   blockedVideos?: string[];
+  /**
+   * Festival id -> what an update wrote for it, when the file writes a festival only in part (without
+   * its "lineup", "days" or "stages") or adds to one ("add"). Absent for a file of whole festivals.
+   */
+  festivalParts?: Record<string, FestivalParts>;
 };
+
+/** The parts of a festival an update may write, each replacing the catalogue's whole. */
+export const FESTIVAL_PARTS = ['lineup', 'days', 'stages', 'sets', 'website', 'tickets'] as const;
+export type FestivalPart = (typeof FESTIVAL_PARTS)[number];
+/** Which parts an update wrote for a festival, and what it adds (its lineup, days, stages and sets). */
+export type FestivalParts = { given: FestivalPart[]; add?: Pick<Festival, 'lineup' | 'days' | 'stages' | 'sets' | 'notes' | 'artistDays' | 'artistWeekends'> };
 
 const ID = /^[A-Za-z0-9_.-]{1,64}$/;
 const TIME = /^([01]?\d|2[0-3]):[0-5]\d$/;
@@ -317,6 +335,37 @@ function parseSimilar(raw: unknown, problems: string[]): ArtistSimilarity | unde
   return undefined;
 }
 
+/**
+ * What each festival of a file wrote, when any is written only in part
+ * (without its lineup, days or stages) or adds to itself ("add"); undefined
+ * for a file of whole festivals. Additions are read like a festival's own.
+ */
+function partsOf(raws: unknown[], festivals: readonly Festival[], problems: string[]): Record<string, FestivalParts> | undefined {
+  const parsedIds = new Set(festivals.map((f) => f.id));
+  const out: Record<string, FestivalParts> = {};
+  let partial = false;
+  raws.forEach((raw, i) => {
+    const festivalId = isObj(raw) ? id(raw.id) : undefined;
+    if (!isObj(raw) || !festivalId || !parsedIds.has(festivalId)) return;
+    const given = FESTIVAL_PARTS.filter((k) => raw[k] !== undefined);
+    if (!given.includes('lineup') || !given.includes('days') || !given.includes('stages') || raw.add !== undefined) partial = true;
+    const parts: FestivalParts = { given };
+    if (raw.add !== undefined) {
+      if (!isObj(raw.add)) problems.push(`Festival "${festivalId}": "add" should be written as { "lineup", "days", "stages", "sets" }, so it was left out.`);
+      else {
+        const a = raw.add;
+        const read = parseFestival({ id: festivalId, name: festivalId, dates: '-', lineup: a.lineup, days: a.days, stages: a.stages, sets: a.sets }, i, problems);
+        if (read) {
+          const { lineup, days, stages, sets, notes, artistDays, artistWeekends } = read;
+          parts.add = { lineup, days, stages, ...(sets ? { sets } : {}), ...(notes ? { notes } : {}), ...(artistDays ? { artistDays } : {}), ...(artistWeekends ? { artistWeekends } : {}) };
+        }
+      }
+    }
+    out[festivalId] = parts;
+  });
+  return partial ? out : undefined;
+}
+
 /** Read a catalogue file (already parsed from JSON, or the raw text). Never throws. */
 export function parseCatalogFile(input: unknown): ParsedFile {
   let raw = input;
@@ -343,8 +392,10 @@ export function parseCatalogFile(input: unknown): ParsedFile {
     clips: pick(list(raw.clips).map((c, i) => parseClip(c, i, problems))),
   };
   if (raw.similar !== undefined) snapshot.similarities = pick(list(raw.similar).map((s) => parseSimilar(s, problems)));
+  const festivalParts = partsOf(list(raw.festivals), snapshot.festivals, problems);
   const updated = text(raw.updated);
   const parsed: ParsedFile = updated ? { snapshot, mode, updated, problems } : { snapshot, mode, problems };
+  if (festivalParts) parsed.festivalParts = festivalParts;
   // Photos for artists that have none of their own: { "artist-id": "https://…" }.
   if (raw.photos !== undefined) {
     if (!isObj(raw.photos)) problems.push('"photos" should be written as { "artist-id": "https://…" }, so it was left out.');

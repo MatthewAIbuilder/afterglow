@@ -300,6 +300,8 @@ export const SUPPORT_TOPICS: { key: SupportTopic; label: string }[] = [
 ];
 /** Support messages are at most this long. */
 export const SUPPORT_MAX = 1000;
+/** Replies kept on one support message (a long conversation keeps its latest ones). */
+export const SUPPORT_REPLIES_MAX = 20;
 export type SupportStatus = 'open' | 'answered' | 'closed';
 
 /** A message to Afterglow support, and the reply when there is one. */
@@ -316,9 +318,20 @@ export type SupportMessage = {
   version?: string;
   status: SupportStatus;
   createdAt: string;
+  /** The latest reply (kept for messages answered before replies were a list). */
   reply?: string;
   repliedAt?: string;
+  /** Every reply, oldest first (a second reply never replaces the first). */
+  replies?: SupportReply[];
 };
+
+export type SupportReply = { text: string; at?: string };
+
+/** A message's replies, oldest first (one answered before replies were a list has its one reply). Pure. */
+export function repliesOf(m: Pick<SupportMessage, 'reply' | 'repliedAt' | 'replies'>): SupportReply[] {
+  if (m.replies?.length) return m.replies;
+  return m.reply ? [{ text: m.reply, ...(m.repliedAt ? { at: m.repliedAt } : {}) }] : [];
+}
 
 /** A report, as the support account sees it. */
 export type ReportRecord = {

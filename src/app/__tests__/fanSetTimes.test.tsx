@@ -97,6 +97,32 @@ describe('set times from fans', () => {
     expect(back.getByLabelText(/^Set scout\./)).toBeTruthy();
   });
 
+  it('a fan is thanked only for their own set times, not for text from another source read after theirs', async () => {
+    await s().signUp('maya@example.com', 'password123');
+    await s().sendSetTimes('edc-orlando-26', { text: 'Friday\nMain Stage\n10:00 PM SUBTRONICS' });
+    const [tip] = [...mockSocial.setTimes.values()];
+    await s().signOut();
+    mockSocial.verified.add(SUPPORT);
+    await s().signUp(SUPPORT, 'password123');
+    await s().addDrop({ festivalId: 'edc-orlando-26', note: 'From the official app', text: 'Friday\nMain Stage\n11:00 PM SUBTRONICS', files: [] });
+    const hq = await renderApp('/');
+    await flush();
+    await showTab(hq, 'Data');
+    await fireEvent.press(hq.getByLabelText('Read the set times sent for EDC Orlando 2026'));
+    await flush();
+    // Then the upload's text instead: publishing it isn't the fan's set times going live.
+    await fireEvent.press(hq.getByText('Use the text'));
+    await flush();
+    expect(hq.getByLabelText('Lineup or set times as text').props.value).toBe('Friday\nMain Stage\n11:00 PM SUBTRONICS');
+    await fireEvent.press(hq.getByText('Read the text'));
+    answerAlerts('Publish');
+    await fireEvent.press(hq.getByText('Publish to everyone'));
+    await flush();
+    expect(mockSocial.patches.size).toBe(1);
+    expect(mockSocial.setTimes.get(tip.id)).toMatchObject({ status: 'new' });
+    expect([...mockSocial.drops.values()][0]).toMatchObject({ status: 'done' });
+  });
+
   it('declining deletes them, so they can be sent again', async () => {
     await s().signUp('maya@example.com', 'password123');
     await s().sendSetTimes('edc-orlando-26', { text: 'Friday 10 PM SUBTRONICS' });
