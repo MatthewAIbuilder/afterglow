@@ -70,11 +70,11 @@ export interface SocialService {
   // The support account only (refused for anyone else):
   /** Every support message, newest first. */
   supportInbox(max: number): Promise<SupportMessage[]>;
-  /** Reply to a message (it becomes answered). */
+  /** Reply to a message (it becomes answered); every reply is kept. */
   answerSupport(id: string, reply: string): Promise<void>;
   /** Mark a message closed, or open again. */
   setSupportStatus(id: string, status: 'open' | 'closed'): Promise<void>;
-  /** Reports, newest first. */
+  /** Reports, newest first: every open one (up to `max`) and the newest `max` of all. */
   reports(max: number): Promise<ReportRecord[]>;
   /** Mark a report dealt with. */
   resolveReport(id: string): Promise<void>;
@@ -82,6 +82,8 @@ export interface SocialService {
   takeDown(kind: 'memory' | 'comment' | 'chat', id: string): Promise<void>;
   /** A reported crew chat message (`crewId/messageId`), for the support account to read. */
   reportedMessage(target: string): Promise<CrewMessage | null>;
+  /** A reported comment, for the support account to read before taking it down. */
+  reportedComment(id: string): Promise<Comment | null>;
   /** The headline numbers, counted on the server; `since` is a week ago. */
   adminCounts(since: string): Promise<AdminCounts>;
   /** When profiles, videos, comments, likes, follows and crews were made since then (newest first, up to `max` each), for the charts. */
@@ -97,7 +99,7 @@ export interface SocialService {
   sendSetTimes(festivalId: string, tip: { text?: string; photo?: string }): Promise<void>;
   /** The set times you've sent, waiting or live. */
   mySetTimes(): Promise<SetTimesTip[]>;
-  /** HQ: set times fans sent, oldest first. Support account only. */
+  /** HQ: set times fans sent and waiting, newest first. Support account only. */
   setTimesTips(max: number): Promise<SetTimesTip[]>;
   /** HQ: they're live (thanks the sender; the photo is dropped). Support account only. */
   markSetTimesLive(id: string): Promise<void>;

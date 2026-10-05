@@ -3,7 +3,7 @@ import bundled from '../../../catalogue/afterglow.json';
 import example from '../../../docs/catalogue-example.json';
 import { BUILT_IN } from '../bundled';
 import { parseCatalogFile, parseSeconds, parseYouTubeLink, safeImageUrl } from '../file';
-import { buildCatalog, mergeSnapshots } from '../merge';
+import { asPatch, buildCatalog, mergeSnapshots } from '../merge';
 import { MOCK_CATALOG, MOCK_SNAPSHOT } from '../mock';
 import { refreshCatalog, type TextStore } from '../remote';
 
@@ -290,5 +290,55 @@ describe('a hosted catalogue file', () => {
     expect(insecure.saved).toBeNull();
     const huge = await run({ fetched: ' '.repeat(2_000_001) });
     expect(huge.got).toEqual([]);
+  });
+});
+
+describe('updates written in part (asPatch)', () => {
+  const f = MOCK_SNAPSHOT.festivals[0];
+  const ordinary = { version: 1, artists: [], clips: [], festivals: [{ id: f.id, name: f.name, dates: f.dates, lineup: f.lineup, days: f.days, stages: f.stages }] };
+
+  it('marks nothing for an ordinary file of whole festivals', () => {
+    expect(parseCatalogFile(ordinary).festivalParts).toBeUndefined();
+  });
+
+  it('changes only the parts an update writes; a missing part keeps the catalogue’s own', () => {
+    const withLinks = { ...MOCK_SNAPSHOT, festivals: MOCK_SNAPSHOT.festivals.map((x) => (x.id === f.id ? { ...f, links: { tickets: 'https://t.example/' } } : x)) };
+    const parsed = parseCatalogFile({ version: 1, artists: [], clips: [], festivals: [{ id: f.id, name: 'Ignored', dates: 'Ignored', days: ['Monday'] }] });
+    expect(parsed.festivalParts?.[f.id]).toEqual({ given: ['days'] });
+    const out = asPatch(parsed, withLinks).snapshot!.festivals[0];
+    expect(out.days).toEqual(['Monday']);
+    expect(out.lineup).toEqual(f.lineup);
+    expect(out.sets).toEqual(f.sets);
+    expect(out.stages).toEqual(f.stages);
+    expect(out.name).toBe(f.name);
+    expect(out.links).toEqual({ tickets: 'https://t.example/' });
+  });
+
+  it('joins additions on: new acts, days, stages, and a set replacing that act’s set that day', () => {
+    const set = f.sets?.[0];
+    const add = {
+      lineup: [{ artist: 'someone-new', days: ['Friday'] }],
+      days: [f.days[0], 'Monday'],
+      stages: [{ id: 'new-tent', name: 'New Tent' }],
+      sets: [...(set ? [{ artist: set.artistId, day: set.day, stage: 'new-tent', start: '01:00', end: '02:00' }] : [])],
+    };
+    const parsed = parseCatalogFile({ version: 1, artists: [{ id: 'someone-new', name: 'Someone New' }], clips: [], festivals: [{ id: f.id, name: f.name, dates: f.dates, add }] });
+    expect(parsed.problems).toEqual([]);
+    const out = asPatch(parsed, MOCK_SNAPSHOT).snapshot!.festivals[0];
+    expect(out.lineup).toEqual([...f.lineup, 'someone-new']);
+    expect(out.artistDays?.['someone-new']).toEqual(['Friday']);
+    expect(out.days).toEqual([...f.days, 'Monday']);
+    expect(out.stages.map((x) => x.id)).toEqual([...f.stages.map((x) => x.id), 'new-tent']);
+    if (set) {
+      expect(out.sets?.length).toBe(f.sets!.length);
+      expect(out.sets?.[0]).toEqual({ ...set, stageId: 'new-tent', start: '01:00', end: '02:00' });
+    }
+  });
+
+  it('keeps reading older, whole updates as before', () => {
+    const whole = parseCatalogFile({ version: 1, artists: [], clips: [], festivals: [{ id: f.id, name: f.name, dates: f.dates, lineup: [f.lineup[0]], days: f.days, stages: f.stages.map((x) => ({ id: x.id, name: x.name })) }] });
+    const out = asPatch(whole, MOCK_SNAPSHOT).snapshot!.festivals[0];
+    expect(out.lineup).toEqual([f.lineup[0]]);
+    expect(out.sets).toEqual(f.sets);
   });
 });

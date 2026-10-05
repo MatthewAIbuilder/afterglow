@@ -4,7 +4,7 @@ import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, TextInp
 import { FilterChips } from '../../components/FilterChips';
 import { SearchField } from '../../components/SearchField';
 import { parseCatalogFile } from '../../data/file';
-import { buildCatalog } from '../../data/merge';
+import { asPatch, buildCatalog } from '../../data/merge';
 import type { CatalogSnapshot, Festival } from '../../data/models';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
@@ -18,16 +18,32 @@ import { formatTime } from '../festivals/format';
 import { matchesName } from '../festivals/search';
 import { DROP_FILES_MAX, type Drop, type SetTimesTip } from '../social/models';
 import { agoShort } from './admin';
-import { buildDraft, type Draft, draftLine, type LineupMode, websiteUpdate } from './draft';
+import { buildDraft, type Draft, draftLine, festivalToFile, type LineupMode, websiteUpdate } from './draft';
 import { claudeBrief, DROP_STATUS_LABEL, dropFor, fileSummary, fileSummaryLine, looksLikeCatalogFile, sizeLabel } from './drops';
 import { refreshLivePatches } from './LivePatchSync';
 import { canReadPhotos, readPhotoText } from './readPhoto';
 import { readSetList } from './setlist';
 
 type Picked = { uri: string; name: string; type: string; size?: number };
-type Review = { title: string; festivalId: string; file: string; line: string; notes: string[]; unread: string[]; preview: string[]; problems: string[]; ok: boolean; dropId?: string; setTimes?: boolean };
+type Review = {
+  title: string;
+  festivalId: string;
+  file: string;
+  line: string;
+  notes: string[];
+  unread: string[];
+  preview: string[];
+  problems: string[];
+  ok: boolean;
+  dropId?: string;
+  setTimes?: boolean;
+  /** The festival whole, as it will look once published, for keeping in catalogue/afterglow.json (the update itself carries only what changes). */
+  catalogueFile?: string;
+};
 
 const today = () => new Date().toISOString().slice(0, 10);
+/** Set times from fans read at a time (newest first). */
+const TIPS_PAGE = 30;
 
 /**
  * HQ's Data tab: the one place to throw lineups and set times at Afterglow.
@@ -74,15 +90,28 @@ export function AdminData() {
 
   // Set times fans sent, waiting to be checked.
   const [tips, setTips] = useState<SetTimesTip[] | undefined>();
+  // Newest first, TIPS_PAGE at a time: "Show older" reads further back.
+  const [tipsMax, setTipsMax] = useState(TIPS_PAGE);
   // The fan's tip being read: only a publish for that same festival marks it live.
   const [fromTip, setFromTip] = useState<{ id: string; festivalId: string } | undefined>();
   const readingTip = useRef<string | undefined>(undefined);
+  // A new festival or a new source of text: whatever the box held came from no fan or upload any more,
+  // so nobody is thanked (or an upload marked done) for set times from somewhere else.
+  const forgetSource = () => {
+    setFromTip(undefined);
+    setFromDrop(undefined);
+    readingTip.current = undefined;
+  };
+  const chooseFestival = (f: Festival | undefined) => {
+    forgetSource();
+    setFestival(f);
+  };
   const loadTips = useCallback(() => {
     social.service
-      .setTimesTips(30)
+      .setTimesTips(tipsMax)
       .then(setTips)
       .catch(() => setTips((t) => t ?? []));
-  }, [social.service]);
+  }, [social.service, tipsMax]);
   useEffect(() => {
     void Promise.resolve().then(loadTips);
   }, [loadTips]);
@@ -124,12 +153,20 @@ export function AdminData() {
   /** Check an update exactly as the app will read it. */
   const check = (file: string, title: string, extra: Pick<Review, 'line' | 'notes' | 'unread' | 'preview'>): Review => {
     const parsed = parseCatalogFile(file);
-    const built = buildCatalog(snapshot, parsed);
+    const built = buildCatalog(snapshot, asPatch(parsed, snapshot));
     const s = fileSummary(parsed, catalog);
+    const whole = s.festivalId ? built.snapshot.festivals.find((f) => f.id === s.festivalId) : undefined;
+    const catalogueFile = whole
+      ? JSON.stringify(
+          { version: 1, mode: 'add', updated: today(), artists: (parsed.snapshot?.artists ?? []).filter((a) => !catalog.artist(a.id)).map((a) => ({ id: a.id, name: a.name, sound: a.sound })), festivals: [festivalToFile(whole)], clips: [] },
+          null,
+          2,
+        )
+      : undefined;
     // An update only ever adds: one that says "replace" would empty everyone's catalogue.
     const replaces = parsed.mode === 'replace';
     const problems = replaces ? ['This file says "mode": "replace". An update can only add to Afterglow: take that line out.', ...built.problems] : built.problems;
-    return { title, festivalId: s.festivalId ?? '', file, problems, ok: built.usedFile && !!s.festivalId && !replaces, setTimes: !!s.sets, ...extra, ...(fromDrop ? { dropId: fromDrop } : {}) };
+    return { title, festivalId: s.festivalId ?? '', file, problems, ok: built.usedFile && !!s.festivalId && !replaces, setTimes: !!s.sets, ...extra, ...(fromDrop ? { dropId: fromDrop } : {}), ...(catalogueFile ? { catalogueFile } : {}) };
   };
 
   // The festival's official page: shown on its page, and looked at every night for news (an email when there is some).
@@ -204,6 +241,7 @@ export function AdminData() {
         showAlert('No text found', 'Try a sharper picture, or crop it to one day or one stage.');
         return;
       }
+      forgetSource();
       setText((t) => (t.trim() ? `${t.trim()}\n\n${found}` : found));
       setReview(undefined);
       haptic.settle();
@@ -285,7 +323,7 @@ export function AdminData() {
       {/* Set times fans sent: read one into the box below, check, publish (which thanks them), or decline. */}
       {tips?.length ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Set times from fans · {tips.length}</Text>
+          <Text style={styles.cardTitle}>{`Set times from fans · ${tips.length}${tips.length >= tipsMax ? '+' : ''}`}</Text>
           <Text style={styles.small}>Nothing here is public. Read one, check it, and publish: the sender is thanked and earns Set scout.</Text>
           {tips.map((t) => (
             <View key={t.id} style={[styles.tip, fromTip?.id === t.id && styles.tipOn]}>
@@ -335,6 +373,11 @@ export function AdminData() {
               {t.photo ? <Image source={{ uri: t.photo }} style={styles.tipThumb} accessible={false} /> : null}
             </View>
           ))}
+          {tips.length >= tipsMax ? (
+            <Pressable onPress={() => setTipsMax((m) => m + TIPS_PAGE)} accessibilityRole="button" accessibilityLabel="Show older set times from fans" hitSlop={8}>
+              <Text style={styles.link}>Show older</Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
 
@@ -349,7 +392,7 @@ export function AdminData() {
             <Text style={styles.small}>
               {festival.dates} · {festival.lineup.length} acts{festival.sets?.length ? ` · ${festival.sets.length} set times` : ''}
             </Text>
-            <Pressable onPress={() => setFestival(undefined)} accessibilityRole="button" hitSlop={8}>
+            <Pressable onPress={() => chooseFestival(undefined)} accessibilityRole="button" hitSlop={8}>
               <Text style={styles.link}>Change</Text>
             </Pressable>
             <Field value={site} onChange={setSite} url label="Official page" placeholder="Its official page, like https://orlando.edc.com" />
@@ -364,7 +407,13 @@ export function AdminData() {
               <Field value={newEnd} onChange={setNewEnd} label="Last day" placeholder="Last day 2027-09-19" />
             </View>
             <Field value={newWhere} onChange={setNewWhere} label="Where" placeholder="Where, like Legend Valley, Thornville, Ohio" />
-            <Pressable onPress={() => setFresh(false)} accessibilityRole="button">
+            <Pressable
+              onPress={() => {
+                forgetSource();
+                setFresh(false);
+              }}
+              accessibilityRole="button"
+            >
               <Text style={styles.link}>Pick one on Afterglow instead</Text>
             </Pressable>
           </View>
@@ -376,7 +425,7 @@ export function AdminData() {
                 key={f.id}
                 onPress={() => {
                   haptic.select();
-                  setFestival(f);
+                  chooseFestival(f);
                   setQuery('');
                 }}
                 accessibilityRole="button"
@@ -386,7 +435,14 @@ export function AdminData() {
                 <Text style={styles.small}>{f.dates}</Text>
               </Pressable>
             ))}
-            <Pressable onPress={() => setFresh(true)} accessibilityRole="button" style={styles.option}>
+            <Pressable
+              onPress={() => {
+                forgetSource();
+                setFresh(true);
+              }}
+              accessibilityRole="button"
+              style={styles.option}
+            >
               <Text style={styles.link}>+ New festival</Text>
             </Pressable>
           </>
@@ -401,6 +457,8 @@ export function AdminData() {
           value={text}
           onChangeText={(t) => {
             setText(t);
+            // Emptied to paste something else: it's no longer the fan's or the upload's.
+            if (!t.trim()) forgetSource();
             setReview(undefined);
           }}
           multiline
@@ -500,7 +558,7 @@ export function AdminData() {
             <Button label="Cancel" onPress={() => setReview(undefined)} />
             <Button label={busy === 'publish' ? 'Publishing…' : 'Publish to everyone'} onPress={publish} disabled={!review.ok || !!busy} primary />
           </View>
-          <Pressable onPress={() => void shareMessage(JSON.stringify(JSON.parse(review.file), null, 2), 'Catalogue update')} accessibilityRole="button">
+          <Pressable onPress={() => void shareMessage(review.catalogueFile ?? JSON.stringify(JSON.parse(review.file), null, 2), 'Catalogue update')} accessibilityRole="button">
             <Text style={styles.link}>Copy as a catalogue file (to keep it in catalogue/afterglow.json)</Text>
           </Pressable>
         </View>
@@ -541,9 +599,10 @@ export function AdminData() {
             {d.text ? (
               <Pressable
                 onPress={() => {
+                  const f = d.festivalId ? catalog.festival(d.festivalId) : undefined;
+                  forgetSource();
                   setText(d.text ?? '');
                   setFromDrop(d.id);
-                  const f = d.festivalId ? catalog.festival(d.festivalId) : undefined;
                   if (f) setFestival(f);
                   else if (d.festivalName) {
                     setFresh(true);

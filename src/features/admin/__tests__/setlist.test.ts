@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 import { MOCK_SNAPSHOT } from '../../../data/mock';
 import { parseCatalogFile } from '../../../data/file';
-import { applyPatches, buildCatalog } from '../../../data/merge';
+import { applyPatches, asPatch, buildCatalog } from '../../../data/merge';
 import type { Festival } from '../../../data/models';
-import { buildDraft, datesText, draftLine, festivalToFile, weekdaysBetween } from '../draft';
+import { buildDraft, datesText, draftLine, festivalToFile, websiteUpdate, weekdaysBetween } from '../draft';
 import { claudeBrief, fileSummary, fileSummaryLine, looksLikeCatalogFile, plusUntil, sizeLabel } from '../drops';
 import { actAndStage, dayHeading, readSetList, readTimes, withEnds } from '../setlist';
 
@@ -80,13 +80,21 @@ describe('a draft update for a festival', () => {
     expect(d.added).toEqual(['Brand New Act']);
     const parsed = parseCatalogFile(d.file);
     expect(parsed.problems).toEqual([]);
-    const f = parsed.snapshot!.festivals[0];
+    // The update carries only what the text adds: the new act and the two sets, not the festival whole.
+    const written = d.file.festivals[0];
+    expect(written.lineup).toBeUndefined();
+    expect(written.sets).toBeUndefined();
+    // The new act, and the known act now listed under that day.
+    expect(parsed.festivalParts?.[festival.id]?.add?.lineup).toEqual([festival.lineup[0], 'brand-new-act']);
+    expect(parsed.festivalParts?.[festival.id]?.add?.sets?.length).toBe(2);
+    const built = buildCatalog(MOCK_SNAPSHOT, asPatch(parsed, MOCK_SNAPSHOT));
+    expect(built.usedFile).toBe(true);
+    const f = built.catalog.festival(festival.id)!;
     expect(f.lineup.slice(0, festival.lineup.length)).toEqual(festival.lineup);
     expect(f.lineup).toContain('brand-new-act');
     expect(f.sets?.find((s) => s.artistId === 'brand-new-act')).toMatchObject({ day: festival.days[0], stageId: festival.stages[0].id, start: '22:00', end: '23:00' });
-    const built = buildCatalog(MOCK_SNAPSHOT, parsed);
-    expect(built.usedFile).toBe(true);
-    expect(built.catalog.festival(festival.id)?.lineup).toContain('brand-new-act');
+    expect(f.sets?.filter((s) => s.artistId === festival.lineup[0] && s.day === festival.days[0])).toHaveLength(1);
+    expect(f.stages).toEqual(festival.stages);
     expect(draftLine(d)).toBe('2 acts (1 already on Afterglow, 1 new) · 2 set times over ' + `${d.days.length} ${d.days.length === 1 ? 'day' : 'days'}`);
   });
 
@@ -104,9 +112,15 @@ describe('a draft update for a festival', () => {
   it('replaces the lineup when asked, keeping set times of acts still on it', () => {
     const name = MOCK_SNAPSHOT.artists.find((a) => a.id === festival.lineup[0])!.name;
     const d = buildDraft(readSetList(name), { kind: 'existing', festival }, MOCK_SNAPSHOT.artists, { lineup: 'replace', today: '2026-10-03' });
-    const f = parseCatalogFile(d.file).snapshot!.festivals[0];
+    const parsed = parseCatalogFile(d.file);
+    const f = parsed.snapshot!.festivals[0];
     expect(f.lineup).toEqual([festival.lineup[0]]);
     expect((f.sets ?? []).every((s) => s.artistId === festival.lineup[0])).toBe(true);
+    // Applied, the lineup and its sets are exactly that; the rest of the festival stays the catalogue's.
+    const out = buildCatalog(MOCK_SNAPSHOT, asPatch(parsed, MOCK_SNAPSHOT)).catalog.festival(festival.id)!;
+    expect(out.lineup).toEqual([festival.lineup[0]]);
+    expect((out.sets ?? []).every((s) => s.artistId === festival.lineup[0])).toBe(true);
+    expect(out.stages).toEqual(festival.stages);
   });
 
   it('writes a festival back without losing anything', () => {
@@ -138,6 +152,42 @@ describe('published updates', () => {
     expect(out.catalog.festival(festival.id)?.name).toBe(festival.name);
     expect(out.catalog.artist(known.id)?.name).toBe(known.name);
   });
+
+  it('carry only what they change, so later catalogue fixes show and taking one down undoes only it', () => {
+    const withTickets: Festival = { ...festival, links: { tickets: 'https://tickets.example/x' } };
+    const snapshot = { ...MOCK_SNAPSHOT, festivals: MOCK_SNAPSHOT.festivals.map((f) => (f.id === festival.id ? withTickets : f)) };
+    const site = websiteUpdate(withTickets, 'https://festival.example', '2026-10-05')!;
+    expect(Object.keys((site as { festivals: object[] }).festivals[0]).sort()).toEqual(['dates', 'id', 'name', 'website']);
+    const draft = buildDraft(readSetList('Brand New Act'), { kind: 'existing', festival: withTickets }, MOCK_SNAPSHOT.artists, { today: '2026-10-05' });
+    const patches = [{ file: JSON.stringify(site) }, { file: JSON.stringify(draft.file) }];
+    // The catalogue fixes a set time and drops an act after both were published: both fixes still show.
+    const fixedSets = (festival.sets ?? []).map((s, i) => (i === 0 ? { ...s, start: '12:00' } : s));
+    const dropped = festival.lineup[festival.lineup.length - 1];
+    const fixed = {
+      ...snapshot,
+      festivals: snapshot.festivals.map((f) =>
+        f.id === festival.id ? { ...withTickets, lineup: f.lineup.filter((a) => a !== dropped), sets: fixedSets.filter((s) => s.artistId !== dropped) } : f,
+      ),
+    };
+    const out = applyPatches(buildCatalog(fixed, undefined), patches, parseCatalogFile).catalog.festival(festival.id)!;
+    expect(out.links).toEqual({ tickets: 'https://tickets.example/x', website: 'https://festival.example/' });
+    expect(out.lineup).not.toContain(dropped);
+    expect(out.lineup).toContain('brand-new-act');
+    if (fixedSets[0] && fixedSets[0].artistId !== dropped) expect(out.sets?.[0].start).toBe('12:00');
+    // Taking the website down leaves the lineup update; taking the lineup down leaves the website.
+    const noSite = applyPatches(buildCatalog(snapshot, undefined), [patches[1]], parseCatalogFile).catalog.festival(festival.id)!;
+    expect(noSite.links).toEqual({ tickets: 'https://tickets.example/x' });
+    expect(noSite.lineup).toContain('brand-new-act');
+    const noLineup = applyPatches(buildCatalog(snapshot, undefined), [patches[0]], parseCatalogFile).catalog.festival(festival.id)!;
+    expect(noLineup.lineup).toEqual(festival.lineup);
+    expect(noLineup.links?.website).toBe('https://festival.example/');
+  });
+
+  it('leave out a partial update for a festival no longer on Afterglow', () => {
+    const gone = { version: 1, artists: [], clips: [], festivals: [{ id: 'gone-fest', name: 'Gone', dates: 'Jan 1', website: 'https://gone.example' }] };
+    const out = applyPatches(buildCatalog(MOCK_SNAPSHOT, undefined), [{ file: JSON.stringify(gone) }], parseCatalogFile);
+    expect(out.catalog.festival('gone-fest')).toBeUndefined();
+  });
 });
 
 describe('the inbox', () => {
@@ -158,7 +208,8 @@ describe('the inbox', () => {
     expect(looksLikeCatalogFile(text)).toBe(true);
     expect(looksLikeCatalogFile('Friday\n10pm A')).toBe(false);
     const s = fileSummary(parseCatalogFile(text), { artist: (id) => MOCK_SNAPSHOT.artists.find((a) => a.id === id) });
-    expect(fileSummaryLine(s)).toBe(`${festival.name}: ${festival.lineup.length + 1} acts, 1 new to Afterglow${festival.sets?.length ? `, ${festival.sets.length} set times` : ''}`);
+    // The update carries only the new act, so that's what it sums up.
+    expect(fileSummaryLine(s)).toBe(`${festival.name}: 1 act, 1 new to Afterglow`);
     expect(plusUntil(0, new Date(2026, 9, 3))).toBeUndefined();
     expect(plusUntil(1, new Date(2026, 9, 3))).toBe(new Date(2026, 10, 3).toISOString());
   });

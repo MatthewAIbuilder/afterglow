@@ -7,7 +7,10 @@ import { type ReadList, withEnds } from './setlist';
  * catalogue/afterglow.json) for one festival, pure. Names are matched to
  * artists already on Afterglow by spelling (case, accents and punctuation
  * ignored); anyone else is added as a new artist. For a festival already on
- * Afterglow, everything it has is kept and only what the text adds changes.
+ * Afterglow, the update carries only what the text changes (new acts, days,
+ * stages and sets as additions; the whole lineup and its sets only when
+ * replacing it), so everything else stays the catalogue's own: later fixes
+ * still reach everyone, and taking the update down undoes only it.
  */
 
 export type DraftTarget =
@@ -34,15 +37,20 @@ export type Draft = {
 type FileFestival = Record<string, unknown>;
 export type CatalogFileJson = { version: 1; mode: 'add'; updated: string; artists: { id: string; name: string; sound: Record<string, number> }[]; festivals: FileFestival[]; clips: [] };
 
+/** One act on a festival's lineup in the catalogue file's words: its id, or { artist, note, days, weekend }. */
+function lineupEntry(f: Festival, id: string): string | Record<string, unknown> {
+  const note = f.notes?.[id];
+  const days = f.artistDays?.[id];
+  const weekend = f.artistWeekends?.[id];
+  if (!note && !days?.length && !weekend) return id;
+  return { artist: id, ...(note ? { note } : {}), ...(days?.length ? { days } : {}), ...(weekend ? { weekend } : {}) };
+}
+
+const setsToFile = (sets: NonNullable<Festival['sets']>) => sets.map((s) => ({ artist: s.artistId, day: s.day, stage: s.stageId, start: s.start, end: s.end }));
+
 /** A festival written back in the catalogue file's words, so publishing it keeps everything it had. */
 export function festivalToFile(f: Festival): FileFestival {
-  const lineup = f.lineup.map((id) => {
-    const note = f.notes?.[id];
-    const days = f.artistDays?.[id];
-    const weekend = f.artistWeekends?.[id];
-    if (!note && !days?.length && !weekend) return id;
-    return { artist: id, ...(note ? { note } : {}), ...(days?.length ? { days } : {}), ...(weekend ? { weekend } : {}) };
-  });
+  const lineup = f.lineup.map((id) => lineupEntry(f, id));
   return {
     id: f.id,
     name: f.name,
@@ -59,8 +67,35 @@ export function festivalToFile(f: Festival): FileFestival {
     lineup,
     days: f.days,
     stages: f.stages,
-    ...(f.sets?.length ? { sets: f.sets.map((s) => ({ artist: s.artistId, day: s.day, stage: s.stageId, start: s.start, end: s.end })) } : {}),
+    ...(f.sets?.length ? { sets: setsToFile(f.sets) } : {}),
   };
+}
+
+/**
+ * Only what changed between a festival on Afterglow and the same festival
+ * after the text, in an update's words (see `FestivalParts` in data/file.ts):
+ * its id, name and dates (to be read), new acts, days, stages and sets as
+ * additions, or, replacing the lineup, the whole lineup and its sets.
+ */
+export function festivalChanges(was: Festival, now: Festival, newSets: NonNullable<Festival['sets']>, mode: LineupMode): FileFestival {
+  const out: FileFestival = { id: now.id, name: now.name, dates: now.dates };
+  const add: Record<string, unknown> = {};
+  if (mode === 'replace') {
+    out.lineup = now.lineup.map((id) => lineupEntry(now, id));
+    out.sets = setsToFile(now.sets ?? []);
+  } else {
+    // New acts, and acts the text gave days to.
+    const sameDays = (a?: string[], b?: string[]) => (a ?? []).join('|') === (b ?? []).join('|');
+    const acts = now.lineup.filter((id) => !was.lineup.includes(id) || !sameDays(was.artistDays?.[id], now.artistDays?.[id]));
+    if (acts.length) add.lineup = acts.map((id) => lineupEntry(now, id));
+    if (newSets.length) add.sets = setsToFile(newSets);
+  }
+  const days = now.days.filter((d) => !was.days.includes(d));
+  if (days.length) add.days = days;
+  const stages = now.stages.filter((st) => !was.stages.some((x) => x.id === st.id));
+  if (stages.length) add.stages = stages;
+  if (Object.keys(add).length) out.add = add;
+  return out;
 }
 
 /**
@@ -76,7 +111,8 @@ export function websiteUpdate(festival: Festival, url: string, today: string): o
     return undefined;
   }
   if (u.protocol !== 'https:' || !u.hostname.includes('.')) return undefined;
-  return { version: 1, mode: 'add', updated: today, artists: [], festivals: [{ ...festivalToFile(festival), website: u.toString() }], clips: [] };
+  // Only the page: everything else about the festival stays the catalogue's own.
+  return { version: 1, mode: 'add', updated: today, artists: [], festivals: [{ id: festival.id, name: festival.name, dates: festival.dates, website: u.toString() }], clips: [] };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -189,6 +225,7 @@ export function buildDraft(
   // Replacing the lineup keeps only the old set times of acts still on it.
   const sets = mode === 'replace' ? (base.sets ?? []).filter((x) => lineup.includes(x.artistId)) : [...(base.sets ?? [])];
   let noDay = 0;
+  const newSets: NonNullable<Festival['sets']> = [];
   for (const s of ended) {
     const day = s.day ?? (days.length === 1 ? days[0] : undefined);
     if (!day) {
@@ -202,6 +239,9 @@ export function buildDraft(
     const set = { artistId: id, day, stageId: stage, start: s.start, end: s.end };
     if (i >= 0) sets[i] = set;
     else sets.push(set);
+    const j = newSets.findIndex((x) => x.artistId === id && x.day === day);
+    if (j >= 0) newSets[j] = set;
+    else newSets.push(set);
   }
   const guessedTimes = ended.filter((s) => s.guessed).length;
   const guessedEnds = ended.filter((s) => s.endGuessed).length;
@@ -225,7 +265,14 @@ export function buildDraft(
   return {
     festivalId: festival.id,
     festivalName: festival.name,
-    file: { version: 1, mode: 'add', updated: opts.today, artists: newArtists, festivals: [festivalToFile(festival)], clips: [] },
+    file: {
+      version: 1,
+      mode: 'add',
+      updated: opts.today,
+      artists: newArtists,
+      festivals: [target.kind === 'existing' ? festivalChanges(target.festival, festival, newSets, mode) : festivalToFile(festival)],
+      clips: [],
+    },
     matched: uniq(matched),
     added,
     sets: ended.length - noDay,
