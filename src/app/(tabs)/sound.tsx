@@ -39,6 +39,7 @@ import { soundLean, tasteMix } from '../../features/taste/lean';
 import { isWarm } from '../../features/taste/ratings';
 import { SoundSpectrum } from '../../features/sound-map/SoundSpectrum';
 import { SoundOverview } from '../../features/sound-map/SoundOverview';
+import { SoundList } from '../../features/sound-map/SoundList';
 import { musicNote, type MusicNote } from '../../features/music/copy';
 import { PROVIDER_NAME } from '../../features/music/models';
 import { useMusic } from '../../state/music';
@@ -85,25 +86,27 @@ export default function MySoundScreen() {
   // One day of that festival's lineup, when the poster or set times say who plays when.
   const [day, setDay] = useState<string | undefined>();
   const { festival: festivalParam, view: viewParam } = useLocalSearchParams<{ festival?: string; view?: string }>();
-  // The overview (your sound, a guide to every sound, tips) or the bubble map. A festival or `view=map` opens the map.
-  const [view, setView] = useState<'overview' | 'map'>(viewParam === 'map' || festivalParam ? 'map' : 'overview');
+  // The overview (your sound, a guide to every sound, tips), the ranked list or the bubble map.
+  // A festival or `view=map` opens the map; `view=list` the list.
+  const [view, setView] = useState<SoundView>(viewParam === 'list' ? 'list' : viewParam === 'map' || festivalParam ? 'map' : 'overview');
   const navigation = useNavigation();
   // `everyone` (from the scope picker) goes back to the whole map; a festival id narrows it.
   const asked = festivalParam === EVERYONE ? EVERYONE : festivalParam && catalog.festival(festivalParam) ? festivalParam : undefined;
   const [lastAsked, setLastAsked] = useState<string | undefined>();
   if (asked && asked !== lastAsked) {
     setLastAsked(asked);
-    setView('map');
+    // The list keeps its place: a festival chosen from it shows that lineup ranked.
+    if (view !== 'list') setView('map');
     setScopeId(asked === EVERYONE ? undefined : asked);
     setDay(undefined);
     setSelectedId(null);
   }
   if (!festivalParam && lastAsked) setLastAsked(undefined);
-  // `view=map` opens the map even when the tab is already open (a quest, your profile's orbit).
+  // `view=map` (or `view=list`) opens it even when the tab is already open (a quest, your profile's orbit).
   const [lastView, setLastView] = useState(viewParam);
   if (viewParam !== lastView) {
     setLastView(viewParam);
-    if (viewParam === 'map') setView('map');
+    if (viewParam === 'map' || viewParam === 'list') setView(viewParam);
   }
   useEffect(() => {
     if (festivalParam) navigation.setParams({ festival: '' } as never);
@@ -210,7 +213,7 @@ export default function MySoundScreen() {
   }
   const watchable = useMemo(() => new Set(soundChoices(catalog.clips, catalog.artist).map((c) => c.tag)), [catalog]);
   const openMap = useCallback(() => setView('map'), []);
-  const openBreakdown = useCallback(() => router.push({ pathname: '/your-sound', params: scope && view === 'map' ? { festival: scope.id } : {} }), [scope, view]);
+  const openBreakdown = useCallback(() => router.push({ pathname: '/your-sound', params: scope && view !== 'overview' ? { festival: scope.id } : {} }), [scope, view]);
 
   const summaryCard = (
     <SoundSummary
@@ -229,7 +232,7 @@ export default function MySoundScreen() {
         <Text style={styles.title}>My Sound</Text>
       </Pressable>
       <View style={styles.actions} pointerEvents="box-none">
-        {view === 'overview' || searchOpen ? null : (
+        {view !== 'map' || searchOpen ? null : (
           <GlassCircleButton label="Search your map for an artist or a sound" onPress={() => setSearchOpen(true)}>
             <SearchIcon color={color.moon} size={18} />
           </GlassCircleButton>
@@ -245,6 +248,40 @@ export default function MySoundScreen() {
     closeSearch();
     setView(v);
   }} />;
+
+  // The festival choices, shared by the list and the map: switching between them keeps the festival.
+  const scopeRows = hasScopes ? (
+    <>
+      <LensRow lenses={lenses} current={scope} onPick={pickLens} />
+      {scope && scopeDays.length > 0 ? <DayRow scope={scope} days={scopeDays} day={dayOn} onDay={pickDay} /> : null}
+    </>
+  ) : null;
+
+  if (view === 'list') {
+    return (
+      <View style={styles.root}>
+        <PageTitle title="My Sound" />
+        <NightSky />
+        {/* Ranked on your live taste, so a rating on an artist's page shows when you come back. */}
+        <SoundList
+          header={
+            <View>
+              {titleRow}
+              {toggle}
+              {scopeRows}
+            </View>
+          }
+          candidates={candidates}
+          taste={live.taste}
+          informed={live.informed}
+          festivalId={scope?.id}
+          festivalName={scope ? (dayOn ? `${scope.name} on ${dayOn}` : scope.name) : undefined}
+          top={insets.top + space.lg}
+          bottom={tabSpace + space.xl}
+        />
+      </View>
+    );
+  }
 
   if (view === 'overview') {
     return (
@@ -346,12 +383,9 @@ export default function MySoundScreen() {
               <Text style={styles.done}>Done</Text>
             </Pressable>
           </View>
-        ) : hasScopes ? (
-          <>
-            <LensRow lenses={lenses} current={scope} onPick={pickLens} />
-            {scope && scopeDays.length > 0 ? <DayRow scope={scope} days={scopeDays} day={dayOn} onDay={pickDay} /> : null}
-          </>
-        ) : null}
+        ) : (
+          scopeRows
+        )}
       </View>
 
       {/* Moved away: one tap glides the map back to your strongest matches. */}
@@ -375,13 +409,18 @@ export default function MySoundScreen() {
   );
 }
 
-/** Overview or map: a quiet two-way switch under the title. */
-function ViewToggle({ view, onChange }: { view: 'overview' | 'map'; onChange: (v: 'overview' | 'map') => void }) {
+type SoundView = 'overview' | 'list' | 'map';
+/** What each view is called to screen readers. */
+const VIEW_SAID: Record<SoundView, string> = { overview: 'Overview', list: 'Ranked list of artists', map: 'Bubble map' };
+
+/** Overview, list or map: a quiet three-way switch under the title. */
+function ViewToggle({ view, onChange }: { view: SoundView; onChange: (v: SoundView) => void }) {
   return (
     <View style={styles.toggle} accessibilityRole="tablist">
       {(
         [
           ['overview', 'Overview'],
+          ['list', 'List'],
           ['map', 'Map'],
         ] as const
       ).map(([v, label]) => {
@@ -396,7 +435,7 @@ function ViewToggle({ view, onChange }: { view: 'overview' | 'map'; onChange: (v
             }}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            accessibilityLabel={v === 'map' ? 'Bubble map' : 'Overview'}
+            accessibilityLabel={VIEW_SAID[v]}
             style={[styles.toggleItem, on && styles.toggleOn]}
           >
             <Text style={[styles.toggleText, on && styles.toggleTextOn]}>{label}</Text>
