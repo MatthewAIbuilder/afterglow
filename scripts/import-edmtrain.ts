@@ -79,8 +79,9 @@ async function main() {
   if (!file.festivals.length) fail(`none of EDMTrain's ${events.length} events made a festival.`);
   if (text.length > MAX_FILE_CHARS) fail('the file would be too large for the app.');
 
-  // Exactly what the app will do with it: read it and add it to the built-in data.
-  const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile(text));
+  // Exactly what the app will do with it: read it and add it to the built-in data. Clips come
+  // later, from the YouTube step (which checks the finished file with clips required).
+  const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile(text), { needClips: false });
   if (!built.usedFile) fail(`the app would refuse the file: ${built.problems.slice(0, 5).join(' ')}`);
   if (built.problems.length) fail(`the file has problems: ${built.problems.slice(0, 5).join(' ')}`);
 

@@ -10,6 +10,11 @@ on:
   pull_request:
   # "Run workflow" on the Actions tab republishes main by hand.
   workflow_dispatch:
+    inputs:
+      restore_clips_from:
+        description: 'Only to get lost Discover clips back: the version id of an earlier release (Firebase console > Hosting > Release history). Leave empty otherwise.'
+        required: false
+        default: ''
   # Every night: fresh festivals from EDMTrain (docs/events-import.md), published with the site.
   schedule:
     - cron: '17 9 * * *'
@@ -84,12 +89,43 @@ jobs:
         if: github.event_name != 'pull_request'
         run: npx --yes tsx@4 scripts/site-pictures.ts /tmp/published.json || echo "::warning::Site pictures were skipped tonight."
 
+      # Getting lost clips back (docs/events-import.md): the clips of an earlier release, copied to a short-lived
+      # preview channel and read from there. Only when asked for on "Run workflow". Never prints the key.
+      - name: Clips from an earlier release
+        if: env.CAN_DEPLOY == 'true' && github.event_name == 'workflow_dispatch' && inputs.restore_clips_from != ''
+        continue-on-error: true
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          VERSION: ${{ inputs.restore_clips_from }}
+          PROJECT: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}
+        run: |
+          VERSION=$(printf '%s' "$VERSION" | sed 's#.*/versions/##' | tr -d '[:space:]')
+          [[ "$VERSION" =~ ^[A-Za-z0-9]{6,40}$ ]] || { echo "::error::That doesn't look like a release's version id."; exit 1; }
+          printf '%s' "$KEY" > "$RUNNER_TEMP/firebase-key.json"
+          trap 'rm -f "$RUNNER_TEMP/firebase-key.json"' EXIT
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json"
+          npx --yes firebase-tools@14 hosting:clone "$PROJECT@$VERSION" "$PROJECT:clips-restore" --non-interactive < /dev/null
+          npx --yes firebase-tools@14 hosting:channel:list --project "$PROJECT" --json > "$RUNNER_TEMP/channels.json"
+          url=$(node -e '
+            const list = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result?.channels ?? [];
+            console.log(list.find((c) => c.name.split("/").pop() === "clips-restore")?.url ?? "");' "$RUNNER_TEMP/channels.json")
+          [ -n "$url" ] && curl -fsS "$url/catalogue.json" -o /tmp/restore.json || echo "::warning::Couldn't read that release's clips."
+          npx --yes firebase-tools@14 hosting:channel:delete clips-restore --project "$PROJECT" --force --non-interactive < /dev/null || true
+          [ -f /tmp/restore.json ] && node -e "console.log('Clips in that release:', (JSON.parse(require('fs').readFileSync('/tmp/restore.json','utf8')).clips ?? []).length)"
+
       # Discover clips: the best live set on YouTube for artists on upcoming festivals, a few a night (docs/events-import.md).
+      # Only the nightly run (and "Run workflow") searches, so merges during the day don't use up YouTube's daily quota;
+      # every run keeps the clips already found. If the step fails, it runs again with no searches; if that fails too,
+      # nothing is deployed, so the site is never published without its clips.
       - name: YouTube clips
         if: github.event_name != 'pull_request' && env.HAS_YOUTUBE == 'true'
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-        run: npx --yes tsx@4 scripts/youtube-clips.ts /tmp/published.json || echo "::warning::YouTube clips were skipped tonight."
+          CLIP_SEARCHES: ${{ github.event_name == 'push' && '0' || '' }}
+        run: |
+          npx --yes tsx@4 scripts/youtube-clips.ts /tmp/published.json /tmp/restore.json \
+            || CLIP_SEARCHES=0 npx --yes tsx@4 scripts/youtube-clips.ts /tmp/published.json /tmp/restore.json \
+            || { echo "::error::YouTube clips failed twice. Stopping before the deploy, so the live site keeps its Discover clips."; exit 1; }
 
       - name: Build the website
         run: npm run build:web

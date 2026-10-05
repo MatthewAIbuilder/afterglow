@@ -2,12 +2,17 @@
  * Nightly Discover clips from YouTube (run by .github/workflows/website.yml
  * after the EDMTrain and photo steps):
  *
- *   YOUTUBE_API_KEY=... npx --yes tsx@4 scripts/youtube-clips.ts [published.json]
+ *   YOUTUBE_API_KEY=... npx --yes tsx@4 scripts/youtube-clips.ts [published.json ...]
  *
  * Keeps the clips found on earlier nights (from the last published file,
- * the optional argument), then searches YouTube for up to MAX_SEARCHES
- * artists on upcoming festivals who still have no clip, and adds the best
- * live set for each as a one-minute clip (src/data/import/youtube.ts).
+ * the optional arguments; a missing file is skipped, and a second file, such
+ * as an earlier release, only fills in artists the first has no clip for),
+ * then searches YouTube for up to MAX_SEARCHES artists on upcoming festivals
+ * who still have no clip (CLIP_SEARCHES=0 searches none: pushes keep the
+ * day's quota for the nightly run), and adds the best live set for each as a
+ * one-minute clip (src/data/import/youtube.ts). A video is used once only
+ * (a b2b set can be the best find for both artists): two clips with one
+ * video would make the app refuse the whole file.
  * Searches that found nothing are remembered ("clipMisses") and retried after
  * a month. Videos reported as wrong ("blockedVideos" in
  * catalogue/afterglow.json) are dropped and never picked again, and the list
@@ -69,31 +74,47 @@ async function main() {
   const homeOf = (artistId: string): Festival | undefined => upcoming.find((f) => f.lineup.includes(artistId));
 
   // Clips found on earlier nights, still pointing at an upcoming festival the artist plays.
-  const lastPath = process.argv[2];
-  let published: { clips?: FileClip[]; clipMisses?: Record<string, string> } = {};
-  if (lastPath && existsSync(lastPath)) {
+  const published: { clips?: FileClip[]; clipMisses?: Record<string, string> }[] = [];
+  for (const path of process.argv.slice(2)) {
+    if (!existsSync(path)) continue;
     try {
-      published = JSON.parse(readFileSync(lastPath, 'utf8'));
+      published.push(JSON.parse(readFileSync(path, 'utf8')));
     } catch {}
   }
-  const clips: FileClip[] = (file.clips ?? []).filter((c) => !isBlocked(c));
+  const clips: FileClip[] = [];
+  // Every video already used, so none is used twice.
+  const used = new Set<string>();
+  const keep = (c: FileClip) => {
+    const v = videoIdOf(c);
+    if (used.has(c.id) || (v && used.has(v))) return false;
+    clips.push(c);
+    used.add(c.id);
+    if (v) used.add(v);
+    return true;
+  };
+  for (const c of file.clips ?? []) if (!isBlocked(c)) keep(c);
+  for (const c of catalog.clips) {
+    used.add(c.id);
+    const v = c.source?.provider === 'youtube' ? c.source.videoId : undefined;
+    if (v) used.add(v);
+  }
   const has = new Set([...catalog.clips.map((c) => c.artistId), ...clips.map((c) => c.artist)]);
-  for (const c of published.clips ?? []) {
+  for (const c of published.flatMap((p) => p.clips ?? [])) {
     if (typeof c?.id !== 'string' || !c.id.startsWith('yt-') || isBlocked(c) || has.has(c.artist) || !catalog.artist(c.artist)) continue;
     // Its festival if still listed (even once it's over, so likes on the clip keep counting), else another the artist plays.
     const home = catalog.festival(c.festival)?.lineup.includes(c.artist)
       ? c.festival
       : (homeOf(c.artist) ?? catalog.festivalsOf(c.artist)[0])?.id;
     if (!home) continue;
-    clips.push({ ...c, festival: home });
-    has.add(c.artist);
+    if (keep({ ...c, festival: home })) has.add(c.artist);
   }
-  const misses: Record<string, string> = { ...(published.clipMisses ?? {}) };
+  const misses: Record<string, string> = { ...published[0]?.clipMisses };
+  const searches = process.env.CLIP_SEARCHES?.trim() ? Math.max(0, Number(process.env.CLIP_SEARCHES) || 0) : undefined;
 
   // Tonight's searches: festivals you curated first, then the rest, soonest first, in billing order.
   const order = [...upcoming.filter((f) => !f.source), ...upcoming.filter((f) => f.source)];
   const wanted = order.flatMap((f) => f.lineup.map((id) => catalog.artist(id)).filter((a) => !!a).map((a) => ({ id: a!.id, name: a!.name })));
-  const plan = clipPlan(wanted, (id) => has.has(id), misses, today);
+  const plan = searches === 0 ? [] : clipPlan(wanted, (id) => has.has(id), misses, today, searches);
 
   let found = 0;
   let searched = 0;
@@ -114,10 +135,9 @@ async function main() {
     searched++;
     const ids = searchIds(s.body);
     const d = ids.length ? await getJson(detailsUrl(ids, key)) : undefined;
-    const set = d?.ok ? pickLiveSet(a.name, d.body, blocked) : undefined;
+    const set = d?.ok ? pickLiveSet(a.name, d.body, new Set([...blocked, ...used])) : undefined;
     const home = homeOf(a.id);
-    if (set && home) {
-      clips.push(setClip(set, a, home.id));
+    if (set && home && keep(setClip(set, a, home.id))) {
       has.add(a.id);
       delete misses[a.id];
       found++;

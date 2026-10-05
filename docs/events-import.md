@@ -117,7 +117,30 @@ as a one-minute clip, a third of the way into the set (past the intro).
   first.
 - YouTube's free daily allowance covers about 90 searches a night, so
   Discover fills up over a few nights. Clips found before are kept; artists
-  with no set found are tried again after a month.
+  with no set found are tried again after a month. Only the nightly run (and
+  "Run workflow") searches: runs after a merge just keep the clips, so they
+  don't use up the day's allowance.
+- Each video is used once. If the clips step fails anyway, it runs again
+  without searching; if that fails too, the run stops before the deploy, so
+  the live site keeps its clips.
+
+### Getting lost clips back
+
+Clips are carried from one release of the website to the next. If a release
+ever goes out without them (as on 5 October 2026), get them back from an
+earlier one:
+
+1. Open the [Firebase console](https://console.firebase.google.com), pick
+   **afterglowmusic**, then **Hosting** in the left menu, and scroll to
+   **Release history**.
+2. Find the last release from before the clips went missing. Its
+   **Version** column shows an id (letters and numbers, e.g.
+   `aaeb73690b23c50f`). Copy it.
+3. On GitHub, open **Actions → Website → Run workflow**, paste the id into
+   "Only to get lost Discover clips back", and press **Run workflow**.
+4. When it finishes, the **Clips from an earlier release** step says how many
+   clips it found, and **YouTube clips** says how many the site now has.
+   Artists who have a newer clip keep it.
 - The clip's credit line in Discover names the YouTube channel. Clips you add
   yourself in `catalogue/afterglow.json` always stay; an artist who already
   has one isn't searched.
