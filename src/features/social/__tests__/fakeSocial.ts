@@ -1,5 +1,6 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type DirectChat, directRoom, isDirectRoom, otherInRoom, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, SUPPORT_REPLIES_MAX, type SetTimesTip } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip } from '../models';
+import { cleanBackdrop } from '../../profile/backdrops';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -244,9 +245,12 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         coverUrl: before?.coverUrl,
         festivals: input.showFestivals ? published.festivals : [],
         sounds: input.showSound ? published.sounds : [],
+        artists: input.showArtists !== false ? (published.artists ?? before?.artists ?? []).slice(0, ARTISTS_SHOWN) : [],
         showFestivals: input.showFestivals,
         showSound: input.showSound,
         ...((input.socials ?? before?.socials) && Object.keys(input.socials ?? before?.socials ?? {}).length ? { socials: input.socials ?? before?.socials } : {}),
+        showArtists: input.showArtists !== false,
+        backdrop: before?.backdrop,
         createdAt: before?.createdAt ?? at,
         updatedAt: at,
       };
@@ -266,6 +270,14 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const p = profiles.get(u.uid);
       if (!p) throw new SocialError('no-profile');
       const next = { ...p, coverUrl: uri ? `https://example.test/covers/${u.uid}.jpg` : undefined };
+      profiles.set(u.uid, next);
+      return next;
+    },
+    async setBackdrop(id) {
+      const u = me();
+      const p = profiles.get(u.uid);
+      if (!p) throw new SocialError('no-profile');
+      const next = { ...p, backdrop: cleanBackdrop(id ?? undefined) };
       profiles.set(u.uid, next);
       return next;
     },

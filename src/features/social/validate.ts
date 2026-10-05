@@ -70,6 +70,7 @@ export function cleanProfileInput(input: ProfileInput): ProfileInput {
     showFestivals: input.showFestivals,
     showSound: input.showSound,
     ...(input.socials ? { socials: cleanSocials(input.socials) } : {}),
+    showArtists: input.showArtists !== false,
   };
 }
 

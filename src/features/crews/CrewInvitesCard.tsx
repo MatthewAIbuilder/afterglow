@@ -5,7 +5,7 @@ import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../social/service';
 import { StandingAvatar } from '../standing/StandingAvatar';
 import { inviteTitle } from './invite';
@@ -88,7 +88,7 @@ export function CrewInvitesCard() {
 const styles = StyleSheet.create({
   section: { gap: space.sm },
   heading: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 1 },
-  card: { padding: space.lg, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(169,124,255,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)' },
+  card: { padding: space.lg, gap: space.md, borderRadius: radius.lg, backgroundColor: glowA(0.12), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45) },
   top: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   title: { ...type.headline, color: color.moon },
   detail: { ...type.caption, color: color.moonDim, marginTop: 2 },

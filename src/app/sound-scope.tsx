@@ -15,7 +15,7 @@ import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 
 /**
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  selected: { backgroundColor: 'rgba(169,124,255,0.16)', borderColor: 'rgba(169,124,255,0.45)' },
+  selected: { backgroundColor: glowA(0.16), borderColor: glowA(0.45) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
   rowText: { flex: 1 },
   rowTitle: { ...type.headline, color: color.moon },

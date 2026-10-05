@@ -5,7 +5,8 @@ import { AppState } from 'react-native';
 import { isSupportAccount } from '../features/admin/admin';
 import { isOffline } from '../features/offline/status';
 import type { Memory } from '../features/memories/models';
-import type { Profile, ProfileInput, ReportReason, SocialUser } from '../features/social/models';
+import { ARTISTS_SHOWN, type Profile, type ProfileInput, type Published, type ReportReason, type SocialUser } from '../features/social/models';
+import { favouriteArtists } from '../features/profile/identity';
 import { publishedChanged } from '../features/social/publish';
 import { SOCIAL_ERROR_COPY, SocialError, socialErrorKind, type ReportTarget, type SocialAvailability, type SocialService } from '../features/social/service';
 import { cleanShareOutbox, queueShare, sharesOf, shareRetryDelay, shareTried, unqueueShare, type ShareItem } from '../features/social/shareOutbox';
@@ -13,9 +14,11 @@ import { defaultSocialService } from '../features/social/services';
 import { tasteMix } from '../features/taste/lean';
 import { showAlert } from '../lib/dialog';
 import { useCatalog } from './catalog';
+import { useFollowedArtists } from './followedArtists';
 import { useGoing } from './going';
 import { forgetLastKnownAccount, lastKnownFor, rememberLastKnown } from './lastKnown';
 import { useMemories } from './memories';
+import { useRatings } from './ratings';
 import { useTaste } from './taste';
 
 /**
@@ -25,8 +28,9 @@ import { useTaste } from './taste';
  *
  * What's published is only what you choose: the profile fields you fill in,
  * the festivals and top sounds you switch on (kept current with your plans),
- * and each memory you share. Nothing about your taste, ratings, reactions or
- * music library is sent.
+ * your favourite artists (on unless you switch it off), and each memory you
+ * share. Nothing else about your taste, ratings, reactions or music library
+ * is sent.
  */
 type Ctx = {
   availability: SocialAvailability;
@@ -49,6 +53,8 @@ type Ctx = {
   /** Read your sign-in again (after confirming your email). */
   refreshUser: () => Promise<void>;
   setCover: (uri: string | null) => Promise<void>;
+  /** An animated background for the top of your profile (a `BACKDROPS` id or `'none'`), or null for the cover photo. */
+  setBackdrop: (id: string | null) => Promise<void>;
   /**
    * Share a memory to your profile; `sharing` shows how far along it is (0 to 1). With no signal it's kept
    * on the phone and sent by itself later ("waiting"); a refusal throws (and it's not kept).
@@ -217,7 +223,17 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     () => tasteMix(artists, taste, informed).slice(0, SOUNDS_SHOWN).map((s) => s.tag),
     [artists, taste, informed],
   );
-  const published = useMemo(() => ({ festivals: [...going], sounds }), [going, sounds]);
+  // Your favourite artists, best first (as round your photo on your own profile), once ratings and follows have loaded.
+  const { ratings, hydrated: ratingsLoaded } = useRatings();
+  const { followed, hydrated: followsLoaded } = useFollowedArtists();
+  const favourites = useMemo(
+    () =>
+      ratingsLoaded && followsLoaded
+        ? favouriteArtists({ artists, taste, informed, ratings, followed }, ARTISTS_SHOWN).map((f) => f.artist.id)
+        : undefined,
+    [artists, taste, informed, ratings, followed, ratingsLoaded, followsLoaded],
+  );
+  const published = useMemo<Published>(() => ({ festivals: [...going], sounds, ...(favourites ? { artists: favourites } : {}) }), [going, sounds, favourites]);
 
   const saveProfile = useCallback(
     async (input: ProfileInput) => {
@@ -232,9 +248,9 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   // Never on the support account: plans and taste are this phone's, so switching to HQ would publish yours there.
   // Not from this phone's copy: an old copy must never be published over a newer profile.
   useEffect(() => {
-    if (!profile || profileKeptAt !== undefined || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds)) return;
+    if (!profile || profileKeptAt !== undefined || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds, published.artists)) return;
     const t = setTimeout(() => {
-      const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound, socials: profile.socials ?? {} };
+      const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound, showArtists: profile.showArtists, socials: profile.socials ?? {} };
       service
         .saveProfile(input, published)
         .then((p) => currentUid.current === p.uid && keepProfile(p))
@@ -264,6 +280,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     if (u && u.uid === currentUid.current) setUser(u);
   }, [service]);
   const setCover = useCallback(async (uri: string | null) => keepProfile(await service.setCover(uri)), [service, keepProfile]);
+  const setBackdrop = useCallback(async (id: string | null) => keepProfile(await service.setBackdrop(id)), [service, keepProfile]);
 
   // --- Sharing to Discover, through an outbox kept on the phone (`shareOutbox.v1`): a share asked for with no
   // signal waits there and goes by itself, oldest first, once there's signal or the app comes back.
@@ -464,8 +481,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
-    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report],
+    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

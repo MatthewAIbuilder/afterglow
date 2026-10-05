@@ -1,4 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -93,6 +94,7 @@ function FullProfile() {
 
   const social = useSocial();
   const me = social.profile;
+  const backdrop = useProfileBackdrop(me);
   const { going } = useGoing();
   const { ratings } = useRatings();
   const { reactions } = useReactions();
@@ -190,7 +192,7 @@ function FullProfile() {
       <PageTitle title="Profile" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
-        <ProfileCover url={me?.coverUrl} height={insets.top + COVER_H} />
+        <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
             {me ? `@${me.handle}` : 'Profile'}

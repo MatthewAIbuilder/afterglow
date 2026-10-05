@@ -27,8 +27,11 @@ import { useReactions } from '../state/reactions';
 import { useMySupport } from '../state/supportSeen';
 import { useSocial } from '../state/social';
 import { useSprouts } from '../state/sprouts';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, THEME_ID, type } from '../theme/tokens';
+import { useProfileBackdrop } from '../features/profile/useProfileBackdrop';
 import { useToes } from '../features/toes/useToes';
+import { themeOf } from '../features/themes/themes';
+import { backdropOf } from '../features/profile/backdrops';
 
 /**
  * Settings and more, from the menu on Profile: your account, the lists
@@ -49,6 +52,7 @@ export default function SettingsScreen() {
   const catalog = useCatalog();
   const social = useSocial();
   const me = social.profile;
+  const shownBackdrop = useProfileBackdrop(me);
   const { memories } = useMemories();
   const { reactions } = useReactions();
   const pool = useClipPool();
@@ -100,6 +104,11 @@ export default function SettingsScreen() {
           />
           <Row label="Your sound" detail="Breakdown" onPress={() => router.push('/your-sound')} />
           {yearCard ? <Row label={`Your ${year}`} detail={yearCard.subtitle.endsWith('so far') ? 'So far' : 'Ready to share'} onPress={() => router.push({ pathname: '/year/[year]', params: { year: String(year) } })} /> : null}
+        </Group>
+
+        <Group title="Look">
+          <Row label="App theme" detail={themeOf(THEME_ID).name} a11y={`App theme: ${themeOf(THEME_ID).name}. Change the colours of the whole app`} onPress={() => router.push('/themes')} />
+          {me ? <Row label="Profile background" detail={backdropOf(shownBackdrop)?.name ?? 'Cover photo'} onPress={() => router.push('/backdrop')} /> : null}
         </Group>
 
         <Group title="Fun">

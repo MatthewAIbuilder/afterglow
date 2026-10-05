@@ -11,7 +11,7 @@ import { PICK_PAGE, pickCandidates, pickDoneLabel } from '../features/taste/quic
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useRatings } from '../state/ratings';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, nightA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
 /**
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   nameOn: { color: color.moon },
   more: { alignSelf: 'center', marginTop: space.lg, paddingVertical: space.sm, paddingHorizontal: space.xl, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   moreText: { ...type.label, color: color.moonDim },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.lg, backgroundColor: 'rgba(10,9,24,0.92)' },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.lg, backgroundColor: nightA(0.92) },
   primary: { minHeight: 54, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep, alignSelf: 'center', width: '100%', maxWidth: 520 },
   quiet: { backgroundColor: color.glass },
   primaryText: { ...type.headline, color: color.moon },

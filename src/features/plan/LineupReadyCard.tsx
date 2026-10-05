@@ -5,7 +5,7 @@ import { stageName } from '../../data/festival';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { countdown, isLive } from '../festivals/when';
 import { LiveNow } from './LiveNow';
@@ -91,9 +91,9 @@ const styles = StyleSheet.create({
     marginBottom: space.xl,
     padding: space.xl,
     borderRadius: radius.lg + 4,
-    backgroundColor: 'rgba(169,124,255,0.14)',
+    backgroundColor: glowA(0.14),
     borderWidth: 1,
-    borderColor: 'rgba(169,124,255,0.55)',
+    borderColor: glowA(0.55),
     shadowColor: color.glow,
     shadowOpacity: 0.35,
     shadowRadius: 18,

@@ -9,7 +9,7 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { EMAIL_RE, PASSWORD_MIN } from '../features/social/validate';
 import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: color.moonDim },
   segment: { flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: color.glass, marginTop: space.sm },
   segmentItem: { flex: 1, paddingVertical: space.sm, borderRadius: radius.pill, alignItems: 'center' },
-  segmentOn: { backgroundColor: 'rgba(169,124,255,0.25)' },
+  segmentOn: { backgroundColor: glowA(0.25) },
   segmentText: { ...type.label, color: color.moonDim },
   segmentTextOn: { color: color.moon },
   input: {
@@ -216,9 +216,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: space.md,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.3)',
+    backgroundColor: glowA(0.3),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.6)',
+    borderColor: glowA(0.6),
     marginTop: space.sm,
   },
   primaryText: { ...type.headline, color: color.moon },

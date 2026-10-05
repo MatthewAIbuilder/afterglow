@@ -44,7 +44,7 @@ import { useCrewChat } from '../../state/crewChat';
 import { chatPreview, unreadLine } from '../crews/chat';
 import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA, glowDeepA } from '../../theme/tokens';
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 
 /** How many of your festivals are asked who else is going. */
@@ -152,7 +152,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
             accessibilityHint="Opens the crew’s chat"
             style={({ pressed }) => [styles.crewCard, pressed && styles.pressed]}
           >
-            <LinearGradient colors={['rgba(107,63,224,0.28)', 'rgba(107,63,224,0.04)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <LinearGradient colors={[glowDeepA(0.28), glowDeepA(0.04)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <CrewOrb name={c.name} people={faces} total={mates.length || 1} size={64} />
             <View style={styles.crewText}>
               <Text style={styles.cardTitle} numberOfLines={1}>
@@ -414,22 +414,22 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   hero: { marginTop: space.xl, padding: space.xl, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', gap: space.md },
-  heroIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(169,124,255,0.16)' },
+  heroIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.16) },
   heroTitle: { ...type.title, color: color.moon, textAlign: 'center' },
   heroBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
   primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
   primaryText: { ...type.headline, color: color.moon },
   link: { ...type.label, color: color.glow },
   section: { gap: space.sm },
-  crewCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.28)', overflow: 'hidden' },
+  crewCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.28), overflow: 'hidden' },
   crewText: { flex: 1, gap: 1 },
   chips: { flexDirection: 'row', gap: space.xs, marginTop: space.xs },
   chip: { paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: 'rgba(243,240,255,0.08)' },
   chipText: { ...type.caption, color: color.moonDim },
-  chipNew: { backgroundColor: 'rgba(169,124,255,0.22)' },
+  chipNew: { backgroundColor: glowA(0.22) },
   chipNewText: { color: color.moon },
   card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  startCard: { borderStyle: 'dashed', borderColor: 'rgba(169,124,255,0.45)' },
+  startCard: { borderStyle: 'dashed', borderColor: glowA(0.45) },
   plusCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glow },
   cardTitle: { ...type.headline, color: color.moon },
   cardDetail: { ...type.caption, color: color.moonDim, marginTop: 2 },

@@ -136,6 +136,15 @@ jest.mock('expo-file-system', () => {
     delete() {
       files.delete(this.uri);
     }
+    create() {
+      if (!files.has(this.uri)) files.set(this.uri, '');
+    }
+    write(content: string) {
+      files.set(this.uri, content);
+    }
+    textSync() {
+      return files.get(this.uri) ?? '';
+    }
   }
   class Directory {
     uri: string;

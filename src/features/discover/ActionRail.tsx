@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import { color, motion, space, type } from '../../theme/tokens';
+import { color, motion, space, type, nightA } from '../../theme/tokens';
 import { HeartIcon, SaveIcon, SkipIcon } from './icons';
 
 type Props = {
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(10,9,24,0.35)',
+    backgroundColor: nightA(0.35),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },

@@ -7,7 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useCommunity } from '../../state/community';
 import { useSocial } from '../../state/social';
-import { color, space, type } from '../../theme/tokens';
+import { color, space, type, nightA } from '../../theme/tokens';
 import { crowdVideos } from '../community/crowd';
 import { pastShort } from '../memories/past';
 import type { SharedMemory } from '../social/models';
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   title: { ...type.title, fontSize: 22, color: color.moon },
   count: { ...type.caption, color: color.moonFaint },
   tile: { width: TILE_W, height: TILE_H, borderRadius: 14, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%', backgroundColor: 'rgba(10,9,24,0.55)' },
+  shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%', backgroundColor: nightA(0.55) },
   info: { position: 'absolute', left: 7, right: 7, bottom: 7, gap: 1 },
   where: { ...type.caption, fontWeight: '700', color: color.moon },
   handle: { ...type.caption, fontSize: 10, color: color.moonDim },

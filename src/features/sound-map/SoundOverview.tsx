@@ -6,7 +6,7 @@ import { ChevronIcon } from '../../components/TabIcons';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Artist } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { soundFocus } from '../discover/focus';
 import type { SoundShare } from '../taste/lean';
 import { SOUND_COLOR, withAlpha } from './colors';
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   rowTitle: { ...type.label, color: color.moon },
   rowBody: { ...type.caption, color: color.moonDim, marginTop: 2 },
   inline: { paddingHorizontal: space.sm, paddingTop: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
-  mapButton: { alignSelf: 'center', paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.18)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)' },
+  mapButton: { alignSelf: 'center', paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: glowA(0.18), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45) },
   mapButtonText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
 });

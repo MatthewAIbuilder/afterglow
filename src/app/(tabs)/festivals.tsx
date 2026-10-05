@@ -39,7 +39,7 @@ import { useGoing } from '../../state/going';
 import { useWeekends } from '../../state/weekends';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 const LOVE = 0.8;
 /** Tiles on the For you shelf are this big. */
@@ -476,9 +476,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: 4,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   title: { ...type.largeTitle, color: color.moon },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
@@ -492,9 +492,9 @@ const styles = StyleSheet.create({
     paddingRight: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(169,124,255,0.18)',
+    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },

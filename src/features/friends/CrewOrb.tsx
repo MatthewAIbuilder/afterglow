@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { PersonAvatar } from '../../components/PersonAvatar';
-import { color } from '../../theme/tokens';
+import { color, glowA, glowDeepA } from '../../theme/tokens';
 import { crewOrbPlaces } from './orbit';
 
 type Face = { name?: string; url?: string };
@@ -20,9 +20,9 @@ export function CrewOrb({ name, people, total, size }: { name: string; people: r
   return (
     <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {/* The glow and the faint ring the faces sit on. */}
-      <LinearGradient colors={['rgba(107,63,224,0.55)', 'rgba(58,35,128,0.25)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: size / 2 }]} />
+      <LinearGradient colors={[glowDeepA(0.55), 'rgba(58,35,128,0.25)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: size / 2 }]} />
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        <Circle cx={size / 2} cy={size / 2} r={size / 2 - 1} stroke="rgba(169,124,255,0.45)" strokeWidth={1} fill="none" />
+        <Circle cx={size / 2} cy={size / 2} r={size / 2 - 1} stroke={glowA(0.45)} strokeWidth={1} fill="none" />
         <Circle cx={size / 2} cy={size / 2} r={size * 0.3} stroke="rgba(243,240,255,0.10)" strokeWidth={1} strokeDasharray="2 4" fill="none" />
       </Svg>
       {shown.length ? (

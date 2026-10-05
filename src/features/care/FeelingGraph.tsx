@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
-import { color, space, type } from '../../theme/tokens';
+import { color, space, type, glowA } from '../../theme/tokens';
 import { elapsed, type FeelingPoint, MOOD_LABEL } from './care';
 import { LEVEL_COLOR } from './feelings';
 import type { GuideEntry } from './guide';
@@ -47,7 +47,7 @@ export function FeelingGraph({ start, now, points, entry, doses }: { start: numb
               <>
                 <Rect x={x(entry.onset[0])} y={0} width={Math.max(0, x(entry.onset[1]) - x(entry.onset[0]))} height={HEIGHT} fill="rgba(255,184,107,0.10)" />
                 <Rect x={x(entry.onset[1])} y={0} width={Math.max(0, x(entry.peak[1]) - x(entry.onset[1]))} height={HEIGHT} fill="rgba(255,126,182,0.13)" />
-                <Rect x={x(entry.peak[1])} y={0} width={Math.max(0, x(entry.total[1]) - x(entry.peak[1]))} height={HEIGHT} fill="rgba(169,124,255,0.10)" />
+                <Rect x={x(entry.peak[1])} y={0} width={Math.max(0, x(entry.total[1]) - x(entry.peak[1]))} height={HEIGHT} fill={glowA(0.10)} />
               </>
             ) : null}
             {[1, 3, 5].map((l) => (
@@ -83,7 +83,7 @@ export function FeelingGraph({ start, now, points, entry, doses }: { start: numb
             <>
               <Key fill="rgba(255,184,107,0.45)" label="Coming up" />
               <Key fill="rgba(255,126,182,0.5)" label="Strongest" />
-              <Key fill="rgba(169,124,255,0.45)" label="Wearing off" />
+              <Key fill={glowA(0.45)} label="Wearing off" />
             </>
           ) : null}
           {doses?.length ? <Key fill="#FF7EB6" label="Took more" thin /> : null}

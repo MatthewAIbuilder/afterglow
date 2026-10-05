@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { stageName } from '../../data/festival';
 import type { Festival } from '../../data/types';
 import { useNow } from '../../lib/useNow';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { liveNow, liveRoute } from './live';
 import type { Schedule, TimedPick } from './plan';
@@ -110,9 +110,9 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
     padding: space.lg,
     borderRadius: radius.lg,
-    backgroundColor: 'rgba(169,124,255,0.12)',
+    backgroundColor: glowA(0.12),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.45)',
+    borderColor: glowA(0.45),
   },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow },

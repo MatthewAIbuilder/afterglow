@@ -10,7 +10,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { color } from '../../theme/tokens';
+import { color, nightA } from '../../theme/tokens';
 
 type Props = {
   /** The video's own still: its colours become the light around the player. */
@@ -48,7 +48,7 @@ export function AmbientBackdrop({ uri, playing, reduceMotion }: Props) {
       </Animated.View>
       <View style={[StyleSheet.absoluteFill, styles.dim]} />
       <LinearGradient
-        colors={['rgba(10,9,24,0.85)', 'rgba(10,9,24,0)', 'rgba(10,9,24,0)', 'rgba(10,9,24,0.9)']}
+        colors={[nightA(0.85), nightA(0), nightA(0), nightA(0.9)]}
         locations={[0, 0.3, 0.55, 1]}
         style={StyleSheet.absoluteFill}
       />

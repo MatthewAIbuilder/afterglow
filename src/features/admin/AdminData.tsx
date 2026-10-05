@@ -13,7 +13,7 @@ import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
 import { useLivePatches } from '../../state/livePatches';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { matchesName } from '../festivals/search';
 import { DROP_FILES_MAX, type Drop, type SetTimesTip } from '../social/models';
@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   wrap: { paddingHorizontal: space.lg, gap: space.md },
   lead: { ...type.body, color: color.moonDim },
   card: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  reviewCard: { borderColor: 'rgba(169,124,255,0.55)', backgroundColor: 'rgba(169,124,255,0.08)' },
+  reviewCard: { borderColor: glowA(0.55), backgroundColor: glowA(0.08) },
   cardTitle: { ...type.headline, color: color.moon, flexShrink: 1 },
   kicker: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 1 },
   body: { ...type.body, color: color.moon },
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
   fileRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 4 },
   fileName: { ...type.label, color: color.moon, flex: 1 },
   remove: { fontSize: 20, color: color.moonFaint, paddingHorizontal: 4 },
-  savedNote: { padding: space.md, borderRadius: radius.md, backgroundColor: 'rgba(169,124,255,0.1)' },
+  savedNote: { padding: space.md, borderRadius: radius.md, backgroundColor: glowA(0.1) },
   preview: { padding: space.md, borderRadius: radius.md, backgroundColor: 'rgba(0,0,0,0.25)', gap: 2 },
   previewLine: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   buttons: { flexDirection: 'row', gap: space.sm, justifyContent: 'flex-end', flexWrap: 'wrap' },
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.45 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   dropHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm, justifyContent: 'space-between' },
-  status: { paddingHorizontal: space.sm, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.2)' },
+  status: { paddingHorizontal: space.sm, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: glowA(0.2) },
   statusWaiting: { backgroundColor: 'rgba(255,184,107,0.22)' },
   statusDone: { backgroundColor: 'rgba(255,255,255,0.08)' },
   statusText: { ...type.caption, color: color.moon },

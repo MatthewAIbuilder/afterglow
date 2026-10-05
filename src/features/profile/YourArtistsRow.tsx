@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { haptic } from '../../lib/haptics';
-import { color, space, type } from '../../theme/tokens';
+import { color, space, type, glowA } from '../../theme/tokens';
 import { HeartIcon } from '../discover/icons';
 import { mixColor, withAlpha } from '../sound-map/colors';
 import type { Favourite } from './identity';
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: color.night,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.6)',
+    borderColor: glowA(0.6),
   },
   name: { ...type.caption, color: color.moon, marginTop: 6, textAlign: 'center' },
 });

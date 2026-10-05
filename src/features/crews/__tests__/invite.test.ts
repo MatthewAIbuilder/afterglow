@@ -11,6 +11,8 @@ const p = (uid: string, displayName: string, festivals: string[] = []): Profile 
   sounds: [],
   showFestivals: true,
   showSound: false,
+  artists: [],
+  showArtists: true,
   createdAt: '',
   updatedAt: '',
 });

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA, raisedA } from '../../theme/tokens';
 import { BACK_ONLINE_MS, isOffline, NOTICE_TEXT, OFFLINE_AFTER_MS, type Notice } from './status';
 
 /**
@@ -64,11 +64,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(18,16,38,0.92)',
+    backgroundColor: raisedA(0.92),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  back: { borderColor: 'rgba(169,124,255,0.45)' },
+  back: { borderColor: glowA(0.45) },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.moonFaint },
   dotBack: { backgroundColor: color.glow },
   text: { ...type.caption, color: color.moon },

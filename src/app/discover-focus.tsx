@@ -20,7 +20,7 @@ import { useCatalog } from '../state/catalog';
 import { useCommunity } from '../state/community';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA, glowDeepA, nightA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
 
@@ -172,7 +172,7 @@ export default function DiscoverFocusScreen() {
                     style={({ pressed }) => [styles.festival, selected && styles.selected, pressed && styles.pressed]}
                   >
                     <FestivalCover photos={cover} style={StyleSheet.absoluteFill} />
-                    {cover.length ? <LinearGradient colors={['rgba(10,9,24,0.88)', 'rgba(10,9,24,0.35)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} /> : null}
+                    {cover.length ? <LinearGradient colors={[nightA(0.88), nightA(0.35)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} /> : null}
                     <View style={styles.rowText}>
                       <Text style={styles.festivalName} numberOfLines={1}>
                         {festival.name}
@@ -300,7 +300,7 @@ function Tile({ title, detail, label, selected, onPress, art, wide }: { title: s
       style={({ pressed }) => [styles.tile, wide ? styles.tileWide : styles.tileHalf, selected && styles.tileOn, pressed && styles.pressed]}
     >
       <LinearGradient
-        colors={selected ? ['rgba(107,63,224,0.55)', 'rgba(58,35,128,0.18)'] : ['rgba(107,63,224,0.22)', 'rgba(255,255,255,0.03)']}
+        colors={selected ? [glowDeepA(0.55), 'rgba(58,35,128,0.18)'] : [glowDeepA(0.22), 'rgba(255,255,255,0.03)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   tileHalf: { flex: 1, minHeight: 132 },
   tileWide: { flexDirection: 'row', alignItems: 'center', marginTop: space.lg },
-  tileOn: { borderColor: 'rgba(169,124,255,0.75)', borderWidth: 1.5, shadowColor: color.glow, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 0 } },
+  tileOn: { borderColor: glowA(0.75), borderWidth: 1.5, shadowColor: color.glow, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 0 } },
   tileTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   tileTitle: { ...type.headline, color: color.moon },
   tileDetail: { ...type.caption, color: color.moonDim, marginTop: 2 },
@@ -383,8 +383,8 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   festivalName: { ...type.headline, color: color.moon },
-  selected: { borderColor: 'rgba(169,124,255,0.75)', borderWidth: 1.5 },
-  going: { paddingHorizontal: space.sm, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.22)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.5)' },
+  selected: { borderColor: glowA(0.75), borderWidth: 1.5 },
+  going: { paddingHorizontal: space.sm, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: glowA(0.22), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
   goingText: { ...type.caption, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.985 }] },
   rowText: { flex: 1 },

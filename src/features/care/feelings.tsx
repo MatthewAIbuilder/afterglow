@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { HELP_MOODS, type Mood, MOOD_LABEL, MOOD_LEVEL, MOODS } from './care';
 
 /** A colour per graph level: 5 bright mint down to 1 soft coral. */
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   },
   chipCompact: { flexDirection: 'row', gap: space.sm, flexBasis: 'auto', flexGrow: 0, minHeight: 36, paddingVertical: 0, paddingHorizontal: space.sm + 2, borderRadius: radius.pill },
   chipCareful: { borderColor: 'rgba(255,140,140,0.35)' },
-  chipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.6)' },
+  chipOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.6) },
   dot: { width: 10, height: 10, borderRadius: 5 },
   text: { ...type.label, fontSize: 13, letterSpacing: -0.2, color: color.moon, textAlign: 'center' },
   textCompact: { ...type.caption, color: color.moon },

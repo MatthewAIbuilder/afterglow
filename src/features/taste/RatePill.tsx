@@ -3,7 +3,7 @@ import type { Artist } from '../../data/models';
 import { showActionSheet } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { useRatings } from '../../state/ratings';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { HeartIcon } from '../discover/icons';
 import { isWarm, RATING_LABEL, RATINGS } from './ratings';
 
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  warm: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.45)' },
+  warm: { backgroundColor: glowA(0.18), borderColor: glowA(0.45) },
   cold: { borderColor: 'rgba(255,255,255,0.22)' },
   text: { ...type.label, color: color.moon },
 });

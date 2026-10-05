@@ -23,7 +23,7 @@ import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
 import { useNow } from '../lib/useNow';
 import { useCare } from '../state/care';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 const HARM_REDUCTION_URL = 'https://dancesafe.org';
 
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   remindTitle: { ...type.label, color: color.moon },
   remindRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
   remindChip: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  remindChipOn: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.5)' },
+  remindChipOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.5) },
   remindChipText: { ...type.caption, color: color.moonDim },
   help: { marginTop: space.xxl, padding: space.lg, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(255,120,120,0.07)', borderWidth: 1, borderColor: 'rgba(255,140,140,0.3)' },
   helpFirst: { marginTop: space.xl },

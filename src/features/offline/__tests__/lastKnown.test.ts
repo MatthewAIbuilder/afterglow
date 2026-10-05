@@ -13,6 +13,8 @@ const profile = (uid: string, name: string): Profile => ({
   sounds: [],
   showFestivals: false,
   showSound: false,
+  artists: [],
+  showArtists: true,
   createdAt: '2026-11-01T00:00:00.000Z',
   updatedAt: '2026-11-01T00:00:00.000Z',
 });

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { DayCount } from './admin';
 import type { Bucket, Cohort, Share } from './metrics';
 import { hourLabel } from './metrics';
@@ -250,7 +250,7 @@ export function RankList({ title, rows, empty, unit }: { title: string; rows: { 
 /** Who came back, by the week they arrived. */
 export function CohortTable({ cohorts }: { cohorts: Cohort[] }) {
   const cell = (v: number | undefined) => (v === undefined ? '–' : `${v}%`);
-  const shade = (v: number | undefined) => (v === undefined ? 'transparent' : `rgba(169,124,255,${0.08 + (v / 100) * 0.5})`);
+  const shade = (v: number | undefined) => (v === undefined ? 'transparent' : glowA(0.08 + (v / 100) * 0.5));
   return (
     <Card>
       <Text style={styles.chartTitle}>Who came back</Text>
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   sectionNote: { ...type.caption, color: color.moonDim },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   tile: { flexBasis: '47%', flexGrow: 1, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, gap: 2 },
-  tileGlow: { borderColor: 'rgba(169,124,255,0.45)' },
+  tileGlow: { borderColor: glowA(0.45) },
   tileGold: { borderColor: 'rgba(245,194,75,0.5)', backgroundColor: 'rgba(245,194,75,0.07)' },
   tileWarn: { borderColor: 'rgba(255,184,107,0.55)', backgroundColor: 'rgba(255,184,107,0.08)' },
   tileLabel: { ...type.caption, color: color.moonDim },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   chartNote: { ...type.caption, color: color.moonDim, marginTop: 2 },
   bars: { flexDirection: 'row', alignItems: 'flex-end', height: 110, marginTop: space.md },
   barCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' },
-  bar: { width: '100%', borderTopLeftRadius: 3, borderTopRightRadius: 3, backgroundColor: 'rgba(169,124,255,0.55)' },
+  bar: { width: '100%', borderTopLeftRadius: 3, borderTopRightRadius: 3, backgroundColor: glowA(0.55) },
   barToday: { backgroundColor: color.glow, opacity: 1 },
   barN: { fontSize: 9, color: color.moonDim, marginBottom: 2 },
   axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },

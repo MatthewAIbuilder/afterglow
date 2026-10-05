@@ -1,7 +1,8 @@
 import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
+import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportReply, type SupportTopic } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 import { cleanHunt, cleanName, type Hunt, isHuntId, isStickerCode, type Sticker } from '../../finds/finds';
 
@@ -28,12 +29,38 @@ export function profileFromDoc(uid: string, d: unknown): Profile | null {
     coverUrl: https(o.coverUrl),
     festivals: strs(o.festivals, 50),
     sounds: strs(o.sounds, 3).filter((s): s is SoundTag => (SOUND_TAGS as readonly string[]).includes(s)),
+    artists: strs(o.artists, ARTISTS_SHOWN),
     showFestivals: o.showFestivals === true,
     showSound: o.showSound === true,
     ...(Object.keys(cleanSocials(o)).length ? { socials: cleanSocials(o) } : {}),
+    showArtists: o.showArtists !== false,
+    backdrop: cleanBackdrop(o.backdrop),
     createdAt: str(o.createdAt) ?? '',
     updatedAt: str(o.updatedAt) ?? '',
   };
+}
+
+/** The fields added after the first rules (favourite artists, the animated background, your socials). */
+export const NEWER_PROFILE_FIELDS = ['artists', 'showArtists', 'backdrop', 'instagram', 'snapchat', 'tiktok'] as const;
+
+/**
+ * A profile as it's written: optional fields only when set (the database
+ * refuses empty values). `legacy` leaves out the newer fields, for a
+ * database whose rules don't know them yet.
+ */
+export function profileToDoc(p: Profile, legacy = false): Record<string, unknown> {
+  const { uid: _uid, avatarUrl, coverUrl, backdrop, socials, ...fields } = p;
+  const out: Record<string, unknown> = {
+    ...fields,
+    // Usernames as their own fields (instagram, snapchat, tiktok; the rules list no `socials`).
+    ...(socials ?? {}),
+    nameLower: p.displayName.toLowerCase(),
+    ...(avatarUrl ? { avatarUrl } : {}),
+    ...(coverUrl ? { coverUrl } : {}),
+    ...(backdrop ? { backdrop } : {}),
+  };
+  if (legacy) for (const k of NEWER_PROFILE_FIELDS) delete out[k];
+  return out;
 }
 
 export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {
@@ -112,15 +139,8 @@ export function crewInviteFromDoc(id: string, d: unknown): CrewInvite | null {
   return { id, crewId, festivalId, crewName: (str(o.crewName) ?? '').slice(0, 40), from, to, at: timeOf(o.createdAt) ?? new Date().toISOString() };
 }
 
-/**
- * A profile as its Firestore fields: usernames as their own fields
- * (instagram, snapchat, tiktok; the rules list no `socials`), no uid, the
- * lowercase name for search, and photo links only when set.
- */
-export function profileFields(p: Profile): Record<string, unknown> {
-  const { uid: _uid, avatarUrl, coverUrl, socials, ...fields } = p;
-  return { ...fields, ...(socials ?? {}), nameLower: p.displayName.toLowerCase(), ...(avatarUrl ? { avatarUrl } : {}), ...(coverUrl ? { coverUrl } : {}) };
-}
+/** A profile as its Firestore fields (see profileToDoc). */
+export const profileFields = (p: Profile): Record<string, unknown> => profileToDoc(p);
 
 /** A sprout document. */
 export function sproutFromDoc(id: string, d: unknown): Sprout | null {

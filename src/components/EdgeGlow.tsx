@@ -2,6 +2,7 @@ import { useEffect, useId } from 'react';
 import { Platform, StyleSheet, type StyleProp, View, type ViewStyle } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, G, LinearGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import { color } from '../theme/tokens';
 
 /** Festival light: the colours the glow runs through, corner to corner. */
 export const GLOW_COLORS = ['#A97CFF', '#FF7EB6', '#FFB86B', '#6FC3FF', '#A97CFF'] as const;
@@ -82,7 +83,7 @@ export function EdgeGlow({ width, height, radius, inset = 0, label, active = tru
           {label ? (
             <G>
               {/* A small banner over the line, so the word reads like it's set into the light. */}
-              <Rect x={x - 7.5} y={gapTop - 6} width={15} height={textLen + 12} rx={7.5} fill="#0A0918" opacity={0.78} />
+              <Rect x={x - 7.5} y={gapTop - 6} width={15} height={textLen + 12} rx={7.5} fill={color.night} opacity={0.78} />
               <SvgText
                 x={x}
                 y={gapTop}

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { SOUND_LABEL } from '../../data/models';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { SoundShare } from './lean';
 import { SOUND_COLOR } from '../sound-map/colors';
 
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 4 },
   label: { ...type.label, color: color.moon, flexShrink: 1 },
   track: { flex: 1, height: 8, borderRadius: radius.pill, backgroundColor: color.glass, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.7)' },
+  fill: { height: '100%', borderRadius: radius.pill, backgroundColor: glowA(0.7) },
   top: { backgroundColor: color.glow },
   percent: { ...type.label, color: color.moonDim, width: 40, textAlign: 'right', fontVariant: ['tabular-nums'] },
 });

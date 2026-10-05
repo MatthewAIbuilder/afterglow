@@ -1,7 +1,7 @@
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 /**
  * A festival's official links, from the catalogue: "Get tickets" (until the
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  tickets: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.4)' },
+  tickets: { backgroundColor: glowA(0.18), borderColor: glowA(0.4) },
   ticketsText: { ...type.label, color: color.moon },
   text: { ...type.label, color: color.moonDim },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },

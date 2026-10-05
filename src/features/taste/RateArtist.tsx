@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useRatings } from '../../state/ratings';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { HeartIcon } from '../discover/icons';
 import { RATING_LABEL, type Rating } from './ratings';
 
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  on: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.4)' },
+  on: { backgroundColor: glowA(0.18), borderColor: glowA(0.4) },
   coldOn: { backgroundColor: color.glass, borderColor: 'rgba(255,255,255,0.22)' },
   pressed: { opacity: 0.7 },
   text: { ...type.label, color: color.moonDim },

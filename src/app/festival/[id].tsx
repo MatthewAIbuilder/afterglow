@@ -13,7 +13,7 @@ import { useWeekends } from '../../state/weekends';
 import { SHARE_PICKS_MAX } from '../../features/messages/shares';
 import { haptic } from '../../lib/haptics';
 import type { Artist } from '../../data/models';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 export default function FestivalScreen() {
   const { id, must } = useLocalSearchParams<{ id: string; must?: string }>();
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   picks: { gap: space.sm, padding: space.md, marginHorizontal: space.xl, marginBottom: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   picksTitle: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: 'rgba(169,124,255,0.16)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.4)' },
+  chip: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: glowA(0.16), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.4) },
   chipText: { ...type.label, color: color.moon },
   pressed: { opacity: 0.7 },
 });

@@ -5,9 +5,9 @@ import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { agoShort, inFilter, type SupportFilter, topicLabel, mailtoLink } from './admin';
 import { repliesOf, type SupportMessage } from '../social/models';
-import { agoShort, inFilter, mailtoLink, type SupportFilter, topicLabel } from './admin';
 
 /**
  * Support messages, newest first: who sent it, what about, when, from which
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   tagDone: { color: '#5BE3B5', backgroundColor: 'rgba(91,227,181,0.12)' },
   meta: { ...type.caption, color: color.moonFaint },
   text: { ...type.body, color: color.moon },
-  replied: { padding: space.md, gap: 2, borderRadius: radius.md, backgroundColor: 'rgba(169,124,255,0.12)' },
+  replied: { padding: space.md, gap: 2, borderRadius: radius.md, backgroundColor: glowA(0.12) },
   repliedLabel: { ...type.caption, color: color.glow },
   repliedText: { ...type.body, color: color.moon },
   replyRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },

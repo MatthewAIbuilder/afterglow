@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { LABEL_MAX } from './care';
 import { GUIDE, rangeText } from './guide';
 
@@ -76,9 +76,9 @@ export function StartStopwatch({ onStart }: { onStart: (label: string, guide?: s
 }
 
 const styles = StyleSheet.create({
-  start: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(169,124,255,0.55)' },
+  start: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: glowA(0.55) },
   startText: { ...type.headline, color: color.glow },
-  panel: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(169,124,255,0.45)' },
+  panel: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45) },
   title: { ...type.headline, color: color.moon },
   sub: { ...type.caption, color: color.moonDim },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xs },

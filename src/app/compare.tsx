@@ -23,7 +23,7 @@ import { useRatings } from '../state/ratings';
 import { useTaste } from '../state/taste';
 import { useLoves } from '../state/useLoves';
 import { useWeekends } from '../state/weekends';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 /** "A", "A and B", "A, B and C". */
 const andList = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : (xs[0] ?? ''));
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  columnBest: { borderColor: 'rgba(169,124,255,0.6)', backgroundColor: 'rgba(169,124,255,0.1)' },
+  columnBest: { borderColor: glowA(0.6), backgroundColor: glowA(0.1) },
   bestTag: { ...type.caption, color: color.glow, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: space.xs },
   name: { ...type.headline, color: color.moon, paddingRight: space.md },
   meta: { ...type.caption, color: color.moonDim, marginTop: space.xs },

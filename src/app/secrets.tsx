@@ -7,7 +7,7 @@ import { PageTitle } from '../components/PageTitle';
 import { SECRET_GLOW, SECRETS, secretsLine } from '../features/secrets/secrets';
 import { haptic } from '../lib/haptics';
 import { revealSecret, useSecrets } from '../state/secrets';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, glowA } from '../theme/tokens';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const foundOn = (t: number) => {
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  found: { borderColor: color.glow, backgroundColor: 'rgba(169,124,255,0.1)' },
+  found: { borderColor: color.glow, backgroundColor: glowA(0.1) },
   lock: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass },
   lockOpen: { backgroundColor: color.glow },
   cardTitle: { ...type.headline, color: color.moon },

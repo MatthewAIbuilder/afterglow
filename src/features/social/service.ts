@@ -1,6 +1,6 @@
 import type { PastEvent } from '../memories/past';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
-import type { Activity, Comment, Crew, Sprout, SproutInput, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, DirectChat, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, SetTimesTip } from './models';
+import type { Published, Activity, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -44,12 +44,14 @@ export interface SocialService {
 
   profileOf(uid: string): Promise<Profile | null>;
   profileByHandle(handle: string): Promise<Profile | null>;
-  /** Saves your profile, claiming the handle; `festivals` and `sounds` are published only when switched on. */
-  saveProfile(input: ProfileInput, published: { festivals: string[]; sounds: Profile['sounds'] }): Promise<Profile>;
+  /** Saves your profile, claiming the handle; `festivals`, `sounds` and `artists` are published only when switched on. */
+  saveProfile(input: ProfileInput, published: Published): Promise<Profile>;
   /** Replace (a local image uri) or remove (null) your profile photo. */
   setAvatar(uri: string | null): Promise<Profile>;
   /** Set or remove the wide photo behind the top of your profile. */
   setCover(uri: string | null): Promise<Profile>;
+  /** Choose an animated background for the top of your profile (a `BACKDROPS` id, `'none'`), or null for the cover photo again. */
+  setBackdrop(id: string | null): Promise<Profile>;
   handleAvailable(handle: string): Promise<boolean>;
   /**
    * Become one of the first FOUNDERS_MAX people, if there's a spot left: your

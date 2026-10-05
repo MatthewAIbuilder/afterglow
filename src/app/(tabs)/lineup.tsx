@@ -17,7 +17,7 @@ import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 /**
  * Your lineup: the festival page for the festival you're going to (your plan
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
-  chipOn: { backgroundColor: 'rgba(169,124,255,0.18)', borderColor: 'rgba(169,124,255,0.6)', borderWidth: 1 },
+  chipOn: { backgroundColor: glowA(0.18), borderColor: glowA(0.6), borderWidth: 1 },
   chipWhen: { ...type.caption, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: color.moonFaint },
   chipText: { ...type.headline, fontSize: 15, lineHeight: 19, color: color.moonDim },
   chipSoon: { ...type.caption, color: color.moonFaint },
@@ -155,9 +155,9 @@ const styles = StyleSheet.create({
     padding: space.lg,
     gap: space.md,
     borderRadius: radius.lg,
-    backgroundColor: 'rgba(169,124,255,0.10)',
+    backgroundColor: glowA(0.10),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(169,124,255,0.4)',
+    borderColor: glowA(0.4),
   },
   nudge: { ...type.body, color: color.moonDim },
   browse: { alignSelf: 'flex-start', paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glow },
