@@ -6,6 +6,7 @@ import { forgetQuestTip } from '../src/state/questTip';
 import { forgetCareTip } from '../src/state/careTip';
 import { forgetFestivalWeek } from '../src/state/festivalWeek';
 import { forgetShowLevel } from '../src/state/showLevel';
+import { forgetCloseFriends } from '../src/state/closeFriends';
 import { forgetScouted } from '../src/state/scouted';
 
 // Shared stores (daily quests, secrets, tips): start every test with fresh ones.
@@ -17,5 +18,6 @@ beforeEach(() => {
   forgetCareTip();
   forgetFestivalWeek();
   forgetShowLevel();
+  forgetCloseFriends();
   forgetScouted();
 });

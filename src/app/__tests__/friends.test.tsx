@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
+import { router } from 'expo-router';
 import { renderApp } from './appRoutes';
 
 /** The Friends hub through the real routes, with the in-memory backend. */
@@ -45,6 +46,29 @@ describe('Friends', () => {
     await fireEvent.press(app.getByText('Create your profile'));
     await flush();
     expect(app.getAllByText(/community guidelines/i).length).toBeGreaterThan(0);
+  });
+
+  it('close friends: starred on their profile, first on Friends, only on your phone', async () => {
+    await person('maya', 'Maya Lin', ['cyclops-cove-4']);
+    await s().signOut();
+    await person('sam', 'Sam');
+    const maya = [...mockSocial.profiles.values()].find((p) => p.handle === 'maya')!.uid;
+    await s().follow(maya);
+    const app = await renderApp('/friends');
+    await flush();
+    expect(app.getByText(/^Star your closest friends on their profile/)).toBeTruthy();
+    await act(async () => router.push('/u/maya'));
+    await flush();
+    const star = app.getByLabelText('Close friend: Maya Lin');
+    expect(star.props.accessibilityState).toMatchObject({ checked: false });
+    await fireEvent.press(star);
+    expect(app.getByLabelText('Close friend: Maya Lin').props.accessibilityState).toMatchObject({ checked: true });
+    await act(async () => router.push('/friends'));
+    await flush();
+    expect(app.getByText('Close friends')).toBeTruthy();
+    expect(app.getByLabelText('Maya Lin, going to Cyclops Cove 4')).toBeTruthy();
+    // Kept on this phone only, for this account; nothing about it reaches the server.
+    expect(JSON.parse((await AsyncStorage.getItem('closeFriends.v1')) ?? '{}')).toEqual({ [mockSocial.currentUser()!.uid]: [maya] });
   });
 
   it('shows who to follow back and who is going to your festivals, and starts a crew', async () => {
