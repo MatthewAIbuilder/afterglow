@@ -4,7 +4,9 @@ import { act, fireEvent } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Asset } from 'expo-media-library';
-import { ActionSheetIOS } from 'react-native';
+import { router } from 'expo-router';
+import { ActionSheetIOS, Alert } from 'react-native';
+import { SocialError } from '../../features/social/service';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 import { State } from 'react-native-gesture-handler';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
@@ -133,6 +135,32 @@ describe('past festivals', () => {
     const saved = JSON.parse((await AsyncStorage.getItem('memories.v1')) ?? '[]');
     expect(saved[0].past).toMatchObject({ name: 'Lost Lands', year: 2024 });
     expect(await mockSocial.service.memoriesOf(uid)).toHaveLength(0);
+  });
+
+  it('an unknown count (no signal) is never shown as shares left, and doesn’t stand in the way', async () => {
+    jest.spyOn(mockSocial.service, 'throwbackUsage').mockRejectedValue(new SocialError('network'));
+    const app = await tagOldVideo();
+    expect(app.queryByTestId('throwback-limit')).toBeNull();
+    expect(app.getByTestId('share-to-discover').props.value).toBe(true);
+  });
+
+  it('Share to profile says so at the limit before anything is uploaded', async () => {
+    const uid = mockSocial.currentUser()!.uid;
+    mockSocial.usage.set(uid, 3);
+    const app = await tagOldVideo();
+    await fireEvent.press(app.getByLabelText('Save to Memories'));
+    await flush();
+    const [m] = JSON.parse((await AsyncStorage.getItem('memories.v1')) ?? '[]');
+    await act(async () => router.push({ pathname: '/memory/[id]', params: { id: m.id } }));
+    await flush();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const upload = jest.spyOn(mockSocial.service, 'shareMemory');
+    await fireEvent.press(app.getByText('Share to profile'));
+    await flush();
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(alert.mock.calls[0][0]).toBe('Couldn’t share it');
+    expect(alert.mock.calls[0][1]).toMatch(/as many throwbacks as the free plan allows/);
+    expect(upload).not.toHaveBeenCalled();
   });
 
   it('with Afterglow Plus there is no limit', async () => {

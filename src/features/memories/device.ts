@@ -62,14 +62,40 @@ export async function recordedVideo(uri: string, durationSec: number, size?: { w
   return { uri, source: 'camera', durationSec: Math.max(1, Math.round(durationSec)), width: size?.width, height: size?.height, moment: await momentNow() };
 }
 
+/** Finding where you are gives up after this long (deep in a crowd the phone may never get a fix): the video comes first. */
+export const PLACE_TIMEOUT_MS = 6_000;
+
+/** A promise's answer, or undefined once `ms` have passed. */
+function within<T>(p: Promise<T>, ms: number): Promise<T | undefined> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(undefined), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      () => {
+        clearTimeout(t);
+        resolve(undefined);
+      },
+    );
+  });
+}
+
 /** Just recorded: now, and where you are (asking for location only while you use the app). */
 async function momentNow(): Promise<Moment> {
   const when = new Date();
   try {
     const perm = await Location.requestForegroundPermissionsAsync();
     if (!perm.granted) return { when };
-    const pos = (await Location.getLastKnownPositionAsync({ maxAge: 10 * 60_000 })) ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
-    return { when, place: await placeOf(pos.coords.latitude, pos.coords.longitude) };
+    const place = await within(
+      (async () => {
+        const pos = (await Location.getLastKnownPositionAsync({ maxAge: 10 * 60_000 })) ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+        return placeOf(pos.coords.latitude, pos.coords.longitude);
+      })(),
+      PLACE_TIMEOUT_MS,
+    );
+    return { when, place };
   } catch {
     return { when };
   }

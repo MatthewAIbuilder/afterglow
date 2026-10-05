@@ -175,6 +175,15 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     return getDownloadURL(task.snapshot.ref);
   }
   const removeFile = (path: string | undefined) => (path ? deleteObject(ref(fb().storage, path)).catch(() => {}) : Promise.resolve());
+  /** Remove a file, where only "it's already gone" counts as done; anything else (no signal) throws. */
+  const removeFileStrict = async (path: string | undefined) => {
+    if (!path) return;
+    try {
+      await deleteObject(ref(fb().storage, path));
+    } catch (e) {
+      if ((e as { code?: unknown } | null)?.code !== 'storage/object-not-found') throw e;
+    }
+  };
   /** A crew's updates (one person's, or everyone's when the crew ends), with their crew-only files. */
   async function removeUpdates(crewId: string, uid?: string) {
     const col = collection(fb().db, 'crews', crewId, 'updates');
@@ -420,6 +429,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const ext = videoType(input.videoUri) === 'video/quicktime' ? 'mov' : videoType(input.videoUri) === 'video/x-m4v' ? 'm4v' : 'mp4';
         const videoPath = `memories/${user.uid}/${memRef.id}.${ext}`;
         const thumbPath = input.thumbUri ? `memories/${user.uid}/${memRef.id}.jpg` : undefined;
+        // A throwback is counted: a few free and as many as you like with Plus. Checked before anything
+        // uploads, so a share past the limit never sends a whole video for nothing (the rules hold the same line).
+        const throwback = !input.festivalId && !!input.past;
+        const usageRef = doc(db, 'usage', user.uid);
+        let used = 0;
+        let plus = false;
+        if (throwback) {
+          used = Number((await getDoc(usageRef)).data()?.throwbacks) || 0;
+          plus = !!standingFromDocs(undefined, undefined, (await getDoc(doc(db, 'plus', user.uid)).catch(() => undefined))?.data()).plus;
+          if (!throwbackShares({ plus, used }).canShare) throw new SocialError('throwback-limit');
+        }
         try {
           const videoUrl = await upload(videoPath, input.videoUri, videoType(input.videoUri), (s) => onProgress?.(s * 0.95));
           const thumbUrl = input.thumbUri && thumbPath ? await upload(thumbPath, input.thumbUri, 'image/jpeg') : undefined;
@@ -447,12 +467,10 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             ...(input.width && input.height ? { width: input.width, height: input.height } : {}),
             createdAt: now(),
           };
-          if (!input.festivalId && input.past) {
-            // A throwback: counted, a few free and as many as you like with Plus (the rules hold the same line).
-            const usageRef = doc(db, 'usage', user.uid);
-            const used = Number((await getDoc(usageRef)).data()?.throwbacks) || 0;
-            const plus = standingFromDocs(undefined, undefined, (await getDoc(doc(db, 'plus', user.uid)).catch(() => undefined))?.data()).plus;
-            if (!throwbackShares({ plus: !!plus, used }).canShare) throw new SocialError('throwback-limit');
+          if (throwback) {
+            // The memory and the count move together (read again, in case another phone shared one meanwhile).
+            used = Number((await getDoc(usageRef)).data()?.throwbacks) || 0;
+            if (!throwbackShares({ plus, used }).canShare) throw new SocialError('throwback-limit');
             const b = writeBatch(db);
             b.set(memRef, shared);
             b.set(usageRef, { throwbacks: used + 1, memory: memRef.id });
@@ -484,6 +502,10 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           for (const d of liked.docs.slice(i, i + 400)) b.delete(d.ref);
           await b.commit();
         }
+        // The files go first, and must really go (a missing one counts as gone): a file is never left
+        // reachable once its doc is gone. If this stops part way, the doc is still there to try again from.
+        await removeFileStrict(data.videoPath);
+        await removeFileStrict(data.thumbPath);
         if (data.pastName) {
           // A throwback gives its place back.
           const usageRef = doc(fb().db, 'usage', user.uid);
@@ -493,8 +515,6 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           if (used > 0) b.set(usageRef, { throwbacks: used - 1, memory: id });
           await b.commit();
         } else await deleteDoc(memRef);
-        await removeFile(data.videoPath);
-        await removeFile(data.thumbPath);
       }),
     memoriesOf: (uid) =>
       guard(async () => {

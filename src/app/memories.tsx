@@ -13,6 +13,7 @@ import { useAddMemory } from '../features/memories/useAddMemory';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useMemories } from '../state/memories';
+import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
@@ -87,6 +88,8 @@ export default function MemoriesScreen() {
 }
 
 function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n: string) => string; lookup: Parameters<typeof memoryLine>[1] }) {
+  // Sharing to Discover: how far along, or waiting for signal (it goes by itself).
+  const { sharing, waiting } = useSocial();
   const untagged = section.key === UNTAGGED;
   return (
     <View style={styles.section}>
@@ -131,8 +134,12 @@ function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n
                     memory={m}
                     thumbUri={m.thumb ? uriOf(m.thumb) : undefined}
                     width={TILE}
-                    badge={untagged ? 'Tag' : undefined}
-                    label={untagged ? `Untagged memory. Tag it` : `Memory: ${memoryLine(m, lookup)}`}
+                    badge={untagged ? 'Tag' : m.id in sharing ? `${Math.round(sharing[m.id] * 100)}%` : waiting.has(m.id) ? 'Waiting' : undefined}
+                    label={
+                      untagged
+                        ? `Untagged memory. Tag it`
+                        : `Memory: ${memoryLine(m, lookup)}${m.id in sharing ? '. Sharing to Discover' : waiting.has(m.id) ? '. Waiting for signal to share to Discover' : ''}`
+                    }
                     onPress={() => (untagged ? router.push({ pathname: '/memory-tag', params: { id: m.id } }) : router.push({ pathname: '/memory/[id]', params: { id: m.id } }))}
                   />
                 ))}

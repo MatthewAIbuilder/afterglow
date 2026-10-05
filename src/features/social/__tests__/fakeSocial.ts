@@ -277,6 +277,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return [...profiles.values()].filter((p) => p.festivals.includes(festivalId)).slice(0, max);
     },
     async shareMemory(input: ShareInput, onProgress) {
+      if (network.down) throw new SocialError('network');
       const u = me();
       const p = profiles.get(u.uid);
       if (!p) throw new SocialError('no-profile');
@@ -308,6 +309,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return m;
     },
     async unshareMemory(id) {
+      if (network.down) throw new SocialError('network');
       const u = me();
       const m = memories.get(id);
       if (!m) return;
@@ -330,6 +332,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return [...memories.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
     async sharedMemory(id) {
+      if (network.noReads) throw new SocialError('network');
       return memories.get(id) ?? null;
     },
     async follow(uid) {
@@ -358,6 +361,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return { ...(founder ? { founder } : {}), ...(flair ? { flair } : {}), ...(plus.has(uid) ? { plus: true } : {}), ...(level ? { level } : {}) };
     },
     async throwbackUsage() {
+      if (network.down) throw new SocialError('network');
       return usage.get(me().uid) ?? 0;
     },
     async setLevel(level) {

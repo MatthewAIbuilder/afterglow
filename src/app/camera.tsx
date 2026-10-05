@@ -48,7 +48,9 @@ function Camera() {
   const [elapsed, setElapsed] = useState(0);
   const [hint, setHint] = useState<string | undefined>();
   const recording = rec.phase === 'recording';
-  const { setDraft } = useMemories();
+  const { setDraft, keepNow } = useMemories();
+  // Keeping the clip you just filmed (reading where you are, copying the file): the button waits meanwhile.
+  const [saving, setSaving] = useState(false);
   const pick = useMemoryPicker();
 
   // Where you are, when you're at a festival you're going to.
@@ -79,10 +81,24 @@ function Camera() {
         return;
       }
       haptic.settle();
-      setDraft(await recordedVideo(uri, length / 1000));
-      router.replace('/memory-tag');
+      setSaving(true);
+      try {
+        const video = await recordedVideo(uri, length / 1000);
+        // Kept straight away, untagged, so closing the app never loses it; the tagging sheet then tags it.
+        const kept = await keepNow(video);
+        // Gone back meanwhile: it's in your Memories (with a Tag badge), but don't open anything over where you are now.
+        if (leaving.current) return;
+        if (kept) router.replace({ pathname: '/memory-tag', params: { id: kept.id, fresh: '1' } });
+        else {
+          // Couldn't copy it (a full phone): tag it from where the camera left it, as before.
+          setDraft(video);
+          router.replace('/memory-tag');
+        }
+      } finally {
+        if (!leaving.current) setSaving(false);
+      }
     },
-    [setDraft],
+    [setDraft, keepNow],
   );
 
   const start = useCallback(
@@ -104,7 +120,7 @@ function Camera() {
   );
 
   const press = (type: 'press-in' | 'press-out' | 'lock') => {
-    if (!ready) return;
+    if (!ready || saving) return;
     const r = recordButton(rec, { type, at: Date.now() });
     if (type === 'lock' && r.state !== rec) haptic.tap();
     setRec(r.state);
@@ -224,7 +240,7 @@ function Camera() {
               {hint}
             </Animated.Text>
           ) : (
-            <Text style={styles.hint}>{recording ? (rec.mode === 'pending' ? 'Filming while you hold · slide away to lock' : rec.mode === 'locked' ? 'Locked · tap to stop' : 'Tap to stop') : allowed ? 'Tap to record · hold to film while you hold' : ' '}</Text>
+            <Text style={styles.hint}>{saving ? 'Keeping your video…' : recording ? (rec.mode === 'pending' ? 'Filming while you hold · slide away to lock' : rec.mode === 'locked' ? 'Locked · tap to stop' : 'Tap to stop') : allowed ? 'Tap to record · hold to film while you hold' : ' '}</Text>
           )}
           <View style={styles.controls}>
             <Pressable
@@ -232,7 +248,7 @@ function Camera() {
                 haptic.select();
                 void pick('library', { replace: true });
               }}
-              disabled={recording}
+              disabled={recording || saving}
               accessibilityRole="button"
               accessibilityLabel="Choose a video from your library"
               hitSlop={10}
@@ -244,7 +260,7 @@ function Camera() {
               recording={recording}
               holding={recording && rec.mode === 'pending'}
               locked={recording && rec.mode === 'locked'}
-              disabled={!allowed || !ready}
+              disabled={!allowed || !ready || saving}
               onPressIn={() => press('press-in')}
               onPressOut={() => press('press-out')}
               onLock={() => press('lock')}
