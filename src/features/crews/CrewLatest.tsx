@@ -23,7 +23,8 @@ export function CrewLatest({ crew, nameOf }: { crew: Crew; nameOf: (uid: string)
   const now = useNow().getTime();
   if (!crewCount) return null;
   const me = social.user?.uid;
-  const rows = latestPerMember(updatesFor(crew.id), crew.members);
+  // Nobody you've blocked.
+  const rows = latestPerMember(updatesFor(crew.id), crew.members.filter((m) => !social.blocked.has(m)));
   const waiting = outboxLine(outbox.filter((o) => o.crewIds.includes(crew.id)));
 
   return (
