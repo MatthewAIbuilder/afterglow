@@ -142,6 +142,12 @@ upload ever warns about a missing reason, it names the API: add it there.
 - **Real content**: festivals with clips in Discover (the nightly YouTube
   clips need the `YOUTUBE_API_KEY` secret), so a reviewer doesn't open an
   empty feed.
+- **Website map tiles**: the festival map on the website draws CARTO's free
+  dark map (from OpenStreetMap). CARTO's free use is meant for small,
+  non-commercial projects; before a commercial launch, move to a paid plan
+  (CARTO, MapTiler or Stadia Maps all have one) and change `TILES` in
+  `src/features/festival-map/FestivalMap.web.tsx`. The app on phones uses
+  Apple Maps and needs nothing.
 
 ## Updates later
 

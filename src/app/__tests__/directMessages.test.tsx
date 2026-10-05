@@ -78,7 +78,7 @@ describe('1-to-1 messages', () => {
     });
     await act(async () => router.push('/friends'));
     await flush();
-    expect(app.getByText('Messages')).toBeTruthy();
+    expect(app.getByText('Chats')).toBeTruthy();
     const row = app.getByLabelText(/^Sam, 1 new message\. Sam: Same stage tonight\?$/);
     await fireEvent.press(row);
     await flush();

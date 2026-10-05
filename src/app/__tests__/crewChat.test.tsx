@@ -55,6 +55,18 @@ async function crewWithMessage() {
 }
 
 describe('crew chat', () => {
+  it('the Friends tab lists your crew chats with what’s new, one tap from the chat', async () => {
+    const { crew } = await crewWithMessage();
+    const app = await renderApp('/friends');
+    await flush();
+    expect(app.getByText('Chats')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Bass crew crew chat, 1 new message. Maya: Meet at the big tree?'));
+    await flush();
+    expect(app.getByText('Only people in this crew can see this chat')).toBeTruthy();
+    expect(app.getByLabelText(/^Maya, 7:58 PM: Meet at the big tree\?$/)).toBeTruthy();
+    expect(crew.id).toBeTruthy();
+  });
+
   it('the crew page shows the chat with a new message; the chat has the rules, the message, and yours', async () => {
     const { crew, sam } = await crewWithMessage();
     const app = await renderApp(`/crew/${crew.id}`);

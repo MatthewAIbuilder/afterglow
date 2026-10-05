@@ -225,7 +225,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 {/* At the festival: add the people in front of you, then your crew. */}
                 <QuickActions handle={me.handle} atFestival />
                 <CloseFriendsRow />
-                <MessagesList />
+                <MessagesList skipCrews={here.map((c) => c.id)} />
                 <CrewInvitesCard />
                 <FriendAddsList />
                 {here.length ? (
