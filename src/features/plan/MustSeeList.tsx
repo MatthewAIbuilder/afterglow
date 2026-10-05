@@ -5,6 +5,7 @@ import Animated, { FadeIn, LayoutAnimationConfig, LinearTransition, useReducedMo
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { haptic } from '../../lib/haptics';
 import { useTaste } from '../../state/taste';
+import { CrewStarsLine, crewStarsSaid, useCrewStars } from './CrewStars';
 import { color, radius, space, type } from '../../theme/tokens';
 import { exploreLine, matchLabel, moreToExplore, TIER_HINT, TIER_LABEL } from './copy';
 import { MustSeeToggle } from './MustSeeToggle';
@@ -73,6 +74,7 @@ export function PickRow({
 }) {
   const { artist } = pick;
   const match = matchLabel(pick);
+  const friends = useCrewStars(festivalId, artist.id);
   return (
     <Pressable
       onPress={() => {
@@ -82,7 +84,7 @@ export function PickRow({
       accessibilityRole="button"
       accessibilityLabel={`${rank ? `Number ${rank}, ` : ''}${artist.name}, ${
         pick.known ? `${match} match` : 'new to you'
-      }${note ? `. ${note}` : ''}`}
+      }${note ? `. ${note}` : ''}${crewStarsSaid(friends)}`}
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
     >
       {rank ? <Text style={styles.rank}>{String(rank).padStart(2, '0')}</Text> : null}
@@ -96,6 +98,7 @@ export function PickRow({
             {note}
           </Text>
         ) : null}
+        <CrewStarsLine names={friends} />
       </View>
       <Text style={[styles.match, pick.tier === 'must-see' && pick.known && { color: color.glow }]}>{match}</Text>
       <MustSeeToggle artist={artist} festivalId={festivalId} />
