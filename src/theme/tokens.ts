@@ -29,6 +29,7 @@ export const color = {
   haze: palette.haze, // large background light
   dusk: palette.dusk, // cool counter-light
   stage: palette.stage, // warm stage light, background only, very faint
+  amber: '#FFB86B', // a quiet heads-up (something you'd miss), never an alarm
 };
 
 /** The accent, the deeper accent, the night and raised surfaces at an opacity, in the theme's colours. */
