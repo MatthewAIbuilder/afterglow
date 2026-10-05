@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
-import { AnimatedBackdrop } from '../features/profile/AnimatedBackdrop';
+import { CoverLayers } from '../components/ProfileCover';
 import { type Backdrop, backdropChoices, backdropOf, type BackdropId, canUse, madeFor, NO_BACKDROP, shownBackdrop } from '../features/profile/backdrops';
 import { useStanding } from '../features/standing/useStanding';
 import { showAlert } from '../lib/dialog';
@@ -20,8 +20,8 @@ const PHOTO = 'photo';
 type Choice = BackdropId | typeof PHOTO;
 
 /**
- * Profile background: an animated scene across the top of your profile in
- * place of the cover photo. A big live preview of whichever you tap, then
+ * Profile background: an animated scene across the top of your profile,
+ * blended over the cover photo when there is one. A big live preview of whichever you tap, then
  * every style as a tile. A few are free, the rest come with Afterglow Plus
  * (anyone can preview them); a background made for you comes first.
  */
@@ -81,14 +81,14 @@ export default function BackdropScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Profile background
         </Text>
-        <Text style={styles.body}>A living scene across the top of your profile, for everyone who visits it.</Text>
+        <Text style={styles.body}>
+          {me?.coverUrl
+            ? 'A living scene across the top of your profile, for everyone who visits it. Your cover photo glows through underneath.'
+            : 'A living scene across the top of your profile, for everyone who visits it.'}
+        </Text>
 
         <View style={[styles.preview, { width: previewW, height: previewH }]} accessible accessibilityLabel={`Preview: ${pickedBackdrop ? `${pickedBackdrop.name}, ${pickedBackdrop.about}` : 'cover photo'}`}>
-          {pickedBackdrop ? (
-            <AnimatedBackdrop key={pickedBackdrop.id} id={pickedBackdrop.id} width={previewW} height={previewH} />
-          ) : me?.coverUrl ? (
-            <Image source={{ uri: me.coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
-          ) : null}
+          <CoverLayers key={pickedBackdrop?.id ?? PHOTO} url={me?.coverUrl} backdrop={pickedBackdrop?.id} width={previewW} height={previewH} />
           <LinearGradient colors={[nightA(0), nightA(0.85)]} locations={[0.5, 1]} style={StyleSheet.absoluteFill} />
           <View style={styles.previewMe}>
             <View style={styles.previewAvatar}>
@@ -99,7 +99,13 @@ export default function BackdropScreen() {
                 {pickedBackdrop?.name ?? 'Cover photo'}
               </Text>
               <Text style={styles.previewAbout} numberOfLines={2}>
-                {pickedBackdrop?.about ?? (me?.coverUrl ? 'Your cover photo, as it is now' : 'A plain night sky. Add a cover photo in Edit profile.')}
+                {pickedBackdrop
+                  ? me?.coverUrl
+                    ? `${pickedBackdrop.about}, blended with your cover photo`
+                    : pickedBackdrop.about
+                  : me?.coverUrl
+                    ? 'Your cover photo, as it is now'
+                    : 'A plain night sky. Add a cover photo in Edit profile.'}
               </Text>
             </View>
           </View>
@@ -133,7 +139,7 @@ export default function BackdropScreen() {
               onPress={() => pick(b.id)}
             >
               {/* Only the chosen tile moves; the big preview above shows it at full size. */}
-              <AnimatedBackdrop id={b.id} width={tileW} height={tileH} still={picked !== b.id} />
+              <CoverLayers url={me?.coverUrl} backdrop={b.id} width={tileW} height={tileH} still={picked !== b.id} />
             </Tile>
           ))}
         </View>
