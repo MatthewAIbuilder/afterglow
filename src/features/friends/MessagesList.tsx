@@ -27,9 +27,10 @@ type Row = { id: string; latestAt?: string } & ({ kind: 'direct'; other: string 
  * crews' chats, the latest first, each with its last message and how many
  * are new, the way a messages app lists them: one glass card, a crew's
  * picture made of its people's faces, the time on the right. Crews you
- * haven't chatted in yet come after. Nobody you've blocked. `skipCrews`: crews already shown as cards (festival mode).
+ * haven't chatted in yet come after. Nobody you've blocked. `skipCrews`: crews already shown as cards (festival mode);
+ * `directOnly`: only 1-to-1 chats, titled Messages (the Friends tab, where each crew's card opens its chat).
  */
-export function MessagesList({ skipCrews = [] }: { skipCrews?: readonly string[] }) {
+export function MessagesList({ skipCrews = [], directOnly = false }: { skipCrews?: readonly string[]; directOnly?: boolean }) {
   const social = useSocial();
   const me = social.user?.uid;
   const chat = useCrewChat();
@@ -45,9 +46,9 @@ export function MessagesList({ skipCrews = [] }: { skipCrews?: readonly string[]
     const direct: Row[] = chat.directChats
       .map((d) => ({ kind: 'direct' as const, id: d.id, other: otherInRoom(d.id, me), latestAt: chat.latestFor(d.id)?.sentAt }))
       .filter((r) => r.latestAt && !social.blocked.has(r.other));
-    const group: Row[] = crews.filter((c) => !skipped.has(c.id)).map((c) => ({ kind: 'crew' as const, id: c.id, crew: c, latestAt: chat.latestFor(c.id)?.sentAt }));
+    const group: Row[] = (directOnly ? [] : crews).filter((c) => !skipped.has(c.id)).map((c) => ({ kind: 'crew' as const, id: c.id, crew: c, latestAt: chat.latestFor(c.id)?.sentAt }));
     return [...direct, ...group].sort((a, b) => (b.latestAt ?? '').localeCompare(a.latestAt ?? ''));
-  }, [me, chat, crews, skip, social.blocked]);
+  }, [me, chat, crews, skip, social.blocked, directOnly]);
 
   // Faces and names: the other person in a 1-to-1, whoever wrote last in a crew.
   const [profiles, setProfiles] = useState<Record<string, Profile | null>>({});
@@ -76,9 +77,9 @@ export function MessagesList({ skipCrews = [] }: { skipCrews?: readonly string[]
   return (
     <View>
       <SectionHeader
-        title="Chats"
+        title={directOnly ? 'Messages' : 'Chats'}
         action={rows.length > SHOWN ? (all ? 'Show fewer' : 'Show all') : undefined}
-        actionLabel={all ? 'Show fewer chats' : `Show all ${rows.length} chats`}
+        actionLabel={all ? `Show fewer ${directOnly ? 'messages' : 'chats'}` : `Show all ${rows.length} ${directOnly ? 'messages' : 'chats'}`}
         onAction={() => setAll((a) => !a)}
       />
       <View style={styles.list}>

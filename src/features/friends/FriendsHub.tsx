@@ -41,7 +41,7 @@ import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { useCrewChat } from '../../state/crewChat';
-import { unreadLine } from '../crews/chat';
+import { chatPreview, unreadLine } from '../crews/chat';
 import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -124,9 +124,10 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
   // One list: people who follow you, then people going to your festivals.
   const mayKnow = useMemo(() => peopleYouMayKnow(followers ?? [], suggestions), [followers, suggestions]);
 
-  // Your crews: they're what you do with friends at a festival.
+  // Your crews: they're what you do with friends at a festival. Each card is the crew's chat (the crew's page,
+  // with its settings, opens from the chat's header).
   const crewsSection = me ? (
-    <Section title="Your crews">
+    <Section title="Crews">
       {crews.map((c) => {
         const festival = catalog.festival(c.festivalId);
         const news = stories.find((s) => s.updates.some((u) => u.crewId === c.id));
@@ -134,6 +135,8 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
         const artist = news?.latest.artistId ? catalog.artist(news.latest.artistId)?.name : undefined;
         const place = news ? updatePlace(news.latest, artist) : '';
         const unread = chat.unreadFor(c.id);
+        const latest = chat.latestFor(c.id);
+        const said = chatPreview(latest, meUid, (u) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : 'Someone'));
         const when = festival ? (isOver(festival, today) ? 'Over' : countdown(festival, today)) : undefined;
         const mates = c.members.filter((m) => m !== meUid);
         const faces = (mates.length ? mates.map((m) => profileOf(m)) : [me]).filter((p): p is Profile => !!p).map((p) => ({ name: p.displayName, url: p.avatarUrl }));
@@ -142,10 +145,11 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
             key={c.id}
             onPress={() => {
               haptic.select();
-              router.push({ pathname: '/crew/[id]', params: { id: c.id } });
+              router.push({ pathname: '/crew-chat/[id]', params: { id: c.id } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${c.name}, ${festival?.name ?? 'a festival'}, ${crewPeopleLine(c.members.length)}${news ? `. Latest: ${who ? firstName(who.displayName) : 'a crewmate'} at ${clock(news.latest.at)}${place ? `, ${place}` : ''}` : ''}${unread ? `. ${unreadLine(unread)}` : ''}`}
+            accessibilityLabel={`${c.name}, ${festival?.name ?? 'a festival'}, ${crewPeopleLine(c.members.length)}${said ? `. ${said}` : news ? `. Latest: ${who ? firstName(who.displayName) : 'a crewmate'} at ${clock(news.latest.at)}${place ? `, ${place}` : ''}` : ''}${unread ? `. ${unreadLine(unread)}` : ''}`}
+            accessibilityHint="Opens the crew’s chat"
             style={({ pressed }) => [styles.crewCard, pressed && styles.pressed]}
           >
             <LinearGradient colors={['rgba(107,63,224,0.28)', 'rgba(107,63,224,0.04)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -157,7 +161,11 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
               <Text style={styles.cardDetail} numberOfLines={1}>
                 {festival?.name ?? 'Festival'} · {crewPeopleLine(c.members.length)}
               </Text>
-              {news ? (
+              {said ? (
+                <Text style={[styles.cardDetail, unread > 0 && styles.fresh]} numberOfLines={1}>
+                  {said}
+                </Text>
+              ) : news ? (
                 <Text style={[styles.cardDetail, news.fresh && styles.fresh]} numberOfLines={1}>
                   {who ? firstName(who.displayName) : 'Crewmate'} · {clock(news.latest.at)}
                   {place ? ` · ${place}` : ''}
@@ -286,14 +294,16 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
               </>
             ) : (
               <>
-                <QuickActions handle={me.handle} festivals={upcoming} />
                 {/* Your people as an orbit: close friends on the inner ring (only you see who's on it). */}
                 <FriendsCircle profiles={circle.profiles} close={circle.close} />
-                <MessagesList />
+                <QuickActions handle={me.handle} festivals={upcoming} />
                 {/* Someone asked you to join their crew: that's the first thing to answer. */}
                 <CrewInvitesCard />
+                {/* Crews, each one its chat; then 1-to-1 messages. */}
+                {crewsSection}
+                <MessagesList directOnly />
                 <FriendAddsList />
-                <FriendsActivity between={crewsSection} profiles={circle.profiles} memories={circle.memories} />
+                <FriendsActivity profiles={circle.profiles} memories={circle.memories} />
 
                 {mayKnow.length ? (
                   <Section title="People you may know">

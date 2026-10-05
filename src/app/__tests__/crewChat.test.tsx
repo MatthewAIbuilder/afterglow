@@ -55,15 +55,20 @@ async function crewWithMessage() {
 }
 
 describe('crew chat', () => {
-  it('the Friends tab lists your crew chats with what’s new, one tap from the chat', async () => {
+  it('the Friends tab lists your crews with what’s new; a crew opens its chat, and the crew page opens from there', async () => {
     const { crew } = await crewWithMessage();
     const app = await renderApp('/friends');
     await flush();
-    expect(app.getByText('Chats')).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Bass crew crew chat, 1 new message. Maya: Meet at the big tree?'));
+    expect(app.getByText('Crews')).toBeTruthy();
+    // Crews aren't listed twice: no crew row among the 1-to-1 messages.
+    expect(app.queryByLabelText(/^Bass crew crew chat/)).toBeNull();
+    await fireEvent.press(app.getByLabelText(/^Bass crew, .*\. Maya: Meet at the big tree\?\. 1 new message$/));
     await flush();
     expect(app.getByText('Only people in this crew can see this chat')).toBeTruthy();
     expect(app.getByLabelText(/^Maya, 7:58 PM: Meet at the big tree\?$/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Crew settings'));
+    await flush();
+    expect(app.getByLabelText('Invite friends')).toBeTruthy();
     expect(crew.id).toBeTruthy();
   });
 

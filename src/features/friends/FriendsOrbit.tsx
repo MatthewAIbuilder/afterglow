@@ -12,8 +12,8 @@ import { ringPlaces, splitOrbit } from './orbit';
 
 /** One slow turn of the whole orbit (both rings together, so faces never cross). */
 const TURN_MS = 140_000;
-const HEIGHT = 340;
-const ME = 72;
+const HEIGHT = 300;
+const ME = 66;
 const INNER = 56;
 const OUTER = 36;
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
@@ -55,7 +55,7 @@ export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onM
   const cx = width / 2;
   const cy = HEIGHT / 2;
   // The inner ring leaves room under each face for its name, inside the outer ring.
-  const innerR = { x: Math.min(width * 0.28, 124), y: 82 };
+  const innerR = { x: Math.min(width * 0.28, 120), y: 66 };
   const outerR = { x: width / 2 - OUTER / 2 - 2, y: HEIGHT / 2 - OUTER / 2 - 6 };
   // Inner ring starts at the top; the outer one half a step round so the rings never line up.
   const innerPlaces = ringPlaces(inner.length, INNER, -Math.PI / 2);
