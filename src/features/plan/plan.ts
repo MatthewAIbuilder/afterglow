@@ -189,8 +189,10 @@ function overlapGroups(sets: TimedPick[]): TimedPick[][] {
  * something already on your plan.
  */
 export function buildSchedule(festival: Festival, picks: Pick[]): Schedule {
-  const withSet = picks.filter((p): p is Pick & { set: SetTime } => !!p.set).map(timed);
-  const unscheduled = picks.filter((p) => !p.set);
+  // Every set an artist plays (some play twice), each on its own day and time.
+  const setsOf = (id: string) => (festival.sets ?? []).filter((s) => s.artistId === id);
+  const withSet = picks.flatMap((p) => setsOf(p.artist.id).map((set) => timed({ ...p, set })));
+  const unscheduled = picks.filter((p) => !setsOf(p.artist.id).length);
 
   const days = festival.days.map((day): ScheduleDay => {
     const today = withSet.filter((p) => p.set.day === day);

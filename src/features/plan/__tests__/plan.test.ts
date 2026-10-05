@@ -216,3 +216,14 @@ describe('mock festivals', () => {
     expect(sat?.kind === 'clash' && sat.verdict.kind === 'clear' && sat.verdict.pick.artist.id).toBe('levity');
   });
 });
+
+describe('an artist who plays twice', () => {
+  it('both sets are on the plan, each on its own day, and the second can clash', () => {
+    const f = fest([set('bolt', 'Friday', '22:00', '23:00'), set('bolt', 'Saturday', '21:00', '22:00'), set('ace', 'Saturday', '21:30', '22:30')]);
+    const schedule = buildSchedule(f, rankLineup({ festival: f, artists: ARTS, taste: TASTE }));
+    const kinds = (d: number) => schedule.days[d].items.map((i) => i.kind);
+    expect(kinds(0)).toEqual(['set']);
+    expect(kinds(1)).toEqual(['clash']);
+    expect(ids(schedule.unscheduled)).not.toContain('bolt');
+  });
+});

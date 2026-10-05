@@ -92,7 +92,7 @@ export function Timetable({
 }
 
 const itemKey = (i: ScheduleItem) =>
-  i.kind === 'clash' ? i.picks.map((p) => p.artist.id).join('+') : i.pick.artist.id;
+  i.kind === 'clash' ? i.picks.map((p) => `${p.artist.id}@${p.start}`).join('+') : `${i.pick.artist.id}@${i.start}`;
 
 function daySummary(d: ScheduleDay) {
   const planned = d.items.reduce((n, i) => n + (i.kind === 'set' ? 1 : i.kind === 'clash' ? i.picks.length : 0), 0);
