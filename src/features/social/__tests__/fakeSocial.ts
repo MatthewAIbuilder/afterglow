@@ -1,5 +1,5 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type DirectChat, directRoom, isDirectRoom, otherInRoom, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type SetTimesTip } from '../models';
+import { CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type Sprout, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type DirectChat, directRoom, isDirectRoom, otherInRoom, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, SUPPORT_REPLIES_MAX, type SetTimesTip } from '../models';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -206,6 +206,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       for (const [k, sp] of sprouts) if (sp.from === u.uid || sp.to === u.uid) sprouts.delete(k);
       for (const k of [...finds.keys()]) if (k.startsWith(`${u.uid}_`)) finds.delete(k);
       for (const [k, t] of [...setTimes.entries()]) if (t.uid === u.uid) setTimes.delete(k);
+      for (const [k, m] of [...support.entries()]) if (m.uid === u.uid) support.delete(k);
       accounts.delete(u.email ?? '');
       current = null;
       emit();
@@ -410,7 +411,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       needAdmin();
       const m = support.get(id);
       if (!m) throw new SocialError('not-found');
-      support.set(id, { ...m, reply: reply.trim(), repliedAt: now(), status: 'answered' });
+      const at = now();
+      const was = m.replies ?? (m.reply ? [{ text: m.reply, ...(m.repliedAt ? { at: m.repliedAt } : {}) }] : []);
+      support.set(id, { ...m, reply: reply.trim(), repliedAt: at, replies: [...was, { text: reply.trim(), at }].slice(-SUPPORT_REPLIES_MAX), status: 'answered' });
     },
     async setSupportStatus(id, status) {
       needAdmin();
@@ -419,9 +422,11 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async reports(max) {
       needAdmin();
-      return [...reports]
-        .reverse()
-        .slice(0, max)
+      // Like the server: every open one (up to max), and the newest max of all.
+      const newest = [...reports].reverse();
+      const shown = new Set([...newest.filter((r) => r.status === 'open').slice(0, max), ...newest.slice(0, max)]);
+      return newest
+        .filter((r) => shown.has(r))
         .map((r) => ({ id: r.id, by: r.by, kind: r.target.kind, targetId: r.target.id, ownerUid: r.target.ownerUid, reason: r.reason, note: r.note ?? '', createdAt: r.createdAt, status: r.status }));
     },
     async resolveReport(id) {
@@ -440,6 +445,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async reportedMessage(target) {
       needAdmin();
       return chat.get(target) ?? null;
+    },
+    async reportedComment(id) {
+      needAdmin();
+      return comments.get(id) ?? null;
     },
     async adminCounts(since) {
       needAdmin();
@@ -522,7 +531,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async setTimesTips(max) {
       needAdmin();
-      return [...setTimes.values()].filter((t) => t.status === 'new').sort((a, b) => a.at.localeCompare(b.at)).slice(0, max);
+      return [...setTimes.values()].filter((t) => t.status === 'new').sort((a, b) => b.at.localeCompare(a.at)).slice(0, max);
     },
     async markSetTimesLive(id) {
       needAdmin();

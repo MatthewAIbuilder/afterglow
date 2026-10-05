@@ -46,7 +46,7 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { DM_PREFIX, directRoom, isDirectRoom, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, TIP_TEXT_MAX } from '../models';
+import { DM_PREFIX, directRoom, isDirectRoom, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, SUPPORT_REPLIES_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, type ReportRecord, TIP_TEXT_MAX } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
@@ -309,6 +309,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // Set times you sent, screenshots and all.
         const tips = await getDocs(query(collection(db, 'setTimes'), where('uid', '==', user.uid), limit(200))).catch(() => null);
         for (const d of tips?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+        // Your messages to support, and their replies.
+        const asked = await getDocs(query(collection(db, 'support'), where('uid', '==', user.uid), limit(500))).catch(() => null);
+        for (const d of asked?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
         // Sprouts you gave and picked up go too (the rules allow it once the profile is gone).
         for (const field of ['from', 'to'] as const) {
           const snap = await getDocs(query(collection(db, 'sprouts'), where(field, '==', user.uid), limit(500))).catch(() => null);
@@ -626,7 +629,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           status: 'open',
           createdAt: serverTimestamp(),
           ...(profile ? { handle: profile.handle, name: profile.displayName.slice(0, 60) } : {}),
-          ...(user.email ? { email: user.email.slice(0, 200) } : {}),
+          // Exactly your sign-in email and your profile's handle (the rules check both).
+          ...(user.email ? { email: user.email } : {}),
           ...(input.platform ? { platform: input.platform.slice(0, 20) } : {}),
           ...(input.version ? { version: input.version.slice(0, 80) } : {}),
         };
@@ -645,13 +649,29 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     answerSupport: (id, reply) =>
       guard(async () => {
-        await updateDoc(doc(fb().db, 'support', id), { reply: reply.trim().slice(0, 2000), repliedAt: now(), status: 'answered' });
+        const ref_ = doc(fb().db, 'support', id);
+        const was = supportFromDoc(id, (await getDoc(ref_)).data());
+        const text = reply.trim().slice(0, 2000);
+        const at = now();
+        // Every reply is kept (a second one never replaces the first); `reply` stays the latest for older apps.
+        const replies = [...(was?.replies ?? []).map((r) => ({ text: r.text, ...(r.at ? { at: r.at } : {}) })), { text, at }].slice(-SUPPORT_REPLIES_MAX);
+        await updateDoc(ref_, { reply: text, repliedAt: at, replies, status: 'answered' });
       }),
     setSupportStatus: (id, status) => guard(async () => updateDoc(doc(fb().db, 'support', id), { status })),
     reports: (max) =>
       guard(async () => {
-        const snap = await getDocs(query(collection(fb().db, 'reports'), orderBy('createdAt', 'desc'), limit(max)));
-        return snap.docs.map((d) => reportFromDoc(d.id, d.data())).filter((r): r is NonNullable<typeof r> => !!r);
+        const { db } = fb();
+        // Every open report (so a flood of new or old ones can't hide one), and the newest of all (dealt with, and reports filed before they carried a status).
+        const [open, newest] = await Promise.all([
+          getDocs(query(collection(db, 'reports'), where('status', '==', 'open'), orderBy('createdAt', 'desc'), limit(max))).catch(() => null),
+          getDocs(query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(max))),
+        ]);
+        const byId = new Map<string, ReportRecord>();
+        for (const d of [...(open?.docs ?? []), ...newest.docs]) {
+          const r = reportFromDoc(d.id, d.data());
+          if (r) byId.set(r.id, r);
+        }
+        return [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       }),
     resolveReport: (id) => guard(async () => updateDoc(doc(fb().db, 'reports', id), { status: 'resolved', resolvedAt: now() })),
     takeDown: (kind, id) =>
@@ -675,6 +695,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!crewId || !messageId) return null;
         return crewMessageFromDoc(crewId, messageId, (await getDoc(doc(fb().db, ...room(crewId), 'chat', messageId))).data());
       }),
+    reportedComment: (id) => guard(async () => commentFromDoc(id, (await getDoc(doc(fb().db, 'comments', id))).data())),
     adminCounts: (since) =>
       guard(async () => {
         const { db } = fb();
@@ -808,7 +829,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     setTimesTips: (max) =>
       guard(async () => {
-        const snap = await getDocs(query(collection(fb().db, 'setTimes'), where('status', '==', 'new'), orderBy('createdAt', 'asc'), limit(max)));
+        // Newest first, so old ones left waiting never crowd out what just came in.
+        const snap = await getDocs(query(collection(fb().db, 'setTimes'), where('status', '==', 'new'), orderBy('createdAt', 'desc'), limit(max)));
         return snap.docs.map((d) => setTimesTipFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
       }),
     markSetTimesLive: (id) => guard(async () => updateDoc(doc(fb().db, 'setTimes', id), { status: 'live', photo: deleteField() })),
@@ -1532,7 +1554,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           ownerUid: target.ownerUid,
           reason,
           note: (note ?? '').slice(0, 500),
-          createdAt: now(),
+          // Open from the start (HQ asks for the open ones), at the server's time (the rules check it).
+          status: 'open',
+          createdAt: serverTimestamp(),
         });
       }),
     blocked: () =>
