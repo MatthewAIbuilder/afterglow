@@ -313,13 +313,15 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const outboxRef = useRef(outbox);
   const memRef = useRef(mem.memories);
   const sharingRef = useRef(social.sharing);
+  const waitingRef = useRef(social.waiting);
   const crewsRef = useRef(crews);
   useEffect(() => {
     outboxRef.current = outbox;
     memRef.current = mem.memories;
     sharingRef.current = social.sharing;
+    waitingRef.current = social.waiting;
     crewsRef.current = crews;
-  }, [outbox, mem.memories, social.sharing, crews]);
+  }, [outbox, mem.memories, social.sharing, social.waiting, crews]);
   const sending = useRef(false);
   const [retryTick, setRetryTick] = useState(0);
 
@@ -340,12 +342,15 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
         let input: CrewUpdateInput | undefined = item.input;
         if (item.input.kind === 'video' && item.memoryId && !item.input.videoUrl) {
           const m = memRef.current.find((x) => x.id === item.memoryId);
+          // Your memories haven't been read back yet: wait for them rather than take the video for deleted.
+          if (!m && !mem.hydrated) continue;
           if (!m) {
             // The video was deleted before it could send.
             setOutbox((o) => delivered(o, item.id, item.crewIds));
             continue;
           }
-          if (item.memoryId in sharingRef.current) continue; // still uploading to Discover: wait for it
+          // Still uploading to Discover, or waiting for signal to: wait for it, then point at it.
+          if (item.memoryId in sharingRef.current || waitingRef.current.has(item.memoryId)) continue;
           if (m.sharedId) {
             const shared = await service.sharedMemory(m.sharedId).catch(() => undefined);
             if (shared === undefined) {
@@ -408,7 +413,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   }, [ready, uid, online, hydrated, service, mem, crewsConfirmed]);
 
   // Try whenever something could have changed: new items, signal back, a share finishing, the retry timer.
-  const sharingKey = Object.keys(social.sharing).join('|');
+  const sharingKey = [...Object.keys(social.sharing), ...social.waiting].join('|');
   useEffect(() => {
     if (outbox.length) void flush();
   }, [outbox.length, online, sharingKey, retryTick, ready, flush]);

@@ -40,6 +40,9 @@ export default function SharedMemoryScreen() {
   const catalog = useCatalog();
   const mem = useMemories();
   const [m, setM] = useState<SharedMemory | null | undefined>();
+  // Couldn't ask (no signal): not the same as removed, and worth another try.
+  const [failed, setFailed] = useState(false);
+  const [readTry, setReadTry] = useState(0);
   const screen = useWindowDimensions();
   const filmer = useStanding(m?.uid);
   const [count, setCount] = useState<number | undefined>();
@@ -56,11 +59,19 @@ export default function SharedMemoryScreen() {
   const signedOut = social.ready && !me;
   useEffect(() => {
     if (!me) return;
+    let live = true;
     social.service
       .sharedMemory(id)
-      .then(setM)
-      .catch(() => setM(null));
-  }, [id, me, social.service]);
+      .then((v) => {
+        if (!live) return;
+        setFailed(false);
+        setM(v);
+      })
+      .catch(() => live && setFailed(true));
+    return () => {
+      live = false;
+    };
+  }, [id, me, social.service, readTry]);
   // Someone else's video, watched here, counts as seen (each video once), like one in Discover:
   // that's what the "In the crowd" daily quest counts.
   const { markSeen } = useSeen();
@@ -173,6 +184,21 @@ export default function SharedMemoryScreen() {
           <Text style={styles.gone}>Sign in to watch videos from the crowd.</Text>
           <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={styles.action}>
             <Text style={styles.actionText}>Sign in or create a free account</Text>
+          </Pressable>
+        </View>
+      ) : m === undefined && failed ? (
+        <View style={[styles.center, styles.signIn]}>
+          <Text style={styles.gone}>Couldn’t load this video. Check your signal and try again.</Text>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              setFailed(false);
+              setReadTry((t) => t + 1);
+            }}
+            accessibilityRole="button"
+            style={styles.action}
+          >
+            <Text style={styles.actionText}>Try again</Text>
           </Pressable>
         </View>
       ) : m === undefined ? (

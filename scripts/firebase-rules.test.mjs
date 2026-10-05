@@ -71,11 +71,27 @@ await t('A can’t release the handle its profile still uses', () => assertFails
 await t('B can’t delete A’s handle', () => assertFails(deleteDoc(doc(B.firestore(), 'handles', 'maya2'))));
 await t('a handle is never reassigned by update', () => assertFails(setDoc(doc(B.firestore(), 'handles', 'maya2'), { uid: 'uidB' })));
 
-const mem = (id, uid, over = {}) => ({ uid, handle: uid === 'uidA' ? 'maya2' : 'bob', memoryId: 'm1', videoPath: `memories/${uid}/${id}.mov`, videoUrl: 'https://x/v.mov', capturedAt: now, createdAt: now, ...over });
-await t('A shares a memory pointing at its own files', () => assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'mem1'), mem('mem1', 'uidA', { thumbPath: 'memories/uidA/mem1.jpg', thumbUrl: 'https://x/t.jpg', festivalId: 'acl-26', durationSec: 42 }))));
+// A download link the way the app's upload makes one (getDownloadURL).
+const fileUrl = (path, bucket = 'afterglowmusic.firebasestorage.app') => `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(path)}?alt=media&token=3f1c2a9e-5b7d-4e2a-9c1f-0a8b7c6d5e4f`;
+const mem = (id, uid, over = {}) => ({ uid, handle: uid === 'uidA' ? 'maya2' : 'bob', memoryId: 'm1', videoPath: `memories/${uid}/${id}.mov`, videoUrl: fileUrl(`memories/${uid}/${id}.mov`), capturedAt: now, createdAt: now, ...over });
+await t('A shares a memory pointing at its own files', () => assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'mem1'), mem('mem1', 'uidA', { thumbPath: 'memories/uidA/mem1.jpg', thumbUrl: fileUrl('memories/uidA/mem1.jpg'), festivalId: 'acl-26', durationSec: 42 }))));
+await t('a shared memory’s links must be the owner’s own uploads for that memory', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'url1'), mem('url1', 'uidA', { videoPath: 'memories/uidA/url1.mp4', videoUrl: fileUrl('memories/uidA/url1.mp4', 'demo-afterglow.appspot.com') })));
+  // Any other site, someone else's folder, another memory's file, or a still that isn't this memory's: refused.
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url2'), mem('url2', 'uidA', { videoUrl: 'https://x/v.mov' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url3'), mem('url3', 'uidA', { videoUrl: fileUrl('memories/uidB/url3.mov') })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url4'), mem('url4', 'uidA', { videoUrl: fileUrl('memories/uidA/mem1.mov') })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url5'), mem('url5', 'uidA', { videoUrl: fileUrl('avatars/uidA.jpg') })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url6'), mem('url6', 'uidA', { videoUrl: fileUrl('memories/uidA/url6.mov').replace('https://firebasestorage.googleapis.com', 'https://evil.example') })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url7'), mem('url7', 'uidA', { videoUrl: fileUrl('memories/uidA/url7.mov') + '&x=https://evil.example' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url8'), mem('url8', 'uidA', { thumbPath: 'memories/uidA/url8.jpg', thumbUrl: 'https://x/t.jpg' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url9'), mem('url9', 'uidA', { thumbPath: 'memories/uidA/url9.jpg', thumbUrl: fileUrl('memories/uidB/url9.jpg') })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'url10'), mem('url10', 'uidA', { thumbPath: 'memories/uidA/url10.jpg', thumbUrl: fileUrl('memories/uidA/url10.mov') })));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'url11'), mem('url11', 'uidA', { thumbPath: 'memories/uidA/url11.jpg', thumbUrl: fileUrl('memories/uidA/url11.jpg') })));
+});
 // Throwbacks go with the free plan's count (usage/{uid}) in one write.
 const T = env.authenticatedContext('uidT');
-const memT = (id, over = {}) => ({ uid: 'uidT', handle: 'tara', memoryId: 'm1', videoPath: `memories/uidT/${id}.mov`, videoUrl: 'https://x/v.mov', capturedAt: now, createdAt: now, ...over });
+const memT = (id, over = {}) => ({ uid: 'uidT', handle: 'tara', memoryId: 'm1', videoPath: `memories/uidT/${id}.mov`, videoUrl: fileUrl(`memories/uidT/${id}.mov`), capturedAt: now, createdAt: now, ...over });
 const shareTb = (id, n, over = {}, ctx = T) => {
   const db = ctx.firestore(); const b = writeBatch(db);
   b.set(doc(db, 'memories', id), memT(id, { pastName: 'EDC Orlando', pastYear: 2024, ...over }));

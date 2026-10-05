@@ -79,6 +79,21 @@ describe('the camera', () => {
     expect(app.queryByTestId('camera-view')).toBeNull();
   });
 
+  it('a video just filmed is kept at once, untagged, so closing the app never loses it; saving tags that one', async () => {
+    const app = await openCamera();
+    await fireEvent(app.getByLabelText('Record a video'), 'pressIn');
+    await settle(1500);
+    await fireEvent(app.getByLabelText('Stop recording'), 'pressOut');
+    await flush();
+    expect(app.getByText('New memory')).toBeTruthy();
+    const kept = JSON.parse((await AsyncStorage.getItem('memories.v1')) ?? '[]');
+    expect(kept).toHaveLength(1);
+    expect(kept[0].festivalId).toBeUndefined();
+    await fireEvent.press(app.getByLabelText('Save to Memories'));
+    await flush();
+    expect(JSON.parse((await AsyncStorage.getItem('memories.v1')) ?? '[]').map((m: { id: string }) => m.id)).toEqual([kept[0].id]);
+  });
+
   it('slide away while holding: locks, keeps filming after you let go, and a tap stops', async () => {
     const app = await openCamera();
     const at = (x: number, y: number) => ({ nativeEvent: { pageX: x, pageY: y } });

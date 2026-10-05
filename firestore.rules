@@ -73,9 +73,12 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
         && request.resource.data.handle == get(path('profiles', me())).data.handle
         && request.resource.data.videoPath.matches('^memories/' + me() + '/' + id + '[.](mp4|mov|m4v)$')
-        && request.resource.data.videoUrl is string && request.resource.data.videoUrl.matches('^https://.*')
+        // The links are this owner's own uploads for this memory: Firebase Storage download links to memories/<uid>/<id>.
+        && request.resource.data.videoUrl is string && request.resource.data.videoUrl.size() <= 2000
+        && request.resource.data.videoUrl.matches('^https://firebasestorage[.]googleapis[.]com/v0/b/[a-z0-9._-]+/o/memories%2F' + me() + '%2F' + id + '[.](mp4|mov|m4v)[?]alt=media&token=[A-Za-z0-9-]+$')
         && (!('thumbPath' in request.resource.data) || request.resource.data.thumbPath == 'memories/' + me() + '/' + id + '.jpg')
-        && (!('thumbUrl' in request.resource.data) || (request.resource.data.thumbUrl is string && request.resource.data.thumbUrl.matches('^https://.*')))
+        && (!('thumbUrl' in request.resource.data) || (request.resource.data.thumbUrl is string && request.resource.data.thumbUrl.size() <= 2000
+          && request.resource.data.thumbUrl.matches('^https://firebasestorage[.]googleapis[.]com/v0/b/[a-z0-9._-]+/o/memories%2F' + me() + '%2F' + id + '[.]jpg[?]alt=media&token=[A-Za-z0-9-]+$')))
         && shortOrAbsent(request.resource.data, 'festivalId', 100) && shortOrAbsent(request.resource.data, 'artistId', 100)
         && shortOrAbsent(request.resource.data, 'night', 40) && shortOrAbsent(request.resource.data, 'memoryId', 60)
         // A throwback (a past festival, from the camera roll): a name and year, never with a festival on Afterglow.

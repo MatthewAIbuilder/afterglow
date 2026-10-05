@@ -39,7 +39,10 @@ export default function MemoryScreen() {
   });
   const [paused, setPaused] = useState(false);
   const screen = useWindowDimensions();
-  const mine = useStanding(useSocial().user?.uid);
+  const social = useSocial();
+  const mine = useStanding(social.user?.uid);
+  // Still uploading to Discover: deleting now would leave the shared copy with nothing on this phone to remove it from.
+  const uploading = !!m && m.id in social.sharing;
 
   // Deleted (here or elsewhere): step back.
   useEffect(() => {
@@ -76,6 +79,7 @@ export default function MemoryScreen() {
     if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(mem.uriOf(m.file), { dialogTitle: artist?.name ?? 'Memory' }).catch(() => {});
   };
   const remove = () => {
+    if (uploading) return;
     haptic.select();
     showAlert(
       'Delete this memory?',
@@ -117,19 +121,21 @@ export default function MemoryScreen() {
           <Action label="Save to Photos" onPress={() => void saveToPhotos()} />
           <Action label="Send" onPress={() => void send()} />
           <ShareToProfile memory={m} render={(label, onPress) => <Action label={label} onPress={onPress} glow />} />
-          <Action label="Delete" onPress={remove} quiet />
+          <Action label="Delete" onPress={remove} quiet disabled={uploading} />
         </View>
       </View>
     </View>
   );
 }
 
-function Action({ label, onPress, quiet, glow }: { label: string; onPress: () => void; quiet?: boolean; glow?: boolean }): ReactNode {
+function Action({ label, onPress, quiet, glow, disabled }: { label: string; onPress: () => void; quiet?: boolean; glow?: boolean; disabled?: boolean }): ReactNode {
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.action, glow && styles.actionGlow, pressed && styles.pressed]}
+      accessibilityState={{ disabled: !!disabled }}
+      style={({ pressed }) => [styles.action, glow && styles.actionGlow, disabled && styles.disabled, pressed && styles.pressed]}
     >
       <Text style={[styles.actionText, quiet && styles.quiet]}>{label}</Text>
     </Pressable>
@@ -156,5 +162,6 @@ const styles = StyleSheet.create({
   actionGlow: { backgroundColor: 'rgba(169,124,255,0.22)', borderColor: 'rgba(169,124,255,0.5)' },
   actionText: { ...type.label, color: color.moon },
   quiet: { color: color.moonDim },
+  disabled: { opacity: 0.4 },
   pressed: { opacity: 0.75, transform: [{ scale: 0.97 }] },
 });
