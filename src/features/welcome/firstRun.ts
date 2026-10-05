@@ -1,5 +1,6 @@
 import type { Clip, Festival } from '../../data/models';
 import { lineupClips } from '../festivals/links';
+import { bySoonest, isOver } from '../festivals/shelves';
 
 /**
  * The first-run welcome: shown once, to someone who has never used the app.
@@ -28,3 +29,16 @@ export function welcomeFestival(festivals: Festival[], going: readonly string[])
 /** Where "Start watching" should open Discover: that festival if it has clips, otherwise wherever Discover opens. */
 export const watchFestival = (festival: Festival | undefined, clips: Clip[]) =>
   festival && lineupClips(festival, clips).length > 0 ? festival : undefined;
+
+/**
+ * "Where are you going?" with a handful of festivals: soonest first, without
+ * the ones that are already over (unless you picked one before it ended), so
+ * a newcomer is never asked about a festival they can no longer go to. The
+ * order doesn't depend on what's picked, so rows never jump while you tap.
+ */
+export function welcomeChoices(festivals: readonly Festival[], going: readonly string[], today: Date): Festival[] {
+  return bySoonest(
+    festivals.filter((f) => going.includes(f.id) || !isOver(f, today)),
+    today,
+  );
+}

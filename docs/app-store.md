@@ -39,7 +39,11 @@ for testing Spotify sign-in while you work. TestFlight is the real app.
 
 ## Step 2: the App Store listing
 
-In App Store Connect → your app:
+A full draft (names and subtitles with character counts, promotional text,
+description, keywords, age rating and privacy answers, and what only you can
+decide) is in [`docs/app-store/listing.md`](app-store/listing.md); the
+screenshots come from GitHub (Actions → App Store screenshots → Run
+workflow, then download the zip from the finished run). In short, in App Store Connect → your app:
 
 - **Name**: Afterglow (if it's taken, something like "Afterglow: Festival
   Sets").
