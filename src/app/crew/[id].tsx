@@ -29,6 +29,7 @@ import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { LastUpdated } from '../../features/offline/LastUpdated';
 
 /**
  * A festival crew. Someone who opens an invite sees the crew and who's in it,
@@ -63,7 +64,7 @@ export default function CrewScreen() {
         );
       case 'ready':
         return page.member ? (
-          <Member crew={page.crew} profiles={page.profiles} picks={page.picks} fresh={fresh === '1'} onChange={update} />
+          <Member crew={page.crew} profiles={page.profiles} picks={page.picks} fresh={fresh === '1'} onChange={update} readAt={page.readAt} kept={!!page.kept} />
         ) : (
           <Invite crew={page.crew} profiles={page.profiles} code={code} onJoined={() => void reload()} />
         );
@@ -233,12 +234,17 @@ function Member({
   picks,
   fresh,
   onChange,
+  readAt,
+  kept,
 }: {
   crew: Crew;
   profiles: Record<string, Profile>;
   picks: { uid: string; artists: string[]; updatedAt: string }[];
   fresh: boolean;
   onChange: (crew: Crew) => void;
+  /** When the crew was read, and whether that's this phone's copy (no signal). */
+  readAt: number;
+  kept: boolean;
 }) {
   const social = useSocial();
   const me = social.user?.uid;
@@ -406,6 +412,7 @@ function Member({
         </Pressable>
       )}
       {festival ? <Text style={styles.meta}>{whereWhen(festival)}</Text> : null}
+      <LastUpdated at={readAt} live={!kept} />
 
       <Pressable onPress={invite} accessibilityRole="button" accessibilityLabel="Invite friends" style={({ pressed }) => [styles.primary, styles.inviteRow, pressed && styles.pressed]}>
         <ShareIcon color={color.moon} size={16} />

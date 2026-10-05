@@ -6,6 +6,7 @@ import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { useSocial } from '../../state/social';
+import { LastUpdated } from '../offline/LastUpdated';
 import { color, radius, space, type } from '../../theme/tokens';
 import type { Crew, CrewUpdate } from '../social/models';
 import { firstName } from './together';
@@ -18,7 +19,7 @@ import { crewWhere, whereLine, type Whereabouts } from './where';
  * people posted, never live location; old places say so.
  */
 export function CrewWhereCard({ festival, crews }: { festival: Festival; crews: readonly Crew[] }) {
-  const { updatesFor, profileOf, stories, outbox } = useCrewUpdates();
+  const { updatesFor, profileOf, stories, outbox, readAt, readLive } = useCrewUpdates();
   const social = useSocial();
   const now = useNow().getTime();
   const me = social.user?.uid;
@@ -87,6 +88,7 @@ export function CrewWhereCard({ festival, crews }: { festival: Festival; crews: 
       ) : null}
       {quiet.length ? <Text style={styles.note}>No update yet from {quiet.join(', ')}.</Text> : null}
       <Text style={styles.note}>From their latest videos and check-ins, not live location.</Text>
+      <LastUpdated at={readAt} live={readLive} />
     </View>
   );
 }

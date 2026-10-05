@@ -1,5 +1,7 @@
+import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { isSupportAccount } from '../features/admin/admin';
+import { isOffline } from '../features/offline/status';
 import type { Memory } from '../features/memories/models';
 import type { Profile, ProfileInput, ReportReason, SocialUser } from '../features/social/models';
 import { publishedChanged } from '../features/social/publish';
@@ -8,6 +10,7 @@ import { defaultSocialService } from '../features/social/services';
 import { tasteMix } from '../features/taste/lean';
 import { useCatalog } from './catalog';
 import { useGoing } from './going';
+import { forgetLastKnownAccount, lastKnownFor, rememberLastKnown } from './lastKnown';
 import { useMemories } from './memories';
 import { useTaste } from './taste';
 
@@ -81,6 +84,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const [user, setUser] = useState<SocialUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileStatus, setProfileStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  // When the profile shown is this phone's copy (no signal on opening), when that copy was read.
+  const [profileKeptAt, setProfileKeptAt] = useState<number | undefined>(undefined);
   const [blocked, setBlockedIds] = useState<ReadonlySet<string>>(new Set());
   const [following, setFollowingIds] = useState<ReadonlySet<string>>(new Set());
   const [sharing, setSharing] = useState<Record<string, number>>({});
@@ -88,7 +93,54 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
 
   // Sign-in state, then your profile and blocks whenever the account changes. An answer that arrives after
   // the account changed again (a quick sign-out and in) is dropped, so one account never shows another's profile.
+  // With no signal, what this phone last read stands in (state/lastKnown), so a festival with no bars still has you.
   const currentUid = useRef<string | null>(null);
+  const readAccount = useCallback(
+    (uid: string, quiet: boolean) => {
+      service
+        .profileOf(uid)
+        .then((p) => {
+          if (currentUid.current !== uid) return;
+          setProfile(p);
+          setProfileStatus('ready');
+          setProfileKeptAt(undefined);
+          rememberLastKnown(uid, { profile: p ? { value: p, at: Date.now() } : undefined });
+        })
+        .catch(async () => {
+          if (quiet) return;
+          const kept = (await lastKnownFor(uid))?.profile;
+          if (currentUid.current !== uid) return;
+          if (kept) {
+            setProfile(kept.value);
+            setProfileKeptAt(kept.at);
+            setProfileStatus('ready');
+          } else setProfileStatus('failed');
+        });
+      service
+        .blocked()
+        .then((ids) => {
+          if (currentUid.current !== uid) return;
+          setBlockedIds(new Set(ids));
+          rememberLastKnown(uid, { blocked: ids });
+        })
+        .catch(async () => {
+          const kept = (await lastKnownFor(uid))?.blocked;
+          if (!quiet && kept && currentUid.current === uid) setBlockedIds(new Set(kept));
+        });
+      service
+        .following(uid, FOLLOWING_MAX)
+        .then((ids) => {
+          if (currentUid.current !== uid) return;
+          setFollowingIds(new Set(ids));
+          rememberLastKnown(uid, { following: ids });
+        })
+        .catch(async () => {
+          const kept = (await lastKnownFor(uid))?.following;
+          if (!quiet && kept && currentUid.current === uid) setFollowingIds(new Set(kept));
+        });
+    },
+    [service],
+  );
   useEffect(
     () =>
       service.onAuthChange((u) => {
@@ -97,28 +149,35 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         setReady(true);
         setProfile(null);
         setProfileStatus('loading');
+        setProfileKeptAt(undefined);
         setBlockedIds(new Set());
         setFollowingIds(new Set());
         if (!u) return;
-        service
-          .profileOf(u.uid)
-          .then((p) => {
-            if (currentUid.current !== u.uid) return;
-            setProfile(p);
-            setProfileStatus('ready');
-          })
-          .catch(() => currentUid.current === u.uid && setProfileStatus('failed'));
-        service
-          .blocked()
-          .then((ids) => currentUid.current === u.uid && setBlockedIds(new Set(ids)))
-          .catch(() => {});
-        service
-          .following(u.uid, FOLLOWING_MAX)
-          .then((ids) => currentUid.current === u.uid && setFollowingIds(new Set(ids)))
-          .catch(() => {});
+        readAccount(u.uid, false);
       }),
-    [service],
+    [service, readAccount],
   );
+  // Signal back after opening without it: read your profile, blocks and follows for real.
+  const offline = isOffline(useNetworkState());
+  const behind = profileKeptAt !== undefined || profileStatus === 'failed';
+  const wasOffline = useRef(false);
+  useEffect(() => {
+    if (offline) {
+      wasOffline.current = true;
+      return;
+    }
+    const uid = currentUid.current;
+    if (!wasOffline.current || !behind || !uid) return;
+    wasOffline.current = false;
+    readAccount(uid, true);
+  }, [offline, behind, readAccount]);
+
+  // A profile just read or saved: shown, and kept on this phone.
+  const keepProfile = useCallback((p: Profile) => {
+    setProfile(p);
+    setProfileKeptAt(undefined);
+    rememberLastKnown(p.uid, { profile: { value: p, at: Date.now() } });
+  }, []);
 
   const reloadProfile = useCallback(() => {
     const uid = currentUid.current;
@@ -130,6 +189,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         if (currentUid.current !== uid) return;
         setProfile(p);
         setProfileStatus('ready');
+        setProfileKeptAt(undefined);
+        rememberLastKnown(uid, { profile: p ? { value: p, at: Date.now() } : undefined });
       })
       .catch(() => currentUid.current === uid && setProfileStatus('failed'));
   }, [service]);
@@ -147,25 +208,26 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const saveProfile = useCallback(
     async (input: ProfileInput) => {
       const p = await service.saveProfile(input, published);
-      if (currentUid.current === p.uid) setProfile(p);
+      if (currentUid.current === p.uid) keepProfile(p);
       return p;
     },
-    [service, published],
+    [service, published, keepProfile],
   );
 
   // Keep "Going to" and "My sound" current (a few seconds after they settle, only when they changed).
   // Never on the support account: plans and taste are this phone's, so switching to HQ would publish yours there.
+  // Not from this phone's copy: an old copy must never be published over a newer profile.
   useEffect(() => {
-    if (!profile || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds)) return;
+    if (!profile || profileKeptAt !== undefined || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds)) return;
     const t = setTimeout(() => {
       const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound, socials: profile.socials ?? {} };
       service
         .saveProfile(input, published)
-        .then((p) => currentUid.current === p.uid && setProfile(p))
+        .then((p) => currentUid.current === p.uid && keepProfile(p))
         .catch(() => {});
     }, 3000);
     return () => clearTimeout(t);
-  }, [profile, published, service, user]);
+  }, [profile, profileKeptAt, published, service, user, keepProfile]);
 
   const signUp = useCallback(async (email: string, password: string) => void (await service.signUp(email, password)), [service]);
   const signIn = useCallback(async (email: string, password: string) => void (await service.signIn(email, password)), [service]);
@@ -174,16 +236,19 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     async (password: string) => {
       const uid = user?.uid;
       await service.deleteAccount(password);
-      if (uid) mem.forgetShares(uid);
+      if (uid) {
+        mem.forgetShares(uid);
+        forgetLastKnownAccount(uid);
+      }
     },
     [service, user, mem],
   );
-  const setAvatar = useCallback(async (uri: string | null) => setProfile(await service.setAvatar(uri)), [service]);
+  const setAvatar = useCallback(async (uri: string | null) => keepProfile(await service.setAvatar(uri)), [service, keepProfile]);
   const refreshUser = useCallback(async () => {
     const u = await service.reloadUser();
     if (u && u.uid === currentUid.current) setUser(u);
   }, [service]);
-  const setCover = useCallback(async (uri: string | null) => setProfile(await service.setCover(uri)), [service]);
+  const setCover = useCallback(async (uri: string | null) => keepProfile(await service.setCover(uri)), [service, keepProfile]);
 
   const inflight = useRef<Set<string>>(new Set());
   const share = useCallback(

@@ -28,6 +28,7 @@ import {
 import { CARE_NOTE, careAlerts as alertsOf, cleanNotified, helpBody, helpTitle, myCare as myCareOf, toNotify, withNotified } from '../features/crews/care';
 import type { Memory } from '../features/memories/models';
 import { isOffline } from '../features/offline/status';
+import { keptAt } from '../features/offline/lastKnown';
 import type { CrewCare, CrewUpdate, CrewUpdateInput, MeetSpot, Profile } from '../features/social/models';
 import { notifyNow } from '../lib/notifyNow';
 import { forgetCrewPhoto, keepCrewPhoto } from '../features/crews/photoFile';
@@ -37,6 +38,7 @@ import { useNow } from '../lib/useNow';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from './catalog';
 import { useCrews } from './crews';
+import { lastKnownFor, rememberLastKnown } from './lastKnown';
 import { useMemories } from './memories';
 import { useSocial } from './social';
 
@@ -98,6 +100,10 @@ type Ctx = {
   /** Take back one of your updates (sent, or still waiting). */
   remove: (update: { crewId?: string; id: string }) => Promise<void>;
   refresh: () => Promise<void>;
+  /** When crews' updates were last read from the server (or this phone's copy of them, with no signal). */
+  readAt?: number;
+  /** The last read got through for every crew (false: showing what this phone had). */
+  readLive: boolean;
 };
 
 export const OUTBOX_KEY = 'crewOutbox.v1';
@@ -207,31 +213,70 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const [meets, setMeets] = useState<{ uid?: string; byCrew: Record<string, MeetSpot | null> }>({ byCrew: {} });
   const liveKey = live.map((c) => `${c.id}:${c.members.join(',')}`).join('|');
   const profiles = useRef(new Map<string, Profile | undefined>());
+  // Crewmates shown from this phone's copy: read again once there's signal.
+  const keptPeople = useRef(new Set<string>());
   const [profilesVersion, setProfilesVersion] = useState(0);
+  // When updates were last read, and whether that read got through for every crew.
+  const [readState, setReadState] = useState<{ uid?: string; at?: number; live: boolean }>({ live: false });
   const refresh = useCallback(async () => {
     if (!ready || !uid || !live.length) return;
-    const since = Date.now() - UPDATES_WINDOW_MS;
+    const now = Date.now();
+    const since = now - UPDATES_WINDOW_MS;
     const read = await Promise.all(
       live.map(async (c) => [c.id, await service.crewUpdates(c.id, since, UPDATES_MAX).catch(() => undefined)] as const),
     );
+    // No answer (no signal): what this phone last read stands in (state/lastKnown).
+    const kept = read.some(([, list]) => !list) ? await lastKnownFor(uid) : undefined;
     setUpdates((s) => {
       const byCrew = s.uid === uid ? { ...s.byCrew } : {};
-      // A crew that couldn't be read keeps what it had.
-      for (const [id, list] of read) if (list) byCrew[id] = list;
+      // A crew that couldn't be read keeps what it had, or this phone's copy.
+      for (const [id, list] of read) {
+        if (list) byCrew[id] = list;
+        else if (!byCrew[id] && kept?.updates?.[id]) byCrew[id] = kept.updates[id].value.filter((u) => Date.parse(u.at) >= since);
+      }
       return { uid, byCrew };
+    });
+    const failed = read.filter(([, list]) => !list).map(([id]) => id);
+    setReadState((s) => {
+      if (!failed.length) return { uid, at: now, live: true };
+      const before = s.uid === uid ? s.at : undefined;
+      return { uid, at: before ?? keptAt(failed.map((id) => kept?.updates?.[id])), live: false };
     });
     const spots = await Promise.all(live.map(async (c) => [c.id, await service.meetSpot(c.id).catch(() => undefined)] as const));
     setMeets((s) => {
       const byCrew = s.uid === uid ? { ...s.byCrew } : {};
-      for (const [id, spot] of spots) if (spot !== undefined) byCrew[id] = spot;
+      for (const [id, spot] of spots) {
+        if (spot !== undefined) byCrew[id] = spot;
+        else if (!(id in byCrew) && kept?.meets && id in kept.meets) byCrew[id] = kept.meets[id];
+      }
       return { uid, byCrew };
     });
-    // Crewmates' names and faces, once each.
-    const missing = [...new Set(live.flatMap((c) => c.members))].filter((m) => m !== uid && !profiles.current.has(m));
+    // Crewmates' names and faces, once each (with no signal, this phone's copy until they can be read).
+    const missing = [...new Set(live.flatMap((c) => c.members))].filter((m) => m !== uid && (!profiles.current.has(m) || keptPeople.current.has(m)));
+    const people: Record<string, Profile> = {};
     if (missing.length) {
-      await Promise.all(missing.map(async (m) => profiles.current.set(m, (await service.profileOf(m).catch(() => null)) ?? undefined)));
+      const known = (kept ?? (await lastKnownFor(uid)))?.people;
+      await Promise.all(
+        missing.map(async (m) => {
+          try {
+            const p = await service.profileOf(m);
+            profiles.current.set(m, p ?? undefined);
+            keptPeople.current.delete(m);
+            if (p) people[m] = p;
+          } catch {
+            if (known?.[m] && !profiles.current.get(m)) {
+              profiles.current.set(m, known[m]);
+              keptPeople.current.add(m);
+            }
+          }
+        }),
+      );
       setProfilesVersion((v) => v + 1);
     }
+    const readUpdates = Object.fromEntries(read.flatMap(([id, list]) => (list ? [[id, { value: list, at: now }]] : [])));
+    const readSpots = Object.fromEntries(spots.flatMap(([id, spot]) => (spot !== undefined ? [[id, spot]] : [])));
+    if (Object.keys(readUpdates).length || Object.keys(readSpots).length || Object.keys(people).length)
+      rememberLastKnown(uid, { updates: readUpdates, meets: readSpots, people });
     // liveKey stands for `live`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, uid, liveKey, service]);
@@ -251,6 +296,17 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
       sub.remove();
     };
   }, [ready, live.length, refresh]);
+  // Signal back: read straight away rather than at the next minute.
+  const wasOffline = useRef(false);
+  useEffect(() => {
+    if (!online) wasOffline.current = true;
+    else if (wasOffline.current) {
+      wasOffline.current = false;
+      void refresh();
+    }
+  }, [online, refresh]);
+  const readAt = readState.uid === uid ? readState.at : undefined;
+  const readLive = readState.uid === uid && readState.live;
 
   // --- Sending: one item at a time, oldest first, whenever there's a chance.
   // The sender reads the latest of these without restarting.
@@ -454,6 +510,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     async (crewId: string, text: string) => {
       const spot = await service.setMeetSpot(crewId, text);
       setMeets((s) => ({ uid, byCrew: { ...(s.uid === uid ? s.byCrew : {}), [crewId]: spot } }));
+      if (uid) rememberLastKnown(uid, { meets: { [crewId]: spot } });
     },
     [service, uid],
   );
@@ -567,8 +624,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox: myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox: myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh, readAt, readLive }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh, readAt, readLive],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }
@@ -596,6 +653,7 @@ const OFF: Ctx = {
   markSeen: () => {},
   remove: async () => {},
   refresh: async () => {},
+  readLive: false,
 };
 
 /** Crew updates; outside the provider (some tests), nothing and nowhere to send. */
