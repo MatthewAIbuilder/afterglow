@@ -46,7 +46,7 @@ describe('framing the map', () => {
     expect(layout.leaders.length).toBeLessThan(layout.bubbles.length / 2);
   });
 
-  it('puts each sound's name by its own group, clear of every bubble', () => {
+  it('puts each sound’s name by its own group, clear of every bubble', () => {
     const layout = bigMap();
     expect(layout.regions.length).toBeGreaterThan(1);
     for (const r of layout.regions) for (const b of layout.bubbles) expect(Math.abs(b.x - r.x) >= b.r + 20 || Math.abs(b.y - r.y) >= b.r + 9).toBe(true);
