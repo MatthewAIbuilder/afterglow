@@ -7,7 +7,7 @@ import type { DayRoute, RouteStop } from './route';
  * During the festival: what's on your plan right now, and what's next. Pure:
  * the time is passed in.
  *
- * A festival night runs from noon to noon, like the set times (an 01:00 set
+ * A festival night runs from 7 AM to 7 AM, like the set times (an 01:00 set
  * on "Friday" is Saturday morning on the calendar). Night one starts on the
  * festival's first date, and its days are taken in order from there, so
  * only festivals with both dates and a day per date get a live view.

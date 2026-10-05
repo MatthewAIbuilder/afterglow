@@ -25,8 +25,11 @@ export const CLOSE_CALL = 0.05;
 const NEAR_SOUND = 0.3;
 /** Shortest part of a clashing set worth suggesting you catch. */
 const MIN_CATCH = 20;
-/** Times before noon belong to the night before. */
-export const DAY_BREAK = 12 * 60;
+/**
+ * Times before 7 AM belong to the night before (sets run past midnight, sunrise sets until dawn);
+ * from 7 AM it's the day itself, so a daytime festival's 11:30 set stays at the start of its day.
+ */
+export const DAY_BREAK = 7 * 60;
 
 export type Tier = 'must-see' | 'strong' | 'explore';
 

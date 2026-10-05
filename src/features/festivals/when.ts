@@ -14,7 +14,7 @@ const fromIso = (iso: string) => {
 const fromDate = (date: Date) => dayNumber(date.getFullYear(), date.getMonth() + 1, date.getDate());
 
 /** Until this hour, a festival night is still the night before (sets run past midnight). */
-export const NIGHT_ENDS_HOUR = 6;
+export const NIGHT_ENDS_HOUR = 7;
 /** Still last night's festival: past midnight, before the night ends, the day after `endIso`. */
 export const stillLastNight = (endIso: string, today: Date) => today.getHours() < NIGHT_ENDS_HOUR && fromIso(endIso) === fromDate(today) - 1;
 
