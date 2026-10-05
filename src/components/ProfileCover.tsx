@@ -5,35 +5,17 @@ import { StyleSheet, View } from 'react-native';
 import { AnimatedBackdrop } from '../features/profile/AnimatedBackdrop';
 import type { BackdropId } from '../features/profile/backdrops';
 import { nightA } from '../theme/tokens';
+import { FadeMask } from './FadeMask';
 
-/** How strongly an animated background shows over a cover photo when there are both: the photo glows through, dimmed. */
-export const BLEND_OPACITY = 0.55;
-
-/**
- * A profile's background, filling its box: the cover photo, the animated
- * background, or both blended (the photo underneath, dimmed by the
- * animation's night and lit by its glow). Nothing without either.
- */
-export function CoverLayers({ url, backdrop, width, height, still }: { url?: string; backdrop?: BackdropId; width: number; height: number; still?: boolean }) {
-  return (
-    <>
-      {url ? <Image source={{ uri: url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} testID={backdrop ? 'cover-blend' : undefined} /> : null}
-      {backdrop ? (
-        <View style={[StyleSheet.absoluteFill, url ? { opacity: BLEND_OPACITY } : null]}>
-          <AnimatedBackdrop id={backdrop} width={width} height={height} still={still} />
-        </View>
-      ) : null}
-    </>
-  );
-}
 
 /**
- * The top of a profile, behind the header: the cover photo, the animated
- * background (see `useProfileBackdrop`), or both blended. Darkened at the
- * very top for the status bar and fading into the night below, so the name
- * and buttons stay readable. Nothing without either.
+ * The top of a profile, behind the header: an animated background when one
+ * is chosen (see `useProfileBackdrop`), else the cover photo; one or the
+ * other, never both. Darkened at the very top for the status bar, then
+ * faded out (a real fade to transparent, `FadeMask`) so it melts into the
+ * night sky behind the page with no edge. Nothing without either.
  */
-export function ProfileCover({ url, height, backdrop }: { url?: string; height: number; backdrop?: BackdropId }) {
+export function ProfileCover({ url, height, backdrop, fadeFrom = 0.7 }: { url?: string; height: number; backdrop?: BackdropId; /** Where it starts fading out, as a share of its height: just under the orbit. */ fadeFrom?: number }) {
   const [width, setWidth] = useState(0);
   if (!url && !backdrop) return null;
   return (
@@ -45,33 +27,33 @@ export function ProfileCover({ url, height, backdrop }: { url?: string; height: 
       onLayout={(e) => setWidth(Math.round(e.nativeEvent.layout.width))}
       testID={backdrop ? `backdrop-${backdrop}` : undefined}
     >
-      <CoverLayers url={url} backdrop={backdrop} width={width} height={height} />
-      {backdrop ? (
-        // Clear over the orbit, then a long, gentle fade into the night below the name.
-        <LinearGradient colors={[nightA(0.4), nightA(0), nightA(0.08), nightA(0.55), nightA(1)]} locations={[0, 0.16, 0.58, 0.82, 1]} style={StyleSheet.absoluteFill} />
-      ) : (
-        <LinearGradient colors={[nightA(0.55), nightA(0.05), nightA(0.3), nightA(0.7), nightA(1)]} locations={[0, 0.2, 0.58, 0.82, 1]} style={StyleSheet.absoluteFill} />
-      )}
+      <FadeMask bottom={fadeFrom} style={StyleSheet.absoluteFill}>
+        {backdrop ? <AnimatedBackdrop id={backdrop} width={width} height={height} /> : <Image source={{ uri: url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />}
+        {/* A little shade under the status bar; a photo also gets a soft veil so the name over it reads. */}
+        <LinearGradient
+          colors={backdrop ? [nightA(0.4), nightA(0), nightA(0)] : [nightA(0.55), nightA(0.12), nightA(0.3)]}
+          locations={[0, 0.18, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </FadeMask>
     </View>
   );
 }
 
 /**
  * Your profile background behind an orbit in the middle of a page (the
- * Friends tab): the cover photo, animated background or both, faded into the night
- * at the top and bottom so it reads as light behind the faces, not a box.
- * Nothing without either. Sized and placed by the caller.
+ * Friends tab): the animated background or cover photo, faded out at the top
+ * and bottom so it reads as light behind the faces, not a box. Nothing
+ * without either. Sized and placed by the caller.
  */
 export function OrbitBackdrop({ url, backdrop, width, height, style }: { url?: string; backdrop?: BackdropId; width: number; height: number; style?: object }) {
   if ((!url && !backdrop) || width <= 0) return null;
   return (
     <View style={[styles.orbit, { width, height }, style]} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID={backdrop ? `orbit-backdrop-${backdrop}` : 'orbit-cover'}>
-      <CoverLayers url={url} backdrop={backdrop} width={width} height={height} />
-      <LinearGradient
-        colors={[nightA(1), nightA(backdrop ? 0.1 : 0.35), nightA(backdrop ? 0.15 : 0.4), nightA(1)]}
-        locations={[0, 0.28, 0.72, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      <FadeMask top={0.3} bottom={0.7} style={StyleSheet.absoluteFill}>
+        {backdrop ? <AnimatedBackdrop id={backdrop} width={width} height={height} /> : <Image source={{ uri: url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />}
+        {backdrop ? null : <View style={[StyleSheet.absoluteFill, { backgroundColor: nightA(0.35) }]} />}
+      </FadeMask>
     </View>
   );
 }
