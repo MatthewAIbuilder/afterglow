@@ -119,7 +119,7 @@ describe('Music connections', () => {
     // No credentials in normal storage.
     expect(JSON.stringify(saved)).not.toMatch(/token/i);
 
-    const sound = await renderApp('/sound?view=map');
+    const sound = await renderApp('/sound?view=overview');
     await settle();
     await act(async () => {
       jest.advanceTimersByTime(500);
