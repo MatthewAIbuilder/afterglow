@@ -4,7 +4,7 @@ import type { QuestId } from '../quests/quests';
  * Milestone badges: a few quiet markers of your festival life, next to the
  * festival pins. Worked out on the phone from what you've done. Pure.
  */
-export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon' | 'green' | 'giver' | 'gardener';
+export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon' | 'green' | 'giver' | 'gardener' | 'scout';
 
 export type Milestone = {
   id: MilestoneId | QuestId;
@@ -45,6 +45,8 @@ export type MilestoneInput = {
   given?: number;
   /** Sprout kinds in your garden (not counting plain ones). */
   kinds?: number;
+  /** Festivals whose set times you sent and Afterglow put live. */
+  scouted?: number;
 };
 
 type Spec = { id: MilestoneId; title: string; how: string; about: string; target: number; value: (i: MilestoneInput) => number };
@@ -64,6 +66,7 @@ const SPECS: Spec[] = [
   { id: 'green', title: 'Green thumb', how: 'Grow a sprout to bloom', about: 'For growing a sprout all the way to bloom: festival days, giving, filming and watching sets all help.', target: 1, value: (i) => i.bloomed ?? 0 },
   { id: 'giver', title: 'Kind soul', how: 'Give 10 sprouts', about: 'For giving 10 sprouts that people picked up. PLUR in action.', target: 10, value: (i) => i.given ?? 0 },
   { id: 'gardener', title: 'Gardener', how: 'Collect all 7 sprout kinds', about: 'For a garden with every kind of sprout in it, grown yourself or given to you.', target: 7, value: (i) => i.kinds ?? 0 },
+  { id: 'scout', title: 'Set scout', how: 'Send set times that go live', about: 'For sending a festival’s set times that Afterglow checked and put live for everyone. Thank you: every plan there became a schedule.', target: 1, value: (i) => i.scouted ?? 0 },
   { id: 'ten', title: '10 festivals', how: 'Go to 10 festivals', about: 'For going to 10 festivals. A proper festival life.', target: 10, value: (i) => i.been },
 ];
 

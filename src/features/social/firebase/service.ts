@@ -20,6 +20,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getCountFromServer,
   getDoc,
@@ -42,13 +43,13 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { DM_PREFIX, directRoom, isDirectRoom, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
+import { DM_PREFIX, directRoom, isDirectRoom, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, TIP_TEXT_MAX } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
-import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -267,6 +268,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // Stickers you found go too.
         const finds = await getDocs(query(collection(db, 'finds'), where('uid', '==', user.uid), limit(500))).catch(() => null);
         for (const d of finds?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+        // Set times you sent, screenshots and all.
+        const tips = await getDocs(query(collection(db, 'setTimes'), where('uid', '==', user.uid), limit(200))).catch(() => null);
+        for (const d of tips?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
         // Sprouts you gave and picked up go too (the rules allow it once the profile is gone).
         for (const field of ['from', 'to'] as const) {
           const snap = await getDocs(query(collection(db, 'sprouts'), where(field, '==', user.uid), limit(500))).catch(() => null);
@@ -726,6 +730,33 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         for (const f of drop?.files ?? []) await removeFile(f.path);
         await deleteDoc(ref_);
       }),
+    sendSetTimes: (festivalId, tip) =>
+      guard(async () => {
+        const user = me();
+        const ref_ = doc(fb().db, 'setTimes', `${user.uid}_${festivalId}`);
+        const text = tip.text?.trim().slice(0, TIP_TEXT_MAX);
+        const data = { uid: user.uid, festivalId, status: 'new', createdAt: serverTimestamp(), ...(text ? { text } : {}), ...(tip.photo ? { photo: tip.photo } : {}) };
+        try {
+          await setDoc(ref_, data);
+        } catch (e) {
+          // One waiting per festival: the record is already there (and only HQ may change it).
+          if ((await getDoc(ref_).catch(() => null))?.exists()) throw new SocialError('already-sent');
+          throw e;
+        }
+      }),
+    mySetTimes: () =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'setTimes'), where('uid', '==', user.uid), limit(50)));
+        return snap.docs.map((d) => setTimesTipFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    setTimesTips: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'setTimes'), where('status', '==', 'new'), orderBy('createdAt', 'asc'), limit(max)));
+        return snap.docs.map((d) => setTimesTipFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    markSetTimesLive: (id) => guard(async () => updateDoc(doc(fb().db, 'setTimes', id), { status: 'live', photo: deleteField() })),
+    declineSetTimes: (id) => guard(async () => deleteDoc(doc(fb().db, 'setTimes', id))),
     livePatches: () =>
       guard(async () => {
         const snap = await getDocs(query(collection(fb().db, 'published'), orderBy('publishedAt', 'asc'), limit(200)));

@@ -11,7 +11,7 @@
  */
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'fs';
-import { doc, getDoc, getDocs, getCountFromServer, setDoc, deleteDoc, writeBatch, updateDoc, collection, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, getDocs, getCountFromServer, setDoc, deleteDoc, writeBatch, updateDoc, collection, query, where, orderBy, limit, serverTimestamp, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 const env = await initializeTestEnvironment({
@@ -814,6 +814,32 @@ await t('1-to-1 chats: only friends both ways, only the two of them, not once bl
   await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), 'blocks', 'uidQ')));
   await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), 'follows', 'uidQ_uidP')));
   await assertFails(setDoc(doc(Q.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm7abcdef'), msg('uidQ')));
+});
+
+await t('set times from fans: one waiting per festival, only HQ reads them all and marks them live', async () => {
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const tip = (uid, festivalId, over = {}) => ({ uid, festivalId, status: 'new', createdAt: serverTimestamp(), text: 'Friday\n10:00 PM SUBTRONICS', ...over });
+  const photo = 'data:image/jpeg;base64,' + 'A'.repeat(2000);
+  await assertSucceeds(setDoc(doc(A.firestore(), 'setTimes', 'uidA_edc-orlando-26'), tip('uidA', 'edc-orlando-26', { photo })));
+  // Once each, never edited by the sender, never in someone else's name, never empty or odd.
+  await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidA_edc-orlando-26'), tip('uidA', 'edc-orlando-26')));
+  await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidB_edc-orlando-26'), tip('uidB', 'edc-orlando-26')));
+  await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidA_acl-26'), { uid: 'uidA', festivalId: 'acl-26', status: 'new', createdAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidA_acl-26'), tip('uidA', 'acl-26', { status: 'live' })));
+  await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidA_acl-26'), tip('uidA', 'acl-26', { photo: 'data:image/png;base64,AAAA' })));
+  await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidA_acl-26'), tip('uidA', 'acl-26', { text: 'x'.repeat(20001) })));
+  await assertFails(setDoc(doc(anon.firestore(), 'setTimes', 'x_acl-26'), tip('x', 'acl-26')));
+  // The sender sees their own; nobody else but HQ.
+  await assertSucceeds(getDoc(doc(A.firestore(), 'setTimes', 'uidA_edc-orlando-26')));
+  await assertSucceeds(getDocs(query(collection(A.firestore(), 'setTimes'), where('uid', '==', 'uidA'))));
+  await assertFails(getDoc(doc(B.firestore(), 'setTimes', 'uidA_edc-orlando-26')));
+  await assertFails(getDocs(collection(B.firestore(), 'setTimes')));
+  await assertSucceeds(getDocs(query(collection(H.firestore(), 'setTimes'), where('status', '==', 'new'))));
+  await assertFails(updateDoc(doc(A.firestore(), 'setTimes', 'uidA_edc-orlando-26'), { status: 'live' }));
+  await assertFails(updateDoc(doc(H.firestore(), 'setTimes', 'uidA_edc-orlando-26'), { status: 'live' }));
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'setTimes', 'uidA_edc-orlando-26'), { status: 'live', photo: deleteField() }));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'setTimes', 'uidB_acl-26'), tip('uidB', 'acl-26')));
+  await assertSucceeds(deleteDoc(doc(H.firestore(), 'setTimes', 'uidB_acl-26')));
 });
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();

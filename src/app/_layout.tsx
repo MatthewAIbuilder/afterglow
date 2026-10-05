@@ -20,6 +20,7 @@ import { FounderClaim } from '../features/standing/FounderClaim';
 import { ActivityPing } from '../features/admin/ActivityPing';
 import { SavedAccountSync } from '../features/accounts/SavedAccountSync';
 import { LivePatchSync } from '../features/admin/LivePatchSync';
+import { ScoutSync } from '../features/setTimes/ScoutSync';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
@@ -129,6 +130,7 @@ export default function RootLayout() {
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recap/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="hunt/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="send-set-times/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="pick-artists" options={{ presentation: 'modal' }} />
         <Stack.Screen name="this-or-that" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="compare" />
@@ -227,6 +229,7 @@ export default function RootLayout() {
       <ActivityPing />
       <SavedAccountSync />
       <LivePatchSync />
+      <ScoutSync />
       <AdminReturnPill />
       <TonightLauncher />
       <WhatsNewLauncher />
