@@ -1,6 +1,6 @@
 import { useNetworkState } from "expo-network";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { showAlert } from "../../lib/dialog";
 import { haptic } from "../../lib/haptics";
@@ -9,23 +9,21 @@ import { color, glowA, radius, space, type } from "../../theme/tokens";
 import { isOffline } from "../offline/status";
 import { CHECK_INS, clock } from "./updates";
 
-const GREEN = "#5BE3B5";
-const AMBER = "#FFB86B";
-const RED = "#FF8A8A";
+/** How-you-are tints: fine, can't find you, need help. */
+export const GREEN = "#5BE3B5";
+export const AMBER = "#FFB86B";
+export const RED = "#FF8A8A";
 
 /**
- * How you're doing, as chips like the check-ins: "I'm OK", "Can't find you"
- * (to your meeting spot when there is one) and "Need help" (asked first).
- * After asking for help, "I'm OK now" clears it. Each waits for signal like
- * any check-in and keeps the time you tapped. `onSent` gets the update's id.
+ * How you're doing, as actions: "I'm OK" (or "I'm OK now" after asking for
+ * help), "Can't find you" and "Need help", the last two asked first. Shared
+ * by the chips below and the crew chat's check-in tray, so both send the
+ * same way. `onSent` gets the update's id and the words it showed.
  */
-export function StatusChips({
-  festivalId,
-  onSent,
-}: {
-  festivalId: string;
-  onSent: (id: string, what: string) => void;
-}) {
+export function useCareActions(
+  festivalId: string,
+  onSent: (id: string, what: string) => void,
+) {
   const { sendCare, callLost, myCare } = useCrewUpdates();
   const asked = myCare?.care === "help";
   const ok = () => {
@@ -62,6 +60,51 @@ export function StatusChips({
         },
       ],
     );
+  return { asked, myCare, ok, lost, help };
+}
+
+/**
+ * What became of your last check-in, said honestly: sending, saved for when
+ * there's signal (marked with the time you tapped), refused, or sent.
+ */
+export function useCheckInStatus() {
+  const { outbox, dropped } = useCrewUpdates();
+  const offline = isOffline(useNetworkState());
+  const [sent, setSent] = useState<{ id: string; what: string; at: string }>();
+  const done = (id: string, what: string) => {
+    haptic.settle();
+    setSent({ id, what, at: new Date().toISOString() });
+  };
+  const waiting = sent ? outbox.some((o) => o.id === sent.id) : false;
+  const refused = sent ? dropped.includes(sent.id) : false;
+  const status = !sent
+    ? undefined
+    : refused
+      ? `Couldn’t reach your crew with “${sent.what}”. Try again.`
+      : waiting
+        ? offline
+          ? `“${sent.what}” is saved for when there’s signal, marked ${clock(sent.at)}.`
+          : `Sending “${sent.what}”…`
+        : `Sent “${sent.what}” · ${clock(sent.at)}`;
+  const tint = refused ? RED : waiting && offline ? AMBER : undefined;
+  const clear = useCallback(() => setSent(undefined), []);
+  return { sent, done, status, tint, settled: !!sent && !waiting && !refused, clear };
+}
+
+/**
+ * How you're doing, as chips like the check-ins: "I'm OK", "Can't find you"
+ * (to your meeting spot when there is one) and "Need help" (asked first).
+ * After asking for help, "I'm OK now" clears it. Each waits for signal like
+ * any check-in and keeps the time you tapped. `onSent` gets the update's id.
+ */
+export function StatusChips({
+  festivalId,
+  onSent,
+}: {
+  festivalId: string;
+  onSent: (id: string, what: string) => void;
+}) {
+  const { asked, myCare, ok, lost, help } = useCareActions(festivalId, onSent);
   return (
     <View style={{ gap: space.sm }}>
       {asked && myCare ? (
@@ -108,25 +151,9 @@ export function CheckInPanel({
   festivalId: string;
   title?: string;
 }) {
-  const { checkIn, outbox, dropped, ready } = useCrewUpdates();
-  const offline = isOffline(useNetworkState());
-  const [sent, setSent] = useState<{ id: string; what: string; at: string }>();
+  const { checkIn, ready } = useCrewUpdates();
+  const { done, status, tint } = useCheckInStatus();
   if (!ready) return null;
-
-  const done = (id: string, what: string) => {
-    haptic.settle();
-    setSent({ id, what, at: new Date().toISOString() });
-  };
-  const waiting = sent ? outbox.some((o) => o.id === sent.id) : false;
-  const status = !sent
-    ? undefined
-    : dropped.includes(sent.id)
-      ? `Couldn’t reach your crew with “${sent.what}”. Try again.`
-      : waiting
-        ? offline
-          ? `“${sent.what}” is saved for when there’s signal, marked ${clock(sent.at)}.`
-          : `Sending “${sent.what}”…`
-        : `Sent “${sent.what}” · ${clock(sent.at)}`;
 
   return (
     <View style={styles.card}>
@@ -164,11 +191,7 @@ export function CheckInPanel({
       <StatusChips festivalId={festivalId} onSent={done} />
       {status ? (
         <Text
-          style={[
-            styles.status,
-            sent && dropped.includes(sent.id) && { color: RED },
-            waiting && offline && { color: AMBER },
-          ]}
+          style={[styles.status, tint ? { color: tint } : null]}
           accessibilityLiveRegion="polite"
         >
           {status}
