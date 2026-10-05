@@ -7,7 +7,7 @@ import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
-import { ChevronIcon } from '../../components/TabIcons';
+import { ChevronIcon, MoreIcon } from '../../components/TabIcons';
 import { CHAT_RULES, DM_RULES, QUICK_MESSAGES, arrivedLate, arrivedLateLine, chatRows, deliveryLine, justArrivedLate, lateNote, seenBy, seenLine, waitingLine, type ChatLine } from '../../features/crews/chat';
 import { firstName } from '../../features/crews/together';
 import { clock } from '../../features/crews/updates';
@@ -302,6 +302,11 @@ export default function CrewChatScreen() {
             </View>
           </Pressable>
           )}
+          {!direct && crew ? (
+            <GlassCircleButton label="Crew settings" onPress={() => router.push({ pathname: '/crew/[id]', params: { id } })}>
+              <MoreIcon color={color.moon} size={18} />
+            </GlassCircleButton>
+          ) : null}
         </View>
         <ScrollView
           ref={scroller}
