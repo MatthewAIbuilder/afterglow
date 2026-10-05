@@ -1,8 +1,8 @@
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../lib/haptics';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 
-export type Chip = { key: string | undefined; label: string; count?: number; accessibilityLabel: string };
+export type Chip = { key: string | undefined; label: string; count?: number; accessibilityLabel: string; /** A small colour dot before the label (a sound's colour). */ dot?: string };
 
 /**
  * A horizontal row of filter chips; the first is usually "All". Tapping the
@@ -42,6 +42,7 @@ export function FilterChips({
             accessibilityLabel={c.accessibilityLabel}
             style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
           >
+            {c.dot ? <View style={[styles.dot, { backgroundColor: c.dot }]} /> : null}
             <Text style={[styles.text, on && { color: color.moon }]}>{c.label}</Text>
             {c.count !== undefined ? <Text style={styles.count}>{c.count}</Text> : null}
           </Pressable>
@@ -67,5 +68,6 @@ const styles = StyleSheet.create({
   },
   chipOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.45) },
   text: { ...type.caption, color: color.moonDim },
+  dot: { width: 7, height: 7, borderRadius: 4 },
   count: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
 });
