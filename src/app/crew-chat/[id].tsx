@@ -29,6 +29,7 @@ import { WEB_URL } from '../../config/app';
 import { ShareCard } from '../../features/messages/ShareCard';
 import { LastUpdated } from '../../features/offline/LastUpdated';
 import { CrewOrb } from '../../features/friends/CrewOrb';
+import { ChatCheckIn } from '../../features/crews/ChatCheckIn';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { isOffline } from '../../features/offline/status';
 import { parseShare, shareNoun } from '../../features/messages/shares';
@@ -50,7 +51,7 @@ export default function CrewChatScreen() {
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const me = social.user?.uid;
-  const { profileOf: crewProfileOf } = useCrewUpdates();
+  const { profileOf: crewProfileOf, ready: updatesReady, crewFestivals } = useCrewUpdates();
   const chat = useCrewChat();
   const offline = isOffline(useNetworkState());
   const { page } = useCrewPage(id);
@@ -83,6 +84,9 @@ export default function CrewChatScreen() {
   );
   const otherName = other && otherProfile ? firstName(otherProfile.displayName) : 'your friend';
   const festival = crew ? catalog.festival(crew.festivalId) : undefined;
+  // Checking in from the chat (crews only, while their festival isn't over): open as the chat opens, folded once you scroll or send.
+  const canCheckIn = !!crew && member && updatesReady && crewFestivals.includes(crew.festivalId);
+  const [checkInOpen, setCheckInOpen] = useState(true);
   const lines = chat.linesFor(id);
   const rows = useMemo(() => chatRows(lines, me, now), [lines, me, now]);
   // "Seen by" goes under your latest message that reached the crew.
@@ -115,6 +119,7 @@ export default function CrewChatScreen() {
     if (!chat.send(id, words)) return;
     haptic.tap();
     setText('');
+    setCheckInOpen(false);
     // A little secret: PLUR sets off the heart rain here too.
     const secret = searchSecret(words);
     if (secret) revealSecret(secret);
@@ -145,6 +150,12 @@ export default function CrewChatScreen() {
       else if (handle) askBlock(handle, false, (on) => social.setBlocked(line.uid, on));
     });
   };
+
+  const quickMessages = QUICK_MESSAGES.map((q) => (
+    <Pressable key={q} onPress={() => send(q)} accessibilityRole="button" accessibilityLabel={`Send “${q}”`} style={({ pressed }) => [styles.chip, pressed && styles.pressed]}>
+      <Text style={styles.chipText}>{q}</Text>
+    </Pressable>
+  ));
 
   const body = (() => {
     if (!social.user) return <Text style={styles.quiet}>{direct ? 'Sign in to see your messages.' : 'Sign in to see your crew’s chat.'}</Text>;
@@ -313,6 +324,7 @@ export default function CrewChatScreen() {
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
+          onScrollBeginDrag={() => setCheckInOpen(false)}
           onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: false })}
           contentContainerStyle={{ paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.lg, gap: 2 }}
         >
@@ -347,15 +359,15 @@ export default function CrewChatScreen() {
         ) : null}
         {member ? (
           <View style={[styles.compose, { paddingBottom: insets.bottom + space.sm }]}>
-            {!text ? (
+            {text ? null : canCheckIn && crew ? (
+              <ChatCheckIn festivalId={crew.festivalId} open={checkInOpen} onOpenChange={setCheckInOpen}>
+                {quickMessages}
+              </ChatCheckIn>
+            ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.quickRow}>
-                {QUICK_MESSAGES.map((q) => (
-                  <Pressable key={q} onPress={() => send(q)} accessibilityRole="button" accessibilityLabel={`Send “${q}”`} style={({ pressed }) => [styles.chip, pressed && styles.pressed]}>
-                    <Text style={styles.chipText}>{q}</Text>
-                  </Pressable>
-                ))}
+                {quickMessages}
               </ScrollView>
-            ) : null}
+            )}
             <View style={styles.inputRow}>
               <TextInput
                 value={text}
