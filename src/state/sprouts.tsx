@@ -6,7 +6,7 @@ import { AppState } from 'react-native';
 import { isOffline } from '../features/offline/status';
 import { socialErrorKind } from '../features/social/service';
 import type { Sprout } from '../features/social/models';
-import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, giftsToSend, giftsToTakeBack, nextDue, queueClaim, tidy } from '../features/sprouts/outbox';
+import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, GIFT_REFUSED_MAX, giftsToSend, giftsToTakeBack, giftTried, nextDue, queueClaim, seedGifts, tidy } from '../features/sprouts/outbox';
 import {
   cleanBloomed,
   cleanSproutArtist,
@@ -113,7 +113,8 @@ type Ctx = {
 };
 
 export const SPROUTS_KEY = 'sprouts.v1';
-const TRY_TIMEOUT_MS = 10_000;
+// Longer than the backend's own wait for a write (12 s, then a read), so its answer comes first.
+const TRY_TIMEOUT_MS = 15_000;
 /** Celebrations already shown, kept at least as long as the wild sprouts and blooms they're for. */
 const SHOWN_MAX = 2000;
 const EMPTY: Stored = { gifts: [], claims: [], garden: [], bloomed: {} };
@@ -176,6 +177,9 @@ const timeout = <T,>(p: Promise<T>, ms: number) =>
       },
     );
   });
+
+/** A try that failed for want of signal (or no answer in time), not a refusal. */
+const noSignal = (e: unknown) => (e instanceof Error && e.message === 'timeout') || socialErrorKind(e) === 'network';
 
 const SproutsContext = createContext<Ctx | null>(null);
 
@@ -272,8 +276,10 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           TRY_TIMEOUT_MS,
         );
         setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, sent: true } : x)) }));
-      } catch {
-        setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
+      } catch (e) {
+        // No signal: tried again later. Refused: given up after a few tries, and its seed is back.
+        const refused = !noSignal(e);
+        setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? giftTried(x, refused, Date.now()) : x)) }));
       } finally {
         inFlight.current.delete(g.id);
       }
@@ -348,7 +354,10 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, takenBack: undefined, sent: true } : x)) }));
           const there = await timeout(social.service.sprout(g.id), TRY_TIMEOUT_MS).catch(() => null);
           if (there?.to) await timeout(noteClaimedRef.current(there), TRY_TIMEOUT_MS).catch(() => {});
-        } else setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? { ...x, tries: x.tries + 1, lastTry: Date.now() } : x)) }));
+        } else if (socialErrorKind(e) === 'not-found' || (!noSignal(e) && (g.refused ?? 0) + 1 >= GIFT_REFUSED_MAX)) {
+          // Not yours, or refused again and again: it's already taken back on this phone, so stop asking.
+          setStored((s) => ({ ...s, gifts: s.gifts.filter((x) => x.id !== g.id) }));
+        } else setStored((s) => ({ ...s, gifts: s.gifts.map((x) => (x.id === g.id ? giftTried(x, !noSignal(e), Date.now()) : x)) }));
       } finally {
         inFlight.current.delete(g.id);
       }
@@ -456,7 +465,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const here = !!tonight && goingSince(tonight.festival.id) < nightStart(tonight.at.getTime());
   const festivalDay = here;
   const seeds = seedsLeft(
-    gifts.map((g) => g.at),
+    seedGifts(gifts).map((g) => g.at),
     now,
     festivalDay,
   );
@@ -470,7 +479,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       // Seeds are counted from what's saved, so not before it's loaded.
       if (!loaded.current) return { problem: 'loading' };
       const t = Date.now();
-      const mine = storedRef.current.gifts.filter((g) => g.account === social.user!.uid && !g.takenBack).map((g) => g.at);
+      const mine = seedGifts(storedRef.current.gifts.filter((g) => g.account === social.user!.uid)).map((g) => g.at);
       if (seedsLeft(mine, t, festivalDay) <= 0) return { problem: 'no-seeds' };
       const id = randomId();
       const words = note ? cleanSproutNote(note) : '';

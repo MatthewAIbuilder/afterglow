@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { useNow } from '../../lib/useNow';
 import { useBadgeClaims } from '../../state/badgeClaims';
+import { useMemories } from '../../state/memories';
+import { useThrowbacks } from '../badges/useThrowbacks';
+import { throwbackKey } from '../profile/milestones';
 import { useCrewChat } from '../../state/crewChat';
 import { useSocialMaybe } from '../../state/social';
 import { useWeekends } from '../../state/weekends';
@@ -25,6 +28,7 @@ import { ROUNDS_MIN, thisOrThatPairs, topSound } from '../taste/thisOrThat';
 import {
   type Counters,
   type QuestAbility,
+  badgeGlowCount,
   canDo,
   type DailySpec,
   type QuestGo,
@@ -75,6 +79,8 @@ export function useQuestSnapshot(): { snap: QuestSnapshot; ready: boolean } {
   return { snap, ready: reacted && rated && seenReady && followReady && plan.hydrated };
 }
 
+const SIDE_QUEST_KEYS: ReadonlySet<string> = new Set(QUESTS.map((q) => `ms:${q.id}`));
+
 export type QuestRow = { spec: DailySpec; current: number; done: boolean };
 export type WeekRow = { spec: WeeklySpec; current: number; done: boolean };
 
@@ -106,12 +112,15 @@ export function useDailyQuests() {
   }
   // Side quests count for your level; claimed badges too (but side quests only once).
   const sideDone = QUESTS.filter((q) => log[q.id]).length;
-  const questKeys = new Set(QUESTS.map((q) => `ms:${q.id}`));
-  const badgeCount = claimed ? [...claimed].filter((k) => !questKeys.has(k)).length : 0;
+  // Throwbacks count only while you still have them (re-tagging a video mustn't earn the same glow again).
+  const { hydrated: memoriesLoaded } = useMemories();
+  const throwbacks = useThrowbacks(undefined);
+  const held = useMemo(() => new Set(throwbacks.map((t) => throwbackKey(t.key))), [throwbacks]);
+  const badgeCount = badgeGlowCount(claimed, SIDE_QUEST_KEYS, held);
   const glow = totalGlow(book, sideDone, badgeCount, Object.keys(secrets.found).length);
   return {
     // Everything your level counts has loaded, so it never jumps (and toasts a level-up) on launch.
-    ready: loaded && ready && !!book && sideLoaded && claimed !== undefined && secrets.loaded,
+    ready: loaded && ready && !!book && sideLoaded && claimed !== undefined && secrets.loaded && memoriesLoaded,
     book,
     picks,
     rows,
