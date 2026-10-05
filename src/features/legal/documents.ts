@@ -13,7 +13,7 @@ export type LegalSection = { heading?: string; paragraphs: string[] };
 export type LegalDocument = { id: LegalDoc; title: string; updated: string; intro: string; sections: LegalSection[] };
 
 /** When these words last changed (shown as "Last updated"). */
-export const LEGAL_UPDATED = 'October 4, 2026';
+export const LEGAL_UPDATED = 'October 5, 2026';
 
 export const LEGAL_DOCS: LegalDoc[] = ['privacy', 'terms', 'guidelines'];
 
@@ -82,7 +82,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
           },
           {
             heading: 'Age',
-            paragraphs: ['Afterglow is not for children under 13, and accounts are only for people 13 or older. If you believe a child under 13 has an account, let us know and we’ll remove it.'],
+            paragraphs: ['Afterglow is for adults: accounts are only for people 18 or older, and it isn’t meant for anyone under 18. If you believe someone under 18 has an account, let us know and we’ll remove it.'],
           },
           { heading: 'Changes and contact', paragraphs: ['If this policy changes, the date above changes with it, and we’ll mention big changes in the app.', contact] },
         ],
@@ -97,7 +97,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
           {
             heading: 'Using Afterglow',
             paragraphs: [
-              'You must be at least 13 to create a profile. Keep your sign-in to yourself; you’re responsible for what’s done with your account.',
+              'You must be at least 18 to create a profile. Keep your sign-in to yourself; you’re responsible for what’s done with your account.',
               'Festival information (lineups, days, set times) comes from official sources but can change or be wrong. Check with the festival before you rely on it. Plans and routes are suggestions.',
               'Clips in Discover are official videos played in YouTube’s player and belong to their owners.',
             ],
