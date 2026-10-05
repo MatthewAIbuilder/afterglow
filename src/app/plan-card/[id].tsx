@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,8 @@ import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
 import { shareMessage } from '../../lib/share';
 import { goBack } from '../../lib/nav';
+import { shareParams } from '../../features/messages/shares';
+import { useSocial } from '../../state/social';
 
 /**
  * Share your plan: your must-sees (your top picks and why), a poster-like
@@ -37,6 +39,7 @@ export default function PlanCardScreen() {
 
 function PlanCardView({ festival }: { festival: Festival }) {
   const { card, text: planText, picks, route } = useFestivalPlan(festival);
+  const social = useSocial();
   // Your must-sees, your plan as a list, or your lineup as a festival poster.
   const poster = useMemo(() => lineupPoster(festival, picks), [festival, picks]);
   const reason = usePickReasons();
@@ -114,6 +117,19 @@ function PlanCardView({ festival }: { festival: Festival }) {
             style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
           >
             <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+          </Pressable>
+        ) : null}
+        {showMustSees && mustSees && social.user && social.profile ? (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/send', params: shareParams({ kind: 'festival', id: festival.id, picks: mustSees.lines.map((l) => l.artist.id) }) });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Send your must-sees to a friend"
+            style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+          >
+            <Text style={styles.buttonText}>Send to a friend</Text>
           </Pressable>
         ) : null}
         {text ? (

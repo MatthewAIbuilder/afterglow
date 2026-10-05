@@ -51,7 +51,7 @@ import { useClipFlags } from '../../state/clipFlags';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
 import { fillsScreen, MIN_PLAYER, tallLayout } from './videoLayout';
-import { shareMessage } from '../../lib/share';
+import { useSendOrShare } from '../messages/useSendOrShare';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
 
@@ -115,6 +115,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const communityState = useCommunity();
   const clipFlags = useClipFlags();
   const social = useSocial();
+  const sendOrShare = useSendOrShare();
   const { remember } = communityState;
   // So your reactions keep counting for the artist after this clip leaves the feed.
   const reacted = reaction.liked || reaction.skipped || !!reaction.watched;
@@ -485,7 +486,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
           <Pressable
             onPress={() => {
               haptic.select();
-              void shareMessage(clipShareText(artist.name, clip.title, media.externalUrl, context, APP_NAME));
+              sendOrShare({ kind: 'clip', id: clip.id }, clipShareText(artist.name, clip.title, media.externalUrl, context, APP_NAME));
             }}
             accessibilityRole="button"
             accessibilityLabel={`Share this clip of ${artist.name}`}

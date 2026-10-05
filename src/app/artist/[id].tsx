@@ -12,7 +12,7 @@ import { anyPhoto, photoCredit } from '../../data/members';
 import { WEB_URL } from '../../config/app';
 import { starsLine } from '../../features/crews/together';
 import { artistShareText } from '../../features/share/pages';
-import { shareMessage } from '../../lib/share';
+import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { useCrews } from '../../state/crews';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon, MapIcon } from '../../components/TabIcons';
@@ -77,6 +77,7 @@ export default function ArtistScreen() {
   const catalog = useCatalog();
   const artist = catalog.artist(id);
   const insets = useSafeAreaInsets();
+  const sendOrShare = useSendOrShare();
   const { taste, informed, similarity, importedFrom, imported, importing, tasteClips } = useTaste();
   const { memories, uriOf } = useMemories();
   const { isMustSee, toggleMustSee } = usePlan();
@@ -418,7 +419,7 @@ export default function ArtistScreen() {
         {credit ? <Text style={styles.credit}>{artist.imageUrl ? 'Photo' : 'Photos'} from {credit}</Text> : null}
       </ScrollView>
 
-      <PageActions shareLabel={`Share ${artist.name}`} onShare={() => void shareMessage(artistShareText(artist, festivals, WEB_URL), artist.name)} />
+      <PageActions shareLabel={`Share ${artist.name}`} onShare={() => sendOrShare({ kind: 'artist', id: artist.id }, artistShareText(artist, festivals, WEB_URL), artist.name)} />
     </View>
   );
 }

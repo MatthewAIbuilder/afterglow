@@ -14,6 +14,7 @@ import SproutScreen from '../sprout/[id]';
 import FindScreen from '../find/[code]';
 import HuntScreen from '../hunt/[id]';
 import SendSetTimesScreen from '../send-set-times/[id]';
+import SendScreen from '../send';
 import StickerSheetScreen from '../sticker-sheet';
 import GardenScreen from '../garden';
 import AddFriendScreen from '../add/[handle]';
@@ -92,6 +93,7 @@ export const APP_ROUTES = {
   'find/[code]': FindScreen,
   'hunt/[id]': HuntScreen,
   'send-set-times/[id]': SendSetTimesScreen,
+  send: SendScreen,
   'sticker-sheet': StickerSheetScreen,
   garden: GardenScreen,
   'add/[handle]': AddFriendScreen,
