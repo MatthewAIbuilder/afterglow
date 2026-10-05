@@ -65,7 +65,8 @@ describe('Friends', () => {
     expect(app.getByLabelText('Close friend: Maya Lin').props.accessibilityState).toMatchObject({ checked: true });
     await act(async () => router.push('/friends'));
     await flush();
-    expect(app.getByText('Close friends')).toBeTruthy();
+    // She's on the orbit's inner ring now.
+    expect(app.getByText('1 close friend · 1 friend')).toBeTruthy();
     expect(app.getByLabelText('Message Maya Lin. Going to Cyclops Cove 4')).toBeTruthy();
     // Kept on this phone only, for this account; nothing about it reaches the server.
     expect(JSON.parse((await AsyncStorage.getItem('closeFriends.v1')) ?? '{}')).toEqual({ [mockSocial.currentUser()!.uid]: [maya] });
