@@ -1,4 +1,6 @@
 import { CHAT_MAX, type CrewMessage } from '../social/models';
+import { WEB_URL } from '../../config/app';
+import { parseShare, shareNoun } from '../messages/shares';
 
 /**
  * A crew's chat, worked out on the phone. Pure.
@@ -247,7 +249,9 @@ export function chatRows(lines: readonly ChatLine[], me: string | undefined, now
 export function chatPreview(m: Pick<CrewMessage, 'uid' | 'text'> | undefined, me: string | undefined, nameOf: (uid: string) => string): string | undefined {
   if (!m) return undefined;
   const who = m.uid === me ? 'You' : nameOf(m.uid);
-  const text = m.text.replace(/\s+/g, ' ');
+  // Something sent from the app reads as what it is, not as a link.
+  const shared = parseShare(m.text, WEB_URL);
+  const text = (shared ? shared.caption || `Sent ${shareNoun(shared.share)}` : m.text).replace(/\s+/g, ' ');
   return `${who}: ${text.length > 60 ? `${text.slice(0, 59)}…` : text}`;
 }
 

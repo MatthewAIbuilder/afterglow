@@ -24,6 +24,9 @@ import { revealSecret } from '../../state/secrets';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { WEB_URL } from '../../config/app';
+import { ShareCard } from '../../features/messages/ShareCard';
+import { parseShare, shareNoun } from '../../features/messages/shares';
 
 const AMBER = '#FFB86B';
 
@@ -183,6 +186,9 @@ export default function CrewChatScreen() {
           const p = profiles[line.uid];
           const late = line.status === 'sent' && arrivedLate(line);
           const state = line.status === 'waiting' ? 'Waiting for signal' : line.status === 'failed' ? 'Not sent. Tap to try again' : undefined;
+          // Something sent from the app shows as a card, with any words above it.
+          const shared = parseShare(line.text, WEB_URL);
+          const said = shared ? [shared.caption, `Sent ${shareNoun(shared.share)}`].filter(Boolean).join('. ') : line.text;
           return (
             <View key={row.key} style={[styles.row, mine ? styles.rowMine : styles.rowTheirs, first && styles.runStart]}>
               {!mine ? <View style={styles.avatarSlot}>{last ? <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={28} /> : null}</View> : null}
@@ -193,12 +199,19 @@ export default function CrewChatScreen() {
                   onLongPress={() => more(line)}
                   delayLongPress={350}
                   accessibilityRole="text"
-                  accessibilityLabel={`${mine ? 'You' : nameOf(line.uid)}, ${clock(line.at)}: ${line.text}${state ? `. ${state}` : ''}${late ? `. Reached the crew ${clock(line.sentAt)}` : ''}`}
+                  accessibilityLabel={`${mine ? 'You' : nameOf(line.uid)}, ${clock(line.at)}: ${said}${state ? `. ${state}` : ''}${late ? `. Reached the crew ${clock(line.sentAt)}` : ''}`}
                   accessibilityActions={[{ name: 'more', label: mine ? 'Delete' : crew?.owner === me ? 'Delete, report or block' : 'Report or block' }]}
                   onAccessibilityAction={() => more(line)}
-                  style={[styles.bubble, mine ? styles.mine : styles.theirs, line.status !== 'sent' && styles.waiting, line.status === 'failed' && styles.failed]}
+                  style={[styles.bubble, mine ? styles.mine : styles.theirs, shared && styles.sharedBubble, line.status !== 'sent' && styles.waiting, line.status === 'failed' && styles.failed]}
                 >
-                  <Text style={styles.text}>{line.text}</Text>
+                  {shared ? (
+                    <>
+                      {shared.caption ? <Text style={[styles.text, styles.caption]}>{shared.caption}</Text> : null}
+                      <ShareCard share={shared.share} />
+                    </>
+                  ) : (
+                    <Text style={styles.text}>{line.text}</Text>
+                  )}
                 </Pressable>
                 {mine && lastMine?.id === line.id && members.length ? (
                   <Text style={styles.meta} accessibilityLiveRegion="polite">
@@ -376,6 +389,8 @@ const styles = StyleSheet.create({
   waiting: { opacity: 0.6 },
   failed: { borderWidth: 1, borderColor: AMBER, opacity: 0.8 },
   text: { ...type.body, color: color.moon },
+  sharedBubble: { padding: space.xs },
+  caption: { paddingHorizontal: space.sm, paddingTop: space.xs, paddingBottom: space.sm, maxWidth: 236 },
   meta: { ...type.caption, fontSize: 11, color: color.moonFaint, marginHorizontal: space.sm },
   compose: { paddingTop: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline, backgroundColor: 'rgba(10,9,24,0.92)', gap: space.sm },
   quickRow: { gap: space.sm, paddingHorizontal: space.lg },

@@ -36,7 +36,7 @@ import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { showActionSheet } from '../../lib/dialog';
-import { shareMessage } from '../../lib/share';
+import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { goBack } from '../../lib/nav';
 
 /**
@@ -50,6 +50,7 @@ export default function PublicProfileScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const social = useSocial();
+  const sendOrShare = useSendOrShare();
   const chat = useCrewChat();
   const catalog = useCatalog();
   const [profile, setProfile] = useState<Profile | null | undefined>();
@@ -136,7 +137,7 @@ export default function PublicProfileScreen() {
   const share = () => {
     if (!profile) return;
     haptic.select();
-    void shareMessage(`@${profile.handle} on Afterglow: ${WEB_URL}/u/${profile.handle}`);
+    sendOrShare({ kind: 'profile', handle: profile.handle }, `@${profile.handle} on Afterglow: ${WEB_URL}/u/${profile.handle}`);
   };
 
   const cols = 3;
