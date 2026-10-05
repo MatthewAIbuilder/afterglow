@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronIcon } from '../../components/TabIcons';
@@ -38,7 +39,9 @@ export function FeedEnd({ festival, following = false, soundLabel, width, height
   const { ratings } = useRatings();
   const insets = useSafeAreaInsets();
   const toRate = festival ? leftToRate(festival, ratings, (a) => !!catalog.artist(a)) : 0;
-  const others = otherFestivalsWithClips(catalog.festivals, catalog.clips, festival?.id);
+  // Worked out again only when the catalogue or the festival changes, not on every swipe (the feed redraws this page with each).
+  const festivalId = festival?.id;
+  const others = useMemo(() => otherFestivalsWithClips(catalog.festivals, catalog.clips, festivalId), [catalog.festivals, catalog.clips, festivalId]);
 
   const row = (label: string, detail: string | undefined, onPress: () => void, icon?: React.ReactNode, primary = false) => (
     <Pressable

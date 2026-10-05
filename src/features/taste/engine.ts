@@ -184,11 +184,22 @@ export function computeTaste(
     direct[id] = (direct[id] ?? 0) + Math.min(WATCH_CAP.up, Math.max(WATCH_CAP.down, p));
   }
 
-  // Direct signal plus spill-over from similar artists.
+  // Direct signal plus spill-over from similar artists. Only artists with a signal can spill, so each
+  // pass looks at those alone (in catalogue order, so the sums come out exactly as before), not at
+  // every artist for every artist: with thousands of artists that was millions of steps on each start.
+  const withSignal = new Map<Record<string, number>, Artist[]>();
+  const sourcesOf = (from: Record<string, number>) => {
+    let list = withSignal.get(from);
+    if (!list) {
+      list = artists.filter((b) => from[b.id]);
+      withSignal.set(from, list);
+    }
+    return list;
+  };
   const spilled = (from: Record<string, number>, a: (typeof artists)[number]) => {
     let s = from[a.id] ?? 0;
-    for (const b of artists) {
-      if (b.id === a.id || !from[b.id]) continue;
+    for (const b of sourcesOf(from)) {
+      if (b.id === a.id) continue;
       const sim = similarity(a, b);
       if (sim >= SPILL_MIN_SIMILARITY) s += from[b.id] * sim * SPILL;
     }
