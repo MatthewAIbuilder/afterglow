@@ -1,4 +1,5 @@
 import type { Festival } from '../../data/models';
+import { PARTNER_NOTE, shopNotes } from '../partners/partners';
 
 /**
  * Getting ready for a festival you're going to: what the app can see you've
@@ -14,6 +15,8 @@ export type PrepItem = {
   done: boolean;
   /** Where to do it in the app, for items the app can see. */
   action?: 'tune' | 'festival' | 'tickets';
+  /** A partner link under the item while it isn't ticked: where to stay, or where to buy it. */
+  link?: { url: string; label: string };
 };
 export type PrepSection = { title: string; items: PrepItem[] };
 
@@ -28,6 +31,8 @@ export type PrepInput = {
   remindersOn: boolean;
   /** Items you ticked yourself. */
   ticked: ReadonlySet<string>;
+  /** Shop links for pack items (item id -> https link); none by default. */
+  shop?: Readonly<Record<string, string>>;
 };
 
 /** Enough of the lineup rated to shape a good plan. */
@@ -63,14 +68,32 @@ export function prepChecklist(i: PrepInput): PrepSection[] {
   const multiDay = !!i.festival.startDate && !!i.festival.endDate && i.festival.endDate > i.festival.startDate;
   const before: PrepItem[] = [
     { id: 'ticket', label: 'Get your ticket', done: tick('ticket'), ...(i.festival.links?.tickets ? { action: 'tickets' as const } : {}) },
-    { id: 'travel', label: multiDay ? 'Sort travel and a place to stay' : 'Sort how you’re getting there and back', done: tick('travel') },
+    {
+      id: 'travel',
+      label: multiDay ? 'Sort travel and a place to stay' : 'Sort how you’re getting there and back',
+      done: tick('travel'),
+      ...(i.festival.links?.stay ? { link: { url: i.festival.links.stay, label: 'Places to stay nearby' } } : {}),
+    },
   ];
-  const pack: PrepItem[] = PACK.map((p) => ({ ...p, done: tick(p.id) }));
+  const pack: PrepItem[] = PACK.map((p) => {
+    const url = i.shop?.[p.id];
+    return { ...p, done: tick(p.id), ...(url ? { link: { url, label: 'Shop' } } : {}) };
+  });
   return [
     { title: 'Your plan', items: plan },
     { title: 'Before you go', items: before },
     { title: 'Pack', items: pack },
   ];
+}
+
+/**
+ * The commission notices a section needs, for the partner links it shows:
+ * where to stay and partner ticket links ("Before you go"), shop links (Pack).
+ */
+export function sectionNotes(section: PrepSection, festival: Festival): string[] {
+  const shop = section.items.filter((x) => x.link && x.id !== 'travel').map((x) => x.link!.url);
+  const partner = section.items.some((x) => (x.id === 'travel' && !!x.link) || (x.action === 'tickets' && !!festival.links?.ticketsPartner));
+  return [...(partner ? [PARTNER_NOTE] : []), ...shopNotes(shop)];
 }
 
 /** How many are done, of how many. */

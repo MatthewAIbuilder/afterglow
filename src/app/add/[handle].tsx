@@ -58,7 +58,7 @@ export default function AddFriendScreen() {
         </Text>
         {!card ? null : !social.availability.ok ? (
           <Text style={styles.body}>Open Afterglow on your phone to add friends.</Text>
-        ) : !social.user ? (
+        ) : !social.ready ? null : !social.user ? (
           <Primary label="Sign in to be friends" onPress={() => router.push('/account')} />
         ) : outcome === 'added' ? (
           <Primary label="See their profile" onPress={() => router.replace({ pathname: '/u/[handle]', params: { handle: card.handle } })} />

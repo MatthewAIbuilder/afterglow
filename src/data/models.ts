@@ -114,8 +114,13 @@ export type Festival = {
    * be key art rather than the full lineup, so it's credited, not called the poster.
    */
   posterFrom?: string;
-  /** Official links (https only): where to buy tickets, the festival's own site. */
-  links?: { tickets?: string; website?: string };
+  /**
+   * Official links (https only): where to buy tickets, the festival's own site,
+   * and where to stay (a partner link). `ticketsPartner` marks a tickets link
+   * that earns Afterglow a commission (still the official seller), so the page
+   * says so beside it.
+   */
+  links?: { tickets?: string; website?: string; stay?: string; ticketsPartner?: boolean };
   /** Where an imported festival's details came from (credited on its page), e.g. { name: 'EDMTrain', url }. */
   source?: { name: string; url: string };
   /** Everyone announced, in billing order. Available months ahead. */

@@ -172,17 +172,26 @@ export default function PublicProfileScreen() {
   let body: React.ReactNode;
   if (!social.availability.ok) {
     body = <Text style={styles.body}>{SOCIAL_ERROR_COPY.unavailable}</Text>;
+  } else if (!social.ready) {
+    // A link opened cold: wait for sign-in to be read back before asking for it.
+    body = <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
   } else if (!social.user) {
-    body = social.ready ? (
-      <View style={[styles.center, styles.signIn]}>
-        <Text style={styles.signInTitle}>{`@${handle} is on Afterglow`}</Text>
-        <Text style={styles.body}>Sign in to see their profile, the festivals they’re going to and their videos.</Text>
-        <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={styles.signInButton}>
-          <Text style={styles.signInText}>Sign in or create a free account</Text>
+    // Most often someone opening a friend's invite: say whose it is and how to see it.
+    body = (
+      <View style={styles.invite}>
+        <Text style={styles.inviteTitle} accessibilityRole="header">
+          {handle ? `@${handle} is on Afterglow` : 'Profiles on Afterglow'}
+        </Text>
+        <Text style={styles.inviteBody}>
+          {handle ? `Sign in or make a profile to see @${handle}’s festivals and videos, and follow each other.` : 'Sign in to see profiles.'}
+        </Text>
+        <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={({ pressed }) => [styles.invitePrimary, pressed && { opacity: 0.8 }]}>
+          <Text style={styles.invitePrimaryText}>Sign in or join</Text>
+        </Pressable>
+        <Pressable onPress={() => router.replace('/')} accessibilityRole="button" hitSlop={8}>
+          <Text style={styles.link}>Look around first</Text>
         </Pressable>
       </View>
-    ) : (
-      <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />
     );
   } else if (profile === undefined) {
     body = <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
@@ -376,6 +385,11 @@ const styles = StyleSheet.create({
   tileLen: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   body: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.lg },
   center: { alignItems: 'center', gap: space.md },
+  invite: { alignItems: 'center', gap: space.md, marginTop: space.xxl, alignSelf: 'center', width: '100%', maxWidth: 520 },
+  inviteTitle: { ...type.title, color: color.moon, textAlign: 'center' },
+  inviteBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
+  invitePrimary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
+  invitePrimaryText: { ...type.headline, color: color.moon },
   link: { ...type.label, color: color.glow },
   signIn: { paddingTop: space.xxxl * 2 },
   signInTitle: { ...type.title, color: color.moon, textAlign: 'center' },
