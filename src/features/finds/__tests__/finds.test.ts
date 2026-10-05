@@ -24,6 +24,7 @@ import {
   readFindLink,
   retryDelay,
   untilLine,
+  withAccountFinds,
 } from '../finds';
 
 const card = { code: 'ferris2027', creature: 'ferris', name: 'Ferris wheel · Night Market' };
@@ -98,6 +99,43 @@ describe('finding stickers', () => {
     const adopted = adopt(finds, 'me');
     expect(adopted.every((f) => f.account === 'me')).toBe(true);
     expect(findsFor(finds, 'someone').map((f) => f.code)).toEqual(['ferris2027']);
+  });
+
+  it('a signed-out re-scan never replaces an account’s confirmed find, and keeps the first scan', () => {
+    const own: Find = { ...queueFind([], card, 'me', t0)[0], state: 'found', sent: true };
+    const later: Find = { ...queueFind([], card, undefined, t0 + 86_400_000)[0], state: 'ended', until: t0 + 1000 };
+    const [kept, ...rest] = adopt([later, own], 'me');
+    expect(rest).toEqual([]);
+    expect(kept).toMatchObject({ account: 'me', state: 'found', sent: true, at: t0 });
+    // The account's copy was still waiting and the signed-out one is found: the better state wins, with the earlier scan.
+    const waiting: Find = { ...queueFind([], card, 'me', t0 + 5000)[0] };
+    const found: Find = { ...queueFind([], card, undefined, t0)[0], state: 'found', sent: false };
+    expect(adopt([waiting, found], 'me')).toEqual([expect.objectContaining({ account: 'me', state: 'found', sent: false, at: t0 })]);
+    // Another account's find of it is left alone.
+    expect(adopt([{ ...own, account: 'other' }, later], 'me').map((f) => f.account).sort()).toEqual(['me', 'other']);
+  });
+
+  it('brings finds kept on the account onto this phone as found and sent', () => {
+    const sticker = { code: card.code, name: 'Ferris wheel', creature: 'ferris', huntId: 'nightmkt27', slot: 0 };
+    const stickerOf = (code: string) => (code === card.code ? sticker : code === 'unread22' ? undefined : null);
+    const out = withAccountFinds([], 'me', [{ code: card.code, at: t0 }, { code: 'unread22', at: t0 }, { code: 'deleted2', at: t0 }], stickerOf);
+    expect(out).toEqual([{ code: card.code, name: 'Ferris wheel', creature: 'ferris', huntId: 'nightmkt27', slot: 0, at: t0, account: 'me', state: 'found', sent: true, tries: 0 }]);
+    // Already here and confirmed: unchanged.
+    expect(withAccountFinds(out, 'me', [{ code: card.code, at: t0 + 10 }], stickerOf)).toBe(out);
+    // Here but still waiting, or marked ended by a later scan: the account's record wins, with the earlier scan.
+    const here: Find = { ...queueFind([], card, 'me', t0 + 99)[0], state: 'ended', until: t0 + 50 };
+    const [fixed] = withAccountFinds([here], 'me', [{ code: card.code, at: t0 }], () => undefined);
+    expect(fixed).toMatchObject({ state: 'found', sent: true, at: t0, until: undefined });
+    // Someone else's on this phone isn't touched.
+    const theirs: Find = { ...queueFind([], card, 'other', t0)[0] };
+    expect(withAccountFinds([theirs], 'me', [{ code: card.code, at: t0 }], stickerOf).map((f) => f.account)).toEqual(['me', 'other']);
+  });
+
+  it('a sticker taken down counts only for scans from before', () => {
+    const [f] = queueFind([], card, 'me', t0);
+    const sticker = { code: card.code, name: 'F', creature: 'ferris', takenDownAt: t0 + 1000 };
+    expect(checked(f, sticker, t0 + 5000).state).toBe('found');
+    expect(checked({ ...f, at: t0 + 2000 }, sticker, t0 + 5000).state).toBe('gone');
   });
 
   it('says what happened', () => {

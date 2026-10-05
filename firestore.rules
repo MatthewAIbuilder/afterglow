@@ -414,6 +414,15 @@ service cloud.firestore {
       allow get: if true;
       allow list, delete: if isAdmin();
       allow create: if isAdmin() && code.matches('^[a-z0-9]{6,24}$') && stickerShape(request.resource.data);
+      // Taking one down marks it (once): its code stops working, but scans from before still count.
+      allow update: if isAdmin() && !('takenDown' in resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['takenDown', 'takenDownAt'])
+        && request.resource.data.takenDown == true && request.resource.data.takenDownAt == request.time;
+    }
+    // A find of sticker `s` scanned at `at`: before its end date and before it was taken down (each sent up to 3 days after).
+    function findOpen(s, at) {
+      return (!('until' in s) || (at <= s.until && request.time < s.until + duration.value(3, 'd')))
+        && (!('takenDown' in s) || (at <= s.takenDownAt && request.time < s.takenDownAt + duration.value(3, 'd')));
     }
     // A hunt: its stickers' creatures and names in order (no codes).
     match /hunts/{id} {
@@ -433,7 +442,7 @@ service cloud.firestore {
         && (request.resource.data.items.size() == resource.data.items.size() + 1
           || request.resource.data.items.size() == resource.data.items.size());
     }
-    // Finds: you found a sticker (once each), before its end date (sent up to 3 days later).
+    // Finds: you found a sticker (once each), before its end date or its takedown (sent up to 3 days later).
     match /finds/{id} {
       allow get, list: if (signedIn() && resource.data.uid == me()) || isAdmin();
       allow create: if signedIn()
@@ -444,9 +453,7 @@ service cloud.firestore {
         && request.resource.data.at is timestamp
         && request.resource.data.createdAt == request.time
         && exists(path('stickers', request.resource.data.code))
-        && (!('until' in get(path('stickers', request.resource.data.code)).data)
-          || (request.resource.data.at <= get(path('stickers', request.resource.data.code)).data.until
-            && request.time < get(path('stickers', request.resource.data.code)).data.until + duration.value(3, 'd')));
+        && findOpen(get(path('stickers', request.resource.data.code)).data, request.resource.data.at);
       allow delete: if (signedIn() && resource.data.uid == me()) || isAdmin();
     }
     // 1-to-1 chats: `dms/<a>_<b>` (the two uids in order) between two people who follow each other,

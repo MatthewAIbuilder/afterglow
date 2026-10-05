@@ -290,12 +290,14 @@ export interface SocialService {
   /** HQ: make a sticker (added to the end of its hunt, if any). Support account only. */
   addSticker(input: StickerInput): Promise<Sticker>;
   stickers(max: number): Promise<Sticker[]>;
-  /** Take a sticker's code down (its place in a hunt stays). */
+  /** Take a sticker's code down (its place in a hunt stays; scans from before still count). */
   deleteSticker(code: string): Promise<void>;
   addHunt(input: HuntInput): Promise<Hunt>;
   hunts(max: number): Promise<Hunt[]>;
   /** A hunt goes; its stickers stay as stickers on their own. */
   deleteHunt(id: string): Promise<void>;
+  /** Stickers you've found, as Afterglow has them (from any phone): each code and when it was scanned (ms). */
+  myFinds(max: number): Promise<{ code: string; at: number }[]>;
   /** How many people have found a sticker. */
   stickerFinds(code: string): Promise<number>;
 
