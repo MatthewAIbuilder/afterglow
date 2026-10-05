@@ -1,5 +1,9 @@
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { OrbitBackdrop } from '../../components/ProfileCover';
+import { useProfileBackdrop } from '../profile/useProfileBackdrop';
+import { FriendQuickMenu } from './FriendQuickMenu';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useCrewChat } from '../../state/crewChat';
@@ -12,6 +16,9 @@ import { nextFestivalOf, splitOrbit } from './orbit';
 import { SectionHeader } from './SectionHeader';
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
+/** Your profile background behind the orbit: a little taller than the orbit, so it fades out beyond the outer ring. */
+const ORBIT_BACKDROP_PAD = 40;
+const ORBIT_BACKDROP_H = 300 + ORBIT_BACKDROP_PAD * 2;
 
 /**
  * "Your friends" at the top of the Friends tab: the orbit (close friends on
@@ -25,7 +32,11 @@ export function FriendsCircle({ profiles, close }: { profiles: Profile[] | undef
   const chat = useCrewChat();
   const { festival } = useCatalog();
   const today = useToday();
+  const backdrop = useProfileBackdrop(me);
+  const { width: screen } = useWindowDimensions();
+  const [picked, setPicked] = useState<Profile | null>(null);
   if (!me || !profiles?.length) return null;
+  const orbitWidth = Math.min(screen - space.xl * 2, 560);
   const { inner } = splitOrbit(profiles, close);
   const total = social.following.size;
   const closeCount = inner.length;
@@ -46,10 +57,18 @@ export function FriendsCircle({ profiles, close }: { profiles: Profile[] | undef
         close={close}
         unreadFrom={(uid) => chat.unreadFor(directRoom(me.uid, uid))}
         nextFestival={(p) => nextFestivalOf(p, festival, today)}
+        onPick={setPicked}
+        backdrop={<OrbitBackdrop url={me.coverUrl} backdrop={backdrop} width={screen} height={ORBIT_BACKDROP_H} style={{ left: (orbitWidth - screen) / 2, top: -ORBIT_BACKDROP_PAD }} />}
+      />
+      <FriendQuickMenu
+        friend={picked}
+        unread={picked ? chat.unreadFor(directRoom(me.uid, picked.uid)) : 0}
+        next={picked ? nextFestivalOf(picked, festival, today) : undefined}
         onMessage={(p) => void openChatWith(chat.openDirect, p.uid, firstName(p.displayName))}
+        onClose={() => setPicked(null)}
       />
       <Text style={styles.line}>{line}</Text>
-      {closeCount ? null : <Text style={styles.hint}>Star your closest friends on their profile to bring them into your inner ring. Only you see who’s on it.</Text>}
+      {closeCount ? null : <Text style={styles.hint}>Star your closest friends to bring them into your inner ring: tap a face, then Add to close friends. Only you see who’s on it.</Text>}
     </View>
   );
 }

@@ -51,7 +51,8 @@ import { useMemoryPicker } from '../../features/memories/useAddMemory';
 import { color, space, type } from '../../theme/tokens';
 
 /** How far the cover photo reaches below the safe area. */
-const COVER_H = 210;
+/** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
+const COVER_H = 420;
 
 type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
 const TABS: Tab[] = ['videos', 'festivals', 'badges', 'saved'];
