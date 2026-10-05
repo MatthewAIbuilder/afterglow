@@ -775,8 +775,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     declineSetTimes: (id) => guard(async () => deleteDoc(doc(fb().db, 'setTimes', id))),
     livePatches: () =>
       guard(async () => {
-        const snap = await getDocs(query(collection(fb().db, 'published'), orderBy('publishedAt', 'asc'), limit(200)));
-        return snap.docs.map((d) => patchFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+        // The newest 200 (so a new update always reaches phones), applied oldest first.
+        const snap = await getDocs(query(collection(fb().db, 'published'), orderBy('publishedAt', 'desc'), limit(200)));
+        return snap.docs
+          .map((d) => patchFromDoc(d.id, d.data()))
+          .filter((x): x is NonNullable<typeof x> => !!x)
+          .reverse();
       }),
     publishPatch: (input) =>
       guard(async () => {

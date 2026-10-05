@@ -126,7 +126,10 @@ export function AdminData() {
     const parsed = parseCatalogFile(file);
     const built = buildCatalog(snapshot, parsed);
     const s = fileSummary(parsed, catalog);
-    return { title, festivalId: s.festivalId ?? '', file, problems: built.problems, ok: built.usedFile && !!s.festivalId, setTimes: !!s.sets, ...extra, ...(fromDrop ? { dropId: fromDrop } : {}) };
+    // An update only ever adds: one that says "replace" would empty everyone's catalogue.
+    const replaces = parsed.mode === 'replace';
+    const problems = replaces ? ['This file says "mode": "replace". An update can only add to Afterglow: take that line out.', ...built.problems] : built.problems;
+    return { title, festivalId: s.festivalId ?? '', file, problems, ok: built.usedFile && !!s.festivalId && !replaces, setTimes: !!s.sets, ...extra, ...(fromDrop ? { dropId: fromDrop } : {}) };
   };
 
   // The festival's official page: shown on its page, and looked at every night for news (an email when there is some).

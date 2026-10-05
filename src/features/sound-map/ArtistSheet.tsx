@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { SheetClose } from '../../components/SheetClose';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { SOUND_LABEL, type SoundTag, type TasteProfile } from '../../data/types';
 import { haptic } from '../../lib/haptics';
@@ -79,7 +80,7 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={artistId ? 'box-none' : 'none'}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close artist details" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close artist details" />
       </Animated.View>
 
       <GestureDetector gesture={drag}>
@@ -89,6 +90,8 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
           <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={[StyleSheet.absoluteFill, styles.tint]} />
           <View style={styles.grabber} />
+          {/* A way out that doesn't need a swipe (browsers can't drag a sheet down). */}
+          <SheetClose onPress={onClose} />
 
           <View style={styles.header}>
             <ArtistAvatar artist={artist} size={56} />
