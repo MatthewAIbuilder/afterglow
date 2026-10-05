@@ -218,16 +218,30 @@ jobs:
           fi
 
       # Database and storage rules (firestore.rules, storage.rules, firestore.indexes.json), so new
-      # features' rules go live with the app instead of waiting for a deploy from a PC. Never prints the key.
+      # features' rules go live with the app instead of waiting for a deploy from a PC. The database rules go
+      # first and on their own, so a storage problem never holds back messages, profiles and the rest.
+      # Never prints the key.
       - name: Database and storage rules
         if: env.CAN_DEPLOY == 'true' && github.event_name != 'pull_request'
         continue-on-error: true
         env:
           KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PROJECT: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}
         run: |
           printf '%s' "$KEY" > "$RUNNER_TEMP/firebase-key.json"
           trap 'rm -f "$RUNNER_TEMP/firebase-key.json"' EXIT
-          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json" npx --yes firebase-tools@14 deploy \
-            --only firestore:rules,firestore:indexes,storage \
-            --project "${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}" --non-interactive \
-            || { echo "::warning::Couldn't deploy the database and storage rules. Deploy them from your PC (docs/firebase-setup.md, step 5), or give the service account the Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer roles (docs/web-deploy.md)."; exit 1; }
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json"
+          failed=0
+          if npx --yes firebase-tools@14 deploy --only firestore:rules,firestore:indexes --project "$PROJECT" --non-interactive; then
+            echo "Database rules and indexes are live."
+          else
+            failed=1
+            echo "::warning::Couldn't deploy the database rules. Give the key the Firebase Rules Admin, Cloud Datastore Index Admin and Service Usage Consumer roles (docs/web-deploy.md), or deploy them from your PC (docs/firebase-setup.md, step 5)."
+          fi
+          if npx --yes firebase-tools@14 deploy --only storage --project "$PROJECT" --non-interactive; then
+            echo "Storage rules are live."
+          else
+            failed=1
+            echo "::warning::Couldn't deploy the storage rules. Give the key the Cloud Storage for Firebase Admin role too (docs/web-deploy.md), or deploy them from your PC (docs/firebase-setup.md, step 5)."
+          fi
+          exit $failed
