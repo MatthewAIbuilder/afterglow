@@ -83,26 +83,26 @@ describe('profile backgrounds', () => {
     expect(app.getByLabelText('Maya’s sound universe: SUBTRONICS, LEVITY.')).toBeTruthy();
   });
 
-  it('a background and a cover photo blend: the photo glows through under the animation', async () => {
-    await person('maya', 'Maya');
-    await s().setBackdrop('aurora');
+  it('your profile swaps between your cover photo and background in one tap, and back', async () => {
+    const uid = await person('sam', 'Sam');
     await s().setCover('file:///cover.jpg');
-    await s().signOut();
-    await person('sam', 'Sam');
-    const app = await renderApp('/u/maya');
+    await s().setBackdrop('aurora');
+    const app = await renderApp('/profile');
     await flush();
-    expect(app.getByTestId('backdrop-aurora', { includeHiddenElements: true })).toBeTruthy();
-    expect(app.getByTestId('cover-blend', { includeHiddenElements: true })).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Show your cover photo instead'));
+    await flush();
+    expect(mockSocial.profiles.get(uid)?.backdrop).toBeUndefined();
+    await fireEvent.press(app.getByLabelText('Show Aurora instead'));
+    await flush();
+    expect(mockSocial.profiles.get(uid)?.backdrop).toBe('aurora');
   });
 
-  it('the picker previews the blend when you have a cover photo', async () => {
+  it('no swap without a cover photo', async () => {
     await person('sam', 'Sam');
-    await s().setCover('file:///cover.jpg');
-    const app = await renderApp('/backdrop');
+    await s().setBackdrop('aurora');
+    const app = await renderApp('/profile');
     await flush();
-    expect(app.getByText(/Your cover photo glows through underneath/)).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Aurora. Free'));
-    expect(app.getByText('Northern lights rippling across the sky, blended with your cover photo')).toBeTruthy();
+    expect(app.queryByLabelText('Show your cover photo instead')).toBeNull();
   });
 
   it('favourite artists stay hidden when switched off', async () => {

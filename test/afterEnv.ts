@@ -7,6 +7,7 @@ import { forgetCareTip } from '../src/state/careTip';
 import { forgetFestivalWeek } from '../src/state/festivalWeek';
 import { forgetShowLevel } from '../src/state/showLevel';
 import { forgetCloseFriends } from '../src/state/closeFriends';
+import { forgetLastBackdrop } from '../src/state/lastBackdrop';
 import { forgetBadgeClaims } from '../src/state/badgeClaims';
 import { forgetScouted } from '../src/state/scouted';
 import { forgetLastKnown } from '../src/state/lastKnown';
@@ -21,6 +22,7 @@ beforeEach(() => {
   forgetFestivalWeek();
   forgetShowLevel();
   forgetCloseFriends();
+  forgetLastBackdrop();
   forgetBadgeClaims();
   forgetScouted();
   forgetLastKnown();

@@ -1,5 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
+import { CoverSwap } from '../../features/profile/CoverSwap';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -52,7 +53,7 @@ import { color, space, type } from '../../theme/tokens';
 
 /** How far the cover photo reaches below the safe area. */
 /** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
-const COVER_H = 420;
+const COVER_H = 400;
 
 type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
 const TABS: Tab[] = ['videos', 'festivals', 'badges', 'saved'];
@@ -193,7 +194,7 @@ function FullProfile() {
       <PageTitle title="Profile" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
-        <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} />
+        <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} fadeFrom={0.72} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
             {me ? `@${me.handle}` : 'Profile'}
@@ -235,6 +236,9 @@ function FullProfile() {
             <ProfileButton label={social.user ? 'Finish your profile' : 'Create your profile'} onPress={signIn} glow />
           ) : null}
         </ProfileHeader>
+
+        {/* Swap between your cover photo and background, in the corner just under the orbit. */}
+        {me ? <CoverSwap me={me} shown={backdrop} style={{ top: Math.round((insets.top + COVER_H) * 0.72) - 46, right: space.lg }} /> : null}
 
         <ClaimBanner b={b} />
 
