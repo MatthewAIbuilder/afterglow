@@ -28,6 +28,6 @@ describe('legal pages', () => {
 
   it('the privacy policy names what leaves the phone and what doesn’t', () => {
     const text = JSON.stringify(legalDocument('privacy'));
-    for (const must of ['stay on your phone', 'Firebase', 'YouTube', 'Delete account', 'under 13', 'don’t sell']) expect(text).toContain(must);
+    for (const must of ['stay on your phone', 'Firebase', 'YouTube', 'Delete account', 'under 18', 'don’t sell']) expect(text).toContain(must);
   });
 });
