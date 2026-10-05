@@ -1,13 +1,14 @@
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 import type { Artist, SoundTag } from '../../data/models';
 import { artistColors } from '../../components/ArtistAvatar';
 import { NO_SOUND_COLOR, SOUND_COLOR } from './colors';
 
 /**
  * How a bubble on My Sound looks: a glowing orb, not a dot on a chart.
- * `OrbGlass` lays light over any face (a photo or a planet): the sphere's
- * shadow away from the light, a soft glint and an atmosphere in the colour
- * of their sound. `PlanetFace` is an artist without a photo: a small planet
+ * `OrbGlass` gives any face (a photo or a planet) an atmosphere in the colour
+ * of their sound, a soft ring of light just outside the edge, so sounds tell
+ * apart at a glance. No gloss or glint over the photo (the user preferred
+ * them matte, 2026-10-05). `PlanetFace` is an artist without a photo: a small planet
  * banded in the colours of their sound mix, their initials faint on it.
  */
 
@@ -21,53 +22,27 @@ function soundBands(sound: Artist['sound']): string[] {
 }
 
 /**
- * Light over the orb's face, and its atmosphere: a soft ring in its sound's
- * colour just outside the edge (in place of a hard ring). One drawing for
- * both, laid over the face; the atmosphere starts at the edge, so it never
- * covers the face. A map of 40 bubbles draws a lot less this way.
+ * The orb's atmosphere: a soft ring in its sound's colour just outside the
+ * edge (in place of a hard ring). It starts at the edge, so it never covers
+ * the face.
  */
 export function OrbGlass({ size, tone, id }: { size: number; tone: string; id: string }) {
   const g = `og-${safe(id)}`;
-  const c = size / 2;
   const outer = size * 1.22;
   const pad = (outer - size) / 2;
   const edge = size / outer;
   return (
     <Svg width={outer} height={outer} style={{ position: 'absolute', left: -pad, top: -pad }} pointerEvents="none">
       <Defs>
-        {/* The atmosphere. */}
+        {/* The atmosphere: a soft ring in their sound's colour just outside the edge. */}
         <RadialGradient id={`${g}h`} cx="50%" cy="50%" r="50%">
           <Stop offset={String(edge)} stopColor={tone} stopOpacity={0} />
-          <Stop offset={String(edge + 0.012)} stopColor={tone} stopOpacity={0.7} />
+          <Stop offset={String(edge + 0.012)} stopColor={tone} stopOpacity={0.75} />
           <Stop offset={String(edge + 0.045)} stopColor={tone} stopOpacity={0.35} />
           <Stop offset="1" stopColor={tone} stopOpacity={0} />
         </RadialGradient>
-        {/* The night side of the sphere. */}
-        <RadialGradient id={`${g}s`} cx="36%" cy="30%" r="78%">
-          <Stop offset="0.45" stopColor="#05040C" stopOpacity={0} />
-          <Stop offset="0.85" stopColor="#05040C" stopOpacity={0.35} />
-          <Stop offset="1" stopColor="#05040C" stopOpacity={0.62} />
-        </RadialGradient>
-        {/* Light from the map bouncing back along its lower edge, in its sound's colour. */}
-        <LinearGradient id={`${g}r`} x1="0.2" y1="0.2" x2="0.85" y2="1">
-          <Stop offset="0.62" stopColor={tone} stopOpacity={0} />
-          <Stop offset="1" stopColor={tone} stopOpacity={0.55} />
-        </LinearGradient>
-        <RadialGradient id={`${g}g`} cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.75} />
-          <Stop offset="0.6" stopColor="#FFFFFF" stopOpacity={0.22} />
-          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
-        </RadialGradient>
       </Defs>
       <Circle cx={outer / 2} cy={outer / 2} r={outer / 2} fill={`url(#${g}h)`} />
-      <G transform={`translate(${pad} ${pad})`}>
-        <Circle cx={c} cy={c} r={c} fill={`url(#${g}s)`} />
-        <Circle cx={c} cy={c} r={c} fill={`url(#${g}r)`} />
-        <Ellipse cx={size * 0.34} cy={size * 0.25} rx={size * 0.2} ry={size * 0.11} fill={`url(#${g}g)`} transform={`rotate(-32 ${size * 0.34} ${size * 0.25})`} />
-        <Circle cx={size * 0.22} cy={size * 0.42} r={size * 0.018} fill="#FFFFFF" opacity={0.55} />
-        {/* A thin bright edge, like glass. */}
-        <Circle cx={c} cy={c} r={c - size * 0.008} fill="none" stroke="#FFFFFF" strokeOpacity={0.12} strokeWidth={size * 0.012} />
-      </G>
     </Svg>
   );
 }

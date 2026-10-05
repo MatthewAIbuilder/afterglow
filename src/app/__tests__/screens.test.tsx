@@ -602,7 +602,8 @@ describe('My Sound', () => {
     await settle();
     // The title, and the tab bar's label.
     expect(app.getAllByText('My Sound').length).toBeGreaterThan(0);
-    expect(app.getByText('A first guess at your sound')).toBeTruthy();
+    // What you lean towards lives on Overview, not over the map.
+    expect(app.queryByText('A first guess at your sound')).toBeNull();
     // Nothing of yours yet: the quickest ways to a real map, and no menu.
     expect(app.getByText('Make this map yours')).toBeTruthy();
     expect(app.getByLabelText('Pick artists you know')).toBeTruthy();
@@ -623,9 +624,12 @@ describe('My Sound', () => {
     await act(async () => {
       jest.advanceTimersByTime(500);
     });
+    expect(app.queryByText('Make this map yours')).toBeNull();
+    // Overview says what you lean towards now.
+    await fireEvent.press(app.getByLabelText('Overview'));
+    await settle();
     expect(app.getByText(/^Leaning [a-z ]+$/)).toBeTruthy();
     expect(app.getByText('From 1 rated artist')).toBeTruthy();
-    expect(app.queryByText('Make this map yours')).toBeNull();
   });
 
   it('narrows the map to one festival, and offers to rate a sparse lineup', async () => {
@@ -705,7 +709,7 @@ describe('My Sound', () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
       buttons?.find((b) => b.style === 'destructive')?.onPress?.();
     });
-    const app = await renderApp('/sound?view=map');
+    const app = await renderApp('/sound?view=overview');
     await settle();
     await act(async () => {
       jest.advanceTimersByTime(500);
@@ -1032,7 +1036,7 @@ describe('Sound breakdowns', () => {
 
   it('shows your sound as a line of colour on My Sound, which opens the breakdown', async () => {
     await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love' }));
-    const app = await renderApp('/sound?view=map');
+    const app = await renderApp('/sound?view=overview');
     await settle();
     const spectrum = app.getByLabelText(/^Your sound: [A-Z][a-z -]+ \d+ percent/);
     await fireEvent.press(spectrum);
@@ -1042,7 +1046,7 @@ describe('Sound breakdowns', () => {
   });
 
   it('breaks your sound down from My Sound, for everyone or one festival', async () => {
-    const app = await renderApp('/sound?view=map');
+    const app = await renderApp('/sound?view=overview');
     await settle();
     await fireEvent.press(app.getByLabelText(/^Your sound: /));
     await settle();

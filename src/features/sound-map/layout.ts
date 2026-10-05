@@ -6,12 +6,14 @@ import { soundSimilarity } from '../taste/similarity';
  * later to move server-side.
  *
  * 1. Your strongest match is pinned at the centre.
- * 2. Every other artist gets a direction from its sound (each sound tag owns
- *    a compass point; neighbouring sounds sit next to each other). Directions
- *    are then eased toward an even spread, keeping their order, so the map
- *    stays balanced around you. Weaker matches drift further out.
+ * 2. Every other artist joins the group of their main sound. Each group is a
+ *    cluster round you, in ring order (each sound owns a compass point;
+ *    neighbouring sounds sit next to each other), in a wedge sized by how
+ *    many artists it holds; inside, the strongest matches sit at the heart
+ *    and the rest spiral out like a sunflower.
  * 3. A relaxation pass pushes artists apart, treating each one as its bubble
- *    plus its name label, so nothing overlaps.
+ *    plus its name label, so nothing overlaps, with a wider channel between
+ *    different sounds so each group reads on its own.
  */
 
 /**
@@ -34,9 +36,11 @@ const RING_PLACE: Record<SoundTag, number> = {
 };
 const MIN_R = 30;
 export const MAX_R = 78;
-const GAP = 16;
-const SPREAD = 110; // extra distance for the weakest match
-const EVENNESS = 0.75; // 0 = true sound angles, 1 = perfectly even ring
+const GAP = 22;
+/** Extra room between artists of different sounds (the channels between groups). */
+const GROUP_SPACE = 30;
+/** The golden angle: a sunflower's spiral, so a cluster packs evenly round its heart. */
+const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 export const LABEL_OFFSET = 8; // space between bubble and name
 /** Two sound names closer than this (across, down) would print over each other. */
 const REGION_GAP = { x: 72, y: 22 };
@@ -70,6 +74,15 @@ export function regionAt(regions: readonly RegionLabel[], x: number, y: number):
 
 const angleOf = (tag: SoundTag) => (RING_PLACE[tag] / 6) * Math.PI * 2 - Math.PI / 2;
 
+/** Artists with no sound yet share one group. */
+const NO_TAG = 'none';
+const mainTag = (artist: Artist): string => {
+  const strongest = (Object.entries(artist.sound) as [SoundTag, number][]).filter(([, w]) => w > 0).sort((p, q) => q[1] - p[1])[0];
+  return strongest && strongest[0] in RING_PLACE ? strongest[0] : NO_TAG;
+};
+const norm = (a: number) => ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+const circularMean = (angles: number[]) => Math.atan2(angles.reduce((s, a) => s + Math.sin(a), 0), angles.reduce((s, a) => s + Math.cos(a), 0));
+
 export const bubbleRadius = (affinity: number) => {
   const t = Math.min(1, Math.max(0, (affinity - 0.3) / 0.7));
   return MIN_R + (MAX_R - MIN_R) * Math.pow(t, 1.6);
@@ -91,7 +104,7 @@ function soundDirection(artist: Artist) {
 }
 
 type Part = { dx: number; dy: number; r: number };
-type Node = PlacedArtist & { hx: number; hy: number; pinned: boolean; parts: Part[] };
+type Node = PlacedArtist & { hx: number; hy: number; pinned: boolean; parts: Part[]; tag?: string };
 
 /** A bubble plus two circles covering its label: a cheap but honest footprint. */
 function footprint(name: string, r: number): Part[] {
@@ -158,29 +171,51 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
 
   const top = ranked[0];
   const topR = bubbleRadius(top.affinity);
-  const lowest = ranked[ranked.length - 1].affinity;
-  const range = Math.max(0.01, top.affinity - lowest);
 
-  // Sound angle for everyone but the centre, then ease toward an even ring.
+  // Everyone but the centre is grouped by their main sound. Each sound is a cluster of its
+  // own (its strongest artists at its heart, the rest spiralling out like a sunflower), and
+  // the clusters sit round you in ring order, each in a wedge sized by how many it holds,
+  // with room between them, so the map reads as a few clear constellations of sound.
   const others = ranked.slice(1).map((o) => {
     const d = soundDirection(o.artist);
-    return { ...o, angle: Math.atan2(d.y, d.x) };
+    return { ...o, angle: Math.atan2(d.y, d.x), tag: mainTag(o.artist), r: bubbleRadius(o.affinity) };
   });
-  const byAngle = [...others].sort((a, b) => a.angle - b.angle);
-  const n = byAngle.length;
-  const assigned = new Map<string, number>();
-  if (n > 0) {
-    // Start the even ring at the average offset so the rotation stays close to the true sounds.
-    let offset = 0;
-    byAngle.forEach((o, i) => {
-      const even = (i / n) * Math.PI * 2;
-      offset += Math.atan2(Math.sin(o.angle - even), Math.cos(o.angle - even));
+  const groupsOf = new Map<string, typeof others>();
+  for (const o of others) groupsOf.set(o.tag, [...(groupsOf.get(o.tag) ?? []), o]);
+  const ordered = [...groupsOf.entries()]
+    .map(([tag, list]) => ({ tag, list: [...list].sort((p, q) => q.affinity - p.affinity), at: tag === NO_TAG ? circularMean(list.map((o) => o.angle)) : angleOf(tag as SoundTag) }))
+    .sort((p, q) => norm(p.at) - norm(q.at));
+  const home = new Map<string, { x: number; y: number }>();
+  if (others.length) {
+    // Wedges by count, then the whole ring turned so each sits near its sound's true place.
+    const per = (Math.PI * 2) / others.length;
+    let cursor = 0;
+    const wedges = ordered.map((g) => {
+      const centre = cursor + (per * g.list.length) / 2;
+      cursor += per * g.list.length;
+      return centre;
     });
-    offset /= n;
-    byAngle.forEach((o, i) => {
-      const even = (i / n) * Math.PI * 2 + offset;
-      const diff = Math.atan2(Math.sin(even - o.angle), Math.cos(even - o.angle));
-      assigned.set(o.artist.id, o.angle + diff * EVENNESS);
+    let sx = 0;
+    let sy = 0;
+    ordered.forEach((g, i) => {
+      sx += Math.cos(g.at - wedges[i]) * g.list.length;
+      sy += Math.sin(g.at - wedges[i]) * g.list.length;
+    });
+    const turn = ordered.length > 1 ? Math.atan2(sy, sx) : ordered[0].at - wedges[0];
+    ordered.forEach((g, i) => {
+      // How much room the cluster needs, roughly: the area of its bubbles (and their labels).
+      const size = Math.sqrt(g.list.reduce((sum, o) => sum + (o.r + GAP) * (o.r + GAP + LABEL_H * 0.6), 0));
+      const angle = wedges[i] + turn;
+      const dist = topR + GAP * 4 + size * 1.25;
+      const cx = Math.cos(angle) * dist;
+      const cy = Math.sin(angle) * dist;
+      const step = g.list.reduce((sum, o) => sum + o.r, 0) / g.list.length + GAP;
+      g.list.forEach((o, k) => {
+        // A sunflower spiral round the cluster's heart: strongest first, at the middle.
+        const rho = step * 1.1 * Math.sqrt(k);
+        const theta = angle + k * GOLDEN;
+        home.set(o.artist.id, { x: cx + Math.cos(theta) * rho, y: cy + Math.sin(theta) * rho });
+      });
     });
   }
 
@@ -188,11 +223,8 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
     const r = bubbleRadius(affinity);
     const parts = footprint(artist.name, r);
     if (i === 0) return { artist, affinity, r, x: 0, y: 0, hx: 0, hy: 0, pinned: true, parts };
-    const a = assigned.get(artist.id) ?? 0;
-    const dist = topR + r + GAP * 2 + ((top.affinity - affinity) / range) * SPREAD;
-    const hx = Math.cos(a) * dist;
-    const hy = Math.sin(a) * dist;
-    return { artist, affinity, r, x: hx, y: hy, hx, hy, pinned: false, parts };
+    const h = home.get(artist.id) ?? { x: 0, y: topR + r + GAP };
+    return { artist, affinity, r, x: h.x, y: h.y, hx: h.x, hy: h.y, pinned: false, parts, tag: mainTag(artist) };
   });
 
   for (let step = 0; step < 400; step++) {
@@ -215,7 +247,8 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
               dy = Math.sin(i * 7 + j);
               d = 1;
             }
-            const min = pa.r + pb.r + GAP;
+            // Two different sounds keep a wider channel between them, so each group reads on its own.
+            const min = pa.r + pb.r + GAP + (a.tag && b.tag && a.tag !== b.tag ? GROUP_SPACE : 0);
             if (d >= min) continue;
             const push = min - d;
             const ux = dx / d;
@@ -270,8 +303,17 @@ export function computeLayout(artists: Artist[], taste: TasteProfile): MapLayout
     .sort((p, q) => q.weight - p.weight);
   const kept: RegionLabel[] = [];
   for (const { tag, a } of placed) {
-    const x = Math.cos(a) * (reach + 22);
-    const y = Math.sin(a) * (reach + 22);
+    // Just beyond that sound's own group (not the whole map), so the name sits by its artists.
+    const ux = Math.cos(a);
+    const uy = Math.sin(a);
+    let own = 0;
+    for (const node of nodes) {
+      if (node.pinned || mainTag(node.artist) !== tag) continue;
+      for (const p of node.parts) own = Math.max(own, (node.x + p.dx) * ux + (node.y + p.dy) * uy + p.r);
+    }
+    const out = (own || reach) + 26;
+    const x = ux * out;
+    const y = uy * out;
     if (kept.some((r) => Math.abs(r.x - x) < REGION_GAP.x && Math.abs(r.y - y) < REGION_GAP.y)) continue;
     kept.push({ tag, x, y });
   }

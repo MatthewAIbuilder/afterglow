@@ -329,7 +329,7 @@ export default function MySoundScreen() {
       >
         {titleRow}
         {toggle}
-        {summaryCard}
+        {/* What you lean towards lives on Overview; the map keeps its room for the map. */}
 
         {searchOpen ? (
           <View style={styles.searchRow}>
