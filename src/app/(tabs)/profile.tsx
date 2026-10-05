@@ -52,7 +52,7 @@ import { color, space, type } from '../../theme/tokens';
 
 /** How far the cover photo reaches below the safe area. */
 /** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
-const COVER_H = 420;
+const COVER_H = 400;
 
 type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
 const TABS: Tab[] = ['videos', 'festivals', 'badges', 'saved'];
@@ -193,7 +193,7 @@ function FullProfile() {
       <PageTitle title="Profile" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
-        <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} />
+        <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} fadeFrom={0.72} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
             {me ? `@${me.handle}` : 'Profile'}

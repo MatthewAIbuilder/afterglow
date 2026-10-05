@@ -83,28 +83,6 @@ describe('profile backgrounds', () => {
     expect(app.getByLabelText('Maya’s sound universe: SUBTRONICS, LEVITY.')).toBeTruthy();
   });
 
-  it('a background and a cover photo blend: the photo glows through under the animation', async () => {
-    await person('maya', 'Maya');
-    await s().setBackdrop('aurora');
-    await s().setCover('file:///cover.jpg');
-    await s().signOut();
-    await person('sam', 'Sam');
-    const app = await renderApp('/u/maya');
-    await flush();
-    expect(app.getByTestId('backdrop-aurora', { includeHiddenElements: true })).toBeTruthy();
-    expect(app.getByTestId('cover-blend', { includeHiddenElements: true })).toBeTruthy();
-  });
-
-  it('the picker previews the blend when you have a cover photo', async () => {
-    await person('sam', 'Sam');
-    await s().setCover('file:///cover.jpg');
-    const app = await renderApp('/backdrop');
-    await flush();
-    expect(app.getByText(/Your cover photo glows through underneath/)).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Aurora. Free'));
-    expect(app.getByText('Northern lights rippling across the sky, blended with your cover photo')).toBeTruthy();
-  });
-
   it('favourite artists stay hidden when switched off', async () => {
     await person('maya', 'Maya');
     await s().saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: false, showSound: false, showArtists: false }, { festivals: [], sounds: [], artists: ['subtronics'] });

@@ -29,7 +29,7 @@ import { useDailyQuests } from '../features/quests/useDailyQuests';
 import { LEVEL_SHOWN_FROM } from '../features/quests/daily';
 import { type CropSource, PhotoCropper } from '../features/profile/PhotoCropper';
 import { goBack } from '../lib/nav';
-import { CoverLayers } from '../components/ProfileCover';
+import { AnimatedBackdrop } from '../features/profile/AnimatedBackdrop';
 import { backdropOf, shownBackdrop } from '../features/profile/backdrops';
 import { useStanding } from '../features/standing/useStanding';
 
@@ -260,11 +260,11 @@ export default function ProfileEditScreen() {
             style={styles.coverRow}
           >
             <View style={styles.cover}>
-              {backdrop ? <CoverLayers url={p?.coverUrl} backdrop={backdrop.id} width={112} height={63} still /> : <Text style={styles.coverHint}>Animated</Text>}
+              {backdrop ? <AnimatedBackdrop id={backdrop.id} width={112} height={63} still /> : <Text style={styles.coverHint}>Animated</Text>}
             </View>
             <View style={{ flexShrink: 1 }}>
               <Text style={styles.link}>{backdrop ? `Background · ${backdrop.name}` : 'Animated background'}</Text>
-              <Text style={styles.rowNote}>{backdrop ? (p?.coverUrl ? 'Blended with your cover photo' : 'Across the top of your profile') : 'Aurora, lasers, a sunset grid and more'}</Text>
+              <Text style={styles.rowNote}>{backdrop ? 'Shows in place of your cover photo' : 'Aurora, lasers, a sunset grid and more'}</Text>
             </View>
           </Pressable>
           <PhotoCropper source={cropping?.source} shape={cropping?.shape ?? 'avatar'} onDone={(uri) => void applyCrop(uri)} onCancel={() => setCropping(undefined)} />
