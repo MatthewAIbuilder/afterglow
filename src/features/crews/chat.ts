@@ -35,6 +35,15 @@ export const CHAT_RULES = [
   'Report anything that breaks the community guidelines. The crew’s starter can remove messages and people.',
 ] as const;
 
+/** The rules for a 1-to-1 chat (shown at the top, like a crew's). */
+export const DM_RULES = [
+  'Only friends who follow each other can chat.',
+  'Be kind. No harassment, threats or hate.',
+  'Don’t share someone else’s private details or photos without asking.',
+  'No selling tickets, drugs or anything else.',
+  'Report anything that breaks the community guidelines, or block them to stop their messages.',
+] as const;
+
 export type ChatOutboxItem = {
   id: string;
   crewId: string;

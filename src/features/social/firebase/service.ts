@@ -43,13 +43,17 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { TIP_TEXT_MAX, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile } from '../models';
+import { DM_PREFIX, directRoom, isDirectRoom, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, TIP_TEXT_MAX } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+
+
+/** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
+const room = (id: string): [string, string] => (isDirectRoom(id) ? ['dms', id.slice(DM_PREFIX.length)] : ['crews', id]);
 
 /**
  * Social profiles on Firebase: Authentication (email and password), Cloud
@@ -608,7 +612,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (kind === 'chat') {
           const [crewId, messageId] = id.split('/');
           if (!crewId || !messageId) return;
-          return deleteDoc(doc(db, 'crews', crewId, 'chat', messageId));
+          return deleteDoc(doc(db, ...room(crewId), 'chat', messageId));
         }
         const ref_ = doc(db, 'memories', id);
         const data = (await getDoc(ref_)).data() as { videoPath?: string; thumbPath?: string } | undefined;
@@ -620,7 +624,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const [crewId, messageId] = target.split('/');
         if (!crewId || !messageId) return null;
-        return crewMessageFromDoc(crewId, messageId, (await getDoc(doc(fb().db, 'crews', crewId, 'chat', messageId))).data());
+        return crewMessageFromDoc(crewId, messageId, (await getDoc(doc(fb().db, ...room(crewId), 'chat', messageId))).data());
       }),
     adminCounts: (since) =>
       guard(async () => {
@@ -1326,21 +1330,21 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!ready.length) return [];
         // One write for all of them: the least a weak connection has to carry.
         const batch = writeBatch(db);
-        for (const i of ready) batch.set(doc(db, 'crews', crewId, 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
+        for (const i of ready) batch.set(doc(db, ...room(crewId), 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
         try {
           await withTimeout(batch.commit(), CHAT_SEND_TIMEOUT_MS);
           return ready.map((i) => i.id);
         } catch (e) {
           if ((e as { code?: string })?.code !== 'permission-denied') throw e;
           // A message from an earlier try that did get through can't be written again: see which are there.
-          const there = await Promise.all(ready.map(async (i) => ((await getDoc(doc(db, 'crews', crewId, 'chat', i.id))).exists() ? i.id : null)));
+          const there = await Promise.all(ready.map(async (i) => ((await getDoc(doc(db, ...room(crewId), 'chat', i.id))).exists() ? i.id : null)));
           const done = there.filter((x): x is string => !!x);
           if (!done.length) throw e;
           // The rest were refused only because they came with those: send them on their own.
           const rest = ready.filter((i) => !done.includes(i.id));
           if (rest.length) {
             const again = writeBatch(db);
-            for (const i of rest) again.set(doc(db, 'crews', crewId, 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
+            for (const i of rest) again.set(doc(db, ...room(crewId), 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
             await withTimeout(again.commit(), CHAT_SEND_TIMEOUT_MS)
               .then(() => done.push(...rest.map((i) => i.id)))
               .catch(() => {});
@@ -1351,7 +1355,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     watchCrewChat(crewId, max, listener, onError) {
       if (!firebaseConfigured(config)) return () => {};
       return onSnapshot(
-        query(collection(fb().db, 'crews', crewId, 'chat'), orderBy('sentAt', 'desc'), limit(max)),
+        query(collection(fb().db, ...room(crewId), 'chat'), orderBy('sentAt', 'desc'), limit(max)),
         (snap) => listener(snap.docs.map((d) => crewMessageFromDoc(crewId, d.id, d.data({ serverTimestamps: 'estimate' }))).filter((m): m is CrewMessage => !!m)),
         (e) => onError?.(asSocialError(e)),
       );
@@ -1359,12 +1363,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     markCrewChatRead: (crewId) =>
       guard(async () => {
         const user = me();
-        await withTimeout(setDoc(doc(fb().db, 'crews', crewId, 'reads', user.uid), { at: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
+        await withTimeout(setDoc(doc(fb().db, ...room(crewId), 'reads', user.uid), { at: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
       }),
     watchCrewReads(crewId, listener, onError) {
       if (!firebaseConfigured(config)) return () => {};
       return onSnapshot(
-        collection(fb().db, 'crews', crewId, 'reads'),
+        collection(fb().db, ...room(crewId), 'reads'),
         (snap) => {
           const reads: Record<string, string> = {};
           for (const d of snap.docs) {
@@ -1378,8 +1382,35 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     },
     deleteCrewMessage: (crewId, id) =>
       guard(async () => {
-        await deleteDoc(doc(fb().db, 'crews', crewId, 'chat', id));
+        await deleteDoc(doc(fb().db, ...room(crewId), 'chat', id));
       }),
+    openDirectChat: (uid) =>
+      guard(async () => {
+        const user = me();
+        const members = [user.uid, uid].sort() as [string, string];
+        const id = directRoom(user.uid, uid);
+        const ref_ = doc(fb().db, ...room(id));
+        // Made the first time; the rules check you're friends both ways and not blocked.
+        const there = await getDoc(ref_).catch(() => null);
+        if (!there?.exists()) await withTimeout(setDoc(ref_, { members, createdAt: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
+        return id;
+      }),
+    watchDirectChats(listener, onError) {
+      if (!firebaseConfigured(config)) return () => {};
+      const user = fb().auth.currentUser;
+      if (!user) return () => {};
+      return onSnapshot(
+        query(collection(fb().db, 'dms'), where('members', 'array-contains', user.uid), limit(200)),
+        (snap) =>
+          listener(
+            snap.docs.flatMap((d) => {
+              const members = d.data().members;
+              return Array.isArray(members) && members.length === 2 && members.every((m) => typeof m === 'string') ? [{ id: `${DM_PREFIX}${d.id}`, members: [members[0], members[1]] as [string, string] }] : [];
+            }),
+          ),
+        (e) => onError?.(asSocialError(e)),
+      );
+    },
     meetSpot: (crewId) =>
       guard(async () => meetSpotFromDoc((await getDoc(doc(fb().db, 'crews', crewId, 'meta', 'meet'))).data())),
     setMeetSpot: (crewId, raw) =>

@@ -66,7 +66,7 @@ describe('Friends', () => {
     await act(async () => router.push('/friends'));
     await flush();
     expect(app.getByText('Close friends')).toBeTruthy();
-    expect(app.getByLabelText('Maya Lin, going to Cyclops Cove 4')).toBeTruthy();
+    expect(app.getByLabelText('Message Maya Lin. Going to Cyclops Cove 4')).toBeTruthy();
     // Kept on this phone only, for this account; nothing about it reaches the server.
     expect(JSON.parse((await AsyncStorage.getItem('closeFriends.v1')) ?? '{}')).toEqual({ [mockSocial.currentUser()!.uid]: [maya] });
   });

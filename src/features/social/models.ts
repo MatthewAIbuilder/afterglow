@@ -216,6 +216,23 @@ export type CrewMessage = {
   sentAt: string;
 };
 
+/**
+ * A 1-to-1 chat between two friends who follow each other: a chat room like a
+ * crew's, with its own id (`dm_<uid>_<uid>`, the two in order). The crew chat
+ * functions (send, watch, read receipts, delete, report) take it as their
+ * crew id.
+ */
+export type DirectChat = { id: string; members: [string, string] };
+export const DM_PREFIX = 'dm_';
+/** The chat room for two people (the same whoever opens it). */
+export const directRoom = (a: string, b: string) => `${DM_PREFIX}${[a, b].sort().join('_')}`;
+export const isDirectRoom = (id: string) => id.startsWith(DM_PREFIX);
+/** The other person in a 1-to-1 chat. */
+export const otherInRoom = (id: string, me: string) => {
+  const [a, b] = id.slice(DM_PREFIX.length).split('_');
+  return a === me ? b : a;
+};
+
 /** What you send: the id is made on your phone, so sending again never doubles it. */
 export type CrewMessageInput = { id: string; text: string; at: string };
 

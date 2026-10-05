@@ -772,6 +772,50 @@ await t('stickers: made in HQ, read by anyone, found once each before their end 
   await assertFails(setDoc(doc(A.firestore(), 'finds', 'uidA_ended2026b'), find('uidA', 'ended2026b', { at: new Date(long.getTime() - 3600_000) })));
   await assertSucceeds(deleteDoc(doc(A.firestore(), 'finds', 'uidA_ferris2027')));
 });
+await t('1-to-1 chats: only friends both ways, only the two of them, not once blocked', async () => {
+  const P = env.authenticatedContext('uidP'), Q = env.authenticatedContext('uidQ'), R = env.authenticatedContext('uidR'), H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const seed = (path, data) => env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), ...path), data));
+  const dm = { members: ['uidP', 'uidQ'], createdAt: serverTimestamp() };
+  const msg = (uid, over = {}) => ({ uid, text: 'see you at the stage', atMs: Date.now(), sentAt: serverTimestamp(), ...over });
+  // P follows Q, not back yet: no chat.
+  await seed(['follows', 'uidP_uidQ'], { from: 'uidP', to: 'uidQ', createdAt: now });
+  await assertFails(setDoc(doc(P.firestore(), 'dms', 'uidP_uidQ'), dm));
+  await seed(['follows', 'uidQ_uidP'], { from: 'uidQ', to: 'uidP', createdAt: now });
+  // Members in order, matching the id, including you.
+  await assertFails(setDoc(doc(P.firestore(), 'dms', 'uidQ_uidP'), { members: ['uidQ', 'uidP'], createdAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(R.firestore(), 'dms', 'uidP_uidQ'), dm));
+  await assertSucceeds(getDoc(doc(P.firestore(), 'dms', 'uidP_uidQ')));
+  await assertSucceeds(setDoc(doc(P.firestore(), 'dms', 'uidP_uidQ'), dm));
+  await assertFails(setDoc(doc(P.firestore(), 'dms', 'uidP_uidQ'), dm));
+  // Only the two of them.
+  await assertSucceeds(getDoc(doc(Q.firestore(), 'dms', 'uidP_uidQ')));
+  await assertFails(getDoc(doc(R.firestore(), 'dms', 'uidP_uidQ')));
+  await assertSucceeds(getDocs(query(collection(P.firestore(), 'dms'), where('members', 'array-contains', 'uidP'))));
+  await assertSucceeds(setDoc(doc(P.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm1abcdef'), msg('uidP')));
+  await assertSucceeds(setDoc(doc(Q.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm2abcdef'), msg('uidQ')));
+  await assertFails(setDoc(doc(P.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm3abcdef'), msg('uidQ')));
+  await assertFails(setDoc(doc(R.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm4abcdef'), msg('uidR')));
+  await assertFails(setDoc(doc(P.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm5abcdef'), msg('uidP', { text: 'x'.repeat(501) })));
+  await assertSucceeds(getDocs(collection(Q.firestore(), 'dms', 'uidP_uidQ', 'chat')));
+  await assertFails(getDocs(collection(R.firestore(), 'dms', 'uidP_uidQ', 'chat')));
+  await assertSucceeds(getDoc(doc(H.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm1abcdef')));
+  await assertSucceeds(setDoc(doc(Q.firestore(), 'dms', 'uidP_uidQ', 'reads', 'uidQ'), { at: serverTimestamp() }));
+  await assertFails(setDoc(doc(Q.firestore(), 'dms', 'uidP_uidQ', 'reads', 'uidP'), { at: serverTimestamp() }));
+  await assertSucceeds(getDocs(collection(P.firestore(), 'dms', 'uidP_uidQ', 'reads')));
+  // Never edited; your own removed.
+  await assertFails(updateDoc(doc(P.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm1abcdef'), { text: 'changed' }));
+  await assertFails(deleteDoc(doc(P.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm2abcdef')));
+  await assertSucceeds(deleteDoc(doc(P.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm1abcdef')));
+  // Q blocks P: P can't write any more (Q still can read the chat).
+  await seed(['blocks', 'uidQ'], { uids: ['uidP'] });
+  await assertFails(setDoc(doc(P.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm6abcdef'), msg('uidP')));
+  await assertSucceeds(getDocs(collection(Q.firestore(), 'dms', 'uidP_uidQ', 'chat')));
+  // Unfollowed: nobody writes.
+  await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), 'blocks', 'uidQ')));
+  await env.withSecurityRulesDisabled((ctx) => deleteDoc(doc(ctx.firestore(), 'follows', 'uidQ_uidP')));
+  await assertFails(setDoc(doc(Q.firestore(), 'dms', 'uidP_uidQ', 'chat', 'm7abcdef'), msg('uidQ')));
+});
+
 await t('set times from fans: one waiting per festival, only HQ reads them all and marks them live', async () => {
   const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
   const tip = (uid, festivalId, over = {}) => ({ uid, festivalId, status: 'new', createdAt: serverTimestamp(), text: 'Friday\n10:00 PM SUBTRONICS', ...over });

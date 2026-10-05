@@ -7,6 +7,9 @@ import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useCloseFriends } from '../../state/closeFriends';
+import { useCrewChat } from '../../state/crewChat';
+import { directRoom } from '../social/models';
+import { openChatWith } from './openChat';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { isOver, whenRank } from '../festivals/shelves';
@@ -25,7 +28,8 @@ export function nextFestivalOf(profile: Pick<Profile, 'festivals'>, festival: (i
 
 /**
  * Your close friends, first on the Friends tab: their faces, and the next
- * festival each is going to (when they show it). Tap one for their profile.
+ * festival each is going to (when they show it). Tap one to message them (a
+ * dot when they've written); hold for their profile.
  * Only people you still follow; only you see the list. Before you've starred
  * anyone, a one-line hint (only once you follow someone).
  */
@@ -34,6 +38,7 @@ export function CloseFriendsRow() {
   const me = social.user?.uid;
   const { ids, ready } = useCloseFriends(me);
   const { festival } = useCatalog();
+  const chat = useCrewChat();
   const today = useToday();
   const shown = useMemo(() => ids.filter((id) => social.following.has(id) && !social.blocked.has(id)), [ids, social.following, social.blocked]);
   const [profiles, setProfiles] = useState<Record<string, Profile | null>>({});
@@ -67,20 +72,24 @@ export function CloseFriendsRow() {
           if (p === null) return null;
           const next = p ? nextFestivalOf(p, festival, today) : undefined;
           const name = p ? firstName(p.displayName) : '';
+          const unread = chat.unreadFor(directRoom(me, id));
           return (
             <Pressable
               key={id}
               onPress={() => {
                 if (!p) return;
                 haptic.select();
-                router.push({ pathname: '/u/[handle]', params: { handle: p.handle } });
+                void openChatWith(chat.openDirect, id, name);
               }}
+              onLongPress={() => p && router.push({ pathname: '/u/[handle]', params: { handle: p.handle } })}
               accessibilityRole="button"
-              accessibilityLabel={p ? `${p.displayName}${next ? `, going to ${next.name}` : ''}` : 'Loading'}
+              accessibilityLabel={p ? `Message ${p.displayName}${unread ? `, ${unread} new` : ''}${next ? `. Going to ${next.name}` : ''}` : 'Loading'}
+              accessibilityHint="Hold for their profile"
               style={({ pressed }) => [styles.person, pressed && styles.pressed]}
             >
               <View style={styles.ring}>
                 <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={AVATAR} />
+                {unread ? <View style={styles.dot} /> : null}
               </View>
               <Text style={styles.name} numberOfLines={1}>
                 {name}
@@ -105,5 +114,6 @@ const styles = StyleSheet.create({
   name: { ...type.label, color: color.moon, marginTop: space.xs },
   next: { ...type.caption, color: color.moonFaint, fontSize: 11 },
   hint: { ...type.caption, color: color.moonFaint },
+  dot: { position: 'absolute', top: 1, right: 1, width: 14, height: 14, borderRadius: 7, backgroundColor: color.glow, borderWidth: 2, borderColor: color.night },
   pressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
 });

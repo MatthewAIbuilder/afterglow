@@ -18,6 +18,7 @@ import { FriendAddsList } from './FriendAddsList';
 import { InviteCard } from './InviteCard';
 import { QuickActions } from './QuickActions';
 import { CloseFriendsRow } from './CloseFriendsRow';
+import { MessagesList } from './MessagesList';
 import { SideQuestsCard } from '../quests/SideQuestsCard';
 import { FriendsActivity } from './FriendsActivity';
 import { accountsOff } from '../social/unavailable';
@@ -224,6 +225,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 {/* At the festival: add the people in front of you, then your crew. */}
                 <QuickActions handle={me.handle} atFestival />
                 <CloseFriendsRow />
+                <MessagesList />
                 <CrewInvitesCard />
                 <FriendAddsList />
                 {here.length ? (
@@ -267,6 +269,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 <QuickActions handle={me.handle} festivals={upcoming} />
                 {/* Your closest people first: only you see who's on the list. */}
                 <CloseFriendsRow />
+                <MessagesList />
                 {/* Someone asked you to join their crew: that's the first thing to answer. */}
                 <CrewInvitesCard />
                 <FriendAddsList />

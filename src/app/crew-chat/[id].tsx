@@ -7,12 +7,12 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
 import { ChevronIcon } from '../../components/TabIcons';
-import { CHAT_RULES, QUICK_MESSAGES, arrivedLate, arrivedLateLine, chatRows, deliveryLine, justArrivedLate, lateNote, seenBy, seenLine, waitingLine, type ChatLine } from '../../features/crews/chat';
+import { CHAT_RULES, DM_RULES, QUICK_MESSAGES, arrivedLate, arrivedLateLine, chatRows, deliveryLine, justArrivedLate, lateNote, seenBy, seenLine, waitingLine, type ChatLine } from '../../features/crews/chat';
 import { firstName } from '../../features/crews/together';
 import { clock } from '../../features/crews/updates';
 import { useCrewPage } from '../../features/crews/useCrewPage';
 import { askBlock, askReport } from '../../features/social/moderation';
-import { CHAT_MAX, type Profile } from '../../features/social/models';
+import { CHAT_MAX, isDirectRoom, otherInRoom, type Profile } from '../../features/social/models';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/service';
 import { showActionSheet, showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
@@ -33,6 +33,9 @@ const AMBER = '#FFB86B';
  * show in the order they were written; yours wait for signal and say so. Hold
  * a message to delete it (yours, or anyone's in a crew you started), or to
  * report or block whoever wrote it.
+ *
+ * A 1-to-1 chat with a friend (`dm_…` ids) is the same screen: the two of
+ * you, their name up top (to their profile), and its own short rules.
  */
 export default function CrewChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -46,9 +49,29 @@ export default function CrewChatScreen() {
   const [text, setText] = useState('');
   const scroller = useRef<ScrollView>(null);
 
-  const crew = page.status === 'ready' ? page.crew : undefined;
-  const member = page.status === 'ready' && page.member;
-  const profiles = useMemo<Record<string, Profile>>(() => (page.status === 'ready' ? page.profiles : {}), [page]);
+  // A 1-to-1 chat: the two of you; their profile is read for the name and photo.
+  const direct = isDirectRoom(id);
+  const other = direct && me ? otherInRoom(id, me) : undefined;
+  const [otherProfile, setOtherProfile] = useState<Profile | null | undefined>();
+  useEffect(() => {
+    if (!other) return;
+    let live = true;
+    social.service
+      .profileOf(other)
+      .then((p) => live && setOtherProfile(p))
+      .catch(() => live && setOtherProfile(null));
+    return () => {
+      live = false;
+    };
+  }, [other, social.service]);
+  const crew = !direct && page.status === 'ready' ? page.crew : undefined;
+  const member = direct ? !!me && id.includes(me) : page.status === 'ready' && page.member;
+  const members = direct ? (other && me ? [me, other] : []) : (crew?.members ?? []);
+  const profiles = useMemo<Record<string, Profile>>(
+    () => (direct ? (other && otherProfile ? { [other]: otherProfile } : {}) : page.status === 'ready' ? page.profiles : {}),
+    [direct, other, otherProfile, page],
+  );
+  const otherName = other && otherProfile ? firstName(otherProfile.displayName) : 'your friend';
   const festival = crew ? catalog.festival(crew.festivalId) : undefined;
   const lines = chat.linesFor(id);
   const rows = useMemo(() => chatRows(lines, me, now), [lines, me, now]);
@@ -114,7 +137,9 @@ export default function CrewChatScreen() {
   };
 
   const body = (() => {
-    if (!social.user) return <Text style={styles.quiet}>Sign in to see your crew’s chat.</Text>;
+    if (!social.user) return <Text style={styles.quiet}>{direct ? 'Sign in to see your messages.' : 'Sign in to see your crew’s chat.'}</Text>;
+    if (direct && !member) return <Text style={styles.quiet}>Only the two people in this chat can read it.</Text>;
+    if (direct) return renderChat();
     if (page.status === 'loading') return <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
     if (page.status === 'missing') return <Text style={styles.quiet}>This crew has ended.</Text>;
     if (page.status === 'failed') return <Text style={styles.quiet}>{SOCIAL_ERROR_COPY.network}</Text>;
@@ -127,11 +152,16 @@ export default function CrewChatScreen() {
           </Pressable>
         </View>
       );
+    return renderChat();
+  })();
+
+  function renderChat() {
+    const rules = direct ? DM_RULES : CHAT_RULES;
     return (
       <>
-        <View style={styles.rules} accessible accessibilityLabel={`Crew chat rules. ${CHAT_RULES.join(' ')}`}>
-          <Text style={styles.rulesTitle}>Only people in this crew can see this chat</Text>
-          {CHAT_RULES.map((r) => (
+        <View style={styles.rules} accessible accessibilityLabel={`${direct ? 'Chat' : 'Crew chat'} rules. ${rules.join(' ')}`}>
+          <Text style={styles.rulesTitle}>{direct ? `Only you and ${otherName} can see this chat` : 'Only people in this crew can see this chat'}</Text>
+          {rules.map((r) => (
             <Text key={r} style={styles.rule}>
               · {r}
             </Text>
@@ -141,7 +171,7 @@ export default function CrewChatScreen() {
           </Pressable>
         </View>
         {!chat.loaded(id) && !lines.length ? <ActivityIndicator color={color.glow} /> : null}
-        {chat.loaded(id) && !lines.length ? <Text style={[styles.quiet, styles.center]}>No messages yet. Say hi to your crew.</Text> : null}
+        {chat.loaded(id) && !lines.length ? <Text style={[styles.quiet, styles.center]}>{direct ? `No messages yet. Say hi to ${otherName}.` : 'No messages yet. Say hi to your crew.'}</Text> : null}
         {rows.map((row) => {
           if (row.kind === 'day')
             return (
@@ -170,9 +200,9 @@ export default function CrewChatScreen() {
                 >
                   <Text style={styles.text}>{line.text}</Text>
                 </Pressable>
-                {mine && lastMine?.id === line.id && crew ? (
+                {mine && lastMine?.id === line.id && members.length ? (
                   <Text style={styles.meta} accessibilityLiveRegion="polite">
-                    {clock(line.at)} · {seenLine(seenBy(line, readsHere, crew.members, me), crew.members.length - 1, nameOf)}
+                    {clock(line.at)} · {direct ? (seenBy(line, readsHere, members, me).length ? 'Seen' : 'Delivered') : seenLine(seenBy(line, readsHere, members, me), members.length - 1, nameOf)}
                   </Text>
                 ) : late ? (
                   <Text style={[styles.meta, { color: AMBER }]} accessibilityLabel={`Held up by signal. ${lateNote(line)}`}>
@@ -190,17 +220,35 @@ export default function CrewChatScreen() {
         })}
       </>
     );
-  })();
+  }
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Crew chat" />
+      <PageTitle title={direct ? 'Messages' : 'Crew chat'} />
       <NightSky />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[styles.head, { paddingTop: insets.top + space.sm }]}>
           <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : crew ? router.replace({ pathname: '/crew/[id]', params: { id } }) : router.replace('/'))}>
             <ChevronIcon color={color.moon} direction="left" size={18} />
           </GlassCircleButton>
+          {direct ? (
+            <Pressable
+              style={styles.dmHead}
+              onPress={() => otherProfile && router.push({ pathname: '/u/[handle]', params: { handle: otherProfile.handle } })}
+              accessibilityRole="button"
+              accessibilityLabel={otherProfile ? `${otherProfile.displayName}. Open their profile.` : 'Messages'}
+            >
+              <PersonAvatar name={otherProfile?.displayName} url={otherProfile?.avatarUrl} size={34} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title} numberOfLines={1}>
+                  {otherProfile?.displayName ?? 'Messages'}
+                </Text>
+                <Text style={styles.sub} numberOfLines={1}>
+                  {otherProfile ? `@${otherProfile.handle} · just the two of you` : ' '}
+                </Text>
+              </View>
+            </Pressable>
+          ) : (
           <Pressable
             style={{ flex: 1 }}
             onPress={() => crew && router.push({ pathname: '/crew/[id]', params: { id } })}
@@ -217,6 +265,7 @@ export default function CrewChatScreen() {
               </Text>
             ) : null}
           </Pressable>
+          )}
         </View>
         <ScrollView
           ref={scroller}
@@ -238,7 +287,9 @@ export default function CrewChatScreen() {
             {delivery ? (
               <Pressable onPress={() => chat.dismissDelivery(id)} accessibilityRole="button" accessibilityHint="Dismisses this note" style={styles.noticeSent}>
                 <Text style={styles.noticeSentText} accessibilityLiveRegion="polite">
-                  {deliveryLine(delivery.count, delivery.heldMs)} The crew sees the time you wrote {delivery.count === 1 ? 'it' : 'them'}.
+                  {direct
+                    ? `${deliveryLine(delivery.count, delivery.heldMs).replace('reached the crew', 'got through')} ${otherName} sees the time you wrote ${delivery.count === 1 ? 'it' : 'them'}.`
+                    : `${deliveryLine(delivery.count, delivery.heldMs)} The crew sees the time you wrote ${delivery.count === 1 ? 'it' : 'them'}.`}
                 </Text>
                 <Text style={styles.noticeClose}>×</Text>
               </Pressable>
@@ -268,11 +319,11 @@ export default function CrewChatScreen() {
               <TextInput
                 value={text}
                 onChangeText={(t) => setText(t.slice(0, CHAT_MAX))}
-                placeholder="Message your crew"
+                placeholder={direct ? `Message ${otherName}` : 'Message your crew'}
                 placeholderTextColor={color.moonFaint}
                 style={styles.input}
                 multiline
-                accessibilityLabel="Message your crew"
+                accessibilityLabel={direct ? `Message ${otherName}` : 'Message your crew'}
               />
               <Pressable
                 onPress={() => send(text)}
@@ -303,6 +354,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingBottom: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
   title: { ...type.headline, color: color.moon },
+  dmHead: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm },
   sub: { ...type.caption, color: color.moonDim },
   quiet: { ...type.body, color: color.moonDim },
   center: { textAlign: 'center', marginTop: space.lg },
