@@ -71,6 +71,32 @@ Until the key is added, everything works as before and the step is skipped.
   the step fails, the run's log says why in plain words; send that line to
   Claude.
 
+## Shows on artist pages (automatic)
+
+In the same step, after the festivals, the script also asks EDMTrain for
+club nights and concerts (everything that isn't a festival) in the next six
+months, and adds them to `catalogue.json` as `shows`
+(`src/data/import/edmtrainShows.ts`). Each artist's page then has an
+**Upcoming shows** section: the date, the event or venue, the town, and
+anyone else on Afterglow on the same bill ("with CRANKDAT"). The next five
+show first, with "See all" for the rest. Tapping a show opens its page on
+EDMTrain, and the section ends with "Show info from EDMTrain ↗", as
+EDMTrain asks.
+
+- Only artists already on Afterglow get shows (yours, and the ones the
+  festival import added). A club night never adds a new artist.
+- Names are matched the same way as for festivals (ignoring capitals and
+  accents). A b2b act ("SUBTRONICS B2B CRANKDAT") counts for each of its
+  artists who is on Afterglow.
+- Festivals and livestreams are left out (festivals have their own pages),
+  and so are shows that are over or have no venue or EDMTrain link.
+- To keep the file small: at most 6 upcoming shows per artist, 8 Afterglow
+  artists per show and 1,500 shows in all, soonest first. If they'd still
+  take too much room, the farthest ones go first.
+- If EDMTrain doesn't answer this second question, the festivals are still
+  published, with no shows that night (the run's log has a warning).
+- Shows are only what EDMTrain publishes; nothing is added by hand.
+
 ## Artist photos (automatic)
 
 Every night, after the festivals step, the Website workflow runs

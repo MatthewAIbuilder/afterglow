@@ -1,4 +1,4 @@
-import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, SetTime, SoundTag, Stage, YouTubeClipSource } from './models';
+import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, SetTime, Show, SoundTag, Stage, YouTubeClipSource } from './models';
 import { SOUND_TAGS } from './models';
 
 /**
@@ -26,7 +26,9 @@ import { SOUND_TAGS } from './models';
  *   "clips":     [{ "id", "artist", "festival", "title",
  *                   "video"?: { "link", "from": "25:00", "to": "25:45", "channel" },
  *                   "seconds"?, "bpm"? }],
- *   "similar"?:  [{ "artist", "other", "score": 0.8 }]
+ *   "similar"?:  [{ "artist", "other", "score": 0.8 }],
+ *   "shows"?:    [{ "id", "date": "2026-10-18", "name"?, "venue", "location"?, "place"?, "link": "https://edmtrain.com/…",
+ *                   "artists": [artist ids] }]   // club shows from the nightly EDMTrain feed
  * }
  *
  * An update published from HQ may write a festival already on Afterglow
@@ -341,6 +343,28 @@ function parseSimilar(raw: unknown, problems: string[]): ArtistSimilarity | unde
   return undefined;
 }
 
+/** At most this many shows are read from a file, and this many artists per show. */
+export const MAX_SHOWS = 3000;
+export const MAX_SHOW_ARTISTS = 12;
+
+/** A club show (see Show in models.ts), or undefined when it's missing its id, day, venue, https link or artists. */
+function parseShow(raw: unknown): Show | undefined {
+  if (!isObj(raw)) return undefined;
+  const showId = id(raw.id);
+  const date = isoDay(raw.date);
+  const venue = text(raw.venue);
+  const link = safeImageUrl(raw.link);
+  const artistIds = [...new Set(list(raw.artists).flatMap((a) => (id(a) ? [id(a)!] : [])))].slice(0, MAX_SHOW_ARTISTS);
+  if (!showId || !date || !venue || !link || !artistIds.length) return undefined;
+  const show: Show = { id: showId, date, venue, location: text(raw.location) ?? '', link, artistIds };
+  const name = text(raw.name);
+  if (name) show.name = name;
+  const lat = isObj(raw.place) ? raw.place.lat : undefined;
+  const lon = isObj(raw.place) ? raw.place.lon : undefined;
+  if (typeof lat === 'number' && typeof lon === 'number' && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && (lat !== 0 || lon !== 0)) show.place = { lat, lon };
+  return show;
+}
+
 /**
  * What each festival of a file wrote, when any is written only in part
  * (without its lineup, days or stages) or adds to itself ("add"); undefined
@@ -398,6 +422,16 @@ export function parseCatalogFile(input: unknown): ParsedFile {
     clips: pick(list(raw.clips).map((c, i) => parseClip(c, i, problems))),
   };
   if (raw.similar !== undefined) snapshot.similarities = pick(list(raw.similar).map((s) => parseSimilar(s, problems)));
+  // Club shows from the nightly EDMTrain feed: [{ "id", "date", "venue", "link", "artists", … }].
+  if (raw.shows !== undefined) {
+    if (!Array.isArray(raw.shows)) problems.push('"shows" should be a list like [{ "id", "date", "venue", "link", "artists" }], so it was left out.');
+    else {
+      const shows = pick(raw.shows.slice(0, MAX_SHOWS).map(parseShow));
+      const bad = Math.min(raw.shows.length, MAX_SHOWS) - shows.length;
+      if (bad) problems.push(`${bad} ${bad === 1 ? 'show was' : 'shows were'} left out: each needs an id, a date like "2026-10-18", a venue, an https link and its artists.`);
+      if (shows.length) snapshot.shows = shows;
+    }
+  }
   const festivalParts = partsOf(list(raw.festivals), snapshot.festivals, problems);
   const updated = text(raw.updated);
   const parsed: ParsedFile = updated ? { snapshot, mode, updated, problems } : { snapshot, mode, problems };
