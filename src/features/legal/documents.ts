@@ -44,11 +44,11 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
               'If you turn on festivals near you, Afterglow asks for your location, rounds it to about a kilometre and keeps it on your phone (or in your browser) to show how far festivals are. Your phone’s maps service may be asked which town that is, and where a festival’s venue is. It isn’t sent to us, and you can turn it off on the Festivals tab.',
               'If you connect Spotify or Apple Music, your sign-in is kept in your phone’s secure storage and a summary of your library (which artists, not song titles or playlists) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
               'Reminders are scheduled on your phone. We don’t send push notifications.',
-              'Messages you write in a crew’s chat are seen only by the people in that crew, with when you wrote them and when they arrived; leaving the crew removes yours, ending it removes them all, and a reported message can be read by us to review it. Joining a crew also records that you agreed to its chat rules and how you were invited.',
+              'Messages you write in a crew’s chat are seen only by the people in that crew, with when you wrote them and when they arrived; leaving the crew removes yours and ending it removes them all. 1-to-1 messages are seen only by the two of you, and deleting your account removes yours. Afterglow support can read crew chats and 1-to-1 messages, and does so only when handling a report or a safety issue; it can remove messages that break the rules. Joining a crew also records that you agreed to its chat rules and how you were invited.',
               'Photos you send to a crew go only to the people in that crew, stored with the crew\u2019s updates; they never appear on Discover or your profile, and leaving the crew removes the ones you sent.',
               'When you’re signed in: the days and times you open the app, which kind of phone or the website, and the app version. This tells us how many people use Afterglow and keeps old versions in view; it never includes what you watch or do, and only you and Afterglow support can read it. It’s removed with your account.',
               'Switching accounts: if you save accounts for quick switching, their emails and names are kept on your phone, and their passwords only in your phone’s keychain (on the website, nothing is kept and you type the password each time). They never leave your phone.',
-              'Support messages: when you contact support in the app, we keep your message with your name, @handle and sign-in email so we can reply; only you and Afterglow support can read it.',
+              'Support messages: when you contact support in the app, we keep your message and our replies with your name, @handle and sign-in email so we can reply; only you and Afterglow support can read them, and they’re deleted with your account.',
               'Founders and badges: if you were one of the first 100 people to make a profile, your founder number is public and shows on your profile. Your festival badges are worked out from the videos you share, so anyone who can see those videos can see your badges. Your glow level from daily quests (a single number) shows on your profile too, unless you switch it off in Edit profile; switching it off removes it.',
               'Look after yourself (stopwatches, including what you chose to time them for, water, food, check-ins and pulse checks) is kept only on your phone. Steps are read from your phone’s own motion counter, only after you ask, and are not stored. None of it is sent to us, shown on your profile or in recaps; it can be locked with Face ID, and Clear everything removes it. Only if you tap “I’m OK” or “Ask my crew for help” does your crew get that one check-in (not how you felt or anything else on the page), like any other crew update.',
             ],
@@ -76,7 +76,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
           {
             heading: 'Your choices',
             paragraphs: [
-              'Delete your account any time from Profile → Edit profile → Delete account. Your profile, handle, shared videos, follows, likes and crew memberships are removed. What’s on your phone stays there until you delete the app or use Start over on My Sound.',
+              'Delete your account any time from Profile → Edit profile → Delete account. Your profile, handle, shared videos, follows, likes, crew memberships, 1-to-1 messages and support messages are removed. What’s on your phone stays there until you delete the app or use Start over on My Sound.',
               'Remove a shared video from your profile at any time; its file is deleted. Switch off showing your festivals or sound in Edit profile. Block anyone, and they can no longer follow you, like your videos or join a crew you started.',
             ],
           },
@@ -138,7 +138,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL): Lega
             paragraphs: [
               'Crews are invite only: you join one from an invite in the app or an invite link from someone in it. Starting or joining a crew means agreeing to these rules for its chat, as well as everything above.',
               ...CHAT_RULES,
-              'Only the people in a crew can read its chat. The person who started the crew can remove messages and people. Report a message by holding it; reported messages are reviewed and can be removed.',
+              'Only the people in a crew can read its chat (and Afterglow support, only when handling a report or a safety issue). The person who started the crew can remove messages and people. Report a message by holding it; reported messages are reviewed and can be removed.',
             ],
           },
           {

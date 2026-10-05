@@ -51,11 +51,13 @@ export type FileSummary = { festivalId?: string; festivalName?: string; festival
 export function fileSummary(file: ParsedFile, catalog: Pick<Catalog, 'artist'>): FileSummary {
   const fs = file.snapshot?.festivals ?? [];
   const f = fs[0];
+  // An update written in part counts what it adds too.
+  const add = f ? file.festivalParts?.[f.id]?.add : undefined;
   return {
     festivals: fs.length,
-    acts: f?.lineup.length ?? 0,
+    acts: (f?.lineup.length ?? 0) + (add?.lineup.filter((id) => !f?.lineup.includes(id)).length ?? 0),
     newArtists: (file.snapshot?.artists ?? []).filter((a) => !catalog.artist(a.id)).length,
-    sets: f?.sets?.length ?? 0,
+    sets: (f?.sets?.length ?? 0) + (add?.sets?.length ?? 0),
     ...(f ? { festivalId: f.id, festivalName: f.name } : {}),
   };
 }

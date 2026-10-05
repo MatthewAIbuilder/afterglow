@@ -144,12 +144,18 @@ await t('blocks are private', async () => {
   await assertFails(getDoc(doc(B.firestore(), 'blocks', 'uidA')));
   await assertFails(setDoc(doc(B.firestore(), 'blocks', 'uidA'), { uids: [] }));
 });
-await t('reports: filed as yourself, never read back', async () => {
-  const r = { by: 'uidB', kind: 'profile', targetId: 'uidA', ownerUid: 'uidA', reason: 'offensive', note: '', createdAt: now };
+await t('reports: filed as yourself, open, at the server time, never read back', async () => {
+  const r = { by: 'uidB', kind: 'profile', targetId: 'uidA', ownerUid: 'uidA', reason: 'offensive', note: '', status: 'open', createdAt: serverTimestamp() };
   await assertSucceeds(setDoc(doc(B.firestore(), 'reports', 'r1'), r));
   await assertFails(setDoc(doc(B.firestore(), 'reports', 'r2'), { ...r, by: 'uidA' }));
   await assertFails(setDoc(doc(B.firestore(), 'reports', 'r3'), { ...r, reason: 'boring' }));
   await assertFails(getDoc(doc(B.firestore(), 'reports', 'r1')));
+  // Dated by the phone (to sink below newer ones), born dealt with, or without a status: refused.
+  await assertFails(setDoc(doc(B.firestore(), 'reports', 'r4'), { ...r, createdAt: now }));
+  await assertFails(setDoc(doc(B.firestore(), 'reports', 'r5'), { ...r, status: 'resolved' }));
+  const { status, ...noStatus } = r;
+  void status;
+  await assertFails(setDoc(doc(B.firestore(), 'reports', 'r6'), noStatus));
 });
 const follow = (from, to, over = {}) => ({ from, to, createdAt: now, ...over });
 await t('follows: someone you blocked can’t follow you', () => assertFails(setDoc(doc(B.firestore(), 'follows', 'uidB_uidA'), follow('uidB', 'uidA'))));
@@ -380,7 +386,7 @@ await t('crew chat: never edited; removed by the writer or the owner', async () 
   await assertSucceeds(deleteDoc(at(A.firestore(), 'm000001')));
   await assertSucceeds(setDoc(at(B.firestore(), 'm000010'), chatMsg()));
   await assertSucceeds(deleteDoc(at(B.firestore(), 'm000010')));
-  await assertSucceeds(setDoc(doc(B.firestore(), 'reports', 'rchat'), { by: 'uidB', kind: 'chat', targetId: 'c1/m000002', ownerUid: 'uidA', reason: 'harassment', note: '', createdAt: now }));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'reports', 'rchat'), { by: 'uidB', kind: 'chat', targetId: 'c1/m000002', ownerUid: 'uidA', reason: 'harassment', note: '', status: 'open', createdAt: serverTimestamp() }));
 });
 await t('crews: members share picks; others can’t read or write them', async () => {
   await assertSucceeds(setDoc(doc(B.firestore(), 'crews', 'c1', 'picks', 'uidB'), { artists: ['skrillex'], updatedAt: now }));
@@ -588,17 +594,26 @@ await t('glow levels: your own, a whole number, server time, with a profile; any
 const ADMIN = env.authenticatedContext('uidAdmin', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
 const NOT_VERIFIED = env.authenticatedContext('uidFake', { email: 'afterglowmusic.support@gmail.com', email_verified: false });
 const msg = (uid, over = {}) => ({ uid, topic: 'help', text: 'The map won’t load', status: 'open', createdAt: serverTimestamp(), ...over });
+// Someone with a profile (@sami) whose sign-in email is s@x.com.
+const S = env.authenticatedContext('uidS'), SE = env.authenticatedContext('uidS', { email: 's@x.com' });
+await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'profiles', 'uidS'), profile('sami')));
 await t('support: you send messages as yourself, and read only yours', async () => {
-  await assertSucceeds(setDoc(doc(A.firestore(), 'support', 's1'), msg('uidA', { handle: 'maya2', email: 'a@x.com', platform: 'ios' })));
-  await assertFails(setDoc(doc(A.firestore(), 'support', 's2'), msg('uidB')));
-  await assertFails(setDoc(doc(A.firestore(), 'support', 's3'), msg('uidA', { topic: 'rant' })));
-  await assertFails(setDoc(doc(A.firestore(), 'support', 's4'), msg('uidA', { status: 'answered' })));
-  await assertFails(setDoc(doc(A.firestore(), 'support', 's5'), msg('uidA', { text: 'x'.repeat(1001) })));
-  await assertSucceeds(getDoc(doc(A.firestore(), 'support', 's1')));
+  await assertSucceeds(setDoc(doc(SE.firestore(), 'support', 's1'), msg('uidS', { handle: 'sami', email: 's@x.com', platform: 'ios' })));
+  // Only your own sign-in email and your own profile's handle.
+  await assertFails(setDoc(doc(SE.firestore(), 'support', 's6'), msg('uidS', { email: 'someone@else.com' })));
+  await assertFails(setDoc(doc(S.firestore(), 'support', 's7'), msg('uidS', { email: 's@x.com' })));
+  await assertFails(setDoc(doc(SE.firestore(), 'support', 's8'), msg('uidS', { handle: 'bob' })));
+  await assertFails(setDoc(doc(env.authenticatedContext('uidNoProfile').firestore(), 'support', 's9'), msg('uidNoProfile', { handle: 'sami' })));
+  await assertSucceeds(setDoc(doc(env.authenticatedContext('uidNoProfile').firestore(), 'support', 's10'), msg('uidNoProfile')));
+  await assertFails(setDoc(doc(S.firestore(), 'support', 's2'), msg('uidB')));
+  await assertFails(setDoc(doc(S.firestore(), 'support', 's3'), msg('uidS', { topic: 'rant' })));
+  await assertFails(setDoc(doc(S.firestore(), 'support', 's4'), msg('uidS', { status: 'answered' })));
+  await assertFails(setDoc(doc(S.firestore(), 'support', 's5'), msg('uidS', { text: 'x'.repeat(1001) })));
+  await assertSucceeds(getDoc(doc(S.firestore(), 'support', 's1')));
   await assertFails(getDoc(doc(B.firestore(), 'support', 's1')));
-  await assertSucceeds(getDocs(query(collection(A.firestore(), 'support'), where('uid', '==', 'uidA'))));
+  await assertSucceeds(getDocs(query(collection(S.firestore(), 'support'), where('uid', '==', 'uidS'))));
   await assertFails(getDocs(collection(B.firestore(), 'support')));
-  await assertFails(updateDoc(doc(A.firestore(), 'support', 's1'), { reply: 'self-answer', status: 'answered' }));
+  await assertFails(updateDoc(doc(S.firestore(), 'support', 's1'), { reply: 'self-answer', status: 'answered' }));
 });
 await t('support account: reads every message and replies, once its email is verified', async () => {
   await assertSucceeds(getDocs(collection(ADMIN.firestore(), 'support')));
@@ -606,11 +621,23 @@ await t('support account: reads every message and replies, once its email is ver
   await assertSucceeds(updateDoc(doc(ADMIN.firestore(), 'support', 's1'), { reply: 'Try again now', repliedAt: '2026-10-03T10:00:00Z', status: 'answered' }));
   await assertFails(updateDoc(doc(ADMIN.firestore(), 'support', 's1'), { text: 'changed' }));
   await assertFails(updateDoc(doc(NOT_VERIFIED.firestore(), 'support', 's1'), { status: 'closed' }));
+  // Every reply kept as a list.
+  const replies = [{ text: 'Try again now', at: '2026-10-03T10:00:00Z' }, { text: 'Fixed for good', at: '2026-10-04T10:00:00Z' }];
+  await assertSucceeds(updateDoc(doc(ADMIN.firestore(), 'support', 's1'), { reply: 'Fixed for good', repliedAt: '2026-10-04T10:00:00Z', replies, status: 'answered' }));
+  await assertFails(updateDoc(doc(ADMIN.firestore(), 'support', 's1'), { replies: 'not a list' }));
+  await assertFails(updateDoc(doc(ADMIN.firestore(), 'support', 's1'), { replies: Array.from({ length: 21 }, () => replies[0]) }));
+});
+await t('support: your messages go with your account; nobody else deletes them', async () => {
+  await assertFails(deleteDoc(doc(B.firestore(), 'support', 's1')));
+  await assertSucceeds(deleteDoc(doc(S.firestore(), 'support', 's1')));
+  await assertSucceeds(deleteDoc(doc(ADMIN.firestore(), 'support', 's10')));
 });
 await t('support account: reads and resolves reports, takes down a video, counts crews', async () => {
-  await assertSucceeds(setDoc(doc(B.firestore(), 'reports', 'rep1'), { by: 'uidB', kind: 'memory', targetId: 'mem1', ownerUid: 'uidA', reason: 'spam', note: '', createdAt: now }));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'reports', 'rep1'), { by: 'uidB', kind: 'memory', targetId: 'mem1', ownerUid: 'uidA', reason: 'spam', note: '', status: 'open', createdAt: serverTimestamp() }));
   await assertFails(getDoc(doc(B.firestore(), 'reports', 'rep1')));
   await assertSucceeds(getDocs(collection(ADMIN.firestore(), 'reports')));
+  await assertSucceeds(getDocs(query(collection(ADMIN.firestore(), 'reports'), where('status', '==', 'open'), orderBy('createdAt', 'desc'), limit(300))));
+  await assertFails(getDocs(query(collection(B.firestore(), 'reports'), where('status', '==', 'open'))));
   await assertSucceeds(updateDoc(doc(ADMIN.firestore(), 'reports', 'rep1'), { status: 'resolved', resolvedAt: now }));
   await assertFails(updateDoc(doc(ADMIN.firestore(), 'reports', 'rep1'), { reason: 'other' }));
   await assertFails(getDocs(collection(NOT_VERIFIED.firestore(), 'reports')));
@@ -849,12 +876,16 @@ await t('set times from fans: one waiting per festival, only HQ reads them all a
   await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidA_acl-26'), tip('uidA', 'acl-26', { photo: 'data:image/png;base64,AAAA' })));
   await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidA_acl-26'), tip('uidA', 'acl-26', { text: 'x'.repeat(20001) })));
   await assertFails(setDoc(doc(anon.firestore(), 'setTimes', 'x_acl-26'), tip('x', 'acl-26')));
+  // Only a festival id like the app's (letters, numbers, - _ .; at most 64).
+  await assertFails(setDoc(doc(A.firestore(), 'setTimes', 'uidA_acl 26!'), tip('uidA', 'acl 26!')));
+  await assertFails(setDoc(doc(A.firestore(), 'setTimes', `uidA_${'x'.repeat(65)}`), tip('uidA', 'x'.repeat(65))));
   // The sender sees their own; nobody else but HQ.
   await assertSucceeds(getDoc(doc(A.firestore(), 'setTimes', 'uidA_edc-orlando-26')));
   await assertSucceeds(getDocs(query(collection(A.firestore(), 'setTimes'), where('uid', '==', 'uidA'))));
   await assertFails(getDoc(doc(B.firestore(), 'setTimes', 'uidA_edc-orlando-26')));
   await assertFails(getDocs(collection(B.firestore(), 'setTimes')));
   await assertSucceeds(getDocs(query(collection(H.firestore(), 'setTimes'), where('status', '==', 'new'))));
+  await assertSucceeds(getDocs(query(collection(H.firestore(), 'setTimes'), where('status', '==', 'new'), orderBy('createdAt', 'desc'), limit(30))));
   await assertFails(updateDoc(doc(A.firestore(), 'setTimes', 'uidA_edc-orlando-26'), { status: 'live' }));
   await assertFails(updateDoc(doc(H.firestore(), 'setTimes', 'uidA_edc-orlando-26'), { status: 'live' }));
   await assertSucceeds(updateDoc(doc(H.firestore(), 'setTimes', 'uidA_edc-orlando-26'), { status: 'live', photo: deleteField() }));

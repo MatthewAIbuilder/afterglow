@@ -203,7 +203,7 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['uid', 'festivalId', 'text', 'photo', 'status', 'createdAt'])
         && request.resource.data.uid == me()
-        && request.resource.data.festivalId is string && request.resource.data.festivalId.size() >= 1 && request.resource.data.festivalId.size() <= 100
+        && request.resource.data.festivalId is string && request.resource.data.festivalId.matches('^[A-Za-z0-9_.-]{1,64}$')
         && id == me() + '_' + request.resource.data.festivalId
         && request.resource.data.status == 'new' && request.resource.data.createdAt == request.time
         && ('text' in request.resource.data || 'photo' in request.resource.data)
@@ -459,7 +459,8 @@ service cloud.firestore {
     // 1-to-1 chats: `dms/<a>_<b>` (the two uids in order) between two people who follow each other,
     // started by either of them unless one blocked the other. Only the two of them read it. Messages and
     // read receipts are like a crew chat's; writing needs you to still be friends both ways and not blocked.
-    // The support account can read and remove a reported message.
+    // The support account can read any message (the rules can't tell a reported one apart); it reads one
+    // only when handling a report or a safety issue (said in the privacy policy), and can remove it.
     match /dms/{id} {
       // Only the two named in the id may even ask whether it exists.
       allow get: if signedIn() && me() in id.split('_');
@@ -584,7 +585,9 @@ service cloud.firestore {
 
       // The crew's chat: members read it and write as themselves. `atMs` is when it was written on the
       // phone (no later than now, no older than a week); `sentAt` is the server's time. Never edited;
-      // removed by the writer or the owner. The support account can read and remove a reported one.
+      // removed by the writer or the owner. The support account can read any message (the rules can't tell
+      // a reported one apart); it reads one only when handling a report or a safety issue (said in the
+      // privacy policy), and can remove it.
       match /chat/{messageId} {
         allow read: if (signedIn() && me() in get(path('crews', id)).data.members) || isAdmin();
         allow create: if signedIn() && me() in get(path('crews', id)).data.members
@@ -648,10 +651,13 @@ service cloud.firestore {
       }
     }
 
-    // Reports: anyone signed in can file one; only the project owner reads them (in the Firebase console).
+    // Reports: anyone signed in can file one (open, at the server's time, so it can't be dated to sink
+    // below others); only the support account reads them (open ones first) and deals with them.
     match /reports/{id} {
       allow create: if signedIn() && request.resource.data.by == me()
-        && request.resource.data.keys().hasOnly(['by', 'kind', 'targetId', 'ownerUid', 'reason', 'note', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['by', 'kind', 'targetId', 'ownerUid', 'reason', 'note', 'status', 'createdAt'])
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time
         && request.resource.data.kind in ['profile', 'memory', 'comment', 'chat']
         && request.resource.data.targetId is string && request.resource.data.targetId.size() <= 128
         && request.resource.data.ownerUid is string && request.resource.data.ownerUid.size() <= 128
@@ -680,8 +686,9 @@ service cloud.firestore {
       allow delete: if signedIn() && me() == uid;
     }
 
-    // Support messages: you write yours (as yourself, marked open, stamped with the server's time) and read
-    // only your own; the support account reads them all, replies, and closes them.
+    // Support messages: you write yours (as yourself, marked open, stamped with the server's time; any
+    // email is your sign-in email and any handle your profile's) and read only your own, and they go with
+    // your account; the support account reads them all, replies (every reply kept), and closes them.
     match /support/{id} {
       allow create: if signedIn() && request.resource.data.uid == me()
         && request.resource.data.keys().hasOnly(['uid', 'handle', 'name', 'email', 'topic', 'text', 'platform', 'version', 'status', 'createdAt'])
@@ -689,16 +696,18 @@ service cloud.firestore {
         && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
         && request.resource.data.status == 'open'
         && request.resource.data.createdAt == request.time
-        && shortOrAbsent(request.resource.data, 'handle', 30)
+        && (!('handle' in request.resource.data) || (exists(path('profiles', me()))
+          && request.resource.data.handle == get(path('profiles', me())).data.handle))
         && shortOrAbsent(request.resource.data, 'name', 60)
-        && shortOrAbsent(request.resource.data, 'email', 200)
+        && (!('email' in request.resource.data) || request.resource.data.email == request.auth.token.email)
         && shortOrAbsent(request.resource.data, 'platform', 20)
         && shortOrAbsent(request.resource.data, 'version', 80);
       allow read: if signedIn() && (resource.data.uid == me() || isAdmin());
-      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'repliedAt'])
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'repliedAt', 'replies'])
         && request.resource.data.status in ['open', 'answered', 'closed']
-        && shortOrAbsent(request.resource.data, 'reply', 2000);
-      allow delete: if isAdmin();
+        && shortOrAbsent(request.resource.data, 'reply', 2000)
+        && (!('replies' in request.resource.data) || (request.resource.data.replies is list && request.resource.data.replies.size() <= 20));
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == me());
     }
   }
 }

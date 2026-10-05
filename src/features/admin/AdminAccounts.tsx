@@ -41,14 +41,17 @@ export function AdminAccounts() {
   const [found, setFound] = useState<Profile[]>([]);
   const [list, setList] = useState<(Privileges & { profile?: Profile | null })[] | undefined>();
   const [chosen, setChosen] = useState<Profile | undefined>();
+  // The list couldn't be read: say so (with Try again) rather than "No one yet".
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
+    setFailed(false);
     try {
       const ps = await social.service.privileged();
       const withProfiles = await Promise.all(ps.map(async (p) => ({ ...p, profile: await social.service.profileOf(p.uid).catch(() => null) })));
       setList(withProfiles);
     } catch {
-      setList((l) => l ?? []);
+      setFailed(true);
     }
   }, [social.service]);
   useEffect(() => {
@@ -80,11 +83,23 @@ export function AdminAccounts() {
         <PersonLine key={p.uid} profile={p} detail={privilegeLine(list?.find((x) => x.uid === p.uid))} onPress={() => setChosen(p)} />
       ))}
 
-      {chosen ? <Grant key={chosen.uid} profile={chosen} current={current} onSaved={load} onClose={() => setChosen(undefined)} /> : null}
+      {/* Only once the list has been read, so the panel starts from what they really have (saving never wipes a privilege it didn't know about). */}
+      {chosen && list ? <Grant key={chosen.uid} profile={chosen} current={current} onSaved={load} onClose={() => setChosen(undefined)} /> : null}
+      {chosen && !list ? (
+        <Text style={styles.small}>{failed ? `${chosen.displayName}’s privileges couldn’t be read yet.` : `Reading ${chosen.displayName}’s privileges…`}</Text>
+      ) : null}
 
       <Text style={styles.section}>With privileges</Text>
-      {!list ? <ActivityIndicator color={color.glow} /> : null}
-      {list && !list.length ? <Text style={styles.small}>No one yet.</Text> : null}
+      {failed ? (
+        <View style={styles.person}>
+          <Text style={[styles.small, { flex: 1 }]}>Couldn’t read who has privileges. Check the signal.</Text>
+          <Pressable onPress={() => void load()} accessibilityRole="button" hitSlop={8}>
+            <Text style={styles.retry}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {!list && !failed ? <ActivityIndicator color={color.glow} /> : null}
+      {list && !list.length && !failed ? <Text style={styles.small}>No one yet.</Text> : null}
       {list?.map((p) =>
         p.profile ? (
           <PersonLine key={p.uid} profile={p.profile} detail={privilegeLine(p)} onPress={() => setChosen(p.profile!)} />
@@ -139,8 +154,11 @@ function Grant({ profile, current, onSaved, onClose }: { profile: Profile; curre
       const months = PLUS_TERMS.find((t) => t.key === term)?.months ?? 0;
       const until = term === 'keep' ? current?.plus?.until : plusUntil(months, new Date());
       const words = (caption.trim() || (flair ? FLAIR_CAPTION[flair] : '')).slice(0, 40);
-      await social.service.setPlus(profile.uid, plus ? (until ? { until } : {}) : null);
-      await social.service.setFlair(profile.uid, flair ? { kind: flair, caption: words } : null);
+      // Only what was changed here is written, so a privilege set elsewhere meanwhile is left alone.
+      const plusChanged = plus !== !!current?.plus || (plus && until !== current?.plus?.until);
+      const flairChanged = flair !== current?.flair?.kind || (!!flair && words !== current?.flair?.caption);
+      if (plusChanged) await social.service.setPlus(profile.uid, plus ? (until ? { until } : {}) : null);
+      if (flairChanged) await social.service.setFlair(profile.uid, flair ? { kind: flair, caption: words } : null);
       // Their ring and caption change straight away on this phone.
       const standing = await social.service.standingOf(profile.uid).catch(() => undefined);
       if (standing) rememberStanding(profile.uid, standing);
@@ -233,4 +251,5 @@ const styles = StyleSheet.create({
   input: { ...type.body, color: color.moon, minHeight: 44, paddingHorizontal: space.md, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   save: { alignSelf: 'flex-start', marginTop: space.md, paddingHorizontal: space.xl, minHeight: 44, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glow },
   saveText: { ...type.headline, color: color.night },
+  retry: { ...type.label, color: color.glow },
 });

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { Alert, type AlertButton } from 'react-native';
+import { mailtoLink } from '../../features/admin/admin';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
 import { forgetGuestView } from '../../state/adminView';
@@ -176,6 +177,64 @@ describe('the support account', () => {
     alert.mockRestore();
     expect(mockSocial.memories.has(shared.id)).toBe(false);
     expect(app.getByText('Nothing reported. All clear.')).toBeTruthy();
+  });
+
+  it('reads a reported comment, opens a reported profile, and never loses an open report under newer ones', async () => {
+    await person('maya', 'Maya');
+    const shared = await s().shareMemory({ memoryId: 'm1', videoUri: 'file:///m1.mp4', festivalId: 'cyclops-cove-4', capturedAt: new Date(2026, 10, 7).toISOString() });
+    await s().signOut();
+    await person('sam', 'Sam');
+    const c = await s().comment(shared.id, shared.uid, 'You call this a set?');
+    await s().signOut();
+    await as('maya');
+    await s().report({ kind: 'comment', id: c.id, ownerUid: c.uid }, 'harassment');
+    await s().report({ kind: 'profile', id: c.uid, ownerUid: c.uid }, 'offensive');
+    await s().signOut();
+    await supportAccount();
+    // An open report is still listed when more newer ones than the page holds were dealt with.
+    for (let i = 0; i < 3; i++) await s().report({ kind: 'memory', id: shared.id, ownerUid: shared.uid }, 'spam');
+    for (const r of (await s().reports(10)).filter((x) => x.kind === 'memory')) await s().resolveReport(r.id);
+    expect((await s().reports(2)).filter((r) => r.status === 'open').map((r) => r.kind).sort()).toEqual(['comment', 'profile']);
+
+    const app = await renderApp('/admin');
+    await flush();
+    await fireEvent.press(app.getByRole('tab', { name: /^Reports/ }));
+    await flush();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await fireEvent.press(app.getByLabelText('Read the comment'));
+    await flush();
+    expect(alert).toHaveBeenCalledWith('@sam’s comment', '“You call this a set?”');
+    alert.mockRestore();
+    await fireEvent.press(app.getByLabelText('Look at the profile'));
+    await flush();
+    expect(app.getByText('@sam')).toBeTruthy();
+  });
+
+  it('keeps every reply, links only a real-looking email, and a message goes with the account', async () => {
+    expect(mailtoLink('maya@example.com', 'Afterglow support')).toBe('mailto:maya@example.com?subject=Afterglow%20support');
+    expect(mailtoLink('maya@example.com?cc=x@y.z', 'Hi')).toBeUndefined();
+    expect(mailtoLink('not an email', 'Hi')).toBeUndefined();
+    await person('maya', 'Maya');
+    const m = await s().contactSupport({ topic: 'help', text: 'How do I add a festival?' });
+    await s().signOut();
+    await supportAccount();
+    await s().answerSupport(m.id, 'From the Festivals tab.');
+    await s().answerSupport(m.id, 'Or send us the lineup.');
+    expect(mockSocial.support.get(m.id)?.replies?.map((r) => r.text)).toEqual(['From the Festivals tab.', 'Or send us the lineup.']);
+    const app = await renderApp('/admin');
+    await flush();
+    await fireEvent.press(app.getByRole('tab', { name: /^Support/ }));
+    await flush();
+    await fireEvent.press(app.getByLabelText('All messages, 1'));
+    await flush();
+    expect(app.getByLabelText('Email maya@example.com')).toBeTruthy();
+    expect(app.getByText('From the Festivals tab.')).toBeTruthy();
+    expect(app.getByText('Or send us the lineup.')).toBeTruthy();
+    await app.unmount();
+    await s().signOut();
+    await as('maya');
+    await s().deleteAccount('password123');
+    expect(mockSocial.support.size).toBe(0);
   });
 
   it('nobody else can read the inbox', async () => {

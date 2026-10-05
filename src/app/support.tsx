@@ -7,7 +7,7 @@ import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
 import { SUPPORT_EMAIL } from '../config/app';
 import { agoShort } from '../features/admin/admin';
-import { SUPPORT_MAX, SUPPORT_TOPICS, type SupportTopic } from '../features/social/models';
+import { repliesOf, SUPPORT_MAX, SUPPORT_TOPICS, type SupportTopic } from '../features/social/models';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
@@ -109,11 +109,13 @@ export default function SupportScreen() {
                       {SUPPORT_TOPICS.find((t) => t.key === m.topic)?.label} · {agoShort(m.createdAt, now)}
                     </Text>
                     <Text style={styles.cardText}>{m.text}</Text>
-                    {m.reply ? (
-                      <View style={styles.reply}>
-                        <Text style={styles.replyLabel}>Afterglow support{m.repliedAt ? ` · ${agoShort(m.repliedAt, now)}` : ''}</Text>
-                        <Text style={styles.replyText}>{m.reply}</Text>
-                      </View>
+                    {repliesOf(m).length ? (
+                      repliesOf(m).map((r, i) => (
+                        <View key={i} style={styles.reply}>
+                          <Text style={styles.replyLabel}>Afterglow support{r.at ? ` · ${agoShort(r.at, now)}` : ''}</Text>
+                          <Text style={styles.replyText}>{r.text}</Text>
+                        </View>
+                      ))
                     ) : (
                       <Text style={styles.waiting}>{m.status === 'closed' ? 'Closed' : 'Waiting for a reply'}</Text>
                     )}
