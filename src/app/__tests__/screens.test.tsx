@@ -4,6 +4,7 @@ import { act, fireEvent } from '@testing-library/react-native';
 import { ActionSheetIOS, Alert, Linking, Share } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Sharing from 'expo-sharing';
+import { router } from 'expo-router';
 import { renderApp, showTab } from './appRoutes';
 
 /**
@@ -121,7 +122,7 @@ describe('Welcome', () => {
     await fireEvent.press(app.getByText('Start watching instead'));
     await settle();
     expect(app.queryByText('Pick artists you know')).toBeNull();
-    expect(app.getByLabelText(/, live sets from the lineup\. Choose what to discover\.$/)).toBeTruthy();
+    expect(app.getByLabelText('Your mix, a bit of everything. Choose what to discover.')).toBeTruthy();
   });
 
   it('is never shown to someone who has used the app', async () => {
@@ -784,13 +785,13 @@ describe('Your clips', () => {
 });
 
 describe('Discover', () => {
-  it('opens on the festival with the most clips and shows the first clip', async () => {
+  it('opens on your mix, a bit of everything, and shows the first clip', async () => {
     const app = await renderApp('/');
     await settle();
     await settle();
-    expect(app.getByText('Solstice 2026')).toBeTruthy();
-    expect(app.getByLabelText(/, live sets from the lineup\. Choose what to discover\.$/)).toBeTruthy();
-    expect(app.getAllByText('ILLENIUM').length).toBeGreaterThan(0);
+    expect(app.getByText('Your mix')).toBeTruthy();
+    expect(app.getByLabelText('Your mix, a bit of everything. Choose what to discover.')).toBeTruthy();
+    expect(app.getAllByLabelText(/^Share this clip of /).length).toBeGreaterThan(0);
   });
 
   it('shares a clip with a link to that moment on YouTube', async () => {
@@ -848,9 +849,10 @@ describe('Discover', () => {
     const app = await renderApp('/?festival=horizon-27');
     await settle();
     expect(app.getByText('Horizon 2027')).toBeTruthy();
-    const next = await renderApp('/?clip=c1');
+    await act(async () => router.push('/?clip=c1'));
     await settle();
-    expect(next.getByText('Solstice 2026')).toBeTruthy();
+    await settle();
+    expect(app.getByText('Solstice 2026')).toBeTruthy();
   });
 
   it('ends the feed with where to go next', async () => {
@@ -865,7 +867,7 @@ describe('Discover', () => {
   });
 
   it('picks what to discover from the header, including your mix, and remembers it', async () => {
-    const app = await renderApp('/');
+    const app = await renderApp('/?festival=solstice-26');
     await settle();
     await settle();
     await fireEvent.press(app.getByLabelText(/^Solstice 2026, live sets from the lineup\. Choose what to discover\.$/));
@@ -881,7 +883,7 @@ describe('Discover', () => {
   });
 
   it('focuses Discover on one sound from every lineup', async () => {
-    const app = await renderApp('/');
+    const app = await renderApp('/?festival=solstice-26');
     await settle();
     await settle();
     await fireEvent.press(app.getByLabelText(/^Solstice 2026, live sets from the lineup\. Choose what to discover\.$/));
@@ -905,12 +907,13 @@ describe('Discover', () => {
     expect(app.getByText('Your mix')).toBeTruthy();
   });
 
-  it('opens on a festival you are going to', async () => {
+  it('opens on your mix even after a festival was picked, or one you are going to', async () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['horizon-27']));
+    await AsyncStorage.setItem('discoverFocus.v1', 'solstice-26');
     const app = await renderApp('/');
     await settle();
     await settle();
-    expect(app.getByText('Horizon 2027')).toBeTruthy();
+    expect(app.getByText('Your mix')).toBeTruthy();
   });
 
   it('refocuses on a festival from its page', async () => {
