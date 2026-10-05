@@ -55,6 +55,33 @@ describe('festival crews', () => {
     expect(app.getByLabelText(/^You could split off for ILLENIUM at 11:40 PM, Main Stage/)).toBeTruthy();
   });
 
+  it('your own plan shows who in your crew is at each set with you, and who’s off elsewhere', async () => {
+    await person('maya', 'Maya');
+    const crew = await s().createCrew('solstice-26', 'Bass crew');
+    await s().setCrewPicks(crew.id, ['subtronics']);
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
+    await s().setCrewPicks(crew.id, ['illenium', 'subtronics']);
+    await s().signOut();
+    await person('jordan', 'Jordan');
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
+    await AsyncStorage.setItem('mustSees.v2', JSON.stringify({ 'solstice-26': ['illenium'] }));
+    await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love' }));
+    const app = await renderApp('/festival/solstice-26');
+    await flush();
+    // The day starts with where you'll be together.
+    expect(app.getByLabelText(/^With your crew today\. 11:40 PM, ILLENIUM at Main Stage, with Sam/)).toBeTruthy();
+    // Each stop says who's with you, and who's off at something else meanwhile.
+    expect(app.getByLabelText(/^11:40 PM to .*ILLENIUM at Main Stage.*\. With Sam\. Maya is at SUBTRONICS, Bass Tent, until 1:30 AM$/)).toBeTruthy();
+    expect(app.getByText('★ With Sam')).toBeTruthy();
+    // Your picks and clashes show their stars too.
+    await fireEvent.press(app.getByLabelText('Your picks and clashes'));
+    await flush();
+    expect(app.getAllByLabelText(/ILLENIUM, .*\. Sam starred it too$/).length).toBeGreaterThan(0);
+    expect(app.getAllByLabelText(/SUBTRONICS, .*\. Maya and Sam starred it too$/).length).toBeGreaterThan(0);
+  });
+
   it('start a crew from a festival page, name it, and your stars reach it', async () => {
     await AsyncStorage.setItem('mustSees.v2', JSON.stringify({ 'edc-orlando-26': ['steve-aoki', 'a-little-sound'] }));
     const me = await person('maya', 'Maya Chen');

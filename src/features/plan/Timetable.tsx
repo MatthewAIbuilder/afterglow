@@ -8,6 +8,7 @@ import { stageName } from '../../data/festival';
 import { formatTime } from '../festivals/format';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
+import { CrewStarsLine, crewStarsSaid, useCrewStars } from './CrewStars';
 import { color, radius, space, type } from '../../theme/tokens';
 import { catchLine, exploreLine, matchLabel, TIER_LABEL, verdictLines } from './copy';
 import { BoltIcon } from './icons';
@@ -204,11 +205,12 @@ function ArtistLine({
   dim?: boolean;
 }) {
   const match = matchLabel(pick);
+  const friends = useCrewStars(festival.id, pick.artist.id);
   return (
     <Pressable
       onPress={() => openArtist(festival, pick.artist.id)}
       accessibilityRole="button"
-      accessibilityLabel={`${label ? `${label}. ` : ''}${pick.artist.name}, ${pick.known ? `${match} match` : 'new to you'}, ${formatTime(pick.set.start)}, ${where(festival, pick)}`}
+      accessibilityLabel={`${label ? `${label}. ` : ''}${pick.artist.name}, ${pick.known ? `${match} match` : 'new to you'}, ${formatTime(pick.set.start)}, ${where(festival, pick)}${crewStarsSaid(friends)}`}
       style={({ pressed }) => [styles.aLine, dim && { opacity: 0.6 }, pressed && { opacity: 0.5 }]}
     >
       <ArtistAvatar artist={pick.artist} size={AVATAR} />
@@ -220,6 +222,7 @@ function ArtistLine({
         <Text style={styles.meta} numberOfLines={1}>
           {where(festival, pick)}
         </Text>
+        <CrewStarsLine names={friends} />
       </View>
       <View style={styles.side}>
         <Text style={[styles.match, pick.tier === 'must-see' && pick.known && { color: color.glow }]}>{match}</Text>
