@@ -73,6 +73,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
               router.push({ pathname: '/send-set-times/[id]', params: { id: festival.id } });
             }}
             accessibilityRole="button"
+            accessibilityLabel={`Seen the set times for ${festival.name}? Send them to us`}
             hitSlop={6}
             style={({ pressed }) => [styles.tipLink, pressed && { opacity: 0.6 }]}
           >
