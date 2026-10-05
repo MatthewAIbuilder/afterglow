@@ -56,7 +56,7 @@ describe('Friends', () => {
     await s().follow(maya);
     const app = await renderApp('/friends');
     await flush();
-    expect(app.getByText(/^Star your closest friends on their profile/)).toBeTruthy();
+    expect(app.getByText(/^Star your closest friends to bring them into your inner ring/)).toBeTruthy();
     await act(async () => router.push('/u/maya'));
     await flush();
     const star = app.getByLabelText('Close friend: Maya Lin');
@@ -67,7 +67,7 @@ describe('Friends', () => {
     await flush();
     // She's on the orbit's inner ring now.
     expect(app.getByText('1 close friend · 1 friend')).toBeTruthy();
-    expect(app.getByLabelText('Message Maya Lin. Going to Cyclops Cove 4')).toBeTruthy();
+    expect(app.getByLabelText('Maya Lin, close friend. Going to Cyclops Cove 4. Quick options')).toBeTruthy();
     // Kept on this phone only, for this account; nothing about it reaches the server.
     expect(JSON.parse((await AsyncStorage.getItem('closeFriends.v1')) ?? '{}')).toEqual({ [mockSocial.currentUser()!.uid]: [maya] });
   });
@@ -131,14 +131,40 @@ describe('Friends', () => {
     const app = await renderApp('/friends');
     await flush();
     expect(app.getByText('Your friends')).toBeTruthy();
-    expect(app.getByLabelText('Open Maya’s profile')).toBeTruthy();
+    expect(app.getByLabelText('Maya. Quick options')).toBeTruthy();
     expect(app.getByText('Recent activity')).toBeTruthy();
     expect(app.getByText('Maya shared a moment of SUBTRONICS')).toBeTruthy();
     expect(app.getByText('Maya is going to Cyclops Cove 4')).toBeTruthy();
 
-    // Her profile says how alike your taste is.
-    await fireEvent.press(app.getByLabelText('Open Maya’s profile'));
+    // A tap opens her quick options; See profile says how alike your taste is.
+    await fireEvent.press(app.getByLabelText('Maya. Quick options'));
+    await flush();
+    expect(app.getByText(/^@maya/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('See profile'));
     await flush();
     expect(app.getByText(/taste match/)).toBeTruthy();
+  });
+
+  it('a tap on a friend in the orbit opens quick options: star them as a close friend, or message them', async () => {
+    await person('maya', 'Maya Lin', ['cyclops-cove-4']);
+    await s().signOut();
+    await person('sam', 'Sam');
+    const maya = [...mockSocial.profiles.values()].find((p) => p.handle === 'maya')!.uid;
+    await s().follow(maya);
+    const app = await renderApp('/friends');
+    await flush();
+    // Following isn't enough to be a close friend: she's on the outer ring until starred.
+    expect(app.getByText('1 friend')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Maya. Quick options'));
+    await flush();
+    const star = app.getByLabelText('Add to close friends. Only you see this');
+    expect(star.props.accessibilityState).toMatchObject({ checked: false });
+    await fireEvent.press(star);
+    await flush();
+    expect(app.getByLabelText('Close friend. Tap to take them off').props.accessibilityState).toMatchObject({ checked: true });
+    await fireEvent.press(app.getAllByLabelText('Close')[0]);
+    await flush();
+    expect(app.getByText('1 close friend · 1 friend')).toBeTruthy();
+    expect(app.getByLabelText('Maya Lin, close friend. Going to Cyclops Cove 4. Quick options')).toBeTruthy();
   });
 });
