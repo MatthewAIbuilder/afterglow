@@ -105,14 +105,14 @@ export function DiscoverFeed() {
   const catalogSettled = useCatalogSettled();
   const { going, hydrated: goingLoaded } = useGoing();
   const { stored, save: saveFocus } = useStoredFocus();
-  // Undecided until the saved focus and your festivals have loaded; then what you picked last, or where you're going.
+  // Undecided until the saved focus and your festivals have loaded; then your mix (or Following, a sound, Tonight if you picked it last).
   const [focusId, setFocusId] = useState<Focus | undefined>();
   const [decided, setDecided] = useState(false);
   // A clip from the catalogue, or a video from the crowd you liked (opened from Your clips).
   const pool = useClipPool();
   const requestedClip = requested ? pool.find(requested) : undefined;
   if (stored !== undefined && goingLoaded) {
-    const base = decided ? focusId : startFocus(catalog.festivals, catalog.clips, going, stored);
+    const base = decided ? focusId : startFocus(stored);
     const target = nextDiscoverFocus(base, { festival: focusParam || undefined, clip: requestedClip }, catalog.festivals);
     if (!decided || target !== focusId) {
       setDecided(true);
@@ -382,8 +382,9 @@ export function DiscoverFeed() {
     [scrollToPage, pages],
   );
 
-  // Your crew's updates along the top, while a crew's festival is on or coming up.
-  const storiesOn = useCrewUpdates().crewCount > 0;
+  // Your crew's updates along the top, only in festival mode (the user, 2026-10-05: checking in is for when you're there).
+  const crewCount = useCrewUpdates().crewCount;
+  const storiesOn = !!hereFestival && crewCount > 0;
   // On a festival night, a way back to Tonight sits above the stories.
   // In festival mode the whole app is tonight, so no pill.
   const pillTonight = hereFestival ? undefined : tonight;

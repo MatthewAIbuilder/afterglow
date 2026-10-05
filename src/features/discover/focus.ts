@@ -2,7 +2,7 @@ import type { Artist, Clip, Festival, SoundTag } from '../../data/models';
 import { SOUND_TAGS } from '../../data/models';
 import { groupFestivals, type Going } from '../festivals/going';
 import { carriesSound } from '../festivals/search';
-import { defaultFocus, focusForClip, lineupClips, playsAt } from '../festivals/links';
+import { focusForClip, lineupClips, playsAt } from '../festivals/links';
 
 /**
  * What Discover is showing: one festival's lineup (its id), your mix (a bit
@@ -49,17 +49,15 @@ export function inSound(clip: Clip, tag: SoundTag, artist: (id: string) => Artis
 }
 
 /**
- * Where Discover opens: what you last picked, if it's still there with clips
- * to show; otherwise the first festival you're going to that has clips;
- * otherwise the festival with the most clips.
+ * Where Discover opens: your mix, a bit of everything from every lineup (the
+ * user chose this on 2026-10-05: Discover is for exploring all of it, not one
+ * festival). What you last picked comes back only when it's another wide
+ * choice (Following, a sound) or Tonight; a festival you picked lasts while
+ * the app is open, and its own "Discover the lineup" still opens it.
  */
-export function startFocus(festivals: Festival[], clips: Clip[], going: Going, stored?: string | null): Focus | undefined {
-  if (stored === MIX || stored === FOLLOWING || stored === TONIGHT || soundOf(stored)) return stored!;
-  const withClips = (f: Festival | undefined) => !!f && lineupClips(f, clips).length > 0;
-  const saved = festivals.find((f) => f.id === stored);
-  if (withClips(saved)) return saved!.id;
-  const mine = going.map((id) => festivals.find((f) => f.id === id)).find(withClips);
-  return (mine ?? defaultFocus(festivals, clips))?.id;
+export function startFocus(stored?: string | null): Focus {
+  if (stored === FOLLOWING || stored === TONIGHT || soundOf(stored)) return stored!;
+  return MIX;
 }
 
 /**

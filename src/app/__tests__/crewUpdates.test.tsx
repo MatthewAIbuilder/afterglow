@@ -32,6 +32,8 @@ beforeEach(async () => {
   jest.useFakeTimers({ now: at(12) });
   await AsyncStorage.clear();
   await AsyncStorage.setItem('welcomed.v1', 'true');
+  // At the festival: the crew row on Discover shows only in festival mode (here, trying it out).
+  await AsyncStorage.setItem('festivalMode.v1', JSON.stringify({ choices: {}, preview: { festivalId: 'solstice-26', until: at(12).getTime() + 365 * 86_400_000 } }));
   mockSocial = fakeSocial();
   forgetGoers();
   network.__setState({ isConnected: true, isInternetReachable: true });
