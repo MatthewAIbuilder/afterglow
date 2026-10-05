@@ -25,6 +25,7 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   green: ['#8FF0B4', '#1E8F4A'],
   giver: ['#9EF2C0', '#C2477E'],
   gardener: ['#C2F0A0', '#1F7F6E'],
+  scout: ['#8FE3FF', '#5B3BC4'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -128,6 +129,16 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
               <Path d={`M${x} ${x === 12 ? 10 : 14} C${x} ${x === 12 ? 7 : 11.5} ${x + 3} ${x === 12 ? 6 : 10.5} ${x + 3.5} ${x === 12 ? 7 : 11}`} {...p} />
             </G>
           ))}
+        </G>
+      );
+    case 'scout':
+      // A timetable with a clock on it.
+      return (
+        <G>
+          <Rect x={3.5} y={4.5} width={13} height={15} rx={2} {...p} />
+          <Path d="M6.5 9 H13.5 M6.5 12.5 H11" {...p} />
+          <Circle cx={16.5} cy={16} r={4.5} {...p} />
+          <Path d="M16.5 13.8 V16 L18 17" {...p} />
         </G>
       );
     case 'basshead':

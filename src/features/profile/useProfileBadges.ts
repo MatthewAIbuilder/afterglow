@@ -26,6 +26,7 @@ import { citiesOf, passport as makePassport } from './passport';
 import { bestStreakOf } from '../quests/daily';
 import { useDailyQuests } from '../quests/useDailyQuests';
 import { useSprouts } from '../../state/sprouts';
+import { useScouted } from '../../state/scouted';
 
 /**
  * Everything your badges need, in one place, for the Profile tab and the
@@ -63,6 +64,7 @@ export function useProfileBadges() {
     [catalog.festivals, forYou, going, memories, badges, loves, today],
   );
   const standing = useStanding(me?.uid);
+  const scouted = useScouted(social.user?.uid);
   const marks = useMemo(
     () =>
       milestones({
@@ -82,8 +84,9 @@ export function useProfileBadges() {
         bloomed: sprouts.garden.filter((g) => g.kind === 'seedling' && g.stage === 3 && g.shown !== 'seedling').length,
         given: sprouts.gifts.filter((g) => g.claimedBy).length,
         kinds: [...sprouts.collected].filter((k) => k !== 'seedling').length,
+        scouted: scouted.length,
       }),
-    [passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
+    [scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();
