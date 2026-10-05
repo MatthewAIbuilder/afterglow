@@ -21,7 +21,7 @@ import { SOUND_TAGS } from './models';
  *   "festivals": [{ "id", "name", "dates", "location", "start"?: "2026-11-06", "end"?: "2026-11-08",
  *                   "lineup": [artist ids, or { "artist", "note": "Sunset set", "days": ["Friday"], "weekend": 1 }],
  *                   "weekends"?: [{ "start", "end" }, ...],   // festivals run over separate weekends
- *                   "days"?, "stages"?: [{ "id", "name" }], "poster"?, "tickets"?, "website"?,
+ *                   "days"?, "stages"?: [{ "id", "name" }], "poster"?, "tickets"?, "ticketsPartner"?, "stay"?, "website"?,
  *                   "sets"?: [{ "artist", "day", "stage", "start": "23:40", "end": "01:10" }] }],
  *   "clips":     [{ "id", "artist", "festival", "title",
  *                   "video"?: { "link", "from": "25:00", "to": "25:45", "channel" },
@@ -240,12 +240,18 @@ function parseFestival(raw: unknown, i: number, problems: string[]): Festival | 
       );
     }
   }
-  // Official links: tickets and the festival's own site.
-  for (const key of ['tickets', 'website'] as const) {
+  // Official links: tickets, the festival's own site, and where to stay.
+  for (const key of ['tickets', 'website', 'stay'] as const) {
     if (raw[key] === undefined) continue;
     const url = safeImageUrl(raw[key]);
     if (url) festival.links = { ...festival.links, [key]: url };
     else problems.push(`Festival "${festivalId}": the ${key} link must start with https://, so it was ignored.`);
+  }
+  // A tickets link that earns a commission (the page says so beside it).
+  if (raw.ticketsPartner !== undefined) {
+    if (raw.ticketsPartner === true && festival.links?.tickets) festival.links = { ...festival.links, ticketsPartner: true };
+    else if (raw.ticketsPartner !== false)
+      problems.push(`Festival "${festivalId}": "ticketsPartner" should be true, next to a "tickets" link, so it was ignored.`);
   }
   // Where an imported festival came from, credited on its page.
   if (raw.source !== undefined) {

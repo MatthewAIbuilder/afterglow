@@ -39,7 +39,6 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { showActionSheet } from '../../lib/dialog';
 import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { goBack } from '../../lib/nav';
-import { shareMessage } from '../../lib/share';
 
 /**
  * Someone's festival profile (or yours, as others see it): photo, name,

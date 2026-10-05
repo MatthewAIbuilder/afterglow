@@ -7,7 +7,7 @@ import { PageActions } from '../../components/PageActions';
 import { PageTitle } from '../../components/PageTitle';
 import { CheckIcon, ChevronIcon } from '../../components/TabIcons';
 import type { Festival } from '../../data/models';
-import type { PrepItem } from '../../features/prep/checklist';
+import { sectionNotes, type PrepItem } from '../../features/prep/checklist';
 import { usePrep } from '../../features/prep/usePrep';
 import { countdown } from '../../features/festivals/when';
 import { haptic } from '../../lib/haptics';
@@ -95,7 +95,26 @@ function PrepView({ festival }: { festival: Festival }) {
                     <Text style={styles.link}>Get tickets ↗</Text>
                   </Pressable>
                 ) : null}
+                {item.link && !item.done ? (
+                  <Pressable
+                    onPress={() => {
+                      haptic.select();
+                      void Linking.openURL(item.link!.url).catch(() => {});
+                    }}
+                    accessibilityRole="link"
+                    accessibilityLabel={`${item.link.label}: ${item.label}. Opens in your browser.`}
+                    hitSlop={8}
+                    style={styles.inlineLink}
+                  >
+                    <Text style={styles.link}>{item.link.label} ↗</Text>
+                  </Pressable>
+                ) : null}
               </View>
+            ))}
+            {sectionNotes(s, festival).map((n) => (
+              <Text key={n} style={styles.partnerNote}>
+                {n}
+              </Text>
             ))}
           </View>
         ))}
@@ -126,4 +145,5 @@ const styles = StyleSheet.create({
   inlineLink: { paddingLeft: 24 + space.md, paddingBottom: space.md, marginTop: -space.xs },
   link: { ...type.label, color: color.glow },
   note: { ...type.caption, color: color.moonFaint, marginTop: space.xl },
+  partnerNote: { ...type.caption, color: color.moonFaint, marginTop: space.sm },
 });
