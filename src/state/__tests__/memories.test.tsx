@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, render } from '@testing-library/react-native';
 import { useEffect } from 'react';
 import type { MemoryFiles, PickedVideo } from '../../features/memories/device';
-import { MEMORIES_STORAGE_KEY, MemoriesProvider, useMemories } from '../memories';
+import { newMemoryId } from '../../features/memories/store';
+import { MEMORIES_DAMAGED_KEY, MEMORIES_STORAGE_KEY, MemoriesProvider, useMemories } from '../memories';
 
 /** Keeping, tagging and deleting memories, with an in-memory folder standing in for the phone's. */
 function fakeFiles(start: string[] = []) {
@@ -111,17 +112,71 @@ describe('memories', () => {
     expect(ctx().draft).toBeDefined();
   });
 
-  it('on launch, files no memory points to are tidied, but never when the saved list is damaged', async () => {
+  it('on launch, old files no memory points to are tidied, but never when the saved list is damaged', async () => {
+    const old = newMemoryId(Date.now() - 3 * 24 * 3600_000);
+    const recent = newMemoryId(Date.now() - 3600_000);
     await AsyncStorage.setItem(MEMORIES_STORAGE_KEY, JSON.stringify([{ id: 'a', file: 'a.mp4', thumb: 'a.jpg', capturedAt: '2026-06-20T04:30:00.000Z' }]));
-    const tidy = fakeFiles(['a.mp4', 'a.jpg', 'orphan.mp4']);
+    // An orphan from days ago goes; one from an hour ago (perhaps being kept right now) and a name that doesn't say when stay.
+    const tidy = fakeFiles(['a.mp4', 'a.jpg', `${old}.mov`, `${old}.jpg`, `${recent}.mov`, 'orphan.mp4']);
     await mount(tidy);
-    expect([...tidy.names].sort()).toEqual(['a.jpg', 'a.mp4']);
+    expect([...tidy.names].sort()).toEqual(['a.jpg', 'a.mp4', `${recent}.mov`, 'orphan.mp4'].sort());
     expect(ctx().memories.map((m) => m.id)).toEqual(['a']);
 
-    await AsyncStorage.setItem(MEMORIES_STORAGE_KEY, JSON.stringify([{ id: 'a', file: 'a.mp4', capturedAt: '2026-06-20T04:30:00.000Z' }, { broken: true }]));
-    const damaged = fakeFiles(['a.mp4', 'b.mp4']);
+    const damagedList = JSON.stringify([{ id: 'a', file: 'a.mp4', capturedAt: '2026-06-20T04:30:00.000Z' }, { broken: true }]);
+    await AsyncStorage.setItem(MEMORIES_STORAGE_KEY, damagedList);
+    const damaged = fakeFiles(['a.mp4', `${old}.mov`]);
     await mount(damaged);
     expect(damaged.names.size).toBe(2);
+    // The damaged list is kept aside as it was, and from then on nothing is tidied, even once the list reads back whole.
+    expect(await AsyncStorage.getItem(MEMORIES_DAMAGED_KEY)).toBe(damagedList);
+    await act(async () => ctx().tag('a', { festivalId: 'solstice-26' }));
+    const after = fakeFiles(['a.mp4', `${old}.mov`]);
+    await mount(after);
+    expect(after.names.size).toBe(2);
+  });
+
+  it('a list that couldn’t be read is never written over, and is read again later', async () => {
+    jest.useFakeTimers();
+    try {
+      await AsyncStorage.setItem(MEMORIES_STORAGE_KEY, JSON.stringify([{ id: 'a', file: 'a.mp4', capturedAt: '2026-06-20T04:30:00.000Z' }]));
+      // (The storage mock's getItem is itself a mock: only this one call fails.)
+      jest.spyOn(AsyncStorage, 'getItem').mockRejectedValueOnce(new Error('busy'));
+      const files = fakeFiles(['a.mp4']);
+      await mount(files);
+      expect(ctx().hydrated).toBe(false);
+      // A video kept meanwhile is shown, but the saved list isn't replaced by it.
+      await act(async () => void (await ctx().keepNow(VIDEO)));
+      expect(ctx().memories).toHaveLength(1);
+      expect(JSON.parse((await AsyncStorage.getItem(MEMORIES_STORAGE_KEY))!).map((m: { id: string }) => m.id)).toEqual(['a']);
+      // Read again a little later: both are there, and now saved together. Nothing was tidied away.
+      await act(async () => {
+        jest.advanceTimersByTime(3_000);
+      });
+      await act(async () => {});
+      expect(ctx().hydrated).toBe(true);
+      expect(ctx().memories).toHaveLength(2);
+      const saved = JSON.parse((await AsyncStorage.getItem(MEMORIES_STORAGE_KEY))!);
+      expect(saved.map((m: { id: string }) => m.id)).toContain('a');
+      expect(saved).toHaveLength(2);
+      expect(files.names.has('a.mp4')).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('keeps a fresh recording straight away, untagged, and remembers what was deleted', async () => {
+    const files = fakeFiles();
+    await mount(files);
+    let kept: Awaited<ReturnType<ReturnType<typeof useMemories>['keepNow']>>;
+    await act(async () => {
+      kept = await ctx().keepNow({ ...VIDEO, source: 'camera' });
+    });
+    expect(kept!).toMatchObject({ durationSec: 42, festivalId: undefined, artistId: undefined });
+    expect(JSON.parse((await AsyncStorage.getItem(MEMORIES_STORAGE_KEY))!)).toHaveLength(1);
+    expect(ctx().wasRemoved(kept!.id)).toBe(false);
+    await act(async () => void (await ctx().remove(kept!.id)));
+    expect(ctx().wasRemoved(kept!.id)).toBe(true);
+    expect(files.names.size).toBe(0);
   });
 
   it('saves a copy to Photos on request', async () => {

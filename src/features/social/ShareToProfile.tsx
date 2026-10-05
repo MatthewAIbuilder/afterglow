@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import type { Memory } from '../memories/models';
+import { throwbackShares } from '../memories/throwbackLimit';
+import { useStanding } from '../standing/useStanding';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from './service';
 import { showAlert } from '../../lib/dialog';
 
@@ -13,11 +15,14 @@ import { showAlert } from '../../lib/dialog';
  */
 export function ShareToProfile({ memory, render }: { memory: Memory; render: (label: string, onPress: () => void) => ReactNode }) {
   const social = useSocial();
+  const standing = useStanding(social.user?.uid);
   if (!social.availability.ok) return null;
   const progress = social.sharing[memory.id];
   const mine = !!memory.sharedId && memory.sharedBy === social.user?.uid;
 
   if (progress !== undefined) return render(`Sharing… ${Math.round(progress * 100)}%`, () => {});
+  // No signal: it's kept on the phone and goes by itself.
+  if (social.waiting.has(memory.id)) return render('Waiting for signal', () => {});
 
   if (mine) {
     return render('On your profile', () => {
@@ -43,9 +48,22 @@ export function ShareToProfile({ memory, render }: { memory: Memory; render: (la
       router.push('/profile-edit');
       return;
     }
+    void confirm(social.profile.handle);
+  });
+
+  async function confirm(handle: string) {
+    // A throwback past the free plan's few: say so now, before anything uploads. Not knowing (no signal)
+    // doesn't stand in the way; the share itself is checked again.
+    if (!memory.festivalId && memory.past && !standing?.plus) {
+      const used = await social.service.throwbackUsage().catch(() => undefined);
+      if (used !== undefined && !throwbackShares({ plus: false, used }).canShare) {
+        showAlert('Couldn’t share it', SOCIAL_ERROR_COPY['throwback-limit']);
+        return;
+      }
+    }
     showAlert(
       'Share to your profile?',
-      `Anyone on Afterglow can watch it on @${social.profile.handle}, with who was playing and the festival. Afterglow doesn’t add where you filmed it, but some videos carry their location inside the file. Only share videos you filmed yourself.`,
+      `Anyone on Afterglow can watch it on @${handle}, with who was playing and the festival. Afterglow doesn’t add where you filmed it, but some videos carry their location inside the file. Only share videos you filmed yourself.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -53,10 +71,12 @@ export function ShareToProfile({ memory, render }: { memory: Memory; render: (la
           onPress: () =>
             void social
               .share(memory)
-              .then(() => haptic.settle())
+              .then((r) => {
+                if (r === 'shared') haptic.settle();
+              })
               .catch((e) => showAlert('Couldn’t share it', SOCIAL_ERROR_COPY[socialErrorKind(e)])),
         },
       ],
     );
-  });
+  }
 }

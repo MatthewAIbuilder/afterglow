@@ -74,6 +74,24 @@ describe('likes on shared videos', () => {
     expect(await s().likeCount(id)).toBe(0);
   });
 
+  it('a shared video that couldn’t be loaded (no signal) says so with Try again, not that it’s gone', async () => {
+    const { id } = await mayaShares();
+    const app = await renderApp('/');
+    await flush();
+    mockSocial.network.noReads = true;
+    await go(`/shared/${id}`);
+    expect(app.getByText('Couldn’t load this video. Check your signal and try again.')).toBeTruthy();
+    expect(app.queryByText('This video isn’t available any more.')).toBeNull();
+    mockSocial.network.noReads = false;
+    await fireEvent.press(app.getByText('Try again'));
+    await flush();
+    expect(app.queryByText('Couldn’t load this video. Check your signal and try again.')).toBeNull();
+    expect(app.getByText('HEDEX')).toBeTruthy();
+    // Really removed: that's what it says.
+    await go('/shared/nope');
+    expect(app.getByText('This video isn’t available any more.')).toBeTruthy();
+  });
+
   it('without a profile a like stays private', async () => {
     const { id } = await mayaShares(false);
     const app = await openFeed();

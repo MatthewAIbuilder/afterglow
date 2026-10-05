@@ -156,6 +156,34 @@ describe('crew updates', () => {
     expect(app.getByText('Couldn’t reach your crew')).toBeTruthy();
   });
 
+  it('a video waiting to go to the crew waits for your memories to be read, never taking it for deleted', async () => {
+    const crew = await crewWithNews();
+    const samUid = mockSocial.currentUser()!.uid;
+    const when = at(17, 10).toISOString();
+    await AsyncStorage.setItem('memories.v1', JSON.stringify([{ id: 'mq1', file: 'mq1.mov', capturedAt: when, festivalId: 'solstice-26' }]));
+    await AsyncStorage.setItem(
+      'crewOutbox.v1',
+      JSON.stringify([{ id: 'u-vidq1', crewIds: [crew.id], input: { id: 'u-vidq1', kind: 'video', at: when, festivalId: 'solstice-26' }, memoryId: 'mq1', tries: 0, queuedAt: at(17, 10).getTime(), uid: samUid }]),
+    );
+    // The phone's storage is slow to answer for your memories the first time.
+    const getItem = AsyncStorage.getItem as unknown as jest.Mock<(k: string) => Promise<string | null>>;
+    const real = getItem.getMockImplementation()!;
+    let fails = 1;
+    getItem.mockImplementation((k: string) => (k === 'memories.v1' && fails-- > 0 ? Promise.reject(new Error('busy')) : real(k)));
+    try {
+      await renderApp('/');
+      await flush();
+      expect([...mockSocial.updates.values()].some((u) => u.id === 'u-vidq1')).toBe(false);
+      expect(JSON.parse((await AsyncStorage.getItem('crewOutbox.v1'))!)).toHaveLength(1);
+      // Read a moment later: now it goes.
+      await settle(3_000);
+      await flush();
+      expect([...mockSocial.updates.values()].find((u) => u.id === 'u-vidq1')).toMatchObject({ crewId: crew.id, kind: 'video' });
+    } finally {
+      getItem.mockImplementation(real);
+    }
+  });
+
   it('the crew page shows where everyone last was', async () => {
     const crew = await crewWithNews();
     const app = await renderApp(`/crew/${crew.id}`);

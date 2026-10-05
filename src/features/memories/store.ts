@@ -74,3 +74,32 @@ export function cleanMemories(raw: unknown): Memory[] {
 export function newMemoryId(now: number, random: () => number = Math.random): string {
   return `m${now.toString(36)}${Math.floor(random() * 36 ** 6).toString(36).padStart(6, '0')}`;
 }
+
+/** A file nobody points to is only tidied away once it's at least this old (it may be a video being kept right now). */
+export const ORPHAN_MIN_AGE_MS = 24 * 3600_000;
+
+/** When a memory id (`newMemoryId`) was made; undefined for any other name. */
+export function memoryIdTime(id: string): number | undefined {
+  const m = /^m([0-9a-z]+)[0-9a-z]{6}$/.exec(id);
+  if (!m) return undefined;
+  const t = parseInt(m[1], 36);
+  return Number.isFinite(t) && t > 0 ? t : undefined;
+}
+
+/**
+ * Files in the memories folder that can safely go: no memory points to them
+ * (by name, or by sharing a memory's id), and their name says they were made
+ * more than `ORPHAN_MIN_AGE_MS` ago. A name that doesn't say when is kept.
+ * Called only with a list that read back whole.
+ */
+export function orphanFiles(names: string[], memories: Memory[], now: number): string[] {
+  const used = new Set(memories.flatMap((m) => [m.file, m.thumb]));
+  const ids = new Set(memories.map((m) => m.id));
+  return names.filter((n) => {
+    if (used.has(n)) return false;
+    const stem = n.replace(/\..*$/, '');
+    if (ids.has(stem)) return false;
+    const t = memoryIdTime(stem);
+    return t !== undefined && now - t > ORPHAN_MIN_AGE_MS;
+  });
+}
