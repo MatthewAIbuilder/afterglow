@@ -30,6 +30,7 @@ import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { LastUpdated } from '../../features/offline/LastUpdated';
+import { CrewOrb } from '../../features/friends/CrewOrb';
 
 /**
  * A festival crew. Someone who opens an invite sees the crew and who's in it,
@@ -358,6 +359,15 @@ function Member({
 
   return (
     <>
+      {/* The crew's picture: its people's faces round a ring of light. */}
+      <View style={styles.orb}>
+        <CrewOrb
+          name={crew.name}
+          people={others.map((u) => profiles[u]).filter((x): x is Profile => !!x).map((x) => ({ name: x.displayName, url: x.avatarUrl }))}
+          total={others.length}
+          size={84}
+        />
+      </View>
       {festival ? (
         <Pressable
           onPress={() => router.push({ pathname: '/festival/[id]', params: { id: festival.id } })}
@@ -498,6 +508,7 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   kicker: { ...type.label, color: color.glow, fontWeight: '600' },
+  orb: { marginBottom: space.md },
   festivalLink: { flexDirection: 'row', alignItems: 'center', gap: space.xs, alignSelf: 'flex-start' },
   meta: { ...type.body, color: color.moonDim, marginTop: -space.xs },
   body: { ...type.body, color: color.moonDim },
