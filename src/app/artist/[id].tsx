@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { PageTitle } from '../../components/PageTitle';
@@ -49,6 +50,7 @@ import { useToday } from '../../lib/useToday';
 import { artistStory, hasStory, nextShow, nextShowLine, storyLines } from '../../features/artists/story';
 import { ArtistSproutCard } from '../../features/sprouts/ArtistSproutCard';
 import { ArtistCrowdRow } from '../../features/artists/ArtistCrowdRow';
+import { localDay, showDateBlock, showLabel, showTitle, showWhere, SHOWS_SHOWN, withLine } from '../../features/artists/shows';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
@@ -89,6 +91,7 @@ export default function ArtistScreen() {
   const { forYou } = useWeekends();
   const { distanceTo, units, placeOf } = useNearby();
   const { seen } = useSeen();
+  const [allShows, setAllShows] = useState(false);
   if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
   const yours = memories.filter((m) => m.artistId === artist.id);
   const context = festivalId ? catalog.festival(festivalId) : undefined;
@@ -107,6 +110,9 @@ export default function ArtistScreen() {
   const similar = similarThere.length ? similarThere : mostSimilar(artist, catalog.artists, similarity);
   const similarAt = similarThere.length ? starFestival : undefined;
   const festivals = catalog.festivalsOf(artist.id);
+  // Their club shows from the nightly EDMTrain feed, from today on.
+  const shows = catalog.showsOf(artist.id, localDay(today));
+  const showsListed = allShows ? shows : shows.slice(0, SHOWS_SHOWN);
   // Yours first, then near you (when it's on), then the soonest; what's over last.
   const playing = playingList(festivals, { going, today, distanceTo, nearKm: NEAR_KM });
   // Their next show, and what you've done with their music here.
@@ -305,6 +311,74 @@ export default function ArtistScreen() {
           </Section>
         )}
 
+        {/* Club shows and concerts, each opening its EDMTrain page (credited, as EDMTrain asks). */}
+        {shows.length > 0 && (
+          <Section title="Upcoming shows">
+            {showsListed.map((s) => {
+              const block = showDateBlock(s.date);
+              const others = s.artistIds.filter((a) => a !== artist.id).flatMap((a) => catalog.artist(a)?.name ?? []);
+              const where = showWhere(s);
+              const w = withLine(others);
+              return (
+                <Pressable
+                  key={s.id}
+                  onPress={() => {
+                    haptic.select();
+                    Linking.openURL(s.link).catch(() => {});
+                  }}
+                  accessibilityRole="link"
+                  accessibilityLabel={showLabel(s, others)}
+                  style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
+                >
+                  <View style={styles.showDate}>
+                    <Text style={styles.showMonth}>{block.month}</Text>
+                    <Text style={styles.showDay}>{block.day}</Text>
+                    <Text style={styles.showWeekday}>{block.weekday}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle} numberOfLines={1}>
+                      {showTitle(s)}
+                    </Text>
+                    {where ? (
+                      <Text style={styles.rowMeta} numberOfLines={1}>
+                        {where}
+                      </Text>
+                    ) : null}
+                    {w ? (
+                      <Text style={[styles.rowMeta, { color: color.glow }]} numberOfLines={1}>
+                        {w}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.showOut}>↗</Text>
+                </Pressable>
+              );
+            })}
+            {shows.length > SHOWS_SHOWN ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  setAllShows((v) => !v);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: allShows }}
+                accessibilityLabel={allShows ? 'Show fewer shows' : `See all ${shows.length} shows`}
+                style={({ pressed }) => [styles.tourLink, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={styles.tourText}>{allShows ? 'Show fewer' : `See all ${shows.length}`}</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={() => void Linking.openURL('https://edmtrain.com').catch(() => {})}
+              accessibilityRole="link"
+              accessibilityLabel="Show info from EDMTrain. Opens their site."
+              style={({ pressed }) => [styles.showCredit, pressed && { opacity: 0.6 }]}
+            >
+              <Text style={styles.showCreditText}>Show info from EDMTrain ↗</Text>
+            </Pressable>
+          </Section>
+        )}
+
         {clips.length > 0 && (
           <Section title="Live clips">
             {clips.map((c) => {
@@ -487,6 +561,21 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md, gap: space.md },
   rowTitle: { ...type.headline, color: color.moon },
   rowMeta: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  showDate: {
+    width: 52,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  showMonth: { ...type.caption, fontSize: 10, letterSpacing: 1.2, fontWeight: '700', color: color.glow },
+  showDay: { ...type.headline, fontSize: 20, lineHeight: 24, color: color.moon, fontVariant: ['tabular-nums'] },
+  showWeekday: { ...type.caption, fontSize: 10, color: color.moonDim },
+  showOut: { ...type.label, color: color.moonFaint },
+  showCredit: { alignSelf: 'flex-start', paddingVertical: space.sm },
+  showCreditText: { ...type.caption, color: color.moonFaint },
   thumb: { width: 52, height: 64, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   similar: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
   playMark: { width: 28, height: 28, borderRadius: 14, paddingLeft: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: nightA(0.5) },

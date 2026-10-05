@@ -29,6 +29,8 @@ export function mergeSnapshots(base: CatalogSnapshot, top: CatalogSnapshot): Cat
   const lineups = [...(top.lineups ?? []), ...(base.lineups ?? []).filter((l) => !top.lineups?.some((t) => t.festivalId === l.festivalId))];
   if (lineups.length) merged.lineups = lineups;
   if (similarities.length) merged.similarities = similarities;
+  const shows = byId(base.shows ?? [], top.shows ?? []);
+  if (shows.length) merged.shows = shows;
   return merged;
 }
 

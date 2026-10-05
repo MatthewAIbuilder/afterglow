@@ -1,5 +1,5 @@
 import { festivalPhase } from './festival';
-import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, FestivalLineup, FestivalPhase } from './models';
+import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, FestivalLineup, FestivalPhase, Show } from './models';
 
 /**
  * The app's view of a catalogue: the snapshot's records plus fast lookups.
@@ -12,6 +12,8 @@ export type Catalog = {
   festivals: Festival[];
   clips: Clip[];
   similarities: ArtistSimilarity[];
+  /** Club shows from the nightly feed, soonest first. */
+  shows: Show[];
   artist: (id: string) => Artist | undefined;
   festival: (id: string) => Festival | undefined;
   clip: (id: string) => Clip | undefined;
@@ -22,6 +24,8 @@ export type Catalog = {
   /** A festival's lineup (and set times, once out) as its own record. */
   lineupOf: (festivalId: string) => FestivalLineup | undefined;
   phaseOf: (festivalId: string) => FestivalPhase | undefined;
+  /** An artist's club shows, soonest first; only those on or after `from` ("YYYY-MM-DD") when given. */
+  showsOf: (artistId: string, from?: string) => Show[];
 };
 
 /** A festival with a separately published lineup applied. */
@@ -46,12 +50,16 @@ export function createCatalog(snapshot: CatalogSnapshot): Catalog {
   for (const c of clips) clipsBy.set(c.artistId, [...(clipsBy.get(c.artistId) ?? []), c]);
   const festivalsBy = new Map<string, Festival[]>();
   for (const f of festivals) for (const id of f.lineup) festivalsBy.set(id, [...(festivalsBy.get(id) ?? []), f]);
+  const shows = [...(snapshot.shows ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+  const showsBy = new Map<string, Show[]>();
+  for (const s of shows) for (const id of s.artistIds) showsBy.set(id, [...(showsBy.get(id) ?? []), s]);
 
   return {
     artists,
     festivals,
     clips,
     similarities: snapshot.similarities ?? [],
+    shows,
     artist: (id) => artistBy.get(id),
     festival: (id) => festivalBy.get(id),
     clip: (id) => clipBy.get(id),
@@ -66,6 +74,10 @@ export function createCatalog(snapshot: CatalogSnapshot): Catalog {
       const f = festivalBy.get(id);
       return f && festivalPhase(f);
     },
+    showsOf: (id, from) => {
+      const all = showsBy.get(id) ?? [];
+      return from ? all.filter((s) => s.date >= from) : all;
+    },
   };
 }
 
@@ -77,5 +89,6 @@ export function withoutClips(catalog: Catalog, ids: ReadonlySet<string>): Catalo
     festivals: catalog.festivals,
     clips: catalog.clips.filter((c) => !ids.has(c.id)),
     similarities: catalog.similarities,
+    shows: catalog.shows,
   });
 }

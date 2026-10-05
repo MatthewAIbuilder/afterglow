@@ -154,6 +154,23 @@ Clips of those videos are left out wherever they come from, and the nightly
 YouTube search never picks them again (it looks for the artist's next best set
 instead). Anything that isn't a YouTube video is quietly ignored.
 
+### Club shows (filled in automatically)
+
+The nightly EDMTrain step adds `shows`: club nights and concerts in the next
+six months for artists already on Afterglow (see `docs/events-import.md`).
+You don't need to write these by hand, but this is how they look:
+
+```json
+"shows": [{ "id": "edm-123456", "date": "2026-10-18", "name": "Halloween Night",
+            "venue": "Mission Ballroom", "location": "Denver, CO",
+            "place": { "lat": 39.771, "lon": -104.98 },
+            "link": "https://edmtrain.com/denver-co/…", "artists": ["subtronics", "crankdat"] }]
+```
+
+`name`, `location` and `place` are optional; the link must start with
+https://. Artists that aren't in the catalogue are quietly left off, and a
+show with none left is skipped.
+
 ## Adding acts later (lineup news)
 
 When you add acts to a festival's lineup (a phase two announcement, say) or add a whole new festival, people who already have the app hear about it: the bell says "SUBTRONICS was added to Cyclops Cove 4" for acts they'd love (ones they rated "Love their sound" or strongly match), and the festival page marks those acts "Just added" for two weeks. Nothing to do on your side beyond updating the file. Acts are never announced twice, even if an older copy of the file shows for a moment, and someone opening the app for the first time isn't told everything is new.

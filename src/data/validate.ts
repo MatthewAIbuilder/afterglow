@@ -147,7 +147,20 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
     return ok;
   });
 
+  // Club shows keep only the artists still on Afterglow, quietly (they're the nightly feed's, not anyone's typing);
+  // a show with none of them left goes. Soonest first.
+  const showIds = new Set<string>();
+  const shows = input.shows
+    ?.flatMap((s) => {
+      if (showIds.has(s.id)) return [];
+      showIds.add(s.id);
+      const ids = s.artistIds.filter((a, i) => artistIds.has(a) && s.artistIds.indexOf(a) === i);
+      return ids.length ? [ids.length === s.artistIds.length ? s : { ...s, artistIds: ids }] : [];
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   const snapshot: CatalogSnapshot = { artists, festivals, clips };
+  if (shows?.length) snapshot.shows = shows;
   if (lineups) snapshot.lineups = lineups;
   if (similarities) snapshot.similarities = similarities;
   return { snapshot, problems };

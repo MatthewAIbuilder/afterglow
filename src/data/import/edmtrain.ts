@@ -19,6 +19,8 @@ export type EdmtrainEvent = {
   name?: string | null;
   date?: string;
   festivalInd?: boolean;
+  /** An online stream rather than a night at a venue. */
+  livestreamInd?: boolean;
   venue?: EdmtrainVenue;
   artistList?: EdmtrainArtist[];
 };

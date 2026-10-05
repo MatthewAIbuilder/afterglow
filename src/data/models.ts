@@ -233,6 +233,29 @@ export type Clip = {
 };
 
 /**
+ * One club show or concert (not a festival) from the nightly EDMTrain feed,
+ * listed on the artist pages of everyone on Afterglow who plays it. Only
+ * what EDMTrain publishes; `link` is the event's EDMTrain page, which the
+ * app opens and credits (as EDMTrain asks).
+ */
+export type Show = {
+  /** "edm-123456" (EDMTrain's event id). */
+  id: string;
+  /** The day, "YYYY-MM-DD" (local to the venue). */
+  date: string;
+  /** The event's own name, when it has one ("Wasteland Halloween"); most club nights only have the venue. */
+  name?: string;
+  venue: string;
+  /** "Denver, CO". Empty when the source doesn't say. */
+  location: string;
+  place?: { lat: number; lon: number };
+  /** The event's page (https). */
+  link: string;
+  /** The artists on Afterglow playing it, in billing order. */
+  artistIds: string[];
+};
+
+/**
  * Everything the app needs from a catalogue, in one plain object: what a
  * source delivers and what the app keeps. Order matters: festivals and
  * clips are shown in the order given.
@@ -244,6 +267,8 @@ export type CatalogSnapshot = {
   /** Separately published lineups; each replaces its festival's lineup. */
   lineups?: FestivalLineup[];
   similarities?: ArtistSimilarity[];
+  /** Club shows and concerts from the nightly feed, soonest first. */
+  shows?: Show[];
 };
 
 /**
