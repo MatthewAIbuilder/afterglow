@@ -24,6 +24,7 @@ import {
   regionOf,
   unproject,
 } from './map';
+import { SPREAD_ZOOM, sameSpot, spreadMarkers } from './explore';
 import { NIGHT_STYLE } from './mapStyle';
 import { HERE_COLOR, TONE_COLOR } from './tones';
 
@@ -56,6 +57,7 @@ export function FestivalMap({
   journey,
   frameKey,
   toHere,
+  onView,
   testID,
 }: {
   markers: readonly FestivalMarker[];
@@ -71,6 +73,8 @@ export function FestivalMap({
   frameKey: string;
   /** Bump to glide to where you are. */
   toHere?: number;
+  /** The part of the map in view after you move it by hand; undefined when it frames everything again. */
+  onView?: (region: Region | undefined) => void;
   testID?: string;
 }) {
   const reduced = useReducedMotion();
@@ -94,8 +98,9 @@ export function FestivalMap({
         m.animateToRegion(r, animated ? duration : 0);
       }
       setMoved(false);
+      onView?.(undefined);
     },
-    [points, duration],
+    [points, duration, onView],
   );
 
   // Framed once per `frameKey` (a filter, a tour): a place looked up later never yanks the map back,
@@ -129,18 +134,27 @@ export function FestivalMap({
   }, [ready, toHere, here, region.longitudeDelta, duration]);
 
   const street = useRef(false);
+  // Touched since the last move settled: the move was yours, so the cards follow what's in view.
+  const touched = useRef(false);
   const onRegion = useCallback((r: Region) => {
+    if (touched.current) {
+      touched.current = false;
+      onView?.(r);
+    }
     // A secret: all the way down to the streets (once each time you get there).
     const atStreet = r.longitudeDelta < STREET_DELTA;
     if (atStreet && !street.current) revealSecret('edge');
     street.current = atStreet;
     setRegion(r);
-  }, []);
+  }, [onView]);
 
   // Lights cluster by zoom, in steps, so small moves don't shuffle them.
   const scale = pxPerUnit(region, width);
   const step = 2 ** (Math.round(Math.log2(scale) * 2) / 2);
-  const clusters = useMemo(() => clusterMarkers(markers, step, CLUSTER_PX), [markers, step]);
+  // Festivals sharing a spot fan out once you're zoomed in to a city, each its own light.
+  const spread = useMemo(() => spreadMarkers(markers, region, step), [markers, region, step]);
+  const clusters = useMemo(() => clusterMarkers(spread, step, CLUSTER_PX), [spread, step]);
+  const fanned = useMemo(() => spread.filter((m, i) => m.at !== markers[i]?.at), [spread, markers]);
   const allNamed = region.longitudeDelta < NAMES_DELTA;
   const trail = useMemo(() => (journey && journey.length > 1 ? journey.map(toLatLng) : undefined), [journey]);
 
@@ -149,6 +163,7 @@ export function FestivalMap({
       style={StyleSheet.absoluteFill}
       testID={testID}
       onTouchStart={() => {
+        touched.current = true;
         if (!moved) setMoved(true);
       }}
     >
@@ -182,6 +197,10 @@ export function FestivalMap({
             <Polyline coordinates={trail} geodesic strokeColor="#FF9AD5" strokeWidth={2} lineCap="round" />
           </>
         ) : null}
+        {/* A fanned-out light keeps a thread back to the real spot. */}
+        {fanned.map((m) => (
+          <Polyline key={`thread-${m.festival.id}`} coordinates={[pointLatLng(m.point), toLatLng(m.at)]} strokeColor="rgba(243,240,255,0.22)" strokeWidth={1} />
+        ))}
         {here ? (
           <Marker coordinate={pointLatLng(here)} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={1}>
             <HereDot reduced={reduced} />
@@ -199,10 +218,15 @@ export function FestivalMap({
               lastGlide.current = c.lead.festival.id;
               onSelect(c.lead.festival.id);
               const at = toLatLng(c.at);
-              // A cluster opens up: zoom in until it splits.
-              if (c.members.length > 1) {
-                const span = region.longitudeDelta / 3;
-                map.current?.animateToRegion({ ...at, latitudeDelta: span * 0.8, longitudeDelta: span }, duration);
+              // A cluster opens up: festivals at one spot fan out; others are framed until they split.
+              if (c.members.length > 1 && sameSpot(c.members)) {
+                const spot = pointLatLng(c.members[0].point);
+                map.current?.animateToRegion({ ...spot, latitudeDelta: SPREAD_ZOOM * 0.8, longitudeDelta: SPREAD_ZOOM }, duration);
+              } else if (c.members.length > 1) {
+                map.current?.fitToCoordinates(
+                  c.members.map((m) => pointLatLng(m.point)),
+                  { edgePadding: { top: 80, right: 80, bottom: 80, left: 80 }, animated: !reduced },
+                );
               } else map.current?.animateCamera({ center: at }, { duration });
             }}
           />
@@ -267,13 +291,13 @@ function Light({ cluster, chosen, named, reduced, onPress }: { cluster: Cluster;
   return (
     <Marker
       coordinate={toLatLng(cluster.at)}
-      anchor={{ x: 0.5, y: LIGHT / 2 / BOX_H }}
+      anchor={{ x: 0.5, y: LIGHT / 2 / (showName ? BOX_H : LIGHT) }}
       onPress={onPress}
       tracksViewChanges={track}
       zIndex={chosen ? 100 : tone === 'going' ? 30 : tone === 'love' ? 20 : 10}
     >
       <View
-        style={styles.box}
+        style={showName ? styles.box : styles.lightHit}
         accessible
         accessibilityRole="button"
         accessibilityLabel={label.trim()}
