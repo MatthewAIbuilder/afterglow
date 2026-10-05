@@ -28,17 +28,19 @@ type Props = {
   unreadFrom: (uid: string) => number;
   /** The soonest festival someone's going to, to say under their name. */
   nextFestival: (p: Profile) => Festival | undefined;
-  onMessage: (p: Profile) => void;
+  /** A friend was tapped: open their quick options. */
+  onPick: (p: Profile) => void;
 };
 
 /**
  * Your people as a little universe, like the orbit on your profile: you in
  * the middle, your close friends circling close (named, a dot when they've
- * written; tap to message, hold for their profile), and everyone else you
- * follow on a wider, fainter ring (tap for their profile). The whole orbit
- * turns very slowly as one; still with reduced motion.
+ * written), and everyone else you follow on a wider, fainter ring. Tap anyone
+ * for quick options (message, profile, close friend); hold a close friend for
+ * their profile. Your profile background glows behind it (`backdrop`). The
+ * whole orbit turns very slowly as one; still with reduced motion.
  */
-export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onMessage }: Props) {
+export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onPick, backdrop }: Props & { backdrop?: React.ReactNode }) {
   const reduce = useReducedMotion();
   const { width: screen } = useWindowDimensions();
   const width = Math.min(screen - space.xl * 2, 560);
@@ -63,16 +65,17 @@ export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onM
 
   return (
     <View style={{ width, height: HEIGHT, alignSelf: 'center' }}>
+      {backdrop}
       <Glow width={width} height={HEIGHT} cx={cx} cy={cy} inner={innerR} outer={outerR} />
       {outer.map((p, i) => (
         <Moon key={p.uid} place={outerPlaces[i]} r={outerR} cx={cx} cy={cy} turn={turn} bloom={bloom} dir={1} delay={300 + i * 60}>
           <Pressable
             onPress={() => {
               haptic.select();
-              router.push({ pathname: '/u/[handle]', params: { handle: p.handle } });
+              onPick(p);
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Open ${firstName(p.displayName)}’s profile`}
+            accessibilityLabel={`${firstName(p.displayName)}. Quick options`}
             hitSlop={6}
             style={({ pressed }) => [styles.outer, pressed && styles.pressed]}
           >
@@ -88,11 +91,11 @@ export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onM
             <Pressable
               onPress={() => {
                 haptic.select();
-                onMessage(p);
+                onPick(p);
               }}
               onLongPress={() => router.push({ pathname: '/u/[handle]', params: { handle: p.handle } })}
               accessibilityRole="button"
-              accessibilityLabel={`Message ${p.displayName}${unread ? `, ${unread} new` : ''}${next ? `. Going to ${next.name}` : ''}`}
+              accessibilityLabel={`${p.displayName}, close friend${unread ? `, ${unread} new` : ''}${next ? `. Going to ${next.name}` : ''}. Quick options`}
               accessibilityHint="Hold for their profile"
               style={({ pressed }) => [styles.innerWrap, pressed && styles.pressed]}
             >

@@ -326,7 +326,7 @@ export default function PublicProfileScreen() {
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>
         <View style={{ marginHorizontal: -space.xl, marginTop: -(insets.top + 64) }}>
-          <ProfileCover url={profile && !blocked ? profile.coverUrl : undefined} backdrop={blocked ? undefined : backdrop} height={insets.top + 64 + 150} />
+          <ProfileCover url={profile && !blocked ? profile.coverUrl : undefined} backdrop={blocked ? undefined : backdrop} height={insets.top + 64 + 360} />
         </View>
         {body}
       </ScrollView>
