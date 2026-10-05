@@ -52,7 +52,7 @@ import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNam
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
-import { profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
+import { accountFindFromDoc, profileFields, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -1166,7 +1166,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           // Sent before and the answer was lost: it's already there.
           if ((await getDoc(ref_).catch(() => null))?.exists()) return;
           const s = stickerFromDoc(code, (await getDoc(doc(fb().db, 'stickers', code))).data());
-          if (!s) throw new SocialError('not-found');
+          // Gone, or taken down before this scan (or too long ago to send now).
+          if (!s || (s.takenDownAt !== undefined && (at > s.takenDownAt || Date.now() > s.takenDownAt + FIND_GRACE_DAYS * 86_400_000))) throw new SocialError('not-found');
           // Refused for being too late, or for some other reason (kept and tried again).
           if (s.until !== undefined && (at > s.until || Date.now() > s.until + FIND_GRACE_DAYS * 86_400_000)) throw new SocialError('sticker-ended');
           throw e;
@@ -1202,9 +1203,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     stickers: (max) =>
       guard(async () => {
         const snap = await getDocs(query(collection(fb().db, 'stickers'), orderBy('createdAt', 'desc'), limit(max)));
-        return snap.docs.map((d) => stickerFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+        // Taken-down ones stay in the database (scans from before still count) but leave HQ's list.
+        return snap.docs.map((d) => stickerFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x && x.takenDownAt === undefined);
       }),
     // Taking a sticker down marks its place in its hunt as gone, so the hunt can still be finished.
+    // The sticker is marked taken down rather than deleted, so a scan made before (sent later, with no signal) still counts.
     deleteSticker: (code) =>
       guard(async () => {
         const { db } = fb();
@@ -1216,8 +1219,14 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             const h = huntFromDoc(s.huntId, (await tx.get(huntRef)).data());
             if (h && h.items[s.slot]) tx.update(huntRef, { items: h.items.map((it, i) => (i === s.slot ? { ...it, gone: true } : it)) });
           }
-          tx.delete(ref_);
+          if (s && s.takenDownAt === undefined) tx.update(ref_, { takenDown: true, takenDownAt: serverTimestamp() });
         });
+      }),
+    myFinds: (max) =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'finds'), where('uid', '==', user.uid), limit(max)));
+        return snap.docs.map((d) => accountFindFromDoc(d.data())).filter((x): x is NonNullable<typeof x> => !!x);
       }),
     addHunt: (input) =>
       guard(async () => {

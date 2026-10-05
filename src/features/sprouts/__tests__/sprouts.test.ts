@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { bloomNotices, sproutNotices, wildNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, giftsToSend, queueClaim, retryDelay, tidy, type Gift } from '../outbox';
+import { bloomNotices, sproutNotices, wildNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, GIFT_REFUSED_MAX, giftsToSend, giftTried, nextDue, queueClaim, retryDelay, seedGifts, tidy, type Gift } from '../outbox';
 import {
   cleanBloomed,
   festivalDaysOf,
@@ -145,6 +145,21 @@ describe('outbox', () => {
     expect(giftsToSend(gifts, 100).map((g) => g.id)).toEqual(['bbbbbbbbbbbbbbbbbbbb']);
     expect(giftsToSend(gifts, 100 + 15_000).map((g) => g.id)).toEqual(['aaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb']);
     expect(cleanGifts([...gifts, { id: 'no', kind: 'plur', at: 1 }])).toHaveLength(3);
+  });
+
+  it('keeps trying a gift with no signal, but gives up after a few refusals and gives the seed back', () => {
+    let g: Gift = { id: 'dddddddddddddddddddd', kind: 'plur', at: 1, sent: false, tries: 0 };
+    for (let i = 0; i < 20; i++) g = giftTried(g, false, 100 + i);
+    expect(g.failed).toBeUndefined();
+    expect(seedGifts([g])).toHaveLength(1);
+    for (let i = 0; i < GIFT_REFUSED_MAX - 1; i++) g = giftTried(g, true, 200 + i);
+    expect(g.failed).toBeUndefined();
+    g = giftTried(g, true, 300);
+    expect(g).toMatchObject({ failed: true, refused: GIFT_REFUSED_MAX });
+    expect(giftsToSend([g], 10_000_000)).toEqual([]);
+    expect(nextDue([g], [])).toBeUndefined();
+    expect(seedGifts([g])).toEqual([]);
+    expect(cleanGifts([g])[0]).toMatchObject({ failed: true, refused: GIFT_REFUSED_MAX });
   });
 });
 

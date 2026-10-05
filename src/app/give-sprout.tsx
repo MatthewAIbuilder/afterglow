@@ -109,6 +109,7 @@ export default function GiveSproutScreen() {
 
   const status = useMemo(() => {
     if (picked) return { text: `Picked up by ${picked.name ?? picked.handle ?? 'someone'}. It’s in their garden now.`, tone: 'done' as const };
+    if (gift?.failed) return { text: 'This sprout couldn’t be sent, so your seed is back. Try giving it again.', tone: 'wait' as const };
     if (gift && !gift.sent) return { text: online ? 'Saving your sprout…' : 'No signal: they can scan it now, and it goes through once you’ve both had signal.', tone: 'wait' as const };
     return { text: 'Waiting for them to scan it…', tone: 'idle' as const };
   }, [picked, gift, online]);

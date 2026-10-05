@@ -786,7 +786,25 @@ await t('stickers: made in HQ, read by anyone, found once each before their end 
   const long = new Date(Date.now() - 5 * 86400_000);
   await assertSucceeds(setDoc(doc(H.firestore(), 'stickers', 'ended2026b'), sticker({ until: long })));
   await assertFails(setDoc(doc(A.firestore(), 'finds', 'uidA_ended2026b'), find('uidA', 'ended2026b', { at: new Date(long.getTime() - 3600_000) })));
+  // Your own finds, read back on a new phone: only yours.
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'finds'), where('uid', '==', 'uidB'), limit(500))));
+  await assertFails(getDocs(query(collection(A.firestore(), 'finds'), where('uid', '==', 'uidB'), limit(500))));
+  await assertFails(getDocs(collection(A.firestore(), 'finds')));
   await assertSucceeds(deleteDoc(doc(A.firestore(), 'finds', 'uidA_ferris2027')));
+  // Taken down: marked once by HQ (not deleted); scans from before still count for 3 days, later ones never.
+  const C = env.authenticatedContext('uidC');
+  await assertSucceeds(setDoc(doc(H.firestore(), 'stickers', 'down2027aa'), sticker()));
+  await assertFails(updateDoc(doc(A.firestore(), 'stickers', 'down2027aa'), { takenDown: true, takenDownAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(H.firestore(), 'stickers', 'down2027aa'), { takenDown: true, takenDownAt: serverTimestamp(), name: 'Renamed' }));
+  await assertFails(updateDoc(doc(H.firestore(), 'stickers', 'down2027aa'), { takenDown: true, takenDownAt: new Date(Date.now() - 86400_000) }));
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'stickers', 'down2027aa'), { takenDown: true, takenDownAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(H.firestore(), 'stickers', 'down2027aa'), { takenDown: true, takenDownAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(anon.firestore(), 'stickers', 'down2027aa')));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'finds', 'uidB_down2027aa'), find('uidB', 'down2027aa', { at: new Date(Date.now() - 60_000) })));
+  await assertFails(setDoc(doc(C.firestore(), 'finds', 'uidC_down2027aa'), find('uidC', 'down2027aa', { at: new Date(Date.now() + 60_000) })));
+  const longAgo = new Date(Date.now() - 5 * 86400_000);
+  await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'stickers', 'down2027bb'), { name: 'Old', creature: 'ferris', by: 'uidHQ', createdAt: longAgo, takenDown: true, takenDownAt: longAgo }));
+  await assertFails(setDoc(doc(C.firestore(), 'finds', 'uidC_down2027bb'), find('uidC', 'down2027bb', { at: new Date(longAgo.getTime() - 3600_000) })));
 });
 await t('1-to-1 chats: only friends both ways, only the two of them, not once blocked', async () => {
   const P = env.authenticatedContext('uidP'), Q = env.authenticatedContext('uidQ'), R = env.authenticatedContext('uidR'), H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });

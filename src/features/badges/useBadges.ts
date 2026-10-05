@@ -7,8 +7,13 @@ import { earnedBadges, throwbackBadges, type Badge, type ThrowbackBadge } from '
 /** Someone's shared videos stay fresh this long for their badges. */
 const FRESH_MS = 5 * 60_000;
 const cache = new Map<string, { at: number; memories: SharedMemory[] }>();
+/** Reads under way, shared by every screen asking for the same person (your glow level asks too). */
+const pending = new Map<string, Promise<SharedMemory[]>>();
 /** For tests: forget what was read. */
-export const forgetBadges = () => cache.clear();
+export const forgetBadges = () => {
+  cache.clear();
+  pending.clear();
+};
 
 /**
  * Someone's festival pins, from the videos they've shared (tagged with the
@@ -25,10 +30,20 @@ export function useBadges(uid: string | undefined): { badges: Badge[]; throwback
     const hit = cache.get(uid);
     if (hit && Date.now() - hit.at < FRESH_MS) return;
     let live = true;
-    social.service
-      .memoriesOf(uid)
-      .then((memories) => {
+    let ask = pending.get(uid);
+    if (!ask) {
+      ask = social.service.memoriesOf(uid).then((memories) => {
         cache.set(uid, { at: Date.now(), memories });
+        return memories;
+      });
+      const asked = ask;
+      pending.set(uid, asked);
+      void asked.catch(() => {}).finally(() => {
+        if (pending.get(uid) === asked) pending.delete(uid);
+      });
+    }
+    ask
+      .then((memories) => {
         if (live) setRead({ uid, memories });
       })
       .catch(() => {});
