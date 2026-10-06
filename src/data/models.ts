@@ -262,6 +262,11 @@ export type Clip = {
   bpm: number;
   /** Real footage. Leave undefined to show the placeholder stage. */
   source?: ClipSource;
+  /**
+   * A back to back: the other artists playing (Afterglow ids), from the
+   * catalogue's `"with"` or found in the title ("B2B KOMPANY"; data/b2b.ts).
+   */
+  withArtistIds?: string[];
 };
 
 /**

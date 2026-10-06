@@ -42,11 +42,13 @@ function useLiveTaste(enabled: boolean, defer: boolean) {
     const extra = [...rememberedClips(ids, artistOf, loaded), ...reactedCards(ids, catalog, (id) => !!catalog.artist(id), loaded)];
     return extra.length ? [...clips, ...extra] : clips;
   }, [enabled, clips, reactions, artistOf, catalog]);
+  // Back to backs count for everyone playing (data/b2b.ts).
+  const b2b = useMemo(() => ({ playersOf: catalog.playersOf, membersOf: catalog.membersOf }), [catalog]);
   return useMemo(
     () =>
       enabled
         ? {
-            ...computeTaste(startingPrior(MOCK_TASTE, imported), artists, allClips, reactions, similarity, ratings, imported),
+            ...computeTaste(startingPrior(MOCK_TASTE, imported), artists, allClips, reactions, similarity, ratings, imported, b2b),
             similarity,
             /** Every clip the taste rests on: the catalogue's plus community clips you reacted to. */
             tasteClips: allClips,
@@ -57,7 +59,7 @@ function useLiveTaste(enabled: boolean, defer: boolean) {
             importedFrom: imported.from,
           }
         : null,
-    [enabled, artists, allClips, reactions, similarity, ratings, imported, importing],
+    [enabled, artists, allClips, reactions, similarity, ratings, imported, importing, b2b],
   );
 }
 

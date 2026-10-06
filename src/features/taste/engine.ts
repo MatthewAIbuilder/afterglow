@@ -137,6 +137,11 @@ export function computeTaste(
   ratings: Ratings = {},
   /** A connected music library, matched to the catalogue. */
   imported: ImportedTaste = NO_IMPORT,
+  /**
+   * Back to backs (data/b2b.ts): everyone playing in a clip, so a reaction counts for each of
+   * them, and a b2b act's artists, so an act you haven't reacted to matches like its best-liked artist.
+   */
+  b2b: { playersOf: (clip: Clip) => readonly string[]; membersOf: (artistId: string) => readonly string[] } = NO_B2B,
 ): {
   taste: TasteProfile;
   summary: TasteSummary;
@@ -165,12 +170,14 @@ export function computeTaste(
       s += WEIGHT.skip;
       summary.skips++;
     }
-    direct[clip.artistId] = (direct[clip.artistId] ?? 0) + s;
+    // A back to back is a set by each of them: it counts for every artist playing.
+    const players = b2b.playersOf(clip);
+    for (const id of players) direct[id] = (direct[id] ?? 0) + s;
 
     const w = isWatch(r.watched) ? r.watched : undefined;
     // A skip already said no; a like or save outweighs a quick swipe.
     if (w && !r.skipped && !(w === 'quick' && (r.liked || r.saved))) {
-      passive[clip.artistId] = (passive[clip.artistId] ?? 0) + WATCH_WEIGHT[w];
+      for (const id of players) passive[id] = (passive[id] ?? 0) + WATCH_WEIGHT[w];
       if (w !== 'quick') summary.watched++;
     }
   }
@@ -237,8 +244,20 @@ export function computeTaste(
       taste[a.id] = Math.min(hi, Math.max(lo, taste[a.id]));
     }
   }
+  // A b2b act nobody has said anything about matches like the artist in it you like best.
+  for (const a of artists) {
+    const members = b2b.membersOf(a.id).filter((m) => m in taste);
+    if (!members.length || (explicit[a.id] ?? 0) !== 0 || isRating(ratings[a.id])) continue;
+    const best = Math.max(...members.map((m) => (informed[m] ? taste[m] : 0)));
+    if (best > taste[a.id]) {
+      taste[a.id] = best;
+      informed[a.id] = true;
+    }
+  }
   return { taste, summary, informed, imported: fromLibrary };
 }
+
+const NO_B2B = { playersOf: (clip: Clip) => [clip.artistId], membersOf: () => [] };
 
 /**
  * The imported layer for every artist it reaches, each within

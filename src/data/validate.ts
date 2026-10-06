@@ -110,6 +110,11 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
       return ok;
     })
     .map((c) => {
+      // A back to back keeps only the other artists who are in the file.
+      if (c.withArtistIds) {
+        const others = c.withArtistIds.filter((x) => artistIds.has(x) && x !== c.artistId);
+        c = others.length ? { ...c, withArtistIds: others } : (({ withArtistIds: _gone, ...rest }) => rest)(c);
+      }
       if (validSource(c.source)) return c;
       problems.push(`Clip "${c.id}": the video doesn't look right, so it shows the stage instead.`);
       const { source: _dropped, ...rest } = c;

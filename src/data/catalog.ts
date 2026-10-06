@@ -1,3 +1,4 @@
+import { b2bIndex, playersOf, withPartners } from './b2b';
 import { festivalPhase } from './festival';
 import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, FestivalLineup, FestivalPhase, Show, SoundCloudProfile } from './models';
 
@@ -19,10 +20,16 @@ export type Catalog = {
   artist: (id: string) => Artist | undefined;
   festival: (id: string) => Festival | undefined;
   clip: (id: string) => Clip | undefined;
-  /** An artist's clips, in catalogue order. */
+  /** An artist's clips, in catalogue order: their own, then back to backs they play in. */
   clipsOf: (artistId: string) => Clip[];
-  /** Festivals an artist is on the lineup of, in catalogue order. */
+  /** Festivals an artist is on the lineup of, in catalogue order, with those where a b2b act they're in plays. */
   festivalsOf: (artistId: string) => Festival[];
+  /** A b2b act's artists who are on Afterglow ("SUBTRONICS B2B CRANKDAT" -> subtronics, crankdat); none for anyone else. */
+  membersOf: (artistId: string) => string[];
+  /** The b2b acts an artist is in. */
+  actsOf: (artistId: string) => string[];
+  /** Everyone playing in a clip, its own artist first (data/b2b.ts). */
+  playersOf: (clip: Clip) => string[];
   /** A festival's lineup (and set times, once out) as its own record. */
   lineupOf: (festivalId: string) => FestivalLineup | undefined;
   phaseOf: (festivalId: string) => FestivalPhase | undefined;
@@ -55,15 +62,25 @@ export function applyLineup(festival: Festival, lineup: FestivalLineup | undefin
 export function createCatalog(snapshot: CatalogSnapshot): Catalog {
   const lineupFor = new Map((snapshot.lineups ?? []).map((l) => [l.festivalId, l]));
   const festivals = snapshot.festivals.map((f) => applyLineup(f, lineupFor.get(f.id)));
-  const { artists, clips } = snapshot;
+  const { artists } = snapshot;
+  // Back to backs: who's in each b2b act, and the other artists a set video's title names.
+  const b2b = b2bIndex(artists);
+  const clips = withPartners(snapshot.clips, b2b);
+  const membersOf = (id: string) => b2b.membersOf.get(id) ?? [];
+  const actsOf = (id: string) => b2b.actsOf.get(id) ?? [];
 
   const artistBy = new Map(artists.map((a) => [a.id, a]));
   const festivalBy = new Map(festivals.map((f) => [f.id, f]));
   const clipBy = new Map(clips.map((c) => [c.id, c]));
   const clipsBy = new Map<string, Clip[]>();
   for (const c of clips) clipsBy.set(c.artistId, [...(clipsBy.get(c.artistId) ?? []), c]);
+  // A back to back is theirs too, after their own.
+  for (const c of clips)
+    for (const id of playersOf(c, membersOf).slice(1)) if (!(clipsBy.get(id) ?? []).includes(c)) clipsBy.set(id, [...(clipsBy.get(id) ?? []), c]);
   const festivalsBy = new Map<string, Festival[]>();
-  for (const f of festivals) for (const id of f.lineup) festivalsBy.set(id, [...(festivalsBy.get(id) ?? []), f]);
+  for (const f of festivals)
+    for (const id of f.lineup)
+      for (const who of [id, ...membersOf(id)]) if (!(festivalsBy.get(who) ?? []).includes(f)) festivalsBy.set(who, [...(festivalsBy.get(who) ?? []), f]);
   const shows = [...(snapshot.shows ?? [])].sort((a, b) => a.date.localeCompare(b.date));
   const showsBy = new Map<string, Show[]>();
   for (const s of shows) for (const id of s.artistIds) showsBy.set(id, [...(showsBy.get(id) ?? []), s]);
@@ -81,6 +98,9 @@ export function createCatalog(snapshot: CatalogSnapshot): Catalog {
     clip: (id) => clipBy.get(id),
     clipsOf: (id) => clipsBy.get(id) ?? [],
     festivalsOf: (id) => festivalsBy.get(id) ?? [],
+    membersOf,
+    actsOf,
+    playersOf: (clip) => playersOf(clip, membersOf),
     lineupOf: (id) => {
       const f = festivalBy.get(id);
       if (!f) return undefined;

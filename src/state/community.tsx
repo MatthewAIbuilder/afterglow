@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { partnersOf } from '../data/b2b';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import type { Clip, Festival } from '../data/models';
-import { cleanKept, COMMUNITY_MAX, communityClips, keepClip, keptClips, rememberArtist } from '../features/community/clips';
+import { cleanKept, COMMUNITY_MAX, communityClips, keepClip, keptClips, PLAYERS_JOIN, rememberArtist } from '../features/community/clips';
 import { isSoundCloudCardId, reactedCards } from '../features/discover/soundcloud';
 import { withOwner } from '../features/community/likes';
 import type { SharedMemory } from '../features/social/models';
@@ -109,7 +110,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
   const remember = useCallback(
     (clip: Clip, liked = false) =>
       setSaved((s) => {
-        const artistOf = rememberArtist(s.artistOf, clip.id, clip.artistId);
+        const artistOf = rememberArtist(s.artistOf, clip.id, [clip.artistId, ...partnersOf(clip)].join(PLAYERS_JOIN));
         const kept = liked && !s.kept[clip.id] ? keepClip(s.kept, clip) : s.kept;
         const owners = clip.source?.provider === 'community' ? withOwner(s.owners, clip.id, clip.source.uid) : s.owners;
         return artistOf === s.artistOf && kept === s.kept && owners === s.owners ? s : { ...s, artistOf, kept, owners };
