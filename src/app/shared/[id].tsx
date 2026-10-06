@@ -26,6 +26,8 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { whereLine } from '../../features/memories/where';
 import { b2bLine } from '../../features/memories/b2b';
 import { useClipLoop } from '../../features/memories/useClipLoop';
+import { fitFor } from '../../features/memories/videoFit';
+import { useVideoSize } from '../../features/memories/useVideoSize';
 import { VideoTags } from '../../features/social/VideoTags';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
@@ -138,6 +140,8 @@ function SharedMemoryPage({ id, active }: { id: string; active: boolean }) {
     p.muted = Platform.OS === 'web';
   });
   useClipLoop(player, m?.clip);
+  // Its real shape: fills the screen only when that crops very little, else shows whole.
+  const videoSize = useVideoSize(player, m?.videoUrl, m ?? undefined);
   // Only the video in view plays (swiping through a profile's moments).
   useEffect(() => {
     if (active) player.play();
@@ -198,7 +202,7 @@ function SharedMemoryPage({ id, active }: { id: string; active: boolean }) {
 
   return (
     <View style={styles.root}>
-      {m && !blocked ? <VideoView player={player} style={StyleSheet.absoluteFill} contentFit={upright(m) ? 'cover' : 'contain'} nativeControls={false} playsInline /> : null}
+      {m && !blocked ? <VideoView player={player} style={StyleSheet.absoluteFill} contentFit={fitFor(videoSize, screen)} nativeControls={false} playsInline /> : null}
       {m && !blocked ? (
         <Pressable onPress={tapVideo} style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={quiet ? t('Turn the sound on') : t('Play or pause')}>
           {quiet ? <Text style={[styles.center, styles.sound]}>{t('Tap for sound')}</Text> : null}
@@ -328,6 +332,3 @@ const styles = StyleSheet.create({
   liked: { backgroundColor: glowA(0.22), borderColor: glowA(0.5) },
   note: { ...type.caption, color: color.moonDim, marginTop: space.sm },
 });
-
-/** Filmed upright (or no size known: phones film upright): fills the screen, like Discover. */
-const upright = (m: { width?: number; height?: number }) => !(m.width && m.height) || m.height >= m.width;
