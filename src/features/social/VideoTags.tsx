@@ -10,9 +10,9 @@ import type { Profile, VideoTag } from './models';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from './service';
 
 /**
- * Who's tagged in a shared video, on its page: "With @sam and @alex" (the
- * owner also sees who hasn't answered yet). Tagged and not answered: a card
- * asks whether it shows on your profile. Said yes: a way to untag yourself.
+ * Who's tagged in a shared video, on its page: "With @sam and @alex". A tag
+ * shows on that person's profile straight away; tagged yourself, you can
+ * hide it (the tag goes). A tag from before that (not answered) still asks.
  */
 export function VideoTags({ memoryId, owner, ownerHandle, refresh }: { memoryId: string; owner: string; ownerHandle: string; refresh: number }) {
   const social = useSocial();
@@ -87,8 +87,8 @@ export function VideoTags({ memoryId, owner, ownerHandle, refresh }: { memoryId:
           </View>
         </View>
       ) : mineTag?.status === 'approved' ? (
-        <Pressable onPress={() => void answer(false)} accessibilityRole="button" accessibilityLabel={t('You’re tagged. Untag yourself')} hitSlop={6}>
-          <Text style={styles.untag}>{t('You’re tagged · Untag me')}</Text>
+        <Pressable onPress={() => void answer(false)} accessibilityRole="button" accessibilityLabel={t('You’re tagged, and it’s on your profile. Hide it from your profile')} hitSlop={6}>
+          <Text style={styles.untag}>{t('On your profile under Tagged · Hide it')}</Text>
         </Pressable>
       ) : null}
     </View>

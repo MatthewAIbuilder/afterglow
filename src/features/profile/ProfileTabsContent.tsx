@@ -99,7 +99,7 @@ export function VideosTab({
       </Pressable>
       {showFilters ? <MomentFilters value={filter} onChange={setFilter} artists={artists} places={places} taggedCount={tagged ? tagged.length : undefined} /> : null}
       {filter.kind === 'tagged' && !shown.length ? (
-        <Text style={styles.filterEmpty}>{t('When someone tags you in a video and you say yes, it shows here.')}</Text>
+        <Text style={styles.filterEmpty}>{t('Videos you’re tagged in show here. Open one to hide it from your profile.')}</Text>
       ) : null}
       <View style={styles.grid}>
         {filter.kind !== 'all' ? null : (

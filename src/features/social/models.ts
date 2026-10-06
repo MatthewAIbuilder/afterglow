@@ -110,7 +110,7 @@ export type Activity =
   | { kind: 'comment'; id: string; from: string; memoryId: string; text: string; createdAt: string }
   | { kind: 'tag'; id: string; from: string; memoryId: string; createdAt: string };
 
-/** Someone tagged in a shared video (`videoTags/<memoryId>_<uid>`): waiting for them to say yes, or said yes (then it's on their profile). */
+/** Someone tagged in a shared video (`videoTags/<memoryId>_<uid>`): on their profile ('approved'; 'pending' only from older apps, said yes to when they next open the bell). Hiding it deletes it. */
 export type VideoTag = { id: string; memoryId: string; owner: string; uid: string; status: 'pending' | 'approved'; createdAt: string };
 
 /** At most this many people tagged in one video. */

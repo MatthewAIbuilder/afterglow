@@ -335,7 +335,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       };
       memories.set(id, m);
       for (const uid of [...new Set(input.people ?? [])].filter((x) => x !== u.uid && profiles.has(x)).slice(0, VIDEO_TAGS_MAX))
-        videoTags.set(`${id}_${uid}`, { id: `${id}_${uid}`, memoryId: id, owner: u.uid, uid, status: 'pending', createdAt: now() });
+        videoTags.set(`${id}_${uid}`, { id: `${id}_${uid}`, memoryId: id, owner: u.uid, uid, status: 'approved', createdAt: now() });
       onProgress?.(1);
       return m;
     },
@@ -353,7 +353,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       for (const [k, v] of videoTags) if (v.memoryId === memoryId && !want.includes(v.uid)) videoTags.delete(k);
       for (const uid of want) {
         const id = `${memoryId}_${uid}`;
-        if (!videoTags.has(id)) videoTags.set(id, { id, memoryId, owner: u.uid, uid, status: 'pending', createdAt: now() });
+        if (!videoTags.has(id)) videoTags.set(id, { id, memoryId, owner: u.uid, uid, status: 'approved', createdAt: now() });
       }
     },
     async answerVideoTag(memoryId, yes) {
@@ -792,13 +792,15 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     },
     async activity(max) {
       const u = me();
+      // Like the real one: a tag from before tags showed straight away shows now.
+      for (const [k, v] of videoTags) if (v.uid === u.uid && v.status === 'pending') videoTags.set(k, { ...v, status: 'approved' });
       const items: Activity[] = [
         ...[...comments.values()]
           .filter((c) => c.owner === u.uid && c.uid !== u.uid)
           .map((c): Activity => ({ kind: 'comment', id: c.id, from: c.uid, memoryId: c.memoryId, text: c.text, createdAt: c.createdAt })),
         ...[...follows.values()].filter((f) => f.to === u.uid).map((f): Activity => ({ kind: 'follow', id: `${f.from}_${f.to}`, from: f.from, createdAt: f.createdAt })),
         ...[...likes.values()].filter((l) => l.owner === u.uid).map((l): Activity => ({ kind: 'like', id: `${l.memoryId}_${l.uid}`, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt })),
-        ...[...videoTags.values()].filter((v) => v.uid === u.uid && v.status === 'pending').map((v): Activity => ({ kind: 'tag', id: v.id, from: v.owner, memoryId: v.memoryId, createdAt: v.createdAt })),
+        ...[...videoTags.values()].filter((v) => v.uid === u.uid).map((v): Activity => ({ kind: 'tag', id: v.id, from: v.owner, memoryId: v.memoryId, createdAt: v.createdAt })),
       ];
       return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
@@ -1203,5 +1205,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
+  return { service, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
 }

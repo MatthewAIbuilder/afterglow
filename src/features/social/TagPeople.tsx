@@ -14,7 +14,7 @@ const OFFERED = 8;
 
 /**
  * Who's in a video: people you follow, or anyone found by searching. Each is
- * asked first; it only shows on their profile once they say yes.
+ * shows on their profile under Tagged straight away, and they can hide it.
  */
 export function TagPeople({ value, onChange }: { value: string[]; onChange: (uids: string[]) => void }) {
   const social = useSocial();
@@ -98,8 +98,8 @@ export function TagPeople({ value, onChange }: { value: string[]; onChange: (uid
       </View>
       <Text style={styles.quiet}>
         {value.length
-          ? t('Each person is asked first. It shows on their profile under Tagged once they say yes.')
-          : t('Tag friends who are in it. They’re asked first, and it shows on their profile once they say yes.')}
+          ? t('It shows on their profile under Tagged. They can hide it any time.')
+          : t('Tag friends who are in it. It shows on their profile under Tagged, and they can hide it any time.')}
       </Text>
     </View>
   );

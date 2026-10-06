@@ -28,7 +28,7 @@ export type ShareInput = {
   artistName?: string;
   /** A festival from before Afterglow, instead of `festivalId`. */
   past?: PastEvent;
-  /** People in the video, to tag once it's shared (each is asked first). */
+  /** People in the video, tagged once it's shared (it shows on their profiles; they can hide it). */
   people?: string[];
   /** A one-night show, instead of a festival. */
   show?: ShowTag;
@@ -154,7 +154,7 @@ export interface SocialService {
   retagShared(sharedId: string, tags: SharedTags): Promise<SharedMemory>;
   /** Who's tagged in a video: everyone who said yes, and (for the video's owner) who hasn't answered yet. */
   videoTags(memoryId: string): Promise<VideoTag[]>;
-  /** Your video: tag these people (each is asked first); anyone left out is untagged. */
+  /** Your video: tag these people (it shows on their profiles straight away); anyone left out is untagged. */
   setVideoTags(memoryId: string, uids: string[]): Promise<void>;
   /** Tagged in someone's video: say yes (it shows on your profile) or no (the tag goes). Also how you untag yourself. */
   answerVideoTag(memoryId: string, yes: boolean): Promise<void>;

@@ -220,7 +220,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     };
   }, [draftUri, draftLength, setClip]);
 
-  // People in it, tagged once it's on Discover (each says yes first).
+  // People in it, tagged once it's on Discover (it shows on their profiles; they can hide it).
   const [people, setPeople] = useState<string[]>(() => existing?.people ?? []);
   const touchedPeople = useRef(false);
 

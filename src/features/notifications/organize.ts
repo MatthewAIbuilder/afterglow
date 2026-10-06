@@ -7,10 +7,11 @@ import type { Notice } from './inbox';
  * newest first (a notice with no time, like a festival starting soon, counts
  * as today), quick filters by kind, a search, and "2h"-style times.
  */
-export type NoticeFilter = 'all' | 'people' | 'festivals' | 'sets' | 'sprouts';
+export type NoticeFilter = 'all' | 'people' | 'tagged' | 'festivals' | 'sets' | 'sprouts';
 
 export const FILTER_KINDS: Record<Exclude<NoticeFilter, 'all'>, readonly Notice['kind'][]> = {
-  people: ['follow', 'like', 'comment', 'tag', 'crewInvite'],
+  people: ['follow', 'like', 'comment', 'crewInvite'],
+  tagged: ['tag'],
   festivals: ['now', 'soon', 'setTimes', 'lineup', 'recap'],
   sets: ['clips'],
   sprouts: ['sprout'],
