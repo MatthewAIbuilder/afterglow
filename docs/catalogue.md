@@ -63,6 +63,7 @@ The demo artists already exist, and you can use them in your lineups without add
   - If you're not sure, leave `sound` out. The artist shows as "New" until you react to their clips.
   - With a sound, the app can work out who's similar to artists you like. My Sound shows up to 40 artists the app knows something about, and new ones join as your likes reach them.
 - **`image`** (optional) is a photo link starting with `https://`. Only use images you have the rights to.
+- **`soundcloud`** (optional) is the artist's own SoundCloud page, like `"https://soundcloud.com/subtronics"`. Discover then shows a SoundCloud card playing their uploads, and Listen on their page offers it. Only soundcloud.com links work. A link you set always wins over the one found each night (see "SoundCloud pages" below), so use it to fix a wrong match.
 - **Back-to-back sets** are one artist named with "B2B" (`"SUBTRONICS B2B CRANKDAT"`). Without an `image` of their own, the app shows each artist's own photo in a split circle, so write the names as the artists appear elsewhere in the file. The nightly job can add photos for b2b artists who aren't in the file as `"memberPhotos": { "CRANKDAT": "https://…" }`.
 
 ### Festivals
@@ -170,6 +171,25 @@ You don't need to write these by hand, but this is how they look:
 `name`, `location` and `place` are optional; the link must start with
 https://. Artists that aren't in the catalogue are quietly left off, and a
 show with none left is skipped.
+
+### SoundCloud pages (filled in automatically)
+
+Each night the Website workflow matches artists to their own SoundCloud page
+by name (see `docs/events-import.md`) and adds `soundcloud`. You don't need
+to write it by hand; to set or fix one artist's page, give that artist a
+`"soundcloud"` link instead (above), which always wins. This is how the
+nightly list looks:
+
+```json
+"soundcloud": { "subtronics": { "url": "https://soundcloud.com/subtronics", "name": "SUBTRONICS",
+                                "image": "https://i1.sndcdn.com/avatars-…-t500x500.jpg" } },
+"soundcloudMisses": { "some-artist": "2026-10-06" }
+```
+
+`name` and `image` are optional. Links must be soundcloud.com pages and
+pictures must come from SoundCloud's image servers; entries for artists that
+aren't in the catalogue are quietly left out. `soundcloudMisses` (artists with
+no page found, and when) is only for the nightly job; the app ignores it.
 
 ## Adding acts later (lineup news)
 
