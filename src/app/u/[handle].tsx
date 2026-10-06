@@ -40,6 +40,7 @@ import { WEB_URL } from '../../config/app';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
+import { useSprouts } from '../../state/sprouts';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { showActionSheet } from '../../lib/dialog';
 import { useSendOrShare } from '../../features/messages/useSendOrShare';
@@ -57,6 +58,7 @@ export default function PublicProfileScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const social = useSocial();
+  const sprouts = useSprouts();
   const sendOrShare = useSendOrShare();
   const chat = useCrewChat();
   const catalog = useCatalog();
@@ -65,8 +67,8 @@ export default function PublicProfileScreen() {
   const { badges, throwbacks } = useBadges(profile?.uid);
   const [memories, setMemories] = useState<SharedMemory[]>([]);
   const [tagged, setTagged] = useState<SharedMemory[]>([]);
-  // Their garden, as they show it (none when they don't).
-  const [garden, setGarden] = useState<PublicResident[] | null>(null);
+  // Their garden, as they show it: undefined while it loads (or couldn't), null when they don't show one.
+  const [garden, setGarden] = useState<PublicResident[] | null | undefined>(undefined);
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
   const [counts, setCounts] = useState<FollowCounts | undefined>();
@@ -358,6 +360,29 @@ export default function PublicProfileScreen() {
               <Text style={styles.gardenSub}>{t('{n} living there · Visit', { n: garden.length })}</Text>
             </View>
           </Pressable>
+        ) : garden !== undefined ? (
+          // Nothing on their profile yet: say why, rather than leaving no sign of it.
+          <Pressable
+            disabled={!mine}
+            onPress={() => {
+              haptic.select();
+              router.push('/garden');
+            }}
+            accessibilityRole={mine ? 'button' : 'text'}
+            style={({ pressed }) => [styles.garden, styles.gardenEmpty, pressed && { opacity: 0.8 }]}
+            testID="garden-not-shared"
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.gardenTitle}>{mine ? t('Your garden') : t('{name}’s garden', { name: profile.displayName.split(' ')[0] })}</Text>
+              <Text style={styles.gardenSub}>
+                {mine
+                  ? sprouts.gardenShown
+                    ? t('It shows here once something is growing in it.')
+                    : t('Hidden from your profile. Open your garden to show it.')
+                  : t('Not shared yet. It shows here once {name} opens the latest Afterglow with something growing.', { name: profile.displayName.split(' ')[0] })}
+              </Text>
+            </View>
+          </Pressable>
         ) : null}
         {!mine && social.profile ? (
           <Pressable
@@ -438,6 +463,7 @@ const styles = StyleSheet.create({
   gardenPeek: { flexDirection: 'row', marginRight: space.xs },
   gardenTitle: { ...type.headline, color: color.moon },
   gardenSub: { ...type.caption, color: color.moonDim },
+  gardenEmpty: { backgroundColor: color.glass, borderColor: color.hairline },
   root: { flex: 1, backgroundColor: color.night },
   back: { position: 'absolute', left: space.lg },
   actions: { position: 'absolute', right: space.lg, flexDirection: 'row', gap: space.sm },
