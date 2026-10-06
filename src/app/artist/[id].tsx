@@ -114,6 +114,22 @@ export default function ArtistScreen() {
   // Their club shows from the nightly EDMTrain feed, from today on.
   const shows = catalog.showsOf(artist.id, localDay(today));
   const showsListed = allShows ? shows : shows.slice(0, SHOWS_SHOWN);
+  // Their tour on the map: any festival or upcoming show with a place.
+  const tourOnMap = festivals.some((f) => placeOf(f)) || shows.some((s) => s.place);
+  const tourLink = (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        router.push({ pathname: '/festival-map', params: { artist: artist.id } });
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`See ${artist.name}'s festivals and shows on the map`}
+      style={({ pressed }) => [styles.tourLink, pressed && { opacity: 0.7 }]}
+    >
+      <MapIcon color={color.glow} size={16} />
+      <Text style={styles.tourText}>See their tour on the map</Text>
+    </Pressable>
+  );
   // Yours first, then near you (when it's on), then the soonest; what's over last.
   const playing = playingList(festivals, { going, today, distanceTo, nearKm: NEAR_KM });
   // Their next show, and what you've done with their music here.
@@ -308,21 +324,8 @@ export default function ArtistScreen() {
                 </Pressable>
               );
             })}
-            {/* Where they play, glowing on the map and joined up in date order. */}
-            {festivals.some((f) => placeOf(f)) ? (
-              <Pressable
-                onPress={() => {
-                  haptic.select();
-                  router.push({ pathname: '/festival-map', params: { artist: artist.id } });
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`See ${artist.name}'s festivals on the map`}
-                style={({ pressed }) => [styles.tourLink, pressed && { opacity: 0.7 }]}
-              >
-                <MapIcon color={color.glow} size={16} />
-                <Text style={styles.tourText}>See their tour on the map</Text>
-              </Pressable>
-            ) : null}
+            {/* Where they play, festivals and shows, glowing on the map and joined up in date order. */}
+            {tourOnMap ? tourLink : null}
           </Section>
         )}
 
@@ -369,6 +372,8 @@ export default function ArtistScreen() {
                 </Pressable>
               );
             })}
+            {/* No festivals to hang it under: the tour link sits with the shows. */}
+            {festivals.length === 0 && tourOnMap ? tourLink : null}
             {shows.length > SHOWS_SHOWN ? (
               <Pressable
                 onPress={() => {
