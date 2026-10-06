@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 import { b2bIndex, partnersInTitle, partnersOf, playersOf, titleWithoutPartners, together, withPartners } from '../b2b';
+import bundled from '../../../catalogue/afterglow.json';
 import { createCatalog } from '../catalog';
+import { fold } from '../import/edmtrain';
+import { b2bParts } from '../members';
 import type { Artist, CatalogSnapshot, Clip } from '../models';
 import { computeTaste } from '../../features/taste/engine';
 import { scoreClips } from '../../features/recommend/feed';
@@ -107,5 +110,32 @@ describe('back to back', () => {
     expect(titleWithoutPartners('DJ SNAKE b2b John Summit at Ultra', ['JOHN SUMMIT'])).toBe('DJ SNAKE at Ultra');
     expect(titleWithoutPartners('LAYZ B2B KOMPANY', ['KOMPANY'])).toBe('LAYZ');
     expect(titleWithoutPartners('B2B KOMPANY', ['KOMPANY'])).toBe('B2B KOMPANY');
+  });
+});
+
+describe('b2b acts in the bundled catalogue', () => {
+  // Every artist in a b2b act is either on Afterglow by exactly that name, or not close to anyone's:
+  // "ALLEYCUT" for ALLEYCVT left the act unlinked to the artist (one letter off).
+  const oneOff = (a: string, b: string) => {
+    if (a === b || Math.abs(a.length - b.length) > 1) return false;
+    let i = 0;
+    while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1);
+    return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
+  };
+  it('names each of its artists exactly as they are on Afterglow', () => {
+    const all = (bundled as { artists: Artist[] }).artists;
+    const names = all.filter((a) => !b2bParts(a.name)).map((a) => fold(a.name));
+    const typos = all.flatMap((a) =>
+      (b2bParts(a.name) ?? [])
+        .map((p) => fold(p))
+        .filter((p) => p.length >= 4 && !names.includes(p))
+        .flatMap((p) => names.filter((n) => oneOff(p, n)).map((n) => `${a.name}: ${p} ~ ${n}`)),
+    );
+    expect(typos).toEqual([]);
+  });
+  it('ALLEYCVT B2B LEVEL UP is played by both', () => {
+    const catalog = createCatalog(bundled as unknown as CatalogSnapshot);
+    expect(catalog.membersOf('alleycut-b2b-level-up')).toEqual(['alleycvt', 'level-up']);
   });
 });
