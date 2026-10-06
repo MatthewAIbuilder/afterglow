@@ -347,4 +347,9 @@ export const es_sprouts: Dictionary = {
   'You were given a theme: {theme}': 'Te regalaron un tema: {theme}',
   'It came with your sprout. A look for the whole app, and a profile background to match.': 'Venía con tu brote. Un estilo para toda la app y un fondo de perfil a juego.',
   'A gift: neon daisy pink, carnival gold and a night full of lights': 'Un regalo: rosa margarita neón, dorado de feria y una noche llena de luces',
+  // Following whoever gave you a sprout.
+  'You follow {name} now': 'Ya sigues a {name}',
+  'Follow {name}?': '¿Seguir a {name}?',
+  'Their videos, plans and festivals show up for you.': 'Ahora ves sus videos, planes y festivales.',
+  '@{handle} gave you this sprout. Follow to see their videos, plans and festivals.': '@{handle} te regaló este brote. Síguele para ver sus videos, planes y festivales.',
 };

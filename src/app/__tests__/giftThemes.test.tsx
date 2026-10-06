@@ -93,6 +93,10 @@ describe('gift themes', () => {
     await flush();
     await s().signIn('sam@example.com', 'password123');
     await flush(40);
+    // First the sprout itself, with the offer to follow whoever gave it; back on a tab, the theme.
+    expect(app.getByText('Follow Matt?')).toBeTruthy();
+    await act(async () => router.push('/profile'));
+    await flush(40);
     expect(app.getByText('A gift from @matt.raves')).toBeTruthy();
     expect(app.getByText(/Neon Daisy came with your sprout.*Putting it on now/)).toBeTruthy();
     await settle(1900);

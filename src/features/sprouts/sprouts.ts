@@ -101,6 +101,17 @@ export function sproutLink(card: SproutCard, base = WEB_URL): string {
   return `${base.replace(/\/+$/, '')}/sprout/${card.id}?${q}`;
 }
 
+/** The route params of `/sprout/[id]` for a sprout (all but its id), as its link carries them. */
+export function sproutLinkParams(s: { from: string; handle?: string; kind: SproutKind; name?: string; artist?: SproutArtist }): Record<string, string> {
+  return {
+    u: s.from,
+    h: s.handle ?? '',
+    k: s.kind,
+    ...(s.name ? { n: s.name.trim().slice(0, NAME_MAX) } : {}),
+    ...(s.artist ? { a: s.artist.id, an: s.artist.name } : {}),
+  };
+}
+
 /** A card from a link's parts, or the route params of `/sprout/[id]`. */
 export function sproutCardFrom(parts: { id?: unknown; u?: unknown; h?: unknown; k?: unknown; n?: unknown; a?: unknown; an?: unknown }): SproutCard | undefined {
   const id = typeof parts.id === 'string' ? parts.id : '';
@@ -287,6 +298,8 @@ export type GardenSprout = {
   wearOnArrival?: true;
   /** The theme page has shown this gift. */
   themeShown?: true;
+  /** Its page (with the offer to follow whoever gave it) has been shown since it arrived. */
+  followAsked?: true;
 };
 
 /**

@@ -109,6 +109,10 @@ type Ctx = {
   giftThemes: (ThemeGift & { granted: boolean; wearOnArrival?: boolean; shown: boolean })[];
   /** The theme page showed this gift (by its sprout). */
   giftThemeShown: (sproutId: string) => void;
+  /** Sprouts that arrived in the background (after signing up, or once there was signal) whose page hasn't been shown yet: it offers to follow the giver. */
+  toAskFollow: GardenSprout[];
+  /** Its page was shown. */
+  followAsked: (sproutId: string) => void;
   /** Give a sprout: a kind, or (with `artist`) the sprout of an artist you've filmed; the developer can add a gift theme. */
   give: (kind: SproutKind, note?: string, artist?: SproutArtist, theme?: ThemeId) => GiveResult;
   takeBack: (id: string) => Promise<boolean>;
@@ -140,10 +144,10 @@ function cleanGarden(raw: unknown): Stored['garden'] {
     (g): g is Stored['garden'][number] =>
       !!g && typeof g === 'object' && typeof g.id === 'string' && isKind(g.kind) && typeof g.from === 'string' && typeof g.at === 'number' && typeof g.account === 'string',
   ).map((g) => {
-    const { artist, theme, themeGranted, wearOnArrival, themeShown, ...rest } = g;
+    const { artist, theme, themeGranted, wearOnArrival, themeShown, followAsked, ...rest } = g;
     const a = cleanSproutArtist(artist);
     const gift = isGiftTheme(theme) ? { theme, ...(themeGranted === true ? { themeGranted } : {}), ...(wearOnArrival === true ? { wearOnArrival } : {}), ...(themeShown === true ? { themeShown } : {}) } : {};
-    return { ...rest, ...(a ? { artist: a } : {}), ...gift };
+    return { ...rest, ...(a ? { artist: a } : {}), ...gift, ...(followAsked === true ? { followAsked } : {}) };
   });
 }
 
@@ -653,6 +657,13 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     (sproutId: string) => setStored((s) => ({ ...s, garden: s.garden.map((g) => (g.id === sproutId && g.theme && !g.themeShown ? { ...g, themeShown: true } : g)) })),
     [setStored],
   );
+  // Sprouts that arrived in the background, to show once (with the offer to follow whoever gave them).
+  const toAskFollow = useMemo(() => (account ? stored.garden.filter((g) => g.account === account && g.late && g.from && g.handle && !g.followAsked) : []), [stored.garden, account]);
+  const followAsked = useCallback(
+    (sproutId: string) =>
+      setStored((s) => (s.garden.some((g) => g.id === sproutId && g.account === accountRef.current && !g.followAsked) ? { ...s, garden: s.garden.map((g) => (g.id === sproutId && g.account === accountRef.current ? { ...g, followAsked: true } : g)) } : s)),
+    [setStored],
+  );
   // Each gift theme's grant saved on Afterglow, so your profile can show its background (tried again on the next round).
   const granting = useRef(new Set<string>());
   useEffect(() => {
@@ -669,8 +680,8 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   }, [account, online, social.availability.ok, social.service, stored.garden, back, setStored]);
 
   const value = useMemo<Ctx>(
-    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, give, takeBack, claim, checkGift, refresh }),
-    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, give, takeBack, claim, checkGift, refresh],
+    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, toAskFollow, followAsked, give, takeBack, claim, checkGift, refresh }),
+    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, toAskFollow, followAsked, give, takeBack, claim, checkGift, refresh],
   );
   return <SproutsContext.Provider value={value}>{children}</SproutsContext.Provider>;
 }

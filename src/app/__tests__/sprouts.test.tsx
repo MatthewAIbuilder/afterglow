@@ -99,6 +99,42 @@ describe('sprouts', () => {
     expect(app.getByText('Kinds · 1 of 7')).toBeTruthy();
   });
 
+  it('after picking one up, you can follow whoever gave it in one tap', async () => {
+    const maya = await mayaGives();
+    await person('sam', 'Sam');
+    const app = await renderApp(routeOf(maya));
+    await flush();
+    await fireEvent.press(app.getByText('Add to my garden'));
+    await flush();
+    expect(app.getByText('Follow Maya?')).toBeTruthy();
+    expect(app.getByText('@maya gave you this sprout. Follow to see their videos, plans and festivals.')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Follow @maya'));
+    await flush();
+    expect(app.getByText('You follow Maya now')).toBeTruthy();
+    expect(await s().following(mockSocial.currentUser()!.uid, 10)).toContain(maya);
+  });
+
+  it('a sprout that arrived after signing up opens once, over a tab, with the offer to follow the giver', async () => {
+    const maya = await mayaGives();
+    const app = await renderApp(routeOf(maya));
+    await flush();
+    await fireEvent.press(app.getByText('Create a free account'));
+    await flush();
+    await person('sam', 'Sam');
+    // The app reads the new profile the way it does after signing up here.
+    await s().signOut();
+    await flush();
+    await as('sam');
+    await flush(20);
+    await act(async () => router.push('/together'));
+    await flush(30);
+    expect(app.getByText('Follow Maya?')).toBeTruthy();
+    // Only once.
+    await act(async () => router.push('/profile'));
+    await flush(30);
+    expect(app.queryByText('Follow Maya?')).toBeNull();
+  });
+
   it('without an account, the sprout is kept on the phone and picked up once you sign up', async () => {
     const maya = await mayaGives();
     const app = await renderApp(routeOf(maya));
