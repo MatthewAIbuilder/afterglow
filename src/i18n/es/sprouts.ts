@@ -355,5 +355,7 @@ export const es_sprouts: Dictionary = {
   'The Wobbler': 'El Tambaleante',
   'A round fellow with a glowing bucket for a head': 'Un tipo redondo con un cubo brillante por cabeza',
   'The Patched bear': 'El Oso remendado',
+  'The Trooper': 'El Soldado estelar',
+  'An armoured trooper bursting out of hyperspace': 'Un soldado con armadura que sale del hiperespacio',
   'A stitched-up teddy with one eye sewn shut': 'Un peluche cosido con un ojo cerrado a puntadas',
 };
