@@ -3,6 +3,7 @@ import type { PastEvent } from '../memories/past';
 import type { ShowTag } from '../memories/show';
 import type { ClipWindow } from '../memories/trim';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
+import type { PublicResident } from '../sprouts/publicGarden';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
 /**
@@ -323,6 +324,10 @@ export interface SocialService {
    * Saying so again is the same as once.
    */
   grantTheme(sproutId: string, theme: string): Promise<void>;
+  /** Show your garden on your profile as it is now (who lives there, nothing private), or take it down (null). */
+  publishGarden(residents: PublicResident[] | null): Promise<void>;
+  /** Someone's garden as they show it; null when they don't. */
+  gardenOf(uid: string): Promise<PublicResident[] | null>;
   /** Take back a sprout nobody has picked up (one that isn't there is fine; `sprout-taken` once someone has it). */
   takeBackSprout(id: string): Promise<void>;
 

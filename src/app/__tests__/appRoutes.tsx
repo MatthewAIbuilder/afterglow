@@ -17,6 +17,7 @@ import SendSetTimesScreen from '../send-set-times/[id]';
 import SendScreen from '../send';
 import StickerSheetScreen from '../sticker-sheet';
 import GardenScreen from '../garden';
+import GardenVisitScreen from '../garden-visit';
 import AddFriendScreen from '../add/[handle]';
 import AccountScreen from '../account';
 import CameraScreen from '../camera';
@@ -100,6 +101,7 @@ export const APP_ROUTES = {
   send: SendScreen,
   'sticker-sheet': StickerSheetScreen,
   garden: GardenScreen,
+  'garden-visit': GardenVisitScreen,
   'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,
   'festival/[id]': FestivalScreen,

@@ -882,6 +882,19 @@ await t('gift themes: only @matt.raves sends one with a sprout; whoever picks it
   await assertFails(deleteDoc(doc(O.firestore(), 'themeGrants', 'uidN_daisy')));
   await assertSucceeds(deleteDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy')));
 });
+await t('gardens: you show yours (a short list, server-timed), anyone signed in visits, only you change or remove it', async () => {
+  const G = env.authenticatedContext('uidGa'), H = env.authenticatedContext('uidGb');
+  const garden = (over = {}) => ({ residents: [{ k: 's', kind: 'plur', stage: 3 }], updatedAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden()));
+  await assertFails(setDoc(doc(H.firestore(), 'gardens', 'uidGa'), garden()));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ note: 'secret' })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ residents: Array.from({ length: 121 }, () => ({ k: 's' })) })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ updatedAt: new Date(0) })));
+  await assertSucceeds(getDoc(doc(H.firestore(), 'gardens', 'uidGa')));
+  await assertFails(getDoc(doc(anon.firestore(), 'gardens', 'uidGa')));
+  await assertFails(deleteDoc(doc(H.firestore(), 'gardens', 'uidGa')));
+  await assertSucceeds(deleteDoc(doc(G.firestore(), 'gardens', 'uidGa')));
+});
 await t('sprouts: an artist sprout names its artist, both id and name, in shape', async () => {
   await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'profiles', 'uidA'), { handle: 'aa', displayName: 'A' }));
   const A = env.authenticatedContext('uidA');

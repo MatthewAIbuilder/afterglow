@@ -75,6 +75,8 @@ type Stored = {
   wild?: GardenSprout[];
   /** When each festival was first marked going on this phone (0: before sprouts existed). */
   goingSince?: Record<string, number>;
+  /** Your garden isn't shown on your profile (it is unless you say). */
+  gardenHidden?: true;
 };
 
 type Ctx = {
@@ -113,6 +115,9 @@ type Ctx = {
   toAskFollow: GardenSprout[];
   /** Its page was shown. */
   followAsked: (sproutId: string) => void;
+  /** Your garden is shown on your profile (anyone signed in can visit it). */
+  gardenShown: boolean;
+  setGardenShown: (on: boolean) => void;
   /** Give a sprout: a kind, or (with `artist`) the sprout of an artist you've filmed; the developer can add a gift theme. */
   give: (kind: SproutKind, note?: string, artist?: SproutArtist, theme?: ThemeId) => GiveResult;
   takeBack: (id: string) => Promise<boolean>;
@@ -169,6 +174,7 @@ function clean(raw: unknown): Stored {
     ...(o.artistShown && typeof o.artistShown === 'object' ? { artistShown: cleanShown(o.artistShown) } : {}),
     ...(typeof o.starterAt === 'number' ? { starterAt: o.starterAt } : {}),
     ...(o.goingSince && typeof o.goingSince === 'object' ? { goingSince: cleanTimes(o.goingSince, true) } : {}),
+    ...(o.gardenHidden === true ? { gardenHidden: true as const } : {}),
     wild: Array.isArray(o.wild)
       ? o.wild.filter((g): g is GardenSprout => !!g && typeof g === 'object' && typeof g.id === 'string' && g.id.startsWith(WILD_PREFIX) && isKind(g.kind) && typeof g.at === 'number').slice(-500)
       : [],
@@ -258,6 +264,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           ...(s.artistShown || cur.artistShown ? { artistShown: { ...s.artistShown, ...cur.artistShown } } : {}),
           starterAt: s.starterAt ?? cur.starterAt ?? Date.now(),
           ...(s.goingSince || cur.goingSince ? { goingSince: { ...cur.goingSince, ...s.goingSince } } : {}),
+          ...(s.gardenHidden || cur.gardenHidden ? { gardenHidden: true as const } : {}),
           wild: [...(s.wild ?? []), ...(cur.wild ?? []).filter((w) => !(s.wild ?? []).some((x) => x.id === w.id))],
         }));
       })
@@ -664,6 +671,16 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       setStored((s) => (s.garden.some((g) => g.id === sproutId && g.account === accountRef.current && !g.followAsked) ? { ...s, garden: s.garden.map((g) => (g.id === sproutId && g.account === accountRef.current ? { ...g, followAsked: true } : g)) } : s)),
     [setStored],
   );
+  const gardenShown = !stored.gardenHidden;
+  const setGardenShown = useCallback(
+    (on: boolean) =>
+      setStored((s) => {
+        if (on === !s.gardenHidden) return s;
+        const { gardenHidden: _was, ...rest } = s;
+        return on ? rest : { ...rest, gardenHidden: true };
+      }),
+    [setStored],
+  );
   // Each gift theme's grant saved on Afterglow, so your profile can show its background (tried again on the next round).
   const granting = useRef(new Set<string>());
   useEffect(() => {
@@ -680,8 +697,8 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   }, [account, online, social.availability.ok, social.service, stored.garden, back, setStored]);
 
   const value = useMemo<Ctx>(
-    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, toAskFollow, followAsked, give, takeBack, claim, checkGift, refresh }),
-    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, toAskFollow, followAsked, give, takeBack, claim, checkGift, refresh],
+    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, toAskFollow, followAsked, gardenShown, setGardenShown, give, takeBack, claim, checkGift, refresh }),
+    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, toAskFollow, followAsked, gardenShown, setGardenShown, give, takeBack, claim, checkGift, refresh],
   );
   return <SproutsContext.Provider value={value}>{children}</SproutsContext.Provider>;
 }

@@ -485,6 +485,16 @@ service cloud.firestore {
         || ((resource.data.from == me() || resource.data.get('to', '') == me()) && !exists(path('profiles', me())))
       );
     }
+    // Gardens as shown on profiles: who lives there (kinds, stages, artists and levels; nothing private),
+    // written by their owner, visited by anyone signed in.
+    match /gardens/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['residents', 'updatedAt'])
+        && request.resource.data.residents is list && request.resource.data.residents.size() <= 120
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && me() == uid;
+    }
     // Gift themes you were given (`<uid>_<theme>`): made by you from a sprout you picked up that came with
     // that theme. Read and removed only by you; the profile rules check it before showing the background.
     match /themeGrants/{id} {

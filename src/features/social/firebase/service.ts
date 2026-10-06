@@ -15,6 +15,7 @@ import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
+import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc } from './mapping';
 
@@ -302,6 +303,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // Your messages to support, and their replies.
         const asked = await getDocs(query(collection(db, 'support'), where('uid', '==', user.uid), limit(500))).catch(() => null);
         for (const d of asked?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+        // Your garden as shown on your profile.
+        await deleteDoc(doc(db, 'gardens', user.uid)).catch(() => {});
         // Gift themes you were given.
         for (const theme of GIFT_THEME_IDS) await deleteDoc(doc(db, 'themeGrants', `${user.uid}_${theme}`)).catch(() => {});
         // Sprouts you gave and picked up go too (the rules allow it once the profile is gone).
@@ -1298,6 +1301,18 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const user = me();
         const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('to', '==', user.uid), orderBy('claimedAt', 'desc'), limit(max)));
         return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    publishGarden: (residents) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'gardens', user.uid);
+        if (!residents) await deleteDoc(ref);
+        else await setDoc(ref, { residents: residents.slice(0, PUBLIC_GARDEN_MAX), updatedAt: serverTimestamp() });
+      }),
+    gardenOf: (uid) =>
+      guard(async () => {
+        const d = await getDoc(doc(fb().db, 'gardens', uid));
+        return d.exists() ? cleanPublicGarden((d.data() as { residents?: unknown }).residents) : null;
       }),
     grantTheme: (sproutId, theme) =>
       guard(async () => {

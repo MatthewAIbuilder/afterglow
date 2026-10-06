@@ -3,6 +3,7 @@ import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comme
 import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
+import { cleanPublicGarden, type PublicResident } from '../../sprouts/publicGarden';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -32,6 +33,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const sprouts = new Map<string, Sprout>();
   /** Gift themes granted, as `uid_theme`. */
   const themeGrants = new Set<string>();
+  /** Gardens as shown on profiles. */
+  const gardens = new Map<string, PublicResident[]>();
   /** Picks as `crewId/uid`. */
   const picks = new Map<string, CrewPicks>();
   const comments = new Map<string, Comment>();
@@ -1096,6 +1099,17 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const u = me();
       return [...sprouts.values()].filter((s) => s.from === u.uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
+    async publishGarden(residents) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      if (residents) gardens.set(u.uid, cleanPublicGarden(residents));
+      else gardens.delete(u.uid);
+    },
+    async gardenOf(uid) {
+      if (network.down) throw new SocialError('network');
+      me();
+      return gardens.get(uid) ?? null;
+    },
     async grantTheme(sproutId, theme) {
       if (network.down) throw new SocialError('network');
       const u = me();
@@ -1205,5 +1219,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
+  return { service, gardens, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
 }

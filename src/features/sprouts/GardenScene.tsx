@@ -52,6 +52,8 @@ type Props = {
   onOpen: (id: string) => void;
   /** Something is being carried (the page shouldn't scroll under it). */
   onCarrying?: (on: boolean) => void;
+  /** Visiting someone else's garden: nothing can be moved, and a tap makes a resident dance. */
+  visiting?: boolean;
 };
 
 /** Hold this long to pick something up (a shorter touch is a tap, or a scroll). */
@@ -59,7 +61,7 @@ export const LIFT_MS = 260;
 /** Arrivals since this long ago glow. */
 const lagSpring = { damping: 16, stiffness: 150, mass: 0.6 };
 
-export function GardenScene({ residents, account, width, focused, ready, onOpen, onCarrying }: Props) {
+export function GardenScene({ residents, account, width, focused, ready, onOpen, onCarrying, visiting = false }: Props) {
   const reduce = useReducedMotion();
   const running = focused && !reduce;
   // One clock for the whole garden.
@@ -82,9 +84,9 @@ export function GardenScene({ residents, account, width, focused, ready, onOpen,
   );
   // Keep where everyone stands (new arrivals placed, the departed freed), once the garden is known.
   useEffect(() => {
-    if (!ready || !layoutReady || !residents.length || samePlacement(layout, placement)) return;
+    if (visiting || !ready || !layoutReady || !residents.length || samePlacement(layout, placement)) return;
     save(placement);
-  }, [ready, layoutReady, residents.length, layout, placement, save]);
+  }, [visiting, ready, layoutReady, residents.length, layout, placement, save]);
   const placementRef = useRef(placement);
   useEffect(() => {
     placementRef.current = placement;
@@ -128,9 +130,11 @@ export function GardenScene({ residents, account, width, focused, ready, onOpen,
   const sprouts = residents.filter((r) => 'kind' in r.look).length;
   const artists = residents.length - sprouts;
   const sproutsLine = tn(sprouts, '{n} sprout', '{n} sprouts');
-  const label = artists
-    ? t('A night meadow with {sprouts} and {collectibles}. Hold and drag one to move it.', { sprouts: sproutsLine, collectibles: tn(artists, '{n} artist collectible', '{n} artist collectibles') })
-    : t('A night meadow with {sprouts}. Hold and drag one to move it.', { sprouts: sproutsLine });
+  const label = visiting
+    ? t('A night meadow with {sprouts} and {collectibles}. Tap one to make it dance.', { sprouts: sproutsLine, collectibles: tn(artists, '{n} artist collectible', '{n} artist collectibles') })
+    : artists
+      ? t('A night meadow with {sprouts} and {collectibles}. Hold and drag one to move it.', { sprouts: sproutsLine, collectibles: tn(artists, '{n} artist collectible', '{n} artist collectibles') })
+      : t('A night meadow with {sprouts}. Hold and drag one to move it.', { sprouts: sproutsLine });
 
   return (
     <View style={{ width, height: m.height }} accessible={false}>
@@ -159,6 +163,7 @@ export function GardenScene({ residents, account, width, focused, ready, onOpen,
             onPick={pick}
             onDrop={drop}
             onRelease={release}
+            visiting={visiting}
           />
         );
       })}
@@ -185,9 +190,10 @@ type CreatureProps = {
   onPick: (id: string) => void;
   onDrop: (id: string, spot: number) => void;
   onRelease: () => void;
+  visiting: boolean;
 };
 
-function Creature({ r, spot, spots, colWidth, scale, names, width, clock, running, reduce, carrying, glance, onOpen, onPick, onDrop, onRelease }: CreatureProps) {
+function Creature({ r, spot, spots, colWidth, scale, names, width, clock, running, reduce, carrying, glance, onOpen, onPick, onDrop, onRelease, visiting }: CreatureProps) {
   const size = Math.round(r.size * scale * (0.9 + 0.1 * spot.depth));
   const pace: Pace = paceOf(r.id);
   const bobC = pace.bob;
@@ -216,7 +222,10 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
       py.set(withSpring(sy, motion.gentle));
     }
   }, [sx, sy, reduce, px, py]);
+  // A tap while visiting: a hop and a spin.
+  const dance = useSharedValue(0);
   const pan = Gesture.Pan()
+    .enabled(!visiting)
     .activateAfterLongPress(LIFT_MS)
     .withTestId(`garden-move-${r.id}`)
     .onStart(() => {
@@ -276,10 +285,14 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
     const ahead = running ? wander((t + 0.002) % 1, legs, phase).x - w.x : 0;
     const step = running ? Math.abs(sine(t, 60, phase)) * w.walking * (1 - up) : 0;
     const lean = Math.sign(ahead) * w.walking * 6 * (1 - up);
+    const d = dance.get();
+    // Up and back down twice while turning all the way round.
+    const hop = Math.abs(Math.sin(d * Math.PI * 2));
     return {
       transform: [
-        { translateY: -bob * size * 0.03 - step * size * 0.05 - up * size * 0.14 },
+        { translateY: -bob * size * 0.03 - step * size * 0.05 - up * size * 0.14 - hop * size * 0.22 },
         { rotate: `${tilt.get() + lean}deg` },
+        { rotateY: `${d * 360}deg` },
         { scale: 1 + up * 0.15 },
         { scaleX: 1 + sq * 0.09 },
         { scaleY: 1 - sq * 0.11 },
@@ -296,6 +309,13 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
   const glowStyle = useAnimatedStyle(() => ({ opacity: running ? 0.55 + 0.45 * sine(clock.get(), 12, phase) : 0.8 }));
 
   const open = () => {
+    if (visiting) {
+      haptic.tap();
+      if (reduce) dance.set(0);
+      else dance.set(withSequence(withTiming(0, { duration: 0 }), withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) })));
+      onOpen(r.id);
+      return;
+    }
     haptic.select();
     onOpen(r.id);
   };
@@ -330,7 +350,7 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
             delayLongPress={LIFT_MS}
             accessibilityRole="button"
             accessibilityLabel={r.label}
-            accessibilityHint={t('Hold and drag to move')}
+            accessibilityHint={visiting ? t('Tap to make it dance') : t('Hold and drag to move')}
             style={({ pressed }) => [{ width: size, height: size }, pressed && !carrying && styles.pressed]}
           >
             {'kind' in look ? <Sprout kind={look.kind} stage={look.stage} size={size} still={reduce} scene driven={driven} /> : <Sprout artist={look.artist} tier={look.tier} size={size} still={reduce} scene driven={driven} />}

@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { BadgeCelebration } from '../features/profile/BadgeCelebration';
@@ -193,6 +193,23 @@ export default function GardenScreen() {
           onCarrying={setCarrying}
         />
         <Text style={styles.hint}>{GROW_TIPS[0]} {t('Sprouts you give help yours grow too.')} {t('Hold one to move it.')}</Text>
+        {social.profile ? (
+          <View style={styles.showRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.showTitle}>{t('Show my garden on my profile')}</Text>
+              <Text style={styles.hint}>{t('Friends can visit and make your sprouts dance. Only who lives here shows, never notes.')}</Text>
+            </View>
+            <Switch
+              value={sprouts.gardenShown}
+              onValueChange={(on) => {
+                haptic.select();
+                sprouts.setGardenShown(on);
+              }}
+              accessibilityLabel={t('Show my garden on my profile')}
+              trackColor={{ true: SPROUT_GREEN, false: 'rgba(255,255,255,0.15)' }}
+            />
+          </View>
+        ) : null}
 
         <FindsSection />
         <ArtistSproutsSection earned={sprouts.artists} given={givenArtists} />
@@ -312,6 +329,8 @@ function SproutSheet({ sprout, onClose }: { sprout?: GardenView; onClose: () => 
 }
 
 const styles = StyleSheet.create({
+  showRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm },
+  showTitle: { ...type.headline, color: color.moon },
   root: { flex: 1, backgroundColor: color.night },
   content: { paddingHorizontal: space.xl, gap: space.md, maxWidth: CONTENT_MAX, width: '100%', alignSelf: 'center' },
   title: { ...type.largeTitle, color: color.moon },

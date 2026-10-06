@@ -15,6 +15,7 @@ import { QuestToast } from '../features/quests/QuestToast';
 import { WhatsNewLauncher } from '../features/whatsNew/WhatsNewLauncher';
 import { ThemeKeeper } from '../features/themes/ThemeKeeper';
 import { SproutFollowKeeper } from '../features/sprouts/SproutFollowKeeper';
+import { GardenPublisher } from '../features/sprouts/GardenPublisher';
 import { SecretStage } from '../features/secrets/SecretStage';
 import { SunriseWatcher } from '../features/secrets/SunriseWatcher';
 import { FirstRun } from '../features/welcome/FirstRun';
@@ -246,6 +247,7 @@ export default function RootLayout() {
       <WhatsNewLauncher />
       <ThemeKeeper />
       <SproutFollowKeeper />
+      <GardenPublisher />
       <QuestTracker />
       <DailyQuestTracker />
       <LevelSync />
