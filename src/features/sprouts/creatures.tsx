@@ -300,67 +300,116 @@ const eye: Draw = (p, f) => {
   };
 };
 
+/** ILLENIUM's: a phoenix rising through a starry night, its wings raised high in flame, a white-hot ember at its heart and a long streaming tail. */
 const phoenix: Draw = (p, f) => {
+  // Wing feathers fanning up and out from the shoulder: tip x, y, width, curl.
   const feathers: [number, number, number, number][] = [
-    [19, 12, 9.5, -9],
-    [9, 25, 9.5, -8],
-    [7, 39, 8.5, -6],
-    [12, 52, 7.5, -4],
-    [21, 61, 6, -2],
+    [25, 4, 7, -10],
+    [18, 9, 8.5, -10],
+    [9, 20, 8.5, -9],
+    [4, 33, 8, -7],
+    [6, 45, 7, -5],
+    [13, 55, 6, -3],
+    [23, 61, 5, -1],
   ];
   const wing = (
     <G>
       {feathers.map(([tx, ty, w, b], i) => (
         <G key={i}>
-          <V d={flame(45, 53, tx, ty, w, b)} fill={p.altDeep} f={f} />
-          <V d={flame(45, 53, 45 + (tx - 45) * 0.84, 53 + (ty - 53) * 0.84, w * 0.66, b * 0.82)} fill={p.alt} f={f} />
-          <Path d={flame(45, 53, 45 + (tx - 45) * 0.58, 53 + (ty - 53) * 0.58, w * 0.3, b * 0.45)} fill={p.light} opacity={0.9} />
+          <V d={flame(44, 50, tx, ty, w, b)} fill={p.altDeep} f={f} />
+          <V d={flame(44, 50, 44 + (tx - 44) * 0.86, 50 + (ty - 50) * 0.86, w * 0.68, b * 0.84)} fill={p.mid} f={f} />
+          <Path d={flame(44, 50, 44 + (tx - 44) * 0.7, 50 + (ty - 50) * 0.7, w * 0.4, b * 0.6)} fill={p.alt} opacity={0.95} />
+          <Path d={flame(44, 50, 44 + (tx - 44) * 0.46, 50 + (ty - 50) * 0.46, w * 0.18, b * 0.36)} fill={p.light} opacity={0.9} />
         </G>
       ))}
     </G>
   );
+  // The tail: long streamers trailing down, the outer ones curling away.
+  const tail: [number, number, number, number][] = [
+    [50, 99, 6.5, 0],
+    [40, 97, 5, 7],
+    [60, 97, 5, -7],
+    [29, 91, 4.2, 10],
+    [71, 91, 4.2, -10],
+  ];
   return {
-    ground: [50, 94, 16],
+    ground: [50, 96, 14],
+    back: (
+      <G>
+        {/* The night it rises through: a cool blue haze with stars. */}
+        <Ellipse cx={50} cy={50} rx={44} ry={42} fill="#3B5FA8" opacity={0.28} />
+        <Ellipse cx={50} cy={44} rx={30} ry={28} fill={p.glow} opacity={0.14} />
+        {sparkles('#BFD6FF', [
+          [12, 14, 1.6],
+          [86, 18, 1.3],
+          [90, 62, 1.5],
+          [9, 70, 1.2],
+          [78, 84, 1],
+          [22, 86, 1],
+        ])}
+      </G>
+    ),
+    flap: true,
+    pivot: [50, 52],
+    sway: both(wing),
     flicker: (
       <G>
-        <Ellipse cx={50} cy={46} rx={34} ry={26} fill={p.alt} opacity={0.12} />
-        {both(wing)}
-        {(
-          [
-            [50, 95, 7, 0],
-            [38, 91, 5.5, 5],
-            [62, 91, 5.5, -5],
-          ] as const
-        ).map(([tx, ty, w, b], i) => (
+        {tail.map(([tx, ty, w, b], i) => (
           <G key={i}>
             <V d={flame(50, 66, tx, ty, w, b)} fill={p.altDeep} f={f} />
-            <V d={flame(50, 66, 50 + (tx - 50) * 0.78, 66 + (ty - 66) * 0.78, w * 0.58, b * 0.7)} fill={p.alt} f={f} />
-            <Path d={flame(50, 66, 50 + (tx - 50) * 0.5, 66 + (ty - 66) * 0.5, w * 0.26, b * 0.4)} fill={p.light} opacity={0.9} />
+            <V d={flame(50, 66, 50 + (tx - 50) * 0.8, 66 + (ty - 66) * 0.8, w * 0.6, b * 0.72)} fill={p.mid} f={f} />
+            <Path d={flame(50, 66, 50 + (tx - 50) * 0.56, 66 + (ty - 66) * 0.56, w * 0.28, b * 0.42)} fill={p.alt} opacity={0.95} />
           </G>
+        ))}
+        {/* Embers drifting off it. */}
+        {(
+          [
+            [27, 24, 1],
+            [74, 22, 0.9],
+            [35, 80, 0.8],
+            [67, 79, 0.9],
+            [50, 18, 0.7],
+          ] as const
+        ).map(([x, y, r], i) => (
+          <Glow key={i} x={x} y={y} r={r} color={p.accent} />
         ))}
       </G>
     ),
     body: (
       <G>
-        {[-16, 0, 16].map((a) => (
-          <V key={a} d={flame(50, 30, 50 + a * 0.6, 10 + Math.abs(a) * 0.32, 3.2, a * 0.16)} fill={p.alt} f={f} />
+        {/* A crest of three plumes swept back. */}
+        {(
+          [
+            [-9, 11, 2.6, -3],
+            [0, 6, 3.2, 3],
+            [9, 11, 2.6, 4],
+          ] as const
+        ).map(([dx, ty, w, b], i) => (
+          <G key={i}>
+            <V d={flame(50, 31, 50 + dx, ty, w, b)} fill={p.altDeep} f={f} />
+            <Path d={flame(50, 31, 50 + dx * 0.8, 31 - (31 - ty) * 0.75, w * 0.45, b * 0.6)} fill={p.alt} />
+          </G>
         ))}
-        <VE cx={50} cy={58} rx={11.5} ry={14} fill={p.mid} f={f} />
-        <VE cx={50} cy={61} rx={6.6} ry={9} fill={p.light} f={f} gloss={false} opacity={0.75} />
-        <Path d="M46 57 q4 2 8 0 M45.6 61 q4.4 2 8.8 0 M46 65 q4 2 8 0" stroke={p.alt} strokeWidth={0.8} fill="none" opacity={0.7} />
-        <Shadow cx={50} cy={46} rx={9} ry={3} f={f} opacity={0.5} />
-        <VE cx={50} cy={37} rx={10} ry={9.6} fill={p.mid} f={f} />
-        <V d="M46.4 41 Q50 39.4 53.6 41 L50 48Z" fill={p.accent} f={f} />
-        <Circle cx={43.6} cy={41.6} r={1.7} fill={p.altDeep} opacity={0.45} />
-        <Circle cx={56.4} cy={41.6} r={1.7} fill={p.altDeep} opacity={0.45} />
+        {/* A slim, tapering body. */}
+        <V d="M50 44 C60 46 61.5 58 57 66 C55 70 52 73 50 74 C48 73 45 70 43 66 C38.5 58 40 46 50 44Z" fill={p.mid} f={f} gloss={[45.5, 52, 2.4, 4.5]} />
+        <Path d="M50 50 C55 52 55.5 61 52.5 67 C51.5 69 50.6 70 50 70.5 C49.4 70 48.5 69 47.5 67 C44.5 61 45 52 50 50Z" fill={p.alt} opacity={0.85} />
+        <Path d="M46.4 58 q3.6 2 7.2 0 M46.8 62.4 q3.2 1.8 6.4 0 M47.6 66.4 q2.4 1.4 4.8 0" stroke={p.altDeep} strokeWidth={0.7} fill="none" opacity={0.55} />
+        {/* The ember at its heart. */}
+        <Glow x={50} y={56} r={2.2} color={p.accent} />
+        <Shadow cx={50} cy={45} rx={8.5} ry={2.6} f={f} opacity={0.45} />
+        <VE cx={50} cy={36} rx={9.6} ry={9.2} fill={p.mid} f={f} />
+        {/* A hooked golden beak. */}
+        <V d="M46.6 40.4 Q50 38.6 53.4 40.4 Q53 44.6 50 48.4 Q49.4 46 48.2 44.4 Q47 42.8 46.6 40.4Z" fill={p.accent} f={f} />
+        <Circle cx={43.8} cy={40.6} r={1.6} fill={p.altDeep} opacity={0.4} />
+        <Circle cx={56.2} cy={40.6} r={1.6} fill={p.altDeep} opacity={0.4} />
       </G>
     ),
     eyes: {
-      box: [40, 31, 20, 10],
+      box: [40, 30, 20, 10],
       el: (
         <G>
-          <VEye x={45.6} y={36.2} r={2.5} f={f} />
-          <VEye x={54.4} y={36.2} r={2.5} f={f} />
+          <VEye x={45.8} y={35.4} r={2.4} f={f} />
+          <VEye x={54.2} y={35.4} r={2.4} f={f} />
         </G>
       ),
     },

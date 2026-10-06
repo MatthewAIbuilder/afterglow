@@ -73,7 +73,7 @@ const P = (light: string, mid: string, deep: string, alt: string, altDeep: strin
 /** Hand-made collectibles, by folded artist name. */
 const SIGNATURES: Record<string, Spec> = {
   subtronics: { creature: 'eye', palette: P('#F4FFE0', '#B6F05A', '#3F8F1A', '#C9A2FF', '#5B2BB0', '#B36BFF', '#9BE84E'), name: t('The Watcher'), theme: t('A big eye with wriggling tentacles') },
-  illenium: { creature: 'phoenix', palette: P('#FFF3D6', '#FF9A4A', '#C2362A', '#FFE08A', '#FF5A2A', '#FFD36B', '#FF7A3D'), name: t('The Phoenix'), theme: t('A phoenix with flaming wings') },
+  illenium: { creature: 'phoenix', palette: P('#FFF3D6', '#FF9A4A', '#C2362A', '#FFE08A', '#FF5A2A', '#FFD36B', '#FF7A3D'), name: t('The Phoenix'), theme: t('A phoenix rising in flame through a starry night') },
   sevenlions: { creature: 'lion', palette: P('#FFF1C9', '#F2B84B', '#A8661C', '#FFB347', '#B8541A', '#FFE9A8', '#F2A23A'), name: t('The Lion'), theme: t('A lion with a glowing mane') },
   zedsdead: { creature: 'ghost', palette: P('#FFFFFF', '#DCD8F2', '#8C88B8', '#9BE84E', '#3E8F1A', '#B6FF6A', '#9BE84E'), name: t('The Ghost'), theme: t('A friendly ghost with glowing eyes') },
   ghengar: { creature: 'ghost', palette: P('#F1E8FF', '#A98CF0', '#4A2E8A', '#FF6AD5', '#7A1E6A', '#FF8AE0', '#A06BFF'), name: t('The Phantom'), theme: t('A grinning phantom'), extra: 'fangs' },
