@@ -3,7 +3,7 @@ import { useNetworkState } from 'expo-network';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, type NativeScrollEvent, type NativeSyntheticEvent, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Linking, type NativeScrollEvent, type NativeSyntheticEvent, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../components/ArtistAvatar';
 import { FilterChips } from '../components/FilterChips';
@@ -15,7 +15,9 @@ import { PageTitle } from '../components/PageTitle';
 import type { Festival } from '../data/types';
 import { FestivalMap } from '../features/festival-map/FestivalMap';
 import { type WhenFilter, WHEN_LABEL, filterWhen, inView, inViewLine, searchMarkers } from '../features/festival-map/explore';
-import { TONE_COLOR } from '../features/festival-map/tones';
+import { SHOW_COLOR, TONE_COLOR } from '../features/festival-map/tones';
+import { type ShowPin, type TourStop, festivalStop, showPinLabel, showPins, tourLine, tourStops } from '../features/festival-map/tour';
+import { localDay, showDateBlock, showTitle } from '../features/artists/shows';
 import { type MapFilter, type Marker, type Region, filterMarkers, inDateOrder, journeyOf, mapMarkers, unplacedLine } from '../features/festival-map/map';
 import { whereWhen } from '../features/festivals/format';
 import { isOffline } from '../features/offline/status';
@@ -82,41 +84,45 @@ export default function FestivalMapScreen() {
     const focus = all.find((m) => m.festival.id === params.focus);
     return focus && !shown.includes(focus) ? [focus, ...shown] : shown;
   }, [all, filter, when, applied, today, params.focus, touring]);
-  // The cards: what's in view once you've moved the map, otherwise all of them; soonest first.
-  const cards = useMemo(
+  // On tour, their upcoming club shows with a place too (from the nightly EDMTrain feed), and every stop in date order.
+  const pins = useMemo<ShowPin[]>(() => (touring ? showPins(catalog.showsOf(touring.id, localDay(today)), localDay(today)) : []), [touring, catalog, today]);
+  const tour = useMemo(() => (touring ? tourStops(markers, pins) : undefined), [touring, markers, pins]);
+  // The cards: what's in view once you've moved the map, otherwise all of them; soonest first. On tour, every stop in date order.
+  const cards = useMemo<TourStop[]>(
     () =>
-      touring
-        ? markers
-        : view
-          ? inView(markers, view, today)
-          : [...markers].sort((a, b) => whenRank(a.festival, today) - whenRank(b.festival, today) || a.festival.name.localeCompare(b.festival.name)),
-    [touring, markers, view, today],
+      tour ??
+      (view
+        ? inView(markers, view, today)
+        : [...markers].sort((a, b) => whenRank(a.festival, today) - whenRank(b.festival, today) || a.festival.name.localeCompare(b.festival.name))
+      ).map(festivalStop),
+    [tour, markers, view, today],
   );
+  const lit = markers.length + pins.length;
   const counts = useMemo(
     () => ({ all: filterMarkers(all, 'all').length, going: filterMarkers(all, 'going').length, love: filterMarkers(all, 'love').length }),
     [all],
   );
   const unplaced = festivals.length - all.length;
   // Yours: a line through them in date order.
-  const journey = useMemo(() => (touring ? markers.map((m) => m.at) : filter === 'going' ? journeyOf(markers).map((m) => m.at) : undefined), [touring, filter, markers]);
+  const journey = useMemo(() => (tour ? tour.map((s) => s.at) : filter === 'going' ? journeyOf(markers).map((m) => m.at) : undefined), [tour, filter, markers]);
   // Looking around counts for the "Explorer" daily quest.
   useEffect(() => bumpQuestEvent('map'), []);
 
   // The cards, in the same order as the lights.
   const [selected, setSelected] = useState<string | undefined>(params.focus && all.some((m) => m.festival.id === params.focus) ? params.focus : undefined);
-  const list = useRef<FlatList<Marker>>(null);
+  const list = useRef<FlatList<TourStop>>(null);
   const cardW = Math.min(420, width - 56);
   const step = cardW + CARD_GAP;
   const choose = useCallback(
     (id: string) => {
       setSelected(id);
-      const i = cards.findIndex((m) => m.festival.id === id);
+      const i = cards.findIndex((c) => c.id === id);
       if (i >= 0) list.current?.scrollToOffset({ offset: i * step, animated: true });
     },
     [cards, step],
   );
   // Whenever the cards change (opening on a festival, moving the map, a filter), keep the chosen one in view, or start from the first.
-  const cardsKey = cards.map((m) => m.festival.id).join('|');
+  const cardsKey = cards.map((c) => c.id).join('|');
   const selectedRef = useRef(selected);
   useEffect(() => {
     selectedRef.current = selected;
@@ -138,10 +144,10 @@ export default function FestivalMapScreen() {
   const onCardsSettled = (e: NativeSyntheticEvent<NativeScrollEvent>) => settleAt(e.nativeEvent.contentOffset.x);
   const settleAt = (x: number) => {
     const i = Math.round(x / step);
-    const m = cards[Math.max(0, Math.min(cards.length - 1, i))];
-    if (m && m.festival.id !== selected) {
+    const c = cards[Math.max(0, Math.min(cards.length - 1, i))];
+    if (c && c.id !== selected) {
       haptic.select();
-      setSelected(m.festival.id);
+      setSelected(c.id);
     }
   };
 
@@ -161,6 +167,7 @@ export default function FestivalMapScreen() {
       <FestivalMap
         testID="festival-map"
         markers={markers}
+        shows={touring ? pins : undefined}
         selected={selected}
         onSelect={choose}
         here={nearby.here}
@@ -205,11 +212,11 @@ export default function FestivalMapScreen() {
             <Text style={styles.title} accessibilityRole="header" numberOfLines={1}>
               {touring ? `${touring.name} on tour` : 'Festival map'}
             </Text>
-            <Text style={styles.sub}>
+            <Text style={styles.sub} numberOfLines={1}>
               {offline
                 ? 'No signal · the streets may not load, the festivals still show'
                 : touring
-                  ? tourLine(markers.length)
+                  ? tourLine(markers.length, pins.length)
                   : view
                     ? `${inViewLine(cards.length)} · ${markers.length} in all`
                     : subLine(markers.length, filter)}
@@ -270,13 +277,13 @@ export default function FestivalMapScreen() {
         </GlassCircleButton>
       </View>
 
-      {cards.length === 0 && view && markers.length ? (
+      {cards.length === 0 && view && lit ? (
         <View style={[styles.empty, { bottom: insets.bottom + space.xl }]} pointerEvents="none">
           <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
           <Text style={styles.emptyTitle}>No festivals here</Text>
           <Text style={styles.emptyText}>Zoom out, or tap Show all.</Text>
         </View>
-      ) : markers.length === 0 ? (
+      ) : lit === 0 ? (
         <View style={[styles.empty, { bottom: insets.bottom + space.xl }]}>
           <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
           <Text style={styles.emptyTitle}>
@@ -296,7 +303,7 @@ export default function FestivalMapScreen() {
             ref={list}
             horizontal
             data={cards}
-            keyExtractor={(m) => m.festival.id}
+            keyExtractor={(c) => c.id}
             showsHorizontalScrollIndicator={false}
             snapToInterval={step}
             decelerationRate="fast"
@@ -306,7 +313,13 @@ export default function FestivalMapScreen() {
             onMomentumScrollEnd={onCardsSettled}
             onScroll={onCardsScroll}
             scrollEventThrottle={32}
-            renderItem={({ item }) => <MapCard marker={item} width={cardW} chosen={item.festival.id === selected} onFocus={() => choose(item.festival.id)} />}
+            renderItem={({ item }) =>
+              item.kind === 'festival' ? (
+                <MapCard marker={item.marker} width={cardW} chosen={item.id === selected} onFocus={() => choose(item.id)} />
+              ) : (
+                <ShowCard pin={item.pin} width={cardW} chosen={item.id === selected} onFocus={() => choose(item.id)} />
+              )
+            }
           />
         </View>
       )}
@@ -315,8 +328,6 @@ export default function FestivalMapScreen() {
 }
 
 const Gap = () => <View style={{ width: CARD_GAP }} />;
-
-const tourLine = (n: number) => (n === 0 ? 'No festivals with a place yet' : n === 1 ? '1 festival' : `${n} festivals, in date order`);
 
 const subLine = (n: number, filter: MapFilter) =>
   n === 0 ? 'Nothing to show here yet' : filter === 'going' ? (n > 1 ? `Your journey · ${n} festivals` : '1 of yours') : filter === 'love' ? `${n} with artists you’d love` : n === 1 ? '1 festival' : `${n} festivals`;
@@ -369,6 +380,52 @@ function MapCard({ marker, width, chosen, onFocus }: { marker: Marker; width: nu
           ))}
         </View>
         <Text style={styles.open}>{chosen ? 'Open ›' : 'Show'}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+/** A club show's card on an artist's tour: its day, venue (or name), town, "Show"; once chosen, it opens the show on EDMTrain. */
+function ShowCard({ pin, width, chosen, onFocus }: { pin: ShowPin; width: number; chosen: boolean; onFocus: () => void }) {
+  const { show } = pin;
+  const block = showDateBlock(show.date);
+  const where = show.name ? [show.venue, show.location].filter(Boolean).join(', ') : show.location;
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        if (!chosen) onFocus();
+        else Linking.openURL(show.link).catch(() => {});
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={showPinLabel(show)}
+      accessibilityHint={chosen ? 'Opens the event page on EDMTrain' : 'Shows it on the map'}
+      testID={`map-card-${show.id}`}
+      style={({ pressed }) => [styles.card, { width }, chosen && { borderColor: SHOW_COLOR }, pressed && { transform: [{ scale: 0.98 }] }]}
+    >
+      <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+      <View style={styles.cardRow}>
+        <View style={styles.date}>
+          <Text style={styles.month}>{block.month}</Text>
+          <Text style={styles.days}>{block.day}</Text>
+        </View>
+        <View style={styles.cardText}>
+          <Text style={styles.cardName} numberOfLines={1}>
+            {showTitle(show)}
+          </Text>
+          {where ? (
+            <Text style={styles.cardMeta} numberOfLines={1}>
+              {where}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      <View style={styles.cardFoot}>
+        <View style={styles.showTag}>
+          <View style={[styles.showTagDot, { borderColor: SHOW_COLOR }]} />
+          <Text style={styles.showTagText}>Show · {block.weekday}</Text>
+        </View>
+        <Text style={styles.open}>{chosen ? 'EDMTrain ↗' : 'See where'}</Text>
       </View>
     </Pressable>
   );
@@ -431,6 +488,9 @@ const styles = StyleSheet.create({
   cardFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   faces: { flexDirection: 'row' },
   open: { ...type.label, color: color.glow },
+  showTag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  showTagDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 2 },
+  showTagText: { ...type.caption, color: color.moonDim },
   empty: {
     position: 'absolute',
     left: space.lg,
