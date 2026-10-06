@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { APP_NAME } from '../../config/app';
 import type { Festival } from '../../data/types';
 import { useCatalog } from '../../state/catalog';
+import { useDayHours } from '../../state/dayHours';
 import { usePlan } from '../../state/plan';
 import { useTaste } from '../../state/taste';
 import { buildSchedule, rankLineup } from './plan';
@@ -17,6 +18,8 @@ export function useFestivalPlan(festival: Festival) {
   const { taste, informed } = useTaste();
   const { artists } = useCatalog();
   const { mustSeesAt } = usePlan();
+  // Your hours each day (arrive, leave, breaks): the route plans inside them.
+  const { hours } = useDayHours(festival.id);
 
   const picks = useMemo(
     () => rankLineup({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id) }),
@@ -25,8 +28,8 @@ export function useFestivalPlan(festival: Festival) {
   const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
   // Every day set to set, from the same live taste and must-sees.
   const route = useMemo(
-    () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id) }) : undefined),
-    [festival, artists, taste, informed, mustSeesAt],
+    () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), hours }) : undefined),
+    [festival, artists, taste, informed, mustSeesAt, hours],
   );
   // Once set times are out, you share the whole route; before, your picks.
   const text = useMemo(
