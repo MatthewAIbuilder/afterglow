@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { BOTTOM, cleanLayouts, colsFor, HORIZON, meadow, moveTo, nearestSpot, placeResidents, ROW_HEIGHT, rowsFor, samePlacement, spotOrder } from '../gardenLayout';
+import { BOTTOM, densityOf, cleanLayouts, colsFor, HORIZON, meadow, moveTo, nearestSpot, placeResidents, ROW_HEIGHT, rowsFor, samePlacement, spotOrder } from '../gardenLayout';
 
 describe('the meadow', () => {
   it('has three spots across on a phone and up to five on a wide page, always with a spare', () => {
@@ -83,5 +83,19 @@ describe('saved layouts', () => {
     expect(cleanLayouts(null)).toEqual({});
     expect(cleanLayouts({ u1: { a: 1, b: 2 }, guest: { starter: 0 } })).toEqual({ u1: { a: 1, b: 2 }, guest: { starter: 0 } });
     expect(cleanLayouts({ u1: { a: 1.5, b: -1, c: 'x', d: 3 }, bad: 5, '': { a: 1 } })).toEqual({ u1: { d: 3 } });
+  });
+
+  it('fits a crowd: smaller and closer as the garden fills, names stepping aside, still one spare spot', () => {
+    expect(densityOf(4)).toEqual({ scale: 1, names: true });
+    expect(densityOf(12)).toMatchObject({ names: true });
+    expect(densityOf(30)).toMatchObject({ names: false });
+    expect(densityOf(100).scale).toBeLessThan(densityOf(30).scale);
+    const few = meadow(4, 342);
+    const many = meadow(100, 342);
+    expect(many.cols).toBeGreaterThan(few.cols);
+    expect(many.cols * many.rows).toBeGreaterThan(100);
+    // Taller than a few, but nothing like a hundred full-size rows.
+    expect(many.height).toBeLessThan(100 * ROW_HEIGHT * 0.3);
+    for (const s of many.spots) expect(s.x).toBeLessThanOrEqual(342);
   });
 });

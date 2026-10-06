@@ -11,7 +11,7 @@ import { type ArtistLook, hashOf, mix } from './artistLook';
 import type { Tier } from './artistSprouts';
 import { HORIZON, type Meadow, meadow, moveTo, nearestSpot, placeResidents, samePlacement, type Spot } from './gardenLayout';
 import { SPROUT_DEEP, SPROUT_GLOW, SPROUT_GREEN } from './look';
-import { CLOCK_MS, type Pace, paceOf, sine } from './motion';
+import { CLOCK_MS, type Pace, paceOf, sine, WANDER_X, WANDER_Y, wander } from './motion';
 import { Sprout } from './Sprout';
 import type { SproutKind, Stage } from './sprouts';
 
@@ -147,6 +147,9 @@ export function GardenScene({ residents, account, width, focused, ready, onOpen,
             spot={spot}
             spots={m.spots}
             colWidth={m.colWidth}
+            scale={m.scale}
+            names={m.names}
+            width={width}
             clock={clock}
             running={running}
             reduce={reduce}
@@ -168,6 +171,11 @@ type CreatureProps = {
   spot: Spot;
   spots: Spot[];
   colWidth: number;
+  /** The meadow's crowding: how big everyone stands, and whether names show. */
+  scale: number;
+  names: boolean;
+  /** The meadow's width, so nobody wanders off the edge. */
+  width: number;
   clock: SharedValue<number>;
   running: boolean;
   reduce: boolean;
@@ -179,11 +187,16 @@ type CreatureProps = {
   onRelease: () => void;
 };
 
-function Creature({ r, spot, spots, colWidth, clock, running, reduce, carrying, glance, onOpen, onPick, onDrop, onRelease }: CreatureProps) {
-  const size = Math.round(r.size * (0.9 + 0.1 * spot.depth));
+function Creature({ r, spot, spots, colWidth, scale, names, width, clock, running, reduce, carrying, glance, onOpen, onPick, onDrop, onRelease }: CreatureProps) {
+  const size = Math.round(r.size * scale * (0.9 + 0.1 * spot.depth));
   const pace: Pace = paceOf(r.id);
   const bobC = pace.bob;
   const phase = pace.phase;
+  const legs = pace.wanders;
+  // How far it strolls from its spot (it always comes back), staying inside the meadow.
+  const reachX = colWidth * WANDER_X;
+  const reachY = size * WANDER_Y * 2;
+  const edge = Math.min(colWidth / 2, size / 2 + 4);
   const px = useSharedValue(spot.x);
   const py = useSharedValue(spot.y);
   const dx = useSharedValue(0);
@@ -246,13 +259,31 @@ function Creature({ r, spot, spots, colWidth, clock, running, reduce, carrying, 
       runOnJS(onRelease)();
     });
 
-  const placeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: px.get() + dx.get() }, { translateY: py.get() + dy.get() }] }));
+  // Wandering about its spot on the garden's clock, set down while it's carried.
+  const placeStyle = useAnimatedStyle(() => {
+    const away = 1 - Math.min(1, lift.get());
+    const w = running ? wander(clock.get(), legs, phase) : { x: 0, y: 0, walking: 0 };
+    const x = Math.max(edge, Math.min(width - edge, px.get() + w.x * reachX * away));
+    return { transform: [{ translateX: x + dx.get() }, { translateY: py.get() + dy.get() + w.y * reachY * away }] };
+  });
   const bodyStyle = useAnimatedStyle(() => {
     const up = lift.get();
     const sq = squash.get();
-    const bob = running ? sine(clock.get(), bobC, phase) : 0;
+    const t = clock.get();
+    const bob = running ? sine(t, bobC, phase) : 0;
+    // Walking: little hops in step, leaning the way it's going.
+    const w = running ? wander(t, legs, phase) : { x: 0, y: 0, walking: 0 };
+    const ahead = running ? wander((t + 0.002) % 1, legs, phase).x - w.x : 0;
+    const step = running ? Math.abs(sine(t, 60, phase)) * w.walking * (1 - up) : 0;
+    const lean = Math.sign(ahead) * w.walking * 6 * (1 - up);
     return {
-      transform: [{ translateY: -bob * size * 0.03 - up * size * 0.14 }, { rotate: `${tilt.get()}deg` }, { scale: 1 + up * 0.15 }, { scaleX: 1 + sq * 0.09 }, { scaleY: 1 - sq * 0.11 }],
+      transform: [
+        { translateY: -bob * size * 0.03 - step * size * 0.05 - up * size * 0.14 },
+        { rotate: `${tilt.get() + lean}deg` },
+        { scale: 1 + up * 0.15 },
+        { scaleX: 1 + sq * 0.09 },
+        { scaleY: 1 - sq * 0.11 },
+      ],
     };
   });
   // Its shadow on the ground: smaller and fainter the higher it floats.
@@ -305,10 +336,12 @@ function Creature({ r, spot, spots, colWidth, clock, running, reduce, carrying, 
             {'kind' in look ? <Sprout kind={look.kind} stage={look.stage} size={size} still={reduce} scene driven={driven} /> : <Sprout artist={look.artist} tier={look.tier} size={size} still={reduce} scene driven={driven} />}
           </Pressable>
         </Animated.View>
-        <Text style={styles.name} numberOfLines={1}>
-          {r.name}
-        </Text>
-        {r.bar ? (
+        {names ? (
+          <Text style={styles.name} numberOfLines={1}>
+            {r.name}
+          </Text>
+        ) : null}
+        {names && r.bar ? (
           <View style={styles.bar}>
             <View style={[styles.barFill, { width: `${Math.round(Math.max(0, Math.min(1, r.bar.at)) * 100)}%`, backgroundColor: r.bar.color }]} />
           </View>
