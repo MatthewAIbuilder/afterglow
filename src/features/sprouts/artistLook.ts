@@ -45,7 +45,8 @@ export type Creature =
   | 'confetti'
   | 'frog'
   // Signatures added later.
-  | 'wobble';
+  | 'wobble'
+  | 'patchbear';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -90,6 +91,7 @@ const SIGNATURES: Record<string, Spec> = {
   sloth: { creature: 'sloth', palette: P('#F2E4CC', '#B8936A', '#6B4A2E', '#8FD67A', '#5A3A22', '#2E2018', '#C9A57E'), name: t('The Sloth'), theme: t('A sloth hanging around') },
   reaper: { creature: 'reaper', palette: P('#A8A2C8', '#5A5480', '#1E1A34', '#E8E4F8', '#8E88AA', '#B9F3FF', '#8FA6FF'), name: t('The Reaper'), theme: t('A hooded reaper under the moon') },
   levity: { creature: 'jelly', palette: P('#E8F8FF', '#6FC3FF', '#2A6AC8', '#B9F3FF', '#4A8AE8', '#FFFFFF', '#6FC3FF'), name: t('The Floater'), theme: t('A jellyfish floating by') },
+  levelup: { creature: 'patchbear', palette: P('#C8F59A', '#78C84A', '#3E7A22', '#6A2E86', '#2E0F3E', '#B6FF6A', '#8FE05A'), name: t('The Patched bear'), theme: t('A stitched-up teddy with one eye sewn shut') },
   ganjawhitenight: { creature: 'wobble', palette: P('#FFB27A', '#E8762A', '#9A3E12', '#8E4FE0', '#3E1A6E', '#FF4FE0', '#FF4FE0'), name: t('The Wobbler'), theme: t('A round fellow with a glowing bucket for a head') },
   troyboi: { creature: 'cat', palette: P('#FFF2D6', '#D9A66B', '#7A4E26', '#2A2030', '#0E0A14', '#FFD24A', '#FFD24A'), name: t('The King cat'), theme: t('A cat with a crown'), extra: 'crown' },
 };

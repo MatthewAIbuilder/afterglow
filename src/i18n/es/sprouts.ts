@@ -354,4 +354,6 @@ export const es_sprouts: Dictionary = {
   '@{handle} gave you this sprout. Follow to see their videos, plans and festivals.': '@{handle} te regaló este brote. Síguele para ver sus videos, planes y festivales.',
   'The Wobbler': 'El Tambaleante',
   'A round fellow with a glowing bucket for a head': 'Un tipo redondo con un cubo brillante por cabeza',
+  'The Patched bear': 'El Oso remendado',
+  'A stitched-up teddy with one eye sewn shut': 'Un peluche cosido con un ojo cerrado a puntadas',
 };
