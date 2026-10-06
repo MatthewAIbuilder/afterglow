@@ -20,6 +20,8 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { whereLine } from '../../features/memories/where';
 import { b2bLine } from '../../features/memories/b2b';
 import { useClipLoop } from '../../features/memories/useClipLoop';
+import { fitFor } from '../../features/memories/videoFit';
+import { useVideoSize } from '../../features/memories/useVideoSize';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
 import { SheetClose } from '../../components/SheetClose';
@@ -48,6 +50,8 @@ function MemoryPage({ id, active }: { id: string; active: boolean }) {
     p.loop = true;
   });
   useClipLoop(player, m?.clip);
+  // Its real shape: fills the screen only when that crops very little, else shows whole.
+  const videoSize = useVideoSize(player, uri ?? undefined, m);
   const [paused, setPaused] = useState(false);
   // Only the video in view plays (swiping through your moments), unless you paused it.
   useEffect(() => {
@@ -110,7 +114,7 @@ function MemoryPage({ id, active }: { id: string; active: boolean }) {
   return (
     <View style={styles.root}>
       <Pressable style={StyleSheet.absoluteFill} onPress={toggle} accessibilityRole="button" accessibilityLabel={paused ? tc('video', 'Play') : t('Pause')}>
-        <VideoView player={player} style={StyleSheet.absoluteFill} contentFit={!(m.width && m.height) || m.height >= m.width ? 'cover' : 'contain'} nativeControls={false} playsInline />
+        <VideoView player={player} style={StyleSheet.absoluteFill} contentFit={fitFor(videoSize, screen)} nativeControls={false} playsInline />
       </Pressable>
       {/* How it looks once shared: the edge glow (unless you have Afterglow Plus). */}
       {showsGlow(mine) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label active={!paused} /> : null}
