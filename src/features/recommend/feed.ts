@@ -1,3 +1,4 @@
+import { partnersOf } from '../../data/b2b';
 import type { Artist, Clip, TasteProfile } from '../../data/types';
 import type { Reaction } from '../../state/reactions';
 import { isCold, type Rating, type Ratings } from '../taste/ratings';
@@ -193,7 +194,11 @@ export function scoreClips({ clips, artists, taste, informed, reactions, seen, n
 
   const items: FeedItem[] = [];
   for (const clip of clips) {
-    const artist = byId.get(clip.artistId);
+    // A back to back is ranked by the artist in it you like best.
+    const artist = [clip.artistId, ...partnersOf(clip)]
+      .map((id) => byId.get(id))
+      .filter((a): a is Artist => !!a)
+      .reduce<Artist | undefined>((best, a) => (!best || (taste[a.id] ?? 0) > (taste[best.id] ?? 0) ? a : best), undefined);
     if (!artist) continue;
     const { lane, reason, nearness } = laneOf(artist, taste, anchors, informed, similarity);
     const r = reactions[clip.id];

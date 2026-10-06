@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { reloadApp } from '../lib/reload';
 import { useSocial } from '../state/social';
+import { useSprouts } from '../state/sprouts';
 import { PALETTES, type ThemeId } from '../theme/palettes';
 import { writeStoredTheme } from '../theme/storedTheme';
 import { color, glowA, nightA, radius, space, THEME_ID, type } from '../theme/tokens';
@@ -29,29 +30,34 @@ const SWAP_MS = 650;
  * and Aurora are free, the rest come with Plus (anyone can preview them),
  * and a theme made for you comes first. Putting one on can match your
  * profile background too, then Afterglow starts again in the new colours.
- * `?gift=1` opens it on a theme made for you.
+ * `?gift=1` opens it on a theme made for you; `?gift=<theme>` on a gift theme
+ * that came with a sprout (`&wear=1` puts it on by itself: a brand-new account).
  */
 export default function ThemesScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const reduce = useReducedMotion();
-  const { gift } = useLocalSearchParams<{ gift?: string }>();
+  const { gift, wear: wearParam } = useLocalSearchParams<{ gift?: string; wear?: string }>();
   const social = useSocial();
   const uid = social.user?.uid;
   const me = social.profile;
   const plus = !!useStanding(uid)?.plus;
-  const choices = themeChoices(uid);
-  const giftTheme = gift ? choices.find((x) => x.only) : undefined;
+  const given = useSprouts().giftThemes;
+  const gifts = given.map((g) => g.theme);
+  const choices = themeChoices(uid, gifts);
+  const giftTheme = gift === '1' ? choices.find((x) => x.only) : gift ? choices.find((x) => x.gift && x.id === gift) : undefined;
+  // Who gave it (a gift theme that came with a sprout).
+  const givenBy = giftTheme?.gift ? given.find((g) => g.theme === giftTheme.id)?.handle : undefined;
   const [picked, setPicked] = useState<ThemeId>(giftTheme?.id ?? THEME_ID);
   const [match, setMatch] = useState(true);
   const [swapping, setSwapping] = useState<ThemeId>();
 
   const theme = themeOf(picked);
-  const locked = !canUseTheme(theme, uid, plus);
+  const locked = !canUseTheme(theme, uid, plus, gifts);
   const changed = picked !== THEME_ID;
   const pairing = theme.backdrop ? backdropOf(theme.backdrop) : undefined;
   // Matching the profile only when there's a profile and its background is theirs to use.
-  const canMatch = !!me && !!pairing && canUse(pairing, uid, plus) && me.backdrop !== pairing.id;
+  const canMatch = !!me && !!pairing && canUse(pairing, uid, plus, gifts) && me.backdrop !== pairing.id;
 
   const pageW = Math.min(width, 640);
   const inner = pageW - space.xl * 2;
@@ -81,7 +87,19 @@ export default function ThemesScreen() {
     setTimeout(() => void reloadApp(), reduce ? 50 : SWAP_MS);
   };
 
-  const title = giftTheme ? t('Made just for you') : t('App theme');
+  // A brand-new account given a theme with its sprout: it goes on by itself, after a moment to see it.
+  const autoWear = wearParam === '1' && !!giftTheme?.gift && giftTheme.id === picked && changed && !locked;
+  const wearRef = useRef(wear);
+  useEffect(() => {
+    wearRef.current = wear;
+  });
+  useEffect(() => {
+    if (!autoWear) return;
+    const timer = setTimeout(() => void wearRef.current(), reduce ? 400 : 1800);
+    return () => clearTimeout(timer);
+  }, [autoWear, reduce]);
+
+  const title = giftTheme?.gift ? (givenBy ? t('A gift from @{handle}', { handle: givenBy }) : t('A gift for you')) : giftTheme ? t('Made just for you') : t('App theme');
   return (
     <View style={styles.root}>
       <PageTitle title={t('App theme')} />
@@ -93,7 +111,11 @@ export default function ThemesScreen() {
           {title}
         </Text>
         <Text style={styles.body}>
-          {giftTheme
+          {giftTheme?.gift
+            ? autoWear
+              ? t('{theme} came with your sprout: a look for the whole app, and a profile background to match. Putting it on now.', { theme: giftTheme.name })
+              : t('{theme} came with your sprout: a look for the whole app, and a profile background to match. Put it on, or keep looking.', { theme: giftTheme.name })
+            : giftTheme
             ? t("{theme}: a look for your whole Afterglow, and nobody else's. Put it on, or keep looking.", { theme: giftTheme.name })
             : t('Change the colours of the whole app: the sky, the glow, buttons and the tab bar. Afterglow starts again in the new look.')}
         </Text>
@@ -107,27 +129,28 @@ export default function ThemesScreen() {
             <Text style={styles.name}>{theme.name}</Text>
             <Text style={styles.about}>{theme.about}</Text>
             {pairing ? <Text style={styles.pair}>{t('With the {backdrop} profile background', { backdrop: pairing.name })}</Text> : null}
-            {tagOf(theme, uid, plus) ? <Text style={[styles.tagLine, theme.only ? styles.tagSpecial : styles.tagPlus]}>{tagOf(theme, uid, plus)}</Text> : null}
+            {tagOf(theme, uid, plus, gifts) ? <Text style={[styles.tagLine, theme.only || theme.gift ? styles.tagSpecial : styles.tagPlus]}>{tagOf(theme, uid, plus, gifts)}</Text> : null}
           </View>
         </View>
 
         <View style={[styles.grid, { gap: space.md }]}>
           {choices.map((th) => {
             const on = picked === th.id;
-            const tag = tagOf(th, uid, plus);
+            const tag = tagOf(th, uid, plus, gifts);
+            const kind = th.only ? t('Made for you') : th.gift ? t('Gift') : th.plus ? t('Plus') : t('Free');
             return (
               <Pressable
                 key={th.id}
                 onPress={() => pick(th.id)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={th.id === THEME_ID ? t('{theme}. {kind}. Your theme now', { theme: th.name, kind: th.only ? t('Made for you') : th.plus ? t('Plus') : t('Free') }) : t('{theme}. {kind}', { theme: th.name, kind: th.only ? t('Made for you') : th.plus ? t('Plus') : t('Free') })}
+                accessibilityLabel={th.id === THEME_ID ? t('{theme}. {kind}. Your theme now', { theme: th.name, kind }) : t('{theme}. {kind}', { theme: th.name, kind })}
                 style={({ pressed }) => [{ width: tileW }, pressed && styles.pressed]}
               >
                 <View style={[styles.tile, { height: tileH }, on && { borderColor: PALETTES[th.id].glow }]}>
                   <ThemeSwatch id={th.id} width={tileW} height={tileH} />
                   {tag ? (
-                    <View style={[styles.tag, th.only ? styles.tagBgSpecial : styles.tagBgPlus]}>
+                    <View style={[styles.tag, th.only || th.gift ? styles.tagBgSpecial : styles.tagBgPlus]}>
                       <Text style={styles.tagText}>{tag}</Text>
                     </View>
                   ) : null}
@@ -136,7 +159,7 @@ export default function ThemesScreen() {
                   {th.name}
                 </Text>
                 <Text style={styles.tileDetail} numberOfLines={1}>
-                  {th.id === THEME_ID ? t('Now') : th.only ? t('Made for you') : th.plus ? t('Plus') : t('Free')}
+                  {th.id === THEME_ID ? t('Now') : kind}
                 </Text>
               </Pressable>
             );
@@ -178,8 +201,9 @@ export default function ThemesScreen() {
   );
 }
 
-function tagOf(th: AppTheme, uid: string | undefined, plus: boolean): string | undefined {
+function tagOf(th: AppTheme, uid: string | undefined, plus: boolean, gifts: readonly string[]): string | undefined {
   if (th.only) return t('♥ Yours');
+  if (th.gift) return canUseTheme(th, uid, plus, gifts) ? t('♥ Gift') : undefined;
   if (th.plus) return canUseTheme(th, uid, plus) ? 'PLUS' : 'PLUS 🔒';
   return undefined;
 }

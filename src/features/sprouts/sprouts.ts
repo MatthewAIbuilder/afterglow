@@ -1,3 +1,4 @@
+import type { ThemeId } from '../../theme/palettes';
 import { WEB_URL } from '../../config/app';
 import type { Festival } from '../../data/models';
 import { runsOf } from '../festivals/when';
@@ -98,6 +99,17 @@ export function sproutLink(card: SproutCard, base = WEB_URL): string {
   const artist = card.artist ? `&a=${encodeURIComponent(card.artist.id)}&an=${encodeURIComponent(card.artist.name)}` : '';
   const q = `u=${encodeURIComponent(card.from)}&h=${encodeURIComponent(card.handle)}&k=${card.kind}${name ? `&n=${encodeURIComponent(name)}` : ''}${artist}`;
   return `${base.replace(/\/+$/, '')}/sprout/${card.id}?${q}`;
+}
+
+/** The route params of `/sprout/[id]` for a sprout (all but its id), as its link carries them. */
+export function sproutLinkParams(s: { from: string; handle?: string; kind: SproutKind; name?: string; artist?: SproutArtist }): Record<string, string> {
+  return {
+    u: s.from,
+    h: s.handle ?? '',
+    k: s.kind,
+    ...(s.name ? { n: s.name.trim().slice(0, NAME_MAX) } : {}),
+    ...(s.artist ? { a: s.artist.id, an: s.artist.name } : {}),
+  };
 }
 
 /** A card from a link's parts, or the route params of `/sprout/[id]`. */
@@ -278,6 +290,16 @@ export type GardenSprout = {
   foundAt?: string;
   /** An artist's sprout someone gave you. */
   artist?: SproutArtist;
+  /** A gift theme that came with it (features/themes/gifts.ts). */
+  theme?: ThemeId;
+  /** The theme's grant is saved on Afterglow (so your profile can show its background). */
+  themeGranted?: true;
+  /** It reached an account with no profile yet: the theme goes on once the profile is made. */
+  wearOnArrival?: true;
+  /** The theme page has shown this gift. */
+  themeShown?: true;
+  /** Its page (with the offer to follow whoever gave it) has been shown since it arrived. */
+  followAsked?: true;
 };
 
 /**

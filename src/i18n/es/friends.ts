@@ -424,4 +424,7 @@ export const es_friends: Dictionary = {
   '{n}m': '{n} min',
   '{n}h': '{n} h',
   '{n}d': '{n} d',
+  'Hide your friend orbit': 'Ocultar tu órbita de amigos',
+  'Show your friend orbit. {line}': 'Mostrar tu órbita de amigos. {line}',
+  'Friend orbit': 'Órbita de amigos',
 };

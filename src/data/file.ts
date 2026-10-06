@@ -1,4 +1,4 @@
-import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, SetTime, Show, SoundCloudProfile, SoundTag, Stage, YouTubeClipSource } from './models';
+import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, FestivalLineup, SetTime, Show, SoundCloudProfile, SoundTag, Stage, YouTubeClipSource } from './models';
 import { SOUND_TAGS } from './models';
 import { soundcloudProfile, soundcloudUrl } from './import/soundcloud';
 
@@ -345,7 +345,45 @@ function parseClip(raw: unknown, i: number, problems: string[]): Clip | undefine
     return void problems.push(`Clip "${clipId}" needs a working video, or "seconds" for how long it runs.`);
   const clip: Clip = { id: clipId, artistId, festivalId, title, durationSec: seconds, bpm };
   if (source) clip.source = source;
+  // A back to back: the other artists' ids ("with": ["kompany"]).
+  const others = Array.isArray(raw.with) ? [...new Set(raw.with.map(id).filter((x): x is string => !!x && x !== artistId))].slice(0, 3) : [];
+  if (others.length) clip.withArtistIds = others;
   return clip;
+}
+
+const TIME_OF_DAY = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+
+/** A lineup published on its own (see FestivalLineup in models.ts). */
+function parseLineup(raw: unknown, problems: string[]): FestivalLineup | undefined {
+  const festivalId = isObj(raw) ? id(raw.festival) : undefined;
+  if (!isObj(raw) || !festivalId) {
+    problems.push('A "lineups" entry needs a festival id and its artists, so it was left out.');
+    return undefined;
+  }
+  const artistIds = [...new Set(list(raw.artists).map(id).filter((x): x is string => !!x))];
+  if (!artistIds.length) {
+    problems.push(`Lineup "${festivalId}" names no artists, so it was left out.`);
+    return undefined;
+  }
+  const lineup: FestivalLineup = { festivalId, artistIds };
+  if (raw.sets !== undefined) {
+    const sets: SetTime[] = [];
+    for (const s of list(raw.sets)) {
+      const set = isObj(s) ? { artistId: id(s.artist), day: text(s.day), stageId: id(s.stage), start: text(s.start), end: text(s.end) } : undefined;
+      if (set?.artistId && set.day && set.stageId && set.start && set.end && TIME_OF_DAY.test(set.start) && TIME_OF_DAY.test(set.end))
+        sets.push({ artistId: set.artistId, day: set.day, stageId: set.stageId, start: set.start, end: set.end });
+      else problems.push(`Lineup "${festivalId}": a set needs an artist, a day, a stage and "start" and "end" times like "23:30", so one was left out.`);
+    }
+    lineup.sets = sets;
+  }
+  if (raw.days !== undefined) lineup.days = list(raw.days).map(text).filter((d): d is string => !!d);
+  if (raw.stages !== undefined) {
+    lineup.stages = list(raw.stages)
+      .map((s) => (isObj(s) ? { id: id(s.id), name: text(s.name) } : undefined))
+      .filter((s): s is Stage => !!s?.id && !!s.name) as Stage[];
+  }
+  if (raw.source === 'page') lineup.source = 'page';
+  return lineup;
 }
 
 function parseSimilar(raw: unknown, problems: string[]): ArtistSimilarity | undefined {
@@ -435,6 +473,11 @@ export function parseCatalogFile(input: unknown): ParsedFile {
     clips: pick(list(raw.clips).map((c, i) => parseClip(c, i, problems))),
   };
   if (raw.similar !== undefined) snapshot.similarities = pick(list(raw.similar).map((s) => parseSimilar(s, problems)));
+  // Lineups published on their own (set times read from official pages each night): [{ "festival", "artists", "sets", "days", "stages", "source" }].
+  if (raw.lineups !== undefined) {
+    const lineups = pick(list(raw.lineups).map((l) => parseLineup(l, problems)));
+    if (lineups.length) snapshot.lineups = lineups;
+  }
   // Club shows from the nightly EDMTrain feed: [{ "id", "date", "venue", "link", "artists", … }].
   if (raw.shows !== undefined) {
     if (!Array.isArray(raw.shows)) problems.push('"shows" should be a list like [{ "id", "date", "venue", "link", "artists" }], so it was left out.');

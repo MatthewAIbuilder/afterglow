@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { Sprout } from '../../features/sprouts/Sprout';
 import { giftTitle, kindOf, sproutCardFrom, sproutName } from '../../features/sprouts/sprouts';
 import { SproutOf } from '../../features/sprouts/SproutOf';
 import { artistLook } from '../../features/sprouts/artistLook';
+import { FollowGiver } from '../../features/sprouts/FollowGiver';
 import { useCatalog } from '../../state/catalog';
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
@@ -48,6 +49,15 @@ export default function SproutScreen() {
   const inGarden = !!card && sprouts.garden.some((g) => g.id === card.id);
   const waiting = card ? sprouts.claims.find((c) => c.card.id === card.id) : undefined;
   const state = inGarden ? 'claimed' : waiting?.state;
+  // Seen here, on screen (not left underneath while signing up): the pop-up for sprouts that arrived later
+  // (SproutFollowKeeper) won't open it again.
+  const { followAsked } = sprouts;
+  const claimedId = card && state === 'claimed' ? card.id : undefined;
+  useFocusEffect(
+    useCallback(() => {
+      if (claimedId) followAsked(claimedId);
+    }, [claimedId, followAsked]),
+  );
 
   // Its note, when there's signal and you're signed in (the code itself is kept small).
   const { service } = social;
@@ -130,6 +140,8 @@ export default function SproutScreen() {
           <Text style={[styles.status, { color: SPROUT_GREEN }]} accessibilityLiveRegion="polite">
             {t('In your garden')}
           </Text>
+          {/* The person who gave it: a friend from the start. */}
+          <FollowGiver uid={card.from} handle={card.handle} name={card.name} />
           <Text style={styles.body}>{t('It grows as you go: festival days, sets you watch, videos you film and sprouts you give.')}</Text>
           <Primary label={t('See your garden')} onPress={() => router.replace('/garden')} />
         </>

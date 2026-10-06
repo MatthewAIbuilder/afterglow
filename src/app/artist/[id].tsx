@@ -303,7 +303,10 @@ export default function ArtistScreen() {
         {festivals.length > 0 && (
           <Section title={tc('artist', 'Playing')}>
             {playing.map(({ festival: f, going: mine, over, km }) => {
-              const set = setFor(f, artist.id);
+              // On this lineup in a b2b act ("SUBTRONICS B2B CRANKDAT"): that act's set.
+              const act = f.lineup.includes(artist.id) ? undefined : catalog.actsOf(artist.id).find((x) => f.lineup.includes(x));
+              const who = act ?? artist.id;
+              const set = setFor(f, who);
               const when = over ? t('Over') : countdown(f, today);
               const extra = [mine ? t('Going') : '', when ?? '', km !== undefined && !over ? distanceLabel(km, units) : ''].filter(Boolean).join(' · ');
               return (
@@ -320,8 +323,8 @@ export default function ArtistScreen() {
                     <Text style={styles.rowTitle}>{f.name}</Text>
                     <Text style={styles.rowMeta}>
                       {setLine(
-                        set ? describeSet(f, set) : t('{days}, set time not announced yet', { days: dayList(daysOf(f, artist.id)) ?? datesLine(f) }),
-                        f.notes?.[artist.id],
+                        set ? describeSet(f, set) : t('{days}, set time not announced yet', { days: dayList(daysOf(f, who)) ?? datesLine(f) }),
+                        act ? [t('As {act}', { act: catalog.artist(act)?.name ?? act }), f.notes?.[act]].filter(Boolean).join(' · ') : f.notes?.[artist.id],
                       )}
                     </Text>
                     {extra ? <Text style={[styles.rowMeta, mine && { color: color.glow }]}>{extra}</Text> : null}

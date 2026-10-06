@@ -228,4 +228,6 @@ export const es_memories: Dictionary = {
   'Edit where it’s from and who was playing': 'Editar de dónde es y quién tocaba',
   Edit: 'Editar',
   'b2b {artists}': 'b2b {artists}',
+  'As {act}': 'Como {act}',
+  'Open {artist}': 'Abrir {artist}',
 };

@@ -44,6 +44,8 @@ import { useMemories } from './memories';
 import { artistSprouts, type ArtistSprout, cleanShown, newArtistSprouts, shownMark } from '../features/sprouts/artistSprouts';
 import { useSeen } from './seen';
 import { useSocial } from './social';
+import { canGiveThemes, giftThemesOf, isGiftTheme, type ThemeGift } from '../features/themes/gifts';
+import type { ThemeId } from '../theme/palettes';
 
 /**
  * Sprouts: your garden, your seeds and the sprouts you've given, made for
@@ -103,8 +105,16 @@ type Ctx = {
   artistShown: (s: ArtistSprout) => void;
   /** Scans waiting or done (this account, or not signed in yet). */
   claims: Claim[];
-  /** Give a sprout: a kind, or (with `artist`) the sprout of an artist you've filmed. */
-  give: (kind: SproutKind, note?: string, artist?: SproutArtist) => GiveResult;
+  /** Gift themes this account has (features/themes/gifts.ts), first given first. */
+  giftThemes: (ThemeGift & { granted: boolean; wearOnArrival?: boolean; shown: boolean })[];
+  /** The theme page showed this gift (by its sprout). */
+  giftThemeShown: (sproutId: string) => void;
+  /** Sprouts that arrived in the background (after signing up, or once there was signal) whose page hasn't been shown yet: it offers to follow the giver. */
+  toAskFollow: GardenSprout[];
+  /** Its page was shown. */
+  followAsked: (sproutId: string) => void;
+  /** Give a sprout: a kind, or (with `artist`) the sprout of an artist you've filmed; the developer can add a gift theme. */
+  give: (kind: SproutKind, note?: string, artist?: SproutArtist, theme?: ThemeId) => GiveResult;
   takeBack: (id: string) => Promise<boolean>;
   claim: (card: SproutCard) => Promise<ClaimResult>;
   /** Read one gift again (while its code is showing): has someone picked it up? */
@@ -134,9 +144,10 @@ function cleanGarden(raw: unknown): Stored['garden'] {
     (g): g is Stored['garden'][number] =>
       !!g && typeof g === 'object' && typeof g.id === 'string' && isKind(g.kind) && typeof g.from === 'string' && typeof g.at === 'number' && typeof g.account === 'string',
   ).map((g) => {
-    const { artist, ...rest } = g;
+    const { artist, theme, themeGranted, wearOnArrival, themeShown, followAsked, ...rest } = g;
     const a = cleanSproutArtist(artist);
-    return a ? { ...rest, artist: a } : rest;
+    const gift = isGiftTheme(theme) ? { theme, ...(themeGranted === true ? { themeGranted } : {}), ...(wearOnArrival === true ? { wearOnArrival } : {}), ...(themeShown === true ? { themeShown } : {}) } : {};
+    return { ...rest, ...(a ? { artist: a } : {}), ...gift, ...(followAsked === true ? { followAsked } : {}) };
   });
 }
 
@@ -209,6 +220,16 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     storedRef.current = stored;
     accountRef.current = account;
   });
+  // A brand-new account (no profile yet, or one made in the last half hour): a gift theme goes straight on.
+  const profileRef = useRef({ status: social.profileStatus, profile: social.profile });
+  useEffect(() => {
+    profileRef.current = { status: social.profileStatus, profile: social.profile };
+  });
+  const newAccountRef = useRef(() => {
+    const { status, profile } = profileRef.current;
+    if (status !== 'ready') return false;
+    return !profile || Date.now() - Date.parse(profile.createdAt) < 30 * 60_000;
+  });
   // Ids being sent or picked up right now, so nothing goes twice.
   const inFlight = useRef(new Set<string>());
   // Coming back to the app: a reason to read what's on Afterglow.
@@ -273,6 +294,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
             ...(g.note ? { note: g.note } : {}),
             ...(g.festivalId ? { festivalId: g.festivalId } : {}),
             ...(g.artist ? { artistId: g.artist.id, artistName: g.artist.name } : {}),
+            ...(g.theme ? { theme: g.theme } : {}),
           }),
           TRY_TIMEOUT_MS,
         );
@@ -289,14 +311,17 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   );
 
   const addToGarden = useCallback(
-    (card: SproutCard, sprout: Sprout | undefined, me: string, at: number, late?: boolean, scannedAt?: number) =>
+    (card: SproutCard, sprout: Sprout | undefined, me: string, at: number, late?: boolean, scannedAt?: number, newAccount?: boolean) =>
       setStored((s) => {
-        if (s.garden.some((g) => g.id === card.id && g.account === me)) return s;
+        // A gift theme only the server can say came with it (a link can be edited).
+        const theme = sprout && isGiftTheme(sprout.theme) ? sprout.theme : undefined;
+        const there = s.garden.find((g) => g.id === card.id && g.account === me);
+        if (there) return theme && !there.theme ? { ...s, garden: s.garden.map((g) => (g === there ? { ...g, theme } : g)) } : s;
         const kind = sprout && isKind(sprout.kind) ? sprout.kind : card.kind;
         // An artist's sprout: the artist the server has, else the one in the code.
         // What the server has wins; the code's artist only counts when the server couldn't be read (a link can be edited).
         const artist = sprout ? (sprout.artistId ? cleanSproutArtist({ id: sprout.artistId, name: sprout.artistName }) : undefined) : cleanSproutArtist(card.artist);
-        const entry = { id: card.id, kind, from: card.from, handle: card.handle, name: card.name, at, account: me, ...(artist ? { artist } : {}), ...(sprout?.note ? { note: sprout.note } : {}), ...(late ? { late: true } : {}), ...(scannedAt && scannedAt < at ? { scannedAt } : {}) };
+        const entry = { id: card.id, kind, from: card.from, handle: card.handle, name: card.name, at, account: me, ...(artist ? { artist } : {}), ...(sprout?.note ? { note: sprout.note } : {}), ...(late ? { late: true } : {}), ...(scannedAt && scannedAt < at ? { scannedAt } : {}), ...(theme ? { theme, ...(newAccount ? { wearOnArrival: true as const } : {}) } : {}) };
         return { ...s, garden: [entry, ...s.garden] };
       }),
     [setStored],
@@ -322,7 +347,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
         }
         // Scanned while signed out, or waiting for signal: it arrives in the background, so say so.
         const late = c.tries > 0 || !c.account;
-        addToGarden(c.card, sprout, me, Date.now(), late, c.at);
+        addToGarden(c.card, sprout, me, Date.now(), late, c.at, newAccountRef.current());
         done('claimed');
         if (late) void notifyNow(`sprout:${c.card.id}`, t('Your sprout from {name} is in your garden', { name: c.card.name }), c.tries > 0 ? t('It went through once there was signal.') : t('It was waiting for you to sign in.'), '/garden');
         return 'claimed';
@@ -471,7 +496,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     festivalDay,
   );
   const give = useCallback(
-    (kind: SproutKind, note?: string, artist?: SproutArtist): GiveResult => {
+    (kind: SproutKind, note?: string, artist?: SproutArtist, theme?: ThemeId): GiveResult => {
       if (!social.user) return { problem: 'signed-out' };
       if (!social.profile) return { problem: 'needs-profile' };
       // Only artists you've filmed, and only an artist the database will take.
@@ -484,7 +509,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       if (seedsLeft(mine, t, festivalDay) <= 0) return { problem: 'no-seeds' };
       const id = randomId();
       const words = note ? cleanSproutNote(note) : '';
-      const gift: Gift = { id, kind, ...(cleanArtist ? { artist: cleanArtist } : {}), at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
+      const gift: Gift = { id, kind, ...(cleanArtist ? { artist: cleanArtist } : {}), ...(theme && isGiftTheme(theme) && canGiveThemes(social.profile.handle) ? { theme } : {}), at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
       storedRef.current = { ...storedRef.current, gifts: [gift, ...storedRef.current.gifts] };
       setStored((s) => ({ ...s, gifts: [gift, ...s.gifts] }));
       bumpQuestEvent('sprout');
@@ -618,9 +643,45 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     [setStored],
   );
 
+  // ---- Gift themes ------------------------------------------------------
+  const handle = social.profile?.handle;
+  const giftThemes = useMemo(
+    () =>
+      giftThemesOf(sprouts, handle).map((g) => {
+        const s = sprouts.find((x) => x.id === g.sprout);
+        return { ...g, granted: !g.sprout || !!s?.themeGranted, shown: !g.sprout || !!s?.themeShown, ...(s?.wearOnArrival ? { wearOnArrival: true } : {}) };
+      }),
+    [sprouts, handle],
+  );
+  const giftThemeShown = useCallback(
+    (sproutId: string) => setStored((s) => ({ ...s, garden: s.garden.map((g) => (g.id === sproutId && g.theme && !g.themeShown ? { ...g, themeShown: true } : g)) })),
+    [setStored],
+  );
+  // Sprouts that arrived in the background, to show once (with the offer to follow whoever gave them).
+  const toAskFollow = useMemo(() => (account ? stored.garden.filter((g) => g.account === account && g.late && g.from && g.handle && !g.followAsked) : []), [stored.garden, account]);
+  const followAsked = useCallback(
+    (sproutId: string) =>
+      setStored((s) => (s.garden.some((g) => g.id === sproutId && g.account === accountRef.current && !g.followAsked) ? { ...s, garden: s.garden.map((g) => (g.id === sproutId && g.account === accountRef.current ? { ...g, followAsked: true } : g)) } : s)),
+    [setStored],
+  );
+  // Each gift theme's grant saved on Afterglow, so your profile can show its background (tried again on the next round).
+  const granting = useRef(new Set<string>());
+  useEffect(() => {
+    if (!account || !online || !social.availability.ok) return;
+    for (const g of stored.garden) {
+      if (g.account !== account || !g.theme || g.themeGranted || granting.current.has(g.id)) continue;
+      const { id, theme } = g;
+      granting.current.add(id);
+      void timeout(social.service.grantTheme(id, theme), TRY_TIMEOUT_MS)
+        .then(() => setStored((s) => ({ ...s, garden: s.garden.map((x) => (x.id === id && x.account === account ? { ...x, themeGranted: true } : x)) })))
+        .catch(() => {})
+        .finally(() => granting.current.delete(id));
+    }
+  }, [account, online, social.availability.ok, social.service, stored.garden, back, setStored]);
+
   const value = useMemo<Ctx>(
-    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, give, takeBack, claim, checkGift, refresh }),
-    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, give, takeBack, claim, checkGift, refresh],
+    () => ({ hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, toAskFollow, followAsked, give, takeBack, claim, checkGift, refresh }),
+    [hydrated, online, ready, festivalDay, seeds, garden, givable, collected, gifts, blooms, newBlooms, bloomShown, artists, newArtists, artistShown, claims, giftThemes, giftThemeShown, toAskFollow, followAsked, give, takeBack, claim, checkGift, refresh],
   );
   return <SproutsContext.Provider value={value}>{children}</SproutsContext.Provider>;
 }

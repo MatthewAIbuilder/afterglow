@@ -838,6 +838,41 @@ await t('sprouts: given as yourself, picked up once, by anyone else not blocked,
   await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), { from: 'uidA', kind: 'seedling', createdAt: new Date(Date.now() - 31 * 86400_000) }));
   await assertFails(updateDoc(doc(B.firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), { to: 'uidB', claimedAt: serverTimestamp() }));
 });
+await t('gift themes: only @matt.raves sends one with a sprout; whoever picks it up gets the grant and its background', async () => {
+  const M = env.authenticatedContext('uidM'), N = env.authenticatedContext('uidN'), O = env.authenticatedContext('uidO');
+  await assertSucceeds(claim(M, 'uidM', 'matt.raves'));
+  await assertSucceeds(claim(N, 'uidN', 'newbie'));
+  await assertSucceeds(claim(O, 'uidO', 'other'));
+  const sprout = (from, extra = {}) => ({ from, kind: 'seedling', createdAt: serverTimestamp(), ...extra });
+  // Only the developer's handle, and only a gift theme.
+  await assertFails(setDoc(doc(O.firestore(), 'sprouts', 'themeoooooooooooooooo'), sprout('uidO', { theme: 'daisy' })));
+  await assertFails(setDoc(doc(M.firestore(), 'sprouts', 'themexxxxxxxxxxxxxxxx'), sprout('uidM', { theme: 'nebula' })));
+  await assertSucceeds(setDoc(doc(M.firestore(), 'sprouts', 'themedaisyaaaaaaaaaa'), sprout('uidM', { theme: 'daisy' })));
+  await assertSucceeds(setDoc(doc(M.firestore(), 'sprouts', 'plainsproutaaaaaaaaa'), sprout('uidM')));
+  // The developer shows the background without a grant; nobody else does.
+  await assertSucceeds(setDoc(doc(M.firestore(), 'profiles', 'uidM'), profile('matt.raves', { backdrop: 'daisy' })));
+  await assertFails(setDoc(doc(N.firestore(), 'profiles', 'uidN'), profile('newbie', { backdrop: 'daisy' })));
+  // No grant before picking it up, or from a sprout without the theme.
+  const grant = (uid, sproutId, theme = 'daisy') => ({ uid, theme, sprout: sproutId, createdAt: serverTimestamp() });
+  await assertFails(setDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy'), grant('uidN', 'themedaisyaaaaaaaaaa')));
+  await assertSucceeds(updateDoc(doc(N.firestore(), 'sprouts', 'plainsproutaaaaaaaaa'), { to: 'uidN', claimedAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy'), grant('uidN', 'plainsproutaaaaaaaaa')));
+  // Picked up: the grant, then the background.
+  await assertSucceeds(updateDoc(doc(N.firestore(), 'sprouts', 'themedaisyaaaaaaaaaa'), { to: 'uidN', claimedAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(O.firestore(), 'themeGrants', 'uidO_daisy'), grant('uidO', 'themedaisyaaaaaaaaaa')));
+  await assertFails(setDoc(doc(N.firestore(), 'themeGrants', 'uidO_daisy'), grant('uidN', 'themedaisyaaaaaaaaaa')));
+  await assertFails(setDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy'), { ...grant('uidN', 'themedaisyaaaaaaaaaa'), extra: 1 }));
+  await assertSucceeds(setDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy'), grant('uidN', 'themedaisyaaaaaaaaaa')));
+  await assertSucceeds(getDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy')));
+  await assertSucceeds(getDoc(doc(N.firestore(), 'themeGrants', 'uidN_nothing')));
+  await assertFails(getDoc(doc(O.firestore(), 'themeGrants', 'uidN_daisy')));
+  await assertSucceeds(setDoc(doc(N.firestore(), 'profiles', 'uidN'), profile('newbie', { backdrop: 'daisy' })));
+  await assertFails(setDoc(doc(O.firestore(), 'profiles', 'uidO'), profile('other', { backdrop: 'daisy' })));
+  // Granted once; it can't be rewritten, and only you remove it.
+  await assertFails(setDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy'), grant('uidN', 'themedaisyaaaaaaaaaa')));
+  await assertFails(deleteDoc(doc(O.firestore(), 'themeGrants', 'uidN_daisy')));
+  await assertSucceeds(deleteDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy')));
+});
 await t('sprouts: an artist sprout names its artist, both id and name, in shape', async () => {
   await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'profiles', 'uidA'), { handle: 'aa', displayName: 'A' }));
   const A = env.authenticatedContext('uidA');

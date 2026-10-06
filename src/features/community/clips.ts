@@ -100,12 +100,16 @@ export function communityClips(memories: SharedMemory[], f: CommunityFilter): Cl
 export function rememberedClips(reactionIds: Iterable<string>, artistOf: Record<string, string>, loaded: ReadonlySet<string>): Clip[] {
   const out: Clip[] = [];
   for (const id of reactionIds) {
-    const artistId = artistOf[id];
+    // "main|other": a back to back remembers everyone playing.
+    const [artistId, ...others] = (artistOf[id] ?? '').split(PLAYERS_JOIN).filter(Boolean);
     if (!artistId || loaded.has(id) || !id.startsWith(COMMUNITY_PREFIX)) continue;
-    out.push({ id, artistId, festivalId: '', title: '', durationSec: DEFAULT_SEC, bpm: 0 });
+    out.push({ id, artistId, festivalId: '', title: '', durationSec: DEFAULT_SEC, bpm: 0, ...(others.length ? { withArtistIds: others } : {}) });
   }
   return out;
 }
+
+/** Joins the artists remembered for a back to back ("boogie-t|subtronics"); ids never contain it. */
+export const PLAYERS_JOIN = '|';
 
 /** Remembered artists, newest last, bounded so the list can't grow forever. */
 export const ARTIST_MEMORY_MAX = 500;

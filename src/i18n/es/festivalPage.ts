@@ -59,6 +59,7 @@ export const es_festivalPage: Dictionary = {
   'Places to stay ↗': 'Alojamiento ↗',
   '{day}, set time to come': '{day}, horario por confirmar',
   'On the lineup, set time to come': 'En el cartel, horario por confirmar',
+  'Set time to come': 'Horario por confirmar',
   'Videos from the crowd': 'Videos del público',
   'See what people filmed here in the Afterglow app.': 'Mira lo que la gente grabó aquí en la app de Afterglow.',
   'Sign in to see what people on Afterglow filmed here.': 'Inicia sesión para ver lo que la gente de Afterglow grabó aquí.',

@@ -1,5 +1,7 @@
 import { t } from '../../i18n';
 import type { Notice } from '../notifications/inbox';
+import { isGiftTheme } from '../themes/gifts';
+import type { ThemeId } from '../../theme/palettes';
 import { cleanSproutArtist, type GardenSprout, isKind, kindOf, isSproutId, type SproutArtist, type SproutCard, type SproutKind, sproutName, SPROUT_KEEP_DAYS, SPROUT_NOTE_MAX } from './sprouts';
 
 /**
@@ -16,6 +18,8 @@ export type Gift = {
   artist?: SproutArtist;
   note?: string;
   festivalId?: string;
+  /** A gift theme that comes with it (only the developer gives these). */
+  theme?: ThemeId;
   /** When you gave it (phone time). */
   at: number;
   /** It's reached Afterglow. */
@@ -113,6 +117,7 @@ export function cleanGifts(raw: unknown): Gift[] {
       ...(typeof g.lastTry === 'number' ? { lastTry: g.lastTry } : {}),
       ...(typeof g.note === 'string' && g.note ? { note: g.note.slice(0, SPROUT_NOTE_MAX) } : {}),
       ...(typeof g.festivalId === 'string' ? { festivalId: g.festivalId } : {}),
+      ...(isGiftTheme(g.theme) ? { theme: g.theme } : {}),
       ...(typeof g.account === 'string' ? { account: g.account } : {}),
       ...(g.claimedBy && typeof g.claimedBy.uid === 'string' ? { claimedBy: g.claimedBy } : {}),
       ...(typeof g.claimedAt === 'number' ? { claimedAt: g.claimedAt } : {}),

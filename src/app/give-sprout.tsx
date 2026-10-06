@@ -15,6 +15,10 @@ import { SproutOf } from '../features/sprouts/SproutOf';
 import { artistLook } from '../features/sprouts/artistLook';
 import { tierLabel } from '../features/sprouts/artistSprouts';
 import { kindOf, seedsLine, SPROUT_NOTE_MAX, type SproutArtist, type SproutCard, type SproutKind, sproutLink, sproutName } from '../features/sprouts/sprouts';
+import { canGiveThemes, GIFT_THEME_IDS } from '../features/themes/gifts';
+import { ThemeSwatch } from '../features/themes/ThemePreview';
+import { themeOf } from '../features/themes/themes';
+import type { ThemeId } from '../theme/palettes';
 import { useCatalog } from '../state/catalog';
 import { t } from '../i18n';
 import { showAlert } from '../lib/dialog';
@@ -52,6 +56,9 @@ export default function GiveSproutScreen() {
   };
   const chosen: SproutArtist | undefined = earned && artistOf(earned.artistId) ? { id: earned.artistId, name: artistOf(earned.artistId)!.name } : undefined;
   const [note, setNote] = useState('');
+  // Only Afterglow's developer can send a gift theme with a sprout (features/themes/gifts.ts).
+  const themeGiver = canGiveThemes(social.profile?.handle);
+  const [theme, setTheme] = useState<ThemeId>();
   const [card, setCard] = useState<SproutCard>();
   const [problem, setProblem] = useState<string>();
   const gift = card ? sprouts.gifts.find((g) => g.id === card.id) : undefined;
@@ -71,7 +78,7 @@ export default function GiveSproutScreen() {
   }, [picked]);
 
   const show = () => {
-    const r = sprouts.give(chosen ? 'seedling' : kind, note, chosen);
+    const r = sprouts.give(chosen ? 'seedling' : kind, note, chosen, themeGiver ? theme : undefined);
     if ('problem' in r) {
       setProblem(
         r.problem === 'no-seeds'
@@ -159,6 +166,7 @@ export default function GiveSproutScreen() {
                 />
                 <Text style={styles.cardName}>{sproutName(card)}</Text>
                 <Text style={styles.cardFrom}>{t('from {name}', { name: `@${card.handle}` })}</Text>
+                {gift?.theme ? <Text style={styles.cardTheme}>{t('With the {theme} theme', { theme: themeOf(gift.theme).name })}</Text> : null}
               </View>
             </LinearGradient>
             {picked ? <ConfettiBurst key={card.id} spread={160} /> : null}
@@ -263,6 +271,49 @@ export default function GiveSproutScreen() {
                 </ScrollView>
               </>
             ) : null}
+            {themeGiver ? (
+              <>
+                <Text style={styles.rowTitle}>{t('Add a theme (only you can give these)')}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kinds} accessibilityRole="radiogroup">
+                  <Pressable
+                    onPress={() => {
+                      haptic.select();
+                      setTheme(undefined);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: !theme }}
+                    accessibilityLabel={t('No theme')}
+                    style={[styles.kind, styles.themeChoice, !theme && styles.kindOn]}
+                  >
+                    <View style={styles.noTheme} />
+                    <Text style={styles.kindName} numberOfLines={1}>
+                      {t('None')}
+                    </Text>
+                  </Pressable>
+                  {GIFT_THEME_IDS.map((id) => (
+                    <Pressable
+                      key={id}
+                      onPress={() => {
+                        haptic.select();
+                        setTheme(id);
+                      }}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: theme === id }}
+                      accessibilityLabel={t('{theme} theme', { theme: themeOf(id).name })}
+                      style={[styles.kind, styles.themeChoice, theme === id && styles.kindOn]}
+                    >
+                      <View style={styles.swatch}>
+                        <ThemeSwatch id={id} width={56} height={44} />
+                      </View>
+                      <Text style={styles.kindName} numberOfLines={1}>
+                        {themeOf(id).name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                {theme ? <Text style={styles.hint}>{t('Whoever picks it up gets {theme}: on straight away for a new account, offered to one that already has a profile.', { theme: themeOf(theme).name })}</Text> : null}
+              </>
+            ) : null}
             <TextInput
               value={note}
               onChangeText={setNote}
@@ -307,6 +358,10 @@ const styles = StyleSheet.create({
   kind: { alignItems: 'center', gap: 2, width: 72, paddingVertical: space.sm, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   kindOn: { borderColor: SPROUT_GREEN, backgroundColor: 'rgba(110,231,160,0.12)' },
   kindName: { ...type.caption, color: color.moon },
+  themeChoice: { width: 84 },
+  swatch: { width: 56, height: 44, borderRadius: radius.sm, overflow: 'hidden' },
+  noTheme: { width: 56, height: 44, borderRadius: radius.sm, borderWidth: 1, borderStyle: 'dashed', borderColor: color.hairline },
+  cardTheme: { ...type.caption, color: '#B5289E', marginTop: 2 },
   input: { ...type.body, color: color.moon, alignSelf: 'stretch', paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   seeds: { ...type.label, color: SPROUT_GREEN },
   ring: { padding: 3, borderRadius: radius.lg + 3, marginTop: space.sm },

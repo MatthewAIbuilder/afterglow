@@ -1,6 +1,7 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
+import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -28,6 +29,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Crew invites as `crewId_to`. */
   const crewInvites = new Map<string, CrewInvite>();
   const sprouts = new Map<string, Sprout>();
+  /** Gift themes granted, as `uid_theme`. */
+  const themeGrants = new Set<string>();
   /** Picks as `crewId/uid`. */
   const picks = new Map<string, CrewPicks>();
   const comments = new Map<string, Comment>();
@@ -282,7 +285,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const u = me();
       const p = profiles.get(u.uid);
       if (!p) throw new SocialError('no-profile');
-      const next = { ...p, backdrop: cleanBackdrop(id ?? undefined) };
+      const backdrop = cleanBackdrop(id ?? undefined);
+      // Like the rules: a gift background only with a grant (or for the developer).
+      if (backdrop && isGiftTheme(backdrop) && !themeGrants.has(`${u.uid}_${backdrop}`) && !canGiveThemes(p.handle)) throw new SocialError('unknown');
+      const next = { ...p, backdrop };
       profiles.set(u.uid, next);
       return next;
     },
@@ -1056,12 +1062,14 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (network.down) throw new SocialError('network');
       const u = me();
       if (!profiles.has(u.uid)) throw new SocialError('no-profile');
+      // Like the rules: only the developer's handle gives a theme with a sprout, and only a gift theme.
+      if (input.theme && (!canGiveThemes(profiles.get(u.uid)!.handle) || !isGiftTheme(input.theme))) throw new SocialError('unknown');
       const there = sprouts.get(input.id);
       if (there) {
         if (there.from === u.uid) return;
         throw new SocialError('unknown');
       }
-      sprouts.set(input.id, { id: input.id, kind: input.kind, from: u.uid, createdAt: now(), ...(input.note ? { note: input.note } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName } : {}) });
+      sprouts.set(input.id, { id: input.id, kind: input.kind, from: u.uid, createdAt: now(), ...(input.note ? { note: input.note } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName } : {}), ...(input.theme ? { theme: input.theme } : {}) });
     },
     async claimSprout(id) {
       if (network.down) throw new SocialError('network');
@@ -1082,6 +1090,13 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async sproutsGiven(max) {
       const u = me();
       return [...sprouts.values()].filter((s) => s.from === u.uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async grantTheme(sproutId, theme) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      const s = sprouts.get(sproutId);
+      if (!s || s.to !== u.uid || s.theme !== theme) throw new SocialError('unknown');
+      themeGrants.add(`${u.uid}_${theme}`);
     },
     async sproutsReceived(max) {
       const u = me();
@@ -1185,5 +1200,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
+  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
 }

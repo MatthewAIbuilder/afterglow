@@ -20,7 +20,8 @@ import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
 import { APP_NAME } from '../../config/app';
 import { setFor } from '../../data/festival';
-import type { Clip, Festival } from '../../data/types';
+import type { Artist, Clip, Festival } from '../../data/types';
+import { partnersOf, titleWithoutPartners, together } from '../../data/b2b';
 import { haptic } from '../../lib/haptics';
 import { useAutoplay } from '../../state/autoplay';
 import { useCatalog } from '../../state/catalog';
@@ -65,6 +66,8 @@ type Props = {
   note?: string;
   /** The festival Discover is focused on. The clip shows the artist's place there and links to it. */
   festival?: Festival;
+  /** The feed mixes festivals (your mix, a sound, Following): the line under the clip names the festival. */
+  nameFestival?: boolean;
   /** You starred this artist as a must-see at that festival. */
   mustSee?: boolean;
   width: number;
@@ -97,7 +100,19 @@ const SOUNDCLOUD_ROOM = 250;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
-function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, index, onSkip, onNext, onHold, topExtra = 0 }: Props) {
+/** "LAYZ b2b KOMPANY": each name opens that artist's page. */
+function B2bNames({ players, onOpen }: { players: readonly Artist[]; onOpen: (id: string) => void }) {
+  return players.map((a, i) => (
+    <Text key={a.id}>
+      {i > 0 ? <Text style={styles.b2b}>{' b2b '}</Text> : null}
+      <Text onPress={() => onOpen(a.id)} accessibilityRole="link" accessibilityLabel={t('Open {artist}', { artist: a.name })}>
+        {a.name}
+      </Text>
+    </Text>
+  ));
+}
+
+function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, index, onSkip, onNext, onHold, topExtra = 0 }: Props) {
   const catalog = useCatalog();
   const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
@@ -309,46 +324,38 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   }));
 
   if (!artist) return null;
-  const pct = Math.round((taste[artist.id] ?? 0) * 100);
+  // A back to back: everyone playing, shown together, matched by the one you like best.
+  const players = [artist, ...partnersOf(clip).map((id) => catalog.artist(id)).filter((a): a is Artist => !!a && a.id !== artist.id)];
+  const shown = together(players) ?? artist;
+  const pct = Math.round(Math.max(...players.map((a) => taste[a.id] ?? 0)) * 100);
+  const title = shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title);
   // The artist's place at the festival you're discovering; without a focus, the clip's own festival.
-  const line = festival ? festivalLine(festival, artist.id) : undefined;
+  const line = festival ? festivalLine(festival, artist.id, nameFestival) : undefined;
   const context = line ? festival : undefined;
   const own = catalog.festival(clip.festivalId);
   const ownSet = own && setFor(own, artist.id);
   const meta = line ?? (own && ownSet ? describeSet(own, ownSet) : (own?.name ?? ''));
 
-  // A crowd video of a back to back: who else was playing.
-  const b2bNames =
-    clip.source?.provider === 'community' && clip.source.withArtistIds?.length
-      ? clip.source.withArtistIds
-          .map((id) => catalog.artist(id)?.name)
-          .filter(Boolean)
-          .join(', ')
-      : '';
+  const openArtist = (id: string) => {
+    haptic.select();
+    // Curious enough to look them up: a short watch isn't passing on it.
+    if (watch.current) watch.current = excuseWatch(watch.current);
+    // In the festival's context, so you can star them as a must-see there.
+    router.push({ pathname: '/artist/[id]', params: { id, festival: context?.id } });
+  };
   const artistButton = (
     <Pressable
-      onPress={() => {
-        haptic.select();
-        // Curious enough to look them up: a short watch isn't passing on it.
-        if (watch.current) watch.current = excuseWatch(watch.current);
-        // In the festival's context, so you can star them as a must-see there.
-        router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: context?.id } });
-      }}
+      onPress={() => openArtist(artist.id)}
       accessibilityRole="button"
-      accessibilityLabel={note ? t('Open {artist}, {pct} percent match, {note}', { artist: artist.name, pct, note }) : t('Open {artist}, {pct} percent match', { artist: artist.name, pct })}
+      accessibilityLabel={note ? t('Open {artist}, {pct} percent match, {note}', { artist: shown.name, pct, note }) : t('Open {artist}, {pct} percent match', { artist: shown.name, pct })}
       hitSlop={8}
       style={({ pressed }) => [styles.artistRow, pressed && { opacity: 0.7 }]}
     >
-      <ArtistAvatar artist={artist} size={40} />
+      <ArtistAvatar artist={shown} size={40} />
       <View style={styles.artistText}>
-        <Text style={styles.name} numberOfLines={1}>
-          {artist.name}
+        <Text style={styles.name} numberOfLines={2}>
+          {players.length > 1 ? <B2bNames players={players} onOpen={openArtist} /> : artist.name}
         </Text>
-        {b2bNames ? (
-          <Text style={styles.match} numberOfLines={1}>
-            {t('b2b {artists}', { artists: b2bNames })}
-          </Text>
-        ) : null}
         <Text style={styles.match} numberOfLines={1}>
           {t('{pct}% match', { pct })}
           {note ? <Text style={styles.note}>{`  ·  ${note}`}</Text> : null}
@@ -477,7 +484,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         {upNextPill}
         {artistButton}
         <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
-          {shownClipTitle(clip.title)}
+          {title}
         </Text>
         {metaLine(!!tall)}
         {community ? (
@@ -698,7 +705,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {upNextPill}
         {artistButton}
-        <Text style={styles.title}>{shownClipTitle(clip.title)}</Text>
+        <Text style={styles.title}>{title}</Text>
         {metaLine(false)}
         {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>{t('This video isn’t available right now.')}</Text>}
         {media?.provider === 'soundcloud' && videoFailed && (
@@ -756,6 +763,7 @@ const styles = StyleSheet.create({
   artistRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
   artistText: { marginLeft: space.md, flex: 1 },
   name: { ...type.headline, color: color.moon, ...shadow },
+  b2b: { color: color.moonDim, fontWeight: '400' },
   match: { ...type.label, color: color.glow, fontVariant: ['tabular-nums'], marginTop: 1, ...shadow },
   note: { color: color.moonDim, fontWeight: '500' },
   title: { ...type.title, fontSize: 22, lineHeight: 27, color: color.moon, marginTop: space.lg, ...shadow },
