@@ -113,6 +113,17 @@ describe('likes on shared videos', () => {
     expect(app.getByText('From the crowd · @maya')).toBeTruthy();
   });
 
+  it('shows your own match with the artist, as on Discover, and opens them', async () => {
+    const { id } = await mayaShares();
+    const app = await renderApp(`/shared/${id}`);
+    await flush();
+    expect(app.getByTestId('shared-match')).toBeTruthy();
+    expect(app.getByText(/^\d+% match$/)).toBeTruthy();
+    await fireEvent.press(app.getByTestId('shared-match'));
+    await flush();
+    expect(app.getAllByText('HEDEX').length).toBeGreaterThan(0);
+  });
+
   it('the person who filmed it sees how many and who', async () => {
     const { id, maya } = await mayaShares();
     await s().like(id, maya);

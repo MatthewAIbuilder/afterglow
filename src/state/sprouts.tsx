@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { backupText, readBackup } from '../features/sprouts/backup';
 import * as Crypto from 'expo-crypto';
 import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -56,7 +57,7 @@ import type { ThemeId } from '../theme/palettes';
 export type ClaimResult = 'claimed' | 'waiting' | 'self' | 'taken' | 'gone' | 'signed-out';
 export type GiveResult = { card: SproutCard } | { problem: 'no-seeds' | 'needs-profile' | 'signed-out' | 'loading' | 'not-yours' };
 
-type Stored = {
+export type Stored = {
   gifts: Gift[];
   claims: Claim[];
   /** Sprouts you picked up, per account. */
@@ -131,6 +132,8 @@ type Ctx = {
 export const SPROUTS_KEY = 'sprouts.v1';
 // Longer than the backend's own wait for a write (12 s, then a read), so its answer comes first.
 const TRY_TIMEOUT_MS = 15_000;
+/** Changes settle this long before your garden's private copy is updated. */
+const BACKUP_SETTLE_MS = 5000;
 /** Celebrations already shown, kept at least as long as the wild sprouts and blooms they're for. */
 const SHOWN_MAX = 2000;
 const EMPTY: Stored = { gifts: [], claims: [], garden: [], bloomed: {} };
@@ -178,6 +181,65 @@ function clean(raw: unknown): Stored {
     wild: Array.isArray(o.wild)
       ? o.wild.filter((g): g is GardenSprout => !!g && typeof g === 'object' && typeof g.id === 'string' && g.id.startsWith(WILD_PREFIX) && isKind(g.kind) && typeof g.at === 'number').slice(-500)
       : [],
+  };
+}
+
+/**
+ * Two saved gardens as one: everything in either is kept (sprouts, gifts and
+ * wild finds by id, blooms, celebrations), and `cur` wins where both have the
+ * same thing. Used when the phone's file loads and when your account's private
+ * copy is read back, so neither ever takes anything away.
+ */
+export function mergeStored(cur: Stored, s: Stored): Stored {
+  const starts = [cur.starterAt, s.starterAt].filter((x): x is number => typeof x === 'number');
+  return {
+    gifts: [...cur.gifts, ...s.gifts.filter((g) => !cur.gifts.some((c) => c.id === g.id))],
+    claims: [...cur.claims, ...s.claims.filter((c) => !cur.claims.some((x) => x.card.id === c.card.id))],
+    garden: [...cur.garden, ...s.garden.filter((g) => !cur.garden.some((c) => c.id === g.id && c.account === g.account))],
+    bloomed: { ...s.bloomed, ...cur.bloomed },
+    bloomedAt: { ...s.bloomedAt, ...cur.bloomedAt },
+    bloomsShown: [...new Set([...(s.bloomsShown ?? []), ...(cur.bloomsShown ?? [])])],
+    ...(s.artistShown || cur.artistShown ? { artistShown: maxShown(s.artistShown, cur.artistShown) } : {}),
+    ...(starts.length ? { starterAt: Math.min(...starts) } : {}),
+    ...(s.goingSince || cur.goingSince ? { goingSince: { ...cur.goingSince, ...s.goingSince } } : {}),
+    ...(s.gardenHidden || cur.gardenHidden ? { gardenHidden: true as const } : {}),
+    wild: [...(s.wild ?? []), ...(cur.wild ?? []).filter((w) => !(s.wild ?? []).some((x) => x.id === w.id))],
+  };
+}
+
+const maxShown = (a: Record<string, number> = {}, b: Record<string, number> = {}) => {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) out[k] = Math.max(out[k] ?? 0, v);
+  return out;
+};
+
+/** What of a saved garden goes in an account's private copy: its own sprouts and gifts (sent ones: unsent ones are still on their way), plus this phone's wild finds and first sprout. */
+export function backupFor(s: Stored, account: string): string | undefined {
+  const garden = s.garden.filter((g) => g.account === account);
+  const ids = new Set([...garden.map((g) => g.id), ...(s.wild ?? []).map((w) => w.id), STARTER_ID]);
+  const pick = <T,>(o: Record<string, T> | undefined) => (o ? Object.fromEntries(Object.entries(o).filter(([k]) => ids.has(k))) : undefined);
+  return backupText({
+    garden,
+    gifts: s.gifts.filter((g) => g.account === account && g.sent && !g.takenBack),
+    bloomed: pick(s.bloomed) ?? {},
+    bloomedAt: pick(s.bloomedAt),
+    bloomsShown: s.bloomsShown,
+    artistShown: s.artistShown,
+    starterAt: s.starterAt,
+    wild: s.wild,
+  });
+}
+
+/** An account's private copy read back as a saved garden (its sprouts and gifts filed under that account), or undefined. */
+export function restoreFrom(text: string | null | undefined, account: string): Stored | undefined {
+  const o = readBackup(text);
+  if (!o) return undefined;
+  const s = clean(o);
+  return {
+    ...s,
+    claims: [],
+    garden: s.garden.map((g) => ({ ...g, account })),
+    gifts: s.gifts.map((g) => ({ ...g, account })),
   };
 }
 
@@ -254,19 +316,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
         try {
           s = raw ? clean(JSON.parse(raw)) : EMPTY;
         } catch {}
-        setStored((cur) => ({
-          gifts: [...cur.gifts, ...s.gifts.filter((g) => !cur.gifts.some((c) => c.id === g.id))],
-          claims: [...cur.claims, ...s.claims.filter((c) => !cur.claims.some((x) => x.card.id === c.card.id))],
-          garden: [...cur.garden, ...s.garden.filter((g) => !cur.garden.some((c) => c.id === g.id && c.account === g.account))],
-          bloomed: { ...s.bloomed, ...cur.bloomed },
-          bloomedAt: { ...s.bloomedAt, ...cur.bloomedAt },
-          bloomsShown: [...new Set([...(s.bloomsShown ?? []), ...(cur.bloomsShown ?? [])])],
-          ...(s.artistShown || cur.artistShown ? { artistShown: { ...s.artistShown, ...cur.artistShown } } : {}),
-          starterAt: s.starterAt ?? cur.starterAt ?? Date.now(),
-          ...(s.goingSince || cur.goingSince ? { goingSince: { ...cur.goingSince, ...s.goingSince } } : {}),
-          ...(s.gardenHidden || cur.gardenHidden ? { gardenHidden: true as const } : {}),
-          wild: [...(s.wild ?? []), ...(cur.wild ?? []).filter((w) => !(s.wild ?? []).some((x) => x.id === w.id))],
-        }));
+        setStored((cur) => ({ ...mergeStored(cur, s), starterAt: s.starterAt ?? cur.starterAt ?? Date.now() }));
       })
       .catch(() => setStored((cur) => ({ ...cur, starterAt: cur.starterAt ?? Date.now() })))
       .finally(() => {
@@ -277,6 +327,47 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (loaded.current && !readFailed.current) AsyncStorage.setItem(SPROUTS_KEY, JSON.stringify(stored)).catch(() => {});
   }, [stored]);
+  // ---- Your account's private copy ---------------------------------------
+  // Read back once per account (and merged in, so a new phone, a cleared
+  // browser or a reinstall gets its garden back); only then kept up to date,
+  // so an empty phone never writes over a full copy.
+  const backupRead = useRef<Record<string, 'reading' | 'read' | 'refused'>>({});
+  const backupSent = useRef<Record<string, string>>({});
+  const [backupReady, setBackupReady] = useState<string | undefined>();
+  useEffect(() => {
+    if (!hydrated || !account || !social.availability.ok || !online || backupRead.current[account]) return;
+    const me = account;
+    backupRead.current[me] = 'reading';
+    social.service
+      .gardenBackup()
+      .then((text) => {
+        const s = restoreFrom(text, me);
+        if (s) setStored((cur) => mergeStored(cur, s));
+        if (text) backupSent.current[me] = text;
+        backupRead.current[me] = 'read';
+        if (accountRef.current === me) setBackupReady(me);
+      })
+      .catch((e) => {
+        // No signal: try again when there is. Refused: leave the copy alone this time.
+        if (noSignal(e)) delete backupRead.current[me];
+        else backupRead.current[me] = 'refused';
+      });
+  }, [hydrated, account, online, social.availability.ok, social.service, back]);
+  const backup = useMemo(() => (account && backupReady === account ? backupFor(stored, account) : undefined), [stored, account, backupReady]);
+  useEffect(() => {
+    if (!account || !backup || !online || backupSent.current[account] === backup || backupRead.current[account] !== 'read') return;
+    const me = account;
+    const timer = setTimeout(() => {
+      social.service
+        .saveGardenBackup(backup)
+        .then(() => {
+          backupSent.current[me] = backup;
+        })
+        .catch(() => {});
+    }, BACKUP_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [account, backup, online, social.service]);
+
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active') return;
