@@ -4,6 +4,11 @@ An event organizer gets their own page on Afterglow and an **organizer
 studio** to run it. The first one is **Underground Alchemy** (after parties,
 https://undergroundalchemy.net, Instagram @underground.alchemy).
 
+An organizer's account opens straight on its studio instead of the fan app
+(like the support account opens on HQ). **View the app** in the studio's
+header shows the app as everyone sees it, with a **← Studio** pill at the top
+to come back; **Switch account** and **Sign out** are there too.
+
 What an organizer can do in the studio:
 
 - **Overview**: how many times people opened their page and their events,
@@ -39,6 +44,8 @@ What an organizer can do in the studio:
   collects it), **Stickers and QR codes** (stickers and hunts to print and hide
   at events, like HQ's), and **Request a design** (a badge, sticker, creature,
   gift or flyer; HQ replies).
+- **Messages**: their conversation with Afterglow: anything they write, and
+  every request, with Afterglow's replies (HQ answers in Organizers).
 - **Page**: their name, line, words, website and Instagram.
 
 Everyone else sees the organizer's page (`/org/underground-alchemy`): the

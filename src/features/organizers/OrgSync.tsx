@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import { setMyOrg, setOrgs } from '../../state/orgs';
+import { restoreMyOrg, setMyOrg, setOrgs } from '../../state/orgs';
 import { orgOfAccount } from './organizers';
 import { useSocial } from '../../state/social';
 
@@ -37,6 +37,7 @@ export function OrgSync() {
         });
     };
     refreshNow = read;
+    if (uid) void restoreMyOrg(uid);
     read();
     const sub = AppState.addEventListener('change', (s) => s === 'active' && read());
     return () => {

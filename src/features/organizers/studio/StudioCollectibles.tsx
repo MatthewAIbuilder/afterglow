@@ -229,7 +229,7 @@ function Designs({ org }: { org: Org }) {
         <Field label="The idea" value={text} onChangeText={setText} placeholder="What it should show, colours, the event, when you need it" multiline maxLength={REQUEST_TEXT_MAX} />
         <Button label="Send request" busy={busy} onPress={() => void send()} />
       </Card>
-      <RequestList requests={requests} org={org} kinds={['design', 'gift', 'other']} />
+      <RequestList requests={requests} org={org} kinds={['design', 'gift']} />
     </>
   );
 }

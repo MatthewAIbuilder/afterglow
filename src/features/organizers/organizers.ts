@@ -160,7 +160,7 @@ export const PROMO_DAYS = [3, 7, 14, 30] as const;
 /** What a design can be asked for. */
 export const DESIGN_FOR = ['Badge', 'Sticker', 'Sprout or creature', 'Gift', 'Flyer or poster', 'Something else'] as const;
 export const REQUEST_KINDS: readonly OrgRequestKind[] = ['promotion', 'design', 'gift', 'other'];
-export const REQUEST_LABEL: Record<OrgRequestKind, string> = { promotion: 'Promotion', design: 'Design', gift: 'Gift', other: 'Something else' };
+export const REQUEST_LABEL: Record<OrgRequestKind, string> = { promotion: 'Promotion', design: 'Design', gift: 'Gift', other: 'Message' };
 
 const ORG_ID = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
 const EVENT_ID = /^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/;

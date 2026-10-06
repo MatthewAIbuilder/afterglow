@@ -16,6 +16,8 @@ import { StudioEvents } from '../features/organizers/studio/StudioEvents';
 import { StudioOverview } from '../features/organizers/studio/StudioOverview';
 import { StudioPage } from '../features/organizers/studio/StudioPage';
 import { StudioPromote } from '../features/organizers/studio/StudioPromote';
+import { StudioMessages } from '../features/organizers/studio/StudioMessages';
+import { setGuestView } from '../state/adminView';
 import { socialErrorKind, SOCIAL_ERROR_COPY } from '../features/social/service';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
@@ -23,7 +25,7 @@ import { rememberOrg, useMyOrg, useOrg } from '../state/orgs';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 
-type Section = 'overview' | 'events' | 'artists' | 'promote' | 'collectibles' | 'page';
+type Section = 'overview' | 'events' | 'artists' | 'promote' | 'collectibles' | 'messages' | 'page';
 
 /**
  * The organizer studio: where an event organizer runs its page on
@@ -55,6 +57,19 @@ export default function StudioScreen() {
       .then(refreshOrgs)
       .catch(() => {});
   }, [linkable, org, uid, social.service]);
+
+  // An organizer's own account: the studio is its home, like HQ for the support account.
+  const home = !hq && !!mine && mine === orgId;
+  const viewApp = () => {
+    haptic.select();
+    setGuestView(true);
+    router.replace('/');
+  };
+  const signOut = () =>
+    showAlert('Sign out?', undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => void social.signOut().then(() => router.replace('/')) },
+    ]);
 
   const save = useCallback(
     async (next: Org) => {
@@ -123,6 +138,7 @@ export default function StudioScreen() {
               { key: 'artists', label: 'Artists' },
               { key: 'promote', label: 'Promote' },
               { key: 'collectibles', label: 'Collectibles' },
+              { key: 'messages', label: 'Messages' },
               { key: 'page', label: 'Page' },
             ]}
           />
@@ -137,6 +153,8 @@ export default function StudioScreen() {
           <StudioPromote org={org} />
         ) : tab === 'collectibles' ? (
           <StudioCollectibles org={org} />
+        ) : tab === 'messages' ? (
+          <StudioMessages org={org} />
         ) : (
           <StudioPage key={org.updatedAt} org={org} save={save} />
         )}
@@ -168,15 +186,26 @@ export default function StudioScreen() {
               >
                 <Text style={styles.pillText}>View your page</Text>
               </Pressable>
+              {home ? (
+                <Pressable onPress={viewApp} accessibilityRole="button" accessibilityLabel="View the app as everyone sees it" style={({ pressed }) => [styles.pill, pressed && styles.pressed]}>
+                  <Text style={styles.pillText}>View the app</Text>
+                </Pressable>
+              ) : null}
               <Pressable onPress={() => router.push('/switch-account')} accessibilityRole="button" style={({ pressed }) => [styles.pill, pressed && styles.pressed]}>
                 <Text style={styles.pillText}>Switch account</Text>
               </Pressable>
             </View>
           ) : null}
+          {home ? (
+            <Pressable onPress={signOut} accessibilityRole="button" hitSlop={6}>
+              <Text style={styles.signOut}>Sign out</Text>
+            </Pressable>
+          ) : null}
         </View>
         {body}
       </ScrollView>
-      <PageActions />
+      {/* The organizer's home (it opens here instead of the app): nothing to go back to. */}
+      {home ? null : <PageActions />}
     </View>
   );
 }
@@ -186,7 +215,8 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: space.sm, paddingHorizontal: space.xl, marginBottom: space.lg },
   kicker: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: space.sm },
   sub: { ...type.caption, color: color.moonDim },
-  headerRow: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
+  headerRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.xs },
+  signOut: { ...type.caption, color: color.moonFaint, marginTop: space.xs },
   pill: { paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
   pillText: { ...type.label, color: color.moon },
   tabs: { marginBottom: space.lg },

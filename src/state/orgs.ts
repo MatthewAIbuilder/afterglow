@@ -71,11 +71,27 @@ export function useOrg(id: string | undefined): Org | undefined {
 /** The organizer the signed-in account runs (its id, keyed by account so another account never sees it), or null. */
 let mine: { uid: string; orgId: string | null } | undefined;
 const mineListeners = new Set<(m: typeof mine) => void>();
+const MINE_KEY = 'myOrg.v1';
 export function setMyOrg(uid: string | undefined, orgId: string | null) {
   const next = uid ? { uid, orgId } : undefined;
   if (mine?.uid === next?.uid && mine?.orgId === next?.orgId) return;
   mine = next;
   mineListeners.forEach((l) => l(next));
+  // Kept, so an organizer's account opens on its studio straight away next time (before anything is read).
+  if (next) AsyncStorage.setItem(MINE_KEY, JSON.stringify(next)).catch(() => {});
+}
+/** What this phone last knew for this account (only used until the server answers). */
+export async function restoreMyOrg(uid: string) {
+  try {
+    const raw = await AsyncStorage.getItem(MINE_KEY);
+    const kept = raw ? (JSON.parse(raw) as { uid?: unknown; orgId?: unknown }) : undefined;
+    if (!mine && kept?.uid === uid && (typeof kept.orgId === 'string' || kept.orgId === null)) {
+      mine = { uid, orgId: kept.orgId };
+      mineListeners.forEach((l) => l(mine));
+    }
+  } catch {
+    // Nothing kept: the server's answer comes soon.
+  }
 }
 /** For tests. */
 export function forgetMyOrg() {

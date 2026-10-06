@@ -256,14 +256,32 @@ describe('organizers', () => {
     await s().signOut();
 
     await s().signIn('ugrnd@example.com', 'password123');
-    const app = await renderApp('/profile');
-    await flush();
-    expect(app.getByText('You run')).toBeTruthy();
-    expect(app.getByLabelText('Underground Alchemy')).toBeTruthy();
-    await fireEvent.press(app.getByText('Organizer studio'));
+    // It opens on its studio, not the app (like HQ for the support account), with no email to confirm.
+    const app = await renderApp('/');
     await flush();
     expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
     expect(app.queryByText('Confirm your email to open the studio')).toBeNull();
+    expect(app.queryByLabelText('Back')).toBeNull();
+
+    // It can still look at the app, with a way back; its profile shows the organizer.
+    await fireEvent.press(app.getByLabelText('View the app as everyone sees it'));
+    await flush();
+    await act(async () => router.push('/profile'));
+    await flush();
+    expect(app.getByText('You run')).toBeTruthy();
+    expect(app.getByLabelText('Underground Alchemy')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Back to your studio'));
+    await flush();
+    expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
+
+    // Messages: written in the studio, answered in HQ.
+    await showTab(app, 'Messages');
+    await fireEvent.changeText(app.getByLabelText('Your message'), 'Can we get a sticker for our Halloween night?');
+    await fireEvent.press(app.getByText('Send'));
+    await flush();
+    const [msg] = [...mockSocial.orgRequests.values()];
+    expect(msg).toMatchObject({ kind: 'other', text: 'Can we get a sticker for our Halloween night?', status: 'open' });
+    expect(app.getByText('Can we get a sticker for our Halloween night?')).toBeTruthy();
     // It can edit its page, but never link anyone else.
     await expect(s().saveOrg({ ...mockSocial.orgs.get(ORG)!, about: 'Hello.' })).resolves.toBeUndefined();
     await expect(s().setOrgAccount(ORG, 'someone-else', true)).rejects.toThrow();
