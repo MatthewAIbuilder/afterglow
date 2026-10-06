@@ -6,7 +6,7 @@ export const es_sprouts: Dictionary = {
   'The Watcher': 'El Vigilante',
   'A big eye with wriggling tentacles': 'Un gran ojo con tentáculos inquietos',
   'The Phoenix': 'El Fénix',
-  'A phoenix with flaming wings': 'Un fénix con alas en llamas',
+  'A phoenix rising in flame through a starry night': 'Un fénix que se alza en llamas por una noche estrellada',
   'The Lion': 'El León',
   'A lion with a glowing mane': 'Un león con la melena brillante',
   'The Ghost': 'El Fantasma',
