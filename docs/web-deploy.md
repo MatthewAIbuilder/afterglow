@@ -1,16 +1,16 @@
 # The website: afterglowmusic.app
 
-Afterglow runs in a browser as well as on the phone. The website is built from the same code and hosted on **Firebase Hosting** (the same Firebase project as profiles). Once it's set up, every merge to `main` goes live on its own, and every pull request gets its own preview link.
+Afterglow runs in a browser as well as on the phone. The website is built from the same code and hosted on **Firebase Hosting** (the same Firebase project as profiles). Once it's set up, every merge to `main` goes live on its own. Pull requests are only type-checked and tested (no build and no preview link since 2026-10-06), to save GitHub Actions minutes; the nightly run and "Run workflow" skip the checks, since `main` was checked when it was pushed.
 
 What works on the website: Discover (YouTube clips, likes, saves, skips, videos from the crowd, Following), My Sound, festivals, lineups, plans and the full-day route, accounts, profiles, following, likes and the bell. What stays in the phone app for now: adding your own videos (Memories), connecting Spotify or Apple Music, the plan as a picture (the website shares it as text) and phone reminders.
 
 ## What happens automatically
 
-`.github/workflows/website.yml`, on every pull request and every push to `main`:
+`.github/workflows/website.yml`, on every pull request and every push to `main` (and each night):
 
-1. Installs, type-checks and runs the tests.
-2. Builds the website (`npm run build:web`, into `dist/`), stamped with the commit it came from (shown at the bottom of Profile, like "Afterglow 1.0.0 · build 3f2a9c1").
-3. Deploys it: **live** from `main`, a **preview** for a pull request (a link is posted on the PR; it lasts 7 days).
+1. Installs; on pull requests and pushes to `main`, type-checks and runs the tests.
+2. From `main` (pushes, the nightly run, "Run workflow"): builds the website (`npm run build:web`, into `dist/`), stamped with the commit it came from (shown at the bottom of Profile, like "Afterglow 1.0.0 · build 3f2a9c1").
+3. Deploys it **live** from `main` (pull requests are only checked, with no preview).
 4. From `main` only: deploys the database and storage rules and indexes (`firestore.rules`, `storage.rules`, `firestore.indexes.json`) with the same key, so new features' rules go live with the app.
 
 Until the secrets below are added, steps 1 and 2 still run and the deploy is skipped. To republish without a new merge: GitHub → **Actions** → **Website** → **Run workflow** (on `main`).
@@ -82,7 +82,6 @@ Firebase console → **Authentication** → **Settings** → **Authorized domain
 | The Actions run is red at "Type-check" or "Tests" | Something in the code needs fixing: tell Claude which step failed. |
 | Green, but "Deploy" was skipped | The `FIREBASE_SERVICE_ACCOUNT` secret is missing or misspelled (step 2). |
 | "Check the Firebase key" fails, or Deploy says "Failed to authenticate" | The `FIREBASE_SERVICE_ACCOUNT` secret holds something else (for example the `.env` file's lines). Replace it with the whole `.json` key file from step 2: open it in Notepad, select all, copy, paste. |
-| A pull request’s Deploy says "channel quota reached" | Firebase only keeps so many preview links at once. The workflow now removes previews of closed pull requests before making a new one, and a missing preview never fails a pull request. If it still happens, delete old previews in Firebase console > Hosting > the preview channels list. |
 | "Database and storage rules" shows a yellow warning | The rules didn't deploy (the website still did). Run `npx firebase-tools@latest deploy --only firestore,storage` from your PC (`docs/firebase-setup.md`, step 5). If it keeps happening, the key needs four more roles: **Firebase Rules Admin**, **Cloud Datastore Index Admin**, **Service Usage Consumer** and **Cloud Storage for Firebase Admin** (open https://console.cloud.google.com/iam-admin/iam?project=afterglowmusic → the row whose email ends in `iam.gserviceaccount.com` → the pencil → Add another role for each → Save). The database rules go first and on their own, so the log says which part failed: "Permission denied to get service [firebasestorage.googleapis.com]" means Service Usage Consumer is missing; "Permission 'firebasestorage.defaultBucket.get' denied" means Cloud Storage for Firebase Admin is missing. |
 | Deploy fails with "permission denied" | The key is for a different project, or `EXPO_PUBLIC_FIREBASE_PROJECT_ID` is wrong. |
 | Deploy fails with "No currently active project" | Fixed: the project (`afterglowmusic`) is now in `.firebaserc` and the workflow. |
