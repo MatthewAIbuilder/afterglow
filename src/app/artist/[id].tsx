@@ -50,6 +50,7 @@ import { useRatings } from '../../state/ratings';
 import { useToday } from '../../lib/useToday';
 import { artistStory, hasStory, nextShow, nextShowLine, storyLines } from '../../features/artists/story';
 import { ArtistSproutCard } from '../../features/sprouts/ArtistSproutCard';
+import { ArtistRow } from '../../components/ArtistRow';
 import { ArtistCrowdRow } from '../../features/artists/ArtistCrowdRow';
 import { localDay, showDateBlock, showLabel, showTitle, showWhere, SHOWS_SHOWN, withLine } from '../../features/artists/shows';
 import { useReactions } from '../../state/reactions';
@@ -152,6 +153,8 @@ export default function ArtistScreen() {
 
   // A b2b without a photo of its own shows its artists' photos.
   const backdrop = anyPhoto(artist);
+  // A b2b act's own artists, those on Afterglow.
+  const members = catalog.membersOf(artist.id).flatMap((id) => catalog.artist(id) ?? []);
   const credit = photoCredit(artist);
   return (
     <View style={styles.root}>
@@ -296,9 +299,23 @@ export default function ArtistScreen() {
           </Section>
         ) : null}
 
-        <Section title={t('Their collectible')}>
-          <ArtistSproutCard artist={artist} />
-        </Section>
+        {members.length ? (
+          // A b2b act is its artists playing together: each one's page, and each one's collectible.
+          <Section title={t('Back to back')}>
+            {members.map((m) => (
+              <ArtistRow key={m.id} artist={m} affinity={taste[m.id] ?? 0} detail={t('Playing in this set')} />
+            ))}
+            <View style={styles.cards}>
+              {members.map((m) => (
+                <ArtistSproutCard key={m.id} artist={m} />
+              ))}
+            </View>
+          </Section>
+        ) : (
+          <Section title={t('Their collectible')}>
+            <ArtistSproutCard artist={artist} />
+          </Section>
+        )}
 
         {festivals.length > 0 && (
           <Section title={tc('artist', 'Playing')}>
@@ -541,6 +558,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const styles = StyleSheet.create({
+  cards: { gap: space.sm, marginTop: space.sm },
   nextShow: { alignSelf: 'stretch', marginTop: space.lg, paddingVertical: space.md, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', gap: 2 },
   nextShowGoing: { borderColor: glowA(0.55), backgroundColor: glowA(0.10) },
   nextKicker: { ...type.caption, fontSize: 10, letterSpacing: 1.5, fontWeight: '700', color: color.glow },
