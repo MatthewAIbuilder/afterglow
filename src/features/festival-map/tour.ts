@@ -47,11 +47,13 @@ export function tourStops(festivals: readonly Marker[], shows: readonly ShowPin[
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** The tour's subtitle: "2 festivals and 3 shows, in date order". */
+/** The tour's subtitle, short enough for one line: "2 festivals · 3 shows", "2 festivals, in date order", "1 show". */
 export function tourLine(festivals: number, shows: number): string {
   if (festivals + shows === 0) return 'No festivals or shows with a place yet';
-  const parts = [festivals ? count(festivals, 'festival', 'festivals') : undefined, shows ? count(shows, 'show', 'shows') : undefined].filter(Boolean).join(' and ');
-  return festivals + shows > 1 ? `${parts}, in date order` : parts;
+  if (festivals && shows) return `${count(festivals, 'festival', 'festivals')} · ${count(shows, 'show', 'shows')}`;
+  const n = festivals || shows;
+  const what = festivals ? count(n, 'festival', 'festivals') : count(n, 'show', 'shows');
+  return n > 1 ? `${what}, in date order` : what;
 }
 
 /** What a screen reader says for a show's light: "Show: Club Space, Saturday 18 October, Miami, FL." */

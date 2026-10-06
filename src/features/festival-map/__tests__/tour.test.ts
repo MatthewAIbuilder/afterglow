@@ -61,7 +61,8 @@ describe('words', () => {
     expect(tourLine(1, 0)).toBe('1 festival');
     expect(tourLine(0, 1)).toBe('1 show');
     expect(tourLine(2, 0)).toBe('2 festivals, in date order');
-    expect(tourLine(1, 3)).toBe('1 festival and 3 shows, in date order');
+    expect(tourLine(0, 2)).toBe('2 shows, in date order');
+    expect(tourLine(1, 3)).toBe('1 festival · 3 shows');
   });
 
   it('says what a show light is', () => {

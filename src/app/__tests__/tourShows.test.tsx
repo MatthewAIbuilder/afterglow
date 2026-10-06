@@ -67,7 +67,7 @@ describe("an artist's tour with their shows", () => {
     await fireEvent.press(app.getByLabelText("See SUBTRONICS's festivals and shows on the map"));
     await flush();
     expect(app.getByText('SUBTRONICS on tour')).toBeTruthy();
-    expect(app.getByText(/ and 2 shows, in date order$/)).toBeTruthy();
+    expect(app.getByText(/^\d+ festivals? · 2 shows$/)).toBeTruthy();
     // Small lights for the two shows with a place; not the one without, nor the past one.
     expect(app.getByTestId('map-show-edm-1')).toBeTruthy();
     expect(app.getByTestId('map-show-edm-2')).toBeTruthy();

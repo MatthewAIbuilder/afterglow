@@ -212,7 +212,7 @@ export default function FestivalMapScreen() {
             <Text style={styles.title} accessibilityRole="header" numberOfLines={1}>
               {touring ? `${touring.name} on tour` : 'Festival map'}
             </Text>
-            <Text style={styles.sub}>
+            <Text style={styles.sub} numberOfLines={1}>
               {offline
                 ? 'No signal · the streets may not load, the festivals still show'
                 : touring
