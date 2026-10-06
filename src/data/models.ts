@@ -187,6 +187,12 @@ export type FestivalLineup = {
   /** Days and stages that come with set times, if the source gives them. */
   days?: string[];
   stages?: Stage[];
+  /**
+   * Read from the festival's official page by the nightly job (features/admin/pageSetTimes.ts): it adds
+   * to the festival's lineup and never replaces set times entered by hand. Absent: a lineup published
+   * on purpose, which replaces the festival's.
+   */
+  source?: 'page';
 };
 
 /** Before set times, a festival is a lineup; after, it's a timetable. Every schedule feature works in both. */

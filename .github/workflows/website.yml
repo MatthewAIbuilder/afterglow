@@ -115,6 +115,17 @@ jobs:
         if: github.event_name != 'pull_request'
         run: npx --yes tsx@4 scripts/site-pictures.ts /tmp/published.json || echo "::warning::Site pictures were skipped tonight."
 
+      # Set times read from festivals' official pages, published by themselves when the reading is clearly right;
+      # anything less clear goes in the heads-up issue for HQ. Set times entered by hand always win (docs/events-import.md).
+      - name: Set times from official pages
+        if: github.event_name != 'pull_request'
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID }}
+          FIREBASE_API_KEY: ${{ vars.EXPO_PUBLIC_FIREBASE_API_KEY || secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
+        run: |
+          rm -f /tmp/set-times.md
+          npx --yes tsx@4 scripts/set-times.ts /tmp/published.json /tmp/set-times.md || echo "::warning::Set times were skipped tonight."
+
       # Getting lost clips back (docs/events-import.md): the clips of an earlier release, copied to a short-lived
       # preview channel and read from there. Only when asked for on "Run workflow". Never prints the key.
       - name: Clips from an earlier release
@@ -202,15 +213,16 @@ jobs:
           projectId: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}
           channelId: live
 
-      # The page watch's news, only once tonight's look is live: otherwise tomorrow compares with the
-      # old look and opens the same issue (and email) again.
+      # Set times published or held tonight, and the page watch's news, only once tonight's look is live:
+      # otherwise tomorrow compares with the old look and opens the same issue (and email) again.
       - name: Festival news heads-up
         if: env.CAN_DEPLOY == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -f /tmp/page-watch.md ]; then
-            gh issue create --repo "$GITHUB_REPOSITORY" --title "Festival news: $(date -u +'%b %-d')" --body-file /tmp/page-watch.md || echo "::warning::Couldn't open the heads-up issue."
+          if [ -f /tmp/set-times.md ] || [ -f /tmp/page-watch.md ]; then
+            cat /tmp/set-times.md /tmp/page-watch.md 2>/dev/null > /tmp/festival-news.md
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "Festival news: $(date -u +'%b %-d')" --body-file /tmp/festival-news.md || echo "::warning::Couldn't open the heads-up issue."
           fi
 
       # Database and storage rules (firestore.rules, storage.rules, firestore.indexes.json), so new

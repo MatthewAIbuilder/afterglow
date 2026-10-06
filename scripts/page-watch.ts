@@ -19,6 +19,7 @@ import { parseCatalogFile } from '../src/data/file';
 import { pageFacts, type PageFacts, type WatchNews, watchNotes, watchReport, type WatchState } from '../src/data/import/pageWatch';
 import { PAGE_MAX_CHARS } from '../src/data/import/sitePicture';
 import { applyPatches, buildCatalog } from '../src/data/merge';
+import { livePatches } from './livePatches';
 
 const CATALOGUE = resolve(__dirname, '../public/catalogue.json');
 const LIVE = 'https://afterglowmusic.web.app';
@@ -30,32 +31,6 @@ async function readPage(url: string): Promise<string | undefined> {
   const res = await fetch(url, { headers: HEADERS, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
   if (!res.ok || !/html/i.test(res.headers.get('content-type') ?? 'text/html')) return undefined;
   return (await res.text()).slice(0, PAGE_MAX_CHARS);
-}
-
-/** Updates published from HQ (anyone can read them), oldest first, so websites set there are watched too. */
-async function livePatches(): Promise<{ file: string }[]> {
-  const project = process.env.FIREBASE_PROJECT_ID;
-  const key = process.env.FIREBASE_API_KEY;
-  if (!project || !key) return [];
-  type Page = { documents?: { fields?: { file?: { stringValue?: string }; publishedAt?: { timestampValue?: string } } }[]; nextPageToken?: string };
-  const docs: NonNullable<Page['documents']> = [];
-  // Every page of them (a page holds at most 300), up to a sensible limit.
-  let token: string | undefined;
-  for (let i = 0; i < 20; i++) {
-    const res = await fetch(
-      `https://firestore.googleapis.com/v1/projects/${project}/databases/(default)/documents/published?pageSize=300&key=${key}${token ? `&pageToken=${encodeURIComponent(token)}` : ''}`,
-      { signal: AbortSignal.timeout(TIMEOUT_MS) },
-    );
-    if (!res.ok) break;
-    const json = (await res.json()) as Page;
-    docs.push(...(json.documents ?? []));
-    token = json.nextPageToken;
-    if (!token) break;
-  }
-  return docs
-    .map((d) => ({ file: d.fields?.file?.stringValue ?? '', at: d.fields?.publishedAt?.timestampValue ?? '' }))
-    .filter((p) => p.file)
-    .sort((a, b) => a.at.localeCompare(b.at));
 }
 
 async function lastLook(): Promise<WatchState | undefined> {

@@ -333,6 +333,39 @@ and adds it to the published `catalogue.json` as `sitePictures`.
   EDMTrain, so they don't get one.
 
 
+## Set times from official pages (automatic)
+
+Every night, before the website is built, Afterglow reads the official page
+of every upcoming festival that has one (`website`, set in the catalogue or
+from **HQ → Data → Official page**) and no set times yet
+(`scripts/set-times.ts`, logic in `src/features/admin/pageSetTimes.ts`). It reads
+the page's text with the same reader HQ uses for pasted set times (day
+headings, stage headings, "10:00 PM – 11:30 PM SUBTRONICS", table rows) and
+matches every name to an artist already on Afterglow. Nobody is invented.
+
+The user chose on 2026-10-06 that set times **publish by themselves** when
+the reading is clearly right:
+
+- at least 8 set times,
+- at least 60% of the acts with set times are on Afterglow (the rest are left out and listed),
+- at least 40% of the festival's lineup has a set time,
+- no day the festival doesn't have, a stage for nearly every set, and AM/PM written on most times.
+
+They go into the published `catalogue.json` as a `"lineups"` entry marked
+`"source": "page"` and are live with that night's deploy. Set times entered
+by hand (in the catalogue file or from HQ) always win, and the page only
+adds acts to a lineup, never removes any. A page that can't be read one
+night keeps what was published the night before.
+
+The nightly "Festival news" issue (an email) lists what went live
+("Set times published") and what was found but not clear enough ("Set times
+found but not published", with the reasons), so you can bring those in from
+HQ → Data. If something published is wrong, enter the right set times in HQ:
+they replace the page's.
+
+Pages that only show set times as a picture (a poster) or build them with
+scripts can't be read this way; for those, use HQ → Data → read a photo.
+
 ## Festival news by email (page watch)
 
 Every night, after the website is built, Afterglow looks at the official

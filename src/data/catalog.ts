@@ -52,6 +52,15 @@ function soundcloudPages(snapshot: CatalogSnapshot): Record<string, SoundCloudPr
 /** A festival with a separately published lineup applied. */
 export function applyLineup(festival: Festival, lineup: FestivalLineup | undefined): Festival {
   if (!lineup) return festival;
+  // Read from the official page: set times entered by hand (the catalogue or HQ) always win, and the page adds to the lineup, never shortens it.
+  if (lineup.source === 'page') {
+    if (festival.sets?.length) return festival;
+    const next: Festival = { ...festival, lineup: [...new Set([...festival.lineup, ...lineup.artistIds])] };
+    if (lineup.sets) next.sets = lineup.sets;
+    if (lineup.days) next.days = lineup.days;
+    if (lineup.stages) next.stages = lineup.stages;
+    return next;
+  }
   const next: Festival = { ...festival, lineup: [...lineup.artistIds] };
   if (lineup.sets) next.sets = lineup.sets;
   if (lineup.days) next.days = lineup.days;
