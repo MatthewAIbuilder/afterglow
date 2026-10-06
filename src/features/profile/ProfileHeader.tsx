@@ -45,8 +45,12 @@ type Props = {
   socials?: Socials;
   /** A quiet line under the bio ("Going to EDC Orlando 2026"). */
   note?: string;
-  /** Your glow level, live from your quests, as a gold pill that opens them. Without it, the level their profile shows (if any). */
-  level?: { level: number; name: string };
+  /**
+   * Your glow level, live from your quests, as a gold pill that opens them;
+   * null while yours is still being worked out (nothing shows, never a
+   * stand-in). Without it, the level their profile shows (if any).
+   */
+  level?: { level: number; name: string } | null;
   onLevel?: () => void;
   /** Which counts can be tapped (all of them by default). */
   tappable?: ProfileStat['key'][];
@@ -64,7 +68,7 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
   const standing = useStanding(uid);
   const ringed = !!ringOf(standing);
   // Your own level comes live from your quests; anyone else's from what their profile shows.
-  const shownLevel = level ?? (standing?.level && standing.level >= LEVEL_SHOWN_FROM ? { level: standing.level, name: levelName(standing.level) } : undefined);
+  const shownLevel = level === null ? undefined : (level ?? (standing?.level && standing.level >= LEVEL_SHOWN_FROM ? { level: standing.level, name: levelName(standing.level) } : undefined));
   const { width } = useWindowDimensions();
   const orbitWidth = Math.min(width, 520);
   const social = stats.filter((s) => s.key === 'followers' || s.key === 'following');

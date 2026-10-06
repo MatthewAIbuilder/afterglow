@@ -124,7 +124,21 @@ export const es: Dictionary = {
   Leave: 'Salir',
   'Your messages got through': 'Tus mensajes llegaron',
 
+  "See {artist}'s festivals and shows on the map": 'Ver los festivales y shows de {artist} en el mapa',
+  'Opens the event page on EDMTrain': 'Abre la página del evento en EDMTrain',
+  'Show · {weekday}': 'Show · {weekday}',
+  'See where': 'Ver dónde',
+  'No festivals or shows with a place yet': 'Aún no hay festivales ni shows con lugar',
+  'Show: {show}': 'Show: {show}',
+  '{n} show': '{n} show',
+  '{n} shows': '{n} shows',
+  '{n} shows, in date order': '{n} shows, por fecha',
+  'Glow level. {done} of {total} quests done today. {streak}-day streak. Opens your quests.':
+    'Nivel de brillo. {done} de {total} misiones hechas hoy. Racha de {streak} días. Abre tus misiones.',
+  'Glow level. {done} of {total} quests done today. Opens your quests.': 'Nivel de brillo. {done} de {total} misiones hechas hoy. Abre tus misiones.',
+
   // Tabs
+
 
 
 

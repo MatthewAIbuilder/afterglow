@@ -19,20 +19,25 @@ export function GlowLevelCard() {
       }}
       accessibilityRole="button"
       accessibilityLabel={
-        q.streak
-          ? t('Glow level {level}, {name}. {done} of {total} quests done today. {streak}-day streak. Opens your quests.', { level: q.level.level, name: q.level.name, done: q.doneToday, total: of, streak: q.streak })
-          : t('Glow level {level}, {name}. {done} of {total} quests done today. Opens your quests.', { level: q.level.level, name: q.level.name, done: q.doneToday, total: of })
+        !q.ready
+          ? q.streak
+            ? t('Glow level. {done} of {total} quests done today. {streak}-day streak. Opens your quests.', { done: q.doneToday, total: of, streak: q.streak })
+            : t('Glow level. {done} of {total} quests done today. Opens your quests.', { done: q.doneToday, total: of })
+          : q.streak
+            ? t('Glow level {level}, {name}. {done} of {total} quests done today. {streak}-day streak. Opens your quests.', { level: q.level.level, name: q.level.name, done: q.doneToday, total: of, streak: q.streak })
+            : t('Glow level {level}, {name}. {done} of {total} quests done today. Opens your quests.', { level: q.level.level, name: q.level.name, done: q.doneToday, total: of })
       }
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
       testID="glow-level-card"
     >
+      {/* Your level only once it's known (never a stand-in while loading). */}
       <View style={styles.ring}>
-        <QuestRing size={52} stroke={4} progress={q.level.progress} />
-        <Text style={styles.num}>{q.level.level}</Text>
+        <QuestRing size={52} stroke={4} progress={q.ready ? q.level.progress : 0} />
+        <Text style={styles.num}>{q.ready ? q.level.level : ''}</Text>
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.kicker}>{t('Glow level')}</Text>
-        <Text style={styles.name}>{q.level.name}</Text>
+        <Text style={styles.name}>{q.ready ? q.level.name : ' '}</Text>
         <Text style={styles.sub}>{t('{done} of {total} quests today', { done: q.doneToday, total: of })}</Text>
       </View>
       {q.streak > 0 ? (

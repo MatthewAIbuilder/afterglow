@@ -20,7 +20,8 @@ import {
   pxPerUnit,
   unproject,
 } from './map';
-import { HERE_COLOR, TONE_COLOR } from './tones';
+import { HERE_COLOR, SHOW_COLOR, TONE_COLOR } from './tones';
+import { type ShowPin, showPinLabel } from './tour';
 import { t } from '../../i18n';
 import { datesLine } from '../festivals/format';
 
@@ -28,9 +29,21 @@ export { TONE_COLOR };
 
 /** Lights closer than this many pixels share one. */
 const CLUSTER_PX = 30;
-/** A dark street map with every road and town, free to use with credit (CARTO, from OpenStreetMap). */
-const TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+/**
+ * The street map under the lights: OpenStreetMap's own standard tiles, which
+ * need no key and may be used by small sites like this one under the OSM tile
+ * usage policy (https://operations.osmfoundation.org/policies/tiles/): a
+ * visible credit, the browser's normal Referer, no bulk downloading, and a
+ * move to a paid or self-hosted provider if traffic grows. They're drawn
+ * light; `leaflet.css` turns them into a night map with a filter on the tile
+ * pane (`.leaflet-tile-pane`). (CARTO's dark tiles, used before, now answer
+ * "API key required".) OSM has no high-resolution tiles: on a retina screen
+ * they're shown a little soft rather than fetching four times as many, which
+ * would also shrink every street name.
+ */
+const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILES_MAX_ZOOM = 19;
+const CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
 
 const latLngOf = (m: MapPoint): L.LatLngTuple => {
   const p = unproject(m);
@@ -42,7 +55,7 @@ const zoomFor = (degrees: number, width: number) => Math.log2((width * 360) / (2
 
 /**
  * The festival map on the website: a real dark street map (Leaflet, tiles
- * from CARTO and OpenStreetMap) that drags, wheels and pinches down to the
+ * from OpenStreetMap, darkened) that drags, wheels and pinches down to the
  * streets, with every festival glowing where it happens. Same props and
  * behaviour as the phone map (FestivalMap.tsx): lights cluster with a count
  * and split as you zoom, festivals sharing a spot fan out, the cards follow
@@ -50,6 +63,7 @@ const zoomFor = (degrees: number, width: number) => Math.log2((width * 360) / (2
  */
 export function FestivalMap({
   markers,
+  shows,
   selected,
   onSelect,
   here,
@@ -62,8 +76,9 @@ export function FestivalMap({
   testID,
 }: {
   markers: readonly FestivalMarker[];
+  shows?: readonly ShowPin[];
   selected?: string;
-  onSelect: (festivalId: string) => void;
+  onSelect: (id: string) => void;
   here?: Point;
   width: number;
   height: number;
@@ -75,6 +90,8 @@ export function FestivalMap({
   testID?: string;
 }) {
   const reduced = useReducedMotion();
+  // Festivals and shows on the map.
+  const lit = markers.length + (shows?.length ?? 0);
   const host = useRef<View>(null);
   const map = useRef<L.Map | null>(null);
   const [region, setRegion] = useState<Region | undefined>();
@@ -93,7 +110,7 @@ export function FestivalMap({
     if (!el) return;
     // No zoom animation: the lights are drawn over the map and would lag behind a scaling map, then jump.
     const m = L.map(el, { zoomControl: false, attributionControl: true, worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomSnap: 0.25, wheelPxPerZoomLevel: 90, zoomAnimation: false });
-    L.tileLayer(TILES, { attribution: CREDIT, subdomains: 'abcd', maxZoom: 19, detectRetina: true }).addTo(m);
+    L.tileLayer(TILES, { attribution: CREDIT, maxZoom: TILES_MAX_ZOOM, maxNativeZoom: TILES_MAX_ZOOM, detectRetina: false }).addTo(m);
     m.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
     m.setView([30, -95], 4);
     const read = () => {
@@ -138,7 +155,7 @@ export function FestivalMap({
     if (corner) corner.style.bottom = `${area.bottom}px`;
   }, [area.bottom]);
 
-  const points = useMemo(() => [...markers.map((m) => m.point), ...(here ? [here] : [])], [markers, here]);
+  const points = useMemo(() => [...markers.map((m) => m.point), ...(shows ?? []).map((p) => p.point), ...(here ? [here] : [])], [markers, shows, here]);
   const frameAll = useCallback(
     (animated: boolean) => {
       const m = map.current;
@@ -167,9 +184,9 @@ export function FestivalMap({
   useEffect(() => {
     if (!selected || selected === lastGlide.current) return;
     lastGlide.current = selected;
-    const k = markers.find((m) => m.festival.id === selected);
-    if (k) map.current?.panTo(pointLatLng(k.point), { animate: !reduced });
-  }, [selected, markers, reduced]);
+    const p = markers.find((m) => m.festival.id === selected)?.point ?? shows?.find((s) => s.show.id === selected)?.point;
+    if (p) map.current?.panTo(pointLatLng(p), { animate: !reduced });
+  }, [selected, markers, shows, reduced]);
 
   // "Show me": glide to where you are.
   const answered = useRef(0);
@@ -219,6 +236,36 @@ export function FestivalMap({
             <View style={styles.here} />
           </View>
         ) : null}
+        {/* An artist's club shows: small hollow lights, under the festivals'. */}
+        {m
+          ? (shows ?? []).map((s) => {
+              const p = at(pointLatLng(s.point));
+              if (!p || p.x < -80 || p.y < -80 || p.x > width + 80) return null;
+              const chosen = s.show.id === selected;
+              return (
+                <View key={s.show.id} style={[styles.lightBox, { left: Math.round(p.x) - LIGHT / 2, top: Math.round(p.y) - LIGHT / 2, zIndex: chosen ? 100 : 5 }]} pointerEvents="box-none">
+                  <Pressable
+                    onPress={() => {
+                      haptic.select();
+                      lastGlide.current = s.show.id;
+                      onSelect(s.show.id);
+                      touched.current = true;
+                      setMoved(true);
+                      m.panTo(pointLatLng(s.point), { animate: !reduced });
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={showPinLabel(s.show)}
+                    accessibilityState={{ selected: chosen }}
+                    testID={`map-show-${s.show.id}`}
+                    style={styles.lightHit}
+                  >
+                    {chosen ? <View style={[styles.showRing, { borderColor: SHOW_COLOR }]} /> : null}
+                    <View style={[styles.showDot, { borderColor: SHOW_COLOR, shadowColor: SHOW_COLOR }]} />
+                  </Pressable>
+                </View>
+              );
+            })
+          : null}
         {m
           ? clusters.map((c) => {
               const p = at(latLngOf(c.at));
@@ -252,7 +299,7 @@ export function FestivalMap({
             })
           : null}
       </View>
-      {moved && markers.length ? (
+      {moved && lit ? (
         <View style={[styles.again, { top: area.top + space.sm }]} pointerEvents="box-none">
           <Pressable
             onPress={() => {
@@ -260,10 +307,10 @@ export function FestivalMap({
               frameAll(true);
             }}
             accessibilityRole="button"
-            accessibilityLabel={markers.length > 1 ? t('Show all these festivals again') : t('Back to the festival')}
+            accessibilityLabel={lit > 1 ? t('Show all these festivals again') : t('Back to the festival')}
             style={({ pressed }) => [styles.againPill, pressed && { opacity: 0.8 }]}
           >
-            <Text style={styles.againText}>{markers.length > 1 ? t('Show all') : t('Back to it')}</Text>
+            <Text style={styles.againText}>{lit > 1 ? t('Show all') : t('Back to it')}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -328,6 +375,8 @@ const styles = StyleSheet.create({
   halo: { position: 'absolute', opacity: 0.22 },
   core: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.75)', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   ring: { position: 'absolute', width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
+  showDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 2, backgroundColor: color.night, shadowOpacity: 0.8, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },
+  showRing: { position: 'absolute', width: 22, height: 22, borderRadius: 11, borderWidth: 1.5 },
   pulse: { position: 'absolute', width: 28, height: 28, borderRadius: 14, borderWidth: 1.5 },
   count: {
     position: 'absolute',

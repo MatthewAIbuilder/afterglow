@@ -66,17 +66,17 @@ export function QuestToast() {
     [],
   );
 
-  // A new glow level gets its own toast (never on the first load).
-  const lastLevel = useRef<number | undefined>(undefined);
+  // A new glow level gets its own toast (never on the first load, nor on signing in to another account).
+  const lastLevel = useRef<{ owner: string; level: number } | undefined>(undefined);
   useEffect(() => {
     if (!quests.ready) return;
-    const was = lastLevel.current;
-    lastLevel.current = quests.level.level;
+    const was = lastLevel.current?.owner === quests.owner ? lastLevel.current.level : undefined;
+    lastLevel.current = { owner: quests.owner, level: quests.level.level };
     if (was !== undefined && quests.level.level > was) {
       const key = ++seq.current;
       setQueue((q) => [...q, { key, title: t('Level {level} · {name}', { level: quests.level.level, name: quests.level.name }), line: t('Your glow grew. Keep going.'), glow: 0, big: true }]);
     }
-  }, [quests.ready, quests.level.level, quests.level.name]);
+  }, [quests.ready, quests.owner, quests.level.level, quests.level.name]);
 
   const current = queue[0];
   const y = useSharedValue(-140);
