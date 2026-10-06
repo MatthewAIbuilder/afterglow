@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { rememberBackdrop, useLastBackdrop } from '../../state/lastBackdrop';
+import { useSprouts } from '../../state/sprouts';
 import { useSocial } from '../../state/social';
 import { color, glowA, nightA } from '../../theme/tokens';
 import { useStanding } from '../standing/useStanding';
@@ -25,6 +26,7 @@ export function CoverSwap({ me, shown, style }: { me: Profile; shown: BackdropId
   const social = useSocial();
   const plus = !!useStanding(me.uid)?.plus;
   const last = useLastBackdrop(me.uid);
+  const gifts = useSprouts().giftThemes.map((g) => g.theme);
   const [busy, setBusy] = useState(false);
 
   // Remember the background you're showing, to come back to it after the photo.
@@ -33,7 +35,7 @@ export function CoverSwap({ me, shown, style }: { me: Profile; shown: BackdropId
   }, [shown, me.uid]);
 
   const lastBackdrop = backdropOf(last);
-  const back = lastBackdrop && canUse(lastBackdrop, me.uid, plus) ? lastBackdrop.id : undefined;
+  const back = lastBackdrop && canUse(lastBackdrop, me.uid, plus, gifts) ? lastBackdrop.id : undefined;
   if (!me.coverUrl || (!shown && !back)) return null;
   const toPhoto = !!shown;
   const otherLabel = toPhoto ? t('Show your cover photo instead') : t('Show {name} instead', { name: backdropOf(back)?.name ?? '' });

@@ -133,11 +133,13 @@ export type Sprout = {
   /** An artist's sprout: which artist. */
   artistId?: string;
   artistName?: string;
+  /** A gift theme that came with it (only Afterglow's developer can give one; features/themes/gifts.ts). */
+  theme?: string;
   /** When it reached Afterglow (ISO). */
   createdAt: string;
   claimedAt?: string;
 };
-export type SproutInput = { id: string; kind: string; note?: string; festivalId?: string; artistId?: string; artistName?: string };
+export type SproutInput = { id: string; kind: string; note?: string; festivalId?: string; artistId?: string; artistName?: string; theme?: string };
 
 export type CrewInvite = {
   /** `crewId_to` */

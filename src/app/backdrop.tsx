@@ -14,6 +14,7 @@ import { showAlert } from '../lib/dialog';
 import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
+import { useSprouts } from '../state/sprouts';
 import { color, radius, space, type, nightA } from '../theme/tokens';
 
 /** The "cover photo" choice: no animated background. */
@@ -35,7 +36,8 @@ export default function BackdropScreen() {
   const current: Choice = (me ? shownBackdrop(me.backdrop, me.uid, plus) : undefined) ?? PHOTO;
   const [picked, setPicked] = useState<Choice>(current);
   const [saving, setSaving] = useState(false);
-  const choices = backdropChoices(me?.uid);
+  const gifts = useSprouts().giftThemes.map((g) => g.theme);
+  const choices = backdropChoices(me?.uid, gifts);
   const special = madeFor(me?.uid);
 
   const pageW = Math.min(width, 640);
@@ -46,7 +48,7 @@ export default function BackdropScreen() {
   const tileH = Math.round(tileW * 0.62);
 
   const pickedBackdrop = picked === PHOTO ? undefined : backdropOf(picked);
-  const locked = !!pickedBackdrop && !canUse(pickedBackdrop, me?.uid, plus);
+  const locked = !!pickedBackdrop && !canUse(pickedBackdrop, me?.uid, plus, gifts);
   const changed = picked !== current;
 
   const save = async () => {
@@ -125,8 +127,8 @@ export default function BackdropScreen() {
             <Tile
               key={b.id}
               label={b.name}
-              detail={b.only ? t('Made for you') : b.plus ? t('Plus') : t('Free')}
-              tag={tagOf(b, me?.uid, plus)}
+              detail={b.only ? t('Made for you') : b.gift ? t('Gift') : b.plus ? t('Plus') : t('Free')}
+              tag={tagOf(b, me?.uid, plus, gifts)}
               selected={picked === b.id}
               current={current === b.id}
               width={tileW}
@@ -160,8 +162,9 @@ export default function BackdropScreen() {
   );
 }
 
-function tagOf(b: Backdrop, uid: string | undefined, plus: boolean): { text: string; tone: 'special' | 'plus' | 'free' } | undefined {
+function tagOf(b: Backdrop, uid: string | undefined, plus: boolean, gifts: readonly string[]): { text: string; tone: 'special' | 'plus' | 'free' } | undefined {
   if (b.only) return { text: t('♥ Yours'), tone: 'special' };
+  if (b.gift) return canUse(b, uid, plus, gifts) ? { text: t('♥ Gift'), tone: 'special' } : undefined;
   if (b.plus) return { text: canUse(b, uid, plus) ? 'PLUS' : 'PLUS 🔒', tone: 'plus' };
   return undefined;
 }

@@ -17,6 +17,8 @@ export type AppTheme = {
   only?: readonly string[];
   /** The profile background that goes with it. */
   backdrop?: BackdropId;
+  /** A gift: only for accounts given it (a sprout from Afterglow's developer that came with it; features/themes/gifts.ts). */
+  gift?: true;
 };
 
 export const THEMES: readonly AppTheme[] = [
@@ -33,6 +35,7 @@ export const THEMES: readonly AppTheme[] = [
   { id: 'prism', name: 'Prism', about: t('Orchid and soft pastel light'), plus: true, backdrop: 'prism' },
   { id: 'panda', name: 'Panda garden', about: t('Made just for you: blossom pink and bamboo green'), plus: false, only: PANDA_FRIENDS, backdrop: 'panda' },
   { id: 'frog', name: 'Frog pond', about: t('Made just for you: lily-pad green and firefly light'), plus: false, only: FROG_FRIENDS, backdrop: 'frog' },
+  { id: 'daisy', name: 'Neon Daisy', about: t('A gift: neon daisy pink, carnival gold and a night full of lights'), plus: false, gift: true, backdrop: 'daisy' },
   { id: 'toes', name: 'Toe beach', about: t('Made just for you: sunset peach on the sand'), plus: false, only: TOE_BEACH_FRIENDS, backdrop: 'toes' },
 ];
 
@@ -41,14 +44,15 @@ const BY_ID = new Map(THEMES.map((t) => [t.id, t]));
 export const themeOf = (id: string | undefined): AppTheme => BY_ID.get(id as ThemeId) ?? BY_ID.get(DEFAULT_THEME)!;
 export const paletteOf = (id: ThemeId): Palette => PALETTES[id];
 
-/** The themes this account is offered: its own special one first, then everyone's. */
-export function themeChoices(uid: string | undefined): AppTheme[] {
-  return [...THEMES.filter((t) => t.only && uid && t.only.includes(uid)), ...THEMES.filter((t) => !t.only)];
+/** The themes this account is offered: its own special one and gifts first, then everyone's. */
+export function themeChoices(uid: string | undefined, gifts: readonly string[] = []): AppTheme[] {
+  return [...THEMES.filter((t) => (t.only && uid && t.only.includes(uid)) || (t.gift && gifts.includes(t.id))), ...THEMES.filter((t) => !t.only && !t.gift)];
 }
 
-/** Whether `uid` may wear it: made for them, free, or with Plus. */
-export function canUseTheme(t: AppTheme, uid: string | undefined, plus: boolean): boolean {
+/** Whether `uid` may wear it: made for them, given to them, free, or with Plus. */
+export function canUseTheme(t: AppTheme, uid: string | undefined, plus: boolean, gifts: readonly string[] = []): boolean {
   if (t.only) return !!uid && t.only.includes(uid);
+  if (t.gift) return gifts.includes(t.id);
   return !t.plus || plus;
 }
 
@@ -61,9 +65,11 @@ export const madeTheme = (uid: string | undefined) => THEMES.find((t) => t.only 
  * Plus has ended. Only decides on what's known: `uid` undefined (signed out)
  * or `plus` undefined (not read yet) never takes a theme away.
  */
-export function themeToRevert(current: ThemeId, who: { uid?: string; plus?: boolean }): ThemeId | undefined {
+export function themeToRevert(current: ThemeId, who: { uid?: string; plus?: boolean; gifts?: readonly string[] }): ThemeId | undefined {
   const t = themeOf(current);
   if (t.only) return who.uid && !t.only.includes(who.uid) ? DEFAULT_THEME : undefined;
+  // A gift goes back only once this account's gifts are known and it isn't among them.
+  if (t.gift) return who.uid && who.gifts && !who.gifts.includes(t.id) ? DEFAULT_THEME : undefined;
   if (t.plus && who.uid && who.plus === false) return DEFAULT_THEME;
   return undefined;
 }

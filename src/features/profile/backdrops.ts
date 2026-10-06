@@ -23,7 +23,8 @@ export type BackdropId =
   | 'vortex'
   | 'panda'
   | 'frog'
-  | 'toes';
+  | 'toes'
+  | 'daisy';
 
 export type Backdrop = {
   id: BackdropId;
@@ -34,6 +35,8 @@ export type Backdrop = {
   plus: boolean;
   /** Only these accounts may use it (and theirs shows it by default). */
   only?: readonly string[];
+  /** A gift: only for accounts given it (a sprout from Afterglow's developer that came with it). */
+  gift?: true;
 };
 
 /** Whose profile gets the panda garden (their Afterglow account). */
@@ -60,6 +63,7 @@ export const BACKDROPS: readonly Backdrop[] = [
   { id: 'vortex', name: t('Vortex'), about: t('Rings of light turning around the centre'), plus: true },
   { id: 'panda', name: t('Panda garden'), about: t('Made just for you: pandas, bamboo and falling blossoms'), plus: false, only: PANDA_FRIENDS },
   { id: 'frog', name: t('Frog pond'), about: t('Made just for you: frogs on lily pads, fireflies and a green glow'), plus: false, only: FROG_FRIENDS },
+  { id: 'daisy', name: t('Neon daisy'), about: t('A gift: giant neon daisies turning under carnival lights'), plus: false, gift: true },
   { id: 'toes', name: t('Toe beach'), about: t('Made just for you: footprints in the sand, wiggling toes and a sunset'), plus: false, only: TOE_BEACH_FRIENDS },
 ];
 
@@ -69,15 +73,16 @@ export const isBackdropId = (v: unknown): v is BackdropId => typeof v === 'strin
 
 export const backdropOf = (id: string | undefined) => (id ? BY_ID.get(id as BackdropId) : undefined);
 
-/** The backgrounds this account is offered: its own special one first, then everyone's. */
-export function backdropChoices(uid: string | undefined): Backdrop[] {
-  const mine = BACKDROPS.filter((b) => b.only && uid && b.only.includes(uid));
-  return [...mine, ...BACKDROPS.filter((b) => !b.only)];
+/** The backgrounds this account is offered: its own special one and gifts first, then everyone's. */
+export function backdropChoices(uid: string | undefined, gifts: readonly string[] = []): Backdrop[] {
+  const mine = BACKDROPS.filter((b) => (b.only && uid && b.only.includes(uid)) || (b.gift && gifts.includes(b.id)));
+  return [...mine, ...BACKDROPS.filter((b) => !b.only && !b.gift)];
 }
 
-/** Whether `uid` may use it now: made for them, free, or with Plus. */
-export function canUse(b: Backdrop, uid: string | undefined, plus: boolean): boolean {
+/** Whether `uid` may use it now: made for them, given to them, free, or with Plus. */
+export function canUse(b: Backdrop, uid: string | undefined, plus: boolean, gifts: readonly string[] = []): boolean {
   if (b.only) return !!uid && b.only.includes(uid);
+  if (b.gift) return gifts.includes(b.id);
   return !b.plus || plus;
 }
 
@@ -92,6 +97,8 @@ export const madeFor = (uid: string | undefined) => BACKDROPS.find((b) => b.only
  */
 export function shownBackdrop(chosen: string | undefined, uid: string | undefined, plus: boolean): BackdropId | undefined {
   const b = backdropOf(chosen);
+  // A gift background: the database only lets someone given it choose it, so a chosen one is theirs.
+  if (b?.gift) return b.id;
   if (b && canUse(b, uid, plus)) return b.id;
   if (chosen === NO_BACKDROP) return undefined;
   return madeFor(uid)?.id;

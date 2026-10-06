@@ -315,6 +315,12 @@ export interface SocialService {
   sproutsGiven(max: number): Promise<Sprout[]>;
   /** Sprouts you picked up, newest first. */
   sproutsReceived(max: number): Promise<Sprout[]>;
+  /**
+   * A gift theme that came with a sprout you picked up is yours: saved where
+   * the database can check it (your profile may then show its background).
+   * Saying so again is the same as once.
+   */
+  grantTheme(sproutId: string, theme: string): Promise<void>;
   /** Take back a sprout nobody has picked up (one that isn't there is fine; `sprout-taken` once someone has it). */
   takeBackSprout(id: string): Promise<void>;
 
