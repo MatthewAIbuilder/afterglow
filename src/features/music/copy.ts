@@ -10,7 +10,7 @@ import {
 } from './models';
 import { PRIOR_YIELDS_AT } from '../taste/engine';
 import type { MusicAvailability } from './service';
-import { t, tn } from '../../i18n';
+import { months, t, tn } from '../../i18n';
 
 /**
  * Words for connected music, on the Music connections screen and My Sound.
@@ -23,14 +23,15 @@ export function syncedAgo(iso: string, now: Date): string {
   const then = Date.parse(iso);
   if (!Number.isFinite(then)) return '';
   const min = Math.max(0, Math.round((now.getTime() - then) / 60_000));
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min} ${min === 1 ? 'minute' : 'minutes'} ago`;
+  if (min < 1) return t('just now');
+  if (min < 60) return tn(min, '{n} minute ago', '{n} minutes ago');
   const h = Math.round(min / 60);
-  if (h < 24) return `${h} ${h === 1 ? 'hour' : 'hours'} ago`;
+  if (h < 24) return tn(h, '{n} hour ago', '{n} hours ago');
   const d = Math.round(h / 24);
-  if (d === 1) return 'yesterday';
-  if (d < 7) return `${d} days ago`;
-  return `on ${new Date(then).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  if (d === 1) return t('yesterday');
+  if (d < 7) return t('{n} days ago', { n: d });
+  const day = new Date(then);
+  return t('on {date}', { date: t('{month} {day}', { month: months(true)[day.getMonth()], day: day.getDate() }) });
 }
 
 /**
@@ -77,29 +78,29 @@ export type ConnectionView = {
 };
 
 const UNAVAILABLE: Record<Exclude<MusicAvailability, { ok: true }>['reason'], string> = {
-  'not-set-up': 'Not available in this version of Afterglow yet.',
-  'needs-full-app': 'Needs the full version of Afterglow. It can’t connect in this preview.',
-  'not-on-this-device': 'Not available on this device.',
+  'not-set-up': t('Not available in this version of Afterglow yet.'),
+  'needs-full-app': t('Needs the full version of Afterglow. It can’t connect in this preview.'),
+  'not-on-this-device': t('Not available on this device.'),
 };
 
 const PART: Record<MusicLibraryGap, string> = {
-  saved: 'saved songs',
-  followed: 'followed artists',
-  top: 'top artists',
-  recent: 'recent listening',
+  saved: t('saved songs'),
+  followed: t('followed artists'),
+  top: t('top artists'),
+  recent: t('recent listening'),
 };
 
-const listed = (parts: string[]) => (parts.length < 2 ? parts.join('') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`);
+const listed = (parts: string[]) => (parts.length < 2 ? parts.join('') : t('{list} and {last}', { list: parts.slice(0, -1).join(', '), last: parts[parts.length - 1] }));
 
 const LABEL: Record<ConnectionStatus, string> = {
-  unavailable: 'Not available',
-  'not-connected': 'Not connected',
-  connecting: 'Connecting',
-  connected: 'Connected',
-  syncing: 'Syncing',
-  synced: 'Synced',
-  reauthorize: 'Sign in again',
-  failed: 'Sync failed',
+  unavailable: t('Not available'),
+  'not-connected': t('Not connected'),
+  connecting: t('Connecting'),
+  connected: t('Connected'),
+  syncing: t('Syncing'),
+  synced: t('Synced'),
+  reauthorize: t('Sign in again'),
+  failed: t('Sync failed'),
 };
 
 /** What a sign-in that didn't finish says, once, under the card. Cancelling says nothing. */
@@ -110,15 +111,15 @@ export function connectProblem(provider: MusicProviderId, reason: MusicErrorKind
     case 'cancelled':
       return undefined;
     case 'denied':
-      return `${name} didn’t connect: access wasn’t allowed. You can try again any time.`;
+      return t('{service} didn’t connect: access wasn’t allowed. You can try again any time.', { service: name });
     case 'network':
-      return `Couldn’t reach ${name}. Check your connection and try again.`;
+      return t('Couldn’t reach {service}. Check your connection and try again.', { service: name });
     case 'rate-limited':
-      return `${name} is busy right now. Try again in a few minutes.`;
+      return t('{service} is busy right now. Try again in a few minutes.', { service: name });
     case 'unavailable':
       return UNAVAILABLE['not-set-up'];
     default:
-      return `${name} didn’t connect. Try again.`;
+      return t('{service} didn’t connect. Try again.', { service: name });
   }
 }
 
@@ -145,52 +146,52 @@ export function connectionView(
   const notes: string[] = [];
   if (snap) {
     const n = snap.artists.length;
-    stats.push({ value: syncedAgo(snap.syncedAt, now), label: 'Last synced' });
-    stats.push({ value: String(n), label: n === 1 ? 'artist analyzed' : 'artists analyzed' });
-    if (n > 0 && reach.upcoming !== undefined) stats.push({ value: String(reach.upcoming), label: 'on upcoming festivals' });
-    if (n === 0) notes.push(`Your ${name} library had no saved songs, followed artists or top artists to read yet.`);
-    else if (reach.matched === 0) notes.push(`None of these artists play Afterglow’s lineups yet, so your map grows from what you do here.`);
+    stats.push({ value: syncedAgo(snap.syncedAt, now), label: t('Last synced') });
+    stats.push({ value: String(n), label: n === 1 ? t('artist analyzed') : t('artists analyzed') });
+    if (n > 0 && reach.upcoming !== undefined) stats.push({ value: String(reach.upcoming), label: t('on upcoming festivals') });
+    if (n === 0) notes.push(t('Your {service} library had no saved songs, followed artists or top artists to read yet.', { service: name }));
+    else if (reach.matched === 0) notes.push(t('None of these artists play Afterglow’s lineups yet, so your map grows from what you do here.'));
     const gaps = MUSIC_SIGNAL_SOURCES.filter((g) => snap.gaps.includes(g));
-    if (n > 0 && gaps.length) notes.push(`${name} didn’t share your ${listed(gaps.map((g) => PART[g]))} this time, so this uses the rest.`);
+    if (n > 0 && gaps.length) notes.push(t('{service} didn’t share your {parts} this time, so this uses the rest.', { service: name, parts: listed(gaps.map((g) => PART[g])) }));
   }
-  const kept = snap ? ' Your last import is still used until you disconnect.' : '';
+  const kept = snap ? ` ${t('Your last import is still used until you disconnect.')}` : '';
 
   switch (status) {
     case 'unavailable':
       return {
         ...base,
         headline: name,
-        detail: `${UNAVAILABLE[(availability as Exclude<MusicAvailability, { ok: true }>).reason]}${snap ? ' Your last import is still used.' : ''}`,
+        detail: `${UNAVAILABLE[(availability as Exclude<MusicAvailability, { ok: true }>).reason]}${snap ? ` ${t('Your last import is still used.')}` : ''}`,
         stats,
         tone: 'quiet',
       };
     case 'not-connected':
-      return { ...base, headline: 'Not connected', detail: 'Start your map from the artists you already play.', tone: 'quiet', primary: { action: 'connect', label: `Connect ${name}` } };
+      return { ...base, headline: t('Not connected'), detail: t('Start your map from the artists you already play.'), tone: 'quiet', primary: { action: 'connect', label: t('Connect {service}', { service: name }) } };
     case 'connecting':
-      return { ...base, headline: `Connecting to ${name}…`, detail: `Finish signing in on ${name}’s page.`, stats, tone: 'good', busy: true };
+      return { ...base, headline: t('Connecting to {service}…', { service: name }), detail: t('Finish signing in on {service}’s page.', { service: name }), stats, tone: 'good', busy: true };
     case 'connected':
-      return { ...base, headline: `Connected to ${name}`, detail: 'Ready to bring in your library.', tone: 'good', primary: { action: 'sync', label: 'Sync now' } };
+      return { ...base, headline: t('Connected to {service}', { service: name }), detail: t('Ready to bring in your library.'), tone: 'good', primary: { action: 'sync', label: t('Sync now') } };
     case 'syncing':
-      return { ...base, headline: snap ? 'Syncing your library…' : 'Reading your library…', detail: 'This takes a few seconds.', stats, tone: 'good', busy: true };
+      return { ...base, headline: snap ? t('Syncing your library…') : t('Reading your library…'), detail: t('This takes a few seconds.'), stats, tone: 'good', busy: true };
     case 'synced':
-      return { ...base, headline: `Connected to ${name}`, stats, notes, tone: 'good', primary: { action: 'sync', label: 'Sync now' } };
+      return { ...base, headline: t('Connected to {service}', { service: name }), stats, notes, tone: 'good', primary: { action: 'sync', label: t('Sync now') } };
     case 'reauthorize':
       return {
         ...base,
-        headline: c?.error === 'denied' ? `${name} didn’t allow access` : `${name} needs you to sign in again`,
-        detail: `${c?.error === 'denied' ? 'Sign in again to allow Afterglow to read your library.' : 'Access ended or was removed.'}${kept}`,
+        headline: c?.error === 'denied' ? t('{service} didn’t allow access', { service: name }) : t('{service} needs you to sign in again', { service: name }),
+        detail: `${c?.error === 'denied' ? t('Sign in again to allow Afterglow to read your library.') : t('Access ended or was removed.')}${kept}`,
         stats,
         tone: 'warn',
-        primary: { action: 'connect', label: 'Sign in again' },
+        primary: { action: 'connect', label: t('Sign in again') },
       };
     case 'failed': {
       const why =
         c?.error === 'rate-limited'
-          ? `${name} is busy right now. Try again in a few minutes.`
+          ? t('{service} is busy right now. Try again in a few minutes.', { service: name })
           : c?.error === 'network'
-            ? `Couldn’t reach ${name}. Check your connection and try again.`
-            : 'Something went wrong reading your library. Try again.';
-      return { ...base, headline: 'Couldn’t sync your library', detail: `${why}${kept}`, stats, notes, tone: 'warn', primary: { action: 'sync', label: 'Try again' } };
+            ? t('Couldn’t reach {service}. Check your connection and try again.', { service: name })
+            : t('Something went wrong reading your library. Try again.');
+      return { ...base, headline: t('Couldn’t sync your library'), detail: `${why}${kept}`, stats, notes, tone: 'warn', primary: { action: 'sync', label: t('Try again') } };
     }
   }
 }

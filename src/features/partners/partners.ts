@@ -15,8 +15,9 @@ export const AMAZON_NOTE =
   "As an Amazon Associate, Afterglow earns from qualifying purchases.";
 
 /** Shown beside shop links that aren't Amazon's. */
-export const SHOP_NOTE =
-  "Afterglow may earn a commission from shop links. It doesn’t change your price.";
+export const SHOP_NOTE = t(
+  "Afterglow may earn a commission from shop links. It doesn’t change your price.",
+);
 
 const httpsOnly = (url: unknown): url is string =>
   typeof url === "string" &&

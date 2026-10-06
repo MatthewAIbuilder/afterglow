@@ -58,18 +58,18 @@ function Week({ festival }: { festival: Festival }) {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={`Festival week · ${festival.name}`} />
+      <PageTitle title={t('Festival week · {festival}', { festival: festival.name })} />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.lg }}>
         <View style={{ gap: 4 }}>
-          <Text style={styles.kicker}>FESTIVAL WEEK</Text>
+          <Text style={styles.kicker}>{t('FESTIVAL WEEK')}</Text>
           <Text style={styles.title} accessibilityRole="header">
             {festival.name}
           </Text>
           {week ? (
-            <Text style={styles.sub}>{week.until <= 0 ? 'It’s today' : week.until === 1 ? 'Tomorrow' : `${week.until} days to go`} · one door a day</Text>
+            <Text style={styles.sub}>{week.until <= 0 ? t('It’s today · one door a day') : week.until === 1 ? t('Tomorrow · one door a day') : t('{n} days to go · one door a day', { n: week.until })}</Text>
           ) : (
-            <Text style={styles.sub}>The doors open in the week before a festival you’re going to.</Text>
+            <Text style={styles.sub}>{t('The doors open in the week before a festival you’re going to.')}</Text>
           )}
         </View>
         {week ? (
@@ -84,7 +84,7 @@ function Week({ festival }: { festival: Festival }) {
         ) : null}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : router.replace({ pathname: '/festival/[id]', params: { id: festival.id } }))}>
+        <GlassCircleButton label={t('Back')} onPress={() => (router.canGoBack() ? goBack() : router.replace({ pathname: '/festival/[id]', params: { id: festival.id } }))}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
@@ -102,10 +102,12 @@ function DoorTile({ door, until, chosen, onPress }: { door: Door & { unlocked: b
     onPress();
   };
   const label = door.opened
-    ? `Door ${door.day}, open: ${door.title}`
+    ? t('Door {n}, open: {title}', { n: door.day, title: door.title })
     : door.unlocked
-      ? `Door ${door.day}, ready. Tap to open it`
-      : `Door ${door.day}, opens ${until - door.day === 1 ? 'tomorrow' : `in ${until - door.day} days`}`;
+      ? t('Door {n}, ready. Tap to open it', { n: door.day })
+      : until - door.day === 1
+        ? t('Door {n}, opens tomorrow', { n: door.day })
+        : t('Door {n}, opens in {days} days', { n: door.day, days: until - door.day });
   return (
     <Pressable onPress={press} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: chosen, disabled: !door.unlocked }} style={styles.tileWrap}>
       <Animated.View style={[styles.tile, ready && styles.tileReady, door.opened && styles.tileOpen, chosen && styles.tileChosen, !door.unlocked && styles.tileLocked, style]}>
@@ -119,7 +121,7 @@ function DoorTile({ door, until, chosen, onPress }: { door: Door & { unlocked: b
         ) : (
           <>
             <Text style={[styles.number, ready && { color: GOLD }]}>{door.day}</Text>
-            <Text style={[styles.tileHint, ready && { color: GOLD }]}>{ready ? 'Open' : door.day === 1 ? 'Day before' : `${door.day} days out`}</Text>
+            <Text style={[styles.tileHint, ready && { color: GOLD }]}>{ready ? t('Open') : door.day === 1 ? t('Day before') : t('{n} days out', { n: door.day })}</Text>
           </>
         )}
       </Animated.View>
@@ -129,9 +131,9 @@ function DoorTile({ door, until, chosen, onPress }: { door: Door & { unlocked: b
 
 function DoorCard({ door, festival, burst }: { door: Door; festival: Festival; burst: number }) {
   return (
-    <View style={styles.card} accessible accessibilityLabel={`Door ${door.day}. ${door.title}. ${door.line}`}>
+    <View style={styles.card} accessible accessibilityLabel={t('Door {n}. {title}. {line}', { n: door.day, title: door.title, line: door.line })}>
       {burst ? <ConfettiBurst key={burst} /> : null}
-      <Text style={styles.cardKicker}>{door.day === 1 ? 'DOOR 1 · THE DAY BEFORE' : `DOOR ${door.day} · ${door.day} DAYS OUT`}</Text>
+      <Text style={styles.cardKicker}>{door.day === 1 ? t('DOOR 1 · THE DAY BEFORE') : t('DOOR {n} · {n} DAYS OUT', { n: door.day })}</Text>
       <Text style={styles.cardTitle}>
         {door.emoji}  {door.title}
       </Text>

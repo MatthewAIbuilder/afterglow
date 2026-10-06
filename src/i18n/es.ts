@@ -2,14 +2,19 @@ import type { Dictionary } from './translate';
 import { es_discover } from './es/discover';
 import { es_festivalPage } from './es/festivalPage';
 import { es_festivals } from './es/festivals';
+import { es_festivalsMore } from './es/festivalsMore';
+import { es_account } from './es/account';
 import { es_artist } from './es/artist';
+import { es_care } from './es/care';
 import { es_crews } from './es/crews';
 import { es_memories } from './es/memories';
 import { es_friends } from './es/friends';
 import { es_plan } from './es/plan';
+import { es_play } from './es/play';
 import { es_profile } from './es/profile';
 import { es_profileLogic } from './es/profileLogic';
 import { es_sound } from './es/sound';
+import { es_sprouts } from './es/sprouts';
 
 /**
  * Spanish, keyed by the English line exactly as it's written in the code
@@ -31,6 +36,11 @@ export const es: Dictionary = {
   ...es_crews,
   ...es_artist,
   ...es_memories,
+  ...es_play,
+  ...es_sprouts,
+  ...es_care,
+  ...es_festivalsMore,
+  ...es_account,
 
 
 
