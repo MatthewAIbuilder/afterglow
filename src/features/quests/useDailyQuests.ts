@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNow } from '../../lib/useNow';
 import { useBadgeClaims } from '../../state/badgeClaims';
 import { useMemories } from '../../state/memories';
@@ -12,7 +12,10 @@ import { useAllOpenedDoors } from '../../state/festivalWeek';
 import { useCommunityClips } from '../../state/community';
 import { useCrews } from '../../state/crews';
 import { useCatalog } from '../../state/catalog';
+import { creditAccountGlow, useAccountGlow } from '../../state/accountGlow';
 import { useQuestBook } from '../../state/dailyQuests';
+import { useStandingRead } from '../standing/useStanding';
+import { creditGlow } from './accountGlow';
 import { useFollowedArtists } from '../../state/followedArtists';
 import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
@@ -117,10 +120,28 @@ export function useDailyQuests() {
   const throwbacks = useThrowbacks(undefined);
   const held = useMemo(() => new Set(throwbacks.map((t) => throwbackKey(t.key))), [throwbacks]);
   const badgeCount = badgeGlowCount(claimed, SIDE_QUEST_KEYS, held);
-  const glow = totalGlow(book, sideDone, badgeCount, Object.keys(secrets.found).length);
+  const phoneGlow = totalGlow(book, sideDone, badgeCount, Object.keys(secrets.found).length);
+  // Everything this phone's glow counts has loaded, so it never jumps (and toasts a level-up) on launch.
+  const phoneReady = loaded && ready && !!book && sideLoaded && claimed !== undefined && secrets.loaded && memoriesLoaded;
+  // Signed in, your level is your account's (state/accountGlow): what you earned while signed in to it,
+  // never less than the level it already shows on your profile. Signed out, it's this phone's.
+  const social = useSocialMaybe();
+  const online = !!social?.availability.ok;
+  const uid = online ? social?.user?.uid : undefined;
+  const signInKnown = !online || !!social?.ready;
+  const ledger = useAccountGlow();
+  const { standing, settled } = useStandingRead(uid);
+  const published = standing?.level;
+  const accountReady = !uid || (!!ledger && settled);
+  const credited = uid && ledger && phoneReady && settled ? creditGlow(ledger, uid, phoneGlow, published) : ledger;
+  useEffect(() => {
+    if (uid && phoneReady && settled) creditAccountGlow(uid, phoneGlow, published);
+  }, [uid, phoneReady, settled, phoneGlow, published, ledger]);
+  const glow = uid ? (credited?.accounts[uid] ?? 0) : phoneGlow;
   return {
-    // Everything your level counts has loaded, so it never jumps (and toasts a level-up) on launch.
-    ready: loaded && ready && !!book && sideLoaded && claimed !== undefined && secrets.loaded && memoriesLoaded,
+    ready: phoneReady && signInKnown && accountReady,
+    /** Whose level this is: the account signed in, or '' for this phone. */
+    owner: uid ?? '',
     book,
     picks,
     rows,
