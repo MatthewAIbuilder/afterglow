@@ -1,9 +1,11 @@
 import { type ReactNode, useEffect, useId } from 'react';
 import { View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
-import { type ArtistLook, hashOf, mix, type Palette } from './artistLook';
-import { DRAW, type Fills, star } from './creatures';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import { type ArtistLook, type Creature, hashOf, mix, type Palette } from './artistLook';
+import { DRAW, type Fills, star, V } from './creatures';
+import { blinkOf, paceOf, sine } from './motion';
+import type { Driven } from './Sprout';
 
 /** Bronze, silver and gold, for the ring round a collectible's tile. */
 export const TIER_COLOR = ['', '#D08A4E', '#D6DDEA', '#FFD24A'] as const;
@@ -16,15 +18,42 @@ export const MOVES_FROM = 100;
 const LOCKED: Palette = { light: '#A3A1B6', mid: '#76748C', deep: '#4A4860', alt: '#8E8CA4', altDeep: '#57556C', accent: '#B4B2C6', glow: '#6E6C84' };
 
 /**
+ * Where a pair of little feet hangs (left hip x, right hip x, hip y, in the
+ * 100 × 100 box) on the creatures that have no legs of their own and wear
+ * them well: round bodies and boxes that stand on the ground. The rest keep
+ * their own legs (astronaut, rabbit, spirit, monster, frog, owl), sit on a
+ * base (cat, fox, bear) or float, trail or are things (eye, ghost, wisp,
+ * jelly, moth, serpent, crystal, skull, reaper, wolf, phoenix, the festival
+ * places).
+ */
+export const FEET: Partial<Record<Creature, [number, number, number]>> = {
+  lion: [43, 57, 67],
+  pumpkin: [42, 58, 79],
+  sheep: [43, 57, 70],
+  twin: [44, 56, 70],
+  alien: [45.5, 54.5, 83],
+  sloth: [44.5, 55.5, 80],
+  beast: [42, 58, 73],
+  bot: [44, 56, 81],
+  dragon: [44, 56, 73],
+};
+/** How far below the hip a foot hangs. */
+const LEG = 10.5;
+
+const ellipseD = (x: number, y: number, rx: number, ry: number) => `M${x - rx} ${y} A${rx} ${ry} 0 1 0 ${x + rx} ${y} A${rx} ${ry} 0 1 0 ${x - rx} ${y}Z`;
+
+/**
  * An artist's collectible: their creature (creatures.tsx), glowing on a dark
  * round tile with a ring in bronze, silver or gold for its `tier`. It floats,
- * blinks, and its flames, wings or tentacles move, unless motion is reduced,
- * it's `still`, or `locked` (a grey figure of what you could earn). Small
- * ones (under `MOVES_FROM`) are still unless told otherwise, so a grid or a
- * list of them scrolls smoothly; a still one is drawn as a single picture.
+ * blinks, swings its feet, and its flames, wings or tentacles move, unless
+ * motion is reduced, it's `still`, or `locked` (a grey figure of what you
+ * could earn). Small ones (under `MOVES_FROM`) are still unless told
+ * otherwise, so a grid or a list of them scrolls smoothly; a still one is
+ * drawn as a single picture. In the garden `scene` it has no tile (the scene
+ * is its ground) and keeps time by the garden's clock (`driven`).
  * Hidden from screen readers (the label around it says what it is).
  */
-export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FROM, locked }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean }) {
+export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FROM, locked, scene, driven }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean; scene?: boolean; driven?: Driven }) {
   // Ends with `_`, so a fill's name ends `_vs`, `_vh` … (creatures.tsx's `mirror` reads them).
   const uid = `c${useId().replace(/[^a-zA-Z0-9]/g, '')}_`;
   const p = locked ? LOCKED : look.palette;
@@ -52,15 +81,28 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
   const sway = useSharedValue(0);
   const flick = useSharedValue(1);
   const blink = useSharedValue(1);
+  const kick = useSharedValue(0);
   // Each collectible keeps its own time, so a shelf of them never moves in step.
   const pace = hashOf(`${look.name}${p.mid}`) % 1000;
+  // On the garden's clock: its own beat and place in the loop.
+  const beat = driven?.pace ?? paceOf(`${look.name}${p.mid}`);
+  const clock = driven?.clock;
+  const hasClock = !!clock;
+  const running = moving && (driven ? driven.running : true);
+  const phase = beat.phase;
+  const swayC = beat.sway;
+  const bobC = beat.bob;
+  const blinkC = beat.blink;
+  const lift = driven?.lift;
   useEffect(() => {
-    if (!moving) return;
+    if (!moving || hasClock) return;
     const sine = Easing.inOut(Easing.sin);
     const bobMs = 2200 + (pace % 600);
     bob.set(withRepeat(withSequence(withTiming(1, { duration: bobMs, easing: sine }), withTiming(-1, { duration: bobMs, easing: sine })), -1, true));
     const swayMs = 1500 + ((pace * 7) % 700);
     sway.set(withRepeat(withSequence(withTiming(1, { duration: swayMs, easing: sine }), withTiming(-1, { duration: swayMs, easing: sine })), -1, true));
+    // The feet swing a little behind the bob.
+    kick.set(withDelay(bobMs / 2, withRepeat(withSequence(withTiming(1, { duration: bobMs, easing: sine }), withTiming(-1, { duration: bobMs, easing: sine })), -1, true)));
     flick.set(
       withRepeat(
         withSequence(
@@ -79,19 +121,38 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       cancelAnimation(sway);
       cancelAnimation(flick);
       cancelAnimation(blink);
+      cancelAnimation(kick);
       // Back to rest, so a stopped one never freezes mid-blink or off-centre.
       bob.set(0);
       sway.set(0);
       flick.set(1);
       blink.set(1);
+      kick.set(0);
     };
-  }, [moving, pace, bob, sway, flick, blink]);
+  }, [moving, hasClock, pace, bob, sway, flick, blink, kick]);
 
   const flap = !!art.flap;
-  const floatStyle = useAnimatedStyle(() => ({ transform: [{ translateY: bob.get() * size * 0.018 }] }));
-  const swayStyle = useAnimatedStyle(() => ({ transform: flap ? [{ scaleX: 1 - (sway.get() + 1) * 0.07 }] : [{ rotate: `${sway.get() * 3.5}deg` }] }));
-  const flickStyle = useAnimatedStyle(() => ({ opacity: flick.get(), transform: [{ scale: 0.985 + flick.get() * 0.015 }] }));
-  const blinkStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: blink.get() }] }));
+  // In the scene the creature's wrapper does the floating.
+  const floatStyle = useAnimatedStyle(() => ({ transform: [{ translateY: clock ? 0 : bob.get() * size * 0.018 }] }));
+  const swayStyle = useAnimatedStyle(() => {
+    const v = clock ? (running ? sine(clock.get(), swayC, phase) : 0) : sway.get();
+    return { transform: flap ? [{ scaleX: 1 - (v + 1) * 0.07 }] : [{ rotate: `${v * 3.5}deg` }] };
+  });
+  const flickStyle = useAnimatedStyle(() => {
+    const v = clock ? (running ? 1 - 0.16 * (0.5 + 0.5 * sine(clock.get(), 20, phase)) * (0.5 + 0.5 * sine(clock.get(), 33, phase + 0.3)) : 1) : flick.get();
+    return { opacity: v, transform: [{ scale: 0.985 + v * 0.015 }] };
+  });
+  const blinkStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: clock ? (running ? blinkOf(clock.get(), blinkC, phase) : 1) : blink.get() }] }));
+  const legL = useAnimatedStyle(() => {
+    const up = lift ? lift.get() : 0;
+    const v = clock ? (running ? sine(clock.get(), bobC, phase + 0.25) : 0) : kick.get();
+    return { transform: [{ rotate: `${(8 + up * 9) * v}deg` }] };
+  });
+  const legR = useAnimatedStyle(() => {
+    const up = lift ? lift.get() : 0;
+    const v = clock ? (running ? sine(clock.get(), bobC, phase + 0.39) : 0) : -kick.get() * 0.8;
+    return { transform: [{ rotate: `${(8 + up * 9) * v}deg` }] };
+  });
 
   const defs = (
     <Defs>
@@ -205,8 +266,27 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
   const eyes = art.eyes;
   const ring = tier ? TIER_COLOR[tier] : locked ? '#4A4860' : p.glow;
 
-  /* The tile: night, the creature's glow, a few far stars and its ring. */
-  const tile = (
+  /* A little leg (`dir` -1 left, 1 right): a stub in the deep colour and a rounded foot, glossy like the rest. */
+  const feet = FEET[look.creature];
+  const leg = (dir: -1 | 1) => {
+    if (!feet) return null;
+    const hx = dir < 0 ? feet[0] : feet[1];
+    const hy = feet[2];
+    const fx = hx + dir;
+    const fy = hy + LEG;
+    return (
+      <G>
+        <Path d={`M${hx} ${hy} L${fx} ${fy - 2.5}`} stroke={p.deep} strokeWidth={5} strokeLinecap="round" />
+        <V d={ellipseD(fx + dir * 0.5, fy, 4.4, 3)} fill={p.deep} f={fills} />
+        <Ellipse cx={fx - 1.2} cy={fy - 1.4} rx={1.5} ry={0.7} fill="#FFFFFF" opacity={0.35} />
+      </G>
+    );
+  };
+
+  /* The tile: night, the creature's glow, a few far stars and its ring. In the scene, just its glow. */
+  const tile = scene ? (
+    <Circle cx={50} cy={50} r={44} fill={`url(#${uid}g)`} />
+  ) : (
     <>
       <Circle cx={50} cy={50} r={48} fill={`url(#${uid}t)`} />
       <Circle cx={50} cy={50} r={44} fill={`url(#${uid}g)`} />
@@ -223,7 +303,7 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       {tier === 3 && !locked ? <Circle cx={50} cy={50} r={45.4} fill="none" stroke="#FFF3B0" strokeWidth={0.6} opacity={0.6} /> : null}
     </>
   );
-  const box = { width: size, height: size, overflow: 'hidden' as const };
+  const box = { width: size, height: size, overflow: scene ? ('visible' as const) : ('hidden' as const) };
 
   // Still: every part in one picture, much lighter to draw than the moving layers.
   if (!moving) {
@@ -233,6 +313,8 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
           <>
             {tile}
             {art.back}
+            {leg(-1)}
+            {leg(1)}
             {art.sway}
             {art.flickerOver ? null : art.flicker}
             {art.body}
@@ -250,6 +332,8 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       <View style={fill}>{layer(tile)}</View>
       <Animated.View style={[fill, floatStyle]}>
         {art.back ? <View style={fill}>{layer(art.back)}</View> : null}
+        {feet ? <Animated.View style={[fill, { transformOrigin: [feet[0] * s, feet[2] * s, 0] }, legL]}>{layer(leg(-1))}</Animated.View> : null}
+        {feet ? <Animated.View style={[fill, { transformOrigin: [feet[1] * s, feet[2] * s, 0] }, legR]}>{layer(leg(1))}</Animated.View> : null}
         {art.sway ? around(art.sway, art.pivot ?? [50, 50], swayStyle, 'sway') : null}
         {art.flickerOver ? null : flicker}
         <View style={fill}>{layer(art.body)}</View>

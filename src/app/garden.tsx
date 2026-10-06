@@ -1,26 +1,38 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { BadgeCelebration } from '../features/profile/BadgeCelebration';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
+import type { Artist } from '../data/models';
 import { SPROUT_GREEN } from '../features/sprouts/look';
 import { claimLine } from '../features/sprouts/outbox';
 import { Sprout } from '../features/sprouts/Sprout';
 import { SproutOf } from '../features/sprouts/SproutOf';
-import { ArtistSproutsSection } from '../features/sprouts/ArtistSproutsSection';
+import { ArtistSproutSheet, ArtistSproutsSection, type GivenArtistSprout } from '../features/sprouts/ArtistSproutsSection';
+import { type ArtistSprout, TIER_AT, tierLabel, toNextTier } from '../features/sprouts/artistSprouts';
+import { TIER_COLOR } from '../features/sprouts/Collectible';
+import { GardenScene, type SceneResident } from '../features/sprouts/GardenScene';
 import { FindsSection } from '../features/finds/FindsSection';
 import { artistLook } from '../features/sprouts/artistLook';
 import { useCatalog } from '../state/catalog';
 import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
 import { haptic } from '../lib/haptics';
+import { useNow } from '../lib/useNow';
+import { useSocial } from '../state/social';
 import { useSprouts } from '../state/sprouts';
 import { color, radius, space, type } from '../theme/tokens';
 
-const TILE = 104;
 const GIVEN_SHOWN = 12;
+/** A sprout or collectible that arrived this recently glows in the garden. */
+const FRESH_MS = 60 * 60 * 1000;
+/** How big each stands in the garden: by stage for a sprout, by level for a collectible. */
+const STAGE_SIZE = [64, 74, 84, 94] as const;
+const TIER_SIZE = [78, 83, 88, 94] as const;
+const ARTIST_PREFIX = 'artist:';
+const CONTENT_MAX = 640;
 
 const day = (t: number) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 const fromLine = (s: GardenView) =>
@@ -29,18 +41,28 @@ const nameOf = (s: GardenView) => (s.shown === 'seedling' ? 'Sprout' : kindOf(s.
 
 /**
  * Your garden: every sprout you've been given (and your first one), growing
- * with what you do; the kinds you've collected; seeds to give; and the
- * sprouts you've given and who picked them up.
+ * with what you do, and every artist collectible you've earned or been given,
+ * living in a night meadow you can rearrange (GardenScene); the kinds you've
+ * collected; seeds to give; and the sprouts you've given and who picked them up.
  */
 export default function GardenScreen() {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const sprouts = useSprouts();
+  const social = useSocial();
+  const now = useNow().getTime();
   const [open, setOpen] = useState<GardenView>();
+  const [openArtist, setOpenArtist] = useState<{ artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }>();
+  // The garden moves only while this screen is showing; the page doesn't scroll while something's carried.
+  const [focused, setFocused] = useState(false);
+  const [carrying, setCarrying] = useState(false);
   const { refresh } = sprouts;
   useFocusEffect(
     useCallback(() => {
+      setFocused(true);
       void refresh();
-    }, [refresh]),
+      return () => setFocused(false);
+    }, [refresh, setFocused]),
   );
   const catalog = useCatalog();
   const waiting = sprouts.claims.filter((c) => c.state === 'waiting');
@@ -49,16 +71,62 @@ export default function GardenScreen() {
   const fresh = bloom ? undefined : sprouts.newArtists[0];
   const freshArtist = fresh ? catalog.artist(fresh.artistId) : undefined;
   const plain = sprouts.garden.filter((g) => !g.artist);
-  const givenArtists = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: fromLine(g).replace(/^from /, ''), at: g.at }] : []));
+  const givenArtists: GivenArtistSprout[] = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: fromLine(g).replace(/^from /, ''), at: g.at }] : []));
   const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
   const collected = kinds.filter((k) => sprouts.collected.has(k.id)).length;
+  const artistOf = (a: { id: string; name: string }): Artist => catalog.artist(a.id) ?? ({ id: a.id, name: a.name, sound: {} } as Artist);
+
+  // Everyone in the garden: your sprouts (newest first), then your artist collectibles, then the ones friends gave you.
+  const residents: SceneResident[] = [
+    ...plain.map((s) => ({
+      id: s.id,
+      name: nameOf(s).replace(/ sprout$/, ''),
+      label: `${nameOf(s)}, ${fromLine(s)}. ${s.shown === 'seedling' && s.growth ? growthLine(s.growth) : STAGE_NAMES[s.stage]}.`,
+      size: STAGE_SIZE[s.stage],
+      bar: s.stage < 3 && s.growth ? { at: (s.stage + s.growth.toNext) / 3, color: SPROUT_GREEN } : undefined,
+      fresh: sprouts.newBlooms.some((b) => b.id === s.id) || (s.id !== STARTER_ID && s.at > now - FRESH_MS),
+      look: { kind: s.shown, stage: s.stage },
+    })),
+    ...sprouts.artists.flatMap((a) => {
+      const artist = catalog.artist(a.artistId);
+      if (!artist) return [];
+      const next = toNextTier(a.videos);
+      return [
+        {
+          id: `${ARTIST_PREFIX}${a.artistId}`,
+          name: artist.name,
+          label: `${artist.name} collectible, ${tierLabel(a)}.`,
+          size: TIER_SIZE[a.tier],
+          bar: { at: next ? (a.videos - TIER_AT[a.tier]) / (TIER_AT[next.tier] - TIER_AT[a.tier]) : 1, color: TIER_COLOR[next ? next.tier : 3] },
+          fresh: sprouts.newArtists.some((n) => n.artistId === a.artistId),
+          look: { artist: artistLook(artist), tier: a.tier },
+        },
+      ];
+    }),
+    ...givenArtists.map((g) => {
+      const artist = artistOf(g.artist);
+      return { id: g.id, name: artist.name, label: `${artist.name} collectible, from ${g.from}.`, size: TIER_SIZE[0], fresh: g.at > now - FRESH_MS, look: { artist: artistLook(artist), tier: 0 as const } };
+    }),
+  ];
+  const openResident = (id: string) => {
+    const s = plain.find((p) => p.id === id);
+    if (s) return setOpen(s);
+    if (id.startsWith(ARTIST_PREFIX)) {
+      const a = sprouts.artists.find((x) => `${ARTIST_PREFIX}${x.artistId}` === id);
+      const artist = a ? catalog.artist(a.artistId) : undefined;
+      if (a && artist) setOpenArtist({ artist, sprout: a });
+      return;
+    }
+    const g = givenArtists.find((x) => x.id === id);
+    if (g) setOpenArtist({ artist: artistOf(g.artist), given: g });
+  };
 
   return (
     <View style={styles.root}>
       <PageTitle title="Your garden" />
       <NightSky />
       <PageActions />
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
+      <ScrollView scrollEnabled={!carrying} contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
         <Text style={styles.title} accessibilityRole="header">
           Your garden
         </Text>
@@ -106,37 +174,19 @@ export default function GardenScreen() {
           </View>
         ) : null}
 
-        <View style={styles.grid}>
-          {plain.map((s) => (
-            <Pressable
-              key={s.id}
-              onPress={() => {
-                haptic.select();
-                setOpen(s);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${nameOf(s)}, ${fromLine(s)}. ${s.shown === 'seedling' && s.growth ? growthLine(s.growth) : STAGE_NAMES[s.stage]}.`}
-              style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
-            >
-              <Sprout kind={s.shown} stage={s.stage} size={78} />
-              <Text style={styles.tileName} numberOfLines={1}>
-                {nameOf(s).replace(/ sprout$/, '')}
-              </Text>
-              <Text style={styles.tileFrom} numberOfLines={1}>
-                {fromLine(s)}
-              </Text>
-              {s.stage < 3 && s.growth ? (
-                <View style={styles.bar}>
-                  <View style={[styles.barFill, { width: `${Math.round(((s.stage + s.growth.toNext) / 3) * 100)}%` }]} />
-                </View>
-              ) : null}
-            </Pressable>
-          ))}
-        </View>
-        <Text style={styles.hint}>{GROW_TIPS[0]} Sprouts you give help yours grow too.</Text>
+        <GardenScene
+          residents={residents}
+          account={social.user?.uid ?? 'guest'}
+          width={Math.min(CONTENT_MAX, windowWidth) - 2 * space.xl}
+          focused={focused}
+          ready={sprouts.hydrated}
+          onOpen={openResident}
+          onCarrying={setCarrying}
+        />
+        <Text style={styles.hint}>{GROW_TIPS[0]} Sprouts you give help yours grow too. Hold one to move it.</Text>
 
         <FindsSection />
-        <ArtistSproutsSection earned={sprouts.artists} given={givenArtists} canGive={sprouts.ready} />
+        <ArtistSproutsSection earned={sprouts.artists} given={givenArtists} />
 
         <View style={styles.section}>
           <Text style={styles.h2}>
@@ -180,11 +230,12 @@ export default function GardenScreen() {
         ) : null}
       </ScrollView>
       <SproutSheet sprout={open} onClose={() => setOpen(undefined)} />
+      <ArtistSproutSheet open={openArtist} canGive={sprouts.ready} onClose={() => setOpenArtist(undefined)} />
       {/* A sprout that bloomed since you last looked gets its moment, one at a time. */}
       <BadgeCelebration
         id={bloom?.id ?? (fresh ? `artist:${fresh.artistId}:${fresh.tier}` : undefined)}
         unlock={
-          open
+          open || openArtist
             ? undefined
             : bloom
               ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt }
@@ -244,7 +295,7 @@ function SproutSheet({ sprout, onClose }: { sprout?: GardenView; onClose: () => 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
-  content: { paddingHorizontal: space.xl, gap: space.md, maxWidth: 640, width: '100%', alignSelf: 'center' },
+  content: { paddingHorizontal: space.xl, gap: space.md, maxWidth: CONTENT_MAX, width: '100%', alignSelf: 'center' },
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.body, color: color.moonDim },
   h2: { ...type.headline, color: color.moon },
@@ -260,10 +311,6 @@ const styles = StyleSheet.create({
   section: { gap: space.sm, marginTop: space.md },
   waitRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: radius.md, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,184,107,0.6)' },
   waitText: { ...type.caption, color: '#FFB86B', flex: 1 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'flex-start' },
-  tile: { width: TILE, alignItems: 'center', paddingVertical: space.sm, paddingHorizontal: 4, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  tileName: { ...type.label, color: color.moon, marginTop: 2 },
-  tileFrom: { ...type.caption, color: color.moonFaint },
   bar: { width: 64, height: 4, borderRadius: 2, marginTop: 6, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
   barWide: { width: 200 },
   barFill: { height: '100%', borderRadius: 2, backgroundColor: SPROUT_GREEN },
