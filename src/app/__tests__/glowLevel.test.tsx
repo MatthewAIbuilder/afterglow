@@ -5,6 +5,10 @@ import { router } from 'expo-router';
 import { levelName } from '../../features/quests/daily';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetStandings } from '../../features/standing/useStanding';
+import { forgetAccountGlow } from '../../state/accountGlow';
+import { forgetBadgeClaims } from '../../state/badgeClaims';
+import { forgetDailyQuests } from '../../state/dailyQuests';
+import { forgetSecrets } from '../../state/secrets';
 import { renderApp } from './appRoutes';
 
 /**
@@ -163,5 +167,73 @@ describe('glow levels on profiles', () => {
     expect(app.getByText('Save')).toBeTruthy();
     expect(app.getByDisplayValue('sam')).toBeTruthy();
     read.mockRestore();
+  });
+});
+
+describe('your level on Profile', () => {
+  /** What the pill says after each step while Profile loads (undefined: no pill). */
+  async function pillsWhileLoading(app: Awaited<ReturnType<typeof renderApp>>, rounds = 12) {
+    const seen: (string | undefined)[] = [];
+    for (let i = 0; i < rounds; i++) {
+      await settle();
+      seen.push(app.queryByTestId('profile-level') ? app.getByTestId('profile-level').props.accessibilityLabel : undefined);
+    }
+    return seen;
+  }
+  const shown = (seen: (string | undefined)[]) => [...new Set(seen.filter(Boolean))];
+
+  it('never shows a stand-in while loading: the level your account shows is a floor', async () => {
+    const sam = await person('sam');
+    mockSocial.levels.set(sam, 5);
+    // Level 2 on this phone, lower than the 5 the account shows elsewhere.
+    await AsyncStorage.setItem('secrets.v1', JSON.stringify({ lightshow: 1, plur: 2 }));
+    const app = await renderApp('/profile');
+    const seen = await pillsWhileLoading(app);
+    expect(shown(seen)).toEqual(['Glow level 5, Strobe. Opens your quests.']);
+    await settle(3500);
+    await flush();
+    expect(mockSocial.levels.get(sam)).toBe(5);
+  });
+
+  it('stays the same across signing out and in, switching accounts and restarts, and never leaks to another account', async () => {
+    const maya = await person('maya');
+    await s().signOut();
+    const sam = await person('sam');
+    // Two secrets found while Sam is signed in: 100 glow, level 2.
+    await AsyncStorage.setItem('secrets.v1', JSON.stringify({ lightshow: 1, plur: 2 }));
+    let app = await renderApp('/profile');
+    expect(shown(await pillsWhileLoading(app))).toEqual(['Glow level 2, Flicker. Opens your quests.']);
+    await settle(3500);
+    await flush();
+    expect(mockSocial.levels.get(sam)).toBe(2);
+
+    // Maya signs in on the same phone: Sam's glow isn't hers.
+    await act(async () => {
+      await s().signOut();
+      await s().signIn('maya@example.com', 'password123');
+    });
+    expect(shown(await pillsWhileLoading(app))).toEqual(['Glow level 1, Spark. Opens your quests.']);
+    await settle(3500);
+    await flush();
+    expect(mockSocial.levels.has(maya)).toBe(false);
+
+    // Back to Sam: level 2 again, straight away.
+    await act(async () => {
+      await s().signOut();
+      await s().signIn('sam@example.com', 'password123');
+    });
+    expect(shown(await pillsWhileLoading(app))).toEqual(['Glow level 2, Flicker. Opens your quests.']);
+
+    // The app starts again (stores read again from the phone): still level 2.
+    await app.unmount();
+    forgetDailyQuests();
+    forgetSecrets();
+    forgetBadgeClaims();
+    forgetAccountGlow();
+    forgetStandings();
+    app = await renderApp('/profile');
+    expect(shown(await pillsWhileLoading(app))).toEqual(['Glow level 2, Flicker. Opens your quests.']);
+    expect(mockSocial.levels.get(sam)).toBe(2);
+    expect(mockSocial.levels.has(maya)).toBe(false);
   });
 });
