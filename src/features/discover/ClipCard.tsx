@@ -317,6 +317,14 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const ownSet = own && setFor(own, artist.id);
   const meta = line ?? (own && ownSet ? describeSet(own, ownSet) : (own?.name ?? ''));
 
+  // A crowd video of a back to back: who else was playing.
+  const b2bNames =
+    clip.source?.provider === 'community' && clip.source.withArtistIds?.length
+      ? clip.source.withArtistIds
+          .map((id) => catalog.artist(id)?.name)
+          .filter(Boolean)
+          .join(', ')
+      : '';
   const artistButton = (
     <Pressable
       onPress={() => {
@@ -336,6 +344,11 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         <Text style={styles.name} numberOfLines={1}>
           {artist.name}
         </Text>
+        {b2bNames ? (
+          <Text style={styles.match} numberOfLines={1}>
+            {t('b2b {artists}', { artists: b2bNames })}
+          </Text>
+        ) : null}
         <Text style={styles.match} numberOfLines={1}>
           {t('{pct}% match', { pct })}
           {note ? <Text style={styles.note}>{`  ·  ${note}`}</Text> : null}

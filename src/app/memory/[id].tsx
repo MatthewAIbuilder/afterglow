@@ -18,6 +18,7 @@ import { useCatalog } from '../../state/catalog';
 import { useMemories } from '../../state/memories';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { whereLine } from '../../features/memories/where';
+import { b2bLine } from '../../features/memories/b2b';
 import { useClipLoop } from '../../features/memories/useClipLoop';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
@@ -97,7 +98,7 @@ export default function MemoryScreen() {
   return (
     <View style={styles.root}>
       <Pressable style={StyleSheet.absoluteFill} onPress={toggle} accessibilityRole="button" accessibilityLabel={paused ? tc('video', 'Play') : t('Pause')}>
-        <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
+        <VideoView player={player} style={StyleSheet.absoluteFill} contentFit={!(m.width && m.height) || m.height >= m.width ? 'cover' : 'contain'} nativeControls={false} playsInline />
       </Pressable>
       {/* How it looks once shared: the edge glow (unless you have Afterglow Plus). */}
       {showsGlow(mine) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label active={!paused} /> : null}
@@ -115,7 +116,7 @@ export default function MemoryScreen() {
           onPress={() => artist && router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festival?.id } })}
           accessibilityRole={artist ? 'button' : 'text'}
         >
-          <Text style={styles.artist}>{artist?.name ?? t('Who’s playing?')}</Text>
+          <Text style={styles.artist}>{artist ? b2bLine([artist.name, ...(m.withArtistIds ?? []).map((id) => catalog.artist(id)?.name ?? '')]) : t('Who’s playing?')}</Text>
         </Pressable>
         {where ? <Text style={styles.where}>{where}</Text> : null}
         {when ? <Text style={styles.when}>{when}</Text> : null}

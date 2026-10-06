@@ -111,10 +111,10 @@ describe('share to Discover while tagging', () => {
     expect((await savedMemories())[0].sharedId).toBeTruthy();
     expect(JSON.parse((await AsyncStorage.getItem('shareOutbox.v1')) ?? '[]')).toEqual([]);
     expect(app.getByText('On your profile')).toBeTruthy();
-    // Retagging it later only changes Memories, and says so.
+    // Retagging it later changes the copy on Discover too, and says so.
     await act(async () => router.push({ pathname: '/memory-tag', params: { id: m.id } }));
     await flush();
-    expect(app.getByTestId('shared-note').props.children).toMatch(/keeps the tags it was shared with/);
+    expect(app.getByTestId('shared-note').props.children).toMatch(/update it there too/);
   });
 
   it('a share refused once signal is back is let go, with a plain message', async () => {

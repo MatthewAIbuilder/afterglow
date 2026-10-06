@@ -34,6 +34,8 @@ export type Memory = {
   /** The festival day ("Friday"), when known. */
   night?: string;
   artistId?: string;
+  /** Playing back to back with `artistId`: the others, in order. */
+  withArtistIds?: string[];
   /** The part that plays, when the video was trimmed (seconds into the file). */
   clip?: ClipWindow;
   /** Once shared to your profile: the shared copy's id, and whose profile it's on. */
@@ -42,4 +44,4 @@ export type Memory = {
 };
 
 /** What the tagging sheet saves onto a memory. */
-export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'past' | 'show' | 'clip'>;
+export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'past' | 'show' | 'clip'>;

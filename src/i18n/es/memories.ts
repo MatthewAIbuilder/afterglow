@@ -218,4 +218,14 @@ export const es_memories: Dictionary = {
   'Discover plays up to {n} seconds. Drag the bright part to the moment you want.': 'Descubrir reproduce hasta {n} segundos. Arrastra la parte iluminada al momento que quieras.',
   'Choose one of ten minutes or less. You can trim it to the best part next.': 'Elige uno de diez minutos o menos. Después puedes recortarlo a la mejor parte.',
   'Pick who was playing to share it to Discover.': 'Elige quién estaba tocando para compartirlo en Descubrir.',
+
+  // Back to back, and changing a shared video's tags
+  'Couldn’t save the changes': 'No se pudieron guardar los cambios',
+  'Couldn’t update it on Discover': 'No se pudo actualizar en Descubrir',
+  'Playing back to back? Tick everyone who was on.': '¿Tocaban back to back? Marca a todos los que estaban.',
+  'Back to back: {artists}': 'Back to back: {artists}',
+  'It’s on Discover. Changes you save here update it there too.': 'Está en Descubrir. Los cambios que guardes aquí también se actualizan allí.',
+  'Edit where it’s from and who was playing': 'Editar de dónde es y quién tocaba',
+  Edit: 'Editar',
+  'b2b {artists}': 'b2b {artists}',
 };

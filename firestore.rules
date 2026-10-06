@@ -76,9 +76,37 @@ service cloud.firestore {
     // Shared memories: readable by anyone signed in; created only by their owner,
     // pointing at the owner's own files; never edited; deleted only by the owner.
     match /memories/{id} {
+      // Where a shared video is from and who was playing: checked when it's shared and when its tags change.
+      function memoryTagsOk(d) {
+        return shortOrAbsent(d, 'festivalId', 100) && shortOrAbsent(d, 'artistId', 100)
+        && shortOrAbsent(d, 'night', 40) && shortOrAbsent(d, 'memoryId', 60)
+        // A throwback (a past festival, from the camera roll): a name and year, never with a festival on Afterglow.
+        && (!('pastName' in d) || (!('festivalId' in d)
+          && d.pastName is string && d.pastName.size() > 0 && d.pastName.size() <= 60
+          && d.pastYear is int && d.pastYear >= 1990 && d.pastYear <= 2100))
+        && (!('pastYear' in d) || 'pastName' in d)
+        && shortOrAbsent(d, 'pastCity', 60) && shortOrAbsent(d, 'seriesId', 100)
+        && (!('seriesId' in d) || 'pastName' in d)
+        // A one-night show (a club night or concert): a name and a day, never with a festival or a throwback.
+        && (!('showName' in d) || (!('festivalId' in d) && !('pastName' in d)
+          && d.showName is string && d.showName.size() > 0 && d.showName.size() <= 60
+          && d.showDate is string && d.showDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+        && (!('showDate' in d) || 'showName' in d)
+        && shortOrAbsent(d, 'showCity', 60) && shortOrAbsent(d, 'showId', 100)
+        && (!('showCity' in d) || 'showName' in d)
+        && (!('showId' in d) || 'showName' in d)
+        // Back to back: up to three more artists, only with a main one.
+        && (!('withArtistIds' in d) || ('artistId' in d && d.withArtistIds is list && d.withArtistIds.size() <= 3));
+      }
+      // Throwbacks are counted: the count moves on by one in the same write, and stops at 3 without Afterglow Plus.
+      function throwbackCounted(id) {
+        return getAfter(path('usage', me())).data.memory == id
+          && getAfter(path('usage', me())).data.throwbacks == (exists(path('usage', me())) ? get(path('usage', me())).data.throwbacks : 0) + 1
+          && (getAfter(path('usage', me())).data.throwbacks <= 3 || hasPlus(me()));
+      }
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == me()
-        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'showName', 'showDate', 'showCity', 'showId', 'clipStart', 'clipEnd', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'withArtistIds', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'showName', 'showDate', 'showCity', 'showId', 'clipStart', 'clipEnd', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
         && request.resource.data.handle == get(path('profiles', me())).data.handle
         && request.resource.data.videoPath.matches('^memories/' + me() + '/' + id + '[.](mp4|mov|m4v)$')
         // The links are this owner's own uploads for this memory: Firebase Storage download links to memories/<uid>/<id>.
@@ -87,40 +115,25 @@ service cloud.firestore {
         && (!('thumbPath' in request.resource.data) || request.resource.data.thumbPath == 'memories/' + me() + '/' + id + '.jpg')
         && (!('thumbUrl' in request.resource.data) || (request.resource.data.thumbUrl is string && request.resource.data.thumbUrl.size() <= 2000
           && request.resource.data.thumbUrl.matches('^https://firebasestorage[.]googleapis[.]com/v0/b/[a-z0-9._-]+/o/memories%2F' + me() + '%2F' + id + '[.]jpg[?]alt=media&token=[A-Za-z0-9-]+$')))
-        && shortOrAbsent(request.resource.data, 'festivalId', 100) && shortOrAbsent(request.resource.data, 'artistId', 100)
-        && shortOrAbsent(request.resource.data, 'night', 40) && shortOrAbsent(request.resource.data, 'memoryId', 60)
-        // A throwback (a past festival, from the camera roll): a name and year, never with a festival on Afterglow.
-        && (!('pastName' in request.resource.data) || (!('festivalId' in request.resource.data)
-          && request.resource.data.pastName is string && request.resource.data.pastName.size() > 0 && request.resource.data.pastName.size() <= 60
-          && request.resource.data.pastYear is int && request.resource.data.pastYear >= 1990 && request.resource.data.pastYear <= 2100))
-        && (!('pastYear' in request.resource.data) || 'pastName' in request.resource.data)
-        && shortOrAbsent(request.resource.data, 'pastCity', 60) && shortOrAbsent(request.resource.data, 'seriesId', 100)
-        && (!('seriesId' in request.resource.data) || 'pastName' in request.resource.data)
-        // A one-night show (a club night or concert): a name and a day, never with a festival or a throwback.
-        && (!('showName' in request.resource.data) || (!('festivalId' in request.resource.data) && !('pastName' in request.resource.data)
-          && request.resource.data.showName is string && request.resource.data.showName.size() > 0 && request.resource.data.showName.size() <= 60
-          && request.resource.data.showDate is string && request.resource.data.showDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
-        && (!('showDate' in request.resource.data) || 'showName' in request.resource.data)
-        && shortOrAbsent(request.resource.data, 'showCity', 60) && shortOrAbsent(request.resource.data, 'showId', 100)
-        && (!('showCity' in request.resource.data) || 'showName' in request.resource.data)
-        && (!('showId' in request.resource.data) || 'showName' in request.resource.data)
+        && memoryTagsOk(request.resource.data)
         // A trimmed video: the part that plays, at most a minute (and a second's grace) of it.
         && (!('clipStart' in request.resource.data) || ('clipEnd' in request.resource.data
           && request.resource.data.clipStart is number && request.resource.data.clipEnd is number
           && request.resource.data.clipStart >= 0 && request.resource.data.clipEnd <= 3600
           && request.resource.data.clipEnd - request.resource.data.clipStart >= 1 && request.resource.data.clipEnd - request.resource.data.clipStart <= 61))
         && (!('clipEnd' in request.resource.data) || 'clipStart' in request.resource.data)
-        // Throwbacks are counted: the count moves on by one in the same write, and stops at 3 without Afterglow Plus.
-        && (!('pastName' in request.resource.data) || (
-          getAfter(path('usage', me())).data.memory == id
-          && getAfter(path('usage', me())).data.throwbacks == (exists(path('usage', me())) ? get(path('usage', me())).data.throwbacks : 0) + 1
-          && (getAfter(path('usage', me())).data.throwbacks <= 3 || hasPlus(me()))))
+        && (!('pastName' in request.resource.data) || throwbackCounted(id))
         && (!('durationSec' in request.resource.data) || (request.resource.data.durationSec is number && request.resource.data.durationSec <= 600))
         && (!('width' in request.resource.data) || (request.resource.data.width is number && request.resource.data.width <= 20000))
         && (!('height' in request.resource.data) || (request.resource.data.height is number && request.resource.data.height <= 20000))
         && request.resource.data.capturedAt is string && request.resource.data.capturedAt.size() <= 40
         && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40;
-      allow update: if false;
+      // Only you change your own video's tags (where it's from, who was playing); nothing else about it.
+      // A throwback stays a throwback (its year and name can change), and nothing else becomes one, so the count holds.
+      allow update: if signedIn() && resource.data.uid == me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['festivalId', 'night', 'artistId', 'withArtistIds', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'showName', 'showDate', 'showCity', 'showId'])
+        && memoryTagsOk(request.resource.data)
+        && (('pastName' in request.resource.data) == ('pastName' in resource.data));
       allow delete: if (signedIn() && resource.data.uid == me()) || isAdmin();
     }
 

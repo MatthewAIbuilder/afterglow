@@ -4,7 +4,7 @@ import { useVideoPlayer, VideoView, type VideoPlayer } from 'expo-video';
 import { EdgeGlow } from '../../components/EdgeGlow';
 import { showsGlow } from '../../features/standing/standing';
 import { useStanding } from '../../features/standing/useStanding';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
@@ -24,6 +24,7 @@ import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { whereLine } from '../../features/memories/where';
+import { b2bLine } from '../../features/memories/b2b';
 import { useClipLoop } from '../../features/memories/useClipLoop';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
@@ -81,6 +82,14 @@ export default function SharedMemoryScreen() {
   useEffect(() => {
     if (othersVideo) markSeen(communityClipId(othersVideo));
   }, [othersVideo, markSeen]);
+  // Coming back (from editing its tags, say): read it again.
+  const focusedBefore = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedBefore.current) setReadTry((n) => n + 1);
+      focusedBefore.current = true;
+    }, [setReadTry]),
+  );
   // How many comments, read each time you come back from them.
   useFocusEffect(
     useCallback(() => {
@@ -176,7 +185,7 @@ export default function SharedMemoryScreen() {
 
   return (
     <View style={styles.root}>
-      {m && !blocked ? <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} /> : null}
+      {m && !blocked ? <VideoView player={player} style={StyleSheet.absoluteFill} contentFit={upright(m) ? 'cover' : 'contain'} nativeControls={false} playsInline /> : null}
       {m && !blocked ? (
         <Pressable onPress={tapVideo} style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={quiet ? t('Turn the sound on') : t('Play or pause')}>
           {quiet ? <Text style={[styles.center, styles.sound]}>{t('Tap for sound')}</Text> : null}
@@ -217,7 +226,7 @@ export default function SharedMemoryScreen() {
       </View>
       {m && !blocked ? (
         <View style={[styles.info, { paddingBottom: insets.bottom + space.lg }]}>
-          <Text style={styles.artist}>{artist?.name ?? t('Festival moment')}</Text>
+          <Text style={styles.artist}>{artist ? b2bLine([artist.name, ...(m.withArtistIds ?? []).map((id) => catalog.artist(id)?.name ?? '')]) : t('Festival moment')}</Text>
           {where ? <Text style={styles.where}>{where}</Text> : null}
           <Pressable onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: m.handle } })} accessibilityRole="button">
             <Text style={styles.by}>@{m.handle}</Text>
@@ -256,9 +265,19 @@ export default function SharedMemoryScreen() {
               <Text style={styles.actionText}>{comments ? String(comments) : t('Comment')}</Text>
             </Pressable>
             {mine ? (
-              <Pressable onPress={remove} accessibilityRole="button" style={styles.action}>
-                <Text style={styles.actionText}>{t('Remove from profile')}</Text>
-              </Pressable>
+              <>
+                <Pressable
+                  onPress={() => router.push({ pathname: '/memory-tag', params: { shared: m.id } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Edit where it’s from and who was playing')}
+                  style={styles.action}
+                >
+                  <Text style={styles.actionText}>{t('Edit')}</Text>
+                </Pressable>
+                <Pressable onPress={remove} accessibilityRole="button" style={styles.action}>
+                  <Text style={styles.actionText}>{t('Remove from profile')}</Text>
+                </Pressable>
+              </>
             ) : (
               <Pressable onPress={() => askReport({ kind: 'memory', id: m.id, ownerUid: m.uid }, social.report)} accessibilityRole="button" style={styles.action}>
                 <Text style={styles.actionText}>{t('Report')}</Text>
@@ -288,10 +307,13 @@ const styles = StyleSheet.create({
   artist: { ...type.largeTitle, color: color.moon },
   where: { ...type.headline, color: color.moonDim },
   by: { ...type.label, color: color.glow, marginTop: space.xs },
-  actions: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.lg },
   action: { paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   actionText: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   like: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   liked: { backgroundColor: glowA(0.22), borderColor: glowA(0.5) },
   note: { ...type.caption, color: color.moonDim, marginTop: space.sm },
 });
+
+/** Filmed upright (or no size known: phones film upright): fills the screen, like Discover. */
+const upright = (m: { width?: number; height?: number }) => !(m.width && m.height) || m.height >= m.width;

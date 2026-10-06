@@ -453,6 +453,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             ...(input.festivalId ? { festivalId: input.festivalId } : {}),
             ...(input.night ? { night: input.night } : {}),
             ...(input.artistId ? { artistId: input.artistId } : {}),
+            ...(input.artistId && input.withArtistIds?.length ? { withArtistIds: input.withArtistIds.slice(0, 3) } : {}),
             // A past festival: its name, year, town and the same festival on Afterglow, as plain fields.
             ...(!input.festivalId && input.past
               ? {
@@ -495,6 +496,35 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await removeFile(thumbPath);
           throw e;
         }
+      }),
+    retagShared: (id, tags) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'memories', id);
+        const before = memoryFromDoc(id, (await getDoc(ref)).data());
+        if (!before || before.uid !== user.uid) throw new SocialError('not-signed-in');
+        // A throwback stays one, and nothing else becomes one (the free plan counts them as they're shared).
+        const wasThrowback = !before.festivalId && !!before.past;
+        const past = wasThrowback ? (tags.past ?? before.past) : undefined;
+        const festivalId = wasThrowback ? undefined : tags.festivalId;
+        const show = festivalId || past ? undefined : tags.show;
+        const withArtistIds = tags.artistId ? tags.withArtistIds?.slice(0, 3) : undefined;
+        const set = <T,>(v: T | undefined) => (v === undefined || v === '' ? deleteField() : v);
+        await updateDoc(ref, {
+          festivalId: set(festivalId),
+          night: set(festivalId ? tags.night : undefined),
+          artistId: set(tags.artistId),
+          withArtistIds: set(withArtistIds?.length ? withArtistIds : undefined),
+          pastName: set(past?.name),
+          pastYear: set(past?.year),
+          pastCity: set(past?.city),
+          seriesId: set(past?.seriesId),
+          showName: set(show?.name),
+          showDate: set(show?.date),
+          showCity: set(show?.city),
+          showId: set(show?.showId),
+        });
+        return memoryFromDoc(id, (await getDoc(ref)).data())!;
       }),
     unshareMemory: (id) =>
       guard(async () => {

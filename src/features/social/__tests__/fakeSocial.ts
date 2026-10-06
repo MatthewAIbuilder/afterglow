@@ -313,6 +313,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         festivalId: input.festivalId,
         night: input.night,
         artistId: input.artistId,
+        withArtistIds: input.artistId ? input.withArtistIds : undefined,
         past: input.festivalId ? undefined : input.past,
         show: input.festivalId || input.past ? undefined : input.show,
         clip: input.clip,
@@ -325,6 +326,26 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       memories.set(id, m);
       onProgress?.(1);
       return m;
+    },
+    async retagShared(id, tags) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      const m = memories.get(id);
+      if (!m || m.uid !== u.uid) throw new SocialError('not-signed-in');
+      const wasThrowback = !m.festivalId && !!m.past;
+      const past = wasThrowback ? (tags.past ?? m.past) : undefined;
+      const festivalId = wasThrowback ? undefined : tags.festivalId;
+      const next = {
+        ...m,
+        festivalId,
+        night: festivalId ? tags.night : undefined,
+        artistId: tags.artistId,
+        withArtistIds: tags.artistId && tags.withArtistIds?.length ? tags.withArtistIds.slice(0, 3) : undefined,
+        past,
+        show: festivalId || past ? undefined : tags.show,
+      };
+      memories.set(id, next);
+      return next;
     },
     async unshareMemory(id) {
       if (network.down) throw new SocialError('network');

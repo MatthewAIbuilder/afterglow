@@ -156,7 +156,7 @@ function StoryVideo({ url }: { url: string }) {
     p.loop = true;
     p.play();
   });
-  return <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />;
+  return <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} playsInline />;
 }
 
 /** A check-in, as a card of its own: their words big, where and when beneath. */
