@@ -1840,6 +1840,55 @@ const frog: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** Ganja White Night's: a round fellow in an orange jumpsuit, a purple bucket for a head with a glowing mask, white gloves and boots (inspired by their mascot, drawn our own way). */
+const wobble: Draw = (p, f) => ({
+  ground: [50, 93, 22],
+  back: (
+    <G>
+      {/* Short legs and white boots. */}
+      <VE cx={39.5} cy={82} rx={7} ry={9} fill={p.mid} f={f} turn={8} />
+      <VE cx={60.5} cy={82} rx={7} ry={9} fill={p.mid} f={f} turn={-8} />
+      <VE cx={37.5} cy={90.5} rx={7.5} ry={3.6} fill="#F1F0F6" f={f} turn={-6} />
+      <VE cx={62.5} cy={90.5} rx={7.5} ry={3.6} fill="#F1F0F6" f={f} turn={6} />
+    </G>
+  ),
+  sway: (
+    <G>
+      {/* Arms out, ready to wobble, in white gloves. */}
+      <VE cx={24} cy={58} rx={6} ry={11.5} fill={p.mid} f={f} turn={32} />
+      <VE cx={76} cy={58} rx={6} ry={11.5} fill={p.mid} f={f} turn={-32} />
+      <VE cx={18.5} cy={68} rx={5.4} ry={4.8} fill="#F1F0F6" f={f} />
+      <VE cx={81.5} cy={68} rx={5.4} ry={4.8} fill="#F1F0F6" f={f} />
+    </G>
+  ),
+  pivot: [50, 52],
+  body: (
+    <G>
+      <Shadow cx={50} cy={46} rx={13} ry={3.4} f={f} opacity={0.55} />
+      {/* The jumpsuit: a big round belly, a crease across the chest, a zip down the middle. */}
+      <VE cx={50} cy={62} rx={24.5} ry={22.5} fill={p.mid} f={f} />
+      <VE cx={50} cy={68} rx={16} ry={13} fill={p.light} f={f} gloss={false} opacity={0.45} />
+      <Path d="M30 51 Q50 44 70 51" stroke={p.deep} strokeWidth={2.2} fill="none" strokeLinecap="round" opacity={0.7} />
+      <Path d="M50 46 L50 83" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" opacity={0.6} />
+      <Path d="M36 78 Q50 85 64 78" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" opacity={0.45} />
+      {/* The bucket head. */}
+      <V d="M38.5 22 L61.5 22 L60 44 Q50 47 40 44 Z" fill={p.alt} f={f} gloss={[44, 27, 3.2, 7]} />
+      <VE cx={50} cy={22} rx={11.5} ry={3.6} fill={p.altDeep} f={f} gloss={false} />
+      <Path d="M39 22.6 Q50 26 61 22.6" stroke={p.alt} strokeWidth={1} fill="none" opacity={0.8} />
+    </G>
+  ),
+  front: (
+    <G>
+      {/* The glowing mask: two swept wings meeting in the middle. */}
+      <Path d="M41.5 29 Q46 27 50 33.5 Q54 27 58.5 29 L57 36.5 Q53.5 34 50 39.5 Q46.5 34 43 36.5 Z" fill={p.accent} opacity={0.35} transform="translate(50 33) scale(1.25) translate(-50 -33)" />
+      <Path d="M41.5 29 Q46 27 50 33.5 Q54 27 58.5 29 L57 36.5 Q53.5 34 50 39.5 Q46.5 34 43 36.5 Z" fill={p.accent} />
+      <Path d="M44.5 31.5 Q47 31 49 35 M55.5 31.5 Q53 31 51 35" stroke="#FFFFFF" strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.85} />
+      <Glow x={23} y={30} r={1.2} color={p.accent} />
+      <Glow x={79} y={36} r={1} color={p.accent} />
+    </G>
+  ),
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -1875,4 +1924,5 @@ export const DRAW: Record<Creature, Draw> = {
   lantern,
   confetti,
   frog,
+  wobble,
 };

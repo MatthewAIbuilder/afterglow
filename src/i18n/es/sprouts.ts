@@ -352,4 +352,6 @@ export const es_sprouts: Dictionary = {
   'Follow {name}?': '¿Seguir a {name}?',
   'Their videos, plans and festivals show up for you.': 'Ahora ves sus videos, planes y festivales.',
   '@{handle} gave you this sprout. Follow to see their videos, plans and festivals.': '@{handle} te regaló este brote. Síguele para ver sus videos, planes y festivales.',
+  'The Wobbler': 'El Tambaleante',
+  'A round fellow with a glowing bucket for a head': 'Un tipo redondo con un cubo brillante por cabeza',
 };
