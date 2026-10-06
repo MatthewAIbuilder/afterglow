@@ -46,7 +46,9 @@ export type Creature =
   | 'frog'
   // Signatures added later.
   | 'wobble'
-  | 'patchbear';
+  | 'patchbear'
+  | 'thornskull'
+  | 'trooper';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -73,17 +75,18 @@ const P = (light: string, mid: string, deep: string, alt: string, altDeep: strin
 /** Hand-made collectibles, by folded artist name. */
 const SIGNATURES: Record<string, Spec> = {
   subtronics: { creature: 'eye', palette: P('#F4FFE0', '#B6F05A', '#3F8F1A', '#C9A2FF', '#5B2BB0', '#B36BFF', '#9BE84E'), name: t('The Watcher'), theme: t('A big eye with wriggling tentacles') },
-  illenium: { creature: 'phoenix', palette: P('#FFF3D6', '#FF9A4A', '#C2362A', '#FFE08A', '#FF5A2A', '#FFD36B', '#FF7A3D'), name: t('The Phoenix'), theme: t('A phoenix with flaming wings') },
+  illenium: { creature: 'phoenix', palette: P('#FFF3D6', '#FF9A4A', '#C2362A', '#FFE08A', '#FF5A2A', '#FFD36B', '#FF7A3D'), name: t('The Phoenix'), theme: t('A phoenix rising in flame through a starry night') },
   sevenlions: { creature: 'lion', palette: P('#FFF1C9', '#F2B84B', '#A8661C', '#FFB347', '#B8541A', '#FFE9A8', '#F2A23A'), name: t('The Lion'), theme: t('A lion with a glowing mane') },
   zedsdead: { creature: 'ghost', palette: P('#FFFFFF', '#DCD8F2', '#8C88B8', '#9BE84E', '#3E8F1A', '#B6FF6A', '#9BE84E'), name: t('The Ghost'), theme: t('A friendly ghost with glowing eyes') },
   ghengar: { creature: 'ghost', palette: P('#F1E8FF', '#A98CF0', '#4A2E8A', '#FF6AD5', '#7A1E6A', '#FF8AE0', '#A06BFF'), name: t('The Phantom'), theme: t('A grinning phantom'), extra: 'fangs' },
   rlgrime: { creature: 'pumpkin', palette: P('#FFD9A0', '#FF8A1F', '#A8400C', '#8FD65A', '#2E6A1E', '#FFE36B', '#FF8A1F'), name: t('The Lantern'), theme: t('A pumpkin lit from inside') },
   wooli: { creature: 'sheep', palette: P('#FFFFFF', '#EDE7DA', '#B3A88E', '#4A3F5C', '#241C30', '#FFE9B0', '#E8D9B0'), name: t('The Woolly'), theme: t('A fluffy ram with curly horns') },
-  slander: { creature: 'twin', palette: P('#FFF8E8', '#FFE2A8', '#E0B060', '#FF5A6E', '#8A1830', '#FFD58A', '#FFC86B'), name: t('Halo and horns'), theme: t('Half angel, half devil') },
+  slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },
   ofthetrees: { creature: 'spirit', palette: P('#F4F8EA', '#D6DEC4', '#8A9472', '#8FD67A', '#2E6A2A', '#E9FFB0', '#7FD87A'), name: t('The Forest spirit'), theme: t('A spirit of the forest') },
   sanholo: { creature: 'crystal', palette: P('#F2FFFD', '#B9A8FF', '#6A4FD0', '#FF9EDB', '#3FC8E0', '#9FF0FF', '#B99CFF'), name: t('The Prism'), theme: t('A holographic crystal') },
+  sullivanking: { creature: 'thornskull', palette: P('#F4EEE6', '#D6CABD', '#6E5F58', '#C8344A', '#8A1E30', '#FF4A5E', '#E0324A'), name: t('The Thorn King'), theme: t('A grinning skull crowned with thorns and roses') },
   zomboy: { creature: 'skull', palette: P('#F4F7E8', '#C9D6A8', '#5E7A3A', '#A6E05A', '#2E4A1A', '#B6FF5A', '#A6E05A'), name: t('The Undead'), theme: t('A stitched-up skull with a green glow') },
   djsnake: { creature: 'serpent', palette: P('#C8FFE8', '#3FC8A0', '#0F6A58', '#FFE9A8', '#C9A050', '#FF5F8F', '#3FC8A0'), name: t('The Serpent'), theme: t('A coiled serpent') },
   atliens: { creature: 'alien', palette: P('#D9FFEA', '#5BE3A0', '#118A55', '#0E1A14', '#000000', '#6CFF9E', '#6CFF9E'), name: t('The Visitor'), theme: t('A visitor from another planet') },

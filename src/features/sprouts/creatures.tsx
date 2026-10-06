@@ -300,67 +300,116 @@ const eye: Draw = (p, f) => {
   };
 };
 
+/** ILLENIUM's: a phoenix rising through a starry night, its wings raised high in flame, a white-hot ember at its heart and a long streaming tail. */
 const phoenix: Draw = (p, f) => {
+  // Wing feathers fanning up and out from the shoulder: tip x, y, width, curl.
   const feathers: [number, number, number, number][] = [
-    [19, 12, 9.5, -9],
-    [9, 25, 9.5, -8],
-    [7, 39, 8.5, -6],
-    [12, 52, 7.5, -4],
-    [21, 61, 6, -2],
+    [25, 4, 7, -10],
+    [18, 9, 8.5, -10],
+    [9, 20, 8.5, -9],
+    [4, 33, 8, -7],
+    [6, 45, 7, -5],
+    [13, 55, 6, -3],
+    [23, 61, 5, -1],
   ];
   const wing = (
     <G>
       {feathers.map(([tx, ty, w, b], i) => (
         <G key={i}>
-          <V d={flame(45, 53, tx, ty, w, b)} fill={p.altDeep} f={f} />
-          <V d={flame(45, 53, 45 + (tx - 45) * 0.84, 53 + (ty - 53) * 0.84, w * 0.66, b * 0.82)} fill={p.alt} f={f} />
-          <Path d={flame(45, 53, 45 + (tx - 45) * 0.58, 53 + (ty - 53) * 0.58, w * 0.3, b * 0.45)} fill={p.light} opacity={0.9} />
+          <V d={flame(44, 50, tx, ty, w, b)} fill={p.altDeep} f={f} />
+          <V d={flame(44, 50, 44 + (tx - 44) * 0.86, 50 + (ty - 50) * 0.86, w * 0.68, b * 0.84)} fill={p.mid} f={f} />
+          <Path d={flame(44, 50, 44 + (tx - 44) * 0.7, 50 + (ty - 50) * 0.7, w * 0.4, b * 0.6)} fill={p.alt} opacity={0.95} />
+          <Path d={flame(44, 50, 44 + (tx - 44) * 0.46, 50 + (ty - 50) * 0.46, w * 0.18, b * 0.36)} fill={p.light} opacity={0.9} />
         </G>
       ))}
     </G>
   );
+  // The tail: long streamers trailing down, the outer ones curling away.
+  const tail: [number, number, number, number][] = [
+    [50, 99, 6.5, 0],
+    [40, 97, 5, 7],
+    [60, 97, 5, -7],
+    [29, 91, 4.2, 10],
+    [71, 91, 4.2, -10],
+  ];
   return {
-    ground: [50, 94, 16],
+    ground: [50, 96, 14],
+    back: (
+      <G>
+        {/* The night it rises through: a cool blue haze with stars. */}
+        <Ellipse cx={50} cy={50} rx={44} ry={42} fill="#3B5FA8" opacity={0.28} />
+        <Ellipse cx={50} cy={44} rx={30} ry={28} fill={p.glow} opacity={0.14} />
+        {sparkles('#BFD6FF', [
+          [12, 14, 1.6],
+          [86, 18, 1.3],
+          [90, 62, 1.5],
+          [9, 70, 1.2],
+          [78, 84, 1],
+          [22, 86, 1],
+        ])}
+      </G>
+    ),
+    flap: true,
+    pivot: [50, 52],
+    sway: both(wing),
     flicker: (
       <G>
-        <Ellipse cx={50} cy={46} rx={34} ry={26} fill={p.alt} opacity={0.12} />
-        {both(wing)}
-        {(
-          [
-            [50, 95, 7, 0],
-            [38, 91, 5.5, 5],
-            [62, 91, 5.5, -5],
-          ] as const
-        ).map(([tx, ty, w, b], i) => (
+        {tail.map(([tx, ty, w, b], i) => (
           <G key={i}>
             <V d={flame(50, 66, tx, ty, w, b)} fill={p.altDeep} f={f} />
-            <V d={flame(50, 66, 50 + (tx - 50) * 0.78, 66 + (ty - 66) * 0.78, w * 0.58, b * 0.7)} fill={p.alt} f={f} />
-            <Path d={flame(50, 66, 50 + (tx - 50) * 0.5, 66 + (ty - 66) * 0.5, w * 0.26, b * 0.4)} fill={p.light} opacity={0.9} />
+            <V d={flame(50, 66, 50 + (tx - 50) * 0.8, 66 + (ty - 66) * 0.8, w * 0.6, b * 0.72)} fill={p.mid} f={f} />
+            <Path d={flame(50, 66, 50 + (tx - 50) * 0.56, 66 + (ty - 66) * 0.56, w * 0.28, b * 0.42)} fill={p.alt} opacity={0.95} />
           </G>
+        ))}
+        {/* Embers drifting off it. */}
+        {(
+          [
+            [27, 24, 1],
+            [74, 22, 0.9],
+            [35, 80, 0.8],
+            [67, 79, 0.9],
+            [50, 18, 0.7],
+          ] as const
+        ).map(([x, y, r], i) => (
+          <Glow key={i} x={x} y={y} r={r} color={p.accent} />
         ))}
       </G>
     ),
     body: (
       <G>
-        {[-16, 0, 16].map((a) => (
-          <V key={a} d={flame(50, 30, 50 + a * 0.6, 10 + Math.abs(a) * 0.32, 3.2, a * 0.16)} fill={p.alt} f={f} />
+        {/* A crest of three plumes swept back. */}
+        {(
+          [
+            [-9, 11, 2.6, -3],
+            [0, 6, 3.2, 3],
+            [9, 11, 2.6, 4],
+          ] as const
+        ).map(([dx, ty, w, b], i) => (
+          <G key={i}>
+            <V d={flame(50, 31, 50 + dx, ty, w, b)} fill={p.altDeep} f={f} />
+            <Path d={flame(50, 31, 50 + dx * 0.8, 31 - (31 - ty) * 0.75, w * 0.45, b * 0.6)} fill={p.alt} />
+          </G>
         ))}
-        <VE cx={50} cy={58} rx={11.5} ry={14} fill={p.mid} f={f} />
-        <VE cx={50} cy={61} rx={6.6} ry={9} fill={p.light} f={f} gloss={false} opacity={0.75} />
-        <Path d="M46 57 q4 2 8 0 M45.6 61 q4.4 2 8.8 0 M46 65 q4 2 8 0" stroke={p.alt} strokeWidth={0.8} fill="none" opacity={0.7} />
-        <Shadow cx={50} cy={46} rx={9} ry={3} f={f} opacity={0.5} />
-        <VE cx={50} cy={37} rx={10} ry={9.6} fill={p.mid} f={f} />
-        <V d="M46.4 41 Q50 39.4 53.6 41 L50 48Z" fill={p.accent} f={f} />
-        <Circle cx={43.6} cy={41.6} r={1.7} fill={p.altDeep} opacity={0.45} />
-        <Circle cx={56.4} cy={41.6} r={1.7} fill={p.altDeep} opacity={0.45} />
+        {/* A slim, tapering body. */}
+        <V d="M50 44 C60 46 61.5 58 57 66 C55 70 52 73 50 74 C48 73 45 70 43 66 C38.5 58 40 46 50 44Z" fill={p.mid} f={f} gloss={[45.5, 52, 2.4, 4.5]} />
+        <Path d="M50 50 C55 52 55.5 61 52.5 67 C51.5 69 50.6 70 50 70.5 C49.4 70 48.5 69 47.5 67 C44.5 61 45 52 50 50Z" fill={p.alt} opacity={0.85} />
+        <Path d="M46.4 58 q3.6 2 7.2 0 M46.8 62.4 q3.2 1.8 6.4 0 M47.6 66.4 q2.4 1.4 4.8 0" stroke={p.altDeep} strokeWidth={0.7} fill="none" opacity={0.55} />
+        {/* The ember at its heart. */}
+        <Glow x={50} y={56} r={2.2} color={p.accent} />
+        <Shadow cx={50} cy={45} rx={8.5} ry={2.6} f={f} opacity={0.45} />
+        <VE cx={50} cy={36} rx={9.6} ry={9.2} fill={p.mid} f={f} />
+        {/* A hooked golden beak. */}
+        <V d="M46.6 40.4 Q50 38.6 53.4 40.4 Q53 44.6 50 48.4 Q49.4 46 48.2 44.4 Q47 42.8 46.6 40.4Z" fill={p.accent} f={f} />
+        <Circle cx={43.8} cy={40.6} r={1.6} fill={p.altDeep} opacity={0.4} />
+        <Circle cx={56.2} cy={40.6} r={1.6} fill={p.altDeep} opacity={0.4} />
       </G>
     ),
     eyes: {
-      box: [40, 31, 20, 10],
+      box: [40, 30, 20, 10],
       el: (
         <G>
-          <VEye x={45.6} y={36.2} r={2.5} f={f} />
-          <VEye x={54.4} y={36.2} r={2.5} f={f} />
+          <VEye x={45.8} y={35.4} r={2.4} f={f} />
+          <VEye x={54.2} y={35.4} r={2.4} f={f} />
         </G>
       ),
     },
@@ -1965,6 +2014,148 @@ const patchbear: Draw = (p, f) => ({
   ),
 });
 
+/** SULLIVAN KING's: a grinning skull crowned with thorns and roses, its jaw dropped open, thorny vines curling behind and petals falling (inspired by their artwork, drawn our own way). */
+const thornskull: Draw = (p, f) => {
+  // A thorny vine along a curve (start, control, end), thorns alternating sides.
+  const vine = (x0: number, y0: number, cx: number, cy: number, x1: number, y1: number, n: number, w = 2.4) => {
+    const at = (t: number) => [(1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * cx + t * t * x1, (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * cy + t * t * y1] as const;
+    const thorns = Array.from({ length: n }, (_, i) => {
+      const t = (i + 0.6) / (n + 0.4);
+      const [x, y] = at(t);
+      const [x2, y2] = at(Math.min(1, t + 0.02));
+      const len = Math.hypot(x2 - x, y2 - y) || 1;
+      const side = i % 2 ? 1 : -1;
+      const nx = (-(y2 - y) / len) * side;
+      const ny = ((x2 - x) / len) * side;
+      const tx = (x2 - x) / len;
+      const ty = (y2 - y) / len;
+      return `M${r1(x - tx * 1.4)} ${r1(y - ty * 1.4)} L${r1(x + nx * 4.2 + tx * 1.4)} ${r1(y + ny * 4.2 + ty * 1.4)} L${r1(x + tx * 1.4)} ${r1(y + ty * 1.4)}Z`;
+    }).join(' ');
+    return (
+      <G>
+        <Path d={`M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}`} stroke={p.altDeep} strokeWidth={w} fill="none" strokeLinecap="round" />
+        <Path d={thorns} fill={p.altDeep} />
+      </G>
+    );
+  };
+  // A rose seen from above: a cup of petals curling in to a dark heart.
+  const rose = (x: number, y: number, r: number) => (
+    <G>
+      <VE cx={x} cy={y} rx={r} ry={r * 0.9} fill={p.alt} f={f} gloss={false} />
+      <Path d={`M${r1(x - r * 0.75)} ${r1(y + r * 0.1)} Q${x} ${r1(y - r * 0.95)} ${r1(x + r * 0.75)} ${r1(y + r * 0.1)} M${r1(x - r * 0.45)} ${r1(y + r * 0.45)} Q${r1(x + r * 0.15)} ${r1(y + r * 0.7)} ${r1(x + r * 0.55)} ${r1(y + r * 0.2)} M${r1(x - r * 0.3)} ${r1(y - r * 0.1)} Q${x} ${r1(y - r * 0.5)} ${r1(x + r * 0.3)} ${r1(y - r * 0.05)}`} stroke={p.altDeep} strokeWidth={0.7} fill="none" strokeLinecap="round" />
+      <Circle cx={r1(x + r * 0.05)} cy={r1(y + r * 0.05)} r={r1(r * 0.22)} fill={p.altDeep} />
+    </G>
+  );
+  const petal = (x: number, y: number, turn: number) => <Path d={`M${x} ${y} q2.2 -2.6 4.2 0 q-2 2.8 -4.2 0Z`} fill={p.alt} opacity={0.95} transform={`rotate(${turn} ${x} ${y})`} />;
+  return {
+    ground: [50, 90, 20],
+    back: (
+      <G>
+        <Ellipse cx={50} cy={50} rx={36} ry={34} fill={p.glow} opacity={0.1} />
+        {vine(14, 84, 10, 50, 30, 22, 7)}
+        {vine(88, 78, 94, 46, 72, 18, 7)}
+        {vine(20, 30, 40, 8, 64, 12, 6, 2)}
+      </G>
+    ),
+    pivot: [50, 60],
+    sway: (
+      <G>
+        {petal(16, 62, 20)}
+        {petal(83, 34, -30)}
+        {petal(80, 70, 50)}
+        {petal(24, 22, -10)}
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The lower jaw, dropped open and tipped a little. */}
+        <G transform="rotate(7 50 66)">
+          <V d="M35 64 C35 76 41 84 50 84 C59 84 65 76 65 64 L61 65 C60.5 73 56 78 50 78 C44 78 39.5 73 39 65Z" fill={p.mid} f={f} gloss={[42, 76, 3, 1.4, 20]} />
+          {[42.4, 46.2, 50, 53.8, 57.6].map((x) => (
+            <V key={x} d={`M${x - 1.7} 77.6 L${x + 1.7} 77.6 L${x + 1.5} 72.6 Q${x} 71.4 ${x - 1.5} 72.6Z`} fill={p.light} f={f} />
+          ))}
+        </G>
+        {/* The mouth, dark inside. */}
+        <Path d="M38 63 Q50 61 62 63 L60 71 Q50 75 40 71Z" fill="#0E0816" />
+        {/* The skull. */}
+        <V d="M27 43 C27 25 38 16 50 16 C62 16 73 25 73 43 C73 51 69.5 56 66 58.5 L64 66 L36 66 L34 58.5 C30.5 56 27 51 27 43Z" fill={p.light} f={f} gloss={[38, 25, 7, 3.2, -35]} />
+        <Ellipse cx={40.5} cy={47} rx={7.2} ry={7.8} fill="#0E0816" />
+        <Ellipse cx={59.5} cy={47} rx={7.2} ry={7.8} fill="#0E0816" />
+        <Path d="M47.6 58.6 L50 53.6 L52.4 58.6 Q50 60.4 47.6 58.6Z" fill="#0E0816" />
+        <Path d="M31 52 Q34 57 37 57.5 M69 52 Q66 57 63 57.5" stroke={p.deep} strokeWidth={0.9} fill="none" opacity={0.6} strokeLinecap="round" />
+        <Shadow cx={50} cy={62.4} rx={13} ry={2} f={f} opacity={0.45} />
+        {[40.6, 44.4, 48.2, 51.8, 55.6, 59.4].map((x) => (
+          <V key={x} d={`M${x - 1.7} 61.4 L${x + 1.7} 61.4 L${x + 1.5} 66.6 Q${x} 67.8 ${x - 1.5} 66.6Z`} fill={p.light} f={f} />
+        ))}
+        {/* A crack down the brow. */}
+        <Path d="M60 18.5 L57.6 24.5 L60.4 27.5 L58.6 31" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+        {/* The crown: a twist of thorny vine round the brow, set with roses. */}
+        <Shadow cx={50} cy={37.5} rx={23} ry={2.4} f={f} opacity={0.4} />
+        {vine(25, 37, 50, 28, 75, 37, 9, 2.2)}
+        <Path d="M26 34.5 Q50 31.5 74 34.5" stroke={p.altDeep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+        {rose(32.5, 34, 5.4)}
+        {rose(50, 30.4, 6.4)}
+        {rose(67.5, 34, 5.4)}
+      </G>
+    ),
+    flicker: (
+      <G>
+        <Glow x={40.5} y={48} r={2.2} color={p.accent} />
+        <Glow x={59.5} y={48} r={2.2} color={p.accent} />
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
+/** SLANDER's: an armoured space trooper, its helmet's visor glowing orange, bursting out of hyperspace (inspired by their artwork, drawn our own way). */
+const trooper: Draw = (p, f) => {
+  // Light streaks rushing out from behind, all round.
+  const rays = Array.from({ length: 22 }, (_, i) => {
+    const a = (i / 22) * Math.PI * 2 + (i % 2 ? 0.08 : 0);
+    const ri = 30 + (i % 3) * 4;
+    const ro = 47 + (i % 4) * 1.5;
+    return `M${r1(50 + Math.cos(a) * ri)} ${r1(46 + Math.sin(a) * ri)} L${r1(50 + Math.cos(a) * ro)} ${r1(46 + Math.sin(a) * ro)}`;
+  }).join(' ');
+  return {
+    ground: [50, 93, 21],
+    back: (
+      <G>
+        <Path d={rays} stroke={p.light} strokeWidth={1.4} strokeLinecap="round" opacity={0.55} />
+        <Circle cx={50} cy={46} r={30} fill={p.light} opacity={0.08} />
+      </G>
+    ),
+    body: (
+      <G>
+        {/* Shoulders with gold pads, and the chest plate. */}
+        <VE cx={25.5} cy={73} rx={10} ry={9} fill={p.alt} f={f} turn={-20} />
+        <VE cx={74.5} cy={73} rx={10} ry={9} fill={p.alt} f={f} turn={20} />
+        <V d="M31 66 Q50 60 69 66 L72 92 Q50 96 28 92 Z" fill={p.deep} f={f} gloss={[38, 70, 4, 8]} />
+        <V d="M40 74 L60 74 L58 84 L42 84 Z" fill={p.mid} f={f} />
+        <Path d="M43 77.5 L57 77.5 M44 81 L56 81" stroke={p.light} strokeWidth={0.9} strokeLinecap="round" opacity={0.6} />
+        <Circle cx={50} cy={88} r={1.6} fill={p.accent} />
+        <Shadow cx={50} cy={64} rx={13} ry={3} f={f} opacity={0.6} />
+        {/* The helmet: rounded, ridged on top, cheek guards. */}
+        <VE cx={50} cy={43} rx={19.5} ry={21} fill={p.mid} f={f} />
+        <V d="M46 22.5 L54 22.5 L53 33 L47 33 Z" fill={p.light} f={f} opacity={0.85} />
+        <VE cx={33} cy={50} rx={5} ry={9} fill={p.deep} f={f} gloss={false} turn={8} />
+        <VE cx={67} cy={50} rx={5} ry={9} fill={p.deep} f={f} gloss={false} turn={-8} />
+        {/* The dark faceplate around the visor. */}
+        <V d="M35 40 Q50 34 65 40 L62 56 Q50 63 38 56 Z" fill={INK} f={f} />
+        <Circle cx={50} cy={36.5} r={2.6} fill={p.deep} stroke={p.light} strokeWidth={0.8} />
+      </G>
+    ),
+    front: (
+      <G>
+        {/* The glowing visor: one wide band swept down to a point in the middle, with a sheen across it. */}
+        <Path d="M36.5 43.5 Q50 39.5 63.5 43.5 L61 49.5 Q55 49 50 53.5 Q45 49 39 49.5 Z" fill={p.accent} opacity={0.3} transform="translate(50 47) scale(1.16) translate(-50 -47)" />
+        <Path d="M36.5 43.5 Q50 39.5 63.5 43.5 L61 49.5 Q55 49 50 53.5 Q45 49 39 49.5 Z" fill={p.accent} />
+        <Path d="M39 45.2 Q50 42.2 61 45.2" stroke="#FFF2C8" strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.8} />
+      </G>
+    ),
+  };
+};
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -2002,4 +2193,6 @@ export const DRAW: Record<Creature, Draw> = {
   frog,
   wobble,
   patchbear,
+  thornskull,
+  trooper,
 };
