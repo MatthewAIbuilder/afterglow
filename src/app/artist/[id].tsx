@@ -286,6 +286,23 @@ export default function ArtistScreen() {
           ) : null}
         </View>
 
+        {/* What an event organizer who books them says about them, credited. */}
+        {artist.org?.bio || artist.org?.instagram ? (
+          <Section title={t('About')}>
+            <View style={styles.story}>
+              {artist.org.bio ? <Text style={styles.storyLine}>{artist.org.bio}</Text> : null}
+              {artist.org.instagram ? (
+                <Pressable onPress={() => void Linking.openURL(`https://www.instagram.com/${artist.org!.instagram}/`).catch(() => {})} accessibilityRole="link" hitSlop={6}>
+                  <Text style={[styles.storyLine, { color: color.glow }]}>{`@${artist.org.instagram} ↗`}</Text>
+                </Pressable>
+              ) : null}
+              <Pressable onPress={() => router.push({ pathname: '/org/[id]', params: { id: artist.org!.id } })} accessibilityRole="link" hitSlop={6}>
+                <Text style={styles.guess}>{t('From {organizer}', { organizer: artist.org.name })}</Text>
+              </Pressable>
+            </View>
+          </Section>
+        ) : null}
+
         {/* You and them: what you've done with their music on Afterglow. */}
         {hasStory(story) ? (
           <Section title={t('You and them')}>

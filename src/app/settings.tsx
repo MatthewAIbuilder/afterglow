@@ -29,6 +29,7 @@ import { useMusic } from '../state/music';
 import { useReactions } from '../state/reactions';
 import { useMySupport } from '../state/supportSeen';
 import { useSocial } from '../state/social';
+import { useMyOrg, useOrgs } from '../state/orgs';
 import { useSprouts } from '../state/sprouts';
 import { color, radius, space, THEME_ID, type } from '../theme/tokens';
 import { useProfileBackdrop } from '../features/profile/useProfileBackdrop';
@@ -57,6 +58,8 @@ export default function SettingsScreen() {
   const catalog = useCatalog();
   const social = useSocial();
   const me = social.profile;
+  const myOrg = useMyOrg(social.user?.uid);
+  const orgs = useOrgs();
   const shownBackdrop = useProfileBackdrop(me);
   const { memories } = useMemories();
   const { reactions } = useReactions();
@@ -80,6 +83,8 @@ export default function SettingsScreen() {
 
         {social.availability.ok ? (
           <Group title={t('Account')}>
+            {/* An event organizer's account: its studio, first. */}
+            {myOrg ? <Row label={t('Organizer studio')} detail={orgs.find((o) => o.id === myOrg)?.name} onPress={() => router.push('/studio')} /> : null}
             {me ? (
               <>
                 <Row label={t('Edit profile')} detail={`@${me.handle}`} onPress={() => router.push('/profile-edit')} />

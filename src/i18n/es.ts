@@ -3,6 +3,7 @@ import { es_discover } from './es/discover';
 import { es_festivalPage } from './es/festivalPage';
 import { es_festivals } from './es/festivals';
 import { es_festivalsMore } from './es/festivalsMore';
+import { es_organizers } from './es/organizers';
 import { es_account } from './es/account';
 import { es_artist } from './es/artist';
 import { es_care } from './es/care';
@@ -40,6 +41,7 @@ export const es: Dictionary = {
   ...es_sprouts,
   ...es_care,
   ...es_festivalsMore,
+  ...es_organizers,
   ...es_account,
 
 

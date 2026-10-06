@@ -13,7 +13,9 @@ import { Collectible } from '../sprouts/Collectible';
 import { socialErrorKind, SOCIAL_ERROR_COPY } from '../social/service';
 
 /** Festival places first, then the sound creatures. Never an artist's hand-made one (that needs their say-so). */
-const CREATURES = [...PLACE_CREATURES, ...SOUND_CREATURES];
+const HQ_CREATURES = [...PLACE_CREATURES, ...SOUND_CREATURES];
+/** In an organizer's studio, its own creature first. */
+const ORG_CREATURES: string[] = ['flask', ...HQ_CREATURES.filter((c) => c !== 'flask')];
 
 function newCode(): string {
   try {
@@ -26,15 +28,17 @@ function newCode(): string {
 /**
  * HQ's Stickers tab: make stickers people collect by scanning them, group
  * them into hunts, see how many people found each, and print them. Every
- * copy of a sticker has the same code.
+ * copy of a sticker has the same code. With `orgId`, an organizer's own
+ * stickers and hunts in its studio (its creature first).
  */
-export function AdminStickers() {
+export function AdminStickers({ orgId }: { orgId?: string } = {}) {
   const social = useSocial();
+  const CREATURES = orgId ? ORG_CREATURES : HQ_CREATURES;
   const [stickers, setStickers] = useState<Sticker[] | undefined>();
   const [hunts, setHunts] = useState<Hunt[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [name, setName] = useState('');
-  const [creature, setCreature] = useState<string>(CREATURES[0]);
+  const [creature, setCreature] = useState<string>(orgId ? ORG_CREATURES[0] : HQ_CREATURES[0]);
   const [huntId, setHuntId] = useState<string | undefined>();
   const [until, setUntil] = useState('');
   const [huntName, setHuntName] = useState('');
@@ -43,6 +47,14 @@ export function AdminStickers() {
 
   const load = useCallback(async () => {
     try {
+      if (orgId) {
+        const [s, h, c] = await Promise.all([social.service.orgStickers(orgId, 200), social.service.orgHunts(orgId, 50), social.service.orgFinds(orgId).catch(() => ({}) as Record<string, number>)]);
+        // Gifts are in the studio's Gifts part.
+        setStickers(s.filter((x) => !x.gift));
+        setHunts(h);
+        setCounts(Object.fromEntries(s.map((x) => [x.code, c[x.code] ?? 0])));
+        return;
+      }
       const [s, h] = await Promise.all([social.service.stickers(200), social.service.hunts(50)]);
       setStickers(s);
       setHunts(h);
@@ -51,7 +63,7 @@ export function AdminStickers() {
     } catch {
       setStickers((x) => x ?? []);
     }
-  }, [social.service]);
+  }, [social.service, orgId]);
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
@@ -64,7 +76,7 @@ export function AdminStickers() {
     if (end === 'bad') return showAlert('That end date doesn’t look right', 'Write it as year-month-day, like 2027-06-14, or leave it empty.');
     setBusy(true);
     try {
-      await social.service.addSticker({ code: newCode(), name: name.trim(), creature, ...(huntId ? { huntId } : {}), ...(end !== undefined ? { until: end } : {}) });
+      await social.service.addSticker({ code: newCode(), name: name.trim(), creature, ...(huntId ? { huntId } : {}), ...(end !== undefined ? { until: end } : {}), ...(orgId ? { orgId } : {}) });
       haptic.settle();
       setName('');
       setUntil('');
@@ -82,7 +94,7 @@ export function AdminStickers() {
     if (end === 'bad') return showAlert('That end date doesn’t look right', 'Write it as year-month-day, like 2027-06-14, or leave it empty.');
     setBusy(true);
     try {
-      const h = await social.service.addHunt({ id: newCode(), name: huntName.trim(), ...(end !== undefined ? { until: end } : {}) });
+      const h = await social.service.addHunt({ id: newCode(), name: huntName.trim(), ...(end !== undefined ? { until: end } : {}), ...(orgId ? { orgId } : {}) });
       haptic.settle();
       setHuntName('');
       setHuntUntil('');
@@ -165,7 +177,7 @@ export function AdminStickers() {
             </Text>
           </View>
           {h.items.length ? (
-            <Pressable onPress={() => router.push({ pathname: '/sticker-sheet', params: { hunt: h.id } })} accessibilityRole="button" accessibilityLabel={`Print the ${h.name} stickers`} hitSlop={6}>
+            <Pressable onPress={() => router.push({ pathname: '/sticker-sheet', params: { hunt: h.id, ...(orgId ? { org: orgId } : {}) } })} accessibilityRole="button" accessibilityLabel={`Print the ${h.name} stickers`} hitSlop={6}>
               <Text style={styles.action}>Print all</Text>
             </Pressable>
           ) : null}
@@ -186,7 +198,7 @@ export function AdminStickers() {
             </Text>
           </View>
           <View style={styles.actions}>
-            <Pressable onPress={() => router.push({ pathname: '/sticker-sheet', params: { code: s.code } })} accessibilityRole="button" accessibilityLabel={`Print ${s.name}`} hitSlop={6}>
+            <Pressable onPress={() => router.push({ pathname: '/sticker-sheet', params: { code: s.code, ...(orgId ? { org: orgId } : {}) } })} accessibilityRole="button" accessibilityLabel={`Print ${s.name}`} hitSlop={6}>
               <Text style={styles.action}>Print</Text>
             </Pressable>
             <Pressable onPress={() => void shareMessage(findLink(s), s.name)} accessibilityRole="button" accessibilityLabel={`Share the link for ${s.name}`} hitSlop={6}>

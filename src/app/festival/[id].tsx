@@ -6,6 +6,7 @@ import { Missing } from '../../components/Missing';
 import { PageActions } from '../../components/PageActions';
 import { WEB_URL } from '../../config/app';
 import { FestivalPage } from '../../features/festivals/FestivalPage';
+import { AfterParties, HostedBy } from '../../features/organizers/OrgCards';
 import { festivalShareText } from '../../features/share/pages';
 import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { useCatalog } from '../../state/catalog';
@@ -33,6 +34,12 @@ export default function FestivalScreen() {
         topSpace={insets.top + 64}
         bottomSpace={insets.bottom + space.xxxl}
         above={<SentPicks artists={picksFrom(must, festival.lineup, catalog.artist)} />}
+        below={
+          <>
+            <HostedBy festival={festival} />
+            <AfterParties festivalId={festival.id} />
+          </>
+        }
       />
       <PageActions
         shareLabel={t('Share {festival}', { festival: festival.name })}

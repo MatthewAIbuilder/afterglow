@@ -365,6 +365,53 @@ function Scene({ theme, ink }: { theme: PinTheme; ink: Ink }) {
           ))}
         </G>
       );
+    case 'alchemy': {
+      // Underground Alchemy's mark: an "A" of three circles joined in a triangle, inside a transmutation circle, over the strata underground.
+      const top = { x: CX, y: CY - 20 };
+      const left = { x: CX - 15.5, y: CY + 7 };
+      const right = { x: CX + 15.5, y: CY + 7 };
+      const r = 4.6;
+      const edge = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        const ux = (b.x - a.x) / len;
+        const uy = (b.y - a.y) / len;
+        return `M ${(a.x + ux * r).toFixed(2)} ${(a.y + uy * r).toFixed(2)} L ${(b.x - ux * r).toFixed(2)} ${(b.y - uy * r).toFixed(2)}`;
+      };
+      const lines = [edge(top, left), edge(top, right), edge(left, right)].join(' ');
+      return (
+        <G>
+          {back}
+          <Glitter seed={seed} n={26} height={RS * 1.1} />
+          {/* The transmutation circle: two thin rings and the four elements' ticks. */}
+          <Circle cx={CX} cy={CY - 4} r={25} fill="none" stroke={metal} strokeWidth={0.5} opacity={0.55} />
+          <Circle cx={CX} cy={CY - 4} r={22.4} fill="none" stroke={metal} strokeWidth={0.4} opacity={0.4} strokeDasharray="1.2 2.2" />
+          {[0, 90, 180, 270].map((deg) => {
+            const a = ((deg - 90) * Math.PI) / 180;
+            return <Circle key={deg} cx={CX + Math.cos(a) * 25} cy={CY - 4 + Math.sin(a) * 25} r={1.1} fill={metal} />;
+          })}
+          {/* The strata underground, a seam of glow running through them. */}
+          <Path d={`M 20 ${CY + 17} Q 40 ${CY + 13} 60 ${CY + 17} T 100 ${CY + 16} L 100 120 L 20 120 Z`} fill={p.ground} />
+          <Path d={`M 20 ${CY + 17} Q 40 ${CY + 13} 60 ${CY + 17} T 100 ${CY + 16}`} stroke={metal} strokeWidth={0.8} fill="none" />
+          <Path d={`M 20 ${CY + 23} Q 38 ${CY + 20.5} 56 ${CY + 23} T 100 ${CY + 22.5}`} stroke={p.accent2} strokeWidth={1.3} fill="none" opacity={0.9} />
+          <Path d={`M 20 ${CY + 28} Q 44 ${CY + 25.5} 64 ${CY + 28} T 100 ${CY + 27.5}`} stroke={metal} strokeWidth={0.6} fill="none" opacity={0.7} />
+          {/* A soft glow behind the mark. */}
+          <Circle cx={CX} cy={CY - 4} r={17} fill={p.accent2} opacity={0.16} />
+          <Circle cx={CX} cy={CY - 4} r={10} fill={p.accent2} opacity={0.14} />
+          {/* The mark: raised metal lines and rings, each ring filled with enamel. */}
+          <Path d={lines} stroke="#000000" strokeWidth={3.6} opacity={0.35} strokeLinecap="round" transform="translate(0.5 0.8)" />
+          <Path d={lines} stroke={metal} strokeWidth={2.6} strokeLinecap="round" />
+          <Path d={lines} stroke={p.accent} strokeWidth={0.8} strokeLinecap="round" opacity={0.6} />
+          {[top, left, right].map((c, i) => (
+            <G key={i}>
+              <Circle cx={c.x} cy={c.y} r={r + 0.9} fill="#000000" opacity={0.3} transform="translate(0.5 0.8)" />
+              <Circle cx={c.x} cy={c.y} r={r} fill={p.accent2} stroke={metal} strokeWidth={1.7} />
+              <Circle cx={c.x} cy={c.y} r={r * 0.42} fill={p.accent} opacity={0.9} />
+              <Circle cx={c.x - 1.4} cy={c.y - 1.5} r={0.9} fill="#FFFFFF" opacity={0.85} />
+            </G>
+          ))}
+        </G>
+      );
+    }
     case 'sound':
     default: {
       const bars = [6, 11, 17, 24, 19, 28, 21, 14, 22, 16, 9, 5];

@@ -11,6 +11,9 @@ import { type FetchText, refreshCatalog, type TextStore } from '../data/remote';
 import { validateSnapshot } from '../data/validate';
 import { useClipFlags } from './clipFlags';
 import { useLivePatches } from './livePatches';
+import { useOrgs } from './orgs';
+import { withOrgs } from '../features/organizers/organizers';
+import { withGuessedSounds } from '../data/soundGuess';
 
 /**
  * The catalogue the app is showing. Starts with what ships with the app (the
@@ -98,12 +101,21 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
 
   // Lineups and set times published from HQ, on top (LivePatchSync reads them).
   const patches = useLivePatches();
-  const catalog = useMemo(() => {
-    if (!patches.length) return base.catalog;
+  const patched = useMemo(() => {
+    if (!patches.length) return base;
     const built = applyPatches(base, patches, parseCatalogFile);
     report(built.problems, 'published from HQ');
-    return built.catalog;
+    return built;
   }, [base, patches]);
+  // Events organizers published themselves (features/organizers), on top: never over a festival already there.
+  const orgs = useOrgs();
+  const catalog = useMemo(() => {
+    const merged = withOrgs(patched.snapshot, orgs);
+    if (merged === patched.snapshot) return patched.catalog;
+    const checked = validateSnapshot(merged);
+    report(checked.problems, 'organizers');
+    return createCatalog(withGuessedSounds(checked.snapshot));
+  }, [patched, orgs]);
 
   // Pull to refresh: read the hosted catalogue again (new festivals and clips arrive each night).
   const refresh = useCallback(async () => {

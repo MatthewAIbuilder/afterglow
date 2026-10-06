@@ -29,6 +29,9 @@ beforeEach(async () => {
   mockSocial = fakeSocial();
 });
 
+// Two app starts per test: well over Jest's 5 s default when the whole suite runs at once.
+jest.setTimeout(20_000);
+
 describe('garden backups', () => {
   it('keeps a private copy with your account, and a wiped phone gets its garden back', async () => {
     const u = await s().signUp('ana@example.com', 'password123');

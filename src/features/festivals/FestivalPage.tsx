@@ -64,6 +64,8 @@ type Props = {
   bottomSpace: number;
   /** Shown above the festival's name, e.g. the Lineup tab's festival switcher. */
   above?: ReactNode;
+  /** Shown under the festival's name and its row of actions, e.g. who's hosting it. */
+  below?: ReactNode;
 };
 
 /**
@@ -76,7 +78,7 @@ const COVER_BELOW = 150;
 /** How far below that the night eases back into the sky. */
 const COVER_TAIL = 140;
 
-export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: Props) {
+export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, below }: Props) {
   const catalog = useCatalog();
   // The festival as it is for you: for one run over several weekends, the weekend you're going to.
   const { forYou } = useWeekends();
@@ -200,6 +202,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           {/* While it's on: timers, water and check-ins, private to you. */}
           {onNow ? <CareCard /> : null}
         </View>
+        {below}
 
         {whole.weekends && whole.weekends.length > 1 ? <WeekendPicker festival={whole} shown={festival.lineup.length} /> : null}
 

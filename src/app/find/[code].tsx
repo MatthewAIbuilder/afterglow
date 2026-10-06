@@ -8,7 +8,8 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { CloseIcon } from '../../components/TabIcons';
 import { APP_STORE_URL } from '../../config/app';
-import { findCardFrom, findLine, huntLine, lookOf, untilLine } from '../../features/finds/finds';
+import { findCardFrom, findLine, huntLine, lookOf, type Sticker, untilLine } from '../../features/finds/finds';
+import { useOrg } from '../../state/orgs';
 import { HuntRow } from '../../features/finds/HuntRow';
 import { accountsOff } from '../../features/social/unavailable';
 import { Collectible } from '../../features/sprouts/Collectible';
@@ -41,6 +42,22 @@ export default function FindScreen() {
     kept.current = true;
     finds.scan(card);
   }, [card, finds]);
+
+  // Afterglow's copy, for who it's from: an organizer's sticker or gift, and a gift's few words.
+  const [sticker, setSticker] = useState<Sticker | null>(null);
+  const stickerCode = card?.code;
+  useEffect(() => {
+    if (!stickerCode || !social.availability.ok) return;
+    let on = true;
+    social.service
+      .sticker(stickerCode)
+      .then((s) => on && setSticker(s))
+      .catch(() => {});
+    return () => {
+      on = false;
+    };
+  }, [stickerCode, social.service, social.availability.ok]);
+  const from = useOrg(sticker?.orgId);
 
   // Its hunt as it is now (stickers join hunts over time).
   const huntId = find?.state === 'found' ? find.huntId : undefined;
@@ -100,6 +117,12 @@ export default function FindScreen() {
       <Text style={styles.title} accessibilityRole="header">
         {shown.name}
       </Text>
+      {from ? (
+        <Pressable onPress={() => router.push({ pathname: '/org/[id]', params: { id: from.id } })} accessibilityRole="link" hitSlop={6}>
+          <Text style={[styles.body, { color: look.accent }]}>{sticker?.gift ? t('A gift from {organizer}', { organizer: from.name }) : t('From {organizer}', { organizer: from.name })}</Text>
+        </Pressable>
+      ) : null}
+      {sticker?.note ? <Text style={styles.body}>“{sticker.note}”</Text> : null}
       {found ? (
         <Text style={styles.body}>{look.theme}.</Text>
       ) : null}

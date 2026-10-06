@@ -31,6 +31,11 @@ export type Sticker = {
   createdAt?: number;
   /** HQ took it down then (ms): scans from before still count. */
   takenDownAt?: number;
+  /** Made by an event organizer (features/organizers), for their events. */
+  orgId?: string;
+  /** A gift: sent as a link rather than printed, with a few words from whoever sent it. */
+  gift?: true;
+  note?: string;
 };
 
 export type Hunt = {
@@ -38,13 +43,16 @@ export type Hunt = {
   name: string;
   until?: number;
   festivalId?: string;
+  orgId?: string;
   /** Its stickers in order (no codes: those are on the stickers). `gone`: taken down, so it no longer counts unless you found it. */
   items: { creature: string; name: string; gone?: true }[];
 };
 
 /** What HQ fills in to make a sticker (the code is made on the phone). */
-export type StickerInput = { code: string; name: string; creature: string; huntId?: string; until?: number; festivalId?: string };
-export type HuntInput = { id: string; name: string; until?: number; festivalId?: string };
+export type StickerInput = { code: string; name: string; creature: string; huntId?: string; until?: number; festivalId?: string; orgId?: string; gift?: true; note?: string };
+export type HuntInput = { id: string; name: string; until?: number; festivalId?: string; orgId?: string };
+/** A gift's few words. */
+export const GIFT_NOTE_MAX = 200;
 
 export type FindState = 'checking' | 'found' | 'ended' | 'gone';
 export type Find = {
@@ -330,7 +338,7 @@ export function cleanHunt(id: string, raw: unknown): Hunt | undefined {
     .filter((i): i is { creature: string; name: string; gone?: unknown } => !!i && typeof i === 'object' && typeof (i as { creature?: unknown }).creature === 'string')
     .map((i) => ({ creature: stickerLook(i.creature) ? i.creature : 'wisp', name: cleanName(i.name) || 'A sticker', ...(i.gone === true ? { gone: true as const } : {}) }))
     .slice(0, HUNT_MAX_ITEMS);
-  return { id, name, items, ...(num(o.until) !== undefined ? { until: num(o.until) } : {}), ...(typeof o.festivalId === 'string' ? { festivalId: o.festivalId } : {}) };
+  return { id, name, items, ...(num(o.until) !== undefined ? { until: num(o.until) } : {}), ...(typeof o.festivalId === 'string' ? { festivalId: o.festivalId } : {}), ...(typeof o.orgId === 'string' ? { orgId: o.orgId } : {}) };
 }
 
 /**

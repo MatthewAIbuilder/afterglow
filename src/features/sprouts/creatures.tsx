@@ -1787,6 +1787,84 @@ const lantern: Draw = (p, f) => ({
   ),
 });
 
+// Underground Alchemy's potion: a round flask with a cork, glowing liquid bubbling inside, and their mark (three circles in a triangle) on the glass.
+const flask: Draw = (p, f) => {
+  const bulb = 'M44.5 31 L55.5 31 L55.5 41.6 A20 20 0 1 1 44.5 41.6 Z';
+  const liquid = 'M30.4 56 Q40 53 50 55.6 T69.6 56 A20 20 0 1 1 30.4 56 Z';
+  const mark: [number, number][] = [
+    [50, 66.4],
+    [46.2, 72.4],
+    [53.8, 72.4],
+  ];
+  return {
+    ground: [50, 81.5, 16],
+    back: (
+      <G>
+        {[
+          [53, 22, 1.6],
+          [47, 16, 1.2],
+          [55, 11, 0.9],
+        ].map(([x, y, r], i) => (
+          <Circle key={i} cx={x} cy={y} r={r} fill={p.accent} opacity={0.55 - i * 0.12} />
+        ))}
+      </G>
+    ),
+    flicker: (
+      <G>
+        <Circle cx={50} cy={62} r={25} fill={p.glow} opacity={0.14} />
+        <Circle cx={50} cy={64} r={15} fill={p.accent} opacity={0.16} />
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The glass, faintly tinted, and the potion inside. */}
+        <Path d={bulb} fill={p.light} opacity={0.22} />
+        <V d={liquid} fill={p.mid} f={f} gloss={[40, 62, 4.5, 2.2]} />
+        <Path d="M30.6 56 Q40 53 50 55.6 T69.4 56" stroke={p.light} strokeWidth={1.1} fill="none" opacity={0.8} strokeLinecap="round" />
+        {[
+          [38, 70, 1.3],
+          [61, 66, 1.1],
+          [57, 75, 0.8],
+          [42, 62.5, 0.7],
+        ].map(([x, y, r], i) => (
+          <Circle key={i} cx={x} cy={y} r={r} fill={p.light} opacity={0.75} />
+        ))}
+        {/* The mark, glowing on the potion. */}
+        <Path d={`M${mark[0][0]} ${mark[0][1]} L${mark[1][0]} ${mark[1][1]} L${mark[2][0]} ${mark[2][1]} Z`} stroke={p.accent} strokeWidth={0.9} fill="none" strokeLinejoin="round" />
+        {mark.map(([x, y], i) => (
+          <Circle key={`m${i}`} cx={x} cy={y} r={1.5} fill={p.deep} stroke={p.accent} strokeWidth={0.8} />
+        ))}
+        {/* Glass edge, shine and the rim at the neck. */}
+        <Path d={bulb} fill={f.hi} />
+        <Path d={bulb} fill="none" stroke={p.light} strokeWidth={1.6} opacity={0.9} />
+        <Path d="M34.5 51 Q36 45 41.5 42.5" stroke="#FFFFFF" strokeWidth={1.8} opacity={0.75} fill="none" strokeLinecap="round" />
+        <Path d="M53.6 33 L53.6 40" stroke="#FFFFFF" strokeWidth={1} opacity={0.5} strokeLinecap="round" />
+        <V d="M42.4 29 Q42.4 27.4 44 27.4 L56 27.4 Q57.6 27.4 57.6 29 L57.6 30.6 Q57.6 32.2 56 32.2 L44 32.2 Q42.4 32.2 42.4 30.6 Z" fill={p.light} f={f} />
+        {/* The cork. */}
+        <V d="M45 18.5 Q45 17 46.5 17 L53.5 17 Q55 17 55 18.5 L54.4 28 L45.6 28 Z" fill={p.alt} f={f} gloss={[47.5, 20.5, 1.4, 2.6, -10]} />
+        <Path d="M46 22 L54 22 M45.8 25 L54.2 25" stroke={p.altDeep} strokeWidth={0.6} opacity={0.6} />
+        <Path d="M47.2 62.6 Q50 64.8 52.8 62.6" stroke={INK} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+      </G>
+    ),
+    eyes: {
+      box: [41, 54.5, 18, 8],
+      el: (
+        <G>
+          <VEye x={45} y={58.4} r={2.5} f={f} />
+          <VEye x={55} y={58.4} r={2.5} f={f} />
+        </G>
+      ),
+    },
+    front: (
+      <G>
+        <Glow x={24} y={44} r={1.3} color={p.accent} />
+        <Glow x={77} y={38} r={1.1} color={p.accent} />
+        <Glow x={75} y={78} r={1.2} color={p.glow} />
+      </G>
+    ),
+  };
+};
+
 const confetti: Draw = (p, f) => {
   const bits: [number, number, number, string][] = [
     [30, 32, 20, p.alt],
@@ -3029,6 +3107,7 @@ export const DRAW: Record<Creature, Draw> = {
   lantern,
   confetti,
   frog,
+  flask,
   wobble,
   patchbear,
   thornskull,

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
 import { createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, initializeAuth, onAuthStateChanged, reauthenticateWithCredential, reload, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type Auth, type Persistence } from 'firebase/auth';
-import { collection, deleteDoc, deleteField, doc, getCountFromServer, getDoc, getDocs, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
+import { collection, deleteDoc, deleteField, doc, getCountFromServer, getDoc, getDocs, increment, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
@@ -11,7 +11,8 @@ import { ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_M
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { FIND_GRACE_DAYS } from '../../finds/finds';
+import { FIND_GRACE_DAYS, GIFT_NOTE_MAX } from '../../finds/finds';
+import { cleanOrg, findsByCode, isCounter, isOrgId, ORG_FIELDS, orgToDoc, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX, utcDay } from '../../organizers/organizers';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
@@ -19,7 +20,7 @@ import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
 import { cleanNote, cleanPublicKandi, cleanWord, isPattern, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
-import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc } from './mapping';
+import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -1404,6 +1405,13 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const ref_ = doc(fb().db, 'finds', `${user.uid}_${code}`);
         try {
           await withTimeout(setDoc(ref_, { uid: user.uid, code, at: Timestamp.fromMillis(at), createdAt: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
+          // A first find of an organizer's sticker or gift adds one to its count (only the count: the organizer never sees who).
+          void getDoc(doc(fb().db, 'stickers', code))
+            .then((d) => {
+              const orgId = stickerFromDoc(code, d.data())?.orgId;
+              if (orgId) return setDoc(doc(fb().db, 'orgViews', `${orgId}_${utcDay(new Date())}_f_${code}`), { orgId, day: utcDay(new Date()), key: `f_${code}`, n: increment(1) }, { merge: true });
+            })
+            .catch(() => {});
         } catch (e) {
           if (e instanceof SocialError && e.kind === 'network') throw e;
           // Sent before and the answer was lost: it's already there.
@@ -1436,6 +1444,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             ...(input.huntId && slot !== undefined ? { huntId: input.huntId, slot } : {}),
             ...(input.until !== undefined ? { until: Timestamp.fromMillis(input.until) } : {}),
             ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+            ...(input.orgId ? { orgId: input.orgId } : {}),
+            ...(input.gift ? { gift: true } : {}),
+            ...(input.note?.trim() ? { note: input.note.trim().slice(0, GIFT_NOTE_MAX) } : {}),
             by: user.uid,
             createdAt: serverTimestamp(),
           };
@@ -1479,6 +1490,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           items: [],
           ...(input.until !== undefined ? { until: Timestamp.fromMillis(input.until) } : {}),
           ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+          ...(input.orgId ? { orgId: input.orgId } : {}),
           by: user.uid,
           createdAt: serverTimestamp(),
         };
@@ -1492,6 +1504,105 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
     deleteHunt: (id) => guard(async () => deleteDoc(doc(fb().db, 'hunts', id))),
     stickerFinds: (code) => guard(async () => (await getCountFromServer(query(collection(fb().db, 'finds'), where('code', '==', code)))).data().count),
+    orgs: () =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'orgs'), limit(50)));
+        return snap.docs.map((d) => cleanOrg(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    myOrg: () =>
+      guard(async () => {
+        const email = fb().auth.currentUser?.email?.trim().toLowerCase();
+        if (!email) return null;
+        const id = (await getDoc(doc(fb().db, 'orgMembers', email))).data()?.orgId;
+        return isOrgId(id) ? id : null;
+      }),
+    saveOrg: (org) =>
+      guard(async () => {
+        me();
+        const ref_ = doc(fb().db, 'orgs', org.id);
+        const data = orgToDoc(org);
+        if ((await getDoc(ref_)).exists()) {
+          // Every field written whole (a list or map replaces the old one), and the ones left empty taken away.
+          const update: Record<string, unknown> = { updatedAt: serverTimestamp() };
+          for (const k of ORG_FIELDS) update[k] = data[k] ?? deleteField();
+          await updateDoc(ref_, update);
+        } else {
+          // Only HQ starts a page.
+          await setDoc(ref_, { ...data, promoted: {}, updatedAt: serverTimestamp() });
+        }
+      }),
+    sendOrgRequest: (input) =>
+      guard(async () => {
+        const user = me();
+        const data = {
+          orgId: input.orgId,
+          by: user.uid,
+          kind: input.kind,
+          text: input.text.trim().slice(0, REQUEST_TEXT_MAX),
+          status: 'open',
+          createdAt: serverTimestamp(),
+          ...(input.eventId ? { eventId: input.eventId } : {}),
+          ...(input.days ? { days: Math.round(input.days) } : {}),
+          ...(input.about ? { about: input.about.slice(0, 40) } : {}),
+        };
+        const ref_ = doc(collection(fb().db, 'orgRequests'));
+        await setDoc(ref_, data);
+        return orgRequestFromDoc(ref_.id, { ...data, createdAt: now() })!;
+      }),
+    orgRequests: (orgId, max) =>
+      guard(async () => {
+        const base = collection(fb().db, 'orgRequests');
+        const q = orgId ? query(base, where('orgId', '==', orgId), orderBy('createdAt', 'desc'), limit(max)) : query(base, orderBy('createdAt', 'desc'), limit(max));
+        return (await getDocs(q)).docs.map((d) => orgRequestFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    answerOrgRequest: (id, status, reply) =>
+      guard(async () => {
+        await updateDoc(doc(fb().db, 'orgRequests', id), { status, reply: reply?.trim() ? reply.trim().slice(0, REQUEST_REPLY_MAX) : deleteField(), answeredAt: serverTimestamp() });
+      }),
+    setPromotion: (orgId, eventId, until) =>
+      guard(async () => {
+        await updateDoc(doc(fb().db, 'orgs', orgId), { [`promoted.${eventId}`]: until ?? deleteField(), updatedAt: serverTimestamp() });
+      }),
+    orgMembers: (orgId) =>
+      guard(async () => (await getDocs(query(collection(fb().db, 'orgMembers'), where('orgId', '==', orgId), limit(20)))).docs.map((d) => d.id)),
+    setOrgMember: (email, orgId) =>
+      guard(async () => {
+        const user = me();
+        const ref_ = doc(fb().db, 'orgMembers', email.trim().toLowerCase());
+        if (orgId) await setDoc(ref_, { orgId, by: user.uid, at: serverTimestamp() });
+        else await deleteDoc(ref_);
+      }),
+    countOrgView: (orgId, key) =>
+      guard(async () => {
+        if (!fb().auth.currentUser || !isCounter(key)) return;
+        const day = utcDay(new Date());
+        await setDoc(doc(fb().db, 'orgViews', `${orgId}_${day}_${key}`), { orgId, day, key, n: increment(1) }, { merge: true });
+      }),
+    orgViews: (orgId, since) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'orgViews'), where('orgId', '==', orgId), where('day', '>=', since), limit(3000)));
+        const byDay = new Map<string, Record<string, number>>();
+        for (const d of snap.docs) {
+          const row = orgDayFromDoc(d.data());
+          if (row) byDay.set(row.day, { ...byDay.get(row.day), ...row.counts });
+        }
+        return [...byDay].map(([day, counts]) => ({ day, counts })).sort((a, b) => a.day.localeCompare(b.day));
+      }),
+    orgStickers: (orgId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'stickers'), where('orgId', '==', orgId), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => stickerFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x && x.takenDownAt === undefined);
+      }),
+    orgHunts: (orgId, max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'hunts'), where('orgId', '==', orgId), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => huntFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    orgFinds: (orgId) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'orgViews'), where('orgId', '==', orgId), where('day', '>=', '2026-01-01'), limit(5000)));
+        return findsByCode(snap.docs.map((d) => orgDayFromDoc(d.data())).filter((x): x is NonNullable<typeof x> => !!x));
+      }),
     declineCrewInvite: (crewId) =>
       guard(async () => {
         const user = me();

@@ -1129,6 +1129,102 @@ await t('clip comments: never edited; removed by the writer or the support accou
   await assertSucceeds(getDoc(doc(H.firestore(), 'clipComments', 'l1')));
   await assertSucceeds(deleteDoc(doc(H.firestore(), 'clipComments', 'l1')));
 });
+await t('organizers: HQ starts a page and says who runs it; its team edits it, never its promotions', async () => {
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  const ONV = env.authenticatedContext('uidOrgNV', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: false });
+  const page = (over = {}) => ({ name: 'Underground Alchemy', tagline: 'After parties', website: 'https://undergroundalchemy.net', instagram: 'underground.alchemy', mark: 'alchemy', color: '#E9E6F2', events: [], artists: {}, promoted: {}, updatedAt: serverTimestamp(), ...over });
+  await assertFails(setDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), page()));
+  await assertFails(setDoc(doc(H.firestore(), 'orgs', 'Bad Id'), page()));
+  await assertSucceeds(setDoc(doc(H.firestore(), 'orgs', 'underground-alchemy'), page()));
+  await assertSucceeds(getDoc(doc(anon.firestore(), 'orgs', 'underground-alchemy')));
+  await assertSucceeds(getDocs(collection(anon.firestore(), 'orgs')));
+  // Not a member yet.
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { about: 'Hi', updatedAt: serverTimestamp() }));
+  const member = { orgId: 'underground-alchemy', by: 'uidHQ', at: serverTimestamp() };
+  await assertFails(setDoc(doc(O.firestore(), 'orgMembers', 'afterglowmusic.support+alchemy@gmail.com'), { ...member, by: 'uidOrg' }));
+  await assertFails(setDoc(doc(H.firestore(), 'orgMembers', 'Mixed@Case.com'), member));
+  await assertFails(setDoc(doc(H.firestore(), 'orgMembers', 'x@y.com'), { ...member, orgId: 'no-such-org' }));
+  await assertSucceeds(setDoc(doc(H.firestore(), 'orgMembers', 'afterglowmusic.support+alchemy@gmail.com'), member));
+  await assertSucceeds(getDoc(doc(O.firestore(), 'orgMembers', 'afterglowmusic.support+alchemy@gmail.com')));
+  await assertSucceeds(getDoc(doc(ONV.firestore(), 'orgMembers', 'afterglowmusic.support+alchemy@gmail.com')));
+  await assertFails(getDoc(doc(A.firestore(), 'orgMembers', 'afterglowmusic.support+alchemy@gmail.com')));
+  await assertFails(getDocs(collection(O.firestore(), 'orgMembers')));
+  await assertSucceeds(getDocs(query(collection(H.firestore(), 'orgMembers'), where('orgId', '==', 'underground-alchemy'))));
+  // The team edits the page (with a confirmed email), but never promotes itself.
+  const event = { id: 'transmutation-11-14', name: 'Transmutation', date: '2026-11-14', venue: 'The Vault', city: 'Orlando, FL', lineup: [{ name: 'SUBTRONICS', artistId: 'subtronics' }], published: true };
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { about: 'After parties till sunrise.', events: [event], artists: { subtronics: { name: 'SUBTRONICS', bio: 'Headliner.' } }, updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(ONV.firestore(), 'orgs', 'underground-alchemy'), { about: 'Unconfirmed', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { 'promoted.transmutation-11-14': '2026-11-14', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { name: '', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { owner: 'uidOrg', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { about: 'no time' }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { events: Array.from({ length: 41 }, () => event), updatedAt: serverTimestamp() }));
+  await assertFails(deleteDoc(doc(O.firestore(), 'orgs', 'underground-alchemy')));
+  await assertFails(updateDoc(doc(A.firestore(), 'orgs', 'underground-alchemy'), { about: 'Taken over', updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'orgs', 'underground-alchemy'), { 'promoted.transmutation-11-14': '2026-11-14', updatedAt: serverTimestamp() }));
+  // Editing after a promotion keeps it as it is.
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { tagline: 'After hours', updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'orgs', 'underground-alchemy'), { 'promoted.transmutation-11-14': deleteField(), updatedAt: serverTimestamp() }));
+});
+await t('organizers: requests go to HQ, which answers; numbers are counts only, one at a time, today', async () => {
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  const request = (over = {}) => ({ orgId: 'underground-alchemy', by: 'uidOrg', kind: 'promotion', eventId: 'transmutation-11-14', days: 7, text: 'Please promote it.', status: 'open', createdAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(doc(O.firestore(), 'orgRequests', 'q1'), request()));
+  await assertSucceeds(setDoc(doc(O.firestore(), 'orgRequests', 'q2'), request({ kind: 'design', about: 'Badge', days: 1 })));
+  await assertFails(setDoc(doc(O.firestore(), 'orgRequests', 'q3'), request({ status: 'approved' })));
+  await assertFails(setDoc(doc(O.firestore(), 'orgRequests', 'q4'), request({ by: 'uidX' })));
+  await assertFails(setDoc(doc(O.firestore(), 'orgRequests', 'q5'), request({ kind: 'free-money' })));
+  await assertFails(setDoc(doc(O.firestore(), 'orgRequests', 'q6'), request({ days: 365 })));
+  await assertFails(setDoc(doc(O.firestore(), 'orgRequests', 'q7'), request({ orgId: 'someone-else' })));
+  await assertFails(setDoc(doc(A.firestore(), 'orgRequests', 'q8'), request({ by: 'uidA' })));
+  await assertSucceeds(getDocs(query(collection(O.firestore(), 'orgRequests'), where('orgId', '==', 'underground-alchemy'))));
+  await assertFails(getDocs(query(collection(A.firestore(), 'orgRequests'), where('orgId', '==', 'underground-alchemy'))));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgRequests', 'q1'), { status: 'approved', answeredAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'orgRequests', 'q1'), { status: 'approved', reply: 'Promoted until Nov 14.', answeredAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(H.firestore(), 'orgRequests', 'q1'), { text: 'changed', answeredAt: serverTimestamp() }));
+  // Counting views: today, one at a time, never for an organizer that isn't there.
+  const day = new Date().toISOString().slice(0, 10);
+  const id = `underground-alchemy_${day}_page`;
+  await assertFails(setDoc(doc(anon.firestore(), 'orgViews', id), { orgId: 'underground-alchemy', day, key: 'page', n: 1 }));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'orgViews', id), { orgId: 'underground-alchemy', day, key: 'page', n: 1 }));
+  await assertSucceeds(updateDoc(doc(B.firestore(), 'orgViews', id), { n: 2 }));
+  await assertFails(updateDoc(doc(B.firestore(), 'orgViews', id), { n: 100 }));
+  await assertFails(updateDoc(doc(B.firestore(), 'orgViews', id), { n: 3, key: 'promo' }));
+  await assertFails(setDoc(doc(A.firestore(), 'orgViews', `underground-alchemy_2020-01-01_page`), { orgId: 'underground-alchemy', day: '2020-01-01', key: 'page', n: 1 }));
+  await assertFails(setDoc(doc(A.firestore(), 'orgViews', `underground-alchemy_${day}_hack`), { orgId: 'underground-alchemy', day, key: 'hack', n: 1 }));
+  await assertFails(setDoc(doc(A.firestore(), 'orgViews', `nobody-here_${day}_page`), { orgId: 'nobody-here', day, key: 'page', n: 1 }));
+  await assertFails(setDoc(doc(A.firestore(), 'orgViews', `underground-alchemy_${day}_tickets`), { orgId: 'underground-alchemy', day, key: 'tickets', n: 5 }));
+  await assertSucceeds(getDocs(query(collection(O.firestore(), 'orgViews'), where('orgId', '==', 'underground-alchemy'), where('day', '>=', '2026-01-01'))));
+  await assertFails(getDocs(query(collection(A.firestore(), 'orgViews'), where('orgId', '==', 'underground-alchemy'))));
+});
+await t('organizers: their own stickers, hunts and gifts, and the finds of them', async () => {
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  const sticker = (over = {}) => ({ name: 'The Alchemist', creature: 'flask', orgId: 'underground-alchemy', by: 'uidOrg', createdAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(doc(O.firestore(), 'hunts', 'uahunt2026'), { name: 'Transmutation hunt', items: [], orgId: 'underground-alchemy', by: 'uidOrg', createdAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(O.firestore(), 'hunts', 'uahunt2027'), { name: 'No org', items: [], by: 'uidOrg', createdAt: serverTimestamp() }));
+  await assertSucceeds(setDoc(doc(O.firestore(), 'stickers', 'uaflask001'), sticker({ huntId: 'uahunt2026', slot: 0 })));
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'hunts', 'uahunt2026'), { items: [{ creature: 'flask', name: 'The Alchemist' }] }));
+  await assertSucceeds(setDoc(doc(O.firestore(), 'stickers', 'uagift0001'), sticker({ gift: true, note: 'Thank you for coming.' })));
+  await assertFails(setDoc(doc(O.firestore(), 'stickers', 'uagift0002'), sticker({ gift: 'yes' })));
+  await assertFails(setDoc(doc(O.firestore(), 'stickers', 'uagift0003'), sticker({ note: 'x'.repeat(201) })));
+  await assertFails(setDoc(doc(O.firestore(), 'stickers', 'uahqhunt01'), sticker({ huntId: 'nightmkt27', slot: 1 })));
+  await assertFails(setDoc(doc(O.firestore(), 'stickers', 'uanoorg001'), sticker({ orgId: 'other-org' })));
+  await assertFails(setDoc(doc(A.firestore(), 'stickers', 'uastrange1'), sticker({ by: 'uidA' })));
+  await assertSucceeds(getDocs(query(collection(O.firestore(), 'stickers'), where('orgId', '==', 'underground-alchemy'))));
+  await assertFails(getDocs(query(collection(A.firestore(), 'stickers'), where('orgId', '==', 'underground-alchemy'))));
+  // A find is the finder's own; the organizer only gets a count of it, never who.
+  await assertSucceeds(setDoc(doc(A.firestore(), 'finds', 'uidA_uagift0001'), { uid: 'uidA', code: 'uagift0001', at: new Date(), createdAt: serverTimestamp() }));
+  await assertFails(getDocs(query(collection(O.firestore(), 'finds'), where('code', '==', 'uagift0001'))));
+  const day = new Date().toISOString().slice(0, 10);
+  await assertSucceeds(setDoc(doc(A.firestore(), 'orgViews', `underground-alchemy_${day}_f_uagift0001`), { orgId: 'underground-alchemy', day, key: 'f_uagift0001', n: 1 }));
+  // Its team takes its own down; never HQ's.
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'stickers', 'uagift0001'), { takenDown: true, takenDownAt: serverTimestamp() }));
+  await assertSucceeds(setDoc(doc(H.firestore(), 'stickers', 'hqonly0001'), { name: 'Ferris', creature: 'ferris', by: 'uidHQ', createdAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'stickers', 'hqonly0001'), { takenDown: true, takenDownAt: serverTimestamp() }));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

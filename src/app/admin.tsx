@@ -9,6 +9,7 @@ import { isSupportAccount } from '../features/admin/admin';
 import { AdminAccounts } from '../features/admin/AdminAccounts';
 import { AdminData } from '../features/admin/AdminData';
 import { AdminOverview } from '../features/admin/AdminOverview';
+import { AdminOrganizers } from '../features/admin/AdminOrganizers';
 import { AdminReports } from '../features/admin/AdminReports';
 import { AdminStickers } from '../features/admin/AdminStickers';
 import { AdminSupport } from '../features/admin/AdminSupport';
@@ -18,12 +19,12 @@ import { setGuestView } from '../state/adminView';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 
-type Section = 'overview' | 'data' | 'stickers' | 'accounts' | 'support' | 'reports';
+type Section = 'overview' | 'data' | 'stickers' | 'organizers' | 'accounts' | 'support' | 'reports';
 
 /**
  * Afterglow HQ: what the support account sees instead of the app. How
  * Afterglow is doing (Overview), lineups and set times to add (Data),
- * stickers to collect and print (Stickers), privileges for other accounts (Accounts), messages from people (Support)
+ * stickers to collect and print (Stickers), event organizers' pages, logins and requests (Organizers), privileges for other accounts (Accounts), messages from people (Support)
  * and what they reported (Reports). "View the app" shows the app as everyone sees
  * it, with a pill back here. It opens only for the support email, once
  * that email is confirmed (the database checks it too).
@@ -111,6 +112,7 @@ export default function AdminScreen() {
                   { key: 'overview', label: 'Overview' },
                   { key: 'data', label: 'Data' },
                   { key: 'stickers', label: 'Stickers' },
+                  { key: 'organizers', label: 'Organizers' },
                   { key: 'accounts', label: 'Accounts' },
                   { key: 'support', label: 'Support', count: open || undefined },
                   { key: 'reports', label: 'Reports' },
@@ -123,6 +125,8 @@ export default function AdminScreen() {
               <AdminData />
             ) : tab === 'stickers' ? (
               <AdminStickers />
+            ) : tab === 'organizers' ? (
+              <AdminOrganizers />
             ) : tab === 'accounts' ? (
               <AdminAccounts />
             ) : tab === 'support' ? (

@@ -23,6 +23,7 @@ import { FounderClaim } from '../features/standing/FounderClaim';
 import { ActivityPing } from '../features/admin/ActivityPing';
 import { SavedAccountSync } from '../features/accounts/SavedAccountSync';
 import { LivePatchSync } from '../features/admin/LivePatchSync';
+import { OrgSync } from '../features/organizers/OrgSync';
 import { ScoutSync } from '../features/setTimes/ScoutSync';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
 import { AccountScope } from '../state/accountScope';
@@ -120,6 +121,8 @@ export default function RootLayout() {
         <Stack.Screen name="backdrop" />
         <Stack.Screen name="themes" />
         <Stack.Screen name="u/[handle]" />
+        <Stack.Screen name="org/[id]" />
+        <Stack.Screen name="studio" />
         <Stack.Screen name="people" />
         <Stack.Screen name="search" options={{ animation: 'fade' }} />
         <Stack.Screen name="legal/[doc]" />
@@ -243,6 +246,7 @@ export default function RootLayout() {
       <ActivityPing />
       <SavedAccountSync />
       <LivePatchSync />
+      <OrgSync />
       <ScoutSync />
       <AdminReturnPill />
       <TonightLauncher />

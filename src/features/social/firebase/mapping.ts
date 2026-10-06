@@ -8,6 +8,8 @@ import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
 import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply, type VideoTag } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
+import { GIFT_NOTE_MAX } from '../../finds/finds';
+import { isCounter, isEventId, type OrgDay, type OrgRequest, REQUEST_KINDS, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX } from '../../organizers/organizers';
 import { cleanHunt, cleanName, type Hunt, isHuntId, isStickerCode, type Sticker } from '../../finds/finds';
 
 /**
@@ -481,7 +483,46 @@ export function stickerFromDoc(code: string, d: unknown): Sticker | null {
     ...(str(o.festivalId) ? { festivalId: str(o.festivalId) } : {}),
     ...(createdAt !== undefined ? { createdAt } : {}),
     ...(takenDownAt !== undefined ? { takenDownAt } : {}),
+    ...(str(o.orgId) ? { orgId: str(o.orgId) } : {}),
+    ...(o.gift === true ? { gift: true as const } : {}),
+    ...(str(o.note) ? { note: str(o.note)!.slice(0, GIFT_NOTE_MAX) } : {}),
   };
+}
+
+/** A request an organizer sent HQ, from its document. */
+export function orgRequestFromDoc(id: string, d: unknown): OrgRequest | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const orgId = str(o.orgId);
+  const by = str(o.by);
+  const kind = REQUEST_KINDS.find((k) => k === o.kind);
+  const createdAt = whenOf(o.createdAt);
+  if (!orgId || !by || !kind || !createdAt) return null;
+  const status = (['open', 'approved', 'declined', 'done'] as const).find((s) => s === o.status) ?? 'open';
+  const answeredAt = whenOf(o.answeredAt);
+  return {
+    id,
+    orgId,
+    by,
+    kind,
+    text: (str(o.text) ?? '').slice(0, REQUEST_TEXT_MAX),
+    status,
+    createdAt,
+    ...(isEventId(o.eventId) ? { eventId: o.eventId } : {}),
+    ...(typeof o.days === 'number' && o.days > 0 ? { days: Math.round(o.days) } : {}),
+    ...(str(o.about) ? { about: str(o.about)!.slice(0, 40) } : {}),
+    ...(str(o.reply) ? { reply: str(o.reply)!.slice(0, REQUEST_REPLY_MAX) } : {}),
+    ...(answeredAt ? { answeredAt } : {}),
+  };
+}
+
+/** One of an organizer's counts (`orgViews/<org>_<day>_<key>`: `orgId`, `day`, `key`, `n`), as a day with that one number. */
+export function orgDayFromDoc(d: unknown): OrgDay | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const day = str(o.day);
+  if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !isCounter(o.key) || typeof o.n !== 'number' || !(o.n > 0)) return null;
+  return { day, counts: { [o.key]: o.n } };
 }
 
 /** Set times a fan sent, from their document (anything unusable dropped). */

@@ -5,6 +5,7 @@ import type { ClipWindow } from '../memories/trim';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
 import type { PublicResident } from '../sprouts/publicGarden';
 import type { Kandi, KandiInput, PublicKandi } from '../kandi/kandi';
+import type { Org, OrgCounter, OrgDay, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
 /**
@@ -348,7 +349,7 @@ export interface SocialService {
   hunt(id: string): Promise<Hunt | null>;
   /** Tell Afterglow you found a sticker (scanned at `at`, ms). Again is the same as once. `sticker-ended` when its end date had passed. */
   recordFind(code: string, at: number): Promise<void>;
-  /** HQ: make a sticker (added to the end of its hunt, if any). Support account only. */
+  /** Make a sticker (added to the end of its hunt, if any). HQ, or an organizer's team for its own (`orgId`). */
   addSticker(input: StickerInput): Promise<Sticker>;
   stickers(max: number): Promise<Sticker[]>;
   /** Take a sticker's code down (its place in a hunt stays; scans from before still count). */
@@ -361,6 +362,33 @@ export interface SocialService {
   myFinds(max: number): Promise<{ code: string; at: number }[]>;
   /** How many people have found a sticker. */
   stickerFinds(code: string): Promise<number>;
+
+  /** Event organizers' pages (features/organizers): anyone can read them, signed in or not. */
+  orgs(): Promise<Org[]>;
+  /** The organizer your signed-in email may run (its id), or null. */
+  myOrg(): Promise<string | null>;
+  /** Save an organizer's page: its own team (confirmed email), or HQ. Never changes its promotions. */
+  saveOrg(org: Org): Promise<void>;
+  /** Ask HQ for something: a promotion, a design, gifts. The organizer's team only. */
+  sendOrgRequest(input: OrgRequestInput): Promise<OrgRequest>;
+  /** An organizer's requests, newest first (its team or HQ); every organizer's with no id (HQ only). */
+  orgRequests(orgId: string | null, max: number): Promise<OrgRequest[]>;
+  /** HQ answers a request. */
+  answerOrgRequest(id: string, status: OrgRequestStatus, reply?: string): Promise<void>;
+  /** HQ promotes an event until that day ("YYYY-MM-DD"), or stops (null). */
+  setPromotion(orgId: string, eventId: string, until: string | null): Promise<void>;
+  /** HQ: who may sign in to an organizer's studio (emails), and adding or taking one away (null). */
+  orgMembers(orgId: string): Promise<string[]>;
+  setOrgMember(email: string, orgId: string | null): Promise<void>;
+  /** Count a view of an organizer's page, an event's page, a ticket tap or a promoted card (signed in only; one each time). */
+  countOrgView(orgId: string, key: OrgCounter): Promise<void>;
+  /** An organizer's numbers day by day since `since` ("YYYY-MM-DD"). Its team or HQ. */
+  orgViews(orgId: string, since: string): Promise<OrgDay[]>;
+  /** An organizer's stickers and gifts (its team or HQ), newest first. */
+  orgStickers(orgId: string, max: number): Promise<Sticker[]>;
+  orgHunts(orgId: string, max: number): Promise<Hunt[]>;
+  /** How many people found each of an organizer's stickers and gifts (code -> count; counts only). Its team or HQ. */
+  orgFinds(orgId: string): Promise<Record<string, number>>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;
