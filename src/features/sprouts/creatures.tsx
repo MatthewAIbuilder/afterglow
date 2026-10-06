@@ -2927,6 +2927,73 @@ const stainedglass: Draw = (p, f) => {
   };
 };
 
+/** ATLIENS's: a hooded figure in a chrome mask, eyes burning red, under a flaming red UFO and its beam (inspired by their look and tour art, drawn our own way). */
+const chromemask: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={38} fill={p.glow} opacity={0.12} />
+      {/* The beam. */}
+      <Path d="M42 26 L58 26 L78 90 Q50 96 22 90Z" fill={p.accent} opacity={0.22} />
+    </G>
+  ),
+  // The UFO, tilting as it hovers.
+  pivot: [50, 22],
+  sway: (
+    <G>
+      <VE cx={50} cy={18.5} rx={8} ry={5} fill={p.deep} f={f} />
+      <VE cx={50} cy={23} rx={24} ry={5} fill={p.deep} f={f} gloss={false} />
+      <Ellipse cx={50} cy={24.6} rx={16} ry={2} fill={p.altDeep} />
+      {[32, 40, 50, 60, 68].map((x) => (
+        <Circle key={x} cx={x} cy={23.2} r={1} fill={p.accent} />
+      ))}
+    </G>
+  ),
+  body: (
+    <G transform="translate(50 98) scale(0.86) translate(-50 -98)">
+      {/* The hoodie, drawstrings hanging. */}
+      <V d="M18 92 C18 76 30 66 50 66 C70 66 82 76 82 92 Q50 97 18 92Z" fill={p.alt} f={f} />
+      <Path d="M45 70 L44 84 M55 70 L56 84" stroke={p.mid} strokeWidth={0.9} strokeLinecap="round" opacity={0.8} />
+      {/* The hood, and the dark inside it. */}
+      <V d="M27 58 C25 36 36 22 50 22 C64 22 75 36 73 58 C69 68 60 72 50 72 C40 72 31 68 27 58Z" fill={p.alt} f={f} gloss={[38, 30, 5, 2, -28]} />
+      <Path d="M33.5 57 C33.5 40 41 31.5 50 31.5 C59 31.5 66.5 40 66.5 57 C62.5 64 57 67 50 67 C43 67 37.5 64 33.5 57Z" fill={p.altDeep} />
+      {/* The chrome mask. */}
+      <V d="M38 46 C38 38 43 34 50 34 C57 34 62 38 62 46 C62 56 57 64 50 65.5 C43 64 38 56 38 46Z" fill={p.mid} f={f} gloss={[44, 39, 3.6, 1.8, -30]} />
+      <Path d="M40.4 41 Q44 38.6 48 40.6 M59.6 41 Q56 38.6 52 40.6" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+      <Path d="M50 44 L48.4 54.4 Q50 55.6 51.6 54.4Z" fill={p.light} opacity={0.7} />
+      <Path d="M46 59.4 Q50 60.8 54 59.4" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+      <Path d="M57.6 50 Q59 56 54.6 61.6" stroke={p.light} strokeWidth={1} fill="none" opacity={0.6} strokeLinecap="round" />
+      <Ellipse cx={44.6} cy={46} rx={3.2} ry={2.3} fill="#06040C" transform="rotate(10 44.6 46)" />
+      <Ellipse cx={55.4} cy={46} rx={3.2} ry={2.3} fill="#06040C" transform="rotate(-10 55.4 46)" />
+    </G>
+  ),
+  flicker: (
+    <G>
+      {/* Flames licking off the top of the UFO. */}
+      {(
+        [
+          [33, 21, 31, 13, 2.2, -2],
+          [40, 19, 39, 10, 2.4, 1],
+          [46, 16.5, 45, 8, 2.2, -1],
+          [54, 16.5, 55.5, 8.5, 2.2, 1],
+          [60, 19, 62, 10.5, 2.4, -1],
+          [67, 21, 70, 13.5, 2, 2],
+        ] as const
+      ).map(([bx, by, tx, ty, w, b], i) => (
+        <G key={i}>
+          <Path d={flame(bx, by, tx, ty, w, b)} fill={p.accent} />
+          <Path d={flame(bx, by, bx + (tx - bx) * 0.6, by + (ty - by) * 0.6, w * 0.5, b * 0.5)} fill="#FFB43A" />
+        </G>
+      ))}
+      <G transform="translate(50 98) scale(0.86) translate(-50 -98)">
+        <Glow x={44.6} y={46.2} r={1.6} color={p.accent} />
+        <Glow x={55.4} y={46.2} r={1.6} color={p.accent} />
+      </G>
+    </G>
+  ),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -2983,4 +3050,5 @@ export const DRAW: Record<Creature, Draw> = {
   dove,
   cake,
   stainedglass,
+  chromemask,
 };

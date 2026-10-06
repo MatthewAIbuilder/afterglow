@@ -46,6 +46,8 @@ export const es_sprouts: Dictionary = {
   'A birthday cake flying through the air': 'Una tarta de cumpleaños volando por los aires',
   'The Window': 'La Vidriera',
   'A stained-glass window lit from within': 'Una vidriera iluminada desde dentro',
+  'The Masked visitor': 'El Visitante enmascarado',
+  'A chrome mask with burning eyes, under a flaming UFO': 'Una máscara cromada de ojos ardientes, bajo un ovni en llamas',
   'The Mammoth': 'El Mamut',
   'A shaggy woolly mammoth with great curling tusks': 'Un mamut lanudo y greñudo con grandes colmillos curvos',
   'Halo and horns': 'Aureola y cuernos',

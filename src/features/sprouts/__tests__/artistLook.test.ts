@@ -38,6 +38,7 @@ describe('signature collectibles', () => {
       ['San Holo', 'dove', 'The White bird'],
       ['Steve Aoki', 'cake', 'The Flying cake'],
       ['Tchami', 'stainedglass', 'The Window'],
+      ['ATLiens', 'chromemask', 'The Masked visitor'],
     ];
     for (const [name, creature, title] of more) {
       expect(artistLook({ id: name, name, sound: {} } as never)).toMatchObject({ creature, signature: true, name: title });
