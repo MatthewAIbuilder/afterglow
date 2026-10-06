@@ -134,6 +134,7 @@ export const es_artist: Dictionary = {
   '{n} more videos of them for gold': '{n} videos más suyos para oro',
   '{n} artist filmed, {gold} at gold': '{n} artista grabado, {gold} en oro',
   '{n} artists filmed, {gold} at gold': '{n} artistas grabados, {gold} en oro',
+  '. Opens the show.': '. Abre el show.',
 
   // A station from them, in Discover
   'Discover more like {artist}': 'Descubrir más como {artist}',

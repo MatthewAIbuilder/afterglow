@@ -335,7 +335,7 @@ export default function ArtistScreen() {
           </Section>
         )}
 
-        {/* Club shows and concerts, each opening its EDMTrain page (credited, as EDMTrain asks). */}
+        {/* Club shows and concerts, each opening its show page (tickets on EDMTrain there; credited, as EDMTrain asks). */}
         {shows.length > 0 && (
           <Section title={t('Upcoming shows')}>
             {showsListed.map((s) => {
@@ -348,9 +348,9 @@ export default function ArtistScreen() {
                   key={s.id}
                   onPress={() => {
                     haptic.select();
-                    Linking.openURL(s.link).catch(() => {});
+                    router.push({ pathname: '/show/[id]', params: { id: s.id } });
                   }}
-                  accessibilityRole="link"
+                  accessibilityRole="button"
                   accessibilityLabel={showLabel(s, others)}
                   style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
                 >
@@ -374,7 +374,7 @@ export default function ArtistScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  <Text style={styles.showOut}>↗</Text>
+                  <ChevronIcon color={color.moonFaint} size={14} />
                 </Pressable>
               );
             })}
@@ -603,7 +603,6 @@ const styles = StyleSheet.create({
   showMonth: { ...type.caption, fontSize: 10, letterSpacing: 1.2, fontWeight: '700', color: color.glow },
   showDay: { ...type.headline, fontSize: 20, lineHeight: 24, color: color.moon, fontVariant: ['tabular-nums'] },
   showWeekday: { ...type.caption, fontSize: 10, color: color.moonDim },
-  showOut: { ...type.label, color: color.moonFaint },
   showCredit: { alignSelf: 'flex-start', paddingVertical: space.sm },
   showCreditText: { ...type.caption, color: color.moonFaint },
   thumb: { width: 52, height: 64, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },

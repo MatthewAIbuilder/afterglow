@@ -23,6 +23,8 @@ import CameraScreen from '../camera';
 import ArtistScreen from '../artist/[id]';
 import DiscoverFocusScreen from '../discover-focus';
 import FestivalScreen from '../festival/[id]';
+import ShowScreen from '../show/[id]';
+import ShowsScreen from '../shows';
 import MemoriesScreen from '../memories';
 import MemoryScreen from '../memory/[id]';
 import MemoryTagScreen from '../memory-tag';
@@ -101,6 +103,8 @@ export const APP_ROUTES = {
   'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,
   'festival/[id]': FestivalScreen,
+  'show/[id]': ShowScreen,
+  shows: ShowsScreen,
   'poster/[id]': PosterScreen,
   saved: SavedScreen,
   welcome: WelcomeScreen,

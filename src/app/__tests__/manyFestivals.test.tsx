@@ -53,7 +53,7 @@ describe('many festivals', () => {
     await flush();
     expect(app.getAllByText(/^Feed Fest \d+$/).length).toBeGreaterThan(before);
     // Search still finds any of them.
-    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'Feed Fest 24');
+    await fireEvent.changeText(app.getByLabelText('Find an artist, festival or show'), 'Feed Fest 24');
     await flush();
     expect(app.getAllByText('Feed Fest 24').length).toBeGreaterThan(0);
   });

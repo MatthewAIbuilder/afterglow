@@ -1,4 +1,4 @@
-import type { Festival } from '../../data/models';
+import type { Festival, Show } from '../../data/models';
 import { t } from '../../i18n';
 
 /**
@@ -31,6 +31,22 @@ export function festivalEvent(festival: Festival, webUrl: string): CalendarEvent
     endDay: end,
     location: festival.location ?? '',
     notes: t('Your lineup and plan: {url}', { url }),
+    url,
+  };
+}
+
+/** A club show as a calendar event: its day, at the venue, with who's on and a link back to it. */
+export function showEvent(show: Show, webUrl: string, artistNames: readonly string[]): CalendarEvent | undefined {
+  if (!DAY.test(show.date)) return undefined;
+  const url = `${webUrl}/show/${show.id}`;
+  const title = show.name ?? (artistNames.length ? t('{artists} at {venue}', { artists: artistNames.slice(0, 2).join(' & '), venue: show.venue }) : show.venue);
+  const lineup = artistNames.length ? `${t('With {names}.', { names: artistNames.join(', ') })} ` : '';
+  return {
+    title,
+    startDay: show.date,
+    endDay: show.date,
+    location: [show.venue, show.location].filter(Boolean).join(', '),
+    notes: `${lineup}${t('Tickets: {link}', { link: show.link })}\n${t('On Afterglow: {url}', { url })}`,
     url,
   };
 }
