@@ -395,7 +395,7 @@ export const es_friends: Dictionary = {
   'Who’s in it?': '¿Quién sale?',
   'Tagged · {n}': 'Etiquetado · {n}',
   '@{handle} tagged you in a video': '@{handle} te etiquetó en un video',
-  'Watch it and choose whether it shows on your profile.': 'Míralo y elige si aparece en tu perfil.',
+  'It’s on your profile under Tagged. Open it to watch, or hide it.': 'Está en tu perfil, en Etiquetados. Ábrelo para verlo u ocultarlo.',
   Tagged: 'Etiquetado',
   '{name}, {n} videos': '{name}, {n} videos',
   'When someone tags you in a video and you say yes, it shows here.': 'Cuando alguien te etiqueta en un video y dices que sí, aparece aquí.',
@@ -427,4 +427,10 @@ export const es_friends: Dictionary = {
   'Hide your friend orbit': 'Ocultar tu órbita de amigos',
   'Show your friend orbit. {line}': 'Mostrar tu órbita de amigos. {line}',
   'Friend orbit': 'Órbita de amigos',
+  // Tags show straight away; you can hide them.
+  'Videos you’re tagged in show here. Open one to hide it from your profile.': 'Aquí aparecen los videos en los que te etiquetan. Abre uno para ocultarlo de tu perfil.',
+  'It shows on their profile under Tagged. They can hide it any time.': 'Aparece en su perfil, en Etiquetados. Puede ocultarlo cuando quiera.',
+  'Tag friends who are in it. It shows on their profile under Tagged, and they can hide it any time.': 'Etiqueta a amigos que salgan. Aparece en su perfil, en Etiquetados, y pueden ocultarlo cuando quieran.',
+  'You’re tagged, and it’s on your profile. Hide it from your profile': 'Estás etiquetado y aparece en tu perfil. Ocultarlo de tu perfil',
+  'On your profile under Tagged · Hide it': 'En tu perfil, en Etiquetados · Ocultar',
 };

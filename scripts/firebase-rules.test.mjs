@@ -162,7 +162,7 @@ await t('your own shared video’s tags can change (where it’s from, who was p
 });
 await t('people tagged in a video: the owner asks, only that person says yes, and a waiting tag is only for those two', async () => {
   const tag = (over = {}) => ({ memoryId: 'sh2', owner: 'uidT', uid: 'uidA', status: 'pending', createdAt: now, ...over });
-  await assertFails(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidA'), tag({ status: 'approved' })));
+  await assertFails(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidA'), tag({ status: 'declined' })));
   await assertFails(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidT'), tag({ uid: 'uidT' })));
   await assertFails(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidNobody'), tag({ uid: 'uidNobody' })));
   await assertFails(setDoc(doc(B.firestore(), 'videoTags', 'sh2_uidA'), tag({ owner: 'uidB' })));
@@ -175,6 +175,10 @@ await t('people tagged in a video: the owner asks, only that person says yes, an
   await assertSucceeds(updateDoc(doc(A.firestore(), 'videoTags', 'sh2_uidA'), { status: 'approved' }));
   await assertSucceeds(getDoc(doc(B.firestore(), 'videoTags', 'sh2_uidA')));
   await assertFails(deleteDoc(doc(B.firestore(), 'videoTags', 'sh2_uidA')));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'videoTags', 'sh2_uidA')));
+  // Tags show on the profile straight away now; anyone can see one, and the person tagged can hide it.
+  await assertSucceeds(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidA'), tag({ status: 'approved' })));
+  await assertSucceeds(getDoc(doc(B.firestore(), 'videoTags', 'sh2_uidA')));
   await assertSucceeds(deleteDoc(doc(A.firestore(), 'videoTags', 'sh2_uidA')));
 });
 await t('throwbacks: counted, three on the free plan, more with Plus, a place back when one is removed', async () => {

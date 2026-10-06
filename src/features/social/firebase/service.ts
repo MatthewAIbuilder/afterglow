@@ -500,7 +500,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           if (input.people?.length) {
             const b = writeBatch(db);
             for (const uid of [...new Set(input.people)].filter((u) => u !== user.uid).slice(0, VIDEO_TAGS_MAX))
-              b.set(doc(db, 'videoTags', `${memRef.id}_${uid}`), { memoryId: memRef.id, owner: user.uid, uid, status: 'pending', createdAt: now() });
+              b.set(doc(db, 'videoTags', `${memRef.id}_${uid}`), { memoryId: memRef.id, owner: user.uid, uid, status: 'approved', createdAt: now() });
             await b.commit().catch(() => {});
           }
           return memoryFromDoc(memRef.id, shared)!;
@@ -567,7 +567,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const b = writeBatch(db);
         for (const d of now_.docs) if (!want.includes(String(d.data().uid))) b.delete(d.ref);
         for (const uid of want)
-          if (!have.has(uid)) b.set(doc(db, 'videoTags', `${memoryId}_${uid}`), { memoryId, owner: user.uid, uid, status: 'pending', createdAt: now() });
+          if (!have.has(uid)) b.set(doc(db, 'videoTags', `${memoryId}_${uid}`), { memoryId, owner: user.uid, uid, status: 'approved', createdAt: now() });
         await b.commit();
       }),
     answerVideoTag: (memoryId, yes) =>
@@ -1117,8 +1117,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           getDocs(query(collection(db, 'follows'), where('to', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
           getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
           getDocs(query(collection(db, 'comments'), where('owner', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
-          // Tagged in a video and not answered yet.
-          getDocs(query(collection(db, 'videoTags'), where('uid', '==', user.uid), where('status', '==', 'pending'), limit(max))).catch(() => undefined),
+          // Tagged in a video (on your profile straight away; tags from before that are said yes to here).
+          getDocs(query(collection(db, 'videoTags'), where('uid', '==', user.uid), limit(max))).catch(() => undefined),
         ]);
         const str = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
         const items: Activity[] = [];
@@ -1137,7 +1137,10 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         }
         for (const d of tagged?.docs ?? []) {
           const tag = videoTagFromDoc(d.id, d.data());
-          if (tag) items.push({ kind: 'tag', id: tag.id, from: tag.owner, memoryId: tag.memoryId, createdAt: tag.createdAt });
+          if (!tag) continue;
+          items.push({ kind: 'tag', id: tag.id, from: tag.owner, memoryId: tag.memoryId, createdAt: tag.createdAt });
+          // A tag from before tags showed straight away: it shows now (you can still hide it).
+          if (tag.status === 'pending') void updateDoc(d.ref, { status: 'approved' }).catch(() => {});
         }
         return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
       }),

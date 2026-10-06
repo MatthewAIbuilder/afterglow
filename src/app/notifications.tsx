@@ -42,7 +42,7 @@ export default function NotificationsScreen() {
   const shown = useMemo(() => filterNotices(list, filter, query), [list, filter, query]);
   const newOnes = shown.filter((n) => fresh?.has(n.id));
   const earlier = shown.filter((n) => !fresh?.has(n.id));
-  const labels: Record<NoticeFilter, string> = { all: t('All'), people: t('People'), festivals: t('Festivals'), sets: t('New sets'), sprouts: t('Sprouts') };
+  const labels: Record<NoticeFilter, string> = { all: t('All'), people: t('People'), tagged: t('Tagged'), festivals: t('Festivals'), sets: t('New sets'), sprouts: t('Sprouts') };
 
   const row = (n: Notice) => {
     const isNew = !!fresh?.has(n.id);

@@ -38,7 +38,7 @@ export type Memory = {
   withArtistIds?: string[];
   /** The artist's name, typed in, when they aren't on Afterglow yet (`artistId` is the id they'll get: data/extraArtists.ts). */
   artistName?: string;
-  /** People in it (uids), tagged once it's shared; each says yes before it shows on their profile. */
+  /** People in it (uids), tagged once it's shared; it shows on their profiles, and each can hide it. */
   people?: string[];
   /** The part that plays, when the video was trimmed (seconds into the file). */
   clip?: ClipWindow;

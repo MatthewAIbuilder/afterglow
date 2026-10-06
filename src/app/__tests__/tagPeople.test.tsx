@@ -7,9 +7,9 @@ import { renderApp } from './appRoutes';
 
 /**
  * Tagging people in a shared video, through the real routes, with the
- * in-memory backend: the person who filmed it tags a friend, the friend is
- * asked on the video's page and in the bell, and once they say yes it shows
- * on their profile under Tagged (and in Moments' Tagged filter).
+ * in-memory backend: the person who filmed it tags a friend, it shows on the
+ * friend's profile under Tagged straight away (and in the bell), and the
+ * friend can hide it from the video's page.
  */
 let mockSocial = fakeSocial();
 jest.mock('../../features/social/services', () => ({ defaultSocialService: () => mockSocial.service }));
@@ -52,25 +52,23 @@ afterEach(() => {
 
 
 describe('tagging people in a video', () => {
-  it('the friend is asked, says yes, and it shows on their profile under Tagged', async () => {
+  it('a tag shows on the friend’s profile straight away, and in the bell under Tagged', async () => {
     const { sam, id } = await mayaShares();
-    // Maya tagged Sam (as she shares it, people are asked once it's on Discover).
     await s().signOut();
     await s().signIn('maya@example.com', 'password123');
     await s().setVideoTags(id, [sam]);
+    await s().follow(sam);
     await s().signOut();
     await s().signIn('sam@example.com', 'password123');
-    expect(await s().activity(10)).toEqual([expect.objectContaining({ kind: 'tag', from: expect.any(String), memoryId: id })]);
+    expect(await s().activity(10)).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'tag', from: expect.any(String), memoryId: id })]));
+    expect(await s().taggedMemoriesOf(sam)).toHaveLength(1);
 
     const app = await renderApp(`/shared/${id}`);
     await flush();
-    expect(app.getByTestId('tag-ask')).toBeTruthy();
-    expect(app.getByText('@maya tagged you in this')).toBeTruthy();
-    await fireEvent.press(app.getByText('Yes, show it'));
-    await flush();
-    expect(app.getByText('You’re tagged · Untag me')).toBeTruthy();
+    // Nothing to say yes to: it's already on Sam's profile.
+    expect(app.queryByTestId('tag-ask')).toBeNull();
+    expect(app.getByText('On your profile under Tagged · Hide it')).toBeTruthy();
     expect(app.getByText('@sam')).toBeTruthy();
-    expect(await s().taggedMemoriesOf(sam)).toHaveLength(1);
 
     // On Sam's profile: Moments' Tagged filter.
     await act(async () => router.navigate('/profile'));
@@ -78,12 +76,18 @@ describe('tagging people in a video', () => {
     await fireEvent.press(app.getByRole('button', { name: 'Tagged · 1' }));
     expect(app.getAllByLabelText(/^Video: /)).toHaveLength(1);
 
+    // The bell has its own Tagged filter.
+    await go('/notifications');
+    await fireEvent.press(app.getByRole('button', { name: 'Tagged' }));
+    expect(app.getByText('@maya tagged you in a video')).toBeTruthy();
+    expect(app.queryByText(/started following you/)).toBeNull();
+
     // And on Sam's page for anyone else.
     await go('/u/sam');
     expect(app.getByText('Tagged · 1')).toBeTruthy();
   });
 
-  it('no thanks takes the tag off; the owner tags people from the tagging sheet', async () => {
+  it('the friend can hide it later; the owner tags people from the tagging sheet', async () => {
     const { sam, id } = await mayaShares();
     await s().signOut();
     await s().signIn('maya@example.com', 'password123');
@@ -94,15 +98,23 @@ describe('tagging people in a video', () => {
     await fireEvent.press(app.getByLabelText('Tag Sam, @sam'));
     await fireEvent.press(app.getByLabelText('Save to Memories'));
     await flush();
-    expect(await s().videoTags(id)).toEqual([expect.objectContaining({ uid: sam, status: 'pending' })]);
+    expect(await s().videoTags(id)).toEqual([expect.objectContaining({ uid: sam, status: 'approved' })]);
 
     await act(async () => void (await s().signIn('sam@example.com', 'password123')));
     await flush();
     await go(`/shared/${id}`);
-    await fireEvent.press(app.getByText('No thanks'));
+    await fireEvent.press(app.getByText('On your profile under Tagged · Hide it'));
     await flush();
-    expect(app.queryByTestId('tag-ask')).toBeNull();
+    expect(app.queryByText('On your profile under Tagged · Hide it')).toBeNull();
     expect(await s().taggedMemoriesOf(sam)).toEqual([]);
+  });
+
+  it('a tag from before (never answered) shows once the bell is read', async () => {
+    const { sam, id } = await mayaShares();
+    mockSocial.videoTags.set(`${id}_${sam}`, { id: `${id}_${sam}`, memoryId: id, owner: 'someone', uid: sam, status: 'pending', createdAt: '2026-10-01T10:00:00.000Z' });
+    expect(await s().taggedMemoriesOf(sam)).toEqual([]);
+    await s().activity(10);
+    expect(await s().taggedMemoriesOf(sam)).toHaveLength(1);
   });
 
   it('a profile’s videos open to swipe through, like Discover', async () => {

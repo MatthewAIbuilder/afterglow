@@ -154,7 +154,8 @@ service cloud.firestore {
       allow read: if signedIn() && (resource.data.status == 'approved' || resource.data.uid == me() || resource.data.owner == me());
       allow create: if signedIn() && request.resource.data.owner == me()
         && request.resource.data.keys().hasOnly(['memoryId', 'owner', 'uid', 'status', 'createdAt'])
-        && request.resource.data.status == 'pending'
+        // Shows on their profile straight away ('pending' from older apps); they can hide it (delete) any time.
+        && request.resource.data.status in ['approved', 'pending']
         && request.resource.data.uid is string && request.resource.data.uid != me() && request.resource.data.uid.size() <= 128
         && request.resource.data.memoryId is string && request.resource.data.memoryId.size() <= 100
         && id == request.resource.data.memoryId + '_' + request.resource.data.uid
