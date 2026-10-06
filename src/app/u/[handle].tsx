@@ -1,4 +1,7 @@
 import { Image } from 'expo-image';
+import { useOrgs } from '../../state/orgs';
+import { orgOfAccount } from '../../features/organizers/organizers';
+import { OrgProfileCard } from '../../features/organizers/OrgProfileCard';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
@@ -117,6 +120,7 @@ export default function PublicProfileScreen() {
   }, [handle, signedIn, social.service]);
 
   const mine = !!profile && profile.uid === social.user?.uid;
+  const runs = orgOfAccount(useOrgs(), profile?.uid);
   const blocked = !!profile && social.blocked.has(profile.uid);
 
   // What you have in common: from what they show and what your phone knows (nothing of yours is sent).
@@ -312,6 +316,8 @@ export default function PublicProfileScreen() {
             )}
           </ProfileHeader>
         </View>
+        {/* They run an event organizer: its logo, next event and page. */}
+        {runs ? <OrgProfileCard org={runs} own={mine} /> : null}
         {common.length > 0 || match !== undefined ? (
           <View
             style={styles.common}

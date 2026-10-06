@@ -7,6 +7,10 @@ import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { FlairKind, Privileges, Profile } from '../social/models';
+import { ORG_STARTERS } from '../../config/organizers';
+import { useOrgs } from '../../state/orgs';
+import { orgFromStarter, orgOfAccount } from '../organizers/organizers';
+import { refreshOrgs } from '../organizers/OrgSync';
 import { FLAIR_KINDS } from '../social/models';
 import { StandingAvatar } from '../standing/StandingAvatar';
 import { rememberStanding } from '../standing/useStanding';
@@ -147,6 +151,13 @@ function Grant({ profile, current, onSaved, onClose }: { profile: Profile; curre
   const [flair, setFlair] = useState<FlairKind | undefined>(current?.flair?.kind);
   const [caption, setCaption] = useState(current?.flair?.caption ?? '');
   const [busy, setBusy] = useState(false);
+  // Which organizer this account runs: one already on Afterglow, or one ready to set up (config/organizers.ts).
+  const orgs = useOrgs();
+  const wasOrg = orgOfAccount(orgs, profile.uid)?.id;
+  // Unless it's changed here, it shows what Afterglow has (which may arrive after this opens).
+  const [picked, setPicked] = useState<{ org: string | undefined } | undefined>();
+  const org = picked ? picked.org : wasOrg;
+  const orgChoices = [...orgs.map((o) => ({ id: o.id, name: o.name })), ...ORG_STARTERS.filter((st) => !orgs.some((o) => o.id === st.id)).map((st) => ({ id: st.id, name: st.name }))];
 
   const save = async () => {
     setBusy(true);
@@ -159,6 +170,16 @@ function Grant({ profile, current, onSaved, onClose }: { profile: Profile; curre
       const flairChanged = flair !== current?.flair?.kind || (!!flair && words !== current?.flair?.caption);
       if (plusChanged) await social.service.setPlus(profile.uid, plus ? (until ? { until } : {}) : null);
       if (flairChanged) await social.service.setFlair(profile.uid, flair ? { kind: flair, caption: words } : null);
+      if (picked && org !== wasOrg) {
+        if (wasOrg) await social.service.setOrgAccount(wasOrg, profile.uid, false);
+        if (org) {
+          // Not set up yet: its page first (from its starter), then the account.
+          const starter = ORG_STARTERS.find((st) => st.id === org);
+          if (!orgs.some((o) => o.id === org) && starter) await social.service.saveOrg(orgFromStarter(starter));
+          await social.service.setOrgAccount(org, profile.uid, true);
+        }
+        refreshOrgs();
+      }
       // Their ring and caption change straight away on this phone.
       const standing = await social.service.standingOf(profile.uid).catch(() => undefined);
       if (standing) rememberStanding(profile.uid, standing);
@@ -226,6 +247,15 @@ function Grant({ profile, current, onSaved, onClose }: { profile: Profile; curre
           style={styles.input}
         />
       ) : null}
+
+      <Text style={[styles.label, { marginTop: space.md }]}>Organizer</Text>
+      <Text style={styles.small}>They run this organizer: their profile shows it, and they get its studio (no email to confirm).</Text>
+      <FilterChips
+        inset={0}
+        value={org ?? 'none'}
+        onChange={(k) => setPicked({ org: k === 'none' || !k ? undefined : k })}
+        chips={[{ key: 'none', label: 'None', accessibilityLabel: 'Not an organizer' }, ...orgChoices.map((o) => ({ key: o.id, label: o.name, accessibilityLabel: `Runs ${o.name}` }))]}
+      />
 
       <Pressable onPress={() => void save()} disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.save, busy && { opacity: 0.6 }, pressed && styles.pressed]}>
         <Text style={styles.saveText}>{busy ? 'Saving…' : 'Save privileges'}</Text>

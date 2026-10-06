@@ -19,6 +19,7 @@ import {
   type Org,
   orgActs,
   orgFromStarter,
+  orgOfAccount,
   orgStats,
   orgToDoc,
   promotionUntil,
@@ -84,8 +85,12 @@ describe('organizers', () => {
   });
 
   it('never saves promotions from the page (only HQ gives them)', () => {
-    const doc = orgToDoc(org({ promoted: { 'transmutation-11-07': '2026-11-07' } }));
+    const doc = orgToDoc(org({ promoted: { 'transmutation-11-07': '2026-11-07' }, uids: ['uidA'] }));
     expect(doc).not.toHaveProperty('promoted');
+    expect(doc).not.toHaveProperty('uids');
+    expect(cleanOrg('underground-alchemy', { name: 'UA', uids: ['uidA', 'uidA', 'bad uid!', 3] })?.uids).toEqual(['uidA']);
+    expect(orgOfAccount([org({ uids: ['uidA'] })], 'uidA')?.id).toBe('underground-alchemy');
+    expect(orgOfAccount([org()], 'uidA')).toBeUndefined();
     expect(doc).not.toHaveProperty('id');
   });
 

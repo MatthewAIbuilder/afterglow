@@ -98,6 +98,8 @@ describe('organizers', () => {
     seed({ events: [] });
     const app = await organizer();
     expect(app.getByText('Organizer studio')).toBeTruthy();
+    // Signed in with the organizer's email, the account links itself (its profile then shows the organizer).
+    expect(mockSocial.orgs.get(ORG)!.uids).toEqual([mockSocial.currentUser()!.uid]);
     await showTab(app, 'Events');
     await fireEvent.press(app.getByText('Add an event'));
     await fireEvent.changeText(app.getByLabelText('Name'), 'Transmutation');
@@ -229,5 +231,51 @@ describe('organizers', () => {
     await s().signOut();
     await s().signIn(TEST_LOGIN, 'password123');
     expect(await s().orgFinds(ORG)).toEqual({ [gift.code]: 1 });
+  });
+  it('HQ links an account from Accounts: its profile shows the organizer, and its studio opens with no email to confirm', async () => {
+    const u = await s().signUp('ugrnd@example.com', 'password123');
+    await s().saveProfile({ handle: 'ugrnd', displayName: 'Ugrnd', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    await s().signOut();
+
+    mockSocial.verified.add(SUPPORT);
+    await s().signUp(SUPPORT, 'password123');
+    const hq = await renderApp('/');
+    await flush();
+    await showTab(hq, 'Accounts');
+    await fireEvent.changeText(hq.getByLabelText('Find someone by name or @handle'), 'ugrnd');
+    await settle(400);
+    await flush();
+    await fireEvent.press(hq.getByLabelText(/^Ugrnd, @ugrnd\./));
+    await fireEvent.press(hq.getByLabelText('Runs Underground Alchemy'));
+    answerAlerts();
+    await fireEvent.press(hq.getByText('Save privileges'));
+    await flush();
+    // Not set up yet: its page is made from its starter, with this account running it.
+    expect(mockSocial.orgs.get(ORG)).toMatchObject({ name: 'Underground Alchemy', uids: [u.uid] });
+    await hq.unmount();
+    await s().signOut();
+
+    await s().signIn('ugrnd@example.com', 'password123');
+    const app = await renderApp('/profile');
+    await flush();
+    expect(app.getByText('You run')).toBeTruthy();
+    expect(app.getByLabelText('Underground Alchemy')).toBeTruthy();
+    await fireEvent.press(app.getByText('Organizer studio'));
+    await flush();
+    expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
+    expect(app.queryByText('Confirm your email to open the studio')).toBeNull();
+    // It can edit its page, but never link anyone else.
+    await expect(s().saveOrg({ ...mockSocial.orgs.get(ORG)!, about: 'Hello.' })).resolves.toBeUndefined();
+    await expect(s().setOrgAccount(ORG, 'someone-else', true)).rejects.toThrow();
+    await app.unmount();
+
+    // Everyone else sees it on their profile too.
+    await s().signOut();
+    await s().signUp('fan@example.com', 'password123');
+    const fan = await renderApp('/u/ugrnd');
+    await flush();
+    expect(fan.getByText('Runs')).toBeTruthy();
+    expect(fan.getByText('See their events')).toBeTruthy();
+    await fan.unmount();
   });
 });

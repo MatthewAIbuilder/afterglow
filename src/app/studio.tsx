@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
@@ -45,6 +45,17 @@ export default function StudioScreen() {
   const [tab, setTab] = useState<Section>('overview');
   const [sent, setSent] = useState(false);
 
+  // Signed in with the organizer's email: link this account too, so its profile shows the organizer.
+  const uid = user?.uid;
+  const linkable = !!org && !!uid && !!user?.emailVerified && mine === org.id && !org.uids.includes(uid);
+  useEffect(() => {
+    if (!linkable || !org || !uid) return;
+    social.service
+      .setOrgAccount(org.id, uid, true)
+      .then(refreshOrgs)
+      .catch(() => {});
+  }, [linkable, org, uid, social.service]);
+
   const save = useCallback(
     async (next: Org) => {
       try {
@@ -83,7 +94,8 @@ export default function StudioScreen() {
   if (!social.ready) body = null;
   else if (!user) body = gate('Sign in to your organizer account', 'The studio is for event organizers working with Afterglow. Sign in with the email Afterglow set up for you.', { label: 'Sign in', onPress: () => router.push('/account') });
   else if (!orgId) body = gate('This account isn’t an organizer yet', `Signed in as ${user.email}. If you put on events and want your own page, badges and stickers on Afterglow, contact us and we’ll set you up.`, { label: 'Contact Afterglow', onPress: () => router.push('/support') });
-  else if (!user.emailVerified)
+  // An account HQ linked needs no email check; one let in by its email does.
+  else if (!user.emailVerified && !org?.uids.includes(user.uid))
     body = gate(
       'Confirm your email to open the studio',
       'So nobody else can run your page, the studio opens once your email is confirmed. Tap below, open the email from Afterglow, tap its link, then come back and tap “I’ve confirmed it”.',

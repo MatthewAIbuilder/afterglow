@@ -123,7 +123,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** The organizer the signed-in (confirmed) email runs. */
   const orgOfMe = () => (current?.email && verified.has(current.email) ? orgMembers.get(current.email.toLowerCase()) : undefined);
   const needOrg = (orgId: string | undefined) => {
-    if (!admin() && (!orgId || orgOfMe() !== orgId)) throw new SocialError('unknown');
+    const linked = !!orgId && !!current && !!orgs.get(orgId)?.uids.includes(current.uid);
+    if (!admin() && (!orgId || (orgOfMe() !== orgId && !linked))) throw new SocialError('unknown');
   };
   const listeners = new Set<(u: SocialUser | null) => void>();
   let current: SocialUser | null = null;
@@ -1263,7 +1264,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!had) needAdmin();
       else needOrg(org.id);
       // As stored and read back: checked, and promotions only ever HQ's.
-      orgs.set(org.id, { ...cleanOrg(org.id, orgToDoc(org))!, promoted: had?.promoted ?? {}, updatedAt: now() });
+      orgs.set(org.id, { ...cleanOrg(org.id, orgToDoc(org))!, promoted: had?.promoted ?? {}, uids: had?.uids ?? [], updatedAt: now() });
     },
     async sendOrgRequest(input) {
       const u = me();
@@ -1293,6 +1294,13 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (until) promoted[eventId] = until;
       else delete promoted[eventId];
       orgs.set(orgId, { ...o, promoted });
+    },
+    async setOrgAccount(orgId, uid, on) {
+      const u = me();
+      if (!admin() && (uid !== u.uid || orgOfMe() !== orgId)) throw new SocialError('unknown');
+      const o = orgs.get(orgId);
+      if (!o) throw new SocialError('not-found');
+      orgs.set(orgId, { ...o, uids: on ? [...new Set([...o.uids, uid])] : o.uids.filter((x) => x !== uid) });
     },
     async orgMembers(orgId) {
       needAdmin();

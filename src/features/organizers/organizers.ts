@@ -85,6 +85,13 @@ export type Org = {
   artists: Record<string, OrgArtist>;
   /** Event id -> the last day it's promoted ("YYYY-MM-DD"). Only HQ sets it. */
   promoted: Record<string, string>;
+  /**
+   * The Afterglow accounts that run it (uids): their profile shows the
+   * organizer, and they open its studio. HQ links an account from Accounts;
+   * someone signed in with an organizer's email links their own when they open
+   * the studio.
+   */
+  uids: string[];
   updatedAt?: string;
 };
 
@@ -118,6 +125,8 @@ export type OrgDay = { day: string; counts: Record<string, number> };
 export type OrgCounter = 'page' | 'promo' | 'tickets' | `e_${string}` | `f_${string}`;
 
 export const ORG_NAME_MAX = 60;
+/** Accounts that can run one organizer. */
+export const ORG_UIDS_MAX = 10;
 export const ORG_TAGLINE_MAX = 80;
 export const ORG_ABOUT_MAX = 600;
 export const ORG_EVENTS_MAX = 40;
@@ -274,6 +283,7 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
     events,
     artists,
     promoted,
+    uids: Array.isArray(r.uids) ? [...new Set(r.uids.filter((u): u is string => typeof u === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(u)))].slice(0, ORG_UIDS_MAX) : [],
     updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : undefined,
   }) as Org;
 }
@@ -281,15 +291,15 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
 /** The fields an organizer's page is saved with (besides `promoted` and `updatedAt`). */
 export const ORG_FIELDS = ['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists'] as const;
 
-/** What an organizer saves (everything but `promoted`, which only HQ sets, and the time). */
+/** What an organizer saves (everything but `promoted` and `uids`, which only HQ sets, and the time). */
 export function orgToDoc(org: Org): Record<string, unknown> {
-  const { id: _id, promoted: _p, updatedAt: _u, ...rest } = org;
+  const { id: _id, promoted: _p, uids: _a, updatedAt: _u, ...rest } = org;
   return JSON.parse(JSON.stringify(rest)) as Record<string, unknown>;
 }
 
 /** A new organizer page from its starter. */
 export function orgFromStarter(s: OrgStarter): Org {
-  return some({ id: s.id, name: s.name, tagline: s.tagline, website: s.website, instagram: s.instagram, mark: s.mark, color: s.color, events: [], artists: {}, promoted: {} }) as Org;
+  return some({ id: s.id, name: s.name, tagline: s.tagline, website: s.website, instagram: s.instagram, mark: s.mark, color: s.color, events: [], artists: {}, promoted: {}, uids: [] }) as Org;
 }
 
 /** A new event's id from its name and night, not already used. */
@@ -458,6 +468,9 @@ export function withOrgs(base: CatalogSnapshot, orgs: readonly Org[]): CatalogSn
     festivals: [...base.festivals, ...top.festivals],
   };
 }
+
+/** The organizer an account runs, by account (HQ linked it, or it linked itself). */
+export const orgOfAccount = (orgs: readonly Org[], uid: string | undefined): Org | undefined => (uid ? orgs.find((o) => o.uids.includes(uid)) : undefined);
 
 // ---- Promotion --------------------------------------------------------------
 

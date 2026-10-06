@@ -34,6 +34,19 @@ What an organizer can do in the studio:
 Everyone else sees the organizer's page (`/org/underground-alchemy`): the
 logo, their words and links, what's coming up, and what you can collect.
 
+## Quickest: link an account you already have
+
+If the organizer (or you, testing) already has an Afterglow account, link it
+in HQ: **Accounts** → find them by name or @handle → **Organizer** → choose
+**Underground Alchemy** → **Save privileges**. (If the organizer isn't set up
+yet, this sets it up too.) Then, on that account, close and reopen the app (or
+refresh the website): its Profile shows a **You run Underground Alchemy** card
+with an **Organizer studio** button, and the studio opens straight away (no
+email to confirm, because HQ chose the account). Everyone else sees the card on
+their profile with **See their events**. Choose **None** to unlink it.
+
+The Partner flair is separate: it only adds the ring and caption.
+
 ## The test login
 
 While Stefan's own account isn't ready, the organizer signs in with a test
