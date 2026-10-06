@@ -211,4 +211,6 @@ export const es_profile: Dictionary = {
   'All your videos, by festival': 'Todos tus videos, por festival',
   'All ›': 'Todos ›',
   'Your videos are on this phone, so they’re here without signal.': 'Tus videos están en este teléfono, así que están aquí aunque no haya señal.',
+  'Choose a video from your phone, tag who was playing, and share it to Discover. Videos you share from the website show here once shared.':
+    'Elige un video de tu teléfono, etiqueta quién tocaba y compártelo en Descubrir. Los videos que compartes desde la web aparecen aquí una vez compartidos.',
 };

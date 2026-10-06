@@ -12,12 +12,30 @@ import { t } from '../../i18n';
 const FACE = 66;
 const WHY: Record<Favourite['why'], string> = { love: t('you love them'), like: t('you like them'), follow: t('you follow them'), match: t('a strong match') };
 
-/** Your artists: the ones you love, like and follow, big faces in a row to swipe. */
-export function YourArtistsRow({ favourites, hidden, onToggle }: { favourites: Favourite[]; hidden: boolean; onToggle: () => void }) {
+/**
+ * Your artists: the ones you love, like and follow, big faces in a row to
+ * swipe, with where the next of them plays ("Next: SUBTRONICS · Sat 18 Oct · Denver").
+ */
+export function YourArtistsRow({ favourites, hidden, onToggle, next }: { favourites: Favourite[]; hidden: boolean; onToggle: () => void; next?: string }) {
   if (!favourites.length) return null;
   return (
     <View style={styles.root}>
       <ShelfHead title={t('Your artists')} hidden={hidden} onToggle={onToggle} link={t('Where they play')} onLink={() => router.push('/your-artists')} />
+      {!hidden && next ? (
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            router.push('/your-artists');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('{next}. See where they play.', { next })}
+          style={({ pressed }) => [styles.next, pressed && { opacity: 0.6 }]}
+        >
+          <Text style={styles.nextText} numberOfLines={1}>
+            {next}
+          </Text>
+        </Pressable>
+      ) : null}
       {hidden ? null : (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {favourites.map((f) => {
@@ -55,6 +73,8 @@ export function YourArtistsRow({ favourites, hidden, onToggle }: { favourites: F
 
 const styles = StyleSheet.create({
   root: { marginTop: space.xl },
+  next: { alignSelf: 'flex-start', marginTop: -space.xs, marginBottom: space.sm, paddingHorizontal: space.xl },
+  nextText: { ...type.caption, color: color.moonDim },
   row: { paddingHorizontal: space.xl, gap: space.md },
   item: { width: FACE + 10, alignItems: 'center' },
   ring: { borderRadius: (FACE + 6) / 2, borderWidth: 2, padding: 1, shadowOpacity: 0.55, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },

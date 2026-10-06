@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { festivalEvent, icsFileName, icsFor, icsText, localDay, nextDay } from '../events';
+import { festivalEvent, icsFileName, icsFor, icsText, localDay, nextDay, showEvent } from '../events';
 
 const fest = (over: Partial<Festival> = {}) =>
   ({ id: 'edc-orlando-26', name: 'EDC Orlando 2026', dates: 'Nov 6 to 8', location: 'Tinker Field, Orlando', lineup: [], days: [], stages: [], startDate: '2026-11-06', endDate: '2026-11-08', ...over }) as Festival;
@@ -40,5 +40,17 @@ describe('festival calendar events', () => {
     const bs = '\\';
     expect(icsText(`a;b\nc${bs}`)).toBe(`a${bs};b${bs}nc${bs}${bs}`);
     expect(icsFileName('RÜFÜS Fest: 2026!')).toBe('rufus-fest-2026.ics');
+  });
+});
+
+describe('show calendar events', () => {
+  const show = { id: 'edm-9', date: '2026-10-18', venue: 'Echostage', location: 'Washington, DC', link: 'https://edmtrain.com/e/9', artistIds: ['a', 'b'] };
+  it('one day at the venue, named by the event or who plays, with tickets and a link back', () => {
+    const e = showEvent(show, 'https://afterglowmusic.app', ['Fred again..', 'Skrillex', 'Four Tet'])!;
+    expect(e).toMatchObject({ title: 'Fred again.. & Skrillex at Echostage', startDay: '2026-10-18', endDay: '2026-10-18', location: 'Echostage, Washington, DC', url: 'https://afterglowmusic.app/show/edm-9' });
+    expect(e.notes).toContain('With Fred again.., Skrillex, Four Tet.');
+    expect(e.notes).toContain('https://edmtrain.com/e/9');
+    expect(showEvent({ ...show, name: 'Halloween' }, 'https://afterglowmusic.app', [])!.title).toBe('Halloween');
+    expect(showEvent({ ...show, date: 'soon' }, 'https://afterglowmusic.app', [])).toBeUndefined();
   });
 });

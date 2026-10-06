@@ -34,6 +34,8 @@ type Ctx = {
   wasRemoved: (id: string) => boolean;
   uriOf: (name: string) => string;
   saveToPhotos: (id: string) => Promise<boolean>;
+  /** The website: videos last only while the page is open (nothing is saved), so they're kept by sharing them. */
+  sessionOnly: boolean;
 };
 
 export const MEMORIES_STORAGE_KEY = 'memories.v1';
@@ -45,7 +47,9 @@ const MemoriesContext = createContext<Ctx | null>(null);
 export function MemoriesProvider({ children, files: given }: { children: ReactNode; files?: MemoryFiles }) {
   const files = given ?? deviceMemoryFiles;
   const [memories, setMemories] = useState<Memory[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  // On the website nothing is saved or read back: there's nothing to wait for.
+  const sessionOnly = !!files.sessionOnly;
+  const [hydrated, setHydrated] = useState(sessionOnly);
   const [draft, setDraft] = useState<PickedVideo | undefined>();
   // The list is only ever written once it has been read back: a failed read (or a damaged file) must never be
   // replaced by the few memories made since, which would cost every older video on the next launch.
@@ -60,7 +64,7 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
   // Read the saved list; after a failed read, try again a little later and whenever the app comes back.
   const [readTry, setReadTry] = useState(0);
   useEffect(() => {
-    if (writable.current) return;
+    if (writable.current || sessionOnly) return;
     let live = true;
     let retry: ReturnType<typeof setTimeout> | undefined;
     Promise.all([AsyncStorage.getItem(MEMORIES_STORAGE_KEY), AsyncStorage.getItem(MEMORIES_DAMAGED_KEY)])
@@ -96,7 +100,7 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
       live = false;
       if (retry) clearTimeout(retry);
     };
-  }, [files, readTry]);
+  }, [files, readTry, sessionOnly]);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active' && !writable.current) setReadTry((t) => t + 1);
@@ -105,9 +109,9 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
   }, []);
 
   useEffect(() => {
-    if (!writable.current) return;
+    if (!writable.current || sessionOnly) return;
     AsyncStorage.setItem(MEMORIES_STORAGE_KEY, JSON.stringify(memories)).catch(() => {});
-  }, [memories, hydrated]);
+  }, [memories, hydrated, sessionOnly]);
 
   const keepVideo = useCallback(
     async (video: PickedVideo, tag: MemoryTagInput) => {
@@ -182,8 +186,8 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
   );
 
   const value = useMemo<Ctx>(
-    () => ({ memories, hydrated, draft, setDraft, keepDraft, keepNow, tag, setShared, forgetShares, remove, wasRemoved, uriOf: files.uriOf, saveToPhotos }),
-    [memories, hydrated, draft, keepDraft, keepNow, tag, setShared, forgetShares, remove, wasRemoved, files, saveToPhotos],
+    () => ({ memories, hydrated, draft, setDraft, keepDraft, keepNow, tag, setShared, forgetShares, remove, wasRemoved, uriOf: files.uriOf, saveToPhotos, sessionOnly }),
+    [memories, hydrated, draft, keepDraft, keepNow, tag, setShared, forgetShares, remove, wasRemoved, files, saveToPhotos, sessionOnly],
   );
   return <MemoriesContext.Provider value={value}>{children}</MemoriesContext.Provider>;
 }
