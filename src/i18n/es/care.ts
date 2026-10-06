@@ -1,0 +1,313 @@
+import type { Dictionary } from '../translate';
+
+/**
+ * Spanish for care (see `../es.ts` for the rules). Harm-reduction lines:
+ * every number, unit and warning is kept exactly as in the English; the
+ * English guide (and so this) still needs expert review before launch.
+ */
+export const es_care: Dictionary = {
+  // The page
+  'Open Look after yourself': 'Abrir Cuídate',
+  Locked: 'Bloqueado',
+  'Your notes are private. Unlock with Face ID or your passcode.': 'Tus notas son privadas. Desbloquea con Face ID o tu código.',
+  Unlock: 'Desbloquear',
+  'Private to you: kept only on this phone, never shared.': 'Solo para ti: se guarda únicamente en este teléfono y nunca se comparte.',
+  'Tip: hold the camera button to get back here quickly.': 'Consejo: mantén pulsado el botón de la cámara para volver aquí rápido.',
+  Feelings: 'Cómo te sientes',
+  Stopwatches: 'Cronómetros',
+  Water: 'Agua',
+  Food: 'Comida',
+  Body: 'Cuerpo',
+  'Timing guide': 'Guía de tiempos',
+  '{label}, {detail}. Jump there': '{label}, {detail}. Ir ahí',
+  '{label}. Jump there': '{label}. Ir ahí',
+  'How are you feeling?': '¿Cómo te sientes?',
+  'Careful: {a} and {b} together. {why}': 'Cuidado: {a} y {b} juntos. {why}',
+  'Careful: {a} and {b}': 'Cuidado: {a} y {b}',
+  'Ask how I’m feeling': 'Preguntarme cómo me siento',
+  'Ask how I’m feeling {every}': 'Preguntarme cómo me siento {every}',
+  'Don’t ask how I’m feeling': 'No preguntarme cómo me siento',
+  'While a stopwatch runs, until it should have worn off. Each check-in starts the clock again.':
+    'Mientras corre un cronómetro, hasta que el efecto ya debería haber pasado. Cada chequeo vuelve a empezar la cuenta.',
+  'A quiet nudge to check in, so your graph fills in. Nothing private shows on your lock screen.':
+    'Un aviso discreto para que registres cómo te sientes y tu gráfica se vaya llenando. No aparece nada privado en tu pantalla de bloqueo.',
+  'Start one when you take something. It tells you when it usually kicks in, and charts how you feel along the way.':
+    'Inicia uno cuando tomes algo. Te dice cuándo suele hacer efecto y va graficando cómo te sientes.',
+  'Water and food': 'Agua y comida',
+  '{name}: add one. {n} tonight. {last}.': '{name}: añadir uno. {n} esta noche. {last}.',
+  'Press and hold to take the last one back': 'Mantén pulsado para quitar el último',
+  'Water refill': 'Recarga de agua',
+  'Ate something': 'Comí algo',
+  '+ Tap to add': '+ Toca para añadir',
+  'Sip regularly and take breaks somewhere cool. Drinking a lot more water than you need can be dangerous too. Press and hold to take one back.':
+    'Bebe sorbos con regularidad y descansa en un lugar fresco. Beber mucha más agua de la que necesitas también puede ser peligroso. Mantén pulsado para quitar uno.',
+  'Remind me to drink water': 'Recordarme beber agua',
+  'Water reminders {every}': 'Recordatorios de agua {every}',
+  'No water reminders': 'Sin recordatorios de agua',
+  'While a festival you’re going to is on, until 6 AM. Each water you log starts the clock again.':
+    'Mientras haya un festival al que vas, hasta las 6 AM. Cada agua que registras vuelve a empezar la cuenta.',
+  'A quiet nudge while a festival you’re going to is on. Nothing private shows on your lock screen.':
+    'Un aviso discreto mientras haya un festival al que vas. No aparece nada privado en tu pantalla de bloqueo.',
+  'reminder|Off': 'No',
+  Off: 'Desactivado',
+  'Every hour': 'Cada hora',
+  'Every {n} min': 'Cada {n} min',
+  'Your body': 'Tu cuerpo',
+  'Lock with Face ID': 'Bloquear con Face ID',
+  'Or your passcode, each time you open this.': 'O con tu código, cada vez que abras esto.',
+  'Clear everything?': '¿Borrar todo?',
+  'Your stopwatches, water, food and check-ins are removed from this phone.': 'Tus cronómetros, agua, comida y chequeos se borran de este teléfono.',
+  'Clear everything': 'Borrar todo',
+
+  // Get help
+  'You said you’re not great. Help is close.': 'Dijiste que no estás muy bien. La ayuda está cerca.',
+  'Get medical help straight away if you or a friend: feel very hot, confused or faint, can’t be woken, has a seizure, or struggles to breathe. Festival medics are there to help, not to get anyone in trouble.':
+    'Busca ayuda médica de inmediato si tú o alguien de tu grupo: siente mucho calor, confusión o que se va a desmayar, no se puede despertar, tiene una convulsión o le cuesta respirar. El personal médico del festival está para ayudar, no para meter a nadie en problemas.',
+  'Call {number}': 'Llamar al {number}',
+  'Find the medical tent: ask any staff or security and they’ll take you there.':
+    'Encuentra la carpa médica: pregúntale a cualquier persona del staff o de seguridad y te llevarán.',
+  'Ask a friend to find me': 'Pedirle a alguien que me busque',
+  'Can you come and find me? I’m not feeling great.': '¿Puedes venir a buscarme? No me siento muy bien.',
+  'Harm reduction info from DanceSafe ↗': 'Información de reducción de daños de DanceSafe ↗',
+
+  // Feelings
+  // How you feel (tc('feeling', …)); the plain lines are the fallback other languages need.
+  'feeling|Great': 'Genial',
+  'feeling|Good': 'Bien',
+  'feeling|Okay': 'Normal',
+  'feeling|Tired': 'Cansancio',
+  'feeling|Anxious': 'Ansiedad',
+  'feeling|Too hot': 'Mucho calor',
+  'feeling|Overwhelmed': 'Agobio',
+  'feeling|Sick': 'Malestar',
+  'feeling|Not great': 'No muy bien',
+  Great: 'Genial',
+  Good: 'Bien',
+  Okay: 'De acuerdo',
+  Tired: 'Cansancio',
+  Anxious: 'Ansiedad',
+  'Too hot': 'Mucho calor',
+  Overwhelmed: 'Agobio',
+  Sick: 'Malestar',
+  'Not great': 'No muy bien',
+  "I'm feeling great": 'Me siento genial',
+  "I'm feeling good": 'Me siento bien',
+  "I'm feeling okay": 'Me siento normal',
+  "I'm feeling tired": 'Siento cansancio',
+  "I'm feeling anxious": 'Siento ansiedad',
+  "I'm feeling too hot": 'Tengo mucho calor',
+  "I'm feeling overwhelmed": 'Siento agobio',
+  "I'm feeling sick": 'Siento malestar',
+  "I'm feeling not great": 'No me siento muy bien',
+  'Love that. Keep sipping water and check in again in a while.': 'Qué bien. Sigue bebiendo sorbos de agua y vuelve a registrar cómo te sientes en un rato.',
+  'Nice. Take breaks from dancing now and then, and keep sipping water.': 'Bien. Descansa de bailar de vez en cuando y sigue bebiendo sorbos de agua.',
+  'Take a breather somewhere calmer, eat something if you can, and check in again soon.':
+    'Tómate un respiro en un lugar más tranquilo, come algo si puedes y vuelve a registrar cómo te sientes pronto.',
+  'Sit down for a while, eat something and have some water. Taking more to push through tends to make things worse.':
+    'Siéntate un rato, come algo y toma un poco de agua. Tomar más para aguantar suele empeorar las cosas.',
+  'Breathe slowly: in for 4, out for 6. Find a quieter spot with a friend. Feelings like this pass.':
+    'Respira despacio: inhala contando 4, exhala contando 6. Busca un lugar más tranquilo con alguien de confianza. Estas sensaciones pasan.',
+  'Get out of the crowd to shade or the chill-out area, take off a layer and sip water. If you stop sweating, feel confused or faint, get help now.':
+    'Sal de la multitud hacia la sombra o la zona de descanso, quítate una capa de ropa y bebe sorbos de agua. Si dejas de sudar, sientes confusión o que te vas a desmayar, pide ayuda ya.',
+  'Find somewhere quieter with a friend and sit down. Medics and welfare tents are there for exactly this.':
+    'Busca un lugar más tranquilo con alguien de confianza y siéntate. El personal médico y las carpas de bienestar están justo para esto.',
+  'Sit down somewhere cool with a friend. If you’re being sick and can’t keep water down, or feel confused, get help.':
+    'Siéntate en un lugar fresco con alguien de confianza. Si estás vomitando y no puedes retener el agua, o sientes confusión, pide ayuda.',
+  'Tell a friend and stay with them. Help is close if you need it.': 'Díselo a alguien de confianza y quédate con esa persona. La ayuda está cerca si la necesitas.',
+  'Check in now and then. It’s the quickest way to notice when things change, for you or a friend.':
+    'Registra cómo te sientes de vez en cuando. Es la forma más rápida de notar cuando algo cambia, en ti o en alguien de tu grupo.',
+  'Tell your crew?': '¿Avisar a tu grupo?',
+  'It’s been a while. How are you now?': 'Ha pasado un rato. ¿Cómo estás ahora?',
+  'Tonight so far': 'Esta noche hasta ahora',
+  'Last check-in: {feeling}, {time} ago. {tip}': 'Último chequeo: {feeling}, hace {time}. {tip}',
+  '{time} ago': 'hace {time}',
+  'None yet tonight': 'Ninguno todavía esta noche',
+  'Last {time} ago': 'El último, hace {time}',
+  'water {time} ago': 'agua hace {time}',
+  '{name} {time}': '{name} {time}',
+  '{h} h {m} min': '{h} h {m} min',
+  '{n} h': '{n} h',
+  Stopwatch: 'Cronómetro',
+  'Stopwatches, water and check-ins, private to you': 'Cronómetros, agua y chequeos, solo para ti',
+
+  // The feelings graph
+  'How you felt since you started: {feelings}.': 'Cómo te has sentido desde que empezaste: {feelings}.',
+  '{time} in, {feeling}': 'a los {time}, {feeling}',
+  'No check-ins on this stopwatch yet.': 'Todavía no hay chequeos en este cronómetro.',
+  'graph|Start': 'Inicio',
+  'Log how you feel and it shows here against the time.': 'Registra cómo te sientes y aparecerá aquí a lo largo del tiempo.',
+  'phase|Coming up': 'Empezando',
+  Strongest: 'Más fuerte',
+  'Wearing off': 'Pasando el efecto',
+  'Took more': 'Tomé más',
+
+  // Starting and running a stopwatch
+  'Start a stopwatch': 'Iniciar un cronómetro',
+  '+ Start a stopwatch': '+ Iniciar un cronómetro',
+  'What did you take?': '¿Qué tomaste?',
+  'Picking one lets the stopwatch say when it usually starts and wears off. It stays on this phone.':
+    'Si eliges uno, el cronómetro puede decirte cuándo suele empezar y pasar el efecto. Se queda en este teléfono.',
+  '{name}. Usually starts in {range}': '{name}. Suele empezar en {range}',
+  'Starts {range}': 'Empieza: {range}',
+  'Something else, in your words': 'Otra cosa, con tus palabras',
+  'Name it your own way': 'Ponle el nombre que quieras',
+  'Start a stopwatch with your own name': 'Iniciar un cronómetro con tu propio nombre',
+  Start: 'Iniciar',
+  'Wait a bit longer?': '¿Esperas un poco más?',
+  'I’ll wait': 'Voy a esperar',
+  'Log it anyway': 'Registrarlo igual',
+  'Log taking more?': '¿Registrar que tomaste más?',
+  'The stopwatch keeps running; the timing starts again from now.': 'El cronómetro sigue corriendo; los tiempos vuelven a contar desde ahora.',
+  'Log it': 'Registrarlo',
+  '{name}. {time} since you started, at {clock}.': '{name}. {time} desde que empezaste, a las {clock}.',
+  'Took more {n} time, last at {clock}.': 'Tomaste más {n} vez, la última a las {clock}.',
+  'Took more {n} times, last at {clock}.': 'Tomaste más {n} veces, la última a las {clock}.',
+  'Started {time}': 'Empezó a las {time}',
+  'took more at {time}': 'tomaste más a las {time}',
+  'took more at {time} ({n} times)': 'tomaste más a las {time} ({n} veces)',
+  Starts: 'Empieza',
+  'Wears off': 'Se pasa',
+  'Some things take up to 2 hours to start. Wait before taking any more.': 'Algunas cosas tardan hasta 2 horas en hacer efecto. Espera antes de tomar más.',
+  'How you’ve felt': 'Cómo te has sentido',
+  'How do you feel now? Log it on {name}': '¿Cómo te sientes ahora? Regístralo en {name}',
+  '+ How do you feel now?': '+ ¿Cómo te sientes ahora?',
+  'I took more {name}': 'Tomé más {name}',
+  'Stop this stopwatch?': '¿Detener este cronómetro?',
+  '{name}, started {time}.': '{name}, empezó a las {time}.',
+  'Keep it': 'Mantenerlo',
+  Stop: 'Detener',
+  'Stop the {name} stopwatch': 'Detener el cronómetro de {name}',
+
+  // The timing guide
+  'Before you take anything': 'Antes de tomar cualquier cosa',
+  '{name}, {how}. Starts in {start}, lasts {total}.': '{name}, {how}. Empieza en {start}, dura {total}.',
+  'Starts {start} · lasts {total}': 'Empieza: {start} · dura: {total}',
+  'Strongest until': 'Más fuerte hasta',
+  'Worn off by': 'Pasa del todo hacia',
+  'Times are for {how}.': 'Tiempos calculados {how}.',
+  'Riskier mixed with': 'Más riesgoso mezclado con',
+  Alcohol: 'Alcohol',
+  'per drink': 'por bebida',
+  'Your body clears about one standard drink an hour, and nothing speeds that up.':
+    'Tu cuerpo elimina más o menos una bebida estándar por hora, y nada acelera eso.',
+  'Have water between drinks and eat something.': 'Toma agua entre bebidas y come algo.',
+  'MDMA / molly': 'MDMA / molly',
+  swallowed: 'por vía oral',
+  'It can take up to 2 hours on a full stomach. Taking more because you can’t feel it yet is a common way people get hurt.':
+    'Puede tardar hasta 2 horas con el estómago lleno. Tomar más porque todavía no lo sientes es una forma común en que la gente se hace daño.',
+  'Overheating is the biggest danger: take breaks from dancing somewhere cool.': 'El sobrecalentamiento es el mayor peligro: descansa de bailar en un lugar fresco.',
+  'Sip water, about a cup an hour while dancing. More isn’t better.': 'Bebe agua a sorbos, más o menos una taza por hora mientras bailas. Más no es mejor.',
+  'Some antidepressants and other medicines are dangerous with it.': 'Algunos antidepresivos y otros medicamentos son peligrosos con esto.',
+  'Cannabis (smoked or vaped)': 'Cannabis (fumado o vapeado)',
+  'smoked or vaped': 'si se fuma o vapea',
+  'Feeling too high passes. Sit somewhere calm, sip water and eat something.':
+    'Si el efecto se siente demasiado fuerte, se pasa. Siéntate en un lugar tranquilo, bebe sorbos de agua y come algo.',
+  'Cannabis edible': 'Comestible de cannabis',
+  eaten: 'si se come',
+  'Edibles can take 2 hours or more to start. Don’t take more in the meantime.':
+    'Los comestibles pueden tardar 2 horas o más en hacer efecto. No tomes más mientras tanto.',
+  'It lasts a lot longer than smoking.': 'Dura mucho más que fumado.',
+  Mushrooms: 'Hongos',
+  'If it gets intense, find a quiet spot and a friend. It passes.': 'Si se pone intenso, busca un lugar tranquilo y a alguien de confianza. Se pasa.',
+  'LSD / acid': 'LSD / ácido',
+  'on a tab': 'en papel (cartón)',
+  'It lasts most of the night. Don’t take more because it feels slow to start.': 'Dura casi toda la noche. No tomes más porque parezca tardar en empezar.',
+  Ketamine: 'Ketamina',
+  snorted: 'por la nariz',
+  'Sit down somewhere safe before it hits: falls and getting lost are common.':
+    'Siéntate en un lugar seguro antes de que haga efecto: las caídas y perderse son comunes.',
+  'Stay with a friend.': 'Quédate con alguien de confianza.',
+  Cocaine: 'Cocaína',
+  'It wears off fast, which makes taking more tempting. Keep count.': 'El efecto se pasa rápido, y eso tienta a tomar más. Lleva la cuenta.',
+  'Hard on your heart, especially when you’re hot.': 'Es duro para tu corazón, sobre todo cuando tienes calor.',
+  'Speed (amphetamine)': 'Speed (anfetamina)',
+  'Hard on your heart and temperature. Take breaks and sip water.': 'Es duro para tu corazón y tu temperatura. Descansa y bebe sorbos de agua.',
+  'You may not feel tired or hungry: eat something anyway.': 'Puede que no sientas cansancio ni hambre: come algo de todos modos.',
+  'GHB / G': 'GHB / G',
+  'The gap between feeling good and passing out is tiny.': 'La diferencia entre sentirte bien y perder el conocimiento es mínima.',
+  'Never with alcohol.': 'Nunca con alcohol.',
+  'If someone can’t be woken, call for help straight away.': 'Si alguien no se puede despertar, pide ayuda de inmediato.',
+  'Nitrous / balloons': 'Óxido nitroso / globos',
+  inhaled: 'si se inhala',
+  'Sit down first, and never straight from a tank.': 'Siéntate antes, y nunca directamente de un tanque.',
+  'Both slow your breathing. Together they’re one of the most common reasons people collapse at festivals.':
+    'Los dos hacen más lenta tu respiración. Juntos son una de las razones más comunes por las que la gente se desploma en los festivales.',
+  'Both slow you right down. Together you can pass out and be sick without waking.':
+    'Los dos te frenan mucho. Juntos puedes perder el conocimiento y vomitar sin despertar.',
+  'Both slow your breathing. Together they can make you pass out.': 'Los dos hacen más lenta tu respiración. Juntos pueden hacer que pierdas el conocimiento.',
+  'Together they make a third substance that’s harder on your heart than either.':
+    'Juntos forman una tercera sustancia que es más dura para tu corazón que cualquiera de los dos.',
+  'Both dry you out and make overheating harder to notice.': 'Los dos te deshidratan y hacen más difícil notar el sobrecalentamiento.',
+  'Two stimulants push your heart rate and temperature up together.': 'Dos estimulantes juntos suben tu ritmo cardiaco y tu temperatura.',
+  'Together it can be much more intense than either. Have a sober friend close.':
+    'Juntos pueden ser mucho más intensos que cada uno por separado. Ten cerca a alguien sobrio.',
+  'Pills and powders are often not what they’re sold as, and fentanyl turns up in both. Test kits from DanceSafe help.':
+    'Las pastillas y los polvos muchas veces no son lo que te venden, y se ha encontrado fentanilo en ambos. Los kits de análisis de DanceSafe ayudan.',
+  'Go slow, and don’t mix. Most emergencies come from taking more too soon or mixing things.':
+    'Ve despacio y no mezcles. La mayoría de las emergencias vienen de tomar más demasiado pronto o de mezclar cosas.',
+  'Stay with friends, and tell one of them what you’ve taken.': 'Quédate con tus amigos y dile a uno de ellos lo que tomaste.',
+  'Medics are there to help, not to get anyone in trouble.': 'El personal médico está para ayudar, no para meter a nadie en problemas.',
+  'Typical times from harm-reduction guides. Everyone’s body is different, food changes things, and what you have may not be what you think. Never a guide to how much to take, and not medical advice.':
+    'Tiempos típicos de guías de reducción de daños. Cada cuerpo es distinto, la comida cambia las cosas y lo que tienes puede no ser lo que crees. Nunca es una guía de cuánto tomar, ni es consejo médico.',
+  'under a minute': 'menos de un minuto',
+  '{lo} to {hi} min': '{lo} a {hi} min',
+  '{lo} min to {hi} h': '{lo} min a {hi} h',
+  '{lo} to {hi} h': '{lo} a {hi} h',
+  'a minute': 'un minuto',
+  'phase|Waiting': 'Esperando',
+  'Usually starts in {range}. Not feeling it yet is normal.': 'Suele empezar en {range}. Es normal no sentirlo todavía.',
+  'It can take up to {time}. Wait before taking any more.': 'Puede tardar hasta {time}. Espera antes de tomar más.',
+  'Around the strongest': 'Cerca del momento más fuerte',
+  'Take a break somewhere cool, and sip water.': 'Descansa en un lugar fresco y bebe sorbos de agua.',
+  'It usually lasts {range} in all.': 'Suele durar {range} en total.',
+  'Should have worn off': 'Ya debería haber pasado',
+  'Still feeling strong effects? Tell a friend or find a medic.': '¿Todavía sientes efectos fuertes? Díselo a alguien de confianza o busca al personal médico.',
+  'It’s only been {since} min. {name} can take up to {time} to start. Taking more before it’s kicked in is one of the most common ways people get hurt.':
+    'Solo han pasado {since} min. {name} puede tardar hasta {time} en hacer efecto. Tomar más antes de que haga efecto es una de las formas más comunes en que la gente se hace daño.',
+  'It’s only been {since} min. Some things take up to 2 hours to start. Taking more before it’s kicked in is one of the most common ways people get hurt.':
+    'Solo han pasado {since} min. Algunas cosas tardan hasta 2 horas en hacer efecto. Tomar más antes de que haga efecto es una de las formas más comunes en que la gente se hace daño.',
+
+  // Your body
+  'Heart rate from Apple Health comes with the full version of the app.': 'El ritmo cardiaco de Apple Health llega con la versión completa de la app.',
+  'Heart rate from your watch': 'Ritmo cardiaco de tu reloj',
+  'Comes with the full version of the app, through Apple Health. Until then, check your pulse above.':
+    'Llega con la versión completa de la app, a través de Apple Health. Mientras tanto, mide tu pulso arriba.',
+  "Count my steps tonight. Uses the phone's motion counter; nothing leaves the phone.":
+    'Contar mis pasos esta noche. Usa el sensor de movimiento del teléfono; nada sale del teléfono.',
+  'Steps tonight': 'Pasos esta noche',
+  'Count my steps': 'Contar mis pasos',
+  'From your phone’s motion counter. Stays on this phone.': 'Del sensor de movimiento de tu teléfono. Se queda en este teléfono.',
+  'Steps tonight: {steps}': 'Pasos esta noche: {steps}',
+  'Steps since you opened this page: {steps}': 'Pasos desde que abriste esta página: {steps}',
+  'Steps since you opened this': 'Pasos desde que abriste esto',
+  '{distance}. Rest your feet now and then.': '{distance}. Descansa los pies de vez en cuando.',
+  '{n} step · about {distance}': '{n} paso · unos {distance}',
+  '{n} steps · about {distance}': '{n} pasos · unos {distance}',
+  'Check your pulse': 'Mide tu pulso',
+  'Check your pulse again from the start': 'Volver a medir tu pulso desde el principio',
+  'Check again': 'Medir de nuevo',
+  'Average of {n} readings.': 'Promedio de {n} mediciones.',
+  'Find it on your wrist or neck, then tap the heart with each beat. {n} short readings make it more accurate.':
+    'Búscalo en tu muñeca o en tu cuello y toca el corazón con cada latido. {n} mediciones cortas lo hacen más preciso.',
+  'Pulse checked': 'Pulso medido',
+  'Tap with each heartbeat. Reading {n} of {total}': 'Toca con cada latido. Medición {n} de {total}',
+  'Tap at least {n} times in time with your pulse': 'Toca al menos {n} veces al ritmo de tu pulso',
+  'beats a minute': 'latidos por minuto',
+  'Your readings were quite far apart. Sit still for a minute and check again.':
+    'Tus mediciones fueron bastante distintas entre sí. No te muevas durante un minuto y vuelve a medir.',
+  'Reading {n} of {total}': 'Medición {n} de {total}',
+  '{n} of {total} taps…': '{n} de {total} toques…',
+  'Now again, in time with your pulse.': 'Otra vez, al ritmo de tu pulso.',
+  'Ready when you are.': 'Cuando quieras.',
+  'That’s fast. If you’ve been resting and it stays this fast, or you feel very hot, faint or have chest pain, get help now.':
+    'Es rápido. Si has estado en reposo y sigue así de rápido, o sientes mucho calor, que te vas a desmayar o dolor en el pecho, pide ayuda ya.',
+  'A bit fast. Sit somewhere cool for 10 minutes, sip water, and check again.':
+    'Un poco rápido. Siéntate en un lugar fresco 10 minutos, bebe sorbos de agua y vuelve a medir.',
+  'That’s slow. If you feel faint, confused or very sleepy, get help.': 'Es lento. Si sientes que te vas a desmayar, confusión o mucho sueño, pide ayuda.',
+  'That’s in the usual resting range.': 'Está en el rango normal en reposo.',
+
+  // Reminders on the phone
+  'Time for some water?': '¿Hora de tomar agua?',
+  'Take a few sips and a breather somewhere cool. Tap to log it.': 'Bebe unos sorbos y tómate un respiro en un lugar fresco. Toca para registrarlo.',
+  'A quick check-in. Tap to answer, it takes a second.': 'Un chequeo rápido. Toca para responder, toma un segundo.',
+};

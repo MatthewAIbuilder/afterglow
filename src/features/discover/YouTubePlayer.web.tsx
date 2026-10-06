@@ -5,6 +5,7 @@ import type { YouTubeMedia } from './media';
 import { canCountWatch, playedSpan, readPlayerReport, shouldPlay } from './playback';
 import { clipProgress, parsePlayerMessage, PLAYER_STATE, playerHtml } from './youtube';
 import { afterRefusal, AUTOPLAY_CHECK_MS, AUTOPLAY_GRACE_MS, autoplayVerdict, afterGesture, type SoundMemory, startMuted } from './webSound';
+import { t } from '../../i18n';
 
 /** Give up if the player hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
@@ -155,7 +156,7 @@ function YouTubePlayerBase({ media, active, live, paused, progress, onPausedChan
       {createElement('iframe', {
         ref: frame,
         srcDoc: html,
-        title: 'Live set video',
+        title: t('Live set video'),
         allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen',
         allowFullScreen: true,
         style: { border: 0, width: '100%', height: '100%', background: 'transparent', opacity: ready ? 1 : 0 },

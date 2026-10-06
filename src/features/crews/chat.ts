@@ -1,6 +1,8 @@
 import { CHAT_MAX, type CrewMessage } from '../social/models';
 import { WEB_URL } from '../../config/app';
 import { parseShare, shareNoun } from '../messages/shares';
+import { LANGUAGE, LOCALE, t, tn } from '../../i18n';
+import { presetLabel } from './updates';
 
 /**
  * A crew's chat, worked out on the phone. Pure.
@@ -25,10 +27,10 @@ export const CHAT_LATE_MS = 10 * 60 * 1000;
 /** Messages from the same person within this long sit together. */
 export const RUN_GAP_MS = 5 * 60 * 1000;
 
-/** Short messages for a festival, a tap away when the box is empty. */
+/** Short messages for a festival, a tap away when the box is empty (sent in English as tapped; shown through `presetLabel`). */
 export const QUICK_MESSAGES = ['On my way', 'Where are you?', 'Meet at our spot', 'Water break', 'This set is amazing'] as const;
 
-/** The chat rules everyone agrees to by starting or joining a crew. */
+/** The chat rules everyone agrees to by starting or joining a crew (kept in English for the legal pages; screens show `t(rule)`). */
 export const CHAT_RULES = [
   'Crews are invite only. Only invite people you know.',
   'Be kind. No harassment, threats or hate.',
@@ -172,24 +174,27 @@ export function heldFor(heldMs: number): string {
 const clockOf = (t: number) => {
   const d = new Date(t);
   const h = d.getHours();
+  if (LANGUAGE === 'es') return `${h}:${String(d.getMinutes()).padStart(2, '0')}`;
   return `${h % 12 === 0 ? 12 : h % 12}:${String(d.getMinutes()).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 };
 
 /** Under a late message: "Sent 8:02 PM · reached the crew 8:20 PM". */
-export const lateNote = (m: Pick<CrewMessage, 'at' | 'sentAt'>) => `Sent ${clockOf(ms(m.at))} · reached the crew ${clockOf(ms(m.sentAt))}`;
+export const lateNote = (m: Pick<CrewMessage, 'at' | 'sentAt'>) => t('Sent {time} · reached the crew {arrived}', { time: clockOf(ms(m.at)), arrived: clockOf(ms(m.sentAt)) });
 
 /** Yours waiting for signal, as one line, saying they keep the time you wrote them. */
 export function waitingLine(waiting: readonly Pick<ChatOutboxItem, 'at'>[]): string | undefined {
   if (!waiting.length) return undefined;
   const first = Math.min(...waiting.map((w) => ms(w.at)));
   return waiting.length === 1
-    ? `Waiting for signal. Your message sends by itself as soon as there’s a bar, still marked ${clockOf(first)}.`
-    : `Waiting for signal. ${waiting.length} messages send by themselves as soon as there’s a bar, still marked from ${clockOf(first)}.`;
+    ? t('Waiting for signal. Your message sends by itself as soon as there’s a bar, still marked {time}.', { time: clockOf(first) })
+    : t('Waiting for signal. {n} messages send by themselves as soon as there’s a bar, still marked from {time}.', { n: waiting.length, time: clockOf(first) });
 }
 
-/** Once yours finally got through: "Your 2 messages reached the crew, held up 18 min by signal." */
-export function deliveryLine(count: number, heldMs: number): string {
-  return `${count === 1 ? 'Your message' : `Your ${count} messages`} reached the crew, held up ${heldFor(heldMs)} by signal.`;
+/** Once yours finally got through: "Your 2 messages reached the crew, held up 18 min by signal." (`direct`: "… got through, …", for a 1-to-1 chat.) */
+export function deliveryLine(count: number, heldMs: number, direct = false): string {
+  const held = heldFor(heldMs);
+  if (direct) return tn(count, 'Your message got through, held up {held} by signal.', 'Your {n} messages got through, held up {held} by signal.', { held });
+  return tn(count, 'Your message reached the crew, held up {held} by signal.', 'Your {n} messages reached the crew, held up {held} by signal.', { held });
 }
 
 /**
@@ -206,7 +211,7 @@ export function justArrivedLate(sent: readonly CrewMessage[], me: string | undef
 
 /** "Maya’s message from 8:02 PM just got through, held up 18 min by signal." */
 export function arrivedLateLine(m: CrewMessage, name: string): string {
-  return `${name}’s message from ${clockOf(ms(m.at))} just got through, held up ${heldFor(ms(m.sentAt) - ms(m.at))} by signal.`;
+  return t('{name}’s message from {time} just got through, held up {held} by signal.', { name, time: clockOf(ms(m.at)), held: heldFor(ms(m.sentAt) - ms(m.at)) });
 }
 
 /** A line in the chat list: a day heading, or a message with where it sits in its run. */
@@ -220,9 +225,9 @@ export function dayLabel(at: number, now: number): string {
   const today = new Date(now);
   const start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const days = Math.round((start(today) - start(d)) / 86_400_000);
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  if (days === 0) return t('Today');
+  if (days === 1) return t('Yesterday');
+  return d.toLocaleDateString(LOCALE, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 /** The chat as rows: a heading each day, and runs of messages from the same person close together. */
@@ -248,15 +253,15 @@ export function chatRows(lines: readonly ChatLine[], me: string | undefined, now
 /** "Maya: see you at Main Stage" for a crew's card. */
 export function chatPreview(m: Pick<CrewMessage, 'uid' | 'text'> | undefined, me: string | undefined, nameOf: (uid: string) => string): string | undefined {
   if (!m) return undefined;
-  const who = m.uid === me ? 'You' : nameOf(m.uid);
+  const who = m.uid === me ? t('You') : nameOf(m.uid);
   // Something sent from the app reads as what it is, not as a link.
   const shared = parseShare(m.text, WEB_URL);
-  const text = (shared ? shared.caption || `Sent ${shareNoun(shared.share)}` : m.text).replace(/\s+/g, ' ');
+  const text = (shared ? shared.caption || t('Sent {thing}', { thing: shareNoun(shared.share) }) : presetLabel(m.text)).replace(/\s+/g, ' ');
   return `${who}: ${text.length > 60 ? `${text.slice(0, 59)}…` : text}`;
 }
 
 /** "2 new messages". */
-export const unreadLine = (n: number) => (n === 1 ? '1 new message' : `${n} new messages`);
+export const unreadLine = (n: number) => tn(n, '{n} new message', '{n} new messages');
 
 /**
  * Who has read up to a message of yours: crewmates (never you) whose last
@@ -270,9 +275,10 @@ export function seenBy(m: Pick<CrewMessage, 'sentAt'>, reads: Readonly<Record<st
 
 /** Under your latest message: "Delivered", "Seen by Maya", "Seen by Maya and Sam", "Seen by everyone". */
 export function seenLine(seen: readonly string[], others: number, nameOf: (uid: string) => string): string {
-  if (!seen.length) return 'Delivered';
-  if (others > 1 && seen.length >= others) return 'Seen by everyone';
+  if (!seen.length) return t('Delivered');
+  if (others > 1 && seen.length >= others) return t('Seen by everyone');
   const names = seen.map(nameOf);
-  if (names.length <= 2) return `Seen by ${names.join(' and ')}`;
-  return `Seen by ${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+  if (names.length === 1) return t('Seen by {names}', { names: names[0] });
+  if (names.length === 2) return t('Seen by {names}', { names: t('{list} and {last}', { list: names[0], last: names[1] }) });
+  return t('Seen by {a}, {b} and {n} more', { a: names[0], b: names[1], n: names.length - 2 });
 }

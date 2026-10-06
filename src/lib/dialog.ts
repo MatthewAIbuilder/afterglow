@@ -1,4 +1,5 @@
 import { ActionSheetIOS, Alert, Platform, type AlertButton, type AlertOptions } from 'react-native';
+import { t } from '../i18n';
 
 /**
  * Alerts and action sheets that work everywhere. On a phone they are the
@@ -43,7 +44,8 @@ export function showAlert(title: string, message?: string, buttons?: DialogButto
     Alert.alert(...args);
     return;
   }
-  const list = buttons?.length ? buttons : [{ text: 'OK' }];
+  const list = buttons?.length ? buttons : [{ text: t('OK') }]
+;
   const cancel = list.find((b) => b.style === 'cancel');
   openWeb({
     title,

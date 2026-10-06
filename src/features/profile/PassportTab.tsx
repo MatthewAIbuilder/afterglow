@@ -14,6 +14,8 @@ import { coverPhotos } from '../festivals/cover';
 import { FestivalCover } from '../festivals/FestivalCover';
 import { countdown } from '../festivals/when';
 import { type Passport, type Stamp, stampLine } from './passport';
+import { t, tn } from '../../i18n';
+import { datesLine } from '../festivals/format';
 
 const CARD_H = 168;
 
@@ -48,11 +50,11 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
     <View style={styles.root}>
       {empty ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>Your festival passport</Text>
-          <Text style={styles.emptyBody}>Tap I’m going on a festival and it gets a page here. Film a set there and you collect its pin.</Text>
+          <Text style={styles.emptyTitle}>{t('Your festival passport')}</Text>
+          <Text style={styles.emptyBody}>{t('Tap I’m going on a festival and it gets a page here. Film a set there and you collect its pin.')}</Text>
           {onAddPast ? (
             <Pressable onPress={onAddPast} accessibilityRole="button" hitSlop={6}>
-              <Text style={styles.addPastLink}>Add a festival you went to before</Text>
+              <Text style={styles.addPastLink}>{t('Add a festival you went to before')}</Text>
             </Pressable>
           ) : null}
           <Pressable
@@ -63,15 +65,15 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
             accessibilityRole="button"
             style={({ pressed }) => [styles.emptyButton, pressed && { opacity: 0.8 }]}
           >
-            <Text style={styles.emptyButtonText}>Find festivals</Text>
+            <Text style={styles.emptyButtonText}>{t('Find festivals')}</Text>
           </Pressable>
         </View>
       ) : (
         <>
           <FilterChips
             chips={[
-              { key: 'planning', label: 'Planning', count: passport.planning.length, accessibilityLabel: `Planning, ${passport.planning.length}` },
-              { key: 'been', label: 'Been there', count: beenCount, accessibilityLabel: `Been there, ${beenCount}` },
+              { key: 'planning', label: t('Planning'), count: passport.planning.length, accessibilityLabel: t('Planning, {n}', { n: passport.planning.length }) },
+              { key: 'been', label: t('Been there'), count: beenCount, accessibilityLabel: t('Been there, {n}', { n: beenCount }) },
             ]}
             value={side}
             onChange={(k) => k && setSide(k as Side)}
@@ -80,7 +82,7 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
             {stamps.map((s) => (
               <PassportCard key={s.festival.id} stamp={s} planning={side === 'planning'} artistOf={artistOf} loves={loves} recap={recapIds.has(s.festival.id)} today={today} />
             ))}
-            {side === 'been' ? throwbacks.map((t) => <ThrowbackCard key={t.key} badge={t} />) : null}
+            {side === 'been' ? throwbacks.map((tb) => <ThrowbackCard key={tb.key} badge={tb} />) : null}
             {side === 'been' && onAddPast ? (
               <Pressable
                 onPress={() => {
@@ -88,16 +90,16 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
                   onAddPast();
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Add a festival you went to before, with a video from your camera roll"
+                accessibilityLabel={t('Add a festival you went to before, with a video from your camera roll')}
                 style={({ pressed }) => [styles.addPast, pressed && { opacity: 0.8 }]}
               >
-                <Text style={styles.addPastTitle}>+ Add a past festival</Text>
-                <Text style={styles.addPastBody}>A video from your camera roll, tagged with the festival and year, earns a rose gold throwback badge.</Text>
+                <Text style={styles.addPastTitle}>{t('+ Add a past festival')}</Text>
+                <Text style={styles.addPastBody}>{t('A video from your camera roll, tagged with the festival and year, earns a rose gold throwback badge.')}</Text>
               </Pressable>
             ) : null}
             {stamps.length || (side === 'been' && (throwbacks.length || onAddPast)) ? null : (
               <Text style={styles.none}>
-                {side === 'been' ? 'Festivals you’ve been to collect here, with what you filmed.' : 'Tap I’m going on a festival to plan it here.'}
+                {side === 'been' ? t('Festivals you’ve been to collect here, with what you filmed.') : t('Tap I’m going on a festival to plan it here.')}
               </Text>
             )}
           </View>
@@ -107,11 +109,11 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
               router.push({ pathname: '/festival-map', params: { show: 'going' } });
             }}
             accessibilityRole="button"
-            accessibilityLabel="See your festivals on the map"
+            accessibilityLabel={t('See your festivals on the map')}
             style={({ pressed }) => [styles.mapLink, pressed && { opacity: 0.7 }]}
           >
             <MapIcon color={color.glow} size={16} />
-            <Text style={styles.mapLinkText}>Your festivals on the map</Text>
+            <Text style={styles.mapLinkText}>{t('Your festivals on the map')}</Text>
           </Pressable>
         </>
       )}
@@ -123,7 +125,8 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
 function PassportCard({ stamp, planning, artistOf, loves, recap, today }: { stamp: Stamp; planning: boolean; artistOf: (id: string) => Artist | undefined; loves: (id: string) => boolean; recap: boolean; today: Date }) {
   const f = stamp.festival;
   const when = countdown(f, today);
-  const upcoming = planning ? (when && when !== 'Over' ? when : 'Date to come') : undefined;
+  const upcoming = planning ? (when && when !== t('Over') ? when : t('Date to come')) : undefined;
+  const dates = datesLine(f);
   const faces = (stamp.filmed.length ? stamp.filmed : f.lineup.filter(loves))
     .map(artistOf)
     .filter((a): a is Artist => !!a)
@@ -140,19 +143,19 @@ function PassportCard({ stamp, planning, artistOf, loves, recap, today }: { stam
     <Pressable
       onPress={open}
       accessibilityRole="button"
-      accessibilityLabel={`${f.name}, ${f.dates}${town ? `, ${town}` : ''}. ${[upcoming, line].filter(Boolean).join(' · ')}${stamp.badge ? '. Pin collected' : ''}${recap ? '. Opens your recap' : ''}`}
+      accessibilityLabel={`${f.name}, ${dates}${town ? `, ${town}` : ''}. ${[upcoming, line].filter(Boolean).join(' · ')}${stamp.badge ? `. ${t('Pin collected')}` : ''}${recap ? `. ${t('Opens your recap')}` : ''}`}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.9, transform: [{ scale: 0.985 }] }]}
     >
       <FestivalCover photos={photos} style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, styles.glass]} />
       <View style={styles.cardBody}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.kicker, upcoming && { color: color.glow }]}>{upcoming ?? (recap ? 'Recap ready' : 'Been there')}</Text>
+          <Text style={[styles.kicker, upcoming && { color: color.glow }]}>{upcoming ?? (recap ? t('Recap ready') : t('Been there'))}</Text>
           <Text style={styles.cardName} numberOfLines={2}>
             {f.name}
           </Text>
           <Text style={styles.cardMeta} numberOfLines={1}>
-            {[f.dates, town].filter(Boolean).join(' · ')}
+            {[dates, town].filter(Boolean).join(' · ')}
           </Text>
         </View>
         <View style={styles.pin} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -168,7 +171,7 @@ function PassportCard({ stamp, planning, artistOf, loves, recap, today }: { stam
           ))}
         </View>
         <Text style={styles.cardLine} numberOfLines={1}>
-          {line || (upcoming ? '' : 'Film a set next time to collect its pin')}
+          {line || (upcoming ? '' : t('Film a set next time to collect its pin'))}
         </Text>
       </View>
     </Pressable>
@@ -184,17 +187,17 @@ function ThrowbackCard({ badge }: { badge: ThrowbackBadge }) {
         router.push({ pathname: '/badge/[id]', params: { id: throwbackId(badge.key) } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${pastLabel(badge.past)}, a throwback. ${throwbackLine(badge)}. Opens its badge`}
+      accessibilityLabel={t('{name}, a throwback. {line}. Opens its badge', { name: pastLabel(badge.past), line: throwbackLine(badge) })}
       style={({ pressed }) => [styles.throwback, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
     >
       <EnamelPin look={throwbackLook(badge.past)} size={76} />
       <View style={styles.throwbackText}>
-        <Text style={styles.throwbackKicker}>THROWBACK</Text>
+        <Text style={styles.throwbackKicker}>{t('THROWBACK')}</Text>
         <Text style={styles.throwbackName} numberOfLines={2}>
           {pastLabel(badge.past)}
         </Text>
         <Text style={styles.throwbackSub} numberOfLines={1}>
-          {[badge.past.city, `${badge.videos} ${badge.videos === 1 ? 'moment' : 'moments'}`].filter(Boolean).join(' · ')}
+          {[badge.past.city, tn(badge.videos, '{n} moment', '{n} moments')].filter(Boolean).join(' · ')}
         </Text>
       </View>
     </Pressable>

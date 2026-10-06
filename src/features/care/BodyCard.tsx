@@ -1,6 +1,7 @@
 import { Pedometer } from 'expo-sensors';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { unitsFor } from '../festivals/near';
@@ -25,9 +26,9 @@ export function BodyCard({ now }: { now: number }) {
     <View style={styles.wrap}>
       {Platform.OS !== 'web' ? <Steps now={now} /> : null}
       <Pulse now={now} />
-      <View style={styles.soon} accessible accessibilityLabel="Heart rate from Apple Health comes with the full version of the app.">
-        <Text style={styles.soonTitle}>Heart rate from your watch</Text>
-        <Text style={styles.soonBody}>Comes with the full version of the app, through Apple Health. Until then, check your pulse above.</Text>
+      <View style={styles.soon} accessible accessibilityLabel={t('Heart rate from Apple Health comes with the full version of the app.')}>
+        <Text style={styles.soonTitle}>{t('Heart rate from your watch')}</Text>
+        <Text style={styles.soonBody}>{t('Comes with the full version of the app, through Apple Health. Until then, check your pulse above.')}</Text>
       </View>
     </View>
   );
@@ -80,20 +81,20 @@ function Steps({ now }: { now: number }) {
             .then(() => setAsked((n) => n + 1));
         }}
         accessibilityRole="button"
-        accessibilityLabel="Count my steps tonight. Uses the phone's motion counter; nothing leaves the phone."
+        accessibilityLabel={t("Count my steps tonight. Uses the phone's motion counter; nothing leaves the phone.")}
         style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
       >
-        <Text style={styles.label}>Steps tonight</Text>
-        <Text style={styles.ask}>Count my steps</Text>
-        <Text style={styles.small}>From your phone’s motion counter. Stays on this phone.</Text>
+        <Text style={styles.label}>{t('Steps tonight')}</Text>
+        <Text style={styles.ask}>{t('Count my steps')}</Text>
+        <Text style={styles.small}>{t('From your phone’s motion counter. Stays on this phone.')}</Text>
       </Pressable>
     );
   const steps = state.base + state.live;
   return (
-    <View style={styles.tile} accessible accessibilityLabel={`Steps ${state.since === 'tonight' ? 'tonight' : 'since you opened this page'}: ${stepsLine(steps, miles)}`}>
-      <Text style={styles.label}>{state.since === 'tonight' ? 'Steps tonight' : 'Steps since you opened this'}</Text>
+    <View style={styles.tile} accessible accessibilityLabel={state.since === 'tonight' ? t('Steps tonight: {steps}', { steps: stepsLine(steps, miles) }) : t('Steps since you opened this page: {steps}', { steps: stepsLine(steps, miles) })}>
+      <Text style={styles.label}>{state.since === 'tonight' ? t('Steps tonight') : t('Steps since you opened this')}</Text>
       <Text style={styles.big}>{steps.toLocaleString('en-US')}</Text>
-      <Text style={styles.small}>{stepsLine(steps, miles).split(' · ')[1]}. Rest your feet now and then.</Text>
+      <Text style={styles.small}>{t('{distance}. Rest your feet now and then.', { distance: stepsLine(steps, miles).split(' · ')[1] })}</Text>
     </View>
   );
 }
@@ -129,25 +130,25 @@ function Pulse({ now }: { now: number }) {
   return (
     <View style={styles.tile}>
       <View style={styles.head}>
-        <Text style={styles.label}>Check your pulse</Text>
+        <Text style={styles.label}>{t('Check your pulse')}</Text>
         {readings.length ? (
-          <Pressable onPress={again} accessibilityRole="button" accessibilityLabel="Check your pulse again from the start" hitSlop={8}>
-            <Text style={styles.link}>Check again</Text>
+          <Pressable onPress={again} accessibilityRole="button" accessibilityLabel={t('Check your pulse again from the start')} hitSlop={8}>
+            <Text style={styles.link}>{t('Check again')}</Text>
           </Pressable>
         ) : null}
       </View>
       <Text style={styles.small}>
         {done
-          ? `Average of ${PULSE_ROUNDS} readings.`
-          : `Find it on your wrist or neck, then tap the heart with each beat. ${PULSE_ROUNDS} short readings make it more accurate.`}
+          ? t('Average of {n} readings.', { n: PULSE_ROUNDS })
+          : t('Find it on your wrist or neck, then tap the heart with each beat. {n} short readings make it more accurate.', { n: PULSE_ROUNDS })}
       </Text>
       <View style={styles.pulseRow}>
         <Pressable
           onPress={tap}
           disabled={done}
           accessibilityRole="button"
-          accessibilityLabel={done ? 'Pulse checked' : `Tap with each heartbeat. Reading ${readings.length + 1} of ${PULSE_ROUNDS}`}
-          accessibilityHint={done ? undefined : `Tap at least ${PULSE_TAPS} times in time with your pulse`}
+          accessibilityLabel={done ? t('Pulse checked') : t('Tap with each heartbeat. Reading {n} of {total}', { n: readings.length + 1, total: PULSE_ROUNDS })}
+          accessibilityHint={done ? undefined : t('Tap at least {n} times in time with your pulse', { n: PULSE_TAPS })}
           style={({ pressed }) => [styles.heart, done && styles.heartDone, pressed && { transform: [{ scale: 0.92 }] }]}
         >
           <Text style={styles.heartText}>♥</Text>
@@ -156,22 +157,20 @@ function Pulse({ now }: { now: number }) {
           {done && avg ? (
             <>
               <Text style={styles.big}>
-                {avg.bpm} <Text style={styles.unit}>beats a minute</Text>
+                {avg.bpm} <Text style={styles.unit}>{t('beats a minute')}</Text>
               </Text>
               <Text style={[styles.small, note?.tone === 'help' && styles.danger, note?.tone === 'watch' && styles.amber]}>{note?.line}</Text>
-              {!avg.steady ? <Text style={styles.small}>Your readings were quite far apart. Sit still for a minute and check again.</Text> : null}
+              {!avg.steady ? <Text style={styles.small}>{t('Your readings were quite far apart. Sit still for a minute and check again.')}</Text> : null}
             </>
           ) : (
             <>
-              <Text style={styles.round}>
-                Reading {readings.length + 1} of {PULSE_ROUNDS}
-              </Text>
+              <Text style={styles.round}>{t('Reading {n} of {total}', { n: readings.length + 1, total: PULSE_ROUNDS })}</Text>
               <View style={styles.taps} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                 {Array.from({ length: PULSE_TAPS }, (_, i) => (
                   <View key={i} style={[styles.tapDot, i < counting && styles.tapDotOn]} />
                 ))}
               </View>
-              <Text style={styles.small}>{counting ? `${counting} of ${PULSE_TAPS} taps…` : readings.length ? 'Now again, in time with your pulse.' : 'Ready when you are.'}</Text>
+              <Text style={styles.small}>{counting ? t('{n} of {total} taps…', { n: counting, total: PULSE_TAPS }) : readings.length ? t('Now again, in time with your pulse.') : t('Ready when you are.')}</Text>
             </>
           )}
           {readings.length ? (

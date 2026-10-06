@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 /**
  * Artists you've rated directly, without watching a clip, on a five-step
  * scale from "Love them" to "Not for me" (plus not rating at all, "Don't know
@@ -16,20 +18,21 @@ export const RATINGS: Rating[] = ['love', 'like', 'ok', 'meh', 'pass'];
 
 /** What each answer says, as a button. */
 export const RATING_LABEL: Record<Rating, string> = {
-  love: 'Love them',
-  like: 'Like them',
-  ok: 'They’re OK',
-  meh: 'Not really',
-  pass: 'Not for me',
+  love: t('Love them'),
+  like: t('Like them'),
+  ok: t('They’re OK'),
+  meh: t('Not really'),
+  pass: t('Not for me'),
 };
 
 /** How it reads back, after the artist's name for screen readers and in lists ("you like them"). */
 export const RATING_SAID: Record<Rating, string> = {
-  love: 'you love their sound',
-  like: 'you like them',
-  ok: 'you think they’re OK',
-  meh: 'not really for you',
-  pass: 'not for you',
+  love: t('you love their sound'),
+  like: t('you like them'),
+  ok: t('you think they’re OK'),
+  meh: t('not really for you'),
+  pass: t('not for you'),
+
 };
 
 export const isRating = (r: unknown): r is Rating => typeof r === 'string' && (RATINGS as string[]).includes(r);

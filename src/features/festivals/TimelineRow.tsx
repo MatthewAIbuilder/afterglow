@@ -10,6 +10,8 @@ import { isOver } from './shelves';
 import { dateBlock } from './timeline';
 import { isLive } from './when';
 import { lovedLine, useFestivalSummary } from './useFestivalSummary';
+import { datesLine } from './format';
+import { t, tn } from '../../i18n';
 
 /**
  * One festival on the Festivals tab's timeline: a calendar date block, its
@@ -22,7 +24,7 @@ export function TimelineRow({ festival, going }: { festival: Festival; going?: b
   const block = dateBlock(festival);
   const over = isOver(festival, s.today);
   const live = isLive(festival, s.today);
-  const when = [s.soon && s.soon !== 'Over' ? s.soon : undefined, s.timesOut && !over ? 'Set times out' : undefined].filter(Boolean).join(' · ');
+  const when = [s.soon && s.soon !== t('Over') ? s.soon : undefined, s.timesOut && !over ? t('Set times out') : undefined].filter(Boolean).join(' · ');
   const watch = () => {
     haptic.tap();
     router.navigate({ pathname: '/', params: { festival: festival.id } });
@@ -34,8 +36,17 @@ export function TimelineRow({ festival, going }: { festival: Festival; going?: b
         router.push(`/festival/${festival.id}`);
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${festival.name}, ${festival.dates}${s.soon ? `, ${s.soon}` : ''}, ${s.loved > 0 ? `${s.loved} of ${s.ranked.length} artists you'll love` : `${s.ranked.length} artists`}${s.timesOut ? ', set times are out' : ''}${going ? ', going' : ''}`}
-      accessibilityActions={s.reach.clips > 0 ? [{ name: 'discover', label: 'Discover the lineup' }] : undefined}
+      accessibilityLabel={[
+        festival.name,
+        datesLine(festival),
+        s.soon,
+        s.loved > 0 ? t("{loved} of {n} artists you'll love", { loved: s.loved, n: s.ranked.length }) : t('{n} artists', { n: s.ranked.length }),
+        s.timesOut ? t('set times are out') : undefined,
+        going ? t('going') : undefined,
+      ]
+        .filter((x) => x !== undefined)
+        .join(', ')}
+      accessibilityActions={s.reach.clips > 0 ? [{ name: 'discover', label: t('Discover the lineup') }] : undefined}
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'discover') watch();
       }}
@@ -50,7 +61,7 @@ export function TimelineRow({ festival, going }: { festival: Festival; going?: b
             </Text>
           </>
         ) : (
-          <Text style={styles.tba}>TBA</Text>
+          <Text style={styles.tba}>{t('TBA')}</Text>
         )}
       </View>
       <View style={styles.body}>
@@ -71,7 +82,7 @@ export function TimelineRow({ festival, going }: { festival: Festival; going?: b
         <Pressable
           onPress={watch}
           accessibilityRole="button"
-          accessibilityLabel={`Discover the ${festival.name} lineup, ${s.reach.clips} ${s.reach.clips === 1 ? 'clip' : 'clips'}`}
+          accessibilityLabel={tn(s.reach.clips, 'Discover the {festival} lineup, {n} clip', 'Discover the {festival} lineup, {n} clips', { festival: festival.name })}
           hitSlop={8}
           style={({ pressed }) => [styles.clips, pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] }]}
         >

@@ -5,14 +5,26 @@ import { useRatings } from '../../state/ratings';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { HeartIcon } from '../discover/icons';
 import { RATING_LABEL, type Rating } from './ratings';
+import { t } from '../../i18n';
 
 /** How each answer is announced, and how taking it back is. */
 export function ratingA11y(r: Rating, name: string, on: boolean): string {
   if (on) {
-    const said = { love: `You love ${name}'s sound`, like: `You like ${name}`, ok: `You think ${name} is OK`, meh: `${name} is not really for you`, pass: `${name} is not for you` }[r];
-    return `${said}. Tap to undo.`;
+    return {
+      love: t("You love {name}'s sound. Tap to undo.", { name }),
+      like: t('You like {name}. Tap to undo.', { name }),
+      ok: t('You think {name} is OK. Tap to undo.', { name }),
+      meh: t('{name} is not really for you. Tap to undo.', { name }),
+      pass: t('{name} is not for you. Tap to undo.', { name }),
+    }[r];
   }
-  return { love: `Love ${name}'s sound`, like: `Like ${name}`, ok: `${name} is OK`, meh: `${name} is not really for me`, pass: `${name} is not for me` }[r];
+  return {
+    love: t("Love {name}'s sound", { name }),
+    like: t('Like {name}', { name }),
+    ok: t('{name} is OK', { name }),
+    meh: t('{name} is not really for me', { name }),
+    pass: t('{name} is not for me', { name }),
+  }[r];
 }
 
 const ROWS: Rating[][] = [
@@ -31,7 +43,7 @@ export function RateArtist({ artist, compact }: { artist: Artist; compact?: bool
   if (compact) return <RateScale artist={artist} current={current} rate={rate} />;
 
   return (
-    <View style={styles.wrap} accessibilityRole="radiogroup" accessibilityLabel={`How do you feel about ${artist.name}?`}>
+    <View style={styles.wrap} accessibilityRole="radiogroup" accessibilityLabel={t('How do you feel about {artist}?', { artist: artist.name })}>
       {ROWS.map((row) => (
         <View key={row.join()} style={styles.row}>
           {row.map((r) => {
@@ -62,15 +74,15 @@ export function RateArtist({ artist, compact }: { artist: Artist; compact?: bool
 }
 
 /** The five answers, short enough to sit in one row: warm on the left, cold on the right. */
-const SHORT: Record<Rating, string> = { love: 'Love', like: 'Like', ok: 'OK', meh: 'Not really', pass: 'Not for me' };
+const SHORT: Record<Rating, string> = { love: t('Love'), like: t('Like'), ok: t('OK'), meh: t('Not really'), pass: t('Not for me') };
 const SCALE: Rating[] = ['love', 'like', 'ok', 'meh', 'pass'];
 
 /** The compact form, for the map's sheet: one row, "How do you feel about them?" above it. */
 function RateScale({ artist, current, rate }: { artist: Artist; current: Rating | undefined; rate: (id: string, r: Rating | undefined) => void }) {
   return (
     <View style={styles.scaleWrap}>
-      <Text style={styles.scaleTitle}>{current ? `You said: ${RATING_LABEL[current].toLowerCase()}` : 'How do you feel about them?'}</Text>
-      <View style={styles.scale} accessibilityRole="radiogroup" accessibilityLabel={`How do you feel about ${artist.name}?`}>
+      <Text style={styles.scaleTitle}>{current ? t('You said: {rating}', { rating: RATING_LABEL[current].toLowerCase() }) : t('How do you feel about them?')}</Text>
+      <View style={styles.scale} accessibilityRole="radiogroup" accessibilityLabel={t('How do you feel about {artist}?', { artist: artist.name })}>
         {SCALE.map((r) => {
           const on = current === r;
           const warm = r === 'love' || r === 'like';

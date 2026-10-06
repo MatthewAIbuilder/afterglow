@@ -1,4 +1,5 @@
 import type { Crew, CrewCare, CrewUpdate } from '../social/models';
+import { t } from '../../i18n';
 import { byHappened, clock } from './updates';
 
 /**
@@ -14,7 +15,7 @@ export const CARE_WINDOW_MS = 3 * 3600 * 1000;
 /** At most this many calls are remembered as already nudged. */
 export const NOTIFIED_MAX = 100;
 
-/** The words a care check-in carries, so it reads right anywhere a check-in shows. */
+/** The words a care check-in carries, so it reads right anywhere a check-in shows (sent in English; shown through `presetLabel`). */
 export const CARE_NOTE: Record<CrewCare, string> = {
   ok: 'I’m OK',
   help: 'Not feeling great. Can someone come find me?',
@@ -54,10 +55,10 @@ export function myCare(updates: readonly CrewUpdate[], me: string | undefined, n
 }
 
 /** "Maya isn't feeling great": the nudge's title. */
-export const helpTitle = (name: string) => `${name} isn’t feeling great`;
+export const helpTitle = (name: string) => t('{name} isn’t feeling great', { name });
 
 /** "Sent 5:30 PM. Tap to see where they last were.": the nudge's body. */
-export const helpBody = (u: Pick<CrewUpdate, 'at'>) => `Sent ${clock(u.at)}. Tap to see their update and let them know you’re coming.`;
+export const helpBody = (u: Pick<CrewUpdate, 'at'>) => t('Sent {time}. Tap to see their update and let them know you’re coming.', { time: clock(u.at) });
 
 /** Calls for help not nudged yet on this phone. */
 export const toNotify = (alerts: readonly CrewUpdate[], notified: readonly string[]) => alerts.filter((u) => !notified.includes(u.id));

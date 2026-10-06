@@ -4,9 +4,11 @@ import type { Festival } from '../../data/types';
 import { useNow } from '../../lib/useNow';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
+import { breakLabel } from './hours';
 import { liveNow, liveRoute } from './live';
 import type { Schedule, TimedPick } from './plan';
 import { clockTime, type DayRoute, type RouteStop } from './route';
+import { dayWord, t } from '../../i18n';
 
 /**
  * During the festival, above your plan: what to watch right now and what's
@@ -18,30 +20,30 @@ export function LiveNow({ festival, schedule, route }: { festival: Festival; sch
   const live = liveNow(festival, schedule, now);
   if (!live) return null;
 
-  const names = (list: TimedPick[]) => list.map((p) => p.artist.name).join(' or ');
+  const names = (list: TimedPick[]) => list.map((p) => p.artist.name).join(t(' or '));
   const where = (p: TimedPick) => stageName(festival, p.set.stageId);
   const first = live.now[0];
   const nowLine = first
-    ? `${live.nowIsDiscovery ? 'Something new · ' : ''}${live.now.length > 1 ? 'A close call, your pick' : where(first)}, until ${formatTime(first.set.end)}`
+    ? `${live.nowIsDiscovery ? `${t('Something new')} · ` : ''}${t('{where}, until {time}', { where: live.now.length > 1 ? t('A close call, your pick') : where(first), time: formatTime(first.set.end) })}`
     : undefined;
   const upcoming = live.next?.[0];
   const nextLine = upcoming
-    ? `${formatTime(upcoming.set.start)}  ${names(live.next!)}${live.next!.length > 1 ? '' : `, ${where(upcoming)}`}${live.nextIsDiscovery ? '  ·  something new' : ''}`
-    : 'That’s everything on your plan tonight.';
+    ? `${formatTime(upcoming.set.start)}  ${names(live.next!)}${live.next!.length > 1 ? '' : `, ${where(upcoming)}`}${live.nextIsDiscovery ? `  ·  ${t('something new')}` : ''}`
+    : t('That’s everything on your plan tonight.');
 
   return (
     <View
       style={styles.card}
       accessible
       accessibilityLabel={[
-        `${live.night.day} night.`,
-        first ? `On now: ${names(live.now)}. ${nowLine}.` : 'Nothing on your plan right now.',
-        upcoming ? `Next: ${nextLine.replace(/ {2}/g, ', ')}.` : nextLine,
+        t('{day} night.', { day: dayWord(live.night.day) }),
+        first ? `${t('On now: {names}.', { names: names(live.now) })} ${nowLine}.` : t('Nothing on your plan right now.'),
+        upcoming ? t('Next: {line}.', { line: nextLine.replace(/ {2}/g, ', ') }) : nextLine,
       ].join(' ')}
     >
       <View style={styles.head}>
         <View style={styles.dot} />
-        <Text style={styles.label}>{`Now · ${live.night.day}`}</Text>
+        <Text style={styles.label}>{t('Now · {day}', { day: t(live.night.day) })}</Text>
       </View>
       {first ? (
         <>
@@ -49,10 +51,10 @@ export function LiveNow({ festival, schedule, route }: { festival: Festival; sch
           <Text style={styles.meta}>{nowLine}</Text>
         </>
       ) : (
-        <Text style={styles.quiet}>Nothing on your plan right now.</Text>
+        <Text style={styles.quiet}>{t('Nothing on your plan right now.')}</Text>
       )}
       <View style={styles.divider} />
-      <Text style={styles.nextLabel}>Next</Text>
+      <Text style={styles.nextLabel}>{t('Next')}</Text>
       <Text style={styles.next}>{nextLine}</Text>
     </View>
   );
@@ -67,29 +69,29 @@ function RouteNow({ festival, route, now }: { festival: Festival; route: DayRout
   const cur = live.now;
   const next = live.next;
   // In one of your own breaks: say which, and until when.
-  const quiet = live.pause ? `${live.pause.label ?? 'Your break'} until ${at(live.pause.to)}.` : 'A break right now.';
+  const quiet = live.pause ? t('{label} until {time}.', { label: live.pause.label != null ? breakLabel(live.pause.label) : t('Your break'), time: at(live.pause.to) }) : t('A break right now.');
   // Leaving before the set ends is worth saying out loud.
   const nowLine = cur
-    ? `${cur.known ? '' : 'Something new · '}${where(cur)}, ${cur.to < cur.setEnd ? `leave at ${at(cur.to)}` : `until ${at(cur.to)}`}`
+    ? `${cur.known ? '' : `${t('Something new')} · `}${cur.to < cur.setEnd ? t('{where}, leave at {time}', { where: where(cur), time: at(cur.to) }) : t('{where}, until {time}', { where: where(cur), time: at(cur.to) })}`
     : undefined;
-  const move = next && cur && next.set.stageId !== cur.set.stageId ? ' (head over)' : '';
+  const move = next && cur && next.set.stageId !== cur.set.stageId ? ` (${t('head over')})` : '';
   const nextLine = next
-    ? `${at(next.from)}  ${next.artist.name}, ${where(next)}${move}${next.known ? '' : '  ·  something new'}`
-    : 'That’s everything on your plan tonight.';
+    ? `${at(next.from)}  ${next.artist.name}, ${where(next)}${move}${next.known ? '' : `  ·  ${t('something new')}`}`
+    : t('That’s everything on your plan tonight.');
 
   return (
     <View
       style={styles.card}
       accessible
       accessibilityLabel={[
-        `${live.night.day} night.`,
-        cur ? `On now: ${cur.artist.name}. ${nowLine}.` : quiet,
-        next ? `Next: ${nextLine.replace(/ {2}/g, ', ')}.` : nextLine,
+        t('{day} night.', { day: dayWord(live.night.day) }),
+        cur ? `${t('On now: {names}.', { names: cur.artist.name })} ${nowLine}.` : quiet,
+        next ? t('Next: {line}.', { line: nextLine.replace(/ {2}/g, ', ') }) : nextLine,
       ].join(' ')}
     >
       <View style={styles.head}>
         <View style={styles.dot} />
-        <Text style={styles.label}>{`Now · ${live.night.day}`}</Text>
+        <Text style={styles.label}>{t('Now · {day}', { day: t(live.night.day) })}</Text>
       </View>
       {cur ? (
         <>
@@ -100,7 +102,7 @@ function RouteNow({ festival, route, now }: { festival: Festival; route: DayRout
         <Text style={styles.quiet}>{quiet}</Text>
       )}
       <View style={styles.divider} />
-      <Text style={styles.nextLabel}>Next</Text>
+      <Text style={styles.nextLabel}>{t('Next')}</Text>
       <Text style={styles.next}>{nextLine}</Text>
     </View>
   );

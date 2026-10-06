@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { t } from '../../i18n';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { type Care, elapsed, feelingsBetween, HELP_MOODS, lastFeeling, type Mood, MOOD_LABEL, MOOD_LEVEL, MOOD_TIP, nightStart } from './care';
 import { FeelingGraph } from './FeelingGraph';
@@ -25,29 +26,29 @@ export function FeelingCard({ care, now, onFeel, crewFestival }: { care: Care; n
   return (
     <View style={styles.card}>
       {last ? (
-        <View style={[styles.now, careful && styles.nowCareful]} accessible accessibilityLabel={`Last check-in: ${MOOD_LABEL[last.mood]}, ${elapsed(now - last.at)} ago. ${MOOD_TIP[last.mood]}`}>
+        <View style={[styles.now, careful && styles.nowCareful]} accessible accessibilityLabel={t('Last check-in: {feeling}, {time} ago. {tip}', { feeling: MOOD_LABEL[last.mood], time: elapsed(now - last.at), tip: MOOD_TIP[last.mood] })}>
           <View style={styles.nowHead}>
             <View style={[styles.dot, { backgroundColor: moodColor(last.mood) }]} />
             <Text style={styles.nowTitle}>{MOOD_LABEL[last.mood]}</Text>
-            <Text style={styles.nowWhen}>{elapsed(now - last.at) === 'Just now' ? 'just now' : `${elapsed(now - last.at)} ago`}</Text>
+            <Text style={styles.nowWhen}>{now - last.at < MIN ? t('just now') : t('{time} ago', { time: elapsed(now - last.at) })}</Text>
           </View>
           <Text style={styles.tip}>{MOOD_TIP[last.mood]}</Text>
         </View>
       ) : (
-        <Text style={styles.intro}>Check in now and then. It’s the quickest way to notice when things change, for you or a friend.</Text>
+        <Text style={styles.intro}>{t('Check in now and then. It’s the quickest way to notice when things change, for you or a friend.')}</Text>
       )}
       {/* Just checked in, with a crew here: offer to tell them (never automatic). */}
       {crewFestival && last && since !== undefined && since < CREW_OFFER_MS ? (
         <View style={styles.crew}>
-          <Text style={styles.crewTitle}>Tell your crew?</Text>
+          <Text style={styles.crewTitle}>{t('Tell your crew?')}</Text>
           <CareButtons festivalId={crewFestival} only={careFor(MOOD_LEVEL[last.mood])} />
         </View>
       ) : null}
-      {stale ? <Text style={styles.nudge}>It’s been a while. How are you now?</Text> : null}
+      {stale ? <Text style={styles.nudge}>{t('It’s been a while. How are you now?')}</Text> : null}
       <FeelingChips onPick={onFeel} current={since !== undefined && since < 2 * MIN ? last?.mood : undefined} />
       {tonight.length >= 2 ? (
         <View style={styles.graph}>
-          <Text style={styles.graphTitle}>Tonight so far</Text>
+          <Text style={styles.graphTitle}>{t('Tonight so far')}</Text>
           <FeelingGraph start={tonight[0].at - 10 * MIN} now={now} points={tonight} />
         </View>
       ) : null}

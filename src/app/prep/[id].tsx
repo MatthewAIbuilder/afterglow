@@ -15,6 +15,7 @@ import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useWeekends } from '../../state/weekends';
 import { color, space, type } from '../../theme/tokens';
+import { t, tc } from '../../i18n';
 
 /**
  * Get ready: one checklist for a festival you're going to. The app ticks
@@ -26,8 +27,14 @@ export default function PrepScreen() {
   const catalog = useCatalog();
   const { forYou } = useWeekends();
   const whole = catalog.festival(id);
-  if (!whole) return <Missing title="Festival not found" line="This festival isn’t on Afterglow any more, or the link isn’t quite right." />;
+  if (!whole) return <Missing title={t('Festival not found')} line={t('This festival isn’t on Afterglow any more, or the link isn’t quite right.')} />;
   return <PrepView festival={forYou(whole)} />;
+}
+
+function itemLabel(item: PrepItem): string {
+  const base = item.detail ? t('{label}, {detail}', { label: item.label, detail: item.detail }) : item.label;
+  if (!item.auto) return base;
+  return item.done ? t('{label}, done', { label: base }) : t('{label}, not done yet. Opens it.', { label: base });
 }
 
 function PrepView({ festival }: { festival: Festival }) {
@@ -49,15 +56,15 @@ function PrepView({ festival }: { festival: Festival }) {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={`Get ready · ${festival.name}`} />
+      <PageTitle title={t('Get ready · {festival}', { festival: festival.name })} />
       <NightSky />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
         <Text style={styles.kicker}>{festival.name}</Text>
-        <Text style={styles.title}>Get ready</Text>
+        <Text style={styles.title}>{t('Get ready')}</Text>
         <Text style={styles.sub}>
-          {progress.done} of {progress.total} done{soon ? ` · ${soon}` : ''}
+          {soon ? t('{done} of {total} done · {soon}', { done: progress.done, total: progress.total, soon }) : tc('prep', '{done} of {total} done', { done: progress.done, total: progress.total })}
         </Text>
-        <View style={styles.bar} accessible accessibilityLabel={`${progress.done} of ${progress.total} done`}>
+        <View style={styles.bar} accessible accessibilityLabel={tc('prep', '{done} of {total} done', { done: progress.done, total: progress.total })}>
           <View style={[styles.fill, { width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }]} />
         </View>
         {sections.map((s) => (
@@ -69,14 +76,14 @@ function PrepView({ festival }: { festival: Festival }) {
                   onPress={() => onItem(item)}
                   accessibilityRole={item.auto ? 'button' : 'checkbox'}
                   accessibilityState={item.auto ? undefined : { checked: item.done }}
-                  accessibilityLabel={`${item.label}${item.detail ? `, ${item.detail}` : ''}${item.auto ? (item.done ? ', done' : ', not done yet. Opens it.') : ''}`}
+                  accessibilityLabel={itemLabel(item)}
                   style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
                 >
                   <View style={[styles.check, item.done && styles.checkOn]}>{item.done ? <CheckIcon color={color.night} size={14} /> : null}</View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.label, item.done && styles.labelDone]}>{item.label}</Text>
                     {item.detail || item.auto ? (
-                      <Text style={styles.detail}>{[item.detail, item.auto ? (item.done ? 'Done in the app' : 'Do it in the app') : ''].filter(Boolean).join(' · ')}</Text>
+                      <Text style={styles.detail}>{[item.detail, item.auto ? (item.done ? t('Done in the app') : t('Do it in the app')) : ''].filter(Boolean).join(' · ')}</Text>
                     ) : null}
                   </View>
                   {item.auto ? <ChevronIcon color={color.moonFaint} size={12} /> : null}
@@ -88,11 +95,11 @@ function PrepView({ festival }: { festival: Festival }) {
                       void Linking.openURL(festival.links!.tickets!).catch(() => {});
                     }}
                     accessibilityRole="link"
-                    accessibilityLabel={`Get tickets for ${festival.name}. Opens the official ticket page.`}
+                    accessibilityLabel={t('Get tickets for {festival}. Opens the official ticket page.', { festival: festival.name })}
                     hitSlop={8}
                     style={styles.inlineLink}
                   >
-                    <Text style={styles.link}>Get tickets ↗</Text>
+                    <Text style={styles.link}>{t('Get tickets ↗')}</Text>
                   </Pressable>
                 ) : null}
                 {item.link && !item.done ? (
@@ -102,7 +109,7 @@ function PrepView({ festival }: { festival: Festival }) {
                       void Linking.openURL(item.link!.url).catch(() => {});
                     }}
                     accessibilityRole="link"
-                    accessibilityLabel={`${item.link.label}: ${item.label}. Opens in your browser.`}
+                    accessibilityLabel={t('{link}: {item}. Opens in your browser.', { link: item.link.label, item: item.label })}
                     hitSlop={8}
                     style={styles.inlineLink}
                   >
@@ -118,7 +125,7 @@ function PrepView({ festival }: { festival: Festival }) {
             ))}
           </View>
         ))}
-        <Text style={styles.note}>Only you see this list. It stays on this phone.</Text>
+        <Text style={styles.note}>{t('Only you see this list. It stays on this phone.')}</Text>
       </ScrollView>
       <PageActions />
     </View>

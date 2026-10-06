@@ -7,7 +7,8 @@ import { haptic } from "../../lib/haptics";
 import { useCrewUpdates } from "../../state/crewUpdates";
 import { color, glowA, radius, space, type } from "../../theme/tokens";
 import { isOffline } from "../offline/status";
-import { CHECK_INS, clock } from "./updates";
+import { CHECK_INS, clock, presetLabel } from "./updates";
+import { t } from "../../i18n";
 
 /** How-you-are tints: fine, can't find you, need help. */
 export const GREEN = "#5BE3B5";
@@ -28,34 +29,34 @@ export function useCareActions(
   const asked = myCare?.care === "help";
   const ok = () => {
     const id = sendCare(festivalId, "ok");
-    if (id) onSent(id, asked ? "I’m OK now" : "I’m OK");
+    if (id) onSent(id, asked ? t("I’m OK now") : t("I’m OK"));
   };
   const lost = () =>
     showAlert(
-      "Tell your crew you can’t find them?",
-      "They’ll see it with the time you sent it, and your meeting spot if you have one.",
+      t("Tell your crew you can’t find them?"),
+      t("They’ll see it with the time you sent it, and your meeting spot if you have one."),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("Cancel"), style: "cancel" },
         {
-          text: "Send",
+          text: t("Send"),
           onPress: () => {
             const id = callLost(festivalId);
-            if (id) onSent(id, "Can’t find you");
+            if (id) onSent(id, t("Can’t find you"));
           },
         },
       ],
     );
   const help = () =>
     showAlert(
-      "Ask your crew to come find you?",
-      "They’ll see “Not feeling great” with the time you sent it, and their phones nudge them. A check-in with where you are helps them find you.",
+      t("Ask your crew to come find you?"),
+      t("They’ll see “Not feeling great” with the time you sent it, and their phones nudge them. A check-in with where you are helps them find you."),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("Cancel"), style: "cancel" },
         {
-          text: "Ask my crew",
+          text: t("Ask my crew"),
           onPress: () => {
             const id = sendCare(festivalId, "help");
-            if (id) onSent(id, "Need help");
+            if (id) onSent(id, t("Need help"));
           },
         },
       ],
@@ -80,12 +81,12 @@ export function useCheckInStatus() {
   const status = !sent
     ? undefined
     : refused
-      ? `Couldn’t reach your crew with “${sent.what}”. Try again.`
+      ? t("Couldn’t reach your crew with “{what}”. Try again.", { what: sent.what })
       : waiting
         ? offline
-          ? `“${sent.what}” is saved for when there’s signal, marked ${clock(sent.at)}.`
-          : `Sending “${sent.what}”…`
-        : `Sent “${sent.what}” · ${clock(sent.at)}`;
+          ? t("“{what}” is saved for when there’s signal, marked {time}.", { what: sent.what, time: clock(sent.at) })
+          : t("Sending “{what}”…", { what: sent.what })
+        : t("Sent “{what}” · {time}", { what: sent.what, time: clock(sent.at) });
   const tint = refused ? RED : waiting && offline ? AMBER : undefined;
   const clear = useCallback(() => setSent(undefined), []);
   return { sent, done, status, tint, settled: !!sent && !waiting && !refused, clear };
@@ -109,28 +110,27 @@ export function StatusChips({
     <View style={{ gap: space.sm }}>
       {asked && myCare ? (
         <Text style={styles.asked}>
-          You asked your crew for help at {clock(myCare.at)}. Feeling better?
-          Let them know.
+          {t("You asked your crew for help at {time}. Feeling better? Let them know.", { time: clock(myCare.at) })}
         </Text>
       ) : null}
       <View style={styles.chips}>
         <Chip
-          label={asked ? "I’m OK now" : "I’m OK"}
+          label={asked ? t("I’m OK now") : t("I’m OK")}
           tint={GREEN}
-          a11y={asked ? "I’m OK now. Tell my crew" : "I’m OK. Tell my crew"}
+          a11y={asked ? t("I’m OK now. Tell my crew") : t("I’m OK. Tell my crew")}
           onPress={ok}
         />
         <Chip
-          label="Can’t find you"
+          label={t("Can’t find you")}
           tint={AMBER}
-          a11y="Can’t find my crew. Tell them"
+          a11y={t("Can’t find my crew. Tell them")}
           onPress={lost}
         />
         {asked ? null : (
           <Chip
-            label="Need help"
+            label={t("Need help")}
             tint={RED}
-            a11y="Not feeling great. Ask my crew to come find me"
+            a11y={t("Not feeling great. Ask my crew to come find me")}
             onPress={help}
           />
         )}
@@ -146,7 +146,7 @@ export function StatusChips({
  */
 export function CheckInPanel({
   festivalId,
-  title = "Check in",
+  title = t("Check in"),
 }: {
   festivalId: string;
   title?: string;
@@ -167,27 +167,27 @@ export function CheckInPanel({
             router.push("/check-in");
           }}
           accessibilityRole="button"
-          accessibilityLabel="Check in with a stage, a photo or your own words"
+          accessibilityLabel={t("Check in with a stage, a photo or your own words")}
           hitSlop={8}
           style={({ pressed }) => [styles.more, pressed && styles.pressed]}
         >
-          <Text style={styles.moreText}>Stage, photo, words ›</Text>
+          <Text style={styles.moreText}>{t("Stage, photo, words ›")}</Text>
         </Pressable>
       </View>
       <View style={styles.chips}>
         {CHECK_INS.map((words) => (
           <Chip
             key={words}
-            label={words}
-            a11y={`Send “${words}” to your crew`}
+            label={presetLabel(words)}
+            a11y={t("Send “{words}” to your crew", { words: presetLabel(words) })}
             onPress={() => {
               const id = checkIn(festivalId, { note: words });
-              if (id) done(id, words);
+              if (id) done(id, presetLabel(words));
             }}
           />
         ))}
       </View>
-      <Text style={styles.label}>Let them know</Text>
+      <Text style={styles.label}>{t("Let them know")}</Text>
       <StatusChips festivalId={festivalId} onSent={done} />
       {status ? (
         <Text

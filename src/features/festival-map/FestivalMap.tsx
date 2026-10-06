@@ -28,6 +28,8 @@ import { SPREAD_ZOOM, sameSpot, spreadMarkers } from './explore';
 import { NIGHT_STYLE } from './mapStyle';
 import { HERE_COLOR, SHOW_COLOR, TONE_COLOR } from './tones';
 import { type ShowPin, showPinLabel } from './tour';
+import { t } from '../../i18n';
+import { datesLine } from '../festivals/format';
 
 /** Lights closer than this many pixels share one. */
 const CLUSTER_PX = 30;
@@ -268,11 +270,11 @@ export function FestivalMap({
               frameAll(true);
             }}
             accessibilityRole="button"
-            accessibilityLabel={lit > 1 ? 'Show all these festivals again' : 'Back to the festival'}
+            accessibilityLabel={lit > 1 ? t('Show all these festivals again') : t('Back to the festival')}
             style={({ pressed }) => [styles.againPill, pressed && { opacity: 0.8 }]}
           >
             <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
-            <Text style={styles.againText}>{lit > 1 ? 'Show all' : 'Back to it'}</Text>
+            <Text style={styles.againText}>{lit > 1 ? t('Show all') : t('Back to it')}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -314,8 +316,8 @@ function Light({ cluster, chosen, named, reduced, onPress }: { cluster: Cluster;
   const track = useTracking(`${chosen}|${showName}|${members.length}`);
   // The pulse lives on iPhone, where markers are real views (Google Maps draws them as still pictures).
   const pulses = tone === 'going' && !reduced && Platform.OS === 'ios';
-  const what = tone === 'going' ? 'You’re going.' : tone === 'over' ? 'It’s over.' : lead.loved ? `${lead.loved} you’d love.` : '';
-  const label = members.length > 1 ? `${lead.festival.name} and ${members.length - 1} more here. ${what}` : `${lead.festival.name}, ${lead.festival.dates}, ${lead.festival.location}. ${what}`;
+  const what = tone === 'going' ? t('You’re going.') : tone === 'over' ? t('It’s over.') : lead.loved ? t('{n} you’d love.', { n: lead.loved }) : '';
+  const label = `${members.length > 1 ? t('{festival} and {n} more here.', { festival: lead.festival.name, n: members.length - 1 }) : t('{festival}, {dates}, {place}.', { festival: lead.festival.name, dates: datesLine(lead.festival), place: lead.festival.location })} ${what}`;
   return (
     <Marker
       coordinate={toLatLng(cluster.at)}
@@ -387,7 +389,7 @@ function Pulse({ tint }: { tint: string }) {
 /** Where you are, when Near you is on: a cool blue dot. */
 function HereDot({ reduced }: { reduced: boolean }) {
   return (
-    <View style={styles.lightHit} accessible accessibilityLabel="You are here, roughly" collapsable={false}>
+    <View style={styles.lightHit} accessible accessibilityLabel={t('You are here, roughly')} collapsable={false}>
       {reduced || Platform.OS !== 'ios' ? <View style={[styles.pulse, { borderColor: HERE_COLOR, opacity: 0.4 }]} /> : <Pulse tint={HERE_COLOR} />}
       <View style={styles.here} />
     </View>

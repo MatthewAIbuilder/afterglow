@@ -2,8 +2,9 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { legalPath, type LegalDoc } from '../features/legal/documents';
 import { color, space, type } from '../theme/tokens';
+import { t } from '../i18n';
 
-const LABEL: Record<LegalDoc, string> = { privacy: 'Privacy', terms: 'Terms', guidelines: 'Community guidelines' };
+const LABEL: Record<LegalDoc, string> = { privacy: t('Privacy'), terms: t('Terms'), guidelines: t('Community guidelines') };
 
 /** "Privacy · Terms · Community guidelines", quiet links to the legal pages. */
 export function LegalLinks({ docs = ['privacy', 'terms', 'guidelines'] }: { docs?: LegalDoc[] }) {

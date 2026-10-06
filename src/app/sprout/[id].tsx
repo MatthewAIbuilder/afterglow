@@ -16,6 +16,7 @@ import { giftTitle, kindOf, sproutCardFrom, sproutName } from '../../features/sp
 import { SproutOf } from '../../features/sprouts/SproutOf';
 import { artistLook } from '../../features/sprouts/artistLook';
 import { useCatalog } from '../../state/catalog';
+import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import { useSprouts } from '../../state/sprouts';
@@ -80,8 +81,8 @@ export default function SproutScreen() {
     return (
       <Shell insets={insets}>
         <Sprout kind="seedling" stage={0} size={120} locked />
-        <Text style={styles.title}>That sprout code didn’t work</Text>
-        <Text style={styles.body}>Ask whoever gave it to you to show it again.</Text>
+        <Text style={styles.title}>{t('That sprout code didn’t work')}</Text>
+        <Text style={styles.body}>{t('Ask whoever gave it to you to show it again.')}</Text>
       </Shell>
     );
   }
@@ -107,18 +108,18 @@ export default function SproutScreen() {
         <View style={styles.ground} />
         {celebrate ? <ConfettiBurst key={celebrate} spread={150} /> : null}
       </View>
-      <Text style={styles.kicker}>{card?.artist ? (mine ? 'YOUR COLLECTIBLE' : 'A COLLECTIBLE FOR YOU') : mine ? 'YOUR SPROUT' : 'A SPROUT FOR YOU'}</Text>
+      <Text style={styles.kicker}>{card?.artist ? (mine ? t('YOUR COLLECTIBLE') : t('A COLLECTIBLE FOR YOU')) : mine ? t('YOUR SPROUT') : t('A SPROUT FOR YOU')}</Text>
       <Text style={styles.title} accessibilityRole="header">
-        {mine ? `Your ${sproutName(card)}` : giftTitle(card)}
+        {mine ? t('Your {sprout}', { sprout: sproutName(card) }) : giftTitle(card)}
       </Text>
       <Text style={styles.from}>@{card.handle}</Text>
       {note ? <Text style={styles.note}>“{note}”</Text> : null}
       <Text style={styles.body}>
-        {card.artist ? `${look(card.artist).name}: ${look(card.artist).theme.toLowerCase()}, earned by filming ${card.artist.name} live.` : k.about}
+        {card.artist ? t('{name}: {theme}, earned by filming {artist} live.', { name: look(card.artist).name, theme: look(card.artist).theme.toLowerCase(), artist: card.artist.name }) : k.about}
       </Text>
 
       {mine ? (
-        <Text style={styles.body}>Show the code to someone so they can scan it.</Text>
+        <Text style={styles.body}>{t('Show the code to someone so they can scan it.')}</Text>
       ) : !social.availability.ok ? (
         <View style={styles.box}>
           <Text style={styles.boxTitle}>{accountsOff(Platform.OS === 'web', 'Sprouts').title}</Text>
@@ -127,10 +128,10 @@ export default function SproutScreen() {
       ) : state === 'claimed' ? (
         <>
           <Text style={[styles.status, { color: SPROUT_GREEN }]} accessibilityLiveRegion="polite">
-            In your garden
+            {t('In your garden')}
           </Text>
-          <Text style={styles.body}>It grows as you go: festival days, sets you watch, videos you film and sprouts you give.</Text>
-          <Primary label="See your garden" onPress={() => router.replace('/garden')} />
+          <Text style={styles.body}>{t('It grows as you go: festival days, sets you watch, videos you film and sprouts you give.')}</Text>
+          <Primary label={t('See your garden')} onPress={() => router.replace('/garden')} />
         </>
       ) : state === 'taken' || state === 'gone' ? (
         <Text style={[styles.status, styles.amber]}>{claimLine(waiting!)}</Text>
@@ -139,24 +140,24 @@ export default function SproutScreen() {
           <Text style={[styles.status, styles.amber]} accessibilityLiveRegion="polite">
             {claimLine(waiting)}
           </Text>
-          <Primary label="Try again now" onPress={() => void keep()} busy={busy} />
+          <Primary label={t('Try again now')} onPress={() => void keep()} busy={busy} />
         </>
       ) : me ? (
-        <Primary label="Add to my garden" onPress={() => void keep()} busy={busy} />
+        <Primary label={t('Add to my garden')} onPress={() => void keep()} busy={busy} />
       ) : (
         <>
-          <Text style={styles.body}>Keep it: make a free Afterglow account and it’ll be waiting in your garden.</Text>
-          <Primary label="Create a free account" onPress={() => void keep()} />
+          <Text style={styles.body}>{t('Keep it: make a free Afterglow account and it’ll be waiting in your garden.')}</Text>
+          <Primary label={t('Create a free account')} onPress={() => void keep()} />
           <Pressable onPress={() => void sprouts.claim(card).then(() => router.push('/account'))} accessibilityRole="button" hitSlop={8}>
-            <Text style={styles.link}>I already have an account</Text>
+            <Text style={styles.link}>{t('I already have an account')}</Text>
           </Pressable>
           {Platform.OS === 'web' ? (
             APP_STORE_URL ? (
               <Pressable onPress={() => void Linking.openURL(APP_STORE_URL).catch(() => {})} accessibilityRole="link" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
-                <Text style={styles.secondaryText}>Get the Afterglow app</Text>
+                <Text style={styles.secondaryText}>{t('Get the Afterglow app')}</Text>
               </Pressable>
             ) : (
-              <Text style={styles.hint}>Afterglow is coming to the App Store. Create your free account here first: your sprout will be waiting in the app when you sign in.</Text>
+              <Text style={styles.hint}>{t('Afterglow is coming to the App Store. Create your free account here first: your sprout will be waiting in the app when you sign in.')}</Text>
             )
           ) : null}
         </>
@@ -168,12 +169,12 @@ export default function SproutScreen() {
 function Shell({ children, insets }: { children: React.ReactNode; insets: { top: number; bottom: number } }) {
   return (
     <View style={styles.root}>
-      <PageTitle title="A sprout for you" />
+      <PageTitle title={t('A sprout for you')} />
       <NightSky />
       <Pressable
         onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}
         accessibilityRole="button"
-        accessibilityLabel="Close"
+        accessibilityLabel={t('Close')}
         hitSlop={10}
         style={[styles.close, { top: insets.top + space.sm }]}
       >
@@ -195,7 +196,7 @@ function Primary({ label, onPress, busy }: { label: string; onPress: () => void;
       accessibilityRole="button"
       style={({ pressed }) => [styles.primary, busy && { opacity: 0.6 }, pressed && styles.pressed]}
     >
-      <Text style={styles.primaryText}>{busy ? 'One moment…' : label}</Text>
+      <Text style={styles.primaryText}>{busy ? t('One moment…') : label}</Text>
     </Pressable>
   );
 }

@@ -5,9 +5,10 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useFestivalMode } from '../../state/festivalMode';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /** What festival mode is, in a line. */
-export const MODE_PITCH = 'A simpler app while you’re here: videos filmed at the festival, your night planned out, the camera one tap away, and your friends.';
+export const MODE_PITCH = t('A simpler app while you’re here: videos filmed at the festival, your night planned out, the camera one tap away, and your friends.');
 
 /**
  * Festival mode on Tonight: the question on the first night ("Switch to
@@ -28,37 +29,37 @@ export function FestivalModeCard({ festival }: { festival: Festival }) {
     return (
       <View style={styles.row}>
         <View style={styles.dot} />
-        <Text style={styles.rowText}>{active?.preview ? 'Testing festival mode' : 'Festival mode is on'}</Text>
+        <Text style={styles.rowText}>{active?.preview ? t('Testing festival mode') : t('Festival mode is on')}</Text>
         <Pressable
           onPress={() => {
             haptic.select();
             leave();
           }}
           accessibilityRole="button"
-          accessibilityLabel={active?.preview ? 'End the festival mode test' : 'Leave festival mode for the full app'}
+          accessibilityLabel={active?.preview ? t('End the festival mode test') : t('Leave festival mode for the full app')}
           hitSlop={8}
         >
-          <Text style={styles.link}>{active?.preview ? 'End test' : 'Full app'}</Text>
+          <Text style={styles.link}>{active?.preview ? t('End test') : t('Full app')}</Text>
         </Pressable>
       </View>
     );
 
   if (!asking)
     return (
-      <Pressable onPress={switchOn} accessibilityRole="button" accessibilityLabel={`Switch to festival mode. ${MODE_PITCH}`} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      <Pressable onPress={switchOn} accessibilityRole="button" accessibilityLabel={`${t('Switch to festival mode.')} ${MODE_PITCH}`} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         <View style={[styles.dot, styles.dotOff]} />
-        <Text style={styles.rowText}>Festival mode</Text>
-        <Text style={styles.link}>Switch on</Text>
+        <Text style={styles.rowText}>{t('Festival mode')}</Text>
+        <Text style={styles.link}>{t('Switch on')}</Text>
       </Pressable>
     );
 
   return (
     <LinearGradient colors={[glowA(0.28), 'rgba(255,126,182,0.16)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
-      <Text style={styles.title}>Switch to festival mode?</Text>
+      <Text style={styles.title}>{t('Switch to festival mode?')}</Text>
       <Text style={styles.body}>{MODE_PITCH}</Text>
       <View style={styles.buttons}>
-        <Pressable onPress={switchOn} accessibilityRole="button" accessibilityLabel="Switch to festival mode" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-          <Text style={styles.primaryText}>Switch</Text>
+        <Pressable onPress={switchOn} accessibilityRole="button" accessibilityLabel={t('Switch to festival mode')} style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+          <Text style={styles.primaryText}>{t('Switch')}</Text>
         </Pressable>
         <Pressable
           onPress={() => {
@@ -66,13 +67,13 @@ export function FestivalModeCard({ festival }: { festival: Festival }) {
             notNow(festival.id);
           }}
           accessibilityRole="button"
-          accessibilityLabel="Not now, keep the full app"
+          accessibilityLabel={t('Not now, keep the full app')}
           style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
         >
-          <Text style={styles.secondaryText}>Not now</Text>
+          <Text style={styles.secondaryText}>{t('Not now')}</Text>
         </Pressable>
       </View>
-      <Text style={styles.fine}>It ends by itself after the festival. You can go back to the full app any time.</Text>
+      <Text style={styles.fine}>{t('It ends by itself after the festival. You can go back to the full app any time.')}</Text>
     </LinearGradient>
   );
 }
@@ -92,13 +93,13 @@ export function TryFestivalMode({ festival }: { festival: Festival }) {
         }
       }}
       accessibilityRole="button"
-      accessibilityLabel={on ? (active?.preview ? 'End the festival mode test' : 'Leave festival mode') : `Test festival mode with ${festival.name}. ${MODE_PITCH}`}
+      accessibilityLabel={on ? (active?.preview ? t('End the festival mode test') : t('Leave festival mode')) : `${t('Test festival mode with {festival}.', { festival: festival.name })} ${MODE_PITCH}`}
       style={({ pressed }) => [styles.tryRow, pressed && styles.pressed]}
     >
       <View style={[styles.dot, !on && styles.dotOff]} />
       <View style={{ flex: 1 }}>
-        <Text style={styles.rowText}>{on ? (active?.preview ? 'Testing festival mode' : 'Festival mode is on') : 'Test festival mode'}</Text>
-        <Text style={styles.tryBody}>{on ? (active?.preview ? 'Tap to end the test.' : 'Tap for the full app.') : 'See how the app will look on festival day, as if it were the first night.'}</Text>
+        <Text style={styles.rowText}>{on ? (active?.preview ? t('Testing festival mode') : t('Festival mode is on')) : t('Test festival mode')}</Text>
+        <Text style={styles.tryBody}>{on ? (active?.preview ? t('Tap to end the test.') : t('Tap for the full app.')) : t('See how the app will look on festival day, as if it were the first night.')}</Text>
       </View>
     </Pressable>
   );

@@ -1,5 +1,6 @@
 import type { Festival } from '../../data/models';
 import { bySoonest, isOver } from './shelves';
+import { LOCALE, t } from '../../i18n';
 
 /**
  * Festivals near you. Pure: where you are comes in as a rough point (rounded
@@ -68,18 +69,18 @@ export function unitsFor(locale: string | undefined): Units {
 /** "12 mi", "Under 1 km", "1,240 mi". */
 export function distanceShort(km: number, units: Units): string {
   const n = units === 'mi' ? km / 1.609344 : km;
-  if (n < 1) return `Under 1 ${units}`;
+  if (n < 1) return t('Under 1 {units}', { units });
   const rounded = n < 100 ? Math.round(n) : Math.round(n / 10) * 10;
-  return `${rounded.toLocaleString('en-US')} ${units}`;
+  return `${rounded.toLocaleString(LOCALE)} ${units}`;
 }
 
 /** "12 mi away", "Under 1 km away", "1,240 mi away". */
-export const distanceLabel = (km: number, units: Units) => `${distanceShort(km, units)} away`;
+export const distanceLabel = (km: number, units: Units) => t('{distance} away', { distance: distanceShort(km, units) });
 
 /** The heading's reach: "Within 300 mi" / "Within 500 km". */
 export function reachLabel(units: Units, maxKm = NEAR_KM): string {
   const n = units === 'mi' ? Math.round(maxKm / 1.609344 / 50) * 50 : maxKm;
-  return `Within ${n} ${units}`;
+  return t('Within {n} {units}', { n, units });
 }
 
 /** A place name to look up for a festival without coordinates: its location text, tidied. */

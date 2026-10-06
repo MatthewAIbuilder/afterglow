@@ -11,6 +11,7 @@ import { useStanding } from '../features/standing/useStanding';
 import { ThemePreview, ThemeSwatch } from '../features/themes/ThemePreview';
 import { type AppTheme, canUseTheme, themeChoices, themeOf } from '../features/themes/themes';
 import { showAlert } from '../lib/dialog';
+import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { reloadApp } from '../lib/reload';
 import { useSocial } from '../state/social';
@@ -40,7 +41,7 @@ export default function ThemesScreen() {
   const me = social.profile;
   const plus = !!useStanding(uid)?.plus;
   const choices = themeChoices(uid);
-  const giftTheme = gift ? choices.find((t) => t.only) : undefined;
+  const giftTheme = gift ? choices.find((x) => x.only) : undefined;
   const [picked, setPicked] = useState<ThemeId>(giftTheme?.id ?? THEME_ID);
   const [match, setMatch] = useState(true);
   const [swapping, setSwapping] = useState<ThemeId>();
@@ -67,11 +68,11 @@ export default function ThemesScreen() {
   const wear = async () => {
     if (!changed || swapping) return;
     if (locked) {
-      showAlert('Part of Afterglow Plus', `${theme.name} comes with Afterglow Plus. Preview every theme here; Afterglow and Aurora are free.`);
+      showAlert(t('Part of Afterglow Plus'), t('{theme} comes with Afterglow Plus. Preview every theme here; Afterglow and Aurora are free.', { theme: theme.name }));
       return;
     }
     if (!writeStoredTheme(picked)) {
-      showAlert('Couldn’t change the theme', 'Try again in a moment.');
+      showAlert(t('Couldn’t change the theme'), t('Try again in a moment.'));
       return;
     }
     haptic.settle();
@@ -80,62 +81,62 @@ export default function ThemesScreen() {
     setTimeout(() => void reloadApp(), reduce ? 50 : SWAP_MS);
   };
 
-  const title = giftTheme ? 'Made just for you' : 'App theme';
+  const title = giftTheme ? t('Made just for you') : t('App theme');
   return (
     <View style={styles.root}>
-      <PageTitle title="App theme" />
+      <PageTitle title={t('App theme')} />
       <NightSky />
       <PageActions />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + 140, width: pageW }]}>
-        {giftTheme ? <Text style={styles.kicker}>A GIFT</Text> : null}
+        {giftTheme ? <Text style={styles.kicker}>{t('A GIFT')}</Text> : null}
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>
         <Text style={styles.body}>
           {giftTheme
-            ? `${giftTheme.name}: a look for your whole Afterglow, and nobody else's. Put it on, or keep looking.`
-            : 'Change the colours of the whole app: the sky, the glow, buttons and the tab bar. Afterglow starts again in the new look.'}
+            ? t("{theme}: a look for your whole Afterglow, and nobody else's. Put it on, or keep looking.", { theme: giftTheme.name })
+            : t('Change the colours of the whole app: the sky, the glow, buttons and the tab bar. Afterglow starts again in the new look.')}
         </Text>
 
         <View style={styles.previewRow}>
-          <View accessible accessibilityLabel={`Preview of ${theme.name}: ${theme.about}`}>
+          <View accessible accessibilityLabel={t('Preview of {theme}: {about}', { theme: theme.name, about: theme.about })}>
             <ThemePreview key={picked} id={picked} width={previewW} />
           </View>
           <View style={styles.previewInfo}>
             <View style={[styles.glowDot, { backgroundColor: PALETTES[picked].glow, shadowColor: PALETTES[picked].glow }]} />
             <Text style={styles.name}>{theme.name}</Text>
             <Text style={styles.about}>{theme.about}</Text>
-            {pairing ? <Text style={styles.pair}>With the {pairing.name} profile background</Text> : null}
+            {pairing ? <Text style={styles.pair}>{t('With the {backdrop} profile background', { backdrop: pairing.name })}</Text> : null}
             {tagOf(theme, uid, plus) ? <Text style={[styles.tagLine, theme.only ? styles.tagSpecial : styles.tagPlus]}>{tagOf(theme, uid, plus)}</Text> : null}
           </View>
         </View>
 
         <View style={[styles.grid, { gap: space.md }]}>
-          {choices.map((t) => {
-            const on = picked === t.id;
-            const tag = tagOf(t, uid, plus);
+          {choices.map((th) => {
+            const on = picked === th.id;
+            const tag = tagOf(th, uid, plus);
             return (
               <Pressable
-                key={t.id}
-                onPress={() => pick(t.id)}
+                key={th.id}
+                onPress={() => pick(th.id)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`${t.name}. ${t.only ? 'Made for you' : t.plus ? 'Plus' : 'Free'}${t.id === THEME_ID ? '. Your theme now' : ''}`}
+                accessibilityLabel={th.id === THEME_ID ? t('{theme}. {kind}. Your theme now', { theme: th.name, kind: th.only ? t('Made for you') : th.plus ? t('Plus') : t('Free') }) : t('{theme}. {kind}', { theme: th.name, kind: th.only ? t('Made for you') : th.plus ? t('Plus') : t('Free') })}
                 style={({ pressed }) => [{ width: tileW }, pressed && styles.pressed]}
               >
-                <View style={[styles.tile, { height: tileH }, on && { borderColor: PALETTES[t.id].glow }]}>
-                  <ThemeSwatch id={t.id} width={tileW} height={tileH} />
+                <View style={[styles.tile, { height: tileH }, on && { borderColor: PALETTES[th.id].glow }]}>
+                  <ThemeSwatch id={th.id} width={tileW} height={tileH} />
                   {tag ? (
-                    <View style={[styles.tag, t.only ? styles.tagBgSpecial : styles.tagBgPlus]}>
+                    <View style={[styles.tag, th.only ? styles.tagBgSpecial : styles.tagBgPlus]}>
                       <Text style={styles.tagText}>{tag}</Text>
                     </View>
                   ) : null}
                 </View>
                 <Text style={[styles.tileLabel, on && styles.tileLabelOn]} numberOfLines={1}>
-                  {t.name}
+                  {th.name}
                 </Text>
                 <Text style={styles.tileDetail} numberOfLines={1}>
-                  {t.id === THEME_ID ? 'Now' : t.only ? 'Made for you' : t.plus ? 'Plus' : 'Free'}
+                  {th.id === THEME_ID ? t('Now') : th.only ? t('Made for you') : th.plus ? t('Plus') : t('Free')}
                 </Text>
               </Pressable>
             );
@@ -143,18 +144,18 @@ export default function ThemesScreen() {
         </View>
 
         <Pressable onPress={() => router.push('/backdrop')} accessibilityRole="button" style={styles.rowLink}>
-          <Text style={styles.link}>Just your profile background ›</Text>
+          <Text style={styles.link}>{t('Just your profile background ›')}</Text>
         </Pressable>
       </ScrollView>
 
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.md }]}>
         {canMatch && changed && !locked ? (
           <View style={styles.matchRow}>
-            <Text style={styles.matchText}>Match my profile background</Text>
-            <Switch value={match} onValueChange={setMatch} accessibilityLabel="Match my profile background" trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }} />
+            <Text style={styles.matchText}>{t('Match my profile background')}</Text>
+            <Switch value={match} onValueChange={setMatch} accessibilityLabel={t('Match my profile background')} trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }} />
           </View>
         ) : null}
-        {locked && changed ? <Text style={styles.lockNote}>Part of Afterglow Plus. Preview it as much as you like.</Text> : null}
+        {locked && changed ? <Text style={styles.lockNote}>{t('Part of Afterglow Plus. Preview it as much as you like.')}</Text> : null}
         <Pressable
           onPress={() => void wear()}
           disabled={!changed || !!swapping}
@@ -162,14 +163,14 @@ export default function ThemesScreen() {
           accessibilityState={{ disabled: !changed || !!swapping }}
           style={({ pressed }) => [styles.primary, { backgroundColor: locked ? 'rgba(255,214,107,0.25)' : PALETTES[picked].glowDeep }, !changed && styles.dim, pressed && styles.pressed]}
         >
-          <Text style={styles.primaryText}>{!changed ? 'This is your theme' : locked ? 'Comes with Plus' : `Put on ${theme.name}`}</Text>
+          <Text style={styles.primaryText}>{!changed ? t('This is your theme') : locked ? t('Comes with Plus') : t('Put on {theme}', { theme: theme.name })}</Text>
         </Pressable>
       </View>
 
       {swapping ? (
         <Animated.View entering={reduce ? undefined : FadeIn.duration(SWAP_MS - 150)} style={[StyleSheet.absoluteFill, styles.swap, { backgroundColor: PALETTES[swapping].night }]} accessibilityLiveRegion="polite">
           <View style={[styles.swapGlow, { backgroundColor: PALETTES[swapping].glow, shadowColor: PALETTES[swapping].glow }]} />
-          <Text style={styles.swapText}>Putting on {themeOf(swapping).name}…</Text>
+          <Text style={styles.swapText}>{t('Putting on {theme}…', { theme: themeOf(swapping).name })}</Text>
           <ActivityIndicator color={PALETTES[swapping].glow} style={{ marginTop: space.lg }} />
         </Animated.View>
       ) : null}
@@ -177,9 +178,9 @@ export default function ThemesScreen() {
   );
 }
 
-function tagOf(t: AppTheme, uid: string | undefined, plus: boolean): string | undefined {
-  if (t.only) return '♥ Yours';
-  if (t.plus) return canUseTheme(t, uid, plus) ? 'PLUS' : 'PLUS 🔒';
+function tagOf(th: AppTheme, uid: string | undefined, plus: boolean): string | undefined {
+  if (th.only) return t('♥ Yours');
+  if (th.plus) return canUseTheme(th, uid, plus) ? 'PLUS' : 'PLUS 🔒';
   return undefined;
 }
 

@@ -1,6 +1,7 @@
 import type { CrewInvite, Profile } from '../social/models';
 import { matchesName } from '../festivals/search';
 import type { Notice } from '../notifications/inbox';
+import { t } from '../../i18n';
 
 /**
  * Inviting people you know on Afterglow to a crew, and the invites you've
@@ -39,7 +40,8 @@ export function inviteCandidates(
 
 /** "Maya invited you to Bass crew" (the crew's name, or "their crew"). */
 export function inviteTitle(fromName: string | undefined, crewName: string): string {
-  return `${fromName ?? 'Someone'} invited you to ${crewName.trim() ? crewName.trim() : 'their crew'}`;
+  const name = fromName ?? t('Someone');
+  return crewName.trim() ? t('{name} invited you to {crew}', { name, crew: crewName.trim() }) : t('{name} invited you to their crew', { name });
 }
 
 /** Invites still worth showing: not to crews you're already in, newest first, each crew once, nobody blocked. */
@@ -60,7 +62,7 @@ export function inviteNotices(invites: readonly CrewInvite[], opts: { nameOf: (u
     id: `crewInvite:${i.crewId}:${i.at}`,
     kind: 'crewInvite' as const,
     title: inviteTitle(opts.nameOf(i.from), i.crewName),
-    body: `Plan ${opts.festivalName(i.festivalId) ?? 'the festival'} together. Tap to see the crew and join.`,
+    body: ((festival) => (festival ? t('Plan {festival} together. Tap to see the crew and join.', { festival }) : t('Plan the festival together. Tap to see the crew and join.')))(opts.festivalName(i.festivalId)),
     href: `/crew/${i.crewId}`,
     festivalId: i.festivalId,
   }));

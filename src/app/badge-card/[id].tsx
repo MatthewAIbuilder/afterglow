@@ -18,6 +18,7 @@ import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 /**
  * Share a badge: the badge as a story-shaped picture (on phones) or as words
@@ -54,10 +55,10 @@ export default function BadgeCardScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={`Share the ${festival.name} badge`} />
+      <PageTitle title={t('Share the {festival} badge', { festival: festival.name })} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.title}>Share your badge</Text>
-        <GlassCircleButton onPress={close} label="Close">
+        <Text style={styles.title}>{t('Share your badge')}</Text>
+        <GlassCircleButton onPress={close} label={t('Close')}>
           <CloseIcon color={color.moon} size={18} />
         </GlassCircleButton>
       </View>
@@ -75,24 +76,24 @@ export default function BadgeCardScreen() {
             onPress={async () => {
               haptic.select();
               setBusy(true);
-              await sharePoster(ref, `${festival.name} badge`, badgeShareText(festival.name, link, mine, who?.handle));
+              await sharePoster(ref, t('{festival} badge', { festival: festival.name }), badgeShareText(festival.name, link, mine, who?.handle));
               setBusy(false);
             }}
             disabled={busy}
             accessibilityRole="button"
             style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
           >
-            <Text style={styles.primaryText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+            <Text style={styles.primaryText}>{busy ? t('Getting it ready…') : t('Share image')}</Text>
           </Pressable>
           <Pressable
             onPress={() => {
               haptic.select();
-              void shareMessage(badgeShareText(festival.name, link, mine, who?.handle), `${festival.name} badge`);
+              void shareMessage(badgeShareText(festival.name, link, mine, who?.handle), t('{festival} badge', { festival: festival.name }));
             }}
             accessibilityRole="button"
             style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
           >
-            <Text style={styles.secondaryText}>Share as text</Text>
+            <Text style={styles.secondaryText}>{t('Share as text')}</Text>
           </Pressable>
         </View>
       </ScrollView>

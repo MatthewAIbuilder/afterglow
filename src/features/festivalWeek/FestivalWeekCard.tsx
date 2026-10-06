@@ -5,6 +5,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { useFestivalWeek } from './useFestivalWeek';
+import { t } from '../../i18n';
 
 const GOLD = '#FFD58A';
 
@@ -16,7 +17,9 @@ const GOLD = '#FFD58A';
 export function FestivalWeekCard({ festival, showName = false }: { festival: Festival; showName?: boolean }) {
   const week = useFestivalWeek(festival);
   if (!week) return null;
-  const label = `Festival week${showName ? ` for ${festival.name}` : ''}. ${week.line}. Opens the calendar.`;
+  const label = showName
+    ? t('Festival week for {festival}. {line}. Opens the calendar.', { festival: festival.name, line: week.line })
+    : t('Festival week. {line}. Opens the calendar.', { line: week.line });
   return (
     <Pressable
       onPress={() => {
@@ -28,7 +31,7 @@ export function FestivalWeekCard({ festival, showName = false }: { festival: Fes
       style={({ pressed }) => [styles.card, week.ready > 0 && styles.cardReady, pressed && { opacity: 0.85 }]}
     >
       <View style={{ flex: 1, gap: 6 }}>
-        <Text style={styles.kicker}>{showName ? `FESTIVAL WEEK · ${festival.name.toUpperCase()}` : 'FESTIVAL WEEK'}</Text>
+        <Text style={styles.kicker}>{showName ? t('FESTIVAL WEEK · {festival}', { festival: festival.name.toUpperCase() }) : t('FESTIVAL WEEK')}</Text>
         <View style={styles.doors}>
           {week.doors.map((d) => (
             <View key={d.day} style={[styles.door, d.opened && styles.doorOpen, d.unlocked && !d.opened && styles.doorReady]}>

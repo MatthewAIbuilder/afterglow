@@ -12,6 +12,7 @@ import { findCardFrom, findLine, huntLine, lookOf, untilLine } from '../../featu
 import { HuntRow } from '../../features/finds/HuntRow';
 import { accountsOff } from '../../features/social/unavailable';
 import { Collectible } from '../../features/sprouts/Collectible';
+import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { goBack } from '../../lib/nav';
 import { useFinds } from '../../state/finds';
@@ -73,8 +74,8 @@ export default function FindScreen() {
   if (!card) {
     return (
       <Shell insets={insets}>
-        <Text style={styles.title}>That sticker code didn’t work</Text>
-        <Text style={styles.body}>Try scanning it again, a little closer.</Text>
+        <Text style={styles.title}>{t('That sticker code didn’t work')}</Text>
+        <Text style={styles.body}>{t('Try scanning it again, a little closer.')}</Text>
       </Shell>
     );
   }
@@ -94,7 +95,7 @@ export default function FindScreen() {
         {celebrate ? <ConfettiBurst key={celebrate} spread={160} /> : null}
       </View>
       <Text style={[styles.kicker, { color: found ? look.accent : color.moonFaint }]}>
-        {found ? (progress?.done ? 'HUNT COMPLETE' : 'YOU FOUND') : shown.state === 'checking' ? (finds.online ? 'CHECKING' : 'SAVED') : 'NOT THIS TIME'}
+        {found ? (progress?.done ? t('HUNT COMPLETE') : t('YOU FOUND')) : shown.state === 'checking' ? (finds.online ? t('CHECKING') : t('SAVED')) : t('NOT THIS TIME')}
       </Text>
       <Text style={styles.title} accessibilityRole="header">
         {shown.name}
@@ -109,30 +110,34 @@ export default function FindScreen() {
       {found && hunt && progress ? (
         <View style={styles.box}>
           <Text style={styles.boxTitle}>{hunt.name}</Text>
-          <Text style={styles.hint}>{huntLine(progress)}{hunt.until ? ` · ${untilLine(hunt.until)}` : ''}</Text>
+          <Text style={styles.hint}>{hunt.until ? t('{progress} · {until}', { progress: huntLine(progress), until: untilLine(hunt.until) }) : huntLine(progress)}</Text>
           <HuntRow hunt={hunt} found={progress.found} size={44} />
           <Pressable onPress={() => router.push({ pathname: '/hunt/[id]', params: { id: hunt.id } })} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
-            <Text style={styles.secondaryText}>{progress.done ? 'Share your hunt' : 'See the hunt'}</Text>
+            <Text style={styles.secondaryText}>{progress.done ? t('Share your hunt') : t('See the hunt')}</Text>
           </Pressable>
         </View>
       ) : null}
 
       {found || shown.state === 'checking' ? (
         social.user ? (
-          <Primary label="See your collection" onPress={() => router.replace('/garden')} />
+          <Primary label={t('See your collection')} onPress={() => router.replace('/garden')} />
         ) : !social.availability.ok ? (
           <Text style={styles.hint}>{accountsOff(Platform.OS === 'web', 'Accounts').body}</Text>
         ) : (
           <>
-            <Text style={styles.body}>It’s kept on this {Platform.OS === 'web' ? 'browser' : 'phone'}. Make a free Afterglow account to keep it everywhere and see your collection.</Text>
-            <Primary label="Create a free account" onPress={() => router.push('/account')} />
+            <Text style={styles.body}>
+              {Platform.OS === 'web'
+                ? t('It’s kept on this browser. Make a free Afterglow account to keep it everywhere and see your collection.')
+                : t('It’s kept on this phone. Make a free Afterglow account to keep it everywhere and see your collection.')}
+            </Text>
+            <Primary label={t('Create a free account')} onPress={() => router.push('/account')} />
             {Platform.OS === 'web' ? (
               APP_STORE_URL ? (
                 <Pressable onPress={() => void Linking.openURL(APP_STORE_URL).catch(() => {})} accessibilityRole="link" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
-                  <Text style={styles.secondaryText}>Get the Afterglow app</Text>
+                  <Text style={styles.secondaryText}>{t('Get the Afterglow app')}</Text>
                 </Pressable>
               ) : (
-                <Text style={styles.hint}>Afterglow is coming to the App Store. Your stickers will be waiting in the app when you sign in.</Text>
+                <Text style={styles.hint}>{t('Afterglow is coming to the App Store. Your stickers will be waiting in the app when you sign in.')}</Text>
               )
             ) : null}
           </>
@@ -145,9 +150,9 @@ export default function FindScreen() {
 function Shell({ children, insets }: { children: React.ReactNode; insets: { top: number; bottom: number } }) {
   return (
     <View style={styles.root}>
-      <PageTitle title="A sticker you found" />
+      <PageTitle title={t('A sticker you found')} />
       <NightSky />
-      <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} style={[styles.close, { top: insets.top + space.sm }]}>
+      <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel={t('Close')} hitSlop={10} style={[styles.close, { top: insets.top + space.sm }]}>
         <CloseIcon color={color.moon} size={18} />
       </Pressable>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxxl, paddingBottom: insets.bottom + space.xl }]}>{children}</ScrollView>
