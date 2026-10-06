@@ -1,5 +1,6 @@
-import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, SetTime, Show, SoundTag, Stage, YouTubeClipSource } from './models';
+import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, SetTime, Show, SoundCloudProfile, SoundTag, Stage, YouTubeClipSource } from './models';
 import { SOUND_TAGS } from './models';
+import { soundcloudProfile, soundcloudUrl } from './import/soundcloud';
 
 /**
  * The catalogue file: how real festivals, artists and clips get into the app
@@ -17,7 +18,7 @@ import { SOUND_TAGS } from './models';
  * {
  *   "version": 1,
  *   "mode": "add",                      // "add" to the demo data, or "replace" it
- *   "artists":   [{ "id", "name", "sound": { "house": 1 }, "image"? }],
+ *   "artists":   [{ "id", "name", "sound": { "house": 1 }, "image"?, "soundcloud"?: "https://soundcloud.com/…" }],
  *   "festivals": [{ "id", "name", "dates", "location", "start"?: "2026-11-06", "end"?: "2026-11-08",
  *                   "lineup": [artist ids, or { "artist", "note": "Sunset set", "days": ["Friday"], "weekend": 1 }],
  *                   "weekends"?: [{ "start", "end" }, ...],   // festivals run over separate weekends
@@ -29,6 +30,8 @@ import { SOUND_TAGS } from './models';
  *   "similar"?:  [{ "artist", "other", "score": 0.8 }],
  *   "shows"?:    [{ "id", "date": "2026-10-18", "name"?, "venue", "location"?, "place"?, "link": "https://edmtrain.com/…",
  *                   "artists": [artist ids] }]   // club shows from the nightly EDMTrain feed
+ *   "soundcloud"?: { "artist-id": { "url": "https://soundcloud.com/…", "name"?, "image"? } }
+ *                                     // SoundCloud pages matched each night (an artist's own "soundcloud" wins)
  * }
  *
  * An update published from HQ may write a festival already on Afterglow
@@ -151,6 +154,11 @@ function parseArtist(raw: unknown, i: number, problems: string[]): Artist | unde
     const imageUrl = safeImageUrl(raw.image);
     if (imageUrl) artist.imageUrl = imageUrl;
     else problems.push(`Artist "${artistId}": the image link must start with https://, so it was ignored.`);
+  }
+  if (raw.soundcloud !== undefined) {
+    const page = soundcloudUrl(raw.soundcloud);
+    if (page) artist.soundcloud = page;
+    else problems.push(`Artist "${artistId}": the SoundCloud link should look like https://soundcloud.com/their-name, so it was ignored.`);
   }
   return artist;
 }
@@ -430,6 +438,21 @@ export function parseCatalogFile(input: unknown): ParsedFile {
       const bad = Math.min(raw.shows.length, MAX_SHOWS) - shows.length;
       if (bad) problems.push(`${bad} ${bad === 1 ? 'show was' : 'shows were'} left out: each needs an id, a date like "2026-10-18", a venue, an https link and its artists.`);
       if (shows.length) snapshot.shows = shows;
+    }
+  }
+  // SoundCloud pages matched each night: { "artist-id": { "url": "https://soundcloud.com/…", "name"?, "image"? } }.
+  if (raw.soundcloud !== undefined) {
+    if (!isObj(raw.soundcloud)) problems.push('"soundcloud" should be written as { "artist-id": { "url": "https://soundcloud.com/…" } }, so it was left out.');
+    else {
+      const pages: Record<string, SoundCloudProfile> = {};
+      let bad = 0;
+      for (const [key, value] of Object.entries(raw.soundcloud)) {
+        const page = soundcloudProfile(value);
+        if (id(key) && page) pages[key] = page;
+        else bad++;
+      }
+      if (bad) problems.push(`${bad} SoundCloud ${bad === 1 ? 'link was' : 'links were'} left out: each needs an artist id and a link like https://soundcloud.com/their-name.`);
+      if (Object.keys(pages).length) snapshot.soundcloud = pages;
     }
   }
   const festivalParts = partsOf(list(raw.festivals), snapshot.festivals, problems);

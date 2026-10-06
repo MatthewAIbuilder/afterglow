@@ -187,7 +187,14 @@ export function SavedTab({ clips, clipCount, followedCount, artistOf, width }: {
           {clips.map((c) => {
             const a = artistOf(c.artistId);
             const [from, to] = artistColors(c.artistId, a?.color);
-            const still = c.source?.provider === 'youtube' ? posterUrl(c.source) : c.source?.provider === 'community' ? c.source.thumbUrl : undefined;
+            const still =
+              c.source?.provider === 'youtube'
+                ? posterUrl(c.source)
+                : c.source?.provider === 'community'
+                  ? c.source.thumbUrl
+                  : c.source?.provider === 'soundcloud'
+                    ? (a?.imageUrl ?? c.source.image)
+                    : undefined;
             return (
               <Pressable
                 key={c.id}

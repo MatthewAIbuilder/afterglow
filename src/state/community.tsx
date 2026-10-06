@@ -3,9 +3,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from 'react-native';
 import type { Clip, Festival } from '../data/models';
 import { cleanKept, COMMUNITY_MAX, communityClips, keepClip, keptClips, rememberArtist } from '../features/community/clips';
+import { isSoundCloudCardId, reactedCards } from '../features/discover/soundcloud';
 import { withOwner } from '../features/community/likes';
 import type { SharedMemory } from '../features/social/models';
 import { useCatalog } from './catalog';
+import { useReactions } from './reactions';
 import { useSocial } from './social';
 
 /**
@@ -161,14 +163,19 @@ export function useClipPool(): { clips: Clip[]; find: (id: string) => Clip | und
   const catalog = useCatalog();
   const social = useSocial();
   const { kept, hidden } = useCommunity();
+  const { reactions } = useReactions();
   const artistIds = useMemo(() => new Set(catalog.artists.map((a) => a.id)), [catalog.artists]);
+  // SoundCloud cards you liked or saved (while the artist still has their page).
+  const cardIds = useMemo(() => Object.keys(reactions).filter((id) => isSoundCloudCardId(id) && (reactions[id]?.liked || reactions[id]?.saved)).join('|'), [reactions]);
   return useMemo(() => {
     // Only while signed in: that's when the people you blocked are known.
-    const extra = social.availability.ok && social.user ? keptClips(kept, { artists: artistIds, blocked: social.blocked, hidden }) : [];
+    const crowd = social.availability.ok && social.user ? keptClips(kept, { artists: artistIds, blocked: social.blocked, hidden }) : [];
+    const cards = cardIds ? reactedCards(cardIds.split('|'), catalog, (id) => !!catalog.soundcloudOf(id), new Set()) : [];
+    const extra = cards.length ? [...crowd, ...cards] : crowd;
     const clips = extra.length ? [...catalog.clips, ...extra] : catalog.clips;
     const byId = new Map(extra.map((c) => [c.id, c]));
     return { clips, find: (id: string) => catalog.clip(id) ?? byId.get(id) };
-  }, [catalog, social.availability.ok, social.user, social.blocked, kept, hidden, artistIds]);
+  }, [catalog, social.availability.ok, social.user, social.blocked, kept, hidden, artistIds, cardIds]);
 }
 
 /** Fetched clips are fresh for this long; after that, coming back to the app or the focus fetches again. */

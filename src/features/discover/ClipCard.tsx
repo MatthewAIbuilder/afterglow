@@ -16,7 +16,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArtistAvatar } from '../../components/ArtistAvatar';
+import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { ChevronIcon, CommentIcon, ShareIcon } from '../../components/TabIcons';
 import { APP_NAME } from '../../config/app';
 import { setFor } from '../../data/festival';
@@ -88,6 +88,8 @@ type Props = {
 const BURST = 110;
 /** How long to hold before adding a video starts. */
 const HOLD_MS = 450;
+/** Room a SoundCloud card keeps under its player for the artist, title, credit and buttons. */
+const SOUNDCLOUD_ROOM = 250;
 /** Starts below the feed's festival header and its fade, so nothing ever sits over the player. */
 const HEADER_CLEARANCE = 100;
 
@@ -106,7 +108,9 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const toes = useToes();
 
   // Real footage when the clip has playable media; the stage when it doesn't or the video fails.
-  const media = useMemo(() => clipMedia(clip), [clip]);
+  const media = useMemo(() => clipMedia(clip, artist?.imageUrl), [clip, artist?.imageUrl]);
+  // An artist's SoundCloud page: their uploads in SoundCloud's own player.
+  const page = media?.provider === 'soundcloud' ? media : undefined;
   // A community clip (someone's shared video): credited to them, with Report / Hide / Block.
   const community = media?.provider === 'video' ? media.community : undefined;
   // The edge glow: on every video, unless the person who filmed a crowd video has Afterglow Plus.
@@ -399,7 +403,10 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
     const stackedWidth = width - space.lg * 2;
     const frame = tall
       ? tall.player
-      : { w: stackedWidth, h: Math.max(MIN_PLAYER, Math.round((stackedWidth * 9) / 16)) };
+      : page
+        ? // SoundCloud's big-picture player: up to square, leaving room for the card's words and buttons.
+          { w: stackedWidth, h: Math.max(MIN_PLAYER, Math.min(stackedWidth, height - top - bottom - SOUNDCLOUD_ROOM)) }
+        : { w: stackedWidth, h: Math.max(MIN_PLAYER, Math.round((stackedWidth * 9) / 16)) };
 
     // The player takes its own taps; a vertical swipe on it still moves the feed. The edge glow sits just
     // outside it (never over a YouTube picture); videos filmed with the app also carry the AFTERGLOW label.
@@ -472,6 +479,44 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
               }
               accessibilityRole="button"
               accessibilityLabel={`More: report, hide or block @${community.handle}`}
+              hitSlop={12}
+              style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+            >
+              <Text style={styles.more}>•••</Text>
+            </Pressable>
+          </View>
+        ) : page ? (
+          <View style={styles.creditRow}>
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                Linking.openURL(page.externalUrl).catch(() => {});
+              }}
+              accessibilityRole="link"
+              accessibilityLabel={`Open ${artist.name} on SoundCloud`}
+              hitSlop={6}
+              style={({ pressed }) => [styles.creditText, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.credit} numberOfLines={1}>
+                {`${page.externalUrl.replace(/^https:\/\//, '')} ↗`}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                sendOrShare({ kind: 'artist', id: artist.id }, clipShareText(artist.name, clip.title, page.externalUrl, context, APP_NAME));
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Share ${artist.name} on SoundCloud`}
+              hitSlop={12}
+              style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+            >
+              <ShareIcon color={color.moonDim} size={15} />
+            </Pressable>
+            <Pressable
+              onPress={() => flagMenu(clip, artist.name, page.externalUrl, clipFlags)}
+              accessibilityRole="button"
+              accessibilityLabel={`Something wrong with ${artist.name}'s SoundCloud page? Hide it or report it`}
               hitSlop={12}
               style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
             >
@@ -556,7 +601,12 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         {/* The video's own colours glow out to the edges. Taps here pause, double-taps like; the player takes its own touches. */}
         <GestureDetector gesture={surface}>
           <View style={StyleSheet.absoluteFill}>
-            <AmbientBackdrop uri={media.posterUrl} playing={playing} reduceMotion={reduceMotion} />
+            {media.posterUrl ? (
+              <AmbientBackdrop uri={media.posterUrl} playing={playing} reduceMotion={reduceMotion} />
+            ) : (
+              // A SoundCloud page with no picture anywhere: the artist's own colours.
+              <LinearGradient colors={[artistColors(artist.id, artist.color)[0], color.night]} style={StyleSheet.absoluteFill} />
+            )}
             {burst}
           </View>
         </GestureDetector>
@@ -627,6 +677,17 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         <Text style={styles.title}>{clip.title}</Text>
         {metaLine(false)}
         {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>This video isn’t available right now.</Text>}
+        {media?.provider === 'soundcloud' && videoFailed && (
+          <Pressable
+            onPress={() => Linking.openURL(media.externalUrl).catch(() => {})}
+            accessibilityRole="link"
+            accessibilityLabel="SoundCloud isn't playing here. Listen on SoundCloud"
+            hitSlop={8}
+            style={({ pressed }) => [styles.notice, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.noticeText}>SoundCloud isn’t playing here. Listen on SoundCloud</Text>
+          </Pressable>
+        )}
         {media?.provider === 'youtube' && videoFailed && (
           <Pressable
             onPress={() => Linking.openURL(media.externalUrl).catch(() => {})}

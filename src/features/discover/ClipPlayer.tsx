@@ -13,6 +13,7 @@ import { color } from '../../theme/tokens';
 import type { ClipMedia } from './media';
 import { NativeVideoPlayer } from './NativeVideoPlayer';
 import { POSTER_MAX_WAIT_MS, showPoster } from './playback';
+import { SoundCloudPlayer } from './SoundCloudPlayer';
 import { YouTubePlayer } from './YouTubePlayer';
 
 /**
@@ -75,7 +76,8 @@ function ClipPlayerBase({ load: near, ...props }: ClipPlayerProps) {
     const t = setTimeout(() => setMayLoad(true), NEAR_LOAD_DELAY_MS);
     return () => clearTimeout(t);
   }, [near, mayLoad, waitToLoad]);
-  const load = near && (mayLoad || !waitToLoad);
+  // A SoundCloud page loads only while on screen: its player can't be told to stay quiet before it's ready.
+  const load = near && (mayLoad || !waitToLoad) && (media.provider !== 'soundcloud' || props.active);
   const reduceMotion = useReducedMotion();
   const [ready, setReady] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
@@ -124,6 +126,7 @@ function ClipPlayerBase({ load: near, ...props }: ClipPlayerProps) {
     <View style={styles.frame}>
       {load && media.provider === 'youtube' && <YouTubePlayer {...props} media={media} onReady={onReady} onStarted={onStarted} />}
       {load && media.provider === 'video' && <NativeVideoPlayer {...props} media={media} onReady={onReady} onStarted={onStarted} />}
+      {load && media.provider === 'soundcloud' && <SoundCloudPlayer {...props} media={media} onReady={onReady} onStarted={onStarted} />}
       {posterMounted && !!media.posterUrl && (
         <Animated.View style={[StyleSheet.absoluteFill, posterStyle]} pointerEvents="none">
           <Image

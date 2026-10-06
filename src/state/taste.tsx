@@ -1,6 +1,7 @@
 import { createContext, type ReactNode, useContext, useDeferredValue, useMemo } from 'react';
 import { MOCK_TASTE } from '../data/mock';
 import { rememberedClips } from '../features/community/clips';
+import { reactedCards } from '../features/discover/soundcloud';
 import { computeTaste, startingPrior } from '../features/taste/engine';
 import { similarityWith, soundSimilarity } from '../features/taste/similarity';
 import { useCatalog } from './catalog';
@@ -24,7 +25,8 @@ function useLiveTaste(enabled: boolean, defer: boolean) {
   const later = useDeferredValue(now);
   const reactions = defer ? later : now;
   const { ratings } = useRatings();
-  const { artists, clips, similarities } = useCatalog();
+  const catalog = useCatalog();
+  const { artists, clips, similarities } = catalog;
   // A connected music library: its own capped layer in the engine (see IMPORT_WEIGHT).
   const { imported, importing } = useMusic();
   // Only when this one works the taste out: every row on screen asks for the taste, and building the
@@ -34,9 +36,12 @@ function useLiveTaste(enabled: boolean, defer: boolean) {
   const artistOf = useCommunityArtists();
   const allClips = useMemo(() => {
     if (!enabled) return clips;
-    const extra = rememberedClips(Object.keys(reactions), artistOf, new Set(clips.map((c) => c.id)));
+    const ids = Object.keys(reactions);
+    const loaded = new Set(clips.map((c) => c.id));
+    // So do SoundCloud cards: a like, save or skip there counts for the artist like a clip's.
+    const extra = [...rememberedClips(ids, artistOf, loaded), ...reactedCards(ids, catalog, (id) => !!catalog.artist(id), loaded)];
     return extra.length ? [...clips, ...extra] : clips;
-  }, [enabled, clips, reactions, artistOf]);
+  }, [enabled, clips, reactions, artistOf, catalog]);
   return useMemo(
     () =>
       enabled

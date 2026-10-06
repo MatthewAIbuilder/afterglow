@@ -83,7 +83,9 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
   const source = playableSource(clip);
   // A video from the crowd: its own still, and who filmed it.
   const crowd = clip.source?.provider === 'community' ? clip.source : undefined;
-  const still = source ? posterUrl(source) : crowd?.thumbUrl;
+  // An artist's SoundCloud page: their photo, or the page's picture.
+  const page = clip.source?.provider === 'soundcloud' ? clip.source : undefined;
+  const still = source ? posterUrl(source) : (crowd?.thumbUrl ?? (page ? (artist?.imageUrl ?? page.image) : undefined));
   const [deep, bright] = artistColors(clip.artistId, artist?.color);
   const name = artist?.name ?? 'Unknown artist';
 
@@ -114,8 +116,7 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
             {crowd ? `${clip.title} · @${crowd.handle}` : clip.title}
           </Text>
           <Text style={styles.detail} numberOfLines={1}>
-            {festival ? `${festival.name}, ` : ''}
-            {formatDuration(clip.durationSec)}
+            {page ? (festival?.name ?? 'Their uploads') : `${festival ? `${festival.name}, ` : ''}${formatDuration(clip.durationSec)}`}
           </Text>
         </View>
       </Pressable>

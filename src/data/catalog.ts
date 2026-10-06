@@ -1,5 +1,5 @@
 import { festivalPhase } from './festival';
-import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, FestivalLineup, FestivalPhase, Show } from './models';
+import type { Artist, ArtistSimilarity, CatalogSnapshot, Clip, Festival, FestivalLineup, FestivalPhase, Show, SoundCloudProfile } from './models';
 
 /**
  * The app's view of a catalogue: the snapshot's records plus fast lookups.
@@ -14,6 +14,8 @@ export type Catalog = {
   similarities: ArtistSimilarity[];
   /** Club shows from the nightly feed, soonest first. */
   shows: Show[];
+  /** Artist id -> their SoundCloud page: a link set in the catalogue, else the nightly match. */
+  soundcloud: Record<string, SoundCloudProfile>;
   artist: (id: string) => Artist | undefined;
   festival: (id: string) => Festival | undefined;
   clip: (id: string) => Clip | undefined;
@@ -26,7 +28,19 @@ export type Catalog = {
   phaseOf: (festivalId: string) => FestivalPhase | undefined;
   /** An artist's club shows, soonest first; only those on or after `from` ("YYYY-MM-DD") when given. */
   showsOf: (artistId: string, from?: string) => Show[];
+  /** An artist's SoundCloud page, if they have one. */
+  soundcloudOf: (artistId: string) => SoundCloudProfile | undefined;
 };
+
+/** Every artist's SoundCloud page: the nightly matches, with links set on the artist winning. */
+function soundcloudPages(snapshot: CatalogSnapshot): Record<string, SoundCloudProfile> {
+  const out: Record<string, SoundCloudProfile> = {};
+  for (const a of snapshot.artists) {
+    if (a.soundcloud) out[a.id] = { url: a.soundcloud };
+    else if (snapshot.soundcloud?.[a.id]) out[a.id] = snapshot.soundcloud[a.id];
+  }
+  return out;
+}
 
 /** A festival with a separately published lineup applied. */
 export function applyLineup(festival: Festival, lineup: FestivalLineup | undefined): Festival {
@@ -53,6 +67,7 @@ export function createCatalog(snapshot: CatalogSnapshot): Catalog {
   const shows = [...(snapshot.shows ?? [])].sort((a, b) => a.date.localeCompare(b.date));
   const showsBy = new Map<string, Show[]>();
   for (const s of shows) for (const id of s.artistIds) showsBy.set(id, [...(showsBy.get(id) ?? []), s]);
+  const soundcloud = soundcloudPages(snapshot);
 
   return {
     artists,
@@ -60,6 +75,7 @@ export function createCatalog(snapshot: CatalogSnapshot): Catalog {
     clips,
     similarities: snapshot.similarities ?? [],
     shows,
+    soundcloud,
     artist: (id) => artistBy.get(id),
     festival: (id) => festivalBy.get(id),
     clip: (id) => clipBy.get(id),
@@ -78,17 +94,32 @@ export function createCatalog(snapshot: CatalogSnapshot): Catalog {
       const all = showsBy.get(id) ?? [];
       return from ? all.filter((s) => s.date >= from) : all;
     },
+    soundcloudOf: (id) => soundcloud[id],
   };
 }
 
-/** The catalogue without these clips (e.g. ones you flagged as wrong). The same object when none of them is in it. */
+/** The id of an artist's SoundCloud card in Discover ("soundcloud:<artist id>"): flagging it hides their page. */
+export const SOUNDCLOUD_PREFIX = 'soundcloud:';
+export const soundcloudCardId = (artistId: string) => `${SOUNDCLOUD_PREFIX}${artistId}`;
+
+/**
+ * The catalogue without these clips (e.g. ones you flagged as wrong), and
+ * without the SoundCloud pages whose Discover card is among them. The same
+ * object when none of them is in it.
+ */
 export function withoutClips(catalog: Catalog, ids: ReadonlySet<string>): Catalog {
-  if (!ids.size || !catalog.clips.some((c) => ids.has(c.id))) return catalog;
-  return createCatalog({
+  const pagesOut = Object.keys(catalog.soundcloud).filter((id) => ids.has(soundcloudCardId(id)));
+  if (!ids.size || (!pagesOut.length && !catalog.clips.some((c) => ids.has(c.id)))) return catalog;
+  const soundcloud = { ...catalog.soundcloud };
+  for (const id of pagesOut) delete soundcloud[id];
+  const built = createCatalog({
     artists: catalog.artists,
     festivals: catalog.festivals,
     clips: catalog.clips.filter((c) => !ids.has(c.id)),
     similarities: catalog.similarities,
     shows: catalog.shows,
+    soundcloud: catalog.soundcloud,
   });
+  // Set here, so a flagged link set on the artist doesn't come back from the artist.
+  return pagesOut.length ? { ...built, soundcloud, soundcloudOf: (id) => soundcloud[id] } : built;
 }
