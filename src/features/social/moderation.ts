@@ -30,7 +30,7 @@ export function askReport(target: ReportTarget, send: (t: ReportTarget, r: Repor
       showAlert(t('Couldn’t send the report'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     }
   };
-  const title = target.kind === 'profile' ? t('Report this profile') : target.kind === 'comment' ? t('Report this comment') : target.kind === 'chat' ? t('Report this message') : t('Report this video');
+  const title = target.kind === 'profile' ? t('Report this profile') : target.kind === 'comment' || target.kind === 'clipComment' ? t('Report this comment') : target.kind === 'chat' ? t('Report this message') : t('Report this video');
   const labels = REPORT_REASONS.map((r) => reasonLabel(r.key, r.label));
   showActionSheet({ title, message: t('Why are you reporting it?'), options: [...labels, t('Cancel')], cancelButtonIndex: labels.length }, (i) => {
     if (i < labels.length) void done(REPORT_REASONS[i].key);
