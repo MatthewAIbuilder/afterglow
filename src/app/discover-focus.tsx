@@ -1,11 +1,18 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArtistAvatar } from '../components/ArtistAvatar';
-import { CheckIcon, ChevronIcon, ProfileIcon } from '../components/TabIcons';
-import { SOUND_LABEL } from '../data/models';
-import { focusChoices, FOLLOWING, isWide, MIX, soundChoices, soundFocus, TONIGHT } from '../features/discover/focus';
+import { CheckIcon, ChevronIcon, ProfileIcon, SoundIcon } from '../components/TabIcons';
+import { SearchField } from '../components/SearchField';
+import { type Artist, SOUND_LABEL, type SoundTag } from '../data/models';
+import { focusChoices, FOLLOWING, isWide, likeFocus, MIX, soundChoices, soundFocus, TONIGHT } from '../features/discover/focus';
+import { matchesName, searchFestivals } from '../features/festivals/search';
+import { searchCatalog } from '../features/search/universal';
+import { stationArtists } from '../features/recommend/station';
+import { useRecentStations } from '../state/recentStations';
+import { useTaste } from '../state/taste';
 import { tonightClips } from '../features/tonight/tonight';
 import { useTonight } from '../features/tonight/useTonight';
 import { PlayIcon } from '../features/discover/icons';
@@ -31,6 +38,11 @@ import { SheetClose } from '../components/SheetClose';
  * headliners' faces (going ones first, marked Going); festivals you're going
  * to with no clips yet in a quiet "Clips on the way" list; then the two
  * playing switches in one group.
+ *
+ * A search field under the title narrows it to sounds, festivals and
+ * artists that match; an artist starts a station ("Sounds like SUBTRONICS":
+ * their sets and artists who sound like them). The last few stations come
+ * back as "Recent stations".
  */
 export default function DiscoverFocusScreen() {
   const { current } = useLocalSearchParams<{ current?: string }>();
@@ -49,6 +61,17 @@ export default function DiscoverFocusScreen() {
   const tonight = useTonight();
   const tonightSets = tonight ? new Set(tonightClips(tonight.festival, catalog.clips, tonight.night).map((c) => c.artistId)).size : 0;
 
+  const { taste, similarity } = useTaste();
+  const { stations } = useRecentStations();
+  const [query, setQuery] = useState('');
+  const q = query.trim();
+  // How many clips each artist has: a station counts the clips of everyone on it.
+  const clipCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const c of catalog.clips) counts[c.artistId] = (counts[c.artistId] ?? 0) + 1;
+    return counts;
+  }, [catalog.clips]);
+
   const pick = (focus: string) => {
     haptic.select();
     router.dismissTo({ pathname: '/', params: { festival: focus } });
@@ -65,16 +88,65 @@ export default function DiscoverFocusScreen() {
     .filter((a): a is NonNullable<typeof a> => !!a?.imageUrl)
     .slice(0, 3);
   const festivals = [...choices.going.map((c) => ({ ...c, going: true })), ...choices.others.map((c) => ({ ...c, going: false }))];
-  const watchable = festivals.filter((f) => f.clips > 0);
-  const waiting = festivals.filter((f) => f.clips === 0);
+  const allWatchable = festivals.filter((f) => f.clips > 0);
+  const allWaiting = festivals.filter((f) => f.clips === 0);
+
+  // Searching: only what matches, by name (a festival by its place too). An artist is offered as a station when it has clips.
+  const found = useMemo(() => {
+    if (!q) return undefined;
+    const artists = searchCatalog(q, catalog, taste)
+      .artists.map((artist) => ({
+        artist,
+        clips: stationArtists(artist, catalog.artists, (id) => clipCounts[id] ?? 0, similarity).reduce((n, s) => n + (clipCounts[s.artist.id] ?? 0), 0),
+      }))
+      .filter((a) => a.clips > 0);
+    return {
+      sounds: soundChoices(catalog.clips, catalog.artist, 1).filter((s) => matchesName(SOUND_LABEL[s.tag], q)),
+      festivalIds: new Set(searchFestivals(catalog.festivals, q).map((f) => f.id)),
+      artists,
+    };
+  }, [q, catalog, taste, similarity, clipCounts]);
+  const watchable = found ? allWatchable.filter((f) => found.festivalIds.has(f.festival.id)) : allWatchable;
+  const waiting = found ? allWaiting.filter((f) => found.festivalIds.has(f.festival.id)) : allWaiting;
+  const shownSounds = found ? found.sounds : sounds;
+  const nothing = !!found && !found.sounds.length && !watchable.length && !waiting.length && !found.artists.length;
+  const recentStations = stations.map((id) => catalog.artist(id)).filter((a): a is Artist => !!a);
+  // Return on a keyboard: the first thing found.
+  const pickFirst = () => {
+    if (!found) return;
+    if (found.sounds[0]) pick(soundFocus(found.sounds[0].tag));
+    else if (watchable[0]) pick(watchable[0].festival.id);
+    else if (found.artists[0]) pick(likeFocus(found.artists[0].artist.id));
+  };
+  const soundChip = (tag: SoundTag, clips: number) => {
+    const on = current === soundFocus(tag);
+    const hue = SOUND_COLOR[tag];
+    return (
+      <Pressable
+        key={tag}
+        onPress={() => pick(soundFocus(tag))}
+        accessibilityRole="button"
+        accessibilityLabel={`${SOUND_LABEL[tag]}, ${clips} clips from every lineup`}
+        accessibilityState={{ selected: on }}
+        style={({ pressed }) => [styles.sound, on && { backgroundColor: `${hue}2E`, borderColor: `${hue}99` }, pressed && styles.pressed]}
+      >
+        <View style={[styles.soundDot, { backgroundColor: hue, shadowColor: hue }]} />
+        <Text style={[styles.soundText, on && { color: color.moon }]}>{SOUND_LABEL[tag]}</Text>
+        <Text style={styles.soundCount}>{clips}</Text>
+      </Pressable>
+    );
+  };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
+      <ScrollView style={styles.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
         <Text style={styles.title}>What to discover</Text>
         <Text style={styles.body}>Everything at once, one sound, or one festival’s lineup.</Text>
+        <View style={styles.searchBar}>
+          <SearchField value={query} onChange={setQuery} placeholder="Sounds, festivals or artists" label="Search sounds, festivals and artists" onSubmit={pickFirst} />
+        </View>
 
-        {tonight && tonightSets > 0 ? (
+        {!found && tonight && tonightSets > 0 ? (
           <Tile
             title="Tonight"
             detail={`${tonight.night ? `${tonight.night} at ` : ''}${tonight.festival.name} · ${tonightSets} ${tonightSets === 1 ? 'artist' : 'artists'}, in set order`}
@@ -89,6 +161,7 @@ export default function DiscoverFocusScreen() {
           />
         ) : null}
 
+        {!found && (
         <View style={styles.tiles}>
           <Tile
             title="Your mix"
@@ -126,30 +199,38 @@ export default function DiscoverFocusScreen() {
             />
           ) : null}
         </View>
+        )}
 
-        {sounds.length > 1 && (
+        {!found && recentStations.length > 0 && (
           <>
-            <Text style={styles.section}>By sound</Text>
+            <Text style={styles.section}>Recent stations</Text>
             <View style={styles.sounds}>
-              {sounds.map(({ tag, clips }) => {
-                const on = current === soundFocus(tag);
-                const hue = SOUND_COLOR[tag];
+              {recentStations.map((a) => {
+                const on = current === likeFocus(a.id);
                 return (
                   <Pressable
-                    key={tag}
-                    onPress={() => pick(soundFocus(tag))}
+                    key={a.id}
+                    onPress={() => pick(likeFocus(a.id))}
                     accessibilityRole="button"
-                    accessibilityLabel={`${SOUND_LABEL[tag]}, ${clips} clips from every lineup`}
+                    accessibilityLabel={`Sounds like ${a.name}, recent station`}
                     accessibilityState={{ selected: on }}
-                    style={({ pressed }) => [styles.sound, on && { backgroundColor: `${hue}2E`, borderColor: `${hue}99` }, pressed && styles.pressed]}
+                    style={({ pressed }) => [styles.station, on && styles.stationOn, pressed && styles.pressed]}
                   >
-                    <View style={[styles.soundDot, { backgroundColor: hue, shadowColor: hue }]} />
-                    <Text style={[styles.soundText, on && { color: color.moon }]}>{SOUND_LABEL[tag]}</Text>
-                    <Text style={styles.soundCount}>{clips}</Text>
+                    <ArtistAvatar artist={a} size={24} />
+                    <Text style={[styles.soundText, styles.stationText, on && { color: color.moon }]} numberOfLines={1}>
+                      Sounds like {a.name}
+                    </Text>
                   </Pressable>
                 );
               })}
             </View>
+          </>
+        )}
+
+        {(found ? shownSounds.length > 0 : sounds.length > 1) && (
+          <>
+            <Text style={styles.section}>{found ? 'Sounds' : 'By sound'}</Text>
+            <View style={styles.sounds}>{shownSounds.map(({ tag, clips }) => soundChip(tag, clips))}</View>
           </>
         )}
 
@@ -213,10 +294,53 @@ export default function DiscoverFocusScreen() {
             <Text style={styles.waitingNote}>New live sets are found every night.</Text>
           </View>
         )}
-        {choices.going.length === 0 && (
+        {found && found.artists.length > 0 && (
+          <>
+            <Text style={styles.section}>Artists</Text>
+            <View style={styles.list}>
+              {found.artists.map(({ artist: a, clips }) => {
+                const on = current === likeFocus(a.id);
+                const count = `${clips} ${clips === 1 ? 'clip' : 'clips'}`;
+                return (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => pick(likeFocus(a.id))}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Sounds like ${a.name}. Start a station from their sets and artists with a similar sound, ${count}`}
+                    accessibilityState={{ selected: on }}
+                    style={({ pressed }) => [styles.artist, on && styles.selected, pressed && styles.pressed]}
+                  >
+                    <ArtistAvatar artist={a} size={44} />
+                    <View style={styles.rowText}>
+                      <Text style={styles.artistName} numberOfLines={1}>
+                        <Text style={styles.soundsLike}>Sounds like </Text>
+                        {a.name}
+                      </Text>
+                      <Text style={styles.detail} numberOfLines={1}>
+                        {count} from them and artists like them
+                      </Text>
+                    </View>
+                    <View style={styles.stationBadge}>
+                      <SoundIcon color={color.glow} size={16} />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
+        {nothing ? (
+          <View style={styles.nothing}>
+            <Text style={styles.nothingTitle}>Nothing matches “{q}”</Text>
+            <Text style={styles.detail}>Try a sound like dubstep, a festival or an artist’s name.</Text>
+          </View>
+        ) : null}
+        {!found && choices.going.length === 0 && (
           <Text style={styles.hint}>Mark the festivals you’re going to on the Festivals tab and they’ll show up first.</Text>
         )}
 
+        {!found && (
+        <>
         <Text style={styles.section}>Playing</Text>
         <View style={styles.group}>
           {social.availability.ok && (
@@ -267,6 +391,8 @@ export default function DiscoverFocusScreen() {
             />
           </View>
         </View>
+        </>
+        )}
 
         {currentFestival && (
           <Pressable
@@ -330,6 +456,38 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.xl, paddingTop: space.xxl },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.xs },
+  searchBar: { marginTop: space.lg },
+  station: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    maxWidth: '100%',
+    paddingVertical: 6,
+    paddingLeft: 6,
+    paddingRight: space.md + 2,
+    borderRadius: radius.pill,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  stationOn: { backgroundColor: glowA(0.18), borderColor: glowA(0.6) },
+  stationText: { flexShrink: 1 },
+  artist: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm + 2,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  artistName: { ...type.headline, color: color.moon },
+  soundsLike: { color: color.moonDim },
+  stationBadge: { width: 32, height: 32, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.16), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.4) },
+  nothing: { marginTop: space.xl, gap: space.xs },
+  nothingTitle: { ...type.headline, color: color.moonDim },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xl, marginBottom: space.md },
   list: { gap: space.sm },
   tiles: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },

@@ -9,12 +9,15 @@ export function SearchField({
   placeholder,
   label,
   autoFocus,
+  onSubmit,
 }: {
   value: string;
   onChange: (text: string) => void;
   placeholder: string;
   label: string;
   autoFocus?: boolean;
+  /** Return (Enter on a keyboard): e.g. open the first result. */
+  onSubmit?: () => void;
 }) {
   return (
     <View style={styles.search}>
@@ -33,6 +36,7 @@ export function SearchField({
         selectionColor={color.glow}
         accessibilityLabel={label}
         autoFocus={autoFocus}
+        onSubmitEditing={onSubmit}
       />
       {value ? (
         <Pressable onPress={() => onChange('')} accessibilityRole="button" accessibilityLabel="Clear the search" hitSlop={10}>
