@@ -66,6 +66,8 @@ type Props = {
   note?: string;
   /** The festival Discover is focused on. The clip shows the artist's place there and links to it. */
   festival?: Festival;
+  /** The feed mixes festivals (your mix, a sound, Following): the line under the clip names the festival. */
+  nameFestival?: boolean;
   /** You starred this artist as a must-see at that festival. */
   mustSee?: boolean;
   width: number;
@@ -110,7 +112,7 @@ function B2bNames({ players, onOpen }: { players: readonly Artist[]; onOpen: (id
   ));
 }
 
-function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, index, onSkip, onNext, onHold, topExtra = 0 }: Props) {
+function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, index, onSkip, onNext, onHold, topExtra = 0 }: Props) {
   const catalog = useCatalog();
   const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
@@ -328,7 +330,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const pct = Math.round(Math.max(...players.map((a) => taste[a.id] ?? 0)) * 100);
   const title = shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title);
   // The artist's place at the festival you're discovering; without a focus, the clip's own festival.
-  const line = festival ? festivalLine(festival, artist.id) : undefined;
+  const line = festival ? festivalLine(festival, artist.id, nameFestival) : undefined;
   const context = line ? festival : undefined;
   const own = catalog.festival(clip.festivalId);
   const ownSet = own && setFor(own, artist.id);

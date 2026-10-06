@@ -61,6 +61,10 @@ describe('festival and artist relationships', () => {
     expect(festivalLine(solstice, 'illenium')).toBe('Friday 11:40 PM, Main Stage');
     expect(festivalLine(horizon, 'levity')).toBe('On the lineup, set time to come');
     expect(festivalLine(horizon, 'illenium')).toBeUndefined();
+    // In a feed that mixes festivals, the line says which one.
+    expect(festivalLine(solstice, 'illenium', true)).toBe('Solstice 2026 · Friday 11:40 PM, Main Stage');
+    expect(festivalLine(horizon, 'levity', true)).toBe('Horizon 2027 · Set time to come');
+    expect(festivalLine(horizon, 'illenium', true)).toBeUndefined();
   });
 
   it('moves Discover between festivals: a festival page wins, then a requested clip, otherwise it stays', () => {
