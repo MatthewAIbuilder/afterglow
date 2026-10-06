@@ -31,7 +31,7 @@ const PLUR = 'plurplurplurplurplur';
 const BASS = 'bassbassbassbassbass';
 
 /** A garden with two sprouts from Maya, a sprout from Sam, and the first sprout. */
-const gardenOf = (account: string) =>
+const gardenOf = (account: string, artistShown: Record<string, number> = {}) =>
   AsyncStorage.setItem(
     'sprouts.v1',
     JSON.stringify({
@@ -45,6 +45,7 @@ const gardenOf = (account: string) =>
       bloomed: {},
       bloomsShown: [],
       starterAt: NOW.getTime() - 10 * 86_400_000,
+      artistShown,
     }),
   );
 const stored = async () => JSON.parse((await AsyncStorage.getItem('gardenLayout.v1')) ?? '{}') as Record<string, Record<string, number>>;
@@ -57,12 +58,15 @@ beforeEach(async () => {
 });
 
 describe('the living garden', () => {
-  it('shows every sprout in the meadow, and a tap opens its sheet', async () => {
+  it('shows every sprout and artist collectible in the meadow, and a tap opens its sheet', async () => {
     const me = await person('jojo', 'Jo');
-    await gardenOf(me);
+    // One artist filmed, already celebrated, so the garden shows it straight away.
+    await gardenOf(me, { subtronics: 1 });
+    const at = new Date(2026, 8, 20, 22).toISOString();
+    await AsyncStorage.setItem('memories.v1', JSON.stringify([{ id: 'm1', file: 'm1.mov', capturedAt: at, addedAt: at, artistId: 'subtronics' }]));
     const app = await renderApp('/garden');
     await flush();
-    expect(app.getByLabelText('A night meadow with 4 sprouts. Hold and drag one to move it.')).toBeTruthy();
+    expect(await app.findByLabelText('A night meadow with 4 sprouts and 1 artist collectible. Hold and drag one to move it.')).toBeTruthy();
     expect(app.getByLabelText('PLUR sprout, from Maya. In bloom.')).toBeTruthy();
     expect(app.getByLabelText('Bass sprout, from Maya. In bloom.')).toBeTruthy();
     expect(app.getByLabelText(/^Sprout, from Sam\. Seed/)).toBeTruthy();
@@ -71,8 +75,8 @@ describe('the living garden', () => {
     // Everyone has a spot, saved for this account.
     await flush();
     const saved = (await stored())[me];
-    expect(Object.keys(saved).sort()).toEqual([BASS, PLUR, 'seedseedseedseedseed', 'starter'].sort());
-    expect(new Set(Object.values(saved)).size).toBe(4);
+    expect(Object.keys(saved).sort()).toEqual([BASS, PLUR, 'seedseedseedseedseed', 'starter', 'artist:subtronics'].sort());
+    expect(new Set(Object.values(saved)).size).toBe(5);
     await fireEvent.press(app.getByLabelText('PLUR sprout, from Maya. In bloom.'));
     await flush();
     expect(app.getByText('“So glad we met”')).toBeTruthy();
@@ -80,20 +84,25 @@ describe('the living garden', () => {
     await fireEvent.press(app.getByText('Done'));
     await flush();
     expect(app.queryByText('“So glad we met”')).toBeNull();
+    await fireEvent.press(app.getByLabelText('SUBTRONICS collectible, 1 video.'));
+    await flush();
+    expect(app.getByText('2 more videos of them for bronze. First filmed Sep 20, 2026.')).toBeTruthy();
   });
 
   it('an empty garden shows your first sprout alone', async () => {
     const app = await renderApp('/garden');
     await flush();
-    expect(app.getByLabelText('A night meadow with 1 sprout. Hold and drag one to move it.')).toBeTruthy();
+    expect(await app.findByLabelText('A night meadow with 1 sprout. Hold and drag one to move it.')).toBeTruthy();
     expect(app.getByLabelText(/^Sprout, Your first sprout\. Seed/)).toBeTruthy();
-    expect((await stored()).guest).toEqual({ starter: 1 });
+    expect((await stored()).guest).toEqual({ starter: 2 });
   });
 
   it('holding a sprout and carrying it to another spot keeps it there, swapping with whoever stood there', async () => {
     const me = await person('jojo', 'Jo');
     await gardenOf(me);
     const app = await renderApp('/garden');
+    await flush();
+    expect(await app.findByLabelText('A night meadow with 4 sprouts. Hold and drag one to move it.')).toBeTruthy();
     await flush();
     const m = meadow(4, WIDTH);
     const before = placeResidents([ 'seedseedseedseedseed', BASS, PLUR, 'starter'], undefined, m);
@@ -123,20 +132,7 @@ describe('the living garden', () => {
     const again = await renderApp('/garden');
     await flush();
     expect((await stored())[me][PLUR]).toBe(to);
-    expect(again.getByLabelText('PLUR sprout, from Maya. In bloom.')).toBeTruthy();
+    expect(await again.findByLabelText('PLUR sprout, from Maya. In bloom.')).toBeTruthy();
   });
 
-  it('an artist collectible lives in the meadow too, and opens its sheet', async () => {
-    const me = await person('jojo', 'Jo');
-    await gardenOf(me);
-    const at = new Date(2026, 8, 20, 22).toISOString();
-    await AsyncStorage.setItem('memories.v1', JSON.stringify([{ id: 'm1', file: 'm1.mov', capturedAt: at, addedAt: at, artistId: 'subtronics' }]));
-    const app = await renderApp('/garden');
-    await flush();
-    expect(app.getByLabelText('A night meadow with 4 sprouts and 1 artist collectible. Hold and drag one to move it.')).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('SUBTRONICS collectible, 1 video.'));
-    await flush();
-    expect(app.getByText('2 more videos of them for bronze. First filmed Sep 20, 2026.')).toBeTruthy();
-    expect((await stored())[me]['artist:subtronics']).toBeDefined();
-  });
 });
