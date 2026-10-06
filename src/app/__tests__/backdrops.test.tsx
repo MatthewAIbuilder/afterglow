@@ -97,6 +97,17 @@ describe('profile backgrounds', () => {
     expect(mockSocial.profiles.get(uid)?.backdrop).toBe('aurora');
   });
 
+  it('your own profile says which festivals you’re going to, and when only you can see it', async () => {
+    const uid = await person('sam', 'Sam');
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['cyclops-cove-4']));
+    const app = await renderApp('/profile');
+    await flush();
+    // person() saves showFestivals: false, so others don't see it.
+    expect(app.getByText('Going to Cyclops Cove 4 · only you can see this')).toBeTruthy();
+    await s().saveProfile({ handle: 'sam', displayName: 'Sam', bio: '', showFestivals: true, showSound: false }, { festivals: ['cyclops-cove-4'], sounds: [] });
+    expect(uid).toBeTruthy();
+  });
+
   it('no swap without a cover photo', async () => {
     await person('sam', 'Sam');
     await s().setBackdrop('aurora');
