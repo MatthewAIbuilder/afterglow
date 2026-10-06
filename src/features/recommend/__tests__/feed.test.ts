@@ -155,6 +155,47 @@ describe('lanes', () => {
   });
 });
 
+describe('several clips per artist (the nightly import keeps up to four sets each)', () => {
+  // Every artist with four clips: their own, then copies standing in for more sets.
+  const many: Clip[] = ARTISTS.flatMap((a) => {
+    const own = CLIPS.filter((c) => c.artistId === a.id);
+    if (!own.length) return [];
+    return [0, 1, 2, 3].map((n) => ({ ...own[n % own.length], id: `${a.id}-set${n}` }));
+  });
+  const feedOf = (reactions: Record<string, Reaction> = {}) => {
+    const { taste, informed } = computeTaste(MOCK_TASTE, ARTISTS, many, reactions);
+    return rankFeed({ clips: many, artists: ARTISTS, taste, informed, reactions, seen: {}, now: NOW });
+  };
+  const positions = (feed: { clip: Clip }[], artistId: string) => feed.flatMap((it, i) => (it.clip.artistId === artistId ? [i] : []));
+  const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length;
+
+  it('spaces one artist’s sets apart, never back to back', () => {
+    const cases: Record<string, Reaction>[] = [{}, { 'illenium-set0': { ...none, liked: true } }, { 'tape-b-set0': { ...none, skipped: true } }];
+    for (const r of cases) {
+      const feed = feedOf(r);
+      expect(feed).toHaveLength(many.length);
+      const a = artistsIn(feed.filter((it) => !it.cooled && !it.skipped));
+      for (let i = 1; i < a.length; i++) expect(a[i]).not.toBe(a[i - 1]);
+      // Room for a gap of ARTIST_GAP while several artists are still left.
+      for (let i = ARTIST_GAP; i < a.length - 8; i++) expect(a.slice(i - ARTIST_GAP, i)).not.toContain(a[i]);
+    }
+  });
+
+  it('brings a liked artist’s other sets forward, and holds back a skipped artist’s', () => {
+    const before = feedOf();
+    const liked = feedOf({ 'john-summit-set0': { ...none, liked: true, saved: true } });
+    const others = (feed: { clip: Clip }[]) => positions(feed, 'john-summit').filter((i) => feed[i].clip.id !== 'john-summit-set0');
+    expect(mean(others(liked))).toBeLessThan(mean(others(before)));
+
+    const skipped = feedOf({ 'illenium-set0': { ...none, skipped: true } });
+    const rest = positions(skipped, 'illenium').filter((i) => skipped[i].clip.id !== 'illenium-set0');
+    expect(mean(rest)).toBeGreaterThan(mean(positions(before, 'illenium')));
+    // Turned down: their other sets wait until every fresh clip from someone else has played.
+    const lastFresh = skipped.findLastIndex((it) => !it.cooled && !it.skipped);
+    for (const i of rest) expect(i).toBeGreaterThan(lastFresh);
+  });
+});
+
 describe('seen history', () => {
   it('records the latest view and stays bounded', () => {
     let h = markSeen({}, 'c1', 1);

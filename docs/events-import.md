@@ -165,10 +165,35 @@ photos step, the Website workflow runs `scripts/soundcloud-artists.ts`.
 ## Discover clips from YouTube (automatic)
 
 Every night, after the festival and photo steps, the Website workflow runs
-`scripts/youtube-clips.ts`. For artists on upcoming festivals who have no clip
-yet (festivals you added by hand first, soonest first, in billing order), it
-searches YouTube for "<artist> live set" and adds the best match to Discover
-as a one-minute clip, a third of the way into the set (past the intro).
+`scripts/youtube-clips.ts`. It searches YouTube for live sets and adds them
+to Discover as one-minute clips, a third of the way into each set (past the
+intro). The feed keeps growing: each artist can have up to **4 different
+sets**.
+
+- **Who it searches for, in order**: first artists on upcoming festivals
+  with no clip yet (festivals you added by hand first, soonest first, in
+  billing order). Then artists with fewer than 4 clips, fewest first (those
+  on upcoming festivals before the rest).
+- **One search, up to two sets**: a search lists 15 videos, and the step
+  keeps up to 2 good ones from it. Each must be a different set from the
+  ones the artist already has: never the same video twice, and never two
+  videos whose titles say the same set ("Live at Lost Lands 2025" and
+  "Full Set | Lost Lands 2025"). A set from a year the artist has no clip
+  from yet goes a step ahead. Once an artist has clips the search words
+  change ("live set", then "full set", then "festival set"), so each search
+  turns up different videos.
+- **Waiting**: an artist with no set found is tried again after a month; an
+  artist searched for more sets with nothing new found waits three weeks.
+- **File size**: every clip makes the website's catalogue file bigger, and
+  the app refuses a file over 2,000,000 characters. Extra sets stop once the
+  file would pass 85% of that (the step's log says so); an artist's first
+  clip, and the clips found on earlier nights, may fill it to 95%. When the
+  file is short of room, extra sets from earlier nights are left out before
+  anyone's first clip.
+- **What the log says**: at the end of the **YouTube clips** step, how many
+  clips there are in all, how many are new tonight (first clips and more
+  sets), and, for artists on upcoming lineups, how many have no clip yet and
+  how many have fewer than 4.
 
 - **Any channel** (the owner's choice), but the video must name the artist,
   look like a set ("live", "set", "full set", festival words), run at least
@@ -177,9 +202,10 @@ as a one-minute clip, a third of the way into the set (past the intro).
   out. The artist's own channel and well-known festival and live-set channels
   (Insomniac, Tomorrowland, Lost Lands, Boiler Room, Cercle and others) come
   first.
-- YouTube's free daily allowance covers about 90 searches a night, so
-  Discover fills up over a few nights. Clips found before are kept; artists
-  with no set found are tried again after a month. Only the nightly run (and
+- YouTube's free daily allowance covers about 90 searches a night (a search
+  costs 100 of the 10,000 daily units; reading the videos' details costs 1),
+  so Discover gains roughly 60 to 150 clips a night until every artist has 4
+  sets or nothing new turns up. Clips found before are kept. Only the nightly run (and
   "Run workflow") searches: runs after a merge just keep the clips, so they
   don't use up the day's allowance.
 - Each video is used once. If the clips step fails anyway, it runs again
@@ -202,10 +228,11 @@ earlier one:
    "Only to get lost Discover clips back", and press **Run workflow**.
 4. When it finishes, the **Clips from an earlier release** step says how many
    clips it found, and **YouTube clips** says how many the site now has.
-   Artists who have a newer clip keep it.
+   The earlier release's clips top each artist up to 4 sets; videos already
+   used aren't added twice.
 - The clip's credit line in Discover names the YouTube channel. Clips you add
-  yourself in `catalogue/afterglow.json` always stay; an artist who already
-  has one isn't searched.
+  yourself in `catalogue/afterglow.json` always stay and count towards the
+  artist's 4.
 - If a clip looks wrong, flag it in Discover (the ••• under the video): it's
   hidden for you at once, and "Send report" emails the video's link. Adding
   that video to `blockedVideos` in `catalogue/afterglow.json` (see

@@ -215,20 +215,32 @@ export function scoreClips({ clips, artists, taste, informed, reactions, seen, n
 function interleave(items: FeedItem[], recent: string[], slot: number): FeedItem[] {
   const queues: Record<Lane, FeedItem[]> = { personal: [], explore: [], discover: [] };
   for (const it of items) queues[it.lane].push(it);
+  // Best score first, so a pick can stop looking early (thousands of clips once artists have several sets each).
+  for (const q of Object.values(queues)) q.sort(byScore);
   const placed: Record<string, number> = {};
   for (const id of recent) placed[id] = (placed[id] ?? 0) + 1;
   const effective = (it: FeedItem) => it.score - REPEAT * (placed[it.clip.artistId] ?? 0);
+  // The highest effective score, ties to the better score (byScore). A clip never counts for more than
+  // its score, and the queue is in byScore order, so once a score can't beat the best so far nothing after it can.
   const best = (q: FeedItem[], blocked: Set<string>) => {
     let at = -1;
+    let top = -Infinity;
     for (let i = 0; i < q.length; i++) {
+      if (at >= 0 && q[i].score <= top) break;
       if (blocked.has(q[i].clip.artistId)) continue;
-      if (at < 0 || effective(q[i]) > effective(q[at]) || (effective(q[i]) === effective(q[at]) && byScore(q[i], q[at]) < 0)) at = i;
+      const e = effective(q[i]);
+      if (at < 0 || e > top) {
+        at = i;
+        top = e;
+      }
     }
     return at;
   };
 
   const left: Record<string, number> = {};
   for (const it of items) left[it.clip.artistId] = (left[it.clip.artistId] ?? 0) + 1;
+  // At least as many as anyone has left (it only goes down): only when it's high is "urgent" worth looking for.
+  let mostLeft = Object.values(left).reduce((m, k) => Math.max(m, k), 0);
 
   const out: FeedItem[] = [];
   const total = items.length;
@@ -239,7 +251,9 @@ function interleave(items: FeedItem[], recent: string[], slot: number): FeedItem
     // If one artist has so many clips left that waiting would force two in a row later, they go now.
     const n = total - out.length;
     const last = recent[recent.length - 1];
-    const urgent = Object.keys(left).find((id) => id !== last && left[id] > Math.ceil((n - 1) / 2));
+    const most = Math.ceil((n - 1) / 2);
+    if (mostLeft > most) mostLeft = Object.values(left).reduce((m, k) => Math.max(m, k), 0);
+    const urgent = mostLeft > most ? Object.keys(left).find((id) => id !== last && left[id] > most) : undefined;
     if (urgent) {
       blocked = new Set(Object.keys(left).filter((id) => id !== urgent));
       lanes = (['personal', 'explore', 'discover'] as const).filter((l) => queues[l].some((it) => it.clip.artistId === urgent));
