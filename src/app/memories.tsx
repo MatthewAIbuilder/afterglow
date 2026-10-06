@@ -71,7 +71,7 @@ export default function MemoriesScreen() {
               accessibilityRole="button"
               style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryText}>{fromServer ? 'Choose a video' : 'Add a memory'}</Text>
+              <Text style={styles.primaryText}>{fromServer ? 'Post a video' : 'Add a memory'}</Text>
             </Pressable>
           </View>
         ) : (
@@ -86,7 +86,7 @@ export default function MemoriesScreen() {
       </View>
       {memories.length ? (
         <View style={[styles.add, { top: insets.top + space.sm }]}>
-          <GlassCircleButton label="Add a memory" onPress={add}>
+          <GlassCircleButton label={fromServer ? 'Post a video' : 'Add a memory'} onPress={add}>
             <PlusIcon color={color.moon} size={18} />
           </GlassCircleButton>
         </View>

@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SharedMemory } from '../social/models';
 import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
@@ -19,20 +19,25 @@ export function useMoments(): { memories: Memory[]; uriOf: (name: string) => str
   const uploading = Object.keys(social.sharing).length;
   const [shared, setShared] = useState<{ uid: string; list: SharedMemory[] } | undefined>();
   const fromServer = mem.sessionOnly;
+  // Read again each time the page shows.
+  const [shown, setShown] = useState(0);
   useFocusEffect(
     useCallback(() => {
-      // `uploading` is read so a finished upload reads the list again.
-      if (!fromServer || !uid || uploading < 0) return;
-      let live = true;
-      social.service
-        .memoriesOf(uid)
-        .then((list) => live && setShared({ uid, list }))
-        .catch(() => {});
-      return () => {
-        live = false;
-      };
-    }, [fromServer, uid, uploading, social.service]),
+      setShown((n) => n + 1);
+    }, []),
   );
+  useEffect(() => {
+    // `uploading` is a dependency so a finished upload reads the list again.
+    if (!fromServer || !uid || !shown) return;
+    let live = true;
+    social.service
+      .memoriesOf(uid)
+      .then((list) => live && setShared({ uid, list }))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [fromServer, uid, shown, uploading, social.service]);
   const memories = useMemo(
     () => (fromServer ? webMoments(mem.memories, shared && shared.uid === uid ? shared.list : []) : mem.memories),
     [fromServer, mem.memories, shared, uid],

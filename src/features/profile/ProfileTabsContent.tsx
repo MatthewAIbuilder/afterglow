@@ -49,7 +49,7 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
           accessibilityRole="button"
           style={({ pressed }) => [styles.emptyButton, pressed && { opacity: 0.8 }]}
         >
-          <Text style={styles.emptyButtonText}>{canFilm ? 'Film a video' : 'Choose a video'}</Text>
+          <Text style={styles.emptyButtonText}>{canFilm ? 'Film a video' : 'Post a video'}</Text>
         </Pressable>
       </View>
     );
@@ -76,7 +76,7 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
             router.push('/camera');
           }}
           accessibilityRole="button"
-          accessibilityLabel={canFilm ? 'Film a video' : 'Choose a video'}
+          accessibilityLabel={canFilm ? 'Film a video' : 'Post a video'}
           style={({ pressed }) => [styles.newTile, { width: tile, height: tileHeight(tile) }, pressed && { opacity: 0.75 }]}
         >
           <View style={styles.newPlus}>

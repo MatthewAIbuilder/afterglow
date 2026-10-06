@@ -58,7 +58,9 @@ async function openTagging() {
   await flush();
   await go('/memories');
   expect(app.getByText('Videos you share from the website show here once shared.')).toBeTruthy();
-  await fireEvent.press(app.getByText('Choose a video'));
+  // On the website this opens the "Post a video" page, whose button opens the browser's chooser; here (the
+  // test runs as a phone) the action sheet stands in for that page and the chooser is the mocked `pickVideo`.
+  await fireEvent.press(app.getByText('Post a video'));
   await flush();
   return app;
 }
