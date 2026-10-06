@@ -30,6 +30,8 @@ import { useProfileBadges } from '../../features/profile/useProfileBadges';
 import { useProfileShelves } from '../../state/profileShelves';
 import { PassportTab } from '../../features/profile/PassportTab';
 import { YourArtistsRow } from '../../features/profile/YourArtistsRow';
+import { useWhereTheyPlay } from '../../features/artists/useWhereTheyPlay';
+import { nextLine } from '../../features/artists/where';
 import { useNow } from '../../lib/useNow';
 import { useLoves } from '../../state/useLoves';
 import { useSeen } from '../../state/seen';
@@ -156,6 +158,9 @@ function FullProfile() {
     () => favouriteArtists({ artists: catalog.artists, taste, informed, ratings, followed }),
     [catalog.artists, taste, informed, ratings, followed],
   );
+  // Where the next of them plays, under the Your artists row.
+  const where = useWhereTheyPlay();
+  const nextDate = useMemo(() => nextLine(where.dates), [where.dates]);
   // The sound you've been feeling this week, from clips you enjoyed lately.
   const { seen } = useSeen();
   const now = useNow();
@@ -262,7 +267,7 @@ function FullProfile() {
 
         <ClaimBanner b={b} />
 
-        <YourArtistsRow favourites={favourites} hidden={shelves.hidden.has('artists')} onToggle={() => shelves.toggle('artists')} />
+        <YourArtistsRow favourites={favourites} next={nextDate} hidden={shelves.hidden.has('artists')} onToggle={() => shelves.toggle('artists')} />
 
         <Highlights
           items={highlights}

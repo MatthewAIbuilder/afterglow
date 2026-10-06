@@ -30,11 +30,11 @@ describe('following artists', () => {
 
     await act(async () => router.push('/your-artists'));
     await flush();
-    expect(app.getByText('1 artist · news when they’re added to a lineup')).toBeTruthy();
-    expect(app.getByText('Playing next')).toBeTruthy();
+    expect(app.getByText(/^\d+ artists? you follow and love$/)).toBeTruthy();
+    expect(app.getAllByText('Where they play').length).toBeGreaterThan(0);
     const next = builtInCatalog.festivalsOf('subtronics').length;
     expect(next).toBeGreaterThan(0);
-    expect(app.getByLabelText(/^SUBTRONICS, .+/)).toBeTruthy();
+    expect(app.getByLabelText(/^SUBTRONICS, \d+ dates?/)).toBeTruthy();
     await fireEvent.press(app.getAllByLabelText('Following SUBTRONICS. Tap to unfollow.').at(-1)!);
     await flush();
     expect(JSON.parse((await AsyncStorage.getItem('followedArtists.v1'))!)).toEqual([]);
@@ -61,10 +61,10 @@ describe('following artists', () => {
     await fireEvent.press(app.getByRole('tab', { name: 'Saved' }));
     await fireEvent.press(app.getByLabelText('Your artists, none followed yet'));
     await flush();
-    expect(app.getByText('Follow artists to hear when they’re added to a lineup.')).toBeTruthy();
-    expect(app.getByText('Artists you’d love')).toBeTruthy();
+    // The artists you love are here too, the same faces as Profile's row, ready to follow.
+    expect(app.getByText(/^\d+ artists? you follow and love$/)).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Follow SUBTRONICS'));
     await flush();
-    expect(app.getByText('1 artist · news when they’re added to a lineup')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('followedArtists.v1'))!)).toEqual(['subtronics']);
   });
 });
