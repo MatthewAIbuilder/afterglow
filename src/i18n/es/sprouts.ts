@@ -355,6 +355,8 @@ export const es_sprouts: Dictionary = {
   'The Wobbler': 'El Tambaleante',
   'A round fellow with a glowing bucket for a head': 'Un tipo redondo con un cubo brillante por cabeza',
   'The Patched bear': 'El Oso remendado',
+  'The Thorn King': 'El Rey de espinas',
+  'A grinning skull crowned with thorns and roses': 'Una calavera sonriente coronada de espinas y rosas',
   'A stitched-up teddy with one eye sewn shut': 'Un peluche cosido con un ojo cerrado a puntadas',
   // Visiting gardens.
   '@{handle}’s garden': 'El jardín de @{handle}',

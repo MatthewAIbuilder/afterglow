@@ -1965,6 +1965,100 @@ const patchbear: Draw = (p, f) => ({
   ),
 });
 
+/** SULLIVAN KING's: a grinning skull crowned with thorns and roses, its jaw dropped open, thorny vines curling behind and petals falling (inspired by their artwork, drawn our own way). */
+const thornskull: Draw = (p, f) => {
+  // A thorny vine along a curve (start, control, end), thorns alternating sides.
+  const vine = (x0: number, y0: number, cx: number, cy: number, x1: number, y1: number, n: number, w = 2.4) => {
+    const at = (t: number) => [(1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * cx + t * t * x1, (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * cy + t * t * y1] as const;
+    const thorns = Array.from({ length: n }, (_, i) => {
+      const t = (i + 0.6) / (n + 0.4);
+      const [x, y] = at(t);
+      const [x2, y2] = at(Math.min(1, t + 0.02));
+      const len = Math.hypot(x2 - x, y2 - y) || 1;
+      const side = i % 2 ? 1 : -1;
+      const nx = (-(y2 - y) / len) * side;
+      const ny = ((x2 - x) / len) * side;
+      const tx = (x2 - x) / len;
+      const ty = (y2 - y) / len;
+      return `M${r1(x - tx * 1.4)} ${r1(y - ty * 1.4)} L${r1(x + nx * 4.2 + tx * 1.4)} ${r1(y + ny * 4.2 + ty * 1.4)} L${r1(x + tx * 1.4)} ${r1(y + ty * 1.4)}Z`;
+    }).join(' ');
+    return (
+      <G>
+        <Path d={`M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}`} stroke={p.altDeep} strokeWidth={w} fill="none" strokeLinecap="round" />
+        <Path d={thorns} fill={p.altDeep} />
+      </G>
+    );
+  };
+  // A rose seen from above: a cup of petals curling in to a dark heart.
+  const rose = (x: number, y: number, r: number) => (
+    <G>
+      <VE cx={x} cy={y} rx={r} ry={r * 0.9} fill={p.alt} f={f} gloss={false} />
+      <Path d={`M${r1(x - r * 0.75)} ${r1(y + r * 0.1)} Q${x} ${r1(y - r * 0.95)} ${r1(x + r * 0.75)} ${r1(y + r * 0.1)} M${r1(x - r * 0.45)} ${r1(y + r * 0.45)} Q${r1(x + r * 0.15)} ${r1(y + r * 0.7)} ${r1(x + r * 0.55)} ${r1(y + r * 0.2)} M${r1(x - r * 0.3)} ${r1(y - r * 0.1)} Q${x} ${r1(y - r * 0.5)} ${r1(x + r * 0.3)} ${r1(y - r * 0.05)}`} stroke={p.altDeep} strokeWidth={0.7} fill="none" strokeLinecap="round" />
+      <Circle cx={r1(x + r * 0.05)} cy={r1(y + r * 0.05)} r={r1(r * 0.22)} fill={p.altDeep} />
+    </G>
+  );
+  const petal = (x: number, y: number, turn: number) => <Path d={`M${x} ${y} q2.2 -2.6 4.2 0 q-2 2.8 -4.2 0Z`} fill={p.alt} opacity={0.95} transform={`rotate(${turn} ${x} ${y})`} />;
+  return {
+    ground: [50, 90, 20],
+    back: (
+      <G>
+        <Ellipse cx={50} cy={50} rx={36} ry={34} fill={p.glow} opacity={0.1} />
+        {vine(14, 84, 10, 50, 30, 22, 7)}
+        {vine(88, 78, 94, 46, 72, 18, 7)}
+        {vine(20, 30, 40, 8, 64, 12, 6, 2)}
+      </G>
+    ),
+    pivot: [50, 60],
+    sway: (
+      <G>
+        {petal(16, 62, 20)}
+        {petal(83, 34, -30)}
+        {petal(80, 70, 50)}
+        {petal(24, 22, -10)}
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The lower jaw, dropped open and tipped a little. */}
+        <G transform="rotate(7 50 66)">
+          <V d="M35 64 C35 76 41 84 50 84 C59 84 65 76 65 64 L61 65 C60.5 73 56 78 50 78 C44 78 39.5 73 39 65Z" fill={p.mid} f={f} gloss={[42, 76, 3, 1.4, 20]} />
+          {[42.4, 46.2, 50, 53.8, 57.6].map((x) => (
+            <V key={x} d={`M${x - 1.7} 77.6 L${x + 1.7} 77.6 L${x + 1.5} 72.6 Q${x} 71.4 ${x - 1.5} 72.6Z`} fill={p.light} f={f} />
+          ))}
+        </G>
+        {/* The mouth, dark inside. */}
+        <Path d="M38 63 Q50 61 62 63 L60 71 Q50 75 40 71Z" fill="#0E0816" />
+        {/* The skull. */}
+        <V d="M27 43 C27 25 38 16 50 16 C62 16 73 25 73 43 C73 51 69.5 56 66 58.5 L64 66 L36 66 L34 58.5 C30.5 56 27 51 27 43Z" fill={p.light} f={f} gloss={[38, 25, 7, 3.2, -35]} />
+        <Ellipse cx={40.5} cy={47} rx={7.2} ry={7.8} fill="#0E0816" />
+        <Ellipse cx={59.5} cy={47} rx={7.2} ry={7.8} fill="#0E0816" />
+        <Path d="M47.6 58.6 L50 53.6 L52.4 58.6 Q50 60.4 47.6 58.6Z" fill="#0E0816" />
+        <Path d="M31 52 Q34 57 37 57.5 M69 52 Q66 57 63 57.5" stroke={p.deep} strokeWidth={0.9} fill="none" opacity={0.6} strokeLinecap="round" />
+        <Shadow cx={50} cy={62.4} rx={13} ry={2} f={f} opacity={0.45} />
+        {[40.6, 44.4, 48.2, 51.8, 55.6, 59.4].map((x) => (
+          <V key={x} d={`M${x - 1.7} 61.4 L${x + 1.7} 61.4 L${x + 1.5} 66.6 Q${x} 67.8 ${x - 1.5} 66.6Z`} fill={p.light} f={f} />
+        ))}
+        {/* A crack down the brow. */}
+        <Path d="M60 18.5 L57.6 24.5 L60.4 27.5 L58.6 31" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+        {/* The crown: a twist of thorny vine round the brow, set with roses. */}
+        <Shadow cx={50} cy={37.5} rx={23} ry={2.4} f={f} opacity={0.4} />
+        {vine(25, 37, 50, 28, 75, 37, 9, 2.2)}
+        <Path d="M26 34.5 Q50 31.5 74 34.5" stroke={p.altDeep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+        {rose(32.5, 34, 5.4)}
+        {rose(50, 30.4, 6.4)}
+        {rose(67.5, 34, 5.4)}
+      </G>
+    ),
+    flicker: (
+      <G>
+        <Glow x={40.5} y={48} r={2.2} color={p.accent} />
+        <Glow x={59.5} y={48} r={2.2} color={p.accent} />
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -2002,4 +2096,5 @@ export const DRAW: Record<Creature, Draw> = {
   frog,
   wobble,
   patchbear,
+  thornskull,
 };

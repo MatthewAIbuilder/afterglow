@@ -46,7 +46,8 @@ export type Creature =
   | 'frog'
   // Signatures added later.
   | 'wobble'
-  | 'patchbear';
+  | 'patchbear'
+  | 'thornskull';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -84,6 +85,7 @@ const SIGNATURES: Record<string, Spec> = {
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },
   ofthetrees: { creature: 'spirit', palette: P('#F4F8EA', '#D6DEC4', '#8A9472', '#8FD67A', '#2E6A2A', '#E9FFB0', '#7FD87A'), name: t('The Forest spirit'), theme: t('A spirit of the forest') },
   sanholo: { creature: 'crystal', palette: P('#F2FFFD', '#B9A8FF', '#6A4FD0', '#FF9EDB', '#3FC8E0', '#9FF0FF', '#B99CFF'), name: t('The Prism'), theme: t('A holographic crystal') },
+  sullivanking: { creature: 'thornskull', palette: P('#F4EEE6', '#D6CABD', '#6E5F58', '#C8344A', '#8A1E30', '#FF4A5E', '#E0324A'), name: t('The Thorn King'), theme: t('A grinning skull crowned with thorns and roses') },
   zomboy: { creature: 'skull', palette: P('#F4F7E8', '#C9D6A8', '#5E7A3A', '#A6E05A', '#2E4A1A', '#B6FF5A', '#A6E05A'), name: t('The Undead'), theme: t('A stitched-up skull with a green glow') },
   djsnake: { creature: 'serpent', palette: P('#C8FFE8', '#3FC8A0', '#0F6A58', '#FFE9A8', '#C9A050', '#FF5F8F', '#3FC8A0'), name: t('The Serpent'), theme: t('A coiled serpent') },
   atliens: { creature: 'alien', palette: P('#D9FFEA', '#5BE3A0', '#118A55', '#0E1A14', '#000000', '#6CFF9E', '#6CFF9E'), name: t('The Visitor'), theme: t('A visitor from another planet') },

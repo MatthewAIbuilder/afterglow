@@ -14,5 +14,7 @@ describe('signature collectibles', () => {
   it('LEVEL UP gets the patched bear', () => {
     expect(artistLook({ id: 'level-up', name: 'LEVEL UP', sound: {} } as never)).toMatchObject({ creature: 'patchbear', signature: true, name: 'The Patched bear' });
     expect(typeof DRAW.patchbear).toBe('function');
+    expect(artistLook({ id: 'sullivan-king', name: 'Sullivan King', sound: {} } as never)).toMatchObject({ creature: 'thornskull', signature: true, name: 'The Thorn King' });
+    expect(typeof DRAW.thornskull).toBe('function');
   });
 });
