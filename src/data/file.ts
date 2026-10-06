@@ -345,6 +345,9 @@ function parseClip(raw: unknown, i: number, problems: string[]): Clip | undefine
     return void problems.push(`Clip "${clipId}" needs a working video, or "seconds" for how long it runs.`);
   const clip: Clip = { id: clipId, artistId, festivalId, title, durationSec: seconds, bpm };
   if (source) clip.source = source;
+  // A back to back: the other artists' ids ("with": ["kompany"]).
+  const others = Array.isArray(raw.with) ? [...new Set(raw.with.map(id).filter((x): x is string => !!x && x !== artistId))].slice(0, 3) : [];
+  if (others.length) clip.withArtistIds = others;
   return clip;
 }
 

@@ -130,6 +130,7 @@ The demo artists already exist, and you can use them in your lineups without add
   - shows the right artist at that time,
   - plays when embedded (on YouTube: **Share**, then **Embed**).
 - A clip without a video shows the drawn stage instead. It then needs `"seconds"` for how long it runs.
+- **`with`** (optional) names the other artists in a back-to-back set, by id: `"with": ["kompany"]` on a LAYZ clip titled "B2B KOMPANY …". You rarely need it: the app reads "b2b <name>" out of the title itself when that name is an artist on Afterglow. Either way the set counts for both artists, shows as "LAYZ b2b KOMPANY" in Discover, and appears on both artists' pages.
 - **`bpm`** (optional) sets the tempo of the stage light show.
 
 ### Similar artists (optional)
