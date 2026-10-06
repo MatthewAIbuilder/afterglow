@@ -21,7 +21,7 @@ What the app has, by area (details in `docs/history.md`):
 - **Afterglow HQ** (`features/admin`, `src/app/admin.tsx`): the support account's dashboard (analytics, data uploads and publishing, privileges, support, reports).
 
 Waiting on the user (don't redo, remind when relevant):
-- Phone testing of nearly everything; Firebase Auth authorised domain for afterglowmusic.app.
+- Phone testing of nearly everything (afterglowmusic.app is already an authorised sign-in domain in Firebase Auth, confirmed 2026-10-05).
 - An Apple Developer account, then the development build (`docs/development-build.md`): Sign in with Apple/Google, push notifications, HealthKit, Spotify sign-in, NFC.
 - Before launch (`docs/app-store.md`): qualified legal review, the care timing guide checked against DanceSafe/TripSit, official Instagram/Snapchat/TikTok icons, App Store listing and screenshots, an `APP_STORE_URL`.
 - Firestore/Storage rules deploy automatically from `main` only if the website key has the right roles; otherwise the user deploys with `firebase deploy --only firestore,storage` (`docs/firebase-setup.md`). Rules are tested with the emulator: copy `scripts/firebase-rules.json` (as `firebase.json`), `firestore.rules`, `storage.rules` and `scripts/firebase-rules.test.mjs` to a scratch folder with firebase-tools and @firebase/rules-unit-testing, then `npx firebase emulators:exec --only firestore,storage --project demo-afterglow "node firebase-rules.test.mjs"`.
