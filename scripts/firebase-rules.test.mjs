@@ -149,6 +149,23 @@ await t('your own shared video’s tags can change (where it’s from, who was p
   await assertSucceeds(updateDoc(doc(db, 'memories', 'tb1'), { pastYear: 2025 }));
   await assertFails(updateDoc(doc(db, 'memories', 'tb1'), { pastName: deleteField(), pastYear: deleteField(), pastCity: deleteField(), seriesId: deleteField(), festivalId: 'acl-26' }));
 });
+await t('people tagged in a video: the owner asks, only that person says yes, and a waiting tag is only for those two', async () => {
+  const tag = (over = {}) => ({ memoryId: 'sh2', owner: 'uidT', uid: 'uidA', status: 'pending', createdAt: now, ...over });
+  await assertFails(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidA'), tag({ status: 'approved' })));
+  await assertFails(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidT'), tag({ uid: 'uidT' })));
+  await assertFails(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidNobody'), tag({ uid: 'uidNobody' })));
+  await assertFails(setDoc(doc(B.firestore(), 'videoTags', 'sh2_uidA'), tag({ owner: 'uidB' })));
+  await assertFails(setDoc(doc(T.firestore(), 'videoTags', 'other_uidA'), tag()));
+  await assertSucceeds(setDoc(doc(T.firestore(), 'videoTags', 'sh2_uidA'), tag()));
+  await assertSucceeds(getDoc(doc(A.firestore(), 'videoTags', 'sh2_uidA')));
+  await assertFails(getDoc(doc(B.firestore(), 'videoTags', 'sh2_uidA')));
+  await assertFails(updateDoc(doc(T.firestore(), 'videoTags', 'sh2_uidA'), { status: 'approved' }));
+  await assertFails(updateDoc(doc(A.firestore(), 'videoTags', 'sh2_uidA'), { status: 'approved', owner: 'uidA' }));
+  await assertSucceeds(updateDoc(doc(A.firestore(), 'videoTags', 'sh2_uidA'), { status: 'approved' }));
+  await assertSucceeds(getDoc(doc(B.firestore(), 'videoTags', 'sh2_uidA')));
+  await assertFails(deleteDoc(doc(B.firestore(), 'videoTags', 'sh2_uidA')));
+  await assertSucceeds(deleteDoc(doc(A.firestore(), 'videoTags', 'sh2_uidA')));
+});
 await t('throwbacks: counted, three on the free plan, more with Plus, a place back when one is removed', async () => {
   // Not counted, or counted wrongly: refused.
   await assertFails(shareTb('tb10', undefined));

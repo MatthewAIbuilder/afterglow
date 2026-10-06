@@ -9,6 +9,13 @@ import { cleanClip } from './trim';
  * apart from storage: newest first, ids never repeat, a tag change only
  * touches tag fields, and anything unreadable in saved data is dropped.
  */
+/** Tagged people read back: uids, each once, at most ten. */
+const cleanPeople = (v: unknown) => {
+  if (!Array.isArray(v)) return undefined;
+  const out = [...new Set(v.filter((x): x is string => typeof x === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(x)))].slice(0, 10);
+  return out.length ? out : undefined;
+};
+
 export function addMemory(list: Memory[], m: Memory): Memory[] {
   return [m, ...list.filter((x) => x.id !== m.id)];
 }
@@ -26,6 +33,7 @@ export function tagMemory(list: Memory[], id: string, tag: MemoryTagInput): Memo
           artistId: tag.artistId,
           withArtistIds: tag.artistId ? cleanWith(tag.withArtistIds, tag.artistId) : undefined,
           clip: 'clip' in tag ? tag.clip : m.clip,
+          people: 'people' in tag ? tag.people : m.people,
         }
       : m,
   );
@@ -77,6 +85,7 @@ export function cleanMemories(raw: unknown): Memory[] {
       past: str(o.festivalId) ? undefined : cleanPast(o.past),
       show: str(o.festivalId) || cleanPast(o.past) ? undefined : cleanShow(o.show),
       clip: cleanClip(o.clip),
+      people: cleanPeople(o.people),
       night: str(o.night),
       artistId: str(o.artistId),
       withArtistIds: str(o.artistId) ? cleanWith(o.withArtistIds, str(o.artistId)) : undefined,

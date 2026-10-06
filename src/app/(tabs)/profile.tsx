@@ -54,6 +54,8 @@ import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { useMemoryPicker } from '../../features/memories/useAddMemory';
+import type { Memory } from '../../features/memories/models';
+import { sharedAsMemory } from '../../features/memories/webVideo';
 import { color, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
 import { datesLine } from '../../features/festivals/format';
@@ -196,6 +198,23 @@ function FullProfile() {
     }, [meUid, social.service]),
   );
 
+  // Videos you're tagged in and said yes to, for Moments' Tagged filter; read each time the tab comes into view.
+  const [tagged, setTagged] = useState<{ uid: string; list: Memory[] } | undefined>();
+  useFocusEffect(
+    useCallback(() => {
+      if (!meUid) return;
+      let live = true;
+      social.service
+        .taggedMemoriesOf(meUid)
+        .then((list) => live && setTagged({ uid: meUid, list: list.filter((m) => !social.blocked.has(m.uid)).map(sharedAsMemory) }))
+        .catch(() => {});
+      return () => {
+        live = false;
+      };
+    }, [meUid, social.service, social.blocked]),
+  );
+  const taggedHere = meUid ? (tagged?.uid === meUid ? tagged.list : []) : undefined;
+
   const stats = profileStats({
     social: !!me,
     festivals: mySet.been.length + mySet.planning.length,
@@ -293,7 +312,7 @@ function FullProfile() {
         </View>
 
         {tab === 'videos' ? (
-          <VideosTab memories={videos} width={width} uriOf={uriOf} lookup={catalog} />
+          <VideosTab memories={videos} width={width} uriOf={uriOf} lookup={catalog} tagged={taggedHere} />
         ) : tab === 'badges' ? (
           <BadgesPanel b={b} uid={me?.uid} width={width} />
         ) : tab === 'festivals' ? (

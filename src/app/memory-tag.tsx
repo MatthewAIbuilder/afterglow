@@ -17,6 +17,7 @@ import { ShowPicker } from '../features/memories/ShowPicker';
 import { showBill, showLabel, type ShowTag } from '../features/memories/show';
 import { TrimBar } from '../features/memories/TrimBar';
 import { allArtists, B2B_MAX, b2bLine } from '../features/memories/b2b';
+import { TagPeople } from '../features/social/TagPeople';
 import { VideoPreview } from '../features/memories/VideoPreview';
 import { loudnessOf } from '../features/memories/loudness';
 import { needsTrim, suggestWindow, type ClipWindow } from '../features/memories/trim';
@@ -209,6 +210,10 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     };
   }, [draftUri, draftLength, setClip]);
 
+  // People in it, tagged once it's on Discover (each says yes first).
+  const [people, setPeople] = useState<string[]>(() => existing?.people ?? []);
+  const touchedPeople = useRef(false);
+
   const tag: MemoryTagInput = {
     festivalId,
     night: festivalId ? night : undefined,
@@ -217,6 +222,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     artistId: chosenArtist,
     withArtistIds: chosenList.length > 1 ? chosenList.slice(1) : undefined,
     ...(draft ? { clip } : {}),
+    people: people.length ? people : undefined,
   };
 
   // Share to Discover: on by default once it's tagged and you have a profile; always your choice.
@@ -224,6 +230,21 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   // Already on Discover as yours: saving changes the shared copy's tags too.
   const sharedCopy = !!sharedMemory || (!!existing?.sharedId && !!social.user && existing.sharedBy === social.user.uid);
   const throwbackLocked = sharedCopy && !!existing?.past && !existing.festivalId;
+  // Who's tagged in it already, from Discover (where the tags live once it's shared).
+  const sharedTagsId = sharedCopy ? existing?.sharedId : undefined;
+  useEffect(() => {
+    if (!sharedTagsId) return;
+    let live = true;
+    void social.service
+      .videoTags(sharedTagsId)
+      .then((tags) => {
+        if (live && !touchedPeople.current) setPeople(tags.map((x) => x.uid));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [sharedTagsId, social.service, setPeople]);
   const offer = shareOffer({
     available: social.availability.ok,
     signedIn: !!social.user,
@@ -282,6 +303,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
       setSaving(true);
       try {
         await social.service.retagShared(sharedMemory.id, tag);
+        await social.service.setVideoTags(sharedMemory.id, people);
       } catch (e) {
         setSaving(false);
         showAlert(t('Couldn’t save the changes'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
@@ -295,8 +317,13 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
       mem.tag(existing.id, tag);
       haptic.settle();
       // The copy on Discover follows (best effort: your Memories have the change either way).
-      if (sharedCopy && existing.sharedId)
-        void social.service.retagShared(existing.sharedId, tag).catch((e) => showAlert(t('Couldn’t update it on Discover'), SOCIAL_ERROR_COPY[socialErrorKind(e)]));
+      if (sharedCopy && existing.sharedId) {
+        const sharedId = existing.sharedId;
+        void social.service
+          .retagShared(sharedId, tag)
+          .then(() => social.service.setVideoTags(sharedId, people))
+          .catch((e) => showAlert(t('Couldn’t update it on Discover'), SOCIAL_ERROR_COPY[socialErrorKind(e)]));
+      }
       if (shareOn) shareIt({ ...existing, ...tag });
       if (crewOn) crewUpdates.sendVideo({ ...existing, ...tag });
       leave();
@@ -602,6 +629,18 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
             </View>
           )}
         </View>
+        {social.availability.ok && social.profile && (shareOn || sharedCopy) ? (
+          <>
+            <Text style={styles.section}>{t('Who’s in it?')}</Text>
+            <TagPeople
+              value={people}
+              onChange={(uids) => {
+                touchedPeople.current = true;
+                setPeople(uids);
+              }}
+            />
+          </>
+        ) : null}
         {crewsHere.length > 0 ? (
           <>
             <Text style={styles.section}>{t('Your crew')}</Text>

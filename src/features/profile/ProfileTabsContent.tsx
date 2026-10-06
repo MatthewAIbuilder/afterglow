@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { artistColors } from '../../components/ArtistAvatar';
 import { BookmarkIcon, ChevronIcon, PlusIcon } from '../../components/TabIcons';
@@ -14,6 +15,8 @@ import type { Memory } from '../memories/models';
 import { clipLength, memoryLine } from '../memories/organize';
 import { onServer } from '../memories/webVideo';
 import { festivalMark } from './profileView';
+import { MomentFilters } from './MomentFilters';
+import { applyMomentFilter, artistChoices, placeChoices, type MomentFilter } from './momentFilter';
 import { t, tn } from '../../i18n';
 
 const GAP = 2;
@@ -27,10 +30,31 @@ type Lookup = { festival: (id: string) => Festival | undefined; artist: (id: str
  * Videos: your memories newest first, three across, edge to edge; a + tile to film another (in the app) or
  * choose one (on the website, where the camera page is the chooser and your moments are what you shared).
  */
-export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory[]; width: number; uriOf: (file: string) => string; lookup: Lookup }) {
+export function VideosTab({
+  memories,
+  width,
+  uriOf,
+  lookup,
+  tagged,
+  filters = true,
+}: {
+  memories: Memory[];
+  width: number;
+  uriOf: (file: string) => string;
+  lookup: Lookup;
+  /** Videos you're tagged in (and approved), for the Tagged filter; undefined hides it. */
+  tagged?: Memory[];
+  /** The quick filters above the grid. */
+  filters?: boolean;
+}) {
   const canFilm = Platform.OS !== 'web';
   const tile = (width - GAP * (COLUMNS - 1)) / COLUMNS;
-  if (!memories.length) {
+  const [filter, setFilter] = useState<MomentFilter>({ kind: 'all' });
+  const artists = useMemo(() => artistChoices(memories, lookup), [memories, lookup]);
+  const places = useMemo(() => placeChoices(memories, lookup), [memories, lookup]);
+  const shown = useMemo(() => applyMomentFilter(memories, tagged ?? [], filter), [memories, tagged, filter]);
+  const showFilters = filters && (memories.length > 1 || !!tagged?.length);
+  if (!memories.length && !tagged?.length) {
     return (
       <View style={styles.empty}>
         <View style={styles.emptyIcon}>
@@ -70,7 +94,12 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
         <Text style={styles.byFestivalText}>{t('By festival')}</Text>
         <ChevronIcon color={color.moonFaint} size={11} />
       </Pressable>
+      {showFilters ? <MomentFilters value={filter} onChange={setFilter} artists={artists} places={places} taggedCount={tagged ? tagged.length : undefined} /> : null}
+      {filter.kind === 'tagged' && !shown.length ? (
+        <Text style={styles.filterEmpty}>{t('When someone tags you in a video and you say yes, it shows here.')}</Text>
+      ) : null}
       <View style={styles.grid}>
+        {filter.kind !== 'all' ? null : (
         <Pressable
           onPress={() => {
             haptic.tap();
@@ -85,7 +114,8 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
           </View>
           <Text style={styles.newText}>{t('New')}</Text>
         </Pressable>
-        {memories.map((m) => {
+        )}
+        {shown.map((m) => {
           const untagged = !m.festivalId && !m.past && !m.artistId;
           const [from, to] = artistColors(m.artistId ?? m.id);
           const length = clipLength(m.durationSec);
@@ -107,7 +137,7 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
               style={({ pressed }) => [styles.tile, { width: tile, height: tileHeight(tile) }, pressed && { opacity: 0.8 }]}
             >
               <LinearGradient colors={[to, from]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />
-              {m.thumb ? <Image source={{ uri: uriOf(m.thumb) }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} /> : null}
+              {m.thumb ? <Image source={{ uri: onServer(m) ? m.thumb : uriOf(m.thumb) }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} /> : null}
               <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(3,2,10,0.65)']} style={styles.scrim} pointerEvents="none" />
               {length ? (
                 <View style={styles.length}>
@@ -267,6 +297,7 @@ const styles = StyleSheet.create({
   clipArtist: { ...type.caption, color: color.moon, position: 'absolute', left: space.sm, right: space.sm, bottom: space.sm },
   byFestival: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4, paddingHorizontal: space.xl, paddingVertical: space.sm },
   byFestivalText: { ...type.caption, color: color.moonDim },
+  filterEmpty: { ...type.caption, color: color.moonDim, textAlign: 'center', paddingHorizontal: space.xl, paddingVertical: space.lg },
   empty: { alignItems: 'center', paddingHorizontal: space.xxl, paddingTop: space.xxl, paddingBottom: space.xl },
   emptyIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: color.hairline, marginBottom: space.lg },
   emptyTitle: { ...type.headline, color: color.moon, textAlign: 'center' },

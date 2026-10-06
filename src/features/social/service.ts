@@ -3,7 +3,7 @@ import type { PastEvent } from '../memories/past';
 import type { ShowTag } from '../memories/show';
 import type { ClipWindow } from '../memories/trim';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
-import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip } from './models';
+import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -26,6 +26,8 @@ export type ShareInput = {
   withArtistIds?: string[];
   /** A festival from before Afterglow, instead of `festivalId`. */
   past?: PastEvent;
+  /** People in the video, to tag once it's shared (each is asked first). */
+  people?: string[];
   /** A one-night show, instead of a festival. */
   show?: ShowTag;
   /** The part that plays, when it was trimmed. */
@@ -148,6 +150,14 @@ export interface SocialService {
   unshareMemory(sharedId: string): Promise<void>;
   /** Change where your shared video is from and who was playing. A throwback stays one (its year and name can change). */
   retagShared(sharedId: string, tags: SharedTags): Promise<SharedMemory>;
+  /** Who's tagged in a video: everyone who said yes, and (for the video's owner) who hasn't answered yet. */
+  videoTags(memoryId: string): Promise<VideoTag[]>;
+  /** Your video: tag these people (each is asked first); anyone left out is untagged. */
+  setVideoTags(memoryId: string, uids: string[]): Promise<void>;
+  /** Tagged in someone's video: say yes (it shows on your profile) or no (the tag goes). Also how you untag yourself. */
+  answerVideoTag(memoryId: string, yes: boolean): Promise<void>;
+  /** Videos someone is tagged in and said yes to, newest first. */
+  taggedMemoriesOf(uid: string): Promise<SharedMemory[]>;
   memoriesOf(uid: string): Promise<SharedMemory[]>;
   /** Shared memories tagged with this festival, newest first (community clips in Discover). */
   festivalMemories(festivalId: string, max: number): Promise<SharedMemory[]>;

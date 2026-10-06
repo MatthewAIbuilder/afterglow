@@ -26,6 +26,7 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { whereLine } from '../../features/memories/where';
 import { b2bLine } from '../../features/memories/b2b';
 import { useClipLoop } from '../../features/memories/useClipLoop';
+import { VideoTags } from '../../features/social/VideoTags';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
@@ -231,6 +232,7 @@ export default function SharedMemoryScreen() {
           <Pressable onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: m.handle } })} accessibilityRole="button">
             <Text style={styles.by}>@{m.handle}</Text>
           </Pressable>
+          <VideoTags memoryId={m.id} owner={m.uid} ownerHandle={m.handle} refresh={readTry} />
           <View style={styles.actions}>
             {!mine ? (
               <Pressable
