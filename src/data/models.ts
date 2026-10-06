@@ -308,6 +308,8 @@ export type Show = {
   link: string;
   /** The artists on Afterglow playing it, in billing order. */
   artistIds: string[];
+  /** The event organizer who claimed it as theirs (features/organizers), shown as hosting it. */
+  organizer?: string;
 };
 
 /**

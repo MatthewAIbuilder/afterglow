@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 350" width="1400" height="350">
+  <!-- Underground Alchemy's flask logo, redrawn from the picture the user sent on 2026-10-06 (a trace, not the original file). -->
+  <defs>
+    <filter id="emboss" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <g fill="none" stroke="#EEEBE4" stroke-width="13" stroke-linejoin="round" stroke-linecap="round" filter="url(#emboss)">
+    <!-- The stopper's flame. -->
+    <path d="M258 95 L266 45 Q274 22 290 14 Q293 40 281 68 L273 95 Z" />
+    <!-- The collar. -->
+    <rect x="236" y="95" width="58" height="30" rx="10" />
+    <!-- Neck and body. -->
+    <path d="M246 125 L246 178 Q246 195 233 211 L186 284 Q170 314 196 329 Q206 335 222 335 L308 335 Q324 335 334 329 Q360 314 344 284 L297 211 Q284 195 284 178 L284 125" />
+    <!-- The liquid inside. -->
+    <path d="M216 250 L314 250 Q325 250 330 261 L344 289 Q352 310 330 312 L200 312 Q178 310 186 289 L200 261 Q205 250 216 250 Z" />
+  </g>
+  <g fill="#EEEBE4" font-family="Rockwell, 'Roboto Slab', Georgia, 'Times New Roman', serif" font-weight="700" filter="url(#emboss)">
+    <text x="385" y="182" font-size="132" textLength="815" lengthAdjust="spacingAndGlyphs">UNDERGROUND</text>
+    <text x="792" y="318" font-size="132" text-anchor="middle" textLength="545" lengthAdjust="spacingAndGlyphs">ALCHEMY</text>
+  </g>
+</svg>

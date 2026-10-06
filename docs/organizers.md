@@ -16,6 +16,16 @@ What an organizer can do in the studio:
   the event on Afterglow like a festival (its own page, plans, crowd videos,
   its badge). Linking it to a festival shows it under "After parties" on that
   festival's page.
+- **On EDMTrain** (in Events): Afterglow already imports festivals and club
+  shows from EDMTrain every night. The organizer finds theirs (Afterglow
+  suggests ones with their name or at their venues, or they search) and taps
+  **This is ours**. Claimed events show "Hosted by" them with their logo and
+  list on their page, exactly as EDMTrain has them. **Edit on Afterglow**
+  copies one into the studio to change anything (name, doors, words, lineup,
+  set times, flyer, tickets); once published, their version shows instead of
+  EDMTrain's (a festival keeps its place, so people's plans, videos and badges
+  stay with it). EDMTrain's listing is never changed: unpublish or delete the
+  copy and EDMTrain's comes back.
 - **Artists**: everyone on their lineups. A bio and Instagram for each show on
   the artist's page, credited to the organizer. For artists new to Afterglow
   they also give the photo, SoundCloud and sound; for artists Afterglow already

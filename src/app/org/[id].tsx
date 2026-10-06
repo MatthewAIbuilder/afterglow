@@ -13,7 +13,8 @@ import { pinLook } from '../../features/badges/badges';
 import { EnamelPin } from '../../features/badges/EnamelPin';
 import { OrgEventRows } from '../../features/organizers/OrgCards';
 import { OrgLogo } from '../../features/organizers/OrgMark';
-import { splitEvents } from '../../features/organizers/organizers';
+import { orgListings } from '../../features/organizers/organizers';
+import { useCatalog } from '../../state/catalog';
 import { useOrgView } from '../../features/organizers/useOrgView';
 import { lookOf } from '../../features/finds/finds';
 import { Collectible } from '../../features/sprouts/Collectible';
@@ -40,7 +41,12 @@ export default function OrgScreen() {
   const social = useSocial();
   const mine = useMyOrg(social.user?.uid);
   useOrgView(org?.id, 'page');
-  const events = useMemo(() => (org ? splitEvents(org, today) : { upcoming: [], past: [] }), [org, today]);
+  // Its own events and the imported ones (EDMTrain) it claimed, as Afterglow has them.
+  const catalog = useCatalog();
+  const events = useMemo(
+    () => (org ? orgListings(org, { festival: catalog.festival, show: (sid) => catalog.shows.find((x) => x.id === sid) }, today) : { upcoming: [], past: [] }),
+    [org, today, catalog],
+  );
   const look = useMemo(() => (org ? pinLook({ id: org.id, name: org.name, location: '', organizer: org.id }) : undefined), [org]);
 
   if (!org || !look) {
@@ -91,7 +97,7 @@ export default function OrgScreen() {
         </View>
 
         <Text style={styles.section}>{t('Coming up')}</Text>
-        <View style={styles.card}>{events.upcoming.length ? <OrgEventRows org={org} events={events.upcoming} /> : <Text style={styles.empty}>{t('No events announced yet. Check back soon.')}</Text>}</View>
+        <View style={styles.card}>{events.upcoming.length ? <OrgEventRows org={org} listings={events.upcoming} /> : <Text style={styles.empty}>{t('No events announced yet. Check back soon.')}</Text>}</View>
 
         <Text style={styles.section}>{t('Collect')}</Text>
         <View style={styles.collect}>
@@ -113,7 +119,7 @@ export default function OrgScreen() {
           <>
             <Text style={styles.section}>{t('Past events')}</Text>
             <View style={styles.card}>
-              <OrgEventRows org={org} events={events.past.slice(0, 12)} />
+              <OrgEventRows org={org} listings={events.past.slice(0, 12)} />
             </View>
           </>
         ) : null}

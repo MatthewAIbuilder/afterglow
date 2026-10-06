@@ -15,7 +15,7 @@ import { CODE_LENGTH, codeFrom, findLink, GIFT_NOTE_MAX, lookOf, parseEndDate, t
 import { PLACE_CREATURES, SOUND_CREATURES } from '../../sprouts/artistLook';
 import { Collectible } from '../../sprouts/Collectible';
 import { socialErrorKind, SOCIAL_ERROR_COPY } from '../../social/service';
-import { DESIGN_FOR, eventFestivalId, giftShareText, type Org, REQUEST_TEXT_MAX, splitEvents } from '../organizers';
+import { DESIGN_FOR, eventFestivalIdOf, giftShareText, type Org, REQUEST_TEXT_MAX, splitEvents } from '../organizers';
 import { RequestList, useOrgRequests } from './StudioPromote';
 import { Action, Button, Card, Chip, Field, studio } from './ui';
 
@@ -67,7 +67,7 @@ function Badges({ org }: { org: Org }) {
           <View style={s.grid}>
             {events.map((e) => (
               <View key={e.id} style={s.cell}>
-                <EnamelPin look={pinLook({ id: eventFestivalId(org.id, e.id), name: e.name, location: [e.venue, e.city].filter(Boolean).join(', '), startDate: e.date, endDate: e.endDate ?? e.date, organizer: org.id })} size={96} />
+                <EnamelPin look={pinLook({ id: eventFestivalIdOf(org, e), name: e.name, location: [e.venue, e.city].filter(Boolean).join(', '), startDate: e.date, endDate: e.endDate ?? e.date, organizer: org.id })} size={96} />
                 <Text style={studio.rowSub} numberOfLines={1}>
                   {e.name}
                 </Text>

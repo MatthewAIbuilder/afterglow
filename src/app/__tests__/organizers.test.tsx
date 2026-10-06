@@ -278,4 +278,50 @@ describe('organizers', () => {
     expect(fan.getByText('See their events')).toBeTruthy();
     await fan.unmount();
   });
+  it('the organizer claims its events from EDMTrain, and copies one to edit on Afterglow without changing the import', async () => {
+    seed();
+    // What the nightly EDMTrain import gives (here, as an update the app reads).
+    const file = {
+      version: 1,
+      festivals: [{ id: 'alchemy-fest-26', name: 'Alchemy Fest 2026', dates: 'Nov 20 to 21', start: '2026-11-20', end: '2026-11-21', location: 'The Vault, Orlando, FL', lineup: ['subtronics'], source: { name: 'EDMTrain', url: 'https://edmtrain.com/x' } }],
+      shows: [{ id: 'edm-111', date: '2026-10-24', name: 'Underground Alchemy presents', venue: 'The Vault', location: 'Orlando, FL', link: 'https://edmtrain.com/e/111', artists: ['subtronics'] }],
+    };
+    mockSocial.patches.set('p1', { id: 'p1', title: 'EDMTrain', festivalId: 'alchemy-fest-26', file: JSON.stringify(file), by: 'uidHQ', publishedAt: '2026-10-01T00:00:00.000Z' });
+    const app = await organizer();
+    await showTab(app, 'Events');
+    expect(app.getByText('These look like yours:')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Claim Underground Alchemy presents'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Claim Alchemy Fest 2026'));
+    await flush();
+    expect(mockSocial.orgs.get(ORG)!.claims).toEqual(['edm-111', 'alchemy-fest-26']);
+
+    // Copy the festival, change it, publish: it shows in the import's place.
+    await fireEvent.press(app.getByLabelText('Copy Alchemy Fest 2026 to edit on Afterglow'));
+    expect(app.getByDisplayValue('Alchemy Fest 2026')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Name'), 'Alchemy Fest: the full night');
+    await fireEvent.changeText(app.getByLabelText('Doors'), '21:00');
+    answerAlerts('Publish');
+    await fireEvent.press(app.getByText('Publish'));
+    await flush();
+    expect(mockSocial.orgs.get(ORG)!.events.find((e) => e.from === 'alchemy-fest-26')).toMatchObject({ name: 'Alchemy Fest: the full night', fromKind: 'festival', published: true });
+
+    await act(async () => router.push('/festival/alchemy-fest-26'));
+    await flush();
+    expect(app.getAllByText('Alchemy Fest: the full night').length).toBeGreaterThan(0);
+    expect(app.getByText('Doors 9:00 PM')).toBeTruthy();
+
+    // The claimed show says who hosts it, and both list on its page.
+    await act(async () => router.push('/show/edm-111'));
+    await flush();
+    expect(app.getByText('Hosted by')).toBeTruthy();
+    expect(app.getByLabelText('Hosted by Underground Alchemy. Open their page')).toBeTruthy();
+    await act(async () => router.push(`/org/${ORG}`));
+    await flush();
+    expect(app.getByText('Underground Alchemy presents')).toBeTruthy();
+    expect(app.getAllByText('Alchemy Fest: the full night').length).toBeGreaterThan(0);
+    // EDMTrain's own data is untouched.
+    expect(mockSocial.patches.get('p1')!.file).toBe(JSON.stringify(file));
+    await app.unmount();
+  });
 });

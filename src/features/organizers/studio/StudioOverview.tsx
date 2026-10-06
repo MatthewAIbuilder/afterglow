@@ -4,7 +4,7 @@ import { useNow } from '../../../lib/useNow';
 import { localDay } from '../../artists/shows';
 import { useSocial } from '../../../state/social';
 import { color } from '../../../theme/tokens';
-import { eventFestivalId, type Org, type OrgDay, orgStats, type OrgRequest, shortCount, sinceDay, splitEvents } from '../organizers';
+import { eventFestivalIdOf, type Org, type OrgDay, orgStats, type OrgRequest, shortCount, sinceDay, splitEvents } from '../organizers';
 import { Bars, Button, Card, Chip, Tile, studio } from './ui';
 
 type Range = 7 | 30 | 90;
@@ -37,7 +37,7 @@ export function StudioOverview({ org }: { org: Org }) {
       const shown = org.events.filter((e) => e.published).slice(0, 12);
       const pairs = await Promise.all(
         shown.map(async (e) => {
-          const id = eventFestivalId(org.id, e.id);
+          const id = eventFestivalIdOf({ id: org.id }, e);
           const [going, videos] = await Promise.all([service.profilesGoingTo(id, 500).catch(() => []), service.festivalMemories(id, 500).catch(() => [])]);
           return [e.id, { going: going.length, videos: videos.length, filmers: new Set(videos.map((v) => v.uid)).size }] as const;
         }),

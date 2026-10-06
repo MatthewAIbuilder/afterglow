@@ -1244,6 +1244,13 @@ await t('organizers: HQ links an account; a linked account runs the page with no
   await assertSucceeds(getDocs(query(collection(L.firestore(), 'orgViews'), where('orgId', '==', 'underground-alchemy'), where('day', '>=', '2026-01-01'))));
   await assertFails(updateDoc(doc(L.firestore(), 'orgs', 'underground-alchemy'), { uids: Array.from({ length: 11 }, (_, i) => `u${i}`), updatedAt: serverTimestamp() }));
 });
+await t('organizers: its team claims imported events (EDMTrain ids) as its own, up to 60', async () => {
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { claims: ['edm-111', 'alchemy-fest-26'], updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { claims: Array.from({ length: 61 }, (_, i) => `edm-${i}`), updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { claims: 'edm-111', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(A.firestore(), 'orgs', 'underground-alchemy'), { claims: ['edm-999'], updatedAt: serverTimestamp() }));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);
