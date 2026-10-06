@@ -11,6 +11,8 @@ import { lineupNotices } from '../features/notifications/lineupNews';
 import { recapNotices } from '../features/recap/recap';
 import { arrivalNotices, bloomNotices, sproutNotices, wildNotices } from '../features/sprouts/outbox';
 import { useSprouts } from './sprouts';
+import { themeGiftNotices } from '../features/themes/gifts';
+import { themeOf } from '../features/themes/themes';
 import { useRecapFestivals } from '../features/recap/useRecap';
 import type { Activity, CrewInvite, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
@@ -165,10 +167,16 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   const recapFestivals = useRecapFestivals();
   const recapList = useMemo(() => recapNotices(recapFestivals, today), [recapFestivals, today]);
   // Sprouts you gave that someone picked up.
-  const { gifts, blooms, garden } = useSprouts();
+  const { gifts, blooms, garden, giftThemes } = useSprouts();
   const sproutList = useMemo(
-    () => [...wildNotices(garden, today.getTime()), ...arrivalNotices(garden, today.getTime()), ...bloomNotices(blooms, today.getTime()), ...sproutNotices(gifts, today.getTime())],
-    [garden, blooms, gifts, today],
+    () => [
+      ...wildNotices(garden, today.getTime()),
+      ...arrivalNotices(garden, today.getTime()),
+      ...bloomNotices(blooms, today.getTime()),
+      ...sproutNotices(gifts, today.getTime()),
+      ...themeGiftNotices(giftThemes, (id) => themeOf(id).name),
+    ],
+    [garden, blooms, gifts, giftThemes, today],
   );
   // Happening now first, then the newest first (features/notifications/organize.ts).
   const all = useMemo(

@@ -36,6 +36,7 @@ const PERIOD: Record<BackdropId, number> = {
   panda: 20_000,
   frog: 16_000,
   toes: 14_000,
+  daisy: 24_000,
 };
 
 export function AnimatedBackdrop({ id, width, height, still }: { id: BackdropId; width: number; height: number; still?: boolean }) {
@@ -488,6 +489,74 @@ function Fireflies({ t, w, h }: SceneProps) {
       {flies.map((f, i) => (
         <Travel key={i} t={t} at={{ left: f.x, top: h + 10 }} dx={0} dy={-h - 30} k={f.k} phase={f.p} sway={[f.sway, 3, f.p]} peak={0.95}>
           <Spark size={f.s} color={f.c} />
+        </Travel>
+      ))}
+    </>
+  );
+}
+
+/** A neon daisy: petals round a gold heart, with a soft glow. */
+function DaisyFlower({ size, petal, heart }: { size: number; petal: string; heart: string }) {
+  const n = 12;
+  const c = size / 2;
+  return (
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <Circle cx={c} cy={c} r={size * 0.48} fill={petal} opacity={0.08} />
+      {Array.from({ length: n }, (_, i) => (
+        <Ellipse key={i} cx={c} cy={c - size * 0.24} rx={size * 0.075} ry={size * 0.2} fill={petal} opacity={0.9} transform={`rotate(${(i * 360) / n} ${c} ${c})`} />
+      ))}
+      <Circle cx={c} cy={c} r={size * 0.12} fill={heart} />
+      <Circle cx={c - size * 0.03} cy={c - size * 0.03} r={size * 0.04} fill="#FFFFFF" opacity={0.55} />
+    </Svg>
+  );
+}
+
+/** Neon daisy (a gift): giant daisies turning slowly, a string of carnival bulbs, petals drifting down. */
+function Daisy({ t, w, h }: SceneProps) {
+  const big = Math.min(w, h * 1.6) * 0.62;
+  const bulbs = useMemo(() => {
+    const n = Math.max(10, Math.round(w / 26));
+    return Array.from({ length: n }, (_, i) => ({ x: (i + 0.5) * (w / n), i }));
+  }, [w]);
+  const petals = useMemo(() => {
+    const r = seeded(77);
+    return Array.from({ length: 14 }, () => ({ x: r() * w, s: 5 + r() * 6, k: 1 + Math.floor(r() * 2), p: r(), sway: 10 + r() * 20, c: r() > 0.5 ? '#FF6AD5' : '#FFFFFF' }));
+  }, [w]);
+  return (
+    <>
+      <Sky colors={['#12062a', '#2a0b4a', '#0e0620']} />
+      <Osc t={t} at={{ left: -w * 0.3, top: -h * 0.2, width: w }} opacity={0.5} scale={[0.08, 1, 0]}>
+        <Glow size={w} color="#FF6AD5" squash={0.8} />
+      </Osc>
+      <Osc t={t} at={{ left: w * 0.45, top: h * 0.2, width: w }} opacity={0.4} scale={[0.1, 1, 0.5]}>
+        <Glow size={w} color="#3D6BFF" squash={0.8} />
+      </Osc>
+      <Stars t={t} w={w} h={h} n={18} seed={23} />
+      <Osc t={t} at={{ left: w * 0.62 - big / 2, top: h * 0.62 - big / 2 }} spin={1} scale={[0.04, 2, 0]}>
+        <DaisyFlower size={big} petal="#FF6AD5" heart="#FFE14D" />
+      </Osc>
+      <Osc t={t} at={{ left: w * 0.12 - big * 0.3, top: h * 0.78 - big * 0.3 }} spin={-1} scale={[0.05, 3, 0.4]}>
+        <DaisyFlower size={big * 0.6} petal="#FFFFFF" heart="#FFB13D" />
+      </Osc>
+      <Osc t={t} at={{ left: w * 0.3 - big * 0.18, top: h * 0.2 - big * 0.18 }} spin={2} scale={[0.06, 2, 0.7]} opacity={0.85}>
+        <DaisyFlower size={big * 0.36} petal="#7CE8FF" heart="#FFE14D" />
+      </Osc>
+      {/* Carnival bulbs on a wire, chasing. */}
+      <Svg width={w} height={30} style={[styles.abs, { left: 0, top: 4 }]}>
+        <Path d={`M 0 6 Q ${w / 2} 26 ${w} 6`} stroke="#FFE14D" strokeOpacity={0.35} strokeWidth={1} fill="none" />
+      </Svg>
+      {bulbs.map((b) => {
+        const u = b.x / w;
+        const y = 4 + 6 + 20 * 4 * u * (1 - u) * 0.5;
+        return (
+          <Osc key={b.i} t={t} at={{ left: b.x - 6, top: y - 6 }} opacity={0.55} flicker={[0.45, 12, b.i / bulbs.length]}>
+            <Spark size={3} color={b.i % 3 === 0 ? '#FF6AD5' : b.i % 3 === 1 ? '#FFE14D' : '#7CE8FF'} />
+          </Osc>
+        );
+      })}
+      {petals.map((p, i) => (
+        <Travel key={i} t={t} at={{ left: p.x, top: -20 }} dx={0} dy={h + 40} k={p.k} phase={p.p} sway={[p.sway, 2, p.p]} turn={240} peak={0.8}>
+          <View style={{ width: p.s, height: p.s * 2.2, borderRadius: p.s, backgroundColor: p.c, opacity: 0.85 }} />
         </Travel>
       ))}
     </>
@@ -1007,6 +1076,7 @@ const SCENES: Record<BackdropId, (p: SceneProps) => React.ReactElement> = {
   panda: Panda,
   frog: FrogPond,
   toes: ToeBeach,
+  daisy: Daisy,
 };
 
 const styles = StyleSheet.create({

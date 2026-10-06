@@ -36,6 +36,7 @@ export const THEME_IDS = [
   'panda',
   'frog',
   'toes',
+  'daisy',
 ] as const;
 
 export type ThemeId = (typeof THEME_IDS)[number];
@@ -57,6 +58,7 @@ export const PALETTES: Record<ThemeId, Palette> = {
   panda: { night: '#120E1C', nightRaised: '#1C1729', glow: '#FF9EC7', glowDeep: '#C04F86', haze: '#3C2A4E', dusk: '#1F3A2C', stage: '#8AD48C' },
   frog: { night: '#04130C', nightRaised: '#0A1F15', glow: '#7CE38B', glowDeep: '#2A8C42', haze: '#12452A', dusk: '#0E3236', stage: '#D9FF6B' },
   toes: { night: '#160C17', nightRaised: '#221322', glow: '#FFB38A', glowDeep: '#C25A40', haze: '#4A1E3A', dusk: '#2A1A50', stage: '#FF9EC7' },
+  daisy: { night: '#0E0620', nightRaised: '#190B31', glow: '#FF6AD5', glowDeep: '#B5289E', haze: '#4E1A86', dusk: '#123A8C', stage: '#FFE14D' },
 };
 
 export const isThemeId = (v: unknown): v is ThemeId => typeof v === 'string' && (THEME_IDS as readonly string[]).includes(v);

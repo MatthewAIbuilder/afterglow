@@ -1,3 +1,4 @@
+import type { ThemeId } from '../../theme/palettes';
 import { WEB_URL } from '../../config/app';
 import type { Festival } from '../../data/models';
 import { runsOf } from '../festivals/when';
@@ -278,6 +279,14 @@ export type GardenSprout = {
   foundAt?: string;
   /** An artist's sprout someone gave you. */
   artist?: SproutArtist;
+  /** A gift theme that came with it (features/themes/gifts.ts). */
+  theme?: ThemeId;
+  /** The theme's grant is saved on Afterglow (so your profile can show its background). */
+  themeGranted?: true;
+  /** It reached an account with no profile yet: the theme goes on once the profile is made. */
+  wearOnArrival?: true;
+  /** The theme page has shown this gift. */
+  themeShown?: true;
 };
 
 /**

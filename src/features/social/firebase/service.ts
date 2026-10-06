@@ -14,6 +14,7 @@ import { throwbackShares } from '../../memories/throwbackLimit';
 import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
+import { GIFT_THEME_IDS } from '../../themes/gifts';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc } from './mapping';
 
 
@@ -300,6 +301,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // Your messages to support, and their replies.
         const asked = await getDocs(query(collection(db, 'support'), where('uid', '==', user.uid), limit(500))).catch(() => null);
         for (const d of asked?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+        // Gift themes you were given.
+        for (const theme of GIFT_THEME_IDS) await deleteDoc(doc(db, 'themeGrants', `${user.uid}_${theme}`)).catch(() => {});
         // Sprouts you gave and picked up go too (the rules allow it once the profile is gone).
         for (const field of ['from', 'to'] as const) {
           const snap = await getDocs(query(collection(db, 'sprouts'), where(field, '==', user.uid), limit(500))).catch(() => null);
@@ -1241,6 +1244,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
               ...(input.note ? { note: input.note.slice(0, 60) } : {}),
               ...(input.festivalId ? { festivalId: input.festivalId } : {}),
               ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName.slice(0, 60) } : {}),
+              ...(input.theme ? { theme: input.theme } : {}),
               createdAt: serverTimestamp(),
             }),
             CHAT_SEND_TIMEOUT_MS,
@@ -1288,6 +1292,18 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const user = me();
         const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('to', '==', user.uid), orderBy('claimedAt', 'desc'), limit(max)));
         return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    grantTheme: (sproutId, theme) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'themeGrants', `${user.uid}_${theme}`);
+        try {
+          await setDoc(ref, { uid: user.uid, theme, sprout: sproutId, createdAt: serverTimestamp() });
+        } catch (e) {
+          // Already granted (from this sprout or another): nothing to do.
+          if (asSocialError(e).kind !== 'network' && (await getDoc(ref).catch(() => null))?.exists()) return;
+          throw e;
+        }
       }),
     takeBackSprout: (id) =>
       guard(async () => {
