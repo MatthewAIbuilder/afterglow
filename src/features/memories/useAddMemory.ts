@@ -31,6 +31,10 @@ export function useMemoryPicker() {
         ]);
       } else if (r.reason === 'too-long') {
         showAlert('That video is too long', 'Choose a clip of a minute or less.');
+      } else if (r.reason === 'too-large') {
+        showAlert('That video is too big', 'Choose one under 150 MB. A shorter clip usually is.');
+      } else if (r.reason === 'wrong-type') {
+        showAlert('That isn’t a video Afterglow can share', 'Choose a video from your Photos or Files (MP4 or MOV).');
       } else if (r.reason === 'app-only') {
         showAlert('Memories are in the iPhone app', 'Adding your own videos works in the Afterglow app on your phone for now.');
       } else if (r.reason === 'failed') {
@@ -50,9 +54,10 @@ export function useAddMemory() {
   const from = useMemoryPicker();
   const busy = useRef(false);
   return useCallback(() => {
-    // In a browser there's nothing to choose between yet: say where it works.
+    // In a browser: the page for choosing a video (the browser's chooser must open from a tap there, and
+    // a hold on Discover isn't one).
     if (Platform.OS === 'web') {
-      void from('library');
+      router.push('/camera');
       return;
     }
     if (busy.current) return;

@@ -133,9 +133,16 @@ describe('the rest', () => {
     expect(versionLine(undefined, undefined)).toBe('Afterglow');
   });
 
-  it('Memories on the website say they’re in the app, and keep nothing', async () => {
+  it('Memories on the website keep videos only while the page is open (and say it’s the app with no page at all)', async () => {
     expect(await pickVideo('library')).toEqual({ ok: false, reason: 'app-only' });
+    expect(deviceMemoryFiles.sessionOnly).toBe(true);
     expect(deviceMemoryFiles.list()).toEqual([]);
-    await expect(deviceMemoryFiles.keep('x', 'y')).rejects.toThrow();
+    await deviceMemoryFiles.keep('blob:https://afterglowmusic.app/1', 'm1.mp4');
+    expect(deviceMemoryFiles.uriOf('m1.mp4')).toBe('blob:https://afterglowmusic.app/1');
+    // A shared video's link is its own name.
+    expect(deviceMemoryFiles.uriOf('https://firebasestorage.googleapis.com/v0/b/x/o/a')).toBe('https://firebasestorage.googleapis.com/v0/b/x/o/a');
+    await deviceMemoryFiles.remove(['m1.mp4']);
+    expect(deviceMemoryFiles.list()).toEqual([]);
+    expect(await deviceMemoryFiles.saveToPhotos('m1.mp4')).toBe(false);
   });
 });

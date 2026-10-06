@@ -127,8 +127,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
   /** Snapshots made from an empty memory with no signal say nothing yet: they're skipped, so what was kept stays. */
   const nothingYet = (snap: { empty: boolean; metadata: { fromCache: boolean } }) => snap.empty && snap.metadata.fromCache;
 
-  async function upload(path: string, uri: string, contentType: string, onProgress?: (s: number) => void) {
-    const blob = await (await fetch(uri)).blob();
+  async function upload(path: string, uri: string | Blob, contentType: string, onProgress?: (s: number) => void) {
+    const blob = typeof uri === 'string' ? await (await fetch(uri)).blob() : uri;
     if (blob.size > MAX_SHARE_BYTES) throw new SocialError('too-large');
     const task = uploadBytesResumable(ref(fb().storage, path), blob, { contentType });
     await new Promise<void>((resolve, reject) =>
@@ -419,8 +419,6 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const profile = profileFromDoc(user.uid, (await getDoc(doc(db, 'profiles', user.uid))).data());
         if (!profile) throw new SocialError('no-profile');
         const memRef = doc(collection(db, 'memories'));
-        const ext = videoType(input.videoUri) === 'video/quicktime' ? 'mov' : videoType(input.videoUri) === 'video/x-m4v' ? 'm4v' : 'mp4';
-        const videoPath = `memories/${user.uid}/${memRef.id}.${ext}`;
         const thumbPath = input.thumbUri ? `memories/${user.uid}/${memRef.id}.jpg` : undefined;
         // A throwback is counted: a few free and as many as you like with Plus. Checked before anything
         // uploads, so a share past the limit never sends a whole video for nothing (the rules hold the same line).
@@ -433,8 +431,14 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           plus = !!standingFromDocs(undefined, undefined, (await getDoc(doc(db, 'plus', user.uid)).catch(() => undefined))?.data()).plus;
           if (!throwbackShares({ plus, used }).canShare) throw new SocialError('throwback-limit');
         }
+        // The file's type decides its name (a video chosen on the website has no name of its own: an iPhone's
+        // .mov says video/quicktime), so storage.rules and the player both see what it really is.
+        const video = await (await fetch(input.videoUri)).blob();
+        const contentType = videoType(input.videoUri, video.type);
+        const ext = contentType === 'video/quicktime' ? 'mov' : contentType === 'video/x-m4v' ? 'm4v' : 'mp4';
+        const videoPath = `memories/${user.uid}/${memRef.id}.${ext}`;
         try {
-          const videoUrl = await upload(videoPath, input.videoUri, videoType(input.videoUri), (s) => onProgress?.(s * 0.95));
+          const videoUrl = await upload(videoPath, video, contentType, (s) => onProgress?.(s * 0.95));
           const thumbUrl = input.thumbUri && thumbPath ? await upload(thumbPath, input.thumbUri, 'image/jpeg') : undefined;
           const shared = {
             uid: user.uid,

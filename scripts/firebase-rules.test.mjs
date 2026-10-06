@@ -539,6 +539,12 @@ await t('storage: upload your own video and still', async () => {
   await assertSucceeds(uploadBytes(ref(B.storage(), 'memories/uidB/abc.mp4'), bytes(1000), { contentType: 'video/mp4' }));
   await assertSucceeds(uploadBytes(ref(B.storage(), 'memories/uidB/abc.jpg'), bytes(1000), { contentType: 'image/jpeg' }));
 });
+await t('storage: a video posted from the website (iPhone Safari gives .mov as video/quicktime, or .mp4)', async () => {
+  await assertSucceeds(uploadBytes(ref(B.storage(), 'memories/uidB/web1.mov'), bytes(1000), { contentType: 'video/quicktime' }));
+  await assertSucceeds(uploadBytes(ref(B.storage(), 'memories/uidB/web2.mp4'), bytes(1000), { contentType: 'video/mp4' }));
+  await assertSucceeds(uploadBytes(ref(B.storage(), 'memories/uidB/web2.jpg'), bytes(1000), { contentType: 'image/jpeg' }));
+  await assertFails(uploadBytes(ref(B.storage(), 'memories/uidB/web3.webm'), bytes(1000), { contentType: 'video/webm' }));
+});
 await t('storage: not into someone else’s folder, not odd files', async () => {
   await assertFails(uploadBytes(ref(A.storage(), 'memories/uidB/x.mp4'), bytes(10), { contentType: 'video/mp4' }));
   await assertFails(uploadBytes(ref(B.storage(), 'memories/uidB/x.exe'), bytes(10), { contentType: 'application/octet-stream' }));

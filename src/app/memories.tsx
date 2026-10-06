@@ -12,7 +12,8 @@ import { clipCount, memoryLine, organizeMemories, UNTAGGED, type MemorySection }
 import { useAddMemory } from '../features/memories/useAddMemory';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
-import { useMemories } from '../state/memories';
+import { useMoments } from '../features/memories/useMoments';
+import { onServer } from '../features/memories/webVideo';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA, glowDeepA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
@@ -23,11 +24,13 @@ const TILE = 112;
  * Memories: your own festival videos, the way you remember them, festival by
  * festival, night by night, set by set. Untagged ones sit at the top so
  * they're easy to finish. Everything here is on this phone and private.
+ * On the website (which keeps no files) it's the videos you shared, and any
+ * still uploading from this page.
  */
 export default function MemoriesScreen() {
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
-  const { memories, uriOf } = useMemories();
+  const { memories, uriOf, fromServer } = useMoments();
   const add = useAddMemory();
   const lookup = useMemo(() => ({ festival: catalog.festival, artist: catalog.artist }), [catalog]);
   const sections = useMemo(() => organizeMemories(memories, lookup), [memories, lookup]);
@@ -42,9 +45,13 @@ export default function MemoriesScreen() {
             Memories
           </Text>
           <Text style={styles.meta}>
-            {memories.length
-              ? `${clipCount(memories.length)}${festivals ? ` from ${festivals} ${festivals === 1 ? 'festival' : 'festivals'}` : ''}. Private to you.`
-              : 'Your own videos from the sets you were at, kept on this phone.'}
+            {fromServer
+              ? memories.length
+                ? `${clipCount(memories.length)}${festivals ? ` from ${festivals} ${festivals === 1 ? 'festival' : 'festivals'}` : ''}, shared to Discover.`
+                : 'Videos you share from the website show here once shared.'
+              : memories.length
+                ? `${clipCount(memories.length)}${festivals ? ` from ${festivals} ${festivals === 1 ? 'festival' : 'festivals'}` : ''}. Private to you.`
+                : 'Your own videos from the sets you were at, kept on this phone.'}
           </Text>
         </View>
 
@@ -52,8 +59,9 @@ export default function MemoriesScreen() {
           <View style={[styles.pad, styles.empty]}>
             <Text style={styles.emptyTitle}>Keep the moments</Text>
             <Text style={styles.emptyBody}>
-              Press and hold a clip in Discover, or tap below, to record or choose a video. Afterglow guesses who was playing
-              from when and where you filmed it.
+              {fromServer
+                ? 'Choose a video from your phone, tag who was playing and share it to Discover. On the website, videos are kept by sharing them.'
+                : 'Press and hold a clip in Discover, or tap below, to record or choose a video. Afterglow guesses who was playing from when and where you filmed it.'}
             </Text>
             <Pressable
               onPress={() => {
@@ -63,7 +71,7 @@ export default function MemoriesScreen() {
               accessibilityRole="button"
               style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryText}>Add a memory</Text>
+              <Text style={styles.primaryText}>{fromServer ? 'Choose a video' : 'Add a memory'}</Text>
             </Pressable>
           </View>
         ) : (
@@ -140,7 +148,14 @@ function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n
                         ? `Untagged memory. Tag it`
                         : `Memory: ${memoryLine(m, lookup)}${m.id in sharing ? '. Sharing to Discover' : waiting.has(m.id) ? '. Waiting for signal to share to Discover' : ''}`
                     }
-                    onPress={() => (untagged ? router.push({ pathname: '/memory-tag', params: { id: m.id } }) : router.push({ pathname: '/memory/[id]', params: { id: m.id } }))}
+                    onPress={() =>
+                      // A video on the server (shared from the website) opens as the shared video.
+                      onServer(m) && m.sharedId
+                        ? router.push({ pathname: '/shared/[id]', params: { id: m.sharedId } })
+                        : untagged
+                          ? router.push({ pathname: '/memory-tag', params: { id: m.id } })
+                          : router.push({ pathname: '/memory/[id]', params: { id: m.id } })
+                    }
                   />
                 ))}
               </ScrollView>
