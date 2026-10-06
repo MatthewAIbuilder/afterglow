@@ -21,6 +21,8 @@ import {
   unproject,
 } from './map';
 import { HERE_COLOR, TONE_COLOR } from './tones';
+import { t } from '../../i18n';
+import { datesLine } from '../festivals/format';
 
 export { TONE_COLOR };
 
@@ -212,7 +214,7 @@ export function FestivalMap({
       {/* The lights, drawn over the map and moved with it. */}
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
         {hereAt ? (
-          <View style={[styles.lightBox, { left: hereAt.x - LIGHT / 2, top: hereAt.y - LIGHT / 2 }]} pointerEvents="none" accessible accessibilityLabel="You are here, roughly">
+          <View style={[styles.lightBox, { left: hereAt.x - LIGHT / 2, top: hereAt.y - LIGHT / 2 }]} pointerEvents="none" accessible accessibilityLabel={t('You are here, roughly')}>
             <View style={[styles.pulse, { borderColor: HERE_COLOR, opacity: 0.4 }]} />
             <View style={styles.here} />
           </View>
@@ -258,10 +260,10 @@ export function FestivalMap({
               frameAll(true);
             }}
             accessibilityRole="button"
-            accessibilityLabel={markers.length > 1 ? 'Show all these festivals again' : 'Back to the festival'}
+            accessibilityLabel={markers.length > 1 ? t('Show all these festivals again') : t('Back to the festival')}
             style={({ pressed }) => [styles.againPill, pressed && { opacity: 0.8 }]}
           >
-            <Text style={styles.againText}>{markers.length > 1 ? 'Show all' : 'Back to it'}</Text>
+            <Text style={styles.againText}>{markers.length > 1 ? t('Show all') : t('Back to it')}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -286,8 +288,8 @@ function LightView({ cluster, x, y, chosen, named, onPress }: { cluster: Cluster
   const tint = TONE_COLOR[tone];
   const core = tone === 'going' ? 13 : tone === 'love' ? 10 + Math.min(4, lead.loved) : tone === 'more' ? 8 : 6;
   const showName = named || chosen;
-  const what = tone === 'going' ? 'You’re going.' : tone === 'over' ? 'It’s over.' : lead.loved ? `${lead.loved} you’d love.` : '';
-  const label = members.length > 1 ? `${lead.festival.name} and ${members.length - 1} more here. ${what}` : `${lead.festival.name}, ${lead.festival.dates}, ${lead.festival.location}. ${what}`;
+  const what = tone === 'going' ? t('You’re going.') : tone === 'over' ? t('It’s over.') : lead.loved ? t('{n} you’d love.', { n: lead.loved }) : '';
+  const label = `${members.length > 1 ? t('{festival} and {n} more here.', { festival: lead.festival.name, n: members.length - 1 }) : t('{festival}, {dates}, {place}.', { festival: lead.festival.name, dates: datesLine(lead.festival), place: lead.festival.location })} ${what}`;
   return (
     <View style={[styles.lightBox, { left: x - LIGHT / 2, top: y - LIGHT / 2, zIndex: chosen ? 100 : tone === 'going' ? 30 : tone === 'love' ? 20 : 10 }]} pointerEvents="box-none">
       <Pressable

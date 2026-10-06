@@ -1,4 +1,6 @@
 import type { Festival } from '../../data/models';
+import { t } from '../../i18n';
+import { datesLine } from '../festivals/format';
 
 /**
  * A clip as plain text for the share sheet: who and what, a link to that
@@ -11,6 +13,11 @@ export function clipShareText(
   festival: Festival | undefined,
   appName: string,
 ): string {
-  const live = festival ? `Playing ${festival.name}${festival.dates ? `, ${festival.dates}` : ''}` : undefined;
-  return [`${artistName}, ${clipTitle}`, link, [live, `Found on ${appName}`].filter(Boolean).join('\n')].join('\n\n');
+  const dates = festival && datesLine(festival);
+  const live = festival
+    ? dates
+      ? t('Playing {festival}, {dates}', { festival: festival.name, dates })
+      : t('Playing {festival}', { festival: festival.name })
+    : undefined;
+  return [`${artistName}, ${clipTitle}`, link, [live, t('Found on {app}', { app: appName })].filter(Boolean).join('\n')].join('\n\n');
 }

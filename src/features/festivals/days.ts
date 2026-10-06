@@ -1,4 +1,5 @@
 import type { Festival } from '../../data/models';
+import { dayWord, t } from '../../i18n';
 
 /**
  * Which day an artist plays, before and after set times. Pure. Set times say
@@ -15,8 +16,11 @@ export function daysOf(festival: Festival, artistId: string): string[] {
 /** "Friday", "Saturday and Sunday", "Friday, Saturday and Sunday". Undefined for none. */
 export function dayList(days: string[]): string | undefined {
   if (!days.length) return undefined;
-  if (days.length === 1) return days[0];
-  return `${days.slice(0, -1).join(', ')} and ${days[days.length - 1]}`;
+  if (days.length === 1) return t(days[0]);
+  // Only the first day starts with a capital (Spanish writes the rest in lower case: "Sábado y domingo").
+  return t('{list} and {last}', { list: days.slice(0, -1).map((d, i) => (i ? dayWord(d) : t(d))).join(', '), last: dayWord(days[days.length - 1]) });
+
+
 }
 
 /**

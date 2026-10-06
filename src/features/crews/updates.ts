@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import { setFor, stageName } from '../../data/festival';
 import { CREW_NOTE_MAX, CREW_STAGE_MAX, type Crew, type CrewUpdate, type CrewUpdateInput } from '../social/models';
+import { LANGUAGE, t } from '../../i18n';
 
 /**
  * Crew updates, pure: who in your crews posted what and when, how it reads,
@@ -28,17 +29,18 @@ export function clock(iso: string): string {
   const d = new Date(iso);
   const h = d.getHours();
   const m = d.getMinutes();
+  if (LANGUAGE === 'es') return `${h}:${String(m).padStart(2, '0')}`;
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
 /** "Just now", "12 min ago", "2 h ago", "1 h 20 min ago". */
 export function ago(iso: string, now: number): string {
   const m = Math.max(0, Math.floor((now - ms(iso)) / 60000));
-  if (m < 1) return 'Just now';
-  if (m < 60) return `${m} min ago`;
+  if (m < 1) return t('Just now');
+  if (m < 60) return t('{m} min ago', { m });
   const h = Math.floor(m / 60);
   const r = m % 60;
-  return h < 3 && r ? `${h} h ${r} min ago` : `${h} h ago`;
+  return h < 3 && r ? t('{h} h {m} min ago', { h, m: r }) : t('{h} h ago', { h });
 }
 
 /** Newest first by when it happened; ties by when it arrived, then id, so the order never flickers. */
@@ -106,26 +108,27 @@ export function updatePlace(u: Pick<CrewUpdate, 'stage' | 'note'>, artistName?: 
 
 /** "Updated 4:05 PM · Main Stage · SLANDER", the line under a crewmate's story ("Replied 4:12 PM" for a reply). */
 export function updateLine(u: CrewUpdate, artistName?: string): string {
-  if (isReply(u)) return `Replied ${clock(u.at)}`;
-  if (u.lost) return `Can’t find the crew · ${clock(u.at)}`;
-  if (u.care === 'help') return `Not feeling great · ${clock(u.at)}`;
-  if (u.care === 'ok') return `I’m OK · ${clock(u.at)}`;
+  if (isReply(u)) return t('Replied {time}', { time: clock(u.at) });
+  if (u.lost) return t('Can’t find the crew · {time}', { time: clock(u.at) });
+  if (u.care === 'help') return t('Not feeling great · {time}', { time: clock(u.at) });
+  if (u.care === 'ok') return t('I’m OK · {time}', { time: clock(u.at) });
   if (u.kind === 'photo') {
     const where = updatePlace(u, artistName);
-    return `Photo ${clock(u.at)}${where ? ` · ${where}` : ''}`;
+    return `${t('Photo {time}', { time: clock(u.at) })}${where ? ` · ${where}` : ''}`;
   }
   const place = updatePlace(u, artistName);
-  return `Updated ${clock(u.at)}${place ? ` · ${place}` : ''}`;
+  return `${t('Updated {time}', { time: clock(u.at) })}${place ? ` · ${place}` : ''}`;
 }
 
 /** An update that took a while to get through: "Sent 3:00 PM, reached the crew 5:02 PM". Nothing when it arrived promptly. */
 export function lateLine(u: Pick<CrewUpdate, 'at' | 'sentAt'>): string | undefined {
-  return ms(u.sentAt) - ms(u.at) >= LATE_AFTER_MS ? `Sent ${clock(u.at)}, reached the crew ${clock(u.sentAt)}` : undefined;
+  return ms(u.sentAt) - ms(u.at) >= LATE_AFTER_MS ? t('Sent {time}, reached the crew {arrived}', { time: clock(u.at), arrived: clock(u.sentAt) }) : undefined;
 }
 
 /** "Last update 3:00 PM · 2 h ago": how fresh a crewmate's latest news is. */
 export function lastUpdateLine(u: CrewUpdate, now: number): string {
-  return `Last update ${clock(u.at)} · ${ago(u.at, now)}`;
+  return t('Last update {time} · {ago}', { time: clock(u.at), ago: ago(u.at, now) });
+
 }
 
 /** Where an artist plays at this festival, from the set times, when known. */

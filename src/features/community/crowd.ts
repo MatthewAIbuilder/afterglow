@@ -1,5 +1,6 @@
 import type { Festival } from '../../data/models';
 import type { SharedMemory } from '../social/models';
+import { tn } from '../../i18n';
 
 /**
  * A festival's videos from the crowd, organised, pure: night by night in the
@@ -54,7 +55,9 @@ export function crowdArtists(memories: readonly SharedMemory[], max = 8): { arti
 /** "12 videos from 5 people". */
 export function crowdLine(memories: readonly SharedMemory[]): string {
   const people = new Set(memories.map((m) => m.uid)).size;
-  return `${memories.length} ${memories.length === 1 ? 'video' : 'videos'} from ${people} ${people === 1 ? 'person' : 'people'}`;
+  const from = tn(people, 'from {n} person', 'from {n} people');
+  return tn(memories.length, '{n} video {from}', '{n} videos {from}', { from });
+
 }
 
 /** "Live from the crowd" looks back this far. */

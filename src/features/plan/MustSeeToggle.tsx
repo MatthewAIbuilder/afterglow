@@ -13,6 +13,7 @@ import { haptic } from '../../lib/haptics';
 import { usePlan } from '../../state/plan';
 import { color, motion } from '../../theme/tokens';
 import { StarIcon } from './icons';
+import { t } from '../../i18n';
 
 /** Star to mark an artist as a must-see at one festival. Planning only, never changes the match. */
 export function MustSeeToggle({
@@ -50,7 +51,7 @@ export function MustSeeToggle({
       hitSlop={10}
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
-      accessibilityLabel={on ? `Remove ${artist.name} from your must sees` : `Mark ${artist.name} as a must see`}
+      accessibilityLabel={on ? t('Remove {artist} from your must sees', { artist: artist.name }) : t('Mark {artist} as a must see', { artist: artist.name })}
       style={styles.hit}
     >
       <Animated.View style={style}>

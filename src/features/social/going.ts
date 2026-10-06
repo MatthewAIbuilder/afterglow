@@ -1,4 +1,5 @@
 import type { Profile } from './models';
+import { t, tn } from '../../i18n';
 
 /**
  * Who else is going to a festival: people you follow first, then everyone
@@ -23,11 +24,14 @@ export function splitGoers(profiles: Profile[], opts: { following: ReadonlySet<s
 
 /** "Maya is going", "Maya and Sam are going", "Maya and 3 others you follow are going", "12 people on Afterglow are going". */
 export function goersLine({ friends, others }: Goers): string | undefined {
-  const more = others.length ? `${others.length} ${others.length === 1 ? 'other' : 'others'} on Afterglow` : '';
-  if (!friends.length) return others.length ? `${others.length} ${others.length === 1 ? 'person' : 'people'} on Afterglow ${others.length === 1 ? 'is' : 'are'} going` : undefined;
+  if (!friends.length) return others.length ? tn(others.length, '{n} person on Afterglow is going', '{n} people on Afterglow are going') : undefined;
   const [a, b] = friends;
-  const names =
-    friends.length === 1 ? a.displayName : friends.length === 2 ? `${a.displayName} and ${b.displayName}` : `${a.displayName} and ${friends.length - 1} others you follow`;
-  const going = `${names} ${friends.length === 1 ? 'is' : 'are'} going`;
-  return more ? `${going}, plus ${more}` : going;
+  const going =
+    friends.length === 1
+      ? t('{name} is going', { name: a.displayName })
+      : friends.length === 2
+        ? t('{a} and {b} are going', { a: a.displayName, b: b.displayName })
+        : t('{a} and {n} others you follow are going', { a: a.displayName, n: friends.length - 1 });
+  return others.length ? tn(others.length, '{going}, plus {n} other on Afterglow', '{going}, plus {n} others on Afterglow', { going }) : going;
+
 }

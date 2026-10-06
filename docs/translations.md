@@ -35,15 +35,16 @@ Tests always run in English (`test/setup.ts` mocks the phone's language), so
 golden tests and screen tests don't change. `src/i18n/__tests__/spanish.test.ts`
 runs the language code as a Spanish phone.
 
-## What's translated (2026-10-06, first step)
+## What's translated
 
-Tab bar, Settings, the welcome, the crash and not-found pages, back / close /
-share buttons, the offline notice, festival dates, countdowns and set times.
-Everything else is still English and is next, screen by screen: Discover,
-Festivals and the festival page, My Sound, Profile and Friends, then the rest.
-Not planned: catalogue data (artist and festival names, the user's own
-lineup notes), people's own posts, the legal pages (they need a qualified
-translation), and Afterglow HQ (only the support account sees it).
+- 2026-10-06, first step: tab bar, Settings, the welcome, the crash and not-found pages, back / close / share buttons, the offline notice, festival dates, countdowns and set times.
+- 2026-10-06, second step: Discover (the feed, its pages: focus, search, Tonight, tips, quest ring button, crew stories, flag and ••• menus, why notes), the Festivals tab (shelves, timeline, Up next, near you, calendar, map, compare, request), a festival's page (For you / Lineup / Videos / Info, the plan, full day, timetable, your hours, must-sees, poster and share text, Tune, the cards on it) and the plan's own wording (reasons, route labels, clashes, share text). Also artist rows and ratings, crew update times, friends-going lines.
+
+The Spanish lists live by area in `src/i18n/es/` (discover, festivals, festivalPage, plan), spread into `src/i18n/es.ts`, which keeps shared lines.
+
+Still English, next: My Sound, Profile and Friends, crews and chat, memories and camera, quests, care, the artist page, account and sign-in, notifications. Not planned: catalogue data (artist and festival names, sound names, the user's own lineup notes), people's own posts, the legal pages (they need a qualified translation), Afterglow HQ (only the support account sees it), reports and emails that go to support (flag reports stay English), Amazon's required associate statement.
+
+Helpers: `dayWord(day)` for a day name mid-sentence (lower case in Spanish), `breakLabel(label)` in `plan/hours.ts` for the stored break presets (saved in English, shown translated). Code that compared a shown line with English (`soon === 'Over'`) must compare with `t('Over')`.
 
 The phone's own permission pop-ups (camera, photos, location…) are in
 Spanish in the development / App Store build (`locales/es.json`, `app.json`

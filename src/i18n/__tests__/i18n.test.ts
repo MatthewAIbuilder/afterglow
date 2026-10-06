@@ -54,7 +54,8 @@ function linesInCode(): { line: string; file: string }[] {
   const unquote = (s: string) => JSON.parse(s.startsWith("'") ? `"${s.slice(1, -1).replace(/\\'/g, "'").replace(/"/g, '\\"')}"` : s) as string;
   return walk(root).flatMap((file) => {
     const text = readFileSync(file, 'utf8');
-    if (!text.includes("/i18n'")) return [];
+    if (!/\/i18n['"]/.test(text)) return [];
+
     const found = [...text.matchAll(one)].map((m) => m[1]);
     for (const m of text.matchAll(two)) found.push(m[1], m[2]);
     return found.map((s) => ({ line: unquote(s), file: file.slice(root.length + 1) }));

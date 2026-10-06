@@ -11,6 +11,7 @@ import { exploreLine, matchLabel, moreToExplore, TIER_HINT, TIER_LABEL } from '.
 import { MustSeeToggle } from './MustSeeToggle';
 import { usePickReasons } from './usePickReasons';
 import { EXPLORE_SHOWN, exploreReason, type Pick, type Tier } from './plan';
+import { t } from '../../i18n';
 
 const TIERS: Tier[] = ['must-see', 'strong', 'explore'];
 
@@ -82,8 +83,8 @@ export function PickRow({
         router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festivalId } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${rank ? `Number ${rank}, ` : ''}${artist.name}, ${
-        pick.known ? `${match} match` : 'new to you'
+      accessibilityLabel={`${rank ? `${t('Number {rank}', { rank })}, ` : ''}${
+        pick.known ? t('{artist}, {match} match', { artist: artist.name, match }) : t('{artist}, new to you', { artist: artist.name })
       }${note ? `. ${note}` : ''}${crewStarsSaid(friends)}`}
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
     >

@@ -1,4 +1,8 @@
 import type { Dictionary } from './translate';
+import { es_discover } from './es/discover';
+import { es_festivalPage } from './es/festivalPage';
+import { es_festivals } from './es/festivals';
+import { es_plan } from './es/plan';
 
 /**
  * Spanish, keyed by the English line exactly as it's written in the code
@@ -8,6 +12,12 @@ import type { Dictionary } from './translate';
  * line the code passes to `t()` has an entry, and that each keeps its slots.
  */
 export const es: Dictionary = {
+  // Each area keeps its own list (src/i18n/es/); the lines below are shared or from the first step.
+  ...es_discover,
+  ...es_festivals,
+  ...es_festivalPage,
+  ...es_plan,
+
   // Shared buttons and words
   OK: 'OK',
   Cancel: 'Cancelar',
@@ -22,7 +32,55 @@ export const es: Dictionary = {
   'Try again in a moment.': 'Vuelve a intentarlo en un momento.',
   'Clear the search': 'Borrar la búsqueda',
 
+  // Ratings, artist rows and crew times (shared by many screens)
+  'Love them': 'Me encantan',
+  'Like them': 'Me gustan',
+  'They’re OK': 'Están bien',
+  'Not for me': 'No es lo mío',
+  'you love their sound': 'te encanta su sonido',
+  'you like them': 'te gustan',
+  'you think they’re OK': 'te parecen bien',
+  'not really for you': 'no es mucho lo tuyo',
+  'not for you': 'no es lo tuyo',
+  'Not really for you': 'No es mucho lo tuyo',
+  '{artist}, {pct} percent match': '{artist}, {pct} por ciento de afinidad',
+  'Just now': 'Ahora mismo',
+  '{m} min ago': 'hace {m} min',
+  '{h} h {m} min ago': 'hace {h} h {m} min',
+  '{h} h ago': 'hace {h} h',
+  'Replied {time}': 'Respondió a las {time}',
+  'Can’t find the crew · {time}': 'No encuentro al grupo · {time}',
+  'Not feeling great · {time}': 'No me siento bien · {time}',
+  'I’m OK · {time}': 'Estoy bien · {time}',
+  'Photo {time}': 'Foto {time}',
+  'Updated {time}': 'Actualizado a las {time}',
+  'Sent {time}, reached the crew {arrived}': 'Enviado a las {time}, llegó al grupo a las {arrived}',
+  'Last update {time} · {ago}': 'Última novedad a las {time} · {ago}',
+  'Looking for videos from {festival}': 'Buscando videos de {festival}',
+  'Live from {festival}': 'En vivo desde {festival}',
+  'Sign in to watch the videos people film here, and share yours.': 'Inicia sesión para ver los videos que la gente graba aquí y compartir los tuyos.',
+  'Be the first: film a set and turn on Share to Discover. Videos people share from here show up as they come in.':
+    'Sé el primero: graba un set y activa Compartir en Descubrir. Los videos que la gente comparta desde aquí aparecen en cuanto llegan.',
+  'Tonight’s plan': 'El plan de esta noche',
+
+  '{list} and {last}': '{list} y {last}',
+  '{n} video {from}': '{n} video {from}',
+  '{n} videos {from}': '{n} videos {from}',
+  'from {n} person': 'de {n} persona',
+  'from {n} people': 'de {n} personas',
+  'Afterglow may earn a commission if you buy through these links. It doesn’t change your price.':
+    'Afterglow puede ganar una comisión si compras con estos enlaces. Tu precio no cambia.',
+  '{n} person on Afterglow is going': '{n} persona en Afterglow va',
+  '{n} people on Afterglow are going': '{n} personas en Afterglow van',
+  '{name} is going': '{name} va',
+  '{a} and {b} are going': '{a} y {b} van',
+  '{a} and {n} others you follow are going': '{a} y {n} personas más que sigues van',
+  '{going}, plus {n} other on Afterglow': '{going}, y {n} persona más en Afterglow',
+  '{going}, plus {n} others on Afterglow': '{going}, y {n} personas más en Afterglow',
+
   // Tabs
+
+
   Discover: 'Descubrir',
   Festivals: 'Festivales',
   'My Sound': 'Mi sonido',

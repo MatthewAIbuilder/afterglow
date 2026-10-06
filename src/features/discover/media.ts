@@ -1,5 +1,6 @@
 import type { Clip, CommunityClipSource, SoundCloudClipSource, YouTubeClipSource } from '../../data/models';
 import { playableSource, posterUrl, watchUrl } from './youtube';
+import { t } from '../../i18n';
 
 /**
  * What Discover needs to know about a clip's real footage, whatever plays it.
@@ -59,7 +60,7 @@ export function clipMedia(clip: Clip, artistImage?: string): ClipMedia | undefin
   if (s?.provider === 'soundcloud') {
     if (!/^https:\/\/soundcloud\.com\//.test(s.url)) return undefined;
     const still = [artistImage, s.image].find((u) => !!u && HTTPS.test(u));
-    return { provider: 'soundcloud', source: s, lengthSec: 0, posterUrl: still ?? '', vertical: false, credit: 'On SoundCloud', externalUrl: s.url };
+    return { provider: 'soundcloud', source: s, lengthSec: 0, posterUrl: still ?? '', vertical: false, credit: t('On SoundCloud'), externalUrl: s.url };
   }
   if (s?.provider === 'community') {
     if (!HTTPS.test(s.videoUrl)) return undefined;
@@ -69,7 +70,7 @@ export function clipMedia(clip: Clip, artistImage?: string): ClipMedia | undefin
       lengthSec: clip.durationSec,
       posterUrl: s.thumbUrl && HTTPS.test(s.thumbUrl) ? s.thumbUrl : '',
       vertical: s.vertical,
-      credit: `Filmed by @${s.handle}`,
+      credit: t('Filmed by @{handle}', { handle: s.handle }),
       community: s,
     };
   }
@@ -81,7 +82,7 @@ export function clipMedia(clip: Clip, artistImage?: string): ClipMedia | undefin
     lengthSec: source.end - source.start,
     posterUrl: posterUrl(source),
     vertical: !!source.vertical,
-    credit: `${source.channel} on YouTube`,
+    credit: t('{channel} on YouTube', { channel: source.channel }),
     externalUrl: watchUrl(source),
   };
 }

@@ -2,6 +2,7 @@ import { Linking, Platform, Pressable, StyleSheet, Text, View, type StyleProp, t
 import { haptic } from '../../lib/haptics';
 import { useNearby } from '../../state/nearby';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * "Festivals near you": an offer on the Festivals tab to use your location.
@@ -13,16 +14,16 @@ export function NearYouPrompt({ style }: { style?: StyleProp<ViewStyle> } = {}) 
   const denied = status === 'denied';
   const body = denied
     ? web
-      ? 'Location is blocked for this site. Allow it in your browser’s settings, then try again.'
-      : 'Location is off for Afterglow. Allow it in Settings, then try again.'
+      ? t('Location is blocked for this site. Allow it in your browser’s settings, then try again.')
+      : t('Location is off for Afterglow. Allow it in Settings, then try again.')
     : status === 'failed'
-      ? 'Couldn’t find where you are just now. Try again in a moment.'
-      : 'See what’s within reach, nearest first. Your location stays on this device.';
+      ? t('Couldn’t find where you are just now. Try again in a moment.')
+      : t('See what’s within reach, nearest first. Your location stays on this device.');
   const locating = status === 'locating';
 
   return (
     <View style={[styles.card, style]} accessibilityRole="summary">
-      <Text style={styles.title}>Festivals near you</Text>
+      <Text style={styles.title}>{t('Festivals near you')}</Text>
       <Text style={styles.body}>{body}</Text>
       <View style={styles.row}>
         <Pressable
@@ -32,11 +33,11 @@ export function NearYouPrompt({ style }: { style?: StyleProp<ViewStyle> } = {}) 
           }}
           disabled={locating}
           accessibilityRole="button"
-          accessibilityLabel={locating ? 'Finding you' : denied || status === 'failed' ? 'Try again' : 'Use my location'}
+          accessibilityLabel={locating ? t('Finding you') : denied || status === 'failed' ? t('Try again') : t('Use my location')}
           accessibilityState={{ busy: locating }}
           style={({ pressed }) => [styles.button, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
         >
-          <Text style={styles.buttonText}>{locating ? 'Finding you…' : denied || status === 'failed' ? 'Try again' : 'Use my location'}</Text>
+          <Text style={styles.buttonText}>{locating ? t('Finding you…') : denied || status === 'failed' ? t('Try again') : t('Use my location')}</Text>
         </Pressable>
         {denied && !web && (
           <Pressable
@@ -45,10 +46,10 @@ export function NearYouPrompt({ style }: { style?: StyleProp<ViewStyle> } = {}) 
               void Linking.openSettings().catch(() => {});
             }}
             accessibilityRole="button"
-            accessibilityLabel="Open Settings"
+            accessibilityLabel={t('Open Settings')}
             hitSlop={8}
           >
-            <Text style={styles.link}>Open Settings</Text>
+            <Text style={styles.link}>{t('Open Settings')}</Text>
           </Pressable>
         )}
       </View>

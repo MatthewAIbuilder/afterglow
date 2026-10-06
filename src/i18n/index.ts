@@ -48,3 +48,13 @@ export function tn(n: number, one: string, other: string, vars?: Vars): string {
 export const months = (short = false) => monthNames(LANGUAGE, short);
 /** Day names (0 = Sunday) in the app's language. */
 export const weekdays = (short = false) => weekdayNames(LANGUAGE, short);
+
+/**
+ * A catalogue day name ('Saturday') for the middle of a sentence: Spanish
+ * writes day names in lower case there ("para el sábado"). Use `t(day)` at
+ * the start of a line or as a heading.
+ */
+export function dayWord(day: string): string {
+  const said = t(day);
+  return LANGUAGE === 'es' && said !== day ? said.toLowerCase() : said;
+}

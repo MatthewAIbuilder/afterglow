@@ -1,4 +1,5 @@
 import type { Festival } from "../../data/models";
+import { t } from "../../i18n";
 
 /**
  * Partner (affiliate) links: where Afterglow may earn a commission, and the
@@ -7,8 +8,7 @@ import type { Festival } from "../../data/models";
  */
 
 /** Shown beside ticket and stay links that earn a commission. */
-export const PARTNER_NOTE =
-  "Afterglow may earn a commission if you buy through these links. It doesn’t change your price.";
+export const PARTNER_NOTE = t("Afterglow may earn a commission if you buy through these links. It doesn’t change your price.");
 
 /** Amazon requires this exact statement wherever its links appear. */
 export const AMAZON_NOTE =
