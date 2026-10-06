@@ -895,6 +895,22 @@ await t('gardens: you show yours (a short list, server-timed), anyone signed in 
   await assertFails(deleteDoc(doc(H.firestore(), 'gardens', 'uidGa')));
   await assertSucceeds(deleteDoc(doc(G.firestore(), 'gardens', 'uidGa')));
 });
+await t('garden backups: only you write (a bounded text, server-timed), read or remove your own', async () => {
+  const G = env.authenticatedContext('uidBa'), H = env.authenticatedContext('uidBb');
+  const copy = (over = {}) => ({ data: '{"v":1}', updatedAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(doc(G.firestore(), 'gardenBackups', 'uidBa'), copy()));
+  await assertSucceeds(setDoc(doc(G.firestore(), 'gardenBackups', 'uidBa'), copy({ data: '{"v":1,"garden":[]}' })));
+  await assertFails(setDoc(doc(H.firestore(), 'gardenBackups', 'uidBa'), copy()));
+  await assertFails(setDoc(doc(G.firestore(), 'gardenBackups', 'uidBa'), copy({ extra: 1 })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardenBackups', 'uidBa'), copy({ data: 5 })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardenBackups', 'uidBa'), copy({ data: 'x'.repeat(900001) })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardenBackups', 'uidBa'), copy({ updatedAt: new Date(0) })));
+  await assertSucceeds(getDoc(doc(G.firestore(), 'gardenBackups', 'uidBa')));
+  await assertFails(getDoc(doc(H.firestore(), 'gardenBackups', 'uidBa')));
+  await assertFails(getDoc(doc(anon.firestore(), 'gardenBackups', 'uidBa')));
+  await assertFails(deleteDoc(doc(H.firestore(), 'gardenBackups', 'uidBa')));
+  await assertSucceeds(deleteDoc(doc(G.firestore(), 'gardenBackups', 'uidBa')));
+});
 await t('kandi: made as yourself for someone else with a profile who hasn’t blocked you; only the two of you read or remove it', async () => {
   const K = env.authenticatedContext('uidKa'), L = env.authenticatedContext('uidKb'), M = env.authenticatedContext('uidKc');
   await env.withSecurityRulesDisabled(async (ctx) => {

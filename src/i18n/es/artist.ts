@@ -15,6 +15,8 @@ export const es_artist: Dictionary = {
   'NEXT SHOW': 'PRÓXIMO SHOW',
   'You and them': 'Tú y su música',
   'Their collectible': 'Su coleccionable',
+  'Back to back': 'Back to back (juntos)',
+  'Playing in this set': 'Toca en este set',
   'artist|Playing': 'Dónde toca',
   '{days}, set time not announced yet': '{days}, horario aún sin anunciar',
   "See {artist}'s festivals on the map": 'Ver los festivales de {artist} en el mapa',

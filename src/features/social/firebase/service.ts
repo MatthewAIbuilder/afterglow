@@ -17,6 +17,7 @@ import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
 import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden';
+import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
 import { cleanNote, cleanPublicKandi, cleanWord, isPattern, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc } from './mapping';
@@ -312,6 +313,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         }
         // Your garden as shown on your profile.
         await deleteDoc(doc(db, 'gardens', user.uid)).catch(() => {});
+        await deleteDoc(doc(db, 'gardenBackups', user.uid)).catch(() => {});
         // Gift themes you were given.
         for (const theme of GIFT_THEME_IDS) await deleteDoc(doc(db, 'themeGrants', `${user.uid}_${theme}`)).catch(() => {});
         // Sprouts you gave and picked up go too (the rules allow it once the profile is gone).
@@ -1333,6 +1335,20 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!d.exists()) return null;
         const o = d.data() as { residents?: unknown; kandi?: unknown };
         return { residents: cleanPublicGarden(o.residents), kandi: cleanPublicKandi(o.kandi) };
+      }),
+    saveGardenBackup: (data) =>
+      guard(async () => {
+        const user = me();
+        if (typeof data !== 'string' || data.length > GARDEN_BACKUP_MAX) throw new SocialError('unknown');
+        await withTimeout(setDoc(doc(fb().db, 'gardenBackups', user.uid), { data, updatedAt: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
+      }),
+    gardenBackup: () =>
+      guard(async () => {
+        const user = me();
+        const d = await getDoc(doc(fb().db, 'gardenBackups', user.uid));
+        if (!d.exists()) return null;
+        const o = d.data() as { data?: unknown };
+        return typeof o.data === 'string' ? o.data : null;
       }),
     giveKandi: (input) =>
       guard(async () => {

@@ -50,7 +50,25 @@ export type Creature =
   | 'wobble'
   | 'patchbear'
   | 'thornskull'
-  | 'trooper';
+  | 'trooper'
+  | 'mammoth'
+  | 'dino'
+  | 'stagskull'
+  | 'captain'
+  | 'gladiator'
+  | 'dreamcube'
+  | 'paperplane'
+  | 'icosa'
+  | 'goggles'
+  | 'hologram'
+  | 'mousehead'
+  | 'mallow'
+  | 'hooded'
+  | 'prism'
+  | 'dove'
+  | 'cake'
+  | 'stainedglass'
+  | 'chromemask';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -82,16 +100,32 @@ const SIGNATURES: Record<string, Spec> = {
   zedsdead: { creature: 'ghost', palette: P('#FFFFFF', '#DCD8F2', '#8C88B8', '#9BE84E', '#3E8F1A', '#B6FF6A', '#9BE84E'), name: t('The Ghost'), theme: t('A friendly ghost with glowing eyes') },
   ghengar: { creature: 'ghost', palette: P('#F1E8FF', '#A98CF0', '#4A2E8A', '#FF6AD5', '#7A1E6A', '#FF8AE0', '#A06BFF'), name: t('The Phantom'), theme: t('A grinning phantom'), extra: 'fangs' },
   rlgrime: { creature: 'pumpkin', palette: P('#FFD9A0', '#FF8A1F', '#A8400C', '#8FD65A', '#2E6A1E', '#FFE36B', '#FF8A1F'), name: t('The Lantern'), theme: t('A pumpkin lit from inside') },
-  wooli: { creature: 'sheep', palette: P('#FFFFFF', '#EDE7DA', '#B3A88E', '#4A3F5C', '#241C30', '#FFE9B0', '#E8D9B0'), name: t('The Woolly'), theme: t('A fluffy ram with curly horns') },
+  excision: { creature: 'dino', palette: P('#D08A64', '#7E3A28', '#3A1610', '#A9BEDF', '#2E4380', '#FF3B3B', '#4F86FF'), name: t('The Dinosaur'), theme: t('A dinosaur from outer space, roaring under a flying saucer') },
+  svddendeath: { creature: 'stagskull', palette: P('#F2EBDD', '#C9BCA6', '#5A4C40', '#2A1E30', '#140E1C', '#FF2E3E', '#B0142A'), name: t('The Stag skull'), theme: t('A stag skull with great antlers, in a dark hooded robe') },
+  voyd: { creature: 'stagskull', palette: P('#F2EBDD', '#C9BCA6', '#5A4C40', '#2A1E30', '#140E1C', '#FF2E3E', '#B0142A'), name: t('The Stag skull'), theme: t('A stag skull with great antlers, in a dark hooded robe') },
+  liquidstranger: { creature: 'captain', palette: P('#C8FFB0', '#7ED46A', '#2E6A3A', '#5A6A8A', '#232A40', '#7FF5FF', '#8CFF7A'), name: t('The Captain'), theme: t('An alien captain at the controls of its ship') },
+  kaiwachi: { creature: 'gladiator', palette: P('#F2F5FA', '#AEB8C8', '#3A4256', '#FF3EC8', '#8A1470', '#4AF0FF', '#FF3EC8'), name: t('The Gladiator'), theme: t('A chrome gladiator with a neon crest') },
+  porterrobinson: { creature: 'dreamcube', palette: P('#FFF4FB', '#FFC2E2', '#7A5AC8', '#BDE6FF', '#6AA8E8', '#FFFFFF', '#FFB8E0'), name: t('The Dream cube'), theme: t('A soft pastel cube floating in a dream') },
+  saidthesky: { creature: 'paperplane', palette: P('#FFFFFF', '#E4E8F8', '#9AA4D0', '#FFC6E0', '#A8D4FF', '#FFE9A8', '#C8B8FF'), name: t('The Paper plane'), theme: t('A paper plane gliding over pink and blue clouds') },
+  odesza: { creature: 'icosa', palette: P('#FFF0B8', '#F2C04A', '#9A6A12', '#D8962A', '#6A4410', '#FFF6D8', '#FFC84A'), name: t('The Icosahedron'), theme: t('A golden twenty-sided shape, glowing') },
+  rezz: { creature: 'goggles', palette: P('#E8D6CC', '#2A2236', '#120E1A', '#4A4458', '#1A1622', '#FF2A3A', '#FF2A3A'), name: t('The Hypnotist'), theme: t('Huge goggles with glowing red spirals') },
+  ericprydz: { creature: 'hologram', palette: P('#E0FFFF', '#6AE8FF', '#1A6A8A', '#5A6478', '#262C3A', '#FFFFFF', '#6AE8FF'), name: t('The Hologram'), theme: t('An astronaut projected in light') },
+  deadmau5: { creature: 'mousehead', palette: P('#FF8A9A', '#E8203A', '#7A0A1E', '#2A1A22', '#120A10', '#FFFFFF', '#FF4A5E'), name: t('The Mouse head'), theme: t('A big round mouse head with a wide grin') },
+  marshmello: { creature: 'mallow', palette: P('#FFFFFF', '#ECE8F2', '#B8B0C8', '#1A1622', '#000000', '#FFB8D8', '#E8E0FF'), name: t('The Marshmallow'), theme: t('A soft marshmallow with a big grin') },
+  alanwalker: { creature: 'hooded', palette: P('#C8D0E0', '#2E3340', '#12141C', '#0A0A10', '#000000', '#E8F4FF', '#8AB8FF'), name: t('The Hooded figure'), theme: t('Hood up, face masked, eyes glowing') },
+  zedd: { creature: 'prism', palette: P('#FFFFFF', '#CFE6FF', '#5A7AB0', '#FFFFFF', '#8AB0E0', '#FFFFFF', '#B8D8FF'), name: t('The Prism'), theme: t('A glass prism splitting light into a rainbow') },
+  steveaoki: { creature: 'cake', palette: P('#FFF4E0', '#FFB8D0', '#B85A8A', '#FFFFFF', '#E8D8F0', '#FFD24A', '#FF8AC0'), name: t('The Flying cake'), theme: t('A birthday cake flying through the air') },
+  tchami: { creature: 'stainedglass', palette: P('#FFF2C8', '#4A3A58', '#120A18', '#7A5AC8', '#1E142C', '#FFD86B', '#B88AFF'), name: t('The Window'), theme: t('A stained-glass window lit from within') },
+  wooli: { creature: 'mammoth', palette: P('#D9A877', '#9A6438', '#4E2C14', '#F6EBD2', '#CDB68C', '#FFE9B0', '#A9D4FF'), name: t('The Mammoth'), theme: t('A shaggy woolly mammoth with great curling tusks') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },
   ofthetrees: { creature: 'spirit', palette: P('#F4F8EA', '#D6DEC4', '#8A9472', '#8FD67A', '#2E6A2A', '#E9FFB0', '#7FD87A'), name: t('The Forest spirit'), theme: t('A spirit of the forest') },
-  sanholo: { creature: 'crystal', palette: P('#F2FFFD', '#B9A8FF', '#6A4FD0', '#FF9EDB', '#3FC8E0', '#9FF0FF', '#B99CFF'), name: t('The Prism'), theme: t('A holographic crystal') },
+  sanholo: { creature: 'dove', palette: P('#FFFFFF', '#E4E0F0', '#6A6488', '#FFC6E0', '#C8D8FF', '#FFC86B', '#FFC6E0'), name: t('The White bird'), theme: t('A white bird in flight against a pastel sky') },
   sullivanking: { creature: 'thornskull', palette: P('#F4EEE6', '#D6CABD', '#6E5F58', '#C8344A', '#8A1E30', '#FF4A5E', '#E0324A'), name: t('The Thorn King'), theme: t('A grinning skull crowned with thorns and roses') },
   zomboy: { creature: 'skull', palette: P('#F4F7E8', '#C9D6A8', '#5E7A3A', '#A6E05A', '#2E4A1A', '#B6FF5A', '#A6E05A'), name: t('The Undead'), theme: t('A stitched-up skull with a green glow') },
   djsnake: { creature: 'serpent', palette: P('#C8FFE8', '#3FC8A0', '#0F6A58', '#FFE9A8', '#C9A050', '#FF5F8F', '#3FC8A0'), name: t('The Serpent'), theme: t('A coiled serpent') },
-  atliens: { creature: 'alien', palette: P('#D9FFEA', '#5BE3A0', '#118A55', '#0E1A14', '#000000', '#6CFF9E', '#6CFF9E'), name: t('The Visitor'), theme: t('A visitor from another planet') },
+  atliens: { creature: 'chromemask', palette: P('#F4F6FA', '#A8AEB8', '#3A3E48', '#1C1A22', '#0A090E', '#FF4A1E', '#FF2A1A'), name: t('The Masked visitor'), theme: t('A chrome mask with burning eyes, under a flaming UFO') },
   tokimonsta: { creature: 'monster', palette: P('#EEE4FF', '#A98CFF', '#5B3FB0', '#FF85C8', '#C23A8A', '#FFD24A', '#A98CFF'), name: t('The Little monster'), theme: t('A little monster with a flower') },
   sloth: { creature: 'sloth', palette: P('#F2E4CC', '#B8936A', '#6B4A2E', '#8FD67A', '#5A3A22', '#2E2018', '#C9A57E'), name: t('The Sloth'), theme: t('A sloth hanging around') },
   reaper: { creature: 'reaper', palette: P('#A8A2C8', '#5A5480', '#1E1A34', '#E8E4F8', '#8E88AA', '#B9F3FF', '#8FA6FF'), name: t('The Reaper'), theme: t('A hooded reaper under the moon') },

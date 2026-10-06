@@ -330,6 +330,10 @@ export interface SocialService {
   publishGarden(residents: PublicResident[] | null, kandi?: PublicKandi[]): Promise<void>;
   /** Someone's garden as they show it; null when they don't. */
   gardenOf(uid: string): Promise<{ residents: PublicResident[]; kandi: PublicKandi[] } | null>;
+  /** Keep a private copy of your garden (as saved on the phone) with your account, so a new phone, a cleared browser or a reinstall gets it back. Only you can read it. */
+  saveGardenBackup(data: string): Promise<void>;
+  /** Your garden's private copy; null when there's none yet. */
+  gardenBackup(): Promise<string | null>;
   /** Leave kandi in someone's garden (they need a profile, and not to have blocked you). */
   giveKandi(input: KandiInput): Promise<Kandi>;
   /** Kandi left for you, newest first. */

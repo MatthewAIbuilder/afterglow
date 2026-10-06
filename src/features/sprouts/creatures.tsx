@@ -2234,6 +2234,844 @@ const trooper: Draw = (p, f) => {
   };
 };
 
+/** WOOLI's: a real woolly mammoth, side on and shaggy, with great curling tusks and a curled trunk, in falling snow. */
+const mammoth: Draw = (p, f) => {
+  // Shaggy fringe hanging off its belly and chest.
+  const fringe = Array.from({ length: 11 }, (_, i) => {
+    const x = 34 + i * 4.6;
+    return flame(x, 71, x - 1.2 + (i % 2) * 0.6, 78.5 + (i % 3) * 1.4, 2.4, i % 2 ? 1 : -1);
+  }).join(' ');
+  return {
+    ground: [58, 90, 30],
+    back: (
+      <G>
+        <Ellipse cx={52} cy={52} rx={40} ry={34} fill={p.glow} opacity={0.14} />
+        {(
+          [
+            [14, 18, 1.1],
+            [26, 9, 0.8],
+            [74, 12, 1],
+            [90, 26, 0.8],
+            [84, 44, 1.1],
+            [12, 40, 0.8],
+            [62, 6, 0.7],
+          ] as const
+        ).map(([x, y, r], i) => (
+          <Circle key={i} cx={x} cy={y} r={r} fill="#FFFFFF" opacity={0.85} />
+        ))}
+      </G>
+    ),
+    // A little tufted tail, flicking.
+    pivot: [86, 58],
+    sway: (
+      <G>
+        <Path d="M85 56 Q92 60 91 68" stroke={p.deep} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+        <V d={flame(91, 66, 91.5, 73, 2.2, 0.6)} fill={p.deep} f={f} />
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The far legs, in shadow. */}
+        <V d="M45 66 L54 66 L54 85 Q49.5 87 45 85Z" fill={p.deep} f={f} />
+        <V d="M74 66 L83 66 L83 84 Q78.5 86 74 84Z" fill={p.deep} f={f} />
+        {/* Its body: a high domed head, the back sloping away to the rump. */}
+        <V d="M30 44 C29 26 39 16 50 17 C57 17.5 61 22 64.5 26 C78 28 88 42 87.5 60 C87 69 83 73 77 73.5 L40 73.5 C34 73.5 30 68 30 60Z" fill={p.mid} f={f} gloss={[44, 26, 7, 3, -30]} />
+        <Path d={fringe} fill={p.deep} />
+        {/* Shaggy strands through the coat. */}
+        <Path d="M56 30 q2 5 0 10 M64 34 q2.4 6 0 12 M72 38 q2.4 6 0 13 M80 44 q2 6 0 12 M60 48 q2 5 0 10 M70 52 q2 5 0 10 M48 50 q2 5 0 10" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.55} />
+        {/* A tuft of hair on top of its head. */}
+        {(
+          [
+            [44, 21, 47, 11.5],
+            [47.5, 19.5, 52, 11],
+            [51, 19.5, 56.5, 13.5],
+          ] as const
+        ).map(([bx, by, tx, ty], i) => (
+          <V key={i} d={flame(bx, by, tx, ty, 1.9, 2.4)} fill={p.deep} f={f} />
+        ))}
+        {/* Its ear. */}
+        <VE cx={51} cy={40} rx={4.6} ry={6} fill={p.deep} f={f} gloss={false} turn={-10} />
+        {/* The near legs. */}
+        <V d="M35 64 L45 64 L45 86 Q40 88.4 35 86Z" fill={p.mid} f={f} />
+        <V d="M66 64 L76 64 L76 85 Q71 87.4 66 85Z" fill={p.mid} f={f} />
+        {/* The far tusk, then the trunk curling down, then the near tusk. */}
+        <V d="M40.5 57.5 C35 71 23 72.5 19.5 61 C23.5 68 32 67.5 39.5 62Z" fill={p.altDeep} f={f} />
+        <Path d="M32.5 50 C27 56 25 66 26.5 76 C27.2 81 31.5 82 32.5 78" stroke={p.deep} strokeWidth={8} fill="none" strokeLinecap="round" />
+        <Path d="M32.5 50 C27 56 25 66 26.5 76 C27.2 81 31.5 82 32.5 78" stroke={p.mid} strokeWidth={6.2} fill="none" strokeLinecap="round" />
+        <Path d="M27.4 60 l4 0.8 M26.6 64.6 l4 0.6 M26.4 69.2 l4 0.4 M26.6 73.6 l4 0.2" stroke={p.deep} strokeWidth={0.8} strokeLinecap="round" opacity={0.6} />
+        <V d="M38 58.5 C31 77 14 77.5 11.5 56 C16 70.5 28.5 70.5 37 64Z" fill={p.alt} f={f} gloss={[22, 71, 3.4, 1, 10]} />
+      </G>
+    ),
+    eyes: {
+      box: [35, 35, 7, 7],
+      el: <VEye x={38.6} y={38.6} r={2.3} f={f} />,
+    },
+  };
+};
+
+/** EXCISION's: a dinosaur from outer space, roaring with a glowing red eye, a flying saucer hovering over a ruined city behind it, fires at its feet (inspired by their artwork, drawn our own way). */
+const dino: Draw = (p, f) => {
+  // Teeth along a jaw, from (x0, y0) to (x1, y1), pointing down (1) or up (-1).
+  const teeth = (x0: number, y0: number, x1: number, y1: number, n: number, dir: 1 | -1) =>
+    Array.from({ length: n }, (_, i) => {
+      const t = (i + 0.5) / n;
+      const x = x0 + (x1 - x0) * t;
+      const y = y0 + (y1 - y0) * t;
+      return `M${r1(x - 1.1)} ${r1(y)} L${r1(x)} ${r1(y + dir * 2.6)} L${r1(x + 1.1)} ${r1(y)}Z`;
+    }).join(' ');
+  const fire = (x: number, y: number, s: number) => (
+    <G>
+      <Path d={flame(x, y, x - s * 0.3, y - s * 2.2, s, -s * 0.4)} fill="#FF5A1F" opacity={0.9} />
+      <Path d={flame(x + s * 0.7, y, x + s * 1.1, y - s * 1.6, s * 0.7, s * 0.4)} fill="#FF8A2E" opacity={0.9} />
+      <Path d={flame(x, y, x - s * 0.15, y - s * 1.3, s * 0.45, -s * 0.2)} fill="#FFD36B" />
+    </G>
+  );
+  return {
+    ground: [58, 90, 28],
+    back: (
+      <G>
+        <Ellipse cx={50} cy={50} rx={42} ry={36} fill={p.glow} opacity={0.16} />
+        {/* A ruined city. */}
+        <Path d="M8 80 L8 52 L14 52 L14 44 L19 44 L19 60 L24 60 L24 36 L30 32 L30 64 L36 64 L36 50 L42 50 L42 68 L60 68 L60 40 L66 40 L66 30 L70 26 L70 58 L76 58 L76 46 L82 42 L82 60 L88 60 L88 50 L93 50 L93 80Z" fill={p.altDeep} opacity={0.75} />
+        {(
+          [
+            [11, 56],
+            [21, 48],
+            [27, 40],
+            [27, 48],
+            [63, 44],
+            [68, 34],
+            [79, 50],
+            [90, 54],
+          ] as const
+        ).map(([x, y], i) => (
+          <Rect key={i} x={x} y={y} width={1.4} height={1.4} fill={p.glow} opacity={0.8} />
+        ))}
+      </G>
+    ),
+    // The flying saucer, hovering and tilting.
+    pivot: [72, 16],
+    sway: (
+      <G>
+        <Path d="M66 22 L56 46 L84 46 L76 22Z" fill={p.glow} opacity={0.16} />
+        <VE cx={72} cy={14.5} rx={5.4} ry={4.2} fill={p.alt} f={f} />
+        <VE cx={72} cy={18.5} rx={14} ry={3.8} fill={p.alt} f={f} gloss={false} />
+        <Ellipse cx={72} cy={20.2} rx={9} ry={1.6} fill={p.altDeep} />
+        {[61, 66.5, 72, 77.5, 83].map((x) => (
+          <Circle key={x} cx={x} cy={19} r={0.9} fill={p.accent} />
+        ))}
+      </G>
+    ),
+    flicker: (
+      <G>
+        {fire(13, 86, 5)}
+        {fire(85, 84, 4.4)}
+        {fire(35, 88, 3.2)}
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The far leg, in shadow. */}
+        <V d="M66 66 L74 66 L73 83 L78 85 Q78 88 75 88 L66 88 Q64 86 67 84Z" fill={p.deep} f={f} />
+        {/* Body and tail. */}
+        <V d="M40 50 C44 42 58 39 68 43 C78 46 86 45 96 42 C89 51 81 56 73 60 C71 68 65 72 56 72 C46 72 40 64 40 56Z" fill={p.mid} f={f} gloss={[56, 47, 6, 2.4, -10]} />
+        {/* Spines down its back. */}
+        {(
+          [
+            [44, 39.5],
+            [50, 41.5],
+            [56, 40.5],
+            [62, 41.5],
+            [68, 43],
+            [74, 44.5],
+            [80, 45],
+            [86, 44.2],
+          ] as const
+        ).map(([x, y], i) => (
+          <V key={i} d={flame(x, y + 2, x + 1.2, y - 3.4 + (i > 5 ? 1.4 : 0), 1.8, 0.6)} fill={p.deep} f={f} />
+        ))}
+        {/* Scales. */}
+        <Path d="M50 52 q2 1.4 4 0 M58 50 q2 1.4 4 0 M66 52 q2 1.4 4 0 M54 58 q2 1.4 4 0 M62 58 q2 1.4 4 0 M76 50 q2 1.4 4 0" stroke={p.deep} strokeWidth={0.8} fill="none" opacity={0.6} strokeLinecap="round" />
+        {/* The near leg: a heavy thigh, a shin and a clawed foot. */}
+        <VE cx={58} cy={63} rx={10} ry={9} fill={p.mid} f={f} />
+        <V d="M53 68 L62 68 L60.5 84 L66 86 Q66.5 89 62 89 L51 89 Q49 87 52.5 85Z" fill={p.mid} f={f} />
+        <Path d="M51 89 l-1.6 1.2 M55 89 l-1 1.6 M59 89 l-0.6 1.6" stroke={p.light} strokeWidth={0.9} strokeLinecap="round" />
+        {/* A little arm. */}
+        <Path d="M44 55 Q40 58 38.5 62" stroke={p.deep} strokeWidth={3.4} fill="none" strokeLinecap="round" />
+        <Path d="M38.5 62 l-1.6 1 M38.5 62 l-0.4 1.8" stroke={p.light} strokeWidth={0.8} strokeLinecap="round" />
+        {/* The mouth, open in a roar. */}
+        <Path d="M38 42 L15.5 37.5 L18 46.5 L37 44Z" fill="#3A0A10" />
+        <Path d={teeth(17, 37.9, 34, 41.2, 6, 1)} fill="#F6EEDC" />
+        <Path d={teeth(19.5, 46.2, 35, 44.2, 5, -1)} fill="#F6EEDC" />
+        {/* The lower jaw, dropped open. */}
+        <V d="M41 48 L37 44 L18 46.5 C15.5 47 15.5 50 18 50.6 C26 52.6 34 52.6 43 52Z" fill={p.mid} f={f} />
+        {/* The head. */}
+        <V d="M49 47 C49 36 45 28 37 26.6 C29 25.4 21 28.4 15.5 31.6 C13.4 33 13.4 36.8 15.5 37.5 L38 42 L41 48Z" fill={p.mid} f={f} gloss={[30, 29.5, 5, 1.6, -12]} />
+        <Path d="M27 31 Q32 28.4 38 30.6" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+        <Circle cx={17.6} cy={33} r={0.8} fill={p.deep} />
+        <Path d="M41 34 q2 1.2 4 0 M42 39 q2 1.2 4 0" stroke={p.deep} strokeWidth={0.8} fill="none" opacity={0.6} strokeLinecap="round" />
+      </G>
+    ),
+    // Its eye, glowing red.
+    front: <Glow x={33.4} y={32.6} r={1.5} color={p.accent} />,
+  };
+};
+
+/** SVDDEN DEATH's (and VOYD's): a bleached stag skull with great antlers, in a dark hooded robe, its eye sockets burning red. */
+const stagskull: Draw = (p, f) => {
+  const antler = (
+    <G>
+      <Path d="M41 27 C34 22 28 15 25 4 M34.5 22 L25.5 23.5 M30 16 L21 14 M27 10 L31.5 3.5" stroke={p.deep} strokeWidth={4.2} fill="none" strokeLinecap="round" />
+      <Path d="M41 27 C34 22 28 15 25 4 M34.5 22 L25.5 23.5 M30 16 L21 14 M27 10 L31.5 3.5" stroke={p.mid} strokeWidth={2.8} fill="none" strokeLinecap="round" />
+      <Path d="M40 25.6 C34 21 29 14.6 26.4 6" stroke={p.light} strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.7} />
+    </G>
+  );
+  return {
+    ground: [50, 94, 24],
+    back: <Ellipse cx={50} cy={50} rx={40} ry={38} fill={p.glow} opacity={0.12} />,
+    body: (
+      <G>
+        {/* The robe and its hood. */}
+        <V d="M22 94 C22 62 32 34 50 28 C68 34 78 62 78 94Z" fill={p.alt} f={f} />
+        <Path d="M30 94 C31 66 38 46 50 40 C62 46 69 66 70 94Z" fill={p.altDeep} />
+        {[34, 44, 56, 66].map((x, i) => (
+          <Path key={x} d={`M${x} ${74 + (i % 2) * 3} q-1.3 4 0 6 q1.3 -2 0 -6Z`} fill={p.accent} opacity={0.85} />
+        ))}
+        {both(antler)}
+        {/* The skull: a wide brow tapering to a long muzzle. */}
+        <V d="M36.5 32 C36.5 24 43 21 50 21 C57 21 63.5 24 63.5 32 C63.5 44 58 58 53 70 Q50 73.5 47 70 C42 58 36.5 44 36.5 32Z" fill={p.light} f={f} gloss={[43, 27, 4.4, 2, -25]} />
+        <Ellipse cx={43.4} cy={38} rx={3.8} ry={4.6} fill="#0E0816" transform="rotate(-12 43.4 38)" />
+        <Ellipse cx={56.6} cy={38} rx={3.8} ry={4.6} fill="#0E0816" transform="rotate(12 56.6 38)" />
+        <Path d="M50 44 L50 62 M46 50 Q50 52 54 50 M47 56 Q50 57.4 53 56" stroke={p.deep} strokeWidth={0.8} fill="none" opacity={0.6} strokeLinecap="round" />
+        <Ellipse cx={48.4} cy={66.5} rx={1} ry={1.6} fill="#0E0816" />
+        <Ellipse cx={51.6} cy={66.5} rx={1} ry={1.6} fill="#0E0816" />
+      </G>
+    ),
+    flicker: (
+      <G>
+        <Glow x={43.4} y={38.6} r={1.7} color={p.accent} />
+        <Glow x={56.6} y={38.6} r={1.7} color={p.accent} />
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
+/** LIQUID STRANGER's: a big-eyed alien captain at the controls of its ship. */
+const captain: Draw = (p, f) => ({
+  ground: [50, 92, 30],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={46} rx={40} ry={34} fill={p.glow} opacity={0.12} />
+      {sparkles(p.accent, [
+        [14, 18, 1.6],
+        [86, 14, 1.3],
+        [90, 40, 1],
+        [10, 44, 1.1],
+      ])}
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Shoulders in a flight suit. */}
+      <V d="M26 74 C28 62 38 58 50 58 C62 58 72 62 74 74Z" fill={p.alt} f={f} />
+      {/* A thin neck and a great domed head. */}
+      <V d="M46 52 L54 52 L53 62 L47 62Z" fill={p.mid} f={f} />
+      <V d="M30 34 C30 18 40 10 50 10 C60 10 70 18 70 34 C70 46 60 56 50 58 C40 56 30 46 30 34Z" fill={p.mid} f={f} gloss={[40, 19, 6, 2.6, -28]} />
+      {/* The eyes: huge, black, tilted. */}
+      <V d="M33 34 C34 28 41 27 46 32 C47 37 43 41 39 40 C35 39.4 32.6 37 33 34Z" fill="#06040C" f={f} gloss={[38, 31, 2.4, 1, -20]} />
+      <V d="M67 34 C66 28 59 27 54 32 C53 37 57 41 61 40 C65 39.4 67.4 37 67 34Z" fill="#06040C" f={f} gloss={[58, 31, 2.4, 1, 20]} />
+      <Path d="M47 50 Q50 51.4 53 50" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  front: (
+    <G>
+      {/* The dashboard. */}
+      <V d="M14 70 L86 70 L92 90 L8 90Z" fill={p.altDeep} f={f} />
+      <Path d="M14 70 L86 70 L88 75 L12 75Z" fill={p.alt} />
+      <Rect x={40} y={78} width={20} height={8} rx={1.4} fill={p.accent} opacity={0.35} />
+      <Path d="M42 84 L46 80 L49 83 L53 79 L58 82" stroke={p.accent} strokeWidth={0.9} fill="none" />
+      {/* Hands on the controls. */}
+      <VE cx={30} cy={71} rx={5} ry={3.2} fill={p.mid} f={f} />
+      <VE cx={70} cy={71} rx={5} ry={3.2} fill={p.mid} f={f} />
+    </G>
+  ),
+  flicker: (
+    <G>
+      {(
+        [
+          [18, 81, '#FF4A5E'],
+          [24, 85, p.accent],
+          [30, 81, '#FFD24A'],
+          [70, 81, p.accent],
+          [76, 85, '#FF4A5E'],
+          [82, 81, '#7AFF8A'],
+        ] as const
+      ).map(([x, y, c], i) => (
+        <Glow key={i} x={x} y={y} r={1.2} color={c} />
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** KAI WACHI's: a cyber-gladiator, chrome helmet crested in neon, a glowing T-shaped visor. */
+const gladiator: Draw = (p, f) => ({
+  ground: [50, 94, 28],
+  back: <Ellipse cx={50} cy={50} rx={40} ry={36} fill={p.glow} opacity={0.12} />,
+  body: (
+    <G>
+      {/* Pauldrons and chest plate. */}
+      {both(<V d="M20 78 C18 66 24 58 34 58 L40 60 L38 76 C32 80 25 81 20 78Z" fill={p.mid} f={f} gloss={[27, 63, 3.5, 1.5, -20]} />)}
+      <V d="M34 60 L66 60 L64 88 Q50 94 36 88Z" fill={p.deep} f={f} />
+      <Path d="M40 66 L50 72 L60 66 M42 76 L50 81 L58 76" stroke={p.accent} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+      {/* The crest: a tall neon ridge. */}
+      <V d="M42 20 C40 8 46 2 50 2 C54 2 60 8 58 20Z" fill={p.alt} f={f} />
+      {[44, 47, 50, 53, 56].map((x) => (
+        <Path key={x} d={`M${x} 18 L${x} 6`} stroke={p.altDeep} strokeWidth={0.7} opacity={0.6} />
+      ))}
+      {/* The helmet: rounded, with cheek guards. */}
+      <V d="M30 40 C30 24 39 16 50 16 C61 16 70 24 70 40 L68 58 L58 62 L58 50 L42 50 L42 62 L32 58Z" fill={p.light} f={f} gloss={[40, 24, 6, 2.6, -28]} />
+      <Path d="M30.5 36 L69.5 36" stroke={p.mid} strokeWidth={1.4} />
+      {/* The T-shaped visor, dark. */}
+      <Path d="M35 39 L65 39 L65 45 L54 45 L54 58 L46 58 L46 45 L35 45Z" fill="#06040C" />
+    </G>
+  ),
+  flicker: (
+    <G>
+      <Path d="M36.5 41 L63.5 41 L63.5 43.4 L52.4 43.4 L52.4 56 L47.6 56 L47.6 43.4 L36.5 43.4Z" fill={p.accent} />
+      <Path d="M35 39 L65 39 L65 45 L54 45 L54 58 L46 58 L46 45 L35 45Z" fill={p.accent} opacity={0.25} transform="translate(50 46) scale(1.15) translate(-50 -46)" />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** PORTER ROBINSON's: a soft pastel cube floating in a dream, pixels drifting off it. */
+const dreamcube: Draw = (p, f) => ({
+  ground: [50, 92, 16],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={48} rx={38} ry={34} fill={p.glow} opacity={0.16} />
+      {sparkles('#FFFFFF', [
+        [16, 20, 1.6],
+        [84, 24, 1.4],
+        [12, 66, 1.1],
+        [88, 70, 1.2],
+      ])}
+    </G>
+  ),
+  pivot: [50, 50],
+  sway: (
+    <G>
+      {(
+        [
+          [18, 40, 3.2, p.alt],
+          [80, 46, 2.8, p.mid],
+          [24, 76, 2.4, p.mid],
+          [76, 78, 3, p.alt],
+          [70, 14, 2.2, p.alt],
+          [30, 12, 2, p.mid],
+        ] as const
+      ).map(([x, y, s, c], i) => (
+        <Rect key={i} x={x} y={y} width={s} height={s} fill={c} opacity={0.9} />
+      ))}
+    </G>
+  ),
+  body: (
+    <G>
+      {/* An isometric cube: top, left and right faces. */}
+      <V d="M50 18 L76 31 L50 44 L24 31Z" fill={p.light} f={f} gloss={[44, 27, 6, 2, -10]} />
+      <V d="M24 31 L50 44 L50 78 L24 65Z" fill={p.mid} f={f} />
+      <V d="M76 31 L50 44 L50 78 L76 65Z" fill={p.alt} f={f} />
+      <Path d="M50 44 L50 78" stroke="#FFFFFF" strokeWidth={0.8} opacity={0.7} />
+      <Circle cx={31} cy={60} r={2.2} fill="#FF8AB8" opacity={0.6} />
+      <Circle cx={45} cy={67} r={2.2} fill="#FF8AB8" opacity={0.6} />
+      <Path d="M35.5 61.5 Q38 64.6 40.5 63" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [29, 48, 18, 10],
+    el: (
+      <G>
+        <VEye x={33} y={53} r={2.4} f={f} />
+        <VEye x={43} y={58} r={2.4} f={f} />
+      </G>
+    ),
+  },
+});
+
+/** SAID THE SKY's: a paper plane gliding over soft pink and blue clouds. */
+const paperplane: Draw = (p, f) => ({
+  ground: [50, 92, 18],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={40} ry={34} fill={p.glow} opacity={0.14} />
+      {(
+        [
+          [20, 78, 13, 8, p.altDeep],
+          [34, 72, 12, 10, p.alt],
+          [50, 78, 14, 9, p.altDeep],
+          [66, 72, 12, 10, p.alt],
+          [80, 78, 12, 8, p.altDeep],
+          [27, 84, 12, 6, p.alt],
+          [72, 84, 12, 6, p.alt],
+          [82, 22, 7, 4, p.alt],
+          [16, 30, 6, 3.5, p.altDeep],
+        ] as const
+      ).map(([cx, cy, rx, ry, c], i) => (
+        <VE key={i} cx={cx} cy={cy} rx={rx} ry={ry} fill={c} f={f} gloss={false} opacity={0.9} />
+      ))}
+    </G>
+  ),
+  pivot: [50, 48],
+  sway: (
+    <G transform="translate(50 46) scale(1.3) translate(-54 -46)">
+      {/* Its trail. */}
+      <Path d="M10 58 Q22 66 30 56" stroke="#FFFFFF" strokeWidth={1.1} fill="none" strokeDasharray="2 3" strokeLinecap="round" opacity={0.8} />
+      {/* The folds: far wing, keel, near wing. */}
+      <V d="M30 54 L84 30 L52 50Z" fill={p.deep} f={f} />
+      <V d="M52 50 L84 30 L56 62Z" fill={p.mid} f={f} />
+      <V d="M30 54 L84 30 L56 58 L48 52Z" fill={p.light} f={f} gloss={[58, 44, 7, 1.6, -24]} />
+      <Path d="M48 52 L84 30" stroke={p.deep} strokeWidth={0.7} opacity={0.6} />
+    </G>
+  ),
+  body: <G />,
+});
+
+/** ODESZA's: a golden icosahedron, twenty faces glowing. */
+const icosa: Draw = (p, f) => {
+  const at = (deg: number, r: number) => [r1(50 + Math.cos((deg * Math.PI) / 180) * r), r1(48 + Math.sin((deg * Math.PI) / 180) * r)] as const;
+  const H = [270, 330, 30, 90, 150, 210].map((d) => at(d, 32));
+  const T: Record<number, readonly [number, number]> = { 330: at(330, 15), 90: at(90, 15), 210: at(210, 15) };
+  const tri = (a: readonly number[], b: readonly number[], c: readonly number[]) => `M${a[0]} ${a[1]} L${b[0]} ${b[1]} L${c[0]} ${c[1]}Z`;
+  const faces: [string, string][] = [
+    [tri(T[330], T[90], T[210]), p.light],
+    [tri(H[0], H[1], T[330]), p.light],
+    [tri(H[1], H[2], T[330]), p.mid],
+    [tri(H[2], H[3], T[90]), p.mid],
+    [tri(H[3], H[4], T[90]), p.alt],
+    [tri(H[4], H[5], T[210]), p.alt],
+    [tri(H[5], H[0], T[210]), p.light],
+    [tri(T[330], T[90], H[2]), p.mid],
+    [tri(T[90], T[210], H[4]), p.alt],
+    [tri(T[210], T[330], H[0]), p.light],
+  ];
+  return {
+    ground: [50, 90, 18],
+    back: (
+      <G>
+        <Circle cx={50} cy={48} r={42} fill={p.glow} opacity={0.12} />
+        <Circle cx={50} cy={48} r={36} fill={p.glow} opacity={0.12} />
+      </G>
+    ),
+    body: (
+      <G>
+        {faces.map(([d, c], i) => (
+          <V key={i} d={d} fill={c} f={f} />
+        ))}
+        <Path d={faces.map(([d]) => d).join(' ')} stroke={p.accent} strokeWidth={0.7} fill="none" strokeLinejoin="round" opacity={0.9} />
+      </G>
+    ),
+    flicker: sparkles('#FFFFFF', [
+      [H[0][0], H[0][1], 2.4],
+      [T[330][0], T[330][1], 1.6],
+      [H[4][0], H[4][1], 1.8],
+    ]),
+    flickerOver: true,
+  };
+};
+
+/** A spiral from the middle out (for hypnotic goggles). */
+function spiral(cx: number, cy: number, r: number, turns = 3) {
+  const n = turns * 16;
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const a = (i / 16) * Math.PI * 2;
+    const d = (i / n) * r;
+    return `${i ? 'L' : 'M'}${r1(cx + Math.cos(a) * d)} ${r1(cy + Math.sin(a) * d)}`;
+  }).join(' ');
+}
+
+/** REZZ's: a dark little figure with a fringe, behind huge goggles of glowing red spirals. */
+const goggles: Draw = (p, f) => ({
+  ground: [50, 92, 24],
+  back: <Ellipse cx={50} cy={50} rx={40} ry={36} fill={p.glow} opacity={0.12} />,
+  body: (
+    <G>
+      {/* A dark jacket, high collar. */}
+      <V d="M24 92 C24 74 34 64 50 64 C66 64 76 74 76 92Z" fill={p.mid} f={f} />
+      <Path d="M42 64 L50 74 L58 64" stroke={p.alt} strokeWidth={1.4} fill="none" />
+      {/* Head and long dark hair with a blunt fringe. */}
+      <V d="M28 50 C26 30 36 18 50 18 C64 18 74 30 72 50 L74 70 L64 66 L36 66 L26 70Z" fill={p.deep} f={f} />
+      <VE cx={50} cy={46} rx={17} ry={18} fill={p.light} f={f} gloss={false} />
+      <V d="M32 40 C32 26 40 21 50 21 C60 21 68 26 68 40 L62 36 L56 39 L50 35 L44 39 L38 36Z" fill={p.deep} f={f} gloss={[42, 26, 5, 1.6, -18]} />
+      <Path d="M46 60 Q50 61.6 54 60" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+      {/* The goggles. */}
+      <Path d="M33 47 L67 47" stroke={p.alt} strokeWidth={2.4} />
+      {[39, 61].map((x) => (
+        <G key={x}>
+          <VE cx={x} cy={48} rx={10} ry={10} fill={p.alt} f={f} />
+          <Circle cx={x} cy={48} r={8} fill="#06040C" />
+        </G>
+      ))}
+    </G>
+  ),
+  flicker: (
+    <G>
+      {[39, 61].map((x) => (
+        <G key={x}>
+          <Circle cx={x} cy={48} r={8} fill={p.accent} opacity={0.18} />
+          <Path d={spiral(x, 48, 7.2, 3)} stroke={p.accent} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+          <Circle cx={x} cy={48} r={1.1} fill="#FFFFFF" />
+        </G>
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ERIC PRYDZ's: a ghostly hologram of an astronaut, projected in light above its emitter. */
+const hologram: Draw = (p, f) => {
+  const lines = Array.from({ length: 16 }, (_, i) => `M26 ${14 + i * 4} L74 ${14 + i * 4}`).join(' ');
+  return {
+    ground: [50, 92, 22],
+    back: <Ellipse cx={50} cy={46} rx={38} ry={36} fill={p.glow} opacity={0.12} />,
+    body: (
+      <G>
+        {/* The emitter and its beam. */}
+        <Path d="M38 84 L28 30 L72 30 L62 84Z" fill={p.mid} opacity={0.1} />
+        <V d="M30 84 Q50 80 70 84 L67 92 Q50 95 33 92Z" fill={p.alt} f={f} />
+        <Ellipse cx={50} cy={84} rx={16} ry={2.6} fill={p.altDeep} />
+        <Ellipse cx={50} cy={84} rx={10} ry={1.6} fill={p.mid} />
+      </G>
+    ),
+    flicker: (
+      <G opacity={0.85}>
+        {/* The astronaut, in light. */}
+        <Path d="M36 78 L38 58 C38 52 42 50 50 50 C58 50 62 52 62 58 L64 78 L56 78 L55 68 L45 68 L44 78Z" fill={p.mid} opacity={0.45} />
+        <Path d="M38 58 L30 66 M62 58 L70 64" stroke={p.mid} strokeWidth={4.4} strokeLinecap="round" opacity={0.45} />
+        <Circle cx={50} cy={36} r={14} fill={p.mid} opacity={0.4} />
+        <Path d="M41 34 Q50 27 59 34 Q59 43 50 44 Q41 43 41 34Z" fill={p.light} opacity={0.75} />
+        <Rect x={44} y={56} width={12} height={7} rx={1} fill={p.light} opacity={0.5} />
+        <Path d={lines} stroke={p.light} strokeWidth={0.5} opacity={0.35} />
+        <Path d="M36 78 L38 58 C38 52 42 50 50 50 C58 50 62 52 62 58 L64 78 M36 36 A14 14 0 1 1 64 36 A14 14 0 1 1 36 36" stroke={p.light} strokeWidth={0.8} fill="none" opacity={0.8} />
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
+/** DEADMAU5's: a big round mouse head with huge ears, round glowing eyes and a wide grin. */
+const mousehead: Draw = (p, f) => ({
+  ground: [50, 92, 24],
+  back: <Ellipse cx={50} cy={50} rx={42} ry={38} fill={p.glow} opacity={0.12} />,
+  body: (
+    <G>
+      {both(<VE cx={24} cy={24} rx={15} ry={15} fill={p.mid} f={f} />)}
+      <V d="M28 82 C30 74 40 70 50 70 C60 70 70 74 72 82Z" fill={p.alt} f={f} />
+      <VE cx={50} cy={52} rx={27} ry={26} fill={p.mid} f={f} />
+      {/* The grin. */}
+      <V d="M33 60 Q50 64 67 60 Q64 74 50 75 Q36 74 33 60Z" fill="#FFFFFF" f={f} />
+      <Path d="M38 61.6 L39 71 M44 62.6 L44.4 74 M50 63 L50 75 M56 62.6 L55.6 74 M62 61.6 L61 71 M34.6 66 Q50 69.6 65.4 66" stroke={p.altDeep} strokeWidth={0.9} fill="none" />
+    </G>
+  ),
+  flicker: (
+    <G>
+      {[39, 61].map((x) => (
+        <G key={x}>
+          <Circle cx={x} cy={46} r={8.4} fill={p.accent} opacity={0.2} />
+          <Circle cx={x} cy={46} r={7} fill={p.accent} />
+          <Circle cx={x + 1} cy={47} r={3.6} fill="#06040C" />
+          <Circle cx={x - 1.6} cy={43.6} r={1.6} fill="#FFFFFF" />
+        </G>
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** MARSHMELLO's: a soft marshmallow with crossed eyes and a big friendly grin. */
+const mallow: Draw = (p, f) => ({
+  ground: [50, 92, 22],
+  back: <Ellipse cx={50} cy={50} rx={40} ry={36} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* Little feet and arms. */}
+      <VE cx={41} cy={88} rx={6} ry={3.6} fill={p.mid} f={f} />
+      <VE cx={59} cy={88} rx={6} ry={3.6} fill={p.mid} f={f} />
+      {both(<VE cx={25} cy={58} rx={4.6} ry={7} fill={p.mid} f={f} turn={20} />)}
+      {/* The marshmallow: a soft cylinder, its top showing. */}
+      <V d="M27 30 C27 24 38 20 50 20 C62 20 73 24 73 30 L73 78 C73 84 62 88 50 88 C38 88 27 84 27 78Z" fill={p.light} f={f} gloss={[36, 40, 3.6, 12, 0]} />
+      <Ellipse cx={50} cy={30} rx={23} ry={8.6} fill={p.mid} opacity={0.55} />
+      <Path d="M27 30 C27 36 38 39 50 39 C62 39 73 36 73 30" stroke={p.deep} strokeWidth={0.8} fill="none" opacity={0.5} />
+      {/* Crossed eyes and the grin. */}
+      <Path d="M36 48 L44 56 M44 48 L36 56 M56 48 L64 56 M64 48 L56 56" stroke={p.alt} strokeWidth={2.6} strokeLinecap="round" />
+      <Path d="M36 63 Q50 64.4 64 63 Q62 75 50 76 Q38 75 36 63Z" fill={p.alt} />
+      <Circle cx={34} cy={64} r={2.4} fill={p.accent} opacity={0.55} />
+      <Circle cx={66} cy={64} r={2.4} fill={p.accent} opacity={0.55} />
+    </G>
+  ),
+});
+
+/** ALAN WALKER's: a hooded figure, hood pulled low and face masked, only the eyes showing. */
+const hooded: Draw = (p, f) => ({
+  ground: [50, 94, 26],
+  back: <Ellipse cx={50} cy={50} rx={40} ry={36} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* The hoodie: body and drawstrings. */}
+      <V d="M20 94 C20 72 32 62 50 62 C68 62 80 72 80 94Z" fill={p.mid} f={f} />
+      <Path d="M45 66 L44 80 M55 66 L56 80" stroke={p.light} strokeWidth={1} strokeLinecap="round" />
+      {/* A simple emblem: two chevrons. */}
+      <Path d="M42 86 L50 80 L58 86 M45 90 L50 86 L55 90" stroke={p.accent} strokeWidth={1.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {/* The hood, pulled low. */}
+      <V d="M24 58 C22 32 34 14 50 14 C66 14 78 32 76 58 C72 66 62 70 50 70 C38 70 28 66 24 58Z" fill={p.mid} f={f} gloss={[38, 22, 6, 2.4, -28]} />
+      <Path d="M32 56 C32 38 40 30 50 30 C60 30 68 38 68 56 C64 62 58 64 50 64 C42 64 36 62 32 56Z" fill={p.deep} />
+      {/* The mask, under the eyes. */}
+      <V d="M34 48 Q50 44 66 48 L64 58 Q50 65 36 58Z" fill={p.alt} f={f} />
+      <Path d="M36 52 Q50 49 64 52" stroke={p.light} strokeWidth={0.5} fill="none" opacity={0.35} />
+    </G>
+  ),
+  flicker: (
+    <G>
+      <Path d="M39 42 Q43 39.6 47 42 Q43 43.6 39 42Z" fill={p.accent} />
+      <Path d="M53 42 Q57 39.6 61 42 Q57 43.6 53 42Z" fill={p.accent} />
+      <Ellipse cx={50} cy={42} rx={14} ry={3.4} fill={p.glow} opacity={0.18} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ZEDD's: a glass prism, a beam of white light going in and a rainbow fanning out. */
+const prism: Draw = (p, f) => {
+  const rainbow = ['#FF3B3B', '#FF9A2E', '#FFE14A', '#4AE07A', '#3AA8FF', '#8A5AFF'];
+  return {
+    ground: [50, 88, 22],
+    back: <Ellipse cx={50} cy={50} rx={42} ry={36} fill={p.glow} opacity={0.12} />,
+    flicker: (
+      <G>
+        <Path d="M4 60 L42 49" stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" />
+        <Path d="M4 60 L42 49" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" opacity={0.25} />
+        {rainbow.map((c, i) => (
+          <Path key={c} d={`M60 ${50 + i * 1.6} L97 ${38 + i * 7} L97 ${44 + i * 7} L60 ${51.6 + i * 1.6}Z`} fill={c} opacity={0.9} />
+        ))}
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The prism: a triangle of glass with a bevelled face. */}
+        <V d="M50 18 L76 72 L24 72Z" fill={p.mid} f={f} opacity={0.85} />
+        <Path d="M50 18 L58 72 L76 72Z" fill={p.deep} opacity={0.35} />
+        <Path d="M50 24 L30 68 L44 68Z" fill="#FFFFFF" opacity={0.35} />
+        <Path d="M50 18 L76 72 L24 72Z" stroke={p.light} strokeWidth={1.2} fill="none" strokeLinejoin="round" />
+        <Path d="M42 49 L60 51" stroke="#FFFFFF" strokeWidth={1.2} opacity={0.8} />
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
+/** SAN HOLO's: a single white bird in flight against a pastel sky. */
+const dove: Draw = (p, f) => ({
+  ground: [50, 90, 16],
+  back: (
+    <G>
+      <Circle cx={50} cy={48} r={40} fill={p.alt} opacity={0.22} />
+      <Circle cx={50} cy={48} r={30} fill={p.altDeep} opacity={0.16} />
+    </G>
+  ),
+  pivot: [50, 50],
+  flap: true,
+  sway: (
+    <G>
+      {/* Wings raised, feathers swept back. */}
+      {both(
+        <G>
+          <V d="M48 50 C40 40 30 28 12 20 C20 32 26 40 30 44 C24 44 18 46 14 50 C24 52 36 54 46 56Z" fill={p.light} f={f} />
+          <Path d="M44 50 C36 42 28 34 18 26 M42 53 C34 50 26 48 20 48" stroke={p.mid} strokeWidth={0.8} fill="none" opacity={0.8} />
+        </G>,
+      )}
+    </G>
+  ),
+  body: (
+    <G>
+      {/* A slim body, tail fanned below, head turned up. */}
+      <V d="M44 66 L50 82 L56 66Z" fill={p.mid} f={f} />
+      <V d="M50 38 C56 40 58 50 56 60 C55 66 52 70 50 70 C48 70 45 66 44 60 C42 50 44 40 50 38Z" fill={p.light} f={f} gloss={[47, 46, 1.6, 4, 0]} />
+      <VE cx={50} cy={36} rx={5.4} ry={5} fill={p.light} f={f} />
+      <Path d="M50 32 L54.6 30 L51 34Z" fill={p.accent} />
+      <Circle cx={51.4} cy={35} r={0.9} fill={p.deep} />
+    </G>
+  ),
+});
+
+/** STEVE AOKI's: a three-tier birthday cake flying through the air, candles lit. */
+const cake: Draw = (p, f) => {
+  const drips = (y: number, x0: number, x1: number) =>
+    Array.from({ length: Math.round((x1 - x0) / 5) }, (_, i) => {
+      const x = x0 + 2.5 + i * 5;
+      const h = 2 + (i % 3) * 1.4;
+      return `M${x - 1.6} ${y} L${x - 1.6} ${y + h} Q${x} ${y + h + 2} ${x + 1.6} ${y + h} L${x + 1.6} ${y}Z`;
+    }).join(' ');
+  const sprinkles = ['#FF4A5E', '#4AE07A', '#3AA8FF', '#FFE14A', '#B07AFF'];
+  return {
+    ground: [50, 92, 22],
+    back: (
+      <G>
+        <Ellipse cx={50} cy={50} rx={40} ry={34} fill={p.glow} opacity={0.14} />
+        <Path d="M14 70 L4 74 M16 78 L6 84 M18 62 L8 64" stroke="#FFFFFF" strokeWidth={1.2} strokeLinecap="round" opacity={0.5} />
+      </G>
+    ),
+    pivot: [50, 56],
+    sway: (
+      <G transform="rotate(-8 50 56)">
+        {/* Plate, then three tiers, each frosted with drips. */}
+        <Ellipse cx={50} cy={84} rx={30} ry={4} fill={p.altDeep} />
+        <V d="M24 64 L76 64 L76 82 Q50 86 24 82Z" fill={p.mid} f={f} />
+        <V d="M24 64 Q50 60 76 64 L76 67 L24 67Z" fill={p.alt} f={f} />
+        <Path d={drips(66.5, 24, 76)} fill={p.alt} />
+        <V d="M31 48 L69 48 L69 64 L31 64Z" fill={p.deep} f={f} />
+        <V d="M31 48 Q50 45 69 48 L69 51 L31 51Z" fill={p.alt} f={f} />
+        <Path d={drips(50.5, 31, 69)} fill={p.alt} />
+        <V d="M38 34 L62 34 L62 48 L38 48Z" fill={p.mid} f={f} />
+        <V d="M38 34 Q50 32 62 34 L62 37 L38 37Z" fill={p.alt} f={f} />
+        <Path d={drips(36.5, 38, 62)} fill={p.alt} />
+        {(
+          [
+            [30, 74],
+            [40, 77],
+            [52, 72],
+            [64, 76],
+            [70, 71],
+            [36, 58],
+            [48, 60],
+            [60, 57],
+            [44, 43],
+            [56, 44],
+          ] as const
+        ).map(([x, y], i) => (
+          <Rect key={i} x={x} y={y} width={2.4} height={0.9} rx={0.45} fill={sprinkles[i % sprinkles.length]} transform={`rotate(${(i * 47) % 180} ${x} ${y})`} />
+        ))}
+        {/* Candles. */}
+        {[43, 50, 57].map((x) => (
+          <G key={x}>
+            <Rect x={x - 1} y={26} width={2} height={8} fill={x === 50 ? '#7AD0FF' : '#FFD86B'} />
+            <Path d={flame(x, 26, x, 20.5, 1.6)} fill={p.accent} />
+          </G>
+        ))}
+      </G>
+    ),
+    body: <G />,
+  };
+};
+
+/** TCHAMI's: a gothic stained-glass window, lit from within. */
+const stainedglass: Draw = (p, f) => {
+  const panes = ['#E0344A', '#3A7AF0', '#3AC07A', '#FFC24A', '#9A5AE8', '#FF8A3A'];
+  // The lancet below: two columns of panes under a pointed arch.
+  const cells: [number, number, number, number][] = [];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) cells.push([31 + c * 12.7, 46 + r * 10, 12.7, 10]);
+  return {
+    ground: [50, 94, 24],
+    back: <Ellipse cx={50} cy={52} rx={42} ry={40} fill={p.glow} opacity={0.18} />,
+    body: (
+      <G>
+        {/* Stone frame. */}
+        <V d="M24 92 L24 40 C24 20 36 8 50 4 C64 8 76 20 76 40 L76 92Z" fill={p.mid} f={f} />
+        {/* The glass: a rose window above, panes below. */}
+        <Path d="M30 86 L30 44 C30 28 40 16 50 12 C60 16 70 28 70 44 L70 86Z" fill={p.altDeep} />
+        {cells.map(([x, y, w, h], i) => (
+          <Rect key={i} x={x} y={y} width={w} height={h} fill={panes[(i * 5) % panes.length]} opacity={0.9} />
+        ))}
+        {Array.from({ length: 8 }, (_, i) => {
+          const a0 = (i / 8) * Math.PI * 2;
+          const a1 = ((i + 1) / 8) * Math.PI * 2;
+          return <Path key={i} d={`M50 30 L${r1(50 + Math.cos(a0) * 12)} ${r1(30 + Math.sin(a0) * 12)} A12 12 0 0 1 ${r1(50 + Math.cos(a1) * 12)} ${r1(30 + Math.sin(a1) * 12)}Z`} fill={panes[i % panes.length]} opacity={0.9} />;
+        })}
+        <Circle cx={50} cy={30} r={3.4} fill={p.accent} />
+        {/* Lead lines. */}
+        <Path d="M30 46 L70 46 M30 56 L70 56 M30 66 L70 66 M30 76 L70 76 M43.7 46 L43.7 86 M56.3 46 L56.3 86" stroke={p.deep} strokeWidth={1.4} />
+        <Circle cx={50} cy={30} r={12} stroke={p.deep} strokeWidth={1.6} fill="none" />
+        <Path d="M50 18 L50 42 M38 30 L62 30 M41.5 21.5 L58.5 38.5 M58.5 21.5 L41.5 38.5" stroke={p.deep} strokeWidth={1} />
+        <Path d="M30 86 L30 44 C30 28 40 16 50 12 C60 16 70 28 70 44 L70 86Z" stroke={p.deep} strokeWidth={2} fill="none" />
+      </G>
+    ),
+    flicker: (
+      <G>
+        <Path d="M30 86 L30 44 C30 28 40 16 50 12 C60 16 70 28 70 44 L70 86Z" fill={p.light} opacity={0.12} />
+        <Glow x={50} y={30} r={1.6} color={p.accent} />
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
+/** ATLIENS's: a hooded figure in a chrome mask, eyes burning red, under a flaming red UFO and its beam (inspired by their look and tour art, drawn our own way). */
+const chromemask: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={38} fill={p.glow} opacity={0.12} />
+      {/* The beam. */}
+      <Path d="M42 26 L58 26 L78 90 Q50 96 22 90Z" fill={p.accent} opacity={0.22} />
+    </G>
+  ),
+  // The UFO, tilting as it hovers.
+  pivot: [50, 22],
+  sway: (
+    <G>
+      <VE cx={50} cy={18.5} rx={8} ry={5} fill={p.deep} f={f} />
+      <VE cx={50} cy={23} rx={24} ry={5} fill={p.deep} f={f} gloss={false} />
+      <Ellipse cx={50} cy={24.6} rx={16} ry={2} fill={p.altDeep} />
+      {[32, 40, 50, 60, 68].map((x) => (
+        <Circle key={x} cx={x} cy={23.2} r={1} fill={p.accent} />
+      ))}
+    </G>
+  ),
+  body: (
+    <G transform="translate(50 98) scale(0.86) translate(-50 -98)">
+      {/* The hoodie, drawstrings hanging. */}
+      <V d="M18 92 C18 76 30 66 50 66 C70 66 82 76 82 92 Q50 97 18 92Z" fill={p.alt} f={f} />
+      <Path d="M45 70 L44 84 M55 70 L56 84" stroke={p.mid} strokeWidth={0.9} strokeLinecap="round" opacity={0.8} />
+      {/* The hood, and the dark inside it. */}
+      <V d="M27 58 C25 36 36 22 50 22 C64 22 75 36 73 58 C69 68 60 72 50 72 C40 72 31 68 27 58Z" fill={p.alt} f={f} gloss={[38, 30, 5, 2, -28]} />
+      <Path d="M33.5 57 C33.5 40 41 31.5 50 31.5 C59 31.5 66.5 40 66.5 57 C62.5 64 57 67 50 67 C43 67 37.5 64 33.5 57Z" fill={p.altDeep} />
+      {/* The chrome mask. */}
+      <V d="M38 46 C38 38 43 34 50 34 C57 34 62 38 62 46 C62 56 57 64 50 65.5 C43 64 38 56 38 46Z" fill={p.mid} f={f} gloss={[44, 39, 3.6, 1.8, -30]} />
+      <Path d="M40.4 41 Q44 38.6 48 40.6 M59.6 41 Q56 38.6 52 40.6" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+      <Path d="M50 44 L48.4 54.4 Q50 55.6 51.6 54.4Z" fill={p.light} opacity={0.7} />
+      <Path d="M46 59.4 Q50 60.8 54 59.4" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+      <Path d="M57.6 50 Q59 56 54.6 61.6" stroke={p.light} strokeWidth={1} fill="none" opacity={0.6} strokeLinecap="round" />
+      <Ellipse cx={44.6} cy={46} rx={3.2} ry={2.3} fill="#06040C" transform="rotate(10 44.6 46)" />
+      <Ellipse cx={55.4} cy={46} rx={3.2} ry={2.3} fill="#06040C" transform="rotate(-10 55.4 46)" />
+    </G>
+  ),
+  flicker: (
+    <G>
+      {/* Flames licking off the top of the UFO. */}
+      {(
+        [
+          [33, 21, 31, 13, 2.2, -2],
+          [40, 19, 39, 10, 2.4, 1],
+          [46, 16.5, 45, 8, 2.2, -1],
+          [54, 16.5, 55.5, 8.5, 2.2, 1],
+          [60, 19, 62, 10.5, 2.4, -1],
+          [67, 21, 70, 13.5, 2, 2],
+        ] as const
+      ).map(([bx, by, tx, ty, w, b], i) => (
+        <G key={i}>
+          <Path d={flame(bx, by, tx, ty, w, b)} fill={p.accent} />
+          <Path d={flame(bx, by, bx + (tx - bx) * 0.6, by + (ty - by) * 0.6, w * 0.5, b * 0.5)} fill="#FFB43A" />
+        </G>
+      ))}
+      <G transform="translate(50 98) scale(0.86) translate(-50 -98)">
+        <Glow x={44.6} y={46.2} r={1.6} color={p.accent} />
+        <Glow x={55.4} y={46.2} r={1.6} color={p.accent} />
+      </G>
+    </G>
+  ),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -2274,4 +3112,22 @@ export const DRAW: Record<Creature, Draw> = {
   patchbear,
   thornskull,
   trooper,
+  mammoth,
+  dino,
+  stagskull,
+  captain,
+  gladiator,
+  dreamcube,
+  paperplane,
+  icosa,
+  goggles,
+  hologram,
+  mousehead,
+  mallow,
+  hooded,
+  prism,
+  dove,
+  cake,
+  stainedglass,
+  chromemask,
 };

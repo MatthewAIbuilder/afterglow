@@ -4,6 +4,7 @@ import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
 import { cleanPublicGarden, type PublicResident } from '../../sprouts/publicGarden';
+import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
 import { cleanNote, cleanPublicKandi, cleanWord, isPattern, type Kandi, type PublicKandi } from '../../kandi/kandi';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
@@ -37,6 +38,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const themeGrants = new Set<string>();
   /** Gardens as shown on profiles. */
   const gardens = new Map<string, { residents: PublicResident[]; kandi: PublicKandi[] }>();
+  const gardenBackups = new Map<string, string>();
   /** Kandi, by id. */
   const kandi = new Map<string, Kandi>();
   /** Picks as `crewId/uid`. */
@@ -1125,6 +1127,17 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       me();
       return gardens.get(uid) ?? null;
     },
+    async saveGardenBackup(data) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      if (typeof data !== 'string' || data.length > GARDEN_BACKUP_MAX) throw new SocialError('unknown');
+      gardenBackups.set(u.uid, data);
+    },
+    async gardenBackup() {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      return gardenBackups.get(u.uid) ?? null;
+    },
     async giveKandi(input) {
       if (network.down) throw new SocialError('network');
       const u = me();
@@ -1346,5 +1359,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, currentUser: () => current };
+  return { service, gardens, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, currentUser: () => current };
 }
