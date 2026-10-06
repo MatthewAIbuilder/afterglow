@@ -349,6 +349,9 @@ export const es_friends: Dictionary = {
   'Save this account': 'Guardar esta cuenta',
   'Saved. Hold the Profile tab any time to switch.': 'Guardada. Mantén pulsada la pestaña Perfil cuando quieras para cambiar.',
   'Add an account': 'Añadir una cuenta',
+  'No account yet?': '¿Aún no tienes cuenta?',
+  'Create a new account': 'Crear una cuenta nueva',
+  'Creating one signs you out of {email}. Save it above first to switch back in one tap.': 'Al crearla se cierra la sesión de {email}. Guárdala arriba primero para volver con un toque.',
   'Sign out': 'Cerrar sesión',
 
   // Create your profile / sign in

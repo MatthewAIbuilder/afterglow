@@ -91,4 +91,16 @@ describe('switching accounts', () => {
     expect(keychain.has('afterglow.account.uid-1')).toBe(false);
     expect(mockSocial.currentUser()?.email).toBe('maya@example.com');
   });
+
+  it('has a way to create an account that doesn’t exist yet, with the email carried over', async () => {
+    const app = await renderApp('/switch-account');
+    await flush();
+    await fireEvent.press(app.getByText('Add an account'));
+    await fireEvent.changeText(app.getByLabelText('Email'), 'new.person@example.com');
+    expect(app.getByText(/Creating one signs you out of maya@example.com/)).toBeTruthy();
+    await fireEvent.press(app.getByText('Create a new account'));
+    await flush();
+    expect(app.getByText('Create your profile')).toBeTruthy();
+    expect(app.getByLabelText('Email').props.value).toBe('new.person@example.com');
+  });
 });
