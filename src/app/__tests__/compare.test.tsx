@@ -44,9 +44,9 @@ describe('comparing festivals', () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['horizon-27']));
     const app = await renderApp('/artist/subtronics');
     await flush();
-    const names = app.getAllByText(/^(Solstice 2026|Horizon 2027|Cyclops Cove 4)$/).map((n) => n.props.children);
+    const names = app.getAllByText(/^(Solstice 2026|Horizon 2027|Cyclops Cove 4|EDC Colombia 2026)$/).map((n) => n.props.children);
     // The next show (the soonest) sits under their name; the Playing list puts yours first.
-    expect(names[0]).toBe('Cyclops Cove 4');
+    expect(names[0]).toBe('EDC Colombia 2026');
     expect(names[1]).toBe('Horizon 2027');
     expect(app.getByText('Going')).toBeTruthy();
   });
