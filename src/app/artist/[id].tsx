@@ -55,6 +55,7 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 const HERO = 132;
 
@@ -92,7 +93,7 @@ export default function ArtistScreen() {
   const { distanceTo, units, placeOf } = useNearby();
   const { seen } = useSeen();
   const [allShows, setAllShows] = useState(false);
-  if (!artist) return <Missing title="Artist not found" line="This artist isn’t on Afterglow any more, or the link isn’t quite right." />;
+  if (!artist) return <Missing title={t('Artist not found')} line={t('This artist isn’t on Afterglow any more, or the link isn’t quite right.')} />;
   const yours = memories.filter((m) => m.artistId === artist.id);
   const context = festivalId ? catalog.festival(festivalId) : undefined;
   const starFestival = context?.lineup.includes(artist.id) ? context : undefined;

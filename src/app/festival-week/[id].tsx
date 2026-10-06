@@ -18,6 +18,7 @@ import { openDoor } from '../../state/festivalWeek';
 import { useWeekends } from '../../state/weekends';
 import { color, motion, radius, space, type, glowA } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 const GOLD = '#FFD58A';
 
@@ -31,7 +32,7 @@ export default function FestivalWeekScreen() {
   const whole = useCatalog().festival(id);
   const { forYou } = useWeekends();
   const festival = useMemo(() => (whole ? forYou(whole) : undefined), [whole, forYou]);
-  if (!festival) return <Missing title="Festival not found" line="This festival isn’t on Afterglow any more, or the link isn’t quite right." />;
+  if (!festival) return <Missing title={t('Festival not found')} line={t('This festival isn’t on Afterglow any more, or the link isn’t quite right.')} />;
   return <Week festival={festival} />;
 }
 

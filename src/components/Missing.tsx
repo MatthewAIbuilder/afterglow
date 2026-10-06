@@ -5,6 +5,7 @@ import { color, space, type } from '../theme/tokens';
 import { NightSky } from './NightSky';
 import { PageActions } from './PageActions';
 import { HiddenToe } from '../features/toes/Toe';
+import { t } from '../i18n';
 
 /** A link to something that isn't on Afterglow (any more): say so, and offer a way on. */
 export function Missing({ title, line, wait = true }: { title: string; line: string; wait?: boolean }) {
@@ -15,7 +16,7 @@ export function Missing({ title, line, wait = true }: { title: string; line: str
       <View style={styles.root}>
         <NightSky />
         <View style={styles.body}>
-          <ActivityIndicator color={color.moonDim} accessibilityLabel="Loading" />
+          <ActivityIndicator color={color.moonDim} accessibilityLabel={t('Loading')} />
         </View>
         <PageActions />
       </View>
@@ -30,7 +31,8 @@ export function Missing({ title, line, wait = true }: { title: string; line: str
         </Text>
         <Text style={styles.line}>{line}</Text>
         <Pressable onPress={() => router.replace('/festivals')} accessibilityRole="button" style={styles.button}>
-          <Text style={styles.link}>See all festivals</Text>
+          <Text style={styles.link}>{t('See all festivals')}</Text>
+
         </Pressable>
       </View>
       <PageActions />

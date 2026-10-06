@@ -15,6 +15,7 @@ import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useWeekends } from '../../state/weekends';
 import { color, space, type } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * Get ready: one checklist for a festival you're going to. The app ticks
@@ -26,7 +27,7 @@ export default function PrepScreen() {
   const catalog = useCatalog();
   const { forYou } = useWeekends();
   const whole = catalog.festival(id);
-  if (!whole) return <Missing title="Festival not found" line="This festival isn’t on Afterglow any more, or the link isn’t quite right." />;
+  if (!whole) return <Missing title={t('Festival not found')} line={t('This festival isn’t on Afterglow any more, or the link isn’t quite right.')} />;
   return <PrepView festival={forYou(whole)} />;
 }
 

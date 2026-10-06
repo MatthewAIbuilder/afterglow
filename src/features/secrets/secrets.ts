@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 /**
  * Secrets: little hidden things to find around the app, each with its own
  * moment (a light show, a rain of hearts, fireworks). Found ones are kept
@@ -89,4 +91,5 @@ export function cleanFound(raw: unknown): Partial<Record<SecretId, number>> {
 }
 
 /** "3 of 8 secrets found". */
-export const secretsLine = (found: number) => (found === SECRETS.length ? `All ${SECRETS.length} secrets found` : `${found} of ${SECRETS.length} secrets found`);
+export const secretsLine = (found: number) => (found === SECRETS.length ? t('All {total} secrets found', { total: SECRETS.length }) : t('{found} of {total} secrets found', { found, total: SECRETS.length }))
+;

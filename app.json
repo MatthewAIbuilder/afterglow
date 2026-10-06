@@ -6,6 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "locales": {
+      "es": "./locales/es.json"
+    },
     "ios": {
       "supportsTablet": false,
       "config": {
@@ -121,7 +124,22 @@
           "motionPermission": "Afterglow counts your steps on a festival night in Look after yourself. Your steps stay on this phone."
         }
       ],
-      "react-native-maps"
+      "react-native-maps",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "en",
+              "es"
+            ],
+            "android": [
+              "en",
+              "es"
+            ]
+          }
+        }
+      ]
     ],
     "scheme": "afterglow",
     "backgroundColor": "#0A0918",

@@ -19,6 +19,8 @@ What the app has, by area (details in `docs/history.md`):
 - **Care** (`features/care`): Look after yourself (stopwatches with a timing guide, feelings, water, pulse, steps, get help), all private on the phone.
 - **Data** (`src/data`): catalogue file plus nightly imports (EDMTrain festivals, YouTube clips, Deezer photos, colours, lineup similarity, site pictures) into `public/catalogue.json`; HQ live patches; `useCatalog()` is the only way screens reach it.
 - **Afterglow HQ** (`features/admin`, `src/app/admin.tsx`): the support account's dashboard (analytics, data uploads and publishing, privileges, support, reports).
+- **Languages** (`src/i18n`, `docs/translations.md`): English and Spanish, following the phone (or Settings → Language). New UI lines go through `t('…')` with a Spanish entry in `src/i18n/es.ts` (a test checks); only some screens are translated so far.
+
 
 Waiting on the user (don't redo, remind when relevant):
 - Phone testing of nearly everything (afterglowmusic.app is already an authorised sign-in domain in Firebase Auth, confirmed 2026-10-05).

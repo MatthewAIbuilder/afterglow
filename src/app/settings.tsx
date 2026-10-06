@@ -10,7 +10,10 @@ import { yourClipCount, yourClips } from '../features/discover/saved';
 import { legalPath } from '../features/legal/documents';
 import { PROVIDER_NAME } from '../features/music/models';
 import { useYear } from '../features/recap/useRecap';
+import { showActionSheet, showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
+import { reloadApp } from '../lib/reload';
+
 import { useToday } from '../lib/useToday';
 import { VERSION_LINE } from '../lib/version';
 import { secretsLine, tapStep } from '../features/secrets/secrets';
@@ -32,6 +35,7 @@ import { useProfileBackdrop } from '../features/profile/useProfileBackdrop';
 import { useToes } from '../features/toes/useToes';
 import { themeOf } from '../features/themes/themes';
 import { backdropOf } from '../features/profile/backdrops';
+import { LANGUAGE, LANGUAGE_CHOICE, LANGUAGES, t, tn, writeStoredLanguage, type LanguageChoice } from '../i18n';
 
 /**
  * Settings and more, from the menu on Profile: your account, the lists
@@ -67,65 +71,68 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Settings" />
+      <PageTitle title={t('Settings')} />
       <NightSky />
       <PageActions />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t('Settings')}</Text>
 
         {social.availability.ok ? (
-          <Group title="Account">
+          <Group title={t('Account')}>
             {me ? (
               <>
-                <Row label="Edit profile" detail={`@${me.handle}`} onPress={() => router.push('/profile-edit')} />
-                <Row label="Friends and crews" onPress={() => router.push('/friends')} />
-                <Row label="Find people" onPress={() => router.push('/people')} />
-                <Row label="Switch account" detail="Or hold the Profile tab" onPress={() => router.push('/switch-account')} />
+                <Row label={t('Edit profile')} detail={`@${me.handle}`} onPress={() => router.push('/profile-edit')} />
+                <Row label={t('Friends and crews')} onPress={() => router.push('/friends')} />
+                <Row label={t('Find people')} onPress={() => router.push('/people')} />
+                <Row label={t('Switch account')} detail={t('Or hold the Profile tab')} onPress={() => router.push('/switch-account')} />
               </>
             ) : (
               <Row
-                label={social.user ? 'Finish your profile' : 'Create your profile'}
-                detail={social.user ? undefined : 'Or sign in'}
+                label={social.user ? t('Finish your profile') : t('Create your profile')}
+                detail={social.user ? undefined : t('Or sign in')}
                 onPress={() => (social.user ? router.push('/profile-edit') : router.push('/account'))}
               />
             )}
           </Group>
         ) : null}
 
-        <Group title="Yours">
-          <Row label="Memories" detail={memories.length ? `${memories.length}, by festival` : 'Add your videos'} a11y={`Memories, ${memories.length}`} onPress={() => router.push('/memories')} />
-          <Row label="Saved and liked clips" detail={String(kept)} a11y={`Your clips, ${kept}`} onPress={() => router.push('/saved')} />
-          <Row label="Your garden" detail={String(gardenCount)} a11y={`Your garden, ${gardenCount} sprouts`} onPress={() => router.push('/garden')} />
+        <Group title={t('Yours')}>
+          <Row label={t('Memories')} detail={memories.length ? t('{n}, by festival', { n: memories.length }) : t('Add your videos')} a11y={t('Memories, {n}', { n: memories.length })} onPress={() => router.push('/memories')} />
+          <Row label={t('Saved and liked clips')} detail={String(kept)} a11y={t('Your clips, {n}', { n: kept })} onPress={() => router.push('/saved')} />
+          <Row label={t('Your garden')} detail={String(gardenCount)} a11y={tn(gardenCount, 'Your garden, {n} sprout', 'Your garden, {n} sprouts')} onPress={() => router.push('/garden')} />
           <Row
-            label="Artists you follow"
-            detail={followedCount ? String(followedCount) : 'Follow artists'}
-            a11y={`Your artists, ${followedCount ? followedCount : 'none followed yet'}`}
+            label={t('Artists you follow')}
+            detail={followedCount ? String(followedCount) : t('Follow artists')}
+            a11y={followedCount ? t('Your artists, {n}', { n: followedCount }) : t('Your artists, none followed yet')}
             onPress={() => router.push('/your-artists')}
           />
-          <Row label="Your sound" detail="Breakdown" onPress={() => router.push('/your-sound')} />
-          {yearCard ? <Row label={`Your ${year}`} detail={yearCard.subtitle.endsWith('so far') ? 'So far' : 'Ready to share'} onPress={() => router.push({ pathname: '/year/[year]', params: { year: String(year) } })} /> : null}
+          <Row label={t('Your sound')} detail={t('Breakdown')} onPress={() => router.push('/your-sound')} />
+          {yearCard ? <Row label={t('Your {year}', { year })} detail={yearCard.subtitle.endsWith('so far') ? t('So far') : t('Ready to share')} onPress={() => router.push({ pathname: '/year/[year]', params: { year: String(year) } })} /> : null}
         </Group>
 
-        <Group title="Look">
-          <Row label="App theme" detail={themeOf(THEME_ID).name} a11y={`App theme: ${themeOf(THEME_ID).name}. Change the colours of the whole app`} onPress={() => router.push('/themes')} />
-          {me ? <Row label="Profile background" detail={backdropOf(shownBackdrop)?.name ?? 'Cover photo'} onPress={() => router.push('/backdrop')} /> : null}
+        <Group title={t('Look')}>
+          <Row label={t('App theme')} detail={themeOf(THEME_ID).name} a11y={t('App theme: {theme}. Change the colours of the whole app', { theme: themeOf(THEME_ID).name })} onPress={() => router.push('/themes')} />
+          {me ? <Row label={t('Profile background')} detail={backdropOf(shownBackdrop)?.name ?? t('Cover photo')} onPress={() => router.push('/backdrop')} /> : null}
+          <Row label={t('Language')} detail={languageDetail()} a11y={t('Language: {language}. Change the language of the app', { language: languageDetail() })} onPress={chooseLanguage} />
         </Group>
 
-        <Group title="Fun">
-          <Row label="Quests" detail="Your glow level" a11y="Quests: today's quests, your streak and your glow level" onPress={() => router.push('/quests')} />
-          <Row label="Secrets" detail={secretsLine(Object.keys(secrets.found).length)} onPress={() => router.push('/secrets')} />
+        <Group title={t('Fun')}>
+          <Row label={t('Quests')} detail={t('Your glow level')} a11y={t("Quests: today's quests, your streak and your glow level")} onPress={() => router.push('/quests')} />
+          <Row label={t('Secrets')} detail={secretsLine(Object.keys(secrets.found).length)} onPress={() => router.push('/secrets')} />
         </Group>
 
-        <Group title="Festival nights">
-          <Row label="Look after yourself" detail="Private" a11y="Look after yourself: stopwatches, water, food and check-ins, private to you" onPress={() => router.push('/care')} />
+        <Group title={t('Festival nights')}>
+          <Row label={t('Look after yourself')} detail={t('Private')} a11y={t('Look after yourself: stopwatches, water, food and check-ins, private to you')} onPress={() => router.push('/care')} />
           {modeFestival ? (
             <Row
-              label={mode.active?.preview ? 'End festival mode test' : mode.active ? 'Leave festival mode' : 'Test festival mode'}
+              label={mode.active?.preview ? t('End festival mode test') : mode.active ? t('Leave festival mode') : t('Test festival mode')}
               detail={mode.active ? mode.active.festival.name : modeFestival.name}
               a11y={
                 mode.active
-                  ? `${mode.active.preview ? 'End the festival mode test' : 'Leave festival mode'}, ${mode.active.festival.name}`
-                  : `Test festival mode with ${modeFestival.name}: see how the app looks on festival day`
+                  ? mode.active.preview
+                    ? t('End the festival mode test, {festival}', { festival: mode.active.festival.name })
+                    : t('Leave festival mode, {festival}', { festival: mode.active.festival.name })
+                  : t('Test festival mode with {festival}: see how the app looks on festival day', { festival: modeFestival.name })
               }
               onPress={() => {
                 if (mode.active) mode.leave();
@@ -138,20 +145,20 @@ export default function SettingsScreen() {
           ) : null}
         </Group>
 
-        <Group title="Connections">
+        <Group title={t('Connections')}>
           <Row
-            label="Music connections"
-            detail={connected || 'Not connected'}
-            a11y={`Music connections${connected ? `, ${connected}` : ', none connected'}`}
+            label={t('Music connections')}
+            detail={connected || t('Not connected')}
+            a11y={connected ? t('Music connections, {services}', { services: connected }) : t('Music connections, none connected')}
             onPress={() => router.push('/music')}
           />
         </Group>
 
-        <Group title="About">
-          <Row label="Contact support" detail={support.unseen ? `${support.unseen} new ${support.unseen === 1 ? 'reply' : 'replies'}` : undefined} onPress={() => router.push('/support')} />
-          <Row label="Privacy" onPress={() => router.push(legalPath('privacy') as never)} />
-          <Row label="Terms" onPress={() => router.push(legalPath('terms') as never)} />
-          <Row label="Community guidelines" onPress={() => router.push(legalPath('guidelines') as never)} />
+        <Group title={t('About')}>
+          <Row label={t('Contact support')} detail={support.unseen ? tn(support.unseen, '{n} new reply', '{n} new replies') : undefined} onPress={() => router.push('/support')} />
+          <Row label={t('Privacy')} onPress={() => router.push(legalPath('privacy') as never)} />
+          <Row label={t('Terms')} onPress={() => router.push(legalPath('terms') as never)} />
+          <Row label={t('Community guidelines')} onPress={() => router.push(legalPath('guidelines') as never)} />
         </Group>
         {/* A secret: tap the small print seven times. */}
         <Pressable
@@ -164,14 +171,38 @@ export default function SettingsScreen() {
           accessibilityRole="text"
           accessibilityLabel={VERSION_LINE}
         >
-          <Text style={styles.version}>{toes ? `${VERSION_LINE} · made with ten toes` : VERSION_LINE}</Text>
+          <Text style={styles.version}>{toes ? `${VERSION_LINE} · ${t('made with ten toes')}` : VERSION_LINE}</Text>
         </Pressable>
       </ScrollView>
     </View>
   );
 }
 
-function Group({ title, children }: { title: string; children: ReactNode }) {
+/** What the Language row says: the language in use, and whether it follows the phone. */
+function languageDetail(): string {
+  const name = LANGUAGES.find((l) => l.id === LANGUAGE)?.name ?? '';
+  return LANGUAGE_CHOICE === 'device' ? t('{language} (from your phone)', { language: name }) : name;
+}
+
+/** Pick a language (or go back to the phone's), then start the app again in it, like a new theme. */
+function chooseLanguage() {
+  const choices: LanguageChoice[] = ['device', ...LANGUAGES.map((l) => l.id)];
+  const labels = [t('Same as my phone'), ...LANGUAGES.map((l) => l.name)];
+  showActionSheet({ title: t('Language'), options: [...labels, t('Cancel')], cancelButtonIndex: labels.length }, (i) => {
+    const picked = choices[i];
+    if (!picked || picked === LANGUAGE_CHOICE) return;
+    if (!writeStoredLanguage(picked)) {
+      showAlert(t('Couldn’t change the language'), t('Try again in a moment.'));
+      return;
+    }
+    haptic.settle();
+    void reloadApp('A new language');
+
+  });
+}
+
+function Group({
+ title, children }: { title: string; children: ReactNode }) {
   return (
     <View style={styles.group}>
       <Text style={styles.groupTitle}>{title}</Text>

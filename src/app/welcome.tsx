@@ -25,15 +25,16 @@ import { runLabel } from '../features/festivals/weekend';
 import { useLoves } from '../state/useLoves';
 import { useWelcomed } from '../state/welcome';
 import { color, radius, space, type, glowA } from '../theme/tokens';
+import { t } from '../i18n';
 
 type Step = 'hello' | 'going' | 'waiting' | 'taste';
 const STEPS: Step[] = ['hello', 'going', 'waiting', 'taste'];
 
 /** What Afterglow is, in three lines under the name: [dot colour, words]. */
 const PROMISES: [string, string][] = [
-  ['#5B8CFF', 'Live sets from the lineups you’re going to'],
-  ['#A97CFF', 'Your sound as a living map'],
-  ['#FF7EB6', 'A plan, set to set, with your crew'],
+  ['#5B8CFF', t('Live sets from the lineups you’re going to')],
+  ['#A97CFF', t('Your sound as a living map')],
+  ['#FF7EB6', t('A plan, set to set, with your crew')],
 ];
 
 /**
@@ -58,8 +59,8 @@ export default function WelcomeScreen() {
   const compact = height < 700 || fontScale > 1.15;
   const pickedSoon = picked ? countdown(picked, today) : undefined;
   const waitingLine = picked
-    ? `${picked.name}${pickedSoon ? ` · ${pickedSoon}` : ''}. A few things to make the most of it.`
-    : 'A few things to find once you’re in.';
+    ? t('{festival}. A few things to make the most of it.', { festival: `${picked.name}${pickedSoon ? ` · ${pickedSoon}` : ''}` })
+    : t('A few things to find once you’re in.');
   // Many festivals: a search and a short list (your picks, then the soonest or best for you).
   const loves = useLoves();
   const many = isMany(catalog.festivals);
@@ -107,10 +108,10 @@ export default function WelcomeScreen() {
         <Pressable
           onPress={startWatching}
           accessibilityRole="button"
-          accessibilityLabel="Skip the welcome"
+          accessibilityLabel={t('Skip the welcome')}
           hitSlop={12}
         >
-          <Text style={styles.skip}>Skip</Text>
+          <Text style={styles.skip}>{t('Skip')}</Text>
         </Pressable>
       </View>
 
@@ -119,7 +120,7 @@ export default function WelcomeScreen() {
           <ScrollView contentContainerStyle={styles.centerScroll} showsVerticalScrollIndicator={false} bounces={false}>
             <HeroOrb size={compact ? (height < 620 ? 140 : 170) : 220} />
             <Text style={[styles.brand, { marginTop: compact ? space.lg : space.xl }]}>{APP_NAME}</Text>
-            <Text style={styles.lead}>Find your sets, see your sound, go with your people.</Text>
+            <Text style={styles.lead}>{t('Find your sets, see your sound, go with your people.')}</Text>
             <View style={styles.promises}>
               {PROMISES.map(([c, words], i) => (
                 <Animated.View
@@ -140,15 +141,15 @@ export default function WelcomeScreen() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
-            <Text style={styles.title}>Where are you going?</Text>
-            <Text style={styles.sub}>Pick any you have tickets for, or are thinking about. You can change this later.</Text>
+            <Text style={styles.title}>{t('Where are you going?')}</Text>
+            <Text style={styles.sub}>{t('Pick any you have tickets for, or are thinking about. You can change this later.')}</Text>
             {many && (
               <View style={styles.search}>
-                <SearchField value={query} onChange={setQuery} placeholder="Find your festival" label="Find your festival" />
+                <SearchField value={query} onChange={setQuery} placeholder={t('Find your festival')} label={t('Find your festival')} />
               </View>
             )}
             {many && query.trim() !== '' && choices.length === 0 ? (
-              <Text style={styles.sub}>No festival matches “{query.trim()}” yet.</Text>
+              <Text style={styles.sub}>{t('No festival matches “{query}” yet.', { query: query.trim() })}</Text>
             ) : null}
             <View style={styles.list}>
               {choices.map((f) => {
@@ -184,11 +185,11 @@ export default function WelcomeScreen() {
                         <FilterChips
                           inset={0}
                           chips={[
-                            { key: undefined, label: 'Every weekend', accessibilityLabel: `Every weekend of ${f.name}` },
+                            { key: undefined, label: t('Every weekend'), accessibilityLabel: t('Every weekend of {festival}', { festival: f.name }) },
                             ...f.weekends.map((r, i) => ({
                               key: String(i + 1),
-                              label: `Weekend ${i + 1} · ${runLabel(r)}`,
-                              accessibilityLabel: `Weekend ${i + 1} of ${f.name}, ${runLabel(r)}`,
+                              label: `${t('Weekend {w}', { w: i + 1 })} · ${runLabel(r)}`,
+                              accessibilityLabel: t('Weekend {w} of {festival}, {dates}', { w: i + 1, festival: f.name, dates: runLabel(r) }),
                             })),
                           ]}
                           value={weekendOf(f.id) ? String(weekendOf(f.id)) : undefined}
@@ -203,26 +204,28 @@ export default function WelcomeScreen() {
           </ScrollView>
         ) : step === 'waiting' ? (
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>Here’s what’s waiting</Text>
+            <Text style={styles.title}>{t('Here’s what’s waiting')}</Text>
             <Text style={styles.sub}>{waitingLine}</Text>
             <Waiting />
           </ScrollView>
         ) : picked ? (
           <View style={styles.center}>
-            <Text style={styles.title}>Tell us what you love</Text>
+            <Text style={styles.title}>{t('Tell us what you love')}</Text>
             <Text style={[styles.sub, styles.centerText]}>
               {canCompare
-                ? 'Play this or that: two live sets at a time, tap the one you’d rather hear. A minute, and your sound takes shape. Or tap the artists you love.'
-                : `Tap the artists you love from ${going.length > 1 ? 'your festivals' : picked.name}. It takes seconds and shapes your whole plan. Or go through the lineup one artist at a time.`}
+                ? t('Play this or that: two live sets at a time, tap the one you’d rather hear. A minute, and your sound takes shape. Or tap the artists you love.')
+                : going.length > 1
+                  ? t('Tap the artists you love from your festivals. It takes seconds and shapes your whole plan. Or go through the lineup one artist at a time.')
+                  : t('Tap the artists you love from {festival}. It takes seconds and shapes your whole plan. Or go through the lineup one artist at a time.', { festival: picked.name })}
             </Text>
           </View>
         ) : (
           <View style={styles.center}>
-            <Text style={styles.title}>Tell us what you love</Text>
+            <Text style={styles.title}>{t('Tell us what you love')}</Text>
             <Text style={[styles.sub, styles.centerText]}>
               {canCompare
-                ? `Play this or that: two live sets at a time, tap the one you’d rather hear, and ${APP_NAME} learns your sound in a minute. Or tap the artists you love.`
-                : `Tap the artists you love and ${APP_NAME} learns your sound. Or start with the sets: like, save or skip clips.`}
+                ? t('Play this or that: two live sets at a time, tap the one you’d rather hear, and {app} learns your sound in a minute. Or tap the artists you love.', { app: APP_NAME })
+                : t('Tap the artists you love and {app} learns your sound. Or start with the sets: like, save or skip clips.', { app: APP_NAME })}
             </Text>
           </View>
         )}
@@ -230,33 +233,34 @@ export default function WelcomeScreen() {
 
       <View style={[styles.actions, { paddingBottom: insets.bottom + space.xl }]}>
         {step === 'hello' ? (
-          <Primary label="Get started" onPress={() => next('going')} />
+          <Primary label={t('Get started')} onPress={() => next('going')} />
         ) : step === 'going' ? (
-          <Primary label={going.length ? 'Continue' : 'Not sure yet'} onPress={() => next('waiting')} />
+          <Primary label={going.length ? t('Continue') : t('Not sure yet')} onPress={() => next('waiting')} />
         ) : step === 'waiting' ? (
-          <Primary label="Continue" onPress={() => next('taste')} />
+          <Primary label={t('Continue')} onPress={() => next('taste')} />
         ) : canCompare ? (
           <>
-            <Primary label="Play this or that" onPress={thisOrThat} />
-            <Secondary label="Pick artists you know" onPress={pickArtists} />
+            <Primary label={t('Play this or that')} onPress={thisOrThat} />
+            <Secondary label={t('Pick artists you know')} onPress={pickArtists} />
             {picked ? (
-              <Secondary label="Rate the lineup one by one" onPress={() => tune(picked)} />
+              <Secondary label={t('Rate the lineup one by one')} onPress={() => tune(picked)} />
             ) : (
-              <Secondary label="Start watching instead" onPress={startWatching} />
+              <Secondary label={t('Start watching instead')} onPress={startWatching} />
             )}
           </>
         ) : picked ? (
           <>
-            <Primary label="Pick artists you know" onPress={pickArtists} />
-            <Secondary label="Rate the lineup one by one" onPress={() => tune(picked)} />
+            <Primary label={t('Pick artists you know')} onPress={pickArtists} />
+            <Secondary label={t('Rate the lineup one by one')} onPress={() => tune(picked)} />
           </>
         ) : (
           <>
-            <Primary label="Pick artists you know" onPress={pickArtists} />
-            <Secondary label="Start watching instead" onPress={startWatching} />
+            <Primary label={t('Pick artists you know')} onPress={pickArtists} />
+            <Secondary label={t('Start watching instead')} onPress={startWatching} />
           </>
         )}
-        <View style={styles.dots} accessibilityLabel={`Step ${STEPS.indexOf(step) + 1} of ${STEPS.length}`}>
+        <View style={styles.dots} accessibilityLabel={t('Step {n} of {total}', { n: STEPS.indexOf(step) + 1, total: STEPS.length })}>
+
           {STEPS.map((s) => (
             <View key={s} style={[styles.dot, s === step && styles.dotOn]} />
           ))}

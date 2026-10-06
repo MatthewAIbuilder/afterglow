@@ -14,6 +14,7 @@ import { SHARE_PICKS_MAX } from '../../features/messages/shares';
 import { haptic } from '../../lib/haptics';
 import type { Artist } from '../../data/models';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 export default function FestivalScreen() {
   const { id, must } = useLocalSearchParams<{ id: string; must?: string }>();
@@ -22,7 +23,7 @@ export default function FestivalScreen() {
   const { forYou } = useWeekends();
   const insets = useSafeAreaInsets();
   const sendOrShare = useSendOrShare();
-  if (!festival) return <Missing title="Festival not found" line="This festival isn’t on Afterglow any more, or the link isn’t quite right." />;
+  if (!festival) return <Missing title={t('Festival not found')} line={t('This festival isn’t on Afterglow any more, or the link isn’t quite right.')} />;
 
   return (
     <View style={styles.root}>
