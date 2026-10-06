@@ -54,6 +54,9 @@ export function VideosTab({
   const places = useMemo(() => placeChoices(memories, lookup), [memories, lookup]);
   const shown = useMemo(() => applyMomentFilter(memories, tagged ?? [], filter), [memories, tagged, filter]);
   const showFilters = filters && (memories.length > 1 || !!tagged?.length);
+  // What a video opens to swipe through: the others like it, in the order shown.
+  const sharedIds = shown.flatMap((x) => (onServer(x) && x.sharedId ? [x.sharedId] : [])).join(',');
+  const localIds = shown.flatMap((x) => (!onServer(x) && (x.festivalId || x.past || x.artistId) ? [x.id] : [])).join(',');
   if (!memories.length && !tagged?.length) {
     return (
       <View style={styles.empty}>
@@ -128,9 +131,10 @@ export function VideosTab({
               onPress={() => {
                 haptic.select();
                 // A video on the server (shared from the website) opens as the shared video.
-                if (onServer(m) && m.sharedId) router.push({ pathname: '/shared/[id]', params: { id: m.sharedId } });
+                // Swipe up and down through the rest, in the order shown, like Discover.
+                if (onServer(m) && m.sharedId) router.push({ pathname: '/shared/[id]', params: { id: m.sharedId, ids: sharedIds } });
                 else if (untagged) router.push({ pathname: '/memory-tag', params: { id: m.id } });
-                else router.push({ pathname: '/memory/[id]', params: { id: m.id } });
+                else router.push({ pathname: '/memory/[id]', params: { id: m.id, ids: localIds } });
               }}
               accessibilityRole="button"
               accessibilityLabel={untagged ? t('Untagged video. Tag it') : m.sharedId ? t('Video: {line}, shared', { line: memoryLine(m, lookup) }) : t('Video: {line}', { line: memoryLine(m, lookup) })}

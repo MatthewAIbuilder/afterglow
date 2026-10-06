@@ -104,4 +104,20 @@ describe('tagging people in a video', () => {
     expect(app.queryByTestId('tag-ask')).toBeNull();
     expect(await s().taggedMemoriesOf(sam)).toEqual([]);
   });
+
+  it('a profile’s videos open to swipe through, like Discover', async () => {
+    const { id } = await mayaShares();
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const second = await s().shareMemory({ memoryId: 'm2', videoUri: 'file:///m2.mov', festivalId: 'cyclops-cove-4', night: 'Saturday', artistId: 'subtronics', capturedAt: '2026-12-05T22:30:00.000Z' });
+    await s().signOut();
+    await s().signIn('sam@example.com', 'password123');
+    const app = await renderApp('/u/maya');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Video of HEDEX'));
+    await flush();
+    // Both videos are pages of one swipe-through, newest first as on the profile.
+    expect(app.getByTestId('pager').props.data).toEqual([second.id, id]);
+    expect(app.getByText('HEDEX')).toBeTruthy();
+  });
 });

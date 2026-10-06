@@ -23,6 +23,7 @@ import { useClipLoop } from '../../features/memories/useClipLoop';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
 import { SheetClose } from '../../components/SheetClose';
+import { pagerIds, VerticalPager } from '../../components/VerticalPager';
 import { t, tc } from '../../i18n';
 
 /**
@@ -30,7 +31,14 @@ import { t, tc } from '../../i18n';
  * and when, then Tag, Save to Photos, Send, Share to your profile and Delete.
  */
 export default function MemoryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `ids`: the videos to swipe through (your moments, in the order shown), this one among them.
+  const { id, ids } = useLocalSearchParams<{ id: string; ids?: string }>();
+  const list = pagerIds(ids, id);
+  if (list.length < 2) return <MemoryPage id={id} active />;
+  return <VerticalPager ids={list} start={id} renderPage={(page, active) => <MemoryPage id={page} active={active} />} />;
+}
+
+function MemoryPage({ id, active }: { id: string; active: boolean }) {
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
   const mem = useMemories();
@@ -38,10 +46,14 @@ export default function MemoryScreen() {
   const uri = m ? mem.uriOf(m.file) : null;
   const player = useVideoPlayer(uri, (p) => {
     p.loop = true;
-    p.play();
   });
   useClipLoop(player, m?.clip);
   const [paused, setPaused] = useState(false);
+  // Only the video in view plays (swiping through your moments), unless you paused it.
+  useEffect(() => {
+    if (active && !paused) player.play();
+    else player.pause();
+  }, [active, paused, player]);
   const screen = useWindowDimensions();
   const social = useSocial();
   const mine = useStanding(social.user?.uid);
