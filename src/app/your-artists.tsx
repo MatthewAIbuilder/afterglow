@@ -252,7 +252,7 @@ function DateRow({ date: d, units }: { date: WhereDate; units: Units }) {
             </Text>
             {away ? (
               <Text style={[styles.rowMeta, styles.away]} numberOfLines={1}>
-                {d.where ? ` · ${away}` : away}
+                {d.where ? `\u00a0· ${away}` : away}
               </Text>
             ) : null}
           </View>
