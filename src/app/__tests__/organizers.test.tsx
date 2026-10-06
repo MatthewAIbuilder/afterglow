@@ -256,14 +256,39 @@ describe('organizers', () => {
     await s().signOut();
 
     await s().signIn('ugrnd@example.com', 'password123');
-    const app = await renderApp('/profile');
-    await flush();
-    expect(app.getByText('You run')).toBeTruthy();
-    expect(app.getByLabelText('Underground Alchemy')).toBeTruthy();
-    await fireEvent.press(app.getByText('Organizer studio'));
+    // It opens on its studio, not the app (like HQ for the support account), with no email to confirm.
+    const app = await renderApp('/');
     await flush();
     expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
     expect(app.queryByText('Confirm your email to open the studio')).toBeNull();
+    expect(app.queryByLabelText('Back')).toBeNull();
+    // Its profile takes the organizer's name and the @handle HQ chose.
+    expect(mockSocial.profiles.get(u.uid)).toMatchObject({ displayName: 'Underground Alchemy', handle: 'undergroundalchemy' });
+
+    // It can still look at the app, with a way back: no My Sound, and Discover is only what's posted at its events.
+    await fireEvent.press(app.getByLabelText('View the app as everyone sees it'));
+    await flush();
+    expect(app.getByText('From your events')).toBeTruthy();
+    expect(app.queryByRole('tab', { name: /^My Sound/ })).toBeNull();
+    await act(async () => router.push('/profile'));
+    await flush();
+    // Its profile is the organizer's: its logo, its DJs and videos instead of a fan's sound.
+    expect(app.getByText('You run')).toBeTruthy();
+    expect(app.getAllByLabelText('Underground Alchemy').length).toBeGreaterThan(0);
+    expect(app.getByRole('tab', { name: /^DJs/ })).toBeTruthy();
+    expect(app.queryByText('Your artists')).toBeNull();
+    await fireEvent.press(app.getByLabelText('Back to your studio'));
+    await flush();
+    expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
+
+    // Messages: written in the studio, answered in HQ.
+    await showTab(app, 'Messages');
+    await fireEvent.changeText(app.getByLabelText('Your message'), 'Can we get a sticker for our Halloween night?');
+    await fireEvent.press(app.getByText('Send'));
+    await flush();
+    const [msg] = [...mockSocial.orgRequests.values()];
+    expect(msg).toMatchObject({ kind: 'other', text: 'Can we get a sticker for our Halloween night?', status: 'open' });
+    expect(app.getByText('Can we get a sticker for our Halloween night?')).toBeTruthy();
     // It can edit its page, but never link anyone else.
     await expect(s().saveOrg({ ...mockSocial.orgs.get(ORG)!, about: 'Hello.' })).resolves.toBeUndefined();
     await expect(s().setOrgAccount(ORG, 'someone-else', true)).rejects.toThrow();
@@ -272,10 +297,16 @@ describe('organizers', () => {
     // Everyone else sees it on their profile too.
     await s().signOut();
     await s().signUp('fan@example.com', 'password123');
-    const fan = await renderApp('/u/ugrnd');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    const fan = await renderApp('/u/undergroundalchemy');
     await flush();
     expect(fan.getByText('Runs')).toBeTruthy();
     expect(fan.getByText('See their events')).toBeTruthy();
+    expect(fan.getByText('Their DJs')).toBeTruthy();
+    // Fans follow it.
+    await fireEvent.press(fan.getByLabelText(/^Follow /));
+    await flush();
+    expect([...mockSocial.follows.values()].some((f) => f.to === u.uid)).toBe(true);
     await fan.unmount();
   });
   it('the organizer claims its events from EDMTrain, and copies one to edit on Afterglow without changing the import', async () => {

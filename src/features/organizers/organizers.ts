@@ -106,6 +106,12 @@ export type Org = {
    * the studio.
    */
   uids: string[];
+  /**
+   * The @handle (and, with `name`, the display name) its accounts' profiles
+   * use, chosen in HQ: an account that runs it takes them when it opens the
+   * studio. Only HQ sets it.
+   */
+  handle?: string;
   updatedAt?: string;
 };
 
@@ -160,7 +166,7 @@ export const PROMO_DAYS = [3, 7, 14, 30] as const;
 /** What a design can be asked for. */
 export const DESIGN_FOR = ['Badge', 'Sticker', 'Sprout or creature', 'Gift', 'Flyer or poster', 'Something else'] as const;
 export const REQUEST_KINDS: readonly OrgRequestKind[] = ['promotion', 'design', 'gift', 'other'];
-export const REQUEST_LABEL: Record<OrgRequestKind, string> = { promotion: 'Promotion', design: 'Design', gift: 'Gift', other: 'Something else' };
+export const REQUEST_LABEL: Record<OrgRequestKind, string> = { promotion: 'Promotion', design: 'Design', gift: 'Gift', other: 'Message' };
 
 const ORG_ID = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
 const EVENT_ID = /^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/;
@@ -303,6 +309,7 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
     artists,
     promoted,
     claims: Array.isArray(r.claims) ? [...new Set(r.claims.filter((c): c is string => typeof c === 'string' && IMPORTED_ID.test(c)))].slice(0, ORG_CLAIMS_MAX) : [],
+    handle: typeof r.handle === 'string' && /^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$/.test(r.handle) ? r.handle : undefined,
     uids: Array.isArray(r.uids) ? [...new Set(r.uids.filter((u): u is string => typeof u === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(u)))].slice(0, ORG_UIDS_MAX) : [],
     updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : undefined,
   }) as Org;
@@ -311,15 +318,15 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
 /** The fields an organizer's page is saved with (besides `promoted` and `updatedAt`). */
 export const ORG_FIELDS = ['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims'] as const;
 
-/** What an organizer saves (everything but `promoted` and `uids`, which only HQ sets, and the time). */
+/** What an organizer saves (everything but `promoted`, `uids` and `handle`, which only HQ sets, and the time). */
 export function orgToDoc(org: Org): Record<string, unknown> {
-  const { id: _id, promoted: _p, uids: _a, updatedAt: _u, ...rest } = org;
+  const { id: _id, promoted: _p, uids: _a, handle: _h, updatedAt: _u, ...rest } = org;
   return JSON.parse(JSON.stringify(rest)) as Record<string, unknown>;
 }
 
 /** A new organizer page from its starter. */
 export function orgFromStarter(s: OrgStarter): Org {
-  return some({ id: s.id, name: s.name, tagline: s.tagline, website: s.website, instagram: s.instagram, mark: s.mark, color: s.color, events: [], artists: {}, claims: [], promoted: {}, uids: [] }) as Org;
+  return some({ id: s.id, name: s.name, tagline: s.tagline, website: s.website, instagram: s.instagram, mark: s.mark, color: s.color, handle: s.handle, events: [], artists: {}, claims: [], promoted: {}, uids: [] }) as Org;
 }
 
 /** A new event's id from its name and night, not already used. */
@@ -618,6 +625,56 @@ export function draftFrom(org: Pick<Org, 'events'>, id: string, look: Lookups, a
     };
   }
   return undefined;
+}
+
+/** A profile @handle from a name: "Underground Alchemy" -> "undergroundalchemy" (3 to 20 letters and numbers). */
+export const handleFor = (name: string) => {
+  const h = slugOf(name, 60).replace(/-/g, '').slice(0, 20);
+  return h.length >= 3 ? h : undefined;
+};
+
+/** The profile an account that runs this organizer should show: its name and @handle, no favourite artists or sounds. */
+export function orgProfileInput(org: Pick<Org, 'name' | 'tagline' | 'handle'>, bio: string | undefined) {
+  const handle = org.handle ?? handleFor(org.name);
+  return handle ? { handle, displayName: org.name.slice(0, 40), bio: (bio || org.tagline || '').slice(0, 160), showFestivals: false, showSound: false, showArtists: false } : undefined;
+}
+
+/** One DJ an organizer books, with what's worth knowing. */
+export type OrgDj = { artistId: string; name: string; events: number; upcoming: number; next?: string; sound?: SoundTag };
+
+/**
+ * The DJs on an organizer's published events and claimed festivals: how many
+ * of its events each plays, how many still to come and the next one, and
+ * their main sound. Most booked first. Pure.
+ */
+export function orgDjs(org: Org, look: Pick<Lookups, 'festival' | 'show'>, artists: readonly Artist[], today: string): OrgDj[] {
+  const index = artistIndex(artists);
+  const artist = (id: string) => index.byId.get(id);
+  const nights = new Map<string, string[]>();
+  const add = (id: string, date: string) => nights.set(id, [...(nights.get(id) ?? []), date]);
+  for (const e of org.events) {
+    if (!e.published) continue;
+    for (const act of e.lineup) {
+      add(actArtistId(act, index, org.id).id, e.date);
+    }
+  }
+  const copied = new Set(org.events.filter((e) => e.published && e.from).map((e) => e.from!));
+  for (const c of org.claims) {
+    if (copied.has(c)) continue;
+    const f = look.festival(c);
+    const s = f ? undefined : look.show(c);
+    if (f?.startDate) for (const id of f.lineup) add(id, f.startDate);
+    else if (s) for (const id of s.artistIds) add(id, s.date);
+  }
+  const out: OrgDj[] = [];
+  for (const [id, dates] of nights) {
+    const a = artist(id);
+    if (!a) continue;
+    const coming = dates.filter((d) => d >= today).sort();
+    const sound = (Object.entries(a.sound ?? {}) as [SoundTag, number][]).sort((x, y) => y[1] - x[1])[0]?.[0];
+    out.push({ artistId: id, name: a.name, events: dates.length, upcoming: coming.length, ...(coming[0] ? { next: coming[0] } : {}), ...(sound ? { sound } : {}) });
+  }
+  return out.sort((a, b) => b.events - a.events || (a.next ?? '9999').localeCompare(b.next ?? '9999') || a.name.localeCompare(b.name));
 }
 
 /** The organizer an account runs, by account (HQ linked it, or it linked itself). */

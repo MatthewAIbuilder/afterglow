@@ -619,7 +619,9 @@ service cloud.firestore {
     // Event organizers' pages: anyone reads them (the website shows them signed out); HQ starts one; its
     // team (an email HQ added, confirmed) edits it, but never its promotions, which only HQ gives.
     function orgShape(d) {
-      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims', 'promoted', 'uids', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims', 'promoted', 'uids', 'handle', 'updatedAt'])
+        // The @handle its accounts' profiles use.
+        && (!('handle' in d) || (d.handle is string && d.handle.matches('^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$')))
         && (!('uids' in d) || (d.uids is list && d.uids.size() <= 10))
         // Imported events (EDMTrain's) it says are its own, by id.
         && (!('claims' in d) || (d.claims is list && d.claims.size() <= 60))
@@ -637,6 +639,7 @@ service cloud.firestore {
       // Its team never changes promotions, and changes who runs it only by adding or taking away their own account.
       allow update: if orgShape(request.resource.data)
         && (isAdmin() || (isOrgMember(id) && request.resource.data.promoted == resource.data.promoted
+          && request.resource.data.get('handle', '') == resource.data.get('handle', '')
           && (request.resource.data.get('uids', []).toSet() == resource.data.get('uids', []).toSet()
             || request.resource.data.get('uids', []).toSet() == resource.data.get('uids', []).toSet().union([me()].toSet())
             || request.resource.data.get('uids', []).toSet() == resource.data.get('uids', []).toSet().difference([me()].toSet()))));

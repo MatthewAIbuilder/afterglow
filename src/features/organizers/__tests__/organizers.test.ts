@@ -26,6 +26,9 @@ import {
   slugOf,
   splitEvents,
   withOrgs,
+  handleFor,
+  orgProfileInput,
+  orgDjs,
   importedCandidates,
   orgListings,
   draftFrom,
@@ -246,5 +249,16 @@ describe('organizers', () => {
     expect(copied.festivals.some((f) => f.id === `underground-alchemy--${show.id}`)).toBe(true);
     // A draft copy changes nothing.
     expect(withOrgs(edm, [{ ...o, events: [{ ...fest }] }]).festivals.find((f) => f.id === 'alchemy-fest-26')?.name).toBe('Alchemy Fest 2026');
+  });
+  it('gives the organizer’s accounts its name and @handle, and lists its DJs with how often they play', () => {
+    expect(handleFor('Underground Alchemy')).toBe('undergroundalchemy');
+    expect(orgProfileInput({ name: 'Underground Alchemy', tagline: 'After parties', handle: 'undergroundalchemy' }, '')).toEqual({ handle: 'undergroundalchemy', displayName: 'Underground Alchemy', bio: 'After parties', showFestivals: false, showSound: false, showArtists: false });
+    const look = { festival: (id: string) => ({ ...base.festivals.find((f) => f.id === id)!, startDate: '2026-11-06' }), show: () => undefined };
+    const o = org({ claims: ['edc-orlando-26'] });
+    const all = withOrgs(base, [o]).artists;
+    const djs = orgDjs(o, look, all, '2026-10-06');
+    expect(djs[0]).toMatchObject({ artistId: 'subtronics', events: 2, upcoming: 2, next: '2026-11-06', sound: 'dubstep' });
+    expect(djs.map((d) => d.artistId)).toEqual(expect.arrayContaining(['night-chemist', 'levity']));
+    expect(djs.some((d) => d.artistId === 'someone')).toBe(false);
   });
 });

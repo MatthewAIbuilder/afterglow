@@ -23,8 +23,9 @@ place. How the organizer features work in general: `../organizers.md`.
 - **An existing account can be linked instead**: HQ → Accounts → the person →
   Organizer → Underground Alchemy → Save privileges (no email to confirm).
   @ugrnd was set up this way for testing, with the Partner flair.
-- **What he gets**: the organizer studio (Overview numbers, Events, On
-  EDMTrain, Artists, Promote, Collectibles, Page), a "You run Underground
+- **What he gets**: his account opens straight on the organizer studio
+  (Overview numbers, Events, On EDMTrain, Artists, Promote, Collectibles,
+  Messages, Page), with View the app to see the fan app, a "You run Underground
   Alchemy" card on his profile, "Hosted by Underground Alchemy" on his events,
   his logo on his events' badges, and "The Alchemist" (a potion flask) as his
   collectible creature for stickers and gifts.

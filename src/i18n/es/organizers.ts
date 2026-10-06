@@ -36,6 +36,18 @@ export const es_organizers: Dictionary = {
   'Your organizer page': 'Tu página de organizador',
   'See their events': 'Ver sus eventos',
   '{organizer}. Open their page': '{organizer}. Abrir su página',
+  // An organizer's profile
+  DJs: 'DJs',
+  Events: 'Eventos',
+  '{organizer}’s profile and videos': 'Perfil y vídeos de {organizer}',
+  'Their DJs': 'Sus DJs',
+  'Your DJs': 'Tus DJs',
+  'Videos · {n}': 'Vídeos · {n}',
+  'No DJs announced yet.': 'Aún no hay DJs anunciados.',
+  'Plays {n} of their events': 'Toca en {n} de sus eventos',
+  'Plays {n} of your events': 'Toca en {n} de tus eventos',
+  'Publish an event in your studio and it shows here.': 'Publica un evento en tu estudio y aparecerá aquí.',
+  'The DJs on your events show here, with how often they play for you.': 'Aquí aparecen los DJs de tus eventos, con cuántas veces tocan para ti.',
   // Artists, stickers and gifts
   'From {organizer}': 'De {organizer}',
   'A gift from {organizer}': 'Un regalo de {organizer}',

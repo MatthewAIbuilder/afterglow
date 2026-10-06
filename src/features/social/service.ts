@@ -382,6 +382,8 @@ export interface SocialService {
    * someone signed in with an organizer's (confirmed) email only for their own.
    */
   setOrgAccount(orgId: string, uid: string, on: boolean): Promise<void>;
+  /** HQ: the @handle (and name) the organizer's accounts' profiles use, or none (null). */
+  setOrgHandle(orgId: string, handle: string | null): Promise<void>;
   /** HQ: who may sign in to an organizer's studio (emails), and adding or taking one away (null). */
   orgMembers(orgId: string): Promise<string[]>;
   setOrgMember(email: string, orgId: string | null): Promise<void>;

@@ -4,6 +4,24 @@ An event organizer gets their own page on Afterglow and an **organizer
 studio** to run it. The first one is **Underground Alchemy** (after parties,
 https://undergroundalchemy.net, Instagram @underground.alchemy).
 
+An organizer's account is the organizer's, not a fan's:
+
+- Its profile shows the organizer's name and the @handle HQ chose (HQ →
+  Organizers → Its profile; Underground Alchemy's is @undergroundalchemy).
+  The account takes them by itself the next time it opens the studio.
+- Its profile has the organizer's logo instead of a photo, no sound, artists
+  orbit, level, garden or badges; instead **Videos** (what it posts),
+  **Events** and **DJs** (everyone it books: how many of its events each
+  plays, the next one, their sound). Fans see the same, plus **Follow**; its
+  organizer page has Follow and a link to the profile too.
+- Looking at the app, it has no My Sound tab, and Discover is **From your
+  events**: only videos filmed at its events and the ones it posts.
+
+An organizer's account opens straight on its studio instead of the fan app
+(like the support account opens on HQ). **View the app** in the studio's
+header shows the app as everyone sees it, with a **← Studio** pill at the top
+to come back; **Switch account** and **Sign out** are there too.
+
 What an organizer can do in the studio:
 
 - **Overview**: how many times people opened their page and their events,
@@ -39,6 +57,8 @@ What an organizer can do in the studio:
   collects it), **Stickers and QR codes** (stickers and hunts to print and hide
   at events, like HQ's), and **Request a design** (a badge, sticker, creature,
   gift or flyer; HQ replies).
+- **Messages**: their conversation with Afterglow: anything they write, and
+  every request, with Afterglow's replies (HQ answers in Organizers).
 - **Page**: their name, line, words, website and Instagram.
 
 Everyone else sees the organizer's page (`/org/underground-alchemy`): the

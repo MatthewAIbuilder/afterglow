@@ -1,4 +1,6 @@
 import { BlurView } from 'expo-blur';
+import { useSocial } from '../state/social';
+import { useMyOrg } from '../state/orgs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
@@ -36,6 +38,8 @@ const CAMERA = 'camera';
  */
 export const FULL_TABS = ['index', 'festivals', 'sound', 'together', 'profile'];
 export const FESTIVAL_TABS = ['index', 'lineup', CAMERA, 'together', 'profile'];
+/** An event organizer's account: no My Sound (its profile shows its DJs instead). */
+export const ORG_TABS = ['index', 'festivals', 'together', 'profile'];
 /** The festival's colours for the camera button (the record button's). */
 const CAMERA_COLORS = ['#A97CFF', '#FF7EB6', '#FFB86B'] as const;
 
@@ -58,7 +62,9 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   // The camera button turning into a heart when held (festival mode).
   const hold = useSharedValue(0);
   const burst = useSharedValue(0);
-  const order = active ? FESTIVAL_TABS : FULL_TABS;
+  const { user } = useSocial();
+  const organizer = !!useMyOrg(user?.uid);
+  const order = active ? FESTIVAL_TABS : organizer ? ORG_TABS : FULL_TABS;
   // Something new from your crew: a glow dot on Friends.
   const unreadChat = useCrewChat().unreadTotal;
   const freshCrew = useCrewUpdates().stories.some((s) => s.fresh) || unreadChat > 0;

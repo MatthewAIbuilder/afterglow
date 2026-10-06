@@ -1264,7 +1264,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!had) needAdmin();
       else needOrg(org.id);
       // As stored and read back: checked, and promotions only ever HQ's.
-      orgs.set(org.id, { ...cleanOrg(org.id, orgToDoc(org))!, promoted: had?.promoted ?? {}, uids: had?.uids ?? [], updatedAt: now() });
+      const handle = had ? had.handle : org.handle;
+      orgs.set(org.id, { ...cleanOrg(org.id, orgToDoc(org))!, promoted: had?.promoted ?? {}, uids: had?.uids ?? [], ...(handle ? { handle } : {}), updatedAt: now() });
     },
     async sendOrgRequest(input) {
       const u = me();
@@ -1301,6 +1302,13 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const o = orgs.get(orgId);
       if (!o) throw new SocialError('not-found');
       orgs.set(orgId, { ...o, uids: on ? [...new Set([...o.uids, uid])] : o.uids.filter((x) => x !== uid) });
+    },
+    async setOrgHandle(orgId, handle) {
+      needAdmin();
+      const o = orgs.get(orgId);
+      if (!o) throw new SocialError('not-found');
+      const { handle: _old, ...rest } = o;
+      orgs.set(orgId, { ...rest, ...(handle ? { handle } : {}) });
     },
     async orgMembers(orgId) {
       needAdmin();

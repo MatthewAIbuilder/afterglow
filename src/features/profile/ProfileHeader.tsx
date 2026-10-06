@@ -54,6 +54,8 @@ type Props = {
   onLevel?: () => void;
   /** Which counts can be tapped (all of them by default). */
   tappable?: ProfileStat['key'][];
+  /** Drawn instead of the photo (an event organizer's logo). */
+  face?: React.ReactNode;
 };
 
 const ORBIT_H = 236;
@@ -64,7 +66,7 @@ const ORBIT_H = 236;
  * round it), your name and bio, what you're feeling lately, the counts, your
  * sound as chips, and the buttons (passed as children).
  */
-export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable, level, onLevel, socials }: Props) {
+export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable, level, onLevel, socials, face }: Props) {
   const standing = useStanding(uid);
   const ringed = !!ringOf(standing);
   // Your own level comes live from your quests; anyone else's from what their profile shows.
@@ -73,7 +75,9 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
   const orbitWidth = Math.min(width, 520);
   const social = stats.filter((s) => s.key === 'followers' || s.key === 'following');
   const mine = stats.filter((s) => s.key !== 'followers' && s.key !== 'following');
-  const photo = ringed ? (
+  const photo = face ? (
+    <View style={styles.avatar}>{face}</View>
+  ) : ringed ? (
     <StandingAvatar standing={standing} name={name} url={avatarUrl} size={AVATAR - 10} />
   ) : (
     <View style={styles.avatar}>

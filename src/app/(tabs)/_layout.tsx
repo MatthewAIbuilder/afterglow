@@ -3,6 +3,7 @@ import { CrashScreen } from '../../components/CrashScreen';
 import { Redirect, Tabs } from 'expo-router';
 import { isSupportAccount } from '../../features/admin/admin';
 import { useGuestView } from '../../state/adminView';
+import { useMyOrg } from '../../state/orgs';
 import { useSocial } from '../../state/social';
 import { GlassTabBar } from '../../components/GlassTabBar';
 import { color } from '../../theme/tokens';
@@ -12,7 +13,10 @@ export default function TabLayout() {
   // The support account gets its dashboard instead of the app (unless it chose to look at the app).
   const { user } = useSocial();
   const view = useGuestView();
+  // An event organizer's account gets its studio the same way.
+  const myOrg = useMyOrg(user?.uid);
   if (isSupportAccount(user) && view.loaded && !view.guest) return <Redirect href="/admin" />;
+  if (!isSupportAccount(user) && myOrg && view.loaded && !view.guest) return <Redirect href="/studio" />;
   return (
     <Tabs
       tabBar={(props) => <GlassTabBar {...props} />}
