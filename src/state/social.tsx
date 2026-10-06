@@ -8,6 +8,10 @@ import type { Memory } from '../features/memories/models';
 import { ARTISTS_SHOWN, type Profile, type ProfileInput, type Published, type ReportReason, type SocialUser } from '../features/social/models';
 import { favouriteArtists } from '../features/profile/identity';
 import { publishedChanged } from '../features/social/publish';
+import { publishedShows } from '../features/festivals/goingShows';
+import { localDay } from '../features/artists/shows';
+import { useToday } from '../lib/useToday';
+import { useGoingShows } from './goingShows';
 import { SOCIAL_ERROR_COPY, SocialError, socialErrorKind, type ReportTarget, type SocialAvailability, type SocialService } from '../features/social/service';
 import { cleanShareOutbox, queueShare, sharesOf, shareRetryDelay, shareTried, unqueueShare, type ShareItem } from '../features/social/shareOutbox';
 import { defaultSocialService } from '../features/social/services';
@@ -234,7 +238,14 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         : undefined,
     [artists, taste, informed, ratings, followed, ratingsLoaded, followsLoaded],
   );
-  const published = useMemo<Published>(() => ({ festivals: [...going], sounds, ...(favourites ? { artists: favourites } : {}) }), [going, sounds, favourites]);
+  // Shows you're going to (coming up) go out with your festivals.
+  const { shows: goingShows, ready: showsReady } = useGoingShows();
+  const todayKey = localDay(useToday());
+  const showIds = useMemo(() => (showsReady ? publishedShows(goingShows, todayKey) : undefined), [goingShows, showsReady, todayKey]);
+  const published = useMemo<Published>(
+    () => ({ festivals: [...going], sounds, ...(favourites ? { artists: favourites } : {}), ...(showIds ? { shows: showIds } : {}) }),
+    [going, sounds, favourites, showIds],
+  );
 
   const saveProfile = useCallback(
     async (input: ProfileInput) => {
@@ -249,7 +260,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   // Never on the support account: plans and taste are this phone's, so switching to HQ would publish yours there.
   // Not from this phone's copy: an old copy must never be published over a newer profile.
   useEffect(() => {
-    if (!profile || profileKeptAt !== undefined || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds, published.artists)) return;
+    if (!profile || profileKeptAt !== undefined || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds, published.artists, published.shows)) return;
     const t = setTimeout(() => {
       const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound, showArtists: profile.showArtists, socials: profile.socials ?? {} };
       service

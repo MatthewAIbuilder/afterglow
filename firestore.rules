@@ -33,7 +33,7 @@ service cloud.firestore {
     match /profiles/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['handle', 'displayName', 'nameLower', 'bio', 'avatarUrl', 'coverUrl', 'festivals', 'sounds', 'showFestivals', 'showSound', 'artists', 'showArtists', 'backdrop', 'createdAt', 'updatedAt', 'instagram', 'snapchat', 'tiktok'])
+        && request.resource.data.keys().hasOnly(['handle', 'displayName', 'nameLower', 'bio', 'avatarUrl', 'coverUrl', 'festivals', 'shows', 'sounds', 'showFestivals', 'showSound', 'artists', 'showArtists', 'backdrop', 'createdAt', 'updatedAt', 'instagram', 'snapchat', 'tiktok'])
         // Usernames only (the app makes the links), in each service's own shape.
         && (!('instagram' in request.resource.data) || (request.resource.data.instagram is string && request.resource.data.instagram.matches('^[a-z0-9._]{1,30}$')))
         && (!('snapchat' in request.resource.data) || (request.resource.data.snapchat is string && request.resource.data.snapchat.matches('^[a-z][a-z0-9._-]{2,14}$')))
@@ -43,6 +43,8 @@ service cloud.firestore {
         && request.resource.data.nameLower == request.resource.data.displayName.lower()
         && request.resource.data.bio is string && request.resource.data.bio.size() <= 160
         && request.resource.data.festivals is list && request.resource.data.festivals.size() <= 50
+        // One-night shows they're going to (ids), alongside the festivals.
+        && (!('shows' in request.resource.data) || (request.resource.data.shows is list && request.resource.data.shows.size() <= 30))
         && request.resource.data.createdAt.size() <= 40 && request.resource.data.updatedAt.size() <= 40
         && request.resource.data.sounds is list && request.resource.data.sounds.size() <= 3
         && request.resource.data.showFestivals is bool && request.resource.data.showSound is bool

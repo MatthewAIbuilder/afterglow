@@ -350,6 +350,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
               avatarUrl: current?.avatarUrl,
               coverUrl: current?.coverUrl,
               festivals: input.showFestivals ? published.festivals.slice(0, 50) : [],
+              // Shows you're going to go with your festivals (left as they were when not given).
+              shows: input.showFestivals ? (published.shows ?? current?.shows ?? []).slice(0, 30) : [],
               sounds: input.showSound ? published.sounds.slice(0, 3) : [],
               artists: showArtists ? (published.artists ?? current?.artists ?? []).slice(0, ARTISTS_SHOWN) : [],
               showFestivals: input.showFestivals,

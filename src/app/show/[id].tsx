@@ -20,6 +20,8 @@ import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
+import { useGoingShows } from '../../state/goingShows';
+import { CheckIcon } from '../../components/TabIcons';
 import { useNearby } from '../../state/nearby';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
@@ -43,6 +45,7 @@ export default function ShowScreen() {
   const { reactions } = useReactions();
   const { here, units } = useNearby();
   const show = useMemo(() => catalog.shows.find((s) => s.id === id), [catalog.shows, id]);
+  const { isGoing, setGoing } = useGoingShows();
   if (!show) return <Missing title={t('Show not found')} line={t('This show isn’t on Afterglow any more (it may have passed), or the link isn’t quite right.')} />;
 
   const ranked = rankShow(show, taste, here);
@@ -57,6 +60,7 @@ export default function ShowScreen() {
   const over = show.date < today;
   const best = ranked.best && bill.find((b) => b.artist.id === ranked.best!.id)?.artist;
   const event = showEvent(show, WEB_URL, names);
+  const going = isGoing(show.id);
   const share = () => {
     haptic.select();
     const w = withLine(names, 3);
@@ -107,6 +111,20 @@ export default function ShowScreen() {
           </Pressable>
           {over ? null : (
             <View style={styles.actions}>
+              <Pressable
+                onPress={() => {
+                  if (going) haptic.select();
+                  else haptic.celebrate();
+                  setGoing(show, !going);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: going }}
+                accessibilityLabel={going ? t("You're going to {festival}. Tap to undo.", { festival: title }) : t("I'm going to {festival}", { festival: title })}
+                style={({ pressed }) => [styles.going, going && styles.goingOn, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+              >
+                <CheckIcon color={going ? color.moon : color.moonDim} size={14} />
+                <Text style={[styles.goingText, !going && { color: color.moonDim }]}>{going ? t('Going') : t('I’m going')}</Text>
+              </Pressable>
               <CalendarPill event={event} name={title} />
             </View>
           )}
@@ -173,6 +191,9 @@ const styles = StyleSheet.create({
   },
   ticketsText: { ...type.headline, color: color.night },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
+  going: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  goingOn: { backgroundColor: glowA(0.28), borderColor: glowA(0.6) },
+  goingText: { ...type.label, color: color.moon },
   section: { marginTop: space.xxl, paddingHorizontal: space.xl },
   sectionTitle: { ...type.title, fontSize: 22, color: color.moon },
   sectionSub: { ...type.caption, color: color.moonDim, marginTop: space.xs, marginBottom: space.sm },

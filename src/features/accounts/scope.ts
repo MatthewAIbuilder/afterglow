@@ -24,6 +24,7 @@ export const ACCOUNT_KEYS = [
   'artistRatings.v1',
   'followedArtists.v1',
   'going.v1',
+  'goingShows.v1',
   'mustSees.v1',
   'weekends.v1',
   'setReminders.v1',

@@ -329,7 +329,7 @@ export default function ProfileEditScreen() {
           })}
 
           <View style={styles.switches}>
-            <SwitchRow label={t('Show festivals I’m going to')} detail={showFestivals ? (goingLine(goingNames) ?? t('None yet. Tap I’m going on a festival.')) : t('Hidden')} value={showFestivals} onChange={setShowFestivals} />
+            <SwitchRow label={t('Show festivals and shows I’m going to')} detail={showFestivals ? (goingLine(goingNames) ?? t('None yet. Tap I’m going on a festival.')) : t('Hidden')} value={showFestivals} onChange={setShowFestivals} />
             <SwitchRow
               label={t('Show my glow level')}
               detail={showLevel === false ? t('Hidden') : !daily.ready ? ' ' : daily.level.level >= LEVEL_SHOWN_FROM ? t('Level {n} · {name}', { n: daily.level.level, name: daily.level.name }) : t('Shows once you reach level 2 in your quests')}

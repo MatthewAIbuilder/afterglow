@@ -12,6 +12,7 @@ import { forgetDailyQuests } from './dailyQuests';
 import { forgetDayHours } from './dayHours';
 import { forgetFestivalWeek } from './festivalWeek';
 import { forgetGardenLayout } from './gardenLayout';
+import { forgetGoingShows } from './goingShows';
 import { forgetLastBackdrop } from './lastBackdrop';
 import { forgetQuests } from './quests';
 import { forgetScouted } from './scouted';
@@ -35,6 +36,7 @@ function forgetShared() {
   forgetDayHours();
   forgetFestivalWeek();
   forgetGardenLayout();
+  forgetGoingShows();
   forgetLastBackdrop();
   forgetQuests();
   forgetScouted();

@@ -22,6 +22,8 @@ import { isOver } from '../../features/festivals/shelves';
 import { tasteMix } from '../../features/taste/lean';
 import { useToday } from '../../lib/useToday';
 import { useGoing } from '../../state/going';
+import { GoingShowsList } from '../../features/festivals/GoingShowsList';
+import { goingShowOf } from '../../features/festivals/goingShows';
 import { useTaste } from '../../state/taste';
 import { useLoves } from '../../state/useLoves';
 import { FollowButton } from '../../features/social/FollowButton';
@@ -184,6 +186,10 @@ export default function PublicProfileScreen() {
     () => publicOrbit(profile?.showArtists ? profile.artists : [], memories.map((m) => m.artistId), catalog.artist),
     [profile, memories, catalog],
   );
+  const theirShows = useMemo(
+    () => (profile?.shows ?? []).map((id) => catalog.shows.find((x) => x.id === id)).filter((x): x is NonNullable<typeof x> => !!x).map(goingShowOf).sort((a, b) => a.date.localeCompare(b.date)),
+    [profile, catalog.shows],
+  );
   const scroller = useRef<ScrollView>(null);
   const sectionY = useRef({ badges: 0, moments: 0 });
   const stats: ProfileStat[] = [
@@ -322,6 +328,8 @@ export default function PublicProfileScreen() {
             <BadgesGrid badges={badges} throwbacks={throwbacks} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
           </View>
         ) : null}
+        {/* One-night shows they're going to (when they show their festivals), from the shows on Afterglow. */}
+        <GoingShowsList title={t('Shows')} shows={theirShows} />
         <Text style={styles.section} onLayout={(e) => (sectionY.current.moments = e.nativeEvent.layout.y)}>
           {memories.length ? t('Memories · {n}', { n: memories.length }) : t('Memories')}
         </Text>

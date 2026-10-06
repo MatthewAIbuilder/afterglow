@@ -295,4 +295,9 @@ export const es_festivalsMore: Dictionary = {
   'With {names}.': 'Con {names}.',
   'Tickets: {link}': 'Entradas: {link}',
   'On Afterglow: {url}': 'En Afterglow: {url}',
+
+  // Going to one-night shows
+  'Shows you’re going to': 'Shows a los que vas',
+  'Shows you went to': 'Shows a los que fuiste',
+  'Show festivals and shows I’m going to': 'Mostrar los festivales y shows a los que voy',
 };

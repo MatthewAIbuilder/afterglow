@@ -56,6 +56,10 @@ import { useWeekends } from '../../state/weekends';
 import { useMemoryPicker } from '../../features/memories/useAddMemory';
 import type { Memory } from '../../features/memories/models';
 import { sharedAsMemory } from '../../features/memories/webVideo';
+import { GoingShowsList } from '../../features/festivals/GoingShowsList';
+import { splitShows } from '../../features/festivals/goingShows';
+import { localDay } from '../../features/artists/shows';
+import { useGoingShows } from '../../state/goingShows';
 import { color, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
 import { datesLine } from '../../features/festivals/format';
@@ -215,6 +219,8 @@ function FullProfile() {
   );
   const taggedHere = meUid ? (tagged?.uid === meUid ? tagged.list : []) : undefined;
 
+  const { shows: myShows } = useGoingShows();
+  const showsSplit = useMemo(() => splitShows(myShows, localDay(today)), [myShows, today]);
   const scroller = useRef<ScrollView>(null);
   const tabsY = useRef(0);
   const stats = profileStats({
@@ -337,6 +343,9 @@ function FullProfile() {
             <CrewsList
               crews={social.user ? crews.map((c) => ({ id: c.id, name: c.name, festival: catalog.festival(c.festivalId)?.name, people: c.members.length })) : []}
             />
+            {/* One-night shows: their own list (they aren't festivals, so they don't count as one). */}
+            <GoingShowsList title={t('Shows you’re going to')} shows={showsSplit.upcoming} />
+            <GoingShowsList title={t('Shows you went to')} shows={showsSplit.past} />
           </PassportTab>
         ) : (
           <SavedTab clips={[...mine.saved, ...mine.liked].slice(0, 12)} clipCount={kept} followedCount={followedCount} artistOf={catalog.artist} width={width} />

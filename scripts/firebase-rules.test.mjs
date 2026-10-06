@@ -34,6 +34,12 @@ async function claim(ctx, uid, handle, over) {
 await t('signed out: can’t read profiles', () => assertFails(getDoc(doc(anon.firestore(), 'profiles', 'uidA'))));
 await t('A claims @maya with a profile', () => assertSucceeds(claim(A, 'uidA', 'maya')));
 await t('B can’t take @maya', () => assertFails(claim(B, 'uidB', 'maya')));
+await t('a profile lists the one-night shows you’re going to (up to 30)', async () => {
+  await assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { shows: ['edm-1', 'edm-2'] })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { shows: Array.from({ length: 31 }, (_, i) => `edm-${i}`) })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { shows: 'edm-1' })));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya')));
+});
 await t('B can’t write a profile with a handle it doesn’t own', () => assertFails(setDoc(doc(B.firestore(), 'profiles', 'uidB'), profile('bob'))));
 await t('B claims @bob', () => assertSucceeds(claim(B, 'uidB', 'bob')));
 await t('B can’t write A’s profile', () => assertFails(setDoc(doc(B.firestore(), 'profiles', 'uidA'), profile('maya'))));
