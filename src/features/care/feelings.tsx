@@ -9,7 +9,7 @@ export const LEVEL_COLOR: Record<number, string> = { 5: '#5BE3B5', 4: '#9ADF8F',
 export const moodColor = (m: Mood) => LEVEL_COLOR[MOOD_LEVEL[m]];
 
 /** Each feeling as a whole line for screen readers. */
-const FEELING_LINE: Record<Mood, string> = {
+export const FEELING_LINE: Record<Mood, string> = {
   great: t("I'm feeling great"),
   good: t("I'm feeling good"),
   okay: t("I'm feeling okay"),
