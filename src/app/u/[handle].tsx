@@ -8,6 +8,9 @@ import type { ProfileStat } from '../../features/profile/profileView';
 import { ProfileCover } from '../../components/ProfileCover';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
+import type { PublicResident } from '../../features/sprouts/publicGarden';
+import { Sprout } from '../../features/sprouts/Sprout';
+import { artistLook } from '../../features/sprouts/artistLook';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,6 +65,8 @@ export default function PublicProfileScreen() {
   const { badges, throwbacks } = useBadges(profile?.uid);
   const [memories, setMemories] = useState<SharedMemory[]>([]);
   const [tagged, setTagged] = useState<SharedMemory[]>([]);
+  // Their garden, as they show it (none when they don't).
+  const [garden, setGarden] = useState<PublicResident[] | null>(null);
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
   const [counts, setCounts] = useState<FollowCounts | undefined>();
@@ -87,6 +92,10 @@ export default function PublicProfileScreen() {
       social.service
         .followCounts(p.uid)
         .then((c) => live && setCounts(c))
+        .catch(() => {});
+      social.service
+        .gardenOf(p.uid)
+        .then((g) => live && setGarden(g?.residents ?? null))
         .catch(() => {});
       // Videos they're tagged in and said yes to (a separate read: if it fails, their own still show).
       social.service
@@ -323,6 +332,45 @@ export default function PublicProfileScreen() {
             ))}
           </View>
         ) : null}
+        {/* Their garden: a peek, and the way in. */}
+        {garden?.length ? (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/garden-visit', params: { uid: profile.uid, handle: profile.handle } });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Visit {name}’s garden: {n} living there', { name: profile.displayName, n: garden.length })}
+            style={({ pressed }) => [styles.garden, pressed && { opacity: 0.8 }]}
+            testID="visit-garden"
+          >
+            <View style={styles.gardenPeek}>
+              {garden.slice(0, 5).map((r, i) =>
+                r.k === 's' ? (
+                  <Sprout key={i} kind={r.kind} stage={r.stage} size={40} still />
+                ) : (
+                  <Sprout key={i} artist={artistLook(catalog.artist(r.artistId) ?? { id: r.artistId, name: r.name, sound: {} })} tier={r.tier} size={40} still />
+                ),
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.gardenTitle}>{mine ? t('Your garden') : t('{name}’s garden', { name: profile.displayName.split(' ')[0] })}</Text>
+              <Text style={styles.gardenSub}>{t('{n} living there · Visit', { n: garden.length })}</Text>
+            </View>
+          </Pressable>
+        ) : null}
+        {!mine && social.profile ? (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/kandi-make', params: { uid: profile.uid, name: profile.displayName, handle: profile.handle } });
+            }}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.makeKandi, pressed && { opacity: 0.8 }]}
+          >
+            <Text style={styles.makeKandiText}>{t('Make kandi for {name}', { name: profile.displayName.split(' ')[0] })}</Text>
+          </Pressable>
+        ) : null}
         {badges.length || throwbacks.length ? (
           <View style={styles.badges} onLayout={(e) => (sectionY.current.badges = e.nativeEvent.layout.y)}>
             <BadgesGrid badges={badges} throwbacks={throwbacks} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
@@ -384,6 +432,12 @@ export default function PublicProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  makeKandi: { marginHorizontal: space.xl, marginTop: space.sm, alignItems: 'center', paddingVertical: space.sm + 2, borderRadius: radius.pill, borderWidth: 1, borderStyle: 'dashed', borderColor: glowA(0.5) },
+  makeKandiText: { ...type.label, color: color.glow },
+  garden: { marginHorizontal: space.xl, marginTop: space.lg, flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: 'rgba(110,231,160,0.07)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,231,160,0.35)' },
+  gardenPeek: { flexDirection: 'row', marginRight: space.xs },
+  gardenTitle: { ...type.headline, color: color.moon },
+  gardenSub: { ...type.caption, color: color.moonDim },
   root: { flex: 1, backgroundColor: color.night },
   back: { position: 'absolute', left: space.lg },
   actions: { position: 'absolute', right: space.lg, flexDirection: 'row', gap: space.sm },

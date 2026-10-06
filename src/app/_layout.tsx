@@ -15,6 +15,7 @@ import { QuestToast } from '../features/quests/QuestToast';
 import { WhatsNewLauncher } from '../features/whatsNew/WhatsNewLauncher';
 import { ThemeKeeper } from '../features/themes/ThemeKeeper';
 import { SproutFollowKeeper } from '../features/sprouts/SproutFollowKeeper';
+import { GardenPublisher } from '../features/sprouts/GardenPublisher';
 import { SecretStage } from '../features/secrets/SecretStage';
 import { SunriseWatcher } from '../features/secrets/SunriseWatcher';
 import { FirstRun } from '../features/welcome/FirstRun';
@@ -53,6 +54,7 @@ import { SeenProvider } from '../state/seen';
 import { SetRemindersProvider } from '../state/setReminders';
 import { SocialProvider } from '../state/social';
 import { SproutsProvider } from '../state/sprouts';
+import { KandiProvider } from '../state/kandi';
 import { FindsProvider } from '../state/finds';
 import { color } from '../theme/tokens';
 
@@ -84,6 +86,7 @@ export default function RootLayout() {
       <ClipNewsProvider>
       <SocialProvider>
       <SproutsProvider>
+      <KandiProvider>
       <FindsProvider>
       <NoticesProvider>
       <CrewsProvider>
@@ -246,6 +249,7 @@ export default function RootLayout() {
       <WhatsNewLauncher />
       <ThemeKeeper />
       <SproutFollowKeeper />
+      <GardenPublisher />
       <QuestTracker />
       <DailyQuestTracker />
       <LevelSync />
@@ -263,6 +267,7 @@ export default function RootLayout() {
       </CrewsProvider>
       </NoticesProvider>
       </FindsProvider>
+      </KandiProvider>
       </SproutsProvider>
       </SocialProvider>
       </ClipNewsProvider>

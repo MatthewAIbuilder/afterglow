@@ -882,6 +882,51 @@ await t('gift themes: only @matt.raves sends one with a sprout; whoever picks it
   await assertFails(deleteDoc(doc(O.firestore(), 'themeGrants', 'uidN_daisy')));
   await assertSucceeds(deleteDoc(doc(N.firestore(), 'themeGrants', 'uidN_daisy')));
 });
+await t('gardens: you show yours (a short list, server-timed), anyone signed in visits, only you change or remove it', async () => {
+  const G = env.authenticatedContext('uidGa'), H = env.authenticatedContext('uidGb');
+  const garden = (over = {}) => ({ residents: [{ k: 's', kind: 'plur', stage: 3 }], updatedAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden()));
+  await assertFails(setDoc(doc(H.firestore(), 'gardens', 'uidGa'), garden()));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ note: 'secret' })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ residents: Array.from({ length: 121 }, () => ({ k: 's' })) })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ updatedAt: new Date(0) })));
+  await assertSucceeds(getDoc(doc(H.firestore(), 'gardens', 'uidGa')));
+  await assertFails(getDoc(doc(anon.firestore(), 'gardens', 'uidGa')));
+  await assertFails(deleteDoc(doc(H.firestore(), 'gardens', 'uidGa')));
+  await assertSucceeds(deleteDoc(doc(G.firestore(), 'gardens', 'uidGa')));
+});
+await t('kandi: made as yourself for someone else with a profile who hasn’t blocked you; only the two of you read or remove it', async () => {
+  const K = env.authenticatedContext('uidKa'), L = env.authenticatedContext('uidKb'), M = env.authenticatedContext('uidKc');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'profiles', 'uidKa'), profile('kaya'));
+    await setDoc(doc(db, 'profiles', 'uidKb'), profile('kobe'));
+    await setDoc(doc(db, 'profiles', 'uidKc'), profile('kim'));
+    await setDoc(doc(db, 'blocks', 'uidKc'), { uids: ['uidKa'] });
+  });
+  const k = (over = {}) => ({ from: 'uidKa', to: 'uidKb', word: 'PLUR', beads: 'uv', note: 'See you at the rail', createdAt: now, ...over });
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'k1'), k()));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'k1b'), k({ word: 'I ♥ U', note: 'x' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k2'), k({ from: 'uidKb' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k3'), k({ to: 'uidKa' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k4'), k({ to: 'uidKc' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k5'), k({ to: 'uidNobody' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k6'), k({ word: 'plur' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k7'), k({ word: 'THIRTEEN CHARS' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k8'), k({ beads: 'gold' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k9'), k({ note: 'x'.repeat(141) })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k10'), k({ extra: 1 })));
+  await assertSucceeds(getDoc(doc(L.firestore(), 'kandi', 'k1')));
+  await assertFails(getDoc(doc(M.firestore(), 'kandi', 'k1')));
+  await assertSucceeds(getDocs(query(collection(L.firestore(), 'kandi'), where('to', '==', 'uidKb'))));
+  await assertFails(getDocs(collection(M.firestore(), 'kandi')));
+  await assertFails(updateDoc(doc(L.firestore(), 'kandi', 'k1'), { word: 'HI' }));
+  await assertFails(deleteDoc(doc(M.firestore(), 'kandi', 'k1')));
+  await assertSucceeds(deleteDoc(doc(L.firestore(), 'kandi', 'k1')));
+  // A garden may show its kandi (at most 40).
+  await assertSucceeds(setDoc(doc(L.firestore(), 'gardens', 'uidKb'), { residents: [], kandi: [{ word: 'PLUR', beads: 'uv', from: 'kaya' }], updatedAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(L.firestore(), 'gardens', 'uidKb'), { residents: [], kandi: Array.from({ length: 41 }, () => ({})), updatedAt: serverTimestamp() }));
+});
 await t('sprouts: an artist sprout names its artist, both id and name, in shape', async () => {
   await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'profiles', 'uidA'), { handle: 'aa', displayName: 'A' }));
   const A = env.authenticatedContext('uidA');
