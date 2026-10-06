@@ -328,6 +328,43 @@ function Scene({ theme, ink }: { theme: PinTheme; ink: Ink }) {
           <Rect x={20} y={CY + 24} width={80} height={30} fill={p.ground} />
         </G>
       );
+    case 'dino':
+      return (
+        <G>
+          {back}
+          <Glitter seed={seed} n={12} height={RS} />
+          <Circle cx={CX - 14} cy={CY - 19} r={5} fill={p.accent} />
+          {/* A volcano, smoking, with a glow in its mouth. */}
+          <Circle cx={CX + 20} cy={CY - 20} r={4} fill={p.accent} opacity={0.22} />
+          <Circle cx={CX + 24} cy={CY - 26} r={5} fill={p.accent} opacity={0.15} />
+          <Path d={`M ${CX + 2} ${CY + 12} L ${CX + 16} ${CY - 12} L ${CX + 23} ${CY - 12} L ${CX + 38} ${CY + 12} Z`} fill={p.ground} opacity={0.7} stroke={metal} strokeWidth={0.7} />
+          <Path d={`M ${CX + 16} ${CY - 12} Q ${CX + 19.5} ${CY - 16} ${CX + 23} ${CY - 12}`} stroke="#FF8A3D" strokeWidth={2} fill="none" strokeLinecap="round" />
+          {/* A long neck, grazing on the left. */}
+          <G fill={p.accent2} stroke={metal} strokeWidth={0.6}>
+            <Path d={`M ${CX - 30} ${CY + 18} Q ${CX - 34} ${CY + 14} ${CX - 37} ${CY + 16}`} stroke={p.accent2} strokeWidth={3} fill="none" strokeLinecap="round" />
+            <Rect x={CX - 28} y={CY + 14} width={3} height={8} rx={1} />
+            <Rect x={CX - 17} y={CY + 14} width={3} height={8} rx={1} />
+            <Ellipse cx={CX - 22} cy={CY + 12} rx={10} ry={6} />
+            <Path d={`M ${CX - 15} ${CY + 9} Q ${CX - 9} ${CY - 3} ${CX - 9} ${CY - 13}`} stroke={p.accent2} strokeWidth={4} fill="none" strokeLinecap="round" />
+            <Ellipse cx={CX - 7} cy={CY - 14} rx={3.6} ry={2.1} />
+          </G>
+          {/* A T. rex out front, roaring at nobody. */}
+          <G fill={p.accent2} stroke={metal} strokeWidth={0.6}>
+            <Path d={`M ${CX + 25} ${CY + 14} Q ${CX + 32} ${CY + 12} ${CX + 37} ${CY + 6}`} stroke={p.accent2} strokeWidth={3.5} fill="none" strokeLinecap="round" />
+            <Path d={`M ${CX + 17} ${CY + 18} L ${CX + 15} ${CY + 25} M ${CX + 21} ${CY + 18} L ${CX + 22} ${CY + 25}`} stroke={p.accent2} strokeWidth={2.6} fill="none" strokeLinecap="round" />
+            <Ellipse cx={CX + 19} cy={CY + 14} rx={7.5} ry={5} />
+            <Path d={`M ${CX + 13} ${CY + 12} L ${CX + 11} ${CY + 8}`} stroke={p.accent2} strokeWidth={4} fill="none" strokeLinecap="round" />
+            <Path d={`M ${CX + 4} ${CY + 4} L ${CX + 12} ${CY + 2} Q ${CX + 15} ${CY + 4} ${CX + 13} ${CY + 9} L ${CX + 7} ${CY + 9} L ${CX + 4} ${CY + 7} Z`} />
+            <Path d={`M ${CX + 13} ${CY + 14} L ${CX + 10} ${CY + 16}`} stroke={p.accent2} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+          </G>
+          <Circle cx={CX + 8} cy={CY + 4.5} r={0.9} fill={metal} />
+          <Rect x={20} y={CY + 24} width={80} height={30} fill={p.ground} />
+          {/* Ferns. */}
+          {[30, 46, 88].map((x, i) => (
+            <Path key={i} d={`M ${x} ${CY + 24} Q ${x - 4} ${CY + 18} ${x - 7} ${CY + 17} M ${x} ${CY + 24} Q ${x + 1} ${CY + 17} ${x + 1} ${CY + 15} M ${x} ${CY + 24} Q ${x + 4} ${CY + 18} ${x + 7} ${CY + 18}`} stroke={metal} strokeWidth={0.8} fill="none" />
+          ))}
+        </G>
+      );
     case 'sound':
     default: {
       const bars = [6, 11, 17, 24, 19, 28, 21, 14, 22, 16, 9, 5];
