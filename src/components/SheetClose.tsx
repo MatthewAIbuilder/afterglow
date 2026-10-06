@@ -4,6 +4,7 @@ import { goBack } from '../lib/nav';
 import { color, space } from '../theme/tokens';
 import { GlassCircleButton } from './GlassCircleButton';
 import { CloseIcon } from './TabIcons';
+import { t } from '../i18n';
 
 /**
  * A close button at the top right of a sheet or pop-up. On a phone a sheet
@@ -14,7 +15,8 @@ export function SheetClose({ fullScreen, onPress }: { fullScreen?: boolean; onPr
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.wrap, { top: (fullScreen ? insets.top : 0) + space.md }]}>
-      <GlassCircleButton label="Close" onPress={onPress ?? goBack}>
+      <GlassCircleButton label={t('Close')}
+ onPress={onPress ?? goBack}>
         <CloseIcon color={color.moon} size={16} />
       </GlassCircleButton>
     </View>

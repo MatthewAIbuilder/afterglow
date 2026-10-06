@@ -6,6 +6,7 @@ import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Rect, Stop, Text as S
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { type Milestone, type MilestoneId, nextMilestone, progressLine } from './milestones';
 import type { QuestId } from '../quests/quests';
+import { t } from '../../i18n';
 
 /** Each milestone's two colours (top left to bottom right). */
 const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
@@ -308,7 +309,7 @@ export function MilestonesSection({
   list,
   isNew,
   onClaim,
-  title = 'Milestones',
+  title = t('Milestones'),
   intro,
   showNext = true,
 }: {
@@ -331,7 +332,7 @@ export function MilestonesSection({
   return (
     <View style={styles.root}>
       <Text style={styles.head} accessibilityRole="header">
-        {title} · {earned} of {list.length}
+        {t('{title} · {n} of {total}', { title, n: earned, total: list.length })}
       </Text>
       {intro ? <Text style={styles.intro}>{intro}</Text> : null}
       {next ? (
@@ -339,11 +340,11 @@ export function MilestonesSection({
           onPress={() => tap(next)}
           style={({ pressed }) => [styles.next, pressed && { opacity: 0.85 }]}
           accessibilityRole="button"
-          accessibilityLabel={`Your next badge: ${next.title}. ${next.how}. ${progressLine(next)}`}
+          accessibilityLabel={t('Your next badge: {title}. {how}. {progress}', { title: next.title, how: next.how, progress: progressLine(next) })}
         >
           <Medal milestone={next} size={58} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.nextKicker}>Your next badge</Text>
+            <Text style={styles.nextKicker}>{t('Your next badge')}</Text>
             <Text style={styles.nextTitle}>{next.title}</Text>
             <Text style={styles.nextHow}>{next.how}</Text>
             <View style={styles.barRow}>
@@ -366,7 +367,7 @@ export function MilestonesSection({
               onPress={() => tap(m)}
               style={({ pressed }) => [styles.item, !m.earned && { opacity: 0.8 }, pressed && { transform: [{ scale: 0.95 }] }]}
               accessibilityRole="button"
-              accessibilityLabel={`${m.title}. ${fresh ? 'New badge, tap to claim' : m.earned ? 'Earned' : `${m.how}, ${progressLine(m)}`}`}
+              accessibilityLabel={`${m.title}. ${fresh ? t('New badge, tap to claim') : m.earned ? t('Earned') : `${m.how}, ${progressLine(m)}`}`}
             >
               <Medal milestone={m} />
               {fresh ? <NewTag /> : null}
@@ -374,7 +375,7 @@ export function MilestonesSection({
                 {m.title}
               </Text>
               <Text style={[styles.itemDetail, fresh && { color: '#FFE38A' }]} numberOfLines={1}>
-                {fresh ? 'Tap to claim' : m.earned ? (m.id === 'og' ? m.how.split(' · ')[1] : 'Earned') : progressLine(m)}
+                {fresh ? t('Tap to claim') : m.earned ? (m.id === 'og' ? m.how.split(' · ')[1] : t('Earned')) : progressLine(m)}
               </Text>
             </Pressable>
           );
@@ -397,7 +398,7 @@ export function NewTag({ inline }: { inline?: boolean } = {}) {
   const style = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.08 * beat.get() }] }));
   return (
     <Animated.View style={[styles.newTag, inline && styles.newInline, style]} pointerEvents="none">
-      <Text style={styles.newText}>NEW</Text>
+      <Text style={styles.newText}>{t('NEW')}</Text>
     </Animated.View>
   );
 }
@@ -406,11 +407,11 @@ export function NewTag({ inline }: { inline?: boolean } = {}) {
 function MilestoneSheet({ milestone, onClose }: { milestone: Milestone | undefined; onClose: () => void }) {
   return (
     <Modal visible={!!milestone} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.sheetScrim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close">
+      <Pressable style={styles.sheetScrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
         {milestone ? (
           <Pressable style={styles.sheet} onPress={() => {}} accessible={false}>
             <Medal milestone={milestone} size={120} />
-            <Text style={[styles.sheetKicker, milestone.earned && { color: '#FFE38A' }]}>{milestone.earned ? 'Earned' : 'Still to earn'}</Text>
+            <Text style={[styles.sheetKicker, milestone.earned && { color: '#FFE38A' }]}>{milestone.earned ? t('Earned') : t('Still to earn')}</Text>
             <Text style={styles.sheetTitle} accessibilityRole="header">
               {milestone.title}
             </Text>
@@ -431,7 +432,7 @@ function MilestoneSheet({ milestone, onClose }: { milestone: Milestone | undefin
               accessibilityRole="button"
               style={({ pressed }) => [styles.sheetButton, pressed && { opacity: 0.8 }]}
             >
-              <Text style={styles.sheetButtonText}>Done</Text>
+              <Text style={styles.sheetButtonText}>{t('Done')}</Text>
             </Pressable>
           </Pressable>
         ) : null}

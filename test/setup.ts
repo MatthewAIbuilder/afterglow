@@ -96,7 +96,13 @@ jest.mock('expo-local-authentication', () => {
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(async () => true), shareAsync: jest.fn(async () => {}) }));
 
 // The secure store: an in-memory keychain the tests can read (`__items`).
+// Tests read the app in English, whatever language the computer running them uses.
+jest.mock('expo-localization', () => ({
+  getLocales: () => [{ languageTag: 'en-US', languageCode: 'en', regionCode: 'US' }],
+}));
+
 jest.mock('expo-secure-store', () => {
+
   const items = new Map<string, string>();
   return {
     __items: items,

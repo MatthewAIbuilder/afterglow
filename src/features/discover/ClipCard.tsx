@@ -54,6 +54,8 @@ import { fillsScreen, MIN_PLAYER, tallLayout } from './videoLayout';
 import { useSendOrShare } from '../messages/useSendOrShare';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
+import { t } from '../../i18n';
+import { shownClipTitle } from '../community/clips';
 
 type Props = {
   clip: Clip;
@@ -227,12 +229,12 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   // The countdown runs only while the clip plays.
   useEffect(() => {
     if (upNext === null || !playing) return;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       const step = countdownTick(upNext);
       setUpNext(step === 'next' ? null : step);
       if (step === 'next') onNextRef.current?.(index);
     }, 1000);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [upNext, playing, index]);
   const upNextPill = upNext !== null ? <UpNextPill left={upNext} onStay={stay} /> : null;
 
@@ -317,7 +319,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: context?.id } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Open ${artist.name}, ${pct} percent match${note ? `, ${note}` : ''}`}
+      accessibilityLabel={note ? t('Open {artist}, {pct} percent match, {note}', { artist: artist.name, pct, note }) : t('Open {artist}, {pct} percent match', { artist: artist.name, pct })}
       hitSlop={8}
       style={({ pressed }) => [styles.artistRow, pressed && { opacity: 0.7 }]}
     >
@@ -327,7 +329,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
           {artist.name}
         </Text>
         <Text style={styles.match} numberOfLines={1}>
-          {pct}% match
+          {t('{pct}% match', { pct })}
           {note ? <Text style={styles.note}>{`  ·  ${note}`}</Text> : null}
         </Text>
       </View>
@@ -343,7 +345,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
           router.push(`/festival/${context.id}`);
         }}
         accessibilityRole="button"
-        accessibilityLabel={`${meta} at ${context.name}${mustSee ? ', one of your must sees' : ''}. Opens the festival.`}
+        accessibilityLabel={mustSee ? t('{set} at {festival}, one of your must sees. Opens the festival.', { set: meta, festival: context.name }) : t('{set} at {festival}. Opens the festival.', { set: meta, festival: context.name })}
         hitSlop={6}
         style={({ pressed }) => [styles.metaRow, pressed && { opacity: 0.7 }]}
       >
@@ -440,7 +442,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         {upNextPill}
         {artistButton}
         <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
-          {clip.title}
+          {shownClipTitle(clip.title)}
         </Text>
         {metaLine(!!tall)}
         {community ? (
@@ -452,7 +454,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
                 router.push({ pathname: '/u/[handle]', params: { handle: community.handle } });
               }}
               accessibilityRole="link"
-              accessibilityLabel={`${media.credit}. Opens their profile.`}
+              accessibilityLabel={t('{credit}. Opens their profile.', { credit: media.credit })}
               hitSlop={6}
               style={({ pressed }) => [styles.creditText, pressed && { opacity: 0.7 }]}
             >
@@ -467,7 +469,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
                 router.push({ pathname: '/comments/[id]', params: { id: community.sharedId } });
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Comments on @${community.handle}'s video`}
+              accessibilityLabel={t("Comments on @{handle}'s video", { handle: community.handle })}
               hitSlop={12}
               style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
             >
@@ -478,7 +480,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
                 communityMenu(community, { report: social.report, hide: communityState.hide, block: social.setBlocked })
               }
               accessibilityRole="button"
-              accessibilityLabel={`More: report, hide or block @${community.handle}`}
+              accessibilityLabel={t('More: report, hide or block @{handle}', { handle: community.handle })}
               hitSlop={12}
               style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
             >
@@ -493,7 +495,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
                 Linking.openURL(page.externalUrl).catch(() => {});
               }}
               accessibilityRole="link"
-              accessibilityLabel={`Open ${artist.name} on SoundCloud`}
+              accessibilityLabel={t('Open {artist} on SoundCloud', { artist: artist.name })}
               hitSlop={6}
               style={({ pressed }) => [styles.creditText, pressed && { opacity: 0.7 }]}
             >
@@ -507,7 +509,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
                 sendOrShare({ kind: 'artist', id: artist.id }, clipShareText(artist.name, clip.title, page.externalUrl, context, APP_NAME));
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Share ${artist.name} on SoundCloud`}
+              accessibilityLabel={t('Share {artist} on SoundCloud', { artist: artist.name })}
               hitSlop={12}
               style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
             >
@@ -516,7 +518,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
             <Pressable
               onPress={() => flagMenu(clip, artist.name, page.externalUrl, clipFlags)}
               accessibilityRole="button"
-              accessibilityLabel={`Something wrong with ${artist.name}'s SoundCloud page? Hide it or report it`}
+              accessibilityLabel={t("Something wrong with {artist}'s SoundCloud page? Hide it or report it", { artist: artist.name })}
               hitSlop={12}
               style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
             >
@@ -534,7 +536,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
               sendOrShare({ kind: 'clip', id: clip.id }, clipShareText(artist.name, clip.title, media.externalUrl, context, APP_NAME));
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Share this clip of ${artist.name}`}
+            accessibilityLabel={t('Share this clip of {artist}', { artist: artist.name })}
             hitSlop={12}
             style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
           >
@@ -543,7 +545,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
           <Pressable
             onPress={() => flagMenu(clip, artist.name, media.externalUrl, clipFlags)}
             accessibilityRole="button"
-            accessibilityLabel={`Something wrong with this clip of ${artist.name}? Hide it or report it`}
+            accessibilityLabel={t('Something wrong with this clip of {artist}? Hide it or report it', { artist: artist.name })}
             hitSlop={12}
             style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
           >
@@ -674,29 +676,29 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {upNextPill}
         {artistButton}
-        <Text style={styles.title}>{clip.title}</Text>
+        <Text style={styles.title}>{shownClipTitle(clip.title)}</Text>
         {metaLine(false)}
-        {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>This video isn’t available right now.</Text>}
+        {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>{t('This video isn’t available right now.')}</Text>}
         {media?.provider === 'soundcloud' && videoFailed && (
           <Pressable
             onPress={() => Linking.openURL(media.externalUrl).catch(() => {})}
             accessibilityRole="link"
-            accessibilityLabel="SoundCloud isn't playing here. Listen on SoundCloud"
+            accessibilityLabel={t("SoundCloud isn't playing here. Listen on SoundCloud")}
             hitSlop={8}
             style={({ pressed }) => [styles.notice, pressed && { opacity: 0.7 }]}
           >
-            <Text style={styles.noticeText}>SoundCloud isn’t playing here. Listen on SoundCloud</Text>
+            <Text style={styles.noticeText}>{t('SoundCloud isn’t playing here. Listen on SoundCloud')}</Text>
           </Pressable>
         )}
         {media?.provider === 'youtube' && videoFailed && (
           <Pressable
             onPress={() => Linking.openURL(media.externalUrl).catch(() => {})}
             accessibilityRole="link"
-            accessibilityLabel="Video unavailable here. Watch on YouTube"
+            accessibilityLabel={t('Video unavailable here. Watch on YouTube')}
             hitSlop={8}
             style={({ pressed }) => [styles.notice, pressed && { opacity: 0.7 }]}
           >
-            <Text style={styles.noticeText}>Video unavailable here. Watch on YouTube</Text>
+            <Text style={styles.noticeText}>{t('Video unavailable here. Watch on YouTube')}</Text>
           </Pressable>
         )}
       </View>

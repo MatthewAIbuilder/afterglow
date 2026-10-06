@@ -4,6 +4,7 @@ import { notifyNow } from '../../lib/notifyNow';
 import { useCatalog } from '../../state/catalog';
 import { loadScouted, setScouted } from '../../state/scouted';
 import { useSocial } from '../../state/social';
+import { t } from '../../i18n';
 
 /**
  * Checks, when the app opens and comes back to the front, whether set times
@@ -25,11 +26,12 @@ export function ScoutSync() {
         .then(([tips]) => {
           const fresh = setScouted(
             uid,
-            tips.filter((t) => t.status === 'live').map((t) => t.festivalId),
+            tips.filter((x) => x.status === 'live').map((x) => x.festivalId),
           );
           for (const id of fresh) {
-            const name = festival(id)?.name ?? 'the festival';
-            void notifyNow(`scout:${id}`, 'Your set times are live', `Thank you! Everyone sees the ${name} set times you sent now.`, `/festival/${id}`);
+            const name = festival(id)?.name;
+            const body = name ? t('Thank you! Everyone sees the {festival} set times you sent now.', { festival: name }) : t('Thank you! Everyone sees the festival set times you sent now.');
+            void notifyNow(`scout:${id}`, t('Your set times are live'), body, `/festival/${id}`);
           }
         })
         .catch(() => {})

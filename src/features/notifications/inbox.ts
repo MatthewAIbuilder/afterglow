@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import { groupFestivals, type Going } from '../festivals/going';
 import { countdown, nextRun } from '../festivals/when';
+import { t } from '../../i18n';
 
 /**
  * What the bell has for you, worked out from the catalogue and your plans:
@@ -32,21 +33,27 @@ export function notices(festivals: Festival[], going: Going, today: Date): Notic
     const next = nextRun(f, today);
     const when = countdown(f, today);
     const until = next?.until;
-    const which = next && next.index > 0 ? ` weekend ${next.index + 1}` : '';
+    const weekend = next && next.index > 0 ? next.index + 1 : 0;
     if (next && next.until <= 0) {
-      now.push({ id: `now:${f.id}:${next.run.start}`, festivalId: f.id, href: `/festival/${f.id}`, kind: 'now', title: `${f.name} is happening now`, body: 'See who your plan says to catch next.' });
+      now.push({ id: `now:${f.id}:${next.run.start}`, festivalId: f.id, href: `/festival/${f.id}`, kind: 'now', title: t('{festival} is happening now', { festival: f.name }), body: t('See who your plan says to catch next.') });
     } else if (next && until !== undefined && until >= 1 && until <= SOON_DAYS) {
       soon.push({
         id: `soon:${f.id}:${next.run.start}`,
         festivalId: f.id,
         href: `/festival/${f.id}`,
         kind: 'soon',
-        title: `${f.name}${which} starts ${until === 1 ? 'tomorrow' : `in ${until} days`}`,
-        body: f.sets?.length ? 'Your day-by-day plan is ready.' : 'Set times aren’t out yet. Your must sees are ready.',
+        title: weekend
+          ? until === 1
+            ? t('{festival} weekend {w} starts tomorrow', { festival: f.name, w: weekend })
+            : t('{festival} weekend {w} starts in {n} days', { festival: f.name, w: weekend, n: until })
+          : until === 1
+            ? t('{festival} starts tomorrow', { festival: f.name })
+            : t('{festival} starts in {n} days', { festival: f.name, n: until }),
+        body: f.sets?.length ? t('Your day-by-day plan is ready.') : t('Set times aren’t out yet. Your must sees are ready.'),
       });
     }
-    if (f.sets?.length && when !== 'Over') {
-      times.push({ id: `sets:${f.id}`, festivalId: f.id, href: `/festival/${f.id}`, kind: 'setTimes', title: `Set times are out for ${f.name}`, body: 'Your plan is laid out day by day, with clashes called out.' });
+    if (f.sets?.length && when !== t('Over')) {
+      times.push({ id: `sets:${f.id}`, festivalId: f.id, href: `/festival/${f.id}`, kind: 'setTimes', title: t('Set times are out for {festival}', { festival: f.name }), body: t('Your plan is laid out day by day, with clashes called out.') });
     }
   }
   return [...now, ...soon, ...times];

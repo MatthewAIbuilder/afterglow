@@ -8,6 +8,7 @@ import { shareMessage } from '../../lib/share';
 import { color, radius, space, type } from '../../theme/tokens';
 import { CARD_MAX_WIDTH, PosterCard, sharePoster } from './PosterCard';
 import type { PlanCard } from './share';
+import { t } from '../../i18n';
 
 /**
  * A plan-like card shown over the page so it goes out as a picture (with the
@@ -52,7 +53,7 @@ export function PictureShareSheet({
           <Text style={styles.heading} accessibilityRole="header">
             {heading}
           </Text>
-          <GlassCircleButton label="Close" onPress={onClose}>
+          <GlassCircleButton label={t('Close')} onPress={onClose}>
             <CloseIcon color={color.moon} />
           </GlassCircleButton>
         </View>
@@ -64,10 +65,10 @@ export function PictureShareSheet({
             onPress={() => void shareImage()}
             disabled={busy}
             accessibilityRole="button"
-            accessibilityLabel={`Share ${label} as an image`}
+            accessibilityLabel={t('Share {label} as an image', { label })}
             style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
           >
-            <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+            <Text style={styles.buttonText}>{busy ? t('Getting it ready…') : t('Share image')}</Text>
           </Pressable>
           <Pressable
             onPress={() => {
@@ -75,10 +76,10 @@ export function PictureShareSheet({
               void shareMessage(text, shareTitle);
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Share ${label} as text`}
+            accessibilityLabel={t('Share {label} as text', { label })}
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
           >
-            <Text style={styles.buttonText}>Share as text</Text>
+            <Text style={styles.buttonText}>{t('Share as text')}</Text>
           </Pressable>
         </ScrollView>
       </View>

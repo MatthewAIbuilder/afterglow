@@ -12,6 +12,7 @@ import { useTaste } from '../state/taste';
 import { useWeekends } from '../state/weekends';
 import { color, space, type } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
+import { t } from '../i18n';
 
 /**
  * Your sound as a breakdown: how much of your taste is each sound, from the
@@ -35,24 +36,24 @@ export default function YourSoundScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
-        <Text style={styles.title}>{festival ? `Your sound at ${festival.name}` : 'Your sound'}</Text>
+        <Text style={styles.title}>{festival ? t('Your sound at {festival}', { festival: festival.name }) : t('Your sound')}</Text>
         <Text style={styles.body}>
           {yours
-            ? 'What your likes, saves, ratings and watching add up to, from the artists you match best.'
-            : 'A first guess from where everyone starts. Like clips or rate artists and it becomes yours.'}
+            ? t('What your likes, saves, ratings and watching add up to, from the artists you match best.')
+            : t('A first guess from where everyone starts. Like clips or rate artists and it becomes yours.')}
         </Text>
         {mix.length > 0 ? (
           <>
             <Text style={[styles.headline, { color: SOUND_COLOR[mix[0].tag] }]} accessibilityRole="header">
-              {mix[0].percent}% {SOUND_LABEL[mix[0].tag].toLowerCase()}
+              {t('{pct}% {sound}', { pct: mix[0].percent, sound: SOUND_LABEL[mix[0].tag].toLowerCase() })}
             </Text>
             <SoundBreakdown shares={mix} colored />
           </>
         ) : (
           <Text style={styles.empty}>
             {festival
-              ? `Nothing on the ${festival.name} lineup matches you strongly yet. Tune your lineup to change that.`
-              : 'Nothing matches you strongly yet. Like a few clips and your sound shows here.'}
+              ? t('Nothing on the {festival} lineup matches you strongly yet. Tune your lineup to change that.', { festival: festival.name })
+              : t('Nothing matches you strongly yet. Like a few clips and your sound shows here.')}
           </Text>
         )}
       </ScrollView>

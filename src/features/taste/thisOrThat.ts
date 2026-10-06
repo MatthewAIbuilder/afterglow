@@ -1,4 +1,5 @@
 import type { Artist, Clip, SoundTag } from '../../data/models';
+import { t, tn } from '../../i18n';
 
 /**
  * This or that, pure: a quick start for a new taste. Two live sets side by
@@ -89,10 +90,10 @@ export function likedBy(answer: Answer, pair: Pair): string[] {
 }
 
 /** "Round 3 of 8". */
-export const roundLine = (index: number, total: number) => `Round ${index + 1} of ${total}`;
+export const roundLine = (index: number, total: number) => t('Round {n} of {total}', { n: index + 1, total });
 
 /** How the game went, for its last screen: "You picked 6 sets." */
 export function pickedLine(liked: number): string {
-  if (!liked) return 'Nothing caught your ear this time.';
-  return liked === 1 ? 'You picked 1 set.' : `You picked ${liked} sets.`;
+  if (!liked) return t('Nothing caught your ear this time.');
+  return tn(liked, 'You picked {n} set.', 'You picked {n} sets.');
 }

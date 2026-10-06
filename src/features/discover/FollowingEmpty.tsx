@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { MIX } from './focus';
+import { t } from '../../i18n';
 
 /**
  * Following with nothing to watch: why (signed out, following no one, or no
@@ -12,15 +13,15 @@ export function FollowingEmpty({ signedIn, follows, loading, bottomSpace }: { si
   if (signedIn && follows > 0 && loading) {
     return (
       <View style={[styles.wrap, { paddingBottom: bottomSpace }]} pointerEvents="box-none">
-        <ActivityIndicator color={color.glow} accessibilityLabel="Loading videos from people you follow" />
+        <ActivityIndicator color={color.glow} accessibilityLabel={t('Loading videos from people you follow')} />
       </View>
     );
   }
   const [title, body] = !signedIn
-    ? ['Follow people', 'Sign in on your profile, follow people, and the videos they share from festivals show up here.']
+    ? [t('Follow people'), t('Sign in on your profile, follow people, and the videos they share from festivals show up here.')]
     : follows === 0
-      ? ['No one yet', 'When you follow people, the videos they share from festivals show up here.']
-      : ['Nothing new yet', 'The people you follow haven’t shared videos of artists on Afterglow yet.'];
+      ? [t('No one yet'), t('When you follow people, the videos they share from festivals show up here.')]
+      : [t('Nothing new yet'), t('The people you follow haven’t shared videos of artists on Afterglow yet.')];
   const button = (label: string, onPress: () => void, primary = false) => (
     <Pressable
       onPress={() => {
@@ -38,8 +39,8 @@ export function FollowingEmpty({ signedIn, follows, loading, bottomSpace }: { si
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.body}>{body}</Text>
       <View style={styles.actions}>
-        {signedIn ? button('Find people', () => router.push('/people'), true) : button('Sign in', () => router.push('/account'), true)}
-        {button('Watch your mix', () => router.setParams({ festival: MIX }))}
+        {signedIn ? button(t('Find people'), () => router.push('/people'), true) : button(t('Sign in'), () => router.push('/account'), true)}
+        {button(t('Watch your mix'), () => router.setParams({ festival: MIX }))}
       </View>
     </View>
   );

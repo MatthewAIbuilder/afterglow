@@ -31,6 +31,7 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { LastUpdated } from '../../features/offline/LastUpdated';
 import { CrewOrb } from '../../features/friends/CrewOrb';
+import { t } from '../../i18n';
 
 /**
  * A festival crew. Someone who opens an invite sees the crew and who's in it,
@@ -51,16 +52,16 @@ export default function CrewScreen() {
         return <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
       case 'signed-out':
         return (
-          <Intro title="Plan a festival together" line="A friend invited you to their festival crew. Sign in to see it and join.">
-            <Primary label="Sign in" onPress={() => router.push('/account')} />
+          <Intro title={t('Plan a festival together')} line={t('A friend invited you to their festival crew. Sign in to see it and join.')}>
+            <Primary label={t('Sign in')} onPress={() => router.push('/account')} />
           </Intro>
         );
       case 'missing':
-        return <Intro title="This crew has ended" line="Everyone left, or the link isn’t quite right. Ask your friend to send it again." />;
+        return <Intro title={t('This crew has ended')} line={t('Everyone left, or the link isn’t quite right. Ask your friend to send it again.')} />;
       case 'failed':
         return (
-          <Intro title="Couldn’t open this crew" line={SOCIAL_ERROR_COPY.network}>
-            <Primary label="Try again" onPress={() => void reload()} />
+          <Intro title={t('Couldn’t open this crew')} line={SOCIAL_ERROR_COPY.network}>
+            <Primary label={t('Try again')} onPress={() => void reload()} />
           </Intro>
         );
       case 'ready':
@@ -74,18 +75,18 @@ export default function CrewScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={'Festival crew'} />
+      <PageTitle title={t('Festival crew')} />
       <NightSky />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }}
         >
-          {social.availability.ok ? body : <Intro title="Festival crews" line={SOCIAL_ERROR_COPY.unavailable} />}
+          {social.availability.ok ? body : <Intro title={t('Festival crews')} line={SOCIAL_ERROR_COPY.unavailable} />}
         </ScrollView>
       </KeyboardAvoidingView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
+        <GlassCircleButton label={t('Back')} onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
@@ -113,7 +114,7 @@ function Primary({ label, onPress, busy = false }: { label: string; onPress: () 
   );
 }
 
-const nameOf = (profiles: Record<string, Profile>) => (uid: string) => (profiles[uid] ? firstName(profiles[uid].displayName) : 'Someone');
+const nameOf = (profiles: Record<string, Profile>) => (uid: string) => (profiles[uid] ? firstName(profiles[uid].displayName) : t('Someone'));
 
 /**
  * Someone opened a crew they're not in. Crews are invite only: with an invite
@@ -129,7 +130,7 @@ function Invite({ crew, profiles, code, onJoined }: { crew: Crew; profiles: Reco
   const invited = invites.find((i) => i.crewId === crew.id);
   const inviter = invited ? inviters[invited.from] : undefined;
   const full = crew.members.length >= CREW_MAX;
-  const festivalName = festival?.name ?? 'this festival';
+  const festivalName = festival?.name ?? t('this festival');
   const canJoin = !!invited || !!code;
 
   const press = async () => {
@@ -144,7 +145,7 @@ function Invite({ crew, profiles, code, onJoined }: { crew: Crew; profiles: Reco
       haptic.settle();
       onJoined();
     } catch (e) {
-      showAlert('Couldn’t join', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t join'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
       setBusy(false);
     }
@@ -152,34 +153,34 @@ function Invite({ crew, profiles, code, onJoined }: { crew: Crew; profiles: Reco
 
   return (
     <>
-      <Text style={styles.kicker}>{invited ? `${inviter ? firstName(inviter.displayName) : 'A friend'} invited you · ${festivalName}` : festivalName}</Text>
+      <Text style={styles.kicker}>{invited ? t('{name} invited you · {festival}', { name: inviter ? firstName(inviter.displayName) : t('A friend'), festival: festivalName }) : festivalName}</Text>
       <Text style={styles.title} accessibilityRole="header">
         {crew.name}
       </Text>
-      <Text style={styles.body}>Plan {festivalName} together: see which sets you all want, everyone’s picks, and chat with the crew.</Text>
+      <Text style={styles.body}>{t('Plan {festival} together: see which sets you all want, everyone’s picks, and chat with the crew.', { festival: festivalName })}</Text>
       <Faces uids={crew.members} profiles={profiles} />
       {!canJoin ? (
         <View style={styles.rulesCard}>
-          <Text style={styles.rulesTitle}>This crew is invite only</Text>
-          <Text style={styles.note}>Ask someone in it to invite you in the app, or to send you a new invite link.</Text>
+          <Text style={styles.rulesTitle}>{t('This crew is invite only')}</Text>
+          <Text style={styles.note}>{t('Ask someone in it to invite you in the app, or to send you a new invite link.')}</Text>
         </View>
       ) : full ? (
-        <Text style={styles.body}>This crew is full ({CREW_MAX} people).</Text>
+        <Text style={styles.body}>{t('This crew is full ({n} people).', { n: CREW_MAX })}</Text>
       ) : (
         <>
-          <View style={styles.rulesCard} accessible accessibilityLabel={`By joining, you agree to the crew chat rules. ${CHAT_RULES.join(' ')}`}>
-            <Text style={styles.rulesTitle}>By joining, you agree to the crew chat rules</Text>
+          <View style={styles.rulesCard} accessible accessibilityLabel={`${t('By joining, you agree to the crew chat rules.')} ${CHAT_RULES.map((r) => t(r)).join(' ')}`}>
+            <Text style={styles.rulesTitle}>{t('By joining, you agree to the crew chat rules')}</Text>
             {CHAT_RULES.map((r) => (
               <Text key={r} style={styles.rule}>
-                · {r}
+                · {t(r)}
               </Text>
             ))}
           </View>
           <Pressable onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'guidelines' } })} accessibilityRole="link" hitSlop={8}>
-            <Text style={styles.link}>Read the community guidelines</Text>
+            <Text style={styles.link}>{t('Read the community guidelines')}</Text>
           </Pressable>
-          <Primary label={social.profile ? 'Agree and join' : 'Create your profile to join'} onPress={() => void press()} busy={busy} />
-          <Text style={styles.note}>When you join, the sets you star at {festivalName} are shared with this crew. You can leave any time.</Text>
+          <Primary label={social.profile ? t('Agree and join') : t('Create your profile to join')} onPress={() => void press()} busy={busy} />
+          <Text style={styles.note}>{t('When you join, the sets you star at {festival} are shared with this crew. You can leave any time.', { festival: festivalName })}</Text>
           {invited ? (
             <Pressable
               onPress={() => {
@@ -191,7 +192,7 @@ function Invite({ crew, profiles, code, onJoined }: { crew: Crew; profiles: Reco
               accessibilityRole="button"
               style={({ pressed }) => [styles.decline, pressed && styles.pressed]}
             >
-              <Text style={styles.declineText}>No thanks</Text>
+              <Text style={styles.declineText}>{t('No thanks')}</Text>
             </Pressable>
           ) : null}
         </>
@@ -203,14 +204,14 @@ function Invite({ crew, profiles, code, onJoined }: { crew: Crew; profiles: Reco
 function Faces({ uids, profiles }: { uids: string[]; profiles: Record<string, Profile> }) {
   const names = uids.map(nameOf(profiles));
   return (
-    <View style={styles.facesRow} accessible accessibilityLabel={`In this crew: ${names.join(', ')}`}>
+    <View style={styles.facesRow} accessible accessibilityLabel={t('In this crew: {names}', { names: names.join(', ') })}>
       <View style={{ flexDirection: 'row' }}>
         {uids.slice(0, 6).map((u, i) => (
           <Face key={u} profile={profiles[u]} first={i === 0} />
         ))}
       </View>
       <Text style={styles.facesLine} numberOfLines={2}>
-        {names.length > 3 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ')}
+        {names.length > 3 ? t('{names} and {n} more', { names: names.slice(0, 3).join(', '), n: names.length - 3 }) : names.join(', ')}
       </Text>
     </View>
   );
@@ -285,7 +286,7 @@ function Member({
       haptic.settle();
       setEditing(false);
     } catch (e) {
-      showAlert('Couldn’t rename the crew', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t rename the crew'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
       setSaving(false);
     }
@@ -300,18 +301,18 @@ function Member({
     haptic.select();
     const last = crew.members.length === 1;
     showAlert(
-      last ? 'End this crew?' : 'Leave this crew?',
-      last ? 'You’re the only one in it, so it ends when you leave.' : 'Your picks and messages are taken out of the crew. You’d need a new invite to join again.',
+      last ? t('End this crew?') : t('Leave this crew?'),
+      last ? t('You’re the only one in it, so it ends when you leave.') : t('Your picks and messages are taken out of the crew. You’d need a new invite to join again.'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: last ? 'End crew' : 'Leave',
+          text: last ? t('End crew') : t('Leave'),
           style: 'destructive',
           onPress: () => {
             crews
               .leave(crew.id)
               .then(() => (router.canGoBack() ? goBack() : router.replace('/')))
-              .catch((e) => showAlert(last ? 'Couldn’t end the crew' : 'Couldn’t leave', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
+              .catch((e) => showAlert(last ? t('Couldn’t end the crew') : t('Couldn’t leave'), SOCIAL_ERROR_COPY[socialErrorKind(e)]));
           },
         },
       ],
@@ -321,16 +322,16 @@ function Member({
   // The owner can end the crew for everyone (leaving would hand it on instead).
   const endForAll = () => {
     haptic.select();
-    showAlert('End this crew for everyone?', 'The crew, its chat, everyone’s picks, updates and the meeting spot are removed for all of you. This can’t be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    showAlert(t('End this crew for everyone?'), t('The crew, its chat, everyone’s picks, updates and the meeting spot are removed for all of you. This can’t be undone.'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'End crew',
+        text: t('End crew'),
         style: 'destructive',
         onPress: () => {
           crews
             .end(crew.id)
             .then(() => (router.canGoBack() ? goBack() : router.replace('/')))
-            .catch((e) => showAlert('Couldn’t end the crew', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
+            .catch((e) => showAlert(t('Couldn’t end the crew'), SOCIAL_ERROR_COPY[socialErrorKind(e)]));
         },
       },
     ]);
@@ -338,17 +339,17 @@ function Member({
 
   const remove = (uid: string) => {
     haptic.select();
-    const n = profiles[uid]?.displayName ?? 'them';
-    showAlert(`Remove ${n}?`, 'Their picks and messages are taken out of the crew. They can only come back with a new invite.', [
-      { text: 'Cancel', style: 'cancel' },
+    const n = profiles[uid]?.displayName;
+    showAlert(n ? t('Remove {name}?', { name: n }) : t('Remove them?'), t('Their picks and messages are taken out of the crew. They can only come back with a new invite.'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('Remove'),
         style: 'destructive',
         onPress: () => {
           crews
             .remove(crew.id, uid)
             .then(onChange)
-            .catch((e) => showAlert('Couldn’t remove them', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
+            .catch((e) => showAlert(t('Couldn’t remove them'), SOCIAL_ERROR_COPY[socialErrorKind(e)]));
         },
       },
     ]);
@@ -372,7 +373,7 @@ function Member({
         <Pressable
           onPress={() => router.push({ pathname: '/festival/[id]', params: { id: festival.id } })}
           accessibilityRole="link"
-          accessibilityLabel={`${festival.name}. Open the festival.`}
+          accessibilityLabel={t('{festival}. Open the festival.', { festival: festival.name })}
           style={styles.festivalLink}
         >
           <Text style={styles.kicker}>{festival.name}</Text>
@@ -386,9 +387,9 @@ function Member({
             onChangeText={setName}
             autoFocus
             maxLength={CREW_NAME_MAX + 10}
-            placeholder="Crew name"
+            placeholder={t('Crew name')}
             placeholderTextColor={color.moonFaint}
-            accessibilityLabel="Crew name"
+            accessibilityLabel={t('Crew name')}
             returnKeyType="done"
             onSubmitEditing={() => void saveName()}
             style={styles.input}
@@ -403,10 +404,10 @@ function Member({
               accessibilityRole="button"
               style={styles.quietButton}
             >
-              <Text style={styles.quietText}>Cancel</Text>
+              <Text style={styles.quietText}>{t('Cancel')}</Text>
             </Pressable>
-            <Pressable onPress={() => void saveName()} disabled={!!problem || saving} accessibilityRole="button" accessibilityLabel="Save name" style={[styles.smallPrimary, (!!problem || saving) && styles.dim]}>
-              <Text style={styles.primaryText}>Save</Text>
+            <Pressable onPress={() => void saveName()} disabled={!!problem || saving} accessibilityRole="button" accessibilityLabel={t('Save name')} style={[styles.smallPrimary, (!!problem || saving) && styles.dim]}>
+              <Text style={styles.primaryText}>{t('Save')}</Text>
             </Pressable>
           </View>
         </View>
@@ -415,20 +416,20 @@ function Member({
           disabled={!owner}
           onPress={() => setEditing(true)}
           accessibilityRole={owner ? 'button' : 'header'}
-          accessibilityLabel={owner ? `${crew.name}. Rename the crew.` : crew.name}
+          accessibilityLabel={owner ? t('{crew}. Rename the crew.', { crew: crew.name }) : crew.name}
         >
           <Text style={styles.title}>{crew.name}</Text>
-          {owner ? <Text style={styles.link}>Rename</Text> : null}
+          {owner ? <Text style={styles.link}>{t('Rename')}</Text> : null}
         </Pressable>
       )}
       {festival ? <Text style={styles.meta}>{whereWhen(festival)}</Text> : null}
       <LastUpdated at={readAt} live={!kept} />
 
-      <Pressable onPress={invite} accessibilityRole="button" accessibilityLabel="Invite friends" style={({ pressed }) => [styles.primary, styles.inviteRow, pressed && styles.pressed]}>
+      <Pressable onPress={invite} accessibilityRole="button" accessibilityLabel={t('Invite friends')} style={({ pressed }) => [styles.primary, styles.inviteRow, pressed && styles.pressed]}>
         <ShareIcon color={color.moon} size={16} />
-        <Text style={styles.primaryText}>Invite friends</Text>
+        <Text style={styles.primaryText}>{t('Invite friends')}</Text>
       </Pressable>
-      {!others.length ? <Text style={styles.note}>Crews are invite only. Invite friends in the app or send them the invite link, up to {CREW_MAX} people.</Text> : null}
+      {!others.length ? <Text style={styles.note}>{t('Crews are invite only. Invite friends in the app or send them the invite link, up to {n} people.', { n: CREW_MAX })}</Text> : null}
 
       <CrewChatCard crew={crew} nameOf={who} />
 
@@ -436,7 +437,7 @@ function Member({
       <CrewLatest crew={crew} nameOf={who} />
       <MeetSpotCard crew={crew} />
 
-      <Text style={styles.section}>Sets you share</Text>
+      <Text style={styles.section}>{t('Sets you share')}</Text>
       {together.shared.length ? (
         together.shared.map((s) => {
           const a = artist(s.artistId);
@@ -444,7 +445,7 @@ function Member({
         })
       ) : (
         <Text style={styles.quiet}>
-          {others.length ? 'When two of you star the same set, it shows up here.' : 'Once friends join, the sets you both starred show up here.'}
+          {others.length ? t('When two of you star the same set, it shows up here.') : t('Once friends join, the sets you both starred show up here.')}
         </Text>
       )}
 
@@ -453,7 +454,7 @@ function Member({
         <CrewRouteSection festival={forYou(festival)} me={me} members={crew.members} stars={stars} nameOf={who} crewName={crew.name} />
       ) : null}
 
-      <Text style={styles.section}>Everyone’s picks</Text>
+      <Text style={styles.section}>{t('Everyone’s picks')}</Text>
       {[...(me ? [me] : []), ...others].map((uid) => {
         const list = together.byMember[uid] ?? [];
         const mine = uid === me;
@@ -462,19 +463,19 @@ function Member({
             <View style={styles.memberHead}>
               <Face profile={profiles[uid]} first size={28} />
               <Text style={styles.memberName} numberOfLines={1}>
-                {mine ? 'You' : (profiles[uid]?.displayName ?? 'Someone')}
-                {uid === crew.owner ? <Text style={styles.ownerTag}>  · started the crew</Text> : null}
+                {mine ? t('You') : (profiles[uid]?.displayName ?? t('Someone'))}
+                {uid === crew.owner ? <Text style={styles.ownerTag}>{`  · ${t('started the crew')}`}</Text> : null}
               </Text>
               {owner && !mine ? (
-                <Pressable onPress={() => remove(uid)} accessibilityRole="button" accessibilityLabel={`Remove ${profiles[uid]?.displayName ?? 'them'} from the crew`} hitSlop={8}>
-                  <Text style={styles.removeText}>Remove</Text>
+                <Pressable onPress={() => remove(uid)} accessibilityRole="button" accessibilityLabel={profiles[uid]?.displayName ? t('Remove {name} from the crew', { name: profiles[uid].displayName }) : t('Remove them from the crew')} hitSlop={8}>
+                  <Text style={styles.removeText}>{t('Remove')}</Text>
                 </Pressable>
               ) : null}
             </View>
             {list.length ? (
               <Text style={styles.picks}>{list.map((aid) => artist(aid)?.name ?? aid).join(' · ')}</Text>
             ) : (
-              <Text style={styles.quiet}>{mine ? 'Star sets on the festival page to share them with your crew.' : 'No starred sets yet.'}</Text>
+              <Text style={styles.quiet}>{mine ? t('Star sets on the festival page to share them with your crew.') : t('No starred sets yet.')}</Text>
             )}
           </View>
         );
@@ -482,11 +483,11 @@ function Member({
       {mineNote(festival?.name)}
 
       <Pressable onPress={leave} accessibilityRole="button" style={styles.leave}>
-        <Text style={styles.danger}>{crew.members.length === 1 ? 'End this crew' : 'Leave this crew'}</Text>
+        <Text style={styles.danger}>{crew.members.length === 1 ? t('End this crew') : t('Leave this crew')}</Text>
       </Pressable>
       {crew.owner === me && crew.members.length > 1 ? (
-        <Pressable onPress={endForAll} accessibilityRole="button" accessibilityLabel="End this crew for everyone" style={styles.endAll}>
-          <Text style={styles.danger}>End this crew for everyone</Text>
+        <Pressable onPress={endForAll} accessibilityRole="button" accessibilityLabel={t('End this crew for everyone')} style={styles.endAll}>
+          <Text style={styles.danger}>{t('End this crew for everyone')}</Text>
         </Pressable>
       ) : null}
     </>
@@ -494,7 +495,11 @@ function Member({
 }
 
 const mineNote = (festivalName?: string) => (
-  <Text style={styles.note}>Your crew sees the sets you star{festivalName ? ` at ${festivalName}` : ''}. Nothing else about your taste is shared.</Text>
+  <Text style={styles.note}>
+    {festivalName
+      ? t('Your crew sees the sets you star at {festival}. Nothing else about your taste is shared.', { festival: festivalName })
+      : t('Your crew sees the sets you star. Nothing else about your taste is shared.')}
+  </Text>
 );
 
 const styles = StyleSheet.create({

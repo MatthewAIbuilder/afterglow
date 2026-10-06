@@ -7,6 +7,7 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { goersLine } from './going';
 import type { Profile } from './models';
 import { useGoers } from './useGoers';
+import { t } from '../../i18n';
 
 /** How many faces the row shows. */
 const FACES = 4;
@@ -28,7 +29,7 @@ export function FriendsGoing({ festivalId }: { festivalId: string }) {
         router.push({ pathname: '/going/[id]', params: { id: festivalId } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${line}. See who.`}
+      accessibilityLabel={`${line}. ${t('See who.')}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <View style={styles.faces}>

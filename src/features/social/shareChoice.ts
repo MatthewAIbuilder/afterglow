@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 /**
  * The "Share to Discover" row on the tagging sheet, pure: whether it shows,
  * what it needs first, and what it says. A tagged video (a festival and who
@@ -16,9 +18,12 @@ export function shareOffer(o: { available: boolean; signedIn: boolean; hasProfil
 
 /** The line under the switch. */
 export function shareDetail(offer: ShareOffer, o: { handle?: string; festival?: string; on: boolean }): string {
-  if (offer === 'needs-account') return 'Sign in to share your videos to Discover.';
-  if (offer === 'needs-profile') return 'Make a profile to share your videos to Discover.';
-  if (offer === 'needs-tags') return 'Pick the festival and who was playing to share it to Discover.';
-  if (!o.on) return 'Only in your Memories, on this phone.';
-  return `People discovering ${o.festival ?? 'the lineup'} can watch it, credited to @${o.handle}. Afterglow doesn’t add where you filmed it, but some videos carry their location inside the file. Only share videos you filmed yourself.`;
+  if (offer === 'needs-account') return t('Sign in to share your videos to Discover.');
+  if (offer === 'needs-profile') return t('Make a profile to share your videos to Discover.');
+  if (offer === 'needs-tags') return t('Pick the festival and who was playing to share it to Discover.');
+  if (!o.on) return t('Only in your Memories, on this phone.');
+  const rest = { handle: String(o.handle) };
+  return o.festival
+    ? t('People discovering {festival} can watch it, credited to @{handle}. Afterglow doesn’t add where you filmed it, but some videos carry their location inside the file. Only share videos you filmed yourself.', { ...rest, festival: o.festival })
+    : t('People discovering the lineup can watch it, credited to @{handle}. Afterglow doesn’t add where you filmed it, but some videos carry their location inside the file. Only share videos you filmed yourself.', rest);
 }

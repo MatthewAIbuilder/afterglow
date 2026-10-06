@@ -7,6 +7,7 @@ import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
 import { color, motion, type } from '../../theme/tokens';
 import { LABEL_OFFSET, MAX_R, type PlacedArtist } from './layout';
 import { OrbGlass, PlanetFace } from './Orb';
+import { t } from '../../i18n';
 
 type Props = {
   placed: PlacedArtist;
@@ -156,7 +157,7 @@ function ArtistBubbleBase({ placed, index, selectedId, onSelect, searching, matc
     <Animated.View
       style={[styles.anchor, anchorStyle]}
       accessibilityRole="button"
-      accessibilityLabel={`${artist.name}, ${pct} percent match`}
+      accessibilityLabel={t('{artist}, {pct} percent match', { artist: artist.name, pct })}
       onAccessibilityTap={() => onSelect(artist.id)}
     >
       <Animated.View style={[styles.glow, bodyStyle]} pointerEvents="none">

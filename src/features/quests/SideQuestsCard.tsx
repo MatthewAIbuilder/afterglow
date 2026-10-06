@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
 import { useQuests } from '../../state/quests';
+import { t } from '../../i18n';
 import { color, radius, space, type } from '../../theme/tokens';
 import { Medal } from '../profile/Milestones';
 import { openQuests, QUESTS } from './quests';
@@ -20,18 +21,16 @@ export function SideQuestsCard({ max = 3 }: { max?: number }) {
     <View style={styles.card}>
       <View style={styles.head}>
         <Text style={styles.title} accessibilityRole="header">
-          Side quests
+          {t('Side quests')}
         </Text>
-        <Text style={styles.count}>
-          {done} of {QUESTS.length} done
-        </Text>
+        <Text style={styles.count}>{t('{done} of {total} done', { done, total: QUESTS.length })}</Text>
       </View>
       {open.length ? (
         open.map((q) => {
           const p = progress[q.id];
           const current = Math.min(q.target, p?.current ?? 0);
           return (
-            <View key={q.id} style={styles.row} accessible accessibilityLabel={`${q.title}. ${q.how}${q.target > 1 ? `, ${current} of ${q.target}` : ''}`}>
+            <View key={q.id} style={styles.row} accessible accessibilityLabel={q.target > 1 ? t('{title}. {how}, {current} of {target}', { title: q.title, how: q.how, current, target: q.target }) : `${q.title}. ${q.how}`}>
               <Medal milestone={{ id: q.id, title: q.title, how: q.how, about: q.about, current, target: q.target, earned: false, quest: true }} size={44} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{q.title}</Text>
@@ -44,7 +43,7 @@ export function SideQuestsCard({ max = 3 }: { max?: number }) {
           );
         })
       ) : (
-        <Text style={styles.how}>You’ve done every side quest. Legend.</Text>
+        <Text style={styles.how}>{t('You’ve done every side quest. Legend.')}</Text>
       )}
       <Pressable
         onPress={() => {
@@ -52,10 +51,10 @@ export function SideQuestsCard({ max = 3 }: { max?: number }) {
           router.navigate({ pathname: '/profile', params: { tab: 'badges' } });
         }}
         accessibilityRole="button"
-        accessibilityLabel="See all side quests and badges"
+        accessibilityLabel={t('See all side quests and badges')}
         style={({ pressed }) => [styles.more, pressed && { opacity: 0.7 }]}
       >
-        <Text style={styles.moreText}>All side quests and badges</Text>
+        <Text style={styles.moreText}>{t('All side quests and badges')}</Text>
         <ChevronIcon color={color.glow} size={11} />
       </Pressable>
     </View>

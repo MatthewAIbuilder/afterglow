@@ -64,6 +64,8 @@ import { useRankedFeed } from './useRankedFeed';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
 import { allowClipSound } from '../../lib/audioSession';
+import { dayWord, t } from '../../i18n';
+import { datesLine } from '../festivals/format';
 
 /**
  * Full-screen vertical feed. One clip per page. Only the clip on screen plays,
@@ -399,7 +401,7 @@ export function DiscoverFeed() {
         <LinearGradient colors={['#1A1238', '#05040E']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
         <Animated.View style={[styles.cameraEdgeIcon, edgeIconStyle]}>
           <CameraIcon color={color.glow} size={26} />
-          <Text style={styles.cameraEdgeText}>Camera</Text>
+          <Text style={styles.cameraEdgeText}>{t('Camera')}</Text>
         </Animated.View>
       </Animated.View>
       <Animated.View style={[styles.shifting, feedShift]}>
@@ -480,7 +482,7 @@ export function DiscoverFeed() {
                 router.push('/tonight');
               }}
               accessibilityRole="button"
-              accessibilityLabel={`${hereFestival.name}, videos filmed here. Open tonight.`}
+              accessibilityLabel={t('{festival}, videos filmed here. Open tonight.', { festival: hereFestival.name })}
               hitSlop={8}
               style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
             >
@@ -491,7 +493,7 @@ export function DiscoverFeed() {
                 </Text>
               </View>
               <Text style={styles.dates} numberOfLines={1}>
-                {standIn ? 'Test: lineup sets stand in for videos filmed here' : 'Videos filmed here'}
+                {standIn ? t('Test: lineup sets stand in for videos filmed here') : t('Videos filmed here')}
               </Text>
             </Pressable>
           ) : (
@@ -501,17 +503,37 @@ export function DiscoverFeed() {
               router.push({ pathname: '/discover-focus', params: { current: focusId } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${tonightOn ? `Tonight, who plays ${tonight?.night ? `${tonight.night} ` : ''}at ${festival?.name}, in set order` : festival ? `${festival.name}, live sets from the lineup` : followingFocus ? 'Following, videos from people you follow' : soundLabel ? `${soundLabel}, live sets from every lineup` : 'Your mix, a bit of everything'}. Choose what to discover.`}
+            accessibilityLabel={
+              tonightOn
+                ? tonight?.night
+                  ? t('Tonight, who plays {night} at {festival}, in set order. Choose what to discover.', { night: dayWord(tonight.night), festival: festival?.name ?? '' })
+                  : t('Tonight, who plays at {festival}, in set order. Choose what to discover.', { festival: festival?.name ?? '' })
+                : festival
+                  ? t('{festival}, live sets from the lineup. Choose what to discover.', { festival: festival.name })
+                  : followingFocus
+                    ? t('Following, videos from people you follow. Choose what to discover.')
+                    : soundLabel
+                      ? t('{sound}, live sets from every lineup. Choose what to discover.', { sound: soundLabel })
+                      : t('Your mix, a bit of everything. Choose what to discover.')
+            }
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.headerTitle}>
-              <Text style={styles.festival} numberOfLines={1}>{tonightOn ? 'Tonight' : festival ? festival.name : followingFocus ? 'Following' : (soundLabel ?? 'Your mix')}</Text>
+              <Text style={styles.festival} numberOfLines={1}>{tonightOn ? t('Tonight') : festival ? festival.name : followingFocus ? t('Following') : (soundLabel ?? t('Your mix'))}</Text>
               {toes ? <ToeGlyph size={12} color={color.moonDim} /> : <ChevronIcon color={color.moonDim} size={13} direction="down" />}
             </View>
             {/* Short, so the title never fights the buttons: the dates, or where the clips come from. */}
             <Text style={styles.dates} numberOfLines={1}>
-              {tonightOn && tonight ? `${tonight.night ? `${tonight.night} at ` : ''}${festival?.name} · in set order` : festival ? festival.dates || 'Live sets from the lineup' : followingFocus ? 'People you follow' : 'Every lineup'}
+              {tonightOn && tonight
+                ? tonight.night
+                  ? t('{night} at {festival} · in set order', { night: t(tonight.night), festival: festival?.name ?? '' })
+                  : t('{festival} · in set order', { festival: festival?.name ?? '' })
+                : festival
+                  ? datesLine(festival) || t('Live sets from the lineup')
+                  : followingFocus
+                    ? t('People you follow')
+                    : t('Every lineup')}
             </Text>
           </Pressable>
           )}
@@ -521,17 +543,17 @@ export function DiscoverFeed() {
             {/* Film your own video (or swipe right). The camera needs the phone app. */}
             {Platform.OS !== 'web' ? (
               <GlassCircleButton
-                label="Open the camera to film a memory"
-                hint="Hold to open Look after yourself"
+                label={t('Open the camera to film a memory')}
+                hint={t('Hold to open Look after yourself')}
                 onPress={openCamera}
                 onLongPress={openCare}
-                longPressLabel="Look after yourself"
+                longPressLabel={t('Look after yourself')}
               >
                 <CameraIcon color={color.moon} size={18} />
               </GlassCircleButton>
             ) : null}
             {/* Search everything: people, artists, festivals. */}
-            <GlassCircleButton label="Search artists, festivals and people" onPress={() => router.push('/search')}>
+            <GlassCircleButton label={t('Search artists, festivals and people')} onPress={() => router.push('/search')}>
               <SearchIcon color={color.moon} size={17} />
             </GlassCircleButton>
           </View>

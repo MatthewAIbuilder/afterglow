@@ -3,6 +3,7 @@ import { festivalMark } from '../profile/profileView';
 import type { SharedMemory } from '../social/models';
 import { runsOf } from '../festivals/when';
 import { type PastEvent, pastKey } from '../memories/past';
+import { LOCALE, months, t, tn } from '../../i18n';
 
 /**
  * Festival badges, pure: a collectible enamel pin for every festival, earned
@@ -60,8 +61,8 @@ export function earnedBadges(memories: readonly SharedMemory[], festivalOf: (id:
 /** Festivals you're going to that aren't over and whose badge you haven't earned: the ones to collect. */
 export function toCollect(going: readonly Festival[], earned: readonly Badge[], today: Date): Festival[] {
   const have = new Set(earned.map((b) => b.festivalId));
-  const t = localDay(today.toISOString()) ?? '';
-  return going.filter((f) => !have.has(f.id) && runsOf(f).some((r) => dayAfter(r.end) >= t));
+  const day = localDay(today.toISOString()) ?? '';
+  return going.filter((f) => !have.has(f.id) && runsOf(f).some((r) => dayAfter(r.end) >= day));
 }
 
 /**
@@ -165,7 +166,7 @@ export const PALETTES: Record<PinTheme, readonly PinPalette[]> = {
   ],
 };
 const BACKINGS: readonly PinBacking[] = ['rays', 'scallop', 'star', 'rays', 'none'];
-const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const MONTHS = months(true).map((m) => m.toUpperCase());
 
 /** A small, steady hash, so a festival's pin always looks the same. */
 export function hashOf(s: string): number {
@@ -189,8 +190,10 @@ export function ribbonText(festival: Pick<Festival, 'startDate' | 'endDate' | 'w
   const m2 = MONTHS[Number(end.slice(5, 7)) - 1];
   const d1 = Number(start.slice(8, 10));
   const d2 = Number(end.slice(8, 10));
-  const days = end === start ? `${m1} ${d1}` : m1 === m2 ? `${m1} ${d1}–${d2}` : `${m1} ${d1}–${m2} ${d2}`;
-  return `${days} · ${end.slice(0, 4)}`;
+  const year = end.slice(0, 4);
+  if (end === start) return t('{month} {day} · {year}', { month: m1, day: d1, year });
+  if (m1 === m2) return t('{month} {day1}–{day2} · {year}', { month: m1, day1: d1, day2: d2, year });
+  return t('{month1} {day1}–{month2} {day2} · {year}', { month1: m1, day1: d1, month2: m2, day2: d2, year });
 }
 
 /** The town from a festival's place: "Sunset Cove Amphitheater, Boca Raton" -> "BOCA RATON". */
@@ -241,21 +244,25 @@ export function pinLook(festival: Pick<Festival, 'id' | 'name' | 'location' | 's
 /** "Earned Dec 5, 2026 · 3 videos". */
 export function earnedLine(b: Badge): string {
   const d = new Date(b.earnedAt);
-  const when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `Earned ${when} · ${b.videos} ${b.videos === 1 ? 'video' : 'videos'}`;
+  const when = d.toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' });
+  return tn(b.videos, 'Earned {date} · {n} video', 'Earned {date} · {n} videos', { date: when });
 }
 
 /** The words that go with a shared badge: "I collected the Cyclops Cove 4 badge on Afterglow." and a link. */
 export function badgeShareText(festivalName: string, link: string, mine: boolean, handle?: string): string {
-  const who = mine ? 'I collected' : handle ? `@${handle} collected` : 'Collected:';
-  return `${who} the ${festivalName} badge on Afterglow. Only people who filmed there get one.\n${link}`;
+  const words = mine
+    ? t('I collected the {festival} badge on Afterglow. Only people who filmed there get one.', { festival: festivalName })
+    : handle
+      ? t('@{handle} collected the {festival} badge on Afterglow. Only people who filmed there get one.', { handle, festival: festivalName })
+      : t('Collected: the {festival} badge on Afterglow. Only people who filmed there get one.', { festival: festivalName });
+  return `${words}\n${link}`;
 }
 
 /** What a festival pin is, in a sentence. */
 export function pinAbout(festival: Pick<Festival, 'name'>, collected: boolean): string {
   return collected
-    ? `Earned by filming a set at ${festival.name}, on its dates. Every festival has its own pin, drawn from its name and where it is.`
-    : `Film a set at ${festival.name}, on its dates, to collect its pin. Every festival has its own, drawn from its name and where it is.`;
+    ? t('Earned by filming a set at {festival}, on its dates. Every festival has its own pin, drawn from its name and where it is.', { festival: festival.name })
+    : t('Film a set at {festival}, on its dates, to collect its pin. Every festival has its own, drawn from its name and where it is.', { festival: festival.name });
 }
 
 /**
@@ -298,24 +305,28 @@ export const throwbackId = (key: string) => `${THROWBACK}${key}`;
 
 /** The words that go with a shared throwback. */
 export function throwbackShareText(p: PastEvent, link: string, mine: boolean, handle?: string): string {
-  const who = mine ? 'I was at' : handle ? `@${handle} was at` : 'Throwback to';
-  return `${who} ${p.name} ${p.year}. A throwback badge on Afterglow.\n${link}`;
+  const words = mine
+    ? t('I was at {festival} {year}. A throwback badge on Afterglow.', { festival: p.name, year: p.year })
+    : handle
+      ? t('@{handle} was at {festival} {year}. A throwback badge on Afterglow.', { handle, festival: p.name, year: p.year })
+      : t('Throwback to {festival} {year}. A throwback badge on Afterglow.', { festival: p.name, year: p.year });
+  return `${words}\n${link}`;
 }
 
 /** A past festival as a pin's festival: the same festival on Afterglow keeps its scene and colours. */
 export const pastPinFestival = (p: PastEvent) => ({ id: p.seriesId ?? `past-${pastKey({ name: p.name, year: 0 })}`, name: p.name, location: p.city ?? '' });
 
 export function throwbackLook(p: PastEvent): PinLook {
-  return { ...pinLook(pastPinFestival(p)), ribbon: `THROWBACK · ${p.year}`, finish: 'throwback' };
+  return { ...pinLook(pastPinFestival(p)), ribbon: t('THROWBACK · {year}', { year: p.year }), finish: 'throwback' };
 }
 
 /** "Filmed Jul 14, 2024 · 3 videos". */
 export function throwbackLine(b: ThrowbackBadge): string {
-  const when = new Date(b.earnedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `Filmed ${when} · ${b.videos} ${b.videos === 1 ? 'video' : 'videos'}`;
+  const when = new Date(b.earnedAt).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' });
+  return tn(b.videos, 'Filmed {date} · {n} video', 'Filmed {date} · {n} videos', { date: when });
 }
 
 /** What a throwback pin is, in a sentence. */
 export function throwbackAbout(p: PastEvent): string {
-  return `A throwback to ${p.name} ${p.year}, added from a video in your camera roll. Rose gold for the festivals you went to before Afterglow; gold ones are for filming there live.`;
+  return t('A throwback to {festival} {year}, added from a video in your camera roll. Rose gold for the festivals you went to before Afterglow; gold ones are for filming there live.', { festival: p.name, year: p.year });
 }

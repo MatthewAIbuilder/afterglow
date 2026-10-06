@@ -4,6 +4,8 @@ import { isOver } from '../festivals/shelves';
 import type { CardLine, CardSection, PlanCard } from '../plan/share';
 import { isWarm, type Ratings } from '../taste/ratings';
 import type { SoundShare } from '../taste/lean';
+import { datesLine } from '../festivals/format';
+import { t, tn } from '../../i18n';
 
 /**
  * Your year on Afterglow: the festivals you went to (and those still to come),
@@ -31,7 +33,6 @@ export type YearInput = {
 export const YEAR_LINES = 5;
 
 const inYear = (day: string | undefined, year: number) => !!day && Number(day.slice(0, 4)) === year;
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 export type YearStats = {
   been: Festival[];
@@ -82,32 +83,36 @@ export function yearCard(i: YearInput): PlanCard | undefined {
   const sections: CardSection[] = [];
   const cut = (heading: string, lines: CardLine[]) => sections.push({ heading, lines: lines.slice(0, YEAR_LINES), more: Math.max(0, lines.length - YEAR_LINES) });
 
-  if (s.been.length) cut('Festivals', s.been.map((f) => ({ name: f.name, where: f.dates, star: false })));
-  if (s.coming.length) cut(s.been.length ? 'Still to come' : 'Festivals ahead', s.coming.map((f) => ({ name: f.name, where: f.dates, star: false })));
-  if (s.top.length) cut('Your top artists', s.top.map((t) => ({ name: t.artist.name, where: t.videos ? plural(t.videos, 'video') : undefined, star: false })));
-  if (i.sounds.length) sections.push({ heading: 'Your sound', lines: i.sounds.slice(0, 3).map((x) => ({ name: SOUND_LABEL[x.tag], where: `${x.percent}%`, star: false })), more: 0 });
+  if (s.been.length) cut(t('Festivals'), s.been.map((f) => ({ name: f.name, where: datesLine(f), star: false })));
+  if (s.coming.length) cut(s.been.length ? t('Still to come') : t('Festivals ahead'), s.coming.map((f) => ({ name: f.name, where: datesLine(f), star: false })));
+  if (s.top.length) cut(t('Your top artists'), s.top.map((x) => ({ name: x.artist.name, where: x.videos ? tn(x.videos, '{n} video', '{n} videos') : undefined, star: false })));
+  if (i.sounds.length) sections.push({ heading: t('Your sound'), lines: i.sounds.slice(0, 3).map((x) => ({ name: SOUND_LABEL[x.tag], where: `${x.percent}%`, star: false })), more: 0 });
 
   const numbers: CardLine[] = [];
   const festivals = s.been.length + s.coming.length;
-  if (festivals) numbers.push({ name: 'Festivals', where: String(festivals), star: false });
-  if (s.videos) numbers.push({ name: 'Videos filmed', where: String(s.videos), star: false });
-  if (s.clips) numbers.push({ name: 'Live clips watched', where: String(s.clips), star: false });
-  if (s.loved) numbers.push({ name: 'Artists you love', where: String(s.loved), star: false });
-  if (s.rated) numbers.push({ name: 'Artists rated', where: String(s.rated), star: false });
-  if (numbers.length) sections.push({ heading: 'By the numbers', lines: numbers, more: 0 });
+  if (festivals) numbers.push({ name: t('Festivals'), where: String(festivals), star: false });
+  if (s.videos) numbers.push({ name: t('Videos filmed'), where: String(s.videos), star: false });
+  if (s.clips) numbers.push({ name: t('Live clips watched'), where: String(s.clips), star: false });
+  if (s.loved) numbers.push({ name: t('Artists you love'), where: String(s.loved), star: false });
+  if (s.rated) numbers.push({ name: t('Artists rated'), where: String(s.rated), star: false });
+  if (numbers.length) sections.push({ heading: t('By the numbers'), lines: numbers, more: 0 });
 
   const soFar = i.today.getFullYear() === i.year && i.today.getMonth() < 11;
-  return { title: `Your ${i.year}`, subtitle: soFar ? 'Your festival year so far' : 'Your festival year', sections };
+  return { title: t('Your {year}', { year: i.year }), subtitle: soFar ? t('Your festival year so far') : t('Your festival year'), sections };
 }
+
+/** Whether a year card is for a year still going (its subtitle says "so far"). */
+export const isYearSoFar = (card: Pick<PlanCard, 'subtitle'>) => card.subtitle === t('Your festival year so far');
 
 /** The year as a message. */
 export function yearText(card: PlanCard): string {
-  const parts = [`My ${card.title.replace(/^Your /, '')} on Afterglow`];
+  const year = card.title.match(/\d{4}/)?.[0] ?? card.title.replace(/^Your /, '');
+  const parts = [t('My {year} on Afterglow', { year })];
   for (const s of card.sections) {
     parts.push('', s.heading);
     for (const l of s.lines) parts.push(`${l.name}${l.where ? `, ${l.where}` : ''}`);
-    if (s.more) parts.push(`and ${s.more} more`);
+    if (s.more) parts.push(t('and {n} more', { n: s.more }));
   }
-  parts.push('', 'Made with Afterglow');
+  parts.push('', t('Made with Afterglow'));
   return parts.join('\n');
 }

@@ -22,6 +22,7 @@ import {
   withAccountFinds,
 } from '../features/finds/finds';
 import { isOffline } from '../features/offline/status';
+import { t } from '../i18n';
 import { SocialError, socialErrorKind } from '../features/social/service';
 import { notifyNow } from '../lib/notifyNow';
 import { useSocial } from './social';
@@ -193,7 +194,7 @@ export function FindsProvider({ children }: { children: ReactNode }) {
         update(f, () => done);
         if (done.huntId) await loadHunt(done.huntId);
         // Checked in the background after a wait for signal: say so.
-        if (done.state === 'found' && f.tries > 0) void notifyNow(`find:${f.code}`, `You found ${done.name}`, 'It’s in your collection now.', `/find/${f.code}`);
+        if (done.state === 'found' && f.tries > 0) void notifyNow(`find:${f.code}`, t('You found {name}', { name: done.name }), t('It’s in your collection now.'), `/find/${f.code}`);
       } catch {
         update(f, (x) => missed(x, Date.now()));
       } finally {

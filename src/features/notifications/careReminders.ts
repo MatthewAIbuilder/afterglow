@@ -1,5 +1,6 @@
 import { type Care, lastDose, lastOf, nightStart } from '../care/care';
 import { guideEntry } from '../care/guide';
+import { t } from '../../i18n';
 import { REMINDER_PREFIX, type Reminder } from './reminders';
 
 /** Water reminders stop at this hour of the morning after a festival night. */
@@ -19,23 +20,23 @@ const LEAD_MS = 5 * 60_000;
 export function careReminders(care: Care, festivalId: string | undefined, now: Date): Reminder[] {
   if (!care.waterEvery || !festivalId) return [];
   const every = care.waterEvery * 60_000;
-  const t = now.getTime();
-  const start = nightStart(t);
+  const time = now.getTime();
+  const start = nightStart(time);
   const end = start + (24 - 12 + CARE_UNTIL_HOUR) * 3_600_000;
   const water = lastOf(care, 'water');
   // No water yet tonight: a steady beat from the start of the night, so other
   // changes (logging food, a check-in) never push the next one back.
   const from = water && water.at >= start ? water.at : start;
   let at = from + every;
-  while (at < t + LEAD_MS) at += every;
+  while (at < time + LEAD_MS) at += every;
   const out: Reminder[] = [];
   for (; at <= end && out.length < CARE_MAX; at += every) {
     out.push({
       id: `${REMINDER_PREFIX}care:water:${festivalId}:${at}`,
       festivalId,
       at: new Date(at),
-      title: 'Time for some water?',
-      body: 'Take a few sips and a breather somewhere cool. Tap to log it.',
+      title: t('Time for some water?'),
+      body: t('Take a few sips and a breather somewhere cool. Tap to log it.'),
       href: '/care',
     });
   }
@@ -59,24 +60,24 @@ export const FEEL_UNGUIDED_MIN = 6 * 60;
 export function feelReminders(care: Care, now: Date): Reminder[] {
   if (!care.feelEvery || !care.timers.length) return [];
   const every = care.feelEvery * 60_000;
-  const t = now.getTime();
+  const time = now.getTime();
   const started = Math.min(...care.timers.map((x) => x.startedAt));
   const until = Math.min(
-    t + 12 * 3_600_000,
+    time + 12 * 3_600_000,
     Math.max(...care.timers.map((x) => lastDose(x) + (guideEntry(x.guide)?.total[1] ?? FEEL_UNGUIDED_MIN) * 60_000)),
   );
   const checkin = lastOf(care, 'checkin');
   const from = checkin && checkin.at >= started ? checkin.at : started;
   let at = from + every;
-  while (at < t + LEAD_MS) at += every;
+  while (at < time + LEAD_MS) at += every;
   const out: Reminder[] = [];
   for (; at <= until && out.length < FEEL_MAX; at += every) {
     out.push({
       id: `${REMINDER_PREFIX}care:feel:${at}`,
       festivalId: '',
       at: new Date(at),
-      title: 'How are you feeling?',
-      body: 'A quick check-in. Tap to answer, it takes a second.',
+      title: t('How are you feeling?'),
+      body: t('A quick check-in. Tap to answer, it takes a second.'),
       href: '/care?part=feelings',
     });
   }

@@ -7,6 +7,7 @@ import { cleanAdds, dueAdds, type FriendAdd, markAdded, markTried, nextDue, queu
 import { CODE_LENGTH, codeFrom, type CodeTheme, type FriendCard, isFriendCode, isTheme } from '../features/friends/qr';
 import { isOffline } from '../features/offline/status';
 import { socialErrorKind } from '../features/social/service';
+import { t } from '../i18n';
 import { notifyNow } from '../lib/notifyNow';
 import { useSocial } from './social';
 
@@ -151,7 +152,7 @@ export function FriendAddsProvider({ children }: { children: ReactNode }) {
         await timeout(social.service.addFriend(a.uid, a.code), ADD_TIMEOUT_MS);
         setSaved((s) => ({ ...s, adds: markAdded(s.adds, a.account, a.uid, Date.now()) }));
         noteFollowing(a.uid);
-        if (a.tries > 0) void notifyNow(`friend-added:${a.uid}`, `You and ${a.name} are friends now`, 'Your scan went through once there was signal.', `/u/${a.handle}`);
+        if (a.tries > 0) void notifyNow(`friend-added:${a.uid}`, t('You and {name} are friends now', { name: a.name }), t('Your scan went through once there was signal.'), `/u/${a.handle}`);
         return true;
       } catch (e) {
         const noSignal = e instanceof Error && e.message === 'timeout' ? true : socialErrorKind(e) === 'network';

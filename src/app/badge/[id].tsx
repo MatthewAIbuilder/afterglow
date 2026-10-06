@@ -22,6 +22,7 @@ import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 /** The shine on a big pin: follows the tilt where there's a motion sensor, else a slow sweep. */
 /** Tapping a pin seven times in a row polishes it: a secret. */
@@ -109,9 +110,9 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
   if (!festival) {
     return (
       <View style={[styles.root, styles.center]}>
-        <Text style={styles.body}>That badge isn’t here any more.</Text>
+        <Text style={styles.body}>{t('That badge isn’t here any more.')}</Text>
         <Pressable onPress={close} accessibilityRole="button">
-          <Text style={styles.link}>Close</Text>
+          <Text style={styles.link}>{t('Close')}</Text>
         </Pressable>
       </View>
     );
@@ -120,19 +121,19 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
   const collected = !!badge;
   return (
     <View style={styles.root}>
-      <PageTitle title={`${festival.name} badge`} />
+      <PageTitle title={t('{festival} badge', { festival: festival.name })} />
       <NightSky />
-      <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} style={[styles.close, { top: insets.top + space.sm }]}>
+      <Pressable onPress={close} accessibilityRole="button" accessibilityLabel={t('Close')} hitSlop={10} style={[styles.close, { top: insets.top + space.sm }]}>
         <CloseIcon color={color.moon} size={18} />
       </Pressable>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl }]}>
-        <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={`${festival.name} badge${collected ? '' : ', not collected yet'}`}>
+        <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={collected ? t('{festival} badge', { festival: festival.name }) : t('{festival} badge, not collected yet', { festival: festival.name })}>
           {collected ? <View style={[styles.glow, { backgroundColor: `${look.palette.ribbon}55`, shadowColor: look.palette.accent }]} /> : null}
           <Pressable onPress={pinTap} accessible={false} testID="badge-pin">
             <EnamelPin look={look} size={260} locked={!collected} sheen={sheen} />
           </Pressable>
         </Animated.View>
-        <Text style={styles.kicker}>{collected ? (mine ? 'In your collection' : owner ? `@${owner}’s badge` : 'Collected') : 'Not collected yet'}</Text>
+        <Text style={styles.kicker}>{collected ? (mine ? t('In your collection') : owner ? t('@{handle}’s badge', { handle: owner }) : t('Collected')) : t('Not collected yet')}</Text>
         <Text style={styles.title}>{festival.name}</Text>
         <Text style={styles.meta}>{whereWhen(festival)}</Text>
         {badge ? <Text style={styles.earned}>{earnedLine(badge)}</Text> : null}
@@ -140,8 +141,8 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
         {!collected && loaded ? (
           <Text style={styles.body}>
             {mine
-              ? `Film a video at ${festival.name}, on its dates, and share it tagged with the festival. The badge is yours the moment it’s shared.`
-              : 'Badges come from videos filmed at the festival, on its dates.'}
+              ? t('Film a video at {festival}, on its dates, and share it tagged with the festival. The badge is yours the moment it’s shared.', { festival: festival.name })
+              : t('Badges come from videos filmed at the festival, on its dates.')}
           </Text>
         ) : null}
         <View style={styles.actions}>
@@ -152,10 +153,10 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
                 router.push({ pathname: '/badge-card/[id]', params: { id: festival.id, ...(whose ? { uid: whose } : {}) } });
               }}
               accessibilityRole="button"
-              accessibilityLabel={mine ? 'Share your badge' : 'Share this badge'}
+              accessibilityLabel={mine ? t('Share your badge') : t('Share this badge')}
               style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryText}>{mine ? 'Share your badge' : 'Share'}</Text>
+              <Text style={styles.primaryText}>{mine ? t('Share your badge') : t('Share')}</Text>
             </Pressable>
           ) : null}
           {badge ? (
@@ -167,7 +168,7 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
               accessibilityRole="button"
               style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
             >
-              <Text style={styles.secondaryText}>Watch the video</Text>
+              <Text style={styles.secondaryText}>{t('Watch the video')}</Text>
             </Pressable>
           ) : null}
           <Pressable
@@ -178,7 +179,7 @@ function FestivalBadge({ id, whose }: { id: string; whose?: string }) {
             accessibilityRole="button"
             style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
           >
-            <Text style={styles.secondaryText}>Open {festival.name}</Text>
+            <Text style={styles.secondaryText}>{t('Open {festival}', { festival: festival.name })}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -193,7 +194,7 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
   const social = useSocial();
   const uid = whose ?? social.user?.uid;
   const mine = !whose || whose === social.user?.uid;
-  const badge = useThrowbacks(uid).find((t) => t.key === pastKey);
+  const badge = useThrowbacks(uid).find((x) => x.key === pastKey);
   const sheen = usePinSheen();
   const pinTap = usePinTaps();
   const reduce = useReducedMotion();
@@ -209,9 +210,9 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
   if (!badge) {
     return (
       <View style={[styles.root, styles.center]}>
-        <Text style={styles.body}>That badge isn’t here any more.</Text>
+        <Text style={styles.body}>{t('That badge isn’t here any more.')}</Text>
         <Pressable onPress={close} accessibilityRole="button">
-          <Text style={styles.link}>Close</Text>
+          <Text style={styles.link}>{t('Close')}</Text>
         </Pressable>
       </View>
     );
@@ -222,19 +223,19 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
   const handle = mine ? social.profile?.handle : owner;
   return (
     <View style={styles.root}>
-      <PageTitle title={`${pastLabel(past)} badge`} />
+      <PageTitle title={t('{festival} badge', { festival: pastLabel(past) })} />
       <NightSky />
-      <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} style={[styles.close, { top: insets.top + space.sm }]}>
+      <Pressable onPress={close} accessibilityRole="button" accessibilityLabel={t('Close')} hitSlop={10} style={[styles.close, { top: insets.top + space.sm }]}>
         <CloseIcon color={color.moon} size={18} />
       </Pressable>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl }]}>
-        <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={`${pastLabel(past)} throwback badge`}>
+        <Animated.View entering={reduce ? undefined : FadeInDown.springify().damping(14)} style={styles.pinWrap} accessible accessibilityLabel={t('{festival} throwback badge', { festival: pastLabel(past) })}>
           <View style={[styles.glow, { backgroundColor: 'rgba(242,184,166,0.3)', shadowColor: ROSE }]} />
           <Pressable onPress={pinTap} accessible={false} testID="badge-pin">
             <EnamelPin look={look} size={260} sheen={sheen} />
           </Pressable>
         </Animated.View>
-        <Text style={[styles.kicker, { color: ROSE }]}>{mine ? 'Throwback · in your collection' : handle ? `Throwback · @${handle}’s badge` : 'Throwback'}</Text>
+        <Text style={[styles.kicker, { color: ROSE }]}>{mine ? t('Throwback · in your collection') : handle ? t('Throwback · @{handle}’s badge', { handle }) : t('Throwback')}</Text>
         <Text style={styles.title}>{pastLabel(past)}</Text>
         {past.city ? <Text style={styles.meta}>{past.city}</Text> : null}
         <Text style={[styles.earned, { color: ROSE }]}>{throwbackLine(badge)}</Text>
@@ -246,10 +247,10 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
               void shareMessage(throwbackShareText(past, handle ? `${WEB_URL}/u/${handle}` : WEB_URL, mine, handle));
             }}
             accessibilityRole="button"
-            accessibilityLabel={mine ? 'Share your throwback' : 'Share this throwback'}
+            accessibilityLabel={mine ? t('Share your throwback') : t('Share this throwback')}
             style={({ pressed }) => [styles.primary, { backgroundColor: ROSE }, pressed && styles.pressed]}
           >
-            <Text style={styles.primaryText}>{mine ? 'Share your throwback' : 'Share'}</Text>
+            <Text style={styles.primaryText}>{mine ? t('Share your throwback') : t('Share')}</Text>
           </Pressable>
           <Pressable
             onPress={() => {
@@ -260,7 +261,7 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
             accessibilityRole="button"
             style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
           >
-            <Text style={styles.secondaryText}>Watch the video</Text>
+            <Text style={styles.secondaryText}>{t('Watch the video')}</Text>
           </Pressable>
           {series ? (
             <Pressable
@@ -271,7 +272,7 @@ function ThrowbackScreen({ pastKey, whose }: { pastKey: string; whose?: string }
               accessibilityRole="button"
               style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
             >
-              <Text style={styles.secondaryText}>See {series.name}</Text>
+              <Text style={styles.secondaryText}>{t('See {festival}', { festival: series.name })}</Text>
             </Pressable>
           ) : null}
         </View>

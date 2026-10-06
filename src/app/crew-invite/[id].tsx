@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
@@ -18,6 +18,7 @@ import { useCrews } from '../../state/crews';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 /**
  * Invite people you know on Afterglow to a crew: people you follow and who
@@ -32,6 +33,7 @@ export default function CrewInviteScreen() {
   const { crews, inviteLink, newInviteLink } = useCrews();
   const crew: Crew | undefined = crews.find((c) => c.id === id);
   const festival = useCatalog().festival(crew?.festivalId ?? '');
+  const festivalName = festival?.name;
   const me = social.user?.uid;
   const [people, setPeople] = useState<Profile[]>();
   const [invited, setInvited] = useState<ReadonlySet<string>>(new Set());
@@ -57,10 +59,8 @@ export default function CrewInviteScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- read once per crew and who you follow
   }, [me, crew?.id, followingKey]);
 
-  const rows = useMemo(
-    () => (crew && people ? inviteCandidates(people, { me, members: crew.members, invited, blocked: social.blocked, festivalId: crew.festivalId, query }) : []),
-    [crew, people, me, invited, social.blocked, query],
-  );
+  // Not wrapped in useMemo: the React Compiler memoizes it.
+  const rows = crew && people ? inviteCandidates(people, { me, members: crew.members, invited, blocked: social.blocked, festivalId: crew.festivalId, query }) : [];
 
   const invite = async (row: InviteRow) => {
     if (!crew || sending) return;
@@ -71,7 +71,7 @@ export default function CrewInviteScreen() {
       haptic.settle();
       setInvited((s) => new Set([...s, row.profile.uid]));
     } catch (e) {
-      showAlert(`Couldn’t invite ${row.profile.displayName}`, SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t invite {name}', { name: row.profile.displayName }), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
       setSending(undefined);
     }
@@ -84,19 +84,21 @@ export default function CrewInviteScreen() {
     try {
       link = fresh ? await newInviteLink(crew.id) : await inviteLink(crew.id);
     } catch (e) {
-      showAlert('Couldn’t make the invite link', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t make the invite link'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
       return;
     }
-    const where = festival ? ` for ${festival.name}` : '';
-    const outcome = await shareMessage(`Join my crew${where} on Afterglow, so we can plan our sets and chat: ${link}`, crew.name);
-    if (outcome === 'failed') showAlert('Couldn’t share the invite', 'Try again in a moment.');
+    const message = festivalName
+      ? t('Join my crew for {festival} on {app}, so we can plan our sets and chat: {link}', { festival: festivalName, app: 'Afterglow', link })
+      : t('Join my crew on {app}, so we can plan our sets and chat: {link}', { app: 'Afterglow', link });
+    const outcome = await shareMessage(message, crew.name);
+    if (outcome === 'failed') showAlert(t('Couldn’t share the invite'), t('Try again in a moment.'));
   };
   // The owner can make a new link, so an old one that went too far stops working.
   const freshLink = () => {
     haptic.select();
-    showAlert('Make a new invite link?', 'The link you shared before stops working. People already in the crew stay in it.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'New link', onPress: () => void shareLink(true) },
+    showAlert(t('Make a new invite link?'), t('The link you shared before stops working. People already in the crew stay in it.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('New link'), onPress: () => void shareLink(true) },
     ]);
   };
 
@@ -106,28 +108,30 @@ export default function CrewInviteScreen() {
       <NightSky />
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }}>
         <Text style={styles.title} accessibilityRole="header">
-          Invite to {crew?.name || 'your crew'}
+          {crew?.name ? t('Invite to {crew}', { crew: crew.name }) : t('Invite to your crew')}
         </Text>
         <Text style={styles.body}>
-          {festival ? `People you know on Afterglow, those going to ${festival.name} first. ` : 'People you know on Afterglow. '}They’ll get the invite in the app and can join with one tap.
+          {festivalName
+            ? t('People you know on {app}, those going to {festival} first. They’ll get the invite in the app and can join with one tap.', { app: 'Afterglow', festival: festivalName })
+            : t('People you know on {app}. They’ll get the invite in the app and can join with one tap.', { app: 'Afterglow' })}
         </Text>
 
         {!crew ? (
-          <Text style={styles.body}>This crew isn’t one of yours any more.</Text>
+          <Text style={styles.body}>{t('This crew isn’t one of yours any more.')}</Text>
         ) : people === undefined ? (
           <ActivityIndicator color={color.glow} style={{ marginTop: space.xl }} />
         ) : total === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No one to invite in the app yet</Text>
-            <Text style={styles.body}>Follow your friends on Afterglow and they’ll show up here. Or send them a link.</Text>
+            <Text style={styles.emptyTitle}>{t('No one to invite in the app yet')}</Text>
+            <Text style={styles.body}>{t('Follow your friends on {app} and they’ll show up here. Or send them a link.', { app: 'Afterglow' })}</Text>
             <Pressable onPress={() => router.push('/people')} accessibilityRole="button" style={({ pressed }) => [styles.ghost, pressed && styles.pressed]}>
-              <Text style={styles.ghostText}>Find people</Text>
+              <Text style={styles.ghostText}>{t('Find people')}</Text>
             </Pressable>
           </View>
         ) : (
           <>
-            {total > 6 ? <SearchField value={query} onChange={setQuery} placeholder="Find a friend" label="Find a friend to invite" /> : null}
-            {rows.length === 0 ? <Text style={styles.body}>No one you know matches “{query.trim()}”.</Text> : null}
+            {total > 6 ? <SearchField value={query} onChange={setQuery} placeholder={t('Find a friend')} label={t('Find a friend to invite')} /> : null}
+            {rows.length === 0 ? <Text style={styles.body}>{t('No one you know matches “{query}”.', { query: query.trim() })}</Text> : null}
             {rows.map((r) => (
               <View key={r.profile.uid} style={styles.row}>
                 <StandingAvatar uid={r.profile.uid} name={r.profile.displayName} url={r.profile.avatarUrl} size={44} />
@@ -136,24 +140,24 @@ export default function CrewInviteScreen() {
                     {r.profile.displayName}
                   </Text>
                   <Text style={[styles.detail, r.going && { color: color.glow }]} numberOfLines={1}>
-                    {r.going && festival ? `Going to ${festival.name}` : `@${r.profile.handle}`}
+                    {r.going && festivalName ? t('Going to {festival}', { festival: festivalName }) : `@${r.profile.handle}`}
                   </Text>
                 </View>
                 {r.status === 'member' ? (
-                  <Text style={styles.status}>In the crew</Text>
+                  <Text style={styles.status}>{t('In the crew')}</Text>
                 ) : r.status === 'invited' ? (
-                  <Text style={styles.status} accessibilityLabel={`${r.profile.displayName} is invited`}>
-                    Invited ✓
+                  <Text style={styles.status} accessibilityLabel={t('{name} is invited', { name: r.profile.displayName })}>
+                    {t('Invited ✓')}
                   </Text>
                 ) : (
                   <Pressable
                     onPress={() => void invite(r)}
                     disabled={!!sending}
                     accessibilityRole="button"
-                    accessibilityLabel={`Invite ${r.profile.displayName}`}
+                    accessibilityLabel={t('Invite {name}', { name: r.profile.displayName })}
                     style={({ pressed }) => [styles.invite, pressed && styles.pressed]}
                   >
-                    {sending === r.profile.uid ? <ActivityIndicator color={color.night} size="small" /> : <Text style={styles.inviteText}>Invite</Text>}
+                    {sending === r.profile.uid ? <ActivityIndicator color={color.night} size="small" /> : <Text style={styles.inviteText}>{t('Invite')}</Text>}
                   </Pressable>
                 )}
               </View>
@@ -162,22 +166,22 @@ export default function CrewInviteScreen() {
         )}
 
         {crew ? (
-          <Pressable onPress={() => void shareLink()} accessibilityRole="button" accessibilityLabel="Share a link instead" style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+          <Pressable onPress={() => void shareLink()} accessibilityRole="button" accessibilityLabel={t('Share a link instead')} style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>Share a link instead</Text>
-              <Text style={styles.detail}>For friends who aren’t on Afterglow yet. Only share it with people you know: anyone with it can join.</Text>
+              <Text style={styles.name}>{t('Share a link instead')}</Text>
+              <Text style={styles.detail}>{t('For friends who aren’t on {app} yet. Only share it with people you know: anyone with it can join.', { app: 'Afterglow' })}</Text>
             </View>
             <ChevronIcon color={color.moonFaint} size={12} />
           </Pressable>
         ) : null}
         {crew && crew.owner === me ? (
-          <Pressable onPress={freshLink} accessibilityRole="button" accessibilityLabel="Make a new invite link" hitSlop={8}>
-            <Text style={styles.detail}>Shared the link too widely? Make a new one; the old link stops working.</Text>
+          <Pressable onPress={freshLink} accessibilityRole="button" accessibilityLabel={t('Make a new invite link')} hitSlop={8}>
+            <Text style={styles.detail}>{t('Shared the link too widely? Make a new one; the old link stops working.')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
+        <GlassCircleButton label={t('Back')} onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

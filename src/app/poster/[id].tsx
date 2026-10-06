@@ -9,6 +9,7 @@ import { CloseIcon } from '../../components/TabIcons';
 import { useCatalog } from '../../state/catalog';
 import { color, motion, space } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 /** Full-screen lineup poster. Pinch to zoom, drag to read, double-tap to zoom in or out. */
 export default function PosterScreen() {
@@ -81,7 +82,7 @@ export default function PosterScreen() {
         </Animated.View>
       </GestureDetector>
       <View style={[styles.close, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Close poster" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Close poster')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>

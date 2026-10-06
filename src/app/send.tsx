@@ -25,6 +25,7 @@ import { useCrews } from '../state/crews';
 import { bumpQuestEvent } from '../state/dailyQuests';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
+import { t } from '../i18n';
 
 const NOTE_MAX = 200;
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
@@ -98,12 +99,12 @@ export default function SendScreen() {
   const describe = (r: Recipient) => {
     if (r.kind === 'crew') {
       const c = crews.find((x) => x.id === r.crewId);
-      return { name: c?.name ?? 'Your crew', sub: catalog.festival(c?.festivalId ?? '')?.name ?? 'Crew', avatar: <PersonAvatar name={c?.name} size={40} /> };
+      return { name: c?.name ?? t('Your crew'), sub: catalog.festival(c?.festivalId ?? '')?.name ?? t('Crew'), avatar: <PersonAvatar name={c?.name} size={40} /> };
     }
     const p = profiles[r.uid];
     return {
       name: p?.displayName ?? ' ',
-      sub: closeSet.has(r.uid) ? 'Close friend' : p ? `@${p.handle}` : ' ',
+      sub: closeSet.has(r.uid) ? t('Close friend') : p ? `@${p.handle}` : ' ',
       avatar: <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={40} />,
       gone: p === null,
     };
@@ -126,16 +127,16 @@ export default function SendScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Send" />
+      <PageTitle title={t('Send')} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.heading}>Send to</Text>
-        <GlassCircleButton label={Object.keys(sent).length ? 'Done' : 'Close'} onPress={() => goBack()}>
+        <Text style={styles.heading}>{t('Send to')}</Text>
+        <GlassCircleButton label={Object.keys(sent).length ? t('Done') : t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xxl }]} keyboardShouldPersistTaps="handled">
         {!share ? (
-          <Text style={styles.body}>This can’t be sent.</Text>
+          <Text style={styles.body}>{t('This can’t be sent.')}</Text>
         ) : (
           <>
             <View style={styles.preview}>
@@ -145,10 +146,10 @@ export default function SendScreen() {
               <>
                 <TextInput
                   value={note}
-                  onChangeText={(t) => setNote(t.slice(0, NOTE_MAX))}
-                  placeholder="Add a message"
+                  onChangeText={(text) => setNote(text.slice(0, NOTE_MAX))}
+                  placeholder={t('Add a message')}
                   placeholderTextColor={color.moonFaint}
-                  accessibilityLabel="Add a message"
+                  accessibilityLabel={t('Add a message')}
                   style={styles.input}
                   multiline
                   maxLength={NOTE_MAX}
@@ -174,22 +175,22 @@ export default function SendScreen() {
                             onPress={() => void send(r, d.name)}
                             disabled={done || busy === r.key}
                             accessibilityRole="button"
-                            accessibilityLabel={done ? `Sent to ${d.name}` : `Send to ${d.name}`}
+                            accessibilityLabel={done ? t('Sent to {name}', { name: d.name }) : t('Send to {name}', { name: d.name })}
                             accessibilityState={{ disabled: done || busy === r.key }}
                             style={({ pressed }) => [styles.send, done && styles.sent, pressed && styles.pressed]}
                           >
-                            <Text style={[styles.sendText, done && styles.sentText]}>{done ? 'Sent' : 'Send'}</Text>
+                            <Text style={[styles.sendText, done && styles.sentText]}>{done ? t('Sent') : t('Send')}</Text>
                           </Pressable>
                         </View>
                       );
                     })}
                   </View>
                 ) : (
-                  <Text style={styles.body}>When you and a friend follow each other, or you’re in a crew, you can send things straight to their chat.</Text>
+                  <Text style={styles.body}>{t('When you and a friend follow each other, or you’re in a crew, you can send things straight to their chat.')}</Text>
                 )}
               </>
             ) : (
-              <Text style={styles.body}>Make a profile to send things to your friends’ chats.</Text>
+              <Text style={styles.body}>{t('Make a profile to send things to your friends’ chats.')}</Text>
             )}
             <Pressable
               onPress={() => {
@@ -197,10 +198,10 @@ export default function SendScreen() {
                 void shareMessage(...systemShare(share, catalog));
               }}
               accessibilityRole="button"
-              accessibilityLabel="More ways to share"
+              accessibilityLabel={t('More ways to share')}
               style={({ pressed }) => [styles.more, pressed && styles.pressed]}
             >
-              <Text style={styles.moreText}>More ways to share</Text>
+              <Text style={styles.moreText}>{t('More ways to share')}</Text>
             </Pressable>
           </>
         )}
@@ -227,7 +228,7 @@ function systemShare(share: ChatShare, catalog: Catalog): [string, string?] {
       return c && a ? [clipShareText(a.name, c.title, link, catalog.festival(c.festivalId), APP_NAME)] : [link];
     }
     case 'profile':
-      return [`@${share.handle} on ${APP_NAME}: ${link}`];
+      return [t('@{handle} on {app}: {link}', { handle: share.handle, app: APP_NAME, link })];
   }
 }
 

@@ -5,6 +5,7 @@ import { color, radius, space, type, glowA, raisedA } from '../../theme/tokens';
 import { HINT_COPY, HINT_SPOKEN, type Hint } from './hints';
 import { HeartIcon } from './icons';
 import { SparkIcon } from '../quests/QuestRing';
+import { t } from '../../i18n';
 
 /** A quiet first-time tip in the feed's header. Never over the video. */
 export function FeedHint({ hint }: { hint: Hint }) {
@@ -16,7 +17,7 @@ export function FeedHint({ hint }: { hint: Hint }) {
       exiting={reduceMotion ? undefined : FadeOut.duration(240)}
       style={styles.pill}
       accessibilityRole="text"
-      accessibilityLabel={`Tip: ${HINT_SPOKEN[hint]}`}
+      accessibilityLabel={t('Tip: {tip}', { tip: HINT_SPOKEN[hint] })}
       pointerEvents="none"
     >
       {hint === 'swipe' ? (

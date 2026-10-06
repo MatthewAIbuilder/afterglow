@@ -1,5 +1,6 @@
 import type { Festival } from '../../data/models';
 import { runsOf } from './when';
+import { LANGUAGE, months, t, tn } from '../../i18n';
 
 /**
  * The festival calendar, pure: a month as weeks (Monday first), which
@@ -10,9 +11,10 @@ export type Month = { year: number; month: number }; // month 0 to 11
 const pad = (n: number) => String(n).padStart(2, '0');
 export const dayKey = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
-export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/** Month names in the app's language, capitalised to stand alone as a title ("November", "Noviembre"). */
+export const MONTH_NAMES = months().map((m) => m.charAt(0).toUpperCase() + m.slice(1));
 /** Monday first. */
-export const WEEKDAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+export const WEEKDAY_LETTERS = LANGUAGE === 'es' ? ['L', 'M', 'X', 'J', 'V', 'S', 'D'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export const monthOf = (d: Date): Month => ({ year: d.getFullYear(), month: d.getMonth() });
 export const addMonths = (m: Month, by: number): Month => {
@@ -20,7 +22,12 @@ export const addMonths = (m: Month, by: number): Month => {
   return { year: d.getFullYear(), month: d.getMonth() };
 };
 export const sameMonth = (a: Month, b: Month) => a.year === b.year && a.month === b.month;
-export const monthTitle = (m: Month, today: Date) => (m.year === today.getFullYear() ? MONTH_NAMES[m.month] : `${MONTH_NAMES[m.month]} ${m.year}`);
+/** The month as it reads mid-sentence ("November", "noviembre"), with the year when it isn't this year. */
+export const monthWords = (m: Month, today: Date) => {
+  const name = months()[m.month];
+  return m.year === today.getFullYear() ? name : t('{month} {year}', { month: name, year: m.year });
+};
+export const monthTitle = (m: Month, today: Date) => (m.year === today.getFullYear() ? MONTH_NAMES[m.month] : t('{month} {year}', { month: MONTH_NAMES[m.month], year: m.year }));
 
 /** The month as weeks of day keys, with blanks (undefined) before the 1st and after the last. */
 export function monthGrid(m: Month): (string | undefined)[][] {
@@ -70,7 +77,7 @@ export function calendarMonths(festivals: readonly Festival[], today: Date): Mon
 
 /** "3 festivals in November" / "No festivals in March yet"; with a reach, "2 festivals within 100 mi in November". */
 export function monthLine(n: number, m: Month, where = ''): string {
-  const w = where ? ` ${where}` : '';
-  const month = MONTH_NAMES[m.month];
-  return n === 0 ? `No festivals${w} in ${month} yet` : n === 1 ? `1 festival${w} in ${month}` : `${n} festivals${w} in ${month}`;
+  const month = months()[m.month];
+  if (where) return n === 0 ? t('No festivals {where} in {month} yet', { where, month }) : tn(n, '{n} festival {where} in {month}', '{n} festivals {where} in {month}', { where, month });
+  return n === 0 ? t('No festivals in {month} yet', { month }) : tn(n, '{n} festival in {month}', '{n} festivals in {month}', { month });
 }
