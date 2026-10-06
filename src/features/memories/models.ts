@@ -1,4 +1,6 @@
 import type { PastEvent } from './past';
+import type { ShowTag } from './show';
+import type { ClipWindow } from './trim';
 /**
  * Memories: your own videos from festivals, kept on this phone and tagged
  * with where they're from (festival, night, artist). Plain data, so the list
@@ -27,13 +29,17 @@ export type Memory = {
   festivalId?: string;
   /** A festival from before Afterglow knew it ("EDC Orlando 2024"), instead of `festivalId`. */
   past?: PastEvent;
+  /** A one-night show (a club night or concert), instead of a festival. */
+  show?: ShowTag;
   /** The festival day ("Friday"), when known. */
   night?: string;
   artistId?: string;
+  /** The part that plays, when the video was trimmed (seconds into the file). */
+  clip?: ClipWindow;
   /** Once shared to your profile: the shared copy's id, and whose profile it's on. */
   sharedId?: string;
   sharedBy?: string;
 };
 
 /** What the tagging sheet saves onto a memory. */
-export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'past'>;
+export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'past' | 'show' | 'clip'>;

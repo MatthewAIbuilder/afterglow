@@ -4,6 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import type { EngineProps } from './ClipPlayer';
 import type { VideoMedia } from './media';
 import { canCountWatch, playedSpan, shouldPlay } from './playback';
+import { loopPosition } from '../memories/trim';
+import { seekTo } from '../memories/seek';
 
 /** Give up if the video hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
@@ -19,9 +21,13 @@ const TICK = 0.25;
  * ClipPlayer uses this.
  */
 function NativeVideoPlayerBase({ media, active, live, paused, progress, onPlayed, onReady, onStarted, onFail }: EngineProps<VideoMedia>) {
+  // A trimmed video plays only its part: it starts there and loops back at its end.
+  const part = media.community.clip;
+  const start = part?.start ?? 0;
   const player = useVideoPlayer(media.uri, (p) => {
     p.loop = true;
     p.timeUpdateEventInterval = TICK;
+    if (part) p.currentTime = part.start;
   });
   const wantPlaying = shouldPlay({ active, live }, paused);
   const ready = useRef(false);
@@ -49,7 +55,15 @@ function NativeVideoPlayerBase({ media, active, live, paused, progress, onPlayed
         isPlaying.current = playing;
         if (playing) now.current.onStarted();
       }),
-      player.addListener('timeUpdate', ({ currentTime }) => {
+      player.addListener('timeUpdate', ({ currentTime: at }) => {
+        const back = loopPosition(at, part);
+        if (back !== undefined) {
+          seekTo(player, back);
+          lastTime.current = null;
+          return;
+        }
+        // Times within the part that plays.
+        const currentTime = Math.max(0, at - start);
         const length = media.lengthSec > 0 ? media.lengthSec : player.duration || 1;
         progress.set(Math.min(1, Math.max(0, currentTime / length)));
         const { active: a, live: l, onPlayed: played } = now.current;
@@ -62,7 +76,7 @@ function NativeVideoPlayerBase({ media, active, live, paused, progress, onPlayed
       clearTimeout(t);
       subs.forEach((s) => s.remove());
     };
-  }, [player, media.lengthSec, progress]);
+  }, [player, media.lengthSec, progress, part, start]);
 
   // One place decides what plays: coming on screen starts from the top; otherwise play only while live and not paused.
   useEffect(() => {
@@ -71,11 +85,12 @@ function NativeVideoPlayerBase({ media, active, live, paused, progress, onPlayed
     lastTime.current = null;
     if (cameActive) {
       progress.set(0);
-      player.replay();
+      if (part) seekTo(player, part.start);
+      else player.replay();
     }
     if (wantPlaying) player.play();
     else player.pause();
-  }, [active, wantPlaying, player, progress]);
+  }, [active, wantPlaying, player, progress, part]);
 
   return (
     <View style={styles.frame}>

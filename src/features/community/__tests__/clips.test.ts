@@ -42,10 +42,10 @@ describe('communityClip', () => {
     expect(communityClip(memory({ thumbUrl: 'http://x/y.jpg' }), ARTISTS)!.source).toMatchObject({ thumbUrl: undefined });
   });
 
-  it('needs an artist Afterglow knows, a festival, an https video and a handle', () => {
+  it('needs an artist Afterglow knows, an https video and a handle (a festival or show is extra)', () => {
     expect(communityClip(memory({ artistId: undefined }), ARTISTS)).toBeUndefined();
     expect(communityClip(memory({ artistId: 'someone-new' }), ARTISTS)).toBeUndefined();
-    expect(communityClip(memory({ festivalId: undefined }), ARTISTS)).toBeUndefined();
+    expect(communityClip(memory({ festivalId: undefined }), ARTISTS)).toMatchObject({ festivalId: '', title: 'From the crowd' });
     expect(communityClip(memory({ videoUrl: 'http://example.test/v.mp4' }), ARTISTS)).toBeUndefined();
     expect(communityClip(memory({ handle: '' }), ARTISTS)).toBeUndefined();
   });

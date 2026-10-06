@@ -123,6 +123,19 @@ await t('throwbacks: a past festival with a name and year, never with a festival
   await assertFails(setDoc(doc(T.firestore(), 'memories', 'tb5'), memT('tb5', { pastYear: 2024 })));
   await assertFails(setDoc(doc(T.firestore(), 'memories', 'tb8'), memT('tb8', { seriesId: 'edc-orlando-26' })));
 });
+await t('one-night shows and trimmed videos: a name and a day, never with a festival or a throwback; at most a minute plays', async () => {
+  const db = T.firestore();
+  await assertSucceeds(setDoc(doc(db, 'memories', 'sh1'), memT('sh1', { artistId: 'slander', showName: 'Echostage', showDate: '2026-01-18', showCity: 'Washington', showId: 'edm-123', clipStart: 12.5, clipEnd: 42.5, durationSec: 30 })));
+  await assertSucceeds(setDoc(doc(db, 'memories', 'sh2'), memT('sh2', { artistId: 'slander' })));
+  await assertFails(setDoc(doc(db, 'memories', 'sh3'), memT('sh3', { showName: 'Echostage', showDate: '2026-01-18', festivalId: 'acl-26' })));
+  await assertFails(setDoc(doc(db, 'memories', 'sh4'), memT('sh4', { showName: 'Echostage', showDate: 'Jan 18' })));
+  await assertFails(setDoc(doc(db, 'memories', 'sh5'), memT('sh5', { showDate: '2026-01-18' })));
+  await assertFails(setDoc(doc(db, 'memories', 'sh6'), memT('sh6', { showName: 'x'.repeat(61), showDate: '2026-01-18' })));
+  await assertFails(setDoc(doc(db, 'memories', 'sh7'), memT('sh7', { clipStart: 0, clipEnd: 90 })));
+  await assertFails(setDoc(doc(db, 'memories', 'sh8'), memT('sh8', { clipStart: 10 })));
+  await assertFails(setDoc(doc(db, 'memories', 'sh9'), memT('sh9', { clipStart: -1, clipEnd: 20 })));
+  await assertFails(setDoc(doc(db, 'memories', 'sh10'), memT('sh10', { showCity: 'Washington' })));
+});
 await t('throwbacks: counted, three on the free plan, more with Plus, a place back when one is removed', async () => {
   // Not counted, or counted wrongly: refused.
   await assertFails(shareTb('tb10', undefined));

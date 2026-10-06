@@ -1,6 +1,7 @@
 import type { Artist, Festival } from '../../data/models';
 import type { Memory } from './models';
 import { type PastEvent, pastKey, pastLabel } from './past';
+import { showKey, showLabel } from './show';
 import { formatTime } from '../festivals/format';
 import { months, t, tn, weekdays } from '../../i18n';
 
@@ -29,6 +30,8 @@ export const UNTAGGED = 'untagged';
 export const ELSEWHERE = 'elsewhere';
 /** Sections for past festivals start with this. */
 export const PAST = 'past:';
+/** Sections for one-night shows start with this. */
+export const SHOW = 'show:';
 
 const byCapture = (a: Memory, b: Memory) => a.capturedAt.localeCompare(b.capturedAt);
 
@@ -41,18 +44,19 @@ export function organizeMemories(
   for (const m of memories) {
     const festival = m.festivalId ? lookup.festival(m.festivalId) : undefined;
     const artist = m.artistId ? lookup.artist(m.artistId) : undefined;
-    if (!festival && !artist && !m.past) {
+    if (!festival && !artist && !m.past && !m.show) {
       untagged.push(m);
       continue;
     }
-    // A throwback is its own section: the festival and year.
-    const key = festival ? festival.id : m.past ? `${PAST}${pastKey(m.past)}` : ELSEWHERE;
+    // A throwback is its own section (the festival and year), and so is a one-night show.
+    const key = festival ? festival.id : m.past ? `${PAST}${pastKey(m.past)}` : m.show ? `${SHOW}${showKey(m.show)}` : ELSEWHERE;
     byFestival.set(key, [...(byFestival.get(key) ?? []), m]);
   }
 
   const sections: MemorySection[] = [];
   for (const [key, list] of byFestival) {
-    const festival = key === ELSEWHERE || key.startsWith(PAST) ? undefined : lookup.festival(key);
+    const festival = key === ELSEWHERE || key.startsWith(PAST) || key.startsWith(SHOW) ? undefined : lookup.festival(key);
+    const show = key.startsWith(SHOW) ? list[0].show : undefined;
     const past = key.startsWith(PAST) ? list[0].past : undefined;
     const nightOrder = new Map((festival?.days ?? []).map((d, i) => [d, i]));
     const nights = new Map<string, Memory[]>();
@@ -67,7 +71,7 @@ export function organizeMemories(
       key,
       festival,
       ...(past ? { past } : {}),
-      title: festival?.name ?? (past ? pastLabel(past) : t('Other sets')),
+      title: festival?.name ?? (past ? pastLabel(past) : show ? showLabel(show) : t('Other sets')),
       count: list.length,
       nights: nightList,
       latest: list.map((m) => m.capturedAt).sort().at(-1) ?? '',

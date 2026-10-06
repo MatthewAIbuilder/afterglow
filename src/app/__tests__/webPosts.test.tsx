@@ -35,25 +35,25 @@ async function go(href: string) {
   await flush();
 }
 
-/** An upright iPhone video chosen in Safari: Saturday night at Cyclops Cove 4. */
-function chooseInBrowser() {
+/** An upright iPhone video chosen in Safari: Saturday night at Cyclops Cove 4 (or another one). */
+function chooseInBrowser(over: { durationSec?: number; when?: Date; city?: string } = {}) {
   jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(1));
   device.pickVideo.mockResolvedValueOnce({
     ok: true,
     video: {
       uri: 'blob:https://afterglowmusic.app/5f1c',
       source: 'library',
-      durationSec: 24,
+      durationSec: over.durationSec ?? 24,
       width: 1080,
       height: 1920,
-      moment: { when: new Date(2026, 11, 5, 22, 30), place: { city: 'Boca Raton', region: 'Florida' } },
+      moment: { when: over.when ?? new Date(2026, 11, 5, 22, 30), place: { city: over.city ?? 'Boca Raton', region: 'Florida' } },
       keptBySharing: true,
     },
   });
 }
 
-async function openTagging() {
-  chooseInBrowser();
+async function openTagging(over?: Parameters<typeof chooseInBrowser>[0]) {
+  chooseInBrowser(over);
   const app = await renderApp('/');
   await flush();
   await go('/memories');
@@ -84,7 +84,7 @@ describe('posting a video from the website', () => {
     expect(app.getByText('Share')).toBeTruthy();
     // Not tagged yet: Share says what's missing and keeps nothing.
     await fireEvent.press(app.getByLabelText('Share this video'));
-    expect(alert).toHaveBeenCalledWith('Share it to keep it', 'Pick the festival and who was playing to share it to Discover. On the website, videos are kept by sharing them.', expect.anything());
+    expect(alert).toHaveBeenCalledWith('Share it to keep it', 'Pick who was playing to share it to Discover. On the website, videos are kept by sharing them.', expect.anything());
     expect(await mockSocial.service.recentMemories(10)).toEqual([]);
 
     await fireEvent.press(app.getByLabelText(/^SUBTRONICS, Playing Saturday/));
@@ -114,6 +114,41 @@ describe('posting a video from the website', () => {
     await act(async () => router.navigate('/profile'));
     await flush();
     expect(app.getAllByLabelText(/^Video: .*, shared$/)).toHaveLength(1);
+  }, 30_000);
+
+  it('a long video from a one-night show: trimmed to the part you choose, tagged with the show and who was playing', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const app = await openTagging({ durationSec: 95, when: new Date(2026, 0, 18, 23, 10), city: 'Washington' });
+    // Longer than Discover plays: a part is chosen for you (the start, when the sound can't be read), and can change.
+    expect(app.getByText('Plays 0:00 to 0:30 · 0:30')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('45 seconds'));
+    expect(app.getByText('Plays 0:00 to 0:45 · 0:45')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('A second later'));
+    expect(app.getByText('Plays 0:01 to 0:46 · 0:45')).toBeTruthy();
+
+    // Who was playing, found by searching: it stays on screen, ticked.
+    await fireEvent.changeText(app.getByLabelText('Search for the artist'), 'subtr');
+    await fireEvent.press(app.getByLabelText('SUBTRONICS'));
+    expect(app.getByRole('button', { name: 'SUBTRONICS', selected: true })).toBeTruthy();
+
+    // The show, typed in: a club night isn't a festival.
+    await fireEvent.press(app.getByText('A one-night show…'));
+    await fireEvent.changeText(app.getByLabelText('Search for the show'), 'Echostage');
+    await fireEvent.press(app.getByLabelText('Add Echostage'));
+    expect(app.getByTestId('show-chosen')).toBeTruthy();
+    expect(app.getByTestId('share-to-discover').props.value).toBe(true);
+
+    await fireEvent.press(app.getByLabelText('Share this video'));
+    await flush();
+    expect(alert).not.toHaveBeenCalled();
+    const [shared] = await mockSocial.service.recentMemories(10);
+    expect(shared).toMatchObject({
+      artistId: 'subtronics',
+      show: { name: 'Echostage', date: '2026-01-18', city: 'Washington' },
+      clip: { start: 1, end: 46 },
+      durationSec: 45,
+    });
+    expect(shared.festivalId).toBeUndefined();
   }, 30_000);
 
   it('signed out, Share offers to sign in and uploads nothing', async () => {
