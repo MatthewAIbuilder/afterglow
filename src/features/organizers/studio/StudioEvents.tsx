@@ -7,7 +7,7 @@ import { useCatalog } from '../../../state/catalog';
 import { useToday } from '../../../lib/useToday';
 import { localDay } from '../../artists/shows';
 import { color, radius, space, type } from '../../../theme/tokens';
-import { cleanEvent, eventFestivalId, foldName, httpsLink, isDay, isTime, LINEUP_MAX, newEventId, type Org, type OrgAct, type OrgEvent, ORG_EVENTS_MAX, splitEvents, EVENT_ABOUT_MAX, EVENT_NAME_MAX, EVENT_PLACE_MAX } from '../organizers';
+import { cleanEvent, draftFrom, importedCandidates, importedListing, ORG_CLAIMS_MAX, eventFestivalIdOf, foldName, httpsLink, isDay, isTime, LINEUP_MAX, newEventId, type Org, type OrgAct, type OrgEvent, ORG_EVENTS_MAX, splitEvents, EVENT_ABOUT_MAX, EVENT_NAME_MAX, EVENT_PLACE_MAX } from '../organizers';
 import { Action, Button, Card, Chip, Field, studio } from './ui';
 
 const blank = (): OrgEvent => ({ id: '', name: '', date: '', venue: '', city: '', lineup: [], published: false });
@@ -51,7 +51,83 @@ export function StudioEvents({ org, save }: { org: Org; save: (next: Org) => Pro
       {past.length ? <Text style={studio.h3}>Past</Text> : null}
       {past.map(row)}
       {!org.events.length ? <Text style={studio.muted}>No events yet.</Text> : null}
+      <OnEdmtrain org={org} save={save} edit={(draft) => setEditing({ event: draft, isNew: true })} />
     </View>
+  );
+}
+
+/**
+ * Events Afterglow imports each night from EDMTrain that are the
+ * organizer's: find and claim them (they then show "Hosted by" it and its
+ * mark, and list on its page, as imported), or copy one to edit on Afterglow
+ * (once published, the copy shows instead; EDMTrain's import is never
+ * changed, and comes back if the copy is unpublished or deleted).
+ */
+function OnEdmtrain({ org, save, edit }: { org: Org; save: (next: Org) => Promise<boolean>; edit: (draft: OrgEvent) => void }) {
+  const catalog = useCatalog();
+  const today = localDay(useToday());
+  const [query, setQuery] = useState('');
+  const look = useMemo(() => ({ festival: catalog.festival, show: (id: string) => catalog.shows.find((x) => x.id === id) }), [catalog]);
+  const claimed = useMemo(() => org.claims.map((id) => ({ id, listing: importedListing(id, look) })), [org.claims, look]);
+  const found = useMemo(() => importedCandidates(org, catalog.festivals, catalog.shows, query, today), [org, catalog.festivals, catalog.shows, query, today]);
+  const copyOf = (id: string) => org.events.find((e) => e.from === id);
+
+  const claim = (id: string) => {
+    if (org.claims.length >= ORG_CLAIMS_MAX) return showAlert('That’s a lot of events', `A page can claim up to ${ORG_CLAIMS_MAX}. Remove past ones first.`);
+    haptic.select();
+    void save({ ...org, claims: [...org.claims, id] });
+  };
+  const unclaim = (id: string, name: string) =>
+    showAlert(`Not yours after all: “${name}”?`, 'It stays on Afterglow as EDMTrain lists it, just without your name on it.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => void save({ ...org, claims: org.claims.filter((c) => c !== id) }) },
+    ]);
+  const copy = (id: string) => {
+    const draft = draftFrom(org, id, look, (a) => catalog.artist(a)?.name);
+    if (!draft) return showAlert('That event isn’t on Afterglow any more', 'It may have passed, or EDMTrain took it down.');
+    edit(draft);
+  };
+
+  return (
+    <Card title="On EDMTrain" sub="Afterglow lists events from EDMTrain each night. Claim the ones that are yours: they show “Hosted by” you with your logo, and list on your page. To change one, copy it to edit on Afterglow; once you publish, your version shows instead. EDMTrain’s listing itself is never changed.">
+      {claimed.map(({ id, listing }) => {
+        const c = copyOf(id);
+        return (
+          <View key={id} style={studio.row}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={studio.rowTitle}>{listing?.name ?? 'No longer listed'}</Text>
+              <Text style={studio.rowSub} numberOfLines={1}>
+                {listing ? [listing.date, listing.venue, listing.city].filter(Boolean).join(' · ') : 'It may have passed, or EDMTrain took it down.'}
+              </Text>
+              {c ? <Text style={studio.rowSub}>{c.published ? 'Your version shows on Afterglow' : 'Your version is a draft'}</Text> : null}
+            </View>
+            <View style={studio.actions}>
+              {c ? (
+                <Action label="Edit yours" onPress={() => edit(c)} a11y={`Edit your version of ${c.name}`} />
+              ) : listing ? (
+                <Action label="Edit on Afterglow" onPress={() => copy(id)} a11y={`Copy ${listing.name} to edit on Afterglow`} />
+              ) : null}
+              {listing ? <Action label="Open" onPress={() => router.push(listing.href as never)} a11y={`Open ${listing.name}`} /> : null}
+              <Action label="Remove" danger onPress={() => unclaim(id, listing?.name ?? id)} a11y={`Remove ${listing?.name ?? id} from your events`} />
+            </View>
+          </View>
+        );
+      })}
+      <TextInput value={query} onChangeText={setQuery} placeholder="Find yours: event, venue or city" placeholderTextColor={color.moonFaint} style={inputStyle} accessibilityLabel="Find your events on EDMTrain" />
+      {!query.trim() && found.length ? <Text style={studio.muted}>These look like yours:</Text> : null}
+      {found.map((c) => (
+        <View key={c.id} style={studio.row}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={studio.rowTitle}>{c.listing.name}</Text>
+            <Text style={studio.rowSub} numberOfLines={1}>
+              {[c.listing.date, c.listing.venue, c.listing.city].filter(Boolean).join(' · ')} · {c.kind === 'festival' ? 'Festival' : 'Show'}
+            </Text>
+          </View>
+          <Action label="This is ours" onPress={() => claim(c.id)} a11y={`Claim ${c.listing.name}`} />
+        </View>
+      ))}
+      {query.trim().length >= 2 && !found.length ? <Text style={studio.muted}>Nothing coming up on EDMTrain matches that.</Text> : null}
+    </Card>
   );
 }
 
@@ -105,7 +181,9 @@ function EventEditor({ org, start, isNew, save, done }: { org: Org; start: OrgEv
     const clean = cleanEvent({ ...e, id, published });
     if (!clean) return showAlert('Check the event', 'Something in it doesn’t look right.');
     setBusy(true);
-    const ok = await save({ ...org, events: isNew ? [...org.events, clean] : org.events.map((x) => (x.id === id ? clean : x)) });
+    // A copy of an imported event keeps that event claimed.
+    const claims = clean.from && !org.claims.includes(clean.from) ? [...org.claims, clean.from] : org.claims;
+    const ok = await save({ ...org, claims, events: isNew ? [...org.events, clean] : org.events.map((x) => (x.id === id ? clean : x)) });
     setBusy(false);
     if (ok) {
       haptic.settle();
@@ -130,7 +208,7 @@ function EventEditor({ org, start, isNew, save, done }: { org: Org; start: OrgEv
   return (
     <View style={studio.wrap}>
       <Action label="‹ All events" onPress={done} a11y="Back to all events" />
-      <Card title={isNew ? 'New event' : e.name} sub={e.published ? 'Live on Afterglow. Changes show for everyone when you save.' : 'A draft: only you see it until you publish.'}>
+      <Card title={isNew ? 'New event' : e.name} sub={`${e.published ? 'Live on Afterglow. Changes show for everyone when you save.' : 'A draft: only you see it until you publish.'}${e.from ? ' Copied from EDMTrain: once published, your version shows instead of EDMTrain’s (which is never changed, and comes back if you unpublish or delete this).' : ''}`}>
         <Field label="Name" value={e.name} onChangeText={(v) => set('name', v)} placeholder="Like Transmutation" maxLength={EVENT_NAME_MAX} />
         <Field label="Night" value={e.date} onChangeText={(v) => set('date', v.trim())} placeholder="2026-11-14" autoCapitalize="none" hint="The night it starts. An after party past midnight still belongs to this night." />
         <Field label="Last night (more than one night only)" value={e.endDate ?? ''} onChangeText={(v) => set('endDate', v.trim() || undefined)} placeholder="Leave empty for one night" autoCapitalize="none" />
@@ -196,7 +274,7 @@ function EventEditor({ org, start, isNew, save, done }: { org: Org; start: OrgEv
         <>
           <Button label="Save changes" busy={busy} onPress={() => void commit(true)} />
           <Button kind="secondary" label="Unpublish (back to draft)" onPress={() => void commit(false)} />
-          <Button kind="secondary" label="See it on Afterglow" onPress={() => router.push(`/festival/${eventFestivalId(org.id, e.id)}`)} />
+          <Button kind="secondary" label="See it on Afterglow" onPress={() => router.push(`/festival/${eventFestivalIdOf(org, e)}`)} />
         </>
       ) : (
         <>

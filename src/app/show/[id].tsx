@@ -1,4 +1,7 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
+import { useOrgs } from '../../state/orgs';
+import { eventFestivalIdOf } from '../../features/organizers/organizers';
+import { HostedBy } from '../../features/organizers/OrgCards';
 import { useMemo } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,6 +49,11 @@ export default function ShowScreen() {
   const { here, units } = useNearby();
   const show = useMemo(() => catalog.shows.find((s) => s.id === id), [catalog.shows, id]);
   const { isGoing, setGoing } = useGoingShows();
+  // Its organizer made its own page for it on Afterglow: that takes over.
+  const copy = useOrgs()
+    .flatMap((o) => o.events.filter((e) => e.published && e.fromKind === 'show' && e.from === id).map((e) => eventFestivalIdOf(o, e)))
+    .find((fid) => !!catalog.festival(fid));
+  if (!show && copy) return <Redirect href={`/festival/${copy}`} />;
   if (!show) return <Missing title={t('Show not found')} line={t('This show isn’t on Afterglow any more (it may have passed), or the link isn’t quite right.')} />;
 
   const ranked = rankShow(show, taste, here);
@@ -129,6 +137,8 @@ export default function ShowScreen() {
             </View>
           )}
         </View>
+        {/* Claimed by an event organizer on Afterglow: who's hosting it. */}
+        <HostedBy show={show} />
 
         {bill.length > 0 ? (
           <View style={styles.section}>

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
 import { createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, initializeAuth, onAuthStateChanged, reauthenticateWithCredential, reload, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type Auth, type Persistence } from 'firebase/auth';
-import { collection, deleteDoc, deleteField, doc, getCountFromServer, getDoc, getDocs, increment, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, getCountFromServer, getDoc, getDocs, increment, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
@@ -1562,6 +1562,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     setPromotion: (orgId, eventId, until) =>
       guard(async () => {
         await updateDoc(doc(fb().db, 'orgs', orgId), { [`promoted.${eventId}`]: until ?? deleteField(), updatedAt: serverTimestamp() });
+      }),
+    setOrgAccount: (orgId, uid, on) =>
+      guard(async () => {
+        me();
+        await updateDoc(doc(fb().db, 'orgs', orgId), { uids: on ? arrayUnion(uid) : arrayRemove(uid), updatedAt: serverTimestamp() });
       }),
     orgMembers: (orgId) =>
       guard(async () => (await getDocs(query(collection(fb().db, 'orgMembers'), where('orgId', '==', orgId), limit(20)))).docs.map((d) => d.id)),

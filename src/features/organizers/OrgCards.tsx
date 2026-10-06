@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../../components/TabIcons';
-import type { Festival } from '../../data/models';
+import type { Festival, Show } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
 import { useOrg, useOrgs } from '../../state/orgs';
@@ -12,7 +12,7 @@ import { t } from '../../i18n';
 import { localDay } from '../artists/shows';
 import { datesLine, formatTime } from '../festivals/format';
 import { OrgDot } from './OrgMark';
-import { activePromotions, datesText, eventFestivalId, eventOf, type Org, type OrgEvent, type Promoted } from './organizers';
+import { activePromotions, datesText, eventAt, eventFestivalIdOf, isCounter, type Listing, type Org, type OrgCounter, type OrgEvent, type Promoted } from './organizers';
 import { countOrgOnce, useOrgView } from './useOrgView';
 
 const openOrg = (id: string) => {
@@ -20,21 +20,26 @@ const openOrg = (id: string) => {
   router.push({ pathname: '/org/[id]', params: { id } });
 };
 
+/** A counter key for an event's views (an id too long or odd for one isn't counted). */
+const viewKey = (id: string): OrgCounter | undefined => (isCounter(`e_${id}`) ? (`e_${id}` as OrgCounter) : undefined);
+
 /**
  * On an organizer's event page: who's putting it on (opening their page),
- * doors, a few words, and tickets. Counts a view of the event for their
- * numbers. Nothing for festivals that aren't an organizer's.
+ * doors, a few words, and tickets. Also on an imported festival or show the
+ * organizer claimed (then with the tickets link it came with). Counts a view
+ * of the event for their numbers. Nothing for anyone else's.
  */
-export function HostedBy({ festival }: { festival: Festival }) {
-  const ids = festival.organizer ? eventOf(festival.id) : undefined;
-  const org = useOrg(festival.organizer);
+export function HostedBy({ festival, show }: { festival?: Festival; show?: Show }) {
+  const org = useOrg(festival?.organizer ?? show?.organizer);
   const { service, user } = useSocial();
   const today = localDay(useToday());
-  useOrgView(org ? ids?.orgId : undefined, ids ? `e_${ids.eventId}` : undefined);
-  const event = org?.events.find((e) => e.id === ids?.eventId);
-  if (!org || !event) return null;
-  const tickets = event.tickets;
-  const over = (event.endDate ?? event.date) < today;
+  const event = org && festival ? eventAt(org, festival.id) : undefined;
+  useOrgView(org?.id, event ? viewKey(event.id) : viewKey((festival ?? show)?.id ?? ''));
+  if (!org || (!festival && !show)) return null;
+  const name = festival?.name ?? show?.name ?? show?.venue ?? '';
+  const tickets = event ? event.tickets : (festival?.links?.tickets ?? undefined);
+  const last = event ? (event.endDate ?? event.date) : (festival?.endDate ?? festival?.startDate ?? show?.date ?? today);
+  const over = last < today;
   return (
     <View style={styles.card}>
       <Pressable onPress={() => openOrg(org.id)} accessibilityRole="button" accessibilityLabel={t('Hosted by {organizer}. Open their page', { organizer: org.name })} style={({ pressed }) => [styles.hostRow, pressed && styles.pressed]}>
@@ -47,8 +52,8 @@ export function HostedBy({ festival }: { festival: Festival }) {
         </View>
         <ChevronIcon color={color.moonFaint} size={12} />
       </Pressable>
-      {event.doors ? <Text style={styles.line}>{t('Doors {time}', { time: formatTime(event.doors) })}</Text> : null}
-      {event.about ? <Text style={styles.about}>{event.about}</Text> : null}
+      {event?.doors ? <Text style={styles.line}>{t('Doors {time}', { time: formatTime(event.doors) })}</Text> : null}
+      {event?.about ? <Text style={styles.about}>{event.about}</Text> : null}
       {tickets && !over ? (
         <Pressable
           onPress={() => {
@@ -57,7 +62,7 @@ export function HostedBy({ festival }: { festival: Festival }) {
             Linking.openURL(tickets).catch(() => {});
           }}
           accessibilityRole="link"
-          accessibilityLabel={t('Get tickets for {festival} from {organizer}', { festival: festival.name, organizer: org.name })}
+          accessibilityLabel={t('Get tickets for {festival} from {organizer}', { festival: name, organizer: org.name })}
           style={({ pressed }) => [styles.tickets, pressed && styles.pressed]}
         >
           <Text style={styles.ticketsText}>{t('Get tickets ↗')}</Text>
@@ -67,32 +72,36 @@ export function HostedBy({ festival }: { festival: Festival }) {
   );
 }
 
-/** One organizer's event as a row: their mark, its name, when and where. */
-function EventRow({ org, event, onOpen }: { org: Org; event: OrgEvent; onOpen?: () => void }) {
-  const when = datesLine({ dates: datesText(event), startDate: event.date, endDate: event.endDate ?? event.date });
+/** One line on an organizer's page: their mark, its name, when and where. */
+function ListingRow({ org, l }: { org: Org; l: Listing }) {
+  const when = datesLine({ dates: datesText({ date: l.date, endDate: l.endDate }), startDate: l.date, endDate: l.endDate ?? l.date });
   return (
     <Pressable
       onPress={() => {
         haptic.select();
-        onOpen?.();
-        router.push(`/festival/${eventFestivalId(org.id, event.id)}`);
+        router.push(l.href as never);
       }}
       accessibilityRole="button"
-      accessibilityLabel={t('{event} by {organizer}, {when}, {place}', { event: event.name, organizer: org.name, when, place: [event.venue, event.city].filter(Boolean).join(', ') })}
+      accessibilityLabel={t('{event} by {organizer}, {when}, {place}', { event: l.name, organizer: org.name, when, place: [l.venue, l.city].filter(Boolean).join(', ') })}
       style={({ pressed }) => [styles.eventRow, pressed && styles.pressed]}
     >
       <OrgDot org={org} size={36} />
       <View style={{ flex: 1 }}>
         <Text style={styles.eventName} numberOfLines={1}>
-          {event.name}
+          {l.name}
         </Text>
         <Text style={styles.line} numberOfLines={1}>
-          {[when, event.venue, event.city].filter(Boolean).join(' · ')}
+          {[when, l.venue, l.city].filter(Boolean).join(' · ')}
         </Text>
       </View>
       <ChevronIcon color={color.moonFaint} size={12} />
     </Pressable>
   );
+}
+
+/** One organizer's event as a row. */
+function EventRow({ org, event }: { org: Org; event: OrgEvent }) {
+  return <ListingRow org={org} l={{ key: event.id, name: event.name, date: event.date, ...(event.endDate ? { endDate: event.endDate } : {}), venue: event.venue, city: event.city, href: `/festival/${eventFestivalIdOf(org, event)}`, imported: false }} />;
 }
 
 /** On a festival's page: after parties organizers put on for it, while they're still to come. */
@@ -171,12 +180,12 @@ function PromotedCard({ p }: { p: Promoted }) {
   );
 }
 
-/** An organizer's upcoming events as rows (their page). */
-export function OrgEventRows({ org, events }: { org: Org; events: OrgEvent[] }) {
+/** An organizer's events as rows (their page): its own and the imported ones it claimed. */
+export function OrgEventRows({ org, listings }: { org: Org; listings: Listing[] }) {
   return (
     <View>
-      {events.map((e) => (
-        <EventRow key={e.id} org={org} event={e} />
+      {listings.map((l) => (
+        <ListingRow key={l.key} org={org} l={l} />
       ))}
     </View>
   );

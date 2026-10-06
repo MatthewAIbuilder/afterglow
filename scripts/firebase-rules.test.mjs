@@ -1225,6 +1225,32 @@ await t('organizers: their own stickers, hunts and gifts, and the finds of them'
   await assertSucceeds(setDoc(doc(H.firestore(), 'stickers', 'hqonly0001'), { name: 'Ferris', creature: 'ferris', by: 'uidHQ', createdAt: serverTimestamp() }));
   await assertFails(updateDoc(doc(O.firestore(), 'stickers', 'hqonly0001'), { takenDown: true, takenDownAt: serverTimestamp() }));
 });
+await t('organizers: HQ links an account; a linked account runs the page with no email to confirm, and only links itself', async () => {
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const L = env.authenticatedContext('uidLinked', { email: 'ugrnd@example.com', email_verified: false });
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  await assertFails(updateDoc(doc(L.firestore(), 'orgs', 'underground-alchemy'), { about: 'Not yet', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(L.firestore(), 'orgs', 'underground-alchemy'), { uids: ['uidLinked'], updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'orgs', 'underground-alchemy'), { uids: ['uidLinked'], updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(L.firestore(), 'orgs', 'underground-alchemy'), { about: 'Run by a linked account.', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(L.firestore(), 'orgs', 'underground-alchemy'), { uids: ['uidLinked', 'uidOther'], updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(L.firestore(), 'orgs', 'underground-alchemy'), { 'promoted.transmutation-11-14': '2026-11-14', updatedAt: serverTimestamp() }));
+  // The organizer's email links its own account, and can't take another off.
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { uids: ['uidLinked', 'uidOrg'], updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { uids: ['uidOrg'], updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { uids: ['uidLinked'], updatedAt: serverTimestamp() }));
+  // A linked account makes the organizer's stickers and reads its numbers.
+  await assertSucceeds(setDoc(doc(L.firestore(), 'stickers', 'uaflask777'), { name: 'Flask', creature: 'flask', orgId: 'underground-alchemy', by: 'uidLinked', createdAt: serverTimestamp() }));
+  await assertSucceeds(getDocs(query(collection(L.firestore(), 'orgViews'), where('orgId', '==', 'underground-alchemy'), where('day', '>=', '2026-01-01'))));
+  await assertFails(updateDoc(doc(L.firestore(), 'orgs', 'underground-alchemy'), { uids: Array.from({ length: 11 }, (_, i) => `u${i}`), updatedAt: serverTimestamp() }));
+});
+await t('organizers: its team claims imported events (EDMTrain ids) as its own, up to 60', async () => {
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { claims: ['edm-111', 'alchemy-fest-26'], updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { claims: Array.from({ length: 61 }, (_, i) => `edm-${i}`), updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { claims: 'edm-111', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(A.firestore(), 'orgs', 'underground-alchemy'), { claims: ['edm-999'], updatedAt: serverTimestamp() }));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

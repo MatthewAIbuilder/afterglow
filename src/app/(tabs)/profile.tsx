@@ -51,7 +51,8 @@ import { useMoments } from '../../features/memories/useMoments';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSocial } from '../../state/social';
-import { useMyOrg } from '../../state/orgs';
+import { useMyOrg, useOrg } from '../../state/orgs';
+import { OrgProfileCard } from '../../features/organizers/OrgProfileCard';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { useMemoryPicker } from '../../features/memories/useAddMemory';
@@ -112,6 +113,7 @@ function FullProfile() {
 
   const social = useSocial();
   const myOrg = useMyOrg(social.user?.uid);
+  const runs = useOrg(myOrg ?? undefined);
   const me = social.profile;
   const backdrop = useProfileBackdrop(me);
   const { going } = useGoing();
@@ -290,8 +292,6 @@ function FullProfile() {
           {me ? (
             <>
               <ProfileButton label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
-              {/* An event organizer's account: its studio, one tap away. */}
-              {myOrg ? <ProfileButton label={t('Studio')} a11y={t('Open the organizer studio')} onPress={() => router.push('/studio')} glow /> : null}
               <ProfileButton label={t('Share profile')} onPress={() => void shareMessage(t('@{handle} on Afterglow: {url}', { handle: me.handle, url: `${WEB_URL}/u/${me.handle}` }))} />
             </>
           ) : social.availability.ok && social.ready ? (
@@ -301,6 +301,9 @@ function FullProfile() {
 
         {/* Swap between your cover photo and background, in the corner just under the orbit. */}
         {me ? <CoverSwap me={me} shown={backdrop} style={{ top: insets.top + 205, right: space.lg }} /> : null}
+
+        {/* An event organizer's account: the organizer it runs, and its studio. */}
+        {runs ? <OrgProfileCard org={runs} own /> : null}
 
         <ClaimBanner b={b} />
 

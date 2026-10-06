@@ -28,6 +28,14 @@ export const es_organizers: Dictionary = {
   'After parties': 'After parties',
   'Promoted: {event} by {organizer}, {when}, {place}': 'Promocionado: {event} de {organizer}, {when}, {place}',
   Promoted: 'Promocionado',
+  // On the profile of an account that runs an organizer
+  'You run': 'Organizas',
+  Runs: 'Organiza',
+  'Next: {event} · {when}': 'Próximo: {event} · {when}',
+  'No events announced yet': 'Aún no hay eventos anunciados',
+  'Your organizer page': 'Tu página de organizador',
+  'See their events': 'Ver sus eventos',
+  '{organizer}. Open their page': '{organizer}. Abrir su página',
   // Artists, stickers and gifts
   'From {organizer}': 'De {organizer}',
   'A gift from {organizer}': 'Un regalo de {organizer}',

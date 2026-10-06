@@ -1,4 +1,4 @@
-import type { Artist, CatalogSnapshot, Festival, SetTime, SoundTag } from '../../data/models';
+import type { Artist, CatalogSnapshot, Festival, SetTime, Show, SoundTag } from '../../data/models';
 import { SOUND_TAGS } from '../../data/models';
 import type { OrgStarter } from '../../config/organizers';
 
@@ -52,6 +52,14 @@ export type OrgEvent = {
   lineup: OrgAct[];
   /** Shown to everyone. Drafts are only in the studio. */
   published: boolean;
+  /**
+   * Copied from an imported event (EDMTrain's festival or show with this id)
+   * to edit on Afterglow. Once published it shows instead of the imported
+   * one (a festival keeps its id, so plans, videos and badges stay); the
+   * import itself is never changed, and comes back if this is unpublished.
+   */
+  from?: string;
+  fromKind?: 'festival' | 'show';
 };
 
 /** What an organizer says about an artist they book. */
@@ -83,8 +91,21 @@ export type Org = {
   events: OrgEvent[];
   /** By artist id. */
   artists: Record<string, OrgArtist>;
+  /**
+   * Imported events (EDMTrain festivals and shows, by id) the organizer says
+   * are theirs: they show "Hosted by" and the organizer's mark, and list on
+   * its page, as imported.
+   */
+  claims: string[];
   /** Event id -> the last day it's promoted ("YYYY-MM-DD"). Only HQ sets it. */
   promoted: Record<string, string>;
+  /**
+   * The Afterglow accounts that run it (uids): their profile shows the
+   * organizer, and they open its studio. HQ links an account from Accounts;
+   * someone signed in with an organizer's email links their own when they open
+   * the studio.
+   */
+  uids: string[];
   updatedAt?: string;
 };
 
@@ -118,6 +139,11 @@ export type OrgDay = { day: string; counts: Record<string, number> };
 export type OrgCounter = 'page' | 'promo' | 'tickets' | `e_${string}` | `f_${string}`;
 
 export const ORG_NAME_MAX = 60;
+/** Accounts that can run one organizer. */
+export const ORG_UIDS_MAX = 10;
+/** Imported events one organizer can claim. */
+export const ORG_CLAIMS_MAX = 60;
+const IMPORTED_ID = /^[A-Za-z0-9_.-]{1,80}$/;
 export const ORG_TAGLINE_MAX = 80;
 export const ORG_ABOUT_MAX = 600;
 export const ORG_EVENTS_MAX = 40;
@@ -222,6 +248,8 @@ export function cleanEvent(raw: unknown): OrgEvent | undefined {
     afterOf: typeof r.afterOf === 'string' && /^[A-Za-z0-9_.-]{1,64}$/.test(r.afterOf) ? r.afterOf : undefined,
     lineup,
     published: r.published === true,
+    from: typeof r.from === 'string' && IMPORTED_ID.test(r.from) && (r.fromKind === 'festival' || r.fromKind === 'show') ? r.from : undefined,
+    fromKind: typeof r.from === 'string' && IMPORTED_ID.test(r.from) && (r.fromKind === 'festival' || r.fromKind === 'show') ? r.fromKind : undefined,
   }) as OrgEvent;
 }
 
@@ -274,22 +302,24 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
     events,
     artists,
     promoted,
+    claims: Array.isArray(r.claims) ? [...new Set(r.claims.filter((c): c is string => typeof c === 'string' && IMPORTED_ID.test(c)))].slice(0, ORG_CLAIMS_MAX) : [],
+    uids: Array.isArray(r.uids) ? [...new Set(r.uids.filter((u): u is string => typeof u === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(u)))].slice(0, ORG_UIDS_MAX) : [],
     updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : undefined,
   }) as Org;
 }
 
 /** The fields an organizer's page is saved with (besides `promoted` and `updatedAt`). */
-export const ORG_FIELDS = ['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists'] as const;
+export const ORG_FIELDS = ['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims'] as const;
 
-/** What an organizer saves (everything but `promoted`, which only HQ sets, and the time). */
+/** What an organizer saves (everything but `promoted` and `uids`, which only HQ sets, and the time). */
 export function orgToDoc(org: Org): Record<string, unknown> {
-  const { id: _id, promoted: _p, updatedAt: _u, ...rest } = org;
+  const { id: _id, promoted: _p, uids: _a, updatedAt: _u, ...rest } = org;
   return JSON.parse(JSON.stringify(rest)) as Record<string, unknown>;
 }
 
 /** A new organizer page from its starter. */
 export function orgFromStarter(s: OrgStarter): Org {
-  return some({ id: s.id, name: s.name, tagline: s.tagline, website: s.website, instagram: s.instagram, mark: s.mark, color: s.color, events: [], artists: {}, promoted: {} }) as Org;
+  return some({ id: s.id, name: s.name, tagline: s.tagline, website: s.website, instagram: s.instagram, mark: s.mark, color: s.color, events: [], artists: {}, claims: [], promoted: {}, uids: [] }) as Org;
 }
 
 /** A new event's id from its name and night, not already used. */
@@ -304,6 +334,10 @@ export function newEventId(org: Pick<Org, 'events'>, name: string, date: string)
 
 /** An event's festival id on Afterglow: "underground-alchemy--transmutation-11-14". */
 export const eventFestivalId = (orgId: string, eventId: string) => `${orgId}--${eventId}`;
+/** An event's festival id: the imported festival's own when it's a copy of one (so it shows in its place), else the organizer's. */
+export const eventFestivalIdOf = (org: Pick<Org, 'id'>, e: Pick<OrgEvent, 'id' | 'from' | 'fromKind'>) => (e.from && e.fromKind === 'festival' ? e.from : eventFestivalId(org.id, e.id));
+/** The organizer's event shown as this festival, if any. */
+export const eventAt = (org: Pick<Org, 'id' | 'events'>, festivalId: string) => org.events.find((e) => eventFestivalIdOf(org, e) === festivalId);
 /** The organizer and event behind a festival id, if it's one of theirs. */
 export function eventOf(festivalId: string): { orgId: string; eventId: string } | undefined {
   const i = festivalId.indexOf('--');
@@ -382,7 +416,7 @@ export function eventToFestival(org: Org, e: OrgEvent, index: ArtistIndex): { fe
   const sets: SetTime[] = acts.filter((a) => a.act.start && a.act.end).map((a) => ({ artistId: a.id, day: days[0], stageId: 'main', start: a.act.start!, end: a.act.end! }));
   const links = some({ tickets: e.tickets, website: org.website });
   const festival: Festival = {
-    id: eventFestivalId(org.id, e.id),
+    id: eventFestivalIdOf(org, e),
     name: e.name,
     dates: datesText(e),
     location: [e.venue, e.city].filter(Boolean).join(', '),
@@ -416,48 +450,178 @@ export function withOrgWords(a: Artist, org: Pick<Org, 'id' | 'name'>, words: Or
 }
 
 /**
- * Organizers' published events added to a catalogue: each event a festival
- * (never over one that's already there), new artists for acts not on
- * Afterglow yet, and organizers' words on the artists they book. Pure.
+ * The catalogue with organizers laid over it, never changing what was
+ * imported (that stays as the nightly feed wrote it; this is worked out on
+ * the phone):
+ * - published events added after everything else (so they never become the
+ *   festival Discover opens on), never over a festival already there;
+ * - a published copy of an imported festival shown in its place (same id,
+ *   keeping its spot on the map); a published copy of an imported show
+ *   hides that show (its festival page takes over);
+ * - imported festivals and shows an organizer claimed marked as theirs;
+ * - organizers' words laid over the artists they book.
+ * The same object when there's nothing to do. Pure.
  */
-export function orgsSnapshot(base: CatalogSnapshot, orgs: readonly Org[]): CatalogSnapshot | undefined {
+export function withOrgs(base: CatalogSnapshot, orgs: readonly Org[]): CatalogSnapshot {
+  if (!orgs.length) return base;
   const index = artistIndex(base.artists);
-  const festivalIds = new Set(base.festivals.map((f) => f.id));
-  const festivals: Festival[] = [];
+  const baseFestivals = new Map(base.festivals.map((f) => [f.id, f]));
+  const baseShows = new Set((base.shows ?? []).map((s) => s.id));
+  const taken = new Set(baseFestivals.keys());
+  const replaced = new Map<string, Festival>();
+  const added: Festival[] = [];
+  const hiddenShows = new Set<string>();
+  const claimedFestivals = new Map<string, string>();
+  const claimedShows = new Map<string, string>();
   const artists = new Map<string, Artist>();
   for (const org of orgs) {
     for (const e of org.events) {
       if (!e.published) continue;
       const { festival, acts } = eventToFestival(org, e, index);
-      if (festivalIds.has(festival.id)) continue;
-      festivalIds.add(festival.id);
-      festivals.push(festival);
+      if (e.from && e.fromKind === 'festival') {
+        const was = baseFestivals.get(e.from);
+        if (replaced.has(e.from)) continue;
+        if (was) replaced.set(e.from, was.place && !festival.place ? { ...festival, place: was.place } : festival);
+        else if (taken.has(festival.id)) continue;
+        else added.push(festival);
+      } else {
+        if (taken.has(festival.id)) continue;
+        added.push(festival);
+        if (e.from && e.fromKind === 'show') hiddenShows.add(e.from);
+      }
+      taken.add(festival.id);
       for (const act of acts) {
         const had = artists.get(act.id) ?? index.byId.get(act.id) ?? { id: act.id, name: act.name, sound: {} };
         artists.set(act.id, withOrgWords(had, org, org.artists[act.id]));
       }
     }
+    for (const c of org.claims) {
+      if (baseFestivals.has(c) && !claimedFestivals.has(c)) claimedFestivals.set(c, org.id);
+      else if (baseShows.has(c) && !claimedShows.has(c)) claimedShows.set(c, org.id);
+    }
   }
-  if (!festivals.length) return undefined;
-  return { artists: [...artists.values()], festivals, clips: [] };
+  if (!replaced.size && !added.length && !claimedFestivals.size && !claimedShows.size) return base;
+  const known = new Set(base.artists.map((a) => a.id));
+  const out: CatalogSnapshot = {
+    ...base,
+    artists: [...base.artists.map((a) => artists.get(a.id) ?? a), ...[...artists.values()].filter((a) => !known.has(a.id))],
+    festivals: [
+      ...base.festivals.map((f) => replaced.get(f.id) ?? (claimedFestivals.has(f.id) && !f.organizer ? { ...f, organizer: claimedFestivals.get(f.id) } : f)),
+      ...added,
+    ],
+  };
+  if (base.shows) out.shows = base.shows.filter((s) => !hiddenShows.has(s.id)).map((s) => (claimedShows.has(s.id) && !s.organizer ? { ...s, organizer: claimedShows.get(s.id) } : s));
+  return out;
 }
 
-/**
- * The catalogue with organizers' events added after everything else (so they
- * never become the festival Discover opens on) and their words laid over the
- * artists they book. The same object when there's nothing to add. Pure.
- */
-export function withOrgs(base: CatalogSnapshot, orgs: readonly Org[]): CatalogSnapshot {
-  const top = orgs.length ? orgsSnapshot(base, orgs) : undefined;
-  if (!top) return base;
-  const changed = new Map(top.artists.map((a) => [a.id, a]));
-  const known = new Set(base.artists.map((a) => a.id));
+// ---- Imported events (EDMTrain) --------------------------------------------
+
+/** One line on an organizer's page: its own event, or an imported one it claimed. */
+export type Listing = { key: string; name: string; date: string; endDate?: string; venue: string; city: string; href: string; imported: boolean };
+
+/** "Venue, Orlando, FL" -> venue "Venue", city "Orlando, FL"; a place with no comma is the city. */
+export function splitPlace(location: string): { venue: string; city: string } {
+  const i = location.indexOf(',');
+  return i < 0 ? { venue: '', city: location.trim() } : { venue: location.slice(0, i).trim(), city: location.slice(i + 1).trim() };
+}
+
+export type Lookups = { festival: (id: string) => Festival | undefined; show: (id: string) => Show | undefined };
+
+/** What an imported festival or show looks like as a line (undefined when it isn't on Afterglow, or has no date). */
+export function importedListing(id: string, look: Lookups): Listing | undefined {
+  const f = look.festival(id);
+  if (f?.startDate) {
+    const { venue, city } = splitPlace(f.location);
+    return { key: `f:${id}`, name: f.name, date: f.startDate, ...(f.endDate && f.endDate !== f.startDate ? { endDate: f.endDate } : {}), venue, city, href: `/festival/${id}`, imported: true };
+  }
+  const s = look.show(id);
+  if (s) return { key: `s:${id}`, name: s.name ?? s.venue, date: s.date, venue: s.name ? s.venue : '', city: s.location, href: `/show/${id}`, imported: true };
+  return undefined;
+}
+
+/** An organizer's page: its published events and the imported ones it claimed (not ones it copied), coming up soonest first, past newest first. */
+export function orgListings(org: Org, look: Lookups, today: string): { upcoming: Listing[]; past: Listing[] } {
+  const copied = new Set(org.events.filter((e) => e.published && e.from).map((e) => e.from!));
+  const own: Listing[] = org.events
+    .filter((e) => e.published)
+    .map((e) => ({ key: `e:${e.id}`, name: e.name, date: e.date, ...(e.endDate ? { endDate: e.endDate } : {}), venue: e.venue, city: e.city, href: `/festival/${eventFestivalIdOf(org, e)}`, imported: false }));
+  const claimed = org.claims.filter((c) => !copied.has(c)).flatMap((c) => importedListing(c, look) ?? []);
+  const all = [...own, ...claimed];
+  const last = (l: Listing) => l.endDate ?? l.date;
   return {
-    ...base,
-    artists: [...base.artists.map((a) => changed.get(a.id) ?? a), ...top.artists.filter((a) => !known.has(a.id))],
-    festivals: [...base.festivals, ...top.festivals],
+    upcoming: all.filter((l) => last(l) >= today).sort((a, b) => a.date.localeCompare(b.date)),
+    past: all.filter((l) => last(l) < today).sort((a, b) => b.date.localeCompare(a.date)),
   };
 }
+
+/** Whether an imported event's words match what's typed (its name, venue or town). */
+const matches = (q: string, ...words: (string | undefined)[]) => words.some((w) => !!w && foldName(w).includes(q));
+
+/**
+ * Imported events an organizer might claim, still to come: matching what's
+ * typed, or (nothing typed) ones that carry its name or play its venues.
+ * Festivals from EDMTrain and every show (shows all come from it). Not ones
+ * it already claimed. Up to `max`, soonest first.
+ */
+export function importedCandidates(org: Org, festivals: readonly Festival[], shows: readonly Show[], query: string, today: string, max = 12): { id: string; kind: 'festival' | 'show'; listing: Listing }[] {
+  const q = foldName(query);
+  const hints = q.length >= 2 ? [q] : [...new Set([...org.name.split(/\s+/).map(foldName).filter((w) => w.length >= 5), ...org.events.map((e) => foldName(e.venue)).filter((v) => v.length >= 4)])];
+  if (!hints.length) return [];
+  const claimed = new Set(org.claims);
+  const look: Lookups = { festival: (id) => festivals.find((f) => f.id === id), show: (id) => shows.find((s) => s.id === id) };
+  const out: { id: string; kind: 'festival' | 'show'; listing: Listing }[] = [];
+  for (const f of festivals) {
+    if (f.organizer || f.source?.name !== 'EDMTrain' || claimed.has(f.id) || (f.endDate ?? f.startDate ?? '') < today) continue;
+    if (hints.some((h) => matches(h, f.name, f.location))) out.push({ id: f.id, kind: 'festival', listing: importedListing(f.id, look)! });
+  }
+  for (const s of shows) {
+    if (s.organizer || claimed.has(s.id) || s.date < today) continue;
+    if (hints.some((h) => matches(h, s.name, s.venue, s.location))) out.push({ id: s.id, kind: 'show', listing: importedListing(s.id, look)! });
+  }
+  return out.filter((c) => !!c.listing).sort((a, b) => a.listing.date.localeCompare(b.listing.date)).slice(0, max);
+}
+
+/** A new event in the studio, filled in from an imported one, to edit on Afterglow (a draft until published). */
+export function draftFrom(org: Pick<Org, 'events'>, id: string, look: Lookups, artistName: (id: string) => string | undefined): OrgEvent | undefined {
+  const f = look.festival(id);
+  const s = f ? undefined : look.show(id);
+  if (f?.startDate) {
+    const { venue, city } = splitPlace(f.location);
+    return {
+      id: newEventId(org, f.name, f.startDate),
+      name: f.name.slice(0, EVENT_NAME_MAX),
+      date: f.startDate,
+      ...(f.endDate && f.endDate > f.startDate ? { endDate: f.endDate } : {}),
+      venue: venue.slice(0, EVENT_PLACE_MAX),
+      city: city.slice(0, EVENT_PLACE_MAX),
+      ...(f.links?.tickets ? { tickets: f.links.tickets } : {}),
+      ...(f.posterImageUrl ? { poster: f.posterImageUrl } : {}),
+      lineup: f.lineup.slice(0, LINEUP_MAX).flatMap((a) => (artistName(a) ? [{ name: artistName(a)!, artistId: a }] : [])),
+      published: false,
+      from: id,
+      fromKind: 'festival',
+    };
+  }
+  if (s) {
+    const name = s.name ?? s.venue;
+    return {
+      id: newEventId(org, name, s.date),
+      name: name.slice(0, EVENT_NAME_MAX),
+      date: s.date,
+      venue: s.venue.slice(0, EVENT_PLACE_MAX),
+      city: s.location.slice(0, EVENT_PLACE_MAX),
+      ...(httpsLink(s.link) ? { tickets: s.link } : {}),
+      lineup: s.artistIds.slice(0, LINEUP_MAX).flatMap((a) => (artistName(a) ? [{ name: artistName(a)!, artistId: a }] : [])),
+      published: false,
+      from: id,
+      fromKind: 'show',
+    };
+  }
+  return undefined;
+}
+
+/** The organizer an account runs, by account (HQ linked it, or it linked itself). */
+export const orgOfAccount = (orgs: readonly Org[], uid: string | undefined): Org | undefined => (uid ? orgs.find((o) => o.uids.includes(uid)) : undefined);
 
 // ---- Promotion --------------------------------------------------------------
 
@@ -470,7 +634,7 @@ export function activePromotions(orgs: readonly Org[], today: string): Promoted[
     for (const e of org.events) {
       const until = org.promoted[e.id];
       if (!until || !e.published || until < today || (e.endDate ?? e.date) < today) continue;
-      out.push({ org, event: e, festivalId: eventFestivalId(org.id, e.id), until });
+      out.push({ org, event: e, festivalId: eventFestivalIdOf(org, e), until });
     }
   return out.sort((a, b) => a.event.date.localeCompare(b.event.date));
 }

@@ -30,10 +30,13 @@ service cloud.firestore {
     function hasPlus(uid) { return exists(path('plus', uid)) && get(path('plus', uid)).data.active == true; }
     // Event organizers (features/organizers): an email HQ lets run an organizer's page, once that email is confirmed.
     function orgEmail() { return request.auth.token.email.lower(); }
+    // Or an account HQ linked to it (in the organizer's `uids`).
     function isOrgMember(orgId) {
-      return signedIn() && request.auth.token.email_verified == true
-        && exists(path('orgMembers', orgEmail()))
-        && get(path('orgMembers', orgEmail())).data.orgId == orgId;
+      return signedIn() && orgId is string && orgId.size() > 0 && (
+        (request.auth.token.email_verified == true
+          && exists(path('orgMembers', orgEmail()))
+          && get(path('orgMembers', orgEmail())).data.orgId == orgId)
+        || me() in get(path('orgs', orgId)).data.get('uids', []));
     }
     // An optional short text field: absent, or a string of at most `max` characters.
     function shortOrAbsent(data, field, max) { return !(field in data) || (data[field] is string && data[field].size() <= max); }
@@ -616,7 +619,10 @@ service cloud.firestore {
     // Event organizers' pages: anyone reads them (the website shows them signed out); HQ starts one; its
     // team (an email HQ added, confirmed) edits it, but never its promotions, which only HQ gives.
     function orgShape(d) {
-      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'promoted', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims', 'promoted', 'uids', 'updatedAt'])
+        && (!('uids' in d) || (d.uids is list && d.uids.size() <= 10))
+        // Imported events (EDMTrain's) it says are its own, by id.
+        && (!('claims' in d) || (d.claims is list && d.claims.size() <= 60))
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
         && shortOrAbsent(d, 'tagline', 80) && shortOrAbsent(d, 'about', 600) && shortOrAbsent(d, 'website', 2000)
         && shortOrAbsent(d, 'instagram', 30) && shortOrAbsent(d, 'mark', 20) && shortOrAbsent(d, 'logoUrl', 2000) && shortOrAbsent(d, 'color', 7)
@@ -628,8 +634,12 @@ service cloud.firestore {
     match /orgs/{id} {
       allow read: if true;
       allow create: if isAdmin() && id.matches('^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$') && orgShape(request.resource.data);
+      // Its team never changes promotions, and changes who runs it only by adding or taking away their own account.
       allow update: if orgShape(request.resource.data)
-        && (isAdmin() || (isOrgMember(id) && request.resource.data.promoted == resource.data.promoted));
+        && (isAdmin() || (isOrgMember(id) && request.resource.data.promoted == resource.data.promoted
+          && (request.resource.data.get('uids', []).toSet() == resource.data.get('uids', []).toSet()
+            || request.resource.data.get('uids', []).toSet() == resource.data.get('uids', []).toSet().union([me()].toSet())
+            || request.resource.data.get('uids', []).toSet() == resource.data.get('uids', []).toSet().difference([me()].toSet()))));
       allow delete: if isAdmin();
     }
     // Who may run an organizer's page: by email (lower case). You can read your own; HQ writes them.

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { setMyOrg, setOrgs } from '../../state/orgs';
+import { orgOfAccount } from './organizers';
 import { useSocial } from '../../state/social';
 
 let refreshNow: (() => void) | undefined;
@@ -24,10 +25,12 @@ export function OrgSync() {
     const read = () => {
       if (busy) return;
       busy = true;
-      Promise.all([
-        service.orgs().then(setOrgs),
-        uid ? service.myOrg().then((id) => setMyOrg(uid, id)) : Promise.resolve(setMyOrg(undefined, null)),
-      ])
+      // By email (HQ's list of who may sign in), else by account (HQ linked it in Accounts).
+      Promise.all([service.orgs(), uid ? service.myOrg().catch(() => null) : Promise.resolve(null)])
+        .then(([orgs, byEmail]) => {
+          setOrgs(orgs);
+          setMyOrg(uid, byEmail ?? orgOfAccount(orgs, uid)?.id ?? null);
+        })
         .catch(() => {})
         .finally(() => {
           busy = false;

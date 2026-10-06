@@ -377,6 +377,11 @@ export interface SocialService {
   answerOrgRequest(id: string, status: OrgRequestStatus, reply?: string): Promise<void>;
   /** HQ promotes an event until that day ("YYYY-MM-DD"), or stops (null). */
   setPromotion(orgId: string, eventId: string, until: string | null): Promise<void>;
+  /**
+   * Link an account to an organizer (`on`), or unlink it: HQ for any account;
+   * someone signed in with an organizer's (confirmed) email only for their own.
+   */
+  setOrgAccount(orgId: string, uid: string, on: boolean): Promise<void>;
   /** HQ: who may sign in to an organizer's studio (emails), and adding or taking one away (null). */
   orgMembers(orgId: string): Promise<string[]>;
   setOrgMember(email: string, orgId: string | null): Promise<void>;

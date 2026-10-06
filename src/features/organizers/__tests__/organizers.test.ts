@@ -19,12 +19,16 @@ import {
   type Org,
   orgActs,
   orgFromStarter,
+  orgOfAccount,
   orgStats,
   orgToDoc,
   promotionUntil,
   slugOf,
   splitEvents,
   withOrgs,
+  importedCandidates,
+  orgListings,
+  draftFrom,
   withOrgWords,
 } from '../organizers';
 
@@ -84,8 +88,12 @@ describe('organizers', () => {
   });
 
   it('never saves promotions from the page (only HQ gives them)', () => {
-    const doc = orgToDoc(org({ promoted: { 'transmutation-11-07': '2026-11-07' } }));
+    const doc = orgToDoc(org({ promoted: { 'transmutation-11-07': '2026-11-07' }, uids: ['uidA'] }));
     expect(doc).not.toHaveProperty('promoted');
+    expect(doc).not.toHaveProperty('uids');
+    expect(cleanOrg('underground-alchemy', { name: 'UA', uids: ['uidA', 'uidA', 'bad uid!', 3] })?.uids).toEqual(['uidA']);
+    expect(orgOfAccount([org({ uids: ['uidA'] })], 'uidA')?.id).toBe('underground-alchemy');
+    expect(orgOfAccount([org()], 'uidA')).toBeUndefined();
     expect(doc).not.toHaveProperty('id');
   });
 
@@ -199,5 +207,44 @@ describe('organizers', () => {
     const { festival } = eventToFestival(org(), org().events[0], artistIndex(artists));
     expect(pinLook(festival).theme).toBe('alchemy');
     expect(pinLook(festival).rimText).toBe('TRANSMUTATION · ORLANDO');
+  });
+  it('lays imported events an organizer claimed or copied over the catalogue, never changing them', () => {
+    const edm: CatalogSnapshot = {
+      ...base,
+      festivals: [...base.festivals, { id: 'alchemy-fest-26', name: 'Alchemy Fest 2026', dates: 'Nov 20 to 21', startDate: '2026-11-20', endDate: '2026-11-21', location: 'The Vault, Orlando, FL', place: { lat: 28.5, lon: -81.4 }, lineup: ['subtronics'], days: ['Friday', 'Saturday'], stages: [], source: { name: 'EDMTrain', url: 'https://edmtrain.com/x' } }],
+      shows: [
+        { id: 'edm-111', date: '2026-10-24', name: 'Underground Alchemy presents', venue: 'The Vault', location: 'Orlando, FL', link: 'https://edmtrain.com/e/111', artistIds: ['subtronics'] },
+        { id: 'edm-222', date: '2026-10-25', venue: 'Elsewhere', location: 'Tampa, FL', link: 'https://edmtrain.com/e/222', artistIds: ['subtronics'] },
+      ],
+    };
+    const look = { festival: (id: string) => edm.festivals.find((f) => f.id === id), show: (id: string) => edm.shows!.find((x) => x.id === id) };
+    const o = org({ events: [{ ...org().events[0] }], claims: [] });
+    // Suggestions: its name and its venues; typed words; never the ones already claimed.
+    expect(importedCandidates(o, edm.festivals, edm.shows!, '', '2026-10-06').map((c) => c.id)).toEqual(['edm-111', 'alchemy-fest-26']);
+    expect(importedCandidates(o, edm.festivals, edm.shows!, 'tampa', '2026-10-06').map((c) => c.id)).toEqual(['edm-222']);
+    expect(importedCandidates({ ...o, claims: ['edm-111'] }, edm.festivals, edm.shows!, '', '2026-10-06').map((c) => c.id)).toEqual(['alchemy-fest-26']);
+
+    // Claimed: marked as theirs, as imported.
+    const claimed = withOrgs(edm, [{ ...o, claims: ['alchemy-fest-26', 'edm-111'] }]);
+    expect(claimed.festivals.find((f) => f.id === 'alchemy-fest-26')).toMatchObject({ name: 'Alchemy Fest 2026', organizer: 'underground-alchemy', source: { name: 'EDMTrain' } });
+    expect(claimed.shows!.find((x) => x.id === 'edm-111')?.organizer).toBe('underground-alchemy');
+    expect(claimed.shows!.find((x) => x.id === 'edm-222')?.organizer).toBeUndefined();
+    expect(edm.festivals.find((f) => f.id === 'alchemy-fest-26')?.organizer).toBeUndefined();
+    expect(orgListings({ ...o, claims: ['alchemy-fest-26', 'edm-111'] }, look, '2026-10-06').upcoming.map((l) => l.href)).toEqual(['/show/edm-111', '/festival/underground-alchemy--transmutation-11-07', '/festival/alchemy-fest-26']);
+
+    // Copied and published: its version takes the festival's place (same id and spot on the map); a copied show's festival page replaces the show.
+    const fest = draftFrom(o, 'alchemy-fest-26', look, (id) => edm.artists.find((a) => a.id === id)?.name)!;
+    expect(fest).toMatchObject({ name: 'Alchemy Fest 2026', date: '2026-11-20', endDate: '2026-11-21', venue: 'The Vault', city: 'Orlando, FL', lineup: [{ name: 'Subtronics', artistId: 'subtronics' }], from: 'alchemy-fest-26', fromKind: 'festival', published: false });
+    const show = draftFrom(o, 'edm-111', look, (id) => edm.artists.find((a) => a.id === id)?.name)!;
+    expect(show).toMatchObject({ name: 'Underground Alchemy presents', venue: 'The Vault', city: 'Orlando, FL', tickets: 'https://edmtrain.com/e/111', fromKind: 'show' });
+    const copied = withOrgs(edm, [{ ...o, claims: ['alchemy-fest-26', 'edm-111'], events: [...o.events, { ...fest, name: 'Alchemy Fest (ours)', doors: '21:00', published: true }, { ...show, published: true }] }]);
+    const replaced = copied.festivals.find((f) => f.id === 'alchemy-fest-26')!;
+    expect(replaced).toMatchObject({ name: 'Alchemy Fest (ours)', organizer: 'underground-alchemy', place: { lat: 28.5, lon: -81.4 } });
+    expect(replaced.source).toBeUndefined();
+    expect(copied.festivals.filter((f) => f.id === 'alchemy-fest-26')).toHaveLength(1);
+    expect(copied.shows!.map((x) => x.id)).toEqual(['edm-222']);
+    expect(copied.festivals.some((f) => f.id === `underground-alchemy--${show.id}`)).toBe(true);
+    // A draft copy changes nothing.
+    expect(withOrgs(edm, [{ ...o, events: [{ ...fest }] }]).festivals.find((f) => f.id === 'alchemy-fest-26')?.name).toBe('Alchemy Fest 2026');
   });
 });
