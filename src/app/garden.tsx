@@ -24,6 +24,10 @@ import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
 import { useSocial } from '../state/social';
 import { useSprouts } from '../state/sprouts';
+import { type ReceivedKandi, useKandi } from '../state/kandi';
+import { KandiLine } from '../features/kandi/KandiLine';
+import { KandiBracelet } from '../features/kandi/KandiBracelet';
+import { showAlert } from '../lib/dialog';
 import { color, radius, space, type } from '../theme/tokens';
 
 const GIVEN_SHOWN = 12;
@@ -59,6 +63,8 @@ export default function GardenScreen() {
   const social = useSocial();
   const now = useNow().getTime();
   const [open, setOpen] = useState<GardenView>();
+  const kandi = useKandi();
+  const [openKandi, setOpenKandi] = useState<ReceivedKandi>();
   const [openArtist, setOpenArtist] = useState<{ artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }>();
   // The garden moves only while this screen is showing; the page doesn't scroll while something's carried.
   const [focused, setFocused] = useState(false);
@@ -193,6 +199,8 @@ export default function GardenScreen() {
           onCarrying={setCarrying}
         />
         <Text style={styles.hint}>{GROW_TIPS[0]} {t('Sprouts you give help yours grow too.')} {t('Hold one to move it.')}</Text>
+        {/* Kandi friends left here. */}
+        <KandiLine items={kandi.received.map((k) => ({ key: k.id, word: k.word, beads: k.beads, from: k.fromHandle }))} onOpen={(id) => setOpenKandi(kandi.received.find((k) => k.id === id))} />
         {social.profile ? (
           <View style={styles.showRow}>
             <View style={{ flex: 1 }}>
@@ -264,6 +272,7 @@ export default function GardenScreen() {
           </View>
         ) : null}
       </ScrollView>
+      <KandiSheet kandi={openKandi} onClose={() => setOpenKandi(undefined)} onRemove={(id) => void kandi.remove(id).then((ok) => ok && setOpenKandi(undefined))} />
       <SproutSheet sprout={open} onClose={() => setOpen(undefined)} />
       <ArtistSproutSheet open={openArtist} canGive={sprouts.ready} onClose={() => setOpenArtist(undefined)} />
       {/* A sprout that bloomed since you last looked gets its moment, one at a time. */}
@@ -284,6 +293,40 @@ export default function GardenScreen() {
         }}
       />
     </View>
+  );
+}
+
+function KandiSheet({ kandi: k, onClose, onRemove }: { kandi?: ReceivedKandi; onClose: () => void; onRemove: (id: string) => void }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={!!k} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
+        {k ? (
+          <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
+            <KandiBracelet word={k.word} beads={k.beads} size={220} label={t('A kandi bracelet spelling {word}', { word: k.word })} />
+            <Text style={styles.sub}>
+              {k.fromHandle ? t('from {name}', { name: `@${k.fromHandle}` }) : t('from someone')} · {day(Date.parse(k.createdAt))}
+            </Text>
+            {k.note ? <Text style={styles.note}>“{k.note}”</Text> : null}
+            <Pressable onPress={onClose} accessibilityRole="button" style={({ pressed }) => [styles.secondary, styles.sheetClose, pressed && styles.pressed]}>
+              <Text style={styles.secondaryText}>{t('Done')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
+                showAlert(t('Take this kandi out of your garden?'), t('It’s gone for good, and nobody visiting sees it any more.'), [
+                  { text: t('Keep it'), style: 'cancel' },
+                  { text: t('Take it out'), style: 'destructive', onPress: () => onRemove(k.id) },
+                ])
+              }
+              accessibilityRole="button"
+              hitSlop={8}
+            >
+              <Text style={styles.removeKandi}>{t('Take it out of my garden')}</Text>
+            </Pressable>
+          </Pressable>
+        ) : null}
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -329,6 +372,7 @@ function SproutSheet({ sprout, onClose }: { sprout?: GardenView; onClose: () => 
 }
 
 const styles = StyleSheet.create({
+  removeKandi: { ...type.label, color: color.moonDim, textAlign: 'center', marginTop: space.sm },
   showRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm },
   showTitle: { ...type.headline, color: color.moon },
   root: { flex: 1, backgroundColor: color.night },

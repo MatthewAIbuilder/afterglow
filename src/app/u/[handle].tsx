@@ -95,7 +95,7 @@ export default function PublicProfileScreen() {
         .catch(() => {});
       social.service
         .gardenOf(p.uid)
-        .then((g) => live && setGarden(g))
+        .then((g) => live && setGarden(g?.residents ?? null))
         .catch(() => {});
       // Videos they're tagged in and said yes to (a separate read: if it fails, their own still show).
       social.service
@@ -359,6 +359,18 @@ export default function PublicProfileScreen() {
             </View>
           </Pressable>
         ) : null}
+        {!mine && social.profile ? (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/kandi-make', params: { uid: profile.uid, name: profile.displayName, handle: profile.handle } });
+            }}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.makeKandi, pressed && { opacity: 0.8 }]}
+          >
+            <Text style={styles.makeKandiText}>{t('Make kandi for {name}', { name: profile.displayName.split(' ')[0] })}</Text>
+          </Pressable>
+        ) : null}
         {badges.length || throwbacks.length ? (
           <View style={styles.badges} onLayout={(e) => (sectionY.current.badges = e.nativeEvent.layout.y)}>
             <BadgesGrid badges={badges} throwbacks={throwbacks} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
@@ -420,6 +432,8 @@ export default function PublicProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  makeKandi: { marginHorizontal: space.xl, marginTop: space.sm, alignItems: 'center', paddingVertical: space.sm + 2, borderRadius: radius.pill, borderWidth: 1, borderStyle: 'dashed', borderColor: glowA(0.5) },
+  makeKandiText: { ...type.label, color: color.glow },
   garden: { marginHorizontal: space.xl, marginTop: space.lg, flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: 'rgba(110,231,160,0.07)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,231,160,0.35)' },
   gardenPeek: { flexDirection: 'row', marginRight: space.xs },
   gardenTitle: { ...type.headline, color: color.moon },

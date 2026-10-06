@@ -4,6 +4,7 @@ import type { ShowTag } from '../memories/show';
 import type { ClipWindow } from '../memories/trim';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
 import type { PublicResident } from '../sprouts/publicGarden';
+import type { Kandi, KandiInput, PublicKandi } from '../kandi/kandi';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
 /**
@@ -324,10 +325,16 @@ export interface SocialService {
    * Saying so again is the same as once.
    */
   grantTheme(sproutId: string, theme: string): Promise<void>;
-  /** Show your garden on your profile as it is now (who lives there, nothing private), or take it down (null). */
-  publishGarden(residents: PublicResident[] | null): Promise<void>;
+  /** Show your garden on your profile as it is now (who lives there and the kandi in it, nothing private), or take it down (null). */
+  publishGarden(residents: PublicResident[] | null, kandi?: PublicKandi[]): Promise<void>;
   /** Someone's garden as they show it; null when they don't. */
-  gardenOf(uid: string): Promise<PublicResident[] | null>;
+  gardenOf(uid: string): Promise<{ residents: PublicResident[]; kandi: PublicKandi[] } | null>;
+  /** Leave kandi in someone's garden (they need a profile, and not to have blocked you). */
+  giveKandi(input: KandiInput): Promise<Kandi>;
+  /** Kandi left for you, newest first. */
+  myKandi(max: number): Promise<Kandi[]>;
+  /** Take kandi out of your garden (or take back one you gave). */
+  removeKandi(id: string): Promise<void>;
   /** Take back a sprout nobody has picked up (one that isn't there is fine; `sprout-taken` once someone has it). */
   takeBackSprout(id: string): Promise<void>;
 

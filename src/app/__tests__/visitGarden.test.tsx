@@ -62,7 +62,7 @@ describe('gardens', () => {
     await flush();
     await settle(4500);
     await flush();
-    expect(mockSocial.gardens.get(me)?.length).toBeGreaterThan(0);
+    expect(mockSocial.gardens.get(me)?.residents.length).toBeGreaterThan(0);
     await fireEvent(app.getByLabelText('Show my garden on my profile'), 'valueChange', false);
     await flush();
     await settle(4500);

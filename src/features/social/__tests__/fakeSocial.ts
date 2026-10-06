@@ -4,6 +4,7 @@ import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
 import { cleanPublicGarden, type PublicResident } from '../../sprouts/publicGarden';
+import { cleanNote, cleanPublicKandi, cleanWord, isPattern, type Kandi, type PublicKandi } from '../../kandi/kandi';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -34,7 +35,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Gift themes granted, as `uid_theme`. */
   const themeGrants = new Set<string>();
   /** Gardens as shown on profiles. */
-  const gardens = new Map<string, PublicResident[]>();
+  const gardens = new Map<string, { residents: PublicResident[]; kandi: PublicKandi[] }>();
+  /** Kandi, by id. */
+  const kandi = new Map<string, Kandi>();
   /** Picks as `crewId/uid`. */
   const picks = new Map<string, CrewPicks>();
   const comments = new Map<string, Comment>();
@@ -804,6 +807,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         ...[...follows.values()].filter((f) => f.to === u.uid).map((f): Activity => ({ kind: 'follow', id: `${f.from}_${f.to}`, from: f.from, createdAt: f.createdAt })),
         ...[...likes.values()].filter((l) => l.owner === u.uid).map((l): Activity => ({ kind: 'like', id: `${l.memoryId}_${l.uid}`, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt })),
         ...[...videoTags.values()].filter((v) => v.uid === u.uid).map((v): Activity => ({ kind: 'tag', id: v.id, from: v.owner, memoryId: v.memoryId, createdAt: v.createdAt })),
+        ...[...kandi.values()].filter((k) => k.to === u.uid).map((k): Activity => ({ kind: 'kandi', id: k.id, from: k.from, word: k.word, createdAt: k.createdAt })),
       ];
       return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
@@ -1099,16 +1103,38 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const u = me();
       return [...sprouts.values()].filter((s) => s.from === u.uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
-    async publishGarden(residents) {
+    async publishGarden(residents, kandiList) {
       if (network.down) throw new SocialError('network');
       const u = me();
-      if (residents) gardens.set(u.uid, cleanPublicGarden(residents));
+      if (residents) gardens.set(u.uid, { residents: cleanPublicGarden(residents), kandi: cleanPublicKandi(kandiList ?? []) });
       else gardens.delete(u.uid);
     },
     async gardenOf(uid) {
       if (network.down) throw new SocialError('network');
       me();
       return gardens.get(uid) ?? null;
+    },
+    async giveKandi(input) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      const word = cleanWord(input.word);
+      if (!profiles.has(u.uid)) throw new SocialError('no-profile');
+      if (!word || !isPattern(input.beads) || input.to === u.uid || !profiles.has(input.to) || (blocks.get(input.to) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      const note = cleanNote(input.note);
+      const k: Kandi = { id: `k${kandi.size + 1}`, from: u.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() };
+      kandi.set(k.id, k);
+      return k;
+    },
+    async myKandi(max) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      return [...kandi.values()].filter((k) => k.to === u.uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async removeKandi(id) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      const k = kandi.get(id);
+      if (k && (k.to === u.uid || k.from === u.uid)) kandi.delete(id);
     },
     async grantTheme(sproutId, theme) {
       if (network.down) throw new SocialError('network');
@@ -1219,5 +1245,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
+  return { service, gardens, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
 }

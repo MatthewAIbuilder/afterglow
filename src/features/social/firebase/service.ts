@@ -16,6 +16,7 @@ import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
 import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden';
+import { cleanNote, cleanPublicKandi, cleanWord, isPattern, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc } from './mapping';
 
@@ -303,6 +304,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // Your messages to support, and their replies.
         const asked = await getDocs(query(collection(db, 'support'), where('uid', '==', user.uid), limit(500))).catch(() => null);
         for (const d of asked?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+        // Kandi you gave and were given.
+        for (const field of ['from', 'to'] as const) {
+          const snap = await getDocs(query(collection(db, 'kandi'), where(field, '==', user.uid), limit(500))).catch(() => null);
+          for (const d of snap?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
+        }
         // Your garden as shown on your profile.
         await deleteDoc(doc(db, 'gardens', user.uid)).catch(() => {});
         // Gift themes you were given.
@@ -1123,6 +1129,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           // Tagged in a video (on your profile straight away; tags from before that are said yes to here).
           getDocs(query(collection(db, 'videoTags'), where('uid', '==', user.uid), limit(max))).catch(() => undefined),
         ]);
+        // Kandi left in your garden (on its own, so a database without kandi yet never stops the rest).
+        const kandi = await getDocs(query(collection(db, 'kandi'), where('to', '==', user.uid), limit(max))).catch(() => undefined);
         const str = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
         const items: Activity[] = [];
         for (const d of followed.docs) {
@@ -1144,6 +1152,10 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           items.push({ kind: 'tag', id: tag.id, from: tag.owner, memoryId: tag.memoryId, createdAt: tag.createdAt });
           // A tag from before tags showed straight away: it shows now (you can still hide it).
           if (tag.status === 'pending') void updateDoc(d.ref, { status: 'approved' }).catch(() => {});
+        }
+        for (const d of kandi?.docs ?? []) {
+          const k = kandiFrom(d.id, d.data());
+          if (k) items.push({ kind: 'kandi', id: k.id, from: k.from, word: k.word, createdAt: k.createdAt });
         }
         return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
       }),
@@ -1302,18 +1314,45 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('to', '==', user.uid), orderBy('claimedAt', 'desc'), limit(max)));
         return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
       }),
-    publishGarden: (residents) =>
+    publishGarden: (residents, kandi) =>
       guard(async () => {
         const user = me();
         const ref = doc(fb().db, 'gardens', user.uid);
         if (!residents) await deleteDoc(ref);
-        else await setDoc(ref, { residents: residents.slice(0, PUBLIC_GARDEN_MAX), updatedAt: serverTimestamp() });
+        else
+          await setDoc(ref, {
+            residents: residents.slice(0, PUBLIC_GARDEN_MAX),
+            ...(kandi?.length ? { kandi: kandi.slice(0, PUBLIC_KANDI_MAX) } : {}),
+            updatedAt: serverTimestamp(),
+          });
       }),
     gardenOf: (uid) =>
       guard(async () => {
         const d = await getDoc(doc(fb().db, 'gardens', uid));
-        return d.exists() ? cleanPublicGarden((d.data() as { residents?: unknown }).residents) : null;
+        if (!d.exists()) return null;
+        const o = d.data() as { residents?: unknown; kandi?: unknown };
+        return { residents: cleanPublicGarden(o.residents), kandi: cleanPublicKandi(o.kandi) };
       }),
+    giveKandi: (input) =>
+      guard(async () => {
+        const user = me();
+        const word = cleanWord(input.word);
+        const note = cleanNote(input.note);
+        if (!word || !isPattern(input.beads) || input.to === user.uid) throw new SocialError('unknown');
+        const ref = doc(collection(fb().db, 'kandi'));
+        await withTimeout(setDoc(ref, { from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
+        return { id: ref.id, from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() };
+      }),
+    myKandi: (max) =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'kandi'), where('to', '==', user.uid), limit(max)));
+        return snap.docs
+          .map((d) => kandiFrom(d.id, d.data()))
+          .filter((k): k is NonNullable<typeof k> => !!k)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      }),
+    removeKandi: (id) => guard(async () => deleteDoc(doc(fb().db, 'kandi', id))),
     grantTheme: (sproutId, theme) =>
       guard(async () => {
         const user = me();

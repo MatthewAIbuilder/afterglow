@@ -490,10 +490,30 @@ service cloud.firestore {
     match /gardens/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['residents', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['residents', 'kandi', 'updatedAt'])
         && request.resource.data.residents is list && request.resource.data.residents.size() <= 120
+        && (!('kandi' in request.resource.data) || (request.resource.data.kandi is list && request.resource.data.kandi.size() <= 40))
         && request.resource.data.updatedAt == request.time;
       allow delete: if signedIn() && me() == uid;
+    }
+    // Kandi: a friendship bracelet left in someone's garden. Made as yourself (with a profile) for someone
+    // else with one, who hasn't blocked you: a word in letter beads, a bead pattern, a short note. Only the
+    // two of you read it (the word and beads show in their garden through their own published garden);
+    // either of you can remove it. Never edited.
+    match /kandi/{id} {
+      allow read: if signedIn() && (resource.data.from == me() || resource.data.to == me());
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['from', 'to', 'word', 'beads', 'note', 'createdAt'])
+        && request.resource.data.from == me()
+        && request.resource.data.to is string && request.resource.data.to != me()
+        && request.resource.data.word is string && request.resource.data.word.matches('^[A-Z0-9 ♥★✿☺!?&+.]{1,12}$')
+        && request.resource.data.beads in ['rainbow', 'pastel', 'neon', 'uv', 'sunset', 'ocean', 'mono', 'candy']
+        && shortOrAbsent(request.resource.data, 'note', 140)
+        && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40
+        && exists(path('profiles', me()))
+        && exists(path('profiles', request.resource.data.to))
+        && !hasBlocked(request.resource.data.to, me());
+      allow delete: if signedIn() && (resource.data.from == me() || resource.data.to == me());
     }
     // Gift themes you were given (`<uid>_<theme>`): made by you from a sprout you picked up that came with
     // that theme. Read and removed only by you; the profile rules check it before showing the background.

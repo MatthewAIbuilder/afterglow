@@ -108,7 +108,8 @@ export type Activity =
   | { kind: 'follow'; id: string; from: string; createdAt: string }
   | { kind: 'like'; id: string; from: string; memoryId: string; createdAt: string }
   | { kind: 'comment'; id: string; from: string; memoryId: string; text: string; createdAt: string }
-  | { kind: 'tag'; id: string; from: string; memoryId: string; createdAt: string };
+  | { kind: 'tag'; id: string; from: string; memoryId: string; createdAt: string }
+  | { kind: 'kandi'; id: string; from: string; word: string; createdAt: string };
 
 /** Someone tagged in a shared video (`videoTags/<memoryId>_<uid>`): on their profile ('approved'; 'pending' only from older apps, said yes to when they next open the bell). Hiding it deletes it. */
 export type VideoTag = { id: string; memoryId: string; owner: string; uid: string; status: 'pending' | 'approved'; createdAt: string };
