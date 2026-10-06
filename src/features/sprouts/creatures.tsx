@@ -2059,6 +2059,54 @@ const thornskull: Draw = (p, f) => {
   };
 };
 
+/** SLANDER's: an armoured space trooper, its helmet's visor glowing orange, bursting out of hyperspace (inspired by their artwork, drawn our own way). */
+const trooper: Draw = (p, f) => {
+  // Light streaks rushing out from behind, all round.
+  const rays = Array.from({ length: 22 }, (_, i) => {
+    const a = (i / 22) * Math.PI * 2 + (i % 2 ? 0.08 : 0);
+    const ri = 30 + (i % 3) * 4;
+    const ro = 47 + (i % 4) * 1.5;
+    return `M${r1(50 + Math.cos(a) * ri)} ${r1(46 + Math.sin(a) * ri)} L${r1(50 + Math.cos(a) * ro)} ${r1(46 + Math.sin(a) * ro)}`;
+  }).join(' ');
+  return {
+    ground: [50, 93, 21],
+    back: (
+      <G>
+        <Path d={rays} stroke={p.light} strokeWidth={1.4} strokeLinecap="round" opacity={0.55} />
+        <Circle cx={50} cy={46} r={30} fill={p.light} opacity={0.08} />
+      </G>
+    ),
+    body: (
+      <G>
+        {/* Shoulders with gold pads, and the chest plate. */}
+        <VE cx={25.5} cy={73} rx={10} ry={9} fill={p.alt} f={f} turn={-20} />
+        <VE cx={74.5} cy={73} rx={10} ry={9} fill={p.alt} f={f} turn={20} />
+        <V d="M31 66 Q50 60 69 66 L72 92 Q50 96 28 92 Z" fill={p.deep} f={f} gloss={[38, 70, 4, 8]} />
+        <V d="M40 74 L60 74 L58 84 L42 84 Z" fill={p.mid} f={f} />
+        <Path d="M43 77.5 L57 77.5 M44 81 L56 81" stroke={p.light} strokeWidth={0.9} strokeLinecap="round" opacity={0.6} />
+        <Circle cx={50} cy={88} r={1.6} fill={p.accent} />
+        <Shadow cx={50} cy={64} rx={13} ry={3} f={f} opacity={0.6} />
+        {/* The helmet: rounded, ridged on top, cheek guards. */}
+        <VE cx={50} cy={43} rx={19.5} ry={21} fill={p.mid} f={f} />
+        <V d="M46 22.5 L54 22.5 L53 33 L47 33 Z" fill={p.light} f={f} opacity={0.85} />
+        <VE cx={33} cy={50} rx={5} ry={9} fill={p.deep} f={f} gloss={false} turn={8} />
+        <VE cx={67} cy={50} rx={5} ry={9} fill={p.deep} f={f} gloss={false} turn={-8} />
+        {/* The dark faceplate around the visor. */}
+        <V d="M35 40 Q50 34 65 40 L62 56 Q50 63 38 56 Z" fill={INK} f={f} />
+        <Circle cx={50} cy={36.5} r={2.6} fill={p.deep} stroke={p.light} strokeWidth={0.8} />
+      </G>
+    ),
+    front: (
+      <G>
+        {/* The glowing visor: one wide band swept down to a point in the middle, with a sheen across it. */}
+        <Path d="M36.5 43.5 Q50 39.5 63.5 43.5 L61 49.5 Q55 49 50 53.5 Q45 49 39 49.5 Z" fill={p.accent} opacity={0.3} transform="translate(50 47) scale(1.16) translate(-50 -47)" />
+        <Path d="M36.5 43.5 Q50 39.5 63.5 43.5 L61 49.5 Q55 49 50 53.5 Q45 49 39 49.5 Z" fill={p.accent} />
+        <Path d="M39 45.2 Q50 42.2 61 45.2" stroke="#FFF2C8" strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.8} />
+      </G>
+    ),
+  };
+};
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -2097,4 +2145,5 @@ export const DRAW: Record<Creature, Draw> = {
   wobble,
   patchbear,
   thornskull,
+  trooper,
 };

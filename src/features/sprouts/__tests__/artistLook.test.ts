@@ -16,5 +16,7 @@ describe('signature collectibles', () => {
     expect(typeof DRAW.patchbear).toBe('function');
     expect(artistLook({ id: 'sullivan-king', name: 'Sullivan King', sound: {} } as never)).toMatchObject({ creature: 'thornskull', signature: true, name: 'The Thorn King' });
     expect(typeof DRAW.thornskull).toBe('function');
+    expect(artistLook({ id: 'slander', name: 'SLANDER', sound: {} } as never)).toMatchObject({ creature: 'trooper', signature: true, name: 'The Trooper' });
+    expect(typeof DRAW.trooper).toBe('function');
   });
 });

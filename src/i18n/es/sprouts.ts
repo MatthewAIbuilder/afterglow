@@ -357,6 +357,8 @@ export const es_sprouts: Dictionary = {
   'The Patched bear': 'El Oso remendado',
   'The Thorn King': 'El Rey de espinas',
   'A grinning skull crowned with thorns and roses': 'Una calavera sonriente coronada de espinas y rosas',
+  'The Trooper': 'El Soldado estelar',
+  'An armoured trooper bursting out of hyperspace': 'Un soldado con armadura que sale del hiperespacio',
   'A stitched-up teddy with one eye sewn shut': 'Un peluche cosido con un ojo cerrado a puntadas',
   // Visiting gardens.
   '@{handle}’s garden': 'El jardín de @{handle}',
