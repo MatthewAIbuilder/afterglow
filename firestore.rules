@@ -485,6 +485,15 @@ service cloud.firestore {
         || ((resource.data.from == me() || resource.data.get('to', '') == me()) && !exists(path('profiles', me())))
       );
     }
+    // Your garden's private copy (features/sprouts/backup.ts): only you read or write it.
+    match /gardenBackups/{uid} {
+      allow get: if signedIn() && me() == uid;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['data', 'updatedAt'])
+        && request.resource.data.data is string && request.resource.data.data.size() <= 900000
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && me() == uid;
+    }
     // Gardens as shown on profiles: who lives there (kinds, stages, artists and levels; nothing private),
     // written by their owner, visited by anyone signed in.
     match /gardens/{uid} {

@@ -20,6 +20,7 @@ import { useCatalog } from '../../state/catalog';
 import { useCommunity } from '../../state/community';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
+import { useTaste } from '../../state/taste';
 import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
@@ -160,6 +161,10 @@ function SharedMemoryPage({ id, active }: { id: string; active: boolean }) {
   const blocked = !!m && social.blocked.has(m.uid);
   const mine = !!m && m.uid === social.user?.uid;
   const artist = m?.artistId ? catalog.artist(m.artistId) : undefined;
+  // How much you'd love them (as on Discover): every artist in a b2b counts, the one you'd love most shows.
+  const { taste } = useTaste();
+  const players = artist ? [artist.id, ...(m?.withArtistIds ?? [])].filter((id) => catalog.artist(id)) : [];
+  const pct = players.length ? Math.round(Math.max(...players.map((id) => taste[id] ?? 0)) * 100) : undefined;
   const festival = m?.festivalId ? catalog.festival(m.festivalId) : undefined;
   const where = m ? whereLine(m, festival?.name) : '';
 
@@ -244,6 +249,18 @@ function SharedMemoryPage({ id, active }: { id: string; active: boolean }) {
       {m && !blocked ? (
         <View style={[styles.info, { paddingBottom: insets.bottom + space.lg }]}>
           <Text style={styles.artist}>{artist ? b2bLine([artist.name, ...(m.withArtistIds ?? []).map((id) => catalog.artist(id)?.name ?? '')]) : t('Festival moment')}</Text>
+          {pct !== undefined && artist ? (
+            <Pressable
+              onPress={() => router.push({ pathname: '/artist/[id]', params: { id: artist.id } })}
+              accessibilityRole="button"
+              accessibilityLabel={t('Open {artist}, {pct} percent match', { artist: artist.name, pct })}
+              hitSlop={6}
+              style={({ pressed }) => pressed && { opacity: 0.7 }}
+              testID="shared-match"
+            >
+              <Text style={styles.match}>{t('{pct}% match', { pct })}</Text>
+            </Pressable>
+          ) : null}
           {where ? <Text style={styles.where}>{where}</Text> : null}
           <Pressable onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: m.handle } })} accessibilityRole="button">
             <Text style={styles.by}>@{m.handle}</Text>
@@ -323,6 +340,7 @@ const styles = StyleSheet.create({
   close: { position: 'absolute', left: space.lg },
   info: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, gap: 2 },
   artist: { ...type.largeTitle, color: color.moon },
+  match: { ...type.label, color: color.glow, marginBottom: 2 },
   where: { ...type.headline, color: color.moonDim },
   by: { ...type.label, color: color.glow, marginTop: space.xs },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.lg },
