@@ -17,17 +17,18 @@ export function GlowLevelCard() {
         router.push('/quests');
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Glow level ${q.level.level}, ${q.level.name}. ${q.doneToday} of ${of} quests done today.${q.streak ? ` ${q.streak}-day streak.` : ''} Opens your quests.`}
+      accessibilityLabel={`${q.ready ? `Glow level ${q.level.level}, ${q.level.name}` : 'Glow level'}. ${q.doneToday} of ${of} quests done today.${q.streak ? ` ${q.streak}-day streak.` : ''} Opens your quests.`}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
       testID="glow-level-card"
     >
+      {/* Your level only once it's known (never a stand-in while loading). */}
       <View style={styles.ring}>
-        <QuestRing size={52} stroke={4} progress={q.level.progress} />
-        <Text style={styles.num}>{q.level.level}</Text>
+        <QuestRing size={52} stroke={4} progress={q.ready ? q.level.progress : 0} />
+        <Text style={styles.num}>{q.ready ? q.level.level : ''}</Text>
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.kicker}>Glow level</Text>
-        <Text style={styles.name}>{q.level.name}</Text>
+        <Text style={styles.name}>{q.ready ? q.level.name : ' '}</Text>
         <Text style={styles.sub}>
           {q.doneToday} of {of} quests today
         </Text>

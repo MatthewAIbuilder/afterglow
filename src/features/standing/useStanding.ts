@@ -1,11 +1,13 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import type { Standing } from '../social/models';
-import { useSocial } from '../../state/social';
+import { useSocialMaybe } from '../../state/social';
 
 /** Standings stay fresh this long. */
 const FRESH_MS = 10 * 60_000;
 const cache = new Map<string, { at: number; standing: Standing }>();
 const asking = new Set<string>();
+/** Standings whose last read failed (no signal), so whoever waits for one can stop waiting. */
+const failed = new Set<string>();
 const listeners = new Set<() => void>();
 let version = 0;
 const changed = () => {
@@ -35,6 +37,7 @@ export function patchStanding(uid: string, patch: (s: Standing) => Standing) {
 export function forgetStandings() {
   cache.clear();
   asking.clear();
+  failed.clear();
   changed();
 }
 
@@ -44,19 +47,35 @@ export function forgetStandings() {
  * Undefined until read, when signed out, or when profiles aren't set up.
  */
 export function useStanding(uid: string | undefined): Standing | undefined {
-  const social = useSocial();
-  const ok = social.availability.ok;
+  return useStandingRead(uid).standing;
+}
+
+/**
+ * The same, and whether the read is over: `settled` once it has been read,
+ * or the read failed, or there's nothing to read (signed out, no profiles).
+ */
+export function useStandingRead(uid: string | undefined): { standing: Standing | undefined; settled: boolean } {
+  const social = useSocialMaybe();
+  const ok = !!social?.availability.ok;
+  const service = social?.service;
   useSyncExternalStore(subscribe, () => version);
   useEffect(() => {
-    if (!ok || !uid) return;
+    if (!ok || !uid || !service) return;
     const hit = cache.get(uid);
     if ((hit && Date.now() - hit.at < FRESH_MS) || asking.has(uid)) return;
     asking.add(uid);
-    social.service
+    service
       .standingOf(uid)
-      .then((s) => rememberStanding(uid, s))
-      .catch(() => {})
+      .then((s) => {
+        failed.delete(uid);
+        rememberStanding(uid, s);
+      })
+      .catch(() => {
+        failed.add(uid);
+        changed();
+      })
       .finally(() => asking.delete(uid));
-  }, [ok, uid, social.service]);
-  return ok && uid ? cache.get(uid)?.standing : undefined;
+  }, [ok, uid, service]);
+  const standing = ok && uid ? cache.get(uid)?.standing : undefined;
+  return { standing, settled: !ok || !uid || !!standing || failed.has(uid) };
 }
