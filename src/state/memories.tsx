@@ -1,3 +1,4 @@
+import { noteArtist } from '../data/extraArtists';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
@@ -112,6 +113,10 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
     if (!writable.current || sessionOnly) return;
     AsyncStorage.setItem(MEMORIES_STORAGE_KEY, JSON.stringify(memories)).catch(() => {});
   }, [memories, hydrated, sessionOnly]);
+  // Artists you named who aren't on Afterglow yet: shown by that name everywhere (data/extraArtists.ts).
+  useEffect(() => {
+    for (const m of memories) if (m.artistName) noteArtist(m.artistId, m.artistName);
+  }, [memories]);
 
   const keepVideo = useCallback(
     async (video: PickedVideo, tag: MemoryTagInput) => {
@@ -140,6 +145,7 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
           show: tag.festivalId || tag.past ? undefined : tag.show,
           artistId: tag.artistId,
           withArtistIds: tag.artistId ? tag.withArtistIds : undefined,
+          ...(tag.artistId && tag.artistName ? { artistName: tag.artistName } : {}),
           clip: tag.clip,
           people: tag.people?.length ? tag.people : undefined,
         };

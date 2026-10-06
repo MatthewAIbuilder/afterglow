@@ -1,3 +1,4 @@
+import { cleanArtistName, noteArtist } from '../../../data/extraArtists';
 import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
 import { cleanShow } from '../../memories/show';
@@ -87,6 +88,9 @@ export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {
   const videoUrl = https(o.videoUrl);
   const capturedAt = str(o.capturedAt);
   if (!uid || !videoUrl || !capturedAt) return null;
+  // An artist not on Afterglow yet, named on the video: shown by that name everywhere until they are.
+  const artistName = cleanArtistName(o.artistName);
+  noteArtist(str(o.artistId), artistName);
   return {
     id,
     uid,
@@ -97,6 +101,7 @@ export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {
     night: str(o.night),
     artistId: str(o.artistId),
     withArtistIds: str(o.artistId) ? cleanWith(o.withArtistIds, str(o.artistId)) : undefined,
+    ...(str(o.artistId) && artistName ? { artistName } : {}),
     past: str(o.festivalId) ? undefined : cleanPast({ name: o.pastName, year: o.pastYear, city: o.pastCity, seriesId: o.seriesId }),
     show: str(o.festivalId) || str(o.pastName) ? undefined : cleanShow({ name: o.showName, date: o.showDate, city: o.showCity, showId: o.showId }),
     clip: cleanClip({ start: o.clipStart, end: o.clipEnd }),

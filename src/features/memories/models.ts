@@ -36,6 +36,8 @@ export type Memory = {
   artistId?: string;
   /** Playing back to back with `artistId`: the others, in order. */
   withArtistIds?: string[];
+  /** The artist's name, typed in, when they aren't on Afterglow yet (`artistId` is the id they'll get: data/extraArtists.ts). */
+  artistName?: string;
   /** People in it (uids), tagged once it's shared; each says yes before it shows on their profile. */
   people?: string[];
   /** The part that plays, when the video was trimmed (seconds into the file). */
@@ -46,4 +48,4 @@ export type Memory = {
 };
 
 /** What the tagging sheet saves onto a memory. */
-export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'past' | 'show' | 'clip' | 'people'>;
+export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'artistName' | 'past' | 'show' | 'clip' | 'people'>;

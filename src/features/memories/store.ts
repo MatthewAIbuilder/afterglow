@@ -3,6 +3,7 @@ import { cleanPast } from './past';
 import { cleanShow } from './show';
 import { cleanWith } from './b2b';
 import { cleanClip } from './trim';
+import { cleanArtistName } from '../../data/extraArtists';
 
 /**
  * The list of memories and how it changes. Pure, so the rules are tested
@@ -32,6 +33,7 @@ export function tagMemory(list: Memory[], id: string, tag: MemoryTagInput): Memo
           show: tag.festivalId || tag.past ? undefined : tag.show,
           artistId: tag.artistId,
           withArtistIds: tag.artistId ? cleanWith(tag.withArtistIds, tag.artistId) : undefined,
+          artistName: tag.artistId ? cleanArtistName(tag.artistName) : undefined,
           clip: 'clip' in tag ? tag.clip : m.clip,
           people: 'people' in tag ? tag.people : m.people,
         }
@@ -89,6 +91,7 @@ export function cleanMemories(raw: unknown): Memory[] {
       night: str(o.night),
       artistId: str(o.artistId),
       withArtistIds: str(o.artistId) ? cleanWith(o.withArtistIds, str(o.artistId)) : undefined,
+      ...(str(o.artistId) && cleanArtistName(o.artistName) ? { artistName: cleanArtistName(o.artistName) } : {}),
       sharedId: str(o.sharedId) && str(o.sharedBy) ? str(o.sharedId) : undefined,
       sharedBy: str(o.sharedId) && str(o.sharedBy) ? str(o.sharedBy) : undefined,
     });

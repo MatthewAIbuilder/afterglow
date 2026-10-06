@@ -24,6 +24,8 @@ export type ShareInput = {
   artistId?: string;
   /** Playing back to back with `artistId`. */
   withArtistIds?: string[];
+  /** The artist's name as typed, when they aren't on Afterglow yet. */
+  artistName?: string;
   /** A festival from before Afterglow, instead of `festivalId`. */
   past?: PastEvent;
   /** People in the video, to tag once it's shared (each is asked first). */
@@ -39,7 +41,7 @@ export type ShareInput = {
 };
 
 /** What can change on a video once it's shared: where it's from and who was playing. */
-export type SharedTags = Pick<ShareInput, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'past' | 'show'>;
+export type SharedTags = Pick<ShareInput, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'artistName' | 'past' | 'show'>;
 
 export type FollowCounts = { followers: number; following: number };
 

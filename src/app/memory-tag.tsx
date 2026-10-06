@@ -6,7 +6,9 @@ import { ArtistAvatar } from '../components/ArtistAvatar';
 import { SearchField } from '../components/SearchField';
 import { CheckIcon } from '../components/TabIcons';
 import type { Artist, Festival } from '../data/models';
-import { matchesName, searchFestivals } from '../features/festivals/search';
+import { matchesName, normalize, searchFestivals } from '../features/festivals/search';
+import { cleanArtistName, newArtistId, noteArtist } from '../data/extraArtists';
+import { useHqRequests } from '../features/memories/useHqRequests';
 import { festivalsAround, isMany } from '../features/festivals/shelves';
 import { artistConfidence, festivalConfidence, guessArtists, guessFestivals, reasonLine, type ArtistGuess } from '../features/memories/guess';
 import type { Memory, MemoryTagInput } from '../features/memories/models';
@@ -191,7 +193,15 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   // A show on Afterglow: its bill first (anyone else is a search away).
   const bill = useMemo(() => (festival ? [] : showBill(show, catalog.shows, catalog.artist)), [festival, show, catalog]);
   const pool: Artist[] = festival ? artistGuesses.map((g) => g.artist) : catalog.artists;
-  const found = query.trim() ? pool.filter((a) => matchesName(a.name, query)).slice(0, 20) : [];
+  const inPool = query.trim() ? pool.filter((a) => matchesName(a.name, query)).slice(0, 20) : [];
+  // Not on this festival's lineup: anyone on Afterglow.
+  const found = inPool.length || !festival || !query.trim() ? inPool : catalog.artists.filter((a) => matchesName(a.name, query)).slice(0, 20);
+  // Someone not on Afterglow yet: added by name (data/extraArtists.ts), and HQ is asked to add them properly.
+  const typedName = cleanArtistName(query);
+  const typedId = typedName ? newArtistId(typedName) : undefined;
+  const onAfterglow = useMemo(() => new Set(catalog.artists.map((a) => a.id)), [catalog.artists]);
+  const canAddNew = !!typedName && !!typedId && !onAfterglow.has(typedId) && !found.some((a) => normalize(a.name) === normalize(typedName));
+  const [named, setNamed] = useState<Record<string, string>>(() => (existing?.artistId && existing.artistName ? { [existing.artistId]: existing.artistName } : {}));
 
   // The part that plays, for a new video (a long one always has one; it starts on the loudest stretch).
   const draftLength = draft?.durationSec;
@@ -221,6 +231,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     show: festivalId || past ? undefined : show,
     artistId: chosenArtist,
     withArtistIds: chosenList.length > 1 ? chosenList.slice(1) : undefined,
+    artistName: chosenArtist && !onAfterglow.has(chosenArtist) ? named[chosenArtist] : undefined,
     ...(draft ? { clip } : {}),
     people: people.length ? people : undefined,
   };
@@ -297,8 +308,11 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
 
   // One save at a time: a second tap while the video is being kept would find nothing left to keep.
   const [saving, setSaving] = useState(false);
+  // A new past festival (its own badge) or a new artist: HQ hears about it by itself.
+  const askHq = useHqRequests();
   const save = async () => {
     if (saving || leaving.current) return;
+    void askHq(tag);
     if (sharedMemory) {
       setSaving(true);
       try {
@@ -607,7 +621,27 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
                     }}
                   />
                 ))}
-                {query.trim() && !found.length ? <Text style={styles.quiet}>{t('No one matches “{query}”.', { query: query.trim() })}</Text> : null}
+                {canAddNew ? (
+                  <Pressable
+                    onPress={() => {
+                      noteArtist(typedId, typedName);
+                      setNamed((n) => ({ ...n, [typedId!]: typedName! }));
+                      if (!chosenList.includes(typedId!)) toggleArtist(typedId!);
+                      setQuery('');
+                      setSearching(false);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('Add {name} as a new artist', { name: typedName! })}
+                    style={({ pressed }) => [styles.addArtist, pressed && { opacity: 0.75 }]}
+                  >
+                    <Text style={styles.addArtistText} numberOfLines={1}>
+                      {t('+ Add “{name}”', { name: typedName! })}
+                    </Text>
+                    <Text style={styles.quiet}>{t('Not on Afterglow yet. Your video shows them by this name, and we’ll add them properly.')}</Text>
+                  </Pressable>
+                ) : query.trim() && !found.length ? (
+                  <Text style={styles.quiet}>{t('No one matches “{query}”.', { query: query.trim() })}</Text>
+                ) : null}
               </View>
             </>
           ) : (
@@ -826,6 +860,8 @@ const styles = StyleSheet.create({
   link: { ...type.label, color: color.glow },
   linkOn: { color: color.moon },
   quiet: { ...type.caption, color: color.moonDim, paddingVertical: space.sm },
+  addArtist: { paddingVertical: space.sm, paddingHorizontal: space.md, borderRadius: radius.md, borderWidth: 1, borderStyle: 'dashed', borderColor: glowA(0.5) },
+  addArtistText: { ...type.headline, color: color.glow },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   shareRow: {
     flexDirection: 'row',

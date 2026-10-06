@@ -148,6 +148,11 @@ await t('your own shared video’s tags can change (where it’s from, who was p
   await assertSucceeds(updateDoc(doc(db, 'memories', 'ed1'), { festivalId: 'acl-26', night: 'Saturday', artistId: 'boogie-t', withArtistIds: ['subtronics'] }));
   await assertSucceeds(updateDoc(doc(db, 'memories', 'ed1'), { festivalId: deleteField(), night: deleteField(), showName: 'Echostage', showDate: '2026-01-18' }));
   await assertFails(updateDoc(doc(db, 'memories', 'ed1'), { withArtistIds: ['a', 'b', 'c', 'd'] }));
+  // An artist not on Afterglow yet: named, only with their id, not too long.
+  await assertSucceeds(updateDoc(doc(db, 'memories', 'ed1'), { artistId: 'rezz', artistName: 'REZZ' }));
+  await assertFails(updateDoc(doc(db, 'memories', 'ed1'), { artistName: 'x'.repeat(61) }));
+  await assertFails(updateDoc(doc(db, 'memories', 'ed1'), { artistId: deleteField(), withArtistIds: deleteField(), artistName: 'REZZ' }));
+  await assertSucceeds(setDoc(doc(db, 'memories', 'ed2'), memT('ed2', { artistId: 'rezz', artistName: 'REZZ' })));
   await assertFails(updateDoc(doc(db, 'memories', 'ed1'), { videoUrl: fileUrl('memories/uidT/other.mov') }));
   await assertFails(updateDoc(doc(db, 'memories', 'ed1'), { showName: deleteField(), showDate: deleteField(), pastName: 'EDC Orlando', pastYear: 2024 }));
   await assertFails(updateDoc(doc(A.firestore(), 'memories', 'ed1'), { artistId: 'someone' }));
