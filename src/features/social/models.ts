@@ -73,6 +73,8 @@ export type SharedMemory = {
   festivalId?: string;
   night?: string;
   artistId?: string;
+  /** Playing back to back with `artistId`. */
+  withArtistIds?: string[];
   /** A festival from before Afterglow ("EDC Orlando 2024"): a throwback, from the camera roll. */
   past?: PastEvent;
   /** A one-night show (a club night or concert), instead of a festival. */

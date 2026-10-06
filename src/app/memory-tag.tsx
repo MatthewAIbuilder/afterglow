@@ -9,12 +9,14 @@ import type { Artist, Festival } from '../data/models';
 import { matchesName, searchFestivals } from '../features/festivals/search';
 import { festivalsAround, isMany } from '../features/festivals/shelves';
 import { artistConfidence, festivalConfidence, guessArtists, guessFestivals, reasonLine, type ArtistGuess } from '../features/memories/guess';
-import type { MemoryTagInput } from '../features/memories/models';
+import type { Memory, MemoryTagInput } from '../features/memories/models';
+import { sharedAsMemory } from '../features/memories/webVideo';
 import { momentLine } from '../features/memories/organize';
 import { PastPicker } from '../features/memories/PastPicker';
 import { ShowPicker } from '../features/memories/ShowPicker';
 import { showBill, showLabel, type ShowTag } from '../features/memories/show';
 import { TrimBar } from '../features/memories/TrimBar';
+import { allArtists, B2B_MAX, b2bLine } from '../features/memories/b2b';
 import { VideoPreview } from '../features/memories/VideoPreview';
 import { loudnessOf } from '../features/memories/loudness';
 import { needsTrim, suggestWindow, type ClipWindow } from '../features/memories/trim';
@@ -52,6 +54,35 @@ const OLD_VIDEO_MS = 30 * 24 * 3600_000;
  * short search to change. The same sheet retags a saved memory (`id`).
  */
 export default function MemoryTagScreen() {
+  // `shared`: a video you already shared (on the website, the only copy is the shared one): its tags change there.
+  const { shared } = useLocalSearchParams<{ shared?: string }>();
+  const social = useSocial();
+  const [sharedMemory, setSharedMemory] = useState<Memory | null | undefined>(undefined);
+  const uid = social.user?.uid;
+  useEffect(() => {
+    if (!shared || !uid) return;
+    let live = true;
+    void social.service
+      .sharedMemory(shared)
+      .then((m) => live && setSharedMemory(m && m.uid === uid ? sharedAsMemory(m) : null))
+      .catch(() => live && setSharedMemory(null));
+    return () => {
+      live = false;
+    };
+  }, [shared, uid, social.service]);
+  useEffect(() => {
+    if (shared && sharedMemory === null) goBack();
+  }, [shared, sharedMemory]);
+  if (shared && !sharedMemory)
+    return (
+      <View style={styles.root}>
+        <SheetClose />
+      </View>
+    );
+  return <MemoryTagSheet key={sharedMemory?.id ?? 'local'} sharedMemory={sharedMemory ?? undefined} />;
+}
+
+function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   // `fresh`: a video just filmed, already kept untagged (so it's never lost) and tagged here for the first time.
   const { id, fresh: freshParam } = useLocalSearchParams<{ id?: string; fresh?: string }>();
   const insets = useSafeAreaInsets();
@@ -61,7 +92,7 @@ export default function MemoryTagScreen() {
   const { taste, informed } = useTaste();
   const { mustSeesAt } = usePlan();
   const mem = useMemories();
-  const existing = id ? mem.memories.find((m) => m.id === id) : undefined;
+  const existing = sharedMemory ?? (id ? mem.memories.find((m) => m.id === id) : undefined);
   const draft = existing ? undefined : mem.draft;
   const fresh = !!existing && freshParam === '1';
   // Retagging something already saved, rather than tagging a new video.
@@ -74,7 +105,7 @@ export default function MemoryTagScreen() {
   const place = existing ? existing.place : draft?.moment.place;
   const city = place?.city;
   const region = place?.region;
-  const videoUri = existing ? mem.uriOf(existing.file) : draft?.uri;
+  const videoUri = sharedMemory ? sharedMemory.file : existing ? mem.uriOf(existing.file) : draft?.uri;
 
   // Festivals, the guessed ones first, then the rest (so any festival is a tap away).
   const guesses = useMemo(
@@ -123,7 +154,7 @@ export default function MemoryTagScreen() {
     setShow(undefined);
     setPickingShow(false);
     setNight(f ? guesses.find((g) => g.festival.id === f.id)?.night : undefined);
-    setArtistId(undefined);
+    setArtistIds([]);
     setTouchedArtist(false);
   };
 
@@ -137,9 +168,22 @@ export default function MemoryTagScreen() {
   const artistSure = artistConfidence(artistGuesses);
 
   // The artist: yours when retagging, otherwise the top guess when it's a confident one, until you choose.
-  const [artistId, setArtistId] = useState<string | undefined>(existing?.artistId);
+  // Who was playing: one artist, or a few for a back to back (the first is the one it's filed under).
+  const [artistIds, setArtistIds] = useState<string[]>(() => (existing ? allArtists(existing) : []));
   const [touchedArtist, setTouchedArtist] = useState(retagging);
-  const chosenArtist = touchedArtist ? artistId : artistSure !== 'maybe' ? artistGuesses[0]?.artist.id : undefined;
+  const guessed = artistSure !== 'maybe' ? artistGuesses[0]?.artist.id : undefined;
+  const chosenList = touchedArtist ? artistIds : guessed ? [guessed] : [];
+  const chosenArtist = chosenList[0];
+  /** Tick or untick someone (ticking a second makes it a back to back). */
+  const toggleArtist = (id: string) => {
+    haptic.select();
+    setTouchedArtist(true);
+    setArtistIds(chosenList.includes(id) ? chosenList.filter((x) => x !== id) : [...chosenList, id].slice(0, 1 + B2B_MAX));
+  };
+  const clearArtists = () => {
+    setTouchedArtist(true);
+    setArtistIds([]);
+  };
 
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
@@ -171,11 +215,15 @@ export default function MemoryTagScreen() {
     past: festivalId ? undefined : past,
     show: festivalId || past ? undefined : show,
     artistId: chosenArtist,
+    withArtistIds: chosenList.length > 1 ? chosenList.slice(1) : undefined,
     ...(draft ? { clip } : {}),
   };
 
   // Share to Discover: on by default once it's tagged and you have a profile; always your choice.
   const social = useSocial();
+  // Already on Discover as yours: saving changes the shared copy's tags too.
+  const sharedCopy = !!sharedMemory || (!!existing?.sharedId && !!social.user && existing.sharedBy === social.user.uid);
+  const throwbackLocked = sharedCopy && !!existing?.past && !existing.festivalId;
   const offer = shareOffer({
     available: social.availability.ok,
     signedIn: !!social.user,
@@ -230,9 +278,25 @@ export default function MemoryTagScreen() {
   const [saving, setSaving] = useState(false);
   const save = async () => {
     if (saving || leaving.current) return;
+    if (sharedMemory) {
+      setSaving(true);
+      try {
+        await social.service.retagShared(sharedMemory.id, tag);
+      } catch (e) {
+        setSaving(false);
+        showAlert(t('Couldn’t save the changes'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+        return;
+      }
+      haptic.settle();
+      leave();
+      return;
+    }
     if (existing) {
       mem.tag(existing.id, tag);
       haptic.settle();
+      // The copy on Discover follows (best effort: your Memories have the change either way).
+      if (sharedCopy && existing.sharedId)
+        void social.service.retagShared(existing.sharedId, tag).catch((e) => showAlert(t('Couldn’t update it on Discover'), SOCIAL_ERROR_COPY[socialErrorKind(e)]));
       if (shareOn) shareIt({ ...existing, ...tag });
       if (crewOn) crewUpdates.sendVideo({ ...existing, ...tag });
       leave();
@@ -305,7 +369,9 @@ export default function MemoryTagScreen() {
   const videoH = Math.min(height * 0.34, 300);
   const top = artistGuesses.slice(0, TOP_GUESSES);
   const chosen = chosenArtist ? catalog.artist(chosenArtist) : undefined;
-  const chosenIsTop = !!chosen && top.some((g) => g.artist.id === chosen.id);
+  // Everyone ticked who isn't already a row above (found by searching).
+  const shownIds = new Set(festival ? top.map((g) => g.artist.id) : bill.slice(0, TOP_GUESSES).map((a) => a.id));
+  const extraChosen = chosenList.filter((id) => !shownIds.has(id)).map((id) => catalog.artist(id)).filter((a): a is Artist => !!a);
   const whenWhere = momentLine(whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs) : undefined, place);
 
   return (
@@ -352,11 +418,14 @@ export default function MemoryTagScreen() {
         <Text style={styles.section}>{t('Festival or show')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {past ? <Chip label={pastLabel(past)} on onPress={() => setPickingPast((v) => !v)} /> : null}
+          {/* Once shared, a throwback stays one (its year and name can change) and nothing else becomes one. */}
+          {throwbackLocked ? null : (
+          <>
           {show ? <Chip label={showLabel(show)} on onPress={() => setPickingShow((v) => !v)} /> : null}
           {[...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals].map((f) => (
             <Chip key={f.id} label={f.name} on={f.id === festivalId} onPress={() => pickFestival(f.id === festivalId ? undefined : f)} />
           ))}
-          {past ? null : (
+          {past || sharedCopy ? null : (
             <Chip
               label={t('A past festival…')}
               on={pickingPast}
@@ -388,6 +457,8 @@ export default function MemoryTagScreen() {
               }}
             />
           ) : null}
+          </>
+          )}
         </ScrollView>
         {many && searchingFestival ? (
           <View style={styles.festivalSearch}>
@@ -459,54 +530,30 @@ export default function MemoryTagScreen() {
         ) : null}
 
         <Text style={styles.section}>{t('Who’s playing?')}</Text>
-        {festival ? (
-          <View style={styles.rows}>
-            {top.map((g) => (
-              <ArtistChoice
-                key={g.artist.id}
-                guess={g}
-                night={night}
-                on={g.artist.id === chosenArtist}
-                likely={g === top[0] && artistSure !== 'maybe' && !touchedArtist}
-                onPress={() => {
-                  haptic.select();
-                  setTouchedArtist(true);
-                  setArtistId(g.artist.id === chosenArtist ? undefined : g.artist.id);
-                }}
-              />
-            ))}
-            {chosen && !chosenIsTop ? (
-              <ArtistChoice guess={{ artist: chosen, reason: 'lineup', score: 0 }} on onPress={() => setArtistId(undefined)} />
-            ) : null}
-          </View>
-        ) : (
-          // No festival: the show's bill (when it's one of Afterglow's), and whoever you picked, ticked.
-          <View style={styles.rows}>
-            {bill.slice(0, TOP_GUESSES).map((a) => (
-              <ArtistChoice
-                key={a.id}
-                guess={{ artist: a, reason: 'lineup', score: 0 }}
-                on={a.id === chosenArtist}
-                onPress={() => {
-                  haptic.select();
-                  setTouchedArtist(true);
-                  setArtistId(a.id === chosenArtist ? undefined : a.id);
-                }}
-              />
-            ))}
-            {chosen && !bill.slice(0, TOP_GUESSES).some((a) => a.id === chosen.id) ? (
-              <ArtistChoice
-                guess={{ artist: chosen, reason: 'lineup', score: 0 }}
-                on
-                onPress={() => {
-                  haptic.select();
-                  setTouchedArtist(true);
-                  setArtistId(undefined);
-                }}
-              />
-            ) : null}
-          </View>
-        )}
+        <View style={styles.rows}>
+          {festival
+            ? top.map((g) => (
+                <ArtistChoice
+                  key={g.artist.id}
+                  guess={g}
+                  night={night}
+                  on={chosenList.includes(g.artist.id)}
+                  likely={g === top[0] && artistSure !== 'maybe' && !touchedArtist}
+                  onPress={() => toggleArtist(g.artist.id)}
+                />
+              ))
+            : // No festival: the show's bill (when it's one of Afterglow's).
+              bill.slice(0, TOP_GUESSES).map((a) => (
+                <ArtistChoice key={a.id} guess={{ artist: a, reason: 'lineup', score: 0 }} on={chosenList.includes(a.id)} onPress={() => toggleArtist(a.id)} />
+              ))}
+          {extraChosen.map((a) => (
+            <ArtistChoice key={a.id} guess={{ artist: a, reason: 'lineup', score: 0 }} on onPress={() => toggleArtist(a.id)} />
+          ))}
+          {chosenList.length === 1 ? <Text style={styles.quiet}>{t('Playing back to back? Tick everyone who was on.')}</Text> : null}
+          {chosenList.length > 1 ? (
+            <Text style={styles.quiet}>{t('Back to back: {artists}', { artists: b2bLine(chosenList.map((id) => catalog.artist(id)?.name ?? '')) })}</Text>
+          ) : null}
+        </View>
 
         <View style={styles.pad}>
           {searching || !festival ? (
@@ -525,11 +572,9 @@ export default function MemoryTagScreen() {
                   <ArtistChoice
                     key={a.id}
                     guess={{ artist: a, reason: 'lineup', score: 0 }}
-                    on={a.id === chosenArtist}
+                    on={chosenList.includes(a.id)}
                     onPress={() => {
-                      haptic.select();
-                      setTouchedArtist(true);
-                      setArtistId(a.id);
+                      if (!chosenList.includes(a.id)) toggleArtist(a.id);
                       setQuery('');
                       setSearching(false);
                     }}
@@ -546,8 +591,7 @@ export default function MemoryTagScreen() {
               <Pressable
                 onPress={() => {
                   haptic.select();
-                  setTouchedArtist(true);
-                  setArtistId(undefined);
+                  clearArtists();
                 }}
                 hitSlop={8}
                 accessibilityRole="button"
@@ -586,7 +630,9 @@ export default function MemoryTagScreen() {
             <Text style={styles.section}>{t('Discover')}</Text>
             <Text style={[styles.shareDetail, styles.sharedNote]} testID="shared-note">
               {existing.sharedId
-                ? t('It’s already on Discover. The copy there keeps the tags it was shared with; changes here are for your Memories.')
+                ? sharedCopy
+                  ? t('It’s on Discover. Changes you save here update it there too.')
+                  : t('It’s already on Discover. The copy there keeps the tags it was shared with; changes here are for your Memories.')
                 : t('Waiting for signal to share it to Discover. It goes by itself, with the tags you save here.')}
             </Text>
           </>

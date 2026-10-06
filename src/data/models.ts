@@ -238,6 +238,8 @@ export type CommunityClipSource = {
   vertical: boolean;
   /** The part that plays, when it was trimmed (seconds into the file). */
   clip?: { start: number; end: number };
+  /** Playing back to back with the clip's artist. */
+  withArtistIds?: string[];
 };
 
 /**

@@ -1,6 +1,7 @@
 import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
 import { cleanShow } from '../../memories/show';
+import { cleanWith } from '../../memories/b2b';
 import { cleanClip } from '../../memories/trim';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
@@ -81,6 +82,7 @@ export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {
     festivalId: str(o.festivalId),
     night: str(o.night),
     artistId: str(o.artistId),
+    withArtistIds: str(o.artistId) ? cleanWith(o.withArtistIds, str(o.artistId)) : undefined,
     past: str(o.festivalId) ? undefined : cleanPast({ name: o.pastName, year: o.pastYear, city: o.pastCity, seriesId: o.seriesId }),
     show: str(o.festivalId) || str(o.pastName) ? undefined : cleanShow({ name: o.showName, date: o.showDate, city: o.showCity, showId: o.showId }),
     clip: cleanClip({ start: o.clipStart, end: o.clipEnd }),

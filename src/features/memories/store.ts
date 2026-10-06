@@ -1,6 +1,7 @@
 import type { Memory, MemoryTagInput } from './models';
 import { cleanPast } from './past';
 import { cleanShow } from './show';
+import { cleanWith } from './b2b';
 import { cleanClip } from './trim';
 
 /**
@@ -23,6 +24,7 @@ export function tagMemory(list: Memory[], id: string, tag: MemoryTagInput): Memo
           past: tag.festivalId ? undefined : tag.past,
           show: tag.festivalId || tag.past ? undefined : tag.show,
           artistId: tag.artistId,
+          withArtistIds: tag.artistId ? cleanWith(tag.withArtistIds, tag.artistId) : undefined,
           clip: 'clip' in tag ? tag.clip : m.clip,
         }
       : m,
@@ -77,6 +79,7 @@ export function cleanMemories(raw: unknown): Memory[] {
       clip: cleanClip(o.clip),
       night: str(o.night),
       artistId: str(o.artistId),
+      withArtistIds: str(o.artistId) ? cleanWith(o.withArtistIds, str(o.artistId)) : undefined,
       sharedId: str(o.sharedId) && str(o.sharedBy) ? str(o.sharedId) : undefined,
       sharedBy: str(o.sharedId) && str(o.sharedBy) ? str(o.sharedBy) : undefined,
     });

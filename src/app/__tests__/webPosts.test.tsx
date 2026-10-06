@@ -151,6 +151,34 @@ describe('posting a video from the website', () => {
     expect(shared.festivalId).toBeUndefined();
   }, 30_000);
 
+  it('a back to back keeps everyone who was playing, and the tags can be put right after sharing', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const app = await openTagging();
+    await fireEvent.press(app.getByLabelText(/^SUBTRONICS, Playing Saturday/));
+    expect(app.getByText('Playing back to back? Tick everyone who was on.')).toBeTruthy();
+    await fireEvent.press(app.getByText('Someone else'));
+    await fireEvent.changeText(app.getByLabelText('Search for the artist'), 'hedex');
+    await fireEvent.press(app.getByLabelText(/^HEDEX/));
+    expect(app.getByText('Back to back: SUBTRONICS b2b HEDEX')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Share this video'));
+    await flush();
+    const [shared] = await mockSocial.service.recentMemories(10);
+    expect(shared).toMatchObject({ artistId: 'subtronics', withArtistIds: ['hedex'], festivalId: 'cyclops-cove-4' });
+
+    // Later: open it and edit (HEDEX wasn't there after all).
+    await go(`/shared/${shared.id}`);
+    expect(app.getByText('SUBTRONICS b2b HEDEX')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Edit where it’s from and who was playing'));
+    await flush();
+    expect(app.getByText('It’s on Discover. Changes you save here update it there too.')).toBeTruthy();
+    await fireEvent.press(app.getByRole('button', { name: /^HEDEX/, selected: true }));
+    await fireEvent.press(app.getByLabelText('Save to Memories'));
+    await flush();
+    const [after] = await mockSocial.service.recentMemories(10);
+    expect(after).toMatchObject({ artistId: 'subtronics', festivalId: 'cyclops-cove-4' });
+    expect(after.withArtistIds).toBeUndefined();
+  }, 30_000);
+
   it('signed out, Share offers to sign in and uploads nothing', async () => {
     await mockSocial.service.signOut();
     const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons?: AlertButton[]) => {

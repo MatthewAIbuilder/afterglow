@@ -100,6 +100,8 @@ function NativeVideoPlayerBase({ media, active, live, paused, progress, onPlayed
         contentFit={media.vertical ? 'cover' : 'contain'}
         nativeControls={false}
         allowsPictureInPicture={false}
+        // In the page on the website: an iPhone would otherwise open its own full-screen player.
+        playsInline
         accessibilityLabel={media.credit}
       />
     </View>

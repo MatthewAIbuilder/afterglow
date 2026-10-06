@@ -136,6 +136,19 @@ await t('one-night shows and trimmed videos: a name and a day, never with a fest
   await assertFails(setDoc(doc(db, 'memories', 'sh9'), memT('sh9', { clipStart: -1, clipEnd: 20 })));
   await assertFails(setDoc(doc(db, 'memories', 'sh10'), memT('sh10', { showCity: 'Washington' })));
 });
+await t('your own shared video’s tags can change (where it’s from, who was playing, a b2b), nothing else about it, and never by anyone else', async () => {
+  const db = T.firestore();
+  await assertSucceeds(setDoc(doc(db, 'memories', 'ed1'), memT('ed1', { artistId: 'boogie-t', festivalId: 'edc-orlando-26', night: 'Friday' })));
+  await assertSucceeds(updateDoc(doc(db, 'memories', 'ed1'), { festivalId: 'acl-26', night: 'Saturday', artistId: 'boogie-t', withArtistIds: ['subtronics'] }));
+  await assertSucceeds(updateDoc(doc(db, 'memories', 'ed1'), { festivalId: deleteField(), night: deleteField(), showName: 'Echostage', showDate: '2026-01-18' }));
+  await assertFails(updateDoc(doc(db, 'memories', 'ed1'), { withArtistIds: ['a', 'b', 'c', 'd'] }));
+  await assertFails(updateDoc(doc(db, 'memories', 'ed1'), { videoUrl: fileUrl('memories/uidT/other.mov') }));
+  await assertFails(updateDoc(doc(db, 'memories', 'ed1'), { showName: deleteField(), showDate: deleteField(), pastName: 'EDC Orlando', pastYear: 2024 }));
+  await assertFails(updateDoc(doc(A.firestore(), 'memories', 'ed1'), { artistId: 'someone' }));
+  // A throwback's year can be put right; it stays a throwback.
+  await assertSucceeds(updateDoc(doc(db, 'memories', 'tb1'), { pastYear: 2025 }));
+  await assertFails(updateDoc(doc(db, 'memories', 'tb1'), { pastName: deleteField(), pastYear: deleteField(), pastCity: deleteField(), seriesId: deleteField(), festivalId: 'acl-26' }));
+});
 await t('throwbacks: counted, three on the free plan, more with Plus, a place back when one is removed', async () => {
   // Not counted, or counted wrongly: refused.
   await assertFails(shareTb('tb10', undefined));
@@ -176,7 +189,11 @@ await t('Discover can list a festival’s shared memories, newest first, when si
   await assertSucceeds(getDocs(query(collection(B.firestore(), 'memories'), orderBy('createdAt', 'desc'), limit(80))));
   await assertFails(getDocs(q(anon.firestore())));
 });
-await t('memories are never edited', () => assertFails(updateDoc(doc(A.firestore(), 'memories', 'mem1'), { artistId: 'x' })));
+await t('only a memory’s tags are ever edited, and only by its owner', async () => {
+  await assertSucceeds(updateDoc(doc(A.firestore(), 'memories', 'mem1'), { artistId: 'x' }));
+  await assertFails(updateDoc(doc(A.firestore(), 'memories', 'mem1'), { handle: 'someone-else' }));
+  await assertFails(updateDoc(doc(B.firestore(), 'memories', 'mem1'), { artistId: 'y' }));
+});
 await t('B can read but not delete A’s memory', async () => {
   await assertSucceeds(getDoc(doc(B.firestore(), 'memories', 'mem1')));
   await assertFails(deleteDoc(doc(B.firestore(), 'memories', 'mem1')));

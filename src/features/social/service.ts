@@ -22,6 +22,8 @@ export type ShareInput = {
   festivalId?: string;
   night?: string;
   artistId?: string;
+  /** Playing back to back with `artistId`. */
+  withArtistIds?: string[];
   /** A festival from before Afterglow, instead of `festivalId`. */
   past?: PastEvent;
   /** A one-night show, instead of a festival. */
@@ -33,6 +35,9 @@ export type ShareInput = {
   width?: number;
   height?: number;
 };
+
+/** What can change on a video once it's shared: where it's from and who was playing. */
+export type SharedTags = Pick<ShareInput, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'past' | 'show'>;
 
 export type FollowCounts = { followers: number; following: number };
 
@@ -141,6 +146,8 @@ export interface SocialService {
 
   shareMemory(input: ShareInput, onProgress?: (share: number) => void): Promise<SharedMemory>;
   unshareMemory(sharedId: string): Promise<void>;
+  /** Change where your shared video is from and who was playing. A throwback stays one (its year and name can change). */
+  retagShared(sharedId: string, tags: SharedTags): Promise<SharedMemory>;
   memoriesOf(uid: string): Promise<SharedMemory[]>;
   /** Shared memories tagged with this festival, newest first (community clips in Discover). */
   festivalMemories(festivalId: string, max: number): Promise<SharedMemory[]>;
