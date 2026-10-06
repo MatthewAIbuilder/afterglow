@@ -15,6 +15,8 @@ export const es_sprouts: Dictionary = {
   'A grinning phantom': 'Un espectro sonriente',
   'The Lantern': 'La Linterna',
   'A pumpkin lit from inside': 'Una calabaza iluminada por dentro',
+  'The Dinosaur': 'El Dinosaurio',
+  'A dinosaur from outer space, roaring under a flying saucer': 'Un dinosaurio del espacio exterior que ruge bajo un platillo volador',
   'The Mammoth': 'El Mamut',
   'A shaggy woolly mammoth with great curling tusks': 'Un mamut lanudo y greñudo con grandes colmillos curvos',
   'Halo and horns': 'Aureola y cuernos',

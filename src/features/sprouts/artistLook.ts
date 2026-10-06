@@ -49,7 +49,8 @@ export type Creature =
   | 'patchbear'
   | 'thornskull'
   | 'trooper'
-  | 'mammoth';
+  | 'mammoth'
+  | 'dino';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -81,6 +82,7 @@ const SIGNATURES: Record<string, Spec> = {
   zedsdead: { creature: 'ghost', palette: P('#FFFFFF', '#DCD8F2', '#8C88B8', '#9BE84E', '#3E8F1A', '#B6FF6A', '#9BE84E'), name: t('The Ghost'), theme: t('A friendly ghost with glowing eyes') },
   ghengar: { creature: 'ghost', palette: P('#F1E8FF', '#A98CF0', '#4A2E8A', '#FF6AD5', '#7A1E6A', '#FF8AE0', '#A06BFF'), name: t('The Phantom'), theme: t('A grinning phantom'), extra: 'fangs' },
   rlgrime: { creature: 'pumpkin', palette: P('#FFD9A0', '#FF8A1F', '#A8400C', '#8FD65A', '#2E6A1E', '#FFE36B', '#FF8A1F'), name: t('The Lantern'), theme: t('A pumpkin lit from inside') },
+  excision: { creature: 'dino', palette: P('#D08A64', '#7E3A28', '#3A1610', '#A9BEDF', '#2E4380', '#FF3B3B', '#4F86FF'), name: t('The Dinosaur'), theme: t('A dinosaur from outer space, roaring under a flying saucer') },
   wooli: { creature: 'mammoth', palette: P('#D9A877', '#9A6438', '#4E2C14', '#F6EBD2', '#CDB68C', '#FFE9B0', '#A9D4FF'), name: t('The Mammoth'), theme: t('A shaggy woolly mammoth with great curling tusks') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
