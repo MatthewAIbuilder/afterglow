@@ -61,6 +61,8 @@ export default function MemoryTagScreen() {
   const fresh = !!existing && freshParam === '1';
   // Retagging something already saved, rather than tagging a new video.
   const retagging = !!existing && !fresh;
+  // Chosen on the website: a browser keeps no files, so the video is kept by sharing it to Discover.
+  const webPost = !!draft?.keptBySharing;
 
   // When it was filmed, as a number so it's stable between renders.
   const whenMs = existing ? Date.parse(existing.capturedAt) : draft?.moment.when?.getTime();
@@ -151,11 +153,12 @@ export default function MemoryTagScreen() {
   const throwback = !!tag.past && !tag.festivalId;
   const throwbackLimit = useThrowbackShares(throwback && offer === 'ready');
   const overLimit = throwback && !!throwbackLimit && !throwbackLimit.canShare;
-  const shareOn = offer === 'ready' && !overLimit && (shareChoice ?? true);
+  const shareOn = offer === 'ready' && !overLimit && (webPost || (shareChoice ?? true));
   // Send to my crew: your crews at this festival see it with the time you filmed it. On by default for a new video.
   const crewUpdates = useCrewUpdates();
   const { crewsAt } = useCrews();
-  const crewsHere = festivalId && crewUpdates.ready ? crewsAt(festivalId) : [];
+  // (Not for a website post: crew videos wait on the phone for signal, and a browser keeps nothing.)
+  const crewsHere = festivalId && crewUpdates.ready && !webPost ? crewsAt(festivalId) : [];
   const [crewChoice, setCrewChoice] = useState<boolean | undefined>();
   const crewOn = crewsHere.length > 0 && (crewChoice ?? !retagging);
   // With no signal it waits on the phone and goes by itself (Memories says "Waiting for signal"): no alert for that.
@@ -163,7 +166,14 @@ export default function MemoryTagScreen() {
     void social.share(m).catch((e) => {
       const kind = socialErrorKind(e);
       // The throwback limit's own words already say where it is.
-      showAlert(t('Couldn’t share it to Discover'), kind === 'throwback-limit' ? SOCIAL_ERROR_COPY[kind] : t('{error} It’s saved in your Memories, so you can share it from there.', { error: SOCIAL_ERROR_COPY[kind] }));
+      showAlert(
+        t('Couldn’t share it to Discover'),
+        kind === 'throwback-limit'
+          ? SOCIAL_ERROR_COPY[kind]
+          : webPost
+            ? t('{error} It stays in your Memories until you close this page, so you can try again from there.', { error: SOCIAL_ERROR_COPY[kind] })
+            : t('{error} It’s saved in your Memories, so you can share it from there.', { error: SOCIAL_ERROR_COPY[kind] }),
+      );
     });
 
   // Nothing to tag (opened without a video, or the memory was deleted): step back, unless we're already leaving
@@ -197,11 +207,25 @@ export default function MemoryTagScreen() {
       leave();
       return;
     }
+    // On the website, saving is sharing: say what's still needed rather than keep it nowhere.
+    if (webPost && !shareOn) {
+      const why = overLimit
+        ? t('You’ve shared as many throwbacks as the free plan allows. Unlimited throwbacks come with Afterglow Plus.')
+        : offer === 'hidden'
+          ? t('Sharing isn’t available right now.')
+          : shareDetail(offer, { on: false });
+      const go = offer === 'needs-account' ? { text: t('Sign in'), path: '/account' as const } : offer === 'needs-profile' ? { text: t('Make a profile'), path: '/profile-edit' as const } : undefined;
+      showAlert(t('Share it to keep it'), t('{why} On the website, videos are kept by sharing them.', { why }), [
+        { text: go ? t('Not now') : t('OK'), style: 'cancel' },
+        ...(go ? [{ text: go.text, onPress: () => router.push(go.path) }] : []),
+      ]);
+      return;
+    }
     setSaving(true);
     const kept = await mem.keepDraft(tag);
     setSaving(false);
     if (!kept) {
-      showAlert(t('Couldn’t save this video'), t('There may not be enough space on your phone. Try again.'));
+      showAlert(t('Couldn’t save this video'), webPost ? t('Try again, or choose it again.') : t('There may not be enough space on your phone. Try again.'));
       return;
     }
     haptic.settle();
@@ -209,6 +233,12 @@ export default function MemoryTagScreen() {
     if (shareOn) shareIt(kept);
     // Waits for signal (and for the Discover upload, if any) on its own.
     if (crewOn) crewUpdates.sendVideo(kept);
+    if (webPost) {
+      // The upload runs in this page: Memories shows how far along it is.
+      leaving.current = true;
+      router.replace('/memories');
+      return;
+    }
     leave();
   };
 
@@ -256,8 +286,15 @@ export default function MemoryTagScreen() {
         <Text style={styles.barTitle} accessibilityRole="header">
           {retagging ? t('Tag memory') : t('New memory')}
         </Text>
-        <Pressable onPress={() => void save()} disabled={saving} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Save to Memories')} accessibilityState={{ disabled: saving, busy: saving }}>
-          <Text style={[styles.barButton, styles.save, saving && styles.saving]}>{t('Save')}</Text>
+        <Pressable
+          onPress={() => void save()}
+          disabled={saving}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={webPost ? t('Share this video') : t('Save to Memories')}
+          accessibilityState={{ disabled: saving, busy: saving }}
+        >
+          <Text style={[styles.barButton, styles.save, saving && styles.saving]}>{webPost ? t('Share') : t('Save')}</Text>
         </Pressable>
       </View>
 
@@ -459,6 +496,11 @@ export default function MemoryTagScreen() {
                 {overLimit ? null : (
                   <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name ?? (past ? pastLabel(past) : undefined), on: shareOn })}</Text>
                 )}
+                {webPost ? (
+                  <Text style={[styles.shareDetail, styles.webNote]} testID="web-keeps-by-sharing">
+                    {t('On the website, videos are kept by sharing them. Nothing is uploaded until you tap Share.')}
+                  </Text>
+                ) : null}
                 {throwback && offer === 'ready' && throwbackLimit && throwbackSharesLine(throwbackLimit) ? (
                   <Text style={[styles.shareDetail, overLimit && styles.limit]} testID="throwback-limit">
                     {throwbackSharesLine(throwbackLimit)}
@@ -479,7 +521,7 @@ export default function MemoryTagScreen() {
               </View>
               <Switch
                 value={shareOn}
-                disabled={offer !== 'ready' || overLimit}
+                disabled={offer !== 'ready' || overLimit || webPost}
                 onValueChange={(v) => {
                   haptic.select();
                   setShareChoice(v);
@@ -612,4 +654,5 @@ const styles = StyleSheet.create({
   shareLink: { marginTop: space.xs },
   limit: { color: '#F2B8A6' },
   sharedNote: { paddingHorizontal: space.xl },
+  webNote: { color: color.moon, marginTop: space.xs },
 });

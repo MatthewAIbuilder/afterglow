@@ -45,7 +45,7 @@ import { useClipPool } from '../../state/community';
 import { useCrews } from '../../state/crews';
 import { useFollowedArtists } from '../../state/followedArtists';
 import { useGoing } from '../../state/going';
-import { useMemories } from '../../state/memories';
+import { useMoments } from '../../features/memories/useMoments';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSocial } from '../../state/social';
@@ -121,7 +121,7 @@ function FullProfile() {
   const pool = useClipPool();
   const mine = useMemo(() => yourClips(pool.clips, reactions), [pool.clips, reactions]);
   const kept = yourClipCount(mine);
-  const { memories, uriOf } = useMemories();
+  const { memories, uriOf } = useMoments();
   const videos = useMemo(() => videoGrid(memories), [memories]);
   const { followed } = useFollowedArtists();
   const followedCount = followed.filter((id) => catalog.artist(id)).length;
