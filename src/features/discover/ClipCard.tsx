@@ -55,6 +55,7 @@ import { useSendOrShare } from '../messages/useSendOrShare';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
 import { t } from '../../i18n';
+import { shownClipTitle } from '../community/clips';
 
 type Props = {
   clip: Clip;
@@ -441,7 +442,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         {upNextPill}
         {artistButton}
         <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
-          {clip.title}
+          {shownClipTitle(clip.title)}
         </Text>
         {metaLine(!!tall)}
         {community ? (
@@ -675,7 +676,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {upNextPill}
         {artistButton}
-        <Text style={styles.title}>{clip.title}</Text>
+        <Text style={styles.title}>{shownClipTitle(clip.title)}</Text>
         {metaLine(false)}
         {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>{t('This video isn’t available right now.')}</Text>}
         {media?.provider === 'soundcloud' && videoFailed && (

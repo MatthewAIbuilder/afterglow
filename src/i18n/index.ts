@@ -1,34 +1,45 @@
-import { getLocales } from 'expo-localization';
-import { Platform } from 'react-native';
 import { es } from './es';
-import { readStoredLanguage } from './storedLanguage';
 import { monthNames, resolveLanguage, translate, weekdayNames, type Dictionary, type Language, type LanguageChoice, type Vars } from './translate';
 
 export { LANGUAGES, type Language, type LanguageChoice } from './translate';
-export { writeStoredLanguage } from './storedLanguage';
 
-function deviceCodes(): string[] {
+/**
+ * What the phone says, read without importing the phone's modules up front:
+ * the website's nightly scripts run some of the app's plain logic in Node,
+ * where React Native can't load, and there everything is simply English.
+ */
+function fromPhone(): { choice?: LanguageChoice; codes: string[] } {
   try {
-    return getLocales().map((l) => l.languageTag || l.languageCode || '');
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { getLocales } = require('expo-localization') as typeof import('expo-localization');
+    const { readStoredLanguage } = require('./storedLanguage') as typeof import('./storedLanguage');
+    /* eslint-enable @typescript-eslint/no-require-imports */
+    let codes: string[] = [];
+    try {
+      codes = getLocales().map((l) => l.languageTag || l.languageCode || '');
+    } catch {}
+    return { choice: readStoredLanguage(), codes };
   } catch {
-    return [];
+    return { codes: [] };
   }
 }
+const phone = fromPhone();
 
 /** What was chosen in Settings ('device' when nothing was). */
-export const LANGUAGE_CHOICE: LanguageChoice = readStoredLanguage() ?? 'device';
+export const LANGUAGE_CHOICE: LanguageChoice = phone.choice ?? 'device';
 /**
  * The language the app speaks, worked out once as it starts (from Settings,
  * else the phone's languages). Changing it in Settings restarts the app, like
  * a new theme, so every screen and every line made at start-up follows.
  */
-export const LANGUAGE: Language = resolveLanguage(LANGUAGE_CHOICE, deviceCodes());
+export const LANGUAGE: Language = resolveLanguage(LANGUAGE_CHOICE, phone.codes);
 /** For `toLocaleString` and friends. */
 export const LOCALE = LANGUAGE === 'es' ? 'es' : 'en-US';
 
 const DICTIONARIES: Partial<Record<Language, Dictionary>> = { es };
 
-if (Platform.OS === 'web' && typeof document !== 'undefined') document.documentElement.lang = LANGUAGE;
+// The website: tell the browser (and screen readers) which language the page is in.
+if (typeof document !== 'undefined' && document.documentElement) document.documentElement.lang = LANGUAGE;
 
 /**
  * A line in the app's language: write the English, get it back translated

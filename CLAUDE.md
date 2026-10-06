@@ -19,7 +19,7 @@ What the app has, by area (details in `docs/history.md`):
 - **Care** (`features/care`): Look after yourself (stopwatches with a timing guide, feelings, water, pulse, steps, get help), all private on the phone.
 - **Data** (`src/data`): catalogue file plus nightly imports (EDMTrain festivals, YouTube clips, Deezer photos, colours, lineup similarity, site pictures) into `public/catalogue.json`; HQ live patches; `useCatalog()` is the only way screens reach it.
 - **Afterglow HQ** (`features/admin`, `src/app/admin.tsx`): the support account's dashboard (analytics, data uploads and publishing, privileges, support, reports).
-- **Languages** (`src/i18n`, `docs/translations.md`): English and Spanish, following the phone (or Settings → Language). New UI lines go through `t('…')` with a Spanish entry in `src/i18n/es.ts` (a test checks); Discover, Festivals, the festival page, My Sound, Profile, Friends and crews are translated; the rest is next (`docs/translations.md`).
+- **Languages** (`src/i18n`, `docs/translations.md`): English and Spanish, following the phone (or Settings → Language). New UI lines go through `t('…')` with a Spanish entry in `src/i18n/es.ts` (a test checks); Discover, Festivals, the festival page, My Sound, Profile, Friends, crews, the artist page and Memories are translated; the rest is next. `src/i18n/index.ts` must not import React Native or Expo at the top (the nightly Node scripts load it) (`docs/translations.md`).
 
 
 Waiting on the user (don't redo, remind when relevant):

@@ -35,7 +35,7 @@ import { PROVIDER_NAME } from '../../features/music/models';
 import { MemoryTile } from '../../features/memories/MemoryTile';
 import { useMemories } from '../../state/memories';
 import { dayList, daysOf } from '../../features/festivals/days';
-import { describeSet, formatDuration } from '../../features/festivals/format';
+import { datesLine, describeSet, formatDuration } from '../../features/festivals/format';
 import { countdown, setLine } from '../../features/festivals/when';
 import { distanceLabel, NEAR_KM } from '../../features/festivals/near';
 import { playingList } from '../../features/festivals/playing';
@@ -55,7 +55,7 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
-import { t } from '../../i18n';
+import { dayWord, t, tc } from '../../i18n';
 
 const HERO = 132;
 
@@ -166,7 +166,7 @@ export default function ArtistScreen() {
           </Svg>
           <ArtistAvatar artist={artist} size={HERO} />
           <Text style={styles.name}>{artist.name}</Text>
-          <Text style={styles.match}>{pct}% match</Text>
+          <Text style={styles.match}>{t('{n}% match', { n: pct })}</Text>
           {/* What the match rests on, so it never feels arbitrary. */}
           <Text style={styles.why}>
             {whyLine(
@@ -184,16 +184,16 @@ export default function ArtistScreen() {
               onPress={() => {
                 haptic.select();
                 const links = listenLinks(artist.name, catalog.soundcloudOf(artist.id)?.url);
-                showActionSheet({ title: `Listen to ${artist.name}`, options: [...links.map((l) => l.service), 'Cancel'], cancelButtonIndex: links.length }, (i) => {
+                showActionSheet({ title: t('Listen to {artist}', { artist: artist.name }), options: [...links.map((l) => l.service), t('Cancel')], cancelButtonIndex: links.length }, (i) => {
                   if (links[i]) Linking.openURL(links[i].url).catch(() => {});
                 });
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Listen to ${artist.name}`}
+              accessibilityLabel={t('Listen to {artist}', { artist: artist.name })}
               style={({ pressed }) => [styles.listenPill, pressed && { opacity: 0.7 }]}
             >
               <PlayIcon color={color.moon} size={12} />
-              <Text style={styles.listenText}>Listen</Text>
+              <Text style={styles.listenText}>{t('Listen')}</Text>
             </Pressable>
           </View>
           {starFestival && (
@@ -207,14 +207,14 @@ export default function ArtistScreen() {
               accessibilityState={{ selected: mustSee }}
               accessibilityLabel={
                 mustSee
-                  ? `Remove from your must sees at ${starFestival.name}`
-                  : `Mark as a must see at ${starFestival.name}`
+                  ? t('Remove from your must sees at {festival}', { festival: starFestival.name })
+                  : t('Mark as a must see at {festival}', { festival: starFestival.name })
               }
               style={({ pressed }) => [styles.mustSee, mustSee && styles.mustSeeOn, pressed && { opacity: 0.7 }]}
             >
               <StarIcon color={mustSee ? color.glow : color.moonDim} filled={mustSee} size={16} />
               <Text style={[styles.mustSeeText, mustSee && { color: color.moon }]}>
-                {mustSee ? 'On your must-see list' : 'Mark as must see'}
+                {mustSee ? t('On your must-see list') : t('Mark as must see')}
               </Text>
             </Pressable>
           )}
@@ -226,10 +226,14 @@ export default function ArtistScreen() {
                 router.push(`/festival/${next.id}`);
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Next show: ${next.name}, ${nextShowLine(next, artist.id, today, (f, a) => dayList(daysOf(f, a)))}${going.includes(next.id) ? '. You’re going' : ''}. Opens the festival.`}
+              accessibilityLabel={
+                going.includes(next.id)
+                  ? t('Next show: {festival}, {when}. You’re going. Opens the festival.', { festival: next.name, when: nextShowLine(next, artist.id, today, (f, a) => dayList(daysOf(f, a))) })
+                  : t('Next show: {festival}, {when}. Opens the festival.', { festival: next.name, when: nextShowLine(next, artist.id, today, (f, a) => dayList(daysOf(f, a))) })
+              }
               style={({ pressed }) => [styles.nextShow, going.includes(next.id) && styles.nextShowGoing, pressed && { opacity: 0.8 }]}
             >
-              <Text style={styles.nextKicker}>{going.includes(next.id) ? 'NEXT SHOW · YOU’RE GOING' : 'NEXT SHOW'}</Text>
+              <Text style={styles.nextKicker}>{going.includes(next.id) ? t('NEXT SHOW · YOU’RE GOING') : t('NEXT SHOW')}</Text>
               <Text style={styles.nextName} numberOfLines={1}>
                 {next.name}
               </Text>
@@ -249,7 +253,7 @@ export default function ArtistScreen() {
 
         {/* You and them: what you've done with their music on Afterglow. */}
         {hasStory(story) ? (
-          <Section title="You and them">
+          <Section title={t('You and them')}>
             <View style={styles.story} accessible accessibilityLabel={storyText.join('. ')}>
               {storyText.map((line, i) => (
                 <Text key={line} style={[styles.storyLine, i === 0 && story.seenLive.length > 0 && { color: color.moon }]}>
@@ -260,16 +264,16 @@ export default function ArtistScreen() {
           </Section>
         ) : null}
 
-        <Section title="Their collectible">
+        <Section title={t('Their collectible')}>
           <ArtistSproutCard artist={artist} />
         </Section>
 
         {festivals.length > 0 && (
-          <Section title="Playing">
+          <Section title={tc('artist', 'Playing')}>
             {playing.map(({ festival: f, going: mine, over, km }) => {
               const set = setFor(f, artist.id);
-              const when = over ? 'Over' : countdown(f, today);
-              const extra = [mine ? 'Going' : '', when ?? '', km !== undefined && !over ? distanceLabel(km, units) : ''].filter(Boolean).join(' · ');
+              const when = over ? t('Over') : countdown(f, today);
+              const extra = [mine ? t('Going') : '', when ?? '', km !== undefined && !over ? distanceLabel(km, units) : ''].filter(Boolean).join(' · ');
               return (
                 <Pressable
                   key={f.id}
@@ -284,7 +288,7 @@ export default function ArtistScreen() {
                     <Text style={styles.rowTitle}>{f.name}</Text>
                     <Text style={styles.rowMeta}>
                       {setLine(
-                        set ? describeSet(f, set) : `${dayList(daysOf(f, artist.id)) ?? f.dates}, set time not announced yet`,
+                        set ? describeSet(f, set) : t('{days}, set time not announced yet', { days: dayList(daysOf(f, artist.id)) ?? datesLine(f) }),
                         f.notes?.[artist.id],
                       )}
                     </Text>
@@ -302,11 +306,11 @@ export default function ArtistScreen() {
                   router.push({ pathname: '/festival-map', params: { artist: artist.id } });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`See ${artist.name}'s festivals on the map`}
+                accessibilityLabel={t("See {artist}'s festivals on the map", { artist: artist.name })}
                 style={({ pressed }) => [styles.tourLink, pressed && { opacity: 0.7 }]}
               >
                 <MapIcon color={color.glow} size={16} />
-                <Text style={styles.tourText}>See their tour on the map</Text>
+                <Text style={styles.tourText}>{t('See their tour on the map')}</Text>
               </Pressable>
             ) : null}
           </Section>
@@ -314,7 +318,7 @@ export default function ArtistScreen() {
 
         {/* Club shows and concerts, each opening its EDMTrain page (credited, as EDMTrain asks). */}
         {shows.length > 0 && (
-          <Section title="Upcoming shows">
+          <Section title={t('Upcoming shows')}>
             {showsListed.map((s) => {
               const block = showDateBlock(s.date);
               const others = s.artistIds.filter((a) => a !== artist.id).flatMap((a) => catalog.artist(a)?.name ?? []);
@@ -363,25 +367,25 @@ export default function ArtistScreen() {
                 }}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: allShows }}
-                accessibilityLabel={allShows ? 'Show fewer shows' : `See all ${shows.length} shows`}
+                accessibilityLabel={allShows ? t('Show fewer shows') : t('See all {n} shows', { n: shows.length })}
                 style={({ pressed }) => [styles.tourLink, pressed && { opacity: 0.7 }]}
               >
-                <Text style={styles.tourText}>{allShows ? 'Show fewer' : `See all ${shows.length}`}</Text>
+                <Text style={styles.tourText}>{allShows ? t('Show fewer') : t('See all {n}', { n: shows.length })}</Text>
               </Pressable>
             ) : null}
             <Pressable
               onPress={() => void Linking.openURL('https://edmtrain.com').catch(() => {})}
               accessibilityRole="link"
-              accessibilityLabel="Show info from EDMTrain. Opens their site."
+              accessibilityLabel={t('Show info from EDMTrain. Opens their site.')}
               style={({ pressed }) => [styles.showCredit, pressed && { opacity: 0.6 }]}
             >
-              <Text style={styles.showCreditText}>Show info from EDMTrain ↗</Text>
+              <Text style={styles.showCreditText}>{t('Show info from EDMTrain ↗')}</Text>
             </Pressable>
           </Section>
         )}
 
         {clips.length > 0 && (
-          <Section title="Live clips">
+          <Section title={t('Live clips')}>
             {clips.map((c) => {
               const watched = c.id in seen;
               return (
@@ -389,7 +393,7 @@ export default function ArtistScreen() {
                   key={c.id}
                   onPress={() => play(c)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Play ${c.title}${watched ? ', watched' : ''}`}
+                  accessibilityLabel={watched ? t('Play {title}, watched', { title: c.title }) : t('Play {title}', { title: c.title })}
                   style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
                 >
                   <ClipStill clip={c} colors={[bright, deep]} style={styles.thumb} />
@@ -397,7 +401,7 @@ export default function ArtistScreen() {
                     <Text style={styles.rowTitle}>{c.title}</Text>
                     <Text style={styles.rowMeta}>
                       {catalog.festival(c.festivalId)?.name}, {formatDuration(c.durationSec)}
-                      {watched ? ' · Watched' : ''}
+                      {watched ? ` · ${t('Watched')}` : ''}
                     </Text>
                   </View>
                 </Pressable>
@@ -408,7 +412,7 @@ export default function ArtistScreen() {
 
         {/* One artist leads to the next: a clip each from artists who sound like them. */}
         {fansWatch.length > 0 && (
-          <Section title="Fans also watch">
+          <Section title={t('Fans also watch')}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.memoryScroll} contentContainerStyle={styles.alsoRow}>
               {fansWatch.map(({ artist: a, clip: c, seen: watched }) => {
                 const [aDeep, aBright] = artistColors(a.id, a.color);
@@ -417,7 +421,11 @@ export default function ArtistScreen() {
                     key={c.id}
                     onPress={() => play(c)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Play ${a.name}, ${c.title}${watched ? ', watched' : ''}. ${Math.round((taste[a.id] ?? 0) * 100)} percent match.`}
+                    accessibilityLabel={
+                      watched
+                        ? t('Play {artist}, {title}, watched. {n} percent match.', { artist: a.name, title: c.title, n: Math.round((taste[a.id] ?? 0) * 100) })
+                        : t('Play {artist}, {title}. {n} percent match.', { artist: a.name, title: c.title, n: Math.round((taste[a.id] ?? 0) * 100) })
+                    }
                     style={({ pressed }) => [styles.also, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
                   >
                     <ClipStill clip={c} colors={[aBright, aDeep]} style={styles.alsoStill} />
@@ -425,7 +433,7 @@ export default function ArtistScreen() {
                       {a.name}
                     </Text>
                     <Text style={styles.rowMeta} numberOfLines={1}>
-                      {Math.round((taste[a.id] ?? 0) * 100)}% · {watched ? 'Watched' : c.title}
+                      {Math.round((taste[a.id] ?? 0) * 100)}% · {watched ? t('Watched') : c.title}
                     </Text>
                   </Pressable>
                 );
@@ -439,7 +447,7 @@ export default function ArtistScreen() {
 
         {/* Your own videos of them, from Memories. */}
         {yours.length > 0 && (
-          <Section title="Your memories">
+          <Section title={t('Your memories')}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.memoryRow} style={styles.memoryScroll}>
               {yours.map((m) => (
                 <MemoryTile
@@ -447,7 +455,7 @@ export default function ArtistScreen() {
                   memory={m}
                   thumbUri={m.thumb ? uriOf(m.thumb) : undefined}
                   width={96}
-                  label={`Your memory of ${artist.name}${m.night ? `, ${m.night}` : ''}`}
+                  label={m.night ? t('Your memory of {artist}, {night}', { artist: artist.name, night: dayWord(m.night) }) : t('Your memory of {artist}', { artist: artist.name })}
                   onPress={() => router.push({ pathname: '/memory/[id]', params: { id: m.id } })}
                 />
               ))}
@@ -457,16 +465,16 @@ export default function ArtistScreen() {
 
         {/* Their sound as a mix, e.g. 80% melodic bass, 20% dubstep. */}
         {mix.length > 0 && (
-          <Section title={artist.soundGuessed ? 'Their sound, a guess' : 'Their sound'}>
+          <Section title={artist.soundGuessed ? t('Their sound, a guess') : t('Their sound')}>
             <View style={styles.mix}>
               <SoundBreakdown shares={mix} />
             </View>
-            {artist.soundGuessed ? <Text style={styles.guess}>Guessed from the festivals they play and who they share bills with. Rate them to sharpen your matches.</Text> : null}
+            {artist.soundGuessed ? <Text style={styles.guess}>{t('Guessed from the festivals they play and who they share bills with. Rate them to sharpen your matches.')}</Text> : null}
           </Section>
         )}
 
         {similar.length > 0 && (
-          <Section title={similarAt ? `Similar sound at ${similarAt.name}` : 'Similar sound'}>
+          <Section title={similarAt ? t('Similar sound at {festival}', { festival: similarAt.name }) : t('Similar sound')}>
             <View style={styles.similar}>
               {similar.map((a) => (
                 <Pressable
@@ -477,7 +485,7 @@ export default function ArtistScreen() {
                     router.push({ pathname: '/artist/[id]', params: { id: a.id, festival: similarAt?.id } });
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={`${a.name}, ${Math.round((taste[a.id] ?? 0) * 100)} percent match`}
+                  accessibilityLabel={t('{artist}, {n} percent match', { artist: a.name, n: Math.round((taste[a.id] ?? 0) * 100) })}
                   style={({ pressed }) => [styles.similarItem, pressed && { opacity: 0.6 }]}
                 >
                   <ArtistAvatar artist={a} size={64} />
@@ -491,10 +499,10 @@ export default function ArtistScreen() {
           </Section>
         )}
         {/* Photos from the nightly photo list credit where they're from. */}
-        {credit ? <Text style={styles.credit}>{artist.imageUrl ? 'Photo' : 'Photos'} from {credit}</Text> : null}
+        {credit ? <Text style={styles.credit}>{artist.imageUrl ? t('Photo from {credit}', { credit }) : t('Photos from {credit}', { credit })}</Text> : null}
       </ScrollView>
 
-      <PageActions shareLabel={`Share ${artist.name}`} onShare={() => sendOrShare({ kind: 'artist', id: artist.id }, artistShareText(artist, festivals, WEB_URL), artist.name)} />
+      <PageActions shareLabel={t('Share {artist}', { artist: artist.name })} onShare={() => sendOrShare({ kind: 'artist', id: artist.id }, artistShareText(artist, festivals, WEB_URL), artist.name)} />
     </View>
   );
 }

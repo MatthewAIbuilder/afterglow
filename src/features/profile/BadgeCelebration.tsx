@@ -22,7 +22,7 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { Sprout } from '../sprouts/Sprout';
 import { kindOf, type SproutKind } from '../sprouts/sprouts';
 import type { ArtistLook } from '../sprouts/artistLook';
-import { type Tier, TIER_NAME, tierLine } from '../sprouts/artistSprouts';
+import { type Tier, TIER_LABEL, tierLine } from '../sprouts/artistSprouts';
 import { pinAbout, pinLook, throwbackAbout, throwbackLook } from '../badges/badges';
 import { type PastEvent, pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
@@ -113,8 +113,8 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           : unlock.kind === 'artistSprout'
             ? unlock.tier
               ? unlock.tier < 3
-                ? t('{tier} now: you’ve filmed {artist} {n} times. {next}.', { tier: TIER_NAME[unlock.tier], artist: unlock.name, n: unlock.videos, next: tierLine(unlock.videos) })
-                : t('{tier} now: you’ve filmed {artist} {n} times.', { tier: TIER_NAME[unlock.tier], artist: unlock.name, n: unlock.videos })
+                ? t('{tier} now: you’ve filmed {artist} {n} times. {next}.', { tier: TIER_LABEL[unlock.tier], artist: unlock.name, n: unlock.videos, next: tierLine(unlock.videos) })
+                : t('{tier} now: you’ve filmed {artist} {n} times.', { tier: TIER_LABEL[unlock.tier], artist: unlock.name, n: unlock.videos })
               : t('{theme}, earned with your video of {artist}. Give one to someone, or film them again: {next}.', { theme: unlock.look.theme, artist: unlock.name, next: tierLine(unlock.videos) })
             : unlock.milestone.about;
 

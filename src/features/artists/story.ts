@@ -5,6 +5,7 @@ import { countdown } from '../festivals/when';
 import { describeSet } from '../festivals/format';
 import { bySoonest, isOver } from '../festivals/shelves';
 import { pastLabel, type PastEvent } from '../memories/past';
+import { t, tn } from '../../i18n';
 
 /**
  * The deeper artist page, worked out on the phone. Pure.
@@ -75,15 +76,18 @@ export function artistStory(input: {
 /** Is there anything to say? */
 export const hasStory = (s: ArtistStory) => s.watched + s.liked + s.saved + s.filmed > 0;
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-const list = (names: readonly string[]) => (names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
+/** "a, b and c", in the app's language. */
+const list = (names: readonly string[]) => (names.length <= 1 ? (names[0] ?? '') : t('{list} and {last}', { list: names.slice(0, -1).join(', '), last: names[names.length - 1] }));
 
 /** The story as short lines: "Seen live at EDC Orlando 2026 and Lost Lands 2024", "3 videos of them", "Watched 4 sets · liked 2 · kept 1". */
 export function storyLines(s: ArtistStory): string[] {
   const out: string[] = [];
-  if (s.seenLive.length) out.push(`Seen live at ${list(s.seenLive.slice(0, 3))}${s.seenLive.length > 3 ? ` and ${s.seenLive.length - 3} more` : ''}`);
-  if (s.filmed) out.push(`${plural(s.filmed, 'video')} of them in your Memories`);
-  const clips = [s.watched ? `Watched ${plural(s.watched, 'set')}` : '', s.liked ? `liked ${s.liked}` : '', s.saved ? `kept ${s.saved}` : ''].filter(Boolean);
+  if (s.seenLive.length) {
+    const places = list(s.seenLive.slice(0, 3));
+    out.push(s.seenLive.length > 3 ? t('Seen live at {places} and {n} more', { places, n: s.seenLive.length - 3 }) : t('Seen live at {places}', { places }));
+  }
+  if (s.filmed) out.push(tn(s.filmed, '{n} video of them in your Memories', '{n} videos of them in your Memories'));
+  const clips = [s.watched ? tn(s.watched, 'Watched {n} set', 'Watched {n} sets') : '', s.liked ? t('liked {n}', { n: s.liked }) : '', s.saved ? t('kept {n}', { n: s.saved }) : ''].filter(Boolean);
   if (clips.length) {
     const line = clips.join(' · ');
     out.push(line[0].toUpperCase() + line.slice(1));

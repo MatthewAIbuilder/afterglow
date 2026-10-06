@@ -2,7 +2,9 @@ import type { Dictionary } from './translate';
 import { es_discover } from './es/discover';
 import { es_festivalPage } from './es/festivalPage';
 import { es_festivals } from './es/festivals';
+import { es_artist } from './es/artist';
 import { es_crews } from './es/crews';
+import { es_memories } from './es/memories';
 import { es_friends } from './es/friends';
 import { es_plan } from './es/plan';
 import { es_profile } from './es/profile';
@@ -27,6 +29,9 @@ export const es: Dictionary = {
   ...es_profileLogic,
   ...es_friends,
   ...es_crews,
+  ...es_artist,
+  ...es_memories,
+
 
 
 

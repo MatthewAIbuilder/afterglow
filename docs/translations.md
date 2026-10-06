@@ -6,6 +6,8 @@ Changing it there restarts the app, like a new theme.
 
 ## How it works
 
+**The website's nightly scripts** (`scripts/*.ts`, run with tsx in Node) use some of the app's plain logic, so `src/i18n/index.ts` must never import React Native, Expo or `./storedLanguage` at the top (it `require`s them inside a try; in Node everything is English). A test checks.
+
 - `src/i18n/translate.ts`: the pure part (which language, filling `{slots}`, month and day names).
 - `src/i18n/index.ts`: `t()` and `tn()`, worked out once as the app starts from the saved choice (`storedLanguage.ts`, a tiny file like the theme; browser storage on the website) and the phone's languages (`expo-localization`).
 - `src/i18n/es.ts`: the Spanish list, keyed by the English line exactly as written in the code.
@@ -44,7 +46,9 @@ The Spanish lists live by area in `src/i18n/es/` (discover, festivals, festivalP
 
 - 2026-10-06, third step: My Sound (overview, list, map, spectrum, lenses, search, artist sheet, your sound, your artists, the rating scale), Profile (yours and other people's: header, passport, badges, milestones, highlights, year card, recap, edit profile, backgrounds, themes' descriptions), Friends (the tab, find people, friend codes, send to a friend, comments, likes, sign in / create account, switch account, report and block) and crews (crew page, chat, invites, check-ins, stories, meeting spots, where everyone is, care check-ins and help alerts, the crew route).
 
-Still English, next: memories and camera, quests and glow levels, sprouts and the garden, secrets, stickers and finds, care (Look after yourself), the artist page, notifications, the music connections page, What's new. Not planned: catalogue data (artist and festival names, sound names, the user's own lineup notes), people's own posts, the legal pages (they need a qualified translation), Afterglow HQ (only the support account sees it), reports and emails that go to support (flag reports stay English), Amazon's required associate statement.
+- 2026-10-06, fourth step: the artist page (follow, rating, why lines, listen links, next shows, set lines, crowd videos, story, collectibles, share text) and Memories and the camera (Memories page, a memory, tagging and the past picker, sharing to Discover, a shared video, the camera and its permission messages). Crowd clip titles the app makes ("From the crowd", "Throwback · …") stay English in storage and reports and are translated where shown (`shownClipTitle`, `community/clips.ts`).
+
+Still English, next: quests and glow levels, sprouts and the garden (and collectible names in `sprouts/artistLook.ts`), secrets, stickers and finds, care (Look after yourself), Your clips (`saved.tsx`), Pick artists and This or that, notifications, the music connections page, What's new, give a sprout. Not planned: catalogue data (artist and festival names, sound names, the user's own lineup notes), people's own posts, the legal pages (they need a qualified translation), Afterglow HQ (only the support account sees it), reports and emails that go to support (flag reports stay English), Amazon's required associate statement.
 
 Helpers: `tc('time', 'Leave')` for one English word with two meanings (Spanish entry `'time|Leave'`, falling back to plain `'Leave'`); `presetLabel(text)` in `crews/updates.ts` for preset crew messages (check-ins, quick replies, care notes), which are sent in English and shown in each phone's own language (people's own words are never translated); `dayWord(day)` for a day name mid-sentence (lower case in Spanish), `breakLabel(label)` in `plan/hours.ts` for the stored break presets (saved in English, shown translated). Code that compared a shown line with English (`soon === 'Over'`) must compare with `t('Over')`.
 

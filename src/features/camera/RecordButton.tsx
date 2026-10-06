@@ -17,6 +17,7 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
 import { motion, glowA, nightA } from '../../theme/tokens';
 import { LOCK_DISTANCE, lockProgress, RECORD_MAX_SEC } from './record';
+import { t } from '../../i18n';
 
 const SIZE = 100;
 const STROKE = 4;
@@ -109,9 +110,9 @@ export function RecordButton({
     transform: [{ rotate: `${-spin.get() * 360}deg` }, { scale: 1 + 0.08 * pulse.get() }],
   }));
   const discStyle = useAnimatedStyle(() => {
-    const t = inner.get();
-    const size = 74 - 38 * t;
-    return { width: size, height: size, borderRadius: size / 2 - (size / 2 - 9) * t };
+    const k = inner.get();
+    const size = 74 - 38 * k;
+    return { width: size, height: size, borderRadius: size / 2 - (size / 2 - 9) * k };
   });
   const lockRingStyle = useAnimatedStyle(() => ({ opacity: interpolate(slide.get(), [0, 0.05, 1], [0, 0.5, 1]) }));
   const lockBadgeStyle = useAnimatedStyle(() => ({ opacity: Math.min(1, lockPop.get()), transform: [{ scale: lockPop.get() }] }));
@@ -164,7 +165,7 @@ export function RecordButton({
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityHint={recording ? undefined : 'Tap to start and tap again to stop, or hold to film while you hold.'}
+        accessibilityHint={recording ? undefined : t('Tap to start and tap again to stop, or hold to film while you hold.')}
         accessibilityState={{ disabled: !!disabled, busy: recording }}
         hitSlop={12}
         style={({ pressed }) => [styles.button, pressed && !recording && { transform: [{ scale: 0.94 }] }, disabled && { opacity: 0.4 }]}

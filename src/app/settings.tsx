@@ -35,7 +35,8 @@ import { useProfileBackdrop } from '../features/profile/useProfileBackdrop';
 import { useToes } from '../features/toes/useToes';
 import { themeOf } from '../features/themes/themes';
 import { backdropOf } from '../features/profile/backdrops';
-import { LANGUAGE, LANGUAGE_CHOICE, LANGUAGES, t, tn, writeStoredLanguage, type LanguageChoice } from '../i18n';
+import { LANGUAGE, LANGUAGE_CHOICE, LANGUAGES, t, tn, type LanguageChoice } from '../i18n';
+import { writeStoredLanguage } from '../i18n/storedLanguage';
 
 /**
  * Settings and more, from the menu on Profile: your account, the lists

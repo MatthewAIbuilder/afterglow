@@ -65,7 +65,17 @@ function linesInCode(): { line: string; file: string }[] {
   });
 }
 
+describe('outside the app', () => {
+  it('loads no phone module up front (the website’s nightly scripts run app logic in Node)', () => {
+    const src = readFileSync(join(__dirname, '..', 'index.ts'), 'utf8');
+    expect(src).not.toMatch(/^import [^;]*from '(react-native|expo[^']*)'/m);
+    expect(src).not.toMatch(/^import [^;]*from '\.\/storedLanguage'/m);
+    expect(src).not.toMatch(/^export [^;]*from '\.\/storedLanguage'/m);
+  });
+});
+
 describe('the Spanish list', () => {
+
   const lines = linesInCode();
 
   it('finds the lines the app translates', () => {
