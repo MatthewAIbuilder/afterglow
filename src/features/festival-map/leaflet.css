@@ -672,3 +672,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .leaflet-container .leaflet-control-attribution a {
 	color: rgba(243, 240, 255, 0.7);
 }
+/* Afterglow: OpenStreetMap's light tiles turned into a night map. Inverted
+   (land goes near-black, streets darker still, names light), colour pulled
+   back, then a faint violet cast (sepia, turned round to violet) so water
+   reads slate-blue and names a soft lavender; lifted from pure black so the
+   streets still show against the land. Only the tiles: lines and lights
+   drawn over the map keep their own colours. */
+.leaflet-container .leaflet-tile-pane {
+	filter: invert(1) saturate(0.3) sepia(0.4) hue-rotate(225deg) brightness(0.88) contrast(0.92);
+}
