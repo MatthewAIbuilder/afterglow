@@ -1,11 +1,13 @@
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { EngineProps } from './ClipPlayer';
 import type { VideoMedia } from './media';
 import { canCountWatch, playedSpan, shouldPlay } from './playback';
 import { loopPosition } from '../memories/trim';
 import { seekTo } from '../memories/seek';
+import { useVideoSize } from '../memories/useVideoSize';
+import { fitFor, type VideoSize } from '../memories/videoFit';
 
 /** Give up if the video hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
@@ -30,6 +32,9 @@ function NativeVideoPlayerBase({ media, active, live, paused, progress, onPlayed
     if (part) p.currentTime = part.start;
   });
   const wantPlaying = shouldPlay({ active, live }, paused);
+  // Fill the frame only when the video's real shape (read from the video itself) nearly matches it; otherwise show it whole.
+  const [frame, setFrame] = useState<VideoSize>();
+  const size = useVideoSize(player, media.uri);
   const ready = useRef(false);
   const isPlaying = useRef(false);
   const lastTime = useRef<number | null>(null);
@@ -93,11 +98,17 @@ function NativeVideoPlayerBase({ media, active, live, paused, progress, onPlayed
   }, [active, wantPlaying, player, progress, part]);
 
   return (
-    <View style={styles.frame}>
+    <View
+      style={styles.frame}
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        if (width > 0 && height > 0 && (width !== frame?.width || height !== frame?.height)) setFrame({ width, height });
+      }}
+    >
       <VideoView
         player={player}
-        style={StyleSheet.absoluteFill}
-        contentFit={media.vertical ? 'cover' : 'contain'}
+        style={styles.video}
+        contentFit={fitFor(size, frame ?? {})}
         nativeControls={false}
         allowsPictureInPicture={false}
         // In the page on the website: an iPhone would otherwise open its own full-screen player.
@@ -111,5 +122,7 @@ function NativeVideoPlayerBase({ media, active, live, paused, progress, onPlayed
 export const NativeVideoPlayer = memo(NativeVideoPlayerBase);
 
 const styles = StyleSheet.create({
+  // A video tag doesn't stretch to fill on the website without a size of its own.
+  video: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   frame: { flex: 1, backgroundColor: '#000' },
 });

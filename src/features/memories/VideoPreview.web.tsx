@@ -44,7 +44,7 @@ export function VideoPreview({ uri, clip, style }: { uri: string; clip?: ClipWin
         loop: !clip,
         preload: 'auto',
         'aria-label': t('Your video'),
-        style: { width: '100%', height: '100%', objectFit: 'cover', backgroundColor: '#000', display: 'block' },
+        style: { width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#000', display: 'block' },
       })}
     </View>
   );

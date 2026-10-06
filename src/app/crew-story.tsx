@@ -156,7 +156,7 @@ function StoryVideo({ url }: { url: string }) {
     p.loop = true;
     p.play();
   });
-  return <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} playsInline />;
+  return <VideoView player={player} style={styles.video} contentFit="contain" nativeControls={false} playsInline />;
 }
 
 /** A check-in, as a card of its own: their words big, where and when beneath. */
@@ -175,6 +175,8 @@ function CheckInCard({ update: u, artist, replyingTo }: { update: CrewUpdate; ar
 }
 
 const styles = StyleSheet.create({
+  // A video tag doesn't stretch to fill on the website without a size of its own.
+  video: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   photoBack: { backgroundColor: '#000' },
   root: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center' },
