@@ -34,15 +34,22 @@ import { useGoing } from '../state/going';
 import { useNearby } from '../state/nearby';
 import { useLoves } from '../state/useLoves';
 import { useWeekends } from '../state/weekends';
+import { localDay } from '../features/artists/shows';
+import { ShowRow, useShowTaste } from '../features/festivals/ShowCards';
+import { isForYou, rankShows, showsByDay, showsInReach, upcomingShows } from '../features/festivals/showsForYou';
+import { router } from 'expo-router';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 
 const GOING = '#FF9AD5';
+/** Shows for you listed under a month (a day lists all of its own). */
+const MONTH_SHOWS = 8;
 
 /**
  * The festival calendar: a month at a time, each day lit with a dot for every
  * festival on it (pink for yours, glow for ones with acts you'd love). Tap a
  * day to see what's on; flip months with the arrows or tap the month to jump.
- * It opens on what's within about 100 miles of you (once location is on);
+ * Club shows for you get a small ring on their day and a list under the
+ * festivals. It opens on what's within about 100 miles of you (once location is on);
  * a state or everywhere are a tap away. Festivals you're going to always show.
  */
 export default function FestivalCalendarScreen() {
@@ -75,6 +82,16 @@ export default function FestivalCalendarScreen() {
   const [picked, setPicked] = useState<string | undefined>();
   const day = picked && picked.startsWith(`${month.year}-${String(month.month + 1).padStart(2, '0')}`) ? picked : undefined;
   const listed: Festival[] = day ? (onDays.get(day) ?? []) : inMonth;
+  // Club shows picked for you (never one carried only by an artist you turned down), within the same reach.
+  const showTaste = useShowTaste();
+  const showPicks = useMemo(
+    () => showsInReach(rankShows(upcomingShows(catalog.shows, localDay(today)), showTaste, nearby.here).filter((r) => isForYou(r)), reach, located),
+    [catalog.shows, today, showTaste, nearby.here, reach, located],
+  );
+  const showDays = useMemo(() => showsByDay(showPicks), [showPicks]);
+  const monthKey = `${month.year}-${String(month.month + 1).padStart(2, '0')}`;
+  const monthShows = useMemo(() => showPicks.filter((r) => r.show.date.startsWith(monthKey)), [showPicks, monthKey]);
+  const listedShows = day ? (showDays.get(day) ?? []) : monthShows;
   const tone = (f: Festival) => (going.includes(f.id) ? GOING : lovedOn(f, loves) > 0 ? color.glow : color.moonDim);
 
   const flip = (by: number) => {
@@ -112,7 +129,7 @@ export default function FestivalCalendarScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Festival calendar" />
+      <PageTitle title="Festivals & shows calendar" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
@@ -198,6 +215,7 @@ export default function FestivalCalendarScreen() {
               {week.map((key, i) => {
                 if (!key) return <View key={i} style={styles.cell} />;
                 const on = onDays.get(key) ?? [];
+                const shows = showDays.get(key) ?? [];
                 const chosen = key === day;
                 const isToday = key === todayKey;
                 const past = key < todayKey;
@@ -210,16 +228,17 @@ export default function FestivalCalendarScreen() {
                       setPicked(chosen ? undefined : key);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`${Number(key.slice(8))} ${monthTitle(month, today)}${on.length ? `, ${on.map((f) => f.name).join(', ')}` : ', nothing on'}${mine ? ', you’re going' : ''}`}
+                    accessibilityLabel={`${Number(key.slice(8))} ${monthTitle(month, today)}${on.length ? `, ${on.map((f) => f.name).join(', ')}` : shows.length ? '' : ', nothing on'}${mine ? ', you’re going' : ''}${shows.length ? `, ${shows.length} ${shows.length === 1 ? 'show' : 'shows'} for you` : ''}`}
                     accessibilityState={{ selected: chosen }}
                     testID={`cal-${key}`}
-                    style={[styles.cell, on.length > 0 && styles.cellOn, mine && styles.cellMine, chosen && styles.cellChosen, isToday && styles.cellToday]}
+                    style={[styles.cell, (on.length > 0 || shows.length > 0) && styles.cellOn, mine && styles.cellMine, chosen && styles.cellChosen, isToday && styles.cellToday]}
                   >
                     <Text style={[styles.num, past && styles.past, on.length > 0 && styles.numOn, chosen && styles.numChosen]}>{Number(key.slice(8))}</Text>
                     <View style={styles.dots}>
                       {on.slice(0, 3).map((f) => (
                         <View key={f.id} style={[styles.dot, { backgroundColor: chosen ? color.night : tone(f) }]} />
                       ))}
+                      {shows.length > 0 ? <View style={[styles.ring, chosen && { borderColor: color.night }]} /> : null}
                     </View>
                   </Pressable>
                 );
@@ -233,6 +252,12 @@ export default function FestivalCalendarScreen() {
           <Text style={styles.legendText}>Going</Text>
           <View style={[styles.dot, { backgroundColor: color.glow, marginLeft: space.md }]} />
           <Text style={styles.legendText}>Artists you’d love</Text>
+          {showPicks.length > 0 ? (
+            <>
+              <View style={[styles.ring, { marginLeft: space.md }]} />
+              <Text style={styles.legendText}>Shows for you</Text>
+            </>
+          ) : null}
         </View>
 
         <Text style={styles.section} accessibilityRole="header">
@@ -244,9 +269,34 @@ export default function FestivalCalendarScreen() {
               <FestivalRow key={f.id} festival={f} />
             ))}
           </View>
+        ) : listedShows.length ? (
+          <Text style={styles.none}>{day ? 'No festivals that day.' : 'No festivals this month.'}</Text>
         ) : (
           <Text style={styles.none}>{day ? 'Nothing on that day yet.' : where ? 'Nothing here this month. Try a wider reach.' : 'New festivals arrive every night.'}</Text>
         )}
+        {listedShows.length > 0 ? (
+          <>
+            <Text style={styles.section} accessibilityRole="header">
+              Shows for you
+            </Text>
+            {(day ? listedShows : listedShows.slice(0, MONTH_SHOWS)).map((r) => (
+              <ShowRow key={r.show.id} ranked={r} />
+            ))}
+            {!day && listedShows.length > MONTH_SHOWS ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push('/shows');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="See all shows"
+                style={styles.back}
+              >
+                <Text style={styles.backText}>See all shows</Text>
+              </Pressable>
+            ) : null}
+          </>
+        ) : null}
         {sameMonth(month, monthOf(today)) ? null : (
           <Pressable
             onPress={() => {
@@ -291,6 +341,7 @@ const styles = StyleSheet.create({
   numChosen: { color: color.night },
   dots: { flexDirection: 'row', gap: 2, height: 6, marginTop: 3 },
   dot: { width: 5, height: 5, borderRadius: 2.5 },
+  ring: { width: 5, height: 5, borderRadius: 2.5, borderWidth: 1, borderColor: color.glow },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: space.xl, marginTop: space.md },
   legendText: { ...type.caption, color: color.moonDim },
   section: { ...type.headline, color: color.moon, paddingHorizontal: space.xl, marginTop: space.xl, marginBottom: space.sm },

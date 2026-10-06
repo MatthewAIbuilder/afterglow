@@ -7,17 +7,18 @@ import { addToCalendar } from '../../lib/calendar';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
-import { festivalEvent } from './events';
+import { festivalEvent, type CalendarEvent } from './events';
 
 /**
  * "Add to calendar" beside Going on a festival page: the festival's days (your
  * weekend, when `festival` is given as it is for you) in the phone's own
  * New Event screen, or an .ics file on the website. Nothing for festivals
- * without dates.
+ * without dates. A show passes its own `event`.
  */
-export function CalendarPill({ festival }: { festival: Festival }) {
+export function CalendarPill(props: { festival: Festival } | { event: CalendarEvent | undefined; name: string }) {
   const [added, setAdded] = useState(false);
-  const event = festivalEvent(festival, WEB_URL);
+  const event = 'festival' in props ? festivalEvent(props.festival, WEB_URL) : props.event;
+  const name = 'festival' in props ? props.festival.name : props.name;
   if (!event) return null;
   const press = async () => {
     haptic.select();
@@ -27,7 +28,7 @@ export function CalendarPill({ festival }: { festival: Festival }) {
       setAdded(true);
     } else if (outcome === 'downloaded') {
       setAdded(true);
-      showAlert('Calendar file downloaded', `Open it to add ${festival.name} to your calendar.`);
+      showAlert('Calendar file downloaded', `Open it to add ${name} to your calendar.`);
     } else if (outcome === 'failed') {
       showAlert('Couldn’t open your calendar', Platform.OS === 'web' ? 'Try again in a moment.' : 'Check that Afterglow may use the calendar in Settings, then try again.');
     }
@@ -36,7 +37,7 @@ export function CalendarPill({ festival }: { festival: Festival }) {
     <Pressable
       onPress={() => void press()}
       accessibilityRole="button"
-      accessibilityLabel={added ? `${festival.name} is in your calendar. Add it again.` : `Add ${festival.name} to your calendar`}
+      accessibilityLabel={added ? `${name} is in your calendar. Add it again.` : `Add ${name} to your calendar`}
       style={({ pressed }) => [styles.pill, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
     >
       {added ? <CheckIcon color={color.moonDim} size={14} /> : <CalendarIcon color={color.moonDim} size={14} />}

@@ -7,7 +7,7 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
  * "Festivals near you": an offer on the Festivals tab to use your location.
  * Nothing is asked until you tap, and the answer stays on this phone.
  */
-export function NearYouPrompt({ style }: { style?: StyleProp<ViewStyle> } = {}) {
+export function NearYouPrompt({ style, title = 'Festivals near you' }: { style?: StyleProp<ViewStyle>; title?: string } = {}) {
   const { status, turnOn } = useNearby();
   const web = Platform.OS === 'web';
   const denied = status === 'denied';
@@ -22,7 +22,7 @@ export function NearYouPrompt({ style }: { style?: StyleProp<ViewStyle> } = {}) 
 
   return (
     <View style={[styles.card, style]} accessibilityRole="summary">
-      <Text style={styles.title}>Festivals near you</Text>
+      <Text style={styles.title}>{title}</Text>
       <Text style={styles.body}>{body}</Text>
       <View style={styles.row}>
         <Pressable

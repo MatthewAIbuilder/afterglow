@@ -54,5 +54,5 @@ export function showLabel(show: Show, others: readonly string[]): string {
   const where = showWhere(show);
   const line = withLine(others);
   const w = line && `W${line.slice(1)}`;
-  return [`${showTitle(show)}, ${showDateSpoken(show.date)}`, where, w].filter(Boolean).join('. ') + '. Opens the event page on EDMTrain.';
+  return [`${showTitle(show)}, ${showDateSpoken(show.date)}`, where, w].filter(Boolean).join('. ') + '. Opens the show.';
 }

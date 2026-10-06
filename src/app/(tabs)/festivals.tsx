@@ -30,6 +30,9 @@ import { searchArtists, searchFestivals } from '../../features/festivals/search'
 import { distanceShort, nearYou, reachLabel } from '../../features/festivals/near';
 import { NearYouPrompt } from '../../features/festivals/NearYouPrompt';
 import { useNearby } from '../../state/nearby';
+import { localDay } from '../../features/artists/shows';
+import { SHOW_CARD_W, ShowCard, ShowRow, useShowTaste } from '../../features/festivals/ShowCards';
+import { rankShows, searchShows, showsForYou, upcomingShows } from '../../features/festivals/showsForYou';
 import { countdown } from '../../features/festivals/when';
 import { useToday } from '../../lib/useToday';
 import { useCatalog, useCatalogRefresh } from '../../state/catalog';
@@ -46,6 +49,8 @@ const LOVE = 0.8;
 const SHELF_TILE = 168;
 /** With many festivals, "More festivals" shows this many at a time. */
 const MORE_PAGE = 20;
+/** Shows listed in search results. */
+const SHOWS_FOUND = 8;
 
 export default function FestivalsScreen() {
   const insets = useSafeAreaInsets();
@@ -86,6 +91,14 @@ export default function FestivalsScreen() {
   const [query, setQuery] = useState('');
   const found = useMemo(() => searchArtists(catalog.artists, query), [catalog.artists, query]);
   const foundFestivals = useMemo(() => searchFestivals(festivals, query), [festivals, query]);
+  // Club shows: a shelf picked for you (near you first once location is on), and found by search.
+  const showTaste = useShowTaste();
+  const todayKey = localDay(today);
+  const showPicks = useMemo(() => showsForYou(catalog.shows, showTaste, { today: todayKey, here: nearby.here }), [catalog.shows, showTaste, todayKey, nearby.here]);
+  const foundShows = useMemo(
+    () => rankShows(searchShows(upcomingShows(catalog.shows, todayKey), query, (id) => catalog.artist(id)?.name, SHOWS_FOUND), showTaste, nearby.here),
+    [catalog, todayKey, query, showTaste, nearby.here],
+  );
   const searching = query.trim().length > 0;
   // Rows on a timeline or square tiles, your choice.
   const { view, setView } = useFestivalsView();
@@ -111,7 +124,7 @@ export default function FestivalsScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Festivals" />
+      <PageTitle title="Festivals & shows" />
       <NightSky />
       <ScrollView
         contentContainerStyle={{
@@ -126,8 +139,8 @@ export default function FestivalsScreen() {
         }
       >
         <View style={styles.header}>
+          {/* The title gets a line of its own: "Festivals & shows" is too long to share one with the buttons. */}
           <View style={styles.titleRow}>
-            <Text style={styles.title}>Festivals</Text>
             <View style={styles.actions}>
               <Pressable
                 onPress={() => {
@@ -146,12 +159,15 @@ export default function FestivalsScreen() {
               <NoticeBell />
             </View>
           </View>
+          <Text style={styles.title} accessibilityRole="header">
+            Festivals & shows
+          </Text>
           <View style={styles.searchWrap}>
             <SearchField
               value={query}
               onChange={setQuery}
-              placeholder="Artist or festival"
-              label="Find an artist or festival"
+              placeholder="Artist, festival or show"
+              label="Find an artist, festival or show"
             />
           </View>
         </View>
@@ -161,9 +177,19 @@ export default function FestivalsScreen() {
             {foundFestivals.map((f) => (
               <FestivalRow key={f.id} festival={f} />
             ))}
-            {found.length > 0 && foundFestivals.length > 0 && <Text style={styles.resultsHead}>Artists</Text>}
-            {found.length === 0 && foundFestivals.length === 0 ? (
-              <Text style={styles.noMatch}>No festival or artist matches “{query.trim()}”.</Text>
+            {foundShows.length > 0 && (
+              <>
+                <Text style={styles.resultsHead}>Shows</Text>
+                <View style={styles.foundShows}>
+                  {foundShows.map((r) => (
+                    <ShowRow key={r.show.id} ranked={r} />
+                  ))}
+                </View>
+              </>
+            )}
+            {found.length > 0 && foundFestivals.length + foundShows.length > 0 && <Text style={styles.resultsHead}>Artists</Text>}
+            {found.length === 0 && foundFestivals.length === 0 && foundShows.length === 0 ? (
+              <Text style={styles.noMatch}>No festival, show or artist matches “{query.trim()}”.</Text>
             ) : (
               found.map((a) => {
                 const at = catalog.festivalsOf(a.id);
@@ -190,6 +216,17 @@ export default function FestivalsScreen() {
             {[ready, upNext].map((f) => (f ? <FestivalWeekCard key={`week-${f.id}`} festival={f} showName /> : null))}
             {alsoGoing.length > 0 && <SectionHead title={upNext || ready ? 'Also going' : 'Going'} />}
             {list(alsoGoing, true)}
+            {/* Club shows picked for you, to swipe through; every show behind See all. */}
+            {showPicks.picks.length > 0 ? (
+              <>
+                <SectionHead title={showPicks.forYou ? 'Shows for you' : 'Shows coming up'} seeAll={{ label: 'See all shows', path: '/shows' }} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf} style={styles.shelfWrap} snapToInterval={SHOW_CARD_W + space.md} decelerationRate="fast">
+                  {showPicks.picks.map((r) => (
+                    <ShowCard key={r.show.id} ranked={r} />
+                  ))}
+                </ScrollView>
+              </>
+            ) : null}
             {nearby.status === 'on' && (many || near.length > 0) ? (
               <>
                 <View style={styles.nearHead}>
@@ -254,7 +291,7 @@ export default function FestivalsScreen() {
 }
 
 /** A section title, with how many when it helps. */
-function SectionHead({ title, count, calendar }: { title: string; count?: number; calendar?: boolean }) {
+function SectionHead({ title, count, calendar, seeAll }: { title: string; count?: number; calendar?: boolean; seeAll?: { label: string; path: '/shows' } }) {
   return (
     <View style={styles.sectionRow}>
       <Text style={[styles.section, styles.sectionTitle]} accessibilityRole="header">
@@ -268,12 +305,26 @@ function SectionHead({ title, count, calendar }: { title: string; count?: number
             router.push('/festival-calendar');
           }}
           accessibilityRole="button"
-          accessibilityLabel="See festivals on a calendar"
+          accessibilityLabel="See festivals and shows on a calendar"
           hitSlop={10}
           style={({ pressed }) => [styles.calLink, pressed && { opacity: 0.7 }]}
         >
           <CalendarIcon color={color.glow} size={14} />
           <Text style={styles.calText}>Calendar</Text>
+        </Pressable>
+      ) : null}
+      {seeAll ? (
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            router.push(seeAll.path);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={seeAll.label}
+          hitSlop={10}
+          style={({ pressed }) => [styles.calLink, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={styles.calText}>See all</Text>
         </Pressable>
       ) : null}
     </View>
@@ -423,7 +474,7 @@ const styles = StyleSheet.create({
   calText: { ...type.label, color: color.glow },
   root: { flex: 1, backgroundColor: color.night },
   header: { paddingHorizontal: space.xl, marginBottom: space.xl },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: space.xs },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   toggle: {
     width: 40,
@@ -484,6 +535,8 @@ const styles = StyleSheet.create({
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
   searchWrap: { marginTop: space.lg },
   results: { paddingHorizontal: space.xl },
+  // Show rows have their own side margin; line them up with the other results.
+  foundShows: { marginHorizontal: -space.lg },
   clips: {
     flexDirection: 'row',
     alignItems: 'center',

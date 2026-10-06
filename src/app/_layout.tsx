@@ -92,6 +92,8 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="artist/[id]" />
         <Stack.Screen name="festival/[id]" />
+        <Stack.Screen name="show/[id]" />
+        <Stack.Screen name="shows" />
         <Stack.Screen name="saved" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="music" />
