@@ -1889,6 +1889,82 @@ const wobble: Draw = (p, f) => ({
   ),
 });
 
+/** Stitches across a seam: a line with short ticks crossing it. */
+function stitches(x1: number, y1: number, x2: number, y2: number, n: number, len: number) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const l = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / l) * len;
+  const ny = (dx / l) * len;
+  let d = `M${r1(x1)} ${r1(y1)} L${r1(x2)} ${r1(y2)}`;
+  for (let i = 1; i <= n; i++) {
+    const t = i / (n + 1);
+    const x = x1 + dx * t;
+    const y = y1 + dy * t;
+    d += ` M${r1(x - nx)} ${r1(y - ny)} L${r1(x + nx)} ${r1(y + ny)}`;
+  }
+  return d;
+}
+
+/** LEVEL UP's: a stitched-up teddy, patched paws and ears, one eye sewn shut with an X, one a button (inspired by her bear, drawn our own way). */
+const patchbear: Draw = (p, f) => ({
+  ground: [50, 93, 23],
+  back: (
+    <G>
+      {/* Sitting: round feet with patched soles. */}
+      <VE cx={33} cy={84} rx={10} ry={8} fill={p.mid} f={f} turn={-12} />
+      <VE cx={67} cy={84} rx={10} ry={8} fill={p.mid} f={f} turn={12} />
+      <VE cx={31.5} cy={85} rx={6.4} ry={5.6} fill={p.alt} f={f} gloss={false} turn={-12} />
+      <VE cx={68.5} cy={85} rx={6.4} ry={5.6} fill={p.alt} f={f} gloss={false} turn={12} />
+      <Path d={stitches(27, 81, 33, 90, 3, 1.3)} stroke={INK} strokeWidth={0.7} fill="none" opacity={0.75} />
+      <Path d={stitches(73, 81, 67, 90, 3, 1.3)} stroke={INK} strokeWidth={0.7} fill="none" opacity={0.75} />
+    </G>
+  ),
+  sway: (
+    <G>
+      {/* Arms, with purple patched paws. */}
+      <VE cx={26.5} cy={62} rx={7} ry={10.5} fill={p.mid} f={f} turn={28} />
+      <VE cx={73.5} cy={62} rx={7} ry={10.5} fill={p.mid} f={f} turn={-28} />
+      <VE cx={23} cy={67} rx={4.6} ry={5} fill={p.alt} f={f} gloss={false} turn={28} />
+      <VE cx={77} cy={67} rx={4.6} ry={5} fill={p.alt} f={f} gloss={false} turn={-28} />
+    </G>
+  ),
+  pivot: [50, 58],
+  body: (
+    <G>
+      {/* The tummy. */}
+      <VE cx={50} cy={69} rx={18} ry={16} fill={p.mid} f={f} />
+      <VE cx={50} cy={71} rx={11} ry={10} fill={p.light} f={f} gloss={false} opacity={0.45} />
+      <Path d={stitches(50, 60, 50, 80, 5, 1.4)} stroke={INK} strokeWidth={0.7} fill="none" opacity={0.6} />
+      {/* Ears with purple patches. */}
+      <VE cx={31.5} cy={24} rx={8.5} ry={8.5} fill={p.mid} f={f} />
+      <VE cx={68.5} cy={24} rx={8.5} ry={8.5} fill={p.mid} f={f} />
+      <VE cx={31.5} cy={24.5} rx={4.8} ry={4.8} fill={p.alt} f={f} gloss={false} />
+      <VE cx={68.5} cy={24.5} rx={4.8} ry={4.8} fill={p.alt} f={f} gloss={false} />
+      <Shadow cx={50} cy={53} rx={14} ry={3.4} f={f} opacity={0.5} />
+      {/* The head, stitched down the middle of the brow. */}
+      <VE cx={50} cy={37} rx={20.5} ry={17.5} fill={p.mid} f={f} />
+      <Path d={stitches(53, 20.5, 53, 34, 4, 1.8)} stroke={INK} strokeWidth={0.85} fill="none" />
+      {/* Muzzle, nose and a little frown with fangs. */}
+      <VE cx={50} cy={44} rx={8.4} ry={6.6} fill={p.light} f={f} gloss={false} opacity={0.7} />
+      <Path d="M46.6 41 L53.4 41 L50 45.2 Z" fill={p.altDeep} stroke={INK} strokeWidth={0.5} strokeLinejoin="round" />
+      <Path d="M50 45.2 L50 47 M47.6 49.2 Q50 46.6 52.4 49.2" stroke={INK} strokeWidth={0.8} fill="none" strokeLinecap="round" />
+      {/* One eye sewn shut with an X. */}
+      <Path d="M38.5 32.5 L44.5 38.5 M44.5 32.5 L38.5 38.5" stroke={INK} strokeWidth={1.5} strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [54, 31, 10, 9],
+    el: <VEye x={59} y={35.5} r={3.4} f={f} />,
+  },
+  front: (
+    <G>
+      <Path d={star(80, 30, 2.4)} fill={p.accent} opacity={0.9} />
+      <Path d={star(19, 40, 1.8)} fill={p.accent} opacity={0.75} />
+    </G>
+  ),
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -1925,4 +2001,5 @@ export const DRAW: Record<Creature, Draw> = {
   confetti,
   frog,
   wobble,
+  patchbear,
 };

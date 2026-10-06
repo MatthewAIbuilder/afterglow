@@ -10,4 +10,9 @@ describe('signature collectibles', () => {
     }
     expect(typeof DRAW.wobble).toBe('function');
   });
+
+  it('LEVEL UP gets the patched bear', () => {
+    expect(artistLook({ id: 'level-up', name: 'LEVEL UP', sound: {} } as never)).toMatchObject({ creature: 'patchbear', signature: true, name: 'The Patched bear' });
+    expect(typeof DRAW.patchbear).toBe('function');
+  });
 });
