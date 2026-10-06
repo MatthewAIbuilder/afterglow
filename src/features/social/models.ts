@@ -103,7 +103,14 @@ export const REPORT_REASONS: { key: ReportReason; label: string }[] = [
 export type Activity =
   | { kind: 'follow'; id: string; from: string; createdAt: string }
   | { kind: 'like'; id: string; from: string; memoryId: string; createdAt: string }
-  | { kind: 'comment'; id: string; from: string; memoryId: string; text: string; createdAt: string };
+  | { kind: 'comment'; id: string; from: string; memoryId: string; text: string; createdAt: string }
+  | { kind: 'tag'; id: string; from: string; memoryId: string; createdAt: string };
+
+/** Someone tagged in a shared video (`videoTags/<memoryId>_<uid>`): waiting for them to say yes, or said yes (then it's on their profile). */
+export type VideoTag = { id: string; memoryId: string; owner: string; uid: string; status: 'pending' | 'approved'; createdAt: string };
+
+/** At most this many people tagged in one video. */
+export const VIDEO_TAGS_MAX = 10;
 
 /**
  * A festival crew: a few friends planning one festival together. Anyone

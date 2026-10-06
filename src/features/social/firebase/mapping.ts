@@ -5,7 +5,7 @@ import { cleanWith } from '../../memories/b2b';
 import { cleanClip } from '../../memories/trim';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply, type VideoTag } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 import { cleanHunt, cleanName, type Hunt, isHuntId, isStickerCode, type Sticker } from '../../finds/finds';
 
@@ -64,6 +64,17 @@ export function profileToDoc(p: Profile, legacy = false): Record<string, unknown
   };
   if (legacy) for (const k of NEWER_PROFILE_FIELDS) delete out[k];
   return out;
+}
+
+export function videoTagFromDoc(id: string, d: unknown): VideoTag | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const memoryId = str(o.memoryId);
+  const owner = str(o.owner);
+  const uid = str(o.uid);
+  const status = o.status === 'approved' ? 'approved' : o.status === 'pending' ? 'pending' : undefined;
+  if (!memoryId || !owner || !uid || !status) return null;
+  return { id, memoryId, owner, uid, status, createdAt: str(o.createdAt) ?? '' };
 }
 
 export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {

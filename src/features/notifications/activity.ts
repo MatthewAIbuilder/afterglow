@@ -24,6 +24,8 @@ export function activityNotices(items: Activity[], look: ActivityLookups): Notic
     if (!handle || look.blocked.has(a.from)) continue;
     if (a.kind === 'follow') {
       out.push({ at: a.createdAt, notice: { id: `follow:${a.id}`, kind: 'follow', title: t('@{handle} started following you', { handle }), body: t('See their profile, and follow back if you like.'), href: `/u/${handle}` } });
+    } else if (a.kind === 'tag') {
+      out.push({ at: a.createdAt, notice: { id: `tag:${a.id}`, kind: 'tag', title: t('@{handle} tagged you in a video', { handle }), body: t('Watch it and choose whether it shows on your profile.'), href: `/shared/${a.memoryId}` } });
     } else if (a.kind === 'comment') {
       const what = look.videoOf(a.memoryId) ?? t('your video');
       const said = a.text.length > 80 ? `${a.text.slice(0, 79).trimEnd()}…` : a.text;

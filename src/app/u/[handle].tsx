@@ -59,6 +59,7 @@ export default function PublicProfileScreen() {
   const backdrop = useProfileBackdrop(profile);
   const { badges, throwbacks } = useBadges(profile?.uid);
   const [memories, setMemories] = useState<SharedMemory[]>([]);
+  const [tagged, setTagged] = useState<SharedMemory[]>([]);
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
   const [counts, setCounts] = useState<FollowCounts | undefined>();
@@ -84,6 +85,11 @@ export default function PublicProfileScreen() {
       social.service
         .followCounts(p.uid)
         .then((c) => live && setCounts(c))
+        .catch(() => {});
+      // Videos they're tagged in and said yes to (a separate read: if it fails, their own still show).
+      social.service
+        .taggedMemoriesOf(p.uid)
+        .then((ms) => live && setTagged(ms))
         .catch(() => {});
       try {
         const ms = await social.service.memoriesOf(p.uid);
@@ -146,6 +152,29 @@ export default function PublicProfileScreen() {
   const cols = 3;
   const gap = space.xs;
   const tileW = Math.floor((width - space.xl * 2 - gap * (cols - 1)) / cols);
+  const taggedShown = tagged.filter((m) => !social.blocked.has(m.uid));
+  const tile = (m: SharedMemory) => {
+    const artist = m.artistId ? catalog.artist(m.artistId) : undefined;
+    return (
+      <Pressable
+        key={m.id}
+        onPress={() => router.push({ pathname: '/shared/[id]', params: { id: m.id } })}
+        accessibilityRole="button"
+        accessibilityLabel={artist ? t('Video of {artist}', { artist: artist.name }) : t('Video')}
+        style={({ pressed }) => [styles.tile, { width: tileW, height: Math.round((tileW * 16) / 9) }, pressed && styles.pressed]}
+      >
+        {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
+        <View style={styles.tileInfo}>
+          {artist ? (
+            <Text style={styles.tileName} numberOfLines={1}>
+              {artist.name}
+            </Text>
+          ) : null}
+          {clipLength(m.durationSec) ? <Text style={styles.tileLen}>{clipLength(m.durationSec)}</Text> : null}
+        </View>
+      </Pressable>
+    );
+  };
   const going = profile?.festivals.map((id) => catalog.festival(id)?.name).filter((n): n is string => !!n) ?? [];
   // The living header, as on your own profile: their favourite artists drift round their photo (unless they
   // switched that off), then the artists they've filmed.
@@ -289,34 +318,19 @@ export default function PublicProfileScreen() {
         <Text style={styles.section}>{memories.length ? t('Memories · {n}', { n: memories.length }) : t('Memories')}</Text>
         {memories.length ? (
           <View style={[styles.grid, { gap }]}>
-            {memories.map((m) => {
-              const artist = m.artistId ? catalog.artist(m.artistId) : undefined;
-              return (
-                <Pressable
-                  key={m.id}
-                  onPress={() => router.push({ pathname: '/shared/[id]', params: { id: m.id } })}
-                  accessibilityRole="button"
-                  accessibilityLabel={artist ? t('Video of {artist}', { artist: artist.name }) : t('Video')}
-                  style={({ pressed }) => [styles.tile, { width: tileW, height: Math.round((tileW * 16) / 9) }, pressed && styles.pressed]}
-                >
-                  {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
-                  <View style={styles.tileInfo}>
-                    {artist ? (
-                      <Text style={styles.tileName} numberOfLines={1}>
-                        {artist.name}
-                      </Text>
-                    ) : null}
-                    {clipLength(m.durationSec) ? <Text style={styles.tileLen}>{clipLength(m.durationSec)}</Text> : null}
-                  </View>
-                </Pressable>
-              );
-            })}
+            {memories.map(tile)}
           </View>
         ) : (
           <Text style={styles.body}>
             {memoriesFailed ? t('Couldn’t load memories just now.') : mine ? t('Share a memory from Memories and it shows up here.') : t('Nothing shared yet.')}
           </Text>
         )}
+        {taggedShown.length ? (
+          <>
+            <Text style={styles.section}>{t('Tagged · {n}', { n: taggedShown.length })}</Text>
+            <View style={[styles.grid, { gap }]}>{taggedShown.map(tile)}</View>
+          </>
+        ) : null}
       </>
     );
   }

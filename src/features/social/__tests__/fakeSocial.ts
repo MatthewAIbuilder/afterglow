@@ -1,5 +1,5 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
@@ -19,6 +19,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const handles = new Map<string, string>();
   const memories = new Map<string, SharedMemory & { memoryId: string }>();
   const blocks = new Map<string, string[]>();
+  const videoTags = new Map<string, VideoTag>();
   /** Follows as `from>to`, in the order made. */
   const follows = new Map<string, { from: string; to: string; createdAt: string }>();
   /** Likes as `memoryId_uid`. */
@@ -324,8 +325,44 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         createdAt: now(),
       };
       memories.set(id, m);
+      for (const uid of [...new Set(input.people ?? [])].filter((x) => x !== u.uid && profiles.has(x)).slice(0, VIDEO_TAGS_MAX))
+        videoTags.set(`${id}_${uid}`, { id: `${id}_${uid}`, memoryId: id, owner: u.uid, uid, status: 'pending', createdAt: now() });
       onProgress?.(1);
       return m;
+    },
+    async videoTags(memoryId) {
+      readable();
+      const u = me();
+      return [...videoTags.values()].filter((v) => v.memoryId === memoryId && (v.status === 'approved' || v.owner === u.uid || v.uid === u.uid));
+    },
+    async setVideoTags(memoryId, uids) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      const m = memories.get(memoryId);
+      if (!m || m.uid !== u.uid) throw new SocialError('not-signed-in');
+      const want = [...new Set(uids)].filter((x) => x !== u.uid && profiles.has(x) && !blockedBy(x, u.uid)).slice(0, VIDEO_TAGS_MAX);
+      for (const [k, v] of videoTags) if (v.memoryId === memoryId && !want.includes(v.uid)) videoTags.delete(k);
+      for (const uid of want) {
+        const id = `${memoryId}_${uid}`;
+        if (!videoTags.has(id)) videoTags.set(id, { id, memoryId, owner: u.uid, uid, status: 'pending', createdAt: now() });
+      }
+    },
+    async answerVideoTag(memoryId, yes) {
+      if (network.down) throw new SocialError('network');
+      const id = `${memoryId}_${me().uid}`;
+      const v = videoTags.get(id);
+      if (!v) return;
+      if (yes) videoTags.set(id, { ...v, status: 'approved' });
+      else videoTags.delete(id);
+    },
+    async taggedMemoriesOf(uid) {
+      readable();
+      me();
+      return [...videoTags.values()]
+        .filter((v) => v.uid === uid && v.status === 'approved')
+        .map((v) => memories.get(v.memoryId))
+        .filter((m): m is NonNullable<typeof m> => !!m)
+        .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
     },
     async retagShared(id, tags) {
       if (network.down) throw new SocialError('network');
@@ -354,6 +391,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!m) return;
       if (m.uid !== u.uid) throw new SocialError('not-signed-in');
       memories.delete(id);
+      for (const [k, v] of videoTags) if (v.memoryId === id) videoTags.delete(k);
       if (m.past && !m.festivalId) usage.set(u.uid, Math.max(0, (usage.get(u.uid) ?? 0) - 1));
       for (const [k, l] of likes) if (l.memoryId === id) likes.delete(k);
       for (const [k, c] of comments) if (c.memoryId === id) comments.delete(k);
@@ -750,6 +788,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
           .map((c): Activity => ({ kind: 'comment', id: c.id, from: c.uid, memoryId: c.memoryId, text: c.text, createdAt: c.createdAt })),
         ...[...follows.values()].filter((f) => f.to === u.uid).map((f): Activity => ({ kind: 'follow', id: `${f.from}_${f.to}`, from: f.from, createdAt: f.createdAt })),
         ...[...likes.values()].filter((l) => l.owner === u.uid).map((l): Activity => ({ kind: 'like', id: `${l.memoryId}_${l.uid}`, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt })),
+        ...[...videoTags.values()].filter((v) => v.uid === u.uid && v.status === 'pending').map((v): Activity => ({ kind: 'tag', id: v.id, from: v.owner, memoryId: v.memoryId, createdAt: v.createdAt })),
       ];
       return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },

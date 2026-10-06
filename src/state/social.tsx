@@ -333,6 +333,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
             night: m.night,
             artistId: m.artistId,
             withArtistIds: m.withArtistIds,
+            people: m.people,
             past: m.past,
             show: m.show,
             clip: m.clip,

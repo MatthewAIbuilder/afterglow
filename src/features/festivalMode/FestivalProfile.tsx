@@ -160,7 +160,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
                 </Pressable>
               ) : null}
             </View>
-            <VideosTab memories={shown} width={width} uriOf={uriOf} lookup={catalog} />
+            <VideosTab memories={shown} width={width} uriOf={uriOf} lookup={catalog} filters={false} />
             {Platform.OS !== 'web' && all.length ? <Text style={styles.note}>{t('Your videos are on this phone, so they’re here without signal.')}</Text> : null}
           </>
         )}

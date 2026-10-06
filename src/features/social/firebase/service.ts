@@ -7,14 +7,14 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
-import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc } from './mapping';
+import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -489,6 +489,13 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             await b.commit();
           } else await setDoc(memRef, shared);
           onProgress?.(1);
+          // People in it are asked (best effort: the video is shared either way).
+          if (input.people?.length) {
+            const b = writeBatch(db);
+            for (const uid of [...new Set(input.people)].filter((u) => u !== user.uid).slice(0, VIDEO_TAGS_MAX))
+              b.set(doc(db, 'videoTags', `${memRef.id}_${uid}`), { memoryId: memRef.id, owner: user.uid, uid, status: 'pending', createdAt: now() });
+            await b.commit().catch(() => {});
+          }
           return memoryFromDoc(memRef.id, shared)!;
         } catch (e) {
           // Nothing half-shared: files that made it up are removed again.
@@ -526,6 +533,48 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         });
         return memoryFromDoc(id, (await getDoc(ref)).data())!;
       }),
+    videoTags: (memoryId) =>
+      guard(async () => {
+        const user = me();
+        const tags = collection(fb().db, 'videoTags');
+        const [said, mine] = await Promise.all([
+          getDocs(query(tags, where('memoryId', '==', memoryId), where('status', '==', 'approved'))),
+          // The video's owner also sees who hasn't answered yet.
+          getDocs(query(tags, where('memoryId', '==', memoryId), where('owner', '==', user.uid))).catch(() => undefined),
+        ]);
+        const byId = new Map<string, VideoTag>();
+        for (const d of [...said.docs, ...(mine?.docs ?? [])]) {
+          const tag = videoTagFromDoc(d.id, d.data());
+          if (tag) byId.set(tag.id, tag);
+        }
+        return [...byId.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      }),
+    setVideoTags: (memoryId, uids) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        const want = [...new Set(uids.filter((u) => u && u !== user.uid))].slice(0, VIDEO_TAGS_MAX);
+        const now_ = await getDocs(query(collection(db, 'videoTags'), where('memoryId', '==', memoryId), where('owner', '==', user.uid)));
+        const have = new Set(now_.docs.map((d) => String(d.data().uid)));
+        const b = writeBatch(db);
+        for (const d of now_.docs) if (!want.includes(String(d.data().uid))) b.delete(d.ref);
+        for (const uid of want)
+          if (!have.has(uid)) b.set(doc(db, 'videoTags', `${memoryId}_${uid}`), { memoryId, owner: user.uid, uid, status: 'pending', createdAt: now() });
+        await b.commit();
+      }),
+    answerVideoTag: (memoryId, yes) =>
+      guard(async () => {
+        const ref = doc(fb().db, 'videoTags', `${memoryId}_${me().uid}`);
+        if (yes) await updateDoc(ref, { status: 'approved' });
+        else await deleteDoc(ref);
+      }),
+    taggedMemoriesOf: (uid) =>
+      guard(async () => {
+        const { db } = fb();
+        const tags = await getDocs(query(collection(db, 'videoTags'), where('uid', '==', uid), where('status', '==', 'approved'), limit(60)));
+        const memories = await Promise.all(tags.docs.map(async (d) => memoryFromDoc(String(d.data().memoryId), (await getDoc(doc(db, 'memories', String(d.data().memoryId))).catch(() => undefined))?.data())));
+        return memories.filter((m): m is NonNullable<typeof m> => !!m).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+      }),
     unshareMemory: (id) =>
       guard(async () => {
         const user = me();
@@ -543,6 +592,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           for (const d of liked.docs.slice(i, i + 400)) b.delete(d.ref);
           await b.commit();
         }
+        // So do its people tags (best effort: without the video they show nowhere).
+        const tagged = await getDocs(query(collection(fb().db, 'videoTags'), where('memoryId', '==', id), where('owner', '==', user.uid))).catch(() => undefined);
+        for (const d of tagged?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
         // The files go first, and must really go (a missing one counts as gone): a file is never left
         // reachable once its doc is gone. If this stops part way, the doc is still there to try again from.
         await removeFileStrict(data.videoPath);
@@ -1053,10 +1105,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const user = me();
         const { db } = fb();
-        const [followed, liked, said] = await Promise.all([
+        const [followed, liked, said, tagged] = await Promise.all([
           getDocs(query(collection(db, 'follows'), where('to', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
           getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
           getDocs(query(collection(db, 'comments'), where('owner', '==', user.uid), orderBy('createdAt', 'desc'), limit(max))),
+          // Tagged in a video and not answered yet.
+          getDocs(query(collection(db, 'videoTags'), where('uid', '==', user.uid), where('status', '==', 'pending'), limit(max))).catch(() => undefined),
         ]);
         const str = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
         const items: Activity[] = [];
@@ -1072,6 +1126,10 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const c = commentFromDoc(d.id, d.data());
           // Your own comments on your own videos aren't news.
           if (c && c.uid !== user.uid) items.push({ kind: 'comment', id: c.id, from: c.uid, memoryId: c.memoryId, text: c.text, createdAt: c.createdAt });
+        }
+        for (const d of tagged?.docs ?? []) {
+          const tag = videoTagFromDoc(d.id, d.data());
+          if (tag) items.push({ kind: 'tag', id: tag.id, from: tag.owner, memoryId: tag.memoryId, createdAt: tag.createdAt });
         }
         return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
       }),

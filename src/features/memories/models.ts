@@ -36,6 +36,8 @@ export type Memory = {
   artistId?: string;
   /** Playing back to back with `artistId`: the others, in order. */
   withArtistIds?: string[];
+  /** People in it (uids), tagged once it's shared; each says yes before it shows on their profile. */
+  people?: string[];
   /** The part that plays, when the video was trimmed (seconds into the file). */
   clip?: ClipWindow;
   /** Once shared to your profile: the shared copy's id, and whose profile it's on. */
@@ -44,4 +46,4 @@ export type Memory = {
 };
 
 /** What the tagging sheet saves onto a memory. */
-export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'past' | 'show' | 'clip'>;
+export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'past' | 'show' | 'clip' | 'people'>;
