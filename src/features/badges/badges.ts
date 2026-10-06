@@ -72,7 +72,7 @@ export function toCollect(going: readonly Festival[], earned: readonly Badge[], 
  * palms for the beach, mesas for the desert…), in its own enamel colours,
  * with its name and city in the rim and its dates on the ribbon.
  */
-export type PinTheme = 'eye' | 'daisy' | 'skyline' | 'infinity' | 'clock' | 'fireworks' | 'beach' | 'desert' | 'lake' | 'castle' | 'sound';
+export type PinTheme = 'eye' | 'daisy' | 'skyline' | 'infinity' | 'clock' | 'fireworks' | 'beach' | 'desert' | 'lake' | 'castle' | 'sound' | 'dino';
 /** The gold behind the round pin: sun rays, scallops, a star, or none. */
 export type PinBacking = 'rays' | 'scallop' | 'star' | 'none';
 
@@ -105,6 +105,8 @@ export type PinLook = {
 
 /** Which scene: the first theme whose words appear in the festival's name or place. */
 const THEME_WORDS: readonly [PinTheme, RegExp][] = [
+  // Lost Lands is the dinosaur festival (a T. rex and a long neck by a smoking volcano), wherever it is.
+  ['dino', /lost lands|dino|jurassic|prehistor/i],
   ['eye', /cyclops|\beye\b|vision/i],
   ['daisy', /\bedc\b|daisy|flower|bloom/i],
   ['infinity', /eternal|infinit|forever/i],
@@ -113,7 +115,7 @@ const THEME_WORDS: readonly [PinTheme, RegExp][] = [
   ['castle', /kingdom|castle|tomorrowland|realm/i],
   ['beach', /beach|cove|boca|miami|island|coast|bay\b|shore|ocean|sea\b|key west/i],
   ['desert', /desert|canyon|mesa|valley|coachella|arizona|vegas|sahara|dune/i],
-  ['lake', /lake|forest|woods|mountain|pine|camp|river|lost lands/i],
+  ['lake', /lake|forest|woods|mountain|pine|camp|river/i],
   ['skyline', /city|austin|chicago|york|downtown|metro|ultra|urban|limits/i],
 ];
 const FALLBACK: readonly PinTheme[] = ['sound', 'fireworks', 'beach', 'lake', 'desert'];
@@ -159,6 +161,10 @@ export const PALETTES: Record<PinTheme, readonly PinPalette[]> = {
   skyline: [
     { sky: ['#FF6F59', '#43AA8B'], accent: '#FFE66D', accent2: '#FF6F59', ground: '#1B263B', rim: '#141B2A', ribbon: '#BF4342' },
     { sky: ['#7209B7', '#F77F00'], accent: '#FCBF49', accent2: '#F72585', ground: '#14213D', rim: '#10172B', ribbon: '#D62828' },
+  ],
+  dino: [
+    { sky: ['#0B2027', '#40798C'], accent: '#F6F1D1', accent2: '#7FB069', ground: '#0B3D2E', rim: '#081C15', ribbon: '#2D6A4F' },
+    { sky: ['#2B0F1E', '#A63D40'], accent: '#FFE38A', accent2: '#8DB580', ground: '#1B1A17', rim: '#140B0B', ribbon: '#BC4749' },
   ],
   sound: [
     { sky: ['#10002B', '#5A189A'], accent: '#C77DFF', accent2: '#4CC9F0', ground: '#10002B', rim: '#0B0018', ribbon: '#7B2CBF' },

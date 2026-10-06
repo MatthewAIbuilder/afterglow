@@ -51,7 +51,7 @@ describe('festival badges', () => {
 
   it('pick a scene that says which festival it is', () => {
     const t = (name: string, location = '') => themeOf({ id: name, name, location });
-    expect([t('Cyclops Cove 4'), t('EDC Orlando 2026'), t('Eternal NYE 2026'), t('Countdown NYE 2026'), t('Austin City Limits 2026'), t('Lost Lands 2027')]).toEqual(['eye', 'daisy', 'infinity', 'clock', 'skyline', 'lake']);
+    expect([t('Cyclops Cove 4'), t('EDC Orlando 2026'), t('Eternal NYE 2026'), t('Countdown NYE 2026'), t('Austin City Limits 2026'), t('Lost Lands 2027')]).toEqual(['eye', 'daisy', 'infinity', 'clock', 'skyline', 'dino']);
     expect(t('Sun Fest', 'Miami Beach')).toBe('beach');
     expect(t('Horizon 2027', 'Desert Valley')).toBe('desert');
   });
