@@ -30,12 +30,12 @@ export const NAMES_SHOWN = 15;
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', '#39': "'" };
 
+/** "&amp;", "&#39;" and the like, as the characters they stand for. */
+export const decodeEntities = (s: string) => s.replace(/&(#?\w+);/g, (m, e: string) => ENTITIES[e.toLowerCase()] ?? (/^#\d+$/.test(e) ? String.fromCharCode(Number(e.slice(1))) : m));
+
 /** A page's readable text: no scripts, styles or tags. */
 export function pageText(html: string): string {
-  return html
-    .replace(/<(script|style|noscript|template|svg)\b[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&(#?\w+);/g, (m, e: string) => ENTITIES[e.toLowerCase()] ?? (/^#\d+$/.test(e) ? String.fromCharCode(Number(e.slice(1))) : m))
+  return decodeEntities(html.replace(/<(script|style|noscript|template|svg)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' '))
     .replace(/\s+/g, ' ')
     .trim();
 }
