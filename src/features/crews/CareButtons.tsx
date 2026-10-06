@@ -8,6 +8,7 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { isOffline } from '../offline/status';
 import type { CrewCare } from '../social/models';
 import { clock } from './updates';
+import { t } from '../../i18n';
 
 const GREEN = '#5BE3B5';
 const RED = 'rgba(255,150,150,0.95)';
@@ -34,11 +35,11 @@ export function CareButtons({ festivalId, only }: { festivalId: string; only?: C
     };
     if (care === 'ok') return go();
     showAlert(
-      'Ask your crew to come find you?',
-      'They’ll see “Not feeling great” with the time you sent it, and their phones nudge them. A check-in with where you are helps them find you.',
+      t('Ask your crew to come find you?'),
+      t('They’ll see “Not feeling great” with the time you sent it, and their phones nudge them. A check-in with where you are helps them find you.'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Ask my crew', onPress: go },
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Ask my crew'), onPress: go },
       ],
     );
   };
@@ -48,14 +49,14 @@ export function CareButtons({ festivalId, only }: { festivalId: string; only?: C
   const status = !sent
     ? undefined
     : dropped.includes(sent.id)
-      ? 'Couldn’t reach your crew. Try again, or ask someone near you.'
+      ? t('Couldn’t reach your crew. Try again, or ask someone near you.')
       : waiting
         ? offline
-          ? 'Saved for when there’s signal. It sends itself, still marked when you tapped.'
-          : 'Sending…'
+          ? t('Saved for when there’s signal. It sends itself, still marked when you tapped.')
+          : t('Sending…')
         : sent.care === 'ok'
-          ? 'Sent. Your crew knows you’re OK.'
-          : 'Sent. Your crew can see you’d like someone to come.';
+          ? t('Sent. Your crew knows you’re OK.')
+          : t('Sent. Your crew can see you’d like someone to come.');
 
   const showOk = asked || !only || only === 'ok';
   const showHelp = !asked && (!only || only === 'help');
@@ -64,7 +65,7 @@ export function CareButtons({ festivalId, only }: { festivalId: string; only?: C
     <View style={styles.wrap}>
       {asked && myCare ? (
         <Text style={styles.asked}>
-          You asked your crew for help at {clock(myCare.at)}. Feeling better? Let them know.
+          {t('You asked your crew for help at {time}. Feeling better? Let them know.', { time: clock(myCare.at) })}
         </Text>
       ) : null}
       <View style={styles.row}>
@@ -72,20 +73,20 @@ export function CareButtons({ festivalId, only }: { festivalId: string; only?: C
           <Pressable
             onPress={() => send('ok')}
             accessibilityRole="button"
-            accessibilityLabel={asked ? 'I’m OK now. Tell my crew' : 'I’m OK. Tell my crew'}
+            accessibilityLabel={asked ? t('I’m OK now. Tell my crew') : t('I’m OK. Tell my crew')}
             style={({ pressed }) => [styles.button, styles.ok, pressed && styles.pressed]}
           >
-            <Text style={[styles.text, { color: GREEN }]}>{asked ? 'I’m OK now' : 'I’m OK'}</Text>
+            <Text style={[styles.text, { color: GREEN }]}>{asked ? t('I’m OK now') : t('I’m OK')}</Text>
           </Pressable>
         ) : null}
         {showHelp ? (
           <Pressable
             onPress={() => send('help')}
             accessibilityRole="button"
-            accessibilityLabel="Not feeling great. Ask my crew to come find me"
+            accessibilityLabel={t('Not feeling great. Ask my crew to come find me')}
             style={({ pressed }) => [styles.button, styles.help, pressed && styles.pressed]}
           >
-            <Text style={[styles.text, { color: RED }]}>Ask my crew for help</Text>
+            <Text style={[styles.text, { color: RED }]}>{t('Ask my crew for help')}</Text>
           </Pressable>
         ) : null}
       </View>

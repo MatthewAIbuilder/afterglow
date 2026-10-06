@@ -5,7 +5,7 @@ import { MOCK_TASTE } from '../../../data/mock/tasteProfile';
 import type { Artist, Clip } from '../../../data/types';
 import type { Reaction } from '../../../state/reactions';
 import { computeTaste } from '../../taste/engine';
-import { ARTIST_GAP, laneOf, anchorsOf, markSeen, rankFeed, RECENT_MS, type FeedInput } from '../feed';
+import { ARTIST_GAP, isShort, laneOf, anchorsOf, markSeen, rankFeed, RECENT_MS, SHORT_EVERY, SHORT_GAP, type FeedInput } from '../feed';
 
 const NOW = 1_800_000_000_000;
 const none: Reaction = { liked: false, saved: false, skipped: false };
@@ -152,6 +152,79 @@ describe('lanes', () => {
   it('falls back to other lanes when one runs dry', () => {
     const onlyFavourites = rankFeed({ clips: clips.filter((c) => c.artistId === 'a' || c.artistId === 'e'), artists, taste, informed, reactions: {}, seen: {}, now: NOW });
     expect(onlyFavourites).toHaveLength(8);
+  });
+});
+
+describe('several clips per artist (the nightly import keeps up to four sets each)', () => {
+  // Every artist with four clips: their own, then copies standing in for more sets.
+  const many: Clip[] = ARTISTS.flatMap((a) => {
+    const own = CLIPS.filter((c) => c.artistId === a.id);
+    if (!own.length) return [];
+    return [0, 1, 2, 3].map((n) => ({ ...own[n % own.length], id: `${a.id}-set${n}` }));
+  });
+  const feedOf = (reactions: Record<string, Reaction> = {}) => {
+    const { taste, informed } = computeTaste(MOCK_TASTE, ARTISTS, many, reactions);
+    return rankFeed({ clips: many, artists: ARTISTS, taste, informed, reactions, seen: {}, now: NOW });
+  };
+  const positions = (feed: { clip: Clip }[], artistId: string) => feed.flatMap((it, i) => (it.clip.artistId === artistId ? [i] : []));
+  const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length;
+
+  it('spaces one artist’s sets apart, never back to back', () => {
+    const cases: Record<string, Reaction>[] = [{}, { 'illenium-set0': { ...none, liked: true } }, { 'tape-b-set0': { ...none, skipped: true } }];
+    for (const r of cases) {
+      const feed = feedOf(r);
+      expect(feed).toHaveLength(many.length);
+      const a = artistsIn(feed.filter((it) => !it.cooled && !it.skipped));
+      for (let i = 1; i < a.length; i++) expect(a[i]).not.toBe(a[i - 1]);
+      // Room for a gap of ARTIST_GAP while several artists are still left.
+      for (let i = ARTIST_GAP; i < a.length - 8; i++) expect(a.slice(i - ARTIST_GAP, i)).not.toContain(a[i]);
+    }
+  });
+
+  it('brings a liked artist’s other sets forward, and holds back a skipped artist’s', () => {
+    const before = feedOf();
+    const liked = feedOf({ 'john-summit-set0': { ...none, liked: true, saved: true } });
+    const others = (feed: { clip: Clip }[]) => positions(feed, 'john-summit').filter((i) => feed[i].clip.id !== 'john-summit-set0');
+    expect(mean(others(liked))).toBeLessThan(mean(others(before)));
+
+    const skipped = feedOf({ 'illenium-set0': { ...none, skipped: true } });
+    const rest = positions(skipped, 'illenium').filter((i) => skipped[i].clip.id !== 'illenium-set0');
+    expect(mean(rest)).toBeGreaterThan(mean(positions(before, 'illenium')));
+    // Turned down: their other sets wait until every fresh clip from someone else has played.
+    const lastFresh = skipped.findLastIndex((it) => !it.cooled && !it.skipped);
+    for (const i of rest) expect(i).toBeGreaterThan(lastFresh);
+  });
+});
+
+describe('Shorts in the feed', () => {
+  // Every artist with four long sets and two Shorts (the nightly caps).
+  const short = (c: Clip, n: number): Clip => ({
+    ...c,
+    id: `${c.artistId}-short${n}`,
+    durationSec: 40,
+    source: { provider: 'youtube', videoId: `${c.artistId}x${n}`.padEnd(11, 'x').slice(0, 11), start: 0, end: 40, channel: 'Fan', vertical: true, short: true },
+  });
+  const mixed: Clip[] = ARTISTS.flatMap((a) => {
+    const own = CLIPS.find((c) => c.artistId === a.id);
+    if (!own) return [];
+    return [0, 1, 2, 3].map((n) => ({ ...own, id: `${a.id}-set${n}` })).concat([short(own, 0), short(own, 1)]);
+  });
+
+  it('mixes Shorts in, never two close together while there are sets to put between, never one artist twice in a row', () => {
+    const { taste, informed } = computeTaste(MOCK_TASTE, ARTISTS, mixed, {});
+    const feed = rankFeed({ clips: mixed, artists: ARTISTS, taste, informed, reactions: {}, seen: {}, now: NOW });
+    expect(feed).toHaveLength(mixed.length);
+    const shorts = feed.map((it) => isShort(it.clip));
+    expect(shorts.indexOf(true)).toBe(SHORT_EVERY - 1); // mixed in early, not left to the end
+    // A Short at least every SHORT_EVERY cards while there are any…
+    const at = shorts.flatMap((s, i) => (s ? [i] : []));
+    for (let k = 1; k < at.length; k++) expect(at[k] - at[k - 1]).toBeLessThanOrEqual(SHORT_EVERY);
+    // …and never closer than SHORT_GAP while there are sets to put between.
+    const lastSet = shorts.lastIndexOf(false);
+    for (let i = 1; i < lastSet; i++) if (shorts[i]) expect(shorts.slice(Math.max(0, i - SHORT_GAP), i)).not.toContain(true);
+    const a = artistsIn(feed);
+    for (let i = 1; i < a.length; i++) expect(a[i]).not.toBe(a[i - 1]);
+    expect(isShort(mixed[0])).toBe(false);
   });
 });
 

@@ -3,6 +3,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { earnsFrom, PARTNER_NOTE } from '../partners/partners';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * A festival's links, from the catalogue: "Get tickets" (until the festival is
@@ -26,30 +27,30 @@ export function OfficialLinks({ festival, over }: { festival: Festival; over: bo
           <Pressable
             onPress={() => open(tickets)}
             accessibilityRole="link"
-            accessibilityLabel={`Get tickets for ${festival.name} on the official site`}
+            accessibilityLabel={t('Get tickets for {festival} on the official site', { festival: festival.name })}
             style={({ pressed }) => [styles.link, styles.tickets, pressed && styles.pressed]}
           >
-            <Text style={styles.ticketsText}>Get tickets ↗</Text>
+            <Text style={styles.ticketsText}>{t('Get tickets ↗')}</Text>
           </Pressable>
         ) : null}
         {website ? (
           <Pressable
             onPress={() => open(website)}
             accessibilityRole="link"
-            accessibilityLabel={`${festival.name} official site`}
+            accessibilityLabel={t('{festival} official site', { festival: festival.name })}
             style={({ pressed }) => [styles.link, pressed && styles.pressed]}
           >
-            <Text style={styles.text}>Official site ↗</Text>
+            <Text style={styles.text}>{t('Official site ↗')}</Text>
           </Pressable>
         ) : null}
         {stay ? (
           <Pressable
             onPress={() => open(stay)}
             accessibilityRole="link"
-            accessibilityLabel={`Places to stay near ${festival.name}. Opens in your browser.`}
+            accessibilityLabel={t('Places to stay near {festival}. Opens in your browser.', { festival: festival.name })}
             style={({ pressed }) => [styles.link, pressed && styles.pressed]}
           >
-            <Text style={styles.text}>Places to stay ↗</Text>
+            <Text style={styles.text}>{t('Places to stay ↗')}</Text>
           </Pressable>
         ) : null}
       </View>

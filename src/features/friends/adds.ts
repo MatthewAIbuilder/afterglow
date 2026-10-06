@@ -1,4 +1,5 @@
 import type { FriendCard } from './qr';
+import { t } from '../../i18n';
 
 /**
  * Friends added by scanning a QR code, pure. Festival signal is often awful,
@@ -124,7 +125,7 @@ export function cleanAdds(raw: unknown, now: number): FriendAdd[] {
 
 /** The line under someone in the list. */
 export function addLine(a: FriendAdd): string {
-  if (a.state === 'added') return 'Friends now';
-  if (a.state === 'failed') return 'Couldn’t add them. Ask them to show their code again.';
-  return 'Waiting for signal. It sends by itself.';
+  if (a.state === 'added') return t('Friends now');
+  if (a.state === 'failed') return t('Couldn’t add them. Ask them to show their code again.');
+  return t('Waiting for signal. It sends by itself.');
 }

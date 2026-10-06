@@ -11,6 +11,7 @@ import { AnimatedBackdrop } from '../features/profile/AnimatedBackdrop';
 import { type Backdrop, backdropChoices, backdropOf, type BackdropId, canUse, madeFor, NO_BACKDROP, shownBackdrop } from '../features/profile/backdrops';
 import { useStanding } from '../features/standing/useStanding';
 import { showAlert } from '../lib/dialog';
+import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, nightA } from '../theme/tokens';
@@ -51,7 +52,7 @@ export default function BackdropScreen() {
   const save = async () => {
     if (!me || !changed || saving) return;
     if (locked) {
-      showAlert('Part of Afterglow Plus', `${pickedBackdrop?.name} comes with Afterglow Plus. You can preview every background here; Aurora, Starfield and Nebula are free.`);
+      showAlert(t('Part of Afterglow Plus'), t('{backdrop} comes with Afterglow Plus. You can preview every background here; Aurora, Starfield and Nebula are free.', { backdrop: `${pickedBackdrop?.name}` }));
       return;
     }
     setSaving(true);
@@ -61,7 +62,7 @@ export default function BackdropScreen() {
       haptic.settle();
       if (router.canGoBack()) router.back();
     } catch {
-      showAlert('Couldn’t save your background', 'Check your connection and try again.');
+      showAlert(t('Couldn’t save your background'), t('Check your connection and try again.'));
     } finally {
       setSaving(false);
     }
@@ -74,16 +75,16 @@ export default function BackdropScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Profile background" />
+      <PageTitle title={t('Profile background')} />
       <NightSky />
       <PageActions />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + 120, width: pageW }]}>
         <Text style={styles.title} accessibilityRole="header">
-          Profile background
+          {t('Profile background')}
         </Text>
-        <Text style={styles.body}>A living scene across the top of your profile, for everyone who visits it.</Text>
+        <Text style={styles.body}>{t('A living scene across the top of your profile, for everyone who visits it.')}</Text>
 
-        <View style={[styles.preview, { width: previewW, height: previewH }]} accessible accessibilityLabel={`Preview: ${pickedBackdrop ? `${pickedBackdrop.name}, ${pickedBackdrop.about}` : 'cover photo'}`}>
+        <View style={[styles.preview, { width: previewW, height: previewH }]} accessible accessibilityLabel={pickedBackdrop ? t('Preview: {backdrop}, {about}', { backdrop: pickedBackdrop.name, about: pickedBackdrop.about }) : t('Preview: cover photo')}>
           {pickedBackdrop ? (
             <AnimatedBackdrop key={pickedBackdrop.id} id={pickedBackdrop.id} width={previewW} height={previewH} />
           ) : me?.coverUrl ? (
@@ -96,23 +97,23 @@ export default function BackdropScreen() {
             </View>
             <View style={{ flexShrink: 1 }}>
               <Text style={styles.previewName} numberOfLines={1}>
-                {pickedBackdrop?.name ?? 'Cover photo'}
+                {pickedBackdrop?.name ?? t('Cover photo')}
               </Text>
               <Text style={styles.previewAbout} numberOfLines={2}>
-                {pickedBackdrop?.about ?? (me?.coverUrl ? 'Your cover photo, as it is now' : 'A plain night sky. Add a cover photo in Edit profile.')}
+                {pickedBackdrop?.about ?? (me?.coverUrl ? t('Your cover photo, as it is now') : t('A plain night sky. Add a cover photo in Edit profile.'))}
               </Text>
             </View>
           </View>
         </View>
 
         <Pressable onPress={() => router.push('/themes')} accessibilityRole="button" style={styles.themeLink}>
-          <Text style={styles.themeLinkText}>Want the whole app in a new look? App themes ›</Text>
+          <Text style={styles.themeLinkText}>{t('Want the whole app in a new look? App themes ›')}</Text>
         </Pressable>
 
         <View style={[styles.grid, { gap: space.md }]}>
           <Tile
-            label="Cover photo"
-            detail={me?.coverUrl ? 'Your photo' : 'Plain night'}
+            label={t('Cover photo')}
+            detail={me?.coverUrl ? t('Your photo') : t('Plain night')}
             selected={picked === PHOTO}
             width={tileW}
             height={tileH}
@@ -124,7 +125,7 @@ export default function BackdropScreen() {
             <Tile
               key={b.id}
               label={b.name}
-              detail={b.only ? 'Made for you' : b.plus ? 'Plus' : 'Free'}
+              detail={b.only ? t('Made for you') : b.plus ? t('Plus') : t('Free')}
               tag={tagOf(b, me?.uid, plus)}
               selected={picked === b.id}
               current={current === b.id}
@@ -140,7 +141,7 @@ export default function BackdropScreen() {
       </ScrollView>
 
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.md }]}>
-        {locked ? <Text style={styles.lockNote}>Part of Afterglow Plus. Preview it as much as you like.</Text> : null}
+        {locked ? <Text style={styles.lockNote}>{t('Part of Afterglow Plus. Preview it as much as you like.')}</Text> : null}
         <Pressable
           onPress={() => void save()}
           disabled={!changed || saving}
@@ -151,7 +152,7 @@ export default function BackdropScreen() {
           {saving ? (
             <ActivityIndicator color={color.moon} />
           ) : (
-            <Text style={styles.primaryText}>{!changed ? 'This is your background' : locked ? 'Comes with Plus' : `Use ${pickedBackdrop?.name ?? 'cover photo'}`}</Text>
+            <Text style={styles.primaryText}>{!changed ? t('This is your background') : locked ? t('Comes with Plus') : pickedBackdrop ? t('Use {backdrop}', { backdrop: pickedBackdrop.name }) : t('Use cover photo')}</Text>
           )}
         </Pressable>
       </View>
@@ -160,7 +161,7 @@ export default function BackdropScreen() {
 }
 
 function tagOf(b: Backdrop, uid: string | undefined, plus: boolean): { text: string; tone: 'special' | 'plus' | 'free' } | undefined {
-  if (b.only) return { text: '♥ Yours', tone: 'special' };
+  if (b.only) return { text: t('♥ Yours'), tone: 'special' };
   if (b.plus) return { text: canUse(b, uid, plus) ? 'PLUS' : 'PLUS 🔒', tone: 'plus' };
   return undefined;
 }
@@ -191,7 +192,7 @@ function Tile({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      accessibilityLabel={`${label}. ${detail}${current ? '. Your background now' : ''}`}
+      accessibilityLabel={current ? t('{label}. {detail}. Your background now', { label, detail }) : t('{label}. {detail}', { label, detail })}
       style={({ pressed }) => [{ width }, pressed && styles.pressed]}
     >
       <View style={[styles.tile, { height }, selected && styles.tileSelected]}>
@@ -211,7 +212,7 @@ function Tile({
         {label}
       </Text>
       <Text style={styles.tileDetail} numberOfLines={1}>
-        {current ? 'Now' : detail}
+        {current ? t('Now') : detail}
       </Text>
     </Pressable>
   );

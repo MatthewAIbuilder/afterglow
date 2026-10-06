@@ -1,5 +1,6 @@
 import type { Festival } from '../../data/models';
 import { nextRun, runsOf } from './when';
+import { months, t } from '../../i18n';
 
 /**
  * How festivals read on the Festivals tab's timeline and its "Up next" card,
@@ -7,7 +8,6 @@ import { nextRun, runsOf } from './when';
  * ("62" over "days to go"). "Today" is passed in.
  */
 
-const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 /**
  * A date block: the month the festival starts and its days ("4–6"; "31–1"
@@ -18,7 +18,7 @@ export function dateBlock(festival: Pick<Festival, 'startDate' | 'endDate' | 'we
   const start = festival.weekends?.[0]?.start ?? festival.startDate;
   if (!start) return undefined;
   const end = festival.weekends?.[festival.weekends.length - 1]?.end ?? festival.endDate ?? start;
-  const month = MONTHS[Number(start.slice(5, 7)) - 1];
+  const month = months(true)[Number(start.slice(5, 7)) - 1]?.toUpperCase();
   const a = Number(start.slice(8, 10));
   const b = Number(end.slice(8, 10));
   if (!month || !a) return undefined;
@@ -38,8 +38,9 @@ export function bigCountdown(festival: Festival, today: Date): BigCountdown | un
   const next = nextRun(festival, today);
   if (!next) return undefined;
   const { until, index } = next;
-  if (until <= 0) return { value: 'Now', unit: index > 0 ? `weekend ${index + 1}` : 'happening', live: true };
-  if (index > 0) return { value: `${until}`, unit: until === 1 ? `day to weekend ${index + 1}` : `days to weekend ${index + 1}` };
-  if (until >= 100) return { value: `${Math.round(until / 30.4)}`, unit: 'months to go' };
-  return { value: `${until}`, unit: until === 1 ? 'day to go' : 'days to go' };
+  if (until <= 0) return { value: t('Now'), unit: index > 0 ? t('weekend {w}', { w: index + 1 }) : t('happening'), live: true };
+  if (index > 0) return { value: `${until}`, unit: until === 1 ? t('day to weekend {w}', { w: index + 1 }) : t('days to weekend {w}', { w: index + 1 }) };
+  if (until >= 100) return { value: `${Math.round(until / 30.4)}`, unit: t('months to go') };
+  return { value: `${until}`, unit: until === 1 ? t('day to go') : t('days to go') };
+
 }

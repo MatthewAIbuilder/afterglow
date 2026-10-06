@@ -21,6 +21,7 @@ import { useGoing } from '../state/going';
 import { useMemories } from '../state/memories';
 import { color, radius, space, type, glowA, raisedA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t } from '../i18n';
 
 /**
  * The camera: film a moment at a festival. Reached by swiping right on
@@ -63,8 +64,8 @@ function Camera() {
   const startedAt = recording ? rec.startedAt : undefined;
   useEffect(() => {
     if (startedAt === undefined) return;
-    const t = setInterval(() => setElapsed(Date.now() - startedAt), 250);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setElapsed(Date.now() - startedAt), 250);
+    return () => clearInterval(timer);
   }, [startedAt]);
 
   // Closing (or leaving) mid-recording throws the clip away.
@@ -77,7 +78,7 @@ function Camera() {
       setElapsed(0);
       if (!uri) return;
       if (length < MIN_RECORD_MS) {
-        setHint('Hold a little longer to film.');
+        setHint(t('Hold a little longer to film.'));
         return;
       }
       haptic.settle();
@@ -113,7 +114,7 @@ function Camera() {
         .then((r) => finish(r?.uri, began))
         .catch(() => {
           setRec(IDLE);
-          setHint('Couldn’t record that one. Try again.');
+          setHint(t('Couldn’t record that one. Try again.'));
         });
     },
     [finish],
@@ -164,7 +165,7 @@ function Camera() {
   return (
     <GestureDetector gesture={swipeBack}>
       <View style={styles.root}>
-        <PageTitle title="Camera" />
+        <PageTitle title={t('Camera')} />
         <StatusBar style="light" />
         {allowed ? (
           <CameraView
@@ -175,7 +176,7 @@ function Camera() {
             mute={!micPerm?.granted}
             enableTorch={torch && facing === 'back'}
             onCameraReady={() => setReady(true)}
-            onMountError={() => setHint('The camera couldn’t start. Close and try again.')}
+            onMountError={() => setHint(t('The camera couldn’t start. Close and try again.'))}
           />
         ) : null}
 
@@ -185,7 +186,7 @@ function Camera() {
 
         <View style={[styles.top, { top: insets.top + space.sm }]}>
           {allowed && facing === 'back' ? (
-            <GlassCircleButton label={torch ? 'Turn the light off' : 'Turn the light on'} onPress={() => setTorch((t) => !t)}>
+            <GlassCircleButton label={torch ? t('Turn the light off') : t('Turn the light on')} onPress={() => setTorch((on) => !on)}>
               <TorchIcon color={torch ? color.glow : color.moon} filled={torch} size={18} />
             </GlassCircleButton>
           ) : (
@@ -193,17 +194,17 @@ function Camera() {
           )}
           <View style={styles.chip} accessibilityRole="text">
             {recording ? (
-              <View style={styles.timerRow} accessibilityLiveRegion="polite" accessibilityLabel={`Recording, ${elapsedLabel(elapsed)}`}>
+              <View style={styles.timerRow} accessibilityLiveRegion="polite" accessibilityLabel={t('Recording, {time}', { time: elapsedLabel(elapsed) })}>
                 <View style={styles.recDot} />
                 <Text style={styles.timer}>{elapsedLabel(elapsed)}</Text>
               </View>
             ) : (
               <Text style={styles.chipText} numberOfLines={1}>
-                {at ? `Filming at ${at}` : 'New memory'}
+                {at ? t('Filming at {festival}', { festival: at }) : t('New memory')}
               </Text>
             )}
           </View>
-          <GlassCircleButton label="Close the camera" onPress={close}>
+          <GlassCircleButton label={t('Close the camera')} onPress={close}>
             <CloseIcon color={color.moon} size={16} />
           </GlassCircleButton>
         </View>
@@ -213,22 +214,22 @@ function Camera() {
             <View style={styles.permIcon}>
               <CameraIcon color={color.moon} size={26} />
             </View>
-            <Text style={styles.permTitle}>Film your festival</Text>
+            <Text style={styles.permTitle}>{t('Film your festival')}</Text>
             <Text style={styles.permBody}>
-              Record a moment and Afterglow works out who was playing. Your videos stay on your phone unless you share them.
+              {t('Record a moment and Afterglow works out who was playing. Your videos stay on your phone unless you share them.')}
             </Text>
             {camPerm.canAskAgain ? (
               <Pressable onPress={askAll} accessibilityRole="button" style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}>
-                <Text style={styles.permButtonText}>Allow camera</Text>
+                <Text style={styles.permButtonText}>{t('Allow camera')}</Text>
               </Pressable>
             ) : (
               <Pressable
                 onPress={() => void Linking.openSettings().catch(() => {})}
                 accessibilityRole="button"
-                accessibilityLabel="Camera access is off. Open Settings to allow it."
+                accessibilityLabel={t('Camera access is off. Open Settings to allow it.')}
                 style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}
               >
-                <Text style={styles.permButtonText}>Open Settings</Text>
+                <Text style={styles.permButtonText}>{t('Open Settings')}</Text>
               </Pressable>
             )}
           </Animated.View>
@@ -240,7 +241,7 @@ function Camera() {
               {hint}
             </Animated.Text>
           ) : (
-            <Text style={styles.hint}>{saving ? 'Keeping your video…' : recording ? (rec.mode === 'pending' ? 'Filming while you hold · slide away to lock' : rec.mode === 'locked' ? 'Locked · tap to stop' : 'Tap to stop') : allowed ? 'Tap to record · hold to film while you hold' : ' '}</Text>
+            <Text style={styles.hint}>{saving ? t('Keeping your video…') : recording ? (rec.mode === 'pending' ? t('Filming while you hold · slide away to lock') : rec.mode === 'locked' ? t('Locked · tap to stop') : t('Tap to stop')) : allowed ? t('Tap to record · hold to film while you hold') : ' '}</Text>
           )}
           <View style={styles.controls}>
             <Pressable
@@ -250,7 +251,7 @@ function Camera() {
               }}
               disabled={recording || saving}
               accessibilityRole="button"
-              accessibilityLabel="Choose a video from your library"
+              accessibilityLabel={t('Choose a video from your library')}
               hitSlop={10}
               style={({ pressed }) => [styles.side, recording && styles.hidden, pressed && styles.pressed]}
             >
@@ -264,7 +265,7 @@ function Camera() {
               onPressIn={() => press('press-in')}
               onPressOut={() => press('press-out')}
               onLock={() => press('lock')}
-              label={recording ? 'Stop recording' : 'Record a video'}
+              label={recording ? t('Stop recording') : t('Record a video')}
             />
             <Pressable
               onPress={() => {
@@ -273,7 +274,7 @@ function Camera() {
               }}
               disabled={recording || !allowed}
               accessibilityRole="button"
-              accessibilityLabel={facing === 'back' ? 'Switch to the front camera' : 'Switch to the back camera'}
+              accessibilityLabel={facing === 'back' ? t('Switch to the front camera') : t('Switch to the back camera')}
               hitSlop={10}
               style={({ pressed }) => [styles.side, (recording || !allowed) && styles.hidden, pressed && styles.pressed]}
             >
@@ -297,13 +298,13 @@ function ChooseOnWeb() {
   const pick = useMemoryPicker();
   return (
     <View style={[styles.root, styles.web, { paddingTop: insets.top + space.xxl }]}>
-      <PageTitle title="Post a video" />
+      <PageTitle title={t('Post a video')} />
       <View style={styles.permIcon}>
         <CameraIcon color={color.moon} size={26} />
       </View>
-      <Text style={styles.permTitle}>Post a festival moment</Text>
+      <Text style={styles.permTitle}>{t('Post a festival moment')}</Text>
       <Text style={styles.permBody}>
-        Choose a video from your Photos or Files, or take one, up to a minute long. Tag who was playing and share it to Discover.
+        {t('Choose a video from your Photos or Files, or take one, up to a minute long. Tag who was playing and share it to Discover.')}
       </Text>
       <Pressable
         onPress={() => {
@@ -313,12 +314,12 @@ function ChooseOnWeb() {
         accessibilityRole="button"
         style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}
       >
-        <Text style={styles.permButtonText}>Choose a video</Text>
+        <Text style={styles.permButtonText}>{t('Choose a video')}</Text>
       </Pressable>
       <Pressable onPress={() => goBack()} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.webBack, pressed && styles.pressed]}>
-        <Text style={styles.webBackText}>Not now</Text>
+        <Text style={styles.webBackText}>{t('Not now')}</Text>
       </Pressable>
-      <Text style={styles.webNote}>Filming with Afterglow’s own camera is in the app.</Text>
+      <Text style={styles.webNote}>{t('Filming with Afterglow’s own camera is in the app.')}</Text>
     </View>
   );
 }

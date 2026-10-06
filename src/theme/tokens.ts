@@ -30,6 +30,7 @@ export const color = {
   dusk: palette.dusk, // cool counter-light
   stage: palette.stage, // warm stage light, background only, very faint
   amber: '#FFB86B', // a quiet heads-up (something you'd miss), never an alarm
+  coral: '#FF8A8A', // care that needs a hand: soft, never a siren
 };
 
 /** The accent, the deeper accent, the night and raised surfaces at an opacity, in the theme's colours. */
@@ -37,6 +38,8 @@ export const glowA = (alpha: number) => rgbaOf(palette.glow, alpha);
 export const glowDeepA = (alpha: number) => rgbaOf(palette.glowDeep, alpha);
 export const nightA = (alpha: number) => rgbaOf(palette.night, alpha);
 export const raisedA = (alpha: number) => rgbaOf(palette.nightRaised, alpha);
+/** A fixed colour token (amber, coral) at an opacity. */
+export const tintA = (hex: string, alpha: number) => rgbaOf(hex, alpha);
 
 function startingTheme(): ThemeId {
   const id = readStoredTheme();

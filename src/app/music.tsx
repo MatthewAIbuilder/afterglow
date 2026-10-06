@@ -14,6 +14,7 @@ import { useMusic } from '../state/music';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { goBack } from '../lib/nav';
+import { t } from '../i18n';
 
 /**
  * Music connections: connect Spotify (or, later, Apple Music) so Afterglow
@@ -46,9 +47,9 @@ export default function MusicScreen() {
       >
         <View style={styles.pad}>
           <Text style={styles.title} accessibilityRole="header">
-            Music connections
+            {t('Music connections')}
           </Text>
-          <Text style={styles.meta}>Start your map from the artists you already play. What you do in Afterglow still counts for more.</Text>
+          <Text style={styles.meta}>{t('Start your map from the artists you already play. What you do in Afterglow still counts for more.')}</Text>
         </View>
 
         <View style={[styles.pad, styles.list]}>
@@ -65,26 +66,27 @@ export default function MusicScreen() {
         </View>
 
         <View style={[styles.pad, styles.about]}>
-          <Text style={styles.aboutTitle}>What Afterglow reads</Text>
+          <Text style={styles.aboutTitle}>{t('What Afterglow reads')}</Text>
           <Text style={styles.aboutBody}>
-            The artists you follow, the songs you’ve saved and the artists you play most. From those it keeps only each
-            artist’s name, how much you play them and their genres.
+            {t(
+              'The artists you follow, the songs you’ve saved and the artists you play most. From those it keeps only each artist’s name, how much you play them and their genres.',
+            )}
           </Text>
-          <Text style={styles.aboutTitle}>What it never keeps</Text>
+          <Text style={styles.aboutTitle}>{t('What it never keeps')}</Text>
           <Text style={styles.aboutBody}>
-            Your password, your account details, your playlists or the songs themselves. The sign-in is kept in this
-            phone’s secure storage and used only to read your library.
+            {t(
+              'Your password, your account details, your playlists or the songs themselves. The sign-in is kept in this phone’s secure storage and used only to read your library.',
+            )}
           </Text>
-          <Text style={styles.aboutTitle}>Private to you</Text>
+          <Text style={styles.aboutTitle}>{t('Private to you')}</Text>
           <Text style={styles.aboutBody}>
-            Your library stays on this phone and is never shown to anyone. Disconnecting removes everything imported and
-            forgets the sign-in.
+            {t('Your library stays on this phone and is never shown to anyone. Disconnecting removes everything imported and forgets the sign-in.')}
           </Text>
         </View>
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
@@ -112,13 +114,13 @@ function ServiceCard({ provider, view }: { provider: MusicProviderId; view: Conn
   const disconnect = () => {
     haptic.select();
     showAlert(
-      `Disconnect ${name}?`,
-      `Everything Afterglow imported from ${name} is removed from this phone and the sign-in is forgotten. Your likes, saves and ratings stay.` +
-        (provider === 'spotify' ? '\n\nTo also remove Afterglow from your Spotify account, visit spotify.com/account/apps.' : ''),
+      t('Disconnect {service}?', { service: name }),
+      t('Everything Afterglow imported from {service} is removed from this phone and the sign-in is forgotten. Your likes, saves and ratings stay.', { service: name }) +
+        (provider === 'spotify' ? `\n\n${t('To also remove Afterglow from your Spotify account, visit spotify.com/account/apps.')}` : ''),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Disconnect & remove',
+          text: t('Disconnect & remove'),
           style: 'destructive',
           onPress: () => {
             setProblem(undefined);
@@ -174,7 +176,7 @@ function ServiceCard({ provider, view }: { provider: MusicProviderId; view: Conn
           onPress={() => void act(view.primary!.action)}
           disabled={view.busy || !music.hydrated}
           accessibilityRole="button"
-          accessibilityLabel={view.primary.label.includes(name) ? view.primary.label : `${view.primary.label}, ${name}`}
+          accessibilityLabel={view.primary.label.includes(name) ? view.primary.label : t('{action}, {service}', { action: view.primary.label, service: name })}
           accessibilityState={{ disabled: view.busy || !music.hydrated }}
           style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
         >
@@ -186,11 +188,11 @@ function ServiceCard({ provider, view }: { provider: MusicProviderId; view: Conn
         <Pressable
           onPress={disconnect}
           accessibilityRole="button"
-          accessibilityLabel={`Disconnect ${name} and remove imported music data`}
+          accessibilityLabel={t('Disconnect {service} and remove imported music data', { service: name })}
           hitSlop={8}
           style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
         >
-          <Text style={styles.secondaryText}>Disconnect & remove imported music data</Text>
+          <Text style={styles.secondaryText}>{t('Disconnect & remove imported music data')}</Text>
         </Pressable>
       ) : null}
     </View>

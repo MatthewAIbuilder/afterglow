@@ -16,6 +16,7 @@ import { useCatalog } from '../../state/catalog';
 import { loadScouted, setScouted } from '../../state/scouted';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * Send set times for a festival that has none yet: paste them, or add a
@@ -45,7 +46,7 @@ export default function SendSetTimesScreen() {
     const data = await shrinkPhoto(asset.uri, asset.width);
     setBusy(undefined);
     if (data) setPhoto({ uri: asset.uri, data });
-    else setProblem('That picture couldn’t be used. Try a screenshot, or crop it to the timetable.');
+    else setProblem(t('That picture couldn’t be used. Try a screenshot, or crop it to the timetable.'));
   };
 
   const send = async () => {
@@ -61,7 +62,7 @@ export default function SendSetTimesScreen() {
       setSent(true);
     } catch (e) {
       const kind = socialErrorKind(e);
-      setProblem(kind === 'network' ? 'No signal right now. Try again when you have some.' : e instanceof SocialError ? SOCIAL_ERROR_COPY[kind] : 'That didn’t send. Try again.');
+      setProblem(kind === 'network' ? t('No signal right now. Try again when you have some.') : e instanceof SocialError ? SOCIAL_ERROR_COPY[kind] : t('That didn’t send. Try again.'));
     } finally {
       setBusy(undefined);
     }
@@ -70,59 +71,59 @@ export default function SendSetTimesScreen() {
   const ready = !!text.trim() || !!photo;
   return (
     <View style={styles.root}>
-      <PageTitle title="Send set times" />
+      <PageTitle title={t('Send set times')} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.heading}>Send set times</Text>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <Text style={styles.heading}>{t('Send set times')}</Text>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xxl }]} keyboardShouldPersistTaps="handled">
         {!festival ? (
-          <Text style={styles.body}>This festival isn’t on Afterglow any more.</Text>
+          <Text style={styles.body}>{t('This festival isn’t on Afterglow any more.')}</Text>
         ) : sent ? (
           <>
-            <Text style={styles.title}>Thank you</Text>
-            <Text style={styles.body}>We’ll check them and add them to {festival.name} for everyone. When they’re live you’ll hear about it, and earn the Set scout badge.</Text>
-            <Button label="Done" onPress={() => goBack()} primary />
+            <Text style={styles.title}>{t('Thank you')}</Text>
+            <Text style={styles.body}>{t('We’ll check them and add them to {festival} for everyone. When they’re live you’ll hear about it, and earn the Set scout badge.', { festival: festival.name })}</Text>
+            <Button label={t('Done')} onPress={() => goBack()} primary />
           </>
         ) : (
           <>
             <Text style={styles.title}>{festival.name}</Text>
-            <Text style={styles.body}>Seen the set times somewhere: the festival’s app or site, or a friend’s screenshot? Send them over. We check them before anyone sees them, then everyone’s plan turns into a schedule.</Text>
+            <Text style={styles.body}>{t('Seen the set times somewhere: the festival’s app or site, or a friend’s screenshot? Send them over. We check them before anyone sees them, then everyone’s plan turns into a schedule.')}</Text>
             {!social.availability.ok ? (
               <Text style={styles.body}>{accountsOff(Platform.OS === 'web', 'Accounts').body}</Text>
             ) : !social.user ? (
               <>
-                <Text style={styles.body}>Make a free account to send them, so we can thank you when they’re live.</Text>
-                <Button label="Create a free account" onPress={() => router.push('/account')} primary />
+                <Text style={styles.body}>{t('Make a free account to send them, so we can thank you when they’re live.')}</Text>
+                <Button label={t('Create a free account')} onPress={() => router.push('/account')} primary />
               </>
             ) : (
               <>
                 <TextInput
                   value={text}
-                  onChangeText={(t) => setText(t.slice(0, TIP_TEXT_MAX))}
+                  onChangeText={(v) => setText(v.slice(0, TIP_TEXT_MAX))}
                   multiline
-                  placeholder={'Paste them here, like\nFriday\nMain Stage\n10:00 PM SUBTRONICS'}
+                  placeholder={t('Paste them here, like\nFriday\nMain Stage\n10:00 PM SUBTRONICS')}
                   placeholderTextColor={color.moonFaint}
-                  accessibilityLabel="Set times as text"
+                  accessibilityLabel={t('Set times as text')}
                   style={styles.input}
                   autoCorrect={false}
                 />
                 {photo ? (
                   <View style={styles.photoRow}>
                     <Image source={{ uri: photo.uri }} style={styles.thumb} accessibilityIgnoresInvertColors accessible={false} />
-                    <Text style={[styles.body, { flex: 1 }]}>Your screenshot</Text>
-                    <Pressable onPress={() => setPhoto(undefined)} accessibilityRole="button" accessibilityLabel="Remove the screenshot" hitSlop={8}>
-                      <Text style={styles.link}>Remove</Text>
+                    <Text style={[styles.body, { flex: 1 }]}>{t('Your screenshot')}</Text>
+                    <Pressable onPress={() => setPhoto(undefined)} accessibilityRole="button" accessibilityLabel={t('Remove the screenshot')} hitSlop={8}>
+                      <Text style={styles.link}>{t('Remove')}</Text>
                     </Pressable>
                   </View>
                 ) : (
-                  <Button label={busy === 'photo' ? 'Getting it ready…' : 'Add a screenshot of the timetable'} onPress={() => void addPhoto()} disabled={!!busy} />
+                  <Button label={busy === 'photo' ? t('Getting it ready…') : t('Add a screenshot of the timetable')} onPress={() => void addPhoto()} disabled={!!busy} />
                 )}
                 {problem ? <Text style={styles.problem}>{problem}</Text> : null}
-                <Button label={busy === 'send' ? 'Sending…' : 'Send to Afterglow'} onPress={() => void send()} disabled={!ready || !!busy} primary />
-                <Text style={styles.small}>Only the set times are ever shown, never your screenshot. It’s deleted once they’re checked.</Text>
+                <Button label={busy === 'send' ? t('Sending…') : t('Send to Afterglow')} onPress={() => void send()} disabled={!ready || !!busy} primary />
+                <Text style={styles.small}>{t('Only the set times are ever shown, never your screenshot. It’s deleted once they’re checked.')}</Text>
               </>
             )}
           </>

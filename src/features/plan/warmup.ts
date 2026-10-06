@@ -1,4 +1,5 @@
 import type { Artist, Clip } from '../../data/models';
+import { t } from '../../i18n';
 import type { Pick as PlanPick } from './plan';
 
 /**
@@ -37,6 +38,7 @@ export function warmupPlaylist(picks: readonly PlanPick[], clipsOf: (artistId: s
 /** "ILLENIUM, SUBTRONICS and 4 more". */
 export function warmupLine(w: Warmup): string {
   const names = w.artists.map((a) => a.name);
-  if (names.length <= 2) return names.join(' and ');
-  return `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+  if (names.length <= 1) return names[0] ?? '';
+  if (names.length === 2) return t('{a} and {b}', { a: names[0], b: names[1] });
+  return t('{a}, {b} and {n} more', { a: names[0], b: names[1], n: names.length - 2 });
 }

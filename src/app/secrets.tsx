@@ -7,12 +7,12 @@ import { PageTitle } from '../components/PageTitle';
 import { SECRET_GLOW, SECRETS, secretsLine } from '../features/secrets/secrets';
 import { haptic } from '../lib/haptics';
 import { revealSecret, useSecrets } from '../state/secrets';
+import { months, t } from '../i18n';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const foundOn = (t: number) => {
-  const d = new Date(t);
-  return `Found ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+const foundOn = (at: number) => {
+  const d = new Date(at);
+  return t('Found {date}', { date: t('{month} {day}', { month: months(true)[d.getMonth()], day: d.getDate() }) });
 };
 
 /**
@@ -25,18 +25,18 @@ export default function SecretsScreen() {
   const count = Object.keys(found).length;
   return (
     <View style={styles.root}>
-      <PageTitle title="Secrets" />
+      <PageTitle title={t('Secrets')} />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
           <Text style={styles.title} accessibilityRole="header">
-            Secrets
+            {t('Secrets')}
           </Text>
           <Text style={styles.sub}>{loaded ? secretsLine(count) : ' '}</Text>
           <View style={styles.bar}>
             <View style={[styles.barFill, { width: `${(count / SECRETS.length) * 100}%` }]} />
           </View>
-          <Text style={styles.note}>Little things hidden around Afterglow. Each one found adds {SECRET_GLOW} glow.</Text>
+          <Text style={styles.note}>{t('Little things hidden around Afterglow. Each one found adds {n} glow.', { n: SECRET_GLOW })}</Text>
         </View>
         {SECRETS.map((s) => {
           const when = found[s.id];
@@ -48,7 +48,7 @@ export default function SecretsScreen() {
                 revealSecret(s.id);
               }}
               accessibilityRole="button"
-              accessibilityLabel={`${s.title}. ${s.found} ${foundOn(when)}. Play it again.`}
+              accessibilityLabel={t('{title}. {how} {when}. Play it again.', { title: s.title, how: s.found, when: foundOn(when) })}
               style={({ pressed }) => [styles.card, styles.found, pressed && { transform: [{ scale: 0.98 }] }]}
               testID={`secret-card-${s.id}`}
             >
@@ -56,14 +56,14 @@ export default function SecretsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{s.title}</Text>
                 <Text style={styles.cardText}>{s.found}</Text>
-                <Text style={styles.when}>{foundOn(when)} · Tap to play again</Text>
+                <Text style={styles.when}>{t('{when} · Tap to play again', { when: foundOn(when) })}</Text>
               </View>
             </Pressable>
           ) : (
-            <View key={s.id} style={styles.card} accessible accessibilityLabel={`A secret not found yet. Hint: ${s.riddle}`} testID={`secret-card-${s.id}`}>
+            <View key={s.id} style={styles.card} accessible accessibilityLabel={t('A secret not found yet. Hint: {riddle}', { riddle: s.riddle })} testID={`secret-card-${s.id}`}>
               <Lock />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.cardTitle, styles.hidden]}>Not found yet</Text>
+                <Text style={[styles.cardTitle, styles.hidden]}>{t('Not found yet')}</Text>
                 <Text style={styles.cardText}>{s.riddle}</Text>
               </View>
             </View>

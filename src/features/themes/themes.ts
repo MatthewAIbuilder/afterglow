@@ -1,5 +1,6 @@
 import { DEFAULT_THEME, isThemeId, PALETTES, type Palette, type ThemeId } from '../../theme/palettes';
 import { type BackdropId, FROG_FRIENDS, PANDA_FRIENDS, TOE_BEACH_FRIENDS } from '../profile/backdrops';
+import { t } from '../../i18n';
 
 /**
  * App themes: a whole new look for Afterglow (the night, the glow, the
@@ -19,20 +20,20 @@ export type AppTheme = {
 };
 
 export const THEMES: readonly AppTheme[] = [
-  { id: 'afterglow', name: 'Afterglow', about: 'The original: violet festival light at night', plus: false },
-  { id: 'aurora', name: 'Aurora', about: 'Northern-lights green on a deep blue night', plus: false, backdrop: 'aurora' },
-  { id: 'moonlight', name: 'Moonlight', about: 'Silver light, cool and calm', plus: true, backdrop: 'starfield' },
-  { id: 'nebula', name: 'Nebula', about: 'Pink starlight on deep space', plus: true, backdrop: 'nebula' },
-  { id: 'laser', name: 'Laser', about: 'Electric lime for the front row', plus: true, backdrop: 'lasers' },
-  { id: 'synthwave', name: 'Sunset grid', about: 'Hot pink and a neon dusk', plus: true, backdrop: 'synthwave' },
-  { id: 'ocean', name: 'Ocean', about: 'Cool blue, like a night swim', plus: true, backdrop: 'waves' },
-  { id: 'firefly', name: 'Firefly', about: 'Warm gold on a summer night', plus: true, backdrop: 'fireflies' },
-  { id: 'bass', name: 'Bass', about: 'Electric blue for the drop', plus: true, backdrop: 'bass' },
-  { id: 'lava', name: 'Lava', about: 'Molten orange and red', plus: true, backdrop: 'lava' },
-  { id: 'prism', name: 'Prism', about: 'Orchid and soft pastel light', plus: true, backdrop: 'prism' },
-  { id: 'panda', name: 'Panda garden', about: 'Made just for you: blossom pink and bamboo green', plus: false, only: PANDA_FRIENDS, backdrop: 'panda' },
-  { id: 'frog', name: 'Frog pond', about: 'Made just for you: lily-pad green and firefly light', plus: false, only: FROG_FRIENDS, backdrop: 'frog' },
-  { id: 'toes', name: 'Toe beach', about: 'Made just for you: sunset peach on the sand', plus: false, only: TOE_BEACH_FRIENDS, backdrop: 'toes' },
+  { id: 'afterglow', name: 'Afterglow', about: t('The original: violet festival light at night'), plus: false },
+  { id: 'aurora', name: 'Aurora', about: t('Northern-lights green on a deep blue night'), plus: false, backdrop: 'aurora' },
+  { id: 'moonlight', name: 'Moonlight', about: t('Silver light, cool and calm'), plus: true, backdrop: 'starfield' },
+  { id: 'nebula', name: 'Nebula', about: t('Pink starlight on deep space'), plus: true, backdrop: 'nebula' },
+  { id: 'laser', name: 'Laser', about: t('Electric lime for the front row'), plus: true, backdrop: 'lasers' },
+  { id: 'synthwave', name: 'Sunset grid', about: t('Hot pink and a neon dusk'), plus: true, backdrop: 'synthwave' },
+  { id: 'ocean', name: 'Ocean', about: t('Cool blue, like a night swim'), plus: true, backdrop: 'waves' },
+  { id: 'firefly', name: 'Firefly', about: t('Warm gold on a summer night'), plus: true, backdrop: 'fireflies' },
+  { id: 'bass', name: 'Bass', about: t('Electric blue for the drop'), plus: true, backdrop: 'bass' },
+  { id: 'lava', name: 'Lava', about: t('Molten orange and red'), plus: true, backdrop: 'lava' },
+  { id: 'prism', name: 'Prism', about: t('Orchid and soft pastel light'), plus: true, backdrop: 'prism' },
+  { id: 'panda', name: 'Panda garden', about: t('Made just for you: blossom pink and bamboo green'), plus: false, only: PANDA_FRIENDS, backdrop: 'panda' },
+  { id: 'frog', name: 'Frog pond', about: t('Made just for you: lily-pad green and firefly light'), plus: false, only: FROG_FRIENDS, backdrop: 'frog' },
+  { id: 'toes', name: 'Toe beach', about: t('Made just for you: sunset peach on the sand'), plus: false, only: TOE_BEACH_FRIENDS, backdrop: 'toes' },
 ];
 
 const BY_ID = new Map(THEMES.map((t) => [t.id, t]));

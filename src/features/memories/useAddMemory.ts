@@ -5,6 +5,7 @@ import { haptic } from '../../lib/haptics';
 import { useMemories } from '../../state/memories';
 import { pickVideo } from './device';
 import { showActionSheet, showAlert } from '../../lib/dialog';
+import { t } from '../../i18n';
 
 /**
  * Choosing a video you already have, then the tagging sheet. A declined
@@ -25,20 +26,20 @@ export function useMemoryPicker() {
         return;
       }
       if (r.reason === 'no-permission') {
-        showAlert('Camera access is off', 'Allow Afterglow to use the camera in Settings to record memories.', [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => void Linking.openSettings().catch(() => {}) },
+        showAlert(t('Camera access is off'), t('Allow Afterglow to use the camera in Settings to record memories.'), [
+          { text: t('Not now'), style: 'cancel' },
+          { text: t('Open Settings'), onPress: () => void Linking.openSettings().catch(() => {}) },
         ]);
       } else if (r.reason === 'too-long') {
-        showAlert('That video is too long', 'Choose a clip of a minute or less.');
+        showAlert(t('That video is too long'), t('Choose a clip of a minute or less.'));
       } else if (r.reason === 'too-large') {
-        showAlert('That video is too big', 'Choose one under 150 MB. A shorter clip usually is.');
+        showAlert(t('That video is too big'), t('Choose one under 150 MB. A shorter clip usually is.'));
       } else if (r.reason === 'wrong-type') {
-        showAlert('That isn’t a video Afterglow can share', 'Choose a video from your Photos or Files (MP4 or MOV).');
+        showAlert(t('That isn’t a video Afterglow can share'), t('Choose a video from your Photos or Files (MP4 or MOV).'));
       } else if (r.reason === 'app-only') {
-        showAlert('Memories are in the iPhone app', 'Adding your own videos works in the Afterglow app on your phone for now.');
+        showAlert(t('Memories are in the iPhone app'), t('Adding your own videos works in the Afterglow app on your phone for now.'));
       } else if (r.reason === 'failed') {
-        showAlert('Couldn’t open that video', 'Try another one.');
+        showAlert(t('Couldn’t open that video'), t('Try another one.'));
       }
     },
     [setDraft],
@@ -65,7 +66,7 @@ export function useAddMemory() {
     const done = () => {
       busy.current = false;
     };
-    showActionSheet({ title: 'Add a memory', options: ['Record a video', 'Choose from library', 'Cancel'], cancelButtonIndex: 2 }, (i) => {
+    showActionSheet({ title: t('Add a memory'), options: [t('Record a video'), t('Choose from library'), t('Cancel')], cancelButtonIndex: 2 }, (i) => {
       if (i === 0) {
         haptic.select();
         done();

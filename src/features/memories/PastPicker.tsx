@@ -7,6 +7,7 @@ import { useCatalog } from '../../state/catalog';
 import { useMemories } from '../../state/memories';
 import { EnamelPin } from '../badges/EnamelPin';
 import { throwbackLook } from '../badges/badges';
+import { t } from '../../i18n';
 import { type PastChoice, type PastEvent, cleanPastName, pastChoices, pastEventsOf, pastLabel, pastYears } from './past';
 
 /**
@@ -48,7 +49,7 @@ export function PastPicker({
 
   return (
     <View style={styles.root}>
-      <Text style={styles.label}>Year</Text>
+      <Text style={styles.label}>{t('Year')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.years}>
         {years.map((y) => (
           <Pressable
@@ -71,27 +72,27 @@ export function PastPicker({
         <View style={styles.card} testID="past-chosen">
           <EnamelPin look={throwbackLook(value)} size={64} />
           <View style={styles.cardText}>
-            <Text style={styles.cardKicker}>THROWBACK</Text>
+            <Text style={styles.cardKicker}>{t('THROWBACK')}</Text>
             <Text style={styles.cardName} numberOfLines={2}>
               {pastLabel(value)}
             </Text>
             <Text style={styles.cardSub} numberOfLines={2}>
-              {value.city ? `${value.city} · ` : ''}It’s a throwback on your profile, with a rose gold badge.
+              {value.city ? t('{city} · It’s a throwback on your profile, with a rose gold badge.', { city: value.city }) : t('It’s a throwback on your profile, with a rose gold badge.')}
             </Text>
             <View style={styles.cardLinks}>
-              <Pressable onPress={onSearch} hitSlop={8} accessibilityRole="button" accessibilityLabel="Change the festival">
-                <Text style={styles.link}>Change</Text>
+              <Pressable onPress={onSearch} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Change the festival')}>
+                <Text style={styles.link}>{t('Change')}</Text>
               </Pressable>
-              <Pressable onPress={() => onChange(undefined)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Not a past festival">
-                <Text style={styles.linkQuiet}>Remove</Text>
+              <Pressable onPress={() => onChange(undefined)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Not a past festival')}>
+                <Text style={styles.linkQuiet}>{t('Remove')}</Text>
               </Pressable>
             </View>
           </View>
         </View>
       ) : (
         <>
-          <Text style={styles.label}>Which festival was it?</Text>
-          <SearchField value={query} onChange={setQuery} placeholder="Search, like EDC Las Vegas" label="Search for the festival" />
+          <Text style={styles.label}>{t('Which festival was it?')}</Text>
+          <SearchField value={query} onChange={setQuery} placeholder={t('Search, like EDC Las Vegas')} label={t('Search for the festival')} />
           <View style={styles.rows}>
             {results.map((r) => (
               <Pressable
@@ -106,7 +107,7 @@ export function PastPicker({
                     {r.name} {year}
                   </Text>
                   <Text style={styles.rowSub} numberOfLines={1}>
-                    {[r.city, r.from === 'yours' ? 'You added it before' : r.from === 'afterglow' ? 'On Afterglow this year' : undefined].filter(Boolean).join(' · ') || 'Festival'}
+                    {[r.city, r.from === 'yours' ? t('You added it before') : r.from === 'afterglow' ? t('On Afterglow this year') : undefined].filter(Boolean).join(' · ') || t('Festival')}
                   </Text>
                 </View>
                 {value && value.name === r.name ? <CheckIcon color={color.glow} size={16} /> : null}
@@ -116,11 +117,11 @@ export function PastPicker({
               <Pressable
                 onPress={() => choose({ name: typed })}
                 accessibilityRole="button"
-                accessibilityLabel={`Add ${typed} ${year}`}
+                accessibilityLabel={t('Add {festival}', { festival: `${typed} ${year}` })}
                 style={({ pressed }) => [styles.row, styles.add, pressed && styles.pressed]}
               >
                 <Text style={styles.addText} numberOfLines={1}>
-                  + Add “{typed} {year}”
+                  {t('+ Add “{festival}”', { festival: `${typed} ${year}` })}
                 </Text>
               </Pressable>
             ) : null}

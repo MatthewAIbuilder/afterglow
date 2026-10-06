@@ -23,6 +23,7 @@ import { mixColor, SOUND_COLOR } from './colors';
 import { artistColors } from '../../components/ArtistAvatar';
 import { Constellation, HeartHalo, NebulaCloud, ReshapeRipple, SparkBurst, Starfield } from './MapSky';
 import { chosenLinks, constellation, CONSTELLATION_OF, heartColors, nebulae } from './sky';
+import { t } from '../../i18n';
 
 type Props = {
   artists: Artist[];
@@ -344,7 +345,7 @@ function RegionName({ region: r, ox, oy, scale, tappable, onTap }: { region: Reg
       pointerEvents="none"
       accessible={tappable}
       accessibilityRole={tappable ? 'button' : undefined}
-      accessibilityLabel={tappable ? `${SOUND_LABEL[r.tag]}. Show these artists` : undefined}
+      accessibilityLabel={tappable ? t('{sound}. Show these artists', { sound: SOUND_LABEL[r.tag] }) : undefined}
       onAccessibilityTap={onTap ? () => onTap(r.tag) : undefined}
     >
       {SOUND_LABEL[r.tag]}

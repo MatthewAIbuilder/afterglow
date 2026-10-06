@@ -14,6 +14,7 @@ import type { Memory } from '../memories/models';
 import { clipLength, memoryLine } from '../memories/organize';
 import { onServer } from '../memories/webVideo';
 import { festivalMark } from './profileView';
+import { t, tn } from '../../i18n';
 
 const GAP = 2;
 const COLUMNS = 3;
@@ -35,11 +36,11 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
         <View style={styles.emptyIcon}>
           <CameraIcon color={color.moon} size={26} />
         </View>
-        <Text style={styles.emptyTitle}>Your festival moments</Text>
+        <Text style={styles.emptyTitle}>{t('Your festival moments')}</Text>
         <Text style={styles.emptyBody}>
           {canFilm
-            ? 'Film a set, tag who was playing, and share it to Discover if you like.'
-            : 'Choose a video from your phone, tag who was playing, and share it to Discover. Videos you share from the website show here once shared.'}
+            ? t('Film a set, tag who was playing, and share it to Discover if you like.')
+            : t('Choose a video from your phone, tag who was playing, and share it to Discover. Videos you share from the website show here once shared.')}
         </Text>
         <Pressable
           onPress={() => {
@@ -49,7 +50,7 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
           accessibilityRole="button"
           style={({ pressed }) => [styles.emptyButton, pressed && { opacity: 0.8 }]}
         >
-          <Text style={styles.emptyButtonText}>{canFilm ? 'Film a video' : 'Post a video'}</Text>
+          <Text style={styles.emptyButtonText}>{canFilm ? t('Film a video') : t('Post a video')}</Text>
         </Pressable>
       </View>
     );
@@ -62,11 +63,11 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
           router.push('/memories');
         }}
         accessibilityRole="button"
-        accessibilityLabel={`Memories, ${memories.length}`}
-        accessibilityHint="Your videos by festival, night and set"
+        accessibilityLabel={t('Memories, {n}', { n: memories.length })}
+        accessibilityHint={t('Your videos by festival, night and set')}
         style={({ pressed }) => [styles.byFestival, pressed && { opacity: 0.7 }]}
       >
-        <Text style={styles.byFestivalText}>By festival</Text>
+        <Text style={styles.byFestivalText}>{t('By festival')}</Text>
         <ChevronIcon color={color.moonFaint} size={11} />
       </Pressable>
       <View style={styles.grid}>
@@ -76,13 +77,13 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
             router.push('/camera');
           }}
           accessibilityRole="button"
-          accessibilityLabel={canFilm ? 'Film a video' : 'Post a video'}
+          accessibilityLabel={canFilm ? t('Film a video') : t('Post a video')}
           style={({ pressed }) => [styles.newTile, { width: tile, height: tileHeight(tile) }, pressed && { opacity: 0.75 }]}
         >
           <View style={styles.newPlus}>
             <PlusIcon color={color.moon} size={18} />
           </View>
-          <Text style={styles.newText}>New</Text>
+          <Text style={styles.newText}>{t('New')}</Text>
         </Pressable>
         {memories.map((m) => {
           const untagged = !m.festivalId && !m.past && !m.artistId;
@@ -102,7 +103,7 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
                 else router.push({ pathname: '/memory/[id]', params: { id: m.id } });
               }}
               accessibilityRole="button"
-              accessibilityLabel={untagged ? 'Untagged video. Tag it' : `Video: ${memoryLine(m, lookup)}${m.sharedId ? ', shared' : ''}`}
+              accessibilityLabel={untagged ? t('Untagged video. Tag it') : m.sharedId ? t('Video: {line}, shared', { line: memoryLine(m, lookup) }) : t('Video: {line}', { line: memoryLine(m, lookup) })}
               style={({ pressed }) => [styles.tile, { width: tile, height: tileHeight(tile) }, pressed && { opacity: 0.8 }]}
             >
               <LinearGradient colors={[to, from]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -131,7 +132,7 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
               {m.sharedId ? <View style={styles.sharedDot} /> : null}
               {untagged ? (
                 <View style={styles.tag}>
-                  <Text style={styles.tagText}>Tag</Text>
+                  <Text style={styles.tagText}>{t('Tag')}</Text>
                 </View>
               ) : null}
             </Pressable>
@@ -149,13 +150,13 @@ export function CrewsList({ crews }: { crews: CrewLine[] }) {
   if (!crews.length) return null;
   return (
     <View style={[styles.list, { marginTop: space.lg }]}>
-      <Text style={styles.listHead}>Crews</Text>
+      <Text style={styles.listHead}>{t('Crews')}</Text>
       {crews.map((c) => (
         <Row
           key={c.id}
           title={c.name}
-          detail={[c.festival, c.people === 1 ? 'Just you' : `${c.people} of you`].filter(Boolean).join(' · ')}
-          label={`Your crew ${c.name}, ${c.festival ?? ''}, ${c.people} ${c.people === 1 ? 'person' : 'people'}`}
+          detail={[c.festival, c.people === 1 ? t('Just you') : t('{n} of you', { n: c.people })].filter(Boolean).join(' · ')}
+          label={tn(c.people, 'Your crew {name}, {festival}, {n} person', 'Your crew {name}, {festival}, {n} people', { name: c.name, festival: c.festival ?? '' })}
           onPress={() => router.push({ pathname: '/crew/[id]', params: { id: c.id } })}
         />
       ))}
@@ -170,16 +171,16 @@ export function SavedTab({ clips, clipCount, followedCount, artistOf, width }: {
     <View>
       <View style={styles.list}>
         <Row
-          title="Saved and liked clips"
-          detail={clipCount ? `${clipCount}` : 'Save clips in Discover'}
-          label={`Your clips, ${clipCount}`}
+          title={t('Saved and liked clips')}
+          detail={clipCount ? `${clipCount}` : t('Save clips in Discover')}
+          label={t('Your clips, {n}', { n: clipCount })}
           icon={<BookmarkIcon color={color.moon} size={18} />}
           onPress={() => router.push('/saved')}
         />
         <Row
-          title="Artists you follow"
-          detail={followedCount ? `${followedCount}` : 'Follow artists'}
-          label={`Your artists, ${followedCount ? followedCount : 'none followed yet'}`}
+          title={t('Artists you follow')}
+          detail={followedCount ? `${followedCount}` : t('Follow artists')}
+          label={followedCount ? t('Your artists, {n}', { n: followedCount }) : t('Your artists, none followed yet')}
           icon={<HeartIcon color={color.moon} size={18} />}
           onPress={() => router.push('/your-artists')}
         />
@@ -205,7 +206,7 @@ export function SavedTab({ clips, clipCount, followedCount, artistOf, width }: {
                   router.navigate({ pathname: '/', params: { clip: c.id } });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Play ${a?.name ?? 'clip'}, ${c.title}`}
+                accessibilityLabel={a ? t('Play {artist}, {title}', { artist: a.name, title: c.title }) : t('Play clip, {title}', { title: c.title })}
                 style={({ pressed }) => [styles.tile, { width: tile, height: tileHeight(tile) }, pressed && { opacity: 0.8 }]}
               >
                 <LinearGradient colors={[to, from]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />

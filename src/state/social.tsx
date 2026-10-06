@@ -13,6 +13,7 @@ import { cleanShareOutbox, queueShare, sharesOf, shareRetryDelay, shareTried, un
 import { defaultSocialService } from '../features/social/services';
 import { tasteMix } from '../features/taste/lean';
 import { showAlert } from '../lib/dialog';
+import { t } from '../i18n';
 import { useCatalog } from './catalog';
 import { useFollowedArtists } from './followedArtists';
 import { useGoing } from './going';
@@ -414,8 +415,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
           setOutbox((o) => unqueueShare(o, item.memoryId, uid));
           if (currentUid.current === uid) {
             showAlert(
-              'Couldn’t share it to Discover',
-              kind === 'throwback-limit' ? SOCIAL_ERROR_COPY[kind] : `${SOCIAL_ERROR_COPY[kind]} It’s saved in your Memories, so you can share it from there.`,
+              t('Couldn’t share it to Discover'),
+              kind === 'throwback-limit' ? SOCIAL_ERROR_COPY[kind] : t('{error} It’s saved in your Memories, so you can share it from there.', { error: SOCIAL_ERROR_COPY[kind] }),
             );
           }
         }

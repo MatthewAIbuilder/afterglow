@@ -7,6 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { color, motion, raisedA } from '../../theme/tokens';
 import { QUEST_GOLD, QuestRing, SparkIcon } from './QuestRing';
 import { useDailyQuests } from './useDailyQuests';
+import { t } from '../../i18n';
 
 const SIZE = 40;
 
@@ -36,7 +37,13 @@ export function QuestButton() {
         router.push('/quests');
       }}
       accessibilityRole="button"
-      accessibilityLabel={q.ready ? `Today's quests, ${q.doneToday} of ${of} done${q.streak ? `, ${q.streak}-day streak` : ''}` : "Today's quests"}
+      accessibilityLabel={
+        q.ready
+          ? q.streak
+            ? t("Today's quests, {done} of {total} done, {streak}-day streak", { done: q.doneToday, total: of, streak: q.streak })
+            : t("Today's quests, {done} of {total} done", { done: q.doneToday, total: of })
+          : t("Today's quests")
+      }
       hitSlop={10}
       testID="quest-button"
       style={({ pressed }) => [pressed && { transform: [{ scale: 0.92 }] }]}

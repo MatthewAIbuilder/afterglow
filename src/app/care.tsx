@@ -18,6 +18,7 @@ import { GuideList } from '../features/care/GuideList';
 import { riskyMixes } from '../features/care/guide';
 import { StartStopwatch } from '../features/care/StartStopwatch';
 import { StopwatchCard } from '../features/care/StopwatchCard';
+import { t, tc } from '../i18n';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
@@ -74,17 +75,17 @@ export default function CareScreen() {
   const opened = params.part;
   useEffect(() => {
     if (!opened || !(PART_IDS as readonly string[]).includes(opened)) return;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       const y = spots.current[opened as PartId];
       if (y !== undefined) scroller.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
     }, 400);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [opened]);
 
   // Face ID (or the passcode); a phone without either set up just opens (the lock can't work there, and you're never locked out).
   const askToUnlock = () =>
     Promise.all([LocalAuthentication.hasHardwareAsync(), LocalAuthentication.isEnrolledAsync()])
-      .then(([has, enrolled]) => (has && enrolled ? LocalAuthentication.authenticateAsync({ promptMessage: 'Open Look after yourself' }).then((r) => r.success) : true))
+      .then(([has, enrolled]) => (has && enrolled ? LocalAuthentication.authenticateAsync({ promptMessage: t('Open Look after yourself') }).then((r) => r.success) : true))
       .catch(() => true);
   // Leaving the app locks it again.
   useEffect(() => {
@@ -111,13 +112,13 @@ export default function CareScreen() {
   if (locked) {
     return (
       <View style={styles.root}>
-        <PageTitle title="Look after yourself" />
+        <PageTitle title={t('Look after yourself')} />
         <NightSky />
         <PageActions />
         <View style={[styles.lockedBox, { paddingTop: insets.top + 120 }]}>
-          <Text style={styles.title}>Locked</Text>
-          <Text style={styles.sub}>Your notes are private. Unlock with Face ID or your passcode.</Text>
-          <Big label="Unlock" onPress={unlock} />
+          <Text style={styles.title}>{t('Locked')}</Text>
+          <Text style={styles.sub}>{t('Your notes are private. Unlock with Face ID or your passcode.')}</Text>
+          <Big label={t('Unlock')} onPress={unlock} />
         </View>
       </View>
     );
@@ -127,12 +128,12 @@ export default function CareScreen() {
   const feeling = lastFeeling(care, now);
   const water = countTonight(care, 'water', now);
   const jumps: { id: PartId; label: string; detail?: string }[] = [
-    { id: 'feelings', label: 'Feelings', detail: feeling ? MOOD_LABEL[feeling.mood] : undefined },
-    { id: 'stopwatches', label: 'Stopwatches', detail: care.timers.length ? String(care.timers.length) : undefined },
-    { id: 'water', label: 'Water', detail: water ? String(water) : undefined },
-    { id: 'body', label: 'Body' },
-    { id: 'help', label: 'Get help' },
-    { id: 'guide', label: 'Timing guide' },
+    { id: 'feelings', label: t('Feelings'), detail: feeling ? MOOD_LABEL[feeling.mood] : undefined },
+    { id: 'stopwatches', label: t('Stopwatches'), detail: care.timers.length ? String(care.timers.length) : undefined },
+    { id: 'water', label: t('Water'), detail: water ? String(water) : undefined },
+    { id: 'body', label: t('Body') },
+    { id: 'help', label: t('Get help') },
+    { id: 'guide', label: t('Timing guide') },
   ];
   const tap = (kind: 'water' | 'food') => {
     haptic.tap();
@@ -141,7 +142,7 @@ export default function CareScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Look after yourself" />
+      <PageTitle title={t('Look after yourself')} />
       <NightSky />
       <PageActions />
       <ScrollView
@@ -151,9 +152,9 @@ export default function CareScreen() {
         keyboardDismissMode="on-drag"
       >
         <HeartMark bloom={fromHeart} />
-        <Text style={styles.title}>Look after yourself</Text>
-        <Text style={styles.sub}>Private to you: kept only on this phone, never shared.</Text>
-        {Platform.OS !== 'web' ? <Text style={styles.tip}>Tip: hold the camera button to get back here quickly.</Text> : null}
+        <Text style={styles.title}>{t('Look after yourself')}</Text>
+        <Text style={styles.sub}>{t('Private to you: kept only on this phone, never shared.')}</Text>
+        {Platform.OS !== 'web' ? <Text style={styles.tip}>{t('Tip: hold the camera button to get back here quickly.')}</Text> : null}
 
         {/* Jump to a part of the page, each with what's there tonight. */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.jumpWrap} contentContainerStyle={styles.jump}>
@@ -165,7 +166,7 @@ export default function CareScreen() {
                 jumpTo(j.id);
               }}
               accessibilityRole="button"
-              accessibilityLabel={`${j.label}${j.detail ? `, ${j.detail}` : ''}. Jump there`}
+              accessibilityLabel={j.detail ? t('{label}, {detail}. Jump there', { label: j.label, detail: j.detail }) : t('{label}. Jump there', { label: j.label })}
               style={({ pressed }) => [styles.jumpChip, j.id === 'help' && help && styles.jumpHelp, pressed && { opacity: 0.8 }]}
             >
               <Text style={styles.jumpText}>{j.label}</Text>
@@ -183,99 +184,99 @@ export default function CareScreen() {
         ) : null}
 
         {/* How you're feeling, near the top: check in often. */}
-        <Part id="feelings" title="How are you feeling?" at={at}>
-          <FeelingCard care={care} now={now} onFeel={checkIn} crewFestival={crewAt} />
+        <Part id="feelings" at={at}>
+          <View style={styles.feelings}>
+            <FeelingCard care={care} now={now} onFeel={checkIn} crewFestival={crewAt} />
+          </View>
         </Part>
 
         {/* Stopwatches: from the timing guide, or your own words, each with how you've felt since. */}
-        <Part id="stopwatches" title="Stopwatches" at={at}>
+        <Part id="stopwatches" title={t('Stopwatches')} at={at}>
           {mixes.map((m) => (
-            <View key={`${m.a.id}-${m.b.id}`} style={styles.mix} accessible accessibilityLabel={`Careful: ${m.a.name} and ${m.b.name} together. ${m.why}`}>
-              <Text style={styles.mixTitle}>
-                Careful: {m.a.name} and {m.b.name}
-              </Text>
+            <View key={`${m.a.id}-${m.b.id}`} style={styles.mix} accessible accessibilityLabel={t('Careful: {a} and {b} together. {why}', { a: m.a.name, b: m.b.name, why: m.why })}>
+              <Text style={styles.mixTitle}>{t('Careful: {a} and {b}', { a: m.a.name, b: m.b.name })}</Text>
               <Text style={styles.mixBody}>{m.why}</Text>
             </View>
           ))}
-          {care.timers.map((t) => (
+          {care.timers.map((timer) => (
             <StopwatchCard
-              key={t.id}
-              timer={t}
+              key={timer.id}
+              timer={timer}
               now={now}
-              feelings={feelingsBetween(care, t.startedAt, now)}
+              feelings={feelingsBetween(care, timer.startedAt, now)}
               onFeel={checkIn}
-              onTookMore={() => tookMore(t.id)}
-              onStop={() => stop(t.id)}
+              onTookMore={() => tookMore(timer.id)}
+              onStop={() => stop(timer.id)}
             />
           ))}
           {care.timers.length < TIMERS_MAX ? <StartStopwatch onStart={start} /> : null}
           {/* "How are you feeling?" on the phone while a stopwatch runs. */}
           {Platform.OS !== 'web' && (care.timers.length || care.feelEvery) ? (
             <View style={styles.remind}>
-              <Text style={styles.remindTitle}>Ask how I’m feeling</Text>
+              <Text style={styles.remindTitle}>{t('Ask how I’m feeling')}</Text>
               <ReminderChoice
                 options={FEEL_EVERY}
                 value={care.feelEvery}
                 onPick={setFeelEvery}
-                a11y={(label) => (label ? `Ask how I’m feeling ${label.toLowerCase()}` : 'Don’t ask how I’m feeling')}
+                a11y={(label) => (label ? t('Ask how I’m feeling {every}', { every: label.toLowerCase() }) : t('Don’t ask how I’m feeling'))}
               />
               <Text style={styles.note}>
                 {care.feelEvery
-                  ? 'While a stopwatch runs, until it should have worn off. Each check-in starts the clock again.'
-                  : 'A quiet nudge to check in, so your graph fills in. Nothing private shows on your lock screen.'}
+                  ? t('While a stopwatch runs, until it should have worn off. Each check-in starts the clock again.')
+                  : t('A quiet nudge to check in, so your graph fills in. Nothing private shows on your lock screen.')}
               </Text>
             </View>
           ) : null}
-          {!care.timers.length ? <Text style={styles.note}>Start one when you take something. It tells you when it usually kicks in, and charts how you feel along the way.</Text> : null}
+          {!care.timers.length ? <Text style={styles.note}>{t('Start one when you take something. It tells you when it usually kicks in, and charts how you feel along the way.')}</Text> : null}
         </Part>
 
         {/* Water and food */}
-        <Part id="water" title="Water and food" at={at}>
+        <Part id="water" title={t('Water and food')} at={at}>
           <View style={styles.pair}>
             {(['water', 'food'] as const).map((kind) => {
               const n = countTonight(care, kind, now);
-              const name = kind === 'water' ? 'Water' : 'Food';
+              const name = kind === 'water' ? t('Water') : t('Food');
               return (
                 <Pressable
                   key={kind}
                   onPress={() => tap(kind)}
                   onLongPress={() => n && undo(kind)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${name}: add one. ${n} tonight. ${lastLine(care, kind, now)}.`}
-                  accessibilityHint="Press and hold to take the last one back"
+                  accessibilityLabel={t('{name}: add one. {n} tonight. {last}.', { name, n, last: lastLine(care, kind, now) })}
+                  accessibilityHint={t('Press and hold to take the last one back')}
                   style={({ pressed }) => [styles.tile, pressed && { transform: [{ scale: 0.97 }] }]}
                 >
-                  <Text style={styles.tileName}>{kind === 'water' ? 'Water refill' : 'Ate something'}</Text>
+                  <Text style={styles.tileName}>{kind === 'water' ? t('Water refill') : t('Ate something')}</Text>
                   <Text style={styles.tileCount}>{n}</Text>
                   <Text style={styles.cardSub}>{lastLine(care, kind, now)}</Text>
-                  <Text style={styles.tilePlus}>+ Tap to add</Text>
+                  <Text style={styles.tilePlus}>{t('+ Tap to add')}</Text>
                 </Pressable>
               );
             })}
           </View>
-          <Text style={styles.note}>Sip regularly and take breaks somewhere cool. Drinking a lot more water than you need can be dangerous too. Press and hold to take one back.</Text>
+          <Text style={styles.note}>{t('Sip regularly and take breaks somewhere cool. Drinking a lot more water than you need can be dangerous too. Press and hold to take one back.')}</Text>
 
           {/* Gentle water reminders on the phone, during a festival night you're going to. */}
           {Platform.OS !== 'web' ? (
             <View style={styles.remind}>
-              <Text style={styles.remindTitle}>Remind me to drink water</Text>
+              <Text style={styles.remindTitle}>{t('Remind me to drink water')}</Text>
               <ReminderChoice
                 options={WATER_EVERY}
                 value={care.waterEvery}
                 onPick={setWaterEvery}
-                a11y={(label) => (label ? `Water reminders ${label.toLowerCase()}` : 'No water reminders')}
+                a11y={(label) => (label ? t('Water reminders {every}', { every: label.toLowerCase() }) : t('No water reminders'))}
               />
               <Text style={styles.note}>
                 {care.waterEvery
-                  ? 'While a festival you’re going to is on, until 6 AM. Each water you log starts the clock again.'
-                  : 'A quiet nudge while a festival you’re going to is on. Nothing private shows on your lock screen.'}
+                  ? t('While a festival you’re going to is on, until 6 AM. Each water you log starts the clock again.')
+                  : t('A quiet nudge while a festival you’re going to is on. Nothing private shows on your lock screen.')}
               </Text>
             </View>
           ) : null}
         </Part>
 
         {/* Your body */}
-        <Part id="body" title="Your body" at={at}>
+        <Part id="body" title={t('Your body')} at={at}>
           <BodyCard now={now} />
         </Part>
 
@@ -286,18 +287,18 @@ export default function CareScreen() {
         ) : null}
 
         {/* The timing guide, readable with no signal. */}
-        <Part id="guide" title="Timing guide" at={at}>
+        <Part id="guide" title={t('Timing guide')} at={at}>
           <GuideList />
         </Part>
 
         {/* Privacy */}
-        <Text style={styles.section}>Privacy</Text>
+        <Text style={styles.section}>{t('Privacy')}</Text>
         <View style={styles.card}>
           {canLock ? (
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>Lock with Face ID</Text>
-                <Text style={styles.cardSub}>Or your passcode, each time you open this.</Text>
+                <Text style={styles.rowTitle}>{t('Lock with Face ID')}</Text>
+                <Text style={styles.cardSub}>{t('Or your passcode, each time you open this.')}</Text>
               </View>
               <Switch
                 value={care.lock}
@@ -306,22 +307,22 @@ export default function CareScreen() {
                   setLock(on);
                   if (on) setUnlocked(true);
                 }}
-                accessibilityLabel="Lock with Face ID"
+                accessibilityLabel={t('Lock with Face ID')}
                 trackColor={{ true: color.glowDeep, false: color.glass }}
               />
             </View>
           ) : null}
           <Pressable
             onPress={() =>
-              showAlert('Clear everything?', 'Your stopwatches, water, food and check-ins are removed from this phone.', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Clear', style: 'destructive', onPress: clear },
+              showAlert(t('Clear everything?'), t('Your stopwatches, water, food and check-ins are removed from this phone.'), [
+                { text: t('Cancel'), style: 'cancel' },
+                { text: t('Clear'), style: 'destructive', onPress: clear },
               ])
             }
             accessibilityRole="button"
             style={({ pressed }) => [styles.clear, pressed && { opacity: 0.7 }]}
           >
-            <Text style={styles.clearText}>Clear everything</Text>
+            <Text style={styles.clearText}>{t('Clear everything')}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -339,7 +340,7 @@ function ReminderChoice<T extends number>({ options, value, onPick, a11y }: { op
     <View style={styles.remindRow} accessibilityRole="radiogroup">
       {([undefined, ...options] as const).map((m) => {
         const on = value === m;
-        const label = m === undefined ? 'Off' : m === 60 ? 'Every hour' : `Every ${m} min`;
+        const label = m === undefined ? tc('reminder', 'Off') : m === 60 ? t('Every hour') : t('Every {n} min', { n: m });
         return (
           <Pressable
             key={m ?? 'off'}
@@ -378,16 +379,17 @@ function Part({ id, title, at, children }: { id: PartId; title?: string; at: (id
 function Help({ number, first }: { number: string; first?: boolean }) {
   return (
     <View style={[styles.help, first && styles.helpFirst]}>
-      <Text style={styles.helpTitle}>{first ? 'You said you’re not great. Help is close.' : 'Get help'}</Text>
+      <Text style={styles.helpTitle}>{first ? t('You said you’re not great. Help is close.') : t('Get help')}</Text>
       <Text style={styles.helpBody}>
-        Get medical help straight away if you or a friend: feel very hot, confused or faint, can’t be woken, has a seizure, or struggles to breathe. Festival
-        medics are there to help, not to get anyone in trouble.
+        {t(
+          'Get medical help straight away if you or a friend: feel very hot, confused or faint, can’t be woken, has a seizure, or struggles to breathe. Festival medics are there to help, not to get anyone in trouble.',
+        )}
       </Text>
-      <Big label={`Call ${number}`} onPress={() => void Linking.openURL(`tel:${number}`).catch(() => {})} danger />
-      <Text style={styles.helpBody}>Find the medical tent: ask any staff or security and they’ll take you there.</Text>
-      <Big label="Ask a friend to find me" onPress={() => void shareMessage('Can you come and find me? I’m not feeling great.')} />
+      <Big label={t('Call {number}', { number })} onPress={() => void Linking.openURL(`tel:${number}`).catch(() => {})} danger />
+      <Text style={styles.helpBody}>{t('Find the medical tent: ask any staff or security and they’ll take you there.')}</Text>
+      <Big label={t('Ask a friend to find me')} onPress={() => void shareMessage(t('Can you come and find me? I’m not feeling great.'))} />
       <Pressable onPress={() => void Linking.openURL(HARM_REDUCTION_URL).catch(() => {})} accessibilityRole="link" style={styles.link}>
-        <Text style={styles.linkText}>Harm reduction info from DanceSafe ↗</Text>
+        <Text style={styles.linkText}>{t('Harm reduction info from DanceSafe ↗')}</Text>
       </Pressable>
     </View>
   );
@@ -415,6 +417,8 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.body, color: color.moonDim, marginTop: space.xs },
   tip: { ...type.caption, color: '#FF9ECB', marginTop: space.xs },
+  // How you feel has no section title (its card asks the question), so it keeps the same room above.
+  feelings: { marginTop: space.xl },
   section: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xxl, marginBottom: space.sm },
   card: {
     flexDirection: 'row',

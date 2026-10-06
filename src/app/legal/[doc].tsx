@@ -11,8 +11,9 @@ import { useCatalog } from '../../state/catalog';
 import { isLegalDoc, LEGAL_DOCS, legalDocument, legalPath, type LegalDoc } from '../../features/legal/documents';
 import { color, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { LANGUAGE, t } from '../../i18n';
 
-const SHORT: Record<LegalDoc, string> = { privacy: 'Privacy', terms: 'Terms', guidelines: 'Community guidelines' };
+const SHORT: Record<LegalDoc, string> = { privacy: t('Privacy'), terms: t('Terms'), guidelines: t('Community guidelines') };
 
 /**
  * The Privacy Policy, Terms of Use or Community Guidelines (`/legal/privacy`,
@@ -35,7 +36,9 @@ export default function LegalScreen() {
           <Text style={styles.title} accessibilityRole="header">
             {d.title}
           </Text>
-          <Text style={styles.updated}>Last updated {d.updated}</Text>
+          <Text style={styles.updated}>{t('Last updated {date}', { date: d.updated })}</Text>
+          {/* The documents themselves are English until they have a qualified translation. */}
+          {LANGUAGE !== 'en' ? <Text style={styles.updated}>{t('This page is only in English for now.')}</Text> : null}
           <Text style={styles.intro}>{d.intro}</Text>
           {d.sections.map((s, i) => (
             <View key={s.heading ?? i} style={styles.section}>
@@ -61,7 +64,7 @@ export default function LegalScreen() {
         </View>
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
+        <GlassCircleButton label={t('Back')} onPress={() => (router.canGoBack() ? goBack() : router.replace('/'))}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

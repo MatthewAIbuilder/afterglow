@@ -4,6 +4,7 @@ import { haptic } from '../../lib/haptics';
 import { useSetReminders } from '../../state/setReminders';
 import { color, radius, space, type } from '../../theme/tokens';
 import { canRemindSets, SET_LEAD_MIN } from '../notifications/setReminders';
+import { t } from '../../i18n';
 
 /**
  * "Remind me before each set" for one festival, above the full-day route.
@@ -17,11 +18,11 @@ export function SetReminderToggle({ festival }: { festival: Festival }) {
   return (
     <View style={styles.row}>
       <View style={styles.text}>
-        <Text style={styles.label}>Remind me before each set</Text>
+        <Text style={styles.label}>{t('Remind me before each set')}</Text>
         <Text style={styles.detail}>
           {value
-            ? `${SET_LEAD_MIN} min before you need to head over. They follow your plan as it changes.`
-            : 'A nudge when it’s time to move, with the stage and the walk.'}
+            ? t('{n} min before you need to head over. They follow your plan as it changes.', { n: SET_LEAD_MIN })
+            : t('A nudge when it’s time to move, with the stage and the walk.')}
         </Text>
       </View>
       <Switch
@@ -31,7 +32,7 @@ export function SetReminderToggle({ festival }: { festival: Festival }) {
           setOn(festival.id, v);
         }}
         trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
-        accessibilityLabel="Remind me before each set"
+        accessibilityLabel={t('Remind me before each set')}
         testID="set-reminders"
       />
     </View>

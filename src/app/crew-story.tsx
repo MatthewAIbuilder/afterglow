@@ -10,7 +10,7 @@ import { PersonAvatar } from '../components/PersonAvatar';
 import { CloseIcon } from '../components/TabIcons';
 import { firstName } from '../features/crews/together';
 import { ReplyBar } from '../features/crews/ReplyBar';
-import { ago, answered, clock, isReply, lateLine, updateLine } from '../features/crews/updates';
+import { ago, answered, clock, isReply, lateLine, presetLabel, updateLine } from '../features/crews/updates';
 import type { CrewUpdate } from '../features/social/models';
 import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
@@ -19,6 +19,7 @@ import { useCrewUpdates } from '../state/crewUpdates';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t } from '../i18n';
 
 /**
  * A crewmate's story, full screen: their latest update first, then earlier
@@ -48,22 +49,22 @@ export default function CrewStoryScreen() {
   if (!story) {
     return (
       <View style={[styles.root, styles.center]}>
-        <Text style={styles.gone}>That update isn’t here any more.</Text>
+        <Text style={styles.gone}>{t('That update isn’t here any more.')}</Text>
         <Pressable onPress={() => goBack()} accessibilityRole="button" style={styles.closeText}>
-          <Text style={styles.link}>Close</Text>
+          <Text style={styles.link}>{t('Close')}</Text>
         </Pressable>
       </View>
     );
   }
   const u = story.updates[Math.min(i, story.updates.length - 1)];
   const profile = profileOf(story.uid);
-  const name = profile ? firstName(profile.displayName) : 'Crewmate';
+  const name = profile ? firstName(profile.displayName) : t('Crewmate');
   const artist = u.artistId ? catalog.artist(u.artistId)?.name : undefined;
   const late = lateLine(u);
   // A reply to you: the thread is your update's, and writing back goes there.
   const yourUpdate = isReply(u) ? answered(updatesFor(u.crewId), u) : undefined;
   const target = isReply(u) ? yourUpdate : u;
-  const nameOf = (id: string) => (id === me ? 'You' : profileOf(id) ? firstName(profileOf(id)!.displayName) : 'Crewmate');
+  const nameOf = (id: string) => (id === me ? t('You') : profileOf(id) ? firstName(profileOf(id)!.displayName) : t('Crewmate'));
 
   const step = (dir: 1 | -1) => {
     haptic.select();
@@ -83,15 +84,23 @@ export default function CrewStoryScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={`${name}’s update`} />
+      <PageTitle title={t('{name}’s update', { name })} />
       {u.kind === 'video' && u.videoUrl ? (
         <StoryVideo key={u.id} url={u.videoUrl} />
       ) : u.kind === 'photo' && u.thumbUrl ? (
-        <View key={u.id} style={[StyleSheet.absoluteFill, styles.photoBack]} accessible accessibilityRole="image" accessibilityLabel={`Photo from ${name}${u.note ? `: ${u.note}` : ''}`}>
+        <View key={u.id} style={[StyleSheet.absoluteFill, styles.photoBack]} accessible accessibilityRole="image" accessibilityLabel={u.note ? t('Photo from {name}: {note}', { name, note: presetLabel(u.note) }) : t('Photo from {name}', { name })}>
           <Image source={{ uri: u.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="contain" transition={200} />
         </View>
       ) : (
-        <CheckInCard key={u.id} update={u} artist={artist} replyingTo={isReply(u) ? (yourUpdate ? `Replying to your ${clock(yourUpdate.at)} update${yourUpdate.note ? `, “${yourUpdate.note}”` : ''}` : 'Replying to your update') : undefined} />
+        <CheckInCard key={u.id} update={u} artist={artist} replyingTo={
+            isReply(u)
+              ? yourUpdate
+                ? yourUpdate.note
+                  ? t('Replying to your {time} update, “{note}”', { time: clock(yourUpdate.at), note: presetLabel(yourUpdate.note) })
+                  : t('Replying to your {time} update', { time: clock(yourUpdate.at) })
+                : t('Replying to your update')
+              : undefined
+          } />
       )}
 
       <LinearGradient colors={['rgba(3,2,10,0.75)', 'rgba(3,2,10,0)']} style={[styles.topFade, { height: insets.top + 150 }]} pointerEvents="none" />
@@ -99,8 +108,8 @@ export default function CrewStoryScreen() {
       {/* Tap zones: left for later, right for earlier. */}
       <View style={StyleSheet.absoluteFill}>
         <View style={styles.zones}>
-          <Pressable style={styles.zoneLeft} onPress={() => step(-1)} accessibilityRole="button" accessibilityLabel="Later update" />
-          <Pressable style={styles.zoneRight} onPress={() => step(1)} accessibilityRole="button" accessibilityLabel="Earlier update" />
+          <Pressable style={styles.zoneLeft} onPress={() => step(-1)} accessibilityRole="button" accessibilityLabel={t('Later update')} />
+          <Pressable style={styles.zoneRight} onPress={() => step(1)} accessibilityRole="button" accessibilityLabel={t('Earlier update')} />
         </View>
       </View>
 
@@ -125,7 +134,7 @@ export default function CrewStoryScreen() {
               </Text>
             ) : null}
           </View>
-          <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} style={styles.close}>
+          <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel={t('Close')} hitSlop={12} style={styles.close}>
             <CloseIcon color={color.moon} size={18} />
           </Pressable>
         </View>
@@ -133,7 +142,7 @@ export default function CrewStoryScreen() {
 
       {(u.kind === 'video' || u.kind === 'photo') && u.note ? (
         <View style={[styles.caption, { top: insets.top + 110 }]} pointerEvents="none">
-          <Text style={styles.captionText}>{u.note}</Text>
+          <Text style={styles.captionText}>{presetLabel(u.note)}</Text>
         </View>
       ) : null}
 
@@ -156,9 +165,9 @@ function CheckInCard({ update: u, artist, replyingTo }: { update: CrewUpdate; ar
     <LinearGradient colors={u.care === 'help' ? ['#4A1C2C', '#1E0E18', color.night] : u.care === 'ok' ? ['#123A30', '#0E1A1A', color.night] : ['#2A1C5C', '#120E2A', color.night]} style={[StyleSheet.absoluteFill, styles.center]}>
       <View style={styles.card}>
         {replyingTo ? <Text style={styles.cardReplying}>{replyingTo}</Text> : null}
-        {u.lost ? <Text style={styles.cardLost}>Can’t find the crew</Text> : null}
-        {u.care === 'help' ? <Text style={[styles.cardLost, { color: 'rgba(255,150,150,0.95)' }]}>Not feeling great</Text> : null}
-        <Text style={styles.cardWords}>{u.note ?? 'Checked in'}</Text>
+        {u.lost ? <Text style={styles.cardLost}>{t('Can’t find the crew')}</Text> : null}
+        {u.care === 'help' ? <Text style={[styles.cardLost, { color: 'rgba(255,150,150,0.95)' }]}>{t('Not feeling great')}</Text> : null}
+        <Text style={styles.cardWords}>{presetLabel(u.note) ?? t('Checked in')}</Text>
         {u.stage || artist ? <Text style={styles.cardPlace}>{[u.stage, artist].filter(Boolean).join(' · ')}</Text> : null}
       </View>
     </LinearGradient>

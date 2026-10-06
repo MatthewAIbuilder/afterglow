@@ -6,6 +6,7 @@ import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { color, radius, space, type, glowA, raisedA } from '../../theme/tokens';
 import { inviteText } from '../social/friends';
+import { t } from '../../i18n';
 
 /** How many of your festivals get their own "Invite to" chip. */
 const INVITE_FESTIVALS = 3;
@@ -18,7 +19,7 @@ const INVITE_FESTIVALS = 3;
 export function InviteCard({ handle, festivals }: { handle?: string; festivals: readonly Festival[] }) {
   const send = (festival?: Festival) => {
     haptic.tap();
-    void shareMessage(inviteText(handle, festival), 'Join me on Afterglow');
+    void shareMessage(inviteText(handle, festival), t('Join me on Afterglow'));
   };
   const chips = festivals.slice(0, INVITE_FESTIVALS);
   return (
@@ -34,29 +35,29 @@ export function InviteCard({ handle, festivals }: { handle?: string; festivals: 
           <PeopleIcon color={color.night} size={20} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Bring your friends</Text>
-          <Text style={styles.body}>Festivals are better together. Follow each other, start a crew, share one route and find each other on the day.</Text>
+          <Text style={styles.title}>{t('Bring your friends')}</Text>
+          <Text style={styles.body}>{t('Festivals are better together. Follow each other, start a crew, share one route and find each other on the day.')}</Text>
         </View>
       </View>
       <Pressable
         onPress={() => send()}
         accessibilityRole="button"
-        accessibilityLabel="Invite friends to Afterglow"
+        accessibilityLabel={t('Invite friends to Afterglow')}
         style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
       >
         <ShareIcon color={color.night} size={16} />
-        <Text style={styles.primaryText}>Send an invite</Text>
+        <Text style={styles.primaryText}>{t('Send an invite')}</Text>
       </Pressable>
       {chips.length ? (
         <>
-          <Text style={styles.label}>Or invite them to a festival</Text>
+          <Text style={styles.label}>{t('Or invite them to a festival')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
             {chips.map((f) => (
               <Pressable
                 key={f.id}
                 onPress={() => send(f)}
                 accessibilityRole="button"
-                accessibilityLabel={`Invite friends to plan ${f.name} together`}
+                accessibilityLabel={t('Invite friends to plan {festival} together', { festival: f.name })}
                 style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
               >
                 <Text style={styles.chipText} numberOfLines={1}>

@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { color, motion, radius, space, type, glowA } from '../../theme/tokens';
 import type { Rating } from '../taste/ratings';
+import { t } from '../../i18n';
 
 /** Every this many answers, a little celebration. */
 export const TUNE_MILESTONE = 10;
@@ -11,22 +12,22 @@ export const TUNE_MILESTONE = 10;
 export function answerPop(answer: Rating | 'unsure'): { text: string; tint: string } {
   switch (answer) {
     case 'love':
-      return { text: '♥ Love', tint: '#FF7EB6' };
+      return { text: `♥ ${t('Love')}`, tint: '#FF7EB6' };
     case 'like':
-      return { text: '♡ Like', tint: color.glow };
+      return { text: `♡ ${t('Like')}`, tint: color.glow };
     case 'ok':
-      return { text: 'OK', tint: color.moonDim };
+      return { text: t('OK'), tint: color.moonDim };
     case 'meh':
-      return { text: 'Not really', tint: color.moonFaint };
+      return { text: t('Not really'), tint: color.moonFaint };
     case 'pass':
-      return { text: 'Not for you', tint: color.moonFaint };
+      return { text: t('Not for you'), tint: color.moonFaint };
     default:
-      return { text: 'Skipped', tint: color.moonFaint };
+      return { text: t('Skipped'), tint: color.moonFaint };
   }
 }
 
 /** "10 rated · your plan just got sharper" at each milestone. */
-export const milestoneLine = (n: number) => (n === TUNE_MILESTONE ? `${n} rated · your plan just got sharper` : `${n} rated · you’re on a roll`);
+export const milestoneLine = (n: number) => (n === TUNE_MILESTONE ? t('{n} rated · your plan just got sharper', { n }) : t('{n} rated · you’re on a roll', { n }));
 
 /** The answer you just gave, floating up and away from the card. Keyed by step, so each answer pops once. */
 export function AnswerPop({ answer }: { answer: Rating | 'unsure' }) {

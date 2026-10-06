@@ -1,4 +1,6 @@
 import type { Festival } from '../../data/models';
+import { t } from '../../i18n';
+import { datesLine } from '../festivals/format';
 import type { Pick } from './plan';
 
 /**
@@ -21,10 +23,15 @@ export function mustSeeCard(festival: Festival, picks: readonly Pick[], why: (p:
     .slice(0, max)
     .map(({ p }) => ({ artist: p.artist, why: why(p), ...(p.known ? { match: p.match } : {}), star: p.pinned }));
   if (!top.length) return undefined;
-  return { festival: festival.name, subtitle: [festival.dates, festival.location].filter(Boolean).join(' · '), lines: top };
+  return { festival: festival.name, subtitle: [datesLine(festival), festival.location].filter(Boolean).join(' · '), lines: top };
 }
 
 /** The same, as a message. */
 export function mustSeeText(card: MustSeeCard, appName: string, webUrl: string): string {
-  return [`My must-sees at ${card.festival}:`, ...card.lines.map((l, i) => `${i + 1}. ${l.star ? '★ ' : ''}${l.artist.name} · ${l.why}`), '', `Made with ${appName} · ${webUrl}`].join('\n');
+  return [
+    t('My must-sees at {festival}:', { festival: card.festival }),
+    ...card.lines.map((l, i) => `${i + 1}. ${l.star ? '★ ' : ''}${l.artist.name} · ${l.why}`),
+    '',
+    t('Made with {app} · {url}', { app: appName, url: webUrl }),
+  ].join('\n');
 }

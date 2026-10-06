@@ -4,6 +4,8 @@
  * advice: it only says when a number is a reason to get help.
  */
 
+import { t, tn } from '../../i18n';
+
 /** Taps needed before a pulse is shown. */
 export const PULSE_TAPS = 8;
 /** Taps further apart than this start a new count. */
@@ -35,10 +37,10 @@ export type PulseNote = { tone: 'ok' | 'watch' | 'help'; line: string };
 /** What a resting pulse means, plainly. */
 export function pulseNote(bpm: number): PulseNote {
   if (bpm >= 120)
-    return { tone: 'help', line: 'That’s fast. If you’ve been resting and it stays this fast, or you feel very hot, faint or have chest pain, get help now.' };
-  if (bpm >= 100) return { tone: 'watch', line: 'A bit fast. Sit somewhere cool for 10 minutes, sip water, and check again.' };
-  if (bpm < 50) return { tone: 'watch', line: 'That’s slow. If you feel faint, confused or very sleepy, get help.' };
-  return { tone: 'ok', line: 'That’s in the usual resting range.' };
+    return { tone: 'help', line: t('That’s fast. If you’ve been resting and it stays this fast, or you feel very hot, faint or have chest pain, get help now.') };
+  if (bpm >= 100) return { tone: 'watch', line: t('A bit fast. Sit somewhere cool for 10 minutes, sip water, and check again.') };
+  if (bpm < 50) return { tone: 'watch', line: t('That’s slow. If you feel faint, confused or very sleepy, get help.') };
+  return { tone: 'ok', line: t('That’s in the usual resting range.') };
 }
 
 /** About 0.75 m a step at a festival's shuffle. */
@@ -48,7 +50,8 @@ const STEP_M = 0.75;
 export function stepsLine(steps: number, miles: boolean): string {
   const km = (steps * STEP_M) / 1000;
   const dist = miles ? `${(km / 1.609).toFixed(1)} mi` : `${km.toFixed(1)} km`;
-  return `${steps.toLocaleString('en-US')} ${steps === 1 ? 'step' : 'steps'} · about ${dist}`;
+  // Keep the ' · ' in every language: the body card shows the part after it.
+  return tn(steps, '{n} step · about {distance}', '{n} steps · about {distance}', { n: steps.toLocaleString('en-US'), distance: dist });
 }
 
 /** A pulse is taken this many times and averaged, for a steadier number. */

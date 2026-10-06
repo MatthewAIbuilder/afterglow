@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { showAlert } from '../../lib/dialog';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../social/service';
+import { t } from '../../i18n';
 
 /** You follow each other, but the database refused the chat: messages aren't switched on there yet. */
 export class MessagesOffError extends Error {
@@ -19,13 +20,13 @@ export async function directRoomWith(open: (uid: string) => Promise<string>, uid
     return await open(uid);
   } catch (e) {
     if (e instanceof MessagesOffError) {
-      showAlert('Messages aren’t ready yet', `You and ${name} follow each other, but Afterglow can’t start chats just yet: its database needs an update first. Try again later.`);
+      showAlert(t('Messages aren’t ready yet'), t('You and {name} follow each other, but Afterglow can’t start chats just yet: its database needs an update first. Try again later.', { name }));
       return undefined;
     }
     const kind = socialErrorKind(e);
     showAlert(
-      kind === 'network' ? 'No signal' : `You can’t message ${name} yet`,
-      kind === 'network' ? SOCIAL_ERROR_COPY.network : `You can message people you follow who follow you back. Once ${name} follows you too, you can chat.`,
+      kind === 'network' ? t('No signal') : t('You can’t message {name} yet', { name }),
+      kind === 'network' ? SOCIAL_ERROR_COPY.network : t('You can message people you follow who follow you back. Once {name} follows you too, you can chat.', { name }),
     );
     return undefined;
   }

@@ -14,6 +14,7 @@ import { SHARE_PICKS_MAX } from '../../features/messages/shares';
 import { haptic } from '../../lib/haptics';
 import type { Artist } from '../../data/models';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 export default function FestivalScreen() {
   const { id, must } = useLocalSearchParams<{ id: string; must?: string }>();
@@ -22,7 +23,7 @@ export default function FestivalScreen() {
   const { forYou } = useWeekends();
   const insets = useSafeAreaInsets();
   const sendOrShare = useSendOrShare();
-  if (!festival) return <Missing title="Festival not found" line="This festival isn’t on Afterglow any more, or the link isn’t quite right." />;
+  if (!festival) return <Missing title={t('Festival not found')} line={t('This festival isn’t on Afterglow any more, or the link isn’t quite right.')} />;
 
   return (
     <View style={styles.root}>
@@ -34,7 +35,7 @@ export default function FestivalScreen() {
         above={<SentPicks artists={picksFrom(must, festival.lineup, catalog.artist)} />}
       />
       <PageActions
-        shareLabel={`Share ${festival.name}`}
+        shareLabel={t('Share {festival}', { festival: festival.name })}
         onShare={() => sendOrShare({ kind: 'festival', id: festival.id }, festivalShareText(forYou(festival), WEB_URL), festival.name)}
       />
     </View>
@@ -57,7 +58,7 @@ function SentPicks({ artists }: { artists: Artist[] }) {
   if (!artists.length) return null;
   return (
     <View style={styles.picks}>
-      <Text style={styles.picksTitle}>Their must-sees</Text>
+      <Text style={styles.picksTitle}>{t('Their must-sees')}</Text>
       <View style={styles.chips}>
         {artists.map((a) => (
           <Pressable
@@ -67,7 +68,7 @@ function SentPicks({ artists }: { artists: Artist[] }) {
               router.push({ pathname: '/artist/[id]', params: { id: a.id } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${a.name}, one of their must-sees`}
+            accessibilityLabel={t('{artist}, one of their must-sees', { artist: a.name })}
             style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
           >
             <Text style={styles.chipText}>★ {a.name}</Text>

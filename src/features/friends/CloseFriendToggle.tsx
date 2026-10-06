@@ -5,6 +5,7 @@ import { CLOSE_FRIENDS_MAX, useCloseFriends } from '../../state/closeFriends';
 import { useSocial } from '../../state/social';
 import { color, radius } from '../../theme/tokens';
 import { StarIcon } from '../plan/icons';
+import { t } from '../../i18n';
 
 /**
  * Star someone you follow as a close friend: they come first on the Friends
@@ -23,12 +24,12 @@ export function CloseFriendToggle({ uid, name }: { uid: string; name: string }) 
       onPress={() => {
         if (on) haptic.select();
         else haptic.tap();
-        if (!set(uid, !on)) showAlert('Your close friends list is full', `It holds up to ${CLOSE_FRIENDS_MAX}. Take someone off it first.`);
+        if (!set(uid, !on)) showAlert(t('Your close friends list is full'), t('It holds up to {n}. Take someone off it first.', { n: CLOSE_FRIENDS_MAX }));
       }}
       accessibilityRole="switch"
       accessibilityState={{ checked: on }}
-      accessibilityLabel={`Close friend: ${name}`}
-      accessibilityHint="Only you can see your close friends"
+      accessibilityLabel={t('Close friend: {name}', { name })}
+      accessibilityHint={t('Only you can see your close friends')}
       hitSlop={6}
       style={({ pressed }) => [styles.button, on && styles.on, pressed && styles.pressed]}
     >

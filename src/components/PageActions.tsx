@@ -4,6 +4,7 @@ import { goBack } from '../lib/nav';
 import { color, space } from '../theme/tokens';
 import { GlassCircleButton } from './GlassCircleButton';
 import { ChevronIcon, ShareIcon } from './TabIcons';
+import { t } from '../i18n';
 
 /** The glass Back button at the top left of a page, and an optional Share button at the top right. */
 export function PageActions({ onShare, shareLabel }: { onShare?: () => void; shareLabel?: string }) {
@@ -11,13 +12,14 @@ export function PageActions({ onShare, shareLabel }: { onShare?: () => void; sha
   return (
     <>
       <View style={[styles.left, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={goBack}>
+        <GlassCircleButton label={t('Back')} onPress={goBack}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
       {onShare ? (
         <View style={[styles.right, { top: insets.top + space.sm }]}>
-          <GlassCircleButton label={shareLabel ?? 'Share'} onPress={onShare}>
+          <GlassCircleButton label={shareLabel ?? t('Share')
+} onPress={onShare}>
             <ShareIcon color={color.moon} size={17} />
           </GlassCircleButton>
         </View>

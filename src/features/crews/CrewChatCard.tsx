@@ -8,6 +8,7 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { Crew } from '../social/models';
 import { chatPreview, gaveUp, unreadLine } from './chat';
 import { useNow } from '../../lib/useNow';
+import { t, tn } from '../../i18n';
 
 /** A crew's chat, as a card: the latest message and how many are new. Opens the chat. */
 export function CrewChatCard({ crew, nameOf }: { crew: Crew; nameOf: (uid: string) => string }) {
@@ -20,10 +21,8 @@ export function CrewChatCard({ crew, nameOf }: { crew: Crew; nameOf: (uid: strin
   const waiting = chat.waitingFor(crew.id).filter((o) => !gaveUp(o, now)).length;
   const preview = chatPreview(chat.latestFor(crew.id), me, nameOf);
   const line = waiting
-    ? waiting === 1
-      ? '1 message waiting for signal. It sends by itself, keeping the time you wrote it.'
-      : `${waiting} messages waiting for signal. They send by themselves, keeping the time you wrote them.`
-    : (preview ?? 'Say hi to your crew. Only people in it can see the chat.');
+    ? tn(waiting, '{n} message waiting for signal. It sends by itself, keeping the time you wrote it.', '{n} messages waiting for signal. They send by themselves, keeping the time you wrote them.')
+    : (preview ?? t('Say hi to your crew. Only people in it can see the chat.'));
   return (
     <Pressable
       onPress={() => {
@@ -31,7 +30,7 @@ export function CrewChatCard({ crew, nameOf }: { crew: Crew; nameOf: (uid: strin
         router.push({ pathname: '/crew-chat/[id]', params: { id: crew.id } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Crew chat${unread ? `, ${unreadLine(unread)}` : ''}. ${line}`}
+      accessibilityLabel={`${t('Crew chat')}${unread ? `, ${unreadLine(unread)}` : ''}. ${line}`}
       style={({ pressed }) => [styles.card, unread > 0 && styles.cardNew, pressed && styles.pressed]}
     >
       <View style={[styles.icon, unread > 0 && styles.iconNew]}>
@@ -39,7 +38,7 @@ export function CrewChatCard({ crew, nameOf }: { crew: Crew; nameOf: (uid: strin
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={styles.title}>
-          Crew chat
+          {t('Crew chat')}
           {unread ? <Text style={styles.new}>{`  ${unreadLine(unread)}`}</Text> : null}
         </Text>
         <Text style={[styles.preview, waiting > 0 && { color: '#FFB86B' }]} numberOfLines={waiting ? 2 : 1}>

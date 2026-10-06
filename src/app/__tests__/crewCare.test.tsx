@@ -94,6 +94,13 @@ describe('telling your crew how you are', () => {
     await flush();
     expect([...mockSocial.updates.values()].find((u) => u.kind === 'reply')).toMatchObject({ uid: expect.any(String), note: 'On my way', replyTo: help!.id });
     expect(hers.getByLabelText('You told Sam you’re on your way')).toBeTruthy();
+    // Her own check-in: Tell my crew offers the one that fits, sent only if she taps it.
+    await fireEvent.press(hers.getByLabelText("I'm feeling good"));
+    await flush();
+    expect(hers.queryByLabelText('I’m OK. Tell my crew')).toBeNull();
+    await fireEvent.press(hers.getByLabelText('Tell my crew how I am'));
+    expect(hers.getByLabelText('I’m OK. Tell my crew')).toBeTruthy();
+    expect(hers.queryByLabelText('Not feeling great. Ask my crew to come find me')).toBeNull();
     await hers.unmount();
 
     // Opening again never nudges twice.
