@@ -1,4 +1,5 @@
 import { FOUNDERS_MAX, type FlairKind, type Standing } from '../social/models';
+import { t } from '../../i18n';
 
 /**
  * Standing, pure: how a founder number and a flair read and look. Founders
@@ -7,10 +8,10 @@ import { FOUNDERS_MAX, type FlairKind, type Standing } from '../social/models';
  */
 
 /** "One of the first 100 on Afterglow · #23": the caption under a founder's name. */
-export const founderCaption = (n: number) => `One of the first ${FOUNDERS_MAX} on Afterglow · #${n}`;
+export const founderCaption = (n: number) => t('One of the first {max} on Afterglow · #{n}', { max: FOUNDERS_MAX, n });
 
 /** "Founder #23": short, for small places. */
-export const founderShort = (n: number) => `Founder #${n}`;
+export const founderShort = (n: number) => t('Founder #{n}', { n });
 
 /** The ring's colours for each kind of standing, brightest first. */
 export const RING: Record<'founder' | FlairKind, readonly string[]> = {
@@ -44,7 +45,7 @@ export function captionsOf(s: Standing | undefined): { kind: 'founder' | FlairKi
 /** For screen readers, after a name: "Artist. One of the first 100 on Afterglow, number 23." */
 export function standingA11y(s: Standing | undefined): string {
   return captionsOf(s)
-    .map((c) => (c.kind === 'founder' ? `One of the first ${FOUNDERS_MAX} on Afterglow, number ${s!.founder}` : c.text))
+    .map((c) => (c.kind === 'founder' ? t('One of the first {max} on Afterglow, number {n}', { max: FOUNDERS_MAX, n: s!.founder! }) : c.text))
     .join('. ');
 }
 

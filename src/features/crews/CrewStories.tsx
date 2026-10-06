@@ -10,6 +10,7 @@ import { useSocial } from '../../state/social';
 import { color, space, type } from '../../theme/tokens';
 import { firstName } from './together';
 import { clock, updatePlace, type Story } from './updates';
+import { t, tn } from '../../i18n';
 
 /** The row's height, so Discover can keep its videos clear of it. */
 export const STORIES_H = 92;
@@ -37,7 +38,11 @@ export function CrewStories() {
           router.push('/check-in');
         }}
         accessibilityRole="button"
-        accessibilityLabel={waiting ? `Check in with your crew. ${waiting} ${waiting === 1 ? 'update is' : 'updates are'} waiting for signal` : 'Check in with your crew'}
+        accessibilityLabel={
+          waiting
+            ? tn(waiting, 'Check in with your crew. {n} update is waiting for signal', 'Check in with your crew. {n} updates are waiting for signal')
+            : t('Check in with your crew')
+        }
         style={({ pressed }) => [styles.item, pressed && styles.pressed]}
       >
         <View style={[styles.ring, waiting ? styles.ringWaiting : styles.ringYou]}>
@@ -47,7 +52,7 @@ export function CrewStories() {
           <PlusIcon color={color.night} size={12} />
         </View>
         <Text style={styles.name} numberOfLines={1}>
-          {waiting ? 'Waiting…' : 'Check in'}
+          {waiting ? t('Waiting…') : t('Check in')}
         </Text>
       </Pressable>
 
@@ -58,7 +63,7 @@ export function CrewStories() {
       {!stories.length ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText} numberOfLines={2}>
-            Your crew’s videos and check-ins show up here, with when they happened.
+            {t('Your crew’s videos and check-ins show up here, with when they happened.')}
           </Text>
         </View>
       ) : null}
@@ -69,7 +74,17 @@ export function CrewStories() {
 function StoryFace({ story, name, url, artist }: { story: Story; name?: string; url?: string; artist: (id: string) => string | undefined }) {
   const u = story.latest;
   const place = updatePlace(u, u.artistId ? artist(u.artistId) : undefined);
-  const who = name ? firstName(name) : 'Crewmate';
+  const who = name ? firstName(name) : t('Crewmate');
+  const time = clock(u.at);
+  const status = u.lost
+    ? t('{who}, can’t find the crew, {time}', { who, time })
+    : u.care === 'help'
+      ? t('{who}, isn’t feeling great, asked for help {time}', { who, time })
+      : u.care === 'ok'
+        ? t('{who}, is OK, {time}', { who, time })
+        : u.kind === 'reply'
+          ? t('{who}, replied to you {time}', { who, time })
+          : t('{who}, updated {time}', { who, time });
   return (
     <Pressable
       onPress={() => {
@@ -77,7 +92,7 @@ function StoryFace({ story, name, url, artist }: { story: Story; name?: string; 
         router.push({ pathname: '/crew-story', params: { uid: story.uid } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${who}, ${u.lost ? 'can’t find the crew,' : u.care === 'help' ? 'isn’t feeling great, asked for help' : u.care === 'ok' ? 'is OK,' : u.kind === 'reply' ? 'replied to you' : 'updated'} ${clock(u.at)}${place ? `, ${place}` : ''}${u.note ? `, “${u.note}”` : ''}${story.fresh ? '. New' : ''}`}
+      accessibilityLabel={`${status}${place ? `, ${place}` : ''}${u.note ? `, “${u.note}”` : ''}${story.fresh ? `. ${t('New')}` : ''}`}
       style={({ pressed }) => [styles.item, pressed && styles.pressed]}
     >
       {/* A call for help stays red until they say they're OK, seen or not. */}

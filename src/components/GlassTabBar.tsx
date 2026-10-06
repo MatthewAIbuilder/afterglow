@@ -16,6 +16,7 @@ import { haptic } from '../lib/haptics';
 import { color, motion, radius, space, type, glowA, raisedA } from '../theme/tokens';
 import { DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
 import { HiddenToe } from '../features/toes/Toe';
+import { t } from '../i18n';
 
 const ICONS: Record<string, typeof DiscoverIcon> = {
   index: DiscoverIcon,
@@ -79,14 +80,14 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
             leave();
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Testing festival mode with ${active.festival.name}. End the test`}
+          accessibilityLabel={t('Testing festival mode with {festival}. End the test', { festival: active.festival.name })}
           style={styles.test}
         >
           <View style={styles.testDot} />
           <Text style={styles.testText} numberOfLines={1}>
-            Testing festival mode
+            {t('Testing festival mode')}
           </Text>
-          <Text style={styles.testEnd}>End</Text>
+          <Text style={styles.testEnd}>{t('End')}</Text>
         </Pressable>
       ) : null}
       {active ? <CareTip /> : null}
@@ -106,8 +107,9 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           const focused = state.index === i;
           const { options } = descriptors[route.key];
           const title = options.title ?? route.name;
+
           const news = route.name === 'together' && freshCrew;
-          const label = news ? `${title}, new from your crew` : title;
+          const label = news ? t('{tab}, new from your crew', { tab: title }) : title;
           const Icon = ICONS[route.name] ?? DiscoverIcon;
           const tint = focused ? color.moon : color.moonFaint;
           return (
@@ -131,8 +133,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                       router.push('/switch-account');
                     },
                     delayLongPress: 450,
-                    accessibilityHint: 'Hold to switch accounts',
-                    accessibilityActions: [{ name: 'longpress', label: 'Switch account' }],
+                    accessibilityHint: t('Hold to switch accounts'),
+                    accessibilityActions: [{ name: 'longpress', label: t('Switch account') }],
                     onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => e.nativeEvent.actionName === 'longpress' && router.push('/switch-account'),
                   }
                 : {})}
@@ -210,7 +212,7 @@ function CareTip() {
       importantForAccessibility="no-hide-descendants"
     >
       <View style={styles.tipBubble}>
-        <Text style={styles.tipText}>Hold for Look after yourself</Text>
+        <Text style={styles.tipText}>{t('Hold for Look after yourself')}</Text>
       </View>
       <View style={styles.tipArrow} />
     </Animated.View>
@@ -244,9 +246,10 @@ function CameraTab({ hold, burst }: { hold: SharedValue<number>; burst: SharedVa
       }}
       delayLongPress={450}
       accessibilityRole="button"
-      accessibilityLabel="Film a video"
-      accessibilityHint="Hold to open Look after yourself"
-      accessibilityActions={[{ name: 'longpress', label: 'Look after yourself' }]}
+      accessibilityLabel={t('Film a video')}
+      accessibilityHint={t('Hold to open Look after yourself')}
+      accessibilityActions={[{ name: 'longpress', label: t('Look after yourself') }]}
+
       onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && openCare(hold, burst, true)}
       style={styles.item}
     >

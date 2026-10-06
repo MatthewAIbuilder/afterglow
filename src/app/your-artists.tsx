@@ -33,6 +33,7 @@ import { useRatings } from '../state/ratings';
 import { useTaste } from '../state/taste';
 import { useLoves } from '../state/useLoves';
 import { color, glowA, radius, space, type } from '../theme/tokens';
+import { t, tc } from '../i18n';
 
 /** Faces drawn on one date; with more, the first two and "+N". */
 const FACES_MAX = 3;
@@ -72,24 +73,24 @@ export default function WhereTheyPlayScreen() {
   const anyShows = dates.some((d) => d.kind === 'show');
 
   const chips: Chip[] = [
-    { key: 'all', label: 'All', count: counts.all, accessibilityLabel: `All dates, ${counts.all}` },
-    { key: 'near', label: 'Near you', count: status === 'on' ? counts.near : undefined, accessibilityLabel: `Near you, ${counts.near}` },
-    { key: 'festivals', label: 'Festivals', count: counts.festivals, accessibilityLabel: `Festivals, ${counts.festivals}` },
-    { key: 'shows', label: 'Shows', count: counts.shows, accessibilityLabel: `Shows, ${counts.shows}` },
-    ...(counts.going ? [{ key: 'going', label: 'Going', count: counts.going, accessibilityLabel: `Going, ${counts.going}` }] : []),
+    { key: 'all', label: tc('dates', 'All'), count: counts.all, accessibilityLabel: t('All dates, {n}', { n: counts.all }) },
+    { key: 'near', label: t('Near you'), count: status === 'on' ? counts.near : undefined, accessibilityLabel: t('Near you, {n}', { n: counts.near }) },
+    { key: 'festivals', label: t('Festivals'), count: counts.festivals, accessibilityLabel: t('Festivals, {n}', { n: counts.festivals }) },
+    { key: 'shows', label: t('Shows'), count: counts.shows, accessibilityLabel: t('Shows, {n}', { n: counts.shows }) },
+    ...(counts.going ? [{ key: 'going', label: t('Going'), count: counts.going, accessibilityLabel: t('Going, {n}', { n: counts.going }) }] : []),
   ];
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Where they play" />
+      <PageTitle title={t('Where they play')} />
       <NightSky />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
         <View style={styles.inset}>
           <Text style={styles.title} accessibilityRole="header">
-            Where they play
+            {t('Where they play')}
           </Text>
           <Text style={styles.sub}>
-            {artists.length ? `${artistsCount(artists.length)} you follow and love` : 'Follow or love artists to see where they play.'}
+            {artists.length ? t('{artists} you follow and love', { artists: artistsCount(artists.length) }) : t('Follow or love artists to see where they play.')}
           </Text>
         </View>
 
@@ -120,10 +121,10 @@ export default function WhereTheyPlayScreen() {
                       void turnOn();
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel="Use my location to see dates near you"
+                    accessibilityLabel={t('Use my location to see dates near you')}
                     style={({ pressed }) => [styles.emptyButton, pressed && { opacity: 0.7 }]}
                   >
-                    <Text style={styles.emptyButtonText}>Use my location</Text>
+                    <Text style={styles.emptyButtonText}>{t('Use my location')}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -133,25 +134,25 @@ export default function WhereTheyPlayScreen() {
               <Pressable
                 onPress={() => void Linking.openURL('https://edmtrain.com').catch(() => {})}
                 accessibilityRole="link"
-                accessibilityLabel="Show info from EDMTrain. Opens their site."
+                accessibilityLabel={t('Show info from EDMTrain. Opens their site.')}
                 style={({ pressed }) => [styles.inset, styles.credit, pressed && { opacity: 0.6 }]}
               >
-                <Text style={styles.creditText}>Show info from EDMTrain ↗</Text>
+                <Text style={styles.creditText}>{t('Show info from EDMTrain')} ↗</Text>
               </Pressable>
             ) : null}
 
             <View style={[styles.inset, styles.section]}>
               <Text style={styles.sectionTitle} accessibilityRole="header">
-                Your artists
+                {t('Your artists')}
               </Text>
               {artists.map((a) => {
                 const theirs = datesOf(dates, a.id);
                 const next = theirs.find((d) => d.date);
                 const line = theirs.length
-                  ? [datesCount(theirs.length), next?.date ? `next ${shortDate(next.date)}` : ''].filter(Boolean).join(' · ')
+                  ? [datesCount(theirs.length), next?.date ? t('next {date}', { date: shortDate(next.date) }) : ''].filter(Boolean).join(' · ')
                   : followed.includes(a.id)
-                    ? 'No dates yet. We’ll tell you when they’re added to a lineup'
-                    : 'No dates yet';
+                    ? t('No dates yet. We’ll tell you when they’re added to a lineup')
+                    : t('No dates yet');
                 return <ArtistLine key={a.id} artist={a} line={line} />;
               })}
             </View>
@@ -161,20 +162,22 @@ export default function WhereTheyPlayScreen() {
         {suggestions.length > 0 && (
           <View style={[styles.inset, styles.section]}>
             <Text style={styles.sectionTitle} accessibilityRole="header">
-              {artists.length ? 'You might follow' : 'Artists you’d love'}
+              {artists.length ? t('You might follow') : t('Artists you’d love')}
             </Text>
             {suggestions.map((a) => (
-              <ArtistLine key={a.id} artist={a} line={`${Math.round((taste[a.id] ?? 0) * 100)}% match`} />
+              <ArtistLine key={a.id} artist={a} line={t('{pct}% match', { pct: Math.round((taste[a.id] ?? 0) * 100) })} />
             ))}
           </View>
         )}
 
         <View style={styles.inset}>
           {!artists.length && !suggestions.length ? (
-            <Text style={styles.note}>Open an artist and tap Follow. Rate a few artists or like some clips and we’ll suggest who to follow.</Text>
+            <Text style={styles.note}>{t('Open an artist and tap Follow. Rate a few artists or like some clips and we’ll suggest who to follow.')}</Text>
           ) : (
             <Text style={styles.note}>
-              {followedCount ? 'Following stays on this phone and never changes your match. ' : ''}Festival dates come from the lineups, club shows from EDMTrain.
+              {followedCount
+                ? t('Following stays on this phone and never changes your match. Festival dates come from the lineups, club shows from EDMTrain.')
+                : t('Festival dates come from the lineups, club shows from EDMTrain.')}
             </Text>
           )}
         </View>
@@ -187,27 +190,30 @@ export default function WhereTheyPlayScreen() {
 function emptyLine(filter: WhereFilter, nearOn: boolean, units: Units): string {
   switch (filter) {
     case 'near':
-      return nearOn ? `None of their dates are ${reachLabel(units, NEAR_KM).toLowerCase()} of you yet.` : 'Turn on your location to see which dates are near you.';
+      return nearOn ? t('None of their dates are {reach} of you yet.', { reach: reachLabel(units, NEAR_KM).toLowerCase() }) : t('Turn on your location to see which dates are near you.');
     case 'festivals':
-      return 'None of them are on a festival lineup yet. We’ll tell you when they’re added.';
+      return t('None of them are on a festival lineup yet. We’ll tell you when they’re added.');
     case 'shows':
-      return 'No club shows listed for them yet.';
+      return t('No club shows listed for them yet.');
     case 'going':
-      return 'You’re not going to a festival they play yet.';
+      return t('You’re not going to a festival they play yet.');
     default:
-      return 'No dates for them yet. We’ll tell you when they’re added to a lineup.';
+      return t('No dates for them yet. We’ll tell you when they’re added to a lineup.');
   }
 }
 
+/** The date's kind as a tag: Festival or Show. */
+const kindWord = (d: WhereDate) => (d.kind === 'festival' ? t('Festival') : tc('event', 'Show'));
+
 /** What a screen reader hears for a date. */
 function dateLabel(d: WhereDate, units: Units): string {
-  const when = d.date ? showDateSpoken(d.date) : 'Date to come';
-  const where = [d.where, d.km !== undefined ? `${distanceShort(d.km, units)} away` : ''].filter(Boolean).join(', ');
-  const tags = [d.kind === 'festival' ? 'Festival' : 'Show', d.weekend ? `Weekend ${d.weekend}` : '', d.going ? 'Going' : '', d.near ? 'Near you' : '']
+  const when = d.date ? showDateSpoken(d.date) : t('Date to come');
+  const where = [d.where, d.km !== undefined ? t('{distance} away', { distance: distanceShort(d.km, units) }) : ''].filter(Boolean).join(', ');
+  const tags = [kindWord(d), d.weekend ? t('Weekend {w}', { w: d.weekend }) : '', d.going ? t('Going') : '', d.near ? t('Near you') : '']
     .filter(Boolean)
     .join(', ');
-  const opens = d.kind === 'festival' ? 'Opens the festival.' : 'Opens the event page on EDMTrain.';
-  return `${artistNames(d.artists)} at ${d.title}, ${when}. ${where ? `${where}. ` : ''}${tags}. ${opens}`;
+  const opens = d.kind === 'festival' ? t('Opens the festival.') : t('Opens the event page on EDMTrain.');
+  return [t('{artists} at {place}, {when}.', { artists: artistNames(d.artists), place: d.title, when }), where ? `${where}.` : '', `${tags}.`, opens].filter(Boolean).join(' ');
 }
 
 function DateRow({ date: d, units }: { date: WhereDate; units: Units }) {
@@ -233,7 +239,7 @@ function DateRow({ date: d, units }: { date: WhereDate; units: Units }) {
             <Text style={styles.dateWeekday}>{block.weekday}</Text>
           </>
         ) : (
-          <Text style={styles.dateSoon}>Soon</Text>
+          <Text style={styles.dateSoon}>{t('Soon')}</Text>
         )}
       </View>
       <Faces artists={d.artists} festivalId={d.festival?.id} />
@@ -258,10 +264,10 @@ function DateRow({ date: d, units }: { date: WhereDate; units: Units }) {
           </View>
         ) : null}
         <View style={styles.tags}>
-          <Tag text={d.kind === 'festival' ? 'Festival' : 'Show'} />
-          {d.weekend ? <Tag text={`Weekend ${d.weekend}`} /> : null}
-          {d.going ? <Tag text="Going" glow /> : null}
-          {d.near ? <Tag text="Near you" glow /> : null}
+          <Tag text={kindWord(d)} />
+          {d.weekend ? <Tag text={t('Weekend {w}', { w: d.weekend })} /> : null}
+          {d.going ? <Tag text={t('Going')} glow /> : null}
+          {d.near ? <Tag text={t('Near you')} glow /> : null}
         </View>
       </View>
       {d.kind === 'show' ? <Text style={styles.out}>↗</Text> : null}
@@ -301,7 +307,7 @@ function Faces({ artists, festivalId }: { artists: Artist[]; festivalId?: string
             router.push({ pathname: '/artist/[id]', params: { id: a.id, ...(festivalId ? { festival: festivalId } : {}) } });
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Open ${a.name}`}
+          accessibilityLabel={t('Open {name}', { name: a.name })}
           hitSlop={4}
           style={[styles.face, at(i)]}
         >

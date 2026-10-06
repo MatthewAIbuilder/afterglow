@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import Animated, { FadeIn, FadeOut, useReducedMotion } from 'react-native-reanimated';
 import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
 import { upNextA11y, upNextLabel } from './autoplay';
+import { t } from '../../i18n';
 
 /** "Next clip in 3 · Stay": shown under a clip you've watched to the end, before the feed moves on. Tap to stay. */
 export function UpNextPill({ left, onStay }: { left: number; onStay: () => void }) {
@@ -18,7 +19,7 @@ export function UpNextPill({ left, onStay }: { left: number; onStay: () => void 
       >
         <Text style={styles.text}>
           {upNextLabel(left)}
-          <Text style={styles.stay}>{'   Stay'}</Text>
+          <Text style={styles.stay}>{`   ${t('Stay')}`}</Text>
         </Text>
       </Pressable>
     </Animated.View>

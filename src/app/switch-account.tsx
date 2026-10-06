@@ -13,6 +13,7 @@ import { forgetAccount, useSavedAccounts } from '../state/savedAccounts';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
+import { t } from '../i18n';
 
 /**
  * Switch account: the accounts saved on this phone, one tap to move between
@@ -40,8 +41,8 @@ export default function SwitchAccountScreen() {
   if (!social.availability.ok) {
     return (
       <View style={[styles.root, { padding: space.xl }]}>
-        <Text style={styles.title}>Switch account</Text>
-        <Text style={styles.body}>Accounts are in the full version of Afterglow.</Text>
+        <Text style={styles.title}>{t('Switch account')}</Text>
+        <Text style={styles.body}>{t('Accounts are in the full version of Afterglow.')}</Text>
         <SheetClose />
       </View>
     );
@@ -64,7 +65,7 @@ export default function SwitchAccountScreen() {
     const r = await switchTo(a);
     if (!r.ok) {
       if (r.needsPassword) ask(a.uid, r.problem);
-      else showAlert('Couldn’t switch', r.problem);
+      else showAlert(t('Couldn’t switch'), r.problem);
     }
   };
   const submit = async (a?: SavedAccount) => {
@@ -74,12 +75,12 @@ export default function SwitchAccountScreen() {
     if (r.ok) {
       if (asking === 'me') setSavedNote(true);
       close();
-    } else setProblem(r.problem ?? 'Type the password.');
+    } else setProblem(r.problem ?? t('Type the password.'));
   };
   const remove = (a: SavedAccount) =>
-    showAlert(`Remove ${accountTitle(a)} from this phone?`, 'It leaves the list and its saved password is forgotten. The account itself isn’t changed.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => void forgetAccount(a.uid) },
+    showAlert(t('Remove {account} from this phone?', { account: accountTitle(a) }), t('It leaves the list and its saved password is forgotten. The account itself isn’t changed.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Remove'), style: 'destructive', onPress: () => void forgetAccount(a.uid) },
     ]);
 
   const passwordForm = (a?: SavedAccount) => (
@@ -88,38 +89,38 @@ export default function SwitchAccountScreen() {
         <TextInput
           value={email}
           onChangeText={setEmail}
-          placeholder="Email"
+          placeholder={t('Email')}
           placeholderTextColor={color.moonFaint}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
           textContentType="username"
-          accessibilityLabel="Email"
+          accessibilityLabel={t('Email')}
           style={styles.input}
         />
       ) : null}
       <TextInput
         value={password}
         onChangeText={setPassword}
-        placeholder="Password"
+        placeholder={t('Password')}
         placeholderTextColor={color.moonFaint}
         secureTextEntry
         autoFocus
         textContentType="password"
-        accessibilityLabel={a ? `Password for ${accountTitle(a)}` : 'Password'}
+        accessibilityLabel={a ? t('Password for {account}', { account: accountTitle(a) }) : t('Password')}
         onSubmitEditing={() => void submit(a)}
         style={styles.input}
       />
       {KEEPS_PASSWORDS ? (
         <View style={styles.rememberRow}>
-          <Text style={styles.rememberText}>Remember the password on this phone</Text>
-          <Switch value={remember} onValueChange={setRemember} accessibilityLabel="Remember the password on this phone" trackColor={{ false: 'rgba(255,255,255,0.18)', true: color.glow }} />
+          <Text style={styles.rememberText}>{t('Remember the password on this phone')}</Text>
+          <Switch value={remember} onValueChange={setRemember} accessibilityLabel={t('Remember the password on this phone')} trackColor={{ false: 'rgba(255,255,255,0.18)', true: color.glow }} />
         </View>
       ) : null}
       {problem ? <Text style={styles.problem}>{problem}</Text> : null}
       <View style={styles.formButtons}>
         <Pressable onPress={close} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
-          <Text style={styles.secondaryText}>Cancel</Text>
+          <Text style={styles.secondaryText}>{t('Cancel')}</Text>
         </Pressable>
         <Pressable
           onPress={() => void submit(a)}
@@ -127,7 +128,7 @@ export default function SwitchAccountScreen() {
           accessibilityRole="button"
           style={({ pressed }) => [styles.primary, (!password || !!busy) && styles.dim, pressed && styles.pressed]}
         >
-          {busy ? <ActivityIndicator color={color.night} /> : <Text style={styles.primaryText}>{asking === 'me' ? 'Save' : asking === 'new' ? 'Sign in' : 'Switch'}</Text>}
+          {busy ? <ActivityIndicator color={color.night} /> : <Text style={styles.primaryText}>{asking === 'me' ? t('Save') : asking === 'new' ? t('Sign in') : t('Switch')}</Text>}
         </Pressable>
       </View>
     </View>
@@ -137,10 +138,10 @@ export default function SwitchAccountScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title} accessibilityRole="header">
-          Switch account
+          {t('Switch account')}
         </Text>
         <Text style={styles.body}>
-          {KEEPS_PASSWORDS ? 'Accounts saved on this phone, one tap apart. Passwords stay in the phone’s keychain.' : 'Accounts saved in this browser. You’ll type the password each time.'}
+          {KEEPS_PASSWORDS ? t('Accounts saved on this phone, one tap apart. Passwords stay in the phone’s keychain.') : t('Accounts saved in this browser. You’ll type the password each time.')}
         </Text>
 
         {!saved ? <ActivityIndicator color={color.glow} style={{ marginTop: space.lg }} /> : null}
@@ -152,8 +153,8 @@ export default function SwitchAccountScreen() {
                 onPress={() => void tap(a)}
                 disabled={current}
                 accessibilityRole="button"
-                accessibilityLabel={current ? `${accountTitle(a)}, signed in` : `Switch to ${accountTitle(a)}`}
-                accessibilityActions={[{ name: 'remove', label: 'Remove from this phone' }]}
+                accessibilityLabel={current ? t('{account}, signed in', { account: accountTitle(a) }) : t('Switch to {account}', { account: accountTitle(a) })}
+                accessibilityActions={[{ name: 'remove', label: t('Remove from this phone') }]}
                 onAccessibilityAction={(e) => e.nativeEvent.actionName === 'remove' && remove(a)}
                 style={({ pressed }) => [styles.row, current && styles.rowOn, pressed && styles.pressed]}
               >
@@ -175,7 +176,7 @@ export default function SwitchAccountScreen() {
                     <CheckIcon color={color.night} size={14} />
                   </View>
                 ) : (
-                  <Pressable onPress={() => remove(a)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Remove ${accountTitle(a)} from this phone`}>
+                  <Pressable onPress={() => remove(a)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Remove {account} from this phone', { account: accountTitle(a) })}>
                     <Text style={styles.remove}>×</Text>
                   </Pressable>
                 )}
@@ -188,22 +189,22 @@ export default function SwitchAccountScreen() {
         {/* The account you're in isn't saved yet: save it, so you can come back to it. */}
         {saved && me?.email && !meSaved ? (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Save {me.email}</Text>
-            <Text style={styles.body}>So you can switch back to it in one tap.</Text>
+            <Text style={styles.cardTitle}>{t('Save {email}', { email: me.email })}</Text>
+            <Text style={styles.body}>{t('So you can switch back to it in one tap.')}</Text>
             {asking === 'me' ? (
               passwordForm()
             ) : (
               <Pressable onPress={() => ask('me')} accessibilityRole="button" style={({ pressed }) => [styles.primary, styles.cardButton, pressed && styles.pressed]}>
-                <Text style={styles.primaryText}>Save this account</Text>
+                <Text style={styles.primaryText}>{t('Save this account')}</Text>
               </Pressable>
             )}
           </View>
         ) : null}
-        {savedNote ? <Text style={styles.note}>Saved. Hold the Profile tab any time to switch.</Text> : null}
+        {savedNote ? <Text style={styles.note}>{t('Saved. Hold the Profile tab any time to switch.')}</Text> : null}
 
         {asking === 'new' ? (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Add an account</Text>
+            <Text style={styles.cardTitle}>{t('Add an account')}</Text>
             {passwordForm()}
           </View>
         ) : (
@@ -216,7 +217,7 @@ export default function SwitchAccountScreen() {
             style={({ pressed }) => [styles.add, pressed && styles.pressed]}
           >
             <Text style={styles.addPlus}>+</Text>
-            <Text style={styles.addText}>Add an account</Text>
+            <Text style={styles.addText}>{t('Add an account')}</Text>
           </Pressable>
         )}
 
@@ -231,7 +232,7 @@ export default function SwitchAccountScreen() {
             accessibilityRole="button"
             style={styles.signOut}
           >
-            <Text style={styles.signOutText}>Sign out</Text>
+            <Text style={styles.signOutText}>{t('Sign out')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>

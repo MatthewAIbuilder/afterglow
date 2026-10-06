@@ -39,6 +39,7 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { showActionSheet } from '../../lib/dialog';
 import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { goBack } from '../../lib/nav';
+import { t, tn } from '../../i18n';
 
 /**
  * Someone's festival profile (or yours, as others see it): photo, name,
@@ -132,14 +133,14 @@ export default function PublicProfileScreen() {
     haptic.select();
     const report = () => askReport({ kind: 'profile', id: profile.uid, ownerUid: profile.uid }, social.report);
     const block = () => askBlock(profile.handle, blocked, (on) => social.setBlocked(profile.uid, on));
-    showActionSheet({ title: `@${profile.handle}`, options: ['Report', blocked ? 'Unblock' : 'Block', 'Cancel'], destructiveButtonIndex: 1, cancelButtonIndex: 2 }, (i) =>
+    showActionSheet({ title: `@${profile.handle}`, options: [t('Report'), blocked ? t('Unblock') : t('Block'), t('Cancel')], destructiveButtonIndex: 1, cancelButtonIndex: 2 }, (i) =>
       i === 0 ? report() : i === 1 ? block() : undefined,
     );
   };
   const share = () => {
     if (!profile) return;
     haptic.select();
-    sendOrShare({ kind: 'profile', handle: profile.handle }, `@${profile.handle} on Afterglow: ${WEB_URL}/u/${profile.handle}`);
+    sendOrShare({ kind: 'profile', handle: profile.handle }, t('@{handle} on Afterglow: {url}', { handle: profile.handle, url: `${WEB_URL}/u/${profile.handle}` }));
   };
 
   const cols = 3;
@@ -155,17 +156,17 @@ export default function PublicProfileScreen() {
   const stats: ProfileStat[] = [
     ...(counts
       ? [
-          { key: 'followers' as const, n: counts.followers, label: counts.followers === 1 ? 'Follower' : 'Followers', a11y: `${followersLabel(counts.followers)}. Opens the list.` },
-          { key: 'following' as const, n: counts.following, label: 'Following', a11y: `${followingLabel(counts.following)}. Opens the list.` },
+          { key: 'followers' as const, n: counts.followers, label: counts.followers === 1 ? t('Follower') : t('Followers'), a11y: `${followersLabel(counts.followers)}. ${t('Opens the list.')}` },
+          { key: 'following' as const, n: counts.following, label: t('Following'), a11y: `${followingLabel(counts.following)}. ${t('Opens the list.')}` },
         ]
       : []),
-    { key: 'festivals', n: going.length, label: going.length === 1 ? 'Festival' : 'Festivals', a11y: `${going.length} ${going.length === 1 ? 'festival' : 'festivals'}` },
-    { key: 'moments', n: memories.length, label: memories.length === 1 ? 'Moment' : 'Moments', a11y: `${memories.length} shared ${memories.length === 1 ? 'moment' : 'moments'}` },
+    { key: 'festivals', n: going.length, label: going.length === 1 ? t('Festival') : t('Festivals'), a11y: tn(going.length, '{n} festival', '{n} festivals') },
+    { key: 'moments', n: memories.length, label: memories.length === 1 ? t('Moment') : t('Moments'), a11y: tn(memories.length, '{n} shared moment', '{n} shared moments') },
     {
       key: 'badges',
       n: badges.length + throwbacks.length,
-      label: badges.length + throwbacks.length === 1 ? 'Badge' : 'Badges',
-      a11y: `${badges.length + throwbacks.length} festival ${badges.length + throwbacks.length === 1 ? 'badge' : 'badges'}`,
+      label: badges.length + throwbacks.length === 1 ? t('Badge') : t('Badges'),
+      a11y: tn(badges.length + throwbacks.length, '{n} festival badge', '{n} festival badges'),
     },
   ];
 
@@ -180,29 +181,29 @@ export default function PublicProfileScreen() {
     body = (
       <View style={styles.invite}>
         <Text style={styles.inviteTitle} accessibilityRole="header">
-          {handle ? `@${handle} is on Afterglow` : 'Profiles on Afterglow'}
+          {handle ? t('@{handle} is on Afterglow', { handle }) : t('Profiles on Afterglow')}
         </Text>
         <Text style={styles.inviteBody}>
-          {handle ? `Sign in or make a profile to see @${handle}’s festivals and videos, and follow each other.` : 'Sign in to see profiles.'}
+          {handle ? t('Sign in or make a profile to see @{handle}’s festivals and videos, and follow each other.', { handle }) : t('Sign in to see profiles.')}
         </Text>
         <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={({ pressed }) => [styles.invitePrimary, pressed && { opacity: 0.8 }]}>
-          <Text style={styles.invitePrimaryText}>Sign in or join</Text>
+          <Text style={styles.invitePrimaryText}>{t('Sign in or join')}</Text>
         </Pressable>
         <Pressable onPress={() => router.replace('/')} accessibilityRole="button" hitSlop={8}>
-          <Text style={styles.link}>Look around first</Text>
+          <Text style={styles.link}>{t('Look around first')}</Text>
         </Pressable>
       </View>
     );
   } else if (profile === undefined) {
     body = <ActivityIndicator color={color.glow} style={{ marginTop: space.xxl }} />;
   } else if (!profile) {
-    body = <Text style={styles.body}>{problem ?? `No one is called @${handle} on Afterglow.`}</Text>;
+    body = <Text style={styles.body}>{problem ?? t('No one is called @{handle} on Afterglow.', { handle: handle ?? '' })}</Text>;
   } else if (blocked) {
     body = (
       <View style={styles.center}>
-        <Text style={styles.body}>You blocked @{profile.handle}.</Text>
+        <Text style={styles.body}>{t('You blocked @{handle}.', { handle: profile.handle })}</Text>
         <Pressable onPress={() => askBlock(profile.handle, true, (on) => social.setBlocked(profile.uid, on))} accessibilityRole="button">
-          <Text style={styles.link}>Unblock</Text>
+          <Text style={styles.link}>{t('Unblock')}</Text>
         </Pressable>
       </View>
     );
@@ -215,7 +216,7 @@ export default function PublicProfileScreen() {
             name={profile.displayName}
             initial
             handle={profile.handle}
-            whose={mine ? 'Your' : `${profile.displayName}’s`}
+            whose={mine ? undefined : profile.displayName}
             uid={profile.uid}
             avatarUrl={profile.avatarUrl}
             bio={profile.bio || undefined}
@@ -230,7 +231,7 @@ export default function PublicProfileScreen() {
             orbit={orbit}
           >
             {mine ? (
-              <ProfileButton label="Edit profile" onPress={() => router.push('/profile-edit')} />
+              <ProfileButton label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
             ) : (
               <View style={styles.follow}>
                 <FollowButton
@@ -246,10 +247,10 @@ export default function PublicProfileScreen() {
                       void openChatWith(chat.openDirect, profile.uid, (profile.displayName.trim().split(/\s+/)[0] || profile.displayName));
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Message ${profile.displayName}`}
+                    accessibilityLabel={t('Message {name}', { name: profile.displayName })}
                     style={({ pressed }) => [styles.message, pressed && { opacity: 0.8 }]}
                   >
-                    <Text style={styles.messageText}>Message</Text>
+                    <Text style={styles.messageText}>{t('Message')}</Text>
                   </Pressable>
                 ) : null}
                 {/* A close friend comes first on your Friends tab. Only you see it. */}
@@ -262,13 +263,13 @@ export default function PublicProfileScreen() {
           <View
             style={styles.common}
             accessible
-            accessibilityLabel={`${match !== undefined ? `${matchLine(match)}. ` : ''}In common. ${common.map((l) => l.text).join('. ')}.`}
+            accessibilityLabel={`${match !== undefined ? `${matchLine(match)}. ` : ''}${t('In common.')} ${common.map((l) => l.text).join('. ')}.`}
           >
             <View style={styles.commonTop}>
-              <Text style={styles.commonHead}>In common</Text>
+              <Text style={styles.commonHead}>{t('In common')}</Text>
               {match !== undefined ? (
                 <Text style={styles.match}>
-                  {match}%<Text style={styles.matchUnit}> taste match</Text>
+                  {match}%<Text style={styles.matchUnit}>{` ${t('taste match')}`}</Text>
                 </Text>
               ) : null}
             </View>
@@ -285,7 +286,7 @@ export default function PublicProfileScreen() {
             <BadgesGrid badges={badges} throwbacks={throwbacks} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
           </View>
         ) : null}
-        <Text style={styles.section}>{memories.length ? `Memories · ${memories.length}` : 'Memories'}</Text>
+        <Text style={styles.section}>{memories.length ? t('Memories · {n}', { n: memories.length }) : t('Memories')}</Text>
         {memories.length ? (
           <View style={[styles.grid, { gap }]}>
             {memories.map((m) => {
@@ -295,7 +296,7 @@ export default function PublicProfileScreen() {
                   key={m.id}
                   onPress={() => router.push({ pathname: '/shared/[id]', params: { id: m.id } })}
                   accessibilityRole="button"
-                  accessibilityLabel={`Video${artist ? ` of ${artist.name}` : ''}`}
+                  accessibilityLabel={artist ? t('Video of {artist}', { artist: artist.name }) : t('Video')}
                   style={({ pressed }) => [styles.tile, { width: tileW, height: Math.round((tileW * 16) / 9) }, pressed && styles.pressed]}
                 >
                   {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
@@ -313,7 +314,7 @@ export default function PublicProfileScreen() {
           </View>
         ) : (
           <Text style={styles.body}>
-            {memoriesFailed ? 'Couldn’t load memories just now.' : mine ? 'Share a memory from Memories and it shows up here.' : 'Nothing shared yet.'}
+            {memoriesFailed ? t('Couldn’t load memories just now.') : mine ? t('Share a memory from Memories and it shows up here.') : t('Nothing shared yet.')}
           </Text>
         )}
       </>
@@ -331,17 +332,17 @@ export default function PublicProfileScreen() {
         {body}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
       {profile ? (
         <View style={[styles.actions, { top: insets.top + space.sm }]}>
-          <GlassCircleButton label="Share profile" onPress={share}>
+          <GlassCircleButton label={t('Share profile')} onPress={share}>
             <ShareIcon color={color.moon} size={16} />
           </GlassCircleButton>
           {!mine ? (
-            <GlassCircleButton label="More: report or block" onPress={menu}>
+            <GlassCircleButton label={t('More: report or block')} onPress={menu}>
               <Text style={styles.more}>•••</Text>
             </GlassCircleButton>
           ) : null}

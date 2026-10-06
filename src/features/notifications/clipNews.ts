@@ -1,5 +1,6 @@
 import type { Clip } from '../../data/models';
 import type { Notice } from './inbox';
+import { t } from '../../i18n';
 
 /**
  * New sets news: when a catalogue update brings new clips (the nightly
@@ -69,7 +70,8 @@ function trimSeen(seen: string[], clips: Clip[]): string[] {
   return seen.filter((id) => !(over > 0 && !current.has(id) && over--));
 }
 
-const names = (list: string[]) => (list.length === 1 ? list[0] : list.length === 2 ? `${list[0]} and ${list[1]}` : `${list[0]}, ${list[1]} and ${list.length - 2} more you’d love`);
+const names = (list: string[]) =>
+  list.length === 1 ? list[0] : list.length === 2 ? t('{a} and {b}', { a: list[0], b: list[1] }) : t('{a}, {b} and {n} more you’d love', { a: list[0], b: list[1], n: list.length - 2 });
 
 /**
  * The bell's new sets: per arrival, newest first, the clips still in the
@@ -97,8 +99,8 @@ export function clipNotices(
       id: `clips:${n.at}`,
       kind: 'clips',
       href: `/?clip=${encodeURIComponent(clips[0].id)}`,
-      title: `${many ? 'New live sets' : 'A new live set'} from ${names(named)}`,
-      body: many ? 'Watch them in Discover.' : 'Watch it in Discover.',
+      title: many ? t('New live sets from {names}', { names: names(named) }) : t('A new live set from {names}', { names: names(named) }),
+      body: many ? t('Watch them in Discover.') : t('Watch it in Discover.'),
     });
   }
   return out;

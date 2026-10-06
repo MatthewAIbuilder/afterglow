@@ -1,4 +1,6 @@
 import { SUPPORT_EMAIL } from '../../config/app';
+import { shortCount } from '../profile/profileView';
+import { t, tn } from '../../i18n';
 
 /**
  * Words for profiles, in one place. The guidelines are what everyone agrees
@@ -12,19 +14,22 @@ export const GUIDELINES: string[] = [
   'Report anything that breaks these, and block anyone you don’t want to see. Reports are reviewed, and accounts that break the guidelines are removed.',
 ];
 
-export const contactLine = () => (SUPPORT_EMAIL ? `Questions or problems: ${SUPPORT_EMAIL}` : undefined);
+export const contactLine = () => (SUPPORT_EMAIL ? t('Questions or problems: {email}', { email: SUPPORT_EMAIL }) : undefined);
 
 /** "Going to EDC Orlando 2026 and ACL 2026", "Going to 3 festivals". */
 export function goingLine(names: string[]): string | undefined {
   if (!names.length) return undefined;
-  if (names.length > 3) return `Going to ${names.length} festivals`;
-  return `Going to ${names.length < 2 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`}`;
+  if (names.length > 3) return t('Going to {n} festivals', { n: names.length });
+  const list = names.length < 2 ? names[0] : t('{list} and {last}', { list: names.slice(0, -1).join(', '), last: names[names.length - 1] });
+  return t('Going to {festivals}', { festivals: list });
 }
 
 /** "1 follower", "12 followers". */
-export const followersLabel = (n: number) => `${n} ${n === 1 ? 'follower' : 'followers'}`;
+export const followersLabel = (n: number) => tn(n, '{n} follower', '{n} followers');
 /** "3 following". */
-export const followingLabel = (n: number) => `${n} following`;
+export const followingLabel = (n: number) => t('{n} following', { n });
 /** "1 like", "12 likes". */
-export const likesLabel = (n: number) => `${n} ${n === 1 ? 'like' : 'likes'}`;
-export const commentsLabel = (n: number) => `${n} ${n === 1 ? 'comment' : 'comments'}`;
+export const likesLabel = (n: number) => tn(n, '{n} like', '{n} likes');
+export const commentsLabel = (n: number) => tn(n, '{n} comment', '{n} comments');
+/** Under the speech bubble in Discover: how many ("12", "1.2K"), or the word when there are none yet (or it isn't known). */
+export const commentCaption = (n?: number) => (n ? shortCount(n) : t('Comment'));

@@ -21,6 +21,7 @@ import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
 import { SheetClose } from '../../components/SheetClose';
+import { t, tc } from '../../i18n';
 
 /**
  * One memory, full screen, with sound. Tap to pause. Below it: who, where
@@ -58,7 +59,7 @@ export default function MemoryScreen() {
 
   const artist = m.artistId ? catalog.artist(m.artistId) : undefined;
   const festival = m.festivalId ? catalog.festival(m.festivalId) : undefined;
-  const where = [m.night, festival?.name ?? (m.past ? `Throwback · ${pastLabel(m.past)}` : undefined)].filter(Boolean).join(' · ');
+  const where = [m.night ? t(m.night) : undefined, festival?.name ?? (m.past ? t('Throwback · {festival}', { festival: pastLabel(m.past) }) : undefined)].filter(Boolean).join(' · ');
   const when = momentLine(new Date(m.capturedAt), m.place);
 
   const toggle = () => {
@@ -72,28 +73,28 @@ export default function MemoryScreen() {
     haptic.tap();
     const ok = await mem.saveToPhotos(m.id);
     if (ok) haptic.settle();
-    else showAlert('Couldn’t save to Photos', 'Allow Afterglow to add to Photos in Settings, then try again.');
+    else showAlert(t('Couldn’t save to Photos'), t('Allow Afterglow to add to Photos in Settings, then try again.'));
   };
   const send = async () => {
     haptic.select();
-    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(mem.uriOf(m.file), { dialogTitle: artist?.name ?? 'Memory' }).catch(() => {});
+    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(mem.uriOf(m.file), { dialogTitle: artist?.name ?? t('Memory') }).catch(() => {});
   };
   const remove = () => {
     if (uploading) return;
     haptic.select();
     showAlert(
-      'Delete this memory?',
-      m.sharedId ? 'It’s removed from this phone. It stays on your profile until you remove it there.' : 'It’s removed from this phone. If it isn’t in Photos, it’s gone for good.',
+      t('Delete this memory?'),
+      m.sharedId ? t('It’s removed from this phone. It stays on your profile until you remove it there.') : t('It’s removed from this phone. If it isn’t in Photos, it’s gone for good.'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => void mem.remove(m.id) },
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Delete'), style: 'destructive', onPress: () => void mem.remove(m.id) },
       ],
     );
   };
 
   return (
     <View style={styles.root}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={toggle} accessibilityRole="button" accessibilityLabel={paused ? 'Play' : 'Pause'}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={toggle} accessibilityRole="button" accessibilityLabel={paused ? tc('video', 'Play') : t('Pause')}>
         <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
       </Pressable>
       {/* How it looks once shared: the edge glow (unless you have Afterglow Plus). */}
@@ -101,7 +102,7 @@ export default function MemoryScreen() {
       <LinearGradient colors={['rgba(3,2,10,0)', 'rgba(3,2,10,0.85)']} style={styles.scrim} pointerEvents="none" />
 
       <View style={[styles.close, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={16} />
         </GlassCircleButton>
       </View>
@@ -112,16 +113,16 @@ export default function MemoryScreen() {
           onPress={() => artist && router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festival?.id } })}
           accessibilityRole={artist ? 'button' : 'text'}
         >
-          <Text style={styles.artist}>{artist?.name ?? 'Who’s playing?'}</Text>
+          <Text style={styles.artist}>{artist?.name ?? t('Who’s playing?')}</Text>
         </Pressable>
         {where ? <Text style={styles.where}>{where}</Text> : null}
         {when ? <Text style={styles.when}>{when}</Text> : null}
         <View style={styles.actions}>
-          <Action label={artist ? 'Tag' : 'Tag it'} onPress={() => router.push({ pathname: '/memory-tag', params: { id: m.id } })} />
-          <Action label="Save to Photos" onPress={() => void saveToPhotos()} />
-          <Action label="Send" onPress={() => void send()} />
+          <Action label={artist ? t('Tag') : t('Tag it')} onPress={() => router.push({ pathname: '/memory-tag', params: { id: m.id } })} />
+          <Action label={t('Save to Photos')} onPress={() => void saveToPhotos()} />
+          <Action label={t('Send')} onPress={() => void send()} />
           <ShareToProfile memory={m} render={(label, onPress) => <Action label={label} onPress={onPress} glow />} />
-          <Action label="Delete" onPress={remove} quiet disabled={uploading} />
+          <Action label={t('Delete')} onPress={remove} quiet disabled={uploading} />
         </View>
       </View>
     </View>

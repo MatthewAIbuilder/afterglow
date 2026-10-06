@@ -1,4 +1,5 @@
 import type { Festival } from '../../data/types';
+import { t } from '../../i18n';
 import { formatTime } from '../festivals/format';
 import { toMinutes } from './plan';
 
@@ -28,8 +29,17 @@ export const BEFORE_FIRST = 120;
 export const AFTER_LAST = 60;
 /** A new break lasts this long. */
 export const NEW_BREAK = 60;
-/** The labels offered for a break. */
+/** The labels offered for a break. Saved as written here (English); `breakLabel` shows them in the app's language. */
 export const BREAK_LABELS = ['Dinner', 'Rest', 'Meet up'] as const;
+
+const BREAK_LABEL_SHOWN: Record<string, () => string> = {
+  Dinner: () => t('Dinner'),
+  Rest: () => t('Rest'),
+  'Meet up': () => t('Meet up'),
+};
+
+/** A break's label as shown: one of `BREAK_LABELS` in the app's language, your own words as you wrote them. */
+export const breakLabel = (label: string) => BREAK_LABEL_SHOWN[label]?.() ?? label;
 
 const isTime = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 
@@ -80,34 +90,35 @@ export function clockLabel(min: number) {
   return formatTime(`${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`);
 }
 
-/** "7:00–8:00 PM", "11:30 PM–12:30 AM"; short drops ":00" when both are on the hour ("7–8 PM"). */
+/** "7:00–8:00 PM", "11:30 PM–12:30 AM"; short drops ":00" when both are on the hour ("7–8 PM"). On the 24-hour clock: "19:00–20:00". */
 export function timeRange(from: number, to: number, short = false) {
   const [a, ap] = clockLabel(from).split(' ');
   const [b, bp] = clockLabel(to).split(' ');
-  const trim = (t: string) => (short && from % 60 === 0 && to % 60 === 0 ? t.replace(/:00$/, '') : t);
+  if (!ap || !bp) return `${a}–${b}`;
+  const trim = (x: string) => (short && from % 60 === 0 && to % 60 === 0 ? x.replace(/:00$/, '') : x);
   return ap === bp ? `${trim(a)}–${trim(b)} ${bp}` : `${trim(a)} ${ap}–${trim(b)} ${bp}`;
 }
 
-const breakName = (b: HoursBreak) => b.label ?? 'Break';
+const breakName = (b: HoursBreak) => (b.label ? breakLabel(b.label) : t('Break'));
 
 /** "Arriving 4:00 PM · Leaving 2:00 AM · Dinner 7–8 PM" (more than two breaks are counted); "All day" when nothing's set. */
 export function hoursLine(h: DayHours | undefined) {
-  if (!h || isAllDay(h)) return 'All day';
+  if (!h || isAllDay(h)) return t('All day');
   const parts: string[] = [];
-  if (h.arrive !== undefined) parts.push(`Arriving ${clockLabel(h.arrive)}`);
-  if (h.leave !== undefined) parts.push(`Leaving ${clockLabel(h.leave)}`);
-  if (h.breaks.length > 2) parts.push(`${h.breaks.length} breaks`);
-  else for (const b of h.breaks) parts.push(`${breakName(b)} ${timeRange(b.from, b.to, true)}`);
+  if (h.arrive !== undefined) parts.push(t('Arriving {time}', { time: clockLabel(h.arrive) }));
+  if (h.leave !== undefined) parts.push(t('Leaving {time}', { time: clockLabel(h.leave) }));
+  if (h.breaks.length > 2) parts.push(t('{n} breaks', { n: h.breaks.length }));
+  else for (const b of h.breaks) parts.push(t('{break} {time}', { break: breakName(b), time: timeRange(b.from, b.to, true) }));
   return parts.join(' · ');
 }
 
 /** The same, in full, for screen readers: "arriving at 4:00 PM, leaving at 2:00 AM, Dinner from 7:00 PM to 8:00 PM". */
 export function hoursSaid(h: DayHours | undefined) {
-  if (!h || isAllDay(h)) return 'all day';
+  if (!h || isAllDay(h)) return t('all day');
   const parts: string[] = [];
-  if (h.arrive !== undefined) parts.push(`arriving at ${clockLabel(h.arrive)}`);
-  if (h.leave !== undefined) parts.push(`leaving at ${clockLabel(h.leave)}`);
-  for (const b of h.breaks) parts.push(`${breakName(b)} from ${clockLabel(b.from)} to ${clockLabel(b.to)}`);
+  if (h.arrive !== undefined) parts.push(t('arriving at {time}', { time: clockLabel(h.arrive) }));
+  if (h.leave !== undefined) parts.push(t('leaving at {time}', { time: clockLabel(h.leave) }));
+  for (const b of h.breaks) parts.push(t('{break} from {from} to {to}', { break: breakName(b), from: clockLabel(b.from), to: clockLabel(b.to) }));
   return parts.join(', ');
 }
 
@@ -177,16 +188,24 @@ export function missedBy(h: DayHours | undefined, start: number, end: number): M
 /** "SUBTRONICS plays at 1:00 AM, after you leave. Stay later?" */
 export function missedLine(name: string, m: Missed) {
   const at = clockLabel(m.start);
-  if (m.why === 'arrive') return `${name} plays at ${at}, before you arrive. Come earlier?`;
-  if (m.why === 'leave') return `${name} plays at ${at}, after you leave. Stay later?`;
-  return `${name} plays at ${at}, during ${m.label ? m.label.toLowerCase() : 'your break'}. Move it?`;
+  if (m.why === 'arrive') return t('{name} plays at {time}, before you arrive. Come earlier?', { name, time: at });
+  if (m.why === 'leave') return t('{name} plays at {time}, after you leave. Stay later?', { name, time: at });
+  if (!m.label) return t('{name} plays at {time}, during your break. Move it?', { name, time: at });
+  if (m.label === 'Dinner') return t('{name} plays at {time}, during dinner. Move it?', { name, time: at });
+  if (m.label === 'Rest') return t('{name} plays at {time}, during rest. Move it?', { name, time: at });
+  if (m.label === 'Meet up') return t('{name} plays at {time}, during meet up. Move it?', { name, time: at });
+  return t('{name} plays at {time}, during {break}. Move it?', { name, time: at, break: m.label.toLowerCase() });
 }
 
 /** The one-tap fix's button: "Stay until 1:30 AM", "Arrive at 10:00 PM", "Remove dinner". */
 export function fixLabel(m: Missed) {
-  if (m.why === 'arrive') return `Arrive at ${clockLabel(m.start)}`;
-  if (m.why === 'leave') return `Stay until ${clockLabel(m.end)}`;
-  return m.label ? `Remove ${m.label.toLowerCase()}` : 'Remove the break';
+  if (m.why === 'arrive') return t('Arrive at {time}', { time: clockLabel(m.start) });
+  if (m.why === 'leave') return t('Stay until {time}', { time: clockLabel(m.end) });
+  if (!m.label) return t('Remove the break');
+  if (m.label === 'Dinner') return t('Remove dinner');
+  if (m.label === 'Rest') return t('Remove rest');
+  if (m.label === 'Meet up') return t('Remove meet up');
+  return t('Remove {break}', { break: m.label.toLowerCase() });
 }
 
 /** Your hours with the one-tap fix applied: arrive for the set, stay to its end, or drop the breaks in its way. */

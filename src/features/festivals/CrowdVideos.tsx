@@ -10,6 +10,7 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type, nightA } from '../../theme/tokens';
 import { crowdArtists, crowdByNight, crowdLine } from '../community/crowd';
 import { useFestivalCrowd } from './useFestivalCrowd';
+import { t } from '../../i18n';
 
 export { CROWD_MAX, forgetCrowd } from './useFestivalCrowd';
 
@@ -29,23 +30,23 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
   const picked = artists.some((a) => a.artistId === artistId) ? artistId : undefined;
   const nights = useMemo(() => (videos ? crowdByNight(videos, festival, picked) : []), [videos, festival, picked]);
 
-  if (!social.availability.ok) return <Note title="Videos from the crowd" body="See what people filmed here in the Afterglow app." />;
+  if (!social.availability.ok) return <Note title={t('Videos from the crowd')} body={t('See what people filmed here in the Afterglow app.')} />;
   if (!social.user)
     return (
       <Note
-        title="Videos from the crowd"
-        body="Sign in to see what people on Afterglow filmed here."
-        action={{ label: 'Sign in', onPress: () => router.push('/account') }}
+        title={t('Videos from the crowd')}
+        body={t('Sign in to see what people on Afterglow filmed here.')}
+        action={{ label: t('Sign in'), onPress: () => router.push('/account') }}
       />
     );
-  if (failed && !videos) return <Note title="Couldn’t load the videos" body="Check your signal and try again in a moment." />;
+  if (failed && !videos) return <Note title={t('Couldn’t load the videos')} body={t('Check your signal and try again in a moment.')} />;
   if (!videos) return <ActivityIndicator color={color.glow} style={{ marginTop: space.xl }} />;
   if (!videos.length)
     return (
       <Note
-        title={`Nothing from ${festival.name} yet`}
-        body="Film a set there and share it, tagged with the festival: it shows up here for everyone going, and earns you its badge."
-        action={Platform.OS !== 'web' ? { label: 'Film a video', onPress: () => router.push('/camera') } : undefined}
+        title={t('Nothing from {festival} yet', { festival: festival.name })}
+        body={t('Film a set there and share it, tagged with the festival: it shows up here for everyone going, and earns you its badge.')}
+        action={Platform.OS !== 'web' ? { label: t('Film a video'), onPress: () => router.push('/camera') } : undefined}
       />
     );
 
@@ -58,10 +59,10 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
       {artists.length > 1 ? (
         <FilterChips
           chips={[
-            { key: undefined, label: 'Every artist', accessibilityLabel: 'Videos of every artist' },
+            { key: undefined, label: t('Every artist'), accessibilityLabel: t('Videos of every artist') },
             ...artists.map((a) => {
-              const name = catalog.artist(a.artistId)?.name ?? 'Artist';
-              return { key: a.artistId, label: name, count: a.count, accessibilityLabel: `${name}, ${a.count} videos` };
+              const name = catalog.artist(a.artistId)?.name ?? t('Artist');
+              return { key: a.artistId, label: name, count: a.count, accessibilityLabel: t('{artist}, {n} videos', { artist: name, n: a.count }) };
             }),
           ]}
           value={picked}
@@ -71,7 +72,7 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
       {nights.map((n) => (
         <View key={n.night} style={styles.night}>
           <Text style={styles.nightTitle}>
-            {n.night} <Text style={styles.nightCount}>{n.videos.length}</Text>
+            {t(n.night)} <Text style={styles.nightCount}>{n.videos.length}</Text>
           </Text>
           <View style={[styles.grid, { gap }]}>
             {n.videos.map((m) => {
@@ -84,7 +85,7 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
                     router.push({ pathname: '/shared/[id]', params: { id: m.id } });
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={`${artist ? `${artist.name}, ` : ''}filmed by @${m.handle}, ${n.night}`}
+                  accessibilityLabel={artist ? t('{artist}, filmed by @{handle}, {night}', { artist: artist.name, handle: m.handle, night: t(n.night) }) : t('filmed by @{handle}, {night}', { handle: m.handle, night: t(n.night) })}
                   style={({ pressed }) => [styles.tile, { width: tile, height: Math.round((tile * 4) / 3) }, pressed && styles.pressed]}
                 >
                   {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}

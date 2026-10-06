@@ -108,7 +108,54 @@ describe('how you are feeling', () => {
     expect(app.getByLabelText('How you felt since you started: 45 min in, anxious.')).toBeTruthy();
     expect(app.getAllByText(/Breathe slowly/).length).toBeGreaterThan(0);
     // Two check-ins tonight: the night's graph shows too.
-    expect(app.getByText('Tonight so far')).toBeTruthy();
+    expect(app.getByText('2 check-ins')).toBeTruthy();
+    expect(app.getByLabelText('Tonight, 2 check-ins: 10 PM too hot, 10:55 PM anxious.')).toBeTruthy();
+  });
+
+  it('checks in with an orb, shows how you feel, changes it, and draws the night', async () => {
+    const app = await renderApp('/care');
+    await flush();
+    // Picking: the good ones as orbs, the rest in their groups.
+    expect(app.getByText('How are you right now?')).toBeTruthy();
+    expect(app.getByText('Something’s off')).toBeTruthy();
+    expect(app.getByText('Need a hand')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText("I'm feeling too hot"));
+    await flush();
+
+    // After: the feeling, when, the tip, and Change (no crew here, so no Tell my crew).
+    expect(app.getByLabelText(/^Last check-in: Too hot, Just now ago\. Get out of the crowd/)).toBeTruthy();
+    expect(app.getByText('Checked in just now')).toBeTruthy();
+    expect(app.queryByLabelText("I'm feeling great")).toBeNull();
+    expect(app.queryByLabelText('Tell my crew how I am')).toBeNull();
+    expect(app.queryByText(/check-ins$/)).toBeNull();
+
+    await settle(20 * 60_000);
+    await flush();
+    expect(app.getByText('Checked in 20 min ago')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Change how I feel'));
+    expect(app.getByText('How are you now?')).toBeTruthy();
+    // A way back without changing anything.
+    await fireEvent.press(app.getByLabelText('Keep how I said I feel'));
+    expect(app.getByText('Checked in 20 min ago')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Change how I feel'));
+    await fireEvent.press(app.getByLabelText("I'm feeling great"));
+    await flush();
+    await settle(60_000);
+    await flush();
+
+    // A new check-in (the first stays), the night as a line, and the note about feeling better.
+    expect((await saved()).log.map((e: { mood: string }) => e.mood)).toEqual(['hot', 'great']);
+    expect(app.getByLabelText(/^Last check-in: Great, /)).toBeTruthy();
+    expect(app.getByText('2 check-ins')).toBeTruthy();
+    expect(app.getByLabelText('Tonight, 2 check-ins: 10 PM too hot, 10:20 PM great.')).toBeTruthy();
+    expect(app.getByText('You felt too hot at 10 PM, and you’ve been feeling better since.')).toBeTruthy();
+
+    // A while later: the picker again, with what you said last.
+    await settle(50 * 60_000);
+    await flush();
+    expect(app.getByText('It’s been a while. How are you now?')).toBeTruthy();
+    expect(app.getByText('Earlier: Great · 51 min ago')).toBeTruthy();
+    expect(app.getByLabelText("I'm feeling good")).toBeTruthy();
   });
 
   it('jumps to each part of the page', async () => {

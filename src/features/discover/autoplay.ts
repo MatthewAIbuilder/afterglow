@@ -1,3 +1,5 @@
+import { t, tn } from '../../i18n';
+
 /**
  * Playing the next clip by itself: once you've watched a clip to its end,
  * Discover counts down briefly and glides to the next one, unless you tap
@@ -17,5 +19,5 @@ export const passFinished = (to: number, lengthSec: number) => lengthSec > 0 && 
 /** One step of the countdown: the seconds left after a tick, or 'next' when it's time to move on. */
 export const countdownTick = (left: number): number | 'next' => (left <= 1 ? 'next' : left - 1);
 
-export const upNextLabel = (left: number) => `Next clip in ${left}`;
-export const upNextA11y = (left: number) => `Next clip in ${left} ${left === 1 ? 'second' : 'seconds'}. Tap to stay on this one.`;
+export const upNextLabel = (left: number) => t('Next clip in {n}', { n: left });
+export const upNextA11y = (left: number) => tn(left, 'Next clip in {n} second. Tap to stay on this one.', 'Next clip in {n} seconds. Tap to stay on this one.');

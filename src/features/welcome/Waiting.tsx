@@ -5,6 +5,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { PeopleIcon } from '../../components/TabIcons';
 import { color, radius, space, type } from '../../theme/tokens';
 import { Sprout } from '../sprouts/Sprout';
+import { t } from '../../i18n';
 
 type Row = { key: string; title: string; body: string; icon: ReactNode; tint: string };
 
@@ -53,31 +54,31 @@ export function Waiting() {
   const rows: Row[] = [
     {
       key: 'sprout',
-      title: 'Your first sprout',
-      body: 'It’s already in your garden. Give sprouts to people you meet at festivals, and watch yours grow.',
+      title: t('Your first sprout'),
+      body: t('It’s already in your garden. Give sprouts to people you meet at festivals, and watch yours grow.'),
       icon: <Sprout size={40} still={reduceMotion} />,
       tint: GREEN,
     },
     {
       key: 'quests',
-      title: 'Three quests a day',
-      body: 'Small things to try, a streak to keep and a glow level that grows. Find them in the ring at the top of Discover.',
+      title: t('Three quests a day'),
+      body: t('Small things to try, a streak to keep and a glow level that grows. Find them in the ring at the top of Discover.'),
       icon: <QuestGlyph />,
       tint: GOLD,
     },
     {
       key: 'crew',
-      title: 'Plan with your crew',
-      body: 'Share picks, check in and chat on the day. Messages wait for signal and keep the time you sent them.',
+      title: t('Plan with your crew'),
+      body: t('Share picks, check in and chat on the day. Messages wait for signal and keep the time you sent them.'),
       icon: <PeopleIcon color={color.glow} size={26} />,
       tint: color.glow,
     },
     {
       key: 'care',
-      title: 'Look after yourself',
+      title: t('Look after yourself'),
       body: web
-        ? 'A private page for festival nights: timers, water, how you feel and help close by. It’s in Settings, and stays on your device.'
-        : 'Hold the camera button for a private page: timers, water, how you feel and help close by. It stays on your phone.',
+        ? t('A private page for festival nights: timers, water, how you feel and help close by. It’s in Settings, and stays on your device.')
+        : t('Hold the camera button for a private page: timers, water, how you feel and help close by. It stays on your phone.'),
       icon: <HeartGlyph />,
       tint: PINK,
     },

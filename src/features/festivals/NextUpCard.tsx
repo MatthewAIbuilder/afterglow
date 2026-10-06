@@ -7,10 +7,11 @@ import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { PlayIcon } from '../discover/icons';
 import { FestivalCover } from './FestivalCover';
-import { whereWhen } from './format';
+import { datesLine, whereWhen } from './format';
 import { distanceLabel } from './near';
 import { bigCountdown } from './timeline';
 import { lovedLine, useFestivalSummary } from './useFestivalSummary';
+import { t, tn } from '../../i18n';
 
 const COVER = 170;
 
@@ -24,7 +25,7 @@ export function NextUpCard({ festival }: { festival: Festival }) {
   const s = useFestivalSummary(festival);
   const big = bigCountdown(festival, s.today);
   const live = !!big?.live;
-  const facts = [lovedLine(s.loved, s.ranked.length), s.loved ? `${s.ranked.length} acts` : undefined, s.timesOut ? 'Set times out' : 'Set times to come'].filter(Boolean).join(' · ');
+  const facts = [lovedLine(s.loved, s.ranked.length), s.loved ? tn(s.ranked.length, '{n} act', '{n} acts') : undefined, s.timesOut ? t('Set times out') : t('Set times to come')].filter(Boolean).join(' · ');
   const open = () => {
     haptic.select();
     router.push(`/festival/${festival.id}`);
@@ -38,8 +39,8 @@ export function NextUpCard({ festival }: { festival: Festival }) {
     <Pressable
       onPress={open}
       accessibilityRole="button"
-      accessibilityLabel={`Up next: ${festival.name}, ${festival.dates}${s.soon ? `, ${s.soon}` : ''}. ${facts}`}
-      accessibilityActions={s.reach.clips > 0 ? [{ name: 'discover', label: 'Discover the lineup' }] : undefined}
+      accessibilityLabel={s.soon ? t('Up next: {festival}, {dates}, {countdown}. {facts}', { festival: festival.name, dates: datesLine(festival), countdown: s.soon, facts }) : t('Up next: {festival}, {dates}. {facts}', { festival: festival.name, dates: datesLine(festival), facts })}
+      accessibilityActions={s.reach.clips > 0 ? [{ name: 'discover', label: t('Discover the lineup') }] : undefined}
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'discover') watch();
       }}
@@ -51,7 +52,7 @@ export function NextUpCard({ festival }: { festival: Festival }) {
       <View style={styles.topRow}>
         <View style={styles.kickerRow}>
           {live ? <View style={styles.dot} /> : null}
-          <Text style={[styles.kicker, live && { color: '#FF7EB6' }]}>{live ? 'Happening now' : 'Up next'}</Text>
+          <Text style={[styles.kicker, live && { color: '#FF7EB6' }]}>{live ? t('Happening now') : t('Up next')}</Text>
         </View>
         {big ? (
           <View style={styles.count} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -84,20 +85,20 @@ export function NextUpCard({ festival }: { festival: Festival }) {
         <Pressable
           onPress={live ? () => router.push('/tonight') : open}
           accessibilityRole="button"
-          accessibilityLabel={live ? 'Open Tonight' : `Open your plan for ${festival.name}`}
+          accessibilityLabel={live ? t('Open Tonight') : t('Open your plan for {festival}', { festival: festival.name })}
           style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
         >
-          <Text style={styles.primaryText}>{live ? 'Tonight' : 'Your plan'}</Text>
+          <Text style={styles.primaryText}>{live ? t('Tonight') : t('Your plan')}</Text>
         </Pressable>
         {s.reach.clips > 0 ? (
           <Pressable
             onPress={watch}
             accessibilityRole="button"
-            accessibilityLabel={`Discover the ${festival.name} lineup, ${s.reach.clips} ${s.reach.clips === 1 ? 'clip' : 'clips'}`}
+            accessibilityLabel={tn(s.reach.clips, 'Discover the {festival} lineup, {n} clip', 'Discover the {festival} lineup, {n} clips', { festival: festival.name })}
             style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
           >
             <PlayIcon color={color.moon} size={12} />
-            <Text style={styles.secondaryText}>Watch · {s.reach.clips}</Text>
+            <Text style={styles.secondaryText}>{t('Watch · {n}', { n: s.reach.clips })}</Text>
           </Pressable>
         ) : null}
       </View>

@@ -14,6 +14,7 @@ import { FriendsOrbit } from './FriendsOrbit';
 import { openChatWith } from './openChat';
 import { nextFestivalOf, splitOrbit } from './orbit';
 import { SectionHeader } from './SectionHeader';
+import { t, tn } from '../../i18n';
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 /** Your profile background behind the orbit: a little taller than the orbit, so it fades out beyond the outer ring. */
@@ -41,14 +42,14 @@ export function FriendsCircle({ profiles, close }: { profiles: Profile[] | undef
   const total = social.following.size;
   const closeCount = inner.length;
   const line = closeCount
-    ? `${closeCount} close ${closeCount === 1 ? 'friend' : 'friends'} · ${total} ${total === 1 ? 'friend' : 'friends'}`
-    : `${total} ${total === 1 ? 'friend' : 'friends'}`;
+    ? `${tn(closeCount, '{n} close friend', '{n} close friends')} · ${tn(total, '{n} friend', '{n} friends')}`
+    : tn(total, '{n} friend', '{n} friends');
   return (
     <View>
       <SectionHeader
-        title="Your friends"
-        action="See all"
-        actionLabel={`See all ${total} people you follow`}
+        title={t('Your friends')}
+        action={t('See all')}
+        actionLabel={t('See all {n} people you follow', { n: total })}
         onAction={() => router.push({ pathname: '/follows/[handle]', params: { handle: me.handle, list: 'following' } })}
       />
       <FriendsOrbit
@@ -68,7 +69,7 @@ export function FriendsCircle({ profiles, close }: { profiles: Profile[] | undef
         onClose={() => setPicked(null)}
       />
       <Text style={styles.line}>{line}</Text>
-      {closeCount ? null : <Text style={styles.hint}>Star your closest friends to bring them into your inner ring: tap a face, then Add to close friends. Only you see who’s on it.</Text>}
+      {closeCount ? null : <Text style={styles.hint}>{t('Star your closest friends to bring them into your inner ring: tap a face, then Add to close friends. Only you see who’s on it.')}</Text>}
     </View>
   );
 }

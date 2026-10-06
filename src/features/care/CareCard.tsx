@@ -6,13 +6,14 @@ import { useNow } from '../../lib/useNow';
 import { useCare } from '../../state/care';
 import { color, radius, space, type } from '../../theme/tokens';
 import { cardLine, needsHelp } from './care';
+import { t } from '../../i18n';
 
 /** On a festival's page while it's on: a quiet way into Look after yourself, with what's running. */
 export function CareCard() {
   const { care } = useCare();
   const now = useNow(30_000).getTime();
   // Locked with Face ID: nothing of what's running shows outside the page.
-  const line = care.lock ? 'Private. Tap to open' : cardLine(care, now);
+  const line = care.lock ? t('Private. Tap to open') : cardLine(care, now);
   const help = needsHelp(care, now);
   return (
     <Pressable
@@ -21,12 +22,12 @@ export function CareCard() {
         router.push('/care');
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Look after yourself. ${line}.`}
+      accessibilityLabel={t('Look after yourself. {line}.', { line })}
       style={({ pressed }) => [styles.card, help && styles.help, pressed && { opacity: 0.8 }]}
     >
       <View style={[styles.dot, help && styles.dotHelp]} />
       <View style={{ flex: 1 }}>
-        <Text style={styles.title}>{help ? 'Get help' : 'Look after yourself'}</Text>
+        <Text style={styles.title}>{help ? t('Get help') : t('Look after yourself')}</Text>
         <Text style={styles.line} numberOfLines={1}>
           {line}
         </Text>

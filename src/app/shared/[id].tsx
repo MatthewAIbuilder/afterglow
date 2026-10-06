@@ -26,6 +26,7 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { pastLabel } from '../../features/memories/past';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 /**
  * A memory someone shared on their profile, full screen. Like it (the same
@@ -150,10 +151,10 @@ export default function SharedMemoryScreen() {
 
   const remove = () => {
     if (!m) return;
-    showAlert('Remove from your profile?', 'If it’s in your Memories, it stays there.', [
-      { text: 'Cancel', style: 'cancel' },
+    showAlert(t('Remove from your profile?'), t('If it’s in your Memories, it stays there.'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('Remove'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -163,7 +164,7 @@ export default function SharedMemoryScreen() {
             haptic.settle();
             goBack();
           } catch (e) {
-            showAlert('Couldn’t remove it', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+            showAlert(t('Couldn’t remove it'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
           }
         },
       },
@@ -174,48 +175,48 @@ export default function SharedMemoryScreen() {
     <View style={styles.root}>
       {m && !blocked ? <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} /> : null}
       {m && !blocked ? (
-        <Pressable onPress={tapVideo} style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={quiet ? 'Turn the sound on' : 'Play or pause'}>
-          {quiet ? <Text style={[styles.center, styles.sound]}>Tap for sound</Text> : null}
+        <Pressable onPress={tapVideo} style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={quiet ? t('Turn the sound on') : t('Play or pause')}>
+          {quiet ? <Text style={[styles.center, styles.sound]}>{t('Tap for sound')}</Text> : null}
         </Pressable>
       ) : null}
       {m && !blocked && showsGlow(filmer) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label /> : null}
       {signedOut ? (
         <View style={[styles.center, styles.signIn]}>
-          <Text style={styles.gone}>Sign in to watch videos from the crowd.</Text>
+          <Text style={styles.gone}>{t('Sign in to watch videos from the crowd.')}</Text>
           <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={styles.action}>
-            <Text style={styles.actionText}>Sign in or create a free account</Text>
+            <Text style={styles.actionText}>{t('Sign in or create a free account')}</Text>
           </Pressable>
         </View>
       ) : m === undefined && failed ? (
         <View style={[styles.center, styles.signIn]}>
-          <Text style={styles.gone}>Couldn’t load this video. Check your signal and try again.</Text>
+          <Text style={styles.gone}>{t('Couldn’t load this video. Check your signal and try again.')}</Text>
           <Pressable
             onPress={() => {
               haptic.select();
               setFailed(false);
-              setReadTry((t) => t + 1);
+              setReadTry((n) => n + 1);
             }}
             accessibilityRole="button"
             style={styles.action}
           >
-            <Text style={styles.actionText}>Try again</Text>
+            <Text style={styles.actionText}>{t('Try again')}</Text>
           </Pressable>
         </View>
       ) : m === undefined ? (
         <ActivityIndicator color={color.glow} style={styles.center} />
       ) : null}
-      {m === null || blocked ? <Text style={[styles.center, styles.gone]}>{blocked ? 'You blocked this person.' : 'This video isn’t available any more.'}</Text> : null}
+      {m === null || blocked ? <Text style={[styles.center, styles.gone]}>{blocked ? t('You blocked this person.') : t('This video isn’t available any more.')}</Text> : null}
       <LinearGradient colors={['rgba(3,2,10,0)', 'rgba(3,2,10,0.85)']} style={styles.scrim} pointerEvents="none" />
       <View style={[styles.close, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={16} />
         </GlassCircleButton>
       </View>
       {m && !blocked ? (
         <View style={[styles.info, { paddingBottom: insets.bottom + space.lg }]}>
-          <Text style={styles.artist}>{artist?.name ?? 'Festival moment'}</Text>
-          {[m.night, festival?.name ?? (m.past ? `Throwback · ${pastLabel(m.past)}` : undefined)].filter(Boolean).length ? (
-            <Text style={styles.where}>{[m.night, festival?.name ?? (m.past ? `Throwback · ${pastLabel(m.past)}` : undefined)].filter(Boolean).join(' · ')}</Text>
+          <Text style={styles.artist}>{artist?.name ?? t('Festival moment')}</Text>
+          {[m.night, festival?.name ?? (m.past ? t('Throwback · {festival}', { festival: pastLabel(m.past) }) : undefined)].filter(Boolean).length ? (
+            <Text style={styles.where}>{[m.night ? t(m.night) : undefined, festival?.name ?? (m.past ? t('Throwback · {festival}', { festival: pastLabel(m.past) }) : undefined)].filter(Boolean).join(' · ')}</Text>
           ) : null}
           <Pressable onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: m.handle } })} accessibilityRole="button">
             <Text style={styles.by}>@{m.handle}</Text>
@@ -226,18 +227,18 @@ export default function SharedMemoryScreen() {
                 onPress={toggleLike}
                 accessibilityRole="button"
                 accessibilityState={{ selected: liked }}
-                accessibilityLabel={`${liked ? 'Liked' : 'Like'}${shown !== undefined ? `, ${likesLabel(shown)}` : ''}`}
+                accessibilityLabel={shown !== undefined ? (liked ? t('Liked, {likes}', { likes: likesLabel(shown) }) : t('Like, {likes}', { likes: likesLabel(shown) })) : liked ? t('Liked') : t('Like')}
                 style={[styles.action, styles.like, liked && styles.liked]}
               >
                 <HeartIcon color={liked ? color.glow : color.moon} filled={liked} size={16} />
-                <Text style={styles.actionText}>{shown ? String(shown) : 'Like'}</Text>
+                <Text style={styles.actionText}>{shown ? String(shown) : t('Like')}</Text>
               </Pressable>
             ) : shown !== undefined ? (
               <Pressable
                 onPress={() => router.push({ pathname: '/likes/[id]', params: { id: m.id } })}
                 disabled={!shown}
                 accessibilityRole="button"
-                accessibilityLabel={shown ? `${likesLabel(shown)}. See who liked it.` : likesLabel(0)}
+                accessibilityLabel={shown ? t('{likes}. See who liked it.', { likes: likesLabel(shown) }) : likesLabel(0)}
                 style={[styles.action, styles.like]}
               >
                 <HeartIcon color={color.moon} filled={!!shown} size={16} />
@@ -247,23 +248,23 @@ export default function SharedMemoryScreen() {
             <Pressable
               onPress={() => router.push({ pathname: '/comments/[id]', params: { id: m.id } })}
               accessibilityRole="button"
-              accessibilityLabel={comments !== undefined ? `${commentsLabel(comments)}. Read and write comments.` : 'Comments'}
+              accessibilityLabel={comments !== undefined ? t('{comments}. Read and write comments.', { comments: commentsLabel(comments) }) : t('Comments')}
               style={[styles.action, styles.like]}
             >
               <CommentIcon color={color.moon} size={16} />
-              <Text style={styles.actionText}>{comments ? String(comments) : 'Comment'}</Text>
+              <Text style={styles.actionText}>{comments ? String(comments) : t('Comment')}</Text>
             </Pressable>
             {mine ? (
               <Pressable onPress={remove} accessibilityRole="button" style={styles.action}>
-                <Text style={styles.actionText}>Remove from profile</Text>
+                <Text style={styles.actionText}>{t('Remove from profile')}</Text>
               </Pressable>
             ) : (
               <Pressable onPress={() => askReport({ kind: 'memory', id: m.id, ownerUid: m.uid }, social.report)} accessibilityRole="button" style={styles.action}>
-                <Text style={styles.actionText}>Report</Text>
+                <Text style={styles.actionText}>{t('Report')}</Text>
               </Pressable>
             )}
           </View>
-          {liked && !mine && !social.profile ? <Text style={styles.note}>Only you see this like. Create a profile and @{m.handle} will see it too.</Text> : null}
+          {liked && !mine && !social.profile ? <Text style={styles.note}>{t('Only you see this like. Create a profile and @{handle} will see it too.', { handle: m.handle })}</Text> : null}
         </View>
       ) : null}
     </View>

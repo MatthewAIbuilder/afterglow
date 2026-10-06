@@ -1,5 +1,7 @@
 import type { Artist, Festival, Show } from '../../data/models';
+import { monthTitle } from '../festivals/calendar';
 import { runsOf, stillLastNight } from '../festivals/when';
+import { months, t, tn } from '../../i18n';
 import { localDay, showDateBlock, showTitle, showWhere } from './shows';
 
 /**
@@ -180,8 +182,6 @@ export function whereCounts(dates: readonly WhereDate[]): Record<WhereFilter, nu
   return Object.fromEntries(WHERE_FILTERS.map((f) => [f, whereFilter(dates, f).length])) as Record<WhereFilter, number>;
 }
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
 export type WhereMonth = { key: string; title: string; dates: WhereDate[] };
 
 /** Dates under month headings: "October", "January 2027" when not this year; festivals without dates under "Date to come". */
@@ -191,9 +191,7 @@ export function byMonth(dates: readonly WhereDate[], today: Date): WhereMonth[] 
     const key = d.date ? d.date.slice(0, 7) : 'tba';
     let group = out.find((g) => g.key === key);
     if (!group) {
-      const title = d.date
-        ? `${MONTH_NAMES[Number(d.date.slice(5, 7)) - 1]}${Number(d.date.slice(0, 4)) === today.getFullYear() ? '' : ` ${d.date.slice(0, 4)}`}`
-        : 'Date to come';
+      const title = d.date ? monthTitle({ year: Number(d.date.slice(0, 4)), month: Number(d.date.slice(5, 7)) - 1 }, today) : t('Date to come');
       group = { key, title, dates: [] };
       out.push(group);
     }
@@ -205,15 +203,15 @@ export function byMonth(dates: readonly WhereDate[], today: Date): WhereMonth[] 
 /** "SUBTRONICS", "SUBTRONICS and Levity", "SUBTRONICS, Levity and 2 more". */
 export function artistNames(artists: readonly Artist[], most = 2): string {
   const names = artists.map((a) => a.name);
-  if (names.length <= most) return names.length === 2 ? `${names[0]} and ${names[1]}` : (names[0] ?? '');
-  if (names.length === most + 1) return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-  return `${names.slice(0, most).join(', ')} and ${names.length - most} more`;
+  if (names.length <= most) return names.length === 2 ? t('{a} and {b}', { a: names[0], b: names[1] }) : (names[0] ?? '');
+  if (names.length === most + 1) return t('{names} and {last}', { names: names.slice(0, -1).join(', '), last: names[names.length - 1] });
+  return t('{names} and {n} more', { names: names.slice(0, most).join(', '), n: names.length - most });
 }
 
-/** "Sat 18 Oct", for a short line. */
+/** "Sat 18 Oct" ("Sáb 18 de oct"), for a short line. */
 export function shortDate(day: string): string {
   const b = showDateBlock(day);
-  return `${b.weekday} ${b.day} ${b.month.charAt(0)}${b.month.slice(1).toLowerCase()}`;
+  return t('{weekday} {day} {month}', { weekday: b.weekday, day: b.day, month: months(true)[Number(day.slice(5, 7)) - 1] });
 }
 
 /** Where, in a word or two: the festival's name, or the show's town ("Denver" from "Denver, CO"). */
@@ -226,7 +224,7 @@ export function placeWord(d: WhereDate): string {
 export function nextLine(dates: readonly WhereDate[]): string | undefined {
   const d = dates.find((x) => x.date);
   if (!d?.date) return undefined;
-  return `Next: ${[d.artists[0]?.name, shortDate(d.date), placeWord(d)].filter(Boolean).join(' · ')}`;
+  return t('Next: {line}', { line: [d.artists[0]?.name, shortDate(d.date), placeWord(d)].filter(Boolean).join(' · ') });
 }
 
 /**
@@ -245,4 +243,4 @@ export function datesOf(dates: readonly WhereDate[], artistId: string): WhereDat
 }
 
 /** "3 dates", "1 date". */
-export const datesCount = (n: number) => `${n} ${n === 1 ? 'date' : 'dates'}`;
+export const datesCount = (n: number) => tn(n, '{n} date', '{n} dates');

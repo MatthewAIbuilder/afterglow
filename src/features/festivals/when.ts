@@ -1,4 +1,5 @@
 import type { Festival } from '../../data/models';
+import { t, tn } from '../../i18n';
 
 /**
  * How far away a festival is, in plain words. Pure: "today" is passed in.
@@ -73,12 +74,13 @@ export function nextRun(festival: Festival, today: Date) {
 export function countdown(festival: Festival, today: Date): string | undefined {
   if (!runsOf(festival).length) return undefined;
   const next = nextRun(festival, today);
-  if (!next) return 'Over';
+  if (!next) return t('Over');
   const { until, index } = next;
-  if (until <= 0) return 'Happening now';
-  if (index > 0) return `Weekend ${index + 1} ${until === 1 ? 'tomorrow' : `in ${until} days`}`;
-  if (until > 1) return until < 60 ? `In ${until} days` : `In ${Math.round(until / 30.4)} months`;
-  return 'Tomorrow';
+  if (until <= 0) return t('Happening now');
+  if (index > 0) return until === 1 ? t('Weekend {w} tomorrow', { w: index + 1 }) : t('Weekend {w} in {n} days', { w: index + 1, n: until });
+  if (until > 1) return until < 60 ? t('In {n} days', { n: until }) : tn(Math.round(until / 30.4), 'In {n} month', 'In {n} months');
+  return t('Tomorrow');
+
 }
 
 /** The line under an artist at a festival: their set time and/or what the lineup says about their set. */

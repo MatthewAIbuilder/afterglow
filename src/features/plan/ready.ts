@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/types';
 import { isOver } from '../festivals/shelves';
 import type { DayRoute, RouteStop } from './route';
+import { tn } from '../../i18n';
 
 /**
  * "Your lineup is ready": once set times are out for a festival you're
@@ -29,5 +30,7 @@ export function routeSummary(route: readonly DayRoute[] | undefined): string | u
   const days = (route ?? []).filter((d) => d.stops.some((s) => s.kind === 'set'));
   if (!days.length) return undefined;
   const sets = days.reduce((n, d) => n + d.stops.filter((s) => s.kind === 'set').length, 0);
-  return `${sets} ${sets === 1 ? 'set' : 'sets'} over ${days.length} ${days.length === 1 ? 'day' : 'days'}`;
+  return days.length === 1
+    ? tn(sets, '{n} set over {days} day', '{n} sets over {days} day', { days: days.length })
+    : tn(sets, '{n} set over {days} days', '{n} sets over {days} days', { days: days.length });
 }

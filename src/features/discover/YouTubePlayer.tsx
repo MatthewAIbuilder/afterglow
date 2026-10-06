@@ -6,6 +6,7 @@ import type { EngineProps } from './ClipPlayer';
 import type { YouTubeMedia } from './media';
 import { canCountWatch, playedSpan, readPlayerReport, shouldPlay } from './playback';
 import { clipProgress, parsePlayerMessage, PLAYER_STATE, playerHtml } from './youtube';
+import { t } from '../../i18n';
 
 /** Give up if the player hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
@@ -133,7 +134,7 @@ function YouTubePlayerBase({
           web.current?.reload();
         }}
         onRenderProcessGone={() => onFail()}
-        accessibilityLabel="Live set video"
+        accessibilityLabel={t('Live set video')}
       />
     </View>
   );

@@ -922,6 +922,49 @@ await t('set times from fans: one waiting per festival, only HQ reads them all a
   await assertSucceeds(setDoc(doc(B.firestore(), 'setTimes', 'uidB_acl-26'), tip('uidB', 'acl-26')));
   await assertSucceeds(deleteDoc(doc(H.firestore(), 'setTimes', 'uidB_acl-26')));
 });
+await t('clip comments: anyone with a profile comments on a Discover clip as themselves, at the server time; anyone signed in reads them', async () => {
+  // Fresh people, so earlier blocks and handle changes don't matter: @kai and @lena.
+  const K = env.authenticatedContext('uidK'), Lc = env.authenticatedContext('uidLc'), N = env.authenticatedContext('uidNoProfileC');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'profiles', 'uidK'), profile('kai'));
+    await setDoc(doc(ctx.firestore(), 'profiles', 'uidLc'), profile('lena'));
+  });
+  const cc = (over = {}) => ({ clipId: 'yt-dQw4w9WgXcQ', uid: 'uidK', handle: 'kai', text: 'That drop!', createdAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(doc(K.firestore(), 'clipComments', 'k1'), cc()));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'clipComments', 'k2'), cc({ clipId: 'soundcloud:hedex' })));
+  await assertSucceeds(setDoc(doc(Lc.firestore(), 'clipComments', 'l1'), cc({ uid: 'uidLc', handle: 'lena', text: 'Agreed' })));
+  await assertSucceeds(getDocs(query(collection(Lc.firestore(), 'clipComments'), where('clipId', '==', 'yt-dQw4w9WgXcQ'), orderBy('createdAt', 'asc'), limit(50))));
+  await assertSucceeds(getCountFromServer(query(collection(Lc.firestore(), 'clipComments'), where('clipId', '==', 'yt-dQw4w9WgXcQ'))));
+  await assertFails(getDocs(query(collection(anon.firestore(), 'clipComments'), where('clipId', '==', 'yt-dQw4w9WgXcQ'))));
+  await assertFails(setDoc(doc(anon.firestore(), 'clipComments', 'x0'), cc()));
+  // Not as someone else, not with another handle, not without a profile, not empty or too long, no phone clock, no extra fields, a real-looking clip id.
+  const db = K.firestore();
+  await assertFails(setDoc(doc(db, 'clipComments', 'x1'), cc({ uid: 'uidLc' })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x2'), cc({ handle: 'lena' })));
+  await assertFails(setDoc(doc(N.firestore(), 'clipComments', 'x3'), cc({ uid: 'uidNoProfileC', handle: 'kai' })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x4'), cc({ text: '' })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x5'), cc({ text: 'x'.repeat(301) })));
+  await assertSucceeds(setDoc(doc(db, 'clipComments', 'x6'), cc({ text: 'x'.repeat(300) })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x7'), cc({ createdAt: now })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x8'), cc({ pinned: true })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x9'), cc({ clipId: '' })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x10'), cc({ clipId: 'has spaces/and slashes' })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x11'), cc({ clipId: 'y'.repeat(129) })));
+  await assertFails(setDoc(doc(db, 'clipComments', 'x12'), cc({ clipId: 42 })));
+});
+await t('clip comments: never edited; removed by the writer or the support account, not anyone else; reportable', async () => {
+  const K = env.authenticatedContext('uidK'), Lc = env.authenticatedContext('uidLc');
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const NV = env.authenticatedContext('uidFake', { email: 'afterglowmusic.support@gmail.com', email_verified: false });
+  await assertFails(updateDoc(doc(K.firestore(), 'clipComments', 'k1'), { text: 'changed' }));
+  await assertFails(deleteDoc(doc(Lc.firestore(), 'clipComments', 'k1')));
+  await assertFails(deleteDoc(doc(NV.firestore(), 'clipComments', 'k1')));
+  await assertSucceeds(deleteDoc(doc(K.firestore(), 'clipComments', 'k1')));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'reports', 'rclip'), { by: 'uidK', kind: 'clipComment', targetId: 'l1', ownerUid: 'uidLc', reason: 'offensive', note: '', status: 'open', createdAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(K.firestore(), 'reports', 'rclip2'), { by: 'uidK', kind: 'clipThing', targetId: 'l1', ownerUid: 'uidLc', reason: 'offensive', note: '', status: 'open', createdAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(doc(H.firestore(), 'clipComments', 'l1')));
+  await assertSucceeds(deleteDoc(doc(H.firestore(), 'clipComments', 'l1')));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

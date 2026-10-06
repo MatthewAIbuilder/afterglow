@@ -5,6 +5,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { usePrep } from './usePrep';
+import { t } from '../../i18n';
 
 /** On the page of a festival you're going to: how ready you are, opening the checklist. */
 export function GetReadyCard({ festival }: { festival: Festival }) {
@@ -17,13 +18,13 @@ export function GetReadyCard({ festival }: { festival: Festival }) {
         router.push({ pathname: '/prep/[id]', params: { id: festival.id } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Get ready for ${festival.name}. ${progress.done} of ${progress.total} done. Opens the checklist.`}
+      accessibilityLabel={t('Get ready for {festival}. {done} of {total} done. Opens the checklist.', { festival: festival.name, done: progress.done, total: progress.total })}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}
     >
       <View style={{ flex: 1 }}>
-        <Text style={styles.title}>{all ? 'You’re ready' : 'Get ready'}</Text>
+        <Text style={styles.title}>{all ? t('You’re ready') : t('Get ready')}</Text>
         <Text style={styles.sub}>
-          {progress.done} of {progress.total} done · ticket, plan and what to pack
+          {t('{done} of {total} done · ticket, plan and what to pack', { done: progress.done, total: progress.total })}
         </Text>
         <View style={styles.bar}>
           <View style={[styles.fill, { width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }]} />

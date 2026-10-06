@@ -1,4 +1,6 @@
 import type { Festival } from '../../data/models';
+import { t } from '../../i18n';
+import { datesLine } from '../festivals/format';
 import type { Pick as PlanPick } from './plan';
 
 /**
@@ -25,7 +27,7 @@ export type LineupPoster = {
   count: number;
 };
 
-export function lineupPoster(festival: Pick<Festival, 'name' | 'dates' | 'location'>, picks: readonly PlanPick[]): LineupPoster | undefined {
+export function lineupPoster(festival: Pick<Festival, 'name' | 'dates' | 'location'> & Partial<Pick<Festival, 'startDate' | 'endDate'>>, picks: readonly PlanPick[]): LineupPoster | undefined {
   const chosen = picks.filter((p) => p.tier !== 'explore' || p.known);
   if (!chosen.length) return undefined;
   // Starred first among equals: they're your headliners.
@@ -39,7 +41,7 @@ export function lineupPoster(festival: Pick<Festival, 'name' | 'dates' | 'locati
     ...(mid.length ? [{ size: 'mid' as const, names: mid.map(name) }] : []),
     ...(rest.length ? [{ size: 'rest' as const, names: rest.map(name) }] : []),
   ];
-  const where = [festival.dates, festival.location].filter(Boolean).join(' · ');
+  const where = [datesLine(festival), festival.location].filter(Boolean).join(' · ');
   return {
     festival: festival.name,
     subtitle: where,
@@ -51,9 +53,9 @@ export function lineupPoster(festival: Pick<Festival, 'name' | 'dates' | 'locati
 
 /** The poster as a message. */
 export function lineupPosterText(p: LineupPoster): string {
-  const parts = [`My ${p.festival} lineup`, p.subtitle, ''];
+  const parts = [t('My {festival} lineup', { festival: p.festival }), p.subtitle, ''];
   for (const r of p.rows) parts.push(r.names.map((n) => n.name).join(' · '));
-  if (p.more) parts.push(`and ${p.more} more`);
-  parts.push('', 'Made with Afterglow');
+  if (p.more) parts.push(t('and {n} more', { n: p.more }));
+  parts.push('', t('Made with {app}', { app: 'Afterglow' }));
   return parts.filter((x, i) => x || i > 1).join('\n');
 }

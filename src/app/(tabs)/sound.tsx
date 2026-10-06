@@ -45,6 +45,7 @@ import { PROVIDER_NAME } from '../../features/music/models';
 import { useMusic } from '../../state/music';
 import { showActionSheet, showAlert } from '../../lib/dialog';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
+import { dayWord, t, tn } from '../../i18n';
 
 /** Where the header ends before it has been measured (it's measured on layout). */
 const HEADER_GUESS = 210;
@@ -72,12 +73,12 @@ export default function MySoundScreen() {
   }, [live, shown]);
 
   const reshapeSoon = useCallback(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (shownRef.current.taste === liveRef.current.taste) return;
       haptic.settle();
       setShown(liveRef.current);
     }, 450);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, []);
   useFocusEffect(reshapeSoon);
 
@@ -228,12 +229,12 @@ export default function MySoundScreen() {
   const titleRow = (
     <View style={styles.titleRow} pointerEvents="box-none">
       {/* A secret: hold the title for a bass drop. */}
-      <Pressable onLongPress={() => revealSecret('bassdrop')} delayLongPress={700} accessibilityRole="header" accessibilityLabel="My Sound">
-        <Text style={styles.title}>My Sound</Text>
+      <Pressable onLongPress={() => revealSecret('bassdrop')} delayLongPress={700} accessibilityRole="header" accessibilityLabel={t('My Sound')}>
+        <Text style={styles.title}>{t('My Sound')}</Text>
       </Pressable>
       <View style={styles.actions} pointerEvents="box-none">
         {view !== 'map' || searchOpen ? null : (
-          <GlassCircleButton label="Search your map for an artist or a sound" onPress={() => setSearchOpen(true)}>
+          <GlassCircleButton label={t('Search your map for an artist or a sound')} onPress={() => setSearchOpen(true)}>
             <SearchIcon color={color.moon} size={18} />
           </GlassCircleButton>
         )}
@@ -260,7 +261,7 @@ export default function MySoundScreen() {
   if (view === 'list') {
     return (
       <View style={styles.root}>
-        <PageTitle title="My Sound" />
+        <PageTitle title={t('My Sound')} />
         <NightSky />
         {/* Ranked on your live taste, so a rating on an artist's page shows when you come back. */}
         <SoundList
@@ -275,7 +276,7 @@ export default function MySoundScreen() {
           taste={live.taste}
           informed={live.informed}
           festivalId={scope?.id}
-          festivalName={scope ? (dayOn ? `${scope.name} on ${dayOn}` : scope.name) : undefined}
+          festivalName={scope ? (dayOn ? t('{festival} on {day}', { festival: scope.name, day: dayWord(dayOn) }) : scope.name) : undefined}
           top={insets.top + space.lg}
           bottom={tabSpace + space.xl}
         />
@@ -286,7 +287,7 @@ export default function MySoundScreen() {
   if (view === 'overview') {
     return (
       <View style={styles.root}>
-        <PageTitle title="My Sound" />
+        <PageTitle title={t('My Sound')} />
         <NightSky />
         <ScrollView contentContainerStyle={[styles.overview, { paddingTop: insets.top + space.lg, paddingBottom: tabSpace + space.xl }]}>
           {titleRow}
@@ -309,7 +310,7 @@ export default function MySoundScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="My Sound" />
+      <PageTitle title={t('My Sound')} />
       <NightSky />
 
       <View style={{ position: 'absolute', top: mapTop, left: 0 }}>
@@ -374,13 +375,13 @@ export default function MySoundScreen() {
               <SearchField
                 value={query}
                 onChange={setQuery}
-                placeholder="Artist or sound, like dubstep"
-                label="Search your map for an artist or a sound"
+                placeholder={t('Artist or sound, like dubstep')}
+                label={t('Search your map for an artist or a sound')}
                 autoFocus={typing}
               />
             </View>
-            <Pressable onPress={closeSearch} accessibilityRole="button" accessibilityLabel="Done searching" hitSlop={8}>
-              <Text style={styles.done}>Done</Text>
+            <Pressable onPress={closeSearch} accessibilityRole="button" accessibilityLabel={t('Done searching')} hitSlop={8}>
+              <Text style={styles.done}>{t('Done')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -392,7 +393,7 @@ export default function MySoundScreen() {
       {moved && !selectedId ? (
         <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(160)} style={[styles.recenter, { top: mapTop + space.sm }]}>
           <GlassCircleButton
-            label="Back to your top matches"
+            label={t('Back to your top matches')}
             onPress={() => {
               haptic.settle();
               setRecenter((n) => n + 1);
@@ -411,7 +412,7 @@ export default function MySoundScreen() {
 
 type SoundView = 'overview' | 'list' | 'map';
 /** What each view is called to screen readers. */
-const VIEW_SAID: Record<SoundView, string> = { overview: 'Overview', list: 'Ranked list of artists', map: 'Bubble map' };
+const VIEW_SAID: Record<SoundView, string> = { overview: t('Overview'), list: t('Ranked list of artists'), map: t('Bubble map') };
 
 /** Overview, list or map: a quiet three-way switch under the title. */
 function ViewToggle({ view, onChange }: { view: SoundView; onChange: (v: SoundView) => void }) {
@@ -419,9 +420,9 @@ function ViewToggle({ view, onChange }: { view: SoundView; onChange: (v: SoundVi
     <View style={styles.toggle} accessibilityRole="tablist">
       {(
         [
-          ['overview', 'Overview'],
-          ['list', 'List'],
-          ['map', 'Map'],
+          ['overview', t('Overview')],
+          ['list', t('List')],
+          ['map', t('Map')],
         ] as const
       ).map(([v, label]) => {
         const on = view === v;
@@ -466,7 +467,7 @@ function SoundSummary({
   onPress: () => void;
 }) {
   const top = shares[0]?.tag;
-  const spoken = shares.map((s) => `${SOUND_LABEL[s.tag]} ${s.percent} percent`).join(', ');
+  const spoken = shares.map((s) => t('{sound} {pct} percent', { sound: SOUND_LABEL[s.tag], pct: s.percent })).join(', ');
   return (
     <Pressable
       onPress={() => {
@@ -474,8 +475,8 @@ function SoundSummary({
         onPress();
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${scopeName ? `Your sound at ${scopeName}` : 'Your sound'}: ${spoken || headline}`}
-      accessibilityHint="Opens the breakdown"
+      accessibilityLabel={scopeName ? t('Your sound at {festival}: {mix}', { festival: scopeName, mix: spoken || headline }) : t('Your sound: {mix}', { mix: spoken || headline })}
+      accessibilityHint={t('Opens the breakdown')}
       style={({ pressed }) => [styles.summary, pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}
     >
       <View style={styles.summaryTop}>
@@ -483,17 +484,23 @@ function SoundSummary({
           {headline}
         </Text>
         <View style={styles.summaryLink}>
-          <Text style={styles.summaryLinkText}>Breakdown</Text>
+          <Text style={styles.summaryLinkText}>{t('Breakdown')}</Text>
           <ChevronIcon color={color.moonDim} size={11} />
         </View>
       </View>
       {shares.length ? (
         <View style={styles.spectrum} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-          <SoundSpectrum shares={shares} label="Your sound" />
+          <SoundSpectrum shares={shares} label={t('Your sound')} />
         </View>
       ) : null}
       <Text style={styles.summaryBasis} numberOfLines={1}>
-        {basis ? `${basis}${scopeName ? ` · at ${scopeName}` : ''}` : `Bigger bubbles are closer matches${scopeName ? ` · ${scopeName}` : ''}`}
+        {basis
+          ? scopeName
+            ? t('{basis} · at {festival}', { basis, festival: scopeName })
+            : basis
+          : scopeName
+            ? t('Bigger bubbles are closer matches · {festival}', { festival: scopeName })
+            : t('Bigger bubbles are closer matches')}
       </Text>
     </Pressable>
   );
@@ -518,7 +525,7 @@ function LensRow({ lenses, current, onPick }: { lenses: { id: string | undefined
             }}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
-            accessibilityLabel={l.id ? `Your sound at ${l.label}` : 'Your sound across every artist'}
+            accessibilityLabel={l.id ? t('Your sound at {festival}', { festival: l.label }) : t('Your sound across every artist')}
             style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
           >
             <Text style={[styles.chipText, on && styles.chipTextOn]} numberOfLines={1}>
@@ -533,10 +540,10 @@ function LensRow({ lenses, current, onPick }: { lenses: { id: string | undefined
           router.push({ pathname: '/sound-scope', params: current ? { current: current.id } : {} });
         }}
         accessibilityRole="button"
-        accessibilityLabel={`${current ? `Your sound at ${current.name}` : 'Your sound across every artist'}. Choose a festival`}
+        accessibilityLabel={current ? t('Your sound at {festival}. Choose a festival', { festival: current.name }) : t('Your sound across every artist. Choose a festival')}
         style={({ pressed }) => [styles.chip, styles.moreChip, pressed && { opacity: 0.75 }]}
       >
-        <Text style={styles.chipText}>More festivals</Text>
+        <Text style={styles.chipText}>{t('More festivals')}</Text>
         <ChevronIcon color={color.moonDim} size={10} direction="down" />
       </Pressable>
     </ScrollView>
@@ -559,10 +566,10 @@ function DayRow({ scope, days, day, onDay }: { scope: Festival; days: string[]; 
             }}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
-            accessibilityLabel={d ? `Only ${d} at ${scope.name}` : `Every day at ${scope.name}`}
+            accessibilityLabel={d ? t('Only {day} at {festival}', { day: dayWord(d), festival: scope.name }) : t('Every day at {festival}', { festival: scope.name })}
             style={({ pressed }) => [styles.day, on && styles.dayOn, pressed && { opacity: 0.75 }]}
           >
-            <Text style={[styles.dayText, on && styles.dayTextOn]}>{d ?? 'All days'}</Text>
+            <Text style={[styles.dayText, on && styles.dayTextOn]}>{d ? t(d) : t('All days')}</Text>
           </Pressable>
         );
       })}
@@ -588,14 +595,14 @@ function NewcomerNote({ scopeId, connect, bottom }: { scopeId?: string; connect?
   );
   return (
     <View style={[styles.sparse, styles.slim, { bottom }]} pointerEvents="box-none" accessible={false}>
-      <Text style={styles.slimTitle} accessibilityLabel={`Make this map yours. Pick a few artists you love and it rearranges around you.${connect ? ` ${connect}` : ''}`}>
-        Make this map yours
+      <Text style={styles.slimTitle} accessibilityLabel={connect ? t('Make this map yours. Pick a few artists you love and it rearranges around you. {connect}', { connect }) : t('Make this map yours. Pick a few artists you love and it rearranges around you.')}>
+        {t('Make this map yours')}
       </Text>
       {connect ? <Text style={styles.slimText}>{connect}</Text> : null}
       <View style={styles.noteButtons}>
-        {button('Pick artists', 'Pick artists you know', () => router.push(scopeId ? { pathname: '/pick-artists', params: { festivals: scopeId } } : '/pick-artists'), true)}
-        {button('This or that', 'Play this or that', () => router.push('/this-or-that'))}
-        {connect ? button('Connect music', 'Connect your music', () => router.push('/music')) : null}
+        {button(t('Pick artists'), t('Pick artists you know'), () => router.push(scopeId ? { pathname: '/pick-artists', params: { festivals: scopeId } } : '/pick-artists'), true)}
+        {button(t('This or that'), t('Play this or that'), () => router.push('/this-or-that'))}
+        {connect ? button(t('Connect music'), t('Connect your music'), () => router.push('/music')) : null}
       </View>
     </View>
   );
@@ -610,8 +617,14 @@ function SearchNote({ search, query, extra, bottom }: { search: MapSearch; query
   const watchable = !!tag && soundChoices(catalog.clips, catalog.artist).some((c) => c.tag === tag);
   const text =
     n === 0
-      ? `No artist or sound matches “${query.trim()}”.`
-      : `${n} ${sound ? `${sound} ` : ''}${n === 1 ? 'artist' : 'artists'}${extra ? `, ${extra} new to your map` : ''}. Tap one to see more.`;
+      ? t('No artist or sound matches “{query}”.', { query: query.trim() })
+      : sound
+        ? extra
+          ? tn(n, '{n} {sound} artist, {extra} new to your map. Tap one to see more.', '{n} {sound} artists, {extra} new to your map. Tap one to see more.', { sound, extra })
+          : tn(n, '{n} {sound} artist. Tap one to see more.', '{n} {sound} artists. Tap one to see more.', { sound })
+        : extra
+          ? tn(n, '{n} artist, {extra} new to your map. Tap one to see more.', '{n} artists, {extra} new to your map. Tap one to see more.', { extra })
+          : tn(n, '{n} artist. Tap one to see more.', '{n} artists. Tap one to see more.');
   return (
     <View style={[styles.sparse, { bottom }]} pointerEvents="box-none" accessibilityLiveRegion="polite">
       <Text style={styles.sparseText}>{text}</Text>
@@ -622,10 +635,10 @@ function SearchNote({ search, query, extra, bottom }: { search: MapSearch; query
             router.navigate({ pathname: '/', params: { festival: soundFocus(tag) } });
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Watch ${sound} live sets in Discover`}
+          accessibilityLabel={t('Watch {sound} live sets in Discover', { sound: sound ?? '' })}
           style={({ pressed }) => [styles.sparseButton, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
         >
-          <Text style={styles.sparseButtonText}>Watch {sound}</Text>
+          <Text style={styles.sparseButtonText}>{t('Watch {sound}', { sound: sound ?? '' })}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -642,9 +655,11 @@ function SparseNote({ festival, shown, bottom }: { festival: Festival; shown: nu
     <View style={[styles.sparse, { bottom }]} pointerEvents="box-none">
       <Text style={styles.sparseText}>
         {shown === 0
-          ? `None of ${festival.name}’s ${total} artists are on your map yet.`
-          : `Only ${shown} of ${festival.name}’s ${total} artists ${shown === 1 ? 'is' : 'are'} on your map so far.`}{' '}
-        {toRate > 0 ? 'Rate the lineup to place the rest.' : 'React to clips from the lineup to place more.'}
+          ? t('None of {festival}’s {total} artists are on your map yet.', { festival: festival.name, total })
+          : shown === 1
+            ? t('Only {shown} of {festival}’s {total} artists is on your map so far.', { shown, festival: festival.name, total })
+            : t('Only {shown} of {festival}’s {total} artists are on your map so far.', { shown, festival: festival.name, total })}{' '}
+        {toRate > 0 ? t('Rate the lineup to place the rest.') : t('React to clips from the lineup to place more.')}
       </Text>
       {toRate > 0 && (
         <Pressable
@@ -653,10 +668,10 @@ function SparseNote({ festival, shown, bottom }: { festival: Festival; shown: nu
             router.push(`/tune/${festival.id}`);
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Tune your lineup. Rate ${toRate} artists one at a time.`}
+          accessibilityLabel={t('Tune your lineup. Rate {n} artists one at a time.', { n: toRate })}
           style={({ pressed }) => [styles.sparseButton, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
         >
-          <Text style={styles.sparseButtonText}>Tune your lineup</Text>
+          <Text style={styles.sparseButtonText}>{t('Tune your lineup')}</Text>
         </Pressable>
       )}
     </View>
@@ -675,15 +690,18 @@ function MusicNoteView({ note, bottom }: { note: MusicNote; bottom: number }) {
             router.push('/music');
           }}
           accessibilityRole="button"
-          accessibilityLabel={note.action === 'connect' ? 'Connect your music' : 'Open music connections'}
+          accessibilityLabel={note.action === 'connect' ? t('Connect your music') : t('Open music connections')}
           style={({ pressed }) => [styles.sparseButton, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
         >
-          <Text style={styles.sparseButtonText}>{note.action === 'connect' ? 'Connect music' : 'Music connections'}</Text>
+          <Text style={styles.sparseButtonText}>{note.action === 'connect' ? t('Connect music') : t('Music connections')}</Text>
         </Pressable>
       )}
     </View>
   );
 }
+
+/** "A and B" (and "A, B and C"), in the app's language. */
+const andList = (xs: string[]) => (xs.length > 1 ? t('{list} and {last}', { list: xs.slice(0, -1).join(', '), last: xs[xs.length - 1] }) : (xs[0] ?? ''));
 
 const hasSignal = ({ likes, saves, skips, watched }: TasteSummary, rated: number) =>
   likes + saves + skips + watched + rated > 0;
@@ -704,16 +722,18 @@ function SoundMenu({ onCleared, scopeId }: { onCleared: () => void; scopeId?: st
   // Connected music is a connection, not something you did here: it stays, and says where to remove it.
   const { importing } = useMusic();
   const music = importing.length
-    ? ` Your ${importing.map((p) => PROVIDER_NAME[p]).join(' and ')} library stays connected (remove it in Music connections).`
+    ? t('Your {libraries} library stays connected (remove it in Music connections).', { libraries: andList(importing.map((p) => PROVIDER_NAME[p])) })
     : '';
   const startOver = () =>
     showAlert(
-      'Start your sound over?',
-      `This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.${music}`,
+      t('Start your sound over?'),
+      music
+        ? t('This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay. {music}', { music })
+        : t('This clears your likes, saves, skips, watched clips and artist ratings. Festivals you’re going to and your starred sets stay.'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Start over',
+          text: t('Start over'),
           style: 'destructive',
           onPress: () => {
             reactions.clear();
@@ -726,22 +746,22 @@ function SoundMenu({ onCleared, scopeId }: { onCleared: () => void; scopeId?: st
       ],
     );
   const items: { label: string; run: () => void; destructive?: boolean }[] = [
-    ...(count > 0 ? [{ label: `Your clips · ${count}`, run: () => router.push('/saved') }] : []),
+    ...(count > 0 ? [{ label: t('Your clips · {n}', { n: count }), run: () => router.push('/saved') }] : []),
     {
-      label: 'Pick more artists',
+      label: t('Pick more artists'),
       run: () => router.push(scopeId ? { pathname: '/pick-artists', params: { festivals: scopeId } } : '/pick-artists'),
     },
-    { label: 'Play this or that', run: () => router.push('/this-or-that') },
-    { label: 'Start over', run: startOver, destructive: true },
+    { label: t('Play this or that'), run: () => router.push('/this-or-that') },
+    { label: t('Start over'), run: startOver, destructive: true },
   ];
   return (
     <GlassCircleButton
-      label={count > 0 ? `More: your clips (${count}), pick artists, this or that, start over` : 'More: pick artists, this or that, start over'}
+      label={count > 0 ? t('More: your clips ({n}), pick artists, this or that, start over', { n: count }) : t('More: pick artists, this or that, start over')}
       onPress={() =>
         showActionSheet(
           {
-            title: 'Your sound',
-            options: [...items.map((i) => i.label), 'Cancel'],
+            title: t('Your sound'),
+            options: [...items.map((i) => i.label), t('Cancel')],
             cancelButtonIndex: items.length,
             destructiveButtonIndex: items.findIndex((i) => i.destructive),
           },

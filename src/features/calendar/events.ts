@@ -1,4 +1,5 @@
 import type { Festival } from '../../data/models';
+import { t } from '../../i18n';
 
 /**
  * A festival as a calendar event: all day, from its first to its last day
@@ -29,7 +30,7 @@ export function festivalEvent(festival: Festival, webUrl: string): CalendarEvent
     startDay: startDate,
     endDay: end,
     location: festival.location ?? '',
-    notes: `Your lineup and plan: ${url}`,
+    notes: t('Your lineup and plan: {url}', { url }),
     url,
   };
 }

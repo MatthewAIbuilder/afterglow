@@ -1,5 +1,6 @@
 import type { Festival } from '../../data/models';
 import { distanceKm, type Point, type Units } from './near';
+import { t } from '../../i18n';
 
 /**
  * How far the festival calendar looks: within a distance of you, one US state,
@@ -119,8 +120,8 @@ export function withinReach(
 
 /** "within 100 mi" / "in Florida" / "" (everywhere), for the month line. */
 export function reachWords(reach: Reach, units: Units, located: boolean): string {
-  if (reach.kind === 'state') return `in ${US_STATES[reach.code] ?? reach.code}`;
-  if (reach.kind === 'near' && located) return `within ${radiusLabel(reach.km, units)}`;
+  if (reach.kind === 'state') return t('in {place}', { place: US_STATES[reach.code] ?? reach.code });
+  if (reach.kind === 'near' && located) return t('within {distance}', { distance: radiusLabel(reach.km, units) });
   return '';
 }
 

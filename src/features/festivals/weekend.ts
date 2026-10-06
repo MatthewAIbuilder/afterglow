@@ -1,4 +1,5 @@
 import type { Festival } from '../../data/models';
+import { months, t } from '../../i18n';
 
 /**
  * Festivals run over several weekends (ACL, Coachella), seen from the one
@@ -40,12 +41,15 @@ export function forWeekend(festival: Festival, weekend: number | undefined): Fes
   return next;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** "Oct 9 to 11", or "Oct 30 to Nov 1" across months, from a weekend's first and last day. */
 export function runLabel(run: { start: string; end: string }) {
   const [, m1, d1] = run.start.split('-').map(Number);
   const [, m2, d2] = run.end.split('-').map(Number);
-  if (run.start === run.end) return `${MONTHS[m1 - 1]} ${d1}`;
-  return m1 === m2 ? `${MONTHS[m1 - 1]} ${d1} to ${d2}` : `${MONTHS[m1 - 1]} ${d1} to ${MONTHS[m2 - 1]} ${d2}`;
+  const MONTHS = months(true);
+  if (run.start === run.end) return t('{month} {day}', { month: MONTHS[m1 - 1], day: d1 });
+  return m1 === m2
+    ? t('{month} {day1} to {day2}', { month: MONTHS[m1 - 1], day1: d1, day2: d2 })
+    : t('{month1} {day1} to {month2} {day2}', { month1: MONTHS[m1 - 1], day1: d1, month2: MONTHS[m2 - 1], day2: d2 });
+
 }

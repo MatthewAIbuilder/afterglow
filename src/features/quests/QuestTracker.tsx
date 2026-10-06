@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SoundTag } from '../../data/models';
 import { notifyNow } from '../../lib/notifyNow';
+import { t } from '../../i18n';
 import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
@@ -85,7 +86,7 @@ export function QuestTracker() {
     recordQuests(fresh);
     for (const [id] of fresh) {
       const q = QUESTS.find((x) => x.id === id);
-      if (q) void notifyNow(`quest:${id}`, 'Side quest complete', `${q.title}. Claim your badge on your profile.`, '/profile?tab=badges');
+      if (q) void notifyNow(`quest:${id}`, t('Side quest complete'), t('{title}. Claim your badge on your profile.', { title: q.title }), '/profile?tab=badges');
     }
   }, [progress, log, loaded]);
 

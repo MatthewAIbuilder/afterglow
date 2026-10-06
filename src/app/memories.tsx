@@ -16,6 +16,7 @@ import { useMemories } from '../state/memories';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA, glowDeepA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t, tn } from '../i18n';
 
 const TILE = 112;
 
@@ -39,21 +40,22 @@ export default function MemoriesScreen() {
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
         <View style={styles.pad}>
           <Text style={styles.title} accessibilityRole="header">
-            Memories
+            {t('Memories')}
           </Text>
           <Text style={styles.meta}>
             {memories.length
-              ? `${clipCount(memories.length)}${festivals ? ` from ${festivals} ${festivals === 1 ? 'festival' : 'festivals'}` : ''}. Private to you.`
-              : 'Your own videos from the sets you were at, kept on this phone.'}
+              ? festivals
+                ? tn(festivals, '{clips} from {n} festival. Private to you.', '{clips} from {n} festivals. Private to you.', { clips: clipCount(memories.length) })
+                : t('{clips}. Private to you.', { clips: clipCount(memories.length) })
+              : t('Your own videos from the sets you were at, kept on this phone.')}
           </Text>
         </View>
 
         {!memories.length ? (
           <View style={[styles.pad, styles.empty]}>
-            <Text style={styles.emptyTitle}>Keep the moments</Text>
+            <Text style={styles.emptyTitle}>{t('Keep the moments')}</Text>
             <Text style={styles.emptyBody}>
-              Press and hold a clip in Discover, or tap below, to record or choose a video. Afterglow guesses who was playing
-              from when and where you filmed it.
+              {t('Press and hold a clip in Discover, or tap below, to record or choose a video. Afterglow guesses who was playing from when and where you filmed it.')}
             </Text>
             <Pressable
               onPress={() => {
@@ -63,7 +65,7 @@ export default function MemoriesScreen() {
               accessibilityRole="button"
               style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryText}>Add a memory</Text>
+              <Text style={styles.primaryText}>{t('Add a memory')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -72,13 +74,13 @@ export default function MemoriesScreen() {
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
       {memories.length ? (
         <View style={[styles.add, { top: insets.top + space.sm }]}>
-          <GlassCircleButton label="Add a memory" onPress={add}>
+          <GlassCircleButton label={t('Add a memory')} onPress={add}>
             <PlusIcon color={color.moon} size={18} />
           </GlassCircleButton>
         </View>
@@ -105,7 +107,7 @@ function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n
           ) : null}
           <Text style={styles.sectionTitle}>{section.title}</Text>
           <Text style={styles.sectionMeta}>
-            {[section.festival ? whereWhen(section.festival) : section.past ? ['Throwback', section.past.city].filter(Boolean).join(' · ') : undefined, clipCount(section.count)]
+            {[section.festival ? whereWhen(section.festival) : section.past ? [t('Throwback'), section.past.city].filter(Boolean).join(' · ') : undefined, clipCount(section.count)]
               .filter(Boolean)
               .join(' · ')}
           </Text>
@@ -113,7 +115,7 @@ function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n
       </View>
       {section.nights.map((n) => (
         <View key={n.key} style={styles.night}>
-          {n.title ? <Text style={[styles.pad, styles.nightTitle]}>{n.title}</Text> : null}
+          {n.title ? <Text style={[styles.pad, styles.nightTitle]}>{t(n.title)}</Text> : null}
           {n.groups.map((g) => (
             <View key={g.key} style={styles.group}>
               {!untagged ? (
@@ -134,11 +136,15 @@ function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n
                     memory={m}
                     thumbUri={m.thumb ? uriOf(m.thumb) : undefined}
                     width={TILE}
-                    badge={untagged ? 'Tag' : m.id in sharing ? `${Math.round(sharing[m.id] * 100)}%` : waiting.has(m.id) ? 'Waiting' : undefined}
+                    badge={untagged ? t('Tag') : m.id in sharing ? `${Math.round(sharing[m.id] * 100)}%` : waiting.has(m.id) ? t('Waiting') : undefined}
                     label={
                       untagged
-                        ? `Untagged memory. Tag it`
-                        : `Memory: ${memoryLine(m, lookup)}${m.id in sharing ? '. Sharing to Discover' : waiting.has(m.id) ? '. Waiting for signal to share to Discover' : ''}`
+                        ? t('Untagged memory. Tag it')
+                        : m.id in sharing
+                          ? t('Memory: {line}. Sharing to Discover', { line: memoryLine(m, lookup) })
+                          : waiting.has(m.id)
+                            ? t('Memory: {line}. Waiting for signal to share to Discover', { line: memoryLine(m, lookup) })
+                            : t('Memory: {line}', { line: memoryLine(m, lookup) })
                     }
                     onPress={() => (untagged ? router.push({ pathname: '/memory-tag', params: { id: m.id } }) : router.push({ pathname: '/memory/[id]', params: { id: m.id } }))}
                   />

@@ -33,6 +33,7 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { useSocial } from '../state/social';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
+import { t } from '../i18n';
 
 /** Guesses shown as big rows before "Someone else". */
 const TOP_GUESSES = 3;
@@ -162,7 +163,7 @@ export default function MemoryTagScreen() {
     void social.share(m).catch((e) => {
       const kind = socialErrorKind(e);
       // The throwback limit's own words already say where it is.
-      showAlert('Couldn’t share it to Discover', kind === 'throwback-limit' ? SOCIAL_ERROR_COPY[kind] : `${SOCIAL_ERROR_COPY[kind]} It’s saved in your Memories, so you can share it from there.`);
+      showAlert(t('Couldn’t share it to Discover'), kind === 'throwback-limit' ? SOCIAL_ERROR_COPY[kind] : t('{error} It’s saved in your Memories, so you can share it from there.', { error: SOCIAL_ERROR_COPY[kind] }));
     });
 
   // Nothing to tag (opened without a video, or the memory was deleted): step back, unless we're already leaving
@@ -200,7 +201,7 @@ export default function MemoryTagScreen() {
     const kept = await mem.keepDraft(tag);
     setSaving(false);
     if (!kept) {
-      showAlert('Couldn’t save this video', 'There may not be enough space on your phone. Try again.');
+      showAlert(t('Couldn’t save this video'), t('There may not be enough space on your phone. Try again.'));
       return;
     }
     haptic.settle();
@@ -213,10 +214,10 @@ export default function MemoryTagScreen() {
 
   const cancel = () => {
     if (fresh || draft?.source === 'camera') {
-      showAlert('Discard this video?', 'You just recorded it. Discarding deletes it from your Memories, and it isn’t saved anywhere else.', [
-        { text: 'Keep editing', style: 'cancel' },
+      showAlert(t('Discard this video?'), t('You just recorded it. Discarding deletes it from your Memories, and it isn’t saved anywhere else.'), [
+        { text: t('Keep editing'), style: 'cancel' },
         {
-          text: 'Discard',
+          text: t('Discard'),
           style: 'destructive',
           onPress: () => {
             leaving.current = true;
@@ -249,14 +250,14 @@ export default function MemoryTagScreen() {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.bar, { paddingTop: Platform.OS === 'ios' ? space.lg : insets.top + space.sm }]}>
-        <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" accessibilityLabel="Cancel">
-          <Text style={styles.barButton}>Cancel</Text>
+        <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Cancel')}>
+          <Text style={styles.barButton}>{t('Cancel')}</Text>
         </Pressable>
         <Text style={styles.barTitle} accessibilityRole="header">
-          {retagging ? 'Tag memory' : 'New memory'}
+          {retagging ? t('Tag memory') : t('New memory')}
         </Text>
-        <Pressable onPress={() => void save()} disabled={saving} hitSlop={10} accessibilityRole="button" accessibilityLabel="Save to Memories" accessibilityState={{ disabled: saving, busy: saving }}>
-          <Text style={[styles.barButton, styles.save, saving && styles.saving]}>Save</Text>
+        <Pressable onPress={() => void save()} disabled={saving} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Save to Memories')} accessibilityState={{ disabled: saving, busy: saving }}>
+          <Text style={[styles.barButton, styles.save, saving && styles.saving]}>{t('Save')}</Text>
         </Pressable>
       </View>
 
@@ -268,13 +269,13 @@ export default function MemoryTagScreen() {
               style={[styles.video, { height: videoH, width: Math.min(videoH * aspect, 340) }]}
               contentFit="cover"
               nativeControls={false}
-              accessibilityLabel="Your video"
+              accessibilityLabel={t('Your video')}
             />
           ) : null}
           {whenWhere ? <Text style={styles.when}>{whenWhere}</Text> : null}
         </View>
 
-        <Text style={styles.section}>Festival</Text>
+        <Text style={styles.section}>{t('Festival')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {past ? <Chip label={pastLabel(past)} on onPress={() => setPickingPast((v) => !v)} /> : null}
           {[...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals].map((f) => (
@@ -282,7 +283,7 @@ export default function MemoryTagScreen() {
           ))}
           {past ? null : (
             <Chip
-              label="A past festival…"
+              label={t('A past festival…')}
               on={pickingPast}
               onPress={() => {
                 haptic.select();
@@ -290,10 +291,10 @@ export default function MemoryTagScreen() {
               }}
             />
           )}
-          <Chip label="Not at a festival" on={!festivalId && !past} onPress={() => pickFestival(undefined)} />
+          <Chip label={t('Not at a festival')} on={!festivalId && !past} onPress={() => pickFestival(undefined)} />
           {many && !searchingFestival ? (
             <Chip
-              label="Another festival…"
+              label={t('Another festival…')}
               on={false}
               onPress={() => {
                 haptic.select();
@@ -304,7 +305,7 @@ export default function MemoryTagScreen() {
         </ScrollView>
         {many && searchingFestival ? (
           <View style={styles.festivalSearch}>
-            <SearchField value={festivalQuery} onChange={setFestivalQuery} placeholder="Find the festival" label="Find the festival" />
+            <SearchField value={festivalQuery} onChange={setFestivalQuery} placeholder={t('Find the festival')} label={t('Find the festival')} />
           </View>
         ) : null}
 
@@ -327,12 +328,12 @@ export default function MemoryTagScreen() {
 
         {festival && festival.days.length > 1 ? (
           <>
-            <Text style={styles.section}>Night</Text>
+            <Text style={styles.section}>{t('Night')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
               {festival.days.map((d) => (
                 <Chip
                   key={d}
-                  label={d}
+                  label={t(d)}
                   on={d === night}
                   onPress={() => {
                     haptic.select();
@@ -345,7 +346,7 @@ export default function MemoryTagScreen() {
           </>
         ) : null}
 
-        <Text style={styles.section}>Who’s playing?</Text>
+        <Text style={styles.section}>{t('Who’s playing?')}</Text>
         {festival ? (
           <View style={styles.rows}>
             {top.map((g) => (
@@ -374,8 +375,8 @@ export default function MemoryTagScreen() {
               <SearchField
                 value={query}
                 onChange={setQuery}
-                placeholder={festival ? `Search ${festival.name}` : 'Search artists'}
-                label="Search for the artist"
+                placeholder={festival ? t('Search {festival}', { festival: festival.name }) : t('Search artists')}
+                label={t('Search for the artist')}
                 autoFocus={searching}
               />
               <View style={styles.rows}>
@@ -393,13 +394,13 @@ export default function MemoryTagScreen() {
                     }}
                   />
                 ))}
-                {query.trim() && !found.length ? <Text style={styles.quiet}>No one matches “{query.trim()}”.</Text> : null}
+                {query.trim() && !found.length ? <Text style={styles.quiet}>{t('No one matches “{query}”.', { query: query.trim() })}</Text> : null}
               </View>
             </>
           ) : (
             <View style={styles.links}>
               <Pressable onPress={() => setSearching(true)} hitSlop={8} accessibilityRole="button">
-                <Text style={styles.link}>Someone else</Text>
+                <Text style={styles.link}>{t('Someone else')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -409,23 +410,21 @@ export default function MemoryTagScreen() {
                 }}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel="Not sure who's playing"
+                accessibilityLabel={t("Not sure who's playing")}
               >
-                <Text style={[styles.link, !chosenArtist && touchedArtist && styles.linkOn]}>Not sure</Text>
+                <Text style={[styles.link, !chosenArtist && touchedArtist && styles.linkOn]}>{t('Not sure')}</Text>
               </Pressable>
             </View>
           )}
         </View>
         {crewsHere.length > 0 ? (
           <>
-            <Text style={styles.section}>Your crew</Text>
+            <Text style={styles.section}>{t('Your crew')}</Text>
             <View style={styles.shareRow}>
               <View style={styles.shareText}>
-                <Text style={styles.shareTitle}>Send to my crew</Text>
+                <Text style={styles.shareTitle}>{t('Send to my crew')}</Text>
                 <Text style={styles.shareDetail}>
-                  {crewOn
-                    ? `${crewsHere.map((c) => c.name).join(' and ')} ${crewsHere.length === 1 ? 'sees' : 'see'} it marked ${whenMs ? `filmed ${clock(new Date(whenMs).toISOString())}` : 'with when you filmed it'}, even if your signal holds it back. Only your crew.`
-                    : 'Only in your Memories.'}
+                  {crewOn ? crewLine(crewsHere.map((c) => c.name), whenMs ? clock(new Date(whenMs).toISOString()) : undefined) : t('Only in your Memories.')}
                 </Text>
               </View>
               <Switch
@@ -435,7 +434,7 @@ export default function MemoryTagScreen() {
                   setCrewChoice(v);
                 }}
                 trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
-                accessibilityLabel="Send to my crew"
+                accessibilityLabel={t('Send to my crew')}
                 testID="send-to-crew"
               />
             </View>
@@ -443,20 +442,20 @@ export default function MemoryTagScreen() {
         ) : null}
         {offer === 'hidden' && existing && social.availability.ok && (existing.sharedId || social.waiting.has(existing.id)) ? (
           <>
-            <Text style={styles.section}>Discover</Text>
+            <Text style={styles.section}>{t('Discover')}</Text>
             <Text style={[styles.shareDetail, styles.sharedNote]} testID="shared-note">
               {existing.sharedId
-                ? 'It’s already on Discover. The copy there keeps the tags it was shared with; changes here are for your Memories.'
-                : 'Waiting for signal to share it to Discover. It goes by itself, with the tags you save here.'}
+                ? t('It’s already on Discover. The copy there keeps the tags it was shared with; changes here are for your Memories.')
+                : t('Waiting for signal to share it to Discover. It goes by itself, with the tags you save here.')}
             </Text>
           </>
         ) : null}
         {offer !== 'hidden' ? (
           <>
-            <Text style={styles.section}>Discover</Text>
+            <Text style={styles.section}>{t('Discover')}</Text>
             <View style={styles.shareRow}>
               <View style={styles.shareText}>
-                <Text style={styles.shareTitle}>Share to Discover</Text>
+                <Text style={styles.shareTitle}>{t('Share to Discover')}</Text>
                 {overLimit ? null : (
                   <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name ?? (past ? pastLabel(past) : undefined), on: shareOn })}</Text>
                 )}
@@ -474,7 +473,7 @@ export default function MemoryTagScreen() {
                     accessibilityRole="button"
                     hitSlop={8}
                   >
-                    <Text style={[styles.link, styles.shareLink]}>{offer === 'needs-account' ? 'Sign in' : 'Make a profile'}</Text>
+                    <Text style={[styles.link, styles.shareLink]}>{offer === 'needs-account' ? t('Sign in') : t('Make a profile')}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -486,7 +485,7 @@ export default function MemoryTagScreen() {
                   setShareChoice(v);
                 }}
                 trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
-                accessibilityLabel="Share to Discover"
+                accessibilityLabel={t('Share to Discover')}
                 testID="share-to-discover"
               />
             </View>
@@ -495,6 +494,18 @@ export default function MemoryTagScreen() {
       </ScrollView>
     </KeyboardAvoidingView>
   );
+}
+
+/** "Lunar crew sees it marked filmed 11:48 PM, …": who in your crews sees the video, and how it's marked. */
+function crewLine(names: string[], filmed: string | undefined): string {
+  const crews = names.reduce((a, b) => t('{a} and {b}', { a, b }));
+  if (names.length === 1)
+    return filmed
+      ? t('{crews} sees it marked filmed {time}, even if your signal holds it back. Only your crew.', { crews, time: filmed })
+      : t('{crews} sees it marked with when you filmed it, even if your signal holds it back. Only your crew.', { crews });
+  return filmed
+    ? t('{crews} see it marked filmed {time}, even if your signal holds it back. Only your crew.', { crews, time: filmed })
+    : t('{crews} see it marked with when you filmed it, even if your signal holds it back. Only your crew.', { crews });
 }
 
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
@@ -512,7 +523,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 
 function ArtistChoice({ guess, night, on, likely, onPress }: { guess: ArtistGuess; night?: string; on: boolean; likely?: boolean; onPress: () => void }) {
   const why = reasonLine(guess, night);
-  const detail = [likely ? 'Probably' : undefined, why].filter(Boolean).join(' · ');
+  const detail = [likely ? t('Probably') : undefined, why].filter(Boolean).join(' · ');
   return (
     <Pressable
       onPress={onPress}

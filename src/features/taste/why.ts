@@ -1,5 +1,6 @@
 import type { Clip } from '../../data/models';
 import type { Rating, Ratings } from './ratings';
+import { t, tn } from '../../i18n';
 
 /**
  * What an artist's match rests on, in plain words, so a score never feels
@@ -40,7 +41,8 @@ export function artistSignals(
   return s;
 }
 
-const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? one : many}` : undefined);
+/** "a, b and c", in the app's language. */
+const andList = (xs: readonly string[]) => (xs.length > 1 ? t('{list} and {last}', { list: xs.slice(0, -1).join(', '), last: xs[xs.length - 1] }) : (xs[0] ?? ''));
 
 /**
  * "From your 2 likes and 1 save", "From your Spotify library and 1 like",
@@ -52,17 +54,14 @@ const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? o
  */
 export function whyLine(s: ArtistSignals, informed: boolean, nearLibrary: string[] = []): string {
   const parts = [
-    s.library?.length ? `${s.library.join(' and ')} ${s.library.length === 1 ? 'library' : 'libraries'}` : undefined,
-    s.rating ? 'rating' : undefined,
-    count(s.likes, 'like', 'likes'),
-    count(s.saves, 'save', 'saves'),
-    count(s.watched, 'clip watched through', 'clips watched through'),
-    count(s.skips, 'skip', 'skips'),
+    s.library?.length ? tn(s.library.length, '{names} library', '{names} libraries', { names: andList(s.library) }) : undefined,
+    s.rating ? t('rating') : undefined,
+    s.likes ? tn(s.likes, '{n} like', '{n} likes') : undefined,
+    s.saves ? tn(s.saves, '{n} save', '{n} saves') : undefined,
+    s.watched ? tn(s.watched, '{n} clip watched through', '{n} clips watched through') : undefined,
+    s.skips ? tn(s.skips, '{n} skip', '{n} skips') : undefined,
   ].filter((p): p is string => !!p);
-  if (parts.length) {
-    const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
-    return `From your ${list}`;
-  }
-  if (nearLibrary.length) return `Close to artists in your ${nearLibrary.join(' and ')} ${nearLibrary.length === 1 ? 'library' : 'libraries'}`;
-  return informed ? 'From sounds you like' : 'A first guess. Rate them or react to their clips to sharpen it.';
+  if (parts.length) return t('From your {list}', { list: andList(parts) });
+  if (nearLibrary.length) return tn(nearLibrary.length, 'Close to artists in your {names} library', 'Close to artists in your {names} libraries', { names: andList(nearLibrary) });
+  return informed ? t('From sounds you like') : t('A first guess. Rate them or react to their clips to sharpen it.');
 }

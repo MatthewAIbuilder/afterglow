@@ -1,4 +1,5 @@
 import type { SoundTag } from '../../data/models';
+import { t } from '../../i18n';
 
 /**
  * How an artist's collectible looks. Pure. A small glowing creature on a dark
@@ -68,41 +69,41 @@ const P = (light: string, mid: string, deep: string, alt: string, altDeep: strin
 
 /** Hand-made collectibles, by folded artist name. */
 const SIGNATURES: Record<string, Spec> = {
-  subtronics: { creature: 'eye', palette: P('#F4FFE0', '#B6F05A', '#3F8F1A', '#C9A2FF', '#5B2BB0', '#B36BFF', '#9BE84E'), name: 'The Watcher', theme: 'A big eye with wriggling tentacles' },
-  illenium: { creature: 'phoenix', palette: P('#FFF3D6', '#FF9A4A', '#C2362A', '#FFE08A', '#FF5A2A', '#FFD36B', '#FF7A3D'), name: 'The Phoenix', theme: 'A phoenix with flaming wings' },
-  sevenlions: { creature: 'lion', palette: P('#FFF1C9', '#F2B84B', '#A8661C', '#FFB347', '#B8541A', '#FFE9A8', '#F2A23A'), name: 'The Lion', theme: 'A lion with a glowing mane' },
-  zedsdead: { creature: 'ghost', palette: P('#FFFFFF', '#DCD8F2', '#8C88B8', '#9BE84E', '#3E8F1A', '#B6FF6A', '#9BE84E'), name: 'The Ghost', theme: 'A friendly ghost with glowing eyes' },
-  ghengar: { creature: 'ghost', palette: P('#F1E8FF', '#A98CF0', '#4A2E8A', '#FF6AD5', '#7A1E6A', '#FF8AE0', '#A06BFF'), name: 'The Phantom', theme: 'A grinning phantom', extra: 'fangs' },
-  rlgrime: { creature: 'pumpkin', palette: P('#FFD9A0', '#FF8A1F', '#A8400C', '#8FD65A', '#2E6A1E', '#FFE36B', '#FF8A1F'), name: 'The Lantern', theme: 'A pumpkin lit from inside' },
-  wooli: { creature: 'sheep', palette: P('#FFFFFF', '#EDE7DA', '#B3A88E', '#4A3F5C', '#241C30', '#FFE9B0', '#E8D9B0'), name: 'The Woolly', theme: 'A fluffy ram with curly horns' },
-  slander: { creature: 'twin', palette: P('#FFF8E8', '#FFE2A8', '#E0B060', '#FF5A6E', '#8A1830', '#FFD58A', '#FFC86B'), name: 'Halo and horns', theme: 'Half angel, half devil' },
-  spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: 'The Astronaut', theme: 'A little astronaut lost in space' },
-  alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: 'The White Rabbit', theme: 'A white rabbit, always late' },
-  ofthetrees: { creature: 'spirit', palette: P('#F4F8EA', '#D6DEC4', '#8A9472', '#8FD67A', '#2E6A2A', '#E9FFB0', '#7FD87A'), name: 'The Forest spirit', theme: 'A spirit of the forest' },
-  sanholo: { creature: 'crystal', palette: P('#F2FFFD', '#B9A8FF', '#6A4FD0', '#FF9EDB', '#3FC8E0', '#9FF0FF', '#B99CFF'), name: 'The Prism', theme: 'A holographic crystal' },
-  zomboy: { creature: 'skull', palette: P('#F4F7E8', '#C9D6A8', '#5E7A3A', '#A6E05A', '#2E4A1A', '#B6FF5A', '#A6E05A'), name: 'The Undead', theme: 'A stitched-up skull with a green glow' },
-  djsnake: { creature: 'serpent', palette: P('#C8FFE8', '#3FC8A0', '#0F6A58', '#FFE9A8', '#C9A050', '#FF5F8F', '#3FC8A0'), name: 'The Serpent', theme: 'A coiled serpent' },
-  atliens: { creature: 'alien', palette: P('#D9FFEA', '#5BE3A0', '#118A55', '#0E1A14', '#000000', '#6CFF9E', '#6CFF9E'), name: 'The Visitor', theme: 'A visitor from another planet' },
-  tokimonsta: { creature: 'monster', palette: P('#EEE4FF', '#A98CFF', '#5B3FB0', '#FF85C8', '#C23A8A', '#FFD24A', '#A98CFF'), name: 'The Little monster', theme: 'A little monster with a flower' },
-  sloth: { creature: 'sloth', palette: P('#F2E4CC', '#B8936A', '#6B4A2E', '#8FD67A', '#5A3A22', '#2E2018', '#C9A57E'), name: 'The Sloth', theme: 'A sloth hanging around' },
-  reaper: { creature: 'reaper', palette: P('#A8A2C8', '#5A5480', '#1E1A34', '#E8E4F8', '#8E88AA', '#B9F3FF', '#8FA6FF'), name: 'The Reaper', theme: 'A hooded reaper under the moon' },
-  levity: { creature: 'jelly', palette: P('#E8F8FF', '#6FC3FF', '#2A6AC8', '#B9F3FF', '#4A8AE8', '#FFFFFF', '#6FC3FF'), name: 'The Floater', theme: 'A jellyfish floating by' },
-  troyboi: { creature: 'cat', palette: P('#FFF2D6', '#D9A66B', '#7A4E26', '#2A2030', '#0E0A14', '#FFD24A', '#FFD24A'), name: 'The King cat', theme: 'A cat with a crown', extra: 'crown' },
+  subtronics: { creature: 'eye', palette: P('#F4FFE0', '#B6F05A', '#3F8F1A', '#C9A2FF', '#5B2BB0', '#B36BFF', '#9BE84E'), name: t('The Watcher'), theme: t('A big eye with wriggling tentacles') },
+  illenium: { creature: 'phoenix', palette: P('#FFF3D6', '#FF9A4A', '#C2362A', '#FFE08A', '#FF5A2A', '#FFD36B', '#FF7A3D'), name: t('The Phoenix'), theme: t('A phoenix with flaming wings') },
+  sevenlions: { creature: 'lion', palette: P('#FFF1C9', '#F2B84B', '#A8661C', '#FFB347', '#B8541A', '#FFE9A8', '#F2A23A'), name: t('The Lion'), theme: t('A lion with a glowing mane') },
+  zedsdead: { creature: 'ghost', palette: P('#FFFFFF', '#DCD8F2', '#8C88B8', '#9BE84E', '#3E8F1A', '#B6FF6A', '#9BE84E'), name: t('The Ghost'), theme: t('A friendly ghost with glowing eyes') },
+  ghengar: { creature: 'ghost', palette: P('#F1E8FF', '#A98CF0', '#4A2E8A', '#FF6AD5', '#7A1E6A', '#FF8AE0', '#A06BFF'), name: t('The Phantom'), theme: t('A grinning phantom'), extra: 'fangs' },
+  rlgrime: { creature: 'pumpkin', palette: P('#FFD9A0', '#FF8A1F', '#A8400C', '#8FD65A', '#2E6A1E', '#FFE36B', '#FF8A1F'), name: t('The Lantern'), theme: t('A pumpkin lit from inside') },
+  wooli: { creature: 'sheep', palette: P('#FFFFFF', '#EDE7DA', '#B3A88E', '#4A3F5C', '#241C30', '#FFE9B0', '#E8D9B0'), name: t('The Woolly'), theme: t('A fluffy ram with curly horns') },
+  slander: { creature: 'twin', palette: P('#FFF8E8', '#FFE2A8', '#E0B060', '#FF5A6E', '#8A1830', '#FFD58A', '#FFC86B'), name: t('Halo and horns'), theme: t('Half angel, half devil') },
+  spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
+  alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },
+  ofthetrees: { creature: 'spirit', palette: P('#F4F8EA', '#D6DEC4', '#8A9472', '#8FD67A', '#2E6A2A', '#E9FFB0', '#7FD87A'), name: t('The Forest spirit'), theme: t('A spirit of the forest') },
+  sanholo: { creature: 'crystal', palette: P('#F2FFFD', '#B9A8FF', '#6A4FD0', '#FF9EDB', '#3FC8E0', '#9FF0FF', '#B99CFF'), name: t('The Prism'), theme: t('A holographic crystal') },
+  zomboy: { creature: 'skull', palette: P('#F4F7E8', '#C9D6A8', '#5E7A3A', '#A6E05A', '#2E4A1A', '#B6FF5A', '#A6E05A'), name: t('The Undead'), theme: t('A stitched-up skull with a green glow') },
+  djsnake: { creature: 'serpent', palette: P('#C8FFE8', '#3FC8A0', '#0F6A58', '#FFE9A8', '#C9A050', '#FF5F8F', '#3FC8A0'), name: t('The Serpent'), theme: t('A coiled serpent') },
+  atliens: { creature: 'alien', palette: P('#D9FFEA', '#5BE3A0', '#118A55', '#0E1A14', '#000000', '#6CFF9E', '#6CFF9E'), name: t('The Visitor'), theme: t('A visitor from another planet') },
+  tokimonsta: { creature: 'monster', palette: P('#EEE4FF', '#A98CFF', '#5B3FB0', '#FF85C8', '#C23A8A', '#FFD24A', '#A98CFF'), name: t('The Little monster'), theme: t('A little monster with a flower') },
+  sloth: { creature: 'sloth', palette: P('#F2E4CC', '#B8936A', '#6B4A2E', '#8FD67A', '#5A3A22', '#2E2018', '#C9A57E'), name: t('The Sloth'), theme: t('A sloth hanging around') },
+  reaper: { creature: 'reaper', palette: P('#A8A2C8', '#5A5480', '#1E1A34', '#E8E4F8', '#8E88AA', '#B9F3FF', '#8FA6FF'), name: t('The Reaper'), theme: t('A hooded reaper under the moon') },
+  levity: { creature: 'jelly', palette: P('#E8F8FF', '#6FC3FF', '#2A6AC8', '#B9F3FF', '#4A8AE8', '#FFFFFF', '#6FC3FF'), name: t('The Floater'), theme: t('A jellyfish floating by') },
+  troyboi: { creature: 'cat', palette: P('#FFF2D6', '#D9A66B', '#7A4E26', '#2A2030', '#0E0A14', '#FFD24A', '#FFD24A'), name: t('The King cat'), theme: t('A cat with a crown'), extra: 'crown' },
 };
 
 /** One creature per sound, in the artist's colours, for everyone without a signature. */
 const SOUND: Record<SoundTag | 'none', Spec> = {
-  dubstep: { creature: 'beast', palette: P('#C9D8FF', '#5B8CFF', '#1E3A9A', '#F2EEE0', '#9A8E70', '#7FF0FF', '#5B8CFF'), name: 'The Bass beast', theme: 'A horned bass beast' },
-  riddim: { creature: 'bot', palette: P('#D6FFFB', '#3FC8C0', '#136A78', '#13202A', '#060A10', '#6CFFE0', '#3FC8C0'), name: 'The Riddim bot', theme: 'A little robot that loves a wobble' },
-  trap: { creature: 'wolf', palette: P('#FFD6E2', '#FF5F8F', '#8A1E48', '#FFF4F8', '#C9A8B8', '#FFE36B', '#FF5F8F'), name: 'The Night wolf', theme: 'A wolf with glowing eyes' },
-  'melodic-bass': { creature: 'moth', palette: P('#F1E8FF', '#A97CFF', '#4A2E9A', '#FFC6F0', '#FF85C8', '#FFF2B0', '#A97CFF'), name: 'The Moth', theme: 'A moth drawn to the lights' },
-  house: { creature: 'cat', palette: P('#FFE6D2', '#FFA86B', '#A84E1E', '#2A2030', '#0E0A14', '#FFE36B', '#FFA86B'), name: 'The Disco cat', theme: 'A cat in shades under the mirror ball' },
-  techno: { creature: 'owl', palette: P('#DCE6FA', '#8FA6D6', '#3A4A78', '#F2F6FF', '#5A6A90', '#FF5A5A', '#8FA6D6'), name: 'The Night owl', theme: 'An owl that stays up till sunrise' },
-  pop: { creature: 'jelly', palette: P('#FFE8F4', '#FF85C8', '#B83A8A', '#FFD6EC', '#FF6AB0', '#FFFFFF', '#FF85C8'), name: 'The Jelly', theme: 'A sparkly jellyfish' },
-  indie: { creature: 'fox', palette: P('#FFE2CC', '#F08A4A', '#9A3E16', '#FFFFFF', '#E8DCD0', '#7FD8A4', '#F08A4A'), name: 'The Fox', theme: 'A curious fox' },
-  rock: { creature: 'dragon', palette: P('#FFD6CC', '#FF7A5C', '#9A2A1E', '#FFE0A8', '#C98A3A', '#FFD24A', '#FF7A5C'), name: 'The Dragon', theme: 'A small dragon breathing sparks' },
-  'hip-hop': { creature: 'bear', palette: P('#FFEED0', '#E0A85A', '#7A4A1E', '#FFE08A', '#C9961E', '#FFF6D0', '#FFC861'), name: 'The Bear', theme: 'A bear with a gold chain' },
-  none: { creature: 'wisp', palette: P('#F4ECFF', '#B99CFF', '#5A3EB0', '#FFF2B0', '#FFC861', '#FFFFFF', '#B99CFF'), name: 'The Wisp', theme: 'A little light that follows the music' },
+  dubstep: { creature: 'beast', palette: P('#C9D8FF', '#5B8CFF', '#1E3A9A', '#F2EEE0', '#9A8E70', '#7FF0FF', '#5B8CFF'), name: t('The Bass beast'), theme: t('A horned bass beast') },
+  riddim: { creature: 'bot', palette: P('#D6FFFB', '#3FC8C0', '#136A78', '#13202A', '#060A10', '#6CFFE0', '#3FC8C0'), name: t('The Riddim bot'), theme: t('A little robot that loves a wobble') },
+  trap: { creature: 'wolf', palette: P('#FFD6E2', '#FF5F8F', '#8A1E48', '#FFF4F8', '#C9A8B8', '#FFE36B', '#FF5F8F'), name: t('The Night wolf'), theme: t('A wolf with glowing eyes') },
+  'melodic-bass': { creature: 'moth', palette: P('#F1E8FF', '#A97CFF', '#4A2E9A', '#FFC6F0', '#FF85C8', '#FFF2B0', '#A97CFF'), name: t('The Moth'), theme: t('A moth drawn to the lights') },
+  house: { creature: 'cat', palette: P('#FFE6D2', '#FFA86B', '#A84E1E', '#2A2030', '#0E0A14', '#FFE36B', '#FFA86B'), name: t('The Disco cat'), theme: t('A cat in shades under the mirror ball') },
+  techno: { creature: 'owl', palette: P('#DCE6FA', '#8FA6D6', '#3A4A78', '#F2F6FF', '#5A6A90', '#FF5A5A', '#8FA6D6'), name: t('The Night owl'), theme: t('An owl that stays up till sunrise') },
+  pop: { creature: 'jelly', palette: P('#FFE8F4', '#FF85C8', '#B83A8A', '#FFD6EC', '#FF6AB0', '#FFFFFF', '#FF85C8'), name: t('The Jelly'), theme: t('A sparkly jellyfish') },
+  indie: { creature: 'fox', palette: P('#FFE2CC', '#F08A4A', '#9A3E16', '#FFFFFF', '#E8DCD0', '#7FD8A4', '#F08A4A'), name: t('The Fox'), theme: t('A curious fox') },
+  rock: { creature: 'dragon', palette: P('#FFD6CC', '#FF7A5C', '#9A2A1E', '#FFE0A8', '#C98A3A', '#FFD24A', '#FF7A5C'), name: t('The Dragon'), theme: t('A small dragon breathing sparks') },
+  'hip-hop': { creature: 'bear', palette: P('#FFEED0', '#E0A85A', '#7A4A1E', '#FFE08A', '#C9961E', '#FFF6D0', '#FFC861'), name: t('The Bear'), theme: t('A bear with a gold chain') },
+  none: { creature: 'wisp', palette: P('#F4ECFF', '#B99CFF', '#5A3EB0', '#FFF2B0', '#FFC861', '#FFFFFF', '#B99CFF'), name: t('The Wisp'), theme: t('A little light that follows the music') },
 };
 
 /** Names folded for matching: lower case, letters and digits only. */
@@ -171,12 +172,12 @@ export const SIGNATURE_NAMES = Object.keys(SIGNATURES);
 
 /** Festival-place creatures, for stickers you find in the wild (features/finds). */
 const PLACES: Record<PlaceCreature, Spec> = {
-  ferris: { creature: 'ferris', palette: P('#FFE9F4', '#FF7EB6', '#B03A7A', '#7FD3FF', '#3A6AC8', '#FFE36B', '#FF7EB6'), name: 'The Ferris wheel', theme: 'A Ferris wheel that lights up the night' },
-  rail: { creature: 'rail', palette: P('#E9FFF4', '#5BE3B5', '#1F8C6A', '#D6DAE4', '#6A7086', '#FF5FCB', '#5BE3B5'), name: 'The Rail rider', theme: 'Front row on the rail, glow sticks up' },
-  sunrise: { creature: 'sunrise', palette: P('#FFF6D0', '#FFC24A', '#E8742A', '#FFB070', '#2E2458', '#FF8A5C', '#FFB347'), name: 'The Sunrise', theme: 'Still dancing when the sun comes up' },
-  lantern: { creature: 'lantern', palette: P('#FFF4D6', '#FFCF6B', '#B8761E', '#6A4C36', '#2E2018', '#FFE9A0', '#FFC861'), name: 'The Camp lantern', theme: 'A lantern that keeps the campsite cosy' },
-  confetti: { creature: 'confetti', palette: P('#F2E8FF', '#A97CFF', '#5A3EB0', '#FF7EB6', '#5BE3B5', '#FFE36B', '#A97CFF'), name: 'The Confetti popper', theme: 'A burst of confetti at the drop' },
-  frog: { creature: 'frog', palette: P('#DFFFD0', '#6CD85A', '#2A8A2E', '#BFEFFF', '#3A9AE0', '#FFFFFF', '#6CD85A'), name: 'The Water frog', theme: 'A frog that reminds you to drink water' },
+  ferris: { creature: 'ferris', palette: P('#FFE9F4', '#FF7EB6', '#B03A7A', '#7FD3FF', '#3A6AC8', '#FFE36B', '#FF7EB6'), name: t('The Ferris wheel'), theme: t('A Ferris wheel that lights up the night') },
+  rail: { creature: 'rail', palette: P('#E9FFF4', '#5BE3B5', '#1F8C6A', '#D6DAE4', '#6A7086', '#FF5FCB', '#5BE3B5'), name: t('The Rail rider'), theme: t('Front row on the rail, glow sticks up') },
+  sunrise: { creature: 'sunrise', palette: P('#FFF6D0', '#FFC24A', '#E8742A', '#FFB070', '#2E2458', '#FF8A5C', '#FFB347'), name: t('The Sunrise'), theme: t('Still dancing when the sun comes up') },
+  lantern: { creature: 'lantern', palette: P('#FFF4D6', '#FFCF6B', '#B8761E', '#6A4C36', '#2E2018', '#FFE9A0', '#FFC861'), name: t('The Camp lantern'), theme: t('A lantern that keeps the campsite cosy') },
+  confetti: { creature: 'confetti', palette: P('#F2E8FF', '#A97CFF', '#5A3EB0', '#FF7EB6', '#5BE3B5', '#FFE36B', '#A97CFF'), name: t('The Confetti popper'), theme: t('A burst of confetti at the drop') },
+  frog: { creature: 'frog', palette: P('#DFFFD0', '#6CD85A', '#2A8A2E', '#BFEFFF', '#3A9AE0', '#FFFFFF', '#6CD85A'), name: t('The Water frog'), theme: t('A frog that reminds you to drink water') },
 };
 export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog';
 export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];

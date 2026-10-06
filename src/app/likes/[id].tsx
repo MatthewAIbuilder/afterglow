@@ -11,6 +11,7 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/servic
 import { useSocial } from '../../state/social';
 import { color, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 /** Lists show the newest this many. */
 const LIST_MAX = 100;
@@ -46,11 +47,11 @@ export default function LikesScreen() {
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }}>
         <Text style={styles.title} accessibilityRole="header">
-          Liked by
+          {t('Liked by')}
         </Text>
         <View style={styles.list}>
           {!social.user ? (
-            <Text style={styles.quiet}>Sign in to see who liked it.</Text>
+            <Text style={styles.quiet}>{t('Sign in to see who liked it.')}</Text>
           ) : answer?.problem ? (
             <Text style={styles.quiet}>{answer.problem}</Text>
           ) : !answer ? (
@@ -58,12 +59,12 @@ export default function LikesScreen() {
           ) : shown.length ? (
             shown.map((p) => <PersonRow key={p.uid} profile={p} follow />)
           ) : (
-            <Text style={styles.quiet}>No likes yet.</Text>
+            <Text style={styles.quiet}>{t('No likes yet.')}</Text>
           )}
         </View>
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
