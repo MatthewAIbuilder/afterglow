@@ -78,6 +78,8 @@ import BadgeCardScreen from '../badge-card/[id]';
 import AdminScreen from '../admin';
 import SwitchAccountScreen from '../switch-account';
 import SupportScreen from '../support';
+import OrgScreen from '../org/[id]';
+import StudioScreen from '../studio';
 import PublicProfileScreen from '../u/[handle]';
 import WelcomeScreen from '../welcome';
 import YourSoundScreen from '../your-sound';
@@ -155,6 +157,8 @@ export const APP_ROUTES = {
   admin: AdminScreen,
   'switch-account': SwitchAccountScreen,
   support: SupportScreen,
+  'org/[id]': OrgScreen,
+  studio: StudioScreen,
   people: PeopleScreen,
   search: SearchScreen,
   'legal/[doc]': LegalScreen,

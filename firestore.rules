@@ -28,6 +28,13 @@ service cloud.firestore {
     function giftThemes() { return ['daisy']; }
     function giftGivers() { return ['matt.raves']; }
     function hasPlus(uid) { return exists(path('plus', uid)) && get(path('plus', uid)).data.active == true; }
+    // Event organizers (features/organizers): an email HQ lets run an organizer's page, once that email is confirmed.
+    function orgEmail() { return request.auth.token.email.lower(); }
+    function isOrgMember(orgId) {
+      return signedIn() && request.auth.token.email_verified == true
+        && exists(path('orgMembers', orgEmail()))
+        && get(path('orgMembers', orgEmail())).data.orgId == orgId;
+    }
     // An optional short text field: absent, or a string of at most `max` characters.
     function shortOrAbsent(data, field, max) { return !(field in data) || (data[field] is string && data[field].size() <= max); }
 
@@ -533,7 +540,9 @@ service cloud.firestore {
     // Stickers you find in the wild: made in HQ, readable by anyone with the
     // code (the website shows one before you sign in), listed only in HQ.
     function stickerShape(d) {
-      return d.keys().hasOnly(['name', 'creature', 'huntId', 'slot', 'until', 'festivalId', 'by', 'createdAt'])
+      return d.keys().hasOnly(['name', 'creature', 'huntId', 'slot', 'until', 'festivalId', 'by', 'createdAt', 'orgId', 'gift', 'note'])
+        && (!('gift' in d) || d.gift == true)
+        && shortOrAbsent(d, 'note', 200)
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 40
         && d.creature is string && d.creature.matches('^[a-z]{2,20}$')
         && (('huntId' in d) == ('slot' in d))
@@ -544,10 +553,15 @@ service cloud.firestore {
     }
     match /stickers/{code} {
       allow get: if true;
-      allow list, delete: if isAdmin();
-      allow create: if isAdmin() && code.matches('^[a-z0-9]{6,24}$') && stickerShape(request.resource.data);
+      allow list: if isAdmin() || isOrgMember(resource.data.orgId);
+      allow delete: if isAdmin();
+      allow create: if code.matches('^[a-z0-9]{6,24}$') && stickerShape(request.resource.data)
+        && (isAdmin()
+          // An organizer's own sticker or gift, in one of its own hunts.
+          || ('orgId' in request.resource.data && isOrgMember(request.resource.data.orgId)
+            && (!('huntId' in request.resource.data) || get(path('hunts', request.resource.data.huntId)).data.get('orgId', '') == request.resource.data.orgId)));
       // Taking one down marks it (once): its code stops working, but scans from before still count.
-      allow update: if isAdmin() && !('takenDown' in resource.data)
+      allow update: if (isAdmin() || isOrgMember(resource.data.get('orgId', ''))) && !('takenDown' in resource.data)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['takenDown', 'takenDownAt'])
         && request.resource.data.takenDown == true && request.resource.data.takenDownAt == request.time;
     }
@@ -559,16 +573,18 @@ service cloud.firestore {
     // A hunt: its stickers' creatures and names in order (no codes).
     match /hunts/{id} {
       allow get: if true;
-      allow list, delete: if isAdmin();
-      allow create: if isAdmin() && id.matches('^[a-z0-9]{6,24}$')
-        && request.resource.data.keys().hasOnly(['name', 'items', 'until', 'festivalId', 'by', 'createdAt'])
+      allow list: if isAdmin() || isOrgMember(resource.data.orgId);
+      allow delete: if isAdmin() || isOrgMember(resource.data.get('orgId', ''));
+      allow create: if id.matches('^[a-z0-9]{6,24}$')
+        && (isAdmin() || ('orgId' in request.resource.data && isOrgMember(request.resource.data.orgId)))
+        && request.resource.data.keys().hasOnly(['name', 'items', 'until', 'festivalId', 'by', 'createdAt', 'orgId'])
         && request.resource.data.name is string && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40
         && request.resource.data.items == []
         && (!('until' in request.resource.data) || request.resource.data.until is timestamp)
         && shortOrAbsent(request.resource.data, 'festivalId', 120)
         && request.resource.data.by == me() && request.resource.data.createdAt == request.time;
       // Stickers join the end of it; one taken down stays in its place, marked gone.
-      allow update: if isAdmin()
+      allow update: if (isAdmin() || isOrgMember(resource.data.get('orgId', '')))
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items'])
         && request.resource.data.items is list && request.resource.data.items.size() <= 24
         && (request.resource.data.items.size() == resource.data.items.size() + 1
@@ -588,6 +604,72 @@ service cloud.firestore {
         && findOpen(get(path('stickers', request.resource.data.code)).data, request.resource.data.at);
       allow delete: if (signedIn() && resource.data.uid == me()) || isAdmin();
     }
+    // Event organizers' pages: anyone reads them (the website shows them signed out); HQ starts one; its
+    // team (an email HQ added, confirmed) edits it, but never its promotions, which only HQ gives.
+    function orgShape(d) {
+      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'promoted', 'updatedAt'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
+        && shortOrAbsent(d, 'tagline', 80) && shortOrAbsent(d, 'about', 600) && shortOrAbsent(d, 'website', 2000)
+        && shortOrAbsent(d, 'instagram', 30) && shortOrAbsent(d, 'mark', 20) && shortOrAbsent(d, 'logoUrl', 2000) && shortOrAbsent(d, 'color', 7)
+        && d.events is list && d.events.size() <= 40
+        && d.artists is map && d.artists.size() <= 120
+        && d.promoted is map && d.promoted.size() <= 40
+        && d.updatedAt == request.time;
+    }
+    match /orgs/{id} {
+      allow read: if true;
+      allow create: if isAdmin() && id.matches('^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$') && orgShape(request.resource.data);
+      allow update: if orgShape(request.resource.data)
+        && (isAdmin() || (isOrgMember(id) && request.resource.data.promoted == resource.data.promoted));
+      allow delete: if isAdmin();
+    }
+    // Who may run an organizer's page: by email (lower case). You can read your own; HQ writes them.
+    match /orgMembers/{email} {
+      allow get: if isAdmin() || (signedIn() && orgEmail() == email);
+      allow list, delete: if isAdmin();
+      allow create, update: if isAdmin() && email.matches('^[^@\\s/]+@[^@\\s/]+[.][^@\\s/]+$') && email == email.lower()
+        && request.resource.data.keys().hasOnly(['orgId', 'by', 'at'])
+        && request.resource.data.orgId is string && exists(path('orgs', request.resource.data.orgId))
+        && request.resource.data.by == me() && request.resource.data.at == request.time;
+    }
+    // What an organizer asks HQ for (a promotion, a design, gifts): its team sends and reads them, HQ answers.
+    match /orgRequests/{id} {
+      allow read: if isAdmin() || isOrgMember(resource.data.orgId);
+      allow create: if isOrgMember(request.resource.data.orgId)
+        && request.resource.data.keys().hasOnly(['orgId', 'by', 'kind', 'eventId', 'days', 'about', 'text', 'status', 'createdAt'])
+        && request.resource.data.by == me()
+        && request.resource.data.kind in ['promotion', 'design', 'gift', 'other']
+        && request.resource.data.text is string && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 1000
+        && shortOrAbsent(request.resource.data, 'eventId', 40) && shortOrAbsent(request.resource.data, 'about', 40)
+        && (!('days' in request.resource.data) || (request.resource.data.days is int && request.resource.data.days >= 1 && request.resource.data.days <= 30))
+        && request.resource.data.status == 'open' && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'answeredAt'])
+        && request.resource.data.status in ['open', 'approved', 'declined', 'done']
+        && shortOrAbsent(request.resource.data, 'reply', 1000) && request.resource.data.answeredAt == request.time;
+      allow delete: if isAdmin();
+    }
+    // An organizer's numbers: one count per organizer, day (UTC, today only) and kind (a view, a ticket tap,
+    // a promoted view, or `f_<code>`: a first find of one of its stickers), each adding one.
+    // Only counts: never who. Its team and HQ read them.
+    function isToday(day) {
+      return day is string && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && int(day.split('-')[0]) == request.time.year() && int(day.split('-')[1]) == request.time.month() && int(day.split('-')[2]) == request.time.day();
+    }
+    match /orgViews/{id} {
+      allow read: if isAdmin() || isOrgMember(resource.data.orgId);
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['orgId', 'day', 'key', 'n'])
+        && request.resource.data.key is string && request.resource.data.key.matches('^(page|promo|tickets|e_[a-z0-9-]{1,40}|f_[a-z0-9]{6,24})$')
+        && request.resource.data.orgId is string && exists(path('orgs', request.resource.data.orgId))
+        && isToday(request.resource.data.day)
+        && id == request.resource.data.orgId + '_' + request.resource.data.day + '_' + request.resource.data.key
+        && request.resource.data.n == 1;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['n'])
+        && request.resource.data.n == resource.data.n + 1;
+    }
+
     // 1-to-1 chats: `dms/<a>_<b>` (the two uids in order) between two people who follow each other,
     // started by either of them unless one blocked the other. Only the two of them read it. Messages and
     // read receipts are like a crew chat's; writing needs you to still be friends both ways and not blocked.

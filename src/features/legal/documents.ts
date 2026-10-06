@@ -13,7 +13,7 @@ export type LegalSection = { heading?: string; paragraphs: string[] };
 export type LegalDocument = { id: LegalDoc; title: string; updated: string; intro: string; sections: LegalSection[] };
 
 /** When these words last changed (shown as "Last updated"). */
-export const LEGAL_UPDATED = 'October 5, 2026';
+export const LEGAL_UPDATED = 'October 6, 2026';
 
 export const LEGAL_DOCS: LegalDoc[] = ['privacy', 'terms', 'guidelines'];
 
@@ -74,7 +74,8 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
               'Videos you choose to share to your profile, with the festival, night and artist you tagged (for a festival from before Afterglow, the name, year and town you gave it; we also count how many of those you’ve shared, since the free plan shares up to three). Anyone signed in can watch them. Afterglow doesn’t add where you filmed, but a video file can carry its own details from your phone.',
               'Who you follow, the shared videos you like, festival crews you join and the sets you star at that crew’s festival (seen only by the crew), people you block (seen only by you) and reports you send (seen only by us).',
               'Sprouts you give: who gave it, its kind (or, for an artist’s collectible, the artist) and any note, the festival it was given at, and once someone picks it up, who and when. Anyone with its code can see who it’s from. Sprouts you pick up are kept the same way. Your garden’s growth is worked out on your phone.',
-              'Stickers you find: which sticker and when you scanned it, so it stays in your collection on every phone and so Afterglow can count how many people found each one.',
+              'Stickers you find: which sticker and when you scanned it, so it stays in your collection on every phone and so Afterglow can count how many people found each one. For a sticker or gift from an event organizer, the organizer sees how many people found it, never who.',
+              'Event organizers on Afterglow see counts only: how many times signed-in people opened their page and their events’ pages, tapped their tickets link, saw their promoted event or found their stickers each day, and how many people show their events on their profile or shared videos there (as anyone can see). They never see who.',
               'Set times you send for a festival: the text and any screenshot, seen only by us. We check them before publishing the set times for everyone (never your screenshot, which is deleted once they’re checked), and keep that they went live so we can thank you.',
             ],
           },

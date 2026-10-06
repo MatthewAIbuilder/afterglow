@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
 import { isSupportAccount } from '../features/admin/admin';
+import { useMyOrg } from '../state/orgs';
 import type { Sticker } from '../features/finds/finds';
 import { STICKER_W, StickerCard } from '../features/finds/StickerCard';
 import { useSocial } from '../state/social';
@@ -29,20 +30,23 @@ const PRINT_CSS = `
 }`;
 
 /**
- * Print stickers (HQ only): `?code=` for copies of one, `?hunt=` for one of
- * each in a hunt. On the website, Print opens the browser's print window
+ * Print stickers (HQ, or an organizer's team with `?org=`): `?code=` for
+ * copies of one, `?hunt=` for one of each in a hunt. On the website, Print opens the browser's print window
  * (choose Save as PDF to send them to a sticker printer). Each sticker is
  * the creature on its night tile, its name and its code, with a white
  * square behind the code so any phone camera reads it.
  */
 export default function StickerSheetScreen() {
-  const { code, hunt } = useLocalSearchParams<{ code?: string; hunt?: string }>();
+  const { code, hunt, org } = useLocalSearchParams<{ code?: string; hunt?: string; org?: string }>();
   const social = useSocial();
+  // HQ, or an organizer's team printing its own (`?org=`).
+  const mine = useMyOrg(social.user?.uid);
+  const allowed = isSupportAccount(social.user) || (!!org && mine === org);
   const insets = useSafeAreaInsets();
   const [stickers, setStickers] = useState<Sticker[] | undefined>();
 
   useEffect(() => {
-    if (!social.ready || !isSupportAccount(social.user)) return;
+    if (!social.ready || !allowed) return;
     let on = true;
     (async () => {
       try {
@@ -50,7 +54,7 @@ export default function StickerSheetScreen() {
           const s = await social.service.sticker(code);
           if (on) setStickers(s && s.takenDownAt === undefined ? Array.from({ length: COPIES }, () => s) : []);
         } else if (hunt) {
-          const all = await social.service.stickers(200);
+          const all = org ? await social.service.orgStickers(org, 200) : await social.service.stickers(200);
           if (on) setStickers(all.filter((s) => s.huntId === hunt).sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0)));
         } else if (on) setStickers([]);
       } catch {
@@ -60,7 +64,7 @@ export default function StickerSheetScreen() {
     return () => {
       on = false;
     };
-  }, [social.ready, social.user, social.service, code, hunt]);
+  }, [social.ready, allowed, social.service, code, hunt, org]);
 
   // The browser's print rules, while this page is open.
   useEffect(() => {
@@ -71,7 +75,7 @@ export default function StickerSheetScreen() {
     return () => el.remove();
   }, []);
 
-  if (social.ready && !isSupportAccount(social.user)) return <Redirect href="/" />;
+  if (social.ready && !allowed && !(org && mine === null && social.user)) return <Redirect href="/" />;
 
   const web = Platform.OS === 'web';
   return (

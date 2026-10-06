@@ -44,6 +44,8 @@ export type Creature =
   | 'lantern'
   | 'confetti'
   | 'frog'
+  // An organizer's own (features/organizers): Underground Alchemy's potion.
+  | 'flask'
   // Signatures added later.
   | 'wobble'
   | 'patchbear'
@@ -186,8 +188,9 @@ const PLACES: Record<PlaceCreature, Spec> = {
   lantern: { creature: 'lantern', palette: P('#FFF4D6', '#FFCF6B', '#B8761E', '#6A4C36', '#2E2018', '#FFE9A0', '#FFC861'), name: t('The Camp lantern'), theme: t('A lantern that keeps the campsite cosy') },
   confetti: { creature: 'confetti', palette: P('#F2E8FF', '#A97CFF', '#5A3EB0', '#FF7EB6', '#5BE3B5', '#FFE36B', '#A97CFF'), name: t('The Confetti popper'), theme: t('A burst of confetti at the drop') },
   frog: { creature: 'frog', palette: P('#DFFFD0', '#6CD85A', '#2A8A2E', '#BFEFFF', '#3A9AE0', '#FFFFFF', '#6CD85A'), name: t('The Water frog'), theme: t('A frog that reminds you to drink water') },
+  flask: { creature: 'flask', palette: P('#F3EEFF', '#A97CFF', '#4A2E9A', '#D9B48A', '#7A5634', '#C9F7FF', '#A97CFF'), name: t('The Alchemist'), theme: t('A bubbling potion from the underground') },
 };
-export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog';
+export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask';
 export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];
 
 /** The sound creatures (no artist's identity), which stickers can use too. */

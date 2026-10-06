@@ -18,11 +18,13 @@ What the app has, by area (details in `docs/history.md`):
 - **Play** (`features/quests`, `features/secrets`, `features/sprouts`, `features/finds`, `features/badges`, `features/profile`): daily and weekly quests with glow levels, side quests, milestones, secrets, sprouts and the garden, artist collectibles, stickers and hunts found by scanning (`docs/stickers.md`).
 - **Care** (`features/care`): Look after yourself (stopwatches with a timing guide, feelings, water, pulse, steps, get help), all private on the phone.
 - **Data** (`src/data`): catalogue file plus nightly imports (EDMTrain festivals, YouTube clips, Deezer photos, colours, lineup similarity, site pictures) into `public/catalogue.json`; HQ live patches; `useCatalog()` is the only way screens reach it.
-- **Afterglow HQ** (`features/admin`, `src/app/admin.tsx`): the support account's dashboard (analytics, data uploads and publishing, privileges, support, reports).
+- **Afterglow HQ** (`features/admin`, `src/app/admin.tsx`): the support account's dashboard (analytics, data uploads and publishing, privileges, organizers, support, reports).
+- **Organizers** (`features/organizers`, `src/app/studio.tsx`, `src/app/org/[id].tsx`, `docs/organizers.md`): event organizers (first: Underground Alchemy) run their own page in the organizer studio: events and lineups (published ones join the catalogue as festivals), words on their artists, numbers (counts only), promotion requests (HQ approves; shown labelled Promoted, never in taste), badges with their mark, gifts, stickers and design requests. HQ decides which emails run which organizer.
 - **Languages** (`src/i18n`, `docs/translations.md`): English and Spanish, following the phone (or Settings → Language). New UI lines go through `t('…')` with a Spanish entry in `src/i18n/es.ts` (a test checks); The whole app is translated except what is deliberately English (catalogue data, legal documents, HQ; list in `docs/translations.md`). `src/i18n/index.ts` must not import React Native or Expo at the top (the nightly Node scripts load it) (`docs/translations.md`).
 
 
 Waiting on the user (don't redo, remind when relevant):
+- Underground Alchemy: a Firestore rules and indexes deploy, then trying the test login `afterglowmusic.support+alchemy@gmail.com` (`docs/organizers.md`); later HQ swaps in stefan@undergroundalchemy.net.
 - Phone testing of nearly everything (afterglowmusic.app is already an authorised sign-in domain in Firebase Auth, confirmed 2026-10-05).
 - An Apple Developer account, then the development build (`docs/development-build.md`): Sign in with Apple/Google, push notifications, HealthKit, Spotify sign-in, NFC.
 - Before launch (`docs/app-store.md`): qualified legal review, the care timing guide checked against DanceSafe/TripSit (and its Spanish, `docs/care-spanish-review.md`), official Instagram/Snapchat/TikTok icons, App Store listing and screenshots, an `APP_STORE_URL`.

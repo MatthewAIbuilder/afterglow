@@ -59,6 +59,11 @@ export type Artist = {
    * in the catalogue. Always wins over the nightly match (`CatalogSnapshot.soundcloud`).
    */
   soundcloud?: string;
+  /**
+   * What an event organizer who books them says about them (features/organizers):
+   * shown on their page, credited to the organizer. Never set in a catalogue file.
+   */
+  org?: { id: string; name: string; bio?: string; instagram?: string };
 };
 
 /**
@@ -169,6 +174,13 @@ export type Festival = {
    * artist plays, by artist id. Artists not listed play every weekend.
    */
   artistWeekends?: Record<string, number>;
+  /**
+   * The organizer whose event this is (an id from features/organizers), for
+   * events organizers add themselves: their page, their badge.
+   */
+  organizer?: string;
+  /** The festival on Afterglow this event is the after party of. */
+  afterOf?: string;
 };
 
 /**

@@ -72,7 +72,7 @@ export function toCollect(going: readonly Festival[], earned: readonly Badge[], 
  * palms for the beach, mesas for the desert…), in its own enamel colours,
  * with its name and city in the rim and its dates on the ribbon.
  */
-export type PinTheme = 'eye' | 'daisy' | 'skyline' | 'infinity' | 'clock' | 'fireworks' | 'beach' | 'desert' | 'lake' | 'castle' | 'sound' | 'dino';
+export type PinTheme = 'eye' | 'daisy' | 'skyline' | 'infinity' | 'clock' | 'fireworks' | 'beach' | 'desert' | 'lake' | 'castle' | 'sound' | 'dino' | 'alchemy';
 /** The gold behind the round pin: sun rays, scallops, a star, or none. */
 export type PinBacking = 'rays' | 'scallop' | 'star' | 'none';
 
@@ -105,6 +105,8 @@ export type PinLook = {
 
 /** Which scene: the first theme whose words appear in the festival's name or place. */
 const THEME_WORDS: readonly [PinTheme, RegExp][] = [
+  // Underground Alchemy's events (and its own badge) carry its mark: the triangle of three circles.
+  ['alchemy', /alchemy|alchemist/i],
   // Lost Lands is the dinosaur festival (a T. rex and a long neck by a smoking volcano), wherever it is.
   ['dino', /lost lands|dino|jurassic|prehistor/i],
   ['eye', /cyclops|\beye\b|vision/i],
@@ -166,6 +168,10 @@ export const PALETTES: Record<PinTheme, readonly PinPalette[]> = {
     { sky: ['#0B2027', '#40798C'], accent: '#F6F1D1', accent2: '#7FB069', ground: '#0B3D2E', rim: '#081C15', ribbon: '#2D6A4F' },
     { sky: ['#2B0F1E', '#A63D40'], accent: '#FFE38A', accent2: '#8DB580', ground: '#1B1A17', rim: '#140B0B', ribbon: '#BC4749' },
   ],
+  alchemy: [
+    { sky: ['#07070B', '#2A2440'], accent: '#F4F1FA', accent2: '#A97CFF', ground: '#14111E', rim: '#0A090E', ribbon: '#2C2540' },
+    { sky: ['#050B0A', '#16332D'], accent: '#F1F7F4', accent2: '#5BE3B5', ground: '#0A1714', rim: '#050A09', ribbon: '#1B443B' },
+  ],
   sound: [
     { sky: ['#10002B', '#5A189A'], accent: '#C77DFF', accent2: '#4CC9F0', ground: '#10002B', rim: '#0B0018', ribbon: '#7B2CBF' },
     { sky: ['#03071E', '#370617'], accent: '#FFBA08', accent2: '#F48C06', ground: '#03071E', rim: '#03030F', ribbon: '#9D0208' },
@@ -182,8 +188,9 @@ export function hashOf(s: string): number {
 }
 
 /** The scene for a festival, from the words in its name and place. */
-export function themeOf(festival: Pick<Festival, 'id' | 'name' | 'location'>): PinTheme {
-  const words = `${festival.name} ${festival.location ?? ''}`;
+export function themeOf(festival: Pick<Festival, 'id' | 'name' | 'location'> & Partial<Pick<Festival, 'organizer'>>): PinTheme {
+  // An organizer's event wears the organizer's scene when it has one (its id is part of the words).
+  const words = `${festival.name} ${festival.location ?? ''} ${festival.organizer ?? ''}`;
   return THEME_WORDS.find(([, re]) => re.test(words))?.[0] ?? FALLBACK[hashOf(festival.id) % FALLBACK.length];
 }
 
@@ -230,7 +237,7 @@ export function townOf(location: string | undefined): string | undefined {
 }
 
 /** How a festival's pin looks: its scene from its name and place, colours and backing from its id. */
-export function pinLook(festival: Pick<Festival, 'id' | 'name' | 'location' | 'startDate' | 'endDate' | 'weekends'>): PinLook {
+export function pinLook(festival: Pick<Festival, 'id' | 'name' | 'location' | 'startDate' | 'endDate' | 'weekends'> & Partial<Pick<Festival, 'organizer'>>): PinLook {
   const h = hashOf(festival.id);
   const theme = themeOf(festival);
   const options = PALETTES[theme];

@@ -8,6 +8,7 @@ import { cleanNote, cleanPublicKandi, cleanWord, isPattern, type Kandi, type Pub
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
+import { cleanOrg, findsByCode, isCounter, type Org, type OrgRequest, orgToDoc, utcDay } from '../../organizers/organizers';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -111,6 +112,16 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const admin = () => !!current?.email && current.email === SUPPORT_EMAIL && verified.has(current.email);
   const needAdmin = () => {
     if (!admin()) throw new SocialError('unknown');
+  };
+  /** Organizers' pages, who may sign in to each (email -> org id), their requests and numbers (`org_day_key` -> n). */
+  const orgs = new Map<string, Org>();
+  const orgMembers = new Map<string, string>();
+  const orgRequests = new Map<string, OrgRequest>();
+  const orgViews = new Map<string, number>();
+  /** The organizer the signed-in (confirmed) email runs. */
+  const orgOfMe = () => (current?.email && verified.has(current.email) ? orgMembers.get(current.email.toLowerCase()) : undefined);
+  const needOrg = (orgId: string | undefined) => {
+    if (!admin() && (!orgId || orgOfMe() !== orgId)) throw new SocialError('unknown');
   };
   const listeners = new Set<(u: SocialUser | null) => void>();
   let current: SocialUser | null = null;
@@ -1163,10 +1174,17 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!s || (s.takenDownAt !== undefined && (at > s.takenDownAt || Date.parse(now()) > s.takenDownAt + 3 * 86_400_000))) throw new SocialError('not-found');
       if (s.until !== undefined && (at > s.until || Date.parse(now()) > s.until + 3 * 86_400_000)) throw new SocialError('sticker-ended');
       finds.set(`${u.uid}_${code}`, at);
+      // A first find of an organizer's sticker adds one to its count.
+      if (s.orgId) {
+        const k = `${s.orgId}_${utcDay(new Date())}_f_${code}`;
+        orgViews.set(k, (orgViews.get(k) ?? 0) + 1);
+      }
     },
     async addSticker(input) {
       me();
-      needAdmin();
+      if (input.orgId) needOrg(input.orgId);
+      else needAdmin();
+      if (input.huntId && input.orgId && hunts.get(input.huntId)?.orgId !== input.orgId) throw new SocialError('unknown');
       if (network.down) throw new SocialError('network');
       let slot: number | undefined;
       if (input.huntId) {
@@ -1175,7 +1193,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         slot = h.items.length;
         hunts.set(h.id, { ...h, items: [...h.items, { creature: input.creature, name: input.name }] });
       }
-      const s: Sticker = { code: input.code, name: input.name, creature: input.creature, createdAt: Date.now() + ++n, ...(input.huntId ? { huntId: input.huntId, slot } : {}), ...(input.until !== undefined ? { until: input.until } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}) };
+      const s: Sticker = { code: input.code, name: input.name, creature: input.creature, createdAt: Date.now() + ++n, ...(input.huntId ? { huntId: input.huntId, slot } : {}), ...(input.until !== undefined ? { until: input.until } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.orgId ? { orgId: input.orgId } : {}), ...(input.gift ? { gift: true as const } : {}), ...(input.note ? { note: input.note } : {}) };
       stickers.set(input.code, s);
       return s;
     },
@@ -1184,8 +1202,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return [...stickers.values()].filter((s) => s.takenDownAt === undefined).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)).slice(0, max);
     },
     async deleteSticker(code) {
-      needAdmin();
       const s = stickers.get(code);
+      if (s?.orgId) needOrg(s.orgId);
+      else needAdmin();
       const h = s?.huntId ? hunts.get(s.huntId) : undefined;
       if (h && s?.slot !== undefined && h.items[s.slot]) hunts.set(h.id, { ...h, items: h.items.map((it, i) => (i === s.slot ? { ...it, gone: true as const } : it)) });
       // Kept, marked taken down: scans from before still count.
@@ -1197,9 +1216,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return [...finds].filter(([k]) => k.startsWith(`${u.uid}_`)).slice(0, max).map(([k, at]) => ({ code: k.slice(u.uid.length + 1), at }));
     },
     async addHunt(input) {
-      needAdmin();
+      if (input.orgId) needOrg(input.orgId);
+      else needAdmin();
       if (network.down) throw new SocialError('network');
-      const h: Hunt = { id: input.id, name: input.name, items: [], ...(input.until !== undefined ? { until: input.until } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}) };
+      const h: Hunt = { id: input.id, name: input.name, items: [], ...(input.until !== undefined ? { until: input.until } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.orgId ? { orgId: input.orgId } : {}) };
       hunts.set(input.id, h);
       return h;
     },
@@ -1214,6 +1234,87 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async stickerFinds(code) {
       needAdmin();
       return [...finds.keys()].filter((k) => k.endsWith(`_${code}`)).length;
+    },
+    async orgs() {
+      if (network.down) throw new SocialError('network');
+      return [...orgs.values()];
+    },
+    async myOrg() {
+      // Reading your own membership needs no confirmed email (writing does).
+      return current?.email ? (orgMembers.get(current.email.toLowerCase()) ?? null) : null;
+    },
+    async saveOrg(org) {
+      me();
+      if (network.down) throw new SocialError('network');
+      const had = orgs.get(org.id);
+      if (!had) needAdmin();
+      else needOrg(org.id);
+      // As stored and read back: checked, and promotions only ever HQ's.
+      orgs.set(org.id, { ...cleanOrg(org.id, orgToDoc(org))!, promoted: had?.promoted ?? {}, updatedAt: now() });
+    },
+    async sendOrgRequest(input) {
+      const u = me();
+      needOrg(input.orgId);
+      if (network.down) throw new SocialError('network');
+      const r: OrgRequest = { id: `q${++n}`, orgId: input.orgId, by: u.uid, kind: input.kind, text: input.text.trim(), status: 'open', createdAt: `${now()}#${String(n).padStart(6, '0')}`, ...(input.eventId ? { eventId: input.eventId } : {}), ...(input.days ? { days: input.days } : {}), ...(input.about ? { about: input.about } : {}) };
+      orgRequests.set(r.id, r);
+      return r;
+    },
+    async orgRequests(orgId, max) {
+      if (orgId) needOrg(orgId);
+      else needAdmin();
+      return [...orgRequests.values()].filter((r) => !orgId || r.orgId === orgId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async answerOrgRequest(id, status, reply) {
+      needAdmin();
+      const r = orgRequests.get(id);
+      if (!r) throw new SocialError('not-found');
+      const { reply: _old, ...rest } = r;
+      orgRequests.set(id, { ...rest, status, answeredAt: now(), ...(reply?.trim() ? { reply: reply.trim() } : {}) });
+    },
+    async setPromotion(orgId, eventId, until) {
+      needAdmin();
+      const o = orgs.get(orgId);
+      if (!o) throw new SocialError('not-found');
+      const promoted = { ...o.promoted };
+      if (until) promoted[eventId] = until;
+      else delete promoted[eventId];
+      orgs.set(orgId, { ...o, promoted });
+    },
+    async orgMembers(orgId) {
+      needAdmin();
+      return [...orgMembers].filter(([, o]) => o === orgId).map(([e]) => e);
+    },
+    async setOrgMember(email, orgId) {
+      needAdmin();
+      if (orgId) orgMembers.set(email.trim().toLowerCase(), orgId);
+      else orgMembers.delete(email.trim().toLowerCase());
+    },
+    async countOrgView(orgId, key) {
+      if (!current || !isCounter(key) || !orgs.has(orgId)) return;
+      const k = `${orgId}_${utcDay(new Date())}_${key}`;
+      orgViews.set(k, (orgViews.get(k) ?? 0) + 1);
+    },
+    async orgViews(orgId, since) {
+      needOrg(orgId);
+      const byDay = new Map<string, Record<string, number>>();
+      for (const [k, v] of orgViews) {
+        if (!k.startsWith(`${orgId}_`)) continue;
+        const [day, key] = [k.slice(orgId.length + 1, orgId.length + 11), k.slice(orgId.length + 12)];
+        if (day >= since) byDay.set(day, { ...byDay.get(day), [key]: v });
+      }
+      return [...byDay].map(([day, counts]) => ({ day, counts })).sort((a, b) => a.day.localeCompare(b.day));
+    },
+    async orgStickers(orgId, max) {
+      needOrg(orgId);
+      return [...stickers.values()].filter((s) => s.orgId === orgId && s.takenDownAt === undefined).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)).slice(0, max);
+    },
+    async orgHunts(orgId, max) {
+      needOrg(orgId);
+      return [...hunts.values()].filter((h) => h.orgId === orgId).reverse().slice(0, max);
+    },
+    async orgFinds(orgId) {
+      return findsByCode(await service.orgViews(orgId, '2026-01-01'));
     },
     async takeBackSprout(id) {
       if (network.down) throw new SocialError('network');
@@ -1245,5 +1346,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
+  return { service, gardens, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, currentUser: () => current };
 }
