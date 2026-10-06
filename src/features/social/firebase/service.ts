@@ -462,6 +462,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
                   ...(input.past.seriesId ? { seriesId: input.past.seriesId } : {}),
                 }
               : {}),
+            // A one-night show: its name, day, town and the show on Afterglow, as plain fields.
+            ...(!input.festivalId && !input.past && input.show
+              ? {
+                  showName: input.show.name,
+                  showDate: input.show.date,
+                  ...(input.show.city ? { showCity: input.show.city } : {}),
+                  ...(input.show.showId ? { showId: input.show.showId } : {}),
+                }
+              : {}),
+            // A trimmed video: the part that plays.
+            ...(input.clip ? { clipStart: input.clip.start, clipEnd: input.clip.end } : {}),
             capturedAt: input.capturedAt,
             ...(input.durationSec ? { durationSec: input.durationSec } : {}),
             ...(input.width && input.height ? { width: input.width, height: input.height } : {}),

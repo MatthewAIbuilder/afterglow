@@ -67,7 +67,7 @@ export function clipMedia(clip: Clip, artistImage?: string): ClipMedia | undefin
     return {
       provider: 'video',
       uri: s.videoUrl,
-      lengthSec: clip.durationSec,
+      lengthSec: s.clip ? s.clip.end - s.clip.start : clip.durationSec,
       posterUrl: s.thumbUrl && HTTPS.test(s.thumbUrl) ? s.thumbUrl : '',
       vertical: s.vertical,
       credit: t('Filmed by @{handle}', { handle: s.handle }),

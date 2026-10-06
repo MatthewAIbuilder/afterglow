@@ -1,5 +1,7 @@
 import type { Memory, MemoryTagInput } from './models';
 import { cleanPast } from './past';
+import { cleanShow } from './show';
+import { cleanClip } from './trim';
 
 /**
  * The list of memories and how it changes. Pure, so the rules are tested
@@ -11,9 +13,19 @@ export function addMemory(list: Memory[], m: Memory): Memory[] {
 }
 
 export function tagMemory(list: Memory[], id: string, tag: MemoryTagInput): Memory[] {
-  // A festival on Afterglow or a past one, never both.
+  // A festival on Afterglow, a past one or a one-night show: only one. The trim stays unless the tag says otherwise.
   return list.map((m) =>
-    m.id === id ? { ...m, festivalId: tag.festivalId, night: tag.festivalId ? tag.night : undefined, past: tag.festivalId ? undefined : tag.past, artistId: tag.artistId } : m,
+    m.id === id
+      ? {
+          ...m,
+          festivalId: tag.festivalId,
+          night: tag.festivalId ? tag.night : undefined,
+          past: tag.festivalId ? undefined : tag.past,
+          show: tag.festivalId || tag.past ? undefined : tag.show,
+          artistId: tag.artistId,
+          clip: 'clip' in tag ? tag.clip : m.clip,
+        }
+      : m,
   );
 }
 
@@ -61,6 +73,8 @@ export function cleanMemories(raw: unknown): Memory[] {
       place: place && (str(place.city) || str(place.region)) ? { city: str(place.city), region: str(place.region) } : undefined,
       festivalId: str(o.festivalId),
       past: str(o.festivalId) ? undefined : cleanPast(o.past),
+      show: str(o.festivalId) || cleanPast(o.past) ? undefined : cleanShow(o.show),
+      clip: cleanClip(o.clip),
       night: str(o.night),
       artistId: str(o.artistId),
       sharedId: str(o.sharedId) && str(o.sharedBy) ? str(o.sharedId) : undefined,

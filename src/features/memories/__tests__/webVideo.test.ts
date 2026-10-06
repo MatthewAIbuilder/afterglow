@@ -33,10 +33,11 @@ describe('which files the website takes', () => {
     expect(checkWebFile({ type: 'video/mp4', name: 'a.mp4', size: 150 * MB })).toEqual({ ok: false, reason: 'too-large' });
   });
 
-  it('a minute long (with a second’s grace), upright or not as the file says, and unreadable ones refused', () => {
+  it('up to ten minutes (longer ones are trimmed on the tagging sheet), upright or not as the file says, and unreadable ones refused', () => {
     expect(checkWebMeta({ duration: 42.4, width: 1080, height: 1920 })).toEqual({ ok: true, durationSec: 42, width: 1080, height: 1920 });
     expect(checkWebMeta({ duration: 61, width: 1920, height: 1080 })).toEqual({ ok: true, durationSec: 61, width: 1920, height: 1080 });
-    expect(checkWebMeta({ duration: 62, width: 1080, height: 1920 })).toEqual({ ok: false, reason: 'too-long' });
+    expect(checkWebMeta({ duration: 95, width: 1080, height: 1920 })).toEqual({ ok: true, durationSec: 95, width: 1080, height: 1920 });
+    expect(checkWebMeta({ duration: 602, width: 1080, height: 1920 })).toEqual({ ok: false, reason: 'too-long' });
     expect(checkWebMeta({ duration: 0.3, width: 0, height: 0 })).toEqual({ ok: true, durationSec: 1, width: undefined, height: undefined });
     expect(checkWebMeta({ duration: Number.NaN, width: 1, height: 1 })).toEqual({ ok: false, reason: 'failed' });
     expect(checkWebMeta({ duration: Infinity, width: 1, height: 1 })).toEqual({ ok: false, reason: 'failed' });
@@ -84,7 +85,7 @@ describe('choosing a video on the website', () => {
 
   it('cancelled, too long, too big, the wrong kind, or unreadable: plain reasons, and the page lets go of the file', async () => {
     expect(await pickWebVideo('library', deps(undefined).d)).toEqual({ ok: false, reason: 'cancelled' });
-    const long = deps(file(), { duration: 95, width: 1080, height: 1920 });
+    const long = deps(file(), { duration: 700, width: 1080, height: 1920 });
     expect(await pickWebVideo('library', long.d)).toEqual({ ok: false, reason: 'too-long' });
     expect(long.revoke).toHaveBeenCalledWith('blob:https://afterglowmusic.app/abc');
     expect(await pickWebVideo('library', deps(file({ size: 400 * MB })).d)).toEqual({ ok: false, reason: 'too-large' });

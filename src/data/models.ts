@@ -236,6 +236,8 @@ export type CommunityClipSource = {
   capturedAt: string;
   /** Filmed upright. Gets a tall player. */
   vertical: boolean;
+  /** The part that plays, when it was trimmed (seconds into the file). */
+  clip?: { start: number; end: number };
 };
 
 /**

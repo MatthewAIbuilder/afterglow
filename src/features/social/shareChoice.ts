@@ -2,8 +2,8 @@ import { t } from '../../i18n';
 
 /**
  * The "Share to Discover" row on the tagging sheet, pure: whether it shows,
- * what it needs first, and what it says. A tagged video (a festival and who
- * was playing) can be shared as you save it, so it reaches other people's
+ * what it needs first, and what it says. A tagged video (who was playing,
+ * and the festival or show when there was one) can be shared as you save it, so it reaches other people's
  * Discover for that lineup; it's on by default once you could share, and
  * always your choice.
  */
@@ -20,7 +20,7 @@ export function shareOffer(o: { available: boolean; signedIn: boolean; hasProfil
 export function shareDetail(offer: ShareOffer, o: { handle?: string; festival?: string; on: boolean }): string {
   if (offer === 'needs-account') return t('Sign in to share your videos to Discover.');
   if (offer === 'needs-profile') return t('Make a profile to share your videos to Discover.');
-  if (offer === 'needs-tags') return t('Pick the festival and who was playing to share it to Discover.');
+  if (offer === 'needs-tags') return t('Pick who was playing to share it to Discover.');
   if (!o.on) return t('Only in your Memories, on this phone.');
   const rest = { handle: String(o.handle) };
   return o.festival

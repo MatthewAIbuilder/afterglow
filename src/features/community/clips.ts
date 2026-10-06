@@ -1,6 +1,7 @@
 import type { Clip, CommunityClipSource, Festival } from '../../data/models';
 import type { SharedMemory } from '../social/models';
 import { pastKey, pastLabel } from '../memories/past';
+import { showKey, showLabel } from '../memories/show';
 import { t } from '../../i18n';
 
 /**
@@ -13,6 +14,8 @@ import { t } from '../../i18n';
  * festival and an artist on its lineup.
  */
 export const COMMUNITY_PREFIX = 'community:';
+/** A community clip from a one-night show is filed under this, plus the show's key, instead of a festival id. */
+export const SHOW_PREFIX = 'show:';
 /** At most this many community clips in one feed, newest first. */
 export const COMMUNITY_MAX = 40;
 /** A community clip with no length recorded is treated as this long. */
@@ -25,17 +28,20 @@ const HTTPS = /^https:\/\//;
 
 /** One shared memory as a feed clip, or undefined when it can't be one. */
 export function communityClip(m: SharedMemory, artists: ReadonlySet<string>): Clip | undefined {
-  // A throwback (a past festival) belongs with the same festival on Afterglow when there is one.
-  const festivalId = m.festivalId ?? m.past?.seriesId ?? (m.past ? `past:${pastKey(m.past)}` : undefined);
-  if (!m.artistId || !artists.has(m.artistId) || !festivalId || !HTTPS.test(m.videoUrl) || !m.handle) return undefined;
-  const sec = m.durationSec && m.durationSec > 0 ? Math.min(180, Math.round(m.durationSec)) : DEFAULT_SEC;
+  // A throwback (a past festival) belongs with the same festival on Afterglow when there is one; a one-night show
+  // has its own key, and a video from neither still shows for its artist.
+  const festivalId = m.festivalId ?? m.past?.seriesId ?? (m.past ? `past:${pastKey(m.past)}` : m.show ? `${SHOW_PREFIX}${showKey(m.show)}` : '');
+  if (!m.artistId || !artists.has(m.artistId) || !HTTPS.test(m.videoUrl) || !m.handle) return undefined;
+  // A trimmed video is as long as the part that plays.
+  const length = m.clip ? m.clip.end - m.clip.start : m.durationSec;
+  const sec = length && length > 0 ? Math.min(180, Math.round(length)) : DEFAULT_SEC;
   // Phones film upright unless the size says otherwise.
   const vertical = m.width && m.height ? m.height >= m.width : true;
   return {
     id: communityClipId(m.id),
     artistId: m.artistId,
     festivalId,
-    title: m.festivalId || !m.past ? 'From the crowd' : `Throwback · ${pastLabel(m.past)}`,
+    title: m.festivalId ? 'From the crowd' : m.past ? `Throwback · ${pastLabel(m.past)}` : m.show ? `From the crowd · ${showLabel(m.show)}` : 'From the crowd',
     durationSec: sec,
     bpm: 0,
     source: {
@@ -47,6 +53,7 @@ export function communityClip(m: SharedMemory, artists: ReadonlySet<string>): Cl
       sharedId: m.id,
       capturedAt: m.capturedAt,
       vertical,
+      ...(m.clip ? { clip: m.clip } : {}),
     },
   };
 }
@@ -176,5 +183,7 @@ export function keptClips(kept: Record<string, Clip>, f: Pick<CommunityFilter, '
 export function shownClipTitle(title: string): string {
   if (title === 'From the crowd') return t('From the crowd');
   const throwback = /^Throwback · (.+)$/.exec(title);
-  return throwback ? t('Throwback · {festival}', { festival: throwback[1] }) : title;
+  if (throwback) return t('Throwback · {festival}', { festival: throwback[1] });
+  const show = /^From the crowd · (.+)$/.exec(title);
+  return show ? t('From the crowd · {show}', { show: show[1] }) : title;
 }

@@ -122,7 +122,8 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
         const id = newMemoryId(now);
         const ext = (video.uri.match(/\.([A-Za-z0-9]{2,4})(?:\?|$)/)?.[1] ?? 'mp4').toLowerCase();
         const file = `${id}.${ext}`;
-        const { thumb } = await files.keep(video.uri, file);
+        // A trimmed video's still comes from the part that plays.
+        const { thumb } = await files.keep(video.uri, file, tag.clip ? { at: tag.clip.start } : undefined);
         const m: Memory = {
           id,
           file,
@@ -136,7 +137,9 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
           festivalId: tag.festivalId,
           night: tag.festivalId ? tag.night : undefined,
           past: tag.festivalId ? undefined : tag.past,
+          show: tag.festivalId || tag.past ? undefined : tag.show,
           artistId: tag.artistId,
+          clip: tag.clip,
         };
         setMemories((l) => addMemory(l, m));
         return m;

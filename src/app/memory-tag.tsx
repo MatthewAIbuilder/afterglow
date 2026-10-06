@@ -1,5 +1,4 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +12,12 @@ import { artistConfidence, festivalConfidence, guessArtists, guessFestivals, rea
 import type { MemoryTagInput } from '../features/memories/models';
 import { momentLine } from '../features/memories/organize';
 import { PastPicker } from '../features/memories/PastPicker';
+import { ShowPicker } from '../features/memories/ShowPicker';
+import { showBill, showLabel, type ShowTag } from '../features/memories/show';
+import { TrimBar } from '../features/memories/TrimBar';
+import { VideoPreview } from '../features/memories/VideoPreview';
+import { loudnessOf } from '../features/memories/loudness';
+import { needsTrim, suggestWindow, type ClipWindow } from '../features/memories/trim';
 import { type PastEvent, pastLabel } from '../features/memories/past';
 import { throwbackSharesLine } from '../features/memories/throwbackLimit';
 import { useThrowbackShares } from '../features/memories/useThrowbackShares';
@@ -103,6 +108,9 @@ export default function MemoryTagScreen() {
   const [past, setPast] = useState<PastEvent | undefined>(existing?.past);
   // Filmed a while ago, at nothing on Afterglow: open on finding the past festival.
   const [pickingPast, setPickingPast] = useState(() => !retagging && !guesses.length && whenMs !== undefined && Date.now() - whenMs > OLD_VIDEO_MS);
+  // A one-night show (a club night or concert) instead of a festival.
+  const [show, setShow] = useState<ShowTag | undefined>(existing?.show);
+  const [pickingShow, setPickingShow] = useState(false);
   const festival = festivalId ? catalog.festival(festivalId) : undefined;
   const guessedHere = guesses.find((g) => g.festival.id === festivalId);
   const [night, setNight] = useState<string | undefined>(() => existing?.night ?? (festivalSure ? topFestival?.night : undefined));
@@ -112,6 +120,8 @@ export default function MemoryTagScreen() {
     setFestivalId(f?.id);
     setPast(undefined);
     setPickingPast(false);
+    setShow(undefined);
+    setPickingShow(false);
     setNight(f ? guesses.find((g) => g.festival.id === f.id)?.night : undefined);
     setArtistId(undefined);
     setTouchedArtist(false);
@@ -133,10 +143,36 @@ export default function MemoryTagScreen() {
 
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
+  // A show on Afterglow: its bill first (anyone else is a search away).
+  const bill = useMemo(() => (festival ? [] : showBill(show, catalog.shows, catalog.artist)), [festival, show, catalog]);
   const pool: Artist[] = festival ? artistGuesses.map((g) => g.artist) : catalog.artists;
   const found = query.trim() ? pool.filter((a) => matchesName(a.name, query)).slice(0, 20) : [];
 
-  const tag: MemoryTagInput = { festivalId, night: festivalId ? night : undefined, past: festivalId ? undefined : past, artistId: chosenArtist };
+  // The part that plays, for a new video (a long one always has one; it starts on the loudest stretch).
+  const draftLength = draft?.durationSec;
+  const [clip, setClip] = useState<ClipWindow | undefined>(() => (draftLength && needsTrim(draftLength) ? suggestWindow(draftLength, undefined) : undefined));
+  const touchedClip = useRef(false);
+  const draftUri = draft?.uri;
+  useEffect(() => {
+    if (!draftUri || !draftLength || !needsTrim(draftLength)) return;
+    let live = true;
+    void loudnessOf(draftUri, draftLength).then((loud) => {
+      const w = loud ? suggestWindow(draftLength, loud) : undefined;
+      if (live && w && !touchedClip.current) setClip(w);
+    });
+    return () => {
+      live = false;
+    };
+  }, [draftUri, draftLength, setClip]);
+
+  const tag: MemoryTagInput = {
+    festivalId,
+    night: festivalId ? night : undefined,
+    past: festivalId ? undefined : past,
+    show: festivalId || past ? undefined : show,
+    artistId: chosenArtist,
+    ...(draft ? { clip } : {}),
+  };
 
   // Share to Discover: on by default once it's tagged and you have a profile; always your choice.
   const social = useSocial();
@@ -144,7 +180,8 @@ export default function MemoryTagScreen() {
     available: social.availability.ok,
     signedIn: !!social.user,
     hasProfile: !!social.profile,
-    tagged: (!!tag.festivalId || !!tag.past) && !!tag.artistId,
+    // Who was playing is enough: a festival, a past one or a show is extra.
+    tagged: !!tag.artistId,
     // Already on Discover, or on its way there.
     alreadyShared: !!existing?.sharedId || (!!existing && (social.waiting.has(existing.id) || existing.id in social.sharing)),
   });
@@ -188,12 +225,6 @@ export default function MemoryTagScreen() {
     // Wait for your memories to load (a link straight here on a cold start) before deciding there's nothing to tag.
     if (missing && mem.hydrated && !leaving.current) goBack();
   }, [missing, mem.hydrated]);
-
-  const player = useVideoPlayer(videoUri ?? null, (p) => {
-    p.loop = true;
-    p.muted = true;
-    p.play();
-  });
 
   // One save at a time: a second tap while the video is being kept would find nothing left to keep.
   const [saving, setSaving] = useState(false);
@@ -300,21 +331,28 @@ export default function MemoryTagScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xxl }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={styles.videoWrap}>
-          {videoUri ? (
-            <VideoView
-              player={player}
-              style={[styles.video, { height: videoH, width: Math.min(videoH * aspect, 340) }]}
-              contentFit="cover"
-              nativeControls={false}
-              accessibilityLabel={t('Your video')}
-            />
-          ) : null}
+          {videoUri ? <VideoPreview uri={videoUri} clip={draft ? clip : existing?.clip} style={[styles.video, { height: videoH, width: Math.min(videoH * aspect, 340) }]} /> : null}
           {whenWhere ? <Text style={styles.when}>{whenWhere}</Text> : null}
         </View>
+        {/* On the website (on the phone, the iPhone's own picker trims). */}
+        {draft && webPost && draftLength && draftLength > 10 ? (
+          <>
+            <Text style={styles.section}>{needsTrim(draftLength) ? t('Trim') : t('Trim (optional)')}</Text>
+            <TrimBar
+              durationSec={draftLength}
+              value={clip}
+              onChange={(w) => {
+                touchedClip.current = true;
+                setClip(w);
+              }}
+            />
+          </>
+        ) : null}
 
-        <Text style={styles.section}>{t('Festival')}</Text>
+        <Text style={styles.section}>{t('Festival or show')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {past ? <Chip label={pastLabel(past)} on onPress={() => setPickingPast((v) => !v)} /> : null}
+          {show ? <Chip label={showLabel(show)} on onPress={() => setPickingShow((v) => !v)} /> : null}
           {[...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals].map((f) => (
             <Chip key={f.id} label={f.name} on={f.id === festivalId} onPress={() => pickFestival(f.id === festivalId ? undefined : f)} />
           ))}
@@ -328,7 +366,18 @@ export default function MemoryTagScreen() {
               }}
             />
           )}
-          <Chip label={t('Not at a festival')} on={!festivalId && !past} onPress={() => pickFestival(undefined)} />
+          {show ? null : (
+            <Chip
+              label={t('A one-night show…')}
+              on={pickingShow}
+              onPress={() => {
+                haptic.select();
+                setPickingShow((v) => !v);
+                setPickingPast(false);
+              }}
+            />
+          )}
+          <Chip label={t('Not at a festival or show')} on={!festivalId && !past && !show} onPress={() => pickFestival(undefined)} />
           {many && !searchingFestival ? (
             <Chip
               label={t('Another festival…')}
@@ -358,7 +407,33 @@ export default function MemoryTagScreen() {
               setPast(p);
               setFestivalId(undefined);
               setNight(undefined);
-              if (p) setPickingPast(false);
+              if (p) {
+                setPickingPast(false);
+                setShow(undefined);
+                setPickingShow(false);
+              }
+            }}
+          />
+        ) : null}
+
+        {pickingShow || show ? (
+          <ShowPicker
+            capturedAt={capturedAt}
+            city={city}
+            artistId={chosenArtist}
+            value={show}
+            searching={pickingShow}
+            onSearch={() => setPickingShow(true)}
+            onChange={(sh) => {
+              haptic.select();
+              setShow(sh);
+              if (sh) {
+                setFestivalId(undefined);
+                setNight(undefined);
+                setPast(undefined);
+                setPickingPast(false);
+                setPickingShow(false);
+              }
             }}
           />
         ) : null}
@@ -404,18 +479,47 @@ export default function MemoryTagScreen() {
               <ArtistChoice guess={{ artist: chosen, reason: 'lineup', score: 0 }} on onPress={() => setArtistId(undefined)} />
             ) : null}
           </View>
-        ) : null}
+        ) : (
+          // No festival: the show's bill (when it's one of Afterglow's), and whoever you picked, ticked.
+          <View style={styles.rows}>
+            {bill.slice(0, TOP_GUESSES).map((a) => (
+              <ArtistChoice
+                key={a.id}
+                guess={{ artist: a, reason: 'lineup', score: 0 }}
+                on={a.id === chosenArtist}
+                onPress={() => {
+                  haptic.select();
+                  setTouchedArtist(true);
+                  setArtistId(a.id === chosenArtist ? undefined : a.id);
+                }}
+              />
+            ))}
+            {chosen && !bill.slice(0, TOP_GUESSES).some((a) => a.id === chosen.id) ? (
+              <ArtistChoice
+                guess={{ artist: chosen, reason: 'lineup', score: 0 }}
+                on
+                onPress={() => {
+                  haptic.select();
+                  setTouchedArtist(true);
+                  setArtistId(undefined);
+                }}
+              />
+            ) : null}
+          </View>
+        )}
 
         <View style={styles.pad}>
           {searching || !festival ? (
             <>
+              <View style={styles.searchPad}>
               <SearchField
                 value={query}
                 onChange={setQuery}
-                placeholder={festival ? t('Search {festival}', { festival: festival.name }) : t('Search artists')}
+                placeholder={festival ? t('Search {festival}', { festival: festival.name }) : chosen ? t('Someone else?') : t('Search artists')}
                 label={t('Search for the artist')}
                 autoFocus={searching}
               />
+              </View>
               <View style={styles.rows}>
                 {found.map((a) => (
                   <ArtistChoice
@@ -494,7 +598,7 @@ export default function MemoryTagScreen() {
               <View style={styles.shareText}>
                 <Text style={styles.shareTitle}>{t('Share to Discover')}</Text>
                 {overLimit ? null : (
-                  <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name ?? (past ? pastLabel(past) : undefined), on: shareOn })}</Text>
+                  <Text style={styles.shareDetail}>{shareDetail(offer, { handle: social.profile?.handle, festival: festival?.name ?? (past ? pastLabel(past) : show ? showLabel(show) : undefined), on: shareOn })}</Text>
                 )}
                 {webPost ? (
                   <Text style={[styles.shareDetail, styles.webNote]} testID="web-keeps-by-sharing">
@@ -616,6 +720,7 @@ const styles = StyleSheet.create({
   chipTextOn: { color: color.moon },
   rows: { gap: space.sm, paddingHorizontal: space.xl },
   pad: { marginTop: space.md, gap: space.sm },
+  searchPad: { paddingHorizontal: space.xl },
   choice: {
     flexDirection: 'row',
     alignItems: 'center',

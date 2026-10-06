@@ -1,5 +1,7 @@
 import { t } from '../../i18n';
 import type { PastEvent } from '../memories/past';
+import type { ShowTag } from '../memories/show';
+import type { ClipWindow } from '../memories/trim';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip } from './models';
 
@@ -22,6 +24,10 @@ export type ShareInput = {
   artistId?: string;
   /** A festival from before Afterglow, instead of `festivalId`. */
   past?: PastEvent;
+  /** A one-night show, instead of a festival. */
+  show?: ShowTag;
+  /** The part that plays, when it was trimmed. */
+  clip?: ClipWindow;
   capturedAt: string;
   durationSec?: number;
   width?: number;

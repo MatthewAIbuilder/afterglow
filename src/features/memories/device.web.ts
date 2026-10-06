@@ -89,7 +89,7 @@ async function readMeta(url: string): Promise<WebVideoMeta | undefined> {
 }
 
 /** A still from about a second in, as a JPEG, like the phone makes; undefined when the browser won't draw one. */
-async function posterFrame(url: string): Promise<Blob | undefined> {
+async function posterFrame(url: string, at?: number): Promise<Blob | undefined> {
   const v = offscreenVideo(url, 'auto');
   try {
     const loaded = waitFor(v, 'loadeddata');
@@ -101,7 +101,7 @@ async function posterFrame(url: string): Promise<Blob | undefined> {
     if (!(await loaded)) return undefined;
     v.pause();
     const seeked = waitFor(v, 'seeked');
-    v.currentTime = Math.min(1, (v.duration || 2) / 2);
+    v.currentTime = at !== undefined ? Math.min(at + 1, Math.max(0, (v.duration || at + 2) - 0.5)) : Math.min(1, (v.duration || 2) / 2);
     if (!(await seeked)) return undefined;
     const w = v.videoWidth;
     const h = v.videoHeight;
@@ -145,10 +145,10 @@ const kept = new Map<string, string>();
 
 export const deviceMemoryFiles: MemoryFiles = {
   sessionOnly: true,
-  async keep(sourceUri, name) {
+  async keep(sourceUri, name, o) {
     kept.set(name, sourceUri);
     if (!hasDom()) return {};
-    const still = await posterFrame(sourceUri).catch(() => undefined);
+    const still = await posterFrame(sourceUri, o?.at).catch(() => undefined);
     if (!still) return {};
     const thumb = name.replace(/\.[^.]+$/, '') + '.jpg';
     kept.set(thumb, URL.createObjectURL(still));

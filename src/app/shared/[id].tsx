@@ -23,7 +23,8 @@ import { useSeen } from '../../state/seen';
 import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
-import { pastLabel } from '../../features/memories/past';
+import { whereLine } from '../../features/memories/where';
+import { useClipLoop } from '../../features/memories/useClipLoop';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
@@ -119,6 +120,7 @@ export default function SharedMemoryScreen() {
     p.muted = Platform.OS === 'web';
     p.play();
   });
+  useClipLoop(player, m?.clip);
   const tapVideo = () => {
     haptic.select();
     if (quiet) {
@@ -133,6 +135,7 @@ export default function SharedMemoryScreen() {
   const mine = !!m && m.uid === social.user?.uid;
   const artist = m?.artistId ? catalog.artist(m.artistId) : undefined;
   const festival = m?.festivalId ? catalog.festival(m.festivalId) : undefined;
+  const where = m ? whereLine(m, festival?.name) : '';
 
   // Public once you have a profile: then your like is part of the count.
   const publicLike = liked && !!social.profile;
@@ -215,9 +218,7 @@ export default function SharedMemoryScreen() {
       {m && !blocked ? (
         <View style={[styles.info, { paddingBottom: insets.bottom + space.lg }]}>
           <Text style={styles.artist}>{artist?.name ?? t('Festival moment')}</Text>
-          {[m.night, festival?.name ?? (m.past ? t('Throwback · {festival}', { festival: pastLabel(m.past) }) : undefined)].filter(Boolean).length ? (
-            <Text style={styles.where}>{[m.night ? t(m.night) : undefined, festival?.name ?? (m.past ? t('Throwback · {festival}', { festival: pastLabel(m.past) }) : undefined)].filter(Boolean).join(' · ')}</Text>
-          ) : null}
+          {where ? <Text style={styles.where}>{where}</Text> : null}
           <Pressable onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: m.handle } })} accessibilityRole="button">
             <Text style={styles.by}>@{m.handle}</Text>
           </Pressable>

@@ -71,7 +71,6 @@ export const es_friends: Dictionary = {
   // Sharing a video to Discover
   'Sign in to share your videos to Discover.': 'Inicia sesión para compartir tus videos en Descubrir.',
   'Make a profile to share your videos to Discover.': 'Crea un perfil para compartir tus videos en Descubrir.',
-  'Pick the festival and who was playing to share it to Discover.': 'Elige el festival y quién tocaba para compartirlo en Descubrir.',
   'Only in your Memories, on this phone.': 'Solo en tus Recuerdos, en este teléfono.',
   'People discovering {festival} can watch it, credited to @{handle}. Afterglow doesn’t add where you filmed it, but some videos carry their location inside the file. Only share videos you filmed yourself.':
     'Quienes exploren {festival} podrán verlo, con el crédito para @{handle}. Afterglow no añade dónde lo grabaste, pero algunos videos llevan su ubicación dentro del archivo. Comparte solo videos que hayas grabado tú.',

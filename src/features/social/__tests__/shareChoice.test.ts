@@ -16,6 +16,6 @@ describe('share to Discover on the tagging sheet', () => {
   it('says plainly where it goes, or what it needs', () => {
     expect(shareDetail('ready', { handle: 'maya', festival: 'Cyclops Cove 4', on: true })).toMatch(/^People discovering Cyclops Cove 4 can watch it, credited to @maya\. Afterglow doesn’t add where you filmed it/);
     expect(shareDetail('ready', { on: false })).toBe('Only in your Memories, on this phone.');
-    expect(shareDetail('needs-tags', { on: false })).toBe('Pick the festival and who was playing to share it to Discover.');
+    expect(shareDetail('needs-tags', { on: false })).toBe('Pick who was playing to share it to Discover.');
   });
 });
