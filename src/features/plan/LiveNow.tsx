@@ -66,6 +66,8 @@ function RouteNow({ festival, route, now }: { festival: Festival; route: DayRout
   const where = (s: RouteStop) => stageName(festival, s.set.stageId);
   const cur = live.now;
   const next = live.next;
+  // In one of your own breaks: say which, and until when.
+  const quiet = live.pause ? `${live.pause.label ?? 'Your break'} until ${at(live.pause.to)}.` : 'A break right now.';
   // Leaving before the set ends is worth saying out loud.
   const nowLine = cur
     ? `${cur.known ? '' : 'Something new · '}${where(cur)}, ${cur.to < cur.setEnd ? `leave at ${at(cur.to)}` : `until ${at(cur.to)}`}`
@@ -81,7 +83,7 @@ function RouteNow({ festival, route, now }: { festival: Festival; route: DayRout
       accessible
       accessibilityLabel={[
         `${live.night.day} night.`,
-        cur ? `On now: ${cur.artist.name}. ${nowLine}.` : 'A break right now.',
+        cur ? `On now: ${cur.artist.name}. ${nowLine}.` : quiet,
         next ? `Next: ${nextLine.replace(/ {2}/g, ', ')}.` : nextLine,
       ].join(' ')}
     >
@@ -95,7 +97,7 @@ function RouteNow({ festival, route, now }: { festival: Festival; route: DayRout
           <Text style={styles.meta}>{nowLine}</Text>
         </>
       ) : (
-        <Text style={styles.quiet}>A break right now.</Text>
+        <Text style={styles.quiet}>{quiet}</Text>
       )}
       <View style={styles.divider} />
       <Text style={styles.nextLabel}>Next</Text>

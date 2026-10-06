@@ -11,6 +11,7 @@ import { forgetLastBackdrop } from '../src/state/lastBackdrop';
 import { forgetBadgeClaims } from '../src/state/badgeClaims';
 import { forgetScouted } from '../src/state/scouted';
 import { forgetLastKnown } from '../src/state/lastKnown';
+import { forgetDayHours } from '../src/state/dayHours';
 
 // Shared stores (daily quests, secrets, tips): start every test with fresh ones.
 beforeEach(() => {
@@ -26,4 +27,5 @@ beforeEach(() => {
   forgetBadgeClaims();
   forgetScouted();
   forgetLastKnown();
+  forgetDayHours();
 });

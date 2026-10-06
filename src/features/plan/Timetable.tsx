@@ -19,6 +19,7 @@ import type { DayRoute } from './route';
 import { RouteList } from './RouteList';
 import { SetReminderToggle } from './SetReminderToggle';
 import { TimetableGrid } from './TimetableGrid';
+import { DayHoursBar } from './YourHours';
 
 type Mode = 'route' | 'picks' | 'grid';
 
@@ -59,7 +60,11 @@ export function Timetable({
           {mode === 'grid' ? (
             <TimetableGrid festival={festival} day={current.day} route={dayRoute} />
           ) : mode === 'route' && dayRoute ? (
-            <RouteList festival={festival} route={dayRoute} />
+            <RouteList
+              festival={festival}
+              route={dayRoute}
+              underSummary={<DayHoursBar festival={festival} day={current.day} route={dayRoute} />}
+            />
           ) : (
             <>
               <Text style={styles.summary}>{daySummary(current)}</Text>

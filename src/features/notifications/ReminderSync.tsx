@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useCatalog } from '../../state/catalog';
+import { useAllDayHours } from '../../state/dayHours';
 import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
 import { useSetReminders } from '../../state/setReminders';
@@ -55,6 +56,8 @@ function PhoneReminders() {
   const { artists } = useCatalog();
   const { taste, informed } = useTaste();
   const { mustSeesAt } = usePlan();
+  // Your hours: no reminder for a set the route skips because you've left or are at dinner.
+  const { all: hoursAt } = useAllDayHours();
   // Water reminders, if you switched them on, while a festival you're going to is on.
   const { care, hydrated: careLoaded } = useCare();
   // The 8 PM nudge for daily quests, if you asked for it.
@@ -66,8 +69,8 @@ function PhoneReminders() {
       festivals
         // Only festivals you're still going to (stop going and their set reminders go too).
         .filter((f) => going.includes(f.id) && remindSets.has(f.id) && canRemindSets(f))
-        .map((f) => ({ festival: f, route: festivalRoute({ festival: f, artists, taste, informed, pinned: mustSeesAt(f.id) }) })),
-    [festivals, going, remindSets, artists, taste, informed, mustSeesAt],
+        .map((f) => ({ festival: f, route: festivalRoute({ festival: f, artists, taste, informed, pinned: mustSeesAt(f.id), hours: hoursAt[f.id] }) })),
+    [festivals, going, remindSets, artists, taste, informed, mustSeesAt, hoursAt],
   );
   const sync = useCallback(
     (mayAsk: boolean) => {

@@ -10,6 +10,8 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { MustSeeToggle } from './MustSeeToggle';
 import { usePickReasons } from './usePickReasons';
+import type { ReactNode } from 'react';
+import { timeRange } from './hours';
 import { clockTime, type DayRoute, type RouteStop, stintLabel } from './route';
 import { elsewhereDuring, meetUps, namesLine, type Elsewhere, type MeetUp, type StarsFor } from './withFriends';
 
@@ -22,12 +24,27 @@ const SHORT_BREAK = 20;
  * set, with when to leave and where to walk. Must-sees glow; discoveries are
  * dashed; breaks are quiet.
  */
-export function RouteList({ festival, route }: { festival: Festival; route: DayRoute }) {
+export function RouteList({
+  festival,
+  route,
+  underSummary,
+}: {
+  festival: Festival;
+  route: DayRoute;
+  /** Shown under the day's summary (on Your festival: your hours, and any must-see they leave out). */
+  underSummary?: ReactNode;
+}) {
   const reason = usePickReasons();
   const { crewStarsFor } = useCrews();
   const { artist: artistOf } = useCatalog();
   const starsFor: StarsFor = (id) => crewStarsFor(festival.id, id);
-  if (!route.stops.length) return <Text style={styles.summary}>Nothing on this day.</Text>;
+  if (!route.stops.length)
+    return (
+      <View>
+        <Text style={styles.summary}>{route.missed?.length ? 'Nothing on for you in your hours.' : 'Nothing on this day.'}</Text>
+        {underSummary}
+      </View>
+    );
   const sets = route.stops.filter((s): s is RouteStop => s.kind === 'set');
   const first = route.stops[0];
   const last = route.stops[route.stops.length - 1];
@@ -36,6 +53,7 @@ export function RouteList({ festival, route }: { festival: Festival; route: DayR
       <Text style={styles.summary}>
         {sets.length} {sets.length === 1 ? 'set' : 'sets'}, {at(first.from)} to {at(last.to)}. Where to be all day.
       </Text>
+      {underSummary}
       <MeetUps festival={festival} meets={meetUps(route, starsFor)} />
       {route.stops.map((stop, i) => {
         const prev = [...route.stops.slice(0, i)].reverse().find((s): s is RouteStop => s.kind === 'set');
@@ -58,7 +76,12 @@ export function RouteList({ festival, route }: { festival: Festival; route: DayR
               {!isLast && <View style={styles.line} />}
             </View>
             <View style={styles.body}>
-              {stop.kind === 'break' ? (
+              {stop.kind === 'break' && stop.yours ? (
+                // One of your own breaks: "Dinner · 7:00–8:00 PM".
+                <Text style={[styles.breakText, styles.yourBreak]}>
+                  {stop.label ?? 'Your break'} · {timeRange(stop.from, stop.to)}
+                </Text>
+              ) : stop.kind === 'break' ? (
                 <Text style={styles.breakText}>
                   {stop.to - stop.from <= SHORT_BREAK
                     ? `${stop.to - stop.from} min break`
@@ -250,6 +273,7 @@ const styles = StyleSheet.create({
   line: { flex: 1, width: StyleSheet.hairlineWidth * 2, backgroundColor: color.hairline, marginTop: space.xs },
   body: { flex: 1, paddingBottom: space.md },
   breakText: { ...type.caption, color: color.moonFaint, paddingTop: space.md + 1 },
+  yourBreak: { ...type.label, color: color.moonDim },
   card: {
     borderRadius: radius.md,
     paddingHorizontal: space.md,

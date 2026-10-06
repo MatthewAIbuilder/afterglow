@@ -1,4 +1,5 @@
 import type { Artist, Festival, SetTime, TasteProfile } from '../../data/types';
+import { cleanHours, type DayHours, freeMinutes, type Missed, missedBy } from './hours';
 import { toMinutes } from './plan';
 
 /**
@@ -16,6 +17,11 @@ import { toMinutes } from './plan';
  * so it doesn't hop every few minutes. The best path through the slices is
  * found exactly (dynamic programming), then tidied: stints too short to be
  * worth the walk are folded into their neighbours.
+ *
+ * Your hours (`hours.ts`), when you've set them for a day, bound it: nothing
+ * before you arrive or after you leave, and your breaks are breaks whatever's
+ * on (a set across one is cut around it). A must-see you'd miss altogether is
+ * never dropped quietly: the day lists it in `missed`.
  */
 
 /** Value per minute of an artist the app has no signal for: worth a look, not worth leaving a match for. */
@@ -57,9 +63,25 @@ export type AlsoOn = { artist: Artist; set: SetTime; match: number; known: boole
 export const ALSO_ON_MAX = 2;
 export const ALSO_ON_MIN = 0.5;
 
-export type RouteBreak = { kind: 'break'; from: number; to: number };
+export type RouteBreak = {
+  kind: 'break';
+  from: number;
+  to: number;
+  /** One of your own breaks (from your hours), not just nothing on for you. */
+  yours?: true;
+  /** Your break's name ("Dinner"), when it has one. */
+  label?: string;
+};
 
-export type DayRoute = { day: string; stops: (RouteStop | RouteBreak)[] };
+/** A must-see your hours leave no time for, and why. */
+export type MissedSet = Missed & { artist: Artist; set: SetTime };
+
+export type DayRoute = {
+  day: string;
+  stops: (RouteStop | RouteBreak)[];
+  /** Must-sees you'd miss altogether in your hours, in time order. Only when there are some. */
+  missed?: MissedSet[];
+};
 
 export type RouteInput = {
   festival: Festival;
@@ -68,6 +90,8 @@ export type RouteInput = {
   informed: Record<string, boolean>;
   /** Your must-sees at this festival. */
   pinned?: ReadonlySet<string>;
+  /** Your hours, by day (when you arrive, leave and take breaks). A day without is all day. */
+  hours?: Record<string, DayHours>;
 };
 
 type Timed = { set: SetTime; artist: Artist; start: number; end: number; value: number; match: number; known: boolean; pinned: boolean; rank: number };
@@ -93,16 +117,38 @@ function timedSets(input: RouteInput, day: string): Timed[] {
 
 /** The best path through one day. Empty when the day has no sets. */
 export function dayRoute(input: RouteInput, day: string): DayRoute {
-  const sets = timedSets(input, day).filter((s) => s.pinned || s.value >= MIN_VALUE);
-  if (!sets.length) return { day, stops: [] };
+  const hours = cleanHours(input.hours?.[day]);
+  const all = timedSets(input, day);
+  // Must-sees with no time at all inside your hours: said, never dropped quietly.
+  const missed: MissedSet[] = hours
+    ? all
+        .filter((s) => s.pinned)
+        .flatMap((s) => {
+          const m = missedBy(hours, s.start, s.end);
+          return m ? [{ ...m, artist: s.artist, set: s.set }] : [];
+        })
+        .sort((a, b) => a.start - b.start)
+    : [];
+  const extra = missed.length ? { missed } : {};
+  const sets = all.filter((s) => (s.pinned || s.value >= MIN_VALUE) && freeMinutes(hours, s.start, s.end) > 0);
+  if (!sets.length) return { day, stops: [], ...extra };
 
-  // Slices between every start and end.
-  const cuts = [...new Set(sets.flatMap((s) => [s.start, s.end]))].sort((a, b) => a - b);
+  // Slices between every start and end (and, with your hours, every arrive, leave and break edge inside them).
+  let cuts = [...new Set(sets.flatMap((s) => [s.start, s.end]))].sort((a, b) => a - b);
+  if (hours) {
+    const lo = Math.max(cuts[0], hours.arrive ?? -Infinity);
+    const hi = Math.min(cuts[cuts.length - 1], hours.leave ?? Infinity);
+    const edges = [lo, hi, ...hours.breaks.flatMap((b) => [b.from, b.to])];
+    cuts = [...new Set([...cuts, ...edges])].filter((c) => c >= lo && c <= hi).sort((a, b) => a - b);
+  }
+  // Your break covering a slice, if any (slices never straddle a break's edge).
+  const yourBreak = (from: number, to: number) => hours?.breaks.find((b) => b.from < to && from < b.to);
   const slices = cuts.slice(0, -1).map((from, i) => ({
     from,
     to: cuts[i + 1],
-    // Who's on for the whole slice; -1 is a break.
-    on: [-1, ...sets.flatMap((s, j) => (s.start <= from && s.end >= cuts[i + 1] ? [j] : []))],
+    brk: yourBreak(from, cuts[i + 1]),
+    // Who's on for the whole slice; -1 is a break (the only choice during one of yours).
+    on: [-1, ...(yourBreak(from, cuts[i + 1]) ? [] : sets.flatMap((s, j) => (s.start <= from && s.end >= cuts[i + 1] ? [j] : [])))],
   }));
 
   // Best score ending each slice in each state, and how we got there.
@@ -148,14 +194,14 @@ export function dayRoute(input: RouteInput, day: string): DayRoute {
   // Runs of the same state become stops.
   let stops: (RouteStop | RouteBreak)[] = [];
   path.forEach((st, i) => {
-    const { from, to } = slices[i];
+    const { from, to, brk } = slices[i];
     const last = stops[stops.length - 1];
-    const same = last && (st < 0 ? last.kind === 'break' : last.kind === 'set' && last.set === sets[st].set);
+    const same = last && (st < 0 ? last.kind === 'break' && sameBreak(last, brk) : last.kind === 'set' && last.set === sets[st].set);
     if (same && last.to === from) {
       last.to = to;
       return;
     }
-    stops.push(st < 0 ? { kind: 'break', from, to } : stopFor(sets[st], from, to));
+    stops.push(st < 0 ? breakFor(from, to, brk) : stopFor(sets[st], from, to));
   });
   stops = walks(tidy(stops));
   // What else is on while you're at each stop, that you'd enjoy too.
@@ -168,8 +214,15 @@ export function dayRoute(input: RouteInput, day: string): DayRoute {
       .map((t) => ({ artist: t.artist, set: t.set, match: t.match, known: t.known }));
     if (others.length) stop.alsoOn = others;
   }
-  return { day, stops };
+  return { day, stops, ...extra };
 }
+
+/** A break stop: plain, or one of yours (with its name). */
+const breakFor = (from: number, to: number, yours?: { label?: string }): RouteBreak =>
+  yours ? { kind: 'break', from, to, yours: true, ...(yours.label ? { label: yours.label } : {}) } : { kind: 'break', from, to };
+
+/** Two breaks run together when both are plain, or both the same break of yours. */
+const sameBreak = (a: RouteBreak, yours?: { label?: string }) => (yours ? !!a.yours && a.label === yours.label : !a.yours);
 
 /** Every day of the festival, in order. */
 export function festivalRoute(input: RouteInput): DayRoute[] {
@@ -219,7 +272,7 @@ function tidy(stops: (RouteStop | RouteBreak)[]): (RouteStop | RouteBreak)[] {
   const merged: (RouteStop | RouteBreak)[] = [];
   for (const s of out) {
     const last = merged[merged.length - 1];
-    if (s.kind === 'break' && last?.kind === 'break') last.to = s.to;
+    if (s.kind === 'break' && last?.kind === 'break' && sameBreak(last, s.yours ? s : undefined)) last.to = s.to;
     else merged.push(s);
   }
   while (merged[0]?.kind === 'break') merged.shift();

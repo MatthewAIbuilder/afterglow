@@ -1,7 +1,7 @@
 import type { Festival } from '../../data/models';
 import { daysUntil } from '../festivals/when';
 import { DAY_BREAK, type Schedule, type ScheduleItem, type TimedPick } from './plan';
-import type { DayRoute, RouteStop } from './route';
+import type { DayRoute, RouteBreak, RouteStop } from './route';
 
 /**
  * During the festival: what's on your plan right now, and what's next. Pure:
@@ -78,17 +78,22 @@ export type LiveRoute = {
   now?: RouteStop;
   /** The next set on the route tonight, if any. */
   next?: RouteStop;
+  /** One of your own breaks (dinner, a rest), when you're in it right now. */
+  pause?: RouteBreak;
 };
 
 /** During the festival, from the full-day route: where you should be now, and where next. */
 export function liveRoute(festival: Festival, route: DayRoute[], now: Date): LiveRoute | undefined {
   const night = festivalNight(festival, now);
   if (!night) return undefined;
-  const stops = (route.find((d) => d.day === night.day)?.stops ?? []).filter((s): s is RouteStop => s.kind === 'set');
+  const all = route.find((d) => d.day === night.day)?.stops ?? [];
+  const stops = all.filter((s): s is RouteStop => s.kind === 'set');
   const m = night.minute;
+  const pause = all.find((s): s is RouteBreak => s.kind === 'break' && !!s.yours && s.from <= m && m < s.to);
   return {
     night,
     now: stops.find((s) => s.from <= m && m < s.to),
     next: stops.find((s) => s.from > m),
+    ...(pause ? { pause } : {}),
   };
 }

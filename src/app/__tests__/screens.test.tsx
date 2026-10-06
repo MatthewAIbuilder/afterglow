@@ -449,6 +449,44 @@ describe('Festivals', () => {
     expect(app.queryByText(/Where to be all day/)).toBeNull();
   });
 
+  it('plans the full day inside your hours, and says when a must-see falls outside them', async () => {
+    await AsyncStorage.setItem('mustSees.v2', JSON.stringify({ 'solstice-26': ['subtronics'] }));
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    const subtronics = /^\d{1,2}:\d{2} [AP]M to \d{1,2}:\d{2} [AP]M, SUBTRONICS at Bass Tent, /;
+    expect(app.getAllByLabelText(subtronics).length).toBe(1);
+    await fireEvent.press(app.getByLabelText(/^Your hours on Friday: all day\./));
+    await settle();
+    expect(app.getByRole('header', { name: 'Your hours' })).toBeTruthy();
+    expect(app.getByLabelText('Leave: Until the end')).toBeTruthy();
+    // Leave at midnight (the last set ends at 1:30 AM), and stop for dinner.
+    for (let i = 0; i < 6; i++) await fireEvent.press(app.getByLabelText('Leave 15 minutes earlier'));
+    expect(app.getByLabelText('Leave: 12:00 AM')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Add a break'));
+    expect(app.getByLabelText('From: 10:30 PM')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Save your hours'));
+    await settle();
+    expect(app.getByLabelText('Your hours on Friday: leaving at 12:00 AM, Dinner from 10:30 PM to 11:30 PM. Change when you arrive, leave and take breaks.')).toBeTruthy();
+    expect(app.getByText('Dinner · 10:30–11:30 PM')).toBeTruthy();
+    expect(app.queryAllByLabelText(subtronics)).toHaveLength(0);
+    expect(app.getByText('SUBTRONICS plays at 12:15 AM, after you leave. Stay later?')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('dayHours.v1')) ?? '{}')).toEqual({
+      'solstice-26': { Friday: { leave: 1440, breaks: [{ from: 1350, to: 1410, label: 'Dinner' }] } },
+    });
+    // One tap to stay for it.
+    await fireEvent.press(app.getByLabelText('Stay until 1:30 AM, so SUBTRONICS is back on your day'));
+    await settle();
+    expect(app.queryByText(/SUBTRONICS plays at/)).toBeNull();
+    expect(app.getAllByLabelText(subtronics).length).toBe(1);
+    // And back to all day.
+    await fireEvent.press(app.getByLabelText(/^Your hours on Friday: leaving at 1:30 AM/));
+    await settle();
+    await fireEvent.press(app.getByLabelText('Reset to all day'));
+    await settle();
+    expect(app.getByLabelText(/^Your hours on Friday: all day\./)).toBeTruthy();
+    expect(app.queryByText('Dinner · 10:30–11:30 PM')).toBeNull();
+  });
+
   it('shows every set of the day as a timetable', async () => {
     const app = await renderApp('/festival/solstice-26');
     await settle();
