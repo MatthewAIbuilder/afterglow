@@ -22,13 +22,37 @@ export type Spot = {
   /** 0 at the back row (by the horizon) to 1 at the front. */
   depth: number;
 };
-export type Meadow = { cols: number; rows: number; colWidth: number; height: number; spots: Spot[] };
+export type Meadow = {
+  cols: number;
+  rows: number;
+  colWidth: number;
+  height: number;
+  spots: Spot[];
+  /** How big everything stands (1 for a few residents, smaller as the garden fills up). */
+  scale: number;
+  /** Names and bars under each one (left out once it's crowded: tap one for its sheet). */
+  names: boolean;
+};
+
+/**
+ * How the meadow fits more residents: everyone a little smaller and closer
+ * together as it fills, so 10, 40 or 100 still read as a meadow and not a
+ * list; past a crowd, names step aside (each still opens on a tap).
+ */
+export function densityOf(count: number): { scale: number; names: boolean } {
+  if (count <= 8) return { scale: 1, names: true };
+  if (count <= 18) return { scale: 0.82, names: true };
+  if (count <= 40) return { scale: 0.66, names: false };
+  return { scale: 0.52, names: false };
+}
 /** Which spot each resident stands at. */
 export type Placement = Record<string, number>;
 
 /** A spot needs about this much width (a creature up to 96 pt and its name). */
 export const SPOT_MIN_WIDTH = 108;
-export const MAX_COLS = 5;
+/** Across at full size; more fit as everyone gets smaller (up to `MAX_COLS`). */
+export const BASE_COLS = 5;
+export const MAX_COLS = 10;
 /** A row: the tallest creature (96) plus its name and bar under it. */
 export const ROW_HEIGHT = 124;
 /** Sky and the rolling horizon above the back row. */
@@ -37,8 +61,8 @@ export const BOTTOM = 26;
 /** The tallest creature: its feet stand this far below the top of its row. */
 const STAND = 96;
 
-export function colsFor(width: number): number {
-  return Math.max(2, Math.min(MAX_COLS, Math.floor(width / SPOT_MIN_WIDTH)));
+export function colsFor(width: number, scale = 1): number {
+  return Math.max(2, Math.min(MAX_COLS, Math.round(BASE_COLS / scale), Math.floor(width / (SPOT_MIN_WIDTH * scale))));
 }
 
 /** Rows for `count` residents: always one spare spot, so something can be moved. */
@@ -48,9 +72,12 @@ export function rowsFor(count: number, cols: number): number {
 
 /** The meadow for `count` residents across `width` points. */
 export function meadow(count: number, width: number): Meadow {
-  const cols = colsFor(width);
+  const { scale, names } = densityOf(count);
+  const cols = colsFor(width, scale);
   const rows = rowsFor(count, cols);
   const colWidth = width / cols;
+  const rowHeight = Math.round(ROW_HEIGHT * scale * (names ? 1 : 0.84));
+  const stand = STAND * scale;
   const spots: Spot[] = [];
   for (let i = 0; i < cols * rows; i++) {
     const row = Math.floor(i / cols);
@@ -58,9 +85,11 @@ export function meadow(count: number, width: number): Meadow {
     // A little off the grid, the same every time.
     const jx = ((hashOf(`spot${i}`) % 1000) / 1000 - 0.5) * colWidth * 0.18;
     const jy = ((hashOf(`row${i}`) % 1000) / 1000 - 0.5) * 12;
-    spots.push({ x: colWidth * (col + 0.5) + jx, y: HORIZON + row * ROW_HEIGHT + STAND + jy, row, col, depth: rows > 1 ? row / (rows - 1) : 1 });
+    // Rows interleave a little once it's crowded, like a meadow rather than a grid.
+    const shift = !names && row % 2 ? colWidth * 0.25 : 0;
+    spots.push({ x: colWidth * (col + 0.5) + jx + shift, y: HORIZON + row * rowHeight + stand + jy * scale, row, col, depth: rows > 1 ? row / (rows - 1) : 1 });
   }
-  return { cols, rows, colWidth, height: HORIZON + rows * ROW_HEIGHT + BOTTOM, spots };
+  return { cols, rows, colWidth, height: HORIZON + rows * rowHeight + BOTTOM, spots, scale, names };
 }
 
 /** Spots in the order new arrivals take them: row by row, from the middle of each row outwards. */
