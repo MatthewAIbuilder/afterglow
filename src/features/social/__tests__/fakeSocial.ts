@@ -248,6 +248,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         avatarUrl: before?.avatarUrl,
         coverUrl: before?.coverUrl,
         festivals: input.showFestivals ? published.festivals : [],
+        shows: input.showFestivals ? (published.shows ?? before?.shows ?? []).slice(0, 30) : [],
         sounds: input.showSound ? published.sounds : [],
         artists: input.showArtists !== false ? (published.artists ?? before?.artists ?? []).slice(0, ARTISTS_SHOWN) : [],
         showFestivals: input.showFestivals,

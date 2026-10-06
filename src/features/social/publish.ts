@@ -7,9 +7,10 @@ import type { Profile } from './models';
  */
 const same = (a: readonly string[], b: readonly string[]) => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
 
-export function publishedChanged(profile: Profile, festivals: readonly string[], sounds: readonly string[], artists?: readonly string[]): boolean {
+export function publishedChanged(profile: Profile, festivals: readonly string[], sounds: readonly string[], artists?: readonly string[], shows?: readonly string[]): boolean {
   return (
     (profile.showFestivals && !same(profile.festivals, festivals)) ||
+    (shows !== undefined && profile.showFestivals && !same(profile.shows ?? [], shows)) ||
     (profile.showSound && !same(profile.sounds, sounds)) ||
     (artists !== undefined && profile.showArtists && !same(profile.artists, artists))
   );

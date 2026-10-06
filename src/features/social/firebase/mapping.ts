@@ -31,6 +31,7 @@ export function profileFromDoc(uid: string, d: unknown): Profile | null {
     avatarUrl: https(o.avatarUrl),
     coverUrl: https(o.coverUrl),
     festivals: strs(o.festivals, 50),
+    shows: strs(o.shows, 30),
     sounds: strs(o.sounds, 3).filter((s): s is SoundTag => (SOUND_TAGS as readonly string[]).includes(s)),
     artists: strs(o.artists, ARTISTS_SHOWN),
     showFestivals: o.showFestivals === true,
@@ -44,7 +45,7 @@ export function profileFromDoc(uid: string, d: unknown): Profile | null {
 }
 
 /** The fields added after the first rules (favourite artists, the animated background, your socials). */
-export const NEWER_PROFILE_FIELDS = ['artists', 'showArtists', 'backdrop', 'instagram', 'snapchat', 'tiktok'] as const;
+export const NEWER_PROFILE_FIELDS = ['artists', 'showArtists', 'backdrop', 'instagram', 'snapchat', 'tiktok', 'shows'] as const;
 
 /**
  * A profile as it's written: optional fields only when set (the database
@@ -62,6 +63,8 @@ export function profileToDoc(p: Profile, legacy = false): Record<string, unknown
     ...(coverUrl ? { coverUrl } : {}),
     ...(backdrop ? { backdrop } : {}),
   };
+  // Only written when there are some (an older database's rules don't know the field).
+  if (!p.shows?.length) delete out.shows;
   if (legacy) for (const k of NEWER_PROFILE_FIELDS) delete out[k];
   return out;
 }

@@ -85,6 +85,21 @@ describe('shows for you', () => {
     open.mockRestore();
   });
 
+  it('“I’m going” on a show puts it in your plans on Profile, apart from your festivals', async () => {
+    const app = await renderApp('/show/edm-2');
+    await flush();
+    await fireEvent.press(app.getByLabelText('I\'m going to Club Two'));
+    expect(app.getByLabelText('You\'re going to Club Two. Tap to undo.')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('goingShows.v1')) ?? '[]')).toEqual([expect.objectContaining({ id: 'edm-2', title: 'Club Two', where: 'Denver, CO' })]);
+    await act(async () => router.navigate('/profile'));
+    await flush();
+    // A show isn't a festival: the count stays at none, and tapping it opens the Festivals tab with the show in it.
+    await fireEvent.press(app.getByLabelText('0 festivals'));
+    await flush();
+    expect(app.getByText('Shows you’re going to')).toBeTruthy();
+    expect(app.getByText('Club Two')).toBeTruthy();
+  });
+
   it('shares a link to the show on the website', async () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
     const app = await renderApp('/show/edm-2');

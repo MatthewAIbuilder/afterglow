@@ -27,6 +27,8 @@ export type Profile = {
   coverUrl?: string;
   /** Festivals you're going to, shown only when you switch it on. */
   festivals: string[];
+  /** One-night shows you're going to (ids, coming up), shown with your festivals when you switch that on. */
+  shows?: string[];
   /** Your top sounds, shown only when you switch it on. */
   sounds: SoundTag[];
   /** Your favourite artists (ids, best first), shown round your photo unless you switch it off. */
@@ -58,7 +60,7 @@ export type ProfileInput = {
 };
 
 /** What your profile publishes when switched on, kept current with your plans and taste. */
-export type Published = { festivals: string[]; sounds: SoundTag[]; artists?: string[] };
+export type Published = { festivals: string[]; sounds: SoundTag[]; artists?: string[]; shows?: string[] };
 
 /** How many favourite artists a profile shows round its photo. */
 export const ARTISTS_SHOWN = 6;
