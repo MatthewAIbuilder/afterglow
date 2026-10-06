@@ -26,7 +26,8 @@ import {
 } from './map';
 import { SPREAD_ZOOM, sameSpot, spreadMarkers } from './explore';
 import { NIGHT_STYLE } from './mapStyle';
-import { HERE_COLOR, TONE_COLOR } from './tones';
+import { HERE_COLOR, SHOW_COLOR, TONE_COLOR } from './tones';
+import { type ShowPin, showPinLabel } from './tour';
 
 /** Lights closer than this many pixels share one. */
 const CLUSTER_PX = 30;
@@ -49,6 +50,7 @@ const pointLatLng = (p: Point): LatLng => ({ latitude: p.lat, longitude: p.lon }
  */
 export function FestivalMap({
   markers,
+  shows,
   selected,
   onSelect,
   here,
@@ -61,8 +63,11 @@ export function FestivalMap({
   testID,
 }: {
   markers: readonly FestivalMarker[];
+  /** An artist's club shows on their tour: smaller lights, under the festivals'. */
+  shows?: readonly ShowPin[];
+  /** The chosen festival's or show's id. */
   selected?: string;
-  onSelect: (festivalId: string) => void;
+  onSelect: (id: string) => void;
   here?: Point;
   width: number;
   height: number;
@@ -78,9 +83,11 @@ export function FestivalMap({
   testID?: string;
 }) {
   const reduced = useReducedMotion();
+  // Festivals and shows on the map.
+  const lit = markers.length + (shows?.length ?? 0);
   const map = useRef<MapView>(null);
   const [ready, setReady] = useState(false);
-  const points = useMemo(() => [...markers.map((m) => m.at), ...(here ? [project(here)] : [])], [markers, here]);
+  const points = useMemo(() => [...markers.map((m) => m.at), ...(shows ?? []).map((p) => p.at), ...(here ? [project(here)] : [])], [markers, shows, here]);
   const [first] = useState(() => regionOf(boxAround(points)));
   const [region, setRegion] = useState<Region>(first);
   // Moved by hand since it was last framed: offer to show everything again.
@@ -124,11 +131,11 @@ export function FestivalMap({
   useEffect(() => {
     if (!ready || !selected || selected === lastGlide.current) return;
     lastGlide.current = selected;
-    const m = markers.find((k) => k.festival.id === selected);
-    if (!m) return;
+    const at = markers.find((k) => k.festival.id === selected)?.at ?? shows?.find((p) => p.show.id === selected)?.at;
+    if (!at) return;
     touched.current = false;
-    map.current?.animateCamera({ center: toLatLng(m.at) }, { duration });
-  }, [ready, selected, markers, duration]);
+    map.current?.animateCamera({ center: toLatLng(at) }, { duration });
+  }, [ready, selected, markers, shows, duration]);
 
   // "Show me": glide to where you are, only when asked.
   const answered = useRef(0);
@@ -212,6 +219,20 @@ export function FestivalMap({
               <HereDot reduced={reduced} />
             </Marker>
           ) : null}
+          {/* An artist's club shows: small lights, under the festivals'. */}
+          {(shows ?? []).map((p) => (
+            <ShowLight
+              key={p.show.id}
+              pin={p}
+              chosen={p.show.id === selected}
+              onPress={() => {
+                haptic.select();
+                lastGlide.current = p.show.id;
+                onSelect(p.show.id);
+                map.current?.animateCamera({ center: toLatLng(p.at) }, { duration });
+              }}
+            />
+          ))}
           {clusters.map((c) => (
             <Light
               key={c.lead.festival.id}
@@ -239,7 +260,7 @@ export function FestivalMap({
           ))}
         </MapView>
       </View>
-      {moved && markers.length ? (
+      {moved && lit ? (
         <View style={[styles.again, { top: area.top + space.sm }]} pointerEvents="box-none">
           <Pressable
             onPress={() => {
@@ -247,11 +268,11 @@ export function FestivalMap({
               frameAll(true);
             }}
             accessibilityRole="button"
-            accessibilityLabel={markers.length > 1 ? 'Show all these festivals again' : 'Back to the festival'}
+            accessibilityLabel={lit > 1 ? 'Show all these festivals again' : 'Back to the festival'}
             style={({ pressed }) => [styles.againPill, pressed && { opacity: 0.8 }]}
           >
             <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
-            <Text style={styles.againText}>{markers.length > 1 ? 'Show all' : 'Back to it'}</Text>
+            <Text style={styles.againText}>{lit > 1 ? 'Show all' : 'Back to it'}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -333,6 +354,27 @@ function Light({ cluster, chosen, named, reduced, onPress }: { cluster: Cluster;
   );
 }
 
+/** A club show on an artist's tour: a small hollow light, quieter than a festival's, a ring when chosen. */
+function ShowLight({ pin, chosen, onPress }: { pin: ShowPin; chosen: boolean; onPress: () => void }) {
+  const track = useTracking(String(chosen));
+  return (
+    <Marker coordinate={toLatLng(pin.at)} anchor={{ x: 0.5, y: 0.5 }} onPress={onPress} tracksViewChanges={track} zIndex={chosen ? 100 : 5}>
+      <View
+        style={styles.lightHit}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={showPinLabel(pin.show)}
+        accessibilityState={{ selected: chosen }}
+        testID={`map-show-${pin.show.id}`}
+        collapsable={false}
+      >
+        {chosen ? <View style={[styles.showRing, { borderColor: SHOW_COLOR }]} /> : null}
+        <View style={[styles.showDot, { borderColor: SHOW_COLOR, shadowColor: SHOW_COLOR }]} />
+      </View>
+    </Marker>
+  );
+}
+
 function Pulse({ tint }: { tint: string }) {
   const p = useSharedValue(0);
   useEffect(() => {
@@ -358,6 +400,8 @@ const styles = StyleSheet.create({
   halo: { position: 'absolute', opacity: 0.22 },
   core: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.75)', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   ring: { position: 'absolute', width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
+  showDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 2, backgroundColor: color.night, shadowOpacity: 0.8, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },
+  showRing: { position: 'absolute', width: 22, height: 22, borderRadius: 11, borderWidth: 1.5 },
   pulse: { position: 'absolute', width: 28, height: 28, borderRadius: 14, borderWidth: 1.5 },
   count: {
     position: 'absolute',

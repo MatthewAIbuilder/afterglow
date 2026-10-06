@@ -15,10 +15,11 @@ const SETTLE_MS = 3000;
  * Renders nothing. Each value is tried once a session, so a database whose
  * rules don't know levels yet is never asked again and again.
  *
- * The level is worked out from what's on this phone, so a new phone, a
- * reinstall or the website starts low: it's only sent when it's higher than
- * what the account already shows, never lowered or removed by itself (only
- * the switch removes it), and never sent to the support account.
+ * The level is your account's (`useDailyQuests`: glow earned on this phone
+ * while signed in to it, never below what the account already shows). It's
+ * only sent when it's higher than what the account shows (read fresh), never
+ * lowered or removed by itself (only the switch removes it), and never sent
+ * to the support account.
  */
 export function LevelSync() {
   const social = useSocial();
