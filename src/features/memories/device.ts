@@ -140,7 +140,7 @@ async function placeOf(latitude: number, longitude: number): Promise<Moment['pla
 /** Where memory files live, by name. The folder is Afterglow's own, backed up with the app, never shown in Photos. */
 export type MemoryFiles = {
   /** Copy a video into Memories and make its still; returns the still's name when one could be made. */
-  keep(sourceUri: string, name: string): Promise<{ thumb?: string }>;
+  keep(sourceUri: string, name: string, o?: { at?: number }): Promise<{ thumb?: string }>;
   remove(names: (string | undefined)[]): Promise<void>;
   uriOf(name: string): string;
   /** Names in the folder, to tidy up files no memory points to. */
@@ -158,11 +158,11 @@ const folder = () => {
 };
 
 export const deviceMemoryFiles: MemoryFiles = {
-  async keep(sourceUri, name) {
+  async keep(sourceUri, name, o) {
     const dest = new File(folder(), name);
     await new File(sourceUri).copy(dest);
     try {
-      const shot = await VideoThumbnails.getThumbnailAsync(dest.uri, { time: 1000, quality: 0.7 });
+      const shot = await VideoThumbnails.getThumbnailAsync(dest.uri, { time: Math.round(((o?.at ?? 0) + 1) * 1000), quality: 0.7 });
       const thumb = name.replace(/\.[^.]+$/, '') + '.jpg';
       await new File(shot.uri).move(new File(folder(), thumb));
       return { thumb };

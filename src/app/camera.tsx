@@ -304,7 +304,7 @@ function ChooseOnWeb() {
       </View>
       <Text style={styles.permTitle}>{t('Post a festival moment')}</Text>
       <Text style={styles.permBody}>
-        {t('Choose a video from your Photos or Files, or take one, up to a minute long. Tag who was playing and share it to Discover.')}
+        {t('Choose a video from your Photos or Files, or take one, up to ten minutes long. Trim it to the best part, tag who was playing and share it to Discover.')}
       </Text>
       <Pressable
         onPress={() => {

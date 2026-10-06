@@ -11,8 +11,10 @@ import type { Memory } from './models';
  * keeps no files of its own). The DOM side is in device.web.ts.
  */
 
-/** The same cap as the app's picker and camera (device.ts `MAX_CLIP_SECONDS`). */
+/** The same cap as the app's picker and camera (device.ts `MAX_CLIP_SECONDS`): what plays, once trimmed. */
 export const WEB_MAX_CLIP_SECONDS = 60;
+/** A longer video can be chosen and trimmed to WEB_MAX_CLIP_SECONDS on the tagging sheet, up to this long. */
+export const WEB_MAX_SOURCE_SECONDS = 600;
 /** The same cap as a share's upload (and storage.rules). */
 export const WEB_MAX_VIDEO_BYTES = MAX_SHARE_BYTES;
 
@@ -47,11 +49,11 @@ export type WebVideoMeta = { duration: number; width: number; height: number };
 
 export type WebMetaCheck = { ok: true; durationSec: number; width?: number; height?: number } | { ok: false; reason: 'too-long' | 'failed' };
 
-/** The same length rule as the app (a second's grace, as on the phone); a file the browser can't read is refused. */
+/** Up to WEB_MAX_SOURCE_SECONDS (longer ones are trimmed on the tagging sheet); a file the browser can't read is refused. */
 export function checkWebMeta(meta: WebVideoMeta | undefined): WebMetaCheck {
   if (!meta || !Number.isFinite(meta.duration) || meta.duration <= 0) return { ok: false, reason: 'failed' };
   const durationSec = Math.max(1, Math.round(meta.duration));
-  if (durationSec > WEB_MAX_CLIP_SECONDS + 1) return { ok: false, reason: 'too-long' };
+  if (durationSec > WEB_MAX_SOURCE_SECONDS + 1) return { ok: false, reason: 'too-long' };
   const sized = meta.width > 0 && meta.height > 0;
   return { ok: true, durationSec, width: sized ? Math.round(meta.width) : undefined, height: sized ? Math.round(meta.height) : undefined };
 }
@@ -78,7 +80,9 @@ export function sharedAsMemory(s: SharedMemory): Memory {
     festivalId: s.festivalId,
     night: s.night,
     past: s.past,
+    show: s.show,
     artistId: s.artistId,
+    clip: s.clip,
     sharedId: s.id,
     sharedBy: s.uid,
   };

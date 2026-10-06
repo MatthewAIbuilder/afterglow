@@ -314,6 +314,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         night: input.night,
         artistId: input.artistId,
         past: input.festivalId ? undefined : input.past,
+        show: input.festivalId || input.past ? undefined : input.show,
+        clip: input.clip,
         capturedAt: input.capturedAt,
         durationSec: input.durationSec,
         width: input.width,

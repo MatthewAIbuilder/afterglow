@@ -78,7 +78,7 @@ service cloud.firestore {
     match /memories/{id} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == me()
-        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'showName', 'showDate', 'showCity', 'showId', 'clipStart', 'clipEnd', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
         && request.resource.data.handle == get(path('profiles', me())).data.handle
         && request.resource.data.videoPath.matches('^memories/' + me() + '/' + id + '[.](mp4|mov|m4v)$')
         // The links are this owner's own uploads for this memory: Firebase Storage download links to memories/<uid>/<id>.
@@ -96,6 +96,20 @@ service cloud.firestore {
         && (!('pastYear' in request.resource.data) || 'pastName' in request.resource.data)
         && shortOrAbsent(request.resource.data, 'pastCity', 60) && shortOrAbsent(request.resource.data, 'seriesId', 100)
         && (!('seriesId' in request.resource.data) || 'pastName' in request.resource.data)
+        // A one-night show (a club night or concert): a name and a day, never with a festival or a throwback.
+        && (!('showName' in request.resource.data) || (!('festivalId' in request.resource.data) && !('pastName' in request.resource.data)
+          && request.resource.data.showName is string && request.resource.data.showName.size() > 0 && request.resource.data.showName.size() <= 60
+          && request.resource.data.showDate is string && request.resource.data.showDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+        && (!('showDate' in request.resource.data) || 'showName' in request.resource.data)
+        && shortOrAbsent(request.resource.data, 'showCity', 60) && shortOrAbsent(request.resource.data, 'showId', 100)
+        && (!('showCity' in request.resource.data) || 'showName' in request.resource.data)
+        && (!('showId' in request.resource.data) || 'showName' in request.resource.data)
+        // A trimmed video: the part that plays, at most a minute (and a second's grace) of it.
+        && (!('clipStart' in request.resource.data) || ('clipEnd' in request.resource.data
+          && request.resource.data.clipStart is number && request.resource.data.clipEnd is number
+          && request.resource.data.clipStart >= 0 && request.resource.data.clipEnd <= 3600
+          && request.resource.data.clipEnd - request.resource.data.clipStart >= 1 && request.resource.data.clipEnd - request.resource.data.clipStart <= 61))
+        && (!('clipEnd' in request.resource.data) || 'clipStart' in request.resource.data)
         // Throwbacks are counted: the count moves on by one in the same write, and stops at 3 without Afterglow Plus.
         && (!('pastName' in request.resource.data) || (
           getAfter(path('usage', me())).data.memory == id

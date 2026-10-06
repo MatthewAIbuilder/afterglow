@@ -66,7 +66,7 @@ const savedMemories = async (): Promise<{ id: string; sharedId?: string }[]> => 
 describe('share to Discover while tagging', () => {
   it('needs who was playing, then is on by default and shares as you save', async () => {
     const app = await openTagging();
-    expect(app.getByText('Pick the festival and who was playing to share it to Discover.')).toBeTruthy();
+    expect(app.getByText('Pick who was playing to share it to Discover.')).toBeTruthy();
     await fireEvent.press(app.getByLabelText(/^SUBTRONICS, Playing Saturday/));
     expect(app.getByTestId('share-to-discover').props.value).toBe(true);
     expect(app.getByText(/^People discovering Cyclops Cove 4 can watch it, credited to @sam\./)).toBeTruthy();

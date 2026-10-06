@@ -333,8 +333,11 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
             night: m.night,
             artistId: m.artistId,
             past: m.past,
+            show: m.show,
+            clip: m.clip,
             capturedAt: m.capturedAt,
-            durationSec: m.durationSec,
+            // A trimmed video is as long as the part that plays.
+            durationSec: m.clip ? Math.max(1, Math.round(m.clip.end - m.clip.start)) : m.durationSec,
             width: m.width,
             height: m.height,
           },

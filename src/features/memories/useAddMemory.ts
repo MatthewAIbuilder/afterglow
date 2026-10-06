@@ -31,7 +31,8 @@ export function useMemoryPicker() {
           { text: t('Open Settings'), onPress: () => void Linking.openSettings().catch(() => {}) },
         ]);
       } else if (r.reason === 'too-long') {
-        showAlert(t('That video is too long'), t('Choose a clip of a minute or less.'));
+        // The website takes longer videos and trims them on the tagging sheet; the phone's picker trims them itself.
+        showAlert(t('That video is too long'), Platform.OS === 'web' ? t('Choose one of ten minutes or less. You can trim it to the best part next.') : t('Choose a clip of a minute or less.'));
       } else if (r.reason === 'too-large') {
         showAlert(t('That video is too big'), t('Choose one under 150 MB. A shorter clip usually is.'));
       } else if (r.reason === 'wrong-type') {

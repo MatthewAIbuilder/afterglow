@@ -126,7 +126,7 @@ describe('adding a memory from Discover', () => {
     await flush();
     await act(async () => holdClip());
     await flush();
-    expect(app.getByRole('button', { name: 'Not at a festival', selected: true })).toBeTruthy();
+    expect(app.getByRole('button', { name: 'Not at a festival or show', selected: true })).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Save to Memories'));
     await flush();
     const [m] = await saved();

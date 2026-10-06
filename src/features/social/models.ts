@@ -1,6 +1,8 @@
 import type { Socials } from './socials';
 import type { SoundTag } from '../../data/models';
 import type { PastEvent } from '../memories/past';
+import type { ShowTag } from '../memories/show';
+import type { ClipWindow } from '../memories/trim';
 
 /**
  * Social profiles: what other Afterglow people can see about you. Plain
@@ -73,6 +75,10 @@ export type SharedMemory = {
   artistId?: string;
   /** A festival from before Afterglow ("EDC Orlando 2024"): a throwback, from the camera roll. */
   past?: PastEvent;
+  /** A one-night show (a club night or concert), instead of a festival. */
+  show?: ShowTag;
+  /** The part that plays, when it was trimmed (seconds into the file). */
+  clip?: ClipWindow;
   capturedAt: string;
   durationSec?: number;
   /** The video's size, so upright clips get a tall player. */

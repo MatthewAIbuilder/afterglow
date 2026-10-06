@@ -1,5 +1,7 @@
 import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
+import { cleanShow } from '../../memories/show';
+import { cleanClip } from '../../memories/trim';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
 import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply } from '../models';
@@ -80,6 +82,8 @@ export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {
     night: str(o.night),
     artistId: str(o.artistId),
     past: str(o.festivalId) ? undefined : cleanPast({ name: o.pastName, year: o.pastYear, city: o.pastCity, seriesId: o.seriesId }),
+    show: str(o.festivalId) || str(o.pastName) ? undefined : cleanShow({ name: o.showName, date: o.showDate, city: o.showCity, showId: o.showId }),
+    clip: cleanClip({ start: o.clipStart, end: o.clipEnd }),
     capturedAt,
     durationSec: num(o.durationSec),
     width: num(o.width),
