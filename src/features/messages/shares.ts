@@ -1,4 +1,5 @@
 import { CHAT_MAX } from '../social/models';
+import { t } from '../../i18n';
 
 /**
  * Something from the app sent in a chat: a festival (optionally with your
@@ -76,13 +77,13 @@ export function shareMessageText(share: ChatShare, note: string, webUrl: string)
 export function shareNoun(share: ChatShare): string {
   switch (share.kind) {
     case 'festival':
-      return share.picks?.length ? 'must-sees' : 'a festival';
+      return share.picks?.length ? t('must-sees') : t('a festival');
     case 'artist':
-      return 'an artist';
+      return t('an artist');
     case 'clip':
-      return 'a live set';
+      return t('a live set');
     case 'profile':
-      return 'a profile';
+      return t('a profile');
   }
 }
 

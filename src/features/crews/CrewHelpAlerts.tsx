@@ -9,6 +9,7 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { helpTitle } from './care';
 import { firstName } from './together';
 import { ago, clock, lateLine } from './updates';
+import { t } from '../../i18n';
 
 /**
  * Crewmates who asked for help, at the top of wherever the crew shows: who,
@@ -26,7 +27,7 @@ export function CrewHelpAlerts({ festivalId }: { festivalId?: string }) {
     <View style={styles.wrap}>
       {alerts.map((u) => {
         const p = profileOf(u.uid);
-        const name = p ? firstName(p.displayName) : 'Someone in your crew';
+        const name = p ? firstName(p.displayName) : t('Someone in your crew');
         const place = stories.find((s) => s.uid === u.uid)?.updates.find((x) => x.stage && !x.care && Date.parse(x.at) <= Date.parse(u.at) + 60_000);
         const late = lateLine(u);
         const on = answered.includes(u.id);
@@ -37,12 +38,12 @@ export function CrewHelpAlerts({ festivalId }: { festivalId?: string }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{helpTitle(name)}</Text>
                 <Text style={styles.when}>
-                  Asked for help {clock(u.at)} · {ago(u.at, now).toLowerCase()}
+                  {t('Asked for help {time} · {ago}', { time: clock(u.at), ago: ago(u.at, now).toLowerCase() })}
                 </Text>
               </View>
             </View>
             {late ? <Text style={styles.late}>{late}</Text> : null}
-            <Text style={styles.body}>{place ? `Last said they were at ${place.stage}, ${clock(place.at)}.` : 'They haven’t said where they are. Try calling, or head to your meeting spot.'}</Text>
+            <Text style={styles.body}>{place ? t('Last said they were at {stage}, {time}.', { stage: place.stage ?? '', time: clock(place.at) }) : t('They haven’t said where they are. Try calling, or head to your meeting spot.')}</Text>
             <View style={styles.actions}>
               <Pressable
                 onPress={() => {
@@ -50,10 +51,10 @@ export function CrewHelpAlerts({ festivalId }: { festivalId?: string }) {
                   router.push(`/crew-story?uid=${encodeURIComponent(u.uid)}`);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`See ${name}’s update`}
+                accessibilityLabel={t('See {name}’s update', { name })}
                 style={({ pressed }) => [styles.button, pressed && styles.pressed]}
               >
-                <Text style={styles.buttonText}>See their update</Text>
+                <Text style={styles.buttonText}>{t('See their update')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -63,10 +64,10 @@ export function CrewHelpAlerts({ festivalId }: { festivalId?: string }) {
                 }}
                 disabled={on}
                 accessibilityRole="button"
-                accessibilityLabel={on ? `You told ${name} you’re on your way` : `Tell ${name} you’re on your way`}
+                accessibilityLabel={on ? t('You told {name} you’re on your way', { name }) : t('Tell {name} you’re on your way', { name })}
                 style={({ pressed }) => [styles.button, styles.primary, on && styles.done, pressed && styles.pressed]}
               >
-                <Text style={[styles.buttonText, styles.primaryText]}>{on ? 'Told them ✓' : 'On my way'}</Text>
+                <Text style={[styles.buttonText, styles.primaryText]}>{on ? t('Told them ✓') : t('On my way')}</Text>
               </Pressable>
             </View>
           </View>

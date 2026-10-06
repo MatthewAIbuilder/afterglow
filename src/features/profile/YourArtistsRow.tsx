@@ -7,16 +7,17 @@ import { HeartIcon } from '../discover/icons';
 import { mixColor, withAlpha } from '../sound-map/colors';
 import type { Favourite } from './identity';
 import { ShelfHead } from './ShelfHead';
+import { t } from '../../i18n';
 
 const FACE = 66;
-const WHY: Record<Favourite['why'], string> = { love: 'you love them', like: 'you like them', follow: 'you follow them', match: 'a strong match' };
+const WHY: Record<Favourite['why'], string> = { love: t('you love them'), like: t('you like them'), follow: t('you follow them'), match: t('a strong match') };
 
 /** Your artists: the ones you love, like and follow, big faces in a row to swipe. */
 export function YourArtistsRow({ favourites, hidden, onToggle }: { favourites: Favourite[]; hidden: boolean; onToggle: () => void }) {
   if (!favourites.length) return null;
   return (
     <View style={styles.root}>
-      <ShelfHead title="Your artists" hidden={hidden} onToggle={onToggle} link="Where they play" onLink={() => router.push('/your-artists')} />
+      <ShelfHead title={t('Your artists')} hidden={hidden} onToggle={onToggle} link={t('Where they play')} onLink={() => router.push('/your-artists')} />
       {hidden ? null : (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {favourites.map((f) => {
@@ -29,7 +30,7 @@ export function YourArtistsRow({ favourites, hidden, onToggle }: { favourites: F
                 router.push(`/artist/${f.artist.id}`);
               }}
               accessibilityRole="button"
-              accessibilityLabel={`${f.artist.name}, ${WHY[f.why]}. ${Math.round(f.match * 100)} percent match`}
+              accessibilityLabel={t('{artist}, {why}. {pct} percent match', { artist: f.artist.name, why: WHY[f.why], pct: Math.round(f.match * 100) })}
               style={({ pressed }) => [styles.item, pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] }]}
             >
               <View style={[styles.ring, { borderColor: withAlpha(ring, 0.85), shadowColor: ring }]}>

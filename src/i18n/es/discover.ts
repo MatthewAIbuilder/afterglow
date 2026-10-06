@@ -98,7 +98,6 @@ export const es_discover: Dictionary = {
   'Not now': 'Ahora no',
   'Send report': 'Enviar aviso',
   'Video from @{handle}': 'Video de @{handle}',
-  'Report this video': 'Denunciar este video',
   'Hide this video': 'Ocultar este video',
   'Block @{handle}': 'Bloquear a @{handle}',
 

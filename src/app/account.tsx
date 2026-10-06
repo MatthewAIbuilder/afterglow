@@ -13,6 +13,7 @@ import { color, radius, space, type, glowA } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
+import { t } from '../i18n';
 
 /**
  * Create your Afterglow profile, or sign back in. Email and password (kept
@@ -37,7 +38,7 @@ export default function AccountScreen() {
     if (!canSubmit) {
       if (!emailOk) setProblem(SOCIAL_ERROR_COPY['invalid-email']);
       else if (create && password.length < PASSWORD_MIN) setProblem(SOCIAL_ERROR_COPY['weak-password']);
-      else if (create && !agreed) setProblem('Agree to the guidelines to create your profile.');
+      else if (create && !agreed) setProblem(t('Agree to the guidelines to create your profile.'));
       return;
     }
     haptic.tap();
@@ -59,12 +60,12 @@ export default function AccountScreen() {
 
   const forgot = async () => {
     if (!emailOk) {
-      setProblem('Type your email above, then tap “Forgot password?” again.');
+      setProblem(t('Type your email above, then tap “Forgot password?” again.'));
       return;
     }
     try {
       await social.service.sendPasswordReset(email);
-      showAlert('Check your email', `If there’s an account for ${email.trim()}, a link to choose a new password is on its way.`);
+      showAlert(t('Check your email'), t('If there’s an account for {email}, a link to choose a new password is on its way.', { email: email.trim() }));
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     }
@@ -73,7 +74,7 @@ export default function AccountScreen() {
   if (!social.availability.ok) {
     return (
       <View style={[styles.root, styles.pad, { paddingTop: space.xxl }]}>
-        <Text style={styles.title}>Profiles</Text>
+        <Text style={styles.title}>{t('Profiles')}</Text>
         <Text style={styles.body}>{SOCIAL_ERROR_COPY.unavailable}</Text>
         <SheetClose />
       </View>
@@ -84,10 +85,10 @@ export default function AccountScreen() {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.pad, { paddingTop: space.xxl, paddingBottom: insets.bottom + space.xxl }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title} accessibilityRole="header">
-          {create ? 'Create your profile' : 'Welcome back'}
+          {create ? t('Create your profile') : t('Welcome back')}
         </Text>
         <Text style={styles.body}>
-          {create ? 'Show where you’re going and share the memories you choose. Everything else stays on your phone.' : 'Sign in to your Afterglow profile.'}
+          {create ? t('Show where you’re going and share the memories you choose. Everything else stays on your phone.') : t('Sign in to your Afterglow profile.')}
         </Text>
 
         <View style={styles.segment} accessibilityRole="tablist">
@@ -103,7 +104,7 @@ export default function AccountScreen() {
               accessibilityState={{ selected: mode === m }}
               style={[styles.segmentItem, mode === m && styles.segmentOn]}
             >
-              <Text style={[styles.segmentText, mode === m && styles.segmentTextOn]}>{m === 'create' ? 'New here' : 'Sign in'}</Text>
+              <Text style={[styles.segmentText, mode === m && styles.segmentTextOn]}>{m === 'create' ? t('New here') : t('Sign in')}</Text>
             </Pressable>
           ))}
         </View>
@@ -111,32 +112,32 @@ export default function AccountScreen() {
         <TextInput
           value={email}
           onChangeText={setEmail}
-          placeholder="Email"
+          placeholder={t('Email')}
           placeholderTextColor={color.moonFaint}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
           textContentType="emailAddress"
           autoComplete="email"
-          accessibilityLabel="Email"
+          accessibilityLabel={t('Email')}
           style={styles.input}
         />
         <TextInput
           value={password}
           onChangeText={setPassword}
-          placeholder={create ? `Password (at least ${PASSWORD_MIN} characters)` : 'Password'}
+          placeholder={create ? t('Password (at least {n} characters)', { n: PASSWORD_MIN }) : t('Password')}
           placeholderTextColor={color.moonFaint}
           secureTextEntry
           textContentType={create ? 'newPassword' : 'password'}
           autoComplete={create ? 'new-password' : 'current-password'}
-          accessibilityLabel="Password"
+          accessibilityLabel={t('Password')}
           style={styles.input}
           onSubmitEditing={() => void submit()}
         />
 
         {create ? (
           <View style={styles.guidelines}>
-            <Text style={styles.guideTitle}>Community guidelines</Text>
+            <Text style={styles.guideTitle}>{t('Community guidelines')}</Text>
             {GUIDELINES.map((g) => (
               <Text key={g} style={styles.guide}>
                 • {g}
@@ -153,7 +154,7 @@ export default function AccountScreen() {
               style={styles.agree}
             >
               <View style={[styles.box, agreed && styles.boxOn]}>{agreed ? <CheckIcon color={color.night} size={14} /> : null}</View>
-              <Text style={styles.agreeText}>I’m 18 or older and agree to the community guidelines, Terms and Privacy Policy</Text>
+              <Text style={styles.agreeText}>{t('I’m 18 or older and agree to the community guidelines, Terms and Privacy Policy')}</Text>
             </Pressable>
             <LegalLinks docs={['terms', 'privacy']} />
           </View>
@@ -171,11 +172,11 @@ export default function AccountScreen() {
           accessibilityState={{ disabled: !canSubmit }}
           style={({ pressed }) => [styles.primary, !canSubmit && styles.dim, pressed && styles.pressed]}
         >
-          {busy ? <ActivityIndicator color={color.moon} /> : <Text style={styles.primaryText}>{create ? 'Create profile' : 'Sign in'}</Text>}
+          {busy ? <ActivityIndicator color={color.moon} /> : <Text style={styles.primaryText}>{create ? t('Create profile') : t('Sign in')}</Text>}
         </Pressable>
         {!create ? (
           <Pressable onPress={() => void forgot()} accessibilityRole="button" hitSlop={8} style={styles.forgot}>
-            <Text style={styles.link}>Forgot password?</Text>
+            <Text style={styles.link}>{t('Forgot password?')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>

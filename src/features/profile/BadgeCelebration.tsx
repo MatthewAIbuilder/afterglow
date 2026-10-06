@@ -28,6 +28,7 @@ import { type PastEvent, pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
 import type { Milestone } from './milestones';
 import { Medal, medalColors } from './Milestones';
+import { t } from '../../i18n';
 
 export type Unlock =
   | { kind: 'pin'; festival: Festival }
@@ -71,8 +72,8 @@ const ARM_MS = 400;
 function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
   const [armed, setArmed] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setArmed(true), ARM_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setArmed(true), ARM_MS);
+    return () => clearTimeout(timer);
   }, []);
   const reduce = useReducedMotion();
   const { width } = useWindowDimensions();
@@ -107,12 +108,14 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
         ? throwbackAbout(unlock.past)
         : unlock.kind === 'sprout'
           ? unlock.foundAt
-            ? `${kindOf(unlock.sprout).about} Found at ${unlock.foundAt}: every festival night brings a new one.`
-            : `${kindOf(unlock.sprout).about} You can give ${kindOf(unlock.sprout).name}s now.`
+            ? t('{about} Found at {place}: every festival night brings a new one.', { about: kindOf(unlock.sprout).about, place: unlock.foundAt })
+            : t('{about} You can give {name}s now.', { about: kindOf(unlock.sprout).about, name: kindOf(unlock.sprout).name })
           : unlock.kind === 'artistSprout'
             ? unlock.tier
-              ? `${TIER_NAME[unlock.tier]} now: you’ve filmed ${unlock.name} ${unlock.videos} times. ${unlock.tier < 3 ? `${tierLine(unlock.videos)}.` : ''}`.trim()
-              : `${unlock.look.theme}, earned with your video of ${unlock.name}. Give one to someone, or film them again: ${tierLine(unlock.videos)}.`
+              ? unlock.tier < 3
+                ? t('{tier} now: you’ve filmed {artist} {n} times. {next}.', { tier: TIER_NAME[unlock.tier], artist: unlock.name, n: unlock.videos, next: tierLine(unlock.videos) })
+                : t('{tier} now: you’ve filmed {artist} {n} times.', { tier: TIER_NAME[unlock.tier], artist: unlock.name, n: unlock.videos })
+              : t('{theme}, earned with your video of {artist}. Give one to someone, or film them again: {next}.', { theme: unlock.look.theme, artist: unlock.name, next: tierLine(unlock.videos) })
             : unlock.milestone.about;
 
   const pop = useSharedValue(reduce ? 1 : 0);
@@ -183,18 +186,18 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
 
       <Animated.View entering={reduce ? undefined : FadeInDown.delay(450).duration(420)} style={styles.words}>
         <Text style={[styles.kicker, { color: '#FFE38A' }]}>{unlock.kind === 'milestone' && unlock.milestone.quest
-            ? 'Side quest complete'
+            ? t('Side quest complete')
             : unlock.kind === 'throwback'
-              ? 'Throwback unlocked'
+              ? t('Throwback unlocked')
               : unlock.kind === 'sprout'
                 ? unlock.foundAt
-                  ? 'A wild sprout appeared'
-                  : 'Your sprout bloomed'
+                  ? t('A wild sprout appeared')
+                  : t('Your sprout bloomed')
                 : unlock.kind === 'artistSprout'
                   ? unlock.tier
-                    ? 'Collectible levelled up'
-                    : 'Artist collectible unlocked'
-                  : 'Badge unlocked'}</Text>
+                    ? t('Collectible levelled up')
+                    : t('Artist collectible unlocked')
+                  : t('Badge unlocked')}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>
@@ -206,10 +209,10 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
             onDone();
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Add ${title} to your collection`}
+          accessibilityLabel={t('Add {name} to your collection', { name: title })}
           style={({ pressed }) => [styles.button, { backgroundColor: c1 }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
         >
-          <Text style={styles.buttonText}>{unlock.kind === 'sprout' || unlock.kind === 'artistSprout' ? 'Lovely' : 'Add to collection'}</Text>
+          <Text style={styles.buttonText}>{unlock.kind === 'sprout' || unlock.kind === 'artistSprout' ? t('Lovely') : t('Add to collection')}</Text>
         </Pressable>
       </Animated.View>
     </View>

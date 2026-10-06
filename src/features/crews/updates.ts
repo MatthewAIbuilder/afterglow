@@ -1,7 +1,7 @@
 import type { Festival } from '../../data/models';
 import { setFor, stageName } from '../../data/festival';
 import { CREW_NOTE_MAX, CREW_STAGE_MAX, type Crew, type CrewUpdate, type CrewUpdateInput } from '../social/models';
-import { LANGUAGE, t } from '../../i18n';
+import { LANGUAGE, t, tn } from '../../i18n';
 
 /**
  * Crew updates, pure: who in your crews posted what and when, how it reads,
@@ -141,6 +141,39 @@ export function stageOf(festival: Festival, artistId: string | undefined): strin
 /** Quick check-ins: one tap each, so they get through on the weakest signal. */
 export const CHECK_INS = ['I’m here', 'Meet at our spot', 'Getting water', 'Phone’s dying', 'Heading out'] as const;
 
+/** Quick replies: one tap, like check-ins. */
+export const QUICK_REPLIES = ['On my way', 'Be there in 10', 'Save me a spot', 'Where exactly?', 'Can’t make it'] as const;
+
+/**
+ * Words the app itself puts in an update or a message (check-ins, quick
+ * replies, care check-ins, "Can't find you", quick chat messages). They're
+ * sent in English, as tapped, so a friend's phone in another language can
+ * still show them in its own: `presetLabel` turns one of them into this
+ * phone's language when it's shown. Anything else (people's own words) is
+ * left exactly as written.
+ */
+const PRESETS: ReadonlySet<string> = new Set<string>([
+  ...CHECK_INS,
+  ...QUICK_REPLIES,
+  'I’m OK',
+  'Not feeling great. Can someone come find me?',
+  'Can’t find you',
+  'Where are you?',
+  'Water break',
+  'This set is amazing',
+]);
+const HEADING_TO = /^Can’t find you\. Heading to (.+)$/;
+
+/** A preset's words in this phone's language; anything else as it is. */
+export function presetLabel(text: string): string;
+export function presetLabel(text: string | undefined): string | undefined;
+export function presetLabel(text: string | undefined): string | undefined {
+  if (!text) return text;
+  if (PRESETS.has(text)) return t(text);
+  const spot = HEADING_TO.exec(text);
+  return spot ? t('Can’t find you. Heading to {spot}', { spot: spot[1] }) : text;
+}
+
 /** A check-in's words, tidied: one line, at most CREW_NOTE_MAX. */
 export const cleanNote = (raw: string) => raw.replace(/\s+/g, ' ').trim().slice(0, CREW_NOTE_MAX);
 
@@ -239,8 +272,8 @@ export function outboxLine(outbox: readonly OutboxItem[]): string | undefined {
   if (!outbox.length) return undefined;
   const oldest = outbox[0];
   return outbox.length === 1
-    ? `Waiting for signal · your ${clock(oldest.input.at)} update will send itself`
-    : `Waiting for signal · ${outbox.length} updates from ${clock(oldest.input.at)} will send themselves`;
+    ? t('Waiting for signal · your {time} update will send itself', { time: clock(oldest.input.at) })
+    : t('Waiting for signal · {n} updates from {time} will send themselves', { n: outbox.length, time: clock(oldest.input.at) });
 }
 
 /** Last seen per crewmate: the newest `at` you've watched from them. */
@@ -270,9 +303,6 @@ export function latestPerMember(updates: readonly CrewUpdate[], members: readonl
   return members.map((uid) => ({ uid, latest: [...updates].filter((u) => u.uid === uid && !isReply(u)).sort(byHappened)[0] }));
 }
 
-/** Quick replies: one tap, like check-ins. */
-export const QUICK_REPLIES = ['On my way', 'Be there in 10', 'Save me a spot', 'Where exactly?', 'Can’t make it'] as const;
-
 /** The replies to one update in its crew, oldest first (a conversation reads down), never from anyone blocked. */
 export function repliesTo(updates: readonly CrewUpdate[], target: Pick<CrewUpdate, 'id' | 'crewId'>, blocked: readonly string[] = []): CrewUpdate[] {
   return unique(updates)
@@ -284,8 +314,8 @@ export function repliesTo(updates: readonly CrewUpdate[], target: Pick<CrewUpdat
 export function repliesLine(replies: readonly CrewUpdate[], nameOf: (uid: string) => string): string | undefined {
   const last = replies[replies.length - 1];
   if (!last) return undefined;
-  const count = replies.length === 1 ? '1 reply' : `${replies.length} replies`;
-  return `${count} · ${nameOf(last.uid)}: ${last.note ?? ''}`;
+  const count = tn(replies.length, '{n} reply', '{n} replies');
+  return `${count} · ${nameOf(last.uid)}: ${presetLabel(last.note) ?? ''}`;
 }
 
 /** The update a reply answers, when it's still here. */

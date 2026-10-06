@@ -35,6 +35,7 @@ import { useLoves } from '../../state/useLoves';
 import { useSeen } from '../../state/seen';
 import { type Highlight, profileHighlights, profileStats, videoGrid } from '../../features/profile/profileView';
 import { useRecapFestivals, useYear } from '../../features/recap/useRecap';
+import { isYearSoFar } from '../../features/recap/year';
 import { tasteMix } from '../../features/taste/lean';
 import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
@@ -52,6 +53,8 @@ import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { useMemoryPicker } from '../../features/memories/useAddMemory';
 import { color, space, type } from '../../theme/tokens';
+import { t } from '../../i18n';
+import { datesLine } from '../../features/festivals/format';
 
 /** How far the cover photo reaches below the safe area. */
 /** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
@@ -111,7 +114,7 @@ function FullProfile() {
       .map((f) => f.name);
     const line = goingLine(names);
     // Your profile settings can hide your festivals from others; say so, since only you see this one.
-    return line && me && !me.showFestivals ? `${line} · only you can see this` : line;
+    return line && me && !me.showFestivals ? t('{line} · only you can see this', { line }) : line;
   }, [going, catalog, today, me]);
   const { ratings } = useRatings();
   const { reactions } = useReactions();
@@ -135,7 +138,8 @@ function FullProfile() {
       groupFestivals(catalog.festivals.map(forYou), going, today).going.map((f) => {
         const w = weekendOf(f.id);
         const when = countdown(f, today);
-        return { festival: f, over: when === 'Over', detail: `${w ? `Weekend ${w} · ` : ''}${when ?? f.dates}` };
+        const said = when ?? datesLine(f);
+        return { festival: f, over: when === t('Over'), detail: w ? t('Weekend {w} · {when}', { w, when: said }) : said };
       }),
     [catalog.festivals, forYou, going, today, weekendOf],
   );
@@ -166,7 +170,7 @@ function FullProfile() {
   const yearCard = useYear(year);
   const highlights = profileHighlights({
     going: festivals.filter((g) => !g.over).map((g) => ({ festival: g.festival, when: g.detail })),
-    year: yearCard ? { year, soFar: yearCard.subtitle.endsWith('so far') } : undefined,
+    year: yearCard ? { year, soFar: isYearSoFar(yearCard) } : undefined,
     recaps,
   });
 
@@ -206,15 +210,15 @@ function FullProfile() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Profile" />
+      <PageTitle title={t('Profile')} />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
         <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} fadeFrom={(insets.top + COVER_SOLID) / (insets.top + COVER_H)} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
-            {me ? `@${me.handle}` : 'Profile'}
+            {me ? `@${me.handle}` : t('Profile')}
           </Text>
-          <IconButton label="Settings and more" onPress={() => router.push('/settings')}>
+          <IconButton label={t('Settings and more')} onPress={() => router.push('/settings')}>
             <MenuIcon color={color.moon} size={22} />
           </IconButton>
         </View>
@@ -222,9 +226,9 @@ function FullProfile() {
         <ProfileHeader
           note={goingNote}
             socials={me?.socials}
-          name={me?.displayName ?? 'You'}
+          name={me?.displayName ?? t('You')}
           initial={!!me}
-          bio={me ? me.bio : 'Your festivals, your videos and your sound.'}
+          bio={me ? me.bio : t('Your festivals, your videos and your sound.')}
           avatarUrl={me?.avatarUrl}
           uid={me?.uid}
           stats={stats}
@@ -245,11 +249,11 @@ function FullProfile() {
         >
           {me ? (
             <>
-              <ProfileButton label="Edit profile" onPress={() => router.push('/profile-edit')} />
-              <ProfileButton label="Share profile" onPress={() => void shareMessage(`@${me.handle} on Afterglow: ${WEB_URL}/u/${me.handle}`)} />
+              <ProfileButton label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
+              <ProfileButton label={t('Share profile')} onPress={() => void shareMessage(t('@{handle} on Afterglow: {url}', { handle: me.handle, url: `${WEB_URL}/u/${me.handle}` }))} />
             </>
           ) : social.availability.ok && social.ready ? (
-            <ProfileButton label={social.user ? 'Finish your profile' : 'Create your profile'} onPress={signIn} glow />
+            <ProfileButton label={social.user ? t('Finish your profile') : t('Create your profile')} onPress={signIn} glow />
           ) : null}
         </ProfileHeader>
 
@@ -275,10 +279,10 @@ function FullProfile() {
             value={tab}
             onChange={setTab}
             items={[
-              { key: 'videos', label: 'Moments', count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
-              { key: 'festivals', label: 'Festivals', count: mySet.been.length + mySet.planning.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
-              { key: 'badges', label: 'Badges', count: earned, icon: (c) => <PinIcon color={c} size={17} /> },
-              { key: 'saved', label: 'Saved', count: kept, icon: (c) => <BookmarkIcon color={c} size={16} /> },
+              { key: 'videos', label: t('Moments'), count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
+              { key: 'festivals', label: t('Festivals'), count: mySet.been.length + mySet.planning.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
+              { key: 'badges', label: t('Badges'), count: earned, icon: (c) => <PinIcon color={c} size={17} /> },
+              { key: 'saved', label: t('Saved'), count: kept, icon: (c) => <BookmarkIcon color={c} size={16} /> },
             ]}
           />
         </View>

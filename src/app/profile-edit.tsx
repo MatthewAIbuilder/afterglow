@@ -23,6 +23,7 @@ import { useSocial } from '../state/social';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type, glowA, nightA } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
+import { t } from '../i18n';
 import type { CropShape } from '../features/profile/crop';
 import { useShowLevel, setShowLevel } from '../state/showLevel';
 import { useDailyQuests } from '../features/quests/useDailyQuests';
@@ -88,7 +89,7 @@ export default function ProfileEditScreen() {
   useEffect(() => {
     if (problems.handle || h === p?.handle) return;
     let live = true;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       social.service
         .handleAvailable(h)
         .then((ok) => live && setChecked({ handle: h, ok }))
@@ -96,7 +97,7 @@ export default function ProfileEditScreen() {
     }, 450);
     return () => {
       live = false;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
   }, [h, problems.handle, p?.handle, social.service]);
 
@@ -107,7 +108,7 @@ export default function ProfileEditScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top + 80, paddingHorizontal: space.xl }]}>
         <NightSky />
-        <Text style={styles.body}>Sign in to edit your profile.</Text>
+        <Text style={styles.body}>{t('Sign in to edit your profile.')}</Text>
       </View>
     );
   }
@@ -118,10 +119,10 @@ export default function ProfileEditScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top + 80, paddingHorizontal: space.xl, gap: space.lg }]}>
         <NightSky />
-        <Text style={styles.body}>{failed ? 'Your profile couldn’t be loaded. Check the signal and try again.' : 'Loading your profile…'}</Text>
+        <Text style={styles.body}>{failed ? t('Your profile couldn’t be loaded. Check the signal and try again.') : t('Loading your profile…')}</Text>
         {failed ? (
-          <Pressable onPress={social.reloadProfile} accessibilityRole="button" accessibilityLabel="Try loading your profile again" hitSlop={8}>
-            <Text style={styles.retry}>Try again</Text>
+          <Pressable onPress={social.reloadProfile} accessibilityRole="button" accessibilityLabel={t('Try loading your profile again')} hitSlop={8}>
+            <Text style={styles.retry}>{t('Try again')}</Text>
           </Pressable>
         ) : null}
         <PageActions />
@@ -143,7 +144,7 @@ export default function ProfileEditScreen() {
       // Saved, but the database isn't ready for socials yet (its rules need updating): say so rather than drop them quietly.
       const wanted = SOCIALS.some((s) => readSocial(s.key, socials[s.key]));
       if (wanted && !Object.keys(saved.socials ?? {}).length)
-        showAlert('Saved, without your socials', 'Your profile is saved, but Instagram, Snapchat and TikTok can’t be added just yet: Afterglow’s database needs an update first. Try again later.');
+        showAlert(t('Saved, without your socials'), t('Your profile is saved, but Instagram, Snapchat and TikTok can’t be added just yet: Afterglow’s database needs an update first. Try again later.'));
       goBack();
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
@@ -162,7 +163,7 @@ export default function ProfileEditScreen() {
       else await social.setCover(uri);
       haptic.settle();
     } catch (e) {
-      showAlert(shape === 'avatar' ? 'Couldn’t update your photo' : 'Couldn’t update your cover', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(shape === 'avatar' ? t('Couldn’t update your photo') : t('Couldn’t update your cover'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
       setUploading(undefined);
     }
@@ -170,41 +171,41 @@ export default function ProfileEditScreen() {
 
   const changePhoto = () => {
     if (!p) {
-      showAlert('Save your profile first', 'Then you can add a photo.');
+      showAlert(t('Save your profile first'), t('Then you can add a photo.'));
       return;
     }
     const pick = async () => {
       const picked = await pickToCrop();
       if (picked) setCropping({ shape: 'avatar', source: picked });
     };
-    showAlert('Profile photo', undefined, [
-      { text: 'Choose a photo', onPress: () => void pick() },
-      ...(p.avatarUrl ? [{ text: 'Remove photo', style: 'destructive' as const, onPress: () => void social.setAvatar(null).catch(() => {}) }] : []),
-      { text: 'Cancel', style: 'cancel' },
+    showAlert(t('Profile photo'), undefined, [
+      { text: t('Choose a photo'), onPress: () => void pick() },
+      ...(p.avatarUrl ? [{ text: t('Remove photo'), style: 'destructive' as const, onPress: () => void social.setAvatar(null).catch(() => {}) }] : []),
+      { text: t('Cancel'), style: 'cancel' },
     ]);
   };
 
   const changeCover = () => {
     if (!p) {
-      showAlert('Save your profile first', 'Then you can add a cover photo.');
+      showAlert(t('Save your profile first'), t('Then you can add a cover photo.'));
       return;
     }
     const pick = async () => {
       const picked = await pickToCrop();
       if (picked) setCropping({ shape: 'cover', source: picked });
     };
-    showAlert('Cover photo', 'A wide photo across the top of your profile: a crowd, a stage, a sunset.', [
-      { text: 'Choose a photo', onPress: () => void pick() },
-      ...(p.coverUrl ? [{ text: 'Remove cover', style: 'destructive' as const, onPress: () => void social.setCover(null).catch(() => {}) }] : []),
-      { text: 'Cancel', style: 'cancel' },
+    showAlert(t('Cover photo'), t('A wide photo across the top of your profile: a crowd, a stage, a sunset.'), [
+      { text: t('Choose a photo'), onPress: () => void pick() },
+      ...(p.coverUrl ? [{ text: t('Remove cover'), style: 'destructive' as const, onPress: () => void social.setCover(null).catch(() => {}) }] : []),
+      { text: t('Cancel'), style: 'cancel' },
     ]);
   };
 
   const signOut = () => {
-    showAlert('Sign out?', 'Your memories stay on this phone. Shared ones stay on your profile.', [
-      { text: 'Cancel', style: 'cancel' },
+    showAlert(t('Sign out?'), t('Your memories stay on this phone. Shared ones stay on your profile.'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Sign out',
+        text: t('Sign out'),
         onPress: () =>
           void social.signOut().then(() => {
             if (router.canGoBack()) goBack();
@@ -219,14 +220,14 @@ export default function ProfileEditScreen() {
       await social.deleteAccount(password);
       if (uid) void forgetAccount(uid);
       haptic.settle();
-      showAlert('Account deleted', 'Your profile and everything you shared are gone. Your memories are still on this phone.');
+      showAlert(t('Account deleted'), t('Your profile and everything you shared are gone. Your memories are still on this phone.'));
       if (router.canGoBack()) goBack();
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     }
   };
 
-  const handleNote = problems.handle ?? (h === p?.handle ? undefined : available === false ? SOCIAL_ERROR_COPY['handle-taken'] : available ? 'Available' : undefined);
+  const handleNote = problems.handle ?? (h === p?.handle ? undefined : available === false ? SOCIAL_ERROR_COPY['handle-taken'] : available ? t('Available') : undefined);
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -234,75 +235,75 @@ export default function ProfileEditScreen() {
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={styles.pad}>
           <Text style={styles.title} accessibilityRole="header">
-            {p ? 'Your profile' : 'Create your profile'}
+            {p ? t('Your profile') : t('Create your profile')}
           </Text>
-          <Text style={styles.body}>Anyone on Afterglow can see what’s here. Your taste, ratings and unshared memories never are.</Text>
+          <Text style={styles.body}>{t('Anyone on Afterglow can see what’s here. Your taste, ratings and unshared memories never are.')}</Text>
 
-          <Pressable onPress={changePhoto} accessibilityRole="button" accessibilityLabel={p?.avatarUrl ? 'Change profile photo' : 'Add a profile photo'} style={styles.avatarRow}>
+          <Pressable onPress={changePhoto} accessibilityRole="button" accessibilityLabel={p?.avatarUrl ? t('Change profile photo') : t('Add a profile photo')} style={styles.avatarRow}>
             <View style={styles.avatar}>
               {p?.avatarUrl ? <Image source={{ uri: p.avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.initial}>{(displayName || handle || '?').slice(0, 1).toUpperCase()}</Text>}
               {uploading === 'avatar' ? <View style={styles.uploading}><ActivityIndicator color={color.moon} /></View> : null}
             </View>
-            <Text style={styles.link}>{uploading === 'avatar' ? 'Uploading…' : p?.avatarUrl ? 'Change photo' : 'Add photo'}</Text>
+            <Text style={styles.link}>{uploading === 'avatar' ? t('Uploading…') : p?.avatarUrl ? t('Change photo') : t('Add photo')}</Text>
           </Pressable>
 
-          <Pressable onPress={changeCover} accessibilityRole="button" accessibilityLabel={p?.coverUrl ? 'Change cover photo' : 'Add a cover photo'} style={styles.coverRow}>
+          <Pressable onPress={changeCover} accessibilityRole="button" accessibilityLabel={p?.coverUrl ? t('Change cover photo') : t('Add a cover photo')} style={styles.coverRow}>
             <View style={styles.cover}>
-              {p?.coverUrl ? <Image source={{ uri: p.coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.coverHint}>Cover photo</Text>}
+              {p?.coverUrl ? <Image source={{ uri: p.coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={styles.coverHint}>{t('Cover photo')}</Text>}
               {uploading === 'cover' ? <View style={styles.uploading}><ActivityIndicator color={color.moon} /></View> : null}
             </View>
-            <Text style={styles.link}>{uploading === 'cover' ? 'Uploading…' : p?.coverUrl ? 'Change cover' : 'Add cover'}</Text>
+            <Text style={styles.link}>{uploading === 'cover' ? t('Uploading…') : p?.coverUrl ? t('Change cover') : t('Add cover')}</Text>
           </Pressable>
           <Pressable
-            onPress={() => (p ? router.push('/backdrop') : showAlert('Save your profile first', 'Then you can choose a background.'))}
+            onPress={() => (p ? router.push('/backdrop') : showAlert(t('Save your profile first'), t('Then you can choose a background.')))}
             accessibilityRole="button"
-            accessibilityLabel={`Profile background: ${backdrop?.name ?? 'cover photo'}. Change it`}
+            accessibilityLabel={backdrop ? t('Profile background: {backdrop}. Change it', { backdrop: backdrop.name }) : t('Profile background: cover photo. Change it')}
             style={styles.coverRow}
           >
             <View style={styles.cover}>
-              {backdrop ? <AnimatedBackdrop id={backdrop.id} width={112} height={63} still /> : <Text style={styles.coverHint}>Animated</Text>}
+              {backdrop ? <AnimatedBackdrop id={backdrop.id} width={112} height={63} still /> : <Text style={styles.coverHint}>{t('Animated')}</Text>}
             </View>
             <View style={{ flexShrink: 1 }}>
-              <Text style={styles.link}>{backdrop ? `Background · ${backdrop.name}` : 'Animated background'}</Text>
-              <Text style={styles.rowNote}>{backdrop ? 'Shows in place of your cover photo' : 'Aurora, lasers, a sunset grid and more'}</Text>
+              <Text style={styles.link}>{backdrop ? t('Background · {backdrop}', { backdrop: backdrop.name }) : t('Animated background')}</Text>
+              <Text style={styles.rowNote}>{backdrop ? t('Shows in place of your cover photo') : t('Aurora, lasers, a sunset grid and more')}</Text>
             </View>
           </Pressable>
           <PhotoCropper source={cropping?.source} shape={cropping?.shape ?? 'avatar'} onDone={(uri) => void applyCrop(uri)} onCancel={() => setCropping(undefined)} />
 
-          <Field label="Name">
-            <TextInput value={displayName} onChangeText={setDisplayName} placeholder="Your name" placeholderTextColor={color.moonFaint} maxLength={60} accessibilityLabel="Name" style={styles.input} />
+          <Field label={t('Name')}>
+            <TextInput value={displayName} onChangeText={setDisplayName} placeholder={t('Your name')} placeholderTextColor={color.moonFaint} maxLength={60} accessibilityLabel={t('Name')} style={styles.input} />
           </Field>
-          <Field label="Handle" note={handleNote} good={!problems.handle && available === true}>
+          <Field label={t('Handle')} note={handleNote} good={!problems.handle && available === true}>
             <View style={styles.handleRow}>
               <Text style={styles.at}>@</Text>
               <TextInput
                 value={handle}
-                onChangeText={(t) => setHandle(t.replace(/\s/g, ''))}
-                placeholder="handle"
+                onChangeText={(v) => setHandle(v.replace(/\s/g, ''))}
+                placeholder={t('handle')}
                 placeholderTextColor={color.moonFaint}
                 autoCapitalize="none"
                 autoCorrect={false}
                 maxLength={24}
-                accessibilityLabel="Handle"
+                accessibilityLabel={t('Handle')}
                 style={[styles.input, styles.handleInput]}
               />
             </View>
           </Field>
-          <Field label="Bio" note={problems.bio ?? `${bio.trim().length}/${BIO_MAX}`}>
+          <Field label={t('Bio')} note={problems.bio ?? `${bio.trim().length}/${BIO_MAX}`}>
             <TextInput
               value={bio}
               onChangeText={setBio}
-              placeholder="Bass head, sunrise sets, always at the rail."
+              placeholder={t('Bass head, sunrise sets, always at the rail.')}
               placeholderTextColor={color.moonFaint}
               multiline
               maxLength={BIO_MAX + 20}
-              accessibilityLabel="Bio"
+              accessibilityLabel={t('Bio')}
               style={[styles.input, styles.bio]}
             />
           </Field>
 
-          <Text style={styles.section}>Your socials</Text>
-          <Text style={styles.note}>Add your usernames and they show as little icons on your profile. Paste a link or type the name.</Text>
+          <Text style={styles.section}>{t('Your socials')}</Text>
+          <Text style={styles.note}>{t('Add your usernames and they show as little icons on your profile. Paste a link or type the name.')}</Text>
           {SOCIALS.map((s) => {
             const name = readSocial(s.key, socials[s.key]);
             const bad = problems[s.key];
@@ -313,12 +314,12 @@ export default function ProfileEditScreen() {
                   <TextInput
                     value={socials[s.key]}
                     onChangeText={(v) => setSocials((x) => ({ ...x, [s.key]: v }))}
-                    placeholder={`${s.label} username`}
+                    placeholder={t('{service} username', { service: s.label })}
                     placeholderTextColor={color.moonFaint}
                     autoCapitalize="none"
                     autoCorrect={false}
                     maxLength={120}
-                    accessibilityLabel={`${s.label} username`}
+                    accessibilityLabel={t('{service} username', { service: s.label })}
                     style={[styles.input, styles.socialInput]}
                   />
                 </View>
@@ -328,26 +329,26 @@ export default function ProfileEditScreen() {
           })}
 
           <View style={styles.switches}>
-            <SwitchRow label="Show festivals I’m going to" detail={showFestivals ? (goingLine(goingNames) ?? 'None yet. Tap I’m going on a festival.') : 'Hidden'} value={showFestivals} onChange={setShowFestivals} />
+            <SwitchRow label={t('Show festivals I’m going to')} detail={showFestivals ? (goingLine(goingNames) ?? t('None yet. Tap I’m going on a festival.')) : t('Hidden')} value={showFestivals} onChange={setShowFestivals} />
             <SwitchRow
-              label="Show my glow level"
-              detail={showLevel === false ? 'Hidden' : daily.level.level >= LEVEL_SHOWN_FROM ? `Level ${daily.level.level} · ${daily.level.name}` : 'Shows once you reach level 2 in your quests'}
+              label={t('Show my glow level')}
+              detail={showLevel === false ? t('Hidden') : daily.level.level >= LEVEL_SHOWN_FROM ? t('Level {n} · {name}', { n: daily.level.level, name: daily.level.name }) : t('Shows once you reach level 2 in your quests')}
               value={showLevel !== false}
               onChange={setShowLevel}
             />
             <SwitchRow
-              label="Show my favourite artists"
-              detail={showArtists ? 'Round your photo on your profile' : 'Hidden'}
+              label={t('Show my favourite artists')}
+              detail={showArtists ? t('Round your photo on your profile') : t('Hidden')}
               value={showArtists}
               onChange={setShowArtists}
             />
             <SwitchRow
-              label="Show my favourite artists"
-              detail={showArtists ? 'They drift round your photo on your profile' : 'Hidden'}
+              label={t('Show my favourite artists')}
+              detail={showArtists ? t('They drift round your photo on your profile') : t('Hidden')}
               value={showArtists}
               onChange={setShowArtists}
             />
-            <SwitchRow label="Show my sound" detail={showSound ? (sounds.length ? sounds.join(', ') : 'Your top sounds, once you’ve reacted to some clips') : 'Hidden'} value={showSound} onChange={setShowSound} />
+            <SwitchRow label={t('Show my sound')} detail={showSound ? (sounds.length ? sounds.join(', ') : t('Your top sounds, once you’ve reacted to some clips')) : t('Hidden')} value={showSound} onChange={setShowSound} />
           </View>
 
           {problem ? (
@@ -357,31 +358,31 @@ export default function ProfileEditScreen() {
           ) : null}
 
           <Pressable onPress={() => void save()} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-            {saving ? <ActivityIndicator color={color.moon} /> : <Text style={styles.primaryText}>{p ? 'Save' : 'Create profile'}</Text>}
+            {saving ? <ActivityIndicator color={color.moon} /> : <Text style={styles.primaryText}>{p ? t('Save') : t('Create profile')}</Text>}
           </Pressable>
 
           {p ? (
             <Pressable onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: p.handle } })} accessibilityRole="button" style={styles.rowLink}>
-              <Text style={styles.link}>See your profile as others do</Text>
+              <Text style={styles.link}>{t('See your profile as others do')}</Text>
             </Pressable>
           ) : null}
 
           <View style={styles.account}>
-            <Text style={styles.section}>Account</Text>
+            <Text style={styles.section}>{t('Account')}</Text>
             <Text style={styles.body}>{social.user.email}</Text>
             <Pressable onPress={signOut} accessibilityRole="button" style={styles.rowLink}>
-              <Text style={styles.link}>Sign out</Text>
+              <Text style={styles.link}>{t('Sign out')}</Text>
             </Pressable>
             {!deleting ? (
               <Pressable onPress={() => setDeleting(true)} accessibilityRole="button" style={styles.rowLink}>
-                <Text style={styles.danger}>Delete account</Text>
+                <Text style={styles.danger}>{t('Delete account')}</Text>
               </Pressable>
             ) : (
               <View style={styles.deleteBox}>
-                <Text style={styles.body}>This deletes your profile, everything you shared and your account, for good. Memories on this phone stay. Type your password to confirm.</Text>
-                <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder="Password" placeholderTextColor={color.moonFaint} accessibilityLabel="Password to delete your account" style={styles.input} />
+                <Text style={styles.body}>{t('This deletes your profile, everything you shared and your account, for good. Memories on this phone stay. Type your password to confirm.')}</Text>
+                <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder={t('Password')} placeholderTextColor={color.moonFaint} accessibilityLabel={t('Password to delete your account')} style={styles.input} />
                 <Pressable onPress={() => void deleteAccount()} disabled={!password} accessibilityRole="button" style={({ pressed }) => [styles.dangerButton, !password && styles.dim, pressed && styles.pressed]}>
-                  <Text style={styles.dangerText}>Delete account forever</Text>
+                  <Text style={styles.dangerText}>{t('Delete account forever')}</Text>
                 </Pressable>
               </View>
             )}
@@ -389,7 +390,7 @@ export default function ProfileEditScreen() {
         </View>
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

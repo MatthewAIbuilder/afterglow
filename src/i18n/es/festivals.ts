@@ -205,7 +205,7 @@ export const es_festivals: Dictionary = {
   'Best fit': 'El que más te va',
   'your fit': 'tu afinidad',
   'new to you': 'nuevo para ti',
-  '{n} you’d love': '{n} te encantarían',
+  '{n} you’d love': '{n} a tu gusto',
   'No favourites yet': 'Aún sin favoritos',
   'Only here': 'Solo aquí',
   'Open {festival}': 'Abrir {festival}',

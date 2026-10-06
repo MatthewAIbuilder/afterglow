@@ -5,6 +5,7 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from './service';
 import { showAlert } from '../../lib/dialog';
+import { t } from '../../i18n';
 
 /**
  * Follow / Following for someone else's profile. Changes straight away and
@@ -19,9 +20,9 @@ export function FollowButton({ uid, handle, compact = false, onChange }: { uid: 
   const press = () => {
     if (!social.profile) {
       haptic.select();
-      showAlert('Create your profile first', 'People can see who follows them, so you need a profile to follow someone.', [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Create profile', onPress: () => router.push('/profile-edit') },
+      showAlert(t('Create your profile first'), t('People can see who follows them, so you need a profile to follow someone.'), [
+        { text: t('Not now'), style: 'cancel' },
+        { text: t('Create profile'), onPress: () => router.push('/profile-edit') },
       ]);
       return;
     }
@@ -30,7 +31,7 @@ export function FollowButton({ uid, handle, compact = false, onChange }: { uid: 
     onChange?.(!on);
     social.setFollowing(uid, !on).catch((e) => {
       onChange?.(on);
-      showAlert(on ? 'Couldn’t unfollow' : 'Couldn’t follow', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(on ? t('Couldn’t unfollow') : t('Couldn’t follow'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     });
   };
 
@@ -39,11 +40,11 @@ export function FollowButton({ uid, handle, compact = false, onChange }: { uid: 
       onPress={press}
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
-      accessibilityLabel={on ? `Following @${handle}. Tap to unfollow.` : `Follow @${handle}`}
+      accessibilityLabel={on ? t('Following @{handle}. Tap to unfollow.', { handle }) : t('Follow @{handle}', { handle })}
       hitSlop={compact ? 6 : 0}
       style={({ pressed }) => [styles.pill, compact && styles.compact, on ? styles.on : styles.off, pressed && styles.pressed]}
     >
-      <Text style={[styles.label, compact && styles.compactLabel, on && styles.onLabel]}>{on ? 'Following' : 'Follow'}</Text>
+      <Text style={[styles.label, compact && styles.compactLabel, on && styles.onLabel]}>{on ? t('Following') : t('Follow')}</Text>
     </Pressable>
   );
 }

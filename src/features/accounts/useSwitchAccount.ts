@@ -8,6 +8,7 @@ import { isSupportAccount } from '../admin/admin';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../social/service';
 import type { SavedAccount } from './saved';
 import { forgetPassword, readPassword, savePassword } from './vault';
+import { t } from '../../i18n';
 
 export type SwitchResult = { ok: true } | { ok: false; needsPassword: true; problem?: string } | { ok: false; needsPassword?: false; problem: string };
 
@@ -40,7 +41,7 @@ export function useSwitchAccount() {
         const kind = socialErrorKind(e);
         if (saved && (kind === 'wrong-password' || kind === 'no-account')) {
           if (target.uid) await forgetPassword(target.uid);
-          return { ok: false, needsPassword: true, problem: 'The saved password didn’t work. Type it again.' };
+          return { ok: false, needsPassword: true, problem: t('The saved password didn’t work. Type it again.') };
         }
         return { ok: false, problem: SOCIAL_ERROR_COPY[kind] };
       } finally {

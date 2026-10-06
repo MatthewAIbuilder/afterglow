@@ -6,6 +6,7 @@ import { haptic } from '../../lib/haptics';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { color, radius, space, type } from '../../theme/tokens';
 import { isOffline } from '../offline/status';
+import { t } from '../../i18n';
 
 /**
  * "Can't find my crew": one tap tells every crew you're in at this festival,
@@ -19,10 +20,10 @@ export function LostButton({ festivalId }: { festivalId: string }) {
   const [sent, setSent] = useState<string | undefined>();
 
   const send = () =>
-    showAlert('Tell your crew you can’t find them?', 'They’ll see it with the time you sent it, and your meeting spot if you have one.', [
-      { text: 'Cancel', style: 'cancel' },
+    showAlert(t('Tell your crew you can’t find them?'), t('They’ll see it with the time you sent it, and your meeting spot if you have one.'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Send',
+        text: t('Send'),
         onPress: () => {
           const id = callLost(festivalId);
           if (!id) return;
@@ -36,22 +37,22 @@ export function LostButton({ festivalId }: { festivalId: string }) {
   const status = !sent
     ? undefined
     : dropped.includes(sent)
-      ? 'Couldn’t reach your crew. Try again, or head to your meeting spot.'
+      ? t('Couldn’t reach your crew. Try again, or head to your meeting spot.')
       : waiting
         ? offline
-          ? 'Saved for when there’s signal. It sends itself, still marked when you tapped.'
-          : 'Sending…'
-        : 'Sent. Your crew can see it.';
+          ? t('Saved for when there’s signal. It sends itself, still marked when you tapped.')
+          : t('Sending…')
+        : t('Sent. Your crew can see it.');
 
   return (
     <View style={styles.wrap}>
       <Pressable
         onPress={send}
         accessibilityRole="button"
-        accessibilityLabel="Can’t find my crew. Tell them"
+        accessibilityLabel={t('Can’t find my crew. Tell them')}
         style={({ pressed }) => [styles.button, pressed && styles.pressed]}
       >
-        <Text style={styles.text}>Can’t find my crew</Text>
+        <Text style={styles.text}>{t('Can’t find my crew')}</Text>
       </Pressable>
       {status ? (
         <Text style={styles.status} accessibilityLiveRegion="polite">

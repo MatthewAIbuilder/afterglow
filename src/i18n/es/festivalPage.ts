@@ -184,7 +184,7 @@ export const es_festivalPage: Dictionary = {
   '{day}. Your full day plans only inside these, and keeps your breaks free.': '{day}. Tu día completo se planea solo dentro de este horario y respeta tus pausas.',
   Arrive: 'Llegada',
   'From the start': 'Desde el inicio',
-  Leave: 'Salida',
+  'time|Leave': 'Salida',
   'Until the end': 'Hasta el final',
   Breaks: 'Pausas',
   'None. Add one for dinner, a rest or meeting someone.': 'Ninguna. Añade una para cenar, descansar o ver a alguien.',

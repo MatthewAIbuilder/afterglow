@@ -13,11 +13,13 @@ import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
 import { countdown } from '../festivals/when';
 import { isOver } from '../festivals/shelves';
+import { datesLine } from '../festivals/format';
 import { activityText, friendActivity, shortAgo, type ActivityItem } from '../social/friendActivity';
 import type { Profile, SharedMemory } from '../social/models';
 import { tasteMix } from '../taste/lean';
 import { useToday } from '../../lib/useToday';
 import { SectionHeader } from './SectionHeader';
+import { t } from '../../i18n';
 
 /**
  * What the people you follow have been up to: moments they shared, festivals
@@ -64,7 +66,7 @@ export function FriendsActivity({ between, profiles, memories }: { between?: Rea
 
       {items.length ? (
         <>
-          <SectionHeader title="Recent activity" />
+          <SectionHeader title={t('Recent activity')} />
           <View style={styles.list}>
             {items.map((item) => {
               const text = activityText(item, (id) => catalog.artist(id)?.name);
@@ -72,8 +74,8 @@ export function FriendsActivity({ between, profiles, memories }: { between?: Rea
                 item.kind === 'moment'
                   ? [item.memory.festivalId ? catalog.festival(item.memory.festivalId)?.name : undefined, shortAgo(item.at, nowMs)].filter(Boolean).join(' · ')
                   : item.kind === 'going'
-                    ? (countdown(item.festival, today) ?? item.festival.dates)
-                    : 'From the sounds you both love';
+                    ? (countdown(item.festival, today) ?? datesLine(item.festival))
+                    : t('From the sounds you both love');
               return (
                 <Pressable
                   key={item.id}

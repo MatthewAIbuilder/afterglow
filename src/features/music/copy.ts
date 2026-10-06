@@ -10,6 +10,7 @@ import {
 } from './models';
 import { PRIOR_YIELDS_AT } from '../taste/engine';
 import type { MusicAvailability } from './service';
+import { t, tn } from '../../i18n';
 
 /**
  * Words for connected music, on the Music connections screen and My Sound.
@@ -199,7 +200,15 @@ export const LITTLE_LIBRARY = PRIOR_YIELDS_AT;
 
 export type MusicNote = { text: string; action?: 'connect' | 'open' };
 
-const names = (ps: MusicProviderId[]) => ps.map((p) => PROVIDER_NAME[p]).join(' and ');
+/** The services
+ in the app's language: "Spotify and Apple Music" ("Spotify or Apple Music" with `or`). */
+const namesSaid = (ps: MusicProviderId[], or = false) => {
+  const all = ps.map((p) => PROVIDER_NAME[p]);
+  if (all.length < 2) return all.join('');
+  const list = all.slice(0, -1).join(', ');
+  const last = all[all.length - 1];
+  return or ? t('{list} or {last}', { list, last }) : t('{list} and {last}', { list, last });
+};
 
 /**
  * My Sound's quiet note about connected music, or nothing. `ownSignal`: you've
@@ -215,15 +224,15 @@ export function musicNote(input: {
   const { state, availability, matched, ownSignal } = input;
   const conns = MUSIC_PROVIDERS.map((p) => state[p]).filter((c): c is MusicConnection => !!c);
   const syncing = conns.find((c) => c.syncing);
-  if (syncing) return { text: `Bringing in your ${PROVIDER_NAME[syncing.provider]} library…` };
+  if (syncing) return { text: t('Bringing in your {service} library…', { service: PROVIDER_NAME[syncing.provider] }) };
   const failed = conns.find((c) => c.error);
   if (failed) {
     const name = PROVIDER_NAME[failed.provider];
-    const kept = failed.snapshot ? ' Your map still uses your last import.' : '';
+    const kept = failed.snapshot ? ` ${t('Your map still uses your last import.')}` : '';
     const text =
       failed.error === 'expired' || failed.error === 'denied'
-        ? `${name} needs you to sign in again.${kept}`
-        : `Couldn’t sync ${name}.${kept || ' Try again from Music connections.'}`;
+        ? `${t('{service} needs you to sign in again.', { service: name })}${kept}`
+        : `${t('Couldn’t sync {service}.', { service: name })}${kept || ` ${t('Try again from Music connections.')}`}`;
     return { text, action: 'open' };
   }
   const synced = conns.filter((c) => c.snapshot).map((c) => c.provider);
@@ -232,12 +241,13 @@ export function musicNote(input: {
     return {
       text:
         matched === 0
-          ? `None of your ${names(synced)} artists play Afterglow’s lineups yet, so your map grows from what you do here.`
-          : `Only ${matched} of your ${names(synced)} artists ${matched === 1 ? 'plays' : 'play'} Afterglow’s lineups so far. React to clips to place more.`,
+          ? t('None of your {services} artists play Afterglow’s lineups yet, so your map grows from what you do here.', { services: namesSaid(synced) })
+          : tn(matched, 'Only {n} of your {services} artists plays Afterglow’s lineups so far. React to clips to place more.', 'Only {n} of your {services} artists play Afterglow’s lineups so far. React to clips to place more.', { services: namesSaid(synced) }),
     };
   }
   if (conns.length || ownSignal) return undefined;
   const offer = MUSIC_PROVIDERS.filter((p) => availability[p]?.ok);
   if (!offer.length) return undefined;
-  return { text: `Connect ${names(offer).replace(' and ', ' or ')} to start your map from what you already play.`, action: 'connect' };
+  return { text: t('Connect {services} to start your map from what you already play.', { services: namesSaid(offer, true) }), action: 'connect' };
+
 }

@@ -1,5 +1,6 @@
 import type { Festival } from '../../data/models';
 import type { Memory } from '../memories/models';
+import { t, tn } from '../../i18n';
 
 /**
  * What the Profile tab shows, worked out from plain data so it can be
@@ -8,8 +9,6 @@ import type { Memory } from '../memories/models';
  */
 
 export type ProfileStat = { key: 'festivals' | 'followers' | 'following' | 'artists' | 'moments' | 'badges'; n: number; label: string; a11y: string };
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /**
  * The counts on your profile. With a profile: followers and following first
@@ -26,15 +25,15 @@ export function profileStats(input: {
   badges: number;
 }): ProfileStat[] {
   const mine: ProfileStat[] = [
-    { key: 'festivals', n: input.festivals, label: 'Festivals', a11y: plural(input.festivals, 'festival', 'festivals') },
-    { key: 'artists', n: input.artists, label: 'Artists', a11y: plural(input.artists, 'artist rated', 'artists rated') },
-    { key: 'moments', n: input.moments, label: 'Moments', a11y: plural(input.moments, 'moment', 'moments') },
-    { key: 'badges', n: input.badges, label: 'Badges', a11y: plural(input.badges, 'badge', 'badges') },
+    { key: 'festivals', n: input.festivals, label: t('Festivals'), a11y: tn(input.festivals, '{n} festival', '{n} festivals') },
+    { key: 'artists', n: input.artists, label: t('Artists'), a11y: tn(input.artists, '{n} artist rated', '{n} artists rated') },
+    { key: 'moments', n: input.moments, label: t('Moments'), a11y: tn(input.moments, '{n} moment', '{n} moments') },
+    { key: 'badges', n: input.badges, label: t('Badges'), a11y: tn(input.badges, '{n} badge', '{n} badges') },
   ];
   if (!input.social) return mine;
   return [
-    { key: 'followers', n: input.followers ?? 0, label: 'Followers', a11y: input.followers === undefined ? 'Followers' : plural(input.followers, 'follower', 'followers') },
-    { key: 'following', n: input.following, label: 'Following', a11y: `${input.following} following` },
+    { key: 'followers', n: input.followers ?? 0, label: t('Followers'), a11y: input.followers === undefined ? t('Followers') : tn(input.followers, '{n} follower', '{n} followers') },
+    { key: 'following', n: input.following, label: t('Following'), a11y: t('{n} following', { n: input.following }) },
     ...mine,
   ];
 }
@@ -64,8 +63,8 @@ export function profileHighlights(input: {
 }): Highlight[] {
   const out: Highlight[] = [];
   for (const g of input.going) out.push({ kind: 'festival', id: g.festival.id, title: g.festival.name, detail: g.when });
-  if (input.year) out.push({ kind: 'year', year: input.year.year, title: `Your ${input.year.year}`, detail: input.year.soFar ? 'So far' : 'Ready' });
-  for (const f of input.recaps) out.push({ kind: 'recap', id: f.id, title: f.name, detail: 'Recap' });
+  if (input.year) out.push({ kind: 'year', year: input.year.year, title: t('Your {year}', { year: input.year.year }), detail: input.year.soFar ? t('So far') : t('Ready') });
+  for (const f of input.recaps) out.push({ kind: 'recap', id: f.id, title: f.name, detail: t('Recap') });
   return out;
 }
 

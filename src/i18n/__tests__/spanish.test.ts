@@ -8,7 +8,7 @@ jest.doMock('expo-localization', () => ({
   getLocales: () => [{ languageTag: 'es-MX', languageCode: 'es', regionCode: 'MX' }],
 }));
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { LANGUAGE, LANGUAGE_CHOICE, t, tn } = require('..') as typeof import('..');
+const { LANGUAGE, LANGUAGE_CHOICE, t, tc, tn } = require('..') as typeof import('..');
 const { datesLine, formatTime, whereWhen } = require('../../features/festivals/format') as typeof import('../../features/festivals/format');
 const { runLabel } = require('../../features/festivals/weekend') as typeof import('../../features/festivals/weekend');
 const { countdown } = require('../../features/festivals/when') as typeof import('../../features/festivals/when');
@@ -23,6 +23,11 @@ describe('on a phone set to Spanish', () => {
     expect(tn(1, '{n} new reply', '{n} new replies')).toBe('1 respuesta nueva');
     expect(tn(3, '{n} new reply', '{n} new replies')).toBe('3 respuestas nuevas');
     expect(t('A line nobody translated')).toBe('A line nobody translated');
+    // One English word, two meanings.
+    expect(t('Leave')).toBe('Salir');
+    expect(tc('time', 'Leave')).toBe('Salida');
+    expect(tc('nothing', 'Leave')).toBe('Salir');
+
   });
 
   it('writes dates and times the Spanish way', () => {

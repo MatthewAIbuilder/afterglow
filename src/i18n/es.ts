@@ -2,7 +2,12 @@ import type { Dictionary } from './translate';
 import { es_discover } from './es/discover';
 import { es_festivalPage } from './es/festivalPage';
 import { es_festivals } from './es/festivals';
+import { es_crews } from './es/crews';
+import { es_friends } from './es/friends';
 import { es_plan } from './es/plan';
+import { es_profile } from './es/profile';
+import { es_profileLogic } from './es/profileLogic';
+import { es_sound } from './es/sound';
 
 /**
  * Spanish, keyed by the English line exactly as it's written in the code
@@ -17,6 +22,13 @@ export const es: Dictionary = {
   ...es_festivals,
   ...es_festivalPage,
   ...es_plan,
+  ...es_sound,
+  ...es_profile,
+  ...es_profileLogic,
+  ...es_friends,
+  ...es_crews,
+
+
 
   // Shared buttons and words
   OK: 'OK',
@@ -78,7 +90,28 @@ export const es: Dictionary = {
   '{going}, plus {n} other on Afterglow': '{going}, y {n} persona más en Afterglow',
   '{going}, plus {n} others on Afterglow': '{going}, y {n} personas más en Afterglow',
 
+  '{list} or {last}': '{list} o {last}',
+  '+{n} more festival': '+{n} festival más',
+  '+{n} more festivals': '+{n} festivales más',
+  'Bringing in your {service} library…': 'Trayendo tu biblioteca de {service}…',
+  'Your map still uses your last import.': 'Tu mapa sigue usando tu última importación.',
+  '{service} needs you to sign in again.': '{service} necesita que vuelvas a iniciar sesión.',
+  'Couldn’t sync {service}.': 'No se pudo sincronizar {service}.',
+  'Try again from Music connections.': 'Vuelve a intentarlo desde Conexiones de música.',
+  'None of your {services} artists play Afterglow’s lineups yet, so your map grows from what you do here.':
+    'Ninguno de tus artistas de {services} toca todavía en los carteles de Afterglow, así que tu mapa crece con lo que haces aquí.',
+  'Only {n} of your {services} artists plays Afterglow’s lineups so far. React to clips to place more.':
+    'Solo {n} de tus artistas de {services} toca en los carteles de Afterglow por ahora. Reacciona a clips para añadir más.',
+  'Only {n} of your {services} artists play Afterglow’s lineups so far. React to clips to place more.':
+    'Solo {n} de tus artistas de {services} tocan en los carteles de Afterglow por ahora. Reacciona a clips para añadir más.',
+  'Connect {services} to start your map from what you already play.': 'Conecta {services} para empezar tu mapa con lo que ya escuchas.',
+
+  Leave: 'Salir',
+  'Your messages got through': 'Tus mensajes llegaron',
+
   // Tabs
+
+
 
 
   Discover: 'Descubrir',

@@ -58,3 +58,13 @@ export function dayWord(day: string): string {
   const said = t(day);
   return LANGUAGE === 'es' && said !== day ? said.toLowerCase() : said;
 }
+
+/**
+ * The same English word with two meanings, told apart for other languages:
+ * tc('time', 'Leave') is "Leave" in English, and the Spanish list's entry for
+ * 'time|Leave' ("Salida", a leaving time) rather than plain 'Leave' ("Salir").
+ */
+export function tc(context: string, english: string, vars?: Vars): string {
+  const dict = DICTIONARIES[LANGUAGE];
+  return translate(dict?.[`${context}|${english}`] ? { [english]: dict[`${context}|${english}`] } : dict, english, vars);
+}

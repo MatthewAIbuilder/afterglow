@@ -107,7 +107,7 @@ export default function SettingsScreen() {
             onPress={() => router.push('/your-artists')}
           />
           <Row label={t('Your sound')} detail={t('Breakdown')} onPress={() => router.push('/your-sound')} />
-          {yearCard ? <Row label={t('Your {year}', { year })} detail={yearCard.subtitle.endsWith('so far') ? t('So far') : t('Ready to share')} onPress={() => router.push({ pathname: '/year/[year]', params: { year: String(year) } })} /> : null}
+          {yearCard ? <Row label={t('Your {year}', { year })} detail={yearCard.subtitle === t('Your festival year so far') ? t('So far') : t('Ready to share')} onPress={() => router.push({ pathname: '/year/[year]', params: { year: String(year) } })} /> : null}
         </Group>
 
         <Group title={t('Look')}>

@@ -1,5 +1,6 @@
 import type { SoundTag } from '../../data/models';
 import type { SoundShare } from '../taste/lean';
+import { t } from '../../i18n';
 
 /**
  * How alike your taste is to someone's, from what they chose to show (their
@@ -34,4 +35,4 @@ export function tasteMatch(mine: readonly SoundShare[], theirs: readonly SoundTa
 }
 
 /** "92% taste match". */
-export const matchLine = (percent: number) => `${percent}% taste match`;
+export const matchLine = (percent: number) => t('{pct}% taste match', { pct: percent });

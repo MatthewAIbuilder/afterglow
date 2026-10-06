@@ -15,6 +15,7 @@ import { otherInRoom, type Crew, type Profile } from '../social/models';
 import { CrewOrb } from './CrewOrb';
 import { chatTime } from './orbit';
 import { SectionHeader } from './SectionHeader';
+import { t } from '../../i18n';
 
 /** Chats shown before "Show all". */
 const SHOWN = 5;
@@ -69,7 +70,7 @@ export function MessagesList({ skipCrews = [], directOnly = false }: { skipCrews
   if (!rows.length) return null;
   const nameOf = (uid: string) => {
     const p = profiles[uid];
-    return p ? firstName(p.displayName) : 'Someone';
+    return p ? firstName(p.displayName) : t('Someone');
   };
   const shown = all ? rows : rows.slice(0, SHOWN);
   const nowMs = now.getTime();
@@ -77,9 +78,17 @@ export function MessagesList({ skipCrews = [], directOnly = false }: { skipCrews
   return (
     <View>
       <SectionHeader
-        title={directOnly ? 'Messages' : 'Chats'}
-        action={rows.length > SHOWN ? (all ? 'Show fewer' : 'Show all') : undefined}
-        actionLabel={all ? `Show fewer ${directOnly ? 'messages' : 'chats'}` : `Show all ${rows.length} ${directOnly ? 'messages' : 'chats'}`}
+        title={directOnly ? t('Messages') : t('Chats')}
+        action={rows.length > SHOWN ? (all ? t('Show fewer') : t('Show all')) : undefined}
+        actionLabel={
+          all
+            ? directOnly
+              ? t('Show fewer messages')
+              : t('Show fewer chats')
+            : directOnly
+              ? t('Show all {n} messages', { n: rows.length })
+              : t('Show all {n} chats', { n: rows.length })
+        }
         onAction={() => setAll((a) => !a)}
       />
       <View style={styles.list}>
@@ -92,8 +101,8 @@ export function MessagesList({ skipCrews = [], directOnly = false }: { skipCrews
           const name = r.kind === 'direct' ? (p?.displayName ?? ' ') : r.crew.name;
           const fest = r.kind === 'crew' ? festival(r.crew.festivalId)?.name : undefined;
           const preview =
-            (r.kind === 'direct' ? chatPreview(latest, me, () => (p ? firstName(p.displayName) : 'Someone')) : chatPreview(latest, me, nameOf)) ??
-            'Say hi to your crew. Only people in it can see the chat.';
+            (r.kind === 'direct' ? chatPreview(latest, me, () => (p ? firstName(p.displayName) : t('Someone'))) : chatPreview(latest, me, nameOf)) ??
+            t('Say hi to your crew. Only people in it can see the chat.');
           const at = latest?.sentAt ? Date.parse(latest.sentAt) : NaN;
           const when = Number.isFinite(at) ? chatTime(at, nowMs) : undefined;
           const faces =
@@ -112,7 +121,7 @@ export function MessagesList({ skipCrews = [], directOnly = false }: { skipCrews
                 router.push({ pathname: '/crew-chat/[id]', params: { id: r.id } });
               }}
               accessibilityRole="button"
-              accessibilityLabel={`${r.kind === 'crew' ? `${name} crew chat` : (p?.displayName ?? 'Someone')}${unread ? `, ${unreadLine(unread)}` : ''}. ${preview}`}
+              accessibilityLabel={`${r.kind === 'crew' ? t('{name} crew chat', { name }) : (p?.displayName ?? t('Someone'))}${unread ? `, ${unreadLine(unread)}` : ''}. ${preview}`}
               style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             >
               {i > 0 ? <View style={styles.divider} /> : null}

@@ -51,6 +51,7 @@ function linesInCode(): { line: string; file: string }[] {
   const str = String.raw`'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"`;
   const one = new RegExp(String.raw`\bt\(\s*(${str})`, 'g');
   const two = new RegExp(String.raw`\btn\([^,]+,\s*(${str})\s*,\s*(${str})`, 'g');
+  const withContext = new RegExp(String.raw`\btc\(\s*(${str})\s*,\s*(${str})`, 'g');
   const unquote = (s: string) => JSON.parse(s.startsWith("'") ? `"${s.slice(1, -1).replace(/\\'/g, "'").replace(/"/g, '\\"')}"` : s) as string;
   return walk(root).flatMap((file) => {
     const text = readFileSync(file, 'utf8');
@@ -58,6 +59,8 @@ function linesInCode(): { line: string; file: string }[] {
 
     const found = [...text.matchAll(one)].map((m) => m[1]);
     for (const m of text.matchAll(two)) found.push(m[1], m[2]);
+    // tc('time', 'Leave') looks up 'time|Leave'.
+    for (const m of text.matchAll(withContext)) found.push(JSON.stringify(`${unquote(m[1])}|${unquote(m[2])}`));
     return found.map((s) => ({ line: unquote(s), file: file.slice(root.length + 1) }));
   });
 }
@@ -72,6 +75,11 @@ describe('the Spanish list', () => {
   it('has every line the code translates', () => {
     const missing = [...new Set(lines.filter((l) => !es[l.line]).map((l) => `${l.file}: ${l.line}`))];
     expect(missing).toEqual([]);
+  });
+
+  it('has the plain line too for every line with a context (other languages fall back to it)', () => {
+    const plain = Object.keys(es).filter((k) => k.includes('|')).map((k) => k.slice(k.indexOf('|') + 1));
+    expect(plain.filter((k) => !es[k])).toEqual([]);
   });
 
   it('keeps every slot of every line', () => {

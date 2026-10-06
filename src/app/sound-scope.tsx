@@ -17,6 +17,8 @@ import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
+import { datesLine } from '../features/festivals/format';
+import { t } from '../i18n';
 
 /**
  * Which lineup My Sound shows: everyone, or one festival (the ones you're
@@ -65,13 +67,15 @@ export default function SoundScopeScreen() {
   );
   const festivalRow = (f: Festival) => {
     const days = lineupDays(f);
-    const when = countdown(f, today) ?? f.dates;
+    const when = countdown(f, today) ?? datesLine(f);
     return row(
       f.id,
       f.name,
-      `${f.lineup.length} artists · ${when}${days.length ? ' · by day' : ''}`,
+      days.length
+        ? t('{n} artists · {when} · by day', { n: f.lineup.length, when })
+        : t('{n} artists · {when}', { n: f.lineup.length, when }),
       current === f.id,
-      `Your sound at ${f.name}`,
+      t('Your sound at {festival}', { festival: f.name }),
     );
   };
 
@@ -82,28 +86,28 @@ export default function SoundScopeScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
-        <Text style={styles.title}>Show my sound for</Text>
+        <Text style={styles.title}>{t('Show my sound for')}</Text>
         <View style={styles.list}>
-          {row(EVERYONE, 'Everyone', 'Every artist the app knows', !current, 'Your sound across every artist')}
+          {row(EVERYONE, t('Everyone'), t('Every artist the app knows'), !current, t('Your sound across every artist'))}
         </View>
         {groups.going.length > 0 && (
           <>
-            <Text style={styles.section}>Going</Text>
+            <Text style={styles.section}>{t('Going')}</Text>
             <View style={styles.list}>{groups.going.map(festivalRow)}</View>
           </>
         )}
         {many && (
           <View style={styles.search}>
-            <SearchField value={query} onChange={setQuery} placeholder="Find a festival" label="Find a festival" />
+            <SearchField value={query} onChange={setQuery} placeholder={t('Find a festival')} label={t('Find a festival')} />
           </View>
         )}
         {others.length > 0 ? (
           <>
-            <Text style={styles.section}>{query.trim() ? 'Matches' : groups.going.length ? 'More festivals' : 'Festivals'}</Text>
+            <Text style={styles.section}>{query.trim() ? t('Matches') : groups.going.length ? t('More festivals') : t('Festivals')}</Text>
             <View style={styles.list}>{others.map(festivalRow)}</View>
           </>
         ) : query.trim() ? (
-          <Text style={styles.none}>No festival matches “{query.trim()}”.</Text>
+          <Text style={styles.none}>{t('No festival matches “{query}”.', { query: query.trim() })}</Text>
         ) : null}
       </ScrollView>
       <SheetClose />

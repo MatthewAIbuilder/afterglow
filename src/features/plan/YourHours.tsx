@@ -28,7 +28,7 @@ import {
   stepTime,
 } from './hours';
 import type { DayRoute } from './route';
-import { dayWord, t } from '../../i18n';
+import { dayWord, t, tc } from '../../i18n';
 
 type Range = NonNullable<ReturnType<typeof dayRange>>;
 
@@ -153,9 +153,9 @@ function HoursEditor({
               }}
             />
             <Stepper
-              title={t('Leave')}
+              title={tc('time', 'Leave')}
               value={draft.leave === undefined ? t('Until the end') : clockLabel(draft.leave)}
-              what={t('Leave')}
+              what={tc('time', 'Leave')}
               onStep={(dir) => {
                 const next = stepTime(draft.leave ?? range.last, dir, lo + HOURS_STEP, range.max);
                 if (next !== draft.leave) change({ ...draft, leave: next });

@@ -21,6 +21,7 @@ import { useRatings } from '../state/ratings';
 import { useTaste } from '../state/taste';
 import { useLoves } from '../state/useLoves';
 import { color, space, type } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * Your artists: everyone you follow, by where they play next (a festival
@@ -53,17 +54,17 @@ export default function YourArtistsScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Your artists" />
+      <PageTitle title={t('Your artists')} />
       <NightSky />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
-        <Text style={styles.title}>Your artists</Text>
+        <Text style={styles.title}>{t('Your artists')}</Text>
         <Text style={styles.sub}>
-          {count ? `${artistsCount(count)} · news when they’re added to a lineup` : 'Follow artists to hear when they’re added to a lineup.'}
+          {count ? t('{artists} · news when they’re added to a lineup', { artists: artistsCount(count) }) : t('Follow artists to hear when they’re added to a lineup.')}
         </Text>
 
         {upcoming.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Playing next</Text>
+            <Text style={styles.sectionTitle}>{t('Playing next')}</Text>
             {upcoming.map((s) => (
               <ShowRow key={s.artist.id} show={s} line={showLine(s, today, units)} />
             ))}
@@ -72,26 +73,26 @@ export default function YourArtistsScreen() {
 
         {later.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>No festival dates yet</Text>
+            <Text style={styles.sectionTitle}>{t('No festival dates yet')}</Text>
             {later.map((a) => (
-              <ArtistLine key={a.id} artist={a} line="We’ll tell you when they’re added to a lineup" />
+              <ArtistLine key={a.id} artist={a} line={t('We’ll tell you when they’re added to a lineup')} />
             ))}
           </View>
         )}
 
         {suggestions.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{count ? 'You might follow' : 'Artists you’d love'}</Text>
+            <Text style={styles.sectionTitle}>{count ? t('You might follow') : t('Artists you’d love')}</Text>
             {suggestions.map((a) => (
-              <ArtistLine key={a.id} artist={a} line={`${Math.round((taste[a.id] ?? 0) * 100)}% match`} />
+              <ArtistLine key={a.id} artist={a} line={t('{pct}% match', { pct: Math.round((taste[a.id] ?? 0) * 100) })} />
             ))}
           </View>
         )}
 
         {!count && !suggestions.length ? (
-          <Text style={styles.note}>Open an artist and tap Follow. Rate a few artists or like some clips and we’ll suggest who to follow.</Text>
+          <Text style={styles.note}>{t('Open an artist and tap Follow. Rate a few artists or like some clips and we’ll suggest who to follow.')}</Text>
         ) : (
-          <Text style={styles.note}>Following stays on this phone and never changes your match.</Text>
+          <Text style={styles.note}>{t('Following stays on this phone and never changes your match.')}</Text>
         )}
       </ScrollView>
       <PageActions />
@@ -101,7 +102,7 @@ export default function YourArtistsScreen() {
 
 function showLine(s: FollowedShow, today: Date, units: Parameters<typeof distanceLabel>[1]): string {
   const { festival, going, km } = s.next;
-  return [festival.name, going ? 'Going' : '', countdown(festival, today) ?? '', km !== undefined ? distanceLabel(km, units) : '', moreLine(s.more)]
+  return [festival.name, going ? t('Going') : '', countdown(festival, today) ?? '', km !== undefined ? distanceLabel(km, units) : '', moreLine(s.more)]
     .filter(Boolean)
     .join(' · ');
 }
