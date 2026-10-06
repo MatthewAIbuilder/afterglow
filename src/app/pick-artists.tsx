@@ -13,6 +13,7 @@ import { useCatalog } from '../state/catalog';
 import { useRatings } from '../state/ratings';
 import { color, radius, space, type, nightA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t } from '../i18n';
 
 /**
  * Pick the artists you know: tap everyone you love in a grid of faces from
@@ -69,11 +70,11 @@ export default function PickArtistsScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Pick artists you know" />
+      <PageTitle title={t('Pick artists you know')} />
       <NightSky />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + 120 }]}>
-        <Text style={styles.title}>Tap the artists you love</Text>
-        <Text style={styles.sub}>Tap again to undo. The more you pick, the better your plan and your sound.</Text>
+        <Text style={styles.title}>{t('Tap the artists you love')}</Text>
+        <Text style={styles.sub}>{t('Tap again to undo. The more you pick, the better your plan and your sound.')}</Text>
         <View style={styles.grid}>
           {candidates.slice(0, shown).map((a) => {
             const on = picked.has(a.id);
@@ -83,7 +84,7 @@ export default function PickArtistsScreen() {
                 onPress={() => toggle(a.id)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on }}
-                accessibilityLabel={on ? `${a.name}, you love their sound` : `Love ${a.name}'s sound`}
+                accessibilityLabel={on ? t('{artist}, you love their sound', { artist: a.name }) : t("Love {artist}'s sound", { artist: a.name })}
                 style={({ pressed }) => [styles.cell, { width: cell }, pressed && { transform: [{ scale: 0.96 }] }]}
               >
                 <View style={[styles.face, on && styles.faceOn, { borderRadius: (face + 6) / 2 }]}>
@@ -108,13 +109,13 @@ export default function PickArtistsScreen() {
               setShown((n) => n + PICK_PAGE);
             }}
             accessibilityRole="button"
-            accessibilityLabel="Show more artists"
+            accessibilityLabel={t('Show more artists')}
             style={({ pressed }) => [styles.more, pressed && { opacity: 0.7 }]}
           >
-            <Text style={styles.moreText}>Show more</Text>
+            <Text style={styles.moreText}>{t('Show more')}</Text>
           </Pressable>
         ) : null}
-        {candidates.length === 0 ? <Text style={styles.sub}>You’ve rated everyone here already.</Text> : null}
+        {candidates.length === 0 ? <Text style={styles.sub}>{t('You’ve rated everyone here already.')}</Text> : null}
       </ScrollView>
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.lg }]}>
         <Pressable

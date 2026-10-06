@@ -10,6 +10,7 @@ import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { color, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t, tc } from '../../i18n';
 
 /**
  * Who's going to a festival: people you follow, then others on Afterglow,
@@ -28,30 +29,30 @@ export default function GoingScreen() {
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }}>
         <Text style={styles.title} accessibilityRole="header">
-          Who’s going
+          {t('Who’s going')}
         </Text>
         {festival ? <Text style={styles.meta}>{festival.name}</Text> : null}
         {!social.user ? (
-          <Text style={styles.quiet}>Sign in to see who else is going.</Text>
+          <Text style={styles.quiet}>{t('Sign in to see who else is going.')}</Text>
         ) : !goers ? (
           <ActivityIndicator color={color.glow} />
         ) : (
           <>
-            {goers.friends.length ? <Text style={styles.section}>People you follow</Text> : null}
+            {goers.friends.length ? <Text style={styles.section}>{t('People you follow')}</Text> : null}
             {goers.friends.map((p) => (
               <PersonRow key={p.uid} profile={p} follow />
             ))}
-            {goers.others.length ? <Text style={styles.section}>{goers.friends.length ? 'Also going' : 'Going'}</Text> : null}
+            {goers.others.length ? <Text style={styles.section}>{goers.friends.length ? tc('people', 'Also going') : tc('people', 'Going')}</Text> : null}
             {goers.others.map((p) => (
               <PersonRow key={p.uid} profile={p} follow />
             ))}
-            {!goers.friends.length && !goers.others.length ? <Text style={styles.quiet}>No one else shows this festival on their profile yet.</Text> : null}
-            <Text style={styles.note}>Only people who show the festivals they’re going to on their profile appear here.</Text>
+            {!goers.friends.length && !goers.others.length ? <Text style={styles.quiet}>{t('No one else shows this festival on their profile yet.')}</Text> : null}
+            <Text style={styles.note}>{t('Only people who show the festivals they’re going to on their profile appear here.')}</Text>
           </>
         )}
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

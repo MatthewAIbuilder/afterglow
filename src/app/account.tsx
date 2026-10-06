@@ -140,7 +140,7 @@ export default function AccountScreen() {
             <Text style={styles.guideTitle}>{t('Community guidelines')}</Text>
             {GUIDELINES.map((g) => (
               <Text key={g} style={styles.guide}>
-                • {g}
+                • {t(g)}
               </Text>
             ))}
             {contactLine() ? <Text style={styles.guide}>{contactLine()}</Text> : null}

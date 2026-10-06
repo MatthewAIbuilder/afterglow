@@ -1,4 +1,5 @@
 import { REMINDER_PREFIX, type Reminder } from './reminders';
+import { t, tn } from '../../i18n';
 
 /** The evening nudge comes at 8 PM, local time. */
 export const QUEST_REMINDER_HOUR = 20;
@@ -21,11 +22,11 @@ export function questReminder(on: boolean, now: Date, left: number, streak: numb
     id: `${REMINDER_PREFIX}quests:${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}:${n}`,
     festivalId: '',
     at,
-    title: 'Your quests are waiting',
+    title: t('Your quests are waiting'),
     body:
       streak > 0
-        ? `${n === 1 ? '1 quest' : `${n} quests`} left today. Keep your ${streak}-day streak glowing.`
-        : `${n === 1 ? '1 small quest' : `${n} small quests`} left today, a little glow each.`,
+        ? tn(n, '{n} quest left today. Keep your {streak}-day streak glowing.', '{n} quests left today. Keep your {streak}-day streak glowing.', { streak })
+        : tn(n, '{n} small quest left today, a little glow each.', '{n} small quests left today, a little glow each.'),
     href: '/quests',
   };
 }

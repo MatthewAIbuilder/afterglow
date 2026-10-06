@@ -9,6 +9,7 @@ import { WEB_URL } from '../../config/app';
 import { huntShareText, untilLine } from '../../features/finds/finds';
 import { HuntCard } from '../../features/finds/HuntCard';
 import { CARD_MAX_WIDTH, sharePoster } from '../../features/plan/PosterCard';
+import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { goBack } from '../../lib/nav';
 import { shareMessage } from '../../lib/share';
@@ -37,10 +38,10 @@ export default function HuntScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={progress ? progress.hunt.name : 'Sticker hunt'} />
+      <PageTitle title={progress ? progress.hunt.name : t('Sticker hunt')} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.heading}>{progress?.done ? 'Hunt complete' : 'Sticker hunt'}</Text>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <Text style={styles.heading}>{progress?.done ? t('Hunt complete') : t('Sticker hunt')}</Text>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
@@ -52,8 +53,9 @@ export default function HuntScreen() {
             </View>
             {!progress.done ? (
               <Text style={styles.hint}>
-                Find the rest by scanning their stickers with Friends → Scan, or your phone’s camera.
-                {progress.hunt.until ? ` ${untilLine(progress.hunt.until)}.` : ''}
+                {progress.hunt.until
+                  ? t('Find the rest by scanning their stickers with Friends → Scan, or your phone’s camera. {until}.', { until: untilLine(progress.hunt.until) })
+                  : t('Find the rest by scanning their stickers with Friends → Scan, or your phone’s camera.')}
               </Text>
             ) : null}
             {Platform.OS !== 'web' ? (
@@ -67,10 +69,10 @@ export default function HuntScreen() {
                 }}
                 disabled={busy}
                 accessibilityRole="button"
-                accessibilityLabel="Share your hunt as an image"
+                accessibilityLabel={t('Share your hunt as an image')}
                 style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
               >
-                <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+                <Text style={styles.buttonText}>{busy ? t('Getting it ready…') : t('Share image')}</Text>
               </Pressable>
             ) : null}
             <Pressable
@@ -79,17 +81,17 @@ export default function HuntScreen() {
                 void shareMessage(huntShareText(progress, WEB_URL));
               }}
               accessibilityRole="button"
-              accessibilityLabel="Share your hunt as text"
+              accessibilityLabel={t('Share your hunt as text')}
               style={({ pressed }) => [styles.button, Platform.OS === 'web' && styles.primary, pressed && styles.pressed]}
             >
-              <Text style={styles.buttonText}>{Platform.OS === 'web' ? 'Share' : 'Share as text'}</Text>
+              <Text style={styles.buttonText}>{Platform.OS === 'web' ? t('Share') : t('Share as text')}</Text>
             </Pressable>
           </>
         ) : (
           <>
-            <Text style={styles.empty}>This hunt shows up here once you’ve found one of its stickers.</Text>
+            <Text style={styles.empty}>{t('This hunt shows up here once you’ve found one of its stickers.')}</Text>
             <Pressable onPress={() => router.replace('/garden')} accessibilityRole="button" style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-              <Text style={styles.buttonText}>See your collection</Text>
+              <Text style={styles.buttonText}>{t('See your collection')}</Text>
             </Pressable>
           </>
         )}

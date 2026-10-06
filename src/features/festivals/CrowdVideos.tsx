@@ -72,7 +72,7 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
       {nights.map((n) => (
         <View key={n.night} style={styles.night}>
           <Text style={styles.nightTitle}>
-            {n.night} <Text style={styles.nightCount}>{n.videos.length}</Text>
+            {t(n.night)} <Text style={styles.nightCount}>{n.videos.length}</Text>
           </Text>
           <View style={[styles.grid, { gap }]}>
             {n.videos.map((m) => {
@@ -85,7 +85,7 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
                     router.push({ pathname: '/shared/[id]', params: { id: m.id } });
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={artist ? t('{artist}, filmed by @{handle}, {night}', { artist: artist.name, handle: m.handle, night: n.night }) : t('filmed by @{handle}, {night}', { handle: m.handle, night: n.night })}
+                  accessibilityLabel={artist ? t('{artist}, filmed by @{handle}, {night}', { artist: artist.name, handle: m.handle, night: t(n.night) }) : t('filmed by @{handle}, {night}', { handle: m.handle, night: t(n.night) })}
                   style={({ pressed }) => [styles.tile, { width: tile, height: Math.round((tile * 4) / 3) }, pressed && styles.pressed]}
                 >
                   {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}

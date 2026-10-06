@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
+import { t } from '../../i18n';
 import { color, radius, space, type } from '../../theme/tokens';
 import { FlameIcon, QUEST_GOLD, QuestRing } from './QuestRing';
 import { useDailyQuests } from './useDailyQuests';
@@ -17,7 +18,11 @@ export function GlowLevelCard() {
         router.push('/quests');
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Glow level ${q.level.level}, ${q.level.name}. ${q.doneToday} of ${of} quests done today.${q.streak ? ` ${q.streak}-day streak.` : ''} Opens your quests.`}
+      accessibilityLabel={
+        q.streak
+          ? t('Glow level {level}, {name}. {done} of {total} quests done today. {streak}-day streak. Opens your quests.', { level: q.level.level, name: q.level.name, done: q.doneToday, total: of, streak: q.streak })
+          : t('Glow level {level}, {name}. {done} of {total} quests done today. Opens your quests.', { level: q.level.level, name: q.level.name, done: q.doneToday, total: of })
+      }
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
       testID="glow-level-card"
     >
@@ -26,11 +31,9 @@ export function GlowLevelCard() {
         <Text style={styles.num}>{q.level.level}</Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.kicker}>Glow level</Text>
+        <Text style={styles.kicker}>{t('Glow level')}</Text>
         <Text style={styles.name}>{q.level.name}</Text>
-        <Text style={styles.sub}>
-          {q.doneToday} of {of} quests today
-        </Text>
+        <Text style={styles.sub}>{t('{done} of {total} quests today', { done: q.doneToday, total: of })}</Text>
       </View>
       {q.streak > 0 ? (
         <View style={styles.streak}>

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfettiBurst } from '../../components/ConfettiBurst';
 import { haptic } from '../../lib/haptics';
 import { onQuestsFinished } from '../../state/dailyQuests';
+import { t } from '../../i18n';
 import { color, motion, radius, space, type } from '../../theme/tokens';
 import type { Finished } from './daily';
 import { QUEST_GOLD, SparkIcon } from './QuestRing';
@@ -32,10 +33,10 @@ export function toastsFor(finished: readonly Finished[], doneToday: number, of: 
   const all = finished.find((f): f is Extract<Finished, { kind: 'all' }> => f.kind === 'all');
   const weekly = finished.find((f): f is Extract<Finished, { kind: 'weekly' }> => f.kind === 'weekly');
   if (all) {
-    out.push({ title: 'All three done today', line: 'Your streak glows on. See you tomorrow.', glow: daily.reduce((n, d) => n + d.spec.glow, 0) + all.glow, big: true });
+    out.push({ title: t('All three done today'), line: t('Your streak glows on. See you tomorrow.'), glow: daily.reduce((n, d) => n + d.spec.glow, 0) + all.glow, big: true });
   } else
-    for (const d of daily) out.push({ title: d.spec.title, line: `${d.spec.how} · ${doneToday} of ${of} today`, glow: d.spec.glow });
-  if (weekly) out.push({ title: `Weekly quest: ${weekly.spec.title}`, line: weekly.spec.how, glow: weekly.spec.glow, big: true });
+    for (const d of daily) out.push({ title: d.spec.title, line: t('{how} · {done} of {total} today', { how: d.spec.how, done: doneToday, total: of }), glow: d.spec.glow });
+  if (weekly) out.push({ title: t('Weekly quest: {title}', { title: weekly.spec.title }), line: weekly.spec.how, glow: weekly.spec.glow, big: true });
   return out;
 }
 
@@ -59,7 +60,7 @@ export function QuestToast() {
     () =>
       onQuestsFinished((finished) => {
         const done = Math.min(counts.current.of, counts.current.done + finished.filter((f) => f.kind === 'daily').length);
-        const add = toastsFor(finished, done, counts.current.of).map((t) => ({ ...t, key: ++seq.current }));
+        const add = toastsFor(finished, done, counts.current.of).map((toast) => ({ ...toast, key: ++seq.current }));
         if (add.length) setQueue((q) => [...q, ...add]);
       }),
     [],
@@ -73,7 +74,7 @@ export function QuestToast() {
     lastLevel.current = quests.level.level;
     if (was !== undefined && quests.level.level > was) {
       const key = ++seq.current;
-      setQueue((q) => [...q, { key, title: `Level ${quests.level.level} · ${quests.level.name}`, line: 'Your glow grew. Keep going.', glow: 0, big: true }]);
+      setQueue((q) => [...q, { key, title: t('Level {level} · {name}', { level: quests.level.level, name: quests.level.name }), line: t('Your glow grew. Keep going.'), glow: 0, big: true }]);
     }
   }, [quests.ready, quests.level.level, quests.level.name]);
 
@@ -87,11 +88,11 @@ export function QuestToast() {
     y.set(reduced ? 0 : withSpring(0, motion.snappy));
     burst.set(0);
     if (!reduced) burst.set(withDelay(120, withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) })));
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       y.set(reduced ? -140 : withTiming(-140, { duration: 260 }));
       setTimeout(() => setQueue((q) => q.slice(1)), reduced ? 0 : 280);
     }, SHOW_MS);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [current, y, burst, reduced]);
   const slide = useAnimatedStyle(() => ({ transform: [{ translateY: y.get() }], opacity: reduced ? (y.get() < -100 ? 0 : 1) : 1 }));
 
@@ -106,7 +107,11 @@ export function QuestToast() {
         }}
         accessibilityRole="button"
         accessibilityLiveRegion="polite"
-        accessibilityLabel={`${current.title}. ${current.line}.${current.glow ? ` Plus ${current.glow} glow.` : ''} Opens your quests.`}
+        accessibilityLabel={
+          current.glow
+            ? t('{title}. {line}. Plus {glow} glow. Opens your quests.', { title: current.title, line: current.line, glow: current.glow })
+            : t('{title}. {line}. Opens your quests.', { title: current.title, line: current.line })
+        }
         style={[styles.toast, current.big && styles.big]}
         testID="quest-toast"
       >
@@ -118,7 +123,7 @@ export function QuestToast() {
           <SparkIcon size={26} />
         </View>
         <View style={styles.text}>
-          <Text style={styles.kicker}>{current.big ? 'Nice one' : 'Quest complete'}</Text>
+          <Text style={styles.kicker}>{current.big ? t('Nice one') : t('Quest complete')}</Text>
           <Text style={styles.title} numberOfLines={1}>
             {current.title}
           </Text>

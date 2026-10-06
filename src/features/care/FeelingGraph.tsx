@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
+import { t, tc } from '../../i18n';
 import { color, space, type, glowA } from '../../theme/tokens';
 import { elapsed, type FeelingPoint, MOOD_LABEL } from './care';
 import { LEVEL_COLOR } from './feelings';
@@ -30,15 +31,15 @@ export function FeelingGraph({ start, now, points, entry, doses }: { start: numb
   const hours = Math.floor(spanMin / 60);
   const step = hours > 6 ? 2 : 1;
   const summary = points.length
-    ? `How you felt since you started: ${at.map((p) => `${elapsed(p.at - start)} in, ${MOOD_LABEL[p.mood].toLowerCase()}`).join('; ')}.`
-    : 'No check-ins on this stopwatch yet.';
+    ? t('How you felt since you started: {feelings}.', { feelings: at.map((p) => t('{time} in, {feeling}', { time: elapsed(p.at - start), feeling: MOOD_LABEL[p.mood].toLowerCase() })).join('; ') })
+    : t('No check-ins on this stopwatch yet.');
   return (
     <View accessible accessibilityLabel={summary}>
       <View style={styles.row}>
       <View style={styles.axis}>
-        <Text style={styles.axisText}>Great</Text>
-        <Text style={styles.axisText}>Okay</Text>
-        <Text style={styles.axisText}>Not great</Text>
+        <Text style={styles.axisText}>{tc('feeling', 'Great')}</Text>
+        <Text style={styles.axisText}>{tc('feeling', 'Okay')}</Text>
+        <Text style={styles.axisText}>{tc('feeling', 'Not great')}</Text>
       </View>
       <View style={styles.chart} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {width ? (
@@ -72,21 +73,21 @@ export function FeelingGraph({ start, now, points, entry, doses }: { start: numb
       <View style={[styles.ticks, { marginLeft: AXIS_W }]}>
         {Array.from({ length: Math.floor(hours / step) + 1 }, (_, i) => i * step).map((h) => (
           <Text key={h} numberOfLines={1} style={[styles.tick, x(h * 60) > width - TICK_W / 2 ? { left: x(h * 60) - TICK_W, textAlign: 'right' } : h ? { left: x(h * 60) - TICK_W / 2, textAlign: 'center' } : { left: 0 }]}>
-            {h ? `${h} h` : 'Start'}
+            {h ? t('{n} h', { n: h }) : tc('graph', 'Start')}
           </Text>
         ))}
       </View>
-      {!points.length ? <Text style={styles.empty}>Log how you feel and it shows here against the time.</Text> : null}
+      {!points.length ? <Text style={styles.empty}>{t('Log how you feel and it shows here against the time.')}</Text> : null}
       {entry || doses?.length ? (
         <View style={styles.legend}>
           {entry ? (
             <>
-              <Key fill="rgba(255,184,107,0.45)" label="Coming up" />
-              <Key fill="rgba(255,126,182,0.5)" label="Strongest" />
-              <Key fill={glowA(0.45)} label="Wearing off" />
+              <Key fill="rgba(255,184,107,0.45)" label={tc('phase', 'Coming up')} />
+              <Key fill="rgba(255,126,182,0.5)" label={t('Strongest')} />
+              <Key fill={glowA(0.45)} label={t('Wearing off')} />
             </>
           ) : null}
-          {doses?.length ? <Key fill="#FF7EB6" label="Took more" thin /> : null}
+          {doses?.length ? <Key fill="#FF7EB6" label={t('Took more')} thin /> : null}
         </View>
       ) : null}
     </View>

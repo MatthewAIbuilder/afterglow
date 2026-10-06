@@ -212,7 +212,7 @@ function CareTip() {
       importantForAccessibility="no-hide-descendants"
     >
       <View style={styles.tipBubble}>
-        <Text style={styles.tipText}>Hold for Look after yourself</Text>
+        <Text style={styles.tipText}>{t('Hold for Look after yourself')}</Text>
       </View>
       <View style={styles.tipArrow} />
     </Animated.View>

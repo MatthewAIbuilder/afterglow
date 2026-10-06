@@ -13,7 +13,7 @@ export const GUIDELINES: string[] = [
   'Report anything that breaks these, and block anyone you don’t want to see. Reports are reviewed, and accounts that break the guidelines are removed.',
 ];
 
-export const contactLine = () => (SUPPORT_EMAIL ? `Questions or problems: ${SUPPORT_EMAIL}` : undefined);
+export const contactLine = () => (SUPPORT_EMAIL ? t('Questions or problems: {email}', { email: SUPPORT_EMAIL }) : undefined);
 
 /** "Going to EDC Orlando 2026 and ACL 2026", "Going to 3 festivals". */
 export function goingLine(names: string[]): string | undefined {

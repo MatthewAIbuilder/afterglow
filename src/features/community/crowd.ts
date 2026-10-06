@@ -1,6 +1,6 @@
 import type { Festival } from '../../data/models';
 import type { SharedMemory } from '../social/models';
-import { tn } from '../../i18n';
+import { t, tn } from '../../i18n';
 
 /**
  * A festival's videos from the crowd, organised, pure: night by night in the
@@ -12,9 +12,9 @@ import { tn } from '../../i18n';
 export type CrowdNight = { night: string; videos: SharedMemory[] };
 
 /** "Other nights" for videos tagged with no night (or one the festival doesn't have). */
-export const OTHER_NIGHT = 'Other nights';
+export const OTHER_NIGHT = t('Other nights');
 /** Throwbacks from an earlier year of the festival: "In 2024". */
-export const yearTitle = (year: number) => `In ${year}`;
+export const yearTitle = (year: number) => t('In {year}', { year });
 
 export function crowdVideos(memories: readonly SharedMemory[], { blocked = [], hidden = [] }: { blocked?: readonly string[]; hidden?: readonly string[] } = {}): SharedMemory[] {
   const seen = new Set<string>();

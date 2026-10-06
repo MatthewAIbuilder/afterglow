@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { t, tn } from '../../i18n';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
@@ -41,7 +42,7 @@ export function StopwatchCard({
   const since = (now - last) / MIN;
   const phase = phaseAt(entry, since);
   const marks = entry ? phaseMarks(entry) : undefined;
-  const name = timer.label || entry?.name || 'Stopwatch';
+  const name = timer.label || entry?.name || t('Stopwatch');
   const doses = timer.doses?.length ?? 0;
 
   const more = () => {
@@ -50,14 +51,14 @@ export function StopwatchCard({
       onTookMore();
     };
     if (tooSoon(entry, since))
-      showAlert('Wait a bit longer?', tooSoonLine(entry, since), [
-        { text: 'I’ll wait', style: 'cancel' },
-        { text: 'Log it anyway', style: 'destructive', onPress: log },
+      showAlert(t('Wait a bit longer?'), tooSoonLine(entry, since), [
+        { text: t('I’ll wait'), style: 'cancel' },
+        { text: t('Log it anyway'), style: 'destructive', onPress: log },
       ]);
     else
-      showAlert('Log taking more?', 'The stopwatch keeps running; the timing starts again from now.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Log it', onPress: log },
+      showAlert(t('Log taking more?'), t('The stopwatch keeps running; the timing starts again from now.'), [
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Log it'), onPress: log },
       ]);
   };
 
@@ -65,7 +66,7 @@ export function StopwatchCard({
     <View style={[styles.card, phase?.phase === 'after' && styles.cardDone]}>
       <View
         accessible
-        accessibilityLabel={`${name}. ${elapsed(now - timer.startedAt)} since you started, at ${clock(timer.startedAt)}.${doses ? ` Took more ${doses} ${doses === 1 ? 'time' : 'times'}, last at ${clock(last)}.` : ''}${phase ? ` ${phase.title}. ${phase.line}` : ''}`}
+        accessibilityLabel={`${t('{name}. {time} since you started, at {clock}.', { name, time: elapsed(now - timer.startedAt), clock: clock(timer.startedAt) })}${doses ? ` ${tn(doses, 'Took more {n} time, last at {clock}.', 'Took more {n} times, last at {clock}.', { clock: clock(last) })}` : ''}${phase ? ` ${phase.title}. ${phase.line}` : ''}`}
       >
         <View style={styles.top}>
           <Text style={styles.name} numberOfLines={1}>
@@ -75,8 +76,8 @@ export function StopwatchCard({
         </View>
         <Text style={styles.clock}>{stopwatchText(now - timer.startedAt)}</Text>
         <Text style={styles.sub}>
-          Started {clock(timer.startedAt)}
-          {doses ? ` · took more at ${clock(last)}${doses > 1 ? ` (${doses} times)` : ''}` : ''}
+          {t('Started {time}', { time: clock(timer.startedAt) })}
+          {doses ? ` · ${doses > 1 ? t('took more at {time} ({n} times)', { time: clock(last), n: doses }) : t('took more at {time}', { time: clock(last) })}` : ''}
         </Text>
 
         {phase && marks ? (
@@ -91,31 +92,31 @@ export function StopwatchCard({
               <LinearGradient colors={['#FFFFFF', '#E9DFFF']} style={styles.markerDot} />
             </View>
             <View style={styles.legend}>
-              <Text style={styles.legendText}>Starts</Text>
-              <Text style={styles.legendText}>Strongest</Text>
-              <Text style={styles.legendText}>Wears off</Text>
+              <Text style={styles.legendText}>{t('Starts')}</Text>
+              <Text style={styles.legendText}>{t('Strongest')}</Text>
+              <Text style={styles.legendText}>{t('Wears off')}</Text>
             </View>
           </View>
         ) : null}
 
-        <Text style={styles.line}>{phase ? phase.line : 'Some things take up to 2 hours to start. Wait before taking any more.'}</Text>
+        <Text style={styles.line}>{phase ? phase.line : t('Some things take up to 2 hours to start. Wait before taking any more.')}</Text>
         {entry?.tips[0] && phase?.phase !== 'after' ? <Text style={styles.tip}>{entry.tips[0]}</Text> : null}
       </View>
 
       {/* How you've felt since you started, against the time. */}
       <View style={styles.feel}>
         <View style={styles.feelHead}>
-          <Text style={styles.feelTitle}>How you’ve felt</Text>
+          <Text style={styles.feelTitle}>{t('How you’ve felt')}</Text>
           <Pressable
             onPress={() => {
               haptic.select();
               setAsking((a) => !a);
             }}
             accessibilityRole="button"
-            accessibilityLabel={asking ? 'Close' : `How do you feel now? Log it on ${name}`}
+            accessibilityLabel={asking ? t('Close') : t('How do you feel now? Log it on {name}', { name })}
             hitSlop={8}
           >
-            <Text style={styles.feelLink}>{asking ? 'Close' : '+ How do you feel now?'}</Text>
+            <Text style={styles.feelLink}>{asking ? t('Close') : t('+ How do you feel now?')}</Text>
           </Pressable>
         </View>
         {asking ? (
@@ -134,23 +135,23 @@ export function StopwatchCard({
         <Pressable
           onPress={more}
           accessibilityRole="button"
-          accessibilityLabel={`I took more ${name}`}
+          accessibilityLabel={t('I took more {name}', { name })}
           style={({ pressed }) => [styles.action, pressed && styles.pressed]}
         >
-          <Text style={styles.actionText}>Took more</Text>
+          <Text style={styles.actionText}>{t('Took more')}</Text>
         </Pressable>
         <Pressable
           onPress={() =>
-            showAlert('Stop this stopwatch?', `${name}, started ${clock(timer.startedAt)}.`, [
-              { text: 'Keep it', style: 'cancel' },
-              { text: 'Stop', style: 'destructive', onPress: onStop },
+            showAlert(t('Stop this stopwatch?'), t('{name}, started {time}.', { name, time: clock(timer.startedAt) }), [
+              { text: t('Keep it'), style: 'cancel' },
+              { text: t('Stop'), style: 'destructive', onPress: onStop },
             ])
           }
           accessibilityRole="button"
-          accessibilityLabel={`Stop the ${name} stopwatch`}
+          accessibilityLabel={t('Stop the {name} stopwatch', { name })}
           style={({ pressed }) => [styles.action, styles.stop, pressed && styles.pressed]}
         >
-          <Text style={styles.stopText}>Stop</Text>
+          <Text style={styles.stopText}>{t('Stop')}</Text>
         </Pressable>
       </View>
     </View>

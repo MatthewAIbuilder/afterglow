@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import type { Notice } from './inbox';
 import { countdown } from '../festivals/when';
+import { t } from '../../i18n';
 
 /**
  * Lineup news: when a catalogue update adds artists to a festival (or a whole
@@ -74,7 +75,8 @@ export function justAdded(memory: LineupMemory, festivalId: string, now: number)
   return out;
 }
 
-const names = (list: string[]) => (list.length === 1 ? list[0] : list.length === 2 ? `${list[0]} and ${list[1]}` : `${list[0]}, ${list[1]} and ${list.length - 2} more you’d love`);
+const names = (list: string[]) =>
+  list.length === 1 ? list[0] : list.length === 2 ? t('{a} and {b}', { a: list[0], b: list[1] }) : t('{a}, {b} and {n} more you’d love', { a: list[0], b: list[1], n: list.length - 2 });
 
 /**
  * The bell's lineup news: for each item, the added acts you'd love (and who
@@ -90,7 +92,7 @@ export function lineupNotices(
   const newAt = new Map<number, { festival: Festival; loved: string[] }[]>();
   for (const n of news) {
     const f = byId.get(n.festivalId);
-    if (!n.newFestival || !f || countdown(f, opts.today) === 'Over') continue;
+    if (!n.newFestival || !f || countdown(f, opts.today) === t('Over')) continue;
     const onLineup = new Set(f.lineup);
     const loved = n.artists.filter((a) => onLineup.has(a) && opts.loves(a)).map(opts.nameOf).filter((x): x is string => !!x);
     if (loved.length) newAt.set(n.at, [...(newAt.get(n.at) ?? []), { festival: f, loved }]);
@@ -108,13 +110,13 @@ export function lineupNotices(
         id: `lineup:new:${n.at}`,
         kind: 'lineup',
         href: '/festivals',
-        title: `${fs.length} new festivals with artists you’d love`,
-        body: `${names(acts)} ${acts.length === 1 ? 'plays' : 'play'}. See them on Festivals.`,
+        title: t('{n} new festivals with artists you’d love', { n: fs.length }),
+        body: acts.length === 1 ? t('{names} plays. See them on Festivals.', { names: names(acts) }) : t('{names} play. See them on Festivals.', { names: names(acts) }),
       });
       continue;
     }
     const f = byId.get(n.festivalId);
-    if (!f || countdown(f, opts.today) === 'Over') continue;
+    if (!f || countdown(f, opts.today) === t('Over')) continue;
     const onLineup = new Set(f.lineup);
     const loved = n.artists.filter((a) => onLineup.has(a) && opts.loves(a)).map(opts.nameOf).filter((x): x is string => !!x);
     if (!loved.length) continue;
@@ -126,16 +128,19 @@ export function lineupNotices(
             kind: 'lineup',
             festivalId: f.id,
             href: `/festival/${f.id}`,
-            title: `${f.name} is on Afterglow`,
-            body: `${names(loved)} ${loved.length === 1 ? 'plays' : 'play'}. See the lineup.`,
+            title: t('{festival} is on Afterglow', { festival: f.name }),
+            body: loved.length === 1 ? t('{names} plays. See the lineup.', { names: names(loved) }) : t('{names} play. See the lineup.', { names: names(loved) }),
           }
         : {
             id: `lineup:${f.id}:${n.at}`,
             kind: 'lineup',
             festivalId: f.id,
             href: `/festival/${f.id}`,
-            title: `${names(loved)} ${loved.length === 1 ? 'was' : 'were'} added to ${f.name}`,
-            body: going ? 'See how it changes your plan.' : 'See the full lineup.',
+            title:
+              loved.length === 1
+                ? t('{names} was added to {festival}', { names: names(loved), festival: f.name })
+                : t('{names} were added to {festival}', { names: names(loved), festival: f.name }),
+            body: going ? t('See how it changes your plan.') : t('See the full lineup.'),
           },
     );
   }
