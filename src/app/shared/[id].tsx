@@ -207,7 +207,7 @@ function SharedMemoryPage({ id, active }: { id: string; active: boolean }) {
 
   return (
     <View style={styles.root}>
-      {m && !blocked ? <VideoView player={player} style={StyleSheet.absoluteFill} contentFit={fitFor(videoSize, screen)} nativeControls={false} playsInline /> : null}
+      {m && !blocked ? <VideoView player={player} style={styles.video} contentFit={fitFor(videoSize, screen)} nativeControls={false} playsInline /> : null}
       {m && !blocked ? (
         <Pressable onPress={tapVideo} style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={quiet ? t('Turn the sound on') : t('Play or pause')}>
           {quiet ? <Text style={[styles.center, styles.sound]}>{t('Tap for sound')}</Text> : null}
@@ -331,6 +331,8 @@ const soundOn = (p: VideoPlayer) => {
 };
 
 const styles = StyleSheet.create({
+  // A video tag doesn't stretch to fill on the website without a size of its own.
+  video: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   root: { flex: 1, backgroundColor: '#000' },
   center: { position: 'absolute', top: '45%', alignSelf: 'center' },
   gone: { ...type.body, color: color.moonDim, textAlign: 'center' },

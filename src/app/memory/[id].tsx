@@ -114,7 +114,7 @@ function MemoryPage({ id, active }: { id: string; active: boolean }) {
   return (
     <View style={styles.root}>
       <Pressable style={StyleSheet.absoluteFill} onPress={toggle} accessibilityRole="button" accessibilityLabel={paused ? tc('video', 'Play') : t('Pause')}>
-        <VideoView player={player} style={StyleSheet.absoluteFill} contentFit={fitFor(videoSize, screen)} nativeControls={false} playsInline />
+        <VideoView player={player} style={styles.video} contentFit={fitFor(videoSize, screen)} nativeControls={false} playsInline />
       </Pressable>
       {/* How it looks once shared: the edge glow (unless you have Afterglow Plus). */}
       {showsGlow(mine) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label active={!paused} /> : null}
@@ -163,6 +163,8 @@ function Action({ label, onPress, quiet, glow, disabled }: { label: string; onPr
 }
 
 const styles = StyleSheet.create({
+  // A video tag doesn't stretch to fill on the website without a size of its own.
+  video: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   root: { flex: 1, backgroundColor: '#000' },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '42%' },
   close: { position: 'absolute', left: space.lg },

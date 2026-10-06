@@ -22,5 +22,5 @@ export function VideoPreview({ uri, clip, style }: { uri: string; clip?: ClipWin
   useEffect(() => {
     if (start !== undefined) seekTo(player, start);
   }, [player, start]);
-  return <VideoView player={player} style={style} contentFit="cover" nativeControls playsInline allowsPictureInPicture={false} accessibilityLabel={t('Your video')} />;
+  return <VideoView player={player} style={style} contentFit="contain" nativeControls playsInline allowsPictureInPicture={false} accessibilityLabel={t('Your video')} />;
 }
