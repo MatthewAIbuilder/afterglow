@@ -71,5 +71,18 @@ describe('gardens', () => {
     await act(async () => router.push('/u/sam'));
     await flush();
     expect(app.queryByTestId('visit-garden')).toBeNull();
+    expect(app.getByText('Hidden from your profile. Open your garden to show it.')).toBeTruthy();
+  });
+
+  it('a friend who hasn’t shared a garden yet still shows where it will be, and why it isn’t there', async () => {
+    await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    const app = await renderApp('/u/maya');
+    await flush();
+    expect(app.queryByTestId('visit-garden')).toBeNull();
+    expect(app.getByTestId('garden-not-shared')).toBeTruthy();
+    expect(app.getByText('Not shared yet. It shows here once Maya opens the latest Afterglow with something growing.')).toBeTruthy();
+    expect(app.getByText('Make kandi for Maya')).toBeTruthy();
   });
 });

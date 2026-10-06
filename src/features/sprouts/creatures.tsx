@@ -2156,6 +2156,189 @@ const trooper: Draw = (p, f) => {
   };
 };
 
+/** WOOLI's: a real woolly mammoth, side on and shaggy, with great curling tusks and a curled trunk, in falling snow. */
+const mammoth: Draw = (p, f) => {
+  // Shaggy fringe hanging off its belly and chest.
+  const fringe = Array.from({ length: 11 }, (_, i) => {
+    const x = 34 + i * 4.6;
+    return flame(x, 71, x - 1.2 + (i % 2) * 0.6, 78.5 + (i % 3) * 1.4, 2.4, i % 2 ? 1 : -1);
+  }).join(' ');
+  return {
+    ground: [58, 90, 30],
+    back: (
+      <G>
+        <Ellipse cx={52} cy={52} rx={40} ry={34} fill={p.glow} opacity={0.14} />
+        {(
+          [
+            [14, 18, 1.1],
+            [26, 9, 0.8],
+            [74, 12, 1],
+            [90, 26, 0.8],
+            [84, 44, 1.1],
+            [12, 40, 0.8],
+            [62, 6, 0.7],
+          ] as const
+        ).map(([x, y, r], i) => (
+          <Circle key={i} cx={x} cy={y} r={r} fill="#FFFFFF" opacity={0.85} />
+        ))}
+      </G>
+    ),
+    // A little tufted tail, flicking.
+    pivot: [86, 58],
+    sway: (
+      <G>
+        <Path d="M85 56 Q92 60 91 68" stroke={p.deep} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+        <V d={flame(91, 66, 91.5, 73, 2.2, 0.6)} fill={p.deep} f={f} />
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The far legs, in shadow. */}
+        <V d="M45 66 L54 66 L54 85 Q49.5 87 45 85Z" fill={p.deep} f={f} />
+        <V d="M74 66 L83 66 L83 84 Q78.5 86 74 84Z" fill={p.deep} f={f} />
+        {/* Its body: a high domed head, the back sloping away to the rump. */}
+        <V d="M30 44 C29 26 39 16 50 17 C57 17.5 61 22 64.5 26 C78 28 88 42 87.5 60 C87 69 83 73 77 73.5 L40 73.5 C34 73.5 30 68 30 60Z" fill={p.mid} f={f} gloss={[44, 26, 7, 3, -30]} />
+        <Path d={fringe} fill={p.deep} />
+        {/* Shaggy strands through the coat. */}
+        <Path d="M56 30 q2 5 0 10 M64 34 q2.4 6 0 12 M72 38 q2.4 6 0 13 M80 44 q2 6 0 12 M60 48 q2 5 0 10 M70 52 q2 5 0 10 M48 50 q2 5 0 10" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.55} />
+        {/* A tuft of hair on top of its head. */}
+        {(
+          [
+            [44, 21, 47, 11.5],
+            [47.5, 19.5, 52, 11],
+            [51, 19.5, 56.5, 13.5],
+          ] as const
+        ).map(([bx, by, tx, ty], i) => (
+          <V key={i} d={flame(bx, by, tx, ty, 1.9, 2.4)} fill={p.deep} f={f} />
+        ))}
+        {/* Its ear. */}
+        <VE cx={51} cy={40} rx={4.6} ry={6} fill={p.deep} f={f} gloss={false} turn={-10} />
+        {/* The near legs. */}
+        <V d="M35 64 L45 64 L45 86 Q40 88.4 35 86Z" fill={p.mid} f={f} />
+        <V d="M66 64 L76 64 L76 85 Q71 87.4 66 85Z" fill={p.mid} f={f} />
+        {/* The far tusk, then the trunk curling down, then the near tusk. */}
+        <V d="M40.5 57.5 C35 71 23 72.5 19.5 61 C23.5 68 32 67.5 39.5 62Z" fill={p.altDeep} f={f} />
+        <Path d="M32.5 50 C27 56 25 66 26.5 76 C27.2 81 31.5 82 32.5 78" stroke={p.deep} strokeWidth={8} fill="none" strokeLinecap="round" />
+        <Path d="M32.5 50 C27 56 25 66 26.5 76 C27.2 81 31.5 82 32.5 78" stroke={p.mid} strokeWidth={6.2} fill="none" strokeLinecap="round" />
+        <Path d="M27.4 60 l4 0.8 M26.6 64.6 l4 0.6 M26.4 69.2 l4 0.4 M26.6 73.6 l4 0.2" stroke={p.deep} strokeWidth={0.8} strokeLinecap="round" opacity={0.6} />
+        <V d="M38 58.5 C31 77 14 77.5 11.5 56 C16 70.5 28.5 70.5 37 64Z" fill={p.alt} f={f} gloss={[22, 71, 3.4, 1, 10]} />
+      </G>
+    ),
+    eyes: {
+      box: [35, 35, 7, 7],
+      el: <VEye x={38.6} y={38.6} r={2.3} f={f} />,
+    },
+  };
+};
+
+/** EXCISION's: a dinosaur from outer space, roaring with a glowing red eye, a flying saucer hovering over a ruined city behind it, fires at its feet (inspired by their artwork, drawn our own way). */
+const dino: Draw = (p, f) => {
+  // Teeth along a jaw, from (x0, y0) to (x1, y1), pointing down (1) or up (-1).
+  const teeth = (x0: number, y0: number, x1: number, y1: number, n: number, dir: 1 | -1) =>
+    Array.from({ length: n }, (_, i) => {
+      const t = (i + 0.5) / n;
+      const x = x0 + (x1 - x0) * t;
+      const y = y0 + (y1 - y0) * t;
+      return `M${r1(x - 1.1)} ${r1(y)} L${r1(x)} ${r1(y + dir * 2.6)} L${r1(x + 1.1)} ${r1(y)}Z`;
+    }).join(' ');
+  const fire = (x: number, y: number, s: number) => (
+    <G>
+      <Path d={flame(x, y, x - s * 0.3, y - s * 2.2, s, -s * 0.4)} fill="#FF5A1F" opacity={0.9} />
+      <Path d={flame(x + s * 0.7, y, x + s * 1.1, y - s * 1.6, s * 0.7, s * 0.4)} fill="#FF8A2E" opacity={0.9} />
+      <Path d={flame(x, y, x - s * 0.15, y - s * 1.3, s * 0.45, -s * 0.2)} fill="#FFD36B" />
+    </G>
+  );
+  return {
+    ground: [58, 90, 28],
+    back: (
+      <G>
+        <Ellipse cx={50} cy={50} rx={42} ry={36} fill={p.glow} opacity={0.16} />
+        {/* A ruined city. */}
+        <Path d="M8 80 L8 52 L14 52 L14 44 L19 44 L19 60 L24 60 L24 36 L30 32 L30 64 L36 64 L36 50 L42 50 L42 68 L60 68 L60 40 L66 40 L66 30 L70 26 L70 58 L76 58 L76 46 L82 42 L82 60 L88 60 L88 50 L93 50 L93 80Z" fill={p.altDeep} opacity={0.75} />
+        {(
+          [
+            [11, 56],
+            [21, 48],
+            [27, 40],
+            [27, 48],
+            [63, 44],
+            [68, 34],
+            [79, 50],
+            [90, 54],
+          ] as const
+        ).map(([x, y], i) => (
+          <Rect key={i} x={x} y={y} width={1.4} height={1.4} fill={p.glow} opacity={0.8} />
+        ))}
+      </G>
+    ),
+    // The flying saucer, hovering and tilting.
+    pivot: [72, 16],
+    sway: (
+      <G>
+        <Path d="M66 22 L56 46 L84 46 L76 22Z" fill={p.glow} opacity={0.16} />
+        <VE cx={72} cy={14.5} rx={5.4} ry={4.2} fill={p.alt} f={f} />
+        <VE cx={72} cy={18.5} rx={14} ry={3.8} fill={p.alt} f={f} gloss={false} />
+        <Ellipse cx={72} cy={20.2} rx={9} ry={1.6} fill={p.altDeep} />
+        {[61, 66.5, 72, 77.5, 83].map((x) => (
+          <Circle key={x} cx={x} cy={19} r={0.9} fill={p.accent} />
+        ))}
+      </G>
+    ),
+    flicker: (
+      <G>
+        {fire(13, 86, 5)}
+        {fire(85, 84, 4.4)}
+        {fire(35, 88, 3.2)}
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The far leg, in shadow. */}
+        <V d="M66 66 L74 66 L73 83 L78 85 Q78 88 75 88 L66 88 Q64 86 67 84Z" fill={p.deep} f={f} />
+        {/* Body and tail. */}
+        <V d="M40 50 C44 42 58 39 68 43 C78 46 86 45 96 42 C89 51 81 56 73 60 C71 68 65 72 56 72 C46 72 40 64 40 56Z" fill={p.mid} f={f} gloss={[56, 47, 6, 2.4, -10]} />
+        {/* Spines down its back. */}
+        {(
+          [
+            [44, 39.5],
+            [50, 41.5],
+            [56, 40.5],
+            [62, 41.5],
+            [68, 43],
+            [74, 44.5],
+            [80, 45],
+            [86, 44.2],
+          ] as const
+        ).map(([x, y], i) => (
+          <V key={i} d={flame(x, y + 2, x + 1.2, y - 3.4 + (i > 5 ? 1.4 : 0), 1.8, 0.6)} fill={p.deep} f={f} />
+        ))}
+        {/* Scales. */}
+        <Path d="M50 52 q2 1.4 4 0 M58 50 q2 1.4 4 0 M66 52 q2 1.4 4 0 M54 58 q2 1.4 4 0 M62 58 q2 1.4 4 0 M76 50 q2 1.4 4 0" stroke={p.deep} strokeWidth={0.8} fill="none" opacity={0.6} strokeLinecap="round" />
+        {/* The near leg: a heavy thigh, a shin and a clawed foot. */}
+        <VE cx={58} cy={63} rx={10} ry={9} fill={p.mid} f={f} />
+        <V d="M53 68 L62 68 L60.5 84 L66 86 Q66.5 89 62 89 L51 89 Q49 87 52.5 85Z" fill={p.mid} f={f} />
+        <Path d="M51 89 l-1.6 1.2 M55 89 l-1 1.6 M59 89 l-0.6 1.6" stroke={p.light} strokeWidth={0.9} strokeLinecap="round" />
+        {/* A little arm. */}
+        <Path d="M44 55 Q40 58 38.5 62" stroke={p.deep} strokeWidth={3.4} fill="none" strokeLinecap="round" />
+        <Path d="M38.5 62 l-1.6 1 M38.5 62 l-0.4 1.8" stroke={p.light} strokeWidth={0.8} strokeLinecap="round" />
+        {/* The mouth, open in a roar. */}
+        <Path d="M38 42 L15.5 37.5 L18 46.5 L37 44Z" fill="#3A0A10" />
+        <Path d={teeth(17, 37.9, 34, 41.2, 6, 1)} fill="#F6EEDC" />
+        <Path d={teeth(19.5, 46.2, 35, 44.2, 5, -1)} fill="#F6EEDC" />
+        {/* The lower jaw, dropped open. */}
+        <V d="M41 48 L37 44 L18 46.5 C15.5 47 15.5 50 18 50.6 C26 52.6 34 52.6 43 52Z" fill={p.mid} f={f} />
+        {/* The head. */}
+        <V d="M49 47 C49 36 45 28 37 26.6 C29 25.4 21 28.4 15.5 31.6 C13.4 33 13.4 36.8 15.5 37.5 L38 42 L41 48Z" fill={p.mid} f={f} gloss={[30, 29.5, 5, 1.6, -12]} />
+        <Path d="M27 31 Q32 28.4 38 30.6" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+        <Circle cx={17.6} cy={33} r={0.8} fill={p.deep} />
+        <Path d="M41 34 q2 1.2 4 0 M42 39 q2 1.2 4 0" stroke={p.deep} strokeWidth={0.8} fill="none" opacity={0.6} strokeLinecap="round" />
+      </G>
+    ),
+    // Its eye, glowing red.
+    front: <Glow x={33.4} y={32.6} r={1.5} color={p.accent} />,
+  };
+};
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -2195,4 +2378,6 @@ export const DRAW: Record<Creature, Draw> = {
   patchbear,
   thornskull,
   trooper,
+  mammoth,
+  dino,
 };
