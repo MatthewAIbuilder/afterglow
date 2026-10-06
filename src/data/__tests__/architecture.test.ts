@@ -48,6 +48,7 @@ describe('architecture', () => {
       'features/festivals/going.ts',
       'features/festivals/shelves.ts',
       'features/festivals/near.ts',
+      'features/festivals/showsForYou.ts',
       'features/festivals/compare.ts',
       'features/festivals/playing.ts',
       'features/recap/recap.ts',

@@ -250,4 +250,38 @@ export const es_discover: Dictionary = {
   '{who}, replied to you {time}': '{who}, te respondió {time}',
   '{who}, updated {time}': '{who}, actualizó {time}',
   New: 'Nuevo',
+
+  // Stations ("Sounds like …"), search on What to discover, the Following button
+  'Sounds, festivals or artists': 'Sonidos, festivales o artistas',
+  'Search sounds, festivals and artists': 'Buscar sonidos, festivales y artistas',
+  'Recent stations': 'Emisoras recientes',
+  'Sounds like {artist}, recent station': 'Suena como {artist}, emisora reciente',
+  Sounds: 'Sonidos',
+  'Sounds like': 'Suena como',
+  'Sounds like {artist}. Start a station from their sets and artists with a similar sound, {n} clip':
+    'Suena como {artist}. Empieza una emisora con sus sets y artistas de sonido parecido, {n} clip',
+  'Sounds like {artist}. Start a station from their sets and artists with a similar sound, {n} clips':
+    'Suena como {artist}. Empieza una emisora con sus sets y artistas de sonido parecido, {n} clips',
+  '{n} clip from them and artists like them': '{n} clip suyo y de artistas parecidos',
+  '{n} clips from them and artists like them': '{n} clips suyos y de artistas parecidos',
+  'Nothing matches “{query}”': 'Nada coincide con “{query}”',
+  'Try a sound like dubstep, a festival or an artist’s name.': 'Prueba un sonido como dubstep, un festival o el nombre de un artista.',
+  'Starts Discover with their sets and artists with a similar sound': 'Abre Descubrir con sus sets y artistas de sonido parecido',
+  'Starts Discover with live sets from its lineup': 'Abre Descubrir con sets en vivo de su cartel',
+  'Discover {sound}, {n} clip from every lineup': 'Descubrir {sound}, {n} clip de todos los carteles',
+  'Discover {sound}, {n} clips from every lineup': 'Descubrir {sound}, {n} clips de todos los carteles',
+  '{n} clip from every lineup': '{n} clip de todos los carteles',
+  '{n} clips from every lineup': '{n} clips de todos los carteles',
+  'Sounds like {artist}, their sets and artists with a similar sound. Choose what to discover.':
+    'Suena como {artist}, sus sets y artistas de sonido parecido. Elige qué descubrir.',
+  'Similar sounds, every lineup': 'Sonidos parecidos, todos los carteles',
+  'Following: videos from people you follow': 'Siguiendo: videos de la gente que sigues',
+  'Tap to watch videos from people you follow': 'Toca para ver videos de la gente que sigues',
+  'Tap to go back to Tonight': 'Toca para volver a Esta noche',
+  'Tap to go back to {sound}': 'Toca para volver a {sound}',
+  'Tap to go back to Sounds like {artist}': 'Toca para volver a Suena como {artist}',
+  'Tap to go back to {festival}': 'Toca para volver a {festival}',
+  'Tap to go back to your mix': 'Toca para volver a tu mezcla',
+  'That’s the station': 'Esa es la emisora',
+  'You’ve seen everything that sounds like {artist}': 'Ya viste todo lo que suena como {artist}',
 };

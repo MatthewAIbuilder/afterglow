@@ -27,8 +27,8 @@ describe('artist show words', () => {
     expect(withLine(['A', 'B', 'C'])).toBe('with A, B and C');
     expect(withLine(['A', 'B', 'C', 'D'])).toBe('with A, B and 2 more');
     expect(showLabel(named, ['Crankdat'])).toBe(
-      'Wasteland Halloween, Sunday 18 October. Echostage, Washington, DC. With Crankdat. Opens the event page on EDMTrain.',
+      'Wasteland Halloween, Sunday 18 October. Echostage, Washington, DC. With Crankdat. Opens the show.',
     );
-    expect(showLabel(club, [])).toBe('Echostage, Sunday 18 October. Washington, DC. Opens the event page on EDMTrain.');
+    expect(showLabel(club, [])).toBe('Echostage, Sunday 18 October. Washington, DC. Opens the show.');
   });
 });

@@ -161,4 +161,32 @@ export const es_memories: Dictionary = {
   Comment: 'Comentar',
   'Remove from profile': 'Quitar del perfil',
   'Only you see this like. Create a profile and @{handle} will see it too.': 'Solo tú ves este me gusta. Crea un perfil y @{handle} también lo verá.',
+  // Posting a video from the website
+  'Post a video': 'Publicar un video',
+  'Post a festival moment': 'Publica un momento del festival',
+  'Choose a video from your Photos or Files, or take one, up to a minute long. Tag who was playing and share it to Discover.':
+    'Elige un video de tus Fotos o Archivos, o graba uno, de hasta un minuto. Etiqueta quién tocaba y compártelo en Descubrir.',
+  'Choose a video': 'Elegir un video',
+  'Filming with Afterglow’s own camera is in the app.': 'Grabar con la cámara de Afterglow es en la app.',
+  '{clips}, shared to Discover.': '{clips}, compartidos en Descubrir.',
+  '{clips} from {n} festival, shared to Discover.': '{clips} de {n} festival, compartidos en Descubrir.',
+  '{clips} from {n} festivals, shared to Discover.': '{clips} de {n} festivales, compartidos en Descubrir.',
+  'Videos you share from the website show here once shared.': 'Los videos que compartes desde la web aparecen aquí una vez compartidos.',
+  'Choose a video from your phone, tag who was playing and share it to Discover. On the website, videos are kept by sharing them.':
+    'Elige un video de tu teléfono, etiqueta quién tocaba y compártelo en Descubrir. En la web, los videos se guardan al compartirlos.',
+  '{error} It stays in your Memories until you close this page, so you can try again from there.':
+    '{error} Se queda en tus Recuerdos hasta que cierres esta página, así que puedes volver a intentarlo desde ahí.',
+  'You’ve shared as many throwbacks as the free plan allows. Unlimited throwbacks come with Afterglow Plus.':
+    'Ya compartiste todos los recuerdos de otro año que permite el plan gratis. Con Afterglow Plus no tienen límite.',
+  'Sharing isn’t available right now.': 'Compartir no está disponible ahora.',
+  'Share it to keep it': 'Compártelo para guardarlo',
+  '{why} On the website, videos are kept by sharing them.': '{why} En la web, los videos se guardan al compartirlos.',
+  'Try again, or choose it again.': 'Inténtalo de nuevo, o vuelve a elegirlo.',
+  'Share this video': 'Compartir este video',
+  'On the website, videos are kept by sharing them. Nothing is uploaded until you tap Share.':
+    'En la web, los videos se guardan al compartirlos. No se sube nada hasta que tocas Compartir.',
+  'That video is too big': 'Ese video es demasiado grande',
+  'Choose one under 150 MB. A shorter clip usually is.': 'Elige uno de menos de 150 MB. Un clip más corto suele serlo.',
+  'That isn’t a video Afterglow can share': 'Afterglow no puede compartir ese video',
+  'Choose a video from your Photos or Files (MP4 or MOV).': 'Elige un video de tus Fotos o Archivos (MP4 o MOV).',
 };

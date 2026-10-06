@@ -21,7 +21,7 @@ describe('the festival calendar', () => {
   it('opens from Festivals, flips months and shows what’s on a day', async () => {
     const app = await renderApp('/festivals');
     await flush();
-    await fireEvent.press(app.getByLabelText('See festivals on a calendar'));
+    await fireEvent.press(app.getByLabelText('See festivals and shows on a calendar'));
     await flush();
     expect(app.getAllByText('October').length).toBeGreaterThan(0);
     await fireEvent.press(app.getByTestId('cal-2026-10-10'));

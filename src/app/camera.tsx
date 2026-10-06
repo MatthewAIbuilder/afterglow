@@ -31,7 +31,7 @@ import { t } from '../i18n';
  * back. Videos stay on the phone unless you share them.
  */
 export default function CameraScreen() {
-  if (Platform.OS === 'web') return <OnlyInApp />;
+  if (Platform.OS === 'web') return <ChooseOnWeb />;
   return <Camera />;
 }
 
@@ -287,20 +287,39 @@ function Camera() {
   );
 }
 
-/** In a browser: filming needs the phone. */
-function OnlyInApp() {
+/**
+ * In a browser: filming with Afterglow's camera needs the app, but you can
+ * post a video you already have (or take one with the phone's own camera).
+ * The browser's chooser opens from the tap on Choose a video; then the same
+ * tagging sheet as the app.
+ */
+function ChooseOnWeb() {
   const insets = useSafeAreaInsets();
+  const pick = useMemoryPicker();
   return (
     <View style={[styles.root, styles.web, { paddingTop: insets.top + space.xxl }]}>
-      <PageTitle title={t('Camera')} />
+      <PageTitle title={t('Post a video')} />
       <View style={styles.permIcon}>
         <CameraIcon color={color.moon} size={26} />
       </View>
-      <Text style={styles.permTitle}>{t('Filming is in the app')}</Text>
-      <Text style={styles.permBody}>{t('Record festival moments with the Afterglow app on your phone. They show up on your profile when you share them.')}</Text>
-      <Pressable onPress={() => goBack()} accessibilityRole="button" style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}>
-        <Text style={styles.permButtonText}>{t('Back to Discover')}</Text>
+      <Text style={styles.permTitle}>{t('Post a festival moment')}</Text>
+      <Text style={styles.permBody}>
+        {t('Choose a video from your Photos or Files, or take one, up to a minute long. Tag who was playing and share it to Discover.')}
+      </Text>
+      <Pressable
+        onPress={() => {
+          haptic.tap();
+          void pick('library', { replace: true });
+        }}
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}
+      >
+        <Text style={styles.permButtonText}>{t('Choose a video')}</Text>
       </Pressable>
+      <Pressable onPress={() => goBack()} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.webBack, pressed && styles.pressed]}>
+        <Text style={styles.webBackText}>{t('Not now')}</Text>
+      </Pressable>
+      <Text style={styles.webNote}>{t('Filming with Afterglow’s own camera is in the app.')}</Text>
     </View>
   );
 }
@@ -340,6 +359,9 @@ const styles = StyleSheet.create({
   permBody: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center', maxWidth: 320 },
   permButton: { marginTop: space.xl, paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
   permButtonText: { ...type.headline, color: color.moon },
+  webBack: { marginTop: space.lg, paddingVertical: space.sm, paddingHorizontal: space.lg },
+  webBackText: { ...type.label, color: color.moonDim },
+  webNote: { ...type.caption, color: color.moonFaint, marginTop: space.xl, textAlign: 'center' },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
   hint: { ...type.caption, color: color.moonDim, marginBottom: space.lg, textAlign: 'center', paddingHorizontal: space.xl },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', paddingHorizontal: space.xxl },

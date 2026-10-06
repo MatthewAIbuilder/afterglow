@@ -12,6 +12,7 @@ import { HeartIcon, PlayIcon } from '../discover/icons';
 import { posterUrl } from '../discover/youtube';
 import type { Memory } from '../memories/models';
 import { clipLength, memoryLine } from '../memories/organize';
+import { onServer } from '../memories/webVideo';
 import { festivalMark } from './profileView';
 import { t, tn } from '../../i18n';
 
@@ -22,7 +23,10 @@ const tileHeight = (w: number) => Math.round((w * 4) / 3);
 
 type Lookup = { festival: (id: string) => Festival | undefined; artist: (id: string) => Artist | undefined };
 
-/** Videos: your memories newest first, three across, edge to edge; a + tile to film another (in the app). */
+/**
+ * Videos: your memories newest first, three across, edge to edge; a + tile to film another (in the app) or
+ * choose one (on the website, where the camera page is the chooser and your moments are what you shared).
+ */
 export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory[]; width: number; uriOf: (file: string) => string; lookup: Lookup }) {
   const canFilm = Platform.OS !== 'web';
   const tile = (width - GAP * (COLUMNS - 1)) / COLUMNS;
@@ -36,20 +40,18 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
         <Text style={styles.emptyBody}>
           {canFilm
             ? t('Film a set, tag who was playing, and share it to Discover if you like.')
-            : t('Film a set in the Afterglow app, tag who was playing, and it shows up here.')}
+            : t('Choose a video from your phone, tag who was playing, and share it to Discover. Videos you share from the website show here once shared.')}
         </Text>
-        {canFilm ? (
-          <Pressable
-            onPress={() => {
-              haptic.tap();
-              router.push('/camera');
-            }}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.emptyButton, pressed && { opacity: 0.8 }]}
-          >
-            <Text style={styles.emptyButtonText}>{t('Film a video')}</Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={() => {
+            haptic.tap();
+            router.push('/camera');
+          }}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.emptyButton, pressed && { opacity: 0.8 }]}
+        >
+          <Text style={styles.emptyButtonText}>{canFilm ? t('Film a video') : t('Post a video')}</Text>
+        </Pressable>
       </View>
     );
   }
@@ -69,22 +71,20 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
         <ChevronIcon color={color.moonFaint} size={11} />
       </Pressable>
       <View style={styles.grid}>
-        {canFilm ? (
-          <Pressable
-            onPress={() => {
-              haptic.tap();
-              router.push('/camera');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('Film a video')}
-            style={({ pressed }) => [styles.newTile, { width: tile, height: tileHeight(tile) }, pressed && { opacity: 0.75 }]}
-          >
-            <View style={styles.newPlus}>
-              <PlusIcon color={color.moon} size={18} />
-            </View>
-            <Text style={styles.newText}>{t('New')}</Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={() => {
+            haptic.tap();
+            router.push('/camera');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={canFilm ? t('Film a video') : t('Post a video')}
+          style={({ pressed }) => [styles.newTile, { width: tile, height: tileHeight(tile) }, pressed && { opacity: 0.75 }]}
+        >
+          <View style={styles.newPlus}>
+            <PlusIcon color={color.moon} size={18} />
+          </View>
+          <Text style={styles.newText}>{t('New')}</Text>
+        </Pressable>
         {memories.map((m) => {
           const untagged = !m.festivalId && !m.past && !m.artistId;
           const [from, to] = artistColors(m.artistId ?? m.id);
@@ -97,7 +97,9 @@ export function VideosTab({ memories, width, uriOf, lookup }: { memories: Memory
               key={m.id}
               onPress={() => {
                 haptic.select();
-                if (untagged) router.push({ pathname: '/memory-tag', params: { id: m.id } });
+                // A video on the server (shared from the website) opens as the shared video.
+                if (onServer(m) && m.sharedId) router.push({ pathname: '/shared/[id]', params: { id: m.sharedId } });
+                else if (untagged) router.push({ pathname: '/memory-tag', params: { id: m.id } });
                 else router.push({ pathname: '/memory/[id]', params: { id: m.id } });
               }}
               accessibilityRole="button"

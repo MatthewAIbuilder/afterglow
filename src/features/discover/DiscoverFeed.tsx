@@ -19,7 +19,7 @@ import { CameraIcon } from '../camera/icons';
 import { OPEN_AT, PEEK_MAX, swipeOpens } from '../camera/record';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
-import { ChevronIcon, SearchIcon } from '../../components/TabIcons';
+import { ChevronIcon, PeopleIcon, SearchIcon } from '../../components/TabIcons';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { QuestButton } from '../quests/QuestButton';
 import { haptic } from '../../lib/haptics';
@@ -53,7 +53,8 @@ import { defaultFocus } from '../festivals/links';
 import { SOUND_LABEL } from '../../data/models';
 import { HereEmpty } from '../festivalMode/HereEmpty';
 import { useFestivalMode } from '../../state/festivalMode';
-import { FOLLOWING, type Focus, hereFocus, MIX, mixContext, nextDiscoverFocus, soundOf, startFocus, TONIGHT } from './focus';
+import { FOLLOWING, type Focus, hereFocus, likeOf, MIX, mixContext, nextDiscoverFocus, soundOf, startFocus, TONIGHT } from './focus';
+import { useRecentStations } from '../../state/recentStations';
 import { reasonNote } from '../recommend/copy';
 import type { FeedItem } from '../recommend/feed';
 import { clipPlayback } from './playback';
@@ -125,6 +126,17 @@ export function DiscoverFeed() {
   useEffect(() => {
     if (decided && focusId) saveFocus(focusId);
   }, [decided, focusId, saveFocus]);
+  // Stations you start are remembered for What to discover (the last few).
+  const { remember: rememberStation } = useRecentStations();
+  const stationId = likeOf(focusId);
+  useEffect(() => {
+    if (decided && stationId && catalog.artist(stationId)) rememberStation(stationId);
+    // Once per station started, not each time the catalogue changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decided, stationId, rememberStation]);
+  // The Following button goes back to what you were on before (your mix if nothing else).
+  const [beforeFollowing, setBeforeFollowing] = useState<Focus>(MIX);
+  if (decided && focusId && focusId !== FOLLOWING && focusId !== beforeFollowing) setBeforeFollowing(focusId);
   // Clips play with sound even with the iPhone's silent switch on (crowd videos always did).
   useEffect(() => allowClipSound(), []);
   // Festival mode: only videos people filmed at the festival you're at (your own choice of focus is kept for later).
@@ -147,8 +159,13 @@ export function DiscoverFeed() {
   // One sound from every lineup ("Dubstep").
   const sound = hereFestival ? undefined : soundOf(focusId);
   const soundLabel = sound ? SOUND_LABEL[sound] : undefined;
+  // A station: "Sounds like SUBTRONICS", their sets and artists who sound like them (an artist no longer on Afterglow: your mix).
+  const seedId = hereFestival ? undefined : likeOf(focusId);
+  const seed = seedId ? catalog.artist(seedId) : undefined;
+  const stationLabel = seed ? t('Sounds like {artist}', { artist: seed.name }) : undefined;
+  const lostStation = !!seedId && !seed;
   // These draw from every lineup: each clip is shown against a festival you're going to where the artist plays.
-  const wide = mix || followingFocus || !!sound;
+  const wide = mix || followingFocus || !!sound || !!seed || lostStation;
   // If the catalogue changes under us (a hosted file arrived) and the festival is gone, open the first one with clips.
   const festival =
     hereFestival ??
@@ -164,8 +181,9 @@ export function DiscoverFeed() {
 
   // Clips people at the festival shared to their profiles, beside the official ones (none when signed out or switched off).
   // In Following, they're the only clips: videos from the people you follow.
-  const { clips: fetched, loaded: communityLoaded } = useCommunityFeed(mix || sound ? 'mix' : followingFocus ? 'following' : festival, !!hereFestival);
+  const { clips: fetched, loaded: communityLoaded } = useCommunityFeed(mix || sound || seedId ? 'mix' : followingFocus ? 'following' : festival, !!hereFestival);
   const social = useSocial();
+  const backHint = useBackHint();
   // Videos from the crowd you opened from Your clips stay in the feed while you're on this focus
   // (unless you hide them or block who filmed them).
   const [opened, setOpened] = useState<{ focus: Focus | undefined; clips: Clip[] }>({ focus: undefined, clips: [] });
@@ -186,7 +204,7 @@ export function DiscoverFeed() {
   const standIn = !!hereFestival && !!testing && communityLoaded && fetched.length === 0;
   const feed = useRankedFeed(
     activeIndex,
-    hereFestival ? (standIn ? hereFestival : viewFocus) : mix ? MIX : followingFocus ? FOLLOWING : sound ? focusId : tonightOn ? TONIGHT : festival,
+    hereFestival ? (standIn ? hereFestival : viewFocus) : mix || lostStation ? MIX : followingFocus ? FOLLOWING : sound || seed ? focusId : tonightOn ? TONIGHT : festival,
     community,
     tonightOn ? tonightFocus.value : undefined,
   );
@@ -437,7 +455,7 @@ export function DiscoverFeed() {
         }}
         ListFooterComponent={
           hasEnd ? (
-            <FeedEnd festival={festival} following={followingFocus} soundLabel={soundLabel} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
+            <FeedEnd festival={festival} following={followingFocus} soundLabel={soundLabel} station={seed?.name} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
           ) : null
         }
         getItemLayout={(_d, index) => ({ length: height, offset: height * index, index })}
@@ -514,13 +532,15 @@ export function DiscoverFeed() {
                     ? t('Following, videos from people you follow. Choose what to discover.')
                     : soundLabel
                       ? t('{sound}, live sets from every lineup. Choose what to discover.', { sound: soundLabel })
-                      : t('Your mix, a bit of everything. Choose what to discover.')
+                      : seed
+                        ? t('Sounds like {artist}, their sets and artists with a similar sound. Choose what to discover.', { artist: seed.name })
+                        : t('Your mix, a bit of everything. Choose what to discover.')
             }
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.headerTitle}>
-              <Text style={styles.festival} numberOfLines={1}>{tonightOn ? t('Tonight') : festival ? festival.name : followingFocus ? t('Following') : (soundLabel ?? t('Your mix'))}</Text>
+              <Text style={styles.festival} numberOfLines={1}>{tonightOn ? t('Tonight') : festival ? festival.name : followingFocus ? t('Following') : (soundLabel ?? stationLabel ?? t('Your mix'))}</Text>
               {toes ? <ToeGlyph size={12} color={color.moonDim} /> : <ChevronIcon color={color.moonDim} size={13} direction="down" />}
             </View>
             {/* Short, so the title never fights the buttons: the dates, or where the clips come from. */}
@@ -533,7 +553,9 @@ export function DiscoverFeed() {
                   ? datesLine(festival) || t('Live sets from the lineup')
                   : followingFocus
                     ? t('People you follow')
-                    : t('Every lineup')}
+                    : seed
+                      ? t('Similar sounds, every lineup')
+                      : t('Every lineup')}
             </Text>
           </Pressable>
           )}
@@ -550,6 +572,20 @@ export function DiscoverFeed() {
                 longPressLabel={t('Look after yourself')}
               >
                 <CameraIcon color={color.moon} size={18} />
+              </GlassCircleButton>
+            ) : null}
+            {/* Following at a tap: videos from people you follow, and back to what you were on. */}
+            {social.user && !hereFestival ? (
+              <GlassCircleButton
+                label={t('Following: videos from people you follow')}
+                hint={followingFocus ? backHint(beforeFollowing) : t('Tap to watch videos from people you follow')}
+                selected={followingFocus}
+                onPress={() => {
+                  setFocusId(followingFocus ? beforeFollowing : FOLLOWING);
+                  setActiveIndex(0);
+                }}
+              >
+                <PeopleIcon color={color.moon} size={18} />
               </GlassCircleButton>
             ) : null}
             {/* Search everything: people, artists, festivals. */}
@@ -581,6 +617,20 @@ export function DiscoverFeed() {
   );
 }
 
+/** The Following button's hint while it's on: going back to what you were on. */
+function useBackHint() {
+  const catalog = useCatalog();
+  return (focus: Focus) => {
+    if (focus === TONIGHT) return t('Tap to go back to Tonight');
+    const tag = soundOf(focus);
+    if (tag) return t('Tap to go back to {sound}', { sound: SOUND_LABEL[tag] });
+    const like = likeOf(focus);
+    if (like) return t('Tap to go back to Sounds like {artist}', { artist: catalog.artist(like)?.name ?? t('an artist') });
+    const festival = focus === MIX ? undefined : catalog.festival(focus);
+    return festival ? t('Tap to go back to {festival}', { festival: festival.name }) : t('Tap to go back to your mix');
+  };
+}
+
 /** The feed's widest: about a large phone. */
 const FEED_MAX_WIDTH = 520;
 /** Roughly the header row's height, for the tip under it. */
@@ -607,7 +657,7 @@ const styles = StyleSheet.create({
   hint: { position: 'absolute', left: space.xl, right: space.xl, flexDirection: 'row' },
   headerEnd: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
-  festival: { ...type.headline, color: color.moon },
+  festival: { ...type.headline, color: color.moon, flexShrink: 1 },
   dates: { ...type.caption, color: color.moonDim, marginTop: 1 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF7EB6', shadowColor: '#FF7EB6', shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
 });

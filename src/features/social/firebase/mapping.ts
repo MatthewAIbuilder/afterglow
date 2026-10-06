@@ -268,10 +268,14 @@ export function firebaseErrorKind(e: unknown): SocialErrorKind {
 export const asSocialError = (e: unknown) => (e instanceof SocialError ? e : new SocialError(firebaseErrorKind(e)));
 
 /** A video's content type from its file name. */
-export function videoType(uri: string): string {
+export function videoType(uri: string, fileType?: string): string {
   const ext = uri.split(/[?#]/)[0].split('.').pop()?.toLowerCase();
   if (ext === 'mov') return 'video/quicktime';
   if (ext === 'm4v') return 'video/x-m4v';
+  if (ext === 'mp4') return 'video/mp4';
+  // No name to go by (a video chosen on the website is a link into the page): what the file says it is.
+  const t = (fileType ?? '').toLowerCase().split(';')[0].trim();
+  if (t === 'video/quicktime' || t === 'video/x-m4v') return t;
   return 'video/mp4';
 }
 

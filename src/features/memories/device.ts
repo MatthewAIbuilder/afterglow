@@ -27,9 +27,14 @@ export type PickedVideo = {
   width?: number;
   height?: number;
   moment: Moment;
+  /** Chosen on the website: a browser keeps no files, so it's kept by sharing it to Discover. */
+  keptBySharing?: boolean;
 };
 
-export type PickResult = { ok: true; video: PickedVideo } | { ok: false; reason: 'cancelled' | 'no-permission' | 'too-long' | 'failed' | 'app-only' };
+export type PickResult =
+  | { ok: true; video: PickedVideo }
+  // `too-large` and `wrong-type` come only from the website's chooser (the app's picker trims and converts).
+  | { ok: false; reason: 'cancelled' | 'no-permission' | 'too-long' | 'too-large' | 'wrong-type' | 'failed' | 'app-only' };
 
 /** Record a new clip with the camera, or choose one from the library. */
 export async function pickVideo(source: 'camera' | 'library'): Promise<PickResult> {
@@ -142,6 +147,8 @@ export type MemoryFiles = {
   list(): string[];
   /** Save a copy to the phone's Photos. */
   saveToPhotos(name: string): Promise<boolean>;
+  /** Files last only while the page is open (the website): the list isn't saved, and your moments come from what you shared. */
+  sessionOnly?: boolean;
 };
 
 const folder = () => {

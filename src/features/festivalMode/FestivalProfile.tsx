@@ -15,7 +15,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useCatalog } from '../../state/catalog';
-import { useMemories } from '../../state/memories';
+import { useMoments } from '../memories/useMoments';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { VideosTab } from '../profile/ProfileTabsContent';
@@ -45,7 +45,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
   const standing = useStanding(me?.uid);
   const backdrop = useProfileBackdrop(me);
   const catalog = useCatalog();
-  const { memories, uriOf } = useMemories();
+  const { memories, uriOf } = useMoments();
   const all = useMemo(() => videoGrid(memories), [memories]);
   const here = useMemo(() => all.filter((m) => m.festivalId === festival.id), [all, festival.id]);
   const shown = here.length ? here : all;

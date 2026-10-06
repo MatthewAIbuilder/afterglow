@@ -83,6 +83,12 @@ describe('reading the database defensively', () => {
     expect(videoType('file:///a/IMG_1.MOV')).toBe('video/quicktime');
     expect(videoType('file:///a/clip.mp4?x=1')).toBe('video/mp4');
     expect(videoType('file:///a/clip.m4v')).toBe('video/x-m4v');
+    // Chosen on the website: a link with no name, so the file's own type decides (an iPhone's .mov).
+    expect(videoType('blob:https://afterglowmusic.app/5f1c', 'video/quicktime')).toBe('video/quicktime');
+    expect(videoType('blob:https://afterglowmusic.app/5f1c', 'video/mp4')).toBe('video/mp4');
+    expect(videoType('blob:https://afterglowmusic.app/5f1c', '')).toBe('video/mp4');
+    // A name wins over the type.
+    expect(videoType('file:///a/IMG_1.MOV', 'video/mp4')).toBe('video/quicktime');
     expect(prefixEnd('may')).toBe('may');
   });
 });

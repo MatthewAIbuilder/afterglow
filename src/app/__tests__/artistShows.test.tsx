@@ -7,7 +7,7 @@ import { renderApp } from './appRoutes';
 /**
  * Artist pages list their club shows from the hosted catalogue file (the
  * nightly EDMTrain feed): the next five, "See all", each opening its
- * EDMTrain page. Shows are dated far ahead so they never go stale; one is over.
+ * show page (tickets on EDMTrain there). Shows are dated far ahead so they never go stale; one is over.
  */
 jest.mock('../../state/catalog', () => {
   const actual = jest.requireActual<typeof import('../../state/catalog')>('../../state/catalog');
@@ -77,13 +77,17 @@ describe('shows on artist pages', () => {
     expect(app.queryByText('Long Gone Club')).toBeNull();
     expect(app.getByText('Show info from EDMTrain ↗')).toBeTruthy();
 
-    await fireEvent.press(app.getByLabelText(new RegExp(`^Halloween Night, \\w+ 11 January\\. Club 1, Denver, CO\\. With ${esc(second.name)}\\. Opens the event page on EDMTrain\\.$`)));
-    expect(open).toHaveBeenCalledWith('https://edmtrain.com/denver-co/club-1');
-
     await fireEvent.press(app.getByLabelText('See all 7 shows'));
     await flush();
     expect(app.getByText('Club 7')).toBeTruthy();
     expect(app.getByLabelText('Show fewer shows')).toBeTruthy();
+
+    // Each row opens the show's own page, with the EDMTrain link inside.
+    await fireEvent.press(app.getByLabelText(new RegExp(`^Halloween Night, \\w+ 11 January\\. Club 1, Denver, CO\\. With ${esc(second.name)}\\. Opens the show\\.$`)));
+    await flush();
+    expect(open).not.toHaveBeenCalled();
+    await fireEvent.press(app.getByLabelText('Get tickets on EDMTrain for Halloween Night. Opens their site.'));
+    expect(open).toHaveBeenCalledWith('https://edmtrain.com/denver-co/club-1');
     open.mockRestore();
   });
 
