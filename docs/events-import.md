@@ -126,6 +126,42 @@ credited "Photo from Deezer" at the bottom of the artist page.
   before a public launch, check Deezer's terms for showing them in an app,
   or switch to another source.
 
+## SoundCloud pages (automatic)
+
+You chose this on 2026-10-06: SoundCloud from the artists themselves in
+Discover, automatic, with no developer key. Every night, after the artist
+photos step, the Website workflow runs `scripts/soundcloud-artists.ts`.
+
+- For each artist on Afterglow (festivals you curated first, then the
+  rest, soonest first) it tries up to three likely page links made from the
+  name (`john-summit`, `johnsummit`, `johnsummitmusic`) and asks
+  SoundCloud's public oEmbed address about each
+  (`https://soundcloud.com/oembed?format=json&url=…`).
+- A page counts only when the name SoundCloud gives it is the artist's name
+  exactly (ignoring capitals, accents and punctuation). Back-to-back acts are
+  skipped: they have no page of their own.
+- At most 150 questions a night, a quarter of a second apart. Pages found
+  are kept in the published `catalogue.json` (`soundcloud`) and never asked
+  about again; artists with no page found are listed in `soundcloudMisses`
+  and asked again after 30 days. Merges during the day only keep what's
+  found (`SOUNDCLOUD_REQUESTS=0`).
+- A link you set yourself on the artist in `catalogue/afterglow.json`
+  (`"soundcloud": "https://soundcloud.com/…"`) always wins and is never
+  looked up: that's how to fix a wrong match. Someone who taps "Wrong
+  artist" on a SoundCloud card in Discover hides it on their phone and can
+  email you a report.
+- It never stops the night: if SoundCloud can't be reached or blocks the
+  questions, you'll see a warning in the workflow run, last night's pages
+  stay, and the rest wait for the next night. The run prints a line like
+  "SoundCloud: 312 of 1124 artists (12 new, 140 asked tonight, 40 not found)".
+- Discover plays the pages in SoundCloud's own embedded player (their
+  uploads), with the artist's photo softly behind it. A SoundCloud card only
+  shows for artists you're a good match for (or have liked), at most one in
+  six cards, never two in a row, behind the live-set videos.
+- The cloud sessions that build Afterglow can't reach soundcloud.com, so this
+  was tested with made-up answers only: **the first nightly run is the real
+  test.** Check its "SoundCloud pages" step in the Actions tab.
+
 ## Discover clips from YouTube (automatic)
 
 Every night, after the festival and photo steps, the Website workflow runs

@@ -1,6 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import type { Clip, Festival } from '../../data/models';
 import { useCatalog } from '../../state/catalog';
+import { useFollowedArtists } from '../../state/followedArtists';
 import { useRatings } from '../../state/ratings';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
@@ -8,6 +9,7 @@ import { useTaste } from '../../state/taste';
 import { lineupClips } from '../festivals/links';
 import { tonightClips, tonightOrder } from '../tonight/tonight';
 import { FOLLOWING, inSound, MIX, soundOf, TONIGHT } from './focus';
+import { soundcloudClips } from './soundcloud';
 import { type FeedItem, rankFeed } from '../recommend/feed';
 
 const NO_CLIPS: Clip[] = [];
@@ -42,16 +44,32 @@ export function useRankedFeed(
   const ready = reactionsReady && seenReady && !!focus;
   // "Now" for recency: when this session started, or your latest view if that's later.
   const [sessionStart] = useState(() => Date.now());
+  const { followed } = useFollowedArtists();
+  // SoundCloud cards of the artists that fit the focus (the feed decides which show, and where).
+  const pages = useMemo(() => {
+    if (!focus || focus === TONIGHT || !Object.keys(catalog.soundcloud).length) return NO_CLIPS;
+    const tag = typeof focus === 'string' ? soundOf(focus) : undefined;
+    const lineup = typeof focus === 'string' ? undefined : new Set(focus.lineup);
+    const following = focus === FOLLOWING ? new Set(followed) : undefined;
+    // Festival mode ("here:") is only what people filmed there.
+    if (typeof focus === 'string' && focus !== MIX && focus !== FOLLOWING && !tag) return NO_CLIPS;
+    return soundcloudClips(catalog, (id) => {
+      if (lineup) return lineup.has(id);
+      if (following) return following.has(id);
+      // A sound's cards are picked with its clips, below.
+      return true;
+    });
+  }, [focus, catalog, followed]);
   const clips = useMemo(() => {
     // Following is only videos from people you follow; the mix is every clip.
     // Tonight: the lineup's clips of artists playing tonight, crowd videos included.
     if (focus === TONIGHT) return tonight ? tonightClips(tonight.festival, [...catalog.clips, ...community], tonight.night) : [];
     const tag = typeof focus === 'string' ? soundOf(focus) : undefined;
-    if (tag) return [...catalog.clips, ...community].filter((c) => inSound(c, tag, catalog.artist));
+    if (tag) return [...catalog.clips, ...community, ...pages].filter((c) => inSound(c, tag, catalog.artist));
     const official =
       focus === MIX ? catalog.clips : focus === FOLLOWING || typeof focus === 'string' ? [] : focus ? lineupClips(focus, catalog.clips) : [];
-    return community.length ? [...official, ...community] : official;
-  }, [focus, catalog, community, tonight]);
+    return community.length || pages.length ? [...official, ...community, ...pages] : official;
+  }, [focus, catalog, community, tonight, pages]);
 
   // Re-rank when an input changes, during render (no extra pass through an effect). Moving
   // through the feed alone doesn't: where you are only decides what stays put at the next re-rank.

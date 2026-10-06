@@ -182,7 +182,7 @@ export default function ArtistScreen() {
             <Pressable
               onPress={() => {
                 haptic.select();
-                const links = listenLinks(artist.name);
+                const links = listenLinks(artist.name, catalog.soundcloudOf(artist.id)?.url);
                 showActionSheet({ title: `Listen to ${artist.name}`, options: [...links.map((l) => l.service), 'Cancel'], cancelButtonIndex: links.length }, (i) => {
                   if (links[i]) Linking.openURL(links[i].url).catch(() => {});
                 });

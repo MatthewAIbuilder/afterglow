@@ -54,6 +54,25 @@ export type Artist = {
    * without a photo of their own (`withMembers` in data/members.ts).
    */
   members?: ArtistMember[];
+  /**
+   * Their SoundCloud page ("https://soundcloud.com/subtronics"), set by hand
+   * in the catalogue. Always wins over the nightly match (`CatalogSnapshot.soundcloud`).
+   */
+  soundcloud?: string;
+};
+
+/**
+ * An artist's own SoundCloud page, matched each night by name through
+ * SoundCloud's public oEmbed answer (scripts/soundcloud-artists.ts), or set by
+ * hand. Played in Discover with SoundCloud's official embedded player.
+ */
+export type SoundCloudProfile = {
+  /** "https://soundcloud.com/subtronics". */
+  url: string;
+  /** The name on the page, as SoundCloud shows it. */
+  name?: string;
+  /** The page's picture (https), for when Afterglow has no photo of the artist. */
+  image?: string;
 };
 
 /** One of the artists in a b2b, with their photo when Afterglow has one. */
@@ -217,7 +236,14 @@ export type CommunityClipSource = {
   vertical: boolean;
 };
 
-export type ClipSource = YouTubeClipSource | CommunityClipSource;
+/**
+ * An artist's SoundCloud page, played in SoundCloud's own embedded player
+ * (their uploads). Never in a catalogue's clips: Discover makes one card per
+ * artist with a page (features/discover/soundcloud.ts), id "soundcloud:<artist id>".
+ */
+export type SoundCloudClipSource = { provider: 'soundcloud' } & SoundCloudProfile;
+
+export type ClipSource = YouTubeClipSource | CommunityClipSource | SoundCloudClipSource;
 
 export type Clip = {
   id: string;
@@ -269,6 +295,8 @@ export type CatalogSnapshot = {
   similarities?: ArtistSimilarity[];
   /** Club shows and concerts from the nightly feed, soonest first. */
   shows?: Show[];
+  /** Artist id -> their SoundCloud page, matched each night (an artist's own `soundcloud` link wins). */
+  soundcloud?: Record<string, SoundCloudProfile>;
 };
 
 /**
