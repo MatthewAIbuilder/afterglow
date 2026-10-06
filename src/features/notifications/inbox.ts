@@ -19,6 +19,8 @@ export type Notice = {
   href: string;
   /** The festival it's about (festival notices). */
   festivalId?: string;
+  /** When it happened (ms), for the newest first and "2h ago"; festival status notices have none (they're about now). */
+  at?: number;
 };
 
 /** How close a festival must be before the bell mentions it. */
