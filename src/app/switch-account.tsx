@@ -131,6 +131,23 @@ export default function SwitchAccountScreen() {
           {busy ? <ActivityIndicator color={color.night} /> : <Text style={styles.primaryText}>{asking === 'me' ? t('Save') : asking === 'new' ? t('Sign in') : t('Switch')}</Text>}
         </Pressable>
       </View>
+      {/* "Add an account" only signs in: an account that doesn't exist yet is made on the sign-up screen. */}
+      {asking === 'new' ? (
+        <View style={styles.createRow}>
+          <Text style={styles.rowDetail}>{t('No account yet?')}</Text>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/account', params: email.trim() ? { email: email.trim() } : {} });
+            }}
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={styles.createLink}>{t('Create a new account')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {asking === 'new' && me?.email && !meSaved ? <Text style={styles.rowDetail}>{t('Creating one signs you out of {email}. Save it above first to switch back in one tap.', { email: me.email })}</Text> : null}
     </View>
   );
 
@@ -257,6 +274,8 @@ const styles = StyleSheet.create({
   rememberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   rememberText: { ...type.caption, color: color.moonDim, flex: 1 },
   problem: { ...type.caption, color: '#FFB86B' },
+  createRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: space.xs, paddingTop: space.xs },
+  createLink: { ...type.label, color: color.glow },
   formButtons: { flexDirection: 'row', gap: space.sm, justifyContent: 'flex-end' },
   primary: { paddingHorizontal: space.lg, minHeight: 44, minWidth: 96, justifyContent: 'center', alignItems: 'center', borderRadius: radius.pill, backgroundColor: color.glow },
   primaryText: { ...type.headline, color: color.night },

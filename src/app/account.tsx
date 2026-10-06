@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,8 +23,10 @@ import { t } from '../i18n';
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const social = useSocial();
+  // Switch account's "Create a new account" passes the email already typed there.
+  const params = useLocalSearchParams<{ email?: string }>();
   const [mode, setMode] = useState<'create' | 'signin'>('create');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(typeof params.email === 'string' ? params.email : '');
   const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
