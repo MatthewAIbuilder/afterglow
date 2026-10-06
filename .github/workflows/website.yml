@@ -1,5 +1,7 @@
-# The website (afterglowmusic.app): checked and built on every pull request and every push to main.
-# Pushes to main go live; pull requests get a preview link posted on the PR.
+# The website (afterglowmusic.app). Pull requests are only checked (type-check and tests), to keep
+# GitHub Actions minutes low (the account has 2,000 a month); pushes to main are checked, built and go live.
+# The nightly run and "Run workflow" skip the checks (main was already checked when it was pushed) and
+# go straight to the imports, the build and the deploy.
 # Deploying needs the Firebase secrets described in docs/web-deploy.md; until they're added,
 # this still type-checks, tests and builds, and skips the deploy.
 name: Website
@@ -36,7 +38,9 @@ jobs:
     env:
       HAS_YOUTUBE: ${{ secrets.YOUTUBE_API_KEY != '' }}
       HAS_EDMTRAIN: ${{ secrets.EDMTRAIN_API_KEY != '' && github.event_name != 'pull_request' }}
-      CAN_DEPLOY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+      CAN_DEPLOY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && github.event_name != 'pull_request' }}
+      # Type-check and tests: on pull requests and pushes to main only.
+      CHECK: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -48,10 +52,23 @@ jobs:
       - run: npm ci
 
       - name: Type-check
+        if: env.CHECK == 'true'
         run: npx tsc --noEmit
 
+      # Jest's transform cache, kept between runs (pull requests can read main's), so most test files
+      # don't need compiling again.
+      - name: Test cache
+        if: env.CHECK == 'true'
+        uses: actions/cache@v4
+        with:
+          path: .jest-cache
+          key: jest-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: jest-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
+      # Both of the runner's cores (Jest otherwise leaves one idle).
       - name: Tests
-        run: npx jest --ci
+        if: env.CHECK == 'true'
+        run: npx jest --ci --maxWorkers=2 --cacheDirectory=.jest-cache
 
       # public/catalogue.json is what the app reads (CATALOG_URL). With the EDMTrain key it's
       # rebuilt from EDMTrain; if that fails, the live copy is kept so a bad night never empties it.
@@ -137,6 +154,7 @@ jobs:
             || { echo "::error::YouTube clips failed twice. Stopping before the deploy, so the live site keeps its Discover clips."; exit 1; }
 
       - name: Build the website
+        if: github.event_name != 'pull_request'
         run: npm run build:web
         env:
           EXPO_PUBLIC_BUILD_ID: ${{ github.sha }}
@@ -149,6 +167,7 @@ jobs:
 
       # Festival and artist pages get their own link previews (docs/web-deploy.md).
       - name: Link previews
+        if: github.event_name != 'pull_request'
         run: npx --yes tsx@4 scripts/page-previews.ts dist
 
       # A look at festivals' official pages: new artist names, set times, a new poster.
@@ -173,52 +192,20 @@ jobs:
             exit 1
           fi
 
-      # Firebase allows only so many preview channels per site, and each lasts 7 days, so a busy week of
-      # pull requests fills them up ("channel quota reached"). Previews of pull requests that are closed
-      # are removed first. Never prints the key.
-      - name: Make room for the preview
-        if: env.CAN_DEPLOY == 'true' && github.event_name == 'pull_request'
-        continue-on-error: true
-        env:
-          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          GH_TOKEN: ${{ github.token }}
-          PROJECT: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}
-        run: |
-          printf '%s' "$KEY" > "$RUNNER_TEMP/firebase-key.json"
-          trap 'rm -f "$RUNNER_TEMP/firebase-key.json"' EXIT
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json"
-          open=$(gh pr list --repo "${{ github.repository }}" --state open --limit 200 --json number --jq '.[].number' | tr '\n' ' ')
-          npx --yes firebase-tools@14 hosting:channel:list --project "$PROJECT" --json > "$RUNNER_TEMP/channels.json"
-          # Channels are named pr<number>-<branch> by the deploy action; keep the open ones and anything else.
-          OPEN="$open" node -e '
-            const open = new Set(process.env.OPEN.trim().split(/\s+/).filter(Boolean));
-            const list = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result?.channels ?? [];
-            for (const c of list) {
-              const id = c.name.split("/").pop();
-              const m = /^pr(\d+)-/.exec(id);
-              if (m && !open.has(m[1])) console.log(id);
-            }' "$RUNNER_TEMP/channels.json" > "$RUNNER_TEMP/stale.txt"
-          echo "Removing $(wc -l < "$RUNNER_TEMP/stale.txt") previews of closed pull requests"
-          while read -r id; do
-            npx --yes firebase-tools@14 hosting:channel:delete "$id" --project "$PROJECT" --force --non-interactive < /dev/null || true
-          done < "$RUNNER_TEMP/stale.txt"
-
-      - name: Deploy (live from main, a preview for pull requests)
+      - name: Deploy (live)
         if: env.CAN_DEPLOY == 'true'
-        # A preview that can't be made (quota, a Firebase hiccup) is only a missing link on the PR; going live from main must succeed.
-        continue-on-error: ${{ github.event_name == 'pull_request' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           # The Firebase project (also in .firebaserc).
           projectId: ${{ vars.EXPO_PUBLIC_FIREBASE_PROJECT_ID || secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'afterglowmusic' }}
-          channelId: ${{ github.event_name != 'pull_request' && 'live' || '' }}
+          channelId: live
 
       # The page watch's news, only once tonight's look is live: otherwise tomorrow compares with the
       # old look and opens the same issue (and email) again.
       - name: Festival news heads-up
-        if: env.CAN_DEPLOY == 'true' && github.event_name != 'pull_request'
+        if: env.CAN_DEPLOY == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -231,7 +218,7 @@ jobs:
       # first and on their own, so a storage problem never holds back messages, profiles and the rest.
       # Never prints the key.
       - name: Database and storage rules
-        if: env.CAN_DEPLOY == 'true' && github.event_name != 'pull_request'
+        if: env.CAN_DEPLOY == 'true'
         continue-on-error: true
         env:
           KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
