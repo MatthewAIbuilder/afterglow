@@ -2156,6 +2156,81 @@ const trooper: Draw = (p, f) => {
   };
 };
 
+/** WOOLI's: a real woolly mammoth, side on and shaggy, with great curling tusks and a curled trunk, in falling snow. */
+const mammoth: Draw = (p, f) => {
+  // Shaggy fringe hanging off its belly and chest.
+  const fringe = Array.from({ length: 11 }, (_, i) => {
+    const x = 34 + i * 4.6;
+    return flame(x, 71, x - 1.2 + (i % 2) * 0.6, 78.5 + (i % 3) * 1.4, 2.4, i % 2 ? 1 : -1);
+  }).join(' ');
+  return {
+    ground: [58, 90, 30],
+    back: (
+      <G>
+        <Ellipse cx={52} cy={52} rx={40} ry={34} fill={p.glow} opacity={0.14} />
+        {(
+          [
+            [14, 18, 1.1],
+            [26, 9, 0.8],
+            [74, 12, 1],
+            [90, 26, 0.8],
+            [84, 44, 1.1],
+            [12, 40, 0.8],
+            [62, 6, 0.7],
+          ] as const
+        ).map(([x, y, r], i) => (
+          <Circle key={i} cx={x} cy={y} r={r} fill="#FFFFFF" opacity={0.85} />
+        ))}
+      </G>
+    ),
+    // A little tufted tail, flicking.
+    pivot: [86, 58],
+    sway: (
+      <G>
+        <Path d="M85 56 Q92 60 91 68" stroke={p.deep} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+        <V d={flame(91, 66, 91.5, 73, 2.2, 0.6)} fill={p.deep} f={f} />
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The far legs, in shadow. */}
+        <V d="M45 66 L54 66 L54 85 Q49.5 87 45 85Z" fill={p.deep} f={f} />
+        <V d="M74 66 L83 66 L83 84 Q78.5 86 74 84Z" fill={p.deep} f={f} />
+        {/* Its body: a high domed head, the back sloping away to the rump. */}
+        <V d="M30 44 C29 26 39 16 50 17 C57 17.5 61 22 64.5 26 C78 28 88 42 87.5 60 C87 69 83 73 77 73.5 L40 73.5 C34 73.5 30 68 30 60Z" fill={p.mid} f={f} gloss={[44, 26, 7, 3, -30]} />
+        <Path d={fringe} fill={p.deep} />
+        {/* Shaggy strands through the coat. */}
+        <Path d="M56 30 q2 5 0 10 M64 34 q2.4 6 0 12 M72 38 q2.4 6 0 13 M80 44 q2 6 0 12 M60 48 q2 5 0 10 M70 52 q2 5 0 10 M48 50 q2 5 0 10" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.55} />
+        {/* A tuft of hair on top of its head. */}
+        {(
+          [
+            [44, 21, 47, 11.5],
+            [47.5, 19.5, 52, 11],
+            [51, 19.5, 56.5, 13.5],
+          ] as const
+        ).map(([bx, by, tx, ty], i) => (
+          <V key={i} d={flame(bx, by, tx, ty, 1.9, 2.4)} fill={p.deep} f={f} />
+        ))}
+        {/* Its ear. */}
+        <VE cx={51} cy={40} rx={4.6} ry={6} fill={p.deep} f={f} gloss={false} turn={-10} />
+        {/* The near legs. */}
+        <V d="M35 64 L45 64 L45 86 Q40 88.4 35 86Z" fill={p.mid} f={f} />
+        <V d="M66 64 L76 64 L76 85 Q71 87.4 66 85Z" fill={p.mid} f={f} />
+        {/* The far tusk, then the trunk curling down, then the near tusk. */}
+        <V d="M40.5 57.5 C35 71 23 72.5 19.5 61 C23.5 68 32 67.5 39.5 62Z" fill={p.altDeep} f={f} />
+        <Path d="M32.5 50 C27 56 25 66 26.5 76 C27.2 81 31.5 82 32.5 78" stroke={p.deep} strokeWidth={8} fill="none" strokeLinecap="round" />
+        <Path d="M32.5 50 C27 56 25 66 26.5 76 C27.2 81 31.5 82 32.5 78" stroke={p.mid} strokeWidth={6.2} fill="none" strokeLinecap="round" />
+        <Path d="M27.4 60 l4 0.8 M26.6 64.6 l4 0.6 M26.4 69.2 l4 0.4 M26.6 73.6 l4 0.2" stroke={p.deep} strokeWidth={0.8} strokeLinecap="round" opacity={0.6} />
+        <V d="M38 58.5 C31 77 14 77.5 11.5 56 C16 70.5 28.5 70.5 37 64Z" fill={p.alt} f={f} gloss={[22, 71, 3.4, 1, 10]} />
+      </G>
+    ),
+    eyes: {
+      box: [35, 35, 7, 7],
+      el: <VEye x={38.6} y={38.6} r={2.3} f={f} />,
+    },
+  };
+};
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -2195,4 +2270,5 @@ export const DRAW: Record<Creature, Draw> = {
   patchbear,
   thornskull,
   trooper,
+  mammoth,
 };
