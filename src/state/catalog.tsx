@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { extraArtist, extraArtistsVersion, subscribeExtraArtists } from '../data/extraArtists';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode, useSyncExternalStore } from 'react';
 import { CATALOG_TIMEOUT_MS, CATALOG_URL } from '../config/data';
 import { BUILT_IN } from '../data/bundled';
 import { type Catalog, createCatalog, withoutClips } from '../data/catalog';
@@ -123,7 +124,12 @@ export function CatalogProvider({ source, children }: { source?: CatalogSource; 
 
   // Clips you flagged as wrong are left out everywhere (ClipFlagsProvider sits outside this one).
   const { hidden } = useClipFlags();
-  const shown = useMemo(() => withoutClips(catalog, hidden), [catalog, hidden]);
+  // Artists people named on their videos who aren't on Afterglow yet (data/extraArtists.ts): found by id too.
+  const extras = useSyncExternalStore(subscribeExtraArtists, extraArtistsVersion, extraArtistsVersion);
+  const shown = useMemo(() => {
+    const c = withoutClips(catalog, hidden);
+    return extras ? { ...c, artist: (id: string) => c.artist(id) ?? extraArtist(id) } : c;
+  }, [catalog, hidden, extras]);
   return (
     <CatalogRefreshContext.Provider value={refresh}>
       <CatalogSettledContext.Provider value={settled}>

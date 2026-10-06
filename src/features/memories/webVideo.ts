@@ -83,6 +83,7 @@ export function sharedAsMemory(s: SharedMemory): Memory {
     show: s.show,
     artistId: s.artistId,
     withArtistIds: s.withArtistIds,
+    ...(s.artistName ? { artistName: s.artistName } : {}),
     clip: s.clip,
     sharedId: s.id,
     sharedBy: s.uid,

@@ -15,6 +15,7 @@ import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
+import { cleanArtistName } from '../../../data/extraArtists';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc } from './mapping';
 
 
@@ -459,6 +460,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             ...(input.night ? { night: input.night } : {}),
             ...(input.artistId ? { artistId: input.artistId } : {}),
             ...(input.artistId && input.withArtistIds?.length ? { withArtistIds: input.withArtistIds.slice(0, 3) } : {}),
+            ...(input.artistId && cleanArtistName(input.artistName) ? { artistName: cleanArtistName(input.artistName) } : {}),
             // A past festival: its name, year, town and the same festival on Afterglow, as plain fields.
             ...(!input.festivalId && input.past
               ? {
@@ -527,6 +529,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           night: set(festivalId ? tags.night : undefined),
           artistId: set(tags.artistId),
           withArtistIds: set(withArtistIds?.length ? withArtistIds : undefined),
+          artistName: set(tags.artistId ? cleanArtistName(tags.artistName) : undefined),
           pastName: set(past?.name),
           pastYear: set(past?.year),
           pastCity: set(past?.city),

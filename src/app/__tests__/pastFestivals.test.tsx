@@ -102,6 +102,34 @@ describe('past festivals', () => {
     expect(saved[0].past).toEqual({ name: 'Sunset Sessions', year: 2023, city: 'Orlando' });
   });
 
+  it('a new festival or a new artist asks HQ by itself, once: a badge of its own, and the artist added properly', async () => {
+    pickOldVideo();
+    const app = await renderApp('/');
+    await flush();
+    await act(async () => fireGestureHandler(getByGestureTestId('hold-c1'), [{ state: State.BEGAN }, { state: State.ACTIVE }, { state: State.END }]));
+    await flush();
+    await fireEvent.press(app.getByLabelText('2023'));
+    await fireEvent.changeText(app.getByLabelText('Search for the festival'), 'Sunset Sessions 2023');
+    await fireEvent.press(app.getByLabelText('Add Sunset Sessions 2023'));
+    // Someone who isn't on Afterglow yet.
+    await fireEvent.changeText(app.getByLabelText('Search for the artist'), 'Rezzy Test');
+    await fireEvent.press(app.getByLabelText('Add Rezzy Test as a new artist'));
+    // Chosen, by that name.
+    expect(app.getByText('Rezzy Test')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Save to Memories'));
+    await flush();
+    const saved = JSON.parse((await AsyncStorage.getItem('memories.v1')) ?? '[]');
+    expect(saved[0]).toMatchObject({ artistId: 'rezzy-test', artistName: 'Rezzy Test' });
+    // Shared with the name, for everyone who sees it.
+    const shared = [...mockSocial.memories.values()];
+    expect(shared[0]).toMatchObject({ artistId: 'rezzy-test', artistName: 'Rezzy Test' });
+    // HQ heard about both.
+    const asked = await mockSocial.service.mySupport(10);
+    expect(asked.map((m) => m.topic).sort()).toEqual(['festival', 'other']);
+    expect(asked.find((m) => m.topic === 'festival')?.text).toMatch(/^New festival added from a throwback: "Sunset Sessions" \(2023, Orlando\)/);
+    expect(asked.find((m) => m.topic === 'other')?.text).toMatch(/^New artist named on a video: "Rezzy Test" \(id "rezzy-test"\)/);
+  });
+
   it('earns a throwback badge on your profile, claimed with the unlock, and listed under Been there', async () => {
     const filmed = new Date(2024, 10, 9, 23, 15).toISOString();
     await AsyncStorage.setItem(

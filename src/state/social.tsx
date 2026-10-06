@@ -344,6 +344,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
             night: m.night,
             artistId: m.artistId,
             withArtistIds: m.withArtistIds,
+            artistName: m.artistName,
             people: m.people,
             past: m.past,
             show: m.show,
