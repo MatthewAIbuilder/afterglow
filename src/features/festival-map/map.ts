@@ -2,6 +2,7 @@ import type { Festival } from '../../data/models';
 import type { Point } from '../festivals/near';
 import { isOver } from '../festivals/shelves';
 import { LAND, LAND_COLS, LAND_NORTH, LAND_ROWS, LAND_STEP } from './land';
+import { t, tn } from '../../i18n';
 
 /**
  * The festival map, pure. The world is drawn as dots of light on a night sky
@@ -207,12 +208,12 @@ export function clusterMarkers(markers: readonly Marker[], scale: number, px: nu
 }
 
 /** "3 festivals here" for a cluster; the festival's own name for one. */
-export const clusterLabel = (c: Cluster) => (c.members.length > 1 ? `${c.lead.festival.name} and ${c.members.length - 1} more` : c.lead.festival.name);
+export const clusterLabel = (c: Cluster) => (c.members.length > 1 ? t('{festival} and {n} more', { festival: c.lead.festival.name, n: c.members.length - 1 }) : c.lead.festival.name);
 
 /** "4 festivals aren't on the map yet: they have no place." */
 export function unplacedLine(n: number): string | undefined {
   if (n <= 0) return undefined;
-  return n === 1 ? '1 festival has no place yet, so it isn’t on the map.' : `${n} festivals have no place yet, so they aren’t on the map.`;
+  return tn(n, '{n} festival has no place yet, so it isn’t on the map.', '{n} festivals have no place yet, so they aren’t on the map.');
 }
 
 /** Festivals in date order (undated last). */

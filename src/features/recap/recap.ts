@@ -7,6 +7,7 @@ import type { CardLine, CardSection, PlanCard } from '../plan/share';
 import { daysUntil } from '../festivals/when';
 import { toShares } from '../taste/lean';
 import { isWarm, type Ratings } from '../taste/ratings';
+import { t, tn } from '../../i18n';
 
 /**
  * Your festival, looked back on: once a festival is over, a card of what it
@@ -28,6 +29,9 @@ export type RecapInput = {
   today: Date;
 };
 
+/** What ends a recap's subtitle (taken off again for the message). */
+const RECAP_TAG = () => ` · ${t('Your recap')}`;
+
 /** Most artists on the card. */
 export const RECAP_ARTISTS = 6;
 
@@ -35,8 +39,6 @@ export const RECAP_ARTISTS = 6;
 export function hasRecap(i: Pick<RecapInput, 'festival' | 'going' | 'memories' | 'stars' | 'today'>): boolean {
   return isOver(i.festival, i.today) && (i.going || i.memories.length > 0 || i.stars.size > 0);
 }
-
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** Your artists there, strongest first: filmed, then starred, then loved; your match breaks ties. */
 export function recapArtists(i: RecapInput): { artist: Artist; videos: number; starred: boolean; rating?: 'love' | 'like' }[] {
@@ -73,9 +75,9 @@ export function festivalRecap(i: RecapInput): PlanCard | undefined {
     const lines: CardLine[] = artists.slice(0, RECAP_ARTISTS).map((a) => ({
       name: a.artist.name,
       star: a.starred,
-      where: [a.videos ? plural(a.videos, 'video') : '', a.rating === 'love' ? 'loved' : a.rating === 'like' ? 'liked' : ''].filter(Boolean).join(' · ') || undefined,
+      where: [a.videos ? tn(a.videos, '{n} video', '{n} videos') : '', a.rating === 'love' ? t('loved') : a.rating === 'like' ? t('liked') : ''].filter(Boolean).join(' · ') || undefined,
     }));
-    sections.push({ heading: 'Your artists', lines, more: Math.max(0, artists.length - RECAP_ARTISTS) });
+    sections.push({ heading: t('Your artists'), lines, more: Math.max(0, artists.length - RECAP_ARTISTS) });
   }
 
   // Nights you filmed, in the festival's order.
@@ -84,7 +86,7 @@ export function festivalRecap(i: RecapInput): PlanCard | undefined {
   if (perNight.size > 1) {
     const order = (d: string) => (i.festival.days.indexOf(d) === -1 ? 99 : i.festival.days.indexOf(d));
     const nights = [...perNight].sort((a, b) => order(a[0]) - order(b[0]));
-    sections.push({ heading: 'Your nights', lines: nights.map(([night, n]) => ({ name: night, where: plural(n, 'video'), star: false })), more: 0 });
+    sections.push({ heading: t('Your nights'), lines: nights.map(([night, n]) => ({ name: t(night), where: tn(n, '{n} video', '{n} videos'), star: false })), more: 0 });
   }
 
   // Your sound there: the sounds of your artists, weighted as ranked.
@@ -94,28 +96,29 @@ export function festivalRecap(i: RecapInput): PlanCard | undefined {
     for (const [tag, v] of Object.entries(a.artist.sound) as [SoundTag, number][]) weights[tag] = (weights[tag] ?? 0) + v * w;
   });
   const shares = toShares(weights).slice(0, 3);
-  if (shares.length) sections.push({ heading: 'Your sound there', lines: shares.map((s) => ({ name: SOUND_LABEL[s.tag], where: `${s.percent}%`, star: false })), more: 0 });
+  if (shares.length) sections.push({ heading: t('Your sound there'), lines: shares.map((s) => ({ name: SOUND_LABEL[s.tag], where: `${s.percent}%`, star: false })), more: 0 });
 
   const numbers: CardLine[] = [];
-  if (i.memories.length) numbers.push({ name: 'Videos filmed', where: String(i.memories.length), star: false });
+  if (i.memories.length) numbers.push({ name: t('Videos filmed'), where: String(i.memories.length), star: false });
   const starred = [...i.stars].filter((a) => i.festival.lineup.includes(a)).length;
-  if (starred) numbers.push({ name: 'Sets starred', where: String(starred), star: false });
+  if (starred) numbers.push({ name: t('Sets starred'), where: String(starred), star: false });
   const loved = i.festival.lineup.filter((a) => isWarm(i.ratings[a])).length;
-  if (loved) numbers.push({ name: 'Artists you love there', where: String(loved), star: false });
-  if (numbers.length) sections.push({ heading: 'By the numbers', lines: numbers, more: 0 });
+  if (loved) numbers.push({ name: t('Artists you love there'), where: String(loved), star: false });
+  if (numbers.length) sections.push({ heading: t('By the numbers'), lines: numbers, more: 0 });
 
-  return { title: i.festival.name, subtitle: `${whereWhen(i.festival)} · Your recap`, sections };
+  return { title: i.festival.name, subtitle: `${whereWhen(i.festival)}${RECAP_TAG()}`, sections };
 }
 
 /** The recap as a message. */
 export function recapText(card: PlanCard): string {
-  const parts = [`My ${card.title}`, card.subtitle.replace(/ · Your recap$/, '')];
+  const tag = RECAP_TAG();
+  const parts = [t('My {festival}', { festival: card.title }), card.subtitle.endsWith(tag) ? card.subtitle.slice(0, -tag.length) : card.subtitle];
   for (const s of card.sections) {
     parts.push('', s.heading);
     for (const l of s.lines) parts.push(`${l.star ? '★ ' : ''}${l.name}${l.where ? `, ${l.where}` : ''}`);
-    if (s.more) parts.push(`and ${s.more} more`);
+    if (s.more) parts.push(t('and {n} more', { n: s.more }));
   }
-  parts.push('', 'Made with Afterglow');
+  parts.push('', t('Made with Afterglow'));
   return parts.join('\n');
 }
 
@@ -134,7 +137,7 @@ export function recapNotices(festivals: readonly Festival[], today: Date): Notic
       kind: 'recap' as const,
       festivalId: f.id,
       href: `/recap/${f.id}`,
-      title: `Your recap of ${f.name} is ready`,
-      body: 'Your artists, nights and sound there, ready to share.',
+      title: t('Your recap of {festival} is ready', { festival: f.name }),
+      body: t('Your artists, nights and sound there, ready to share.'),
     }));
 }

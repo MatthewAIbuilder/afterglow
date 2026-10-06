@@ -12,6 +12,7 @@ import { useNearby } from '../../state/nearby';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, glowA, radius, space, type } from '../../theme/tokens';
+import { t } from '../../i18n';
 import { showDateBlock, showDateSpoken, showTitle, showWhere } from '../artists/shows';
 import { distanceLabel, distanceShort } from './near';
 import { matchLabel, type RankedShow, type ShowTaste } from './showsForYou';
@@ -38,8 +39,8 @@ function useBill(r: RankedShow): Artist[] {
 /** What a screen reader hears for a show card or row. */
 function spoken(r: RankedShow, best: Artist | undefined, away: string | undefined) {
   const where = showWhere(r.show);
-  const match = best && r.best ? `${Math.round(r.match * 100)} percent match with ${best.name}` : undefined;
-  return [`${showTitle(r.show)}, ${showDateSpoken(r.show.date)}`, where, away, match].filter(Boolean).join('. ') + '. Opens the show.';
+  const match = best && r.best ? t('{pct} percent match with {artist}', { pct: Math.round(r.match * 100), artist: best.name }) : undefined;
+  return [`${showTitle(r.show)}, ${showDateSpoken(r.show.date)}`, where, away, match].filter(Boolean).join('. ') + t('. Opens the show.');
 }
 
 /** The calendar block: "OCT" over "18" over "Sat". */
@@ -106,7 +107,7 @@ export function ShowCard({ ranked: r }: { ranked: RankedShow }) {
     <Pressable
       onPress={() => openShow(r.show.id)}
       accessibilityRole="button"
-      accessibilityLabel={spoken(r, best, away && `${away} away`)}
+      accessibilityLabel={spoken(r, best, away && t('{distance} away', { distance: away }))}
       style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 }]}
     >
       <LinearGradient colors={[`${bright}33`, 'rgba(0,0,0,0)']} style={StyleSheet.absoluteFill} pointerEvents="none" />

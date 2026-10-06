@@ -16,15 +16,17 @@ import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
 import { useNearby } from '../state/nearby';
 import { color, radius, space, type } from '../theme/tokens';
+import { t } from '../i18n';
 
 /** Rows shown at a time. */
 const PAGE = 30;
 
-const FILTERS: { key: ShowFilter; label: string; spoken: string; none: string }[] = [
-  { key: 'near', label: 'Near you', spoken: 'Shows near you', none: 'No shows that close yet.' },
-  { key: 'week', label: 'This week', spoken: 'Shows in the next 7 days', none: 'No shows this week yet.' },
-  { key: 'month', label: 'This month', spoken: 'Shows in the next month', none: 'No shows this month yet.' },
-  { key: 'all', label: 'All', spoken: 'All upcoming shows', none: 'No shows yet.' },
+/** The filters, in the phone's language (worked out when shown). */
+const filters = (): { key: ShowFilter; label: string; spoken: string; none: string }[] => [
+  { key: 'near', label: t('Near you'), spoken: t('Shows near you'), none: t('No shows that close yet.') },
+  { key: 'week', label: t('This week'), spoken: t('Shows in the next 7 days'), none: t('No shows this week yet.') },
+  { key: 'month', label: t('This month'), spoken: t('Shows in the next month'), none: t('No shows this month yet.') },
+  { key: 'all', label: t('All'), spoken: t('All upcoming shows'), none: t('No shows yet.') },
 ];
 
 /**
@@ -36,14 +38,15 @@ export default function ShowsScreen() {
   const insets = useSafeAreaInsets();
   const catalog = useCatalog();
   const today = localDay(useToday());
-  const t = useShowTaste();
+  const taste = useShowTaste();
+  const FILTERS = useMemo(() => filters(), []);
   const nearby = useNearby();
   const [filter, setFilter] = useState<ShowFilter>('all');
   const [query, setQuery] = useState('');
   const [shown, setShown] = useState(PAGE);
   const upcoming = useMemo(() => dedupeShows(upcomingShows(catalog.shows, today)), [catalog.shows, today]);
-  const ranked = useMemo(() => rankShows(upcoming, t, nearby.here), [upcoming, t, nearby.here]);
-  const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.key, filterShows(ranked, f.key, today).length])) as Record<ShowFilter, number>, [ranked, today]);
+  const ranked = useMemo(() => rankShows(upcoming, taste, nearby.here), [upcoming, taste, nearby.here]);
+  const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.key, filterShows(ranked, f.key, today).length])) as Record<ShowFilter, number>, [FILTERS, ranked, today]);
   const searching = query.trim().length > 0;
   const listed = useMemo(() => {
     const inFilter = filterShows(ranked, filter, today);
@@ -56,7 +59,7 @@ export default function ShowsScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Shows" />
+      <PageTitle title={t('Shows')} />
       <NightSky />
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }}
@@ -66,9 +69,9 @@ export default function ShowsScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title} accessibilityRole="header">
-            Shows
+            {t('Shows')}
           </Text>
-          <Text style={styles.sub}>Club nights and concerts, best for you first.</Text>
+          <Text style={styles.sub}>{t('Club nights and concerts, best for you first.')}</Text>
           <View style={styles.search}>
             <SearchField
               value={query}
@@ -76,8 +79,8 @@ export default function ShowsScreen() {
                 setQuery(q);
                 setShown(PAGE);
               }}
-              placeholder="Artist, venue or town"
-              label="Find a show by artist, venue or town"
+              placeholder={t('Artist, venue or town')}
+              label={t('Find a show by artist, venue or town')}
             />
           </View>
         </View>
@@ -94,22 +97,24 @@ export default function ShowsScreen() {
             key: f.key,
             label: f.label,
             count: f.key === 'near' && nearby.status !== 'on' ? undefined : counts[f.key],
-            accessibilityLabel: f.key === 'near' && nearby.status !== 'on' ? f.spoken : `${f.spoken}, ${counts[f.key]}`,
+            accessibilityLabel: f.key === 'near' && nearby.status !== 'on' ? f.spoken : t('{filter}, {n}', { filter: f.spoken, n: counts[f.key] }),
           }))}
         />
         {filter === 'near' && nearby.status === 'on' ? (
           <Text style={styles.reach}>
-            {reachLabel(nearby.units)} of {nearby.hereLabel ?? 'you'}
+            {nearby.hereLabel
+              ? t('{within} of {place}', { within: reachLabel(nearby.units), place: nearby.hereLabel })
+              : t('{within} of you', { within: reachLabel(nearby.units) })}
           </Text>
         ) : null}
         <View style={styles.list}>
           {needsPlace ? (
             nearby.hydrated ? (
-              <NearYouPrompt title="Shows near you" style={styles.prompt} />
+              <NearYouPrompt title={t('Shows near you')} style={styles.prompt} />
             ) : null
           ) : listed.length === 0 ? (
             <Text style={styles.none}>
-              {searching ? `No show matches “${query.trim()}”.` : `${catalog.shows.length ? none : 'No shows yet.'} New ones arrive every night.`}
+              {searching ? t('No show matches “{query}”.', { query: query.trim() }) : `${catalog.shows.length ? none : t('No shows yet.')} ${t('New ones arrive every night.')}`}
             </Text>
           ) : (
             listed.slice(0, shown).map((r) => <ShowRow key={r.show.id} ranked={r} />)
@@ -121,10 +126,10 @@ export default function ShowsScreen() {
                 setShown((n) => n + PAGE);
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Show more shows. ${listed.length - shown} left`}
+              accessibilityLabel={t('Show more shows. {n} left', { n: listed.length - shown })}
               style={({ pressed }) => [styles.more, pressed && { opacity: 0.7 }]}
             >
-              <Text style={styles.moreText}>Show more · {listed.length - shown} left</Text>
+              <Text style={styles.moreText}>{t('Show more · {n} left', { n: listed.length - shown })}</Text>
             </Pressable>
           ) : null}
         </View>

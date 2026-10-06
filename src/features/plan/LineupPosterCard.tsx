@@ -5,6 +5,7 @@ import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { APP_NAME } from '../../config/app';
 import { color, radius, space, type } from '../../theme/tokens';
 import type { LineupPoster } from './lineupPoster';
+import { t } from '../../i18n';
 
 /**
  * Your lineup as a festival poster: the festival up top, your headliners big,
@@ -16,7 +17,7 @@ export function LineupPosterCard({ poster }: { poster: LineupPoster }) {
     <View
       style={styles.card}
       accessible
-      accessibilityLabel={`Your ${poster.festival} lineup poster: ${poster.rows.flatMap((r) => r.names.map((n) => n.name)).join(', ')}${poster.more ? `, and ${poster.more} more` : ''}`}
+      accessibilityLabel={poster.more ? t('Your {festival} lineup poster: {names}, and {n} more', { festival: poster.festival, names: poster.rows.flatMap((r) => r.names.map((n) => n.name)).join(', '), n: poster.more }) : t('Your {festival} lineup poster: {names}', { festival: poster.festival, names: poster.rows.flatMap((r) => r.names.map((n) => n.name)).join(', ') })}
     >
       <LinearGradient colors={['#1B1240', '#2A1A5E', '#140F33', color.night]} locations={[0, 0.35, 0.7, 1]} style={StyleSheet.absoluteFill} />
       <Svg width={GLOW} height={GLOW} style={styles.glow} pointerEvents="none">
@@ -28,9 +29,9 @@ export function LineupPosterCard({ poster }: { poster: LineupPoster }) {
         </Defs>
         <Circle cx={GLOW / 2} cy={GLOW / 2} r={GLOW / 2} fill="url(#poster-glow)" />
       </Svg>
-      <Text style={styles.brand}>{APP_NAME.toUpperCase()} PRESENTS</Text>
+      <Text style={styles.brand}>{t('{app} PRESENTS', { app: APP_NAME.toUpperCase() })}</Text>
       <Text style={styles.festival}>{poster.festival}</Text>
-      <Text style={styles.kicker}>Your lineup</Text>
+      <Text style={styles.kicker}>{t('Your lineup')}</Text>
       <View style={styles.rule} />
       {poster.rows.map((row, i) => (
         <Text key={row.size} style={[styles.row, ROW[row.size], i > 0 && { marginTop: row.size === 'mid' ? space.lg : space.md }]}>
@@ -43,10 +44,10 @@ export function LineupPosterCard({ poster }: { poster: LineupPoster }) {
           ))}
         </Text>
       ))}
-      {poster.more > 0 ? <Text style={styles.more}>and {poster.more} more</Text> : null}
+      {poster.more > 0 ? <Text style={styles.more}>{t('and {n} more', { n: poster.more })}</Text> : null}
       <View style={styles.rule} />
       {poster.subtitle ? <Text style={styles.where}>{poster.subtitle}</Text> : null}
-      <Text style={styles.foot}>Made with {APP_NAME}</Text>
+      <Text style={styles.foot}>{t('Made with {app}', { app: APP_NAME })}</Text>
     </View>
   );
 }

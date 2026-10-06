@@ -43,6 +43,8 @@ import { useWeekends } from '../../state/weekends';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { datesLine } from '../../features/festivals/format';
+import { t, tn } from '../../i18n';
 
 const LOVE = 0.8;
 /** Tiles on the For you shelf are this big. */
@@ -109,7 +111,7 @@ export default function FestivalsScreen() {
   const pullToRefresh = () => {
     haptic.soft();
     const now = Date.now();
-    pulls.current = [...pulls.current.filter((t) => now - t < 20_000), now];
+    pulls.current = [...pulls.current.filter((at) => now - at < 20_000), now];
     if (pulls.current.length >= 3) {
       pulls.current = [];
       revealSecret('fireworks');
@@ -124,7 +126,7 @@ export default function FestivalsScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Festivals & shows" />
+      <PageTitle title={t('Festivals & shows')} />
       <NightSky />
       <ScrollView
         contentContainerStyle={{
@@ -148,8 +150,8 @@ export default function FestivalsScreen() {
                   router.push('/festival-map');
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Festival map"
-                accessibilityHint="Every festival, glowing on a map"
+                accessibilityLabel={t('Festival map')}
+                accessibilityHint={t('Every festival, glowing on a map')}
                 hitSlop={10}
                 style={({ pressed }) => [styles.toggle, pressed && { transform: [{ scale: 0.92 }] }]}
               >
@@ -160,26 +162,26 @@ export default function FestivalsScreen() {
             </View>
           </View>
           <Text style={styles.title} accessibilityRole="header">
-            Festivals & shows
+            {t('Festivals & shows')}
           </Text>
           <View style={styles.searchWrap}>
             <SearchField
               value={query}
               onChange={setQuery}
-              placeholder="Artist, festival or show"
-              label="Find an artist, festival or show"
+              placeholder={t('Artist, festival or show')}
+              label={t('Find an artist, festival or show')}
             />
           </View>
         </View>
         {searching ? (
           <View style={styles.results}>
-            {foundFestivals.length > 0 && <Text style={styles.resultsHead}>Festivals</Text>}
+            {foundFestivals.length > 0 && <Text style={styles.resultsHead}>{t('Festivals')}</Text>}
             {foundFestivals.map((f) => (
               <FestivalRow key={f.id} festival={f} />
             ))}
             {foundShows.length > 0 && (
               <>
-                <Text style={styles.resultsHead}>Shows</Text>
+                <Text style={styles.resultsHead}>{t('Shows')}</Text>
                 <View style={styles.foundShows}>
                   {foundShows.map((r) => (
                     <ShowRow key={r.show.id} ranked={r} />
@@ -187,9 +189,9 @@ export default function FestivalsScreen() {
                 </View>
               </>
             )}
-            {found.length > 0 && foundFestivals.length + foundShows.length > 0 && <Text style={styles.resultsHead}>Artists</Text>}
+            {found.length > 0 && foundFestivals.length + foundShows.length > 0 && <Text style={styles.resultsHead}>{t('Artists')}</Text>}
             {found.length === 0 && foundFestivals.length === 0 && foundShows.length === 0 ? (
-              <Text style={styles.noMatch}>No festival, show or artist matches “{query.trim()}”.</Text>
+              <Text style={styles.noMatch}>{t('No festival, show or artist matches “{query}”.', { query: query.trim() })}</Text>
             ) : (
               found.map((a) => {
                 const at = catalog.festivalsOf(a.id);
@@ -199,7 +201,7 @@ export default function FestivalsScreen() {
                     artist={a}
                     affinity={taste[a.id] ?? 0}
                     festivalId={at.length === 1 ? at[0].id : undefined}
-                    detail={at.length ? `Plays ${at.map((f) => f.name).join(', ')}` : undefined}
+                    detail={at.length ? t('Plays {festivals}', { festivals: at.map((f) => f.name).join(', ') }) : undefined}
                     rating={ratings[a.id]}
                   />
                 );
@@ -214,12 +216,12 @@ export default function FestivalsScreen() {
             {upNext ? <NextUpCard festival={upNext} /> : null}
             {/* The week before a festival you're going to: a door a day. */}
             {[ready, upNext].map((f) => (f ? <FestivalWeekCard key={`week-${f.id}`} festival={f} showName /> : null))}
-            {alsoGoing.length > 0 && <SectionHead title={upNext || ready ? 'Also going' : 'Going'} />}
+            {alsoGoing.length > 0 && <SectionHead title={upNext || ready ? t('Also going') : t('Going')} />}
             {list(alsoGoing, true)}
             {/* Club shows picked for you, to swipe through; every show behind See all. */}
             {showPicks.picks.length > 0 ? (
               <>
-                <SectionHead title={showPicks.forYou ? 'Shows for you' : 'Shows coming up'} seeAll={{ label: 'See all shows', path: '/shows' }} />
+                <SectionHead title={showPicks.forYou ? t('Shows for you') : t('Shows coming up')} seeAll={{ label: t('See all shows'), path: '/shows' }} />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf} style={styles.shelfWrap} snapToInterval={SHOW_CARD_W + space.md} decelerationRate="fast">
                   {showPicks.picks.map((r) => (
                     <ShowCard key={r.show.id} ranked={r} />
@@ -230,23 +232,25 @@ export default function FestivalsScreen() {
             {nearby.status === 'on' && (many || near.length > 0) ? (
               <>
                 <View style={styles.nearHead}>
-                  <Text style={[styles.section, styles.nearTitle]}>Near you</Text>
+                  <Text style={[styles.section, styles.nearTitle]}>{t('Near you')}</Text>
                   <Pressable
                     onPress={() => {
                       haptic.select();
                       nearby.turnOff();
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel="Stop showing festivals near you"
+                    accessibilityLabel={t('Stop showing festivals near you')}
                     hitSlop={8}
                   >
-                    <Text style={styles.nearOff}>Turn off</Text>
+                    <Text style={styles.nearOff}>{t('Turn off')}</Text>
                   </Pressable>
                 </View>
                 <Text style={styles.nearSub}>
-                  {reachLabel(nearby.units)} of {nearby.hereLabel ?? 'you'}
+                  {nearby.hereLabel
+                    ? t('{within} of {place}', { within: reachLabel(nearby.units), place: nearby.hereLabel })
+                    : t('{within} of you', { within: reachLabel(nearby.units) })}
                 </Text>
-                {near.length > 0 ? list(near.map((n) => n.festival)) : <Text style={styles.nearNone}>No festivals that close yet. New ones arrive every night.</Text>}
+                {near.length > 0 ? list(near.map((n) => n.festival)) : <Text style={styles.nearNone}>{t('No festivals that close yet. New ones arrive every night.')}</Text>}
               </>
             ) : (
               many && <NearYouPrompt />
@@ -254,7 +258,7 @@ export default function FestivalsScreen() {
             {/* With many festivals: a short shelf picked for you, to swipe through. */}
             {shelf && shelf.festivals.length > 0 ? (
               <>
-                <SectionHead title={shelf.title} />
+                <SectionHead title={t(shelf.title)} />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf} style={styles.shelfWrap}>
                   {shelf.festivals.map((f) => (
                     <FestivalTile key={f.id} festival={f} taste={taste} size={SHELF_TILE} />
@@ -262,7 +266,7 @@ export default function FestivalsScreen() {
                 </ScrollView>
               </>
             ) : null}
-            {rest.length > 0 && <SectionHead title={groups.going.length || shelf ? 'All festivals' : 'Coming up'} count={rest.length} calendar />}
+            {rest.length > 0 && <SectionHead title={groups.going.length || shelf ? t('All festivals') : t('Coming up')} count={rest.length} calendar />}
             {byMonth(rest.slice(0, restShown), today).map((g) => (
               <View key={g.label}>
                 <Text style={[styles.section, styles.month]}>{g.label}</Text>
@@ -276,10 +280,10 @@ export default function FestivalsScreen() {
                   setRestShown((n) => n + MORE_PAGE);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Show more festivals. ${rest.length - restShown} left`}
+                accessibilityLabel={t('Show more festivals. {n} left', { n: rest.length - restShown })}
                 style={({ pressed }) => [styles.showMore, pressed && { opacity: 0.7 }]}
               >
-                <Text style={styles.showMoreText}>Show more · {rest.length - restShown} left</Text>
+                <Text style={styles.showMoreText}>{t('Show more · {n} left', { n: rest.length - restShown })}</Text>
               </Pressable>
             )}
             <RequestRow />
@@ -305,12 +309,12 @@ function SectionHead({ title, count, calendar, seeAll }: { title: string; count?
             router.push('/festival-calendar');
           }}
           accessibilityRole="button"
-          accessibilityLabel="See festivals and shows on a calendar"
+          accessibilityLabel={t('See festivals and shows on a calendar')}
           hitSlop={10}
           style={({ pressed }) => [styles.calLink, pressed && { opacity: 0.7 }]}
         >
           <CalendarIcon color={color.glow} size={14} />
-          <Text style={styles.calText}>Calendar</Text>
+          <Text style={styles.calText}>{t('Calendar')}</Text>
         </Pressable>
       ) : null}
       {seeAll ? (
@@ -324,7 +328,7 @@ function SectionHead({ title, count, calendar, seeAll }: { title: string; count?
           hitSlop={10}
           style={({ pressed }) => [styles.calLink, pressed && { opacity: 0.7 }]}
         >
-          <Text style={styles.calText}>See all</Text>
+          <Text style={styles.calText}>{t('See all')}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -341,7 +345,7 @@ function ViewToggle({ value, onChange }: { value: FestivalsView; onChange: (v: F
         onChange(next);
       }}
       accessibilityRole="button"
-      accessibilityLabel={next === 'grid' ? 'Show festivals as tiles' : 'Show festivals as a list'}
+      accessibilityLabel={next === 'grid' ? t('Show festivals as tiles') : t('Show festivals as a list')}
       hitSlop={10}
       style={({ pressed }) => [styles.toggle, pressed && { transform: [{ scale: 0.92 }] }]}
     >
@@ -371,17 +375,17 @@ function RequestRow({ name }: { name?: string }) {
         router.push(name ? { pathname: '/request', params: { name } } : '/request');
       }}
       accessibilityRole="button"
-      accessibilityLabel={name ? `Can't find it? Request ${name}` : 'Missing a festival? Request it'}
+      accessibilityLabel={name ? t("Can't find it? Request {name}", { name }) : t('Missing a festival? Request it')}
       style={({ pressed }) => [styles.request, name && styles.requestInline, pressed && { opacity: 0.7 }]}
     >
       <Text style={styles.requestText}>
         {name ? (
           <>
-            Can’t find it? <Text style={styles.requestLink}>Request “{name}”</Text>
+            {t('Can’t find it?')} <Text style={styles.requestLink}>{t('Request “{name}”', { name })}</Text>
           </>
         ) : (
           <>
-            Missing a festival? <Text style={styles.requestLink}>Request it</Text>
+            {t('Missing a festival?')} <Text style={styles.requestLink}>{t('Request it')}</Text>
           </>
         )}
       </Text>
@@ -423,8 +427,8 @@ function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; ta
         router.push(`/festival/${festival.id}`);
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${festival.name}, ${festival.dates}${soon ? `, ${soon}` : ''}, ${loved ? `${loved} artists you'll love` : `${ranked.length} artists`}`}
-      accessibilityActions={reach.clips > 0 ? [{ name: 'discover', label: 'Discover the lineup' }] : undefined}
+      accessibilityLabel={[festival.name, datesLine(festival), ...(soon ? [soon] : []), loved ? t("{n} artists you'll love", { n: loved }) : t('{n} artists', { n: ranked.length })].join(', ')}
+      accessibilityActions={reach.clips > 0 ? [{ name: 'discover', label: t('Discover the lineup') }] : undefined}
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'discover') discover();
       }}
@@ -435,13 +439,13 @@ function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; ta
       {cover.length > 0 && <View style={styles.coverGlass} pointerEvents="none" />}
       <LinearGradient colors={[`${bright}33`, 'rgba(0,0,0,0)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
       <Text style={[styles.tileWhen, timesOut && { color: color.glow }]} numberOfLines={1}>
-        {timesOut ? 'Set times out' : (soon ?? festival.dates)}
+        {timesOut ? t('Set times out') : (soon ?? datesLine(festival))}
       </Text>
       <Text style={styles.tileName} numberOfLines={3}>
         {festival.name}
       </Text>
       <Text style={styles.tileLoved} numberOfLines={1}>
-        {loved > 0 ? `${loved} you’ll love` : `${ranked.length} acts`}
+        {loved > 0 ? t('{n} you’ll love', { n: loved }) : t('{n} acts', { n: ranked.length })}
         {away !== undefined ? ` · ${distanceShort(away, units)}` : ''}
       </Text>
       <View style={styles.tileBottom}>
@@ -456,7 +460,7 @@ function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; ta
           <Pressable
             onPress={discover}
             accessibilityRole="button"
-            accessibilityLabel={`Discover the ${festival.name} lineup, ${reach.clips} ${reach.clips === 1 ? 'clip' : 'clips'}`}
+            accessibilityLabel={tn(reach.clips, 'Discover the {festival} lineup, {n} clip', 'Discover the {festival} lineup, {n} clips', { festival: festival.name })}
             hitSlop={8}
             style={({ pressed }) => [styles.tileClips, pressed && { opacity: 0.75 }]}
           >

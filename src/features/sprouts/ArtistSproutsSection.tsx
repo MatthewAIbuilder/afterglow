@@ -9,9 +9,10 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { artistLook, foldName, SIGNATURE_NAMES } from './artistLook';
 import { type ArtistSprout, artistGardenLine, tierLabel, tierLine } from './artistSprouts';
 import { Sprout } from './Sprout';
+import { LOCALE, t } from '../../i18n';
 
 const TILE = 104;
-const day = (t: number) => (t ? new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
+const day = (at: number) => (at ? new Date(at).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
 /** Artist collectibles someone gave you: the artist and who from. */
 export type GivenArtistSprout = { id: string; artist: { id: string; name: string }; from: string; at: number };
@@ -29,12 +30,12 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
     const byName = new Map(catalog.artists.map((a) => [foldName(a.name), a]));
     return SIGNATURE_NAMES.map((n) => byName.get(n)).filter((a): a is Artist => !!a).slice(0, 4);
   }, [catalog]);
-  const nameOf = (id: string, fallback?: string) => catalog.artist(id)?.name ?? fallback ?? 'An artist';
+  const nameOf = (id: string, fallback?: string) => catalog.artist(id)?.name ?? fallback ?? t('An artist');
 
   return (
     <View style={styles.section}>
       <Text style={styles.h2} accessibilityRole="header">
-        Artist collectibles{earned.length || given.length ? ` · ${earned.length + given.length}` : ''}
+        {earned.length || given.length ? t('Artist collectibles · {n}', { n: earned.length + given.length }) : t('Artist collectibles')}
       </Text>
       <Text style={styles.sub}>{artistGardenLine(earned)}</Text>
       {earned.length || given.length ? (
@@ -50,7 +51,7 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
                   setOpen({ artist, sprout: s });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${artist.name} collectible, ${tierLabel(s)}.`}
+                accessibilityLabel={t('{artist} collectible, {tier}.', { artist: artist.name, tier: tierLabel(s) })}
                 style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
               >
                 <Sprout artist={artistLook(artist)} tier={s.tier} stage={3} size={78} />
@@ -73,7 +74,7 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
                   setOpen({ artist, given: g });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${nameOf(g.artist.id, g.artist.name)} collectible, from ${g.from}.`}
+                accessibilityLabel={t('{artist} collectible, from {name}.', { artist: nameOf(g.artist.id, g.artist.name), name: g.from })}
                 style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
               >
                 <Sprout artist={artistLook(artist)} stage={3} size={78} />
@@ -81,7 +82,7 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
                   {nameOf(g.artist.id, g.artist.name)}
                 </Text>
                 <Text style={styles.tileSub} numberOfLines={1}>
-                  from {g.from}
+                  {t('from {name}', { name: g.from })}
                 </Text>
               </Pressable>
             );
@@ -92,7 +93,7 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
           {teasers.map((a) => {
             const look = artistLook(a);
             return (
-              <View key={a.id} style={styles.teaser} accessible accessibilityLabel={`${a.name}: ${look.name}, ${look.theme.toLowerCase()}. Film their set to earn it.`}>
+              <View key={a.id} style={styles.teaser} accessible accessibilityLabel={t('{artist}: {name}, {theme}. Film their set to earn it.', { artist: a.name, name: look.name, theme: look.theme.toLowerCase() })}>
                 <Sprout artist={look} stage={3} size={56} locked still />
                 <Text style={styles.teaserName} numberOfLines={1}>
                   {a.name}
@@ -114,7 +115,7 @@ function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist: Artist
   const look = a ? artistLook(a) : undefined;
   return (
     <Modal visible={!!open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close">
+      <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
         {a && look ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
             <Sprout artist={look} tier={s?.tier ?? 0} stage={3} size={160} />
@@ -125,12 +126,12 @@ function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist: Artist
               <>
                 <Text style={styles.label}>{tierLabel(s)}</Text>
                 <Text style={styles.body}>
-                  {tierLine(s.videos)}.{s.firstAt ? ` First filmed ${day(s.firstAt)}.` : ''}
+                  {s.firstAt ? t('{line}. First filmed {date}.', { line: tierLine(s.videos), date: day(s.firstAt) }) : `${tierLine(s.videos)}.`}
                 </Text>
               </>
             ) : open?.given ? (
               <Text style={styles.body}>
-                From {open.given.from} · {day(open.given.at)}
+                {t('From {name} · {date}', { name: open.given.from, date: day(open.given.at) })}
               </Text>
             ) : null}
             <View style={styles.buttons}>
@@ -142,10 +143,10 @@ function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist: Artist
                     router.push({ pathname: '/give-sprout', params: { artist: a.id } });
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={`Give someone a ${a.name} collectible`}
+                  accessibilityLabel={t('Give someone a {artist} collectible', { artist: a.name })}
                   style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
                 >
-                  <Text style={styles.primaryText}>Give one</Text>
+                  <Text style={styles.primaryText}>{t('Give one')}</Text>
                 </Pressable>
               ) : null}
               <Pressable
@@ -157,7 +158,7 @@ function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist: Artist
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
               >
-                <Text style={styles.secondaryText}>See {a.name}</Text>
+                <Text style={styles.secondaryText}>{t('See {artist}', { artist: a.name })}</Text>
               </Pressable>
             </View>
           </Pressable>

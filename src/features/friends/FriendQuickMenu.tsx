@@ -11,6 +11,7 @@ import { useSocial } from '../../state/social';
 import { color, glowA, nightA, radius, space, type } from '../../theme/tokens';
 import { StarIcon } from '../plan/icons';
 import type { Profile } from '../social/models';
+import { t } from '../../i18n';
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 
@@ -50,7 +51,7 @@ export function FriendQuickMenu({ friend, unread, next, onMessage, onClose }: Pr
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <Animated.View entering={reduce ? undefined : FadeIn.duration(160)} exiting={reduce ? undefined : FadeOut.duration(140)} style={styles.scrim}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')} />
         <Animated.View entering={reduce ? undefined : ZoomIn.springify().damping(18).stiffness(220)} style={styles.card} accessibilityViewIsModal>
           <View style={styles.head}>
             <View style={[styles.face, close && styles.faceClose]}>
@@ -61,36 +62,36 @@ export function FriendQuickMenu({ friend, unread, next, onMessage, onClose }: Pr
             </Text>
             <Text style={styles.sub} numberOfLines={1}>
               @{friend.handle}
-              {next ? ` · going to ${next.name}` : ''}
+              {next ? ` · ${t('going to {festival}', { festival: next.name })}` : ''}
             </Text>
           </View>
 
           <View style={styles.rows}>
             <Row
               icon={<CommentIcon color={color.moon} size={18} />}
-              label={unread ? `Message ${name} · ${unread} new` : `Message ${name}`}
+              label={unread ? t('Message {name} · {n} new', { name, n: unread }) : t('Message {name}', { name })}
               onPress={() => go(() => onMessage(friend))}
               accent={unread > 0}
             />
-            <Row icon={<ProfileIcon color={color.moon} size={18} />} label="See profile" onPress={() => go(() => router.push({ pathname: '/u/[handle]', params: { handle: friend.handle } }))} />
+            <Row icon={<ProfileIcon color={color.moon} size={18} />} label={t('See profile')} onPress={() => go(() => router.push({ pathname: '/u/[handle]', params: { handle: friend.handle } }))} />
             {canStar ? (
               <Row
                 icon={<StarIcon color={close ? color.glow : color.moon} size={18} filled={close} />}
-                label={close ? 'Close friend' : 'Add to close friends'}
-                detail={close ? 'Tap to take them off' : 'Only you see this'}
+                label={close ? t('Close friend') : t('Add to close friends')}
+                detail={close ? t('Tap to take them off') : t('Only you see this')}
                 role="switch"
                 checked={close}
                 onPress={() => {
                   if (close) haptic.select();
                   else haptic.tap();
-                  if (!set(friend.uid, !close)) showAlert('Your close friends list is full', `It holds up to ${CLOSE_FRIENDS_MAX}. Take someone off it first.`);
+                  if (!set(friend.uid, !close)) showAlert(t('Your close friends list is full'), t('It holds up to {n}. Take someone off it first.', { n: CLOSE_FRIENDS_MAX }));
                 }}
               />
             ) : null}
           </View>
 
-          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}>
-            <Text style={styles.cancelText}>Close</Text>
+          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')} style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}>
+            <Text style={styles.cancelText}>{t('Close')}</Text>
           </Pressable>
         </Animated.View>
       </Animated.View>

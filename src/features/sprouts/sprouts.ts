@@ -1,6 +1,7 @@
 import { WEB_URL } from '../../config/app';
 import type { Festival } from '../../data/models';
 import { runsOf } from '../festivals/when';
+import { t, tn } from '../../i18n';
 import { questDay } from '../quests/daily';
 
 /**
@@ -25,8 +26,12 @@ export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 
 export type KindSpec = {
   id: SproutKind;
   name: string;
+  /** Its name without "sprout" ("PLUR"), for small labels. */
+  short: string;
   /** How it grows (or "Every sprout starts here"). */
   how: string;
+  /** What grows it, without "Grows from" ("giving sprouts away"). */
+  grows: string;
   /** A short line about it. */
   about: string;
   /** Body tint and the accent on top. */
@@ -35,14 +40,14 @@ export type KindSpec = {
 };
 
 export const SPROUT_KINDS: readonly KindSpec[] = [
-  { id: 'seedling', name: 'Sprout', how: 'Every sprout starts here', about: 'A little green hello. Grow it and it becomes something of its own.', body: ['#8FF0B4', '#2FB36B'], accent: '#6EE7A0' },
-  { id: 'plur', name: 'PLUR sprout', how: 'Grows from giving sprouts away', about: 'Peace, love, unity, respect. Grown by passing the love on.', body: ['#9EF2C0', '#2FB36B'], accent: '#FF7EB6' },
-  { id: 'wanderer', name: 'Wanderer sprout', how: 'Grows from festival days', about: 'Grown in the field, one festival day at a time.', body: ['#A8F0B0', '#3BAA5C'], accent: '#FFB86B' },
-  { id: 'bass', name: 'Bass sprout', how: 'Grows from watching heavy sets', about: 'Grown on dubstep, riddim and trap. Shakes a little.', body: ['#8EE8C8', '#22A07A'], accent: '#5B8CFF' },
-  { id: 'melody', name: 'Melody sprout', how: 'Grows from watching melodic sets', about: 'Grown on melodic bass and big feelings.', body: ['#A4EFC0', '#2FB36B'], accent: '#A97CFF' },
-  { id: 'groove', name: 'Groove sprout', how: 'Grows from watching house and techno', about: 'Grown on four to the floor. Never stops moving.', body: ['#8DEBD2', '#1F9C86'], accent: '#5BE3B5' },
-  { id: 'spotlight', name: 'Spotlight sprout', how: 'Grows from filming your own videos', about: 'Grown by catching the moment.', body: ['#B4F0A8', '#45A84F'], accent: '#FFD58A' },
-  { id: 'sunrise', name: 'Sunrise sprout', how: 'Grows from filming at sunrise', about: 'Grown by the ones still dancing when the sun comes up.', body: ['#C2F0A0', '#4DA844'], accent: '#FF9F5A' },
+  { id: 'seedling', name: t('Sprout'), short: t('Sprout'), how: t('Every sprout starts here'), grows: t('Every sprout starts here'), about: t('A little green hello. Grow it and it becomes something of its own.'), body: ['#8FF0B4', '#2FB36B'], accent: '#6EE7A0' },
+  { id: 'plur', name: t('PLUR sprout'), short: t('PLUR'), how: t('Grows from giving sprouts away'), grows: t('giving sprouts away'), about: t('Peace, love, unity, respect. Grown by passing the love on.'), body: ['#9EF2C0', '#2FB36B'], accent: '#FF7EB6' },
+  { id: 'wanderer', name: t('Wanderer sprout'), short: t('Wanderer'), how: t('Grows from festival days'), grows: t('festival days'), about: t('Grown in the field, one festival day at a time.'), body: ['#A8F0B0', '#3BAA5C'], accent: '#FFB86B' },
+  { id: 'bass', name: t('Bass sprout'), short: t('Bass'), how: t('Grows from watching heavy sets'), grows: t('watching heavy sets'), about: t('Grown on dubstep, riddim and trap. Shakes a little.'), body: ['#8EE8C8', '#22A07A'], accent: '#5B8CFF' },
+  { id: 'melody', name: t('Melody sprout'), short: t('Melody'), how: t('Grows from watching melodic sets'), grows: t('watching melodic sets'), about: t('Grown on melodic bass and big feelings.'), body: ['#A4EFC0', '#2FB36B'], accent: '#A97CFF' },
+  { id: 'groove', name: t('Groove sprout'), short: t('Groove'), how: t('Grows from watching house and techno'), grows: t('watching house and techno'), about: t('Grown on four to the floor. Never stops moving.'), body: ['#8DEBD2', '#1F9C86'], accent: '#5BE3B5' },
+  { id: 'spotlight', name: t('Spotlight sprout'), short: t('Spotlight'), how: t('Grows from filming your own videos'), grows: t('filming your own videos'), about: t('Grown by catching the moment.'), body: ['#B4F0A8', '#45A84F'], accent: '#FFD58A' },
+  { id: 'sunrise', name: t('Sunrise sprout'), short: t('Sunrise'), how: t('Grows from filming at sunrise'), grows: t('filming at sunrise'), about: t('Grown by the ones still dancing when the sun comes up.'), body: ['#C2F0A0', '#4DA844'], accent: '#FF9F5A' },
 ];
 
 export const kindOf = (id: string): KindSpec => SPROUT_KINDS.find((k) => k.id === id) ?? SPROUT_KINDS[0];
@@ -124,13 +129,17 @@ export function readSproutLink(text: string): SproutCard | undefined {
 }
 
 /** A sprout's name: "PLUR sprout", or an artist's collectible ("SUBTRONICS collectible"). */
-export const sproutName = (s: { kind: SproutKind; artist?: SproutArtist }) => (s.artist ? `${s.artist.name} collectible` : kindOf(s.kind).name);
+export const sproutName = (s: { kind: SproutKind; artist?: SproutArtist }) => (s.artist ? t('{artist} collectible', { artist: s.artist.name }) : kindOf(s.kind).name);
 const an = (name: string) => (/^[AEIOU]/i.test(name) ? 'an' : 'a');
 /** "a PLUR sprout", "an ILLENIUM sprout". */
-export const aSprout = (s: { kind: SproutKind; artist?: SproutArtist }) => `${an(sproutName(s))} ${sproutName(s)}`;
+export const aSprout = (s: { kind: SproutKind; artist?: SproutArtist }) => {
+  const vowel = an(sproutName(s)) === 'an';
+  if (s.artist) return vowel ? t('an {artist} collectible', { artist: s.artist.name }) : t('a {artist} collectible', { artist: s.artist.name });
+  return vowel ? t('an {sprout}', { sprout: kindOf(s.kind).name }) : t('a {sprout}', { sprout: kindOf(s.kind).name });
+};
 
 /** "Maya gave you a PLUR sprout". */
-export const giftTitle = (card: Pick<SproutCard, 'name' | 'kind' | 'artist'>) => `${card.name} gave you ${aSprout(card)}`;
+export const giftTitle = (card: Pick<SproutCard, 'name' | 'kind' | 'artist'>) => t('{name} gave you {sprout}', { name: card.name, sprout: aSprout(card) });
 
 /** A sprout cleaned up for its note. */
 export const cleanSproutNote = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, SPROUT_NOTE_MAX);
@@ -149,8 +158,8 @@ export function seedsLeft(givenAt: readonly number[], now: number, festivalDay: 
 /** "3 of 5 seeds left today" / "No seeds left today. New ones at 4 AM." */
 export function seedsLine(left: number, festivalDay: boolean): string {
   const total = seedsToday(festivalDay);
-  if (left <= 0) return 'No seeds left today. New ones at 4 AM.';
-  return `${left} of ${total} seeds left today${festivalDay ? ' · festival day, double seeds' : ''}`;
+  if (left <= 0) return t('No seeds left today. New ones at 4 AM.');
+  return festivalDay ? t('{left} of {total} seeds left today · festival day, double seeds', { left, total }) : t('{left} of {total} seeds left today', { left, total });
 }
 
 // ---- Growing -------------------------------------------------------------
@@ -158,7 +167,7 @@ export function seedsLine(left: number, festivalDay: boolean): string {
 export type Stage = 0 | 1 | 2 | 3;
 /** Growth needed for each stage: seed, sprout, leafy, in bloom. */
 export const GROW_AT = [0, 6, 18, 36] as const;
-export const STAGE_NAMES = ['Seed', 'Sprout', 'Leafy', 'In bloom'] as const;
+export const STAGE_NAMES = [t('Seed'), t('Sprout'), t('Leafy'), t('In bloom')] as const;
 /** Growth for each thing you do. */
 export const GROWTH = { watch: 1, film: 3, give: 4, festivalDay: 8 } as const;
 
@@ -233,17 +242,19 @@ export function growthOf(journey: Journey, since: number, now: number): Growth {
 
 /** "Grows from festival days · 12 more to bloom" / "In bloom". */
 export function growthLine(g: Growth): string {
-  if (g.stage === 3) return 'In bloom';
-  const left = GROW_AT[g.stage + 1] - g.points;
-  return `${STAGE_NAMES[g.stage]} · ${left} more growth to ${g.stage === 2 ? 'bloom' : STAGE_NAMES[g.stage + 1].toLowerCase()}`;
+  if (g.stage === 3) return t('In bloom');
+  const n = GROW_AT[g.stage + 1] - g.points;
+  if (g.stage === 0) return t('Seed · {n} more growth to sprout', { n });
+  if (g.stage === 1) return t('Sprout · {n} more growth to leafy', { n });
+  return t('Leafy · {n} more growth to bloom', { n });
 }
 
 /** What grows it, said simply. */
 export const GROW_TIPS = [
-  'Festival days grow sprouts fastest.',
-  'Every sprout you give helps your others grow.',
-  'Filming your own videos grows them too.',
-  'Watching sets helps a little at a time.',
+  t('Festival days grow sprouts fastest.'),
+  t('Every sprout you give helps your others grow.'),
+  t('Filming your own videos grows them too.'),
+  t('Watching sets helps a little at a time.'),
 ] as const;
 
 // ---- Your garden ---------------------------------------------------------
@@ -327,7 +338,8 @@ export const collectedKinds = (view: readonly GardenView[]) => new Set(view.filt
 /** "4 sprouts · 2 kinds". */
 export function gardenLine(view: readonly GardenView[]): string {
   const kinds = new Set(view.map((s) => s.shown)).size;
-  return `${view.length === 1 ? '1 sprout' : `${view.length} sprouts`}${kinds > 1 ? ` · ${kinds} kinds` : ''}`;
+  const count = tn(view.length, '{n} sprout', '{n} sprouts');
+  return kinds > 1 ? t('{sprouts} · {kinds} kinds', { sprouts: count, kinds }) : count;
 }
 
 /** Reads the remembered blooms back. */

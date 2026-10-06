@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import { WEB_URL } from '../../config/app';
 import type { Profile } from './models';
+import { t } from '../../i18n';
 
 /**
  * The Friends hub, pure: who follows you that you don't follow back, people
@@ -53,13 +54,13 @@ export function goerSuggestions(
  * and find you); otherwise to your profile, or the app.
  */
 export function inviteText(handle?: string, festival?: Festival): string {
-  const where = festival ? ` Let's plan ${festival.name} together.` : ' Find your sets, plan festivals together and see where your crew is.';
+  const where = festival ? ' ' + t("Let's plan {festival} together.", { festival: festival.name }) : ' ' + t('Find your sets, plan festivals together and see where your crew is.');
   const link = festival ? `${WEB_URL}/festival/${festival.id}` : handle ? `${WEB_URL}/u/${handle}` : WEB_URL;
-  return `${handle ? `Join me on Afterglow, I'm @${handle}.` : 'Join me on Afterglow.'}${where}\n${link}`;
+  return `${handle ? t("Join me on Afterglow, I'm @{handle}.", { handle }) : t('Join me on Afterglow.')}${where}\n${link}`;
 }
 
 /** "3 of you", "Just you so far". */
-export const crewPeopleLine = (members: number) => (members <= 1 ? 'Just you so far' : `${members} of you`);
+export const crewPeopleLine = (members: number) => (members <= 1 ? t('Just you so far') : t('{n} of you', { n: members }));
 
 export type MayKnow = { profile: Profile; why: string };
 
@@ -77,12 +78,12 @@ export function peopleYouMayKnow(followsYou: readonly Profile[], goers: readonly
   for (const p of followsYou) {
     if (seen.has(p.uid)) continue;
     seen.add(p.uid);
-    out.push({ profile: p, why: 'Follows you' });
+    out.push({ profile: p, why: t('Follows you') });
   }
   for (const g of goers) {
     if (seen.has(g.profile.uid)) continue;
     seen.add(g.profile.uid);
-    out.push({ profile: g.profile, why: `Going to ${g.festival.name}` });
+    out.push({ profile: g.profile, why: t('Going to {festival}', { festival: g.festival.name }) });
   }
   return out;
 }

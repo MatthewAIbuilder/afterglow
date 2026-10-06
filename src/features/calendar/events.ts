@@ -1,4 +1,5 @@
 import type { Festival, Show } from '../../data/models';
+import { t } from '../../i18n';
 
 /**
  * A festival as a calendar event: all day, from its first to its last day
@@ -29,7 +30,7 @@ export function festivalEvent(festival: Festival, webUrl: string): CalendarEvent
     startDay: startDate,
     endDay: end,
     location: festival.location ?? '',
-    notes: `Your lineup and plan: ${url}`,
+    notes: t('Your lineup and plan: {url}', { url }),
     url,
   };
 }
@@ -38,14 +39,14 @@ export function festivalEvent(festival: Festival, webUrl: string): CalendarEvent
 export function showEvent(show: Show, webUrl: string, artistNames: readonly string[]): CalendarEvent | undefined {
   if (!DAY.test(show.date)) return undefined;
   const url = `${webUrl}/show/${show.id}`;
-  const title = show.name ?? (artistNames.length ? `${artistNames.slice(0, 2).join(' & ')} at ${show.venue}` : show.venue);
-  const lineup = artistNames.length ? `With ${artistNames.join(', ')}. ` : '';
+  const title = show.name ?? (artistNames.length ? t('{artists} at {venue}', { artists: artistNames.slice(0, 2).join(' & '), venue: show.venue }) : show.venue);
+  const lineup = artistNames.length ? `${t('With {names}.', { names: artistNames.join(', ') })} ` : '';
   return {
     title,
     startDay: show.date,
     endDay: show.date,
     location: [show.venue, show.location].filter(Boolean).join(', '),
-    notes: `${lineup}Tickets: ${show.link}\nOn Afterglow: ${url}`,
+    notes: `${lineup}${t('Tickets: {link}', { link: show.link })}\n${t('On Afterglow: {url}', { url })}`,
     url,
   };
 }

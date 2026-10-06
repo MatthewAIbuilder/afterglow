@@ -36,6 +36,8 @@ import { useCrewUpdates } from '../state/crewUpdates';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { dayWord, t } from '../i18n';
+import { datesLine } from '../features/festivals/format';
 
 /** Picks shown for tonight before set times are out. */
 const TONIGHT_PICKS = 6;
@@ -52,17 +54,17 @@ export default function TonightScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Tonight" />
+      <PageTitle title={t('Tonight')} />
       <NightSky />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.xxxl }]}>
         <View style={styles.top}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.kicker}>Tonight</Text>
+            <Text style={styles.kicker}>{t('Tonight')}</Text>
             <Text style={styles.title} accessibilityRole="header">
-              {tonight ? tonightTitle(tonight) : 'No festival tonight'}
+              {tonight ? tonightTitle(tonight) : t('No festival tonight')}
             </Text>
           </View>
-          <GlassCircleButton label="Close" onPress={() => goBack()}>
+          <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
             <CloseIcon color={color.moon} size={18} />
           </GlassCircleButton>
         </View>
@@ -90,7 +92,7 @@ function NextUp() {
   const soon = f ? countdown(f, today) : undefined;
   return (
     <>
-      <Text style={styles.quiet}>Tonight opens here while a festival you’re going to is on: where to be, what’s next, your crew and looking after yourself, all in one place.</Text>
+      <Text style={styles.quiet}>{t('Tonight opens here while a festival you’re going to is on: where to be, what’s next, your crew and looking after yourself, all in one place.')}</Text>
       {f ? (
         <Pressable
           onPress={() => {
@@ -98,12 +100,12 @@ function NextUp() {
             router.push({ pathname: '/festival/[id]', params: { id: f.id } });
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Your next festival: ${f.name}${soon ? `, ${soon}` : ''}. Open`}
+          accessibilityLabel={soon ? t('Your next festival: {festival}, {when}. Open', { festival: f.name, when: soon }) : t('Your next festival: {festival}. Open', { festival: f.name })}
           style={({ pressed }) => [styles.next, pressed && { opacity: 0.8 }]}
         >
-          <Text style={styles.nextKicker}>Your next festival</Text>
+          <Text style={styles.nextKicker}>{t('Your next festival')}</Text>
           <Text style={styles.nextName}>{f.name}</Text>
-          <Text style={styles.nextWhen}>{[soon, f.dates].filter(Boolean).join(' · ')}</Text>
+          <Text style={styles.nextWhen}>{[soon, datesLine(f)].filter(Boolean).join(' · ')}</Text>
         </Pressable>
       ) : festivals.length ? (
         <Pressable
@@ -112,11 +114,11 @@ function NextUp() {
             router.navigate('/festivals');
           }}
           accessibilityRole="button"
-          accessibilityLabel="Find a festival to go to"
+          accessibilityLabel={t('Find a festival to go to')}
           style={({ pressed }) => [styles.next, pressed && { opacity: 0.8 }]}
         >
-          <Text style={styles.nextName}>Find a festival</Text>
-          <Text style={styles.nextWhen}>Tap I’m going on one and its nights open here.</Text>
+          <Text style={styles.nextName}>{t('Find a festival')}</Text>
+          <Text style={styles.nextWhen}>{t('Tap I’m going on one and its nights open here.')}</Text>
         </Pressable>
       ) : null}
     </>
@@ -144,13 +146,13 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
       <FestivalModeCard festival={festival} />
       <LiveCrowdRow festival={festival} inset={0} />
 
-      <Section title={schedule ? 'Your route' : night ? `Your picks for ${night}` : 'Your picks'}>
+      <Section title={schedule ? t('Your route') : night ? t('Your picks for {night}', { night: dayWord(night) }) : t('Your picks')}>
         {schedule ? (
           <LiveNow festival={festival} schedule={schedule} route={route} />
         ) : tonightPicks.length ? (
-          tonightPicks.map((p) => <ArtistRow key={p.artist.id} artist={p.artist} affinity={p.match} festivalId={festival.id} detail={p.pinned ? 'Must see' : undefined} />)
+          tonightPicks.map((p) => <ArtistRow key={p.artist.id} artist={p.artist} affinity={p.match} festivalId={festival.id} detail={p.pinned ? t('Must see') : undefined} />)
         ) : (
-          <Text style={styles.quiet}>No picks yet. Rate the lineup to fill your night.</Text>
+          <Text style={styles.quiet}>{t('No picks yet. Rate the lineup to fill your night.')}</Text>
         )}
         <Pressable
           onPress={() => {
@@ -158,15 +160,15 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
             router.push(`/festival/${festival.id}`);
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Your whole plan for ${festival.name}`}
+          accessibilityLabel={t('Your whole plan for {festival}', { festival: festival.name })}
           hitSlop={8}
         >
-          <Text style={styles.link}>Your whole plan ›</Text>
+          <Text style={styles.link}>{t('Your whole plan ›')}</Text>
         </Pressable>
       </Section>
 
       {social.availability.ok ? (
-        <Section title="Your crew">
+        <Section title={t('Your crew')}>
           {crews.length ? (
             <>
               <CrewHelpAlerts festivalId={festival.id} />
@@ -186,42 +188,42 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
                 router.push(social.profile ? '/start-crew' : '/friends');
               }}
               accessibilityRole="button"
-              accessibilityLabel="Start a crew to see where your friends are"
+              accessibilityLabel={t('Start a crew to see where your friends are')}
               style={({ pressed }) => [styles.card, pressed && styles.pressed]}
             >
-              <Text style={styles.cardTitle}>See where your friends are</Text>
-              <Text style={styles.cardBody}>Start a crew and everyone’s videos and check-ins show up here, with when they happened.</Text>
+              <Text style={styles.cardTitle}>{t('See where your friends are')}</Text>
+              <Text style={styles.cardBody}>{t('Start a crew and everyone’s videos and check-ins show up here, with when they happened.')}</Text>
             </Pressable>
           )}
         </Section>
       ) : null}
 
-      <Section title="Tonight’s side quests">
+      <Section title={t('Tonight’s side quests')}>
         <SideQuestsCard />
       </Section>
 
-      <Section title="Look after yourself">
+      <Section title={t('Look after yourself')}>
         <CareCard />
       </Section>
 
       <View style={styles.actions}>
         {Platform.OS !== 'web' ? (
-          <Action label="Film" a11y="Film a video" onPress={() => router.push('/camera')} icon={<CameraIcon color={color.moon} size={20} />} />
+          <Action label={t('Film')} a11y={t('Film a video')} onPress={() => router.push('/camera')} icon={<CameraIcon color={color.moon} size={20} />} />
         ) : null}
-        {ready && crews.length ? <Action label="Check in" a11y="Check in with your crew" onPress={() => router.push('/check-in')} /> : null}
+        {ready && crews.length ? <Action label={t('Check in')} a11y={t('Check in with your crew')} onPress={() => router.push('/check-in')} /> : null}
         {ready ? (
-          <Action label="Sprout" a11y="Give someone a sprout" onPress={() => router.push('/give-sprout')} icon={<Sprout kind="seedling" stage={2} size={26} still />} />
+          <Action label={t('Sprout')} a11y={t('Give someone a sprout')} onPress={() => router.push('/give-sprout')} icon={<Sprout kind="seedling" stage={2} size={26} still />} />
         ) : null}
         {previewable ? (
           <Action
-            label="Preview"
-            a11y={`Preview tonight's sets in Discover, in set order`}
+            label={t('Preview')}
+            a11y={t("Preview tonight's sets in Discover, in set order")}
             onPress={() => router.dismissTo({ pathname: '/', params: { festival: TONIGHT } })}
           />
         ) : null}
-        <Action label="Lineup" a11y={`${festival.name} lineup`} onPress={() => router.push(`/festival/${festival.id}`)} />
+        <Action label={t('Lineup')} a11y={t('{festival} lineup', { festival: festival.name })} onPress={() => router.push(`/festival/${festival.id}`)} />
       </View>
-      <Text style={styles.footnote}>Your plan, lineup and route work without signal.</Text>
+      <Text style={styles.footnote}>{t('Your plan, lineup and route work without signal.')}</Text>
     </>
   );
 }

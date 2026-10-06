@@ -1,6 +1,7 @@
 import { SOCIALS, cleanSocials, readSocial, socialProblem, type SocialKey } from './socials';
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from 'obscenity';
 import { COMMENT_MAX, CREW_NAME_MAX, type ProfileInput } from './models';
+import { t } from '../../i18n';
 
 /**
  * Checks on what people publish: handles, names and bios. Pure. Plain-words
@@ -30,13 +31,13 @@ export const normalizeHandle = (raw: string) => raw.trim().replace(/^@+/, '').to
 
 export function handleProblem(raw: string): string | undefined {
   const h = normalizeHandle(raw);
-  if (h.length < HANDLE_MIN) return `At least ${HANDLE_MIN} characters.`;
-  if (h.length > HANDLE_MAX) return `At most ${HANDLE_MAX} characters.`;
-  if (!/^[a-z0-9._]+$/.test(h)) return 'Letters, numbers, dots and underscores only.';
-  if (/^[._]|[._]$/.test(h)) return 'Start and end with a letter or number.';
-  if (/[._]{2}/.test(h)) return 'No two dots or underscores in a row.';
-  if (RESERVED.has(h) || h.startsWith('afterglow')) return 'That handle isn’t available.';
-  if (isOffensive(h.replace(/[._]/g, ' '))) return 'That handle isn’t allowed.';
+  if (h.length < HANDLE_MIN) return t('At least {n} characters.', { n: HANDLE_MIN });
+  if (h.length > HANDLE_MAX) return t('At most {n} characters.', { n: HANDLE_MAX });
+  if (!/^[a-z0-9._]+$/.test(h)) return t('Letters, numbers, dots and underscores only.');
+  if (/^[._]|[._]$/.test(h)) return t('Start and end with a letter or number.');
+  if (/[._]{2}/.test(h)) return t('No two dots or underscores in a row.');
+  if (RESERVED.has(h) || h.startsWith('afterglow')) return t('That handle isn’t available.');
+  if (isOffensive(h.replace(/[._]/g, ' '))) return t('That handle isn’t allowed.');
   return undefined;
 }
 
@@ -47,12 +48,12 @@ export function profileProblems(input: ProfileInput): ProfileProblems {
   const handle = handleProblem(input.handle);
   if (handle) out.handle = handle;
   const name = input.displayName.trim();
-  if (!name) out.displayName = 'Add a name.';
-  else if (name.length > NAME_MAX) out.displayName = `At most ${NAME_MAX} characters.`;
-  else if (isOffensive(name)) out.displayName = 'That name isn’t allowed.';
+  if (!name) out.displayName = t('Add a name.');
+  else if (name.length > NAME_MAX) out.displayName = t('At most {n} characters.', { n: NAME_MAX });
+  else if (isOffensive(name)) out.displayName = t('That name isn’t allowed.');
   const bio = input.bio.trim();
-  if (bio.length > BIO_MAX) out.bio = `At most ${BIO_MAX} characters.`;
-  else if (isOffensive(bio)) out.bio = 'Please keep your bio friendly.';
+  if (bio.length > BIO_MAX) out.bio = t('At most {n} characters.', { n: BIO_MAX });
+  else if (isOffensive(bio)) out.bio = t('Please keep your bio friendly.');
   for (const spec of SOCIALS) {
     const name = input.socials?.[spec.key];
     const problem = name ? socialProblem(spec.key, readSocial(spec.key, name)) : undefined;
@@ -91,9 +92,9 @@ export const cleanCrewName = (raw: string) => raw.trim().replace(/\s+/g, ' ');
 /** What's wrong with a crew name, in plain words (checked on the cleaned name). */
 export function crewNameProblem(raw: string): string | undefined {
   const name = cleanCrewName(raw);
-  if (!name) return 'Give your crew a name.';
-  if (name.length > CREW_NAME_MAX) return `At most ${CREW_NAME_MAX} characters.`;
-  if (isOffensive(name)) return 'That name isn’t allowed.';
+  if (!name) return t('Give your crew a name.');
+  if (name.length > CREW_NAME_MAX) return t('At most {n} characters.', { n: CREW_NAME_MAX });
+  if (isOffensive(name)) return t('That name isn’t allowed.');
   return undefined;
 }
 
@@ -103,8 +104,8 @@ export const cleanComment = (raw: string) => raw.replace(/\r/g, '').replace(/\n{
 /** Why a comment can't be posted, in plain words, or undefined when it can. */
 export function commentProblem(raw: string): string | undefined {
   const text = cleanComment(raw);
-  if (!text) return 'Write something first.';
-  if (raw.trim().length > COMMENT_MAX) return `Keep it under ${COMMENT_MAX} characters.`;
-  if (isOffensive(text)) return 'That comment has words we don’t allow. Keep it kind.';
+  if (!text) return t('Write something first.');
+  if (raw.trim().length > COMMENT_MAX) return t('Keep it under {n} characters.', { n: COMMENT_MAX });
+  if (isOffensive(text)) return t('That comment has words we don’t allow. Keep it kind.');
   return undefined;
 }

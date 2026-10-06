@@ -1,4 +1,5 @@
 import { type Artist, SOUND_LABEL, type SoundTag } from '../../data/models';
+import { t, tn } from '../../i18n';
 import { isWarm, type Rating } from '../taste/ratings';
 import type { ArtistSignals } from '../taste/why';
 import { TIER_AT } from './plan';
@@ -41,28 +42,30 @@ export function pickWhy(pick: PickLike, signals: ArtistSignals, favourites: read
   return { kind: 'sound', sound: lead?.[0] };
 }
 
-const sets = (n: number) => (n === 1 ? 'one of their sets' : `${n} of their sets`);
-
 /** "You love them.", "You liked 2 of their sets.", "Sounds like Illenium, one of your favourites." */
 export function whyText(why: PickWhy): string {
   switch (why.kind) {
     case 'starred':
-      return 'You starred this one.';
+      return t('You starred this one.');
     case 'rated':
-      return why.rating === 'love' ? 'You love them.' : 'You like them.';
+      return why.rating === 'love' ? t('You love them.') : t('You like them.');
     case 'reacted':
-      if (why.likes && why.saves) return 'You liked and saved their sets.';
-      if (why.likes) return `You liked ${sets(why.likes)}.`;
-      if (why.saves) return `You saved ${sets(why.saves)}.`;
-      return `You watched ${sets(why.watched)} all the way through.`;
-    case 'library':
-      return `In your ${why.from.join(' and ')} ${why.from.length === 1 ? 'library' : 'libraries'}.`;
+      if (why.likes && why.saves) return t('You liked and saved their sets.');
+      if (why.likes) return tn(why.likes, 'You liked one of their sets.', 'You liked {n} of their sets.');
+      if (why.saves) return tn(why.saves, 'You saved one of their sets.', 'You saved {n} of their sets.');
+      return tn(why.watched, 'You watched one of their sets all the way through.', 'You watched {n} of their sets all the way through.');
+    case 'library': {
+      const [a, b] = why.from;
+      if (why.from.length === 1) return t('In your {service} library.', { service: a });
+      if (why.from.length === 2) return t('In your {a} and {b} libraries.', { a, b });
+      return t('In your {services} libraries.', { services: why.from.join(' and ') });
+    }
     case 'near':
-      return `Sounds like ${why.to.name}, one of your favourites.`;
+      return t('Sounds like {name}, one of your favourites.', { name: why.to.name });
     case 'sound':
-      return why.sound ? `Right in your sound: ${SOUND_LABEL[why.sound].toLowerCase()}.` : 'Right in your sound.';
+      return why.sound ? t('Right in your sound: {sound}.', { sound: SOUND_LABEL[why.sound].toLowerCase() }) : t('Right in your sound.');
     case 'guess':
-      return 'A first guess. Rate them to sharpen it.';
+      return t('A first guess. Rate them to sharpen it.');
   }
 }
 

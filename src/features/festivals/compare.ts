@@ -1,5 +1,6 @@
 import type { Artist, Festival, SoundTag, TasteProfile } from '../../data/models';
 import { toShares, type SoundShare } from '../taste/lean';
+import { t, tn } from '../../i18n';
 
 /**
  * Festivals side by side, from your live taste. Pure.
@@ -88,14 +89,17 @@ export function compareFestivals(festivals: readonly Festival[], i: Inputs): Com
 
 /** One line at the top: which fits you, or that it's close. */
 export function verdictLine(c: Comparison): string {
-  if (c.fits.length < 2) return 'Add a festival to compare.';
+  if (c.fits.length < 2) return t('Add a festival to compare.');
   const withFit = c.fits.filter((f) => f.fit !== undefined);
-  if (!withFit.length) return 'Rate a few artists and the comparison will show which suits you.';
+  if (!withFit.length) return t('Rate a few artists and the comparison will show which suits you.');
   const best = c.fits.find((f) => f.festival.id === c.best);
-  if (!best) return 'A close call for your sound. Compare who you’d love at each.';
+  if (!best) return t('A close call for your sound. Compare who you’d love at each.');
   const n = best.loved.length;
   const only = best.onlyHere.length;
-  return `${best.festival.name} fits your sound best${n ? `: ${n} ${n === 1 ? 'artist' : 'artists'} you’d love` : ''}${only ? `, ${only} only there` : ''}.`;
+  const festival = best.festival.name;
+  if (!n) return t('{festival} fits your sound best.', { festival });
+  if (!only) return tn(n, '{festival} fits your sound best: {n} artist you’d love.', '{festival} fits your sound best: {n} artists you’d love.', { festival });
+  return tn(n, '{festival} fits your sound best: {n} artist you’d love, {only} only there.', '{festival} fits your sound best: {n} artists you’d love, {only} only there.', { festival, only });
 }
 
 /** The ids asked for, known, in order, at most `COMPARE_MAX`. */

@@ -11,6 +11,7 @@ import { color, space, type, nightA } from '../../theme/tokens';
 import { crowdVideos } from '../community/crowd';
 import { pastShort } from '../memories/past';
 import type { SharedMemory } from '../social/models';
+import { t, tn } from '../../i18n';
 
 /** At most this many of an artist's videos are read. */
 export const ARTIST_CROWD_MAX = 30;
@@ -56,10 +57,9 @@ export function ArtistCrowdRow({ artist, inset = space.xl }: { artist: Artist; i
   return (
     <View style={styles.wrap}>
       <View style={[styles.head, { paddingHorizontal: inset }]}>
-        <Text style={styles.title}>From the crowd</Text>
+        <Text style={styles.title}>{t('From the crowd')}</Text>
         <Text style={styles.count}>
-          {videos.length === 1 ? '1 video' : `${videos.length} videos`}
-          {people > 1 ? ` from ${people} people` : ''}
+          {people > 1 ? tn(videos.length, '{n} video from {people} people', '{n} videos from {people} people', { people }) : tn(videos.length, '{n} video', '{n} videos')}
         </Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: inset, gap: space.sm }}>
@@ -73,7 +73,13 @@ export function ArtistCrowdRow({ artist, inset = space.xl }: { artist: Artist; i
                 router.push({ pathname: '/shared/[id]', params: { id: m.id } });
               }}
               accessibilityRole="button"
-              accessibilityLabel={`${artist.name}${where ? ` at ${where.replace('↺ ', 'a throwback, ')}` : ''}, filmed by @${m.handle}`}
+              accessibilityLabel={
+                m.past
+                  ? t('{artist} at a throwback, {where}, filmed by @{handle}', { artist: artist.name, where: pastShort(m.past), handle: m.handle })
+                  : where
+                    ? t('{artist} at {where}, filmed by @{handle}', { artist: artist.name, where, handle: m.handle })
+                    : t('{artist}, filmed by @{handle}', { artist: artist.name, handle: m.handle })
+              }
               style={({ pressed }) => [styles.tile, pressed && { opacity: 0.85 }]}
             >
               {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}

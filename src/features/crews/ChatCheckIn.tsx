@@ -7,6 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { color, glowA, radius, space, type } from '../../theme/tokens';
 import { AMBER, GREEN, RED, useCareActions, useCheckInStatus } from './CheckInPanel';
+import { t } from '../../i18n';
 
 /** How long "Sent …" stays under the tray once it's really through. */
 export const SENT_NOTE_MS = 6000;
@@ -35,8 +36,8 @@ export function ChatCheckIn({ festivalId, open, onOpenChange, children }: { fest
   // "Sent …" fades away once it's through; waiting or refused stays said.
   useEffect(() => {
     if (!settled) return;
-    const t = setTimeout(clear, SENT_NOTE_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(clear, SENT_NOTE_MS);
+    return () => clearTimeout(timer);
   }, [settled, clear]);
 
   const toggle = (next: boolean) => {
@@ -58,25 +59,25 @@ export function ChatCheckIn({ festivalId, open, onOpenChange, children }: { fest
               <Pressable
                 onPress={() => toggle(false)}
                 accessibilityRole="button"
-                accessibilityLabel="Hide check-ins"
+                accessibilityLabel={t('Hide check-ins')}
                 hitSlop={6}
                 style={({ pressed }) => [styles.close, pressed && styles.pressed]}
               >
                 <CloseIcon color={color.moonDim} size={12} />
               </Pressable>
               <Chip
-                label="I’m here"
-                a11y="Send “I’m here” to your crew"
+                label={t('I’m here')}
+                a11y={t('Send “{words}” to your crew', { words: t('I’m here') })}
                 glow
                 onPress={() => {
                   const id = checkIn(festivalId, { note: 'I’m here' });
-                  if (id) sent(id, 'I’m here');
+                  if (id) sent(id, t('I’m here'));
                 }}
               />
-              <Chip label={care.asked ? 'I’m OK now' : 'I’m OK'} a11y={care.asked ? 'I’m OK now. Tell my crew' : 'I’m OK. Tell my crew'} tint={GREEN} onPress={care.ok} />
-              <Chip label="Can’t find you" a11y="Can’t find my crew. Tell them" tint={AMBER} onPress={care.lost} />
-              {care.asked ? null : <Chip label="Need help" a11y="Not feeling great. Ask my crew to come find me" tint={RED} onPress={care.help} />}
-              <Chip label="More…" a11y="Check in with a stage, a photo or your own words" onPress={() => router.push('/check-in')} />
+              <Chip label={care.asked ? t('I’m OK now') : t('I’m OK')} a11y={care.asked ? t('I’m OK now. Tell my crew') : t('I’m OK. Tell my crew')} tint={GREEN} onPress={care.ok} />
+              <Chip label={t('Can’t find you')} a11y={t('Can’t find my crew. Tell them')} tint={AMBER} onPress={care.lost} />
+              {care.asked ? null : <Chip label={t('Need help')} a11y={t('Not feeling great. Ask my crew to come find me')} tint={RED} onPress={care.help} />}
+              <Chip label={t('More…')} a11y={t('Check in with a stage, a photo or your own words')} onPress={() => router.push('/check-in')} />
               {children ? <View style={styles.divider} /> : null}
               {children}
             </>
@@ -85,13 +86,13 @@ export function ChatCheckIn({ festivalId, open, onOpenChange, children }: { fest
               <Pressable
                 onPress={() => toggle(true)}
                 accessibilityRole="button"
-                accessibilityLabel="Check in with your crew"
-                accessibilityHint="Shows quick check-ins"
+                accessibilityLabel={t('Check in with your crew')}
+                accessibilityHint={t('Shows quick check-ins')}
                 accessibilityState={{ expanded: false }}
                 style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
               >
                 <View style={styles.dot} />
-                <Text style={styles.pillText}>Check in</Text>
+                <Text style={styles.pillText}>{t('Check in')}</Text>
               </Pressable>
               {children}
             </>

@@ -1,6 +1,7 @@
 import type { Clip, CommunityClipSource, Festival } from '../../data/models';
 import type { SharedMemory } from '../social/models';
 import { pastKey, pastLabel } from '../memories/past';
+import { t } from '../../i18n';
 
 /**
  * Community clips: memories people shared to their profiles, shown in
@@ -164,4 +165,16 @@ export function keptClips(kept: Record<string, Clip>, f: Pick<CommunityFilter, '
     const s = c.source;
     return s?.provider === 'community' && f.artists.has(c.artistId) && !f.blocked.has(s.uid) && !f.hidden.has(s.sharedId);
   });
+}
+
+/**
+ * A crowd clip's title as shown: the two titles the app makes ("From the
+ * crowd", "Throwback · {festival}") are kept in English with the clip (and in
+ * reports to support), so they're translated here, at display. Any other
+ * title (a video's own) is shown as it is.
+ */
+export function shownClipTitle(title: string): string {
+  if (title === 'From the crowd') return t('From the crowd');
+  const throwback = /^Throwback · (.+)$/.exec(title);
+  return throwback ? t('Throwback · {festival}', { festival: throwback[1] }) : title;
 }

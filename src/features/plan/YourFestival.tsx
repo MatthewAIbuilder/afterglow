@@ -19,6 +19,7 @@ import { useFestivalPlan } from './useFestivalPlan';
 import { warmupLine, warmupPlaylist } from './warmup';
 import { PlayIcon } from '../discover/icons';
 import { useCatalog } from '../../state/catalog';
+import { t } from '../../i18n';
 
 /**
  * "Your festival": who to see, from your live taste. Before set times it is a
@@ -46,7 +47,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
       <View style={styles.head}>
         <View style={styles.titleRow}>
           <Text style={[styles.sub, { flex: 1 }]}>
-            {schedule ? 'Your night, set to set. Star anyone you won’t miss.' : 'Ranked by what you like and rate. It turns into your schedule when set times are out.'}
+            {schedule ? t('Your night, set to set. Star anyone you won’t miss.') : t('Ranked by what you like and rate. It turns into your schedule when set times are out.')}
           </Text>
           {text ? (
             <Pressable
@@ -56,7 +57,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
                 router.push(`/plan-card/${festival.id}`);
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Share your plan for ${festival.name}`}
+              accessibilityLabel={t('Share your plan for {festival}', { festival: festival.name })}
               hitSlop={10}
               style={({ pressed }) => [styles.share, pressed && { opacity: 0.6 }]}
             >
@@ -73,11 +74,11 @@ export function YourFestival({ festival }: { festival: Festival }) {
               router.push({ pathname: '/send-set-times/[id]', params: { id: festival.id } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Seen the set times for ${festival.name}? Send them to us`}
+            accessibilityLabel={t('Seen the set times for {festival}? Send them to us', { festival: festival.name })}
             hitSlop={6}
             style={({ pressed }) => [styles.tipLink, pressed && { opacity: 0.6 }]}
           >
-            <Text style={styles.tipText}>Seen the set times? Send them to us</Text>
+            <Text style={styles.tipText}>{t('Seen the set times? Send them to us')}</Text>
           </Pressable>
         ) : null}
         {warmup ? (
@@ -87,16 +88,16 @@ export function YourFestival({ festival }: { festival: Festival }) {
               void Linking.openURL(warmup.url).catch(() => {});
             }}
             accessibilityRole="link"
-            accessibilityLabel={`Warm-up playlist: live sets from ${warmupLine(warmup)}. Opens YouTube.`}
+            accessibilityLabel={t('Warm-up playlist: live sets from {artists}. Opens YouTube.', { artists: warmupLine(warmup) })}
             style={({ pressed }) => [styles.warmup, pressed && { opacity: 0.75, transform: [{ scale: 0.99 }] }]}
           >
             <View style={styles.warmupIcon}>
               <PlayIcon color={color.moon} size={13} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.warmupTitle}>Warm-up playlist</Text>
+              <Text style={styles.warmupTitle}>{t('Warm-up playlist')}</Text>
               <Text style={styles.warmupSub} numberOfLines={1}>
-                {warmup.artists.length} live sets · {warmupLine(warmup)}
+                {t('{n} live sets · {artists}', { n: warmup.artists.length, artists: warmupLine(warmup) })}
               </Text>
             </View>
             <Text style={styles.warmupGo}>YouTube ↗</Text>
@@ -104,7 +105,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
         ) : null}
       </View>
       {picks.length === 0 ? (
-        <Text style={[styles.sub, styles.head]}>Like a few clips in Discover and your picks will show up here.</Text>
+        <Text style={[styles.sub, styles.head]}>{t('Like a few clips in Discover and your picks will show up here.')}</Text>
       ) : schedule ? (
         <>
           {maybeLive && <LiveNow festival={festival} schedule={schedule} route={route} />}
@@ -127,14 +128,14 @@ function Toggle({ byDay, onChange }: { byDay: boolean; onChange: (v: boolean) =>
   return (
     <View style={styles.toggle} accessibilityRole="tablist">
       {[
-        { on: byDay, label: 'By day', value: true },
-        { on: !byDay, label: 'Ranked', value: false },
+        { on: byDay, label: t('By day'), value: true },
+        { on: !byDay, label: t('Ranked'), value: false },
       ].map((o) => (
         <Pressable
           key={o.label}
           accessibilityRole="tab"
           accessibilityState={{ selected: o.on }}
-          accessibilityLabel={o.value ? 'Your picks by day' : 'Your picks ranked by match'}
+          accessibilityLabel={o.value ? t('Your picks by day') : t('Your picks ranked by match')}
           onPress={() => {
             if (o.on) return;
             haptic.select();

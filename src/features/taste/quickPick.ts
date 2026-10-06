@@ -1,5 +1,6 @@
 import type { Artist, Festival } from '../../data/models';
 import { anyPhoto } from '../../data/members';
+import { t } from '../../i18n';
 import type { Ratings } from './ratings';
 
 /**
@@ -40,5 +41,5 @@ export function pickCandidates(
 
 /** What the grid's button says. */
 export function pickDoneLabel(picked: number): string {
-  return picked === 0 ? 'Skip for now' : `Done · ${picked} picked`;
+  return picked === 0 ? t('Skip for now') : t('Done · {n} picked', { n: picked });
 }

@@ -24,6 +24,7 @@ import { useNearby } from '../../state/nearby';
 import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
 import { color, glowA, radius, space, type } from '../../theme/tokens';
+import { t, tc } from '../../i18n';
 
 /**
  * One club show from the nightly EDMTrain feed: when and where, who's on the
@@ -37,14 +38,14 @@ export default function ShowScreen() {
   const catalog = useCatalog();
   const insets = useSafeAreaInsets();
   const today = localDay(useToday());
-  const t = useShowTaste();
+  const taste = useShowTaste();
   const { tasteClips } = useTaste();
   const { reactions } = useReactions();
   const { here, units } = useNearby();
   const show = useMemo(() => catalog.shows.find((s) => s.id === id), [catalog.shows, id]);
-  if (!show) return <Missing title="Show not found" line="This show isn’t on Afterglow any more (it may have passed), or the link isn’t quite right." />;
+  if (!show) return <Missing title={t('Show not found')} line={t('This show isn’t on Afterglow any more (it may have passed), or the link isn’t quite right.')} />;
 
-  const ranked = rankShow(show, t, here);
+  const ranked = rankShow(show, taste, here);
   const bill = ranked.bill.flatMap((b) => {
     const a = catalog.artist(b.id);
     return a ? [{ artist: a, bill: b }] : [];
@@ -79,10 +80,10 @@ export default function ShowScreen() {
             <ShowDateBlock date={show.date} big />
             <View style={styles.heroWhen}>
               <View style={styles.tag}>
-                <Text style={styles.tagText}>Show</Text>
+                <Text style={styles.tagText}>{tc('event', 'Show')}</Text>
               </View>
               <Text style={styles.date}>{showDateSpoken(show.date)}</Text>
-              {over ? <Text style={styles.over}>This show has passed</Text> : null}
+              {over ? <Text style={styles.over}>{t('This show has passed')}</Text> : null}
             </View>
           </View>
           <Text style={styles.title} accessibilityRole="header">
@@ -92,17 +93,17 @@ export default function ShowScreen() {
           {away ? <Text style={styles.away}>{away}</Text> : null}
           {best && ranked.best ? (
             <Text style={styles.best}>
-              {Math.round(ranked.match * 100)}% match with {best.name}
+              {t('{pct}% match with {artist}', { pct: Math.round(ranked.match * 100), artist: best.name })}
             </Text>
           ) : null}
 
           <Pressable
             onPress={tickets}
             accessibilityRole="link"
-            accessibilityLabel={`Get tickets on EDMTrain for ${title}. Opens their site.`}
+            accessibilityLabel={t('Get tickets on EDMTrain for {show}. Opens their site.', { show: title })}
             style={({ pressed }) => [styles.tickets, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
           >
-            <Text style={styles.ticketsText}>Get tickets on EDMTrain ↗</Text>
+            <Text style={styles.ticketsText}>{t('Get tickets on EDMTrain ↗')}</Text>
           </Pressable>
           {over ? null : (
             <View style={styles.actions}>
@@ -114,11 +115,11 @@ export default function ShowScreen() {
         {bill.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle} accessibilityRole="header">
-              On the bill
+              {t('On the bill')}
             </Text>
-            <Text style={styles.sectionSub}>Artists on Afterglow, best for you first. The full lineup is on EDMTrain.</Text>
+            <Text style={styles.sectionSub}>{t('Artists on Afterglow, best for you first. The full lineup is on EDMTrain.')}</Text>
             {bill.map(({ artist, bill: b }) => (
-              <ArtistRow key={artist.id} artist={artist} affinity={b.match} rating={t.ratings[artist.id]} detail={why(artist, tasteClips, reactions, t)} />
+              <ArtistRow key={artist.id} artist={artist} affinity={b.match} rating={taste.ratings[artist.id]} detail={why(artist, tasteClips, reactions, taste)} />
             ))}
           </View>
         ) : null}
@@ -126,21 +127,21 @@ export default function ShowScreen() {
         <Pressable
           onPress={() => void Linking.openURL('https://edmtrain.com').catch(() => {})}
           accessibilityRole="link"
-          accessibilityLabel="Show info from EDMTrain. Opens their site."
+          accessibilityLabel={t('Show info from EDMTrain. Opens their site.')}
           style={({ pressed }) => [styles.credit, pressed && { opacity: 0.6 }]}
         >
-          <Text style={styles.creditText}>Show info from EDMTrain ↗</Text>
+          <Text style={styles.creditText}>{t('Show info from EDMTrain ↗')}</Text>
         </Pressable>
       </ScrollView>
-      <PageActions shareLabel={`Share ${title}`} onShare={share} />
+      <PageActions shareLabel={t('Share {show}', { show: title })} onShare={share} />
     </View>
   );
 }
 
 /** What their match rests on, in the artist page's own words. */
-function why(artist: Artist, clips: Parameters<typeof artistSignals>[1], reactions: Parameters<typeof artistSignals>[2], t: ReturnType<typeof useShowTaste>) {
-  if (t.isFollowing(artist.id) && !t.informed[artist.id]) return 'You follow them';
-  return whyLine(artistSignals(artist.id, clips, reactions, t.ratings), !!t.informed[artist.id]);
+function why(artist: Artist, clips: Parameters<typeof artistSignals>[1], reactions: Parameters<typeof artistSignals>[2], taste: ReturnType<typeof useShowTaste>) {
+  if (taste.isFollowing(artist.id) && !taste.informed[artist.id]) return t('You follow them');
+  return whyLine(artistSignals(artist.id, clips, reactions, taste.ratings), !!taste.informed[artist.id]);
 }
 
 const styles = StyleSheet.create({

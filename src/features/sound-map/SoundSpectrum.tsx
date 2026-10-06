@@ -6,6 +6,7 @@ import { SOUND_LABEL } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import type { SoundShare } from '../taste/lean';
 import { SOUND_COLOR } from './colors';
+import { t } from '../../i18n';
 
 /**
  * A sound mix as one glowing band of colour: each sound's light flowing
@@ -24,7 +25,7 @@ export function SoundSpectrum({
   /** What a screen reader says before the percentages, like "Your sound". */
   label: string;
 }) {
-  const spoken = `${label}: ${shares.map((s) => `${SOUND_LABEL[s.tag]} ${s.percent} percent`).join(', ')}`;
+  const spoken = `${label}: ${shares.map((s) => t('{sound} {pct} percent', { sound: SOUND_LABEL[s.tag], pct: s.percent })).join(', ')}`;
   // One band of light: each sound's colour at the middle of its share, flowing into the next (no hard segments: this is a glow, not a chart).
   const stops = blend(shares);
   const bar = (
@@ -50,7 +51,7 @@ export function SoundSpectrum({
       }}
       accessibilityRole="button"
       accessibilityLabel={spoken}
-      accessibilityHint="Opens the breakdown"
+      accessibilityHint={t('Opens the breakdown')}
       hitSlop={{ top: 12, bottom: 12 }}
       style={({ pressed }) => pressed && { opacity: 0.8 }}
     >

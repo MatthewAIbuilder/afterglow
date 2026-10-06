@@ -4,7 +4,8 @@ import { haptic } from '../../lib/haptics';
 import { useCrewUpdates } from '../../state/crewUpdates';
 import { color, radius, space, type } from '../../theme/tokens';
 import { CREW_NOTE_MAX, type CrewUpdate } from '../social/models';
-import { clock, QUICK_REPLIES } from './updates';
+import { clock, presetLabel, QUICK_REPLIES } from './updates';
+import { t } from '../../i18n';
 
 /**
  * Under a crewmate's update: what the crew has said back (oldest first, each
@@ -29,19 +30,19 @@ export function ReplyBar({ target, nameOf, me, bottom }: { target: CrewUpdate; n
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.wrap, { paddingBottom: bottom + space.md }]} pointerEvents="box-none">
       {shown.length ? (
         <View style={styles.thread}>
-          {replies.length > shown.length ? <Text style={styles.more}>{replies.length - shown.length} earlier</Text> : null}
+          {replies.length > shown.length ? <Text style={styles.more}>{t('{n} earlier', { n: replies.length - shown.length })}</Text> : null}
           {shown.map(({ reply: r, waiting }) => (
             <View
               key={r.id}
               style={styles.bubble}
               accessible
-              accessibilityLabel={`${nameOf(r.uid)}, ${clock(r.at)}: ${r.note}${waiting ? '. Waiting for signal' : ''}`}
+              accessibilityLabel={`${nameOf(r.uid)}, ${clock(r.at)}: ${presetLabel(r.note)}${waiting ? `. ${t('Waiting for signal')}` : ''}`}
             >
               <Text style={styles.bubbleText}>
                 <Text style={styles.bubbleName}>{nameOf(r.uid)} </Text>
-                {r.note}
+                {presetLabel(r.note)}
               </Text>
-              <Text style={[styles.bubbleTime, waiting && styles.waiting]}>{waiting ? `${clock(r.at)} · waiting for signal` : clock(r.at)}</Text>
+              <Text style={[styles.bubbleTime, waiting && styles.waiting]}>{waiting ? t('{time} · waiting for signal', { time: clock(r.at) }) : clock(r.at)}</Text>
             </View>
           ))}
         </View>
@@ -54,10 +55,10 @@ export function ReplyBar({ target, nameOf, me, bottom }: { target: CrewUpdate; n
                 key={q}
                 onPress={() => send(q)}
                 accessibilityRole="button"
-                accessibilityLabel={yours ? `Write back “${q}”` : `Reply “${q}” to ${who}`}
+                accessibilityLabel={yours ? t('Write back “{words}”', { words: presetLabel(q) }) : t('Reply “{words}” to {name}', { words: presetLabel(q), name: who })}
                 style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
               >
-                <Text style={styles.chipText}>{q}</Text>
+                <Text style={styles.chipText}>{presetLabel(q)}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -65,17 +66,17 @@ export function ReplyBar({ target, nameOf, me, bottom }: { target: CrewUpdate; n
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder={yours ? 'Write back' : `Reply to ${who}`}
+              placeholder={yours ? t('Write back') : t('Reply to {name}', { name: who })}
               placeholderTextColor="rgba(255,255,255,0.55)"
               maxLength={CREW_NOTE_MAX}
               returnKeyType="send"
               onSubmitEditing={() => send(text)}
               style={styles.input}
-              accessibilityLabel={yours ? 'Write back' : `Reply to ${who}`}
+              accessibilityLabel={yours ? t('Write back') : t('Reply to {name}', { name: who })}
             />
             {text.trim() ? (
-              <Pressable onPress={() => send(text)} accessibilityRole="button" accessibilityLabel="Send reply" hitSlop={8}>
-                <Text style={styles.send}>Send</Text>
+              <Pressable onPress={() => send(text)} accessibilityRole="button" accessibilityLabel={t('Send reply')} hitSlop={8}>
+                <Text style={styles.send}>{t('Send')}</Text>
               </Pressable>
             ) : null}
           </View>

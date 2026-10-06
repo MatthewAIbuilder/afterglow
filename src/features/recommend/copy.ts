@@ -1,5 +1,6 @@
 import type { Artist } from '../../data/types';
 import type { Reason } from './feed';
+import { t } from '../../i18n';
 
 /**
  * A few quiet words on why a clip is in your feed, shown next to the match.
@@ -11,11 +12,11 @@ export function reasonNote(reason: Reason, artistById: (id: string) => Artist | 
       return undefined;
     case 'near': {
       const to = artistById(reason.artistId);
-      return to ? `Close to ${to.name}` : 'Close to your sound';
+      return to ? t('Close to {artist}', { artist: to.name }) : t('Close to your sound');
     }
     case 'new-sound':
-      return 'A different sound';
+      return t('A different sound');
     case 'unknown':
-      return 'New to you';
+      return t('New to you');
   }
 }

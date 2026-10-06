@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import type { Crew, CrewUpdate } from '../social/models';
 import { byHappened, isReply, UPDATES_WINDOW_MS } from './updates';
+import { t } from '../../i18n';
 
 /**
  * Where's the crew, pure: everyone at a festival grouped by the stage their
@@ -74,12 +75,12 @@ export function crewWhere(
 
 /** "Maya and Sam at Main Stage · 2 of you elsewhere", for screen readers and a one-line summary. */
 export function whereLine(where: CrewWhere, nameOf: (uid: string) => string): string {
-  const parts = where.stages.map((g) => `${listNames(g.people.map((p) => nameOf(p.uid)))} at ${g.stage}`);
-  if (where.elsewhere.length) parts.push(`${listNames(where.elsewhere.map((p) => nameOf(p.uid)))} somewhere else`);
-  return parts.length ? parts.join(', ') : 'No one has said where they are yet';
+  const parts = where.stages.map((g) => t('{names} at {stage}', { names: listNames(g.people.map((p) => nameOf(p.uid))), stage: g.stage }));
+  if (where.elsewhere.length) parts.push(t('{names} somewhere else', { names: listNames(where.elsewhere.map((p) => nameOf(p.uid))) }));
+  return parts.length ? parts.join(', ') : t('No one has said where they are yet');
 }
 
 function listNames(names: string[]): string {
   if (names.length <= 1) return names[0] ?? '';
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return t('{list} and {last}', { list: names.slice(0, -1).join(', '), last: names[names.length - 1] });
 }

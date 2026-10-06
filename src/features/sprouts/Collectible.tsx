@@ -52,8 +52,10 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
   const sway = useSharedValue(0);
   const flick = useSharedValue(1);
   const blink = useSharedValue(1);
-  // Each collectible keeps its own time, so a shelf of them never moves in step.
-  const pace = hashOf(`${look.name}${p.mid}`) % 1000;
+  // Each collectible keeps its own time, so a shelf of them never moves in step
+  // (from its creature and colours, not its name, so the timing is the same in every language).
+  const pace = hashOf(`${look.creature}${p.mid}${p.accent}`) % 1000;
+
   useEffect(() => {
     if (!moving) return;
     const sine = Easing.inOut(Easing.sin);

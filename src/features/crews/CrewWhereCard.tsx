@@ -12,6 +12,7 @@ import type { Crew, CrewUpdate } from '../social/models';
 import { firstName } from './together';
 import { ago, clock } from './updates';
 import { crewWhere, whereLine, type Whereabouts } from './where';
+import { t } from '../../i18n';
 
 /**
  * Where's the crew: everyone at this festival grouped by the stage their
@@ -34,13 +35,13 @@ export function CrewWhereCard({ festival, crews }: { festival: Festival; crews: 
   if (!where.stages.length && !where.elsewhere.length) return null;
 
   const profile = (uid: string) => (uid === me ? social.profile : profileOf(uid));
-  const nameOf = (uid: string) => (uid === me ? 'You' : profile(uid) ? firstName(profile(uid)!.displayName) : 'Crewmate');
+  const nameOf = (uid: string) => (uid === me ? t('You') : profile(uid) ? firstName(profile(uid)!.displayName) : t('Crewmate'));
   const quiet = where.quiet.filter((u) => u !== me).map(nameOf);
 
   const person = (w: Whereabouts) => {
     const name = nameOf(w.uid);
     const opens = w.uid !== me && stories.some((s) => s.uid === w.uid);
-    const label = `${name}, ${clock(w.update.at)}, ${ago(w.update.at, now)}${w.stale ? ', may have moved' : ''}`;
+    const label = `${name}, ${clock(w.update.at)}, ${ago(w.update.at, now)}${w.stale ? `, ${t('may have moved')}` : ''}`;
     const body = (
       <>
         <PersonAvatar name={profile(w.uid)?.displayName} url={profile(w.uid)?.avatarUrl} size={28} />
@@ -72,7 +73,7 @@ export function CrewWhereCard({ festival, crews }: { festival: Festival; crews: 
   return (
     <View style={styles.card}>
       <Text style={styles.title} accessibilityRole="header" accessibilityHint={whereLine(where, nameOf)}>
-        Where’s the crew
+        {t('Where’s the crew')}
       </Text>
       {where.stages.map((g) => (
         <View key={g.stage} style={styles.group}>
@@ -82,12 +83,12 @@ export function CrewWhereCard({ festival, crews }: { festival: Festival; crews: 
       ))}
       {where.elsewhere.length ? (
         <View style={styles.group}>
-          <Text style={[styles.stage, styles.dim]}>Somewhere else</Text>
+          <Text style={[styles.stage, styles.dim]}>{t('Somewhere else')}</Text>
           <View style={styles.people}>{where.elsewhere.map(person)}</View>
         </View>
       ) : null}
-      {quiet.length ? <Text style={styles.note}>No update yet from {quiet.join(', ')}.</Text> : null}
-      <Text style={styles.note}>From their latest videos and check-ins, not live location.</Text>
+      {quiet.length ? <Text style={styles.note}>{t('No update yet from {names}.', { names: quiet.join(', ') })}</Text> : null}
+      <Text style={styles.note}>{t('From their latest videos and check-ins, not live location.')}</Text>
       <LastUpdated at={readAt} live={readLive} />
     </View>
   );

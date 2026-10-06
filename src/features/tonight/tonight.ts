@@ -4,6 +4,7 @@ import { toMinutes } from '../plan/plan';
 import { nightStart } from '../care/care';
 import { isLive } from '../festivals/when';
 import { festivalNight } from '../plan/live';
+import { t } from '../../i18n';
 
 /**
  * Festival-day mode, pure: is one of your festivals on right now, which
@@ -24,7 +25,7 @@ export function tonightFestival(festivals: readonly Festival[], going: readonly 
   const on = festivals.filter((f) => going.includes(f.id) && isOn(f, now));
   if (!on.length) return undefined;
   const withNight = on.map((f) => ({ festival: f, night: festivalNight(f, now)?.day }));
-  return withNight.find((t) => t.night) ?? withNight[0];
+  return withNight.find((n) => n.night) ?? withNight[0];
 }
 
 /** One key per festival night (nights run noon to noon), so Tonight opens by itself once a night at most. */
@@ -34,7 +35,8 @@ export function tonightKey(festivalId: string, now: Date): string {
 }
 
 /** "Saturday at Cyclops Cove 4", or just the festival when the night isn't known. */
-export const tonightTitle = (t: Tonight) => (t.night ? `${t.night} at ${t.festival.name}` : t.festival.name);
+export const tonightTitle = (tonight: Tonight) =>
+  tonight.night ? t('{night} at {festival}', { night: t(tonight.night), festival: tonight.festival.name }) : tonight.festival.name;
 
 /**
  * Tonight's preview, the running order: one clip per artist playing tonight

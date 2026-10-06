@@ -5,6 +5,7 @@ import { haptic } from '../../lib/haptics';
 import { useFriendAdds } from '../../state/friendAdds';
 import { color, radius, space, type } from '../../theme/tokens';
 import { addLine } from './adds';
+import { t } from '../../i18n';
 
 /**
  * Friends you scanned: waiting for signal (amber, sends by itself), friends
@@ -16,7 +17,7 @@ export function FriendAddsList() {
   const waiting = adds.filter((a) => a.state === 'waiting').length;
   return (
     <View style={styles.wrap}>
-      <Text style={styles.title}>{waiting ? `Scanned · ${waiting} waiting for signal` : 'Scanned'}</Text>
+      <Text style={styles.title}>{waiting ? t('Scanned · {n} waiting for signal', { n: waiting }) : t('Scanned')}</Text>
       {adds.map((a) => {
         const line = addLine(a);
         const body = (
@@ -36,11 +37,11 @@ export function FriendAddsList() {
           return (
             <View key={a.uid} style={styles.row} accessible accessibilityLabel={`${a.name}, @${a.handle}. ${line}`}>
               {body}
-              <Pressable onPress={() => retry(a.uid)} accessibilityRole="button" accessibilityLabel={`Try adding ${a.name} again`} hitSlop={8}>
-                <Text style={styles.action}>Try again</Text>
+              <Pressable onPress={() => retry(a.uid)} accessibilityRole="button" accessibilityLabel={t('Try adding {name} again', { name: a.name })} hitSlop={8}>
+                <Text style={styles.action}>{t('Try again')}</Text>
               </Pressable>
-              <Pressable onPress={() => remove(a.uid)} accessibilityRole="button" accessibilityLabel={`Remove ${a.name} from this list`} hitSlop={8}>
-                <Text style={styles.remove}>Remove</Text>
+              <Pressable onPress={() => remove(a.uid)} accessibilityRole="button" accessibilityLabel={t('Remove {name} from this list', { name: a.name })} hitSlop={8}>
+                <Text style={styles.remove}>{t('Remove')}</Text>
               </Pressable>
             </View>
           );

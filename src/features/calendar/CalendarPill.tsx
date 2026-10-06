@@ -8,6 +8,7 @@ import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { festivalEvent, type CalendarEvent } from './events';
+import { t } from '../../i18n';
 
 /**
  * "Add to calendar" beside Going on a festival page: the festival's days (your
@@ -28,20 +29,20 @@ export function CalendarPill(props: { festival: Festival } | { event: CalendarEv
       setAdded(true);
     } else if (outcome === 'downloaded') {
       setAdded(true);
-      showAlert('Calendar file downloaded', `Open it to add ${name} to your calendar.`);
+      showAlert(t('Calendar file downloaded'), t('Open it to add {festival} to your calendar.', { festival: name }));
     } else if (outcome === 'failed') {
-      showAlert('Couldn’t open your calendar', Platform.OS === 'web' ? 'Try again in a moment.' : 'Check that Afterglow may use the calendar in Settings, then try again.');
+      showAlert(t('Couldn’t open your calendar'), Platform.OS === 'web' ? t('Try again in a moment.') : t('Check that Afterglow may use the calendar in Settings, then try again.'));
     }
   };
   return (
     <Pressable
       onPress={() => void press()}
       accessibilityRole="button"
-      accessibilityLabel={added ? `${name} is in your calendar. Add it again.` : `Add ${name} to your calendar`}
+      accessibilityLabel={added ? t('{festival} is in your calendar. Add it again.', { festival: name }) : t('Add {festival} to your calendar', { festival: name })}
       style={({ pressed }) => [styles.pill, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
     >
       {added ? <CheckIcon color={color.moonDim} size={14} /> : <CalendarIcon color={color.moonDim} size={14} />}
-      <Text style={styles.text}>{added ? 'In your calendar' : 'Add to calendar'}</Text>
+      <Text style={styles.text}>{added ? t('In your calendar') : t('Add to calendar')}</Text>
     </Pressable>
   );
 }

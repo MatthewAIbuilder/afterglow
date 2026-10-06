@@ -7,6 +7,7 @@ import type { EngineProps } from './ClipPlayer';
 import type { SoundCloudMedia } from './media';
 import { shouldPlay } from './playback';
 import { parseSoundCloudMessage, soundcloudPlayerHtml } from './soundcloud';
+import { t } from '../../i18n';
 
 /** Give up if the player hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
@@ -84,7 +85,7 @@ function SoundCloudPlayerBase({ media, active, live, paused, progress, onPausedC
         onError={() => onFail()}
         onContentProcessDidTerminate={() => onFail()}
         onRenderProcessGone={() => onFail()}
-        accessibilityLabel="SoundCloud player"
+        accessibilityLabel={t('SoundCloud player')}
       />
     </View>
   );

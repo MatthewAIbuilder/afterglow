@@ -10,6 +10,7 @@ import { color, space, type, nightA } from '../../theme/tokens';
 import { ago } from '../crews/updates';
 import { liveCrowd } from '../community/crowd';
 import { useFestivalCrowd } from './useFestivalCrowd';
+import { t } from '../../i18n';
 
 const TILE_W = 96;
 const TILE_H = 160;
@@ -29,7 +30,7 @@ export function LiveCrowdRow({ festival, inset = space.xl }: { festival: Festiva
     <View style={styles.wrap}>
       <View style={[styles.head, { paddingHorizontal: inset }]}>
         <View style={styles.dot} />
-        <Text style={styles.title}>Live from the crowd</Text>
+        <Text style={styles.title}>{t('Live from the crowd')}</Text>
         <Text style={styles.count}>{live.length}</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: inset, gap: space.sm }}>
@@ -43,7 +44,11 @@ export function LiveCrowdRow({ festival, inset = space.xl }: { festival: Festiva
                 router.push({ pathname: '/shared/[id]', params: { id: m.id } });
               }}
               accessibilityRole="button"
-              accessibilityLabel={`${artist ? `${artist.name}, ` : ''}filmed by @${m.handle}, ${ago(m.capturedAt, now)}`}
+              accessibilityLabel={
+                artist
+                  ? t('{artist}, filmed by @{handle}, {ago}', { artist: artist.name, handle: m.handle, ago: ago(m.capturedAt, now) })
+                  : t('filmed by @{handle}, {ago}', { handle: m.handle, ago: ago(m.capturedAt, now) })
+              }
               style={({ pressed }) => [styles.tile, pressed && { opacity: 0.85 }]}
             >
               {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}

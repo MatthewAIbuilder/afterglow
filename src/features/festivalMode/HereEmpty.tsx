@@ -5,6 +5,7 @@ import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
 import { accountsOff } from '../social/unavailable';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * Festival mode's Discover with nothing to watch yet: why (signed out, or no
@@ -15,15 +16,15 @@ export function HereEmpty({ festival, loading, bottomSpace, onFilm }: { festival
   if (social.user && loading) {
     return (
       <View style={[styles.wrap, { paddingBottom: bottomSpace }]} pointerEvents="box-none">
-        <ActivityIndicator color={color.glow} accessibilityLabel={`Looking for videos from ${festival.name}`} />
+        <ActivityIndicator color={color.glow} accessibilityLabel={t('Looking for videos from {festival}', { festival: festival.name })} />
       </View>
     );
   }
   const [title, body] = !social.availability.ok
     ? (({ title, body }) => [title, body])(accountsOff(Platform.OS === 'web', 'Videos from the crowd'))
     : !social.user
-      ? [`Live from ${festival.name}`, 'Sign in to watch the videos people film here, and share yours.']
-      : [`Nothing from ${festival.name} yet`, 'Be the first: film a set and turn on Share to Discover. Videos people share from here show up as they come in.'];
+      ? [t('Live from {festival}', { festival: festival.name }), t('Sign in to watch the videos people film here, and share yours.')]
+      : [t('Nothing from {festival} yet', { festival: festival.name }), t('Be the first: film a set and turn on Share to Discover. Videos people share from here show up as they come in.')];
   const film = Platform.OS !== 'web' && social.availability.ok;
   return (
     <View style={[styles.wrap, { paddingBottom: bottomSpace }]} pointerEvents="box-none">
@@ -31,11 +32,12 @@ export function HereEmpty({ festival, loading, bottomSpace, onFilm }: { festival
       <Text style={styles.body}>{body}</Text>
       <View style={styles.actions}>
         {social.availability.ok && !social.user ? (
-          <Button label="Sign in" primary onPress={() => router.push('/account')} />
+          <Button label={t('Sign in')} primary onPress={() => router.push('/account')} />
         ) : film ? (
-          <Button label="Film a video" primary onPress={onFilm} />
+          <Button label={t('Film a video')} primary onPress={onFilm} />
         ) : null}
-        <Button label="Tonight’s plan" onPress={() => router.navigate('/lineup')} />
+        <Button label={t('Tonight’s plan')} onPress
+={() => router.navigate('/lineup')} />
       </View>
     </View>
   );

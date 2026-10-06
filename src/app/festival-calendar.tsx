@@ -20,6 +20,7 @@ import {
   monthLine,
   monthOf,
   monthTitle,
+  monthWords,
   sameMonth,
 } from '../features/festivals/calendar';
 import { NearYouPrompt } from '../features/festivals/NearYouPrompt';
@@ -39,6 +40,7 @@ import { ShowRow, useShowTaste } from '../features/festivals/ShowCards';
 import { isForYou, rankShows, showsByDay, showsInReach, upcomingShows } from '../features/festivals/showsForYou';
 import { router } from 'expo-router';
 import { color, radius, space, type, glowA } from '../theme/tokens';
+import { t, tn } from '../i18n';
 
 const GOING = '#FF9AD5';
 /** Shows for you listed under a month (a day lists all of its own). */
@@ -105,7 +107,7 @@ export default function FestivalCalendarScreen() {
   const jump = () => {
     if (months.length < 2) return;
     haptic.select();
-    showActionSheet({ title: 'Go to a month', options: [...months.map((m) => monthTitle(m, today)), 'Cancel'], cancelButtonIndex: months.length }, (i) => {
+    showActionSheet({ title: t('Go to a month'), options: [...months.map((m) => monthTitle(m, today)), t('Cancel')], cancelButtonIndex: months.length }, (i) => {
       if (i < 0 || i >= months.length) return;
       setShown(months[i]);
       setPicked(undefined);
@@ -129,11 +131,11 @@ export default function FestivalCalendarScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Festivals & shows calendar" />
+      <PageTitle title={t('Festivals & shows calendar')} />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
-          <Pressable onPress={() => flip(-1)} disabled={index === 0} accessibilityRole="button" accessibilityLabel="Previous month" hitSlop={12} style={[styles.arrow, index === 0 && styles.off]}>
+          <Pressable onPress={() => flip(-1)} disabled={index === 0} accessibilityRole="button" accessibilityLabel={t('Previous month')} hitSlop={12} style={[styles.arrow, index === 0 && styles.off]}>
             <ChevronIcon color={color.moon} direction="left" size={16} />
           </Pressable>
           <Pressable
@@ -141,7 +143,7 @@ export default function FestivalCalendarScreen() {
             disabled={months.length < 2}
             accessibilityRole="button"
             accessibilityLabel={`${monthTitle(month, today)}, ${monthLine(inMonth.length, month, where)}`}
-            accessibilityHint={months.length < 2 ? undefined : 'Go to another month'}
+            accessibilityHint={months.length < 2 ? undefined : t('Go to another month')}
             style={styles.titleWrap}
           >
             <Text style={styles.title} accessibilityRole="header">
@@ -153,7 +155,7 @@ export default function FestivalCalendarScreen() {
             onPress={() => flip(1)}
             disabled={index >= months.length - 1}
             accessibilityRole="button"
-            accessibilityLabel="Next month"
+            accessibilityLabel={t('Next month')}
             hitSlop={12}
             style={[styles.arrow, index >= months.length - 1 && styles.off]}
           >
@@ -164,9 +166,9 @@ export default function FestivalCalendarScreen() {
         <View style={styles.reach}>
           <Tabs
             items={[
-              { key: 'near', label: 'Near me' },
-              { key: 'state', label: 'By state' },
-              { key: 'all', label: 'Everywhere' },
+              { key: 'near', label: t('Near me') },
+              { key: 'state', label: t('By state') },
+              { key: 'all', label: t('Everywhere') },
             ]}
             value={mode}
             onChange={pickMode}
@@ -183,7 +185,9 @@ export default function FestivalCalendarScreen() {
                 chips={RADII[nearby.units].map((km) => ({
                   key: String(Math.round(km)),
                   label: radiusLabel(km, nearby.units),
-                  accessibilityLabel: `Within ${radiusLabel(km, nearby.units)}${nearby.hereLabel ? ` of ${nearby.hereLabel}` : ''}`,
+                  accessibilityLabel: nearby.hereLabel
+                    ? t('Within {distance} of {place}', { distance: radiusLabel(km, nearby.units), place: nearby.hereLabel })
+                    : t('Within {distance}', { distance: radiusLabel(km, nearby.units) }),
                 }))}
               />
             </View>
@@ -197,7 +201,7 @@ export default function FestivalCalendarScreen() {
               inset={space.lg}
               value={reach.code}
               onChange={(k) => k && choose({ kind: 'state', code: k })}
-              chips={stateList.map((st) => ({ key: st.code, label: st.name, count: st.count, accessibilityLabel: `${st.name}, ${st.count} ${st.count === 1 ? 'festival' : 'festivals'}` }))}
+              chips={stateList.map((st) => ({ key: st.code, label: st.name, count: st.count, accessibilityLabel: tn(st.count, '{state}, {n} festival', '{state}, {n} festivals', { state: st.name }) }))}
             />
           </View>
         ) : null}
@@ -228,7 +232,12 @@ export default function FestivalCalendarScreen() {
                       setPicked(chosen ? undefined : key);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`${Number(key.slice(8))} ${monthTitle(month, today)}${on.length ? `, ${on.map((f) => f.name).join(', ')}` : shows.length ? '' : ', nothing on'}${mine ? ', you’re going' : ''}${shows.length ? `, ${shows.length} ${shows.length === 1 ? 'show' : 'shows'} for you` : ''}`}
+                    accessibilityLabel={[
+                      t('{day} {month}', { day: Number(key.slice(8)), month: monthWords(month, today) }),
+                      ...(on.length ? [on.map((f) => f.name).join(', ')] : shows.length ? [] : [t('nothing on')]),
+                      ...(mine ? [t('you’re going')] : []),
+                      ...(shows.length ? [tn(shows.length, '{n} show for you', '{n} shows for you')] : []),
+                    ].join(', ')}
                     accessibilityState={{ selected: chosen }}
                     testID={`cal-${key}`}
                     style={[styles.cell, (on.length > 0 || shows.length > 0) && styles.cellOn, mine && styles.cellMine, chosen && styles.cellChosen, isToday && styles.cellToday]}
@@ -249,19 +258,19 @@ export default function FestivalCalendarScreen() {
 
         <View style={styles.legend} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <View style={[styles.dot, { backgroundColor: GOING }]} />
-          <Text style={styles.legendText}>Going</Text>
+          <Text style={styles.legendText}>{t('Going')}</Text>
           <View style={[styles.dot, { backgroundColor: color.glow, marginLeft: space.md }]} />
-          <Text style={styles.legendText}>Artists you’d love</Text>
+          <Text style={styles.legendText}>{t('Artists you’d love')}</Text>
           {showPicks.length > 0 ? (
             <>
               <View style={[styles.ring, { marginLeft: space.md }]} />
-              <Text style={styles.legendText}>Shows for you</Text>
+              <Text style={styles.legendText}>{t('Shows for you')}</Text>
             </>
           ) : null}
         </View>
 
         <Text style={styles.section} accessibilityRole="header">
-          {day ? `On ${Number(day.slice(8))} ${monthTitle(month, today)}` : `In ${monthTitle(month, today)}`}
+          {day ? t('On {day} {month}', { day: Number(day.slice(8)), month: monthWords(month, today) }) : t('In {month}', { month: monthWords(month, today) })}
         </Text>
         {listed.length ? (
           <View style={styles.rows}>
@@ -270,14 +279,14 @@ export default function FestivalCalendarScreen() {
             ))}
           </View>
         ) : listedShows.length ? (
-          <Text style={styles.none}>{day ? 'No festivals that day.' : 'No festivals this month.'}</Text>
+          <Text style={styles.none}>{day ? t('No festivals that day.') : t('No festivals this month.')}</Text>
         ) : (
-          <Text style={styles.none}>{day ? 'Nothing on that day yet.' : where ? 'Nothing here this month. Try a wider reach.' : 'New festivals arrive every night.'}</Text>
+          <Text style={styles.none}>{day ? t('Nothing on that day yet.') : where ? t('Nothing here this month. Try a wider reach.') : t('New festivals arrive every night.')}</Text>
         )}
         {listedShows.length > 0 ? (
           <>
             <Text style={styles.section} accessibilityRole="header">
-              Shows for you
+              {t('Shows for you')}
             </Text>
             {(day ? listedShows : listedShows.slice(0, MONTH_SHOWS)).map((r) => (
               <ShowRow key={r.show.id} ranked={r} />
@@ -289,10 +298,10 @@ export default function FestivalCalendarScreen() {
                   router.push('/shows');
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="See all shows"
+                accessibilityLabel={t('See all shows')}
                 style={styles.back}
               >
-                <Text style={styles.backText}>See all shows</Text>
+                <Text style={styles.backText}>{t('See all shows')}</Text>
               </Pressable>
             ) : null}
           </>
@@ -307,7 +316,7 @@ export default function FestivalCalendarScreen() {
             accessibilityRole="button"
             style={styles.back}
           >
-            <Text style={styles.backText}>Back to this month</Text>
+            <Text style={styles.backText}>{t('Back to this month')}</Text>
           </Pressable>
         )}
       </ScrollView>

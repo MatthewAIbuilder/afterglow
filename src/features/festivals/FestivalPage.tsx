@@ -40,6 +40,7 @@ import { TryFestivalMode } from '../festivalMode/FestivalModeCard';
 import { useRecap } from '../recap/useRecap';
 import { CalendarPill } from '../calendar/CalendarPill';
 import { CareCard } from '../care/CareCard';
+import { dayWord, t } from '../../i18n';
 
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
@@ -165,27 +166,27 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
             {/* Over, and you were part of it: your recap. */}
             {recap ? (
               <Action
-                label="Recap"
-                a11y={`See your recap of ${whole.name}`}
+                label={t('Recap')}
+                a11y={t('See your recap of {festival}', { festival: whole.name })}
                 icon={<StarIcon color={color.glow} size={13} filled />}
                 onPress={() => router.push({ pathname: '/recap/[id]', params: { id: whole.id } })}
               />
             ) : null}
             {reach.clips > 0 ? (
               <Action
-                label="Watch"
+                label={t('Watch')}
                 count={reach.clips}
                 glow
-                a11y={`Discover the lineup. ${reach.clips} live clips from ${reach.artists} artists playing ${festival.name}.`}
+                a11y={t('Discover the lineup. {clips} live clips from {artists} artists playing {festival}.', { clips: reach.clips, artists: reach.artists, festival: festival.name })}
                 icon={<PlayIcon color={color.moon} size={13} />}
                 onPress={() => router.navigate({ pathname: '/', params: { festival: festival.id } })}
               />
             ) : null}
             {toRate > 0 ? (
               <Action
-                label="Tune"
+                label={t('Tune')}
                 count={toRate}
-                a11y={`Tune your lineup. Rate ${toRate} artists one at a time.`}
+                a11y={t('Tune your lineup. Rate {n} artists one at a time.', { n: toRate })}
                 icon={<HeartIcon color={color.moon} size={13} />}
                 // Narrowed to a day in the lineup? Tune that day.
                 onPress={() => router.push(day ? { pathname: '/tune/[id]', params: { id: festival.id, day } } : `/tune/${festival.id}`)}
@@ -207,10 +208,10 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
             value={tab}
             onChange={setTab}
             items={[
-              { key: 'plan', label: 'For you' },
-              { key: 'lineup', label: 'Lineup', count: festival.lineup.length },
-              { key: 'crowd', label: 'Videos' },
-              { key: 'info', label: 'Info' },
+              { key: 'plan', label: t('For you') },
+              { key: 'lineup', label: t('Lineup'), count: festival.lineup.length },
+              { key: 'crowd', label: t('Videos') },
+              { key: 'info', label: t('Info') },
             ]}
           />
         </View>
@@ -223,7 +224,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           <View style={styles.lineupTab}>
             <View style={[styles.pad, styles.lineupHead]}>
               <Text style={styles.lineupCount}>
-                {shown.length === lineup.length ? `${lineup.length} acts` : `${shown.length} of ${lineup.length} acts`}
+                {shown.length === lineup.length ? t('{n} acts', { n: lineup.length }) : t('{shown} of {total} acts', { shown: shown.length, total: lineup.length })}
               </Text>
               <Segmented value={order} onChange={setOrder} />
             </View>
@@ -232,8 +233,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
                 <SearchField
                   value={query}
                   onChange={setQuery}
-                  placeholder="Find an artist"
-                  label={`Find an artist on the ${festival.name} lineup`}
+                  placeholder={t('Find an artist')}
+                  label={t('Find an artist on the {festival} lineup', { festival: festival.name })}
                 />
               </View>
             )}
@@ -242,12 +243,12 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               <View style={styles.dayChips}>
                 <FilterChips
                   chips={[
-                    { key: undefined, label: 'All days', accessibilityLabel: `Every day at ${festival.name}` },
+                    { key: undefined, label: t('All days'), accessibilityLabel: t('Every day at {festival}', { festival: festival.name }) },
                     ...days.map((d) => ({
                       key: d,
-                      label: d,
+                      label: t(d),
                       count: lineup.filter((a) => playsOn(festival, a.id, d)).length,
-                      accessibilityLabel: `${d}, ${lineup.filter((a) => playsOn(festival, a.id, d)).length} artists`,
+                      accessibilityLabel: t('{day}, {n} artists', { day: t(d), n: lineup.filter((a) => playsOn(festival, a.id, d)).length }),
                     })),
                   ]}
                   value={day}
@@ -264,17 +265,17 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               {(query || day) && shown.length === 0 ? (
                 <Text style={styles.noMatch}>
                   {sound
-                    ? `No ${SOUND_LABEL[sound].toLowerCase()} artist on the lineup matches “${query.trim()}”.`
+                    ? t('No {sound} artist on the lineup matches “{query}”.', { sound: SOUND_LABEL[sound].toLowerCase(), query: query.trim() })
                     : query
-                      ? `No one on the lineup matches “${query.trim()}”.`
-                      : `No one with that sound plays ${day}.`}
+                      ? t('No one on the lineup matches “{query}”.', { query: query.trim() })
+                      : t('No one with that sound plays {day}.', { day: day ? dayWord(day) : '' })}
                 </Text>
               ) : null}
               {shown.map((a) => {
                 const set = setFor(festival, a.id);
                 const line = setLine(set ? describeSet(festival, set) : dayList(daysOf(festival, a.id)), festival.notes?.[a.id]);
                 // "Just added", following, your crewmates' stars, then when they play.
-                const detail = [added.has(a.id) ? 'Just added' : undefined, isFollowing(a.id) ? 'Following' : undefined, starsShort(crewStarsFor(festival.id, a.id)), line].filter(Boolean).join(' · ') || undefined;
+                const detail = [added.has(a.id) ? t('Just added') : undefined, isFollowing(a.id) ? t('Following') : undefined, starsShort(crewStarsFor(festival.id, a.id)), line].filter(Boolean).join(' · ') || undefined;
                 return (
                   <ArtistRow
                     key={a.id}
@@ -297,16 +298,16 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
           <View style={styles.infoTab}>
             <View style={styles.pad}>
               {/* Tickets and the festival's own site, when the catalogue has them. */}
-              <OfficialLinks festival={whole} over={soon === 'Over'} />
+              <OfficialLinks festival={whole} over={soon === t('Over')} />
               {/* Once you're going: the days (your weekend) into your calendar, and your checklist. */}
-              {isGoing(whole.id) && soon !== 'Over' ? (
+              {isGoing(whole.id) && soon !== t('Over') ? (
                 <View style={styles.infoPills}>
                   <CalendarPill festival={festival} />
                 </View>
               ) : null}
-              {isGoing(whole.id) && soon !== 'Over' ? <GetReadyCard festival={festival} /> : null}
+              {isGoing(whole.id) && soon !== t('Over') ? <GetReadyCard festival={festival} /> : null}
               {/* A simpler app for the day itself: test it any day. */}
-              {soon !== 'Over' ? <TryFestivalMode festival={whole} /> : null}
+              {soon !== t('Over') ? <TryFestivalMode festival={whole} /> : null}
               {/* Your crews for this festival, or start one. */}
               <CrewCard festival={whole} />
             </View>
@@ -317,7 +318,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
                   router.push(`/poster/${festival.id}`);
                 }}
                 accessibilityRole="imagebutton"
-                accessibilityLabel={festival.posterFrom ? `Picture from ${festival.posterFrom}, the festival's official site. Opens full screen.` : 'Official lineup poster. Opens full screen.'}
+                accessibilityLabel={festival.posterFrom ? t("Picture from {site}, the festival's official site. Opens full screen.", { site: festival.posterFrom }) : t('Official lineup poster. Opens full screen.')}
                 style={[styles.posterWrap, festival.posterFrom && styles.siteWrap]}
               >
                 {festival.posterFrom ? (
@@ -332,7 +333,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
                 )}
                 <View style={styles.posterHint}>
                   {/* A picture from the festival's own site may be key art rather than the lineup, so it's credited, not called the poster. */}
-                  <Text style={styles.posterHintText}>{festival.posterFrom ? `From ${festival.posterFrom}` : 'View poster'}</Text>
+                  <Text style={styles.posterHintText}>{festival.posterFrom ? t('From {site}', { site: festival.posterFrom }) : t('View poster')}</Text>
                   <ChevronIcon color={color.moon} size={12} />
                 </View>
               </Pressable>
@@ -346,12 +347,12 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
                   router.push({ pathname: '/festival-map', params: { focus: whole.id } });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`See ${whole.name} on the festival map`}
+                accessibilityLabel={t('See {festival} on the festival map', { festival: whole.name })}
                 style={({ pressed }) => [styles.pad, styles.infoRow, pressed && { opacity: 0.7 }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.infoRowTitle}>See it on the map</Text>
-                  <Text style={styles.infoRowSub}>{whole.location}, among the other festivals</Text>
+                  <Text style={styles.infoRowTitle}>{t('See it on the map')}</Text>
+                  <Text style={styles.infoRowSub}>{t('{place}, among the other festivals', { place: whole.location })}</Text>
                 </View>
                 <ChevronIcon color={color.moonFaint} size={12} />
               </Pressable>
@@ -364,12 +365,12 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
                   router.push({ pathname: '/compare', params: { ids: whole.id } });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Compare ${whole.name} with other festivals`}
+                accessibilityLabel={t('Compare {festival} with other festivals', { festival: whole.name })}
                 style={({ pressed }) => [styles.pad, styles.infoRow, pressed && { opacity: 0.7 }]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.infoRowTitle}>Compare festivals</Text>
-                  <Text style={styles.infoRowSub}>See which lineup fits your sound best</Text>
+                  <Text style={styles.infoRowTitle}>{t('Compare festivals')}</Text>
+                  <Text style={styles.infoRowSub}>{t('See which lineup fits your sound best')}</Text>
                 </View>
                 <ChevronIcon color={color.moonFaint} size={12} />
               </Pressable>
@@ -379,10 +380,10 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above }: 
               <Pressable
                 onPress={() => void Linking.openURL(festival.source!.url).catch(() => {})}
                 accessibilityRole="link"
-                accessibilityLabel={`Event info from ${festival.source.name}. Opens their page.`}
+                accessibilityLabel={t('Event info from {source}. Opens their page.', { source: festival.source.name })}
                 style={({ pressed }) => [styles.pad, styles.source, pressed && { opacity: 0.6 }]}
               >
-                <Text style={styles.sourceText}>Event info from {festival.source.name} ↗</Text>
+                <Text style={styles.sourceText}>{t('Event info from {source} ↗', { source: festival.source.name })}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -402,14 +403,14 @@ function WeekendPicker({ festival, shown }: { festival: Festival; shown: number 
   const runs = festival.weekends ?? [];
   return (
     <View style={styles.weekends}>
-      <Text style={styles.weekendsHead}>Your weekend</Text>
+      <Text style={styles.weekendsHead}>{t('Your weekend')}</Text>
       <FilterChips
         chips={[
-          { key: undefined, label: 'Every weekend', accessibilityLabel: `Every weekend of ${festival.name}` },
+          { key: undefined, label: t('Every weekend'), accessibilityLabel: t('Every weekend of {festival}', { festival: festival.name }) },
           ...runs.map((r, i) => ({
             key: String(i + 1),
-            label: `Weekend ${i + 1} · ${runLabel(r)}`,
-            accessibilityLabel: `Weekend ${i + 1}, ${runLabel(r)}`,
+            label: t('Weekend {n} · {dates}', { n: i + 1, dates: runLabel(r) }),
+            accessibilityLabel: t('Weekend {n}, {dates}', { n: i + 1, dates: runLabel(r) }),
           })),
         ]}
         value={chosen ? String(chosen) : undefined}
@@ -417,7 +418,7 @@ function WeekendPicker({ festival, shown }: { festival: Festival; shown: number 
       />
       {chosen ? (
         <Text style={styles.weekendsNote}>
-          Your plan and the lineup show weekend {chosen}: {shown} of {festival.lineup.length} acts.
+          {t('Your plan and the lineup show weekend {n}: {shown} of {total} acts.', { n: chosen, shown, total: festival.lineup.length })}
         </Text>
       ) : null}
     </View>
@@ -463,7 +464,7 @@ function GoingPill({ festival }: { festival: Festival }) {
         }}
         accessibilityRole="button"
         accessibilityState={{ selected: going }}
-        accessibilityLabel={going ? `You're going to ${festival.name}. Tap to undo.` : `I'm going to ${festival.name}`}
+        accessibilityLabel={going ? t("You're going to {festival}. Tap to undo.", { festival: festival.name }) : t("I'm going to {festival}", { festival: festival.name })}
         style={({ pressed }) => [
           styles.discover,
           going ? styles.goingOn : styles.tune,
@@ -471,7 +472,7 @@ function GoingPill({ festival }: { festival: Festival }) {
         ]}
       >
         <CheckIcon color={going ? color.moon : color.moonDim} size={14} />
-        <Text style={[styles.discoverText, !going && { color: color.moonDim }]}>{going ? 'Going' : 'I’m going'}</Text>
+        <Text style={[styles.discoverText, !going && { color: color.moonDim }]}>{going ? t('Going') : t('I’m going')}</Text>
       </Pressable>
       {cheers && going ? <ConfettiBurst key={cheers} /> : null}
     </View>
@@ -491,7 +492,7 @@ function SoundChips({
   onChange: (tag: SoundTag | undefined) => void;
 }) {
   const chips: { tag: SoundTag | undefined; label: string; count?: number }[] = [
-    { tag: undefined, label: 'All sounds' },
+    { tag: undefined, label: t('All sounds') },
     ...sounds.map((s) => ({ tag: s.tag, label: SOUND_LABEL[s.tag], count: s.count })),
   ];
   return (
@@ -514,7 +515,7 @@ function SoundChips({
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             accessibilityLabel={
-              c.tag ? `${c.label}, ${c.count} artists on the ${festivalName} lineup` : `All sounds on the ${festivalName} lineup`
+              c.tag ? t('{sound}, {n} artists on the {festival} lineup', { sound: c.label, n: c.count ?? 0, festival: festivalName }) : t('All sounds on the {festival} lineup', { festival: festivalName })
             }
             style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
           >
@@ -529,8 +530,8 @@ function SoundChips({
 
 function Segmented({ value, onChange }: { value: Order; onChange: (o: Order) => void }) {
   const options: { key: Order; label: string }[] = [
-    { key: 'match', label: 'For you' },
-    { key: 'billing', label: 'Billing' },
+    { key: 'match', label: t('For you') },
+    { key: 'billing', label: t('Billing') },
   ];
   return (
     <View style={styles.segment} accessibilityRole="tablist">

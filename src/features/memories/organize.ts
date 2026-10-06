@@ -1,6 +1,8 @@
 import type { Artist, Festival } from '../../data/models';
 import type { Memory } from './models';
 import { type PastEvent, pastKey, pastLabel } from './past';
+import { formatTime } from '../festivals/format';
+import { months, t, tn, weekdays } from '../../i18n';
 
 /**
  * Memories arranged the way you remember them: by festival (most recent
@@ -65,7 +67,7 @@ export function organizeMemories(
       key,
       festival,
       ...(past ? { past } : {}),
-      title: festival?.name ?? (past ? pastLabel(past) : 'Other sets'),
+      title: festival?.name ?? (past ? pastLabel(past) : t('Other sets')),
       count: list.length,
       nights: nightList,
       latest: list.map((m) => m.capturedAt).sort().at(-1) ?? '',
@@ -76,9 +78,9 @@ export function organizeMemories(
     const sorted = [...untagged].sort(byCapture);
     sections.unshift({
       key: UNTAGGED,
-      title: 'Not tagged yet',
+      title: t('Not tagged yet'),
       count: untagged.length,
-      nights: [{ key: UNTAGGED, groups: [{ key: UNTAGGED, title: 'Not tagged yet', memories: sorted }] }],
+      nights: [{ key: UNTAGGED, groups: [{ key: UNTAGGED, title: t('Not tagged yet'), memories: sorted }] }],
       latest: sorted.at(-1)?.capturedAt ?? '',
     });
   }
@@ -90,7 +92,7 @@ function groupByArtist(prefix: string, memories: Memory[], artist: (id: string) 
   for (const m of [...memories].sort(byCapture)) {
     const a = m.artistId ? artist(m.artistId) : undefined;
     const key = `${prefix}:${a?.id ?? ''}`;
-    const g = groups.get(key) ?? { key, artist: a, title: a?.name ?? 'Artist not tagged', memories: [] };
+    const g = groups.get(key) ?? { key, artist: a, title: a?.name ?? t('Artist not tagged'), memories: [] };
     g.memories.push(m);
     groups.set(key, g);
   }
@@ -99,24 +101,21 @@ function groupByArtist(prefix: string, memories: Memory[], artist: (id: string) 
 }
 
 /** "12 clips", "1 clip". */
-export const clipCount = (n: number) => `${n} ${n === 1 ? 'clip' : 'clips'}`;
+export const clipCount = (n: number) => tn(n, '{n} clip', '{n} clips');
 
 /** A memory's own line: "SUBTRONICS · Saturday · Solstice 2026". */
 export function memoryLine(m: Memory, lookup: { festival: (id: string) => Festival | undefined; artist: (id: string) => Artist | undefined }): string {
-  const parts = [m.artistId ? lookup.artist(m.artistId)?.name : undefined, m.night, m.festivalId ? lookup.festival(m.festivalId)?.name : undefined];
-  return parts.filter(Boolean).join(' · ') || 'Not tagged yet';
+  const parts = [m.artistId ? lookup.artist(m.artistId)?.name : undefined, m.night ? t(m.night) : undefined, m.festivalId ? lookup.festival(m.festivalId)?.name : undefined];
+  return parts.filter(Boolean).join(' · ') || t('Not tagged yet');
 }
 
-const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** "Sat, Jun 20 · 11:48 PM · Orlando": when and where a video was filmed, in the phone's time. */
 export function momentLine(when: Date | undefined, place?: { city?: string; region?: string }): string {
   const parts: string[] = [];
   if (when && Number.isFinite(when.getTime())) {
-    const h = when.getHours();
-    parts.push(`${DAY[when.getDay()]}, ${MONTH[when.getMonth()]} ${when.getDate()}`);
-    parts.push(`${h % 12 === 0 ? 12 : h % 12}:${String(when.getMinutes()).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`);
+    parts.push(t('{weekday}, {month} {day}', { weekday: weekdays(true)[when.getDay()], month: months(true)[when.getMonth()], day: when.getDate() }));
+    parts.push(formatTime(`${when.getHours()}:${String(when.getMinutes()).padStart(2, '0')}`));
   }
   const where = place?.city ?? place?.region;
   if (where) parts.push(where);

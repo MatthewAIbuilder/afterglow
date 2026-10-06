@@ -4,6 +4,7 @@ import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { tonightTitle, type Tonight } from './tonight';
+import { t } from '../../i18n';
 
 /** Its height, so Discover keeps videos clear of it. */
 export const TONIGHT_PILL_H = 40;
@@ -18,12 +19,12 @@ export function TonightPill({ tonight }: { tonight: Tonight }) {
           router.push('/tonight');
         }}
         accessibilityRole="button"
-        accessibilityLabel={`Tonight: ${tonightTitle(tonight)}. Your plan, your crew and looking after yourself.`}
+        accessibilityLabel={t('Tonight: {title}. Your plan, your crew and looking after yourself.', { title: tonightTitle(tonight) })}
         style={({ pressed }) => [styles.pill, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
       >
         <View style={styles.dot} />
         <Text style={styles.text} numberOfLines={1}>
-          Tonight · {tonightTitle(tonight)}
+          {t('Tonight · {title}', { title: tonightTitle(tonight) })}
         </Text>
         <ChevronIcon color={color.moonDim} size={11} />
       </Pressable>

@@ -5,8 +5,12 @@
  * gives you their collectible; filming more of them levels it up: bronze at
  * 3 videos, silver at 6, gold at 10.
  */
+import { t, tn } from '../../i18n';
+
 export const TIER_AT = [1, 3, 6, 10] as const;
 export const TIER_NAME = ['', 'Bronze', 'Silver', 'Gold'] as const;
+/** The level's name, in the app's language. */
+export const TIER_LABEL = ['', t('Bronze'), t('Silver'), t('Gold')] as const;
 export type Tier = 0 | 1 | 2 | 3;
 
 export type ArtistSprout = {
@@ -28,23 +32,25 @@ export function tierFor(videos: number): Tier {
 
 /** Videos still to film for the next level, or undefined at gold. */
 export function toNextTier(videos: number): { more: number; tier: Tier } | undefined {
-  const t = tierFor(videos);
-  if (t === 3) return undefined;
-  const next = (t + 1) as Tier;
+  const tier = tierFor(videos);
+  if (tier === 3) return undefined;
+  const next = (tier + 1) as Tier;
   return { more: TIER_AT[next] - videos, tier: next };
 }
 
 /** "2 more videos of them for silver", "Gold: you've filmed them 12 times". */
 export function tierLine(videos: number): string {
   const next = toNextTier(videos);
-  if (!next) return `Gold: you’ve filmed them ${videos} times`;
-  return `${next.more} more ${next.more === 1 ? 'video' : 'videos'} of them for ${TIER_NAME[next.tier].toLowerCase()}`;
+  if (!next) return t('Gold: you’ve filmed them {n} times', { n: videos });
+  if (next.tier === 1) return tn(next.more, '{n} more video of them for bronze', '{n} more videos of them for bronze');
+  if (next.tier === 2) return tn(next.more, '{n} more video of them for silver', '{n} more videos of them for silver');
+  return tn(next.more, '{n} more video of them for gold', '{n} more videos of them for gold');
 }
 
 /** "Bronze · 4 videos", "1 video". */
 export function tierLabel(s: Pick<ArtistSprout, 'tier' | 'videos'>): string {
-  const n = `${s.videos} ${s.videos === 1 ? 'video' : 'videos'}`;
-  return s.tier ? `${TIER_NAME[s.tier]} · ${n}` : n;
+  const n = tn(s.videos, '{n} video', '{n} videos');
+  return s.tier ? `${TIER_LABEL[s.tier]} · ${n}` : n;
 }
 
 /** Your artist sprouts from your memories, most filmed first (then most recent). */
@@ -53,13 +59,13 @@ export function artistSprouts(memories: readonly { artistId?: string; capturedAt
   for (const m of memories) {
     if (!m.artistId || (known && !known(m.artistId))) continue;
     const at = Date.parse(m.capturedAt);
-    const t = Number.isNaN(at) ? 0 : at;
+    const time = Number.isNaN(at) ? 0 : at;
     const cur = by.get(m.artistId);
     if (cur) {
       cur.videos += 1;
-      cur.firstAt = Math.min(cur.firstAt, t);
-      cur.lastAt = Math.max(cur.lastAt, t);
-    } else by.set(m.artistId, { artistId: m.artistId, videos: 1, tier: 0, firstAt: t, lastAt: t });
+      cur.firstAt = Math.min(cur.firstAt, time);
+      cur.lastAt = Math.max(cur.lastAt, time);
+    } else by.set(m.artistId, { artistId: m.artistId, videos: 1, tier: 0, firstAt: time, lastAt: time });
   }
   return [...by.values()].map((s) => ({ ...s, tier: tierFor(s.videos) })).sort((a, b) => b.videos - a.videos || b.lastAt - a.lastAt);
 }
@@ -85,7 +91,9 @@ export function cleanShown(raw: unknown): Record<string, number> {
 
 /** "Artist sprouts · 4", "12 artists filmed, 2 at gold". */
 export function artistGardenLine(list: readonly ArtistSprout[]): string {
-  if (!list.length) return 'Film a set and that artist’s collectible joins your garden.';
+  if (!list.length) return t('Film a set and that artist’s collectible joins your garden.');
   const gold = list.filter((s) => s.tier === 3).length;
-  return `${list.length} ${list.length === 1 ? 'artist' : 'artists'} filmed${gold ? `, ${gold} at gold` : ''}`;
+  return gold
+    ? tn(list.length, '{n} artist filmed, {gold} at gold', '{n} artists filmed, {gold} at gold', { gold })
+    : tn(list.length, '{n} artist filmed', '{n} artists filmed');
 }

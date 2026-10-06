@@ -30,6 +30,7 @@ import { useNow } from '../lib/useNow';
 import { useCrews } from './crews';
 import { rememberLastKnown, useLastKnown } from './lastKnown';
 import { useSocial } from './social';
+import { t } from '../i18n';
 
 /**
  * Crew chats. Each of your crews' newest messages are followed live while
@@ -243,7 +244,8 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
           if (held.length && heldMs >= DELAY_NOTICE_MS) {
             setDeliveries((d) => [...d.filter((x) => x.crewId !== crewId), { crewId, count: held.length, heldMs, at }]);
             if (heldMs >= CHAT_LATE_MS && openChat.current !== crewId)
-              void notifyNow(`chat-sent:${crewId}:${at}`, 'Your messages got through', deliveryLine(held.length, heldMs).replace('reached the crew', isDirectRoom(crewId) ? 'got through' : 'reached the crew'), `/crew-chat/${crewId}`);
+              void notifyNow(`chat-sent:${crewId}:${at}`, t('Your messages got through'), deliveryLine(held.length, heldMs, isDirectRoom(crewId)),
+ `/crew-chat/${crewId}`);
           }
           // Any left over (sent with ones already there) try again on the usual wait.
           for (const o of items) if (!done.has(o.id)) setOutbox((box) => messageFailed(box, o.id, Date.now(), false));
