@@ -1,4 +1,5 @@
 import { SUPPORT_EMAIL } from '../../config/app';
+import { shortCount } from '../profile/profileView';
 
 /**
  * Words for profiles, in one place. The guidelines are what everyone agrees
@@ -28,3 +29,5 @@ export const followingLabel = (n: number) => `${n} following`;
 /** "1 like", "12 likes". */
 export const likesLabel = (n: number) => `${n} ${n === 1 ? 'like' : 'likes'}`;
 export const commentsLabel = (n: number) => `${n} ${n === 1 ? 'comment' : 'comments'}`;
+/** Under the speech bubble in Discover: how many ("12", "1.2K"), or the word when there are none yet (or it isn't known). */
+export const commentCaption = (n?: number) => (n ? shortCount(n) : 'Comment');

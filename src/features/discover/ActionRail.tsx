@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { color, motion, space, type, nightA } from '../../theme/tokens';
+import { CommentIcon } from '../../components/TabIcons';
 import { HeartIcon, SaveIcon, SkipIcon } from './icons';
 
 type Props = {
@@ -11,16 +12,23 @@ type Props = {
   /** Without it there's no Save button (community clips can't be kept in Your clips). */
   onSave?: () => void;
   onSkip: () => void;
+  /** The speech bubble: opens the clip's comments; `caption` is the count (or the word when there are none). */
+  comments?: { caption: string; label: string; onPress: () => void };
   /** Row sits under a video instead of floating beside the stage. */
   horizontal?: boolean;
 };
 
-export function ActionRail({ liked, saved, onLike, onSave, onSkip, horizontal }: Props) {
+export function ActionRail({ liked, saved, onLike, onSave, onSkip, comments, horizontal }: Props) {
   return (
     <View style={[styles.rail, horizontal && styles.row]}>
       <RailButton label={liked ? 'Liked' : 'Like'} active={liked} onPress={onLike}>
         <HeartIcon color={liked ? color.glow : color.moon} filled={liked} />
       </RailButton>
+      {comments ? (
+        <RailButton label={comments.label} caption={comments.caption} active={false} onPress={comments.onPress}>
+          <CommentIcon color={color.moon} size={27} />
+        </RailButton>
+      ) : null}
       {onSave ? (
         <RailButton label={saved ? 'Saved' : 'Save'} active={saved} onPress={onSave}>
           <SaveIcon color={saved ? color.glow : color.moon} filled={saved} />
@@ -35,12 +43,15 @@ export function ActionRail({ liked, saved, onLike, onSave, onSkip, horizontal }:
 
 function RailButton({
   label,
+  caption,
   active,
   onPress,
   nudge,
   children,
 }: {
   label: string;
+  /** What shows under the icon, when it isn't the label. */
+  caption?: string;
   active: boolean;
   onPress: () => void;
   /** Skip: the icon darts forward when tapped. */
@@ -83,7 +94,7 @@ function RailButton({
         {burst ? <Burst key={burst} /> : null}
         <Animated.View style={[styles.icon, style]}>{children}</Animated.View>
       </View>
-      <Text style={[styles.label, active && { color: color.glow }]}>{label}</Text>
+      <Text style={[styles.label, active && { color: color.glow }]}>{caption ?? label}</Text>
     </Pressable>
   );
 }

@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
-import { ChevronIcon, CommentIcon, ShareIcon } from '../../components/TabIcons';
+import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
 import { APP_NAME } from '../../config/app';
 import { setFor } from '../../data/festival';
 import type { Clip, Festival } from '../../data/types';
@@ -54,6 +54,8 @@ import { fillsScreen, MIN_PLAYER, tallLayout } from './videoLayout';
 import { useSendOrShare } from '../messages/useSendOrShare';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
+import { useCommentCount } from '../social/useCommentCount';
+import { commentCaption } from '../social/copy';
 
 type Props = {
   clip: Clip;
@@ -120,6 +122,12 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const clipFlags = useClipFlags();
   const social = useSocial();
   const sendOrShare = useSendOrShare();
+  // Comments: a shared video keeps its own (on the video); every other clip has the clip's.
+  const commentTarget = useMemo(
+    () => (community ? { kind: 'video' as const, id: community.sharedId } : { kind: 'clip' as const, id: clip.id }),
+    [community, clip.id],
+  );
+  const commentCount = useCommentCount(commentTarget, isNear || isActive);
   const { remember } = communityState;
   // So your reactions keep counting for the artist after this clip leaves the feed.
   const reacted = reaction.liked || reaction.skipped || !!reaction.watched;
@@ -384,6 +392,20 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         markSkipped(clip.id);
         onSkip(index);
       }}
+      comments={{
+        caption: commentCaption(commentCount),
+        label: commentCount ? `Comments, ${commentCount}` : 'Comments',
+        onPress: () => {
+          haptic.select();
+          // Stopping to read what people said isn't passing on it.
+          if (watch.current) watch.current = excuseWatch(watch.current);
+          router.push(
+            commentTarget.kind === 'video'
+              ? { pathname: '/comments/[id]', params: { id: commentTarget.id } }
+              : { pathname: '/comments/[id]', params: { id: commentTarget.id, kind: 'clip' } },
+          );
+        },
+      }}
     />
   );
 
@@ -459,19 +481,6 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
               <Text style={styles.credit} numberOfLines={1}>
                 {media.credit}
               </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                haptic.select();
-                if (watch.current) watch.current = excuseWatch(watch.current);
-                router.push({ pathname: '/comments/[id]', params: { id: community.sharedId } });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`Comments on @${community.handle}'s video`}
-              hitSlop={12}
-              style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
-            >
-              <CommentIcon color={color.moonDim} size={16} />
             </Pressable>
             <Pressable
               onPress={() =>
