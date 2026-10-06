@@ -166,6 +166,76 @@ export function feelingsBetween(care: Care, from: number, to: number): FeelingPo
     .map((e) => ({ at: e.at, mood: e.mood, level: MOOD_LEVEL[e.mood] }));
 }
 
+/** The groups the feelings are offered in: the good ones as big orbs, then something's off, then needing a hand. */
+export type MoodGroup = { id: 'fine' | 'off' | 'hand'; title?: string; moods: Mood[] };
+/** The feelings offered under "Need a hand" (like sick, they bring Get help to the top). */
+export const HAND_MOODS: readonly Mood[] = ['overwhelmed', 'rough'];
+/** Every feeling once, in `MOODS` order: okay or better, then the rest, then the ones asking for a hand. */
+export const MOOD_GROUPS: readonly MoodGroup[] = [
+  { id: 'fine', moods: MOODS.filter((m) => MOOD_LEVEL[m] >= 3) },
+  { id: 'off', title: 'Something’s off', moods: MOODS.filter((m) => MOOD_LEVEL[m] < 3 && !HAND_MOODS.includes(m)) },
+  { id: 'hand', title: 'Need a hand', moods: MOODS.filter((m) => HAND_MOODS.includes(m)) },
+];
+
+/** "9 PM", "10:30" (short, for the graph) or "10:30 PM" (`ampm`), in the phone's time. */
+export function clockShort(ms: number, ampm = false): string {
+  const d = new Date(ms);
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  if (!m) return `${hh} ${suffix}`;
+  return `${hh}:${String(m).padStart(2, '0')}${ampm ? ` ${suffix}` : ''}`;
+}
+
+/**
+ * The times under tonight's graph: the first check-in, `between` evenly
+ * spaced times (to the quarter hour) when the night is long enough, and
+ * "Now" once it's a little later than the first.
+ */
+export function graphTimes(from: number, now: number, between = 2): { at: number; label: string }[] {
+  const span = now - from;
+  const out = [{ at: from, label: clockShort(from) }];
+  const quarter = 15 * MIN;
+  if (span >= (between + 1) * 30 * MIN) {
+    for (let i = 1; i <= between; i++) {
+      const at = Math.round((from + (span * i) / (between + 1)) / quarter) * quarter;
+      out.push({ at, label: clockShort(at) });
+    }
+  }
+  if (span >= 20 * MIN) out.push({ at: now, label: 'Now' });
+  return out;
+}
+
+/**
+ * A low point tonight you've felt better than since: the latest check-in at
+ * level 2 or lower, when it isn't the latest one. Only what you told the
+ * app, never a guess at why.
+ */
+export function recoveryFrom(points: FeelingPoint[]): FeelingPoint | undefined {
+  const i = points.map((p) => p.level <= 2).lastIndexOf(true);
+  return i < 0 || i === points.length - 1 ? undefined : points[i];
+}
+
+/** "You felt too hot at 10:30 PM, and you’ve been feeling better since." */
+export function recoveryLine(low: FeelingPoint): string {
+  const felt = low.mood === 'rough' ? 'You weren’t feeling great' : `You felt ${MOOD_LABEL[low.mood].toLowerCase()}`;
+  return `${felt} at ${clockShort(low.at, true)}, and you’ve been feeling better since.`;
+}
+
+/** The lowest check-ins tonight, when they're lower than the rest (labelled under the graph). */
+export function lowestPoints(points: FeelingPoint[]): FeelingPoint[] {
+  if (points.length < 2) return [];
+  const levels = points.map((p) => p.level);
+  const min = Math.min(...levels);
+  return min < Math.max(...levels) ? points.filter((p) => p.level === min) : [];
+}
+
+/** Tonight in words for screen readers: "Tonight, 3 check-ins: 9 PM good, 10:30 PM too hot, 11:45 PM great." */
+export function nightSummary(points: FeelingPoint[]): string {
+  return `Tonight, ${points.length} check-ins: ${points.map((p) => `${clockShort(p.at, true)} ${MOOD_LABEL[p.mood].toLowerCase()}`).join(', ')}.`;
+}
+
 /** The one line on the festival page's card: what's running and when you last drank. */
 export function cardLine(care: Care, now: number): string {
   const parts: string[] = [];

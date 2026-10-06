@@ -183,8 +183,10 @@ export default function CareScreen() {
         ) : null}
 
         {/* How you're feeling, near the top: check in often. */}
-        <Part id="feelings" title="How are you feeling?" at={at}>
-          <FeelingCard care={care} now={now} onFeel={checkIn} crewFestival={crewAt} />
+        <Part id="feelings" at={at}>
+          <View style={styles.feelings}>
+            <FeelingCard care={care} now={now} onFeel={checkIn} crewFestival={crewAt} />
+          </View>
         </Part>
 
         {/* Stopwatches: from the timing guide, or your own words, each with how you've felt since. */}
@@ -415,6 +417,8 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.body, color: color.moonDim, marginTop: space.xs },
   tip: { ...type.caption, color: '#FF9ECB', marginTop: space.xs },
+  // How you feel has no section title (its card asks the question), so it keeps the same room above.
+  feelings: { marginTop: space.xl },
   section: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xxl, marginBottom: space.sm },
   card: {
     flexDirection: 'row',
