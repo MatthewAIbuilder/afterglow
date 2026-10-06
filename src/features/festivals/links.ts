@@ -92,14 +92,23 @@ export function nextFocus(
 /**
  * The artist's place at the festival, for the line under a clip. Works in
  * both phases: their set once times are out, otherwise that they're on the
- * lineup. Undefined if they don't play it.
+ * lineup. Undefined if they don't play it. `named`: says which festival
+ * ("Lost Lands 2026 · Saturday, set time to come"), for a feed that mixes
+ * festivals.
  */
-export function festivalLine(festival: Festival, artistId: string): string | undefined {
+export function festivalLine(festival: Festival, artistId: string, named = false): string | undefined {
   if (!playsAt(festival, artistId)) return undefined;
   const set = setFor(festival, artistId);
   const day = dayList(daysOf(festival, artistId));
-  const when = set ? describeSet(festival, set) : day ? t('{day}, set time to come', { day }) : t('On the lineup, set time to come');
-  return setLine(when, festival.notes?.[artistId]);
+  const when = set
+    ? describeSet(festival, set)
+    : day
+      ? t('{day}, set time to come', { day })
+      : named
+        ? t('Set time to come')
+        : t('On the lineup, set time to come');
+  const line = setLine(when, festival.notes?.[artistId]);
+  return named ? `${festival.name} · ${line}` : line;
 }
 
 /** How many clips and artists Discover has for a festival's lineup. */
