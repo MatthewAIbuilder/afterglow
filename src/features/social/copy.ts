@@ -1,4 +1,5 @@
 import { SUPPORT_EMAIL } from '../../config/app';
+import { shortCount } from '../profile/profileView';
 import { t, tn } from '../../i18n';
 
 /**
@@ -30,3 +31,5 @@ export const followingLabel = (n: number) => t('{n} following', { n });
 /** "1 like", "12 likes". */
 export const likesLabel = (n: number) => tn(n, '{n} like', '{n} likes');
 export const commentsLabel = (n: number) => tn(n, '{n} comment', '{n} comments');
+/** Under the speech bubble in Discover: how many ("12", "1.2K"), or the word when there are none yet (or it isn't known). */
+export const commentCaption = (n?: number) => (n ? shortCount(n) : t('Comment'));

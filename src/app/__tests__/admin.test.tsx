@@ -210,6 +210,31 @@ describe('the support account', () => {
     expect(app.getByText('@sam')).toBeTruthy();
   });
 
+  it('reads a reported comment on a clip in Discover and takes it down', async () => {
+    await person('sam', 'Sam');
+    const c = await s().clipComment('yt-abc', 'Worst set ever, loser');
+    await s().signOut();
+    await person('maya', 'Maya');
+    await s().report({ kind: 'clipComment', id: c.id, ownerUid: c.uid }, 'harassment');
+    await s().signOut();
+    await supportAccount();
+    const app = await renderApp('/admin');
+    await flush();
+    await fireEvent.press(app.getByRole('tab', { name: /^Reports/ }));
+    await flush();
+    expect(app.getByText('A comment on a clip in Discover')).toBeTruthy();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await fireEvent.press(app.getByLabelText('Read the comment'));
+    await flush();
+    expect(alert).toHaveBeenCalledWith('@sam’s comment', '“Worst set ever, loser”');
+    alert.mockImplementation((_t, _m, buttons?: AlertButton[]) => buttons?.find((b) => b.text === 'Take it down')?.onPress?.());
+    await fireEvent.press(app.getByLabelText('Remove the comment'));
+    await flush();
+    alert.mockRestore();
+    expect(mockSocial.clipComments.has(c.id)).toBe(false);
+    expect(app.getByText('Nothing reported. All clear.')).toBeTruthy();
+  });
+
   it('keeps every reply, links only a real-looking email, and a message goes with the account', async () => {
     expect(mailtoLink('maya@example.com', 'Afterglow support')).toBe('mailto:maya@example.com?subject=Afterglow%20support');
     expect(mailtoLink('maya@example.com?cc=x@y.z', 'Hi')).toBeUndefined();

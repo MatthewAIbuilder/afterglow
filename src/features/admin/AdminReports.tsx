@@ -53,10 +53,10 @@ export function AdminReports() {
       showAlert('Couldn’t read it', 'Check the signal and try again.');
     }
   };
-  // A comment: read it before taking it down.
+  // A comment (on a shared video, or on a clip in Discover): read it before taking it down.
   const readComment = async (r: ReportRecord) => {
     try {
-      const c = await service.reportedComment(r.targetId);
+      const c = r.kind === 'clipComment' ? await service.reportedClipComment(r.targetId) : await service.reportedComment(r.targetId);
       showAlert(c ? `@${c.handle}’s comment` : 'The comment', c ? `“${c.text}”` : 'It’s already gone.');
     } catch {
       showAlert('Couldn’t read it', 'Check the signal and try again.');
@@ -73,7 +73,8 @@ export function AdminReports() {
     }
   };
   const takeDown = (r: ReportRecord) => {
-    if (r.kind === 'profile') return;
+    const kind = r.kind;
+    if (kind === 'profile') return;
     showAlert(r.kind === 'memory' ? 'Take this video down?' : r.kind === 'chat' ? 'Remove this message?' : 'Remove this comment?', 'It’s removed for everyone, and the report is marked dealt with.', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -81,7 +82,7 @@ export function AdminReports() {
         style: 'destructive',
         onPress: async () => {
           try {
-            await service.takeDown(r.kind as 'memory' | 'comment' | 'chat', r.targetId);
+            await service.takeDown(kind, r.targetId);
             await service.resolveReport(r.id);
             haptic.settle();
             void load();
@@ -104,7 +105,7 @@ export function AdminReports() {
         shown.map((r) => (
           <View key={r.id} style={[styles.card, r.status === 'open' && styles.cardOpen]}>
             <View style={styles.head}>
-              <Text style={styles.what}>{r.kind === 'memory' ? 'A video' : r.kind === 'comment' ? 'A comment' : r.kind === 'chat' ? (isDirectRoom(r.targetId) ? 'A 1-to-1 message' : 'A crew chat message') : 'A profile'}</Text>
+              <Text style={styles.what}>{r.kind === 'memory' ? 'A video' : r.kind === 'comment' ? 'A comment' : r.kind === 'clipComment' ? 'A comment on a clip in Discover' : r.kind === 'chat' ? (isDirectRoom(r.targetId) ? 'A 1-to-1 message' : 'A crew chat message') : 'A profile'}</Text>
               <Text style={styles.when}>{agoShort(r.createdAt, now)}</Text>
             </View>
             <Text style={styles.reason}>{REPORT_REASONS.find((x) => x.key === r.reason)?.label}</Text>
@@ -115,7 +116,7 @@ export function AdminReports() {
                   <Text style={styles.link}>Look at it</Text>
                 </Pressable>
               ) : null}
-              {r.kind === 'comment' ? (
+              {r.kind === 'comment' || r.kind === 'clipComment' ? (
                 <Pressable onPress={() => void readComment(r)} accessibilityRole="button" accessibilityLabel="Read the comment" hitSlop={6}>
                   <Text style={styles.link}>Read it</Text>
                 </Pressable>

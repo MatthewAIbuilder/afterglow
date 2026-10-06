@@ -1,7 +1,7 @@
 import { t } from '../../i18n';
 import type { PastEvent } from '../memories/past';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
-import type { Published, Activity, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip } from './models';
+import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -30,7 +30,7 @@ export type ShareInput = {
 
 export type FollowCounts = { followers: number; following: number };
 
-export type ReportTarget = { kind: 'profile' | 'memory' | 'comment' | 'chat'; id: string; ownerUid: string };
+export type ReportTarget = { kind: 'profile' | 'memory' | 'comment' | 'clipComment' | 'chat'; id: string; ownerUid: string };
 
 export interface SocialService {
   availability(): SocialAvailability;
@@ -82,11 +82,13 @@ export interface SocialService {
   /** Mark a report dealt with. */
   resolveReport(id: string): Promise<void>;
   /** Take down a shared video or a comment that breaks the guidelines. */
-  takeDown(kind: 'memory' | 'comment' | 'chat', id: string): Promise<void>;
+  takeDown(kind: 'memory' | 'comment' | 'clipComment' | 'chat', id: string): Promise<void>;
   /** A reported crew chat message (`crewId/messageId`), for the support account to read. */
   reportedMessage(target: string): Promise<CrewMessage | null>;
   /** A reported comment, for the support account to read before taking it down. */
   reportedComment(id: string): Promise<Comment | null>;
+  /** A reported comment on a clip in Discover. */
+  reportedClipComment(id: string): Promise<ClipComment | null>;
   /** The headline numbers, counted on the server; `since` is a week ago. */
   adminCounts(since: string): Promise<AdminCounts>;
   /** When profiles, videos, comments, likes, follows and crews were made since then (newest first, up to `max` each), for the charts. */
@@ -175,6 +177,13 @@ export interface SocialService {
   commentCount(memoryId: string): Promise<number>;
   /** Remove a comment: your own, or any on your video. */
   deleteComment(id: string): Promise<void>;
+  /** Comment on a clip in Discover (`clipId` is the clip's own id). Needs your profile. Online only, like video comments. */
+  clipComment(clipId: string, text: string): Promise<ClipComment>;
+  /** A clip's comments, oldest first, at most `max`; `after` (the last one already read) reads the next page. */
+  clipComments(clipId: string, max: number, after?: ClipComment): Promise<ClipComment[]>;
+  clipCommentCount(clipId: string): Promise<number>;
+  /** Remove your own comment on a clip (the support account removes others with `takeDown`). */
+  deleteClipComment(id: string): Promise<void>;
   /** What happened to you lately (new followers, likes and comments on your videos), newest first. */
   activity(max: number): Promise<Activity[]>;
 

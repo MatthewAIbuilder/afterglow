@@ -8,8 +8,15 @@ import { ArtistRow } from '../components/ArtistRow';
 import { FestivalRow } from '../components/FestivalRow';
 import { NightSky } from '../components/NightSky';
 import { SearchField } from '../components/SearchField';
-import { ChevronIcon, CloseIcon } from '../components/TabIcons';
+import { ChevronIcon, CloseIcon, SoundIcon } from '../components/TabIcons';
+import { GlassCircleButton } from '../components/GlassCircleButton';
 import type { Artist, Festival } from '../data/types';
+import { SOUND_LABEL } from '../data/models';
+import { likeFocus, soundChoices, soundFocus } from '../features/discover/focus';
+import { PlayIcon } from '../features/discover/icons';
+import { lineupClips } from '../features/festivals/links';
+import { matchesName } from '../features/festivals/search';
+import { SOUND_COLOR } from '../features/sound-map/colors';
 import { searchCatalog, searchesPeople, liveRecents, topArtists, type Recent } from '../features/search/universal';
 import type { Profile } from '../features/social/models';
 import { PersonRow } from '../features/social/PersonRow';
@@ -25,12 +32,14 @@ import { useTaste } from '../state/taste';
 import { useWeekends } from '../state/weekends';
 import { color, radius, space, type } from '../theme/tokens';
 import { goBack } from '../lib/nav';
-import { t } from '../i18n';
+import { t, tn } from '../i18n';
 
 /**
  * Search everything from Discover: people (when profiles are on and you're
  * signed in), artists and festivals, in one list as you type. Before you
  * type: your recent searches, your festivals and your best matches.
+ * Anything found can start Discover from it: a sound plays that sound, a
+ * festival its lineup, an artist a station ("Sounds like …").
  */
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
@@ -52,6 +61,12 @@ export default function SearchScreen() {
   const q = query.trim();
 
   const found = useMemo(() => searchCatalog(q, catalog, taste), [q, catalog, taste]);
+  // Sounds by name ("dub" finds Dubstep), the ones with clips.
+  const sounds = useMemo(() => (q && !found.peopleOnly ? soundChoices(catalog.clips, catalog.artist, 1).filter((s) => matchesName(SOUND_LABEL[s.tag], q)) : []), [q, found, catalog]);
+  // Start Discover from something found: its focus, back on the Discover tab.
+  const discover = (focus: string) => {
+    router.navigate({ pathname: '/', params: { festival: focus } });
+  };
 
   // People, from your profile's service (a moment after you stop typing). Answers are kept with their search.
   const canFindPeople = social.availability.ok && !!social.user;
@@ -77,19 +92,46 @@ export default function SearchScreen() {
   const artistRow = (a: Artist) => {
     const at = catalog.festivalsOf(a.id);
     return (
-      <ArtistRow
-        key={a.id}
-        artist={a}
-        affinity={taste[a.id] ?? 0}
-        festivalId={at.length === 1 ? at[0].id : undefined}
-        detail={at.length ? t('Plays {festivals}', { festivals: at.map((f) => f.name).join(', ') }) : undefined}
-        rating={ratings[a.id]}
-        onOpen={() => remember({ kind: 'artist', id: a.id, label: a.name })}
-      />
+      <View key={a.id} style={styles.withAction}>
+        <View style={styles.rowFill}>
+          <ArtistRow
+            artist={a}
+            affinity={taste[a.id] ?? 0}
+            festivalId={at.length === 1 ? at[0].id : undefined}
+            detail={at.length ? t('Plays {festivals}', { festivals: at.map((f) => f.name).join(', ') }) : undefined}
+            rating={ratings[a.id]}
+            onOpen={() => remember({ kind: 'artist', id: a.id, label: a.name })}
+          />
+        </View>
+        <GlassCircleButton label={t('Sounds like {artist}', { artist: a.name })} hint={t('Starts Discover with their sets and artists with a similar sound')} onPress={() => {
+          remember({ kind: 'artist', id: a.id, label: a.name });
+          discover(likeFocus(a.id));
+        }}>
+          <SoundIcon color={color.glow} size={16} />
+        </GlassCircleButton>
+      </View>
+    );
+  };
+  const festivalRow = (f: Festival) => {
+    const watchable = lineupClips(f, catalog.clips).length > 0;
+    return (
+      <View key={f.id} style={styles.withAction}>
+        <View style={styles.rowFill}>
+          <FestivalRow festival={f} onOpen={() => remember({ kind: 'festival', id: f.id, label: f.name })} />
+        </View>
+        {watchable ? (
+          <GlassCircleButton label={t('Discover {festival}', { festival: f.name })} hint={t('Starts Discover with live sets from its lineup')} onPress={() => {
+            remember({ kind: 'festival', id: f.id, label: f.name });
+            discover(f.id);
+          }}>
+            <PlayIcon color={color.glow} size={14} />
+          </GlassCircleButton>
+        ) : null}
+      </View>
     );
   };
 
-  const nothing = !!q && !found.festivals.length && !found.artists.length && (!lookForPeople || (peopleNow && !shownPeople.length));
+  const nothing = !!q && !sounds.length && !found.festivals.length && !found.artists.length && (!lookForPeople || (peopleNow && !shownPeople.length));
 
   return (
     <View style={styles.root}>
@@ -124,10 +166,30 @@ export default function SearchScreen() {
             {found.peopleOnly && !canFindPeople ? (
               <Text style={styles.quiet}>{social.availability.ok ? t('Sign in on your profile to find people.') : t('Finding people isn’t available in this version yet.')}</Text>
             ) : null}
-            {found.festivals.length ? <Text style={styles.section}>{t('Festivals')}</Text> : null}
-            {found.festivals.map((f) => (
-              <FestivalRow key={f.id} festival={f} onOpen={() => remember({ kind: 'festival', id: f.id, label: f.name })} />
+            {sounds.length ? <Text style={styles.section}>{t('Sounds')}</Text> : null}
+            {sounds.map(({ tag, clips }) => (
+              <Pressable
+                key={tag}
+                onPress={() => {
+                  haptic.select();
+                  discover(soundFocus(tag));
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={tn(clips, 'Discover {sound}, {n} clip from every lineup', 'Discover {sound}, {n} clips from every lineup', { sound: SOUND_LABEL[tag] })}
+                style={({ pressed }) => [styles.soundRow, pressed && { opacity: 0.7 }]}
+              >
+                <View style={[styles.soundDot, { backgroundColor: SOUND_COLOR[tag], shadowColor: SOUND_COLOR[tag] }]} />
+                <View style={styles.rowFill}>
+                  <Text style={styles.soundName}>{SOUND_LABEL[tag]}</Text>
+                  <Text style={styles.soundDetail}>
+                    {tn(clips, '{n} clip from every lineup', '{n} clips from every lineup')}
+                  </Text>
+                </View>
+                <PlayIcon color={color.glow} size={14} />
+              </Pressable>
             ))}
+            {found.festivals.length ? <Text style={styles.section}>{t('Festivals')}</Text> : null}
+            {found.festivals.map(festivalRow)}
             {found.artists.length ? <Text style={styles.section}>{t('Artists')}</Text> : null}
             {found.artists.map(artistRow)}
             {nothing ? (
@@ -257,6 +319,12 @@ function Suggestions({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
+  withAction: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  rowFill: { flex: 1 },
+  soundRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
+  soundDot: { width: 10, height: 10, borderRadius: 5, marginHorizontal: space.xs, shadowOpacity: 0.9, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
+  soundName: { ...type.headline, color: color.moon },
+  soundDetail: { ...type.caption, color: color.moonDim, marginTop: 2 },
   bar: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.xl, paddingBottom: space.sm },
   cancel: { ...type.headline, color: color.moonDim },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xl, marginBottom: space.xs },

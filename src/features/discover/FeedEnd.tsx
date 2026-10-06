@@ -21,6 +21,8 @@ type Props = {
   following?: boolean;
   /** You were watching one sound from every lineup ("Dubstep"). */
   soundLabel?: string;
+  /** You were on a station ("Sounds like SUBTRONICS"): its artist's name. */
+  station?: string;
   width: number;
   height: number;
   /** Space reserved at the bottom for the floating tab bar. */
@@ -35,7 +37,7 @@ type Props = {
  * rate the rest of the lineup, see your plan, discover another festival or
  * your mix, or start again.
  */
-export function FeedEnd({ festival, following = false, soundLabel, width, height, bottomSpace, onRestart }: Props) {
+export function FeedEnd({ festival, following = false, soundLabel, station, width, height, bottomSpace, onRestart }: Props) {
   const catalog = useCatalog();
   const { ratings } = useRatings();
   const insets = useSafeAreaInsets();
@@ -65,7 +67,7 @@ export function FeedEnd({ festival, following = false, soundLabel, width, height
 
   return (
     <View style={[styles.page, { width, height, paddingTop: insets.top + 100, paddingBottom: bottomSpace + space.xl }]}>
-      <Text style={styles.kicker}>{festival ? t('That’s the lineup') : following ? t('That’s everyone you follow') : soundLabel ? t('That’s {sound}', { sound: soundLabel.toLowerCase() }) : t('That’s your mix')}</Text>
+      <Text style={styles.kicker}>{festival ? t('That’s the lineup') : following ? t('That’s everyone you follow') : soundLabel ? t('That’s {sound}', { sound: soundLabel.toLowerCase() }) : station ? t('That’s the station') : t('That’s your mix')}</Text>
       <Text style={styles.title}>
         {festival
           ? t('You’ve seen every clip from {festival}', { festival: festival.name })
@@ -73,7 +75,9 @@ export function FeedEnd({ festival, following = false, soundLabel, width, height
             ? t('You’ve seen every video from people you follow')
             : soundLabel
               ? t('You’ve seen every {sound} clip', { sound: soundLabel.toLowerCase() })
-              : t('You’ve seen every clip')}
+              : station
+                ? t('You’ve seen everything that sounds like {artist}', { artist: station })
+                : t('You’ve seen every clip')}
       </Text>
       <Text style={styles.body}>
         {following
@@ -94,7 +98,7 @@ export function FeedEnd({ festival, following = false, soundLabel, width, height
           row(t('Discover {festival}', { festival: f.name }), undefined, () => router.navigate({ pathname: '/', params: { festival: f.id } }), <PlayIcon color={color.moonDim} size={14} />),
         )}
         {following && row(t('Find people'), undefined, () => router.push('/people'), undefined, true)}
-        {(festival || following || soundLabel) &&
+        {(festival || following || soundLabel || station) &&
           row(t('Try your mix'), t('a bit of everything'), () => router.navigate({ pathname: '/', params: { festival: MIX } }), <PlayIcon color={color.moonDim} size={14} />)}
         {row(t('Watch again from the top'), undefined, onRestart)}
       </View>
