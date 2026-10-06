@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import { isOver, whenRank } from '../festivals/shelves';
 import type { Profile } from '../social/models';
+import { months, t, weekdays } from '../../i18n';
 
 /**
  * Where faces sit in the Friends orbit and in a crew's picture. Pure.
@@ -72,13 +73,13 @@ export function crewOrbPlaces(n: number, box: number): OrbPlace[] {
 /** "2m", "3h", "Tue", "12 Oct": how long ago a chat's last message was, as short as a messages list shows it. */
 export function chatTime(at: number, now: number): string {
   const m = Math.max(0, Math.floor((now - at) / 60000));
-  if (m < 1) return 'now';
+  if (m < 1) return t('now');
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
   const d = new Date(at);
-  if (h < 24 * 6) return d.toLocaleDateString('en-US', { weekday: 'short' });
-  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  if (h < 24 * 6) return weekdays(true)[d.getDay()];
+  return t('{month} {day}', { month: months(true)[d.getMonth()], day: d.getDate() });
 }
 
 /** The soonest festival still to come on someone's profile, if they show where they're going. */

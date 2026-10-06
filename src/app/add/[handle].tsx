@@ -7,6 +7,7 @@ import { PageActions } from '../../components/PageActions';
 import { PageTitle } from '../../components/PageTitle';
 import { PersonAvatar } from '../../components/PersonAvatar';
 import { cardFrom } from '../../features/friends/qr';
+import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { type AddResult, useFriendAdds } from '../../state/friendAdds';
 import { useSocial } from '../../state/social';
@@ -33,20 +34,20 @@ export default function AddFriendScreen() {
   };
 
   const line = !card
-    ? 'This friend link isn’t complete. Ask your friend to share it again, or scan their code.'
+    ? t('This friend link isn’t complete. Ask your friend to share it again, or scan their code.')
     : outcome === 'added'
-      ? `You and ${card.name} are friends now. You follow each other.`
+      ? t('You and {name} are friends now. You follow each other.', { name: card.name })
       : outcome === 'self'
-        ? 'This is your own friend link.'
+        ? t('This is your own friend link.')
         : outcome === 'waiting'
-          ? `Saved. You’ll be friends with ${card.name} as soon as there’s signal.`
+          ? t('Saved. You’ll be friends with {name} as soon as there’s signal.', { name: card.name })
           : outcome === 'needs-profile'
-            ? `Make your profile and you’ll be friends with ${card.name} once there’s signal.`
-            : `${card.name} wants to be friends on Afterglow. You’ll follow each other.`;
+            ? t('Make your profile and you’ll be friends with {name} once there’s signal.', { name: card.name })
+            : t('{name} wants to be friends on Afterglow. You’ll follow each other.', { name: card.name });
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Add a friend" />
+      <PageTitle title={t('Add a friend')} />
       <NightSky />
       <PageActions />
       <View style={[styles.content, { paddingTop: insets.top + 80 }]}>
@@ -57,15 +58,15 @@ export default function AddFriendScreen() {
           {line}
         </Text>
         {!card ? null : !social.availability.ok ? (
-          <Text style={styles.body}>Open Afterglow on your phone to add friends.</Text>
+          <Text style={styles.body}>{t('Open Afterglow on your phone to add friends.')}</Text>
         ) : !social.ready ? null : !social.user ? (
-          <Primary label="Sign in to be friends" onPress={() => router.push('/account')} />
+          <Primary label={t('Sign in to be friends')} onPress={() => router.push('/account')} />
         ) : outcome === 'added' ? (
-          <Primary label="See their profile" onPress={() => router.replace({ pathname: '/u/[handle]', params: { handle: card.handle } })} />
+          <Primary label={t('See their profile')} onPress={() => router.replace({ pathname: '/u/[handle]', params: { handle: card.handle } })} />
         ) : outcome === 'needs-profile' ? (
-          <Primary label="Make my profile" onPress={() => router.push('/profile-edit')} />
+          <Primary label={t('Make my profile')} onPress={() => router.push('/profile-edit')} />
         ) : outcome === undefined || outcome === 'adding' ? (
-          <Primary label={outcome === 'adding' ? 'Adding…' : 'Be friends'} onPress={() => void go()} disabled={outcome === 'adding'} />
+          <Primary label={outcome === 'adding' ? t('Adding…') : t('Be friends')} onPress={() => void go()} disabled={outcome === 'adding'} />
         ) : null}
       </View>
     </View>

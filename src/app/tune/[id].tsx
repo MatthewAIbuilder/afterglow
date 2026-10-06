@@ -31,6 +31,7 @@ import { FilterChips } from '../../components/FilterChips';
 import { lineupDays, playsOn } from '../../features/festivals/days';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { dayWord, t, tn } from '../../i18n';
 
 type Answer = Rating | 'unsure';
 
@@ -43,9 +44,9 @@ const ANSWER_ROWS: Rating[][] = [
 
 /** "You love 2 and like 5 artists here." */
 function favouritesLine(loved: number, liked: number): string {
-  const artists = (n: number) => `${n} ${n === 1 ? 'artist' : 'artists'}`;
-  if (loved && liked) return `You love ${loved} and like ${liked} ${loved + liked === 1 ? 'artist' : 'artists'} here.`;
-  return loved ? `You love ${artists(loved)} here.` : `You like ${artists(liked)} here.`;
+  // Both together are always two or more.
+  if (loved && liked) return t('You love {loved} and like {liked} artists here.', { loved, liked });
+  return loved ? tn(loved, 'You love {n} artist here.', 'You love {n} artists here.') : tn(liked, 'You like {n} artist here.', 'You like {n} artists here.');
 }
 type Step = { id: string; answer: Answer };
 
@@ -133,7 +134,7 @@ export default function TuneScreen() {
         ? SlideOutLeft.duration(260)
         : FadeOut.duration(160);
   const tags = artist ? (Object.entries(artist.sound) as [SoundTag, number][]).sort((a, b) => b[1] - a[1]) : [];
-  const match = artist && informed[artist.id] ? `${Math.round((taste[artist.id] ?? 0) * 100)}% match` : 'New to you';
+  const match = artist && informed[artist.id] ? t('{n}% match', { n: Math.round((taste[artist.id] ?? 0) * 100) }) : t('New to you');
   // A hint for artists you don't know: who they sound like among ones you love or strongly match (your answers here count too).
   const like = artist
     ? soundsLike(
@@ -143,7 +144,12 @@ export default function TuneScreen() {
         similarity,
       )
     : [];
-  const likeLine = like.length ? `Sounds like ${like.map((a) => a.name).join(' and ')}` : undefined;
+  // At most two.
+  const likeLine = like.length
+    ? like.length === 1
+      ? t('Sounds like {artist}', { artist: like[0].name })
+      : t('Sounds like {artist1} and {artist2}', { artist1: like[0].name, artist2: like[1].name })
+    : undefined;
 
   return (
     <View style={styles.root}>
@@ -151,35 +157,35 @@ export default function TuneScreen() {
 
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
         {steps.length > 0 ? (
-          <Pressable onPress={undo} accessibilityRole="button" accessibilityLabel="Undo the last answer" hitSlop={12}>
-            <Text style={styles.undo}>Undo</Text>
+          <Pressable onPress={undo} accessibilityRole="button" accessibilityLabel={t('Undo the last answer')} hitSlop={12}>
+            <Text style={styles.undo}>{t('Undo')}</Text>
           </Pressable>
         ) : (
           <View />
         )}
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
 
       <View style={[styles.head, tiny && { marginTop: space.xs }]}>
-        <Text style={[styles.title, tiny && styles.titleTiny]}>Tune your lineup</Text>
+        <Text style={[styles.title, tiny && styles.titleTiny]}>{t('Tune your lineup')}</Text>
         <Text style={styles.sub}>
           {festival.name}
-          {day ? ` · ${day}` : ''}
-          {!done && queue.length > 0 ? ` · ${steps.length + 1} of ${queue.length}` : ''}
+          {day ? ` · ${t(day)}` : ''}
+          {!done && queue.length > 0 ? ` · ${t('{n} of {total}', { n: steps.length + 1, total: queue.length })}` : ''}
         </Text>
         {days.length > 0 && steps.length === 0 && (
           <View style={styles.dayChips}>
             <FilterChips
               inset={0}
               chips={[
-                { key: undefined, label: 'All days', count: queueFor(undefined).length, accessibilityLabel: 'Tune every day' },
+                { key: undefined, label: t('All days'), count: queueFor(undefined).length, accessibilityLabel: t('Tune every day') },
                 ...days.map((d) => ({
                   key: d,
-                  label: d,
+                  label: t(d),
                   count: queueFor(d).length,
-                  accessibilityLabel: `Tune only ${d}, ${queueFor(d).length} to rate`,
+                  accessibilityLabel: t('Tune only {day}, {n} to rate', { day: dayWord(d), n: queueFor(d).length }),
                 })),
               ]}
               value={day}
@@ -201,7 +207,7 @@ export default function TuneScreen() {
             exiting={exiting}
             style={styles.card}
             accessible
-            accessibilityLabel={`${artist.name}. ${tags.map(([t]) => SOUND_LABEL[t]).join(', ') || 'Sound not known yet'}. ${match}.${likeLine ? ` ${likeLine}.` : ''}`}
+            accessibilityLabel={`${t('{artist}. {sounds}. {match}.', { artist: artist.name, sounds: tags.map(([tag]) => SOUND_LABEL[tag]).join(', ') || t('Sound not known yet'), match })}${likeLine ? ` ${likeLine}.` : ''}`}
           >
             <ArtistAvatar artist={artist} size={tiny ? 60 : compact ? 92 : 148} />
             <Text style={[styles.name, compact && styles.nameCompact, tiny && styles.nameTiny]} numberOfLines={2}>
@@ -227,15 +233,15 @@ export default function TuneScreen() {
           <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(320)} style={styles.card}>
             {queue.length > 0 ? <DoneBurst /> : null}
             <HeartIcon color={color.glow} filled size={56} />
-            <Text style={styles.name}>{queue.length === 0 ? 'All rated' : 'That’s everyone'}</Text>
+            <Text style={styles.name}>{queue.length === 0 ? t('All rated') : t('That’s everyone')}</Text>
             <Text style={styles.doneText}>
               {queue.length === 0
                 ? day
-                  ? `You’ve rated everyone playing ${day} at ${festival.name}.`
-                  : `You’ve rated everyone on the ${festival.name} lineup.`
+                  ? t('You’ve rated everyone playing {day} at {festival}.', { day: dayWord(day), festival: festival.name })
+                  : t('You’ve rated everyone on the {festival} lineup.', { festival: festival.name })
                 : loved + liked > 0
-                  ? `${favouritesLine(loved, liked)} Your festival plan and My Sound have been updated.`
-                  : 'Your festival plan and My Sound have been updated.'}
+                  ? `${favouritesLine(loved, liked)} ${t('Your festival plan and My Sound have been updated.')}`
+                  : t('Your festival plan and My Sound have been updated.')}
             </Text>
           </Animated.View>
         )}
@@ -272,11 +278,11 @@ export default function TuneScreen() {
               <Pressable
                 onPress={() => answer('unsure')}
                 accessibilityRole="button"
-                accessibilityLabel={`I don't know ${artist.name}. Skip without rating.`}
+                accessibilityLabel={t("I don't know {artist}. Skip without rating.", { artist: artist.name })}
                 hitSlop={10}
                 style={({ pressed }) => [styles.unsure, pressed && styles.pressed]}
               >
-                <Text style={styles.unsureText}>Don’t know them</Text>
+                <Text style={styles.unsureText}>{t('Don’t know them')}</Text>
               </Pressable>
               {/* Hear them first: opens YouTube, and this card is still here when you come back. */}
               <Pressable
@@ -286,11 +292,11 @@ export default function TuneScreen() {
                   if (yt) Linking.openURL(yt.url).catch(() => {});
                 }}
                 accessibilityRole="link"
-                accessibilityLabel={`Listen to ${artist.name} on YouTube`}
+                accessibilityLabel={t('Listen to {artist} on YouTube', { artist: artist.name })}
                 hitSlop={10}
                 style={({ pressed }) => [styles.unsure, pressed && styles.pressed]}
               >
-                <Text style={[styles.unsureText, styles.listen]}>Listen on YouTube</Text>
+                <Text style={[styles.unsureText, styles.listen]}>{t('Listen on YouTube')}</Text>
               </Pressable>
             </View>
           </>
@@ -301,7 +307,7 @@ export default function TuneScreen() {
               accessibilityRole="button"
               style={({ pressed }) => [styles.choice, styles.love, styles.wide, pressed && styles.pressed]}
             >
-              <Text style={[styles.choiceText, { color: color.moon }]}>See your festival</Text>
+              <Text style={[styles.choiceText, { color: color.moon }]}>{t('See your festival')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -309,11 +315,11 @@ export default function TuneScreen() {
                 router.navigate({ pathname: '/sound', params: { festival: festival.id } });
               }}
               accessibilityRole="button"
-              accessibilityLabel={`See your sound at ${festival.name} on My Sound`}
+              accessibilityLabel={t('See your sound at {festival} on My Sound', { festival: festival.name })}
               hitSlop={10}
               style={({ pressed }) => [styles.unsure, pressed && styles.pressed]}
             >
-              <Text style={styles.unsureText}>See it on My Sound</Text>
+              <Text style={styles.unsureText}>{t('See it on My Sound')}</Text>
             </Pressable>
           </>
         )}

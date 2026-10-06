@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import type { Going } from '../festivals/going';
 import { runsOf } from '../festivals/when';
+import { t } from '../../i18n';
 
 /**
  * Reminders the phone shows even when the app is closed: a week before and
@@ -42,15 +43,15 @@ export function festivalReminders(festivals: Festival[], going: Going, now: Date
         start: runs[0].start,
         key: 'week',
         at: localDay(runs[0].start, 7),
-        title: `${f.name} is a week away`,
-        body: timesOut ? 'Your day-by-day plan is ready.' : 'Tune your lineup so your must sees are ready.',
+        title: t('{festival} is a week away', { festival: f.name }),
+        body: timesOut ? t('Your day-by-day plan is ready.') : t('Tune your lineup so your must sees are ready.'),
       },
       ...runs.map((run, i) => ({
         start: run.start,
         key: 'eve',
         at: localDay(run.start, 1),
-        title: `${f.name}${i > 0 ? ` weekend ${i + 1}` : ''} is tomorrow`,
-        body: timesOut ? 'Your plan is laid out day by day, clashes and all.' : 'Your must sees are ready. Have a great one.',
+        title: i > 0 ? t('{festival} weekend {w} is tomorrow', { festival: f.name, w: i + 1 }) : t('{festival} is tomorrow', { festival: f.name }),
+        body: timesOut ? t('Your plan is laid out day by day, clashes and all.') : t('Your must sees are ready. Have a great one.'),
       })),
     ];
     for (const p of planned) {

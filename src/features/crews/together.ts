@@ -1,4 +1,5 @@
 import type { Crew, CrewPicks } from '../social/models';
+import { t, tn } from '../../i18n';
 
 /**
  * Planning a festival as a crew. Pure. Each member shares their starred sets
@@ -36,31 +37,31 @@ export function crewTogether(picks: CrewPicks[], members: string[], lineup: stri
 }
 
 /** Names in a list: "Maya", "Maya and Sam", "Maya, Sam and Jo". */
-const joinNames = (names: string[]) => (names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
+const joinNames = (names: string[]) => (names.length <= 1 ? (names[0] ?? '') : t('{list} and {last}', { list: names.slice(0, -1).join(', '), last: names[names.length - 1] }));
 
 /**
  * Who wants a set: "Both of you", "All 4 of you", or names with you last
  * ("Maya and you", "Maya, Sam and you"). `nameOf` gives a member's first name.
  */
 export function whoLine(who: string[], crewSize: number, me: string | undefined, nameOf: (uid: string) => string): string {
-  if (who.length === crewSize && crewSize > 1) return crewSize === 2 ? 'Both of you' : `All ${crewSize} of you`;
+  if (who.length === crewSize && crewSize > 1) return crewSize === 2 ? t('Both of you') : t('All {n} of you', { n: crewSize });
   const others = who.filter((u) => u !== me).map(nameOf);
-  return joinNames(me && who.includes(me) ? [...others, 'you'] : others);
+  return joinNames(me && who.includes(me) ? [...others, t('you')] : others);
 }
 
 /** A line about the crew for the festival page: "You, Maya and Sam", "Just you so far. Invite your friends." */
 export function crewMembersLine(crew: Crew, me: string | undefined, nameOf: (uid: string) => string): string {
   const others = crew.members.filter((u) => u !== me);
-  if (!others.length) return 'Just you so far. Invite your friends.';
+  if (!others.length) return t('Just you so far. Invite your friends.');
   const shown = others.slice(0, 3).map(nameOf);
   const more = others.length - shown.length;
-  return `You, ${joinNames(more ? [...shown, `${more} more`] : shown)}`;
+  return t('You, {names}', { names: joinNames(more ? [...shown, t('{n} more', { n: more })] : shown) });
 }
 
 /** "3 sets you share", "1 set you share", or nothing to show yet. */
 export function sharedCountLine(together: Together): string | undefined {
   const n = together.shared.length;
-  return n ? `${n} ${n === 1 ? 'set' : 'sets'} you share` : undefined;
+  return n ? tn(n, '{n} set you share', '{n} sets you share') : undefined;
 }
 
 /** A member's first name from their display name (or handle). */
@@ -137,13 +138,14 @@ export function crewStars(
 /** "★ Maya", "★ Maya and Sam", "★ Maya, Sam +2" (short, for a lineup row). */
 export function starsShort(names: string[]): string | undefined {
   if (!names.length) return undefined;
-  if (names.length <= 2) return `★ ${names.join(' and ')}`;
+  if (names.length <= 2) return `★ ${names.join(t(' and '))}`;
   return `★ ${names.slice(0, 2).join(', ')} +${names.length - 2}`;
 }
 
 /** "Maya starred this in your crew", "Maya and Sam starred this…", "Maya, Sam and 2 others starred this…". */
 export function starsLine(names: string[]): string | undefined {
   if (!names.length) return undefined;
-  const who = names.length === 1 ? names[0] : names.length === 2 ? `${names[0]} and ${names[1]}` : `${names[0]}, ${names[1]} and ${names.length - 2} ${names.length === 3 ? 'other' : 'others'}`;
-  return `${who} starred this in your crew`;
+  if (names.length === 1) return t('{name} starred this in your crew', { name: names[0] });
+  if (names.length === 2) return t('{name1} and {name2} starred this in your crew', { name1: names[0], name2: names[1] });
+  return tn(names.length - 2, '{name1}, {name2} and {n} other starred this in your crew', '{name1}, {name2} and {n} others starred this in your crew', { name1: names[0], name2: names[1] });
 }

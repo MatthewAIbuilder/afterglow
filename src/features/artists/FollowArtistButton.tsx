@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useFollowedArtists } from '../../state/followedArtists';
+import { t } from '../../i18n';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 
 /**
@@ -21,12 +22,12 @@ export function FollowArtistButton({ artist, compact = false, row = false }: { a
       }}
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
-      accessibilityLabel={on ? `Following ${artist.name}. Tap to unfollow.` : `Follow ${artist.name}`}
-      accessibilityHint={on ? undefined : 'Hear when they’re added to a lineup'}
+      accessibilityLabel={on ? t('Following {artist}. Tap to unfollow.', { artist: artist.name }) : t('Follow {artist}', { artist: artist.name })}
+      accessibilityHint={on ? undefined : t('Hear when they’re added to a lineup')}
       hitSlop={compact ? 6 : 0}
       style={({ pressed }) => [styles.pill, compact && styles.compact, row && styles.row, on ? styles.on : styles.off, pressed && styles.pressed]}
     >
-      <Text style={[styles.label, (compact || row) && styles.compactLabel, on && styles.onLabel]}>{on ? 'Following' : 'Follow'}</Text>
+      <Text style={[styles.label, (compact || row) && styles.compactLabel, on && styles.onLabel]}>{on ? t('Following') : t('Follow')}</Text>
     </Pressable>
   );
 }

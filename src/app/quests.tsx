@@ -19,6 +19,7 @@ import { revealSecret, useSecrets } from '../state/secrets';
 import { setQuestReminder, useQuestReminder } from '../state/questReminder';
 import { markQuestTipDone } from '../state/questTip';
 import { secretsLine } from '../features/secrets/secrets';
+import { t, tc } from '../i18n';
 import { color, motion, radius, space, type } from '../theme/tokens';
 
 /** Taps on the level ring that wake the secret. */
@@ -52,14 +53,14 @@ export default function QuestsScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Quests" />
+      <PageTitle title={t('Quests')} />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
         {/* Hidden (its room kept) until your level is known, so it never shows a stand-in. */}
         <View style={!q.ready && styles.waiting} accessibilityElementsHidden={!q.ready} importantForAccessibility={q.ready ? 'auto' : 'no-hide-descendants'}>
           <LevelHero level={q.level.level} name={q.level.name} progress={q.level.progress} />
           <Text style={styles.toNext}>
-            {q.level.glow} glow · {toNext} to {next ? next.name : `level ${q.level.level + 1}`}
+            {next ? t('{glow} glow · {left} to {name}', { glow: q.level.glow, left: toNext, name: next.name }) : t('{glow} glow · {left} to level {level}', { glow: q.level.glow, left: toNext, level: q.level.level + 1 })}
           </Text>
         </View>
 
@@ -67,8 +68,8 @@ export default function QuestsScreen() {
           <View style={styles.streakHead}>
             <FlameIcon size={28} lit={q.streak > 0} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.streakTitle}>{q.streak > 0 ? `${q.streak}-day streak` : 'Start a streak'}</Text>
-              <Text style={styles.sub}>{q.streak > 0 ? 'Days in a row you finished all three.' : 'Finish all three quests today to light the first day.'}</Text>
+              <Text style={styles.streakTitle}>{q.streak === 1 ? tc('one', '{n}-day streak', { n: 1 }) : q.streak > 0 ? t('{n}-day streak', { n: q.streak }) : t('Start a streak')}</Text>
+              <Text style={styles.sub}>{q.streak > 0 ? t('Days in a row you finished all three.') : t('Finish all three quests today to light the first day.')}</Text>
             </View>
           </View>
           <View style={styles.weekRow} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
@@ -83,7 +84,7 @@ export default function QuestsScreen() {
 
         <View style={styles.head}>
           <Text style={styles.section} accessibilityRole="header">
-            Today
+            {t('Today')}
           </Text>
           <Text style={styles.turns}>{q.turnsOver}</Text>
         </View>
@@ -91,17 +92,17 @@ export default function QuestsScreen() {
           <QuestCard key={row.spec.id} row={row} onGo={() => go(route(row.spec.go))} />
         ))}
         {q.rows.length && q.doneToday === q.rows.length ? (
-          <Text style={styles.allDone}>All three done. +{ALL_DONE_BONUS} glow, and your streak lives on.</Text>
+          <Text style={styles.allDone}>{t('All three done. +{n} glow, and your streak lives on.', { n: ALL_DONE_BONUS })}</Text>
         ) : (
-          <Text style={styles.bonus}>Finish all three for +{ALL_DONE_BONUS} glow.</Text>
+          <Text style={styles.bonus}>{t('Finish all three for +{n} glow.', { n: ALL_DONE_BONUS })}</Text>
         )}
 
         {/* An evening nudge, if you'd like one (phones only). */}
         {Platform.OS !== 'web' ? (
           <View style={styles.nudge}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>Remind me at 8 PM</Text>
-              <Text style={styles.sub}>Only on days you haven’t finished them.</Text>
+              <Text style={styles.rowTitle}>{t('Remind me at 8 PM')}</Text>
+              <Text style={styles.sub}>{t('Only on days you haven’t finished them.')}</Text>
             </View>
             <Switch
               value={nudge.on}
@@ -110,7 +111,7 @@ export default function QuestsScreen() {
                 setQuestReminder(on);
               }}
               trackColor={{ true: QUEST_AMBER, false: 'rgba(243,240,255,0.18)' }}
-              accessibilityLabel="Remind me about my quests at 8 PM"
+              accessibilityLabel={t('Remind me about my quests at 8 PM')}
               testID="quest-reminder"
             />
           </View>
@@ -119,25 +120,33 @@ export default function QuestsScreen() {
         {q.weekly ? (
           <>
             <Text style={[styles.section, styles.sectionGap]} accessibilityRole="header">
-              This week
+              {t('This week')}
             </Text>
             <Pressable
               onPress={() => go(route(q.weekly!.spec.go))}
               disabled={!q.weekly.spec.go || q.weekly.done}
               accessibilityRole="button"
-              accessibilityLabel={`Weekly quest: ${q.weekly.spec.title}. ${q.weekly.spec.how}. ${q.weekly.done ? 'Done.' : `${q.weekly.current} of ${q.weekly.spec.target}.`} ${q.weekly.spec.glow} glow.`}
+              accessibilityLabel={
+                q.weekly.done
+                  ? t('Weekly quest: {title}. {how}. Done. {glow} glow.', { title: q.weekly.spec.title, how: q.weekly.spec.how, glow: q.weekly.spec.glow })
+                  : t('Weekly quest: {title}. {how}. {current} of {target}. {glow} glow.', {
+                      title: q.weekly.spec.title,
+                      how: q.weekly.spec.how,
+                      current: q.weekly.current,
+                      target: q.weekly.spec.target,
+                      glow: q.weekly.spec.glow,
+                    })
+              }
               style={({ pressed }) => [styles.weekly, q.weekly!.done && styles.weeklyDone, pressed && { opacity: 0.85 }]}
             >
               <View style={styles.weeklyTop}>
-                <Text style={styles.weeklyKicker}>{q.weekly.done ? 'Done this week' : 'Weekly quest'}</Text>
+                <Text style={styles.weeklyKicker}>{q.weekly.done ? t('Done this week') : t('Weekly quest')}</Text>
                 <Text style={styles.reward}>+{q.weekly.spec.glow}</Text>
               </View>
               <Text style={styles.weeklyTitle}>{q.weekly.spec.title}</Text>
               <Text style={styles.sub}>{q.weekly.spec.how}</Text>
               <Bar value={q.weekly.current / q.weekly.spec.target} />
-              <Text style={styles.count}>
-                {q.weekly.current} of {q.weekly.spec.target}
-              </Text>
+              <Text style={styles.count}>{t('{current} of {target}', { current: q.weekly.current, target: q.weekly.spec.target })}</Text>
             </Pressable>
           </>
         ) : null}
@@ -148,14 +157,12 @@ export default function QuestsScreen() {
             router.navigate({ pathname: '/profile', params: { tab: 'badges' } });
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Side quests at festivals, ${sideDone} of ${QUESTS.length} done. See your badges.`}
+          accessibilityLabel={t('Side quests at festivals, {done} of {total} done. See your badges.', { done: sideDone, total: QUESTS.length })}
           style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
         >
           <View style={{ flex: 1 }}>
-            <Text style={styles.rowTitle}>Side quests at festivals</Text>
-            <Text style={styles.sub}>
-              {sideDone} of {QUESTS.length} done · {SIDE_QUEST_GLOW} glow each
-            </Text>
+            <Text style={styles.rowTitle}>{t('Side quests at festivals')}</Text>
+            <Text style={styles.sub}>{t('{done} of {total} done · {glow} glow each', { done: sideDone, total: QUESTS.length, glow: SIDE_QUEST_GLOW })}</Text>
           </View>
           <ChevronIcon color={color.moonFaint} size={12} />
         </Pressable>
@@ -166,26 +173,28 @@ export default function QuestsScreen() {
             router.push('/secrets');
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Secrets, ${secretsLine(Object.keys(secrets.found).length)}`}
+          accessibilityLabel={t('Secrets, {line}', { line: secretsLine(Object.keys(secrets.found).length) })}
           style={({ pressed }) => [styles.row, styles.rowTight, pressed && { opacity: 0.7 }]}
         >
           <View style={{ flex: 1 }}>
-            <Text style={styles.rowTitle}>Secrets</Text>
+            <Text style={styles.rowTitle}>{t('Secrets')}</Text>
             <Text style={styles.sub}>{secretsLine(Object.keys(secrets.found).length)}</Text>
           </View>
           <ChevronIcon color={color.moonFaint} size={12} />
         </Pressable>
 
         <View style={styles.how}>
-          <Text style={styles.howTitle}>How glow works</Text>
+          <Text style={styles.howTitle}>{t('How glow works')}</Text>
           <Text style={styles.howText}>
-            Daily quests give 10 to 25 glow, finishing all three adds {ALL_DONE_BONUS}, the weekly quest 150, each side quest {SIDE_QUEST_GLOW} and each badge you claim {MILESTONE_GLOW} and each secret 50. Quests
-            are counted on this phone, and a new set arrives at 4 AM.
+            {t(
+              'Daily quests give 10 to 25 glow, finishing all three adds {bonus}, the weekly quest 150, each side quest {side} and each badge you claim {badge} and each secret 50. Quests are counted on this phone, and a new set arrives at 4 AM.',
+              { bonus: ALL_DONE_BONUS, side: SIDE_QUEST_GLOW, badge: MILESTONE_GLOW },
+            )}
           </Text>
         </View>
       </ScrollView>
       <PageActions
-        shareLabel="Share your glow level"
+        shareLabel={t('Share your glow level')}
         onShare={() => void shareMessage(glowShareText(q.level.level, q.level.name, q.streak, WEB_URL))}
       />
     </View>
@@ -193,7 +202,9 @@ export default function QuestsScreen() {
 }
 
 const streakLabel = (streak: number, done: number, of: number) =>
-  `${streak > 0 ? `${streak}-day streak.` : 'No streak yet.'} ${done} of ${of} quests done today.`;
+  streak > 0
+    ? t('{streak}-day streak. {done} of {total} quests done today.', { streak, done, total: of })
+    : t('No streak yet. {done} of {total} quests done today.', { done, total: of });
 
 /** The big ring with your level. Tapping it wobbles it; keep tapping and something happens. */
 function LevelHero({ level, name, progress }: { level: number; name: string; progress: number }) {
@@ -218,7 +229,7 @@ function LevelHero({ level, name, progress }: { level: number; name: string; pro
   };
   return (
     <View style={styles.hero}>
-      <Pressable onPress={tap} accessibilityRole="image" accessibilityLabel={`Glow level ${level}, ${name}. ${Math.round(progress * 100)} percent of the way to the next level.`}>
+      <Pressable onPress={tap} accessibilityRole="image" accessibilityLabel={t('Glow level {level}, {name}. {percent} percent of the way to the next level.', { level, name, percent: Math.round(progress * 100) })}>
         <Animated.View style={[styles.ring, style]}>
           <QuestRing size={148} stroke={7} progress={progress} />
           <View style={styles.ringInside} pointerEvents="none">
@@ -227,7 +238,7 @@ function LevelHero({ level, name, progress }: { level: number; name: string; pro
           </View>
         </Animated.View>
       </Pressable>
-      <Text style={styles.levelKicker}>Glow level</Text>
+      <Text style={styles.levelKicker}>{t('Glow level')}</Text>
       <Text style={styles.levelName}>{name}</Text>
     </View>
   );
@@ -241,7 +252,13 @@ function QuestCard({ row, onGo }: { row: QuestRow; onGo: () => void }) {
       onPress={onGo}
       disabled={done || !spec.go}
       accessibilityRole="button"
-      accessibilityLabel={`${spec.title}. ${spec.how}. ${done ? 'Done.' : spec.target > 1 ? `${current} of ${spec.target}.` : 'Not done yet.'} ${spec.glow} glow.`}
+      accessibilityLabel={
+        done
+          ? t('{title}. {how}. Done. {glow} glow.', { title: spec.title, how: spec.how, glow: spec.glow })
+          : spec.target > 1
+            ? t('{title}. {how}. {current} of {target}. {glow} glow.', { title: spec.title, how: spec.how, current, target: spec.target, glow: spec.glow })
+            : t('{title}. {how}. Not done yet. {glow} glow.', { title: spec.title, how: spec.how, glow: spec.glow })
+      }
       testID={`quest-${spec.id}`}
       style={({ pressed }) => [styles.quest, done && styles.questDone, pressed && { transform: [{ scale: 0.98 }] }]}
     >
@@ -258,7 +275,7 @@ function QuestCard({ row, onGo }: { row: QuestRow; onGo: () => void }) {
             {current}/{spec.target}
           </Text>
         ) : !done && spec.go ? (
-          <Text style={styles.goText}>Go</Text>
+          <Text style={styles.goText}>{t('Go')}</Text>
         ) : null}
       </View>
     </Pressable>

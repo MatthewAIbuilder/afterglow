@@ -20,6 +20,7 @@ import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /** At most this many comments on a shared video are read. */
 const COMMENTS_SHOWN = 200;
@@ -60,7 +61,7 @@ export default function CommentsScreen() {
   const clip = onClip && id ? pool.find(id) : undefined;
   const cardArtist = id?.startsWith(SOUNDCLOUD_PREFIX) ? id.slice(SOUNDCLOUD_PREFIX.length) : undefined;
   const clipArtist = onClip ? catalog.artist(clip?.artistId ?? cardArtist ?? '') : undefined;
-  const clipTitle = clip?.title ?? (cardArtist ? 'On SoundCloud' : undefined);
+  const clipTitle = clip?.title ?? (cardArtist ? t('On SoundCloud') : undefined);
 
   useEffect(() => {
     if (!id || !social.availability.ok || !social.user) return;
@@ -103,7 +104,7 @@ export default function CommentsScreen() {
       });
       setMore(next.length >= CLIP_COMMENTS_PAGE);
     } catch (e) {
-      showAlert('Couldn’t load more comments', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t load more comments'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
       setLoadingMore(false);
     }
@@ -112,7 +113,7 @@ export default function CommentsScreen() {
   const send = async () => {
     if (!id || !open || sending || !text.trim()) return;
     if (problem) {
-      showAlert('Can’t post that', problem);
+      showAlert(t('Can’t post that'), problem);
       return;
     }
     setSending(true);
@@ -124,7 +125,7 @@ export default function CommentsScreen() {
       if (target) bumpCommentCount(target, 1);
       setText('');
     } catch (e) {
-      showAlert('Couldn’t post your comment', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t post your comment'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
       setSending(false);
     }
@@ -134,21 +135,23 @@ export default function CommentsScreen() {
     const yours = c.uid === me;
     const canRemove = yours || (!onClip && video?.uid === me);
     // On your own video you can take down someone's comment and still report or block them.
-    const options = [...(canRemove ? ['Delete comment'] : []), ...(yours ? [] : ['Report comment', `Block @${c.handle}`])];
+    const del = t('Delete comment');
+    const report = t('Report comment');
+    const options = [...(canRemove ? [del] : []), ...(yours ? [] : [report, t('Block @{handle}', { handle: c.handle })])];
     showActionSheet(
-      { title: `@${c.handle}`, options: [...options, 'Cancel'], cancelButtonIndex: options.length, destructiveButtonIndex: 0 },
+      { title: `@${c.handle}`, options: [...options, t('Cancel')], cancelButtonIndex: options.length, destructiveButtonIndex: 0 },
       (i) => {
         const choice = options[i];
         if (!choice) return;
-        if (choice === 'Delete comment') {
+        if (choice === del) {
           (onClip ? social.service.deleteClipComment(c.id) : social.service.deleteComment(c.id))
             .then(() => {
               haptic.select();
               setList((l) => (l ?? []).filter((x) => x.id !== c.id));
               if (target) bumpCommentCount(target, -1);
             })
-            .catch((e) => showAlert('Couldn’t delete it', SOCIAL_ERROR_COPY[socialErrorKind(e)]));
-        } else if (choice === 'Report comment') askReport({ kind: onClip ? 'clipComment' : 'comment', id: c.id, ownerUid: c.uid }, social.report);
+            .catch((e) => showAlert(t('Couldn’t delete it'), SOCIAL_ERROR_COPY[socialErrorKind(e)]));
+        } else if (choice === report) askReport({ kind: onClip ? 'clipComment' : 'comment', id: c.id, ownerUid: c.uid }, social.report);
         else askBlock(c.handle, false, (on) => social.setBlocked(c.uid, on));
       },
     );
@@ -158,11 +161,11 @@ export default function CommentsScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <PageTitle title="Comments" />
+      <PageTitle title={t('Comments')} />
       <SheetClose />
       <View style={styles.head}>
         <Text style={styles.title} accessibilityRole="header">
-          {list ? commentsLabel(total) : 'Comments'}
+          {list ? commentsLabel(total) : t('Comments')}
         </Text>
         {clipArtist ? (
           <Text style={styles.about} numberOfLines={1}>
@@ -172,29 +175,29 @@ export default function CommentsScreen() {
         ) : null}
       </View>
       <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
-        {!social.user ? <Text style={styles.quiet}>Sign in to read and write comments.</Text> : null}
+        {!social.user ? <Text style={styles.quiet}>{t('Sign in to read and write comments.')}</Text> : null}
         {social.user && list === undefined && !failed ? <ActivityIndicator color={color.glow} /> : null}
-        {!onClip && video === null ? <Text style={styles.quiet}>This video isn’t available any more.</Text> : null}
+        {!onClip && video === null ? <Text style={styles.quiet}>{t('This video isn’t available any more.')}</Text> : null}
         {failed && list === undefined ? (
-          <Pressable onPress={() => setAttempt((n) => n + 1)} accessibilityRole="button" accessibilityLabel="Couldn’t load the comments. Try again" hitSlop={8}>
-            <Text style={styles.quiet}>Couldn’t load the comments. Check the signal and tap to try again.</Text>
+          <Pressable onPress={() => setAttempt((n) => n + 1)} accessibilityRole="button" accessibilityLabel={t('Couldn’t load the comments. Try again')} hitSlop={8}>
+            <Text style={styles.quiet}>{t('Couldn’t load the comments. Check the signal and tap to try again.')}</Text>
           </Pressable>
         ) : null}
-        {list && !shown.length && open ? <Text style={styles.quiet}>No comments yet. Say something nice.</Text> : null}
+        {list && !shown.length && open ? <Text style={styles.quiet}>{t('No comments yet. Say something nice.')}</Text> : null}
         {shown.map((c) => (
           <Pressable
             key={c.id}
             onLongPress={() => menu(c)}
             accessibilityRole="text"
-            accessibilityLabel={`@${c.handle}${filmedIt(c) ? ', who filmed it' : ''}: ${c.text}. ${ago(c.createdAt.split('#')[0], now)}`}
-            accessibilityActions={[{ name: 'more', label: c.uid === me ? 'Delete' : !onClip && video?.uid === me ? 'Delete, report or block' : 'Report or block' }]}
+            accessibilityLabel={`${filmedIt(c) ? t('@{handle}, who filmed it', { handle: c.handle }) : `@${c.handle}`}: ${c.text}. ${ago(c.createdAt.split('#')[0], now)}`}
+            accessibilityActions={[{ name: 'more', label: c.uid === me ? t('Delete') : !onClip && video?.uid === me ? t('Delete, report or block') : t('Report or block') }]}
             onAccessibilityAction={() => menu(c)}
             style={styles.comment}
           >
             <View style={{ flex: 1 }}>
               <Text style={styles.who}>
                 <Text onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: c.handle } })}>@{c.handle}</Text>
-                {filmedIt(c) ? <Text style={styles.author}> · filmed it</Text> : null}
+                {filmedIt(c) ? <Text style={styles.author}> · {t('filmed it')}</Text> : null}
                 <Text style={styles.ago}> · {ago(c.createdAt.split('#')[0], now)}</Text>
               </Text>
               <Text style={styles.text}>{c.text}</Text>
@@ -209,11 +212,11 @@ export default function CommentsScreen() {
             onPress={() => void loadMore()}
             disabled={loadingMore}
             accessibilityRole="button"
-            accessibilityLabel="Show more comments"
+            accessibilityLabel={t('Show more comments')}
             hitSlop={8}
             style={({ pressed }) => [styles.moreRow, pressed && { opacity: 0.7 }]}
           >
-            {loadingMore ? <ActivityIndicator color={color.glow} /> : <Text style={styles.moreText}>Show more comments</Text>}
+            {loadingMore ? <ActivityIndicator color={color.glow} /> : <Text style={styles.moreText}>{t('Show more comments')}</Text>}
           </Pressable>
         ) : null}
       </ScrollView>
@@ -222,21 +225,21 @@ export default function CommentsScreen() {
           <View style={[styles.compose, { paddingBottom: insets.bottom + space.sm }]}>
             <TextInput
               value={text}
-              onChangeText={(t) => setText(t.slice(0, COMMENT_MAX + 20))}
-              placeholder={onClip || !video ? 'Add a comment…' : video.uid === me ? 'Reply to your comments…' : `Add a comment for @${video.handle}…`}
+              onChangeText={(typed) => setText(typed.slice(0, COMMENT_MAX + 20))}
+              placeholder={onClip || !video ? t('Add a comment…') : video.uid === me ? t('Reply to your comments…') : t('Add a comment for @{handle}…', { handle: video.handle })}
               placeholderTextColor={color.moonFaint}
               style={styles.input}
               multiline
-              accessibilityLabel="Write a comment"
+              accessibilityLabel={t('Write a comment')}
             />
             <Pressable
               onPress={() => void send()}
               disabled={!text.trim() || sending}
               accessibilityRole="button"
-              accessibilityLabel="Post comment"
+              accessibilityLabel={t('Post comment')}
               style={({ pressed }) => [styles.send, (!text.trim() || sending) && styles.dim, pressed && { opacity: 0.8 }]}
             >
-              <Text style={styles.sendText}>Post</Text>
+              <Text style={styles.sendText}>{t('Post')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -245,7 +248,7 @@ export default function CommentsScreen() {
             accessibilityRole="button"
             style={[styles.compose, { paddingBottom: insets.bottom + space.md }]}
           >
-            <Text style={styles.quiet}>Create a profile to comment.</Text>
+            <Text style={styles.quiet}>{t('Create a profile to comment.')}</Text>
           </Pressable>
         )
       ) : null}

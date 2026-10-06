@@ -1,6 +1,7 @@
 import { SOUND_LABEL, type Artist, type SoundTag } from '../../data/models';
 import { type Rating, isCold } from '../taste/ratings';
 import { toShares, type SoundShare } from '../taste/lean';
+import { t } from '../../i18n';
 
 /**
  * Your Afterglow identity, from what the phone already knows: the artists
@@ -105,7 +106,7 @@ export function currentlyFeeling({ seen, reactions, artistOfClip, now }: Feeling
 }
 
 /** "Currently feeling melodic bass". */
-export const feelingLine = (tag: SoundTag) => `Currently feeling ${SOUND_LABEL[tag].toLowerCase()}`;
+export const feelingLine = (tag: SoundTag) => t('Currently feeling {sound}', { sound: SOUND_LABEL[tag].toLowerCase() });
 
 /**
  * Who drifts round someone else's photo: the artists in the videos they've

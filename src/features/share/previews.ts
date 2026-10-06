@@ -1,6 +1,5 @@
 import type { Artist, Festival } from '../../data/models';
 import { anyPhoto } from '../../data/members';
-import { whereWhen } from '../festivals/format';
 
 /**
  * Link previews for shared festival and artist pages. The website is one
@@ -8,7 +7,9 @@ import { whereWhen } from '../festivals/format';
  * WhatsApp, Instagram…) only ever saw "Afterglow". At build time
  * scripts/page-previews.ts writes a copy of that page for each festival and
  * artist with its own title and description; the app itself is unchanged.
- * Pure.
+ * Pure. Always English: it runs in Node at build time (no app language, and
+ * nothing from `src/i18n`, which needs React Native), so it doesn't use
+ * `whereWhen` from festivals/format.
  */
 export type PagePreview = {
   path: string;
@@ -19,6 +20,9 @@ export type PagePreview = {
   /** The image is a wide 1200 × 630 card (keeps the big preview); otherwise a square photo. */
   wide?: { alt: string };
 };
+
+/** "Nov 6 to 8, Tinker Field, Orlando": the catalogue's own words. */
+const whereWhen = (festival: Pick<Festival, 'dates' | 'location'>) => [festival.dates, festival.location].filter(Boolean).join(', ');
 
 const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
 

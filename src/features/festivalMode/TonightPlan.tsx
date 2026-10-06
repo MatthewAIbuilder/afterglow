@@ -16,6 +16,7 @@ import { LiveNow } from '../plan/LiveNow';
 import type { Pick } from '../plan/plan';
 import { RouteList } from '../plan/RouteList';
 import { useFestivalPlan } from '../plan/useFestivalPlan';
+import { dayWord, t } from '../../i18n';
 import type { ModeNow } from './mode';
 
 /** Picks shown for a night before set times are out. */
@@ -50,10 +51,10 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
   ).slice(0, NIGHT_PICKS);
 
   const askLeave = () =>
-    showAlert(mode.preview ? 'End the test?' : 'Back to the full app?', mode.preview ? undefined : 'Festival mode comes back if you switch it on from Tonight.', [
-      { text: 'Cancel', style: 'cancel' },
+    showAlert(mode.preview ? t('End the test?') : t('Back to the full app?'), mode.preview ? undefined : t('Festival mode comes back if you switch it on from Tonight.'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: mode.preview ? 'End test' : 'Full app',
+        text: mode.preview ? t('End test') : t('Full app'),
         onPress: () => {
           haptic.select();
           leave();
@@ -63,14 +64,14 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={`Tonight · ${festival.name}`} />
+      <PageTitle title={t('Tonight · {festival}', { festival: festival.name })} />
       <NightSky />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg, paddingBottom: tabSpace + space.xxxl }]}>
-        <Text style={styles.kicker}>{mode.preview ? (tonight ? 'Test · tonight' : 'Test · festival mode') : tonight ? 'Tonight' : festival.name}</Text>
+        <Text style={styles.kicker}>{mode.preview ? (tonight ? t('Test · tonight') : t('Test · festival mode')) : tonight ? t('Tonight') : festival.name}</Text>
         <Text style={styles.title} accessibilityRole="header">
-          {day ?? festival.name}
+          {day ? t(day) : festival.name}
         </Text>
-        <Text style={styles.sub}>{tonight ? `At ${festival.name}` : festival.name}</Text>
+        <Text style={styles.sub}>{tonight ? t('At {festival}', { festival: festival.name }) : festival.name}</Text>
 
         {days.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipsWrap}>
@@ -86,10 +87,10 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
                   }}
                   accessibilityRole="button"
                   accessibilityState={{ selected: on }}
-                  accessibilityLabel={d === mode.night ? `${d}, tonight` : d}
+                  accessibilityLabel={d === mode.night ? t('{day}, tonight', { day: t(d) }) : t(d)}
                   style={[styles.chip, on && styles.chipOn]}
                 >
-                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{d === mode.night ? `${d} · tonight` : d}</Text>
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{d === mode.night ? t('{day} · tonight', { day: t(d) }) : t(d)}</Text>
                 </Pressable>
               );
             })}
@@ -104,14 +105,14 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
               </View>
             ) : null}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Set to set</Text>
+              <Text style={styles.sectionTitle}>{t('Set to set')}</Text>
               <RouteList festival={festival} route={dayRoute} />
             </View>
           </>
         ) : (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{days.length ? `Your picks for ${day}` : 'Your picks'}</Text>
-            <Text style={styles.note}>Set times aren’t out yet. When they are, this turns into your night, set to set.</Text>
+            <Text style={styles.sectionTitle}>{days.length ? t('Your picks for {day}', { day: dayWord(day ?? '') }) : t('Your picks')}</Text>
+            <Text style={styles.note}>{t('Set times aren’t out yet. When they are, this turns into your night, set to set.')}</Text>
             {nightPicks.length ? (
               nightPicks.map((p) => (
                 <ArtistRow
@@ -119,25 +120,25 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
                   artist={p.artist}
                   affinity={p.match}
                   festivalId={festival.id}
-                  detail={p.pinned ? 'You starred this one' : p.tier === 'must-see' ? 'Must see' : p.tier === 'strong' ? 'Strong match' : 'Worth a look'}
+                  detail={p.pinned ? t('You starred this one') : p.tier === 'must-see' ? t('Must see') : p.tier === 'strong' ? t('Strong match') : t('Worth a look')}
                 />
               ))
             ) : (
-              <Text style={styles.quiet}>No picks{days.length ? ` for ${day}` : ''} yet. Rate the lineup and your night fills in.</Text>
+              <Text style={styles.quiet}>{days.length ? t('No picks for {day} yet. Rate the lineup and your night fills in.', { day: dayWord(day ?? '') }) : t('No picks yet. Rate the lineup and your night fills in.')}</Text>
             )}
           </View>
         )}
 
         <View style={styles.actions}>
           <Action
-            label={days.length ? 'Rate the night' : 'Rate the lineup'}
+            label={days.length ? t('Rate the night') : t('Rate the lineup')}
             onPress={() => router.push({ pathname: '/tune/[id]', params: days.length && day ? { id: festival.id, day } : { id: festival.id } })}
           />
-          <Action label="Full lineup" onPress={() => router.push(`/festival/${festival.id}`)} />
+          <Action label={t('Full lineup')} onPress={() => router.push(`/festival/${festival.id}`)} />
         </View>
-        <Text style={styles.footnote}>Your plan and the lineup work without signal.</Text>
-        <Pressable onPress={askLeave} accessibilityRole="button" accessibilityLabel={mode.preview ? 'End the festival mode test' : 'Leave festival mode for the full app'} hitSlop={8}>
-          <Text style={styles.leave}>{mode.preview ? 'End the test' : 'Back to the full app'}</Text>
+        <Text style={styles.footnote}>{t('Your plan and the lineup work without signal.')}</Text>
+        <Pressable onPress={askLeave} accessibilityRole="button" accessibilityLabel={mode.preview ? t('End the festival mode test') : t('Leave festival mode for the full app')} hitSlop={8}>
+          <Text style={styles.leave}>{mode.preview ? t('End the test') : t('Back to the full app')}</Text>
         </Pressable>
       </ScrollView>
     </View>

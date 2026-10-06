@@ -1,4 +1,5 @@
 import { WEB_URL } from '../../config/app';
+import { t } from '../../i18n';
 
 /**
  * Friend codes, pure: what a QR code says and how a scanned one is read.
@@ -108,10 +109,10 @@ export function inCentre(size: number, x: number, y: number, hole: number): bool
  * to bottom-right) and a bright glow around it (`glow`).
  */
 export const CODE_THEMES = {
-  glow: { label: 'Glow', dots: ['#4B22B8', '#B0185A'], glow: ['#A97CFF', '#FF7EB6'] },
-  sunset: { label: 'Sunset', dots: ['#B0185A', '#C2410C'], glow: ['#FF7EB6', '#FFB86B'] },
-  ocean: { label: 'Ocean', dots: ['#0B5C9E', '#4B22B8'], glow: ['#6FC3FF', '#A97CFF'] },
-  aurora: { label: 'Aurora', dots: ['#0B7A5E', '#0B5C9E'], glow: ['#5BE3B5', '#6FC3FF'] },
+  glow: { label: t('Glow'), dots: ['#4B22B8', '#B0185A'], glow: ['#A97CFF', '#FF7EB6'] },
+  sunset: { label: t('Sunset'), dots: ['#B0185A', '#C2410C'], glow: ['#FF7EB6', '#FFB86B'] },
+  ocean: { label: t('Ocean'), dots: ['#0B5C9E', '#4B22B8'], glow: ['#6FC3FF', '#A97CFF'] },
+  aurora: { label: t('Aurora'), dots: ['#0B7A5E', '#0B5C9E'], glow: ['#5BE3B5', '#6FC3FF'] },
 } as const;
 export type CodeTheme = keyof typeof CODE_THEMES;
 export const THEME_ORDER = Object.keys(CODE_THEMES) as CodeTheme[];

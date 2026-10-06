@@ -8,6 +8,7 @@ import { pinLook } from '../badges/badges';
 import { EnamelPin } from '../badges/EnamelPin';
 import { festivalMark, type Highlight } from './profileView';
 import { ShelfHead } from './ShelfHead';
+import { t } from '../../i18n';
 
 const RING = 64;
 
@@ -33,7 +34,7 @@ export function Highlights({
   if (!items.length) return null;
   return (
     <View style={styles.wrap}>
-      <ShelfHead title="Your festivals" hidden={hidden} onToggle={onToggle} />
+      <ShelfHead title={t('Your festivals')} hidden={hidden} onToggle={onToggle} />
       {hidden ? null : (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
       {items.map((h) => {
@@ -41,7 +42,7 @@ export function Highlights({
         const [deep, bright] = artistColors(key);
         const festival = h.kind === 'year' ? undefined : festivalOf(h.id);
         const mark = h.kind === 'year' ? String(h.year).slice(2) : festivalMark(h.title);
-        const label = h.kind === 'festival' ? `${h.title}, ${h.detail}` : h.kind === 'year' ? `${h.title} on Afterglow` : `Your recap of ${h.title}`;
+        const label = h.kind === 'festival' ? `${h.title}, ${h.detail}` : h.kind === 'year' ? t('{title} on Afterglow', { title: h.title }) : t('Your recap of {festival}', { festival: h.title });
         return (
           <Pressable
             key={key}

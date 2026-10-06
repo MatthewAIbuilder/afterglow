@@ -8,6 +8,7 @@ import { shareMessage } from '../../lib/share';
 import { color, space, type } from '../../theme/tokens';
 import { inviteText } from '../social/friends';
 import { Sprout } from '../sprouts/Sprout';
+import { t } from '../../i18n';
 
 /** How many of your festivals the Invite menu offers. */
 const INVITE_FESTIVALS = 3;
@@ -21,13 +22,13 @@ const INVITE_FESTIVALS = 3;
 export function QuickActions({ handle, festivals = [], atFestival = false }: { handle?: string; festivals?: readonly Festival[]; atFestival?: boolean }) {
   const invite = () => {
     const chips = festivals.slice(0, INVITE_FESTIVALS);
-    const send = (f?: Festival) => void shareMessage(inviteText(handle, f), 'Join me on Afterglow');
+    const send = (f?: Festival) => void shareMessage(inviteText(handle, f), t('Join me on Afterglow'));
     if (!chips.length) {
       send();
       return;
     }
-    const options = ['Invite to Afterglow', ...chips.map((f) => `Invite to plan ${f.name}`), 'Cancel'];
-    showActionSheet({ title: 'Invite friends', options, cancelButtonIndex: options.length - 1 }, (i) => {
+    const options = [t('Invite to Afterglow'), ...chips.map((f) => t('Invite to plan {festival}', { festival: f.name })), t('Cancel')];
+    showActionSheet({ title: t('Invite friends'), options, cancelButtonIndex: options.length - 1 }, (i) => {
       if (i === 0) send();
       else if (i > 0 && i <= chips.length) send(chips[i - 1]);
     });
@@ -35,14 +36,14 @@ export function QuickActions({ handle, festivals = [], atFestival = false }: { h
   const phone = Platform.OS !== 'web';
   return (
     <View style={styles.row}>
-      {atFestival ? null : <Action label="Find" a11y="Find people" icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />}
-      <Action label="My code" a11y="Show my friend code" icon={<QrIcon color={color.moon} size={22} />} onPress={() => router.push('/my-code')} />
-      {phone ? <Action label="Scan" a11y="Scan a friend's code" icon={<ScanIcon color={color.night} size={22} />} onPress={() => router.push('/scan')} glow /> : null}
-      <Action label="Sprout" a11y="Give someone a sprout" icon={<Sprout kind="seedling" stage={2} size={40} still />} onPress={() => router.push('/give-sprout')} />
+      {atFestival ? null : <Action label={t('Find')} a11y={t('Find people')} icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />}
+      <Action label={t('My code')} a11y={t('Show my friend code')} icon={<QrIcon color={color.moon} size={22} />} onPress={() => router.push('/my-code')} />
+      {phone ? <Action label={t('Scan')} a11y={t("Scan a friend's code")} icon={<ScanIcon color={color.night} size={22} />} onPress={() => router.push('/scan')} glow /> : null}
+      <Action label={t('Sprout')} a11y={t('Give someone a sprout')} icon={<Sprout kind="seedling" stage={2} size={40} still />} onPress={() => router.push('/give-sprout')} />
       {atFestival ? (
-        <Action label="Find" a11y="Find people" icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />
+        <Action label={t('Find')} a11y={t('Find people')} icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />
       ) : (
-        <Action label="Invite" a11y="Invite friends to Afterglow" icon={<ShareIcon color={color.moon} size={19} />} onPress={invite} />
+        <Action label={t('Invite')} a11y={t('Invite friends to Afterglow')} icon={<ShareIcon color={color.moon} size={19} />} onPress={invite} />
       )}
     </View>
   );

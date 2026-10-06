@@ -19,6 +19,8 @@ import { useClipPool } from '../state/community';
 import { useReactions } from '../state/reactions';
 import { color, radius, space, type, nightA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { shownClipTitle } from '../features/community/clips';
+import { t, tc } from '../i18n';
 
 type Shelf = 'saved' | 'liked';
 
@@ -41,22 +43,22 @@ export default function YourClipsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.pad}>
-          <Text style={styles.title}>Your clips</Text>
-          <Text style={styles.meta}>What you saved to watch again, and what you liked.</Text>
+          <Text style={styles.title}>{t('Your clips')}</Text>
+          <Text style={styles.meta}>{t('What you saved to watch again, and what you liked.')}</Text>
         </View>
 
         <View style={[styles.pad, styles.list]}>
           {empty ? (
             <Text style={styles.empty}>
-              Nothing here yet. Tap Save or Like on a clip in Discover and it will wait for you here.
+              {t('Nothing here yet. Tap Save or Like on a clip in Discover and it will wait for you here.')}
             </Text>
           ) : null}
-          {listed.saved.length > 0 && <Text style={styles.section}>Saved</Text>}
+          {listed.saved.length > 0 && <Text style={styles.section}>{tc('shelf', 'Saved')}</Text>}
           {listed.saved.map((c) => (
             <ClipRow key={c.id} clip={c} shelf="saved" />
           ))}
           {listed.liked.length > 0 && (
-            <Text style={[styles.section, listed.saved.length > 0 && styles.sectionGap]}>Liked</Text>
+            <Text style={[styles.section, listed.saved.length > 0 && styles.sectionGap]}>{tc('shelf', 'Liked')}</Text>
           )}
           {listed.liked.map((c) => (
             <ClipRow key={c.id} clip={c} shelf="liked" />
@@ -65,7 +67,7 @@ export default function YourClipsScreen() {
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>
@@ -87,7 +89,8 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
   const page = clip.source?.provider === 'soundcloud' ? clip.source : undefined;
   const still = source ? posterUrl(source) : (crowd?.thumbUrl ?? (page ? (artist?.imageUrl ?? page.image) : undefined));
   const [deep, bright] = artistColors(clip.artistId, artist?.color);
-  const name = artist?.name ?? 'Unknown artist';
+  const name = artist?.name ?? t('Unknown artist');
+  const title = shownClipTitle(clip.title);
 
   return (
     <View style={styles.row}>
@@ -98,7 +101,7 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
           router.dismissTo({ pathname: '/', params: { clip: clip.id } });
         }}
         accessibilityRole="button"
-        accessibilityLabel={`Play ${name}, ${clip.title}`}
+        accessibilityLabel={t('Play {artist}, {title}', { artist: name, title })}
         style={({ pressed }) => [styles.open, pressed && { opacity: 0.6 }]}
       >
         <View style={styles.thumb}>
@@ -113,10 +116,10 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
             {name}
           </Text>
           <Text style={styles.clipTitle} numberOfLines={1}>
-            {crowd ? `${clip.title} · @${crowd.handle}` : clip.title}
+            {crowd ? `${title} · @${crowd.handle}` : title}
           </Text>
           <Text style={styles.detail} numberOfLines={1}>
-            {page ? (festival?.name ?? 'Their uploads') : `${festival ? `${festival.name}, ` : ''}${formatDuration(clip.durationSec)}`}
+            {page ? (festival?.name ?? t('Their uploads')) : `${festival ? `${festival.name}, ` : ''}${formatDuration(clip.durationSec)}`}
           </Text>
         </View>
       </Pressable>
@@ -132,11 +135,11 @@ function ClipRow({ clip, shelf }: { clip: Clip; shelf: Shelf }) {
         accessibilityLabel={
           shelf === 'saved'
             ? on
-              ? `Remove ${name} from saved`
-              : `Save ${name} again`
+              ? t('Remove {artist} from saved', { artist: name })
+              : t('Save {artist} again', { artist: name })
             : on
-              ? `Unlike ${name}`
-              : `Like ${name} again`
+              ? t('Unlike {artist}', { artist: name })
+              : t('Like {artist} again', { artist: name })
         }
         hitSlop={10}
         style={({ pressed }) => [styles.toggle, pressed && { transform: [{ scale: 0.9 }] }]}

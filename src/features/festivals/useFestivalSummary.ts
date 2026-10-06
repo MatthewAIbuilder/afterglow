@@ -7,6 +7,7 @@ import { useTaste } from '../../state/taste';
 import { coverPhotos } from './cover';
 import { lineupReach } from './links';
 import { countdown } from './when';
+import { t, tn } from '../../i18n';
 
 /** A match at least this strong counts as an artist "you'll love" on festival cards. */
 export const LOVE = 0.8;
@@ -47,4 +48,4 @@ export function useFestivalSummary(festival: Festival) {
 }
 
 /** "3 you'll love" or "52 acts". */
-export const lovedLine = (loved: number, acts: number) => (loved > 0 ? `${loved} you’ll love` : `${acts} ${acts === 1 ? 'act' : 'acts'}`);
+export const lovedLine = (loved: number, acts: number) => (loved > 0 ? t('{n} you’ll love', { n: loved }) : tn(acts, '{n} act', '{n} acts'));

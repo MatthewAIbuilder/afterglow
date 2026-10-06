@@ -10,6 +10,7 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { soundFocus } from '../discover/focus';
 import type { SoundShare } from '../taste/lean';
 import { SOUND_COLOR, withAlpha } from './colors';
+import { t } from '../../i18n';
 import { artistsIn, closeTo, nextSounds, otherSounds, SOUND_GUIDE, type SoundTip, soundTips } from './guide';
 
 /**
@@ -51,16 +52,19 @@ export function SoundOverview({
   return (
     <View style={styles.wrap}>
       {yours.length ? (
-        <Section title={shaped ? 'Your sounds' : 'Where you might start'} sub={shaped ? 'What you lean towards, and what makes each one tick.' : 'A first guess. Like, skip and rate and these become yours.'}>
-          {yours.map((t, i) => card(t, undefined, i === 0))}
+        <Section
+          title={shaped ? t('Your sounds') : t('Where you might start')}
+          sub={shaped ? t('What you lean towards, and what makes each one tick.') : t('A first guess. Like, skip and rate and these become yours.')}
+        >
+          {yours.map((tag, i) => card(tag, undefined, i === 0))}
         </Section>
       ) : null}
 
-      <Section title="Sounds to try next" sub="Close to yours, so there’s a good chance you’ll love them.">
-        {next.map((t) => card(t, closeTo(t, yours)))}
+      <Section title={t('Sounds to try next')} sub={t('Close to yours, so there’s a good chance you’ll love them.')}>
+        {next.map((tag) => card(tag, closeTo(tag, yours)))}
       </Section>
 
-      <Section title="Find your sound faster">
+      <Section title={t('Find your sound faster')}>
         <View style={styles.tips}>
           {tips.map((tip, i) => (
             <Tip key={tip.id} tip={tip} last={i === tips.length - 1} onOpenMap={onOpenMap} />
@@ -68,7 +72,7 @@ export function SoundOverview({
         </View>
       </Section>
 
-      <Section title="Every sound" sub="Tap one to see what it’s about.">
+      <Section title={t('Every sound')} sub={t('Tap one to see what it’s about.')}>
         <View style={styles.tips}>
           {rest.map((t, i) => (
             <View key={t}>
@@ -103,10 +107,10 @@ export function SoundOverview({
           onOpenMap();
         }}
         accessibilityRole="button"
-        accessibilityLabel="Open your bubble map"
+        accessibilityLabel={t('Open your bubble map')}
         style={({ pressed }) => [styles.mapButton, pressed && styles.pressed]}
       >
-        <Text style={styles.mapButtonText}>Open your bubble map</Text>
+        <Text style={styles.mapButtonText}>{t('Open your bubble map')}</Text>
       </Pressable>
     </View>
   );
@@ -142,12 +146,12 @@ function SoundCard({ tag, kicker, share, artists, watchable, startOpen }: { tag:
           {kicker ? <Text style={[styles.kicker, { color: tone }]}>{kicker.toUpperCase()}</Text> : null}
           <Text style={[styles.cardTitle, { color: tone }]}>{label}</Text>
         </View>
-        {share ? <Text style={styles.share}>{share.percent}% of your sound</Text> : null}
+        {share ? <Text style={styles.share}>{t('{pct}% of your sound', { pct: share.percent })}</Text> : null}
       </View>
       <Text style={styles.feel}>{g.feel}</Text>
       {more ? (
         <>
-          <Text style={styles.label}>Listen for</Text>
+          <Text style={styles.label}>{t('Listen for')}</Text>
           {g.listenFor.map((l) => (
             <View key={l} style={styles.bulletRow}>
               <View style={[styles.bullet, { backgroundColor: tone }]} />
@@ -163,11 +167,11 @@ function SoundCard({ tag, kicker, share, artists, watchable, startOpen }: { tag:
             setMore(true);
           }}
           accessibilityRole="button"
-          accessibilityLabel={`How ${label.toLowerCase()} sounds, and how it differs`}
+          accessibilityLabel={t('How {sound} sounds, and how it differs', { sound: label.toLowerCase() })}
           hitSlop={8}
           style={styles.moreRow}
         >
-          <Text style={[styles.moreText, { color: tone }]}>How it sounds</Text>
+          <Text style={[styles.moreText, { color: tone }]}>{t('How it sounds')}</Text>
           <ChevronIcon color={tone} size={10} direction="down" />
         </Pressable>
       )}
@@ -196,10 +200,10 @@ function SoundCard({ tag, kicker, share, artists, watchable, startOpen }: { tag:
                 router.navigate({ pathname: '/', params: { festival: soundFocus(tag) } });
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Watch ${label.toLowerCase()} live sets in Discover`}
+              accessibilityLabel={t('Watch {sound} live sets in Discover', { sound: label.toLowerCase() })}
               style={({ pressed }) => [styles.watch, { borderColor: withAlpha(tone, 0.5), backgroundColor: withAlpha(tone, 0.16) }, pressed && styles.pressed]}
             >
-              <Text style={styles.watchText}>Watch</Text>
+              <Text style={styles.watchText}>{t('Watch')}</Text>
             </Pressable>
           ) : null}
         </View>

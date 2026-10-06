@@ -11,6 +11,7 @@ import { useDayHours } from '../../state/dayHours';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import {
   BREAK_LABELS,
+  breakLabel,
   cleanHours,
   clockLabel,
   dayRange,
@@ -27,6 +28,7 @@ import {
   stepTime,
 } from './hours';
 import type { DayRoute } from './route';
+import { dayWord, t, tc } from '../../i18n';
 
 type Range = NonNullable<ReturnType<typeof dayRange>>;
 
@@ -50,12 +52,12 @@ export function DayHoursBar({ festival, day, route }: { festival: Festival; day:
           setEditing(true);
         }}
         accessibilityRole="button"
-        accessibilityLabel={`Your hours on ${day}: ${hoursSaid(h)}. Change when you arrive, leave and take breaks.`}
+        accessibilityLabel={t('Your hours on {day}: {hours}. Change when you arrive, leave and take breaks.', { day: dayWord(day), hours: hoursSaid(h) })}
         style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
       >
         <Text style={styles.rowText} numberOfLines={2}>
-          <Text style={styles.rowLabel}>Your hours  </Text>
-          {isAllDay(h) ? 'all day' : hoursLine(h)}
+          <Text style={styles.rowLabel}>{`${t('Your hours')}  `}</Text>
+          {isAllDay(h) ? t('all day') : hoursLine(h)}
         </Text>
         <ChevronIcon color={color.moonFaint} size={14} />
       </Pressable>
@@ -71,7 +73,7 @@ export function DayHoursBar({ festival, day, route }: { festival: Festival; day:
                     set(day, makeRoom(h, m));
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={`${fixLabel(m)}, so ${m.artist.name} is back on your day`}
+                  accessibilityLabel={t('{fix}, so {artist} is back on your day', { fix: fixLabel(m), artist: m.artist.name })}
                   hitSlop={6}
                   style={({ pressed }) => [styles.fix, pressed && { opacity: 0.6 }]}
                 >
@@ -131,39 +133,39 @@ function HoursEditor({
   return (
     <Modal transparent visible animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close your hours" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close your hours')} />
         <View style={[styles.sheet, { maxHeight: height * 0.88, paddingBottom: insets.bottom + space.lg }]} accessibilityViewIsModal>
           <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
           <SheetClose onPress={onClose} />
           <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
             <Text style={styles.title} accessibilityRole="header">
-              Your hours
+              {t('Your hours')}
             </Text>
-            <Text style={styles.sub}>{day}. Your full day plans only inside these, and keeps your breaks free.</Text>
+            <Text style={styles.sub}>{t('{day}. Your full day plans only inside these, and keeps your breaks free.', { day: t(day) })}</Text>
 
             <Stepper
-              title="Arrive"
-              value={draft.arrive === undefined ? 'From the start' : clockLabel(draft.arrive)}
-              what="Arrive"
+              title={t('Arrive')}
+              value={draft.arrive === undefined ? t('From the start') : clockLabel(draft.arrive)}
+              what={t('Arrive')}
               onStep={(dir) => {
                 const next = stepTime(draft.arrive ?? range.first, dir, range.min, hi - HOURS_STEP);
                 if (next !== draft.arrive) change({ ...draft, arrive: next });
               }}
             />
             <Stepper
-              title="Leave"
-              value={draft.leave === undefined ? 'Until the end' : clockLabel(draft.leave)}
-              what="Leave"
+              title={tc('time', 'Leave')}
+              value={draft.leave === undefined ? t('Until the end') : clockLabel(draft.leave)}
+              what={tc('time', 'Leave')}
               onStep={(dir) => {
                 const next = stepTime(draft.leave ?? range.last, dir, lo + HOURS_STEP, range.max);
                 if (next !== draft.leave) change({ ...draft, leave: next });
               }}
             />
 
-            <Text style={styles.section}>Breaks</Text>
-            {draft.breaks.length === 0 ? <Text style={styles.sub}>None. Add one for dinner, a rest or meeting someone.</Text> : null}
+            <Text style={styles.section}>{t('Breaks')}</Text>
+            {draft.breaks.length === 0 ? <Text style={styles.sub}>{t('None. Add one for dinner, a rest or meeting someone.')}</Text> : null}
             {draft.breaks.map((b, i) => {
-              const name = b.label ?? 'Break';
+              const name = b.label != null ? breakLabel(b.label) : t('Break');
               return (
                 <View key={i} style={styles.breakCard}>
                   <View style={styles.chips} accessibilityRole="radiogroup">
@@ -175,36 +177,36 @@ function HoursEditor({
                           onPress={() => !on && setBreak(i, { label: l })}
                           accessibilityRole="radio"
                           accessibilityState={{ selected: on }}
-                          accessibilityLabel={`Break ${i + 1}: ${l}`}
+                          accessibilityLabel={t('Break {n}: {label}', { n: i + 1, label: breakLabel(l) })}
                           style={[styles.chip, on && styles.chipOn]}
                         >
-                          <Text style={[styles.chipText, on && { color: color.moon }]}>{l}</Text>
+                          <Text style={[styles.chipText, on && { color: color.moon }]}>{breakLabel(l)}</Text>
                         </Pressable>
                       );
                     })}
                     <Pressable
                       onPress={() => change({ ...draft, breaks: draft.breaks.filter((_, j) => j !== i) })}
                       accessibilityRole="button"
-                      accessibilityLabel={`Remove ${name.toLowerCase()}`}
+                      accessibilityLabel={t('Remove {name}', { name: name.toLowerCase() })}
                       hitSlop={6}
                       style={({ pressed }) => [styles.remove, pressed && { opacity: 0.6 }]}
                     >
-                      <Text style={styles.removeText}>Remove</Text>
+                      <Text style={styles.removeText}>{t('Remove')}</Text>
                     </Pressable>
                   </View>
                   <Stepper
-                    title="From"
+                    title={t('From')}
                     value={clockLabel(b.from)}
-                    what={`${name} start`}
+                    what={t('{name} start', { name })}
                     onStep={(dir) => {
                       const from = stepTime(b.from, dir, lo, b.to - HOURS_STEP);
                       if (from !== b.from) setBreak(i, { from });
                     }}
                   />
                   <Stepper
-                    title="To"
+                    title={t('To')}
                     value={clockLabel(b.to)}
-                    what={`${name} end`}
+                    what={t('{name} end', { name })}
                     onStep={(dir) => {
                       const to = stepTime(b.to, dir, b.from + HOURS_STEP, hi);
                       if (to !== b.to) setBreak(i, { to });
@@ -217,11 +219,11 @@ function HoursEditor({
               <Pressable
                 onPress={() => change({ ...draft, breaks: [...draft.breaks, newBreak(draft, range, BREAK_LABELS[draft.breaks.length % BREAK_LABELS.length])] })}
                 accessibilityRole="button"
-                accessibilityLabel="Add a break"
+                accessibilityLabel={t('Add a break')}
                 style={({ pressed }) => [styles.add, pressed && { opacity: 0.6 }]}
               >
                 <PlusIcon color={color.glow} size={14} />
-                <Text style={styles.addText}>Add a break</Text>
+                <Text style={styles.addText}>{t('Add a break')}</Text>
               </Pressable>
             ) : null}
 
@@ -232,10 +234,10 @@ function HoursEditor({
                   onSave(undefined);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Reset to all day"
+                accessibilityLabel={t('Reset to all day')}
                 style={({ pressed }) => [styles.button, pressed && { opacity: 0.6 }]}
               >
-                <Text style={styles.buttonText}>Reset to all day</Text>
+                <Text style={styles.buttonText}>{t('Reset to all day')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -243,10 +245,10 @@ function HoursEditor({
                   onSave(cleanHours(draft));
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Save your hours"
+                accessibilityLabel={t('Save your hours')}
                 style={({ pressed }) => [styles.button, styles.primary, pressed && { opacity: 0.7 }]}
               >
-                <Text style={[styles.buttonText, { color: color.moon }]}>Save</Text>
+                <Text style={[styles.buttonText, { color: color.moon }]}>{t('Save')}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -264,7 +266,7 @@ function Stepper({ title, value, what, onStep }: { title: string; value: string;
       <Pressable
         onPress={() => onStep(-1)}
         accessibilityRole="button"
-        accessibilityLabel={`${what} 15 minutes earlier`}
+        accessibilityLabel={t('{what} 15 minutes earlier', { what })}
         hitSlop={6}
         style={({ pressed }) => [styles.stepButton, pressed && { opacity: 0.6 }]}
       >
@@ -276,7 +278,7 @@ function Stepper({ title, value, what, onStep }: { title: string; value: string;
       <Pressable
         onPress={() => onStep(1)}
         accessibilityRole="button"
-        accessibilityLabel={`${what} 15 minutes later`}
+        accessibilityLabel={t('{what} 15 minutes later', { what })}
         hitSlop={6}
         style={({ pressed }) => [styles.stepButton, pressed && { opacity: 0.6 }]}
       >

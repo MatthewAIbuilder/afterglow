@@ -7,6 +7,7 @@ import { SUPPORT_EMAIL } from '../config/app';
 import { haptic } from '../lib/haptics';
 import { color, radius, space, type } from '../theme/tokens';
 import { NightSky } from './NightSky';
+import { t } from '../i18n';
 
 /** The mail that "Tell us" opens: what broke, nothing personal. */
 export function crashMailto(error: Error, email = SUPPORT_EMAIL): string | undefined {
@@ -63,9 +64,9 @@ export function CrashScreen({ error, retry }: { error: Error; retry: () => Promi
         </Svg>
       </Animated.View>
       <Text style={styles.title} accessibilityRole="header">
-        Something went wrong
+        {t('Something went wrong')}
       </Text>
-      <Text style={styles.body}>This page tripped over a cable. Your plans, ratings and videos are safe on this phone.</Text>
+      <Text style={styles.body}>{t('This page tripped over a cable. Your plans, ratings and videos are safe on this phone.')}</Text>
       {__DEV__ ? (
         <Text style={styles.dev} numberOfLines={4}>
           {error?.message}
@@ -79,7 +80,7 @@ export function CrashScreen({ error, retry }: { error: Error; retry: () => Promi
         accessibilityRole="button"
         style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }]}
       >
-        <Text style={styles.primaryText}>Try again</Text>
+        <Text style={styles.primaryText}>{t('Try again')}</Text>
       </Pressable>
       <Pressable
         onPress={() => {
@@ -89,11 +90,12 @@ export function CrashScreen({ error, retry }: { error: Error; retry: () => Promi
         accessibilityRole="button"
         style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
       >
-        <Text style={styles.secondaryText}>Go to Discover</Text>
+        <Text style={styles.secondaryText}>{t('Go to Discover')}</Text>
       </Pressable>
       {mail ? (
         <Pressable onPress={() => void Linking.openURL(mail).catch(() => {})} accessibilityRole="link" hitSlop={8}>
-          <Text style={styles.tell}>Tell us what happened</Text>
+          <Text style={styles.tell}>{t('Tell us what happened')}</Text>
+
         </Pressable>
       ) : null}
     </View>

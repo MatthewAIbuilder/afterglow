@@ -11,9 +11,10 @@ import { formatTime } from '../festivals/format';
 import { MustSeeToggle } from './MustSeeToggle';
 import { usePickReasons } from './usePickReasons';
 import type { ReactNode } from 'react';
-import { timeRange } from './hours';
+import { breakLabel, timeRange } from './hours';
 import { clockTime, type DayRoute, type RouteStop, stintLabel } from './route';
 import { elsewhereDuring, meetUps, namesLine, type Elsewhere, type MeetUp, type StarsFor } from './withFriends';
+import { t, tn } from '../../i18n';
 
 const at = (min: number) => formatTime(clockTime(min));
 /** A gap this short is just a breather between sets. */
@@ -41,7 +42,7 @@ export function RouteList({
   if (!route.stops.length)
     return (
       <View>
-        <Text style={styles.summary}>{route.missed?.length ? 'Nothing on for you in your hours.' : 'Nothing on this day.'}</Text>
+        <Text style={styles.summary}>{route.missed?.length ? t('Nothing on for you in your hours.') : t('Nothing on this day.')}</Text>
         {underSummary}
       </View>
     );
@@ -51,7 +52,7 @@ export function RouteList({
   return (
     <View>
       <Text style={styles.summary}>
-        {sets.length} {sets.length === 1 ? 'set' : 'sets'}, {at(first.from)} to {at(last.to)}. Where to be all day.
+        {tn(sets.length, '{n} set, {from} to {to}. Where to be all day.', '{n} sets, {from} to {to}. Where to be all day.', { from: at(first.from), to: at(last.to) })}
       </Text>
       {underSummary}
       <MeetUps festival={festival} meets={meetUps(route, starsFor)} />
@@ -79,13 +80,13 @@ export function RouteList({
               {stop.kind === 'break' && stop.yours ? (
                 // One of your own breaks: "Dinner · 7:00–8:00 PM".
                 <Text style={[styles.breakText, styles.yourBreak]}>
-                  {stop.label ?? 'Your break'} · {timeRange(stop.from, stop.to)}
+                  {stop.label != null ? breakLabel(stop.label) : t('Your break')} · {timeRange(stop.from, stop.to)}
                 </Text>
               ) : stop.kind === 'break' ? (
                 <Text style={styles.breakText}>
                   {stop.to - stop.from <= SHORT_BREAK
-                    ? `${stop.to - stop.from} min break`
-                    : `Break until ${at(stop.to)}. Nothing on for you.`}
+                    ? t('{n} min break', { n: stop.to - stop.from })
+                    : t('Break until {time}. Nothing on for you.', { time: at(stop.to) })}
                 </Text>
               ) : (
                 <StopCard
@@ -112,8 +113,8 @@ export function RouteList({
 function MeetUps({ festival, meets }: { festival: Festival; meets: MeetUp[] }) {
   if (!meets.length) return null;
   return (
-    <View style={styles.meets} accessible accessibilityLabel={`With your crew today. ${meets.map((m) => `${at(m.stop.from)}, ${m.stop.artist.name} at ${stageName(festival, m.stop.set.stageId)}, with ${namesLine(m.names)}`).join('. ')}`}>
-      <Text style={styles.meetsTitle}>With your crew today</Text>
+    <View style={styles.meets} accessible accessibilityLabel={`${t('With your crew today.')} ${meets.map((m) => t('{time}, {artist} at {stage}, with {names}', { time: at(m.stop.from), artist: m.stop.artist.name, stage: stageName(festival, m.stop.set.stageId), names: namesLine(m.names) })).join('. ')}`}>
+      <Text style={styles.meetsTitle}>{t('With your crew today')}</Text>
       {meets.map((m) => (
         <View key={`${m.stop.from}-${m.stop.artist.id}`} style={styles.meetRow}>
           <Text style={styles.meetTime}>{at(m.stop.from)}</Text>
@@ -123,13 +124,24 @@ function MeetUps({ festival, meets }: { festival: Festival; meets: MeetUp[] }) {
               <Text style={styles.meetStage}>{`  ${stageName(festival, m.stop.set.stageId)}`}</Text>
             </Text>
             <Text style={styles.meetWho} numberOfLines={1}>
-              with {namesLine(m.names)}
+              {t('with {names}', { names: namesLine(m.names) })}
             </Text>
           </View>
         </View>
       ))}
     </View>
   );
+}
+
+/** The first sentence read out for a set on your route: when, who, where, your match and whether it's a must-see. */
+function stopLine(stop: RouteStop, v: { from: string; to: string; artist: string; stage: string; stint: string; pct: string }): string {
+  if (stop.known)
+    return stop.pinned
+      ? t('{from} to {to}, {artist} at {stage}, {stint}, {pct} match, one of your must sees', v)
+      : t('{from} to {to}, {artist} at {stage}, {stint}, {pct} match', v);
+  return stop.pinned
+    ? t('{from} to {to}, {artist} at {stage}, {stint}, new to you, one of your must sees', v)
+    : t('{from} to {to}, {artist} at {stage}, {stint}, new to you', v);
 }
 
 function StopCard({
@@ -150,7 +162,7 @@ function StopCard({
   const stage = stageName(festival, stop.set.stageId);
   const pct = `${Math.round(stop.match * 100)}%`;
   const stint = stintLabel(stop);
-  const label = stop.pinned ? 'Must see' : stop.known ? undefined : 'New to you';
+  const label = stop.pinned ? t('Must see') : stop.known ? undefined : t('New to you');
   return (
     <Pressable
       onPress={() => {
@@ -158,14 +170,12 @@ function StopCard({
         router.push({ pathname: '/artist/[id]', params: { id: stop.artist.id, festival: festival.id } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${at(stop.from)} to ${at(stop.to)}, ${stop.artist.name} at ${stage}, ${stint.toLowerCase()}${
-        stop.known ? `, ${pct} match` : ', new to you'
-      }${stop.pinned ? ', one of your must sees' : ''}${walkFrom ? `. Walk over from ${stageName(festival, walkFrom.set.stageId)}` : ''}. ${reason}${friends.length ? `. With ${namesLine(friends)}` : ''}${elsewhere
-        .map((e) => `. ${e.name} is at ${e.artist.name}, ${stageName(festival, e.stageId)}, until ${at(e.end)}`)
+      accessibilityLabel={`${stopLine(stop, { from: at(stop.from), to: at(stop.to), artist: stop.artist.name, stage, stint: stint.toLowerCase(), pct })}${walkFrom ? `. ${t('Walk over from {stage}', { stage: stageName(festival, walkFrom.set.stageId) })}` : ''}. ${reason}${friends.length ? `. ${t('With {names}', { names: namesLine(friends) })}` : ''}${elsewhere
+        .map((e) => `. ${t('{name} is at {artist}, {stage}, until {time}', { name: e.name, artist: e.artist.name, stage: stageName(festival, e.stageId), time: at(e.end) })}`)
         .join('')}`}
       style={({ pressed }) => [styles.card, !stop.known && styles.discovery, stop.pinned && styles.mustSee, pressed && { opacity: 0.7 }]}
     >
-      {walkFrom ? <Text style={styles.walk}>Head to {stage}{stop.walk ? ` · ${stop.walk} min walk` : ''}</Text> : null}
+      {walkFrom ? <Text style={styles.walk}>{stop.walk ? t('Head to {stage} · {n} min walk', { stage, n: stop.walk }) : t('Head to {stage}', { stage })}</Text> : null}
       <View style={styles.line1}>
         <ArtistAvatar artist={stop.artist} size={36} />
         <View style={styles.text}>
@@ -177,7 +187,7 @@ function StopCard({
             {stage}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
-            {stint}, {stop.to < stop.setEnd ? 'leave at' : 'until'} {at(stop.to)}
+            {stop.to < stop.setEnd ? t('{stint}, leave at {time}', { stint, time: at(stop.to) }) : t('{stint}, until {time}', { stint, time: at(stop.to) })}
           </Text>
           {/* Why it's on your day, in your own signals. */}
           <Text style={styles.reason} numberOfLines={2}>
@@ -186,12 +196,12 @@ function StopCard({
           {/* Your crew: who's here with you, and who's off at something else meanwhile. */}
           {friends.length ? (
             <Text style={styles.with} numberOfLines={1}>
-              ★ With {namesLine(friends)}
+              ★ {t('With {names}', { names: namesLine(friends) })}
             </Text>
           ) : null}
           {elsewhere.length ? (
             <Text style={styles.elsewhere} numberOfLines={2}>
-              Meanwhile {elsewhere.map((e) => `${e.name} at ${e.artist.name} (${stageName(festival, e.stageId)}, until ${at(e.end)})`).join(', ')}
+              {t('Meanwhile {list}', { list: elsewhere.map((e) => t('{name} at {artist} ({stage}, until {time})', { name: e.name, artist: e.artist.name, stage: stageName(festival, e.stageId), time: at(e.end) })).join(', ') })}
             </Text>
           ) : null}
         </View>
@@ -211,12 +221,12 @@ function StopCard({
                   router.push({ pathname: '/artist/[id]', params: { id: o.artist.id, festival: festival.id } });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Also on: ${o.artist.name} at ${stageName(festival, o.set.stageId)}${o.known ? `, ${Math.round(o.match * 100)} percent match` : ''}. Opens the artist.`}
+                accessibilityLabel={o.known ? t('Also on: {artist} at {stage}, {n} percent match. Opens the artist.', { artist: o.artist.name, stage: stageName(festival, o.set.stageId), n: Math.round(o.match * 100) }) : t('Also on: {artist} at {stage}. Opens the artist.', { artist: o.artist.name, stage: stageName(festival, o.set.stageId) })}
                 hitSlop={4}
                 style={({ pressed }) => [styles.alsoMain, pressed && { opacity: 0.6 }]}
               >
                 <Text style={styles.alsoText} numberOfLines={1}>
-                  <Text style={styles.alsoLabel}>Also on  </Text>
+                  <Text style={styles.alsoLabel}>{`${t('Also on')}  `}</Text>
                   {o.artist.name}
                   <Text style={styles.alsoLabel}>{`  ${stageName(festival, o.set.stageId)}`}</Text>
                 </Text>

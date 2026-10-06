@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import { setFor, stageName } from '../../data/festival';
 import { CREW_NOTE_MAX, CREW_STAGE_MAX, type Crew, type CrewUpdate, type CrewUpdateInput } from '../social/models';
+import { LANGUAGE, t, tn } from '../../i18n';
 
 /**
  * Crew updates, pure: who in your crews posted what and when, how it reads,
@@ -28,17 +29,18 @@ export function clock(iso: string): string {
   const d = new Date(iso);
   const h = d.getHours();
   const m = d.getMinutes();
+  if (LANGUAGE === 'es') return `${h}:${String(m).padStart(2, '0')}`;
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
 /** "Just now", "12 min ago", "2 h ago", "1 h 20 min ago". */
 export function ago(iso: string, now: number): string {
   const m = Math.max(0, Math.floor((now - ms(iso)) / 60000));
-  if (m < 1) return 'Just now';
-  if (m < 60) return `${m} min ago`;
+  if (m < 1) return t('Just now');
+  if (m < 60) return t('{m} min ago', { m });
   const h = Math.floor(m / 60);
   const r = m % 60;
-  return h < 3 && r ? `${h} h ${r} min ago` : `${h} h ago`;
+  return h < 3 && r ? t('{h} h {m} min ago', { h, m: r }) : t('{h} h ago', { h });
 }
 
 /** Newest first by when it happened; ties by when it arrived, then id, so the order never flickers. */
@@ -106,26 +108,27 @@ export function updatePlace(u: Pick<CrewUpdate, 'stage' | 'note'>, artistName?: 
 
 /** "Updated 4:05 PM · Main Stage · SLANDER", the line under a crewmate's story ("Replied 4:12 PM" for a reply). */
 export function updateLine(u: CrewUpdate, artistName?: string): string {
-  if (isReply(u)) return `Replied ${clock(u.at)}`;
-  if (u.lost) return `Can’t find the crew · ${clock(u.at)}`;
-  if (u.care === 'help') return `Not feeling great · ${clock(u.at)}`;
-  if (u.care === 'ok') return `I’m OK · ${clock(u.at)}`;
+  if (isReply(u)) return t('Replied {time}', { time: clock(u.at) });
+  if (u.lost) return t('Can’t find the crew · {time}', { time: clock(u.at) });
+  if (u.care === 'help') return t('Not feeling great · {time}', { time: clock(u.at) });
+  if (u.care === 'ok') return t('I’m OK · {time}', { time: clock(u.at) });
   if (u.kind === 'photo') {
     const where = updatePlace(u, artistName);
-    return `Photo ${clock(u.at)}${where ? ` · ${where}` : ''}`;
+    return `${t('Photo {time}', { time: clock(u.at) })}${where ? ` · ${where}` : ''}`;
   }
   const place = updatePlace(u, artistName);
-  return `Updated ${clock(u.at)}${place ? ` · ${place}` : ''}`;
+  return `${t('Updated {time}', { time: clock(u.at) })}${place ? ` · ${place}` : ''}`;
 }
 
 /** An update that took a while to get through: "Sent 3:00 PM, reached the crew 5:02 PM". Nothing when it arrived promptly. */
 export function lateLine(u: Pick<CrewUpdate, 'at' | 'sentAt'>): string | undefined {
-  return ms(u.sentAt) - ms(u.at) >= LATE_AFTER_MS ? `Sent ${clock(u.at)}, reached the crew ${clock(u.sentAt)}` : undefined;
+  return ms(u.sentAt) - ms(u.at) >= LATE_AFTER_MS ? t('Sent {time}, reached the crew {arrived}', { time: clock(u.at), arrived: clock(u.sentAt) }) : undefined;
 }
 
 /** "Last update 3:00 PM · 2 h ago": how fresh a crewmate's latest news is. */
 export function lastUpdateLine(u: CrewUpdate, now: number): string {
-  return `Last update ${clock(u.at)} · ${ago(u.at, now)}`;
+  return t('Last update {time} · {ago}', { time: clock(u.at), ago: ago(u.at, now) });
+
 }
 
 /** Where an artist plays at this festival, from the set times, when known. */
@@ -137,6 +140,39 @@ export function stageOf(festival: Festival, artistId: string | undefined): strin
 
 /** Quick check-ins: one tap each, so they get through on the weakest signal. */
 export const CHECK_INS = ['I’m here', 'Meet at our spot', 'Getting water', 'Phone’s dying', 'Heading out'] as const;
+
+/** Quick replies: one tap, like check-ins. */
+export const QUICK_REPLIES = ['On my way', 'Be there in 10', 'Save me a spot', 'Where exactly?', 'Can’t make it'] as const;
+
+/**
+ * Words the app itself puts in an update or a message (check-ins, quick
+ * replies, care check-ins, "Can't find you", quick chat messages). They're
+ * sent in English, as tapped, so a friend's phone in another language can
+ * still show them in its own: `presetLabel` turns one of them into this
+ * phone's language when it's shown. Anything else (people's own words) is
+ * left exactly as written.
+ */
+const PRESETS: ReadonlySet<string> = new Set<string>([
+  ...CHECK_INS,
+  ...QUICK_REPLIES,
+  'I’m OK',
+  'Not feeling great. Can someone come find me?',
+  'Can’t find you',
+  'Where are you?',
+  'Water break',
+  'This set is amazing',
+]);
+const HEADING_TO = /^Can’t find you\. Heading to (.+)$/;
+
+/** A preset's words in this phone's language; anything else as it is. */
+export function presetLabel(text: string): string;
+export function presetLabel(text: string | undefined): string | undefined;
+export function presetLabel(text: string | undefined): string | undefined {
+  if (!text) return text;
+  if (PRESETS.has(text)) return t(text);
+  const spot = HEADING_TO.exec(text);
+  return spot ? t('Can’t find you. Heading to {spot}', { spot: spot[1] }) : text;
+}
 
 /** A check-in's words, tidied: one line, at most CREW_NOTE_MAX. */
 export const cleanNote = (raw: string) => raw.replace(/\s+/g, ' ').trim().slice(0, CREW_NOTE_MAX);
@@ -236,8 +272,8 @@ export function outboxLine(outbox: readonly OutboxItem[]): string | undefined {
   if (!outbox.length) return undefined;
   const oldest = outbox[0];
   return outbox.length === 1
-    ? `Waiting for signal · your ${clock(oldest.input.at)} update will send itself`
-    : `Waiting for signal · ${outbox.length} updates from ${clock(oldest.input.at)} will send themselves`;
+    ? t('Waiting for signal · your {time} update will send itself', { time: clock(oldest.input.at) })
+    : t('Waiting for signal · {n} updates from {time} will send themselves', { n: outbox.length, time: clock(oldest.input.at) });
 }
 
 /** Last seen per crewmate: the newest `at` you've watched from them. */
@@ -267,9 +303,6 @@ export function latestPerMember(updates: readonly CrewUpdate[], members: readonl
   return members.map((uid) => ({ uid, latest: [...updates].filter((u) => u.uid === uid && !isReply(u)).sort(byHappened)[0] }));
 }
 
-/** Quick replies: one tap, like check-ins. */
-export const QUICK_REPLIES = ['On my way', 'Be there in 10', 'Save me a spot', 'Where exactly?', 'Can’t make it'] as const;
-
 /** The replies to one update in its crew, oldest first (a conversation reads down), never from anyone blocked. */
 export function repliesTo(updates: readonly CrewUpdate[], target: Pick<CrewUpdate, 'id' | 'crewId'>, blocked: readonly string[] = []): CrewUpdate[] {
   return unique(updates)
@@ -281,8 +314,8 @@ export function repliesTo(updates: readonly CrewUpdate[], target: Pick<CrewUpdat
 export function repliesLine(replies: readonly CrewUpdate[], nameOf: (uid: string) => string): string | undefined {
   const last = replies[replies.length - 1];
   if (!last) return undefined;
-  const count = replies.length === 1 ? '1 reply' : `${replies.length} replies`;
-  return `${count} · ${nameOf(last.uid)}: ${last.note ?? ''}`;
+  const count = tn(replies.length, '{n} reply', '{n} replies');
+  return `${count} · ${nameOf(last.uid)}: ${presetLabel(last.note) ?? ''}`;
 }
 
 /** The update a reply answers, when it's still here. */

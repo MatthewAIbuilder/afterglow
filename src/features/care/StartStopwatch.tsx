@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { LABEL_MAX } from './care';
@@ -20,10 +21,10 @@ export function StartStopwatch({ onStart }: { onStart: (label: string, guide?: s
           setOpen(true);
         }}
         accessibilityRole="button"
-        accessibilityLabel="Start a stopwatch"
+        accessibilityLabel={t('Start a stopwatch')}
         style={({ pressed }) => [styles.start, pressed && styles.pressed]}
       >
-        <Text style={styles.startText}>+ Start a stopwatch</Text>
+        <Text style={styles.startText}>{t('+ Start a stopwatch')}</Text>
       </Pressable>
     );
 
@@ -36,19 +37,19 @@ export function StartStopwatch({ onStart }: { onStart: (label: string, guide?: s
 
   return (
     <View style={styles.panel}>
-      <Text style={styles.title}>What did you take?</Text>
-      <Text style={styles.sub}>Picking one lets the stopwatch say when it usually starts and wears off. It stays on this phone.</Text>
+      <Text style={styles.title}>{t('What did you take?')}</Text>
+      <Text style={styles.sub}>{t('Picking one lets the stopwatch say when it usually starts and wears off. It stays on this phone.')}</Text>
       <View style={styles.grid}>
         {GUIDE.map((g) => (
           <Pressable
             key={g.id}
             onPress={() => go(g.name, g.id)}
             accessibilityRole="button"
-            accessibilityLabel={`${g.name}. Usually starts in ${rangeText(g.onset)}`}
+            accessibilityLabel={t('{name}. Usually starts in {range}', { name: g.name, range: rangeText(g.onset) })}
             style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
           >
             <Text style={styles.chipText}>{g.name}</Text>
-            <Text style={styles.chipSub}>Starts {rangeText(g.onset)}</Text>
+            <Text style={styles.chipSub}>{t('Starts {range}', { range: rangeText(g.onset) })}</Text>
           </Pressable>
         ))}
       </View>
@@ -56,20 +57,20 @@ export function StartStopwatch({ onStart }: { onStart: (label: string, guide?: s
         <TextInput
           value={label}
           onChangeText={setLabel}
-          placeholder="Something else, in your words"
+          placeholder={t('Something else, in your words')}
           placeholderTextColor={color.moonFaint}
-          accessibilityLabel="Name it your own way"
+          accessibilityLabel={t('Name it your own way')}
           maxLength={LABEL_MAX}
           style={styles.input}
           returnKeyType="done"
           onSubmitEditing={() => go(label)}
         />
-        <Pressable onPress={() => go(label)} accessibilityRole="button" accessibilityLabel="Start a stopwatch with your own name" style={({ pressed }) => [styles.go, pressed && styles.pressed]}>
-          <Text style={styles.goText}>Start</Text>
+        <Pressable onPress={() => go(label)} accessibilityRole="button" accessibilityLabel={t('Start a stopwatch with your own name')} style={({ pressed }) => [styles.go, pressed && styles.pressed]}>
+          <Text style={styles.goText}>{t('Start')}</Text>
         </Pressable>
       </View>
       <Pressable onPress={() => setOpen(false)} accessibilityRole="button" hitSlop={8}>
-        <Text style={styles.cancel}>Cancel</Text>
+        <Text style={styles.cancel}>{t('Cancel')}</Text>
       </Pressable>
     </View>
   );

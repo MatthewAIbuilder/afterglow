@@ -1,5 +1,6 @@
 import type { Artist, Festival } from '../../data/models';
 import { playingList, type Playing } from '../festivals/playing';
+import { tn } from '../../i18n';
 
 /**
  * Following artists: a list of the artists you want news about, newest first.
@@ -80,7 +81,8 @@ export function followSuggestions(
 }
 
 /** "3 artists", "1 artist". */
-export const artistsCount = (n: number) => `${n} ${n === 1 ? 'artist' : 'artists'}`;
+export const artistsCount = (n: number) => tn(n, '{n} artist', '{n} artists');
 
 /** "and 2 more festivals", for under an artist's next show. */
-export const moreLine = (n: number) => (n > 0 ? `+${n} more ${n === 1 ? 'festival' : 'festivals'}` : '');
+export const moreLine = (n: number) => (n > 0 ? tn(n, '+{n} more festival', '+{n} more festivals') : '');
+

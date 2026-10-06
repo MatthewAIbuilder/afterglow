@@ -11,6 +11,7 @@ import { useStanding } from '../standing/useStanding';
 import type { Profile } from '../social/models';
 import { AnimatedBackdrop } from './AnimatedBackdrop';
 import { backdropOf, type BackdropId, canUse, madeFor, NO_BACKDROP } from './backdrops';
+import { t } from '../../i18n';
 
 const SIZE = 38;
 
@@ -35,7 +36,7 @@ export function CoverSwap({ me, shown, style }: { me: Profile; shown: BackdropId
   const back = lastBackdrop && canUse(lastBackdrop, me.uid, plus) ? lastBackdrop.id : undefined;
   if (!me.coverUrl || (!shown && !back)) return null;
   const toPhoto = !!shown;
-  const otherName = toPhoto ? 'your cover photo' : backdropOf(back)?.name;
+  const otherLabel = toPhoto ? t('Show your cover photo instead') : t('Show {name} instead', { name: backdropOf(back)?.name ?? '' });
 
   const swap = async () => {
     if (busy) return;
@@ -46,7 +47,7 @@ export function CoverSwap({ me, shown, style }: { me: Profile; shown: BackdropId
       await social.setBackdrop(toPhoto ? (madeFor(me.uid) ? NO_BACKDROP : null) : (back ?? null));
       haptic.settle();
     } catch {
-      showAlert('Couldn’t swap your background', 'Check your connection and try again.');
+      showAlert(t('Couldn’t swap your background'), t('Check your connection and try again.'));
     } finally {
       setBusy(false);
     }
@@ -57,7 +58,7 @@ export function CoverSwap({ me, shown, style }: { me: Profile; shown: BackdropId
       onPress={() => void swap()}
       disabled={busy}
       accessibilityRole="button"
-      accessibilityLabel={`Show ${otherName} instead`}
+      accessibilityLabel={otherLabel}
       accessibilityState={{ busy }}
       hitSlop={8}
       style={({ pressed }) => [styles.button, style, (pressed || busy) && styles.pressed]}

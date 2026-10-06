@@ -2,6 +2,7 @@ import type { Artist, Festival, SetTime, TasteProfile } from '../../data/models'
 import { stageName } from '../../data/festival';
 import { playsOn } from '../festivals/days';
 import { formatTime } from '../festivals/format';
+import { dayWord, t } from '../../i18n';
 import { normalize } from '../festivals/search';
 import { runsOf } from '../festivals/when';
 import { festivalNight } from '../plan/live';
@@ -215,13 +216,13 @@ export function artistConfidence(guesses: ArtistGuess[]): 'sure' | 'likely' | 'm
 export function reasonLine(g: ArtistGuess, night?: string): string | undefined {
   switch (g.reason) {
     case 'plan':
-      return g.stage ? `On your plan · ${g.stage}` : 'On your plan';
+      return g.stage ? t('On your plan · {stage}', { stage: g.stage }) : t('On your plan');
     case 'on-now':
-      return g.stage && g.set ? `${g.stage} until ${formatTime(g.set.end)}` : g.stage;
+      return g.stage && g.set ? t('{stage} until {time}', { stage: g.stage, time: formatTime(g.set.end) }) : g.stage;
     case 'close':
-      return g.stage && g.set ? `${g.stage} · ${formatTime(g.set.start)} to ${formatTime(g.set.end)}` : g.stage;
+      return g.stage && g.set ? t('{stage} · {start} to {end}', { stage: g.stage, start: formatTime(g.set.start), end: formatTime(g.set.end) }) : g.stage;
     case 'tonight':
-      return night ? `Playing ${night}` : undefined;
+      return night ? t('Playing {night}', { night: dayWord(night) }) : undefined;
     default:
       return undefined;
   }

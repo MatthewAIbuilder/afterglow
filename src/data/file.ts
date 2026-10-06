@@ -332,6 +332,11 @@ function parseClip(raw: unknown, i: number, problems: string[]): Clip | undefine
       source = { provider: 'youtube', videoId: link.videoId, start, end, channel };
       // A Short, or a video marked upright (the nightly clip finder asks YouTube for each video's shape).
       if (link.vertical || v.vertical === true) source.vertical = true;
+      // A Short found by the nightly clip finder: the whole video, upright, spaced out in Discover.
+      if (v.short === true) {
+        source.short = true;
+        source.vertical = true;
+      }
     }
   }
 

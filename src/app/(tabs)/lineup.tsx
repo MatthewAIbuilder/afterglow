@@ -18,6 +18,7 @@ import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
 import { useGoing } from '../../state/going';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * Your lineup: the festival page for the festival you're going to (your plan
@@ -46,7 +47,7 @@ function FullLineup() {
   if (!festival) {
     return (
       <View style={styles.root}>
-        <PageTitle title="Lineup" />
+        <PageTitle title={t('Lineup')} />
         <NightSky />
       </View>
     );
@@ -54,7 +55,7 @@ function FullLineup() {
 
   const header = (
     <View style={styles.header}>
-      <Text style={styles.kicker}>{yours ? 'Your lineup' : 'Lineups'}</Text>
+      <Text style={styles.kicker}>{yours ? t('Your lineup') : t('Lineups')}</Text>
       {/* Which festival: a card each, with its dates and how long until it. */}
       {festivals.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipsWrap}>
@@ -72,16 +73,16 @@ function FullLineup() {
                 }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`Show the ${f.name} lineup`}
+                accessibilityLabel={t('Show the {festival} lineup', { festival: f.name })}
                 style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && { opacity: 0.75 }]}
               >
                 <Text style={[styles.chipWhen, on && { color: color.glow }]} numberOfLines={1}>
-                  {block ? `${block.month} ${block.days}` : 'Dates to come'}
+                  {block ? t('{month} {days}', { month: block.month, days: block.days }) : t('Dates to come')}
                 </Text>
                 <Text style={[styles.chipText, on && { color: color.moon }]} numberOfLines={2}>
                   {f.name}
                 </Text>
-                {soon && soon !== 'Over' ? (
+                {soon && soon !== t('Over') ? (
                   <Text style={styles.chipSoon} numberOfLines={1}>
                     {soon}
                   </Text>
@@ -93,17 +94,17 @@ function FullLineup() {
       )}
       {!yours && (
         <View style={styles.nudgeCard}>
-          <Text style={styles.nudge}>Tap “I’m going” on a festival and this tab becomes your lineup for it.</Text>
+          <Text style={styles.nudge}>{t('Tap “I’m going” on a festival and this tab becomes your lineup for it.')}</Text>
           <Pressable
             onPress={() => {
               haptic.select();
               router.navigate('/festivals');
             }}
             accessibilityRole="button"
-            accessibilityLabel="Browse festivals"
+            accessibilityLabel={t('Browse festivals')}
             style={({ pressed }) => [styles.browse, pressed && { opacity: 0.8 }]}
           >
-            <Text style={styles.browseText}>Browse festivals</Text>
+            <Text style={styles.browseText}>{t('Browse festivals')}</Text>
           </Pressable>
         </View>
       )}
@@ -112,7 +113,7 @@ function FullLineup() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Lineup" />
+      <PageTitle title={t('Lineup')} />
       <FestivalPage
         key={festival.id}
         festival={festival}

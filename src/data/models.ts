@@ -212,6 +212,8 @@ export type YouTubeClipSource = {
   channel: string;
   /** Shot vertically (an official Short). Gets a tall player; everything else is shown 16:9. */
   vertical?: boolean;
+  /** A short upright crowd clip (a YouTube Short), played whole from its start. Discover spaces these out. */
+  short?: boolean;
 };
 
 /**

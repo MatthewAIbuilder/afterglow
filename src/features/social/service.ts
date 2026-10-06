@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import type { PastEvent } from '../memories/past';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip } from './models';
@@ -355,27 +356,27 @@ export const socialErrorKind = (e: unknown): SocialErrorKind => (e instanceof So
 
 /** Each error in plain words. */
 export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
-  'email-in-use': 'There’s already an account with that email. Sign in instead.',
-  'invalid-email': 'That email doesn’t look right.',
-  'weak-password': 'Choose a longer password (at least 8 characters).',
-  'wrong-password': 'That email and password don’t match.',
-  'no-account': 'That email and password don’t match.',
-  'too-many-attempts': 'Too many tries. Wait a few minutes and try again.',
-  'handle-taken': 'Someone already has that handle.',
-  'not-signed-in': 'Sign in to do that.',
-  'no-profile': 'Create your profile first.',
-  'too-large': 'That video is too big to share. Try a shorter clip.',
-  'crew-full': 'That crew is full.',
-  'not-invited': 'Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.',
-  'sprout-taken': 'Someone else already picked up this sprout.',
-  'already-sent': 'You’ve already sent set times for this festival. We’ll look at them soon.',
-  'sprout-gone': 'This sprout can’t be picked up any more. Ask them for a new code.',
-  'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
-  'sticker-ended': 'This sticker can’t be found any more.',
-  'not-found': 'That doesn’t exist any more.',
-  network: 'Couldn’t reach Afterglow. Check your connection and try again.',
-  unavailable: 'Profiles aren’t available in this version of Afterglow yet.',
-  unknown: 'Something went wrong. Try again.',
+  'email-in-use': t('There’s already an account with that email. Sign in instead.'),
+  'invalid-email': t('That email doesn’t look right.'),
+  'weak-password': t('Choose a longer password (at least 8 characters).'),
+  'wrong-password': t('That email and password don’t match.'),
+  'no-account': t('That email and password don’t match.'),
+  'too-many-attempts': t('Too many tries. Wait a few minutes and try again.'),
+  'handle-taken': t('Someone already has that handle.'),
+  'not-signed-in': t('Sign in to do that.'),
+  'no-profile': t('Create your profile first.'),
+  'too-large': t('That video is too big to share. Try a shorter clip.'),
+  'crew-full': t('That crew is full.'),
+  'not-invited': t('Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.'),
+  'sprout-taken': t('Someone else already picked up this sprout.'),
+  'already-sent': t('You’ve already sent set times for this festival. We’ll look at them soon.'),
+  'sprout-gone': t('This sprout can’t be picked up any more. Ask them for a new code.'),
+  'throwback-limit': t('You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.'),
+  'sticker-ended': t('This sticker can’t be found any more.'),
+  'not-found': t('That doesn’t exist any more.'),
+  network: t('Couldn’t reach Afterglow. Check your connection and try again.'),
+  unavailable: t('Profiles aren’t available in this version of Afterglow yet.'),
+  unknown: t('Something went wrong. Try again.'),
 };
 
 /** Shared videos are at most this big (the storage rules enforce it too). */

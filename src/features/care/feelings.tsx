@@ -1,11 +1,25 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { t } from '../../i18n';
 import { HELP_MOODS, type Mood, MOOD_LABEL, MOOD_LEVEL, MOODS } from './care';
 
 /** A colour per graph level: 5 bright mint down to 1 soft coral. */
 export const LEVEL_COLOR: Record<number, string> = { 5: '#5BE3B5', 4: '#9ADF8F', 3: '#C9C3E6', 2: '#FFB86B', 1: '#FF8A8A' };
 export const moodColor = (m: Mood) => LEVEL_COLOR[MOOD_LEVEL[m]];
+
+/** Each feeling as a whole line for screen readers. */
+const FEELING_LINE: Record<Mood, string> = {
+  great: t("I'm feeling great"),
+  good: t("I'm feeling good"),
+  okay: t("I'm feeling okay"),
+  tired: t("I'm feeling tired"),
+  anxious: t("I'm feeling anxious"),
+  hot: t("I'm feeling too hot"),
+  overwhelmed: t("I'm feeling overwhelmed"),
+  sick: t("I'm feeling sick"),
+  rough: t("I'm feeling not great"),
+};
 
 /**
  * The feelings to pick from, each with its colour dot. `compact` is the
@@ -25,7 +39,7 @@ export function FeelingChips({ onPick, compact, current }: { onPick: (m: Mood) =
               onPick(m);
             }}
             accessibilityRole="button"
-            accessibilityLabel={`I'm feeling ${MOOD_LABEL[m].toLowerCase()}`}
+            accessibilityLabel={FEELING_LINE[m]}
             style={({ pressed }) => [styles.chip, compact && styles.chipCompact, careful && styles.chipCareful, on && styles.chipOn, pressed && styles.pressed]}
           >
             <View style={[styles.dot, { backgroundColor: moodColor(m) }]} />

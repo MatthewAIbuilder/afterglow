@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 /**
  * Your Instagram, Snapchat and TikTok on your profile: just the username,
  * typed however you like ("maya", "@maya", or a pasted profile link). Only
@@ -26,7 +28,7 @@ export const SOCIALS: readonly Spec[] = [
     valid: /^(?!.*\.\.)(?!\.)(?!.*\.$)[a-z0-9._]{1,30}$/,
     hosts: ['instagram.com', 'www.instagram.com', 'instagr.am'],
     url: (u) => `https://instagram.com/${u}`,
-    hint: 'Up to 30 letters, numbers, dots and underscores.',
+    hint: t('Up to 30 letters, numbers, dots and underscores.'),
   },
   {
     key: 'snapchat',
@@ -34,7 +36,7 @@ export const SOCIALS: readonly Spec[] = [
     valid: /^[a-z][a-z0-9._-]{2,14}$/,
     hosts: ['snapchat.com', 'www.snapchat.com'],
     url: (u) => `https://www.snapchat.com/add/${u}`,
-    hint: '3 to 15 characters, starting with a letter.',
+    hint: t('3 to 15 characters, starting with a letter.'),
   },
   {
     key: 'tiktok',
@@ -42,7 +44,7 @@ export const SOCIALS: readonly Spec[] = [
     valid: /^[a-z0-9._]{2,24}$/,
     hosts: ['tiktok.com', 'www.tiktok.com', 'm.tiktok.com'],
     url: (u) => `https://www.tiktok.com/@${u}`,
-    hint: '2 to 24 letters, numbers, dots and underscores.',
+    hint: t('2 to 24 letters, numbers, dots and underscores.'),
   },
 ];
 
@@ -72,7 +74,7 @@ export function readSocial(key: SocialKey, raw: string): string {
 export function socialProblem(key: SocialKey, name: string): string | undefined {
   if (!name) return undefined;
   const spec = socialSpec(key);
-  return spec.valid.test(name) ? undefined : `That doesn’t look like a ${spec.label} username. ${spec.hint}`;
+  return spec.valid.test(name) ? undefined : t('That doesn’t look like a {service} username. {hint}', { service: spec.label, hint: spec.hint });
 }
 
 /** The profile link for a username. */
@@ -91,4 +93,7 @@ export function cleanSocials(raw: unknown): Socials {
 }
 
 /** "Maya on Instagram, @maya": for screen readers. */
-export const socialA11y = (key: SocialKey, name: string, whose?: string) => `${whose ? `${whose} on ` : ''}${socialSpec(key).label}, @${name}. Opens ${socialSpec(key).label}.`;
+export const socialA11y = (key: SocialKey, name: string, whose?: string) =>
+  whose
+    ? t('{whose} on {service}, @{name}. Opens {service}.', { whose, service: socialSpec(key).label, name })
+    : t('{service}, @{name}. Opens {service}.', { service: socialSpec(key).label, name });

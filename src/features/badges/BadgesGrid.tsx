@@ -7,6 +7,7 @@ import { type Badge, type ThrowbackBadge, pinLook, throwbackId, throwbackLook } 
 import { type PastEvent, pastLabel } from '../memories/past';
 import { EnamelPin } from './EnamelPin';
 import { NewTag } from '../profile/Milestones';
+import { t, tn } from '../../i18n';
 
 /**
  * A collection of festival pins, three across: earned ones in gold with the
@@ -55,7 +56,7 @@ export function BadgesGrid({
       {earned.length ? (
         <>
           <Text style={styles.head}>
-            {earned.length} {earned.length === 1 ? 'badge' : 'badges'} collected
+            {tn(earned.length, '{n} badge collected', '{n} badges collected')}
           </Text>
           <View style={styles.grid}>
             {earned.map(({ b, f }) => {
@@ -72,8 +73,8 @@ export function BadgesGrid({
                   accessibilityRole="button"
                   accessibilityLabel={
                     fresh
-                      ? `${f.name} badge, new. Tap to claim it`
-                      : `${f.name} badge, collected. ${b.videos} ${b.videos === 1 ? 'video' : 'videos'} filmed there. Opens the badge`
+                      ? t('{festival} badge, new. Tap to claim it', { festival: f.name })
+                      : tn(b.videos, '{festival} badge, collected. {n} video filmed there. Opens the badge', '{festival} badge, collected. {n} videos filmed there. Opens the badge', { festival: f.name })
                   }
                   style={({ pressed }) => [styles.cell, { width: cell }, pressed && styles.pressed]}
                 >
@@ -82,51 +83,51 @@ export function BadgesGrid({
                   <Text style={styles.name} numberOfLines={2}>
                     {f.name}
                   </Text>
-                  {fresh ? <Text style={styles.claim}>Tap to claim</Text> : null}
+                  {fresh ? <Text style={styles.claim}>{t('Tap to claim')}</Text> : null}
                 </Pressable>
               );
             })}
           </View>
         </>
       ) : throwbacks.length ? (
-        <Text style={[styles.hint, { marginTop: 0 }]}>{mine ? 'Film a set at a festival, on its dates, and share it: its gold pin joins your collection.' : 'Gold pins come from videos filmed at a festival, on its dates.'}</Text>
+        <Text style={[styles.hint, { marginTop: 0 }]}>{mine ? t('Film a set at a festival, on its dates, and share it: its gold pin joins your collection.') : t('Gold pins come from videos filmed at a festival, on its dates.')}</Text>
       ) : (
         <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>{mine ? 'Collect a badge for every festival' : 'No badges yet'}</Text>
+          <Text style={styles.emptyTitle}>{mine ? t('Collect a badge for every festival') : t('No badges yet')}</Text>
           <Text style={styles.emptyBody}>
             {mine
-              ? 'Film a video at a festival and share it, tagged with the festival: its badge joins your collection. Only videos filmed there, on its dates, count.'
-              : 'Badges come from videos filmed at a festival, on its dates.'}
+              ? t('Film a video at a festival and share it, tagged with the festival: its badge joins your collection. Only videos filmed there, on its dates, count.')
+              : t('Badges come from videos filmed at a festival, on its dates.')}
           </Text>
         </View>
       )}
       {throwbacks.length || onAddPast ? (
         <>
           <Text style={[styles.head, styles.roseHead, (earned.length > 0 || throwbacks.length === 0) && { marginTop: space.lg }]}>
-            {throwbacks.length ? `Throwbacks · ${throwbacks.length}` : 'Throwbacks'}
+            {throwbacks.length ? t('Throwbacks · {n}', { n: throwbacks.length }) : t('Throwbacks')}
           </Text>
           <View style={styles.grid}>
-            {throwbacks.map((t) => {
-              const fresh = !!isNewThrowback?.(t.key) && !!onClaimThrowback;
+            {throwbacks.map((tb) => {
+              const fresh = !!isNewThrowback?.(tb.key) && !!onClaimThrowback;
               return (
                 <Pressable
-                  key={t.key}
+                  key={tb.key}
                   onPress={() => {
                     if (fresh) {
                       haptic.select();
-                      onClaimThrowback?.(t.past);
-                    } else open(throwbackId(t.key));
+                      onClaimThrowback?.(tb.past);
+                    } else open(throwbackId(tb.key));
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={fresh ? `${pastLabel(t.past)} throwback badge, new. Tap to claim it` : `${pastLabel(t.past)} throwback badge. Opens the badge`}
+                  accessibilityLabel={fresh ? t('{name} throwback badge, new. Tap to claim it', { name: pastLabel(tb.past) }) : t('{name} throwback badge. Opens the badge', { name: pastLabel(tb.past) })}
                   style={({ pressed }) => [styles.cell, { width: cell }, pressed && styles.pressed]}
                 >
-                  <EnamelPin look={throwbackLook(t.past)} size={cell} />
+                  <EnamelPin look={throwbackLook(tb.past)} size={cell} />
                   {fresh ? <NewTag /> : null}
                   <Text style={styles.name} numberOfLines={2}>
-                    {pastLabel(t.past)}
+                    {pastLabel(tb.past)}
                   </Text>
-                  {fresh ? <Text style={styles.claim}>Tap to claim</Text> : null}
+                  {fresh ? <Text style={styles.claim}>{t('Tap to claim')}</Text> : null}
                 </Pressable>
               );
             })}
@@ -137,33 +138,33 @@ export function BadgesGrid({
                   onAddPast();
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Add a festival you went to before, with a video from your camera roll"
+                accessibilityLabel={t('Add a festival you went to before, with a video from your camera roll')}
                 style={({ pressed }) => [styles.cell, { width: cell }, pressed && styles.pressed]}
               >
                 <View style={[styles.addPin, { width: cell * 0.78, height: cell * 0.78, borderRadius: cell * 0.39, marginVertical: cell * 0.11 }]}>
                   <Text style={styles.addPlus}>+</Text>
                 </View>
                 <Text style={[styles.name, styles.roseName]} numberOfLines={2}>
-                  Add a past festival
+                  {t('Add a past festival')}
                 </Text>
               </Pressable>
             ) : null}
           </View>
           {onAddPast && !throwbacks.length ? (
-            <Text style={styles.hint}>Been to festivals before Afterglow? Add a video from your camera roll and tag the festival: it gets a rose gold throwback badge.</Text>
+            <Text style={styles.hint}>{t('Been to festivals before Afterglow? Add a video from your camera roll and tag the festival: it gets a rose gold throwback badge.')}</Text>
           ) : null}
         </>
       ) : null}
       {mine && toCollect.length ? (
         <>
-          <Text style={[styles.head, { marginTop: space.lg }]}>To collect</Text>
+          <Text style={[styles.head, { marginTop: space.lg }]}>{t('To collect')}</Text>
           <View style={styles.grid}>
             {toCollect.map((f) => (
               <Pressable
                 key={f.id}
                 onPress={() => open(f.id)}
                 accessibilityRole="button"
-                accessibilityLabel={`${f.name} badge, not collected yet. Film a video there to collect it`}
+                accessibilityLabel={t('{festival} badge, not collected yet. Film a video there to collect it', { festival: f.name })}
                 style={({ pressed }) => [styles.cell, { width: cell }, pressed && styles.pressed]}
               >
                 <EnamelPin look={pinLook(f)} size={cell} locked />
