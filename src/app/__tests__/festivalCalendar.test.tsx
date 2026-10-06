@@ -46,8 +46,9 @@ describe('the festival calendar', () => {
     expect(app.queryByLabelText(/^Austin City Limits 2026/)).toBeNull();
     await fireEvent.press(app.getByText('Everywhere'));
     await flush();
-    expect(app.getByText('1 festival in October')).toBeTruthy();
+    expect(app.getByText('2 festivals in October')).toBeTruthy();
     expect(app.getByLabelText(/^Austin City Limits 2026/)).toBeTruthy();
+    expect(app.getByLabelText(/^EDC Colombia 2026/)).toBeTruthy();
     await fireEvent.press(app.getByText('By state'));
     await flush();
     expect(app.getByLabelText('Texas, 1 festival')).toBeTruthy();
