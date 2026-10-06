@@ -2,19 +2,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
 import { createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, initializeAuth, onAuthStateChanged, reauthenticateWithCredential, reload, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type Auth, type Persistence } from 'firebase/auth';
-import { collection, deleteDoc, deleteField, doc, getCountFromServer, getDoc, getDocs, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
+import { collection, deleteDoc, deleteField, doc, getCountFromServer, getDoc, getDocs, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type Comment, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { FIND_GRACE_DAYS } from '../../finds/finds';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
-import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc } from './mapping';
+import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -43,6 +43,7 @@ const room = (id: string): [string, string] => (isDirectRoom(id) ? ['dms', id.sl
  *   crews/{id}/updates/{updateId} uid, kind, atMs (when it happened on the phone), sentAt (server time), festivalId,
  *                       artistId, stage, note, videoUrl/thumbUrl (+ videoPath/thumbPath when uploaded for the crew), sharedId, durationSec, width, height
  *   comments/{id}       memoryId, owner, uid, handle, text (≤ 300), createdAt: written as yourself, removed by you or the video's owner
+ *   clipComments/{id}   clipId, uid, handle, text (≤ 300), createdAt (server time): comments on clips in Discover, removed by you or support
  *   levels/{uid}        level, at: your glow level, shown on your profile unless you switch it off
  *   reports/{id}        by, kind, targetId, ownerUid, reason, note, createdAt: create-only
  * Storage: memories/{uid}/{id}.(mp4|mov|m4v|jpg), avatars/{uid}.jpg, crews/{crewId}/{uid}/{updateId}.(mp4|mov|m4v|jpg) (links only in members-only updates)
@@ -263,6 +264,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           getDocs(query(collection(db, 'likes'), where('owner', '==', user.uid))),
           getDocs(query(collection(db, 'comments'), where('uid', '==', user.uid))),
           getDocs(query(collection(db, 'comments'), where('owner', '==', user.uid))),
+          // Comments on clips in Discover (soft: a database whose rules predate them never blocks deleting the account).
+          getDocs(query(collection(db, 'clipComments'), where('uid', '==', user.uid))).catch(() => ({ docs: [] as { ref: DocumentReference }[] })),
           getDocs(query(collection(db, 'friendLinks'), where('from', '==', user.uid))),
           getDocs(query(collection(db, 'crewInvites'), where('from', '==', user.uid))),
           getDocs(query(collection(db, 'crewInvites'), where('to', '==', user.uid))),
@@ -672,6 +675,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const { db } = fb();
         if (kind === 'comment') return deleteDoc(doc(db, 'comments', id));
+        if (kind === 'clipComment') return deleteDoc(doc(db, 'clipComments', id));
         if (kind === 'chat') {
           const [crewId, messageId] = id.split('/');
           if (!crewId || !messageId) return;
@@ -690,6 +694,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         return crewMessageFromDoc(crewId, messageId, (await getDoc(doc(fb().db, ...room(crewId), 'chat', messageId))).data());
       }),
     reportedComment: (id) => guard(async () => commentFromDoc(id, (await getDoc(doc(fb().db, 'comments', id))).data())),
+    reportedClipComment: (id) => guard(async () => clipCommentFromDoc(id, (await getDoc(doc(fb().db, 'clipComments', id))).data())),
     adminCounts: (since) =>
       guard(async () => {
         const { db } = fb();
@@ -974,6 +979,35 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     commentCount: (memoryId) =>
       guard(async () => (await getCountFromServer(query(collection(fb().db, 'comments'), where('memoryId', '==', memoryId)))).data().count),
     deleteComment: (id) => guard(async () => deleteDoc(doc(fb().db, 'comments', id))),
+    clipComment: (clipId, raw) =>
+      guard(async () => {
+        const user = me();
+        const { db } = fb();
+        if (!validClipId(clipId) || commentProblem(raw)) throw new SocialError('unknown');
+        const profile = profileFromDoc(user.uid, (await getDoc(doc(db, 'profiles', user.uid))).data());
+        if (!profile) throw new SocialError('no-profile');
+        const ref_ = doc(collection(db, 'clipComments'));
+        const data = { clipId, uid: user.uid, handle: profile.handle, text: cleanComment(raw) };
+        // Stamped with the server's time (the rules require it), so no phone clock can reorder them.
+        await setDoc(ref_, { ...data, createdAt: serverTimestamp() });
+        return { id: ref_.id, ...data, createdAt: now() };
+      }),
+    clipComments: (clipId, max, after) =>
+      guard(async () => {
+        const { db } = fb();
+        const list = collection(db, 'clipComments');
+        // The next page starts after the last one already read (its own document, so ties in time can't skip one).
+        const last = after ? await getDoc(doc(db, 'clipComments', after.id)) : undefined;
+        const q =
+          last && last.exists()
+            ? query(list, where('clipId', '==', clipId), orderBy('createdAt', 'asc'), startAfter(last), limit(max))
+            : query(list, where('clipId', '==', clipId), orderBy('createdAt', 'asc'), ...(after ? [startAfter(Timestamp.fromMillis(Date.parse(after.createdAt)))] : []), limit(max));
+        const snap = await getDocs(q);
+        return snap.docs.map((d) => clipCommentFromDoc(d.id, d.data())).filter((c): c is ClipComment => !!c && c.id !== after?.id);
+      }),
+    clipCommentCount: (clipId) =>
+      guard(async () => (await getCountFromServer(query(collection(fb().db, 'clipComments'), where('clipId', '==', clipId)))).data().count),
+    deleteClipComment: (id) => guard(async () => deleteDoc(doc(fb().db, 'clipComments', id))),
     activity: (max) =>
       guard(async () => {
         const user = me();

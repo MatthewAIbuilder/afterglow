@@ -16,7 +16,8 @@ import { artistShareText } from '../../features/share/pages';
 import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { useCrews } from '../../state/crews';
 import { NightSky } from '../../components/NightSky';
-import { ChevronIcon, MapIcon } from '../../components/TabIcons';
+import { ChevronIcon, MapIcon, SoundIcon } from '../../components/TabIcons';
+import { likeFocus } from '../../features/discover/focus';
 import { setFor } from '../../data/festival';
 import type { Artist, Clip } from '../../data/types';
 import { PlayIcon } from '../../features/discover/icons';
@@ -193,7 +194,7 @@ export default function ArtistScreen() {
               !importedFrom[artist.id] && (imported[artist.id] ?? 0) > 0 ? importing.map((p) => PROVIDER_NAME[p]) : [],
             )}
           </Text>
-          {/* One row: follow (news when they're added to a lineup), your take, and somewhere to hear them. */}
+          {/* One row: follow (news when they're added to a lineup), your take, somewhere to hear them, and a station from them. */}
           <View style={styles.actions}>
             <FollowArtistButton artist={artist} row />
             <RatePill artist={artist} />
@@ -211,6 +212,20 @@ export default function ArtistScreen() {
             >
               <PlayIcon color={color.moon} size={12} />
               <Text style={styles.listenText}>{t('Listen')}</Text>
+            </Pressable>
+            {/* A station from them: their sets and artists who sound like them, in Discover. */}
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.navigate({ pathname: '/', params: { festival: likeFocus(artist.id) } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Discover more like {artist}', { artist: artist.name })}
+              accessibilityHint={t('Starts a station in Discover: their sets and artists with a similar sound')}
+              style={({ pressed }) => [styles.listenPill, pressed && { opacity: 0.7 }]}
+            >
+              <SoundIcon color={color.glow} size={14} />
+              <Text style={styles.listenText}>{t('More like this')}</Text>
             </Pressable>
           </View>
           {starFestival && (
@@ -320,7 +335,7 @@ export default function ArtistScreen() {
           </Section>
         )}
 
-        {/* Club shows and concerts, each opening its EDMTrain page (credited, as EDMTrain asks). */}
+        {/* Club shows and concerts, each opening its show page (tickets on EDMTrain there; credited, as EDMTrain asks). */}
         {shows.length > 0 && (
           <Section title={t('Upcoming shows')}>
             {showsListed.map((s) => {
@@ -333,9 +348,9 @@ export default function ArtistScreen() {
                   key={s.id}
                   onPress={() => {
                     haptic.select();
-                    Linking.openURL(s.link).catch(() => {});
+                    router.push({ pathname: '/show/[id]', params: { id: s.id } });
                   }}
-                  accessibilityRole="link"
+                  accessibilityRole="button"
                   accessibilityLabel={showLabel(s, others)}
                   style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
                 >
@@ -359,7 +374,7 @@ export default function ArtistScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  <Text style={styles.showOut}>↗</Text>
+                  <ChevronIcon color={color.moonFaint} size={14} />
                 </Pressable>
               );
             })}
@@ -588,7 +603,6 @@ const styles = StyleSheet.create({
   showMonth: { ...type.caption, fontSize: 10, letterSpacing: 1.2, fontWeight: '700', color: color.glow },
   showDay: { ...type.headline, fontSize: 20, lineHeight: 24, color: color.moon, fontVariant: ['tabular-nums'] },
   showWeekday: { ...type.caption, fontSize: 10, color: color.moonDim },
-  showOut: { ...type.label, color: color.moonFaint },
   showCredit: { alignSelf: 'flex-start', paddingVertical: space.sm },
   showCreditText: { ...type.caption, color: color.moonFaint },
   thumb: { width: 52, height: 64, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },

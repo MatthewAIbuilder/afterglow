@@ -2,7 +2,7 @@ import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 import { cleanHunt, cleanName, type Hunt, isHuntId, isStickerCode, type Sticker } from '../../finds/finds';
 
@@ -116,6 +116,19 @@ export function commentFromDoc(id: string, d: unknown): Comment | null {
   const createdAt = str(o.createdAt);
   if (!memoryId || !owner || !uid || !handle || !text || !createdAt) return null;
   return { id, memoryId, owner, uid, handle, text: text.slice(0, COMMENT_MAX), createdAt };
+}
+
+/** A comment on a clip in Discover; `createdAt` is the server's time (a Timestamp). Anything missing drops it. */
+export function clipCommentFromDoc(id: string, d: unknown): ClipComment | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const clipId = str(o.clipId);
+  const uid = str(o.uid);
+  const handle = str(o.handle);
+  const text = str(o.text);
+  const createdAt = timeOf(o.createdAt) ?? str(o.createdAt);
+  if (!clipId || !uid || !handle || !text || !createdAt) return null;
+  return { id, clipId, uid, handle, text: text.slice(0, COMMENT_MAX), createdAt };
 }
 
 /** A server time (a Firestore Timestamp, or milliseconds) as ISO 8601. */
@@ -338,7 +351,7 @@ function supportReplies(o: Record<string, unknown>): SupportReply[] {
 export function reportFromDoc(id: string, d: unknown): ReportRecord | null {
   if (!d || typeof d !== 'object') return null;
   const o = d as Record<string, unknown>;
-  const kind = o.kind === 'profile' || o.kind === 'memory' || o.kind === 'comment' || o.kind === 'chat' ? o.kind : undefined;
+  const kind = o.kind === 'profile' || o.kind === 'memory' || o.kind === 'comment' || o.kind === 'clipComment' || o.kind === 'chat' ? o.kind : undefined;
   const reason = REPORT_REASONS.find((r) => r.key === o.reason)?.key;
   const by = str(o.by);
   const targetId = str(o.targetId);

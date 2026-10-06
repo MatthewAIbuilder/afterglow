@@ -157,13 +157,13 @@ describe('Festivals', () => {
   it('finds an artist at any festival from the Festivals tab', async () => {
     const app = await renderApp('/festivals');
     await settle();
-    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'wool');
+    await fireEvent.changeText(app.getByLabelText('Find an artist, festival or show'), 'wool');
     await settle();
     expect(app.getByLabelText(/^WOOLI, \d+ percent match, Plays EDC Orlando 2026$/)).toBeTruthy();
     expect(app.queryByText('Solstice 2026')).toBeNull();
-    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'zzz');
+    await fireEvent.changeText(app.getByLabelText('Find an artist, festival or show'), 'zzz');
     await settle();
-    expect(app.getByText('No festival or artist matches “zzz”.')).toBeTruthy();
+    expect(app.getByText('No festival, show or artist matches “zzz”.')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Clear the search'));
     await settle();
     expect(app.getByText('Solstice 2026')).toBeTruthy();
@@ -172,11 +172,11 @@ describe('Festivals', () => {
   it('finds festivals by name or place, and offers to request one that is missing', async () => {
     const app = await renderApp('/festivals');
     await settle();
-    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'orlando');
+    await fireEvent.changeText(app.getByLabelText('Find an artist, festival or show'), 'orlando');
     await settle();
     expect(app.getByLabelText(/^EDC Orlando 2026, Nov 6 to 8, Tinker Field, Orlando/)).toBeTruthy();
     expect(app.getByLabelText(/^Eternal NYE 2026, /)).toBeTruthy();
-    await fireEvent.changeText(app.getByLabelText('Find an artist or festival'), 'Lost Lands');
+    await fireEvent.changeText(app.getByLabelText('Find an artist, festival or show'), 'Lost Lands');
     await settle();
     await fireEvent.press(app.getByLabelText("Can't find it? Request Lost Lands"));
     await settle();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Artist, Clip, Festival } from '../../../data/models';
-import { focusChoices, FOLLOWING, inSound, isWide, MIX, mixContext, nextDiscoverFocus, soundChoices, soundFocus, soundOf, startFocus } from '../focus';
+import { focusChoices, FOLLOWING, inSound, isWide, likeFocus, likeOf, MIX, mixContext, nextDiscoverFocus, soundChoices, soundFocus, soundOf, startFocus } from '../focus';
 
 const fest = (id: string, lineup: string[], startDate?: string): Festival => ({
   id,
@@ -104,5 +104,20 @@ describe('Discover focus', () => {
       { tag: 'house', clips: 1 },
     ]);
     expect(soundChoices(clips, artist)).toEqual([]);
+  });
+});
+
+describe('stations', () => {
+  it('names a station by its artist, is wide, is remembered, and is kept when asked for', () => {
+    expect(likeFocus('subtronics')).toBe('like:subtronics');
+    expect(likeOf('like:subtronics')).toBe('subtronics');
+    expect(likeOf('like:')).toBeUndefined();
+    expect(likeOf('sound:dubstep')).toBeUndefined();
+    expect(isWide('like:subtronics')).toBe(true);
+    expect(startFocus('like:subtronics')).toBe('like:subtronics');
+    expect(nextDiscoverFocus(MIX, { festival: 'like:subtronics' }, [])).toBe('like:subtronics');
+    // A clip link from a station goes to the mix, which has every clip.
+    const c = { id: 'c1', artistId: 'x', festivalId: 'f', title: '', durationSec: 1 } as Clip;
+    expect(nextDiscoverFocus('like:subtronics', { clip: c }, [])).toBe(MIX);
   });
 });
