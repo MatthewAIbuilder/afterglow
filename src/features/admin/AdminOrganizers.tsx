@@ -10,7 +10,7 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { localDay } from '../artists/shows';
 import { OrgDot } from '../organizers/OrgMark';
-import { type Org, orgFromStarter, type OrgRequest, promotionUntil, REQUEST_LABEL } from '../organizers/organizers';
+import { handleFor, type Org, orgFromStarter, type OrgRequest, promotionUntil, REQUEST_LABEL } from '../organizers/organizers';
 import { refreshOrgs } from '../organizers/OrgSync';
 import { STATUS_LABEL } from '../organizers/studio/StudioPromote';
 import { socialErrorKind, SOCIAL_ERROR_COPY } from '../social/service';
@@ -106,6 +106,12 @@ function OrgCard({ org, emails, busy, run }: { org: Org; emails: string[]; busy:
   const { service } = useSocial();
   const today = localDay(useToday());
   const [email, setEmail] = useState('');
+  const [handle, setHandle] = useState(org.handle ?? handleFor(org.name) ?? '');
+  const saveHandle = () => {
+    const h = handle.trim().toLowerCase().replace(/^@/, '');
+    if (h && !/^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$/.test(h)) return showAlert('That @handle doesn’t look right', '3 to 20 letters, numbers, dots or underscores.');
+    void run(() => service.setOrgHandle(org.id, h || null));
+  };
   const promoted = Object.entries(org.promoted).filter(([, until]) => until >= today);
   const addEmail = () => {
     const e = email.trim().toLowerCase();
@@ -134,6 +140,15 @@ function OrgCard({ org, emails, busy, run }: { org: Org; emails: string[]; busy:
         </Pressable>
         <Pressable onPress={() => router.push({ pathname: '/org/[id]', params: { id: org.id } })} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
           <Text style={styles.secondaryText}>View its page</Text>
+        </Pressable>
+      </View>
+
+      <Text style={styles.label}>Its profile</Text>
+      <Text style={styles.body}>Accounts that run it show as {org.name}, with this @handle (they take it the next time they open the studio).</Text>
+      <View style={styles.rowTop}>
+        <TextInput value={handle} onChangeText={setHandle} placeholder="handle" placeholderTextColor={color.moonFaint} autoCapitalize="none" style={[styles.input, { flex: 1 }]} accessibilityLabel="Profile handle" />
+        <Pressable onPress={saveHandle} disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+          <Text style={styles.secondaryText}>{org.handle ? 'Save' : 'Use it'}</Text>
         </Pressable>
       </View>
 

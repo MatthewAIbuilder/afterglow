@@ -15,6 +15,7 @@ import { OrgEventRows } from '../../features/organizers/OrgCards';
 import { OrgLogo } from '../../features/organizers/OrgMark';
 import { orgListings } from '../../features/organizers/organizers';
 import { useCatalog } from '../../state/catalog';
+import { FollowButton } from '../../features/social/FollowButton';
 import { useOrgView } from '../../features/organizers/useOrgView';
 import { lookOf } from '../../features/finds/finds';
 import { Collectible } from '../../features/sprouts/Collectible';
@@ -82,6 +83,23 @@ export default function OrgScreen() {
               </Pressable>
             ) : null}
           </View>
+          {/* Follow the organizer (its account), and its profile with its videos. */}
+          {org.uids[0] && org.handle ? (
+            <View style={styles.links}>
+              <FollowButton uid={org.uids[0]} handle={org.handle} />
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.push({ pathname: '/u/[handle]', params: { handle: org.handle! } });
+                }}
+                accessibilityRole="link"
+                accessibilityLabel={t('{organizer}’s profile and videos', { organizer: org.name })}
+                style={({ pressed }) => [styles.link, pressed && styles.pressed]}
+              >
+                <Text style={styles.linkText}>@{org.handle}</Text>
+              </Pressable>
+            </View>
+          ) : null}
           {canEdit ? (
             <Pressable
               onPress={() => {

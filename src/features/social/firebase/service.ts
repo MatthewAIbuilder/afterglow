@@ -1527,8 +1527,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           for (const k of ORG_FIELDS) update[k] = data[k] ?? deleteField();
           await updateDoc(ref_, update);
         } else {
-          // Only HQ starts a page.
-          await setDoc(ref_, { ...data, promoted: {}, updatedAt: serverTimestamp() });
+          // Only HQ starts a page (with the profile @handle its accounts will use).
+          await setDoc(ref_, { ...data, promoted: {}, ...(org.handle ? { handle: org.handle } : {}), updatedAt: serverTimestamp() });
         }
       }),
     sendOrgRequest: (input) =>
@@ -1567,6 +1567,10 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         me();
         await updateDoc(doc(fb().db, 'orgs', orgId), { uids: on ? arrayUnion(uid) : arrayRemove(uid), updatedAt: serverTimestamp() });
+      }),
+    setOrgHandle: (orgId, handle) =>
+      guard(async () => {
+        await updateDoc(doc(fb().db, 'orgs', orgId), { handle: handle ?? deleteField(), updatedAt: serverTimestamp() });
       }),
     orgMembers: (orgId) =>
       guard(async () => (await getDocs(query(collection(fb().db, 'orgMembers'), where('orgId', '==', orgId), limit(20)))).docs.map((d) => d.id)),

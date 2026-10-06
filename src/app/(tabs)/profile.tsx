@@ -53,6 +53,8 @@ import { useReactions } from '../../state/reactions';
 import { useSocial } from '../../state/social';
 import { useMyOrg, useOrg } from '../../state/orgs';
 import { OrgProfileCard } from '../../features/organizers/OrgProfileCard';
+import { OrgDot } from '../../features/organizers/OrgMark';
+import { OrgDjs, OrgEvents } from '../../features/organizers/OrgProfileParts';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { useMemoryPicker } from '../../features/memories/useAddMemory';
@@ -72,7 +74,7 @@ const COVER_H = 300;
 /** Where the top starts fading out: just past the middle of the orbit. */
 const COVER_SOLID = 150;
 
-type Tab = 'videos' | 'badges' | 'festivals' | 'saved';
+type Tab = 'videos' | 'badges' | 'festivals' | 'saved' | 'events' | 'djs';
 const TABS: Tab[] = ['videos', 'festivals', 'badges', 'saved'];
 
 /**
@@ -268,7 +270,8 @@ function FullProfile() {
           bio={me ? me.bio : t('Your festivals, your videos and your sound.')}
           avatarUrl={me?.avatarUrl}
           uid={me?.uid}
-          stats={stats}
+          stats={runs ? stats.filter((st) => st.key === 'followers' || st.key === 'following' || st.key === 'moments') : stats}
+          face={runs ? <OrgDot org={runs} size={94} /> : undefined}
           onStat={(key) => {
             // Festivals, Moments and Badges open their tab below, scrolled into view.
             const open = (to: Tab) => {
@@ -281,17 +284,19 @@ function FullProfile() {
             else if (key === 'artists') router.push('/your-artists');
             else if (me) router.push({ pathname: '/follows/[handle]', params: { handle: me.handle, list: key } });
           }}
-          sounds={sounds}
-          onSounds={() => router.push('/your-sound')}
-          orbit={favourites.slice(0, ORBIT_MAX)}
-          onOrbit={() => router.navigate({ pathname: '/sound', params: { view: 'map' } })}
-          feeling={feeling?.tag}
-          level={quests.ready ? quests.level : null}
+          // An event organizer's profile shows the organizer, not a fan's sound, artists or level.
+          sounds={runs ? [] : sounds}
+          onSounds={runs ? undefined : () => router.push('/your-sound')}
+          orbit={runs ? [] : favourites.slice(0, ORBIT_MAX)}
+          onOrbit={runs ? undefined : () => router.navigate({ pathname: '/sound', params: { view: 'map' } })}
+          feeling={runs ? undefined : feeling?.tag}
+          level={runs || !quests.ready ? null : quests.level}
           onLevel={() => router.push('/quests')}
         >
           {me ? (
             <>
               <ProfileButton label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
+              {runs ? <ProfileButton label={t('Studio')} a11y={t('Open the organizer studio')} onPress={() => router.push('/studio')} glow /> : null}
               <ProfileButton label={t('Share profile')} onPress={() => void shareMessage(t('@{handle} on Afterglow: {url}', { handle: me.handle, url: `${WEB_URL}/u/${me.handle}` }))} />
             </>
           ) : social.availability.ok && social.ready ? (
@@ -305,25 +310,33 @@ function FullProfile() {
         {/* An event organizer's account: the organizer it runs, and its studio. */}
         {runs ? <OrgProfileCard org={runs} own /> : null}
 
-        <ClaimBanner b={b} />
+        {runs ? null : (
+          <>
+            <ClaimBanner b={b} />
 
-        <YourArtistsRow favourites={favourites} next={nextDate} hidden={shelves.hidden.has('artists')} onToggle={() => shelves.toggle('artists')} />
+            <YourArtistsRow favourites={favourites} next={nextDate} hidden={shelves.hidden.has('artists')} onToggle={() => shelves.toggle('artists')} />
 
-        <Highlights
-          items={highlights}
-          onOpen={openHighlight}
-          festivalOf={catalog.festival}
-          hidden={shelves.hidden.has('festivals')}
-          onToggle={() => shelves.toggle('festivals')}
-        />
+            <Highlights
+              items={highlights}
+              onOpen={openHighlight}
+              festivalOf={catalog.festival}
+              hidden={shelves.hidden.has('festivals')}
+              onToggle={() => shelves.toggle('festivals')}
+            />
 
-        <GardenShelf hidden={shelves.hidden.has('garden')} onToggle={() => shelves.toggle('garden')} />
+            <GardenShelf hidden={shelves.hidden.has('garden')} onToggle={() => shelves.toggle('garden')} />
+          </>
+        )}
 
         <View style={styles.tabs} onLayout={(e) => (tabsY.current = e.nativeEvent.layout.y)}>
           <Tabs<Tab>
             value={tab}
             onChange={setTab}
-            items={[
+            items={runs ? [
+              { key: 'videos', label: t('Videos'), count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
+              { key: 'events', label: t('Events'), icon: (c) => <FestivalsIcon color={c} size={17} /> },
+              { key: 'djs', label: t('DJs') },
+            ] : [
               { key: 'videos', label: t('Moments'), count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
               { key: 'festivals', label: t('Festivals'), count: mySet.been.length + mySet.planning.length + b.throwbacks.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
               { key: 'badges', label: t('Badges'), count: earned, icon: (c) => <PinIcon color={c} size={17} /> },
@@ -332,7 +345,13 @@ function FullProfile() {
           />
         </View>
 
-        {tab === 'videos' ? (
+        {runs && tab === 'events' ? (
+          <OrgEvents org={runs} own />
+        ) : runs && tab === 'djs' ? (
+          <OrgDjs org={runs} own />
+        ) : runs && tab !== 'videos' ? (
+          <VideosTab memories={videos} width={width} uriOf={uriOf} lookup={catalog} tagged={taggedHere} />
+        ) : tab === 'videos' ? (
           <VideosTab memories={videos} width={width} uriOf={uriOf} lookup={catalog} tagged={taggedHere} />
         ) : tab === 'badges' ? (
           <BadgesPanel b={b} uid={me?.uid} width={width} />

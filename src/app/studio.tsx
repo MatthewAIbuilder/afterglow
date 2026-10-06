@@ -9,7 +9,7 @@ import { Tabs } from '../components/Tabs';
 import { isSupportAccount } from '../features/admin/admin';
 import { OrgLogo } from '../features/organizers/OrgMark';
 import { refreshOrgs } from '../features/organizers/OrgSync';
-import type { Org } from '../features/organizers/organizers';
+import { type Org, orgProfileInput } from '../features/organizers/organizers';
 import { StudioArtists } from '../features/organizers/studio/StudioArtists';
 import { StudioCollectibles } from '../features/organizers/studio/StudioCollectibles';
 import { StudioEvents } from '../features/organizers/studio/StudioEvents';
@@ -70,6 +70,20 @@ export default function StudioScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: () => void social.signOut().then(() => router.replace('/')) },
     ]);
+
+  // Its account's profile is the organizer's: its name and the @handle HQ chose (once each time it differs).
+  const [handleTaken, setHandleTaken] = useState<string | undefined>();
+  const profile = social.profile;
+  const open = home && !!org && !!user && (user.emailVerified || org.uids.includes(user.uid));
+  const want = open && org ? orgProfileInput(org, profile?.bio) : undefined;
+  const differs = !!want && social.ready && (!profile || profile.handle !== want.handle || profile.displayName !== want.displayName) && handleTaken !== want.handle;
+  useEffect(() => {
+    if (!differs || !want) return;
+    social.saveProfile(want).catch((e) => {
+      if (socialErrorKind(e) === 'handle-taken') setHandleTaken(want.handle);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once each time what it should be changes
+  }, [differs, want?.handle, want?.displayName]);
 
   const save = useCallback(
     async (next: Org) => {
@@ -202,6 +216,7 @@ export default function StudioScreen() {
             </Pressable>
           ) : null}
         </View>
+        {handleTaken ? <Text style={styles.note}>{`Your profile couldn’t take @${handleTaken}: someone already has it. Ask Afterglow (Messages) to pick another.`}</Text> : null}
         {body}
       </ScrollView>
       {/* The organizer's home (it opens here instead of the app): nothing to go back to. */}
@@ -217,6 +232,7 @@ const styles = StyleSheet.create({
   sub: { ...type.caption, color: color.moonDim },
   headerRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.xs },
   signOut: { ...type.caption, color: color.moonFaint, marginTop: space.xs },
+  note: { ...type.caption, color: color.amber, marginHorizontal: space.xl, marginBottom: space.md, textAlign: 'center' },
   pill: { paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
   pillText: { ...type.label, color: color.moon },
   tabs: { marginBottom: space.lg },

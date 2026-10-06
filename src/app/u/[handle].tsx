@@ -2,6 +2,8 @@ import { Image } from 'expo-image';
 import { useOrgs } from '../../state/orgs';
 import { orgOfAccount } from '../../features/organizers/organizers';
 import { OrgProfileCard } from '../../features/organizers/OrgProfileCard';
+import { OrgDot } from '../../features/organizers/OrgMark';
+import { OrgDjs } from '../../features/organizers/OrgProfileParts';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
@@ -276,7 +278,8 @@ export default function PublicProfileScreen() {
             avatarUrl={profile.avatarUrl}
             bio={profile.bio || undefined}
             note={goingLine(going) || undefined}
-            stats={stats}
+            stats={runs ? stats.filter((st) => st.key === 'followers' || st.key === 'following' || st.key === 'moments') : stats}
+            face={runs ? <OrgDot org={runs} size={94} /> : undefined}
             tappable={['followers', 'following', 'festivals', 'moments', 'badges']}
             onStat={(key) => {
               // Festivals and badges scroll to their pins, moments to their videos.
@@ -284,8 +287,10 @@ export default function PublicProfileScreen() {
               else if (key === 'moments') scroller.current?.scrollTo({ y: Math.max(0, sectionY.current.moments - space.md), animated: true });
               else if (key === 'followers' || key === 'following') router.push({ pathname: '/follows/[handle]', params: { handle: profile.handle, list: key } });
             }}
-            sounds={profile.sounds.map((tag) => ({ tag }))}
-            orbit={orbit}
+            // An event organizer: the organizer, not a fan's sound or artists.
+            sounds={runs ? [] : profile.sounds.map((tag) => ({ tag }))}
+            orbit={runs ? [] : orbit}
+            level={runs ? null : undefined}
           >
             {mine ? (
               <ProfileButton label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
@@ -318,7 +323,13 @@ export default function PublicProfileScreen() {
         </View>
         {/* They run an event organizer: its logo, next event and page. */}
         {runs ? <OrgProfileCard org={runs} own={mine} /> : null}
-        {common.length > 0 || match !== undefined ? (
+        {runs ? (
+          <>
+            <Text style={styles.section}>{mine ? t('Your DJs') : t('Their DJs')}</Text>
+            <OrgDjs org={runs} own={mine} />
+          </>
+        ) : null}
+        {!runs && (common.length > 0 || match !== undefined) ? (
           <View
             style={styles.common}
             accessible
@@ -341,7 +352,7 @@ export default function PublicProfileScreen() {
           </View>
         ) : null}
         {/* Their garden: a peek, and the way in. */}
-        {garden?.length ? (
+        {runs ? null : garden?.length ? (
           <Pressable
             onPress={() => {
               haptic.select();
@@ -390,7 +401,7 @@ export default function PublicProfileScreen() {
             </View>
           </Pressable>
         ) : null}
-        {!mine && social.profile ? (
+        {!mine && !runs && social.profile ? (
           <Pressable
             onPress={() => {
               haptic.select();
@@ -402,7 +413,7 @@ export default function PublicProfileScreen() {
             <Text style={styles.makeKandiText}>{t('Make kandi for {name}', { name: profile.displayName.split(' ')[0] })}</Text>
           </Pressable>
         ) : null}
-        {badges.length || throwbacks.length ? (
+        {!runs && (badges.length || throwbacks.length) ? (
           <View style={styles.badges} onLayout={(e) => (sectionY.current.badges = e.nativeEvent.layout.y)}>
             <BadgesGrid badges={badges} throwbacks={throwbacks} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
           </View>
@@ -410,7 +421,7 @@ export default function PublicProfileScreen() {
         {/* One-night shows they're going to (when they show their festivals), from the shows on Afterglow. */}
         <GoingShowsList title={t('Shows')} shows={theirShows} />
         <Text style={styles.section} onLayout={(e) => (sectionY.current.moments = e.nativeEvent.layout.y)}>
-          {memories.length ? t('Memories · {n}', { n: memories.length }) : t('Memories')}
+          {runs ? (memories.length ? t('Videos · {n}', { n: memories.length }) : t('Videos')) : memories.length ? t('Memories · {n}', { n: memories.length }) : t('Memories')}
         </Text>
         {memories.length ? (
           <View style={[styles.grid, { gap }]}>

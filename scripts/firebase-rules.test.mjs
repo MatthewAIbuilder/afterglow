@@ -1251,6 +1251,14 @@ await t('organizers: its team claims imported events (EDMTrain ids) as its own, 
   await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { claims: 'edm-111', updatedAt: serverTimestamp() }));
   await assertFails(updateDoc(doc(A.firestore(), 'orgs', 'underground-alchemy'), { claims: ['edm-999'], updatedAt: serverTimestamp() }));
 });
+await t('organizers: only HQ sets the @handle its accounts use', async () => {
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  await assertSucceeds(updateDoc(doc(H.firestore(), 'orgs', 'underground-alchemy'), { handle: 'undergroundalchemy', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(H.firestore(), 'orgs', 'underground-alchemy'), { handle: 'Bad Handle!', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { handle: 'stolenhandle', updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { tagline: 'After hours', updatedAt: serverTimestamp() }));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

@@ -21,6 +21,8 @@ export type OrgStarter = {
   /** The brand's own colour, for its page. */
   color?: string;
   loginEmail: string;
+  /** The @handle its accounts' profiles use. */
+  handle: string;
 };
 
 export const ORG_STARTERS: readonly OrgStarter[] = [
@@ -33,5 +35,6 @@ export const ORG_STARTERS: readonly OrgStarter[] = [
     mark: 'alchemy',
     color: '#E9E6F2',
     loginEmail: 'afterglowmusic.support+alchemy@gmail.com',
+    handle: 'undergroundalchemy',
   },
 ];

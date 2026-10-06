@@ -262,14 +262,21 @@ describe('organizers', () => {
     expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
     expect(app.queryByText('Confirm your email to open the studio')).toBeNull();
     expect(app.queryByLabelText('Back')).toBeNull();
+    // Its profile takes the organizer's name and the @handle HQ chose.
+    expect(mockSocial.profiles.get(u.uid)).toMatchObject({ displayName: 'Underground Alchemy', handle: 'undergroundalchemy' });
 
-    // It can still look at the app, with a way back; its profile shows the organizer.
+    // It can still look at the app, with a way back: no My Sound, and Discover is only what's posted at its events.
     await fireEvent.press(app.getByLabelText('View the app as everyone sees it'));
     await flush();
+    expect(app.getByText('From your events')).toBeTruthy();
+    expect(app.queryByRole('tab', { name: /^My Sound/ })).toBeNull();
     await act(async () => router.push('/profile'));
     await flush();
+    // Its profile is the organizer's: its logo, its DJs and videos instead of a fan's sound.
     expect(app.getByText('You run')).toBeTruthy();
-    expect(app.getByLabelText('Underground Alchemy')).toBeTruthy();
+    expect(app.getAllByLabelText('Underground Alchemy').length).toBeGreaterThan(0);
+    expect(app.getByRole('tab', { name: /^DJs/ })).toBeTruthy();
+    expect(app.queryByText('Your artists')).toBeNull();
     await fireEvent.press(app.getByLabelText('Back to your studio'));
     await flush();
     expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
@@ -290,10 +297,16 @@ describe('organizers', () => {
     // Everyone else sees it on their profile too.
     await s().signOut();
     await s().signUp('fan@example.com', 'password123');
-    const fan = await renderApp('/u/ugrnd');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    const fan = await renderApp('/u/undergroundalchemy');
     await flush();
     expect(fan.getByText('Runs')).toBeTruthy();
     expect(fan.getByText('See their events')).toBeTruthy();
+    expect(fan.getByText('Their DJs')).toBeTruthy();
+    // Fans follow it.
+    await fireEvent.press(fan.getByLabelText(/^Follow /));
+    await flush();
+    expect([...mockSocial.follows.values()].some((f) => f.to === u.uid)).toBe(true);
     await fan.unmount();
   });
   it('the organizer claims its events from EDMTrain, and copies one to edit on Afterglow without changing the import', async () => {
