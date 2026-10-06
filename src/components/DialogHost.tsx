@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { closeDialog, subscribeDialogs, type WebDialog } from '../lib/dialog';
 import { color, radius, space, type } from '../theme/tokens';
+import { t } from '../i18n';
 
 /**
  * Shows `showAlert` / `showActionSheet` in a browser, one at a time: a glass
@@ -48,7 +49,8 @@ export function DialogHost() {
     // Over everything: it comes last in the root layout.
     <View style={styles.layer}>
       {/* The dimmed page behind: tapping it cancels. A sibling of the card, so the card's buttons aren't inside another button. */}
-      <Pressable style={styles.backdrop} onPress={dismiss} accessibilityLabel="Close" accessibilityRole="button" focusable={false} />
+      <Pressable style={styles.backdrop} onPress={dismiss} accessibilityLabel={t('Close')}
+ accessibilityRole="button" focusable={false} />
       <View style={styles.middle} pointerEvents="box-none">
         <View style={[styles.card, d.sheet && styles.sheet]} accessibilityRole="alert" accessibilityViewIsModal aria-modal>
           {d.title ? <Text style={styles.title}>{d.title}</Text> : null}

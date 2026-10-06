@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { color, radius, space, type } from '../theme/tokens';
 import { CloseIcon, SearchIcon } from './TabIcons';
+import { t } from '../i18n';
 
 /** A glass search field with a clear button. `label` is what screen readers hear. */
 export function SearchField({
@@ -39,7 +40,8 @@ export function SearchField({
         onSubmitEditing={onSubmit}
       />
       {value ? (
-        <Pressable onPress={() => onChange('')} accessibilityRole="button" accessibilityLabel="Clear the search" hitSlop={10}>
+        <Pressable onPress={() => onChange('')} accessibilityRole="button" accessibilityLabel={t('Clear the search')}
+ hitSlop={10}>
           <CloseIcon color={color.moonDim} size={14} />
         </Pressable>
       ) : null}

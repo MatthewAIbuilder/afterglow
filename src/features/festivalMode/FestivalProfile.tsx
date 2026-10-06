@@ -26,6 +26,7 @@ import { videoGrid } from '../profile/profileView';
 import { BadgeCelebration } from '../profile/BadgeCelebration';
 import { BadgesPanel, ClaimBanner } from '../profile/BadgesPanel';
 import { useProfileBadges } from '../profile/useProfileBadges';
+import { t } from '../../i18n';
 
 /**
  * Profile in festival mode: just you. Your photo, name and bio (still
@@ -64,18 +65,18 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
   const share = () => {
     if (!me) return;
     haptic.select();
-    void shareMessage(`@${me.handle} on Afterglow: ${WEB_URL}/u/${me.handle}`);
+    void shareMessage(t('@{handle} on Afterglow: {url}', { handle: me.handle, url: `${WEB_URL}/u/${me.handle}` }));
   };
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Profile" />
+      <PageTitle title={t('Profile')} />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
         <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + 190} />
         <View style={styles.bar}>
           <Text style={styles.at} numberOfLines={1}>
-            {me ? `@${me.handle}` : 'Profile'}
+            {me ? `@${me.handle}` : t('Profile')}
           </Text>
           <Pressable
             onPress={() => {
@@ -83,7 +84,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
               router.push('/settings');
             }}
             accessibilityRole="button"
-            accessibilityLabel="Settings and more"
+            accessibilityLabel={t('Settings and more')}
             hitSlop={8}
             style={({ pressed }) => [styles.round, pressed && styles.pressed]}
           >
@@ -93,24 +94,24 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
 
         <View style={styles.hero}>
           {standing && ringOf(standing) ? (
-            <StandingAvatar standing={standing} name={me?.displayName ?? 'You'} url={me?.avatarUrl} size={104} />
+            <StandingAvatar standing={standing} name={me?.displayName ?? t('You')} url={me?.avatarUrl} size={104} />
           ) : (
             <View style={styles.ring}>
-              <PersonAvatar name={me?.displayName ?? 'You'} url={me?.avatarUrl} size={104} />
+              <PersonAvatar name={me?.displayName ?? t('You')} url={me?.avatarUrl} size={104} />
             </View>
           )}
           <Text style={styles.name} accessibilityRole="header">
-            {me?.displayName ?? 'You'}
+            {me?.displayName ?? t('You')}
           </Text>
-          <Text style={styles.where}>At {festival.name}</Text>
+          <Text style={styles.where}>{t('At {festival}', { festival: festival.name })}</Text>
           <StandingCaption standing={standing} align="center" />
           {me?.bio ? <Text style={styles.bio}>{me.bio}</Text> : null}
 
           {me ? (
             <>
               <View style={styles.row}>
-                <Button label="Edit profile" onPress={() => router.push('/profile-edit')} />
-                <Button label="Share profile" icon={<ShareIcon color={color.moon} size={15} />} onPress={share} />
+                <Button label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
+                <Button label={t('Share profile')} icon={<ShareIcon color={color.moon} size={15} />} onPress={share} />
               </View>
               <Pressable
                 onPress={() => {
@@ -118,11 +119,11 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
                   router.push('/my-code');
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Show my friend code, so friends here can add you"
+                accessibilityLabel={t('Show my friend code, so friends here can add you')}
                 style={({ pressed }) => [styles.code, pressed && styles.pressed]}
               >
                 <QrIcon color={color.night} size={20} />
-                <Text style={styles.codeText}>My friend code</Text>
+                <Text style={styles.codeText}>{t('My friend code')}</Text>
               </Pressable>
             </>
           ) : social.availability.ok && social.ready ? (
@@ -131,7 +132,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
               accessibilityRole="button"
               style={({ pressed }) => [styles.code, pressed && styles.pressed]}
             >
-              <Text style={styles.codeText}>{social.user ? 'Finish your profile' : 'Create your profile'}</Text>
+              <Text style={styles.codeText}>{social.user ? t('Finish your profile') : t('Create your profile')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -142,8 +143,8 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
             value={tab}
             onChange={setTab}
             items={[
-              { key: 'moments', label: 'Moments', count: all.length, icon: (c) => <TilesIcon color={c} size={16} /> },
-              { key: 'badges', label: 'Badges', count: b.earned, icon: (c) => <PinIcon color={c} size={17} /> },
+              { key: 'moments', label: t('Moments'), count: all.length, icon: (c) => <TilesIcon color={c} size={16} /> },
+              { key: 'badges', label: t('Badges'), count: b.earned, icon: (c) => <PinIcon color={c} size={17} /> },
             ]}
           />
         </View>
@@ -152,15 +153,15 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
         ) : (
           <>
             <View style={styles.videosHead}>
-              <Text style={styles.section}>{here.length ? `Your videos from ${festival.name}` : 'Your videos'}</Text>
+              <Text style={styles.section}>{here.length ? t('Your videos from {festival}', { festival: festival.name }) : t('Your videos')}</Text>
               {all.length ? (
-                <Pressable onPress={() => router.push('/memories')} accessibilityRole="button" accessibilityLabel="All your videos, by festival" hitSlop={8}>
-                  <Text style={styles.link}>All ›</Text>
+                <Pressable onPress={() => router.push('/memories')} accessibilityRole="button" accessibilityLabel={t('All your videos, by festival')} hitSlop={8}>
+                  <Text style={styles.link}>{t('All ›')}</Text>
                 </Pressable>
               ) : null}
             </View>
             <VideosTab memories={shown} width={width} uriOf={uriOf} lookup={catalog} />
-            {Platform.OS !== 'web' && all.length ? <Text style={styles.note}>Your videos are on this phone, so they’re here without signal.</Text> : null}
+            {Platform.OS !== 'web' && all.length ? <Text style={styles.note}>{t('Your videos are on this phone, so they’re here without signal.')}</Text> : null}
           </>
         )}
       </ScrollView>

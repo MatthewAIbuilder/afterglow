@@ -1,6 +1,7 @@
 import type { Festival } from '../../data/models';
 import { festivalNight } from '../plan/live';
 import { nextRun } from '../festivals/when';
+import { t } from '../../i18n';
 
 /**
  * The camera page's rules, pure. The record button works two ways: tap to
@@ -77,5 +78,5 @@ export function filmingAt(festivals: readonly Festival[], going: readonly string
   const on = festivals.find((f) => going.includes(f.id) && (nextRun(f, now)?.until ?? 1) <= 0);
   if (!on) return undefined;
   const night = festivalNight(on, now)?.day;
-  return night ? `${on.name} · ${night}` : on.name;
+  return night ? `${on.name} · ${t(night)}` : on.name;
 }

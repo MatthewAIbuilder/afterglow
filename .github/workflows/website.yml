@@ -122,7 +122,7 @@ jobs:
           npx --yes firebase-tools@14 hosting:channel:delete clips-restore --project "$PROJECT" --force --non-interactive < /dev/null || true
           [ -f /tmp/restore.json ] && node -e "console.log('Clips in that release:', (JSON.parse(require('fs').readFileSync('/tmp/restore.json','utf8')).clips ?? []).length)"
 
-      # Discover clips: the best live set on YouTube for artists on upcoming festivals, a few a night (docs/events-import.md).
+      # Discover clips: live sets (up to 4 per artist) and Shorts (up to 2) from YouTube, a few a night (docs/events-import.md).
       # Only the nightly run (and "Run workflow") searches, so merges during the day don't use up YouTube's daily quota;
       # every run keeps the clips already found. If the step fails, it runs again with no searches; if that fails too,
       # nothing is deployed, so the site is never published without its clips.

@@ -32,6 +32,7 @@ import { useTaste } from '../state/taste';
 import { useWeekends } from '../state/weekends';
 import { color, radius, space, type } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t, tn } from '../i18n';
 
 /**
  * Search everything from Discover: people (when profiles are on and you're
@@ -97,12 +98,12 @@ export default function SearchScreen() {
             artist={a}
             affinity={taste[a.id] ?? 0}
             festivalId={at.length === 1 ? at[0].id : undefined}
-            detail={at.length ? `Plays ${at.map((f) => f.name).join(', ')}` : undefined}
+            detail={at.length ? t('Plays {festivals}', { festivals: at.map((f) => f.name).join(', ') }) : undefined}
             rating={ratings[a.id]}
             onOpen={() => remember({ kind: 'artist', id: a.id, label: a.name })}
           />
         </View>
-        <GlassCircleButton label={`Sounds like ${a.name}`} hint="Starts Discover with their sets and artists with a similar sound" onPress={() => {
+        <GlassCircleButton label={t('Sounds like {artist}', { artist: a.name })} hint={t('Starts Discover with their sets and artists with a similar sound')} onPress={() => {
           remember({ kind: 'artist', id: a.id, label: a.name });
           discover(likeFocus(a.id));
         }}>
@@ -119,7 +120,7 @@ export default function SearchScreen() {
           <FestivalRow festival={f} onOpen={() => remember({ kind: 'festival', id: f.id, label: f.name })} />
         </View>
         {watchable ? (
-          <GlassCircleButton label={`Discover ${f.name}`} hint="Starts Discover with live sets from its lineup" onPress={() => {
+          <GlassCircleButton label={t('Discover {festival}', { festival: f.name })} hint={t('Starts Discover with live sets from its lineup')} onPress={() => {
             remember({ kind: 'festival', id: f.id, label: f.name });
             discover(f.id);
           }}>
@@ -134,14 +135,14 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={'Search'} />
+      <PageTitle title={t('Search')} />
       <NightSky />
       <View style={[styles.bar, { paddingTop: insets.top + space.sm }]}>
         <View style={{ flex: 1 }}>
-          <SearchField value={query} onChange={setQuery} placeholder={canFindPeople ? 'Artists, festivals or @people' : 'Artists or festivals'} label="Search Afterglow" autoFocus />
+          <SearchField value={query} onChange={setQuery} placeholder={canFindPeople ? t('Artists, festivals or @people') : t('Artists or festivals')} label={t('Search Afterglow')} autoFocus />
         </View>
-        <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel="Close search" hitSlop={10}>
-          <Text style={styles.cancel}>Cancel</Text>
+        <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel={t('Close search')} hitSlop={10}>
+          <Text style={styles.cancel}>{t('Cancel')}</Text>
         </Pressable>
       </View>
       <ScrollView
@@ -153,19 +154,19 @@ export default function SearchScreen() {
           <>
             {lookForPeople ? (
               <>
-                <Text style={styles.section}>People</Text>
+                <Text style={styles.section}>{t('People')}</Text>
                 {!peopleNow ? <ActivityIndicator color={color.glow} style={styles.spinner} /> : null}
-                {peopleNow?.failed ? <Text style={styles.quiet}>Couldn’t search people just now.</Text> : null}
-                {peopleNow && !peopleNow.failed && !shownPeople.length ? <Text style={styles.quiet}>No one matches “{q}”.</Text> : null}
+                {peopleNow?.failed ? <Text style={styles.quiet}>{t('Couldn’t search people just now.')}</Text> : null}
+                {peopleNow && !peopleNow.failed && !shownPeople.length ? <Text style={styles.quiet}>{t('No one matches “{query}”.', { query: q })}</Text> : null}
                 {shownPeople.map((p) => (
                   <PersonRow key={p.uid} profile={p} follow onOpen={() => remember({ kind: 'person', id: p.handle, label: p.displayName })} />
                 ))}
               </>
             ) : null}
             {found.peopleOnly && !canFindPeople ? (
-              <Text style={styles.quiet}>{social.availability.ok ? 'Sign in on your profile to find people.' : 'Finding people isn’t available in this version yet.'}</Text>
+              <Text style={styles.quiet}>{social.availability.ok ? t('Sign in on your profile to find people.') : t('Finding people isn’t available in this version yet.')}</Text>
             ) : null}
-            {sounds.length ? <Text style={styles.section}>Sounds</Text> : null}
+            {sounds.length ? <Text style={styles.section}>{t('Sounds')}</Text> : null}
             {sounds.map(({ tag, clips }) => (
               <Pressable
                 key={tag}
@@ -174,32 +175,32 @@ export default function SearchScreen() {
                   discover(soundFocus(tag));
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Discover ${SOUND_LABEL[tag]}, ${clips} ${clips === 1 ? 'clip' : 'clips'} from every lineup`}
+                accessibilityLabel={tn(clips, 'Discover {sound}, {n} clip from every lineup', 'Discover {sound}, {n} clips from every lineup', { sound: SOUND_LABEL[tag] })}
                 style={({ pressed }) => [styles.soundRow, pressed && { opacity: 0.7 }]}
               >
                 <View style={[styles.soundDot, { backgroundColor: SOUND_COLOR[tag], shadowColor: SOUND_COLOR[tag] }]} />
                 <View style={styles.rowFill}>
                   <Text style={styles.soundName}>{SOUND_LABEL[tag]}</Text>
                   <Text style={styles.soundDetail}>
-                    {clips} {clips === 1 ? 'clip' : 'clips'} from every lineup
+                    {tn(clips, '{n} clip from every lineup', '{n} clips from every lineup')}
                   </Text>
                 </View>
                 <PlayIcon color={color.glow} size={14} />
               </Pressable>
             ))}
-            {found.festivals.length ? <Text style={styles.section}>Festivals</Text> : null}
+            {found.festivals.length ? <Text style={styles.section}>{t('Festivals')}</Text> : null}
             {found.festivals.map(festivalRow)}
-            {found.artists.length ? <Text style={styles.section}>Artists</Text> : null}
+            {found.artists.length ? <Text style={styles.section}>{t('Artists')}</Text> : null}
             {found.artists.map(artistRow)}
             {nothing ? (
               <>
-                <Text style={[styles.quiet, styles.nothing]}>Nothing on Afterglow matches “{q}”.</Text>
+                <Text style={[styles.quiet, styles.nothing]}>{t('Nothing on Afterglow matches “{query}”.', { query: q })}</Text>
                 <Pressable
                   onPress={() => router.push({ pathname: '/request', params: { name: q } })}
                   accessibilityRole="button"
-                  accessibilityLabel={`Request ${q} as a festival`}
+                  accessibilityLabel={t('Request {query} as a festival', { query: q })}
                 >
-                  <Text style={styles.link}>Is it a festival? Request “{q}”</Text>
+                  <Text style={styles.link}>{t('Is it a festival? Request “{query}”', { query: q })}</Text>
                 </Pressable>
               </>
             ) : null}
@@ -231,7 +232,7 @@ export default function SearchScreen() {
   );
 }
 
-const KIND_LABEL: Record<Recent['kind'], string> = { festival: 'Festival', artist: 'Artist', person: 'Person' };
+const KIND_LABEL: Record<Recent['kind'], string> = { festival: t('Festival'), artist: t('Artist'), person: t('Person') };
 
 function Suggestions({
   recents,
@@ -257,9 +258,9 @@ function Suggestions({
       {recents.length ? (
         <>
           <View style={styles.sectionRow}>
-            <Text style={styles.section}>Recent</Text>
-            <Pressable onPress={onClear} accessibilityRole="button" accessibilityLabel="Clear recent searches" hitSlop={8}>
-              <Text style={styles.clear}>Clear</Text>
+            <Text style={styles.section}>{t('Recent')}</Text>
+            <Pressable onPress={onClear} accessibilityRole="button" accessibilityLabel={t('Clear recent searches')} hitSlop={8}>
+              <Text style={styles.clear}>{t('Clear')}</Text>
             </Pressable>
           </View>
           {recents.map((r) => (
@@ -275,7 +276,7 @@ function Suggestions({
                 </Text>
                 <Text style={styles.recentKind}>{KIND_LABEL[r.kind]}</Text>
               </Pressable>
-              <Pressable onPress={() => onForget(r)} accessibilityRole="button" accessibilityLabel={`Remove ${r.label} from recent searches`} hitSlop={10}>
+              <Pressable onPress={() => onForget(r)} accessibilityRole="button" accessibilityLabel={t('Remove {name} from recent searches', { name: r.label })} hitSlop={10}>
                 <CloseIcon color={color.moonFaint} size={12} />
               </Pressable>
             </View>
@@ -284,7 +285,7 @@ function Suggestions({
       ) : null}
       {top.length ? (
         <>
-          <Text style={styles.section}>Your top matches</Text>
+          <Text style={styles.section}>{t('Your top matches')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faces} keyboardShouldPersistTaps="handled">
             {top.map((a) => (
               <Pressable key={a.id} onPress={() => onArtist(a)} accessibilityRole="button" accessibilityLabel={a.name} style={({ pressed }) => [styles.face, pressed && { opacity: 0.7 }]}>
@@ -299,17 +300,17 @@ function Suggestions({
       ) : null}
       {festivals.length ? (
         <>
-          <Text style={styles.section}>Your festivals</Text>
+          <Text style={styles.section}>{t('Your festivals')}</Text>
           {festivals.map((f) => (
             <FestivalRow key={f.id} festival={f} onOpen={() => onFestival(f)} />
           ))}
         </>
       ) : null}
       {!recents.length && !top.length && !festivals.length ? (
-        <Text style={[styles.quiet, styles.nothing]}>Search for an artist, a festival or a friend’s @handle.</Text>
+        <Text style={[styles.quiet, styles.nothing]}>{t('Search for an artist, a festival or a friend’s @handle.')}</Text>
       ) : null}
       <Pressable onPress={() => router.push('/festivals')} accessibilityRole="button" style={styles.browse}>
-        <Text style={styles.link}>Browse all festivals</Text>
+        <Text style={styles.link}>{t('Browse all festivals')}</Text>
         <ChevronIcon color={color.glow} size={10} />
       </Pressable>
     </>

@@ -8,12 +8,12 @@ import { type Milestone, milestoneKey, pinKey, throwbackKey } from './milestones
 import { useMemoryPicker } from '../memories/useAddMemory';
 import { MilestonesSection, NewTag } from './Milestones';
 import type { ProfileBadges } from './useProfileBadges';
+import { t, tn } from '../../i18n';
 
 /** "You unlocked 2 badges · Claim": shown while anything earned is waiting to be claimed. */
 export function ClaimBanner({ b }: { b: ProfileBadges }) {
   const n = b.unclaimedKeys.length;
   if (!n) return null;
-  const what = n === 1 ? 'a badge' : `${n} badges`;
   return (
     <Pressable
       onPress={() => {
@@ -21,12 +21,12 @@ export function ClaimBanner({ b }: { b: ProfileBadges }) {
         b.claimNext();
       }}
       accessibilityRole="button"
-      accessibilityLabel={`You unlocked ${what}. Claim`}
+      accessibilityLabel={tn(n, 'You unlocked a badge. Claim', 'You unlocked {n} badges. Claim')}
       style={({ pressed }) => [styles.unlocked, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
     >
       <NewTag inline />
-      <Text style={styles.unlockedText}>You unlocked {what}</Text>
-      <Text style={styles.unlockedClaim}>Claim</Text>
+      <Text style={styles.unlockedText}>{tn(n, 'You unlocked a badge', 'You unlocked {n} badges')}</Text>
+      <Text style={styles.unlockedClaim}>{t('Claim')}</Text>
     </Pressable>
   );
 }
@@ -43,8 +43,8 @@ export function BadgesPanel({ b, uid, width, questsFirst = false }: { b: Profile
   const quests = (
     <View style={styles.section}>
       <MilestonesSection
-        title="Side quests"
-        intro="Meet people, look out for your crew, catch the sunrise. Done at your festivals, on their nights."
+        title={t('Side quests')}
+        intro={t('Meet people, look out for your crew, catch the sunrise. Done at your festivals, on their nights.')}
         showNext={false}
         list={b.questList}
         isNew={(m) => isNewMark(m.id)}
@@ -56,7 +56,7 @@ export function BadgesPanel({ b, uid, width, questsFirst = false }: { b: Profile
     <>
       <GlowLevelCard />
       {questsFirst ? quests : null}
-      <Text style={styles.pinsHead}>Festival pins</Text>
+      <Text style={styles.pinsHead}>{t('Festival pins')}</Text>
       <BadgesGrid
         badges={b.badges}
         toCollect={b.collect}

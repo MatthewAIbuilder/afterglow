@@ -1,4 +1,5 @@
 import type { Festival } from '../../data/models';
+import { t } from '../../i18n';
 import { PARTNER_NOTE, shopNotes } from '../partners/partners';
 
 /**
@@ -39,13 +40,13 @@ export type PrepInput = {
 export const RATED_ENOUGH = 10;
 
 const PACK = [
-  { id: 'id', label: 'Photo ID' },
-  { id: 'power', label: 'Phone charger or power bank' },
-  { id: 'earplugs', label: 'Earplugs' },
-  { id: 'water', label: 'Refillable water bottle' },
-  { id: 'sun', label: 'Sunscreen and sunglasses' },
-  { id: 'rain', label: 'Something for the rain' },
-  { id: 'meet', label: 'A meeting spot if you lose your friends' },
+  { id: 'id', label: t('Photo ID') },
+  { id: 'power', label: t('Phone charger or power bank') },
+  { id: 'earplugs', label: t('Earplugs') },
+  { id: 'water', label: t('Refillable water bottle') },
+  { id: 'sun', label: t('Sunscreen and sunglasses') },
+  { id: 'rain', label: t('Something for the rain') },
+  { id: 'meet', label: t('A meeting spot if you lose your friends') },
 ];
 
 export function prepChecklist(i: PrepInput): PrepSection[] {
@@ -54,35 +55,35 @@ export function prepChecklist(i: PrepInput): PrepSection[] {
   const plan: PrepItem[] = [
     {
       id: 'rate',
-      label: 'Rate the lineup',
-      detail: i.lineup ? `${i.rated} of ${i.lineup} rated` : undefined,
+      label: t('Rate the lineup'),
+      detail: i.lineup ? t('{n} of {total} rated', { n: i.rated, total: i.lineup }) : undefined,
       auto: true,
       done: i.lineup > 0 && i.rated >= enough,
       action: 'tune',
     },
-    { id: 'stars', label: 'Star your must-sees', detail: i.stars ? `${i.stars} starred` : undefined, auto: true, done: i.stars > 0, action: 'festival' },
+    { id: 'stars', label: t('Star your must-sees'), detail: i.stars ? t('{n} starred', { n: i.stars }) : undefined, auto: true, done: i.stars > 0, action: 'festival' },
     ...(i.remindersPossible
-      ? [{ id: 'reminders', label: 'Turn on reminders before each set', auto: true, done: i.remindersOn, action: 'festival' as const }]
+      ? [{ id: 'reminders', label: t('Turn on reminders before each set'), auto: true, done: i.remindersOn, action: 'festival' as const }]
       : []),
   ];
   const multiDay = !!i.festival.startDate && !!i.festival.endDate && i.festival.endDate > i.festival.startDate;
   const before: PrepItem[] = [
-    { id: 'ticket', label: 'Get your ticket', done: tick('ticket'), ...(i.festival.links?.tickets ? { action: 'tickets' as const } : {}) },
+    { id: 'ticket', label: t('Get your ticket'), done: tick('ticket'), ...(i.festival.links?.tickets ? { action: 'tickets' as const } : {}) },
     {
       id: 'travel',
-      label: multiDay ? 'Sort travel and a place to stay' : 'Sort how you’re getting there and back',
+      label: multiDay ? t('Sort travel and a place to stay') : t('Sort how you’re getting there and back'),
       done: tick('travel'),
-      ...(i.festival.links?.stay ? { link: { url: i.festival.links.stay, label: 'Places to stay nearby' } } : {}),
+      ...(i.festival.links?.stay ? { link: { url: i.festival.links.stay, label: t('Places to stay nearby') } } : {}),
     },
   ];
   const pack: PrepItem[] = PACK.map((p) => {
     const url = i.shop?.[p.id];
-    return { ...p, done: tick(p.id), ...(url ? { link: { url, label: 'Shop' } } : {}) };
+    return { ...p, done: tick(p.id), ...(url ? { link: { url, label: t('Shop') } } : {}) };
   });
   return [
-    { title: 'Your plan', items: plan },
-    { title: 'Before you go', items: before },
-    { title: 'Pack', items: pack },
+    { title: t('Your plan'), items: plan },
+    { title: t('Before you go'), items: before },
+    { title: t('Pack'), items: pack },
   ];
 }
 

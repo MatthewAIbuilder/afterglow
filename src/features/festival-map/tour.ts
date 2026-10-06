@@ -2,6 +2,7 @@ import type { Show } from '../../data/models';
 import { showDateSpoken, showTitle } from '../artists/shows';
 import type { Point } from '../festivals/near';
 import { type MapPoint, type Marker, project } from './map';
+import { t, tn } from '../../i18n';
 
 /**
  * An artist's tour on the map, pure: their festivals (past ones too) and
@@ -45,19 +46,18 @@ export function tourStops(festivals: readonly Marker[], shows: readonly ShowPin[
     .map(({ s }) => s);
 }
 
-const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /** The tour's subtitle, short enough for one line: "2 festivals · 3 shows", "2 festivals, in date order", "1 show". */
 export function tourLine(festivals: number, shows: number): string {
-  if (festivals + shows === 0) return 'No festivals or shows with a place yet';
-  if (festivals && shows) return `${count(festivals, 'festival', 'festivals')} · ${count(shows, 'show', 'shows')}`;
-  const n = festivals || shows;
-  const what = festivals ? count(n, 'festival', 'festivals') : count(n, 'show', 'shows');
-  return n > 1 ? `${what}, in date order` : what;
+  if (festivals + shows === 0) return t('No festivals or shows with a place yet');
+  if (festivals && shows) return `${tn(festivals, '{n} festival', '{n} festivals')} · ${tn(shows, '{n} show', '{n} shows')}`;
+  if (festivals) return tn(festivals, '{n} festival', '{n} festivals, in date order');
+  return tn(shows, '{n} show', '{n} shows, in date order');
 }
 
 /** What a screen reader says for a show's light: "Show: Club Space, Saturday 18 October, Miami, FL." */
 export function showPinLabel(show: Show): string {
   const where = show.name ? [show.venue, show.location] : [show.location];
-  return [`Show: ${showTitle(show)}`, showDateSpoken(show.date), ...where.filter(Boolean)].join(', ') + '.';
+  return [t('Show: {show}', { show: showTitle(show) }), showDateSpoken(show.date), ...where.filter(Boolean)].join(', ') + '.';
+
 }

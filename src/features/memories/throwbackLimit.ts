@@ -6,6 +6,8 @@
  * shared throwback gives its place back. Pure; the database rules hold the
  * same line (`usage/{uid}` in firestore.rules).
  */
+import { t } from '../../i18n';
+
 export const THROWBACKS_FREE = 3;
 
 export type ThrowbackShares = { canShare: boolean; /** Free shares left; undefined with Plus. */ left?: number };
@@ -19,6 +21,6 @@ export function throwbackShares({ plus, used }: { plus: boolean; used: number })
 /** What the share switch says about it. */
 export function throwbackSharesLine(s: ThrowbackShares): string | undefined {
   if (s.left === undefined) return undefined;
-  if (s.left === 0) return `You’ve shared ${THROWBACKS_FREE} throwbacks, the most on the free plan. It’s saved in your Memories with its badge. Unlimited throwbacks come with Afterglow Plus.`;
-  return `${s.left} of ${THROWBACKS_FREE} free throwback shares left.`;
+  if (s.left === 0) return t('You’ve shared {n} throwbacks, the most on the free plan. It’s saved in your Memories with its badge. Unlimited throwbacks come with Afterglow Plus.', { n: THROWBACKS_FREE });
+  return t('{left} of {total} free throwback shares left.', { left: s.left, total: THROWBACKS_FREE });
 }

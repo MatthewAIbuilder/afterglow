@@ -20,6 +20,7 @@ import { RouteList } from './RouteList';
 import { SetReminderToggle } from './SetReminderToggle';
 import { TimetableGrid } from './TimetableGrid';
 import { DayHoursBar } from './YourHours';
+import { t, tn } from '../../i18n';
 
 type Mode = 'route' | 'picks' | 'grid';
 
@@ -86,7 +87,7 @@ export function Timetable({
 
       {schedule.unscheduled.length > 0 && (
         <View style={styles.unscheduled}>
-          <Text style={styles.subhead}>No set time yet</Text>
+          <Text style={styles.subhead}>{t('No set time yet')}</Text>
           {schedule.unscheduled.map((p) => (
             <PickRow key={p.artist.id} festivalId={festival.id} pick={p} note={TIER_LABEL[p.tier]} />
           ))}
@@ -101,19 +102,20 @@ const itemKey = (i: ScheduleItem) =>
 
 function daySummary(d: ScheduleDay) {
   const planned = d.items.reduce((n, i) => n + (i.kind === 'set' ? 1 : i.kind === 'clash' ? i.picks.length : 0), 0);
-  if (!d.items.length) return 'Nothing from your list today. A good day to wander.';
-  if (!planned) return 'Nothing you love is on. A good night to try something new.';
-  const sets = `${planned} ${planned === 1 ? 'set' : 'sets'} for you`;
-  if (!d.clashes) return `${sets}, no clashes.`;
-  return `${sets}, ${d.clashes} ${d.clashes === 1 ? 'clash' : 'clashes'} to decide.`;
+  if (!d.items.length) return t('Nothing from your list today. A good day to wander.');
+  if (!planned) return t('Nothing you love is on. A good night to try something new.');
+  if (!d.clashes) return tn(planned, '{n} set for you, no clashes.', '{n} sets for you, no clashes.');
+  const v = { n: planned, c: d.clashes };
+  if (planned === 1) return d.clashes === 1 ? t('{n} set for you, {c} clash to decide.', v) : t('{n} set for you, {c} clashes to decide.', v);
+  return d.clashes === 1 ? t('{n} sets for you, {c} clash to decide.', v) : t('{n} sets for you, {c} clashes to decide.', v);
 }
 
 /** Full day (the set-to-set route), your picks (with clashes called out), or every set as a timetable. */
 function ModePicker({ value, onChange }: { value: Mode; onChange: (m: Mode) => void }) {
   const options: { key: Mode; label: string; a11y: string }[] = [
-    { key: 'route', label: 'Full day', a11y: 'Full day, set to set' },
-    { key: 'picks', label: 'Your picks', a11y: 'Your picks and clashes' },
-    { key: 'grid', label: 'All sets', a11y: 'All sets, as a timetable' },
+    { key: 'route', label: t('Full day'), a11y: t('Full day, set to set') },
+    { key: 'picks', label: t('Your picks'), a11y: t('Your picks and clashes') },
+    { key: 'grid', label: t('All sets'), a11y: t('All sets, as a timetable') },
   ];
   return (
     <View style={styles.modes} accessibilityRole="tablist">
@@ -150,7 +152,7 @@ function DayPicker({ days, value, onChange }: { days: ScheduleDay[]; value: stri
             key={d.day}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            accessibilityLabel={`${d.day}${d.clashes ? `, ${d.clashes} ${d.clashes === 1 ? 'clash' : 'clashes'}` : ''}`}
+            accessibilityLabel={d.clashes ? tn(d.clashes, '{day}, {n} clash', '{day}, {n} clashes', { day: t(d.day) }) : t(d.day)}
             onPress={() => {
               if (on) return;
               haptic.select();
@@ -158,7 +160,7 @@ function DayPicker({ days, value, onChange }: { days: ScheduleDay[]; value: stri
             }}
             style={[styles.dayItem, on && styles.dayOn]}
           >
-            <Text style={[styles.dayText, on && { color: color.moon }]}>{d.day}</Text>
+            <Text style={[styles.dayText, on && { color: color.moon }]}>{t(d.day)}</Text>
             <View style={[styles.dayDot, d.clashes > 0 && { backgroundColor: color.glow }]} />
           </Pressable>
         );
@@ -188,7 +190,7 @@ function TimelineRow({ item, last, children }: { item: ScheduleItem; last: boole
 }
 
 const where = (festival: Festival, p: TimedPick) =>
-  `${stageName(festival, p.set.stageId)}, until ${formatTime(p.set.end)}`;
+  t('{where}, until {time}', { where: stageName(festival, p.set.stageId), time: formatTime(p.set.end) });
 
 const openArtist = (festival: Festival, id: string) => {
   haptic.select();
@@ -215,7 +217,7 @@ function ArtistLine({
     <Pressable
       onPress={() => openArtist(festival, pick.artist.id)}
       accessibilityRole="button"
-      accessibilityLabel={`${label ? `${label}. ` : ''}${pick.artist.name}, ${pick.known ? `${match} match` : 'new to you'}, ${formatTime(pick.set.start)}, ${where(festival, pick)}${crewStarsSaid(friends)}`}
+      accessibilityLabel={`${label ? `${label}. ` : ''}${pick.known ? t('{artist}, {match} match, {time}, {where}', { artist: pick.artist.name, match, time: formatTime(pick.set.start), where: where(festival, pick) }) : t('{artist}, new to you, {time}, {where}', { artist: pick.artist.name, time: formatTime(pick.set.start), where: where(festival, pick) })}${crewStarsSaid(friends)}`}
       style={({ pressed }) => [styles.aLine, dim && { opacity: 0.6 }, pressed && { opacity: 0.5 }]}
     >
       <ArtistAvatar artist={pick.artist} size={AVATAR} />
@@ -242,13 +244,13 @@ function Alternatives({ festival, picks }: { festival: Festival; picks: TimedPic
   if (!picks.length) return null;
   return (
     <View style={styles.alt}>
-      <Text style={styles.altHead}>Or try something new at the same time</Text>
+      <Text style={styles.altHead}>{t('Or try something new at the same time')}</Text>
       {picks.map((p) => (
         <Pressable
           key={p.artist.id}
           onPress={() => openArtist(festival, p.artist.id)}
           accessibilityRole="button"
-          accessibilityLabel={`${p.artist.name}, ${p.known ? `${matchLabel(p)} match` : 'new to you'}, ${where(festival, p)}`}
+          accessibilityLabel={p.known ? t('{artist}, {match} match, {where}', { artist: p.artist.name, match: matchLabel(p), where: where(festival, p) }) : t('{artist}, new to you, {where}', { artist: p.artist.name, where: where(festival, p) })}
           style={({ pressed }) => [styles.altRow, pressed && { opacity: 0.6 }]}
         >
           <ArtistAvatar artist={p.artist} size={28} />
@@ -295,12 +297,12 @@ function ClashCard({ festival, item }: { festival: Festival; item: Extract<Sched
       <View
         style={styles.clashHead}
         accessible
-        accessibilityLabel={`Clash between ${item.picks.map((p) => p.artist.name).join(' and ')}`}
+        accessibilityLabel={t('Clash between {names}', { names: item.picks.map((p) => p.artist.name).join(t(' and ')) })}
       >
         <BoltIcon color={color.glow} />
-        <Text style={styles.clashTitle}>Clash</Text>
+        <Text style={styles.clashTitle}>{t('Clash')}</Text>
         <Text style={styles.clashTime}>
-          {formatTime(first.set.start)} to {formatTime(last.set.end)}
+          {t('{from} to {to}', { from: formatTime(first.set.start), to: formatTime(last.set.end) })}
         </Text>
       </View>
       {item.picks.map((p, i) => (
@@ -308,14 +310,14 @@ function ClashCard({ festival, item }: { festival: Festival; item: Extract<Sched
           {i > 0 && (
             <View style={styles.vs}>
               <View style={styles.vsLine} />
-              <Text style={styles.vsText}>vs</Text>
+              <Text style={styles.vsText}>{t('vs')}</Text>
               <View style={styles.vsLine} />
             </View>
           )}
           <ArtistLine
             festival={festival}
             pick={p}
-            label={pickId === p.artist.id ? 'Your pick' : undefined}
+            label={pickId === p.artist.id ? t('Your pick') : undefined}
             labelGlow
             dim={!!pickId && pickId !== p.artist.id}
           />
@@ -334,7 +336,7 @@ function ClashCard({ festival, item }: { festival: Festival; item: Extract<Sched
 function DiscoverCard({ festival, item }: { festival: Festival; item: Extract<ScheduleItem, { kind: 'discover' }> }) {
   return (
     <View style={[styles.card, styles.discover]}>
-      <ArtistLine festival={festival} pick={item.pick} label="Discovery" />
+      <ArtistLine festival={festival} pick={item.pick} label={t('Discovery')} />
       <Text style={styles.reason}>{exploreLine(item.reason, true)}</Text>
     </View>
   );

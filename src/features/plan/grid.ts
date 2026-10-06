@@ -1,4 +1,5 @@
 import type { Artist, Festival, SetTime, TasteProfile } from '../../data/types';
+import { LANGUAGE } from '../../i18n';
 import { TIER_AT, toMinutes } from './plan';
 import type { DayRoute } from './route';
 
@@ -84,9 +85,10 @@ export function gridDay(
   return { day, stages, from, to, hours, blocks };
 }
 
-/** "10 PM", "12 AM", "1 AM" for an hour on the festival clock. */
+/** "10 PM", "12 AM", "1 AM" for an hour on the festival clock ("22:00", "0:00" on the 24-hour clock in Spanish). */
 export function hourLabel(min: number): string {
   const h = Math.floor(min / HOUR) % 24;
+  if (LANGUAGE === 'es') return `${h}:00`;
   const twelve = h % 12 === 0 ? 12 : h % 12;
   return `${twelve} ${h < 12 ? 'AM' : 'PM'}`;
 }

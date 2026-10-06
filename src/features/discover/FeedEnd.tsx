@@ -12,6 +12,7 @@ import { otherFestivalsWithClips } from '../festivals/links';
 import { leftToRate } from '../festivals/tune';
 import { MIX } from './focus';
 import { HeartIcon, PlayIcon } from './icons';
+import { t } from '../../i18n';
 
 type Props = {
   /** The lineup you were discovering; none when it was your mix or Following. */
@@ -20,8 +21,8 @@ type Props = {
   following?: boolean;
   /** You were watching one sound from every lineup ("Dubstep"). */
   soundLabel?: string;
-  /** You were on a station ("Sounds like SUBTRONICS"). */
-  stationLabel?: string;
+  /** You were on a station ("Sounds like SUBTRONICS"): its artist's name. */
+  station?: string;
   width: number;
   height: number;
   /** Space reserved at the bottom for the floating tab bar. */
@@ -36,7 +37,7 @@ type Props = {
  * rate the rest of the lineup, see your plan, discover another festival or
  * your mix, or start again.
  */
-export function FeedEnd({ festival, following = false, soundLabel, stationLabel, width, height, bottomSpace, onRestart }: Props) {
+export function FeedEnd({ festival, following = false, soundLabel, station, width, height, bottomSpace, onRestart }: Props) {
   const catalog = useCatalog();
   const { ratings } = useRatings();
   const insets = useSafeAreaInsets();
@@ -66,40 +67,40 @@ export function FeedEnd({ festival, following = false, soundLabel, stationLabel,
 
   return (
     <View style={[styles.page, { width, height, paddingTop: insets.top + 100, paddingBottom: bottomSpace + space.xl }]}>
-      <Text style={styles.kicker}>{festival ? 'That’s the lineup' : following ? 'That’s everyone you follow' : soundLabel ? `That’s ${soundLabel.toLowerCase()}` : stationLabel ? 'That’s the station' : 'That’s your mix'}</Text>
+      <Text style={styles.kicker}>{festival ? t('That’s the lineup') : following ? t('That’s everyone you follow') : soundLabel ? t('That’s {sound}', { sound: soundLabel.toLowerCase() }) : station ? t('That’s the station') : t('That’s your mix')}</Text>
       <Text style={styles.title}>
         {festival
-          ? `You’ve seen every clip from ${festival.name}`
+          ? t('You’ve seen every clip from {festival}', { festival: festival.name })
           : following
-            ? 'You’ve seen every video from people you follow'
+            ? t('You’ve seen every video from people you follow')
             : soundLabel
-              ? `You’ve seen every ${soundLabel.toLowerCase()} clip`
-              : stationLabel
-                ? `You’ve seen everything that ${stationLabel.replace(/^Sounds/, 'sounds')}`
-                : 'You’ve seen every clip'}
+              ? t('You’ve seen every {sound} clip', { sound: soundLabel.toLowerCase() })
+              : station
+                ? t('You’ve seen everything that sounds like {artist}', { artist: station })
+                : t('You’ve seen every clip')}
       </Text>
       <Text style={styles.body}>
         {following
-          ? 'Find more people to follow, try your mix, or watch again.'
+          ? t('Find more people to follow, try your mix, or watch again.')
           : !festival
-          ? 'Focus on a festival to shape your plan, or watch again.'
+          ? t('Focus on a festival to shape your plan, or watch again.')
           : toRate > 0
-            ? 'Rate the rest of the lineup to shape your plan, or keep discovering.'
-            : 'Your plan is up to date. Keep discovering, or watch again.'}
+            ? t('Rate the rest of the lineup to shape your plan, or keep discovering.')
+            : t('Your plan is up to date. Keep discovering, or watch again.')}
       </Text>
 
       <View style={styles.actions}>
         {festival &&
           toRate > 0 &&
-          row('Tune your lineup', `${toRate} to rate`, () => router.push(`/tune/${festival.id}`), <HeartIcon color={color.moon} size={16} />, true)}
-        {festival && row('See your festival', undefined, () => router.push(`/festival/${festival.id}`))}
+          row(t('Tune your lineup'), t('{n} to rate', { n: toRate }), () => router.push(`/tune/${festival.id}`), <HeartIcon color={color.moon} size={16} />, true)}
+        {festival && row(t('See your festival'), undefined, () => router.push(`/festival/${festival.id}`))}
         {others.map((f) =>
-          row(`Discover ${f.name}`, undefined, () => router.navigate({ pathname: '/', params: { festival: f.id } }), <PlayIcon color={color.moonDim} size={14} />),
+          row(t('Discover {festival}', { festival: f.name }), undefined, () => router.navigate({ pathname: '/', params: { festival: f.id } }), <PlayIcon color={color.moonDim} size={14} />),
         )}
-        {following && row('Find people', undefined, () => router.push('/people'), undefined, true)}
-        {(festival || following || soundLabel || stationLabel) &&
-          row('Try your mix', 'a bit of everything', () => router.navigate({ pathname: '/', params: { festival: MIX } }), <PlayIcon color={color.moonDim} size={14} />)}
-        {row('Watch again from the top', undefined, onRestart)}
+        {following && row(t('Find people'), undefined, () => router.push('/people'), undefined, true)}
+        {(festival || following || soundLabel || station) &&
+          row(t('Try your mix'), t('a bit of everything'), () => router.navigate({ pathname: '/', params: { festival: MIX } }), <PlayIcon color={color.moonDim} size={14} />)}
+        {row(t('Watch again from the top'), undefined, onRestart)}
       </View>
     </View>
   );

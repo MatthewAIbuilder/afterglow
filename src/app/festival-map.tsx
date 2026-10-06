@@ -35,6 +35,7 @@ import { useLoves } from '../state/useLoves';
 import { useNearby } from '../state/nearby';
 import { useWeekends } from '../state/weekends';
 import { color, radius, space, type, nightA, raisedA, glowA } from '../theme/tokens';
+import { t, tn } from '../i18n';
 
 const CARD_GAP = 12;
 const CARDS_H = 132;
@@ -156,14 +157,14 @@ export default function FestivalMapScreen() {
   const headerH = insets.top + (touring ? 64 : 112);
   const cardsSpace = cards.length ? CARDS_H + insets.bottom + space.lg : insets.bottom;
   const chips = [
-    { key: 'all', label: 'All festivals', count: counts.all, accessibilityLabel: `All festivals, ${counts.all}` },
-    ...(counts.going ? [{ key: 'going', label: 'Yours', count: counts.going, accessibilityLabel: `Festivals you're going to or went to, ${counts.going}` }] : []),
-    ...(counts.love ? [{ key: 'love', label: 'For you', count: counts.love, accessibilityLabel: `Festivals with artists you'd love, ${counts.love}` }] : []),
+    { key: 'all', label: t('All festivals'), count: counts.all, accessibilityLabel: t('All festivals, {n}', { n: counts.all }) },
+    ...(counts.going ? [{ key: 'going', label: t('Yours'), count: counts.going, accessibilityLabel: t("Festivals you're going to or went to, {n}", { n: counts.going }) }] : []),
+    ...(counts.love ? [{ key: 'love', label: t('For you'), count: counts.love, accessibilityLabel: t("Festivals with artists you'd love, {n}", { n: counts.love }) }] : []),
   ];
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Festival map" />
+      <PageTitle title={t('Festival map')} />
       <FestivalMap
         testID="festival-map"
         markers={markers}
@@ -191,7 +192,7 @@ export default function FestivalMapScreen() {
         {searching ? (
           <View style={styles.searchRow}>
             <View style={{ flex: 1 }}>
-              <SearchField value={query} onChange={setQuery} placeholder="Festival or city" label="Search the map" autoFocus />
+              <SearchField value={query} onChange={setQuery} placeholder={t('Festival or city')} label={t('Search the map')} autoFocus />
             </View>
             <Pressable
               onPress={() => {
@@ -201,24 +202,24 @@ export default function FestivalMapScreen() {
                 setApplied('');
               }}
               accessibilityRole="button"
-              accessibilityLabel="Stop searching"
+              accessibilityLabel={t('Stop searching')}
               hitSlop={8}
             >
-              <Text style={styles.cancel}>Cancel</Text>
+              <Text style={styles.cancel}>{t('Cancel')}</Text>
             </Pressable>
           </View>
         ) : (
           <View style={styles.titleWrap} pointerEvents="none">
             <Text style={styles.title} accessibilityRole="header" numberOfLines={1}>
-              {touring ? `${touring.name} on tour` : 'Festival map'}
+              {touring ? t('{artist} on tour', { artist: touring.name }) : t('Festival map')}
             </Text>
             <Text style={styles.sub} numberOfLines={1}>
               {offline
-                ? 'No signal · the streets may not load, the festivals still show'
+                ? t('No signal · the streets may not load, the festivals still show')
                 : touring
                   ? tourLine(markers.length, pins.length)
                   : view
-                    ? `${inViewLine(cards.length)} · ${markers.length} in all`
+                    ? `${inViewLine(cards.length)} · ${t('{n} in all', { n: markers.length })}`
                     : subLine(markers.length, filter)}
             </Text>
           </View>
@@ -230,12 +231,12 @@ export default function FestivalMapScreen() {
               onPress={() => {
                 haptic.select();
                 const keys: WhenFilter[] = ['any', 'month', 'season'];
-                showActionSheet({ title: 'When', options: [...keys.map((k) => WHEN_LABEL[k]), 'Cancel'], cancelButtonIndex: keys.length }, (i) => {
+                showActionSheet({ title: t('When'), options: [...keys.map((k) => WHEN_LABEL[k]), t('Cancel')], cancelButtonIndex: keys.length }, (i) => {
                   if (i < keys.length) setWhen(keys[i]);
                 });
               }}
               accessibilityRole="button"
-              accessibilityLabel={`When: ${WHEN_LABEL[when]}. Change`}
+              accessibilityLabel={t('When: {when}. Change', { when: WHEN_LABEL[when] })}
               style={({ pressed }) => [styles.when, when !== 'any' && styles.whenOn, pressed && { opacity: 0.8 }]}
             >
               <Text style={[styles.whenText, when !== 'any' && { color: color.moon }]}>{WHEN_LABEL[when]}</Text>
@@ -252,7 +253,7 @@ export default function FestivalMapScreen() {
       <View style={[styles.here, { top: insets.top + space.sm }]}>
         {touring || searching ? null : (
           <GlassCircleButton
-            label="Search the map"
+            label={t('Search the map')}
             onPress={() => {
               haptic.select();
               setSearching(true);
@@ -262,14 +263,14 @@ export default function FestivalMapScreen() {
           </GlassCircleButton>
         )}
         <GlassCircleButton
-          label={nearby.here ? 'Show where I am' : 'Show me on the map'}
-          hint={nearby.here ? undefined : 'Uses your location, rounded, kept on this phone'}
+          label={nearby.here ? t('Show where I am') : t('Show me on the map')}
+          hint={nearby.here ? undefined : t('Uses your location, rounded, kept on this phone')}
           onPress={() => {
             if (nearby.here) setToHere((n) => n + 1);
             else
               void nearby.turnOn().then((s) => {
                 if (s === 'on') setToHere((n) => n + 1);
-                else if (s === 'denied') showAlert('Location is off for Afterglow', 'Turn it on in your settings to see where you are among the festivals.');
+                else if (s === 'denied') showAlert(t('Location is off for Afterglow'), t('Turn it on in your settings to see where you are among the festivals.'));
               });
           }}
         >
@@ -280,21 +281,21 @@ export default function FestivalMapScreen() {
       {cards.length === 0 && view && lit ? (
         <View style={[styles.empty, { bottom: insets.bottom + space.xl }]} pointerEvents="none">
           <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-          <Text style={styles.emptyTitle}>No festivals here</Text>
-          <Text style={styles.emptyText}>Zoom out, or tap Show all.</Text>
+          <Text style={styles.emptyTitle}>{t('No festivals here')}</Text>
+          <Text style={styles.emptyText}>{t('Zoom out, or tap Show all.')}</Text>
         </View>
       ) : lit === 0 ? (
         <View style={[styles.empty, { bottom: insets.bottom + space.xl }]}>
           <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
           <Text style={styles.emptyTitle}>
-            {applied || when !== 'any' ? 'No festivals match' : filter === 'going' ? 'None of your festivals are on the map yet' : 'No festivals on the map yet'}
+            {applied || when !== 'any' ? t('No festivals match') : filter === 'going' ? t('None of your festivals are on the map yet') : t('No festivals on the map yet')}
           </Text>
           <Text style={styles.emptyText}>
             {applied || when !== 'any'
-              ? 'Try another name or city, or any time.'
+              ? t('Try another name or city, or any time.')
               : filter === 'going'
-                ? 'Tap I’m going on a festival and it lights up here.'
-                : (unplacedLine(unplaced) ?? 'New festivals arrive every night.')}
+                ? t('Tap I’m going on a festival and it lights up here.')
+                : (unplacedLine(unplaced) ?? t('New festivals arrive every night.'))}
           </Text>
         </View>
       ) : (
@@ -330,7 +331,15 @@ export default function FestivalMapScreen() {
 const Gap = () => <View style={{ width: CARD_GAP }} />;
 
 const subLine = (n: number, filter: MapFilter) =>
-  n === 0 ? 'Nothing to show here yet' : filter === 'going' ? (n > 1 ? `Your journey · ${n} festivals` : '1 of yours') : filter === 'love' ? `${n} with artists you’d love` : n === 1 ? '1 festival' : `${n} festivals`;
+  n === 0
+    ? t('Nothing to show here yet')
+    : filter === 'going'
+      ? n > 1
+        ? t('Your journey · {n} festivals', { n })
+        : t('1 of yours')
+      : filter === 'love'
+        ? t('{n} with artists you’d love', { n })
+        : tn(n, '{n} festival', '{n} festivals');
 
 /** A festival's card under the map: its date, name, place, what's there for you. */
 function MapCard({ marker, width, chosen, onFocus }: { marker: Marker; width: number; chosen: boolean; onFocus: () => void }) {
@@ -338,7 +347,7 @@ function MapCard({ marker, width, chosen, onFocus }: { marker: Marker; width: nu
   const s = useFestivalSummary(f);
   const block = dateBlock(f);
   const tint = TONE_COLOR[marker.tone];
-  const facts = [marker.going ? (marker.tone === 'over' ? 'Been there' : 'Going') : undefined, lovedLine(s.loved, s.ranked.length), s.soon].filter(Boolean).join(' · ');
+  const facts = [marker.going ? (marker.tone === 'over' ? t('Been there') : t('Going')) : undefined, lovedLine(s.loved, s.ranked.length), s.soon].filter(Boolean).join(' · ');
   return (
     <Pressable
       onPress={() => {
@@ -347,15 +356,15 @@ function MapCard({ marker, width, chosen, onFocus }: { marker: Marker; width: nu
         else router.push(`/festival/${f.id}`);
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${f.name}, ${whereWhen(f)}. ${facts}`}
-      accessibilityHint={chosen ? 'Opens the festival' : 'Shows it on the map'}
+      accessibilityLabel={t('{festival}, {when}. {facts}', { festival: f.name, when: whereWhen(f), facts })}
+      accessibilityHint={chosen ? t('Opens the festival') : t('Shows it on the map')}
       testID={`map-card-${f.id}`}
       style={({ pressed }) => [styles.card, { width }, chosen && { borderColor: tint }, pressed && { transform: [{ scale: 0.98 }] }]}
     >
       <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={styles.cardRow}>
         <View style={[styles.date, marker.going && { backgroundColor: tint }]}>
-          <Text style={[styles.month, marker.going && styles.onTint]}>{block?.month ?? 'TBA'}</Text>
+          <Text style={[styles.month, marker.going && styles.onTint]}>{block?.month ?? t('TBA')}</Text>
           <Text style={[styles.days, marker.going && styles.onTint]}>{block?.days ?? '–'}</Text>
         </View>
         <View style={styles.cardText}>
@@ -379,7 +388,7 @@ function MapCard({ marker, width, chosen, onFocus }: { marker: Marker; width: nu
             </View>
           ))}
         </View>
-        <Text style={styles.open}>{chosen ? 'Open ›' : 'Show'}</Text>
+        <Text style={styles.open}>{chosen ? t('Open ›') : t('Show')}</Text>
       </View>
     </Pressable>
   );
@@ -399,7 +408,7 @@ function ShowCard({ pin, width, chosen, onFocus }: { pin: ShowPin; width: number
       }}
       accessibilityRole="button"
       accessibilityLabel={showPinLabel(show)}
-      accessibilityHint={chosen ? 'Opens the event page on EDMTrain' : 'Shows it on the map'}
+      accessibilityHint={chosen ? t('Opens the event page on EDMTrain') : t('Shows it on the map')}
       testID={`map-card-${show.id}`}
       style={({ pressed }) => [styles.card, { width }, chosen && { borderColor: SHOW_COLOR }, pressed && { transform: [{ scale: 0.98 }] }]}
     >
@@ -423,9 +432,10 @@ function ShowCard({ pin, width, chosen, onFocus }: { pin: ShowPin; width: number
       <View style={styles.cardFoot}>
         <View style={styles.showTag}>
           <View style={[styles.showTagDot, { borderColor: SHOW_COLOR }]} />
-          <Text style={styles.showTagText}>Show · {block.weekday}</Text>
+          <Text style={styles.showTagText}>{t('Show · {weekday}', { weekday: block.weekday })}</Text>
         </View>
-        <Text style={styles.open}>{chosen ? 'EDMTrain ↗' : 'See where'}</Text>
+        <Text style={styles.open}>{chosen ? 'EDMTrain ↗' : t('See where')}</Text>
+
       </View>
     </Pressable>
   );

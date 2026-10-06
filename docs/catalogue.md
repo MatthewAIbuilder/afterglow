@@ -122,7 +122,7 @@ The demo artists already exist, and you can use them in your lineups without add
 }
 ```
 
-- **`video.link`** is any normal YouTube link: a watch link, a youtu.be link or a Shorts link. Shorts get the tall player automatically, and so does any clip with `"vertical": true` in its `video` (a video filmed upright; the nightly clip finder sets this itself).
+- **`video.link`** is any normal YouTube link: a watch link, a youtu.be link or a Shorts link. Shorts get the tall player automatically, and so does any clip with `"vertical": true` in its `video` (a video filmed upright; the nightly clip finder sets this itself). `"short": true` marks a short crowd clip (the nightly finder sets it on the YouTube Shorts it brings in): it plays whole from its start in the tall player, and Discover spaces these out among the longer sets.
 - **`from`** and **`to`** are the part of the video to play, written as minutes:seconds (or hours:minutes:seconds). Keep it under 3 minutes.
 - **`channel`** is who uploaded it. Only use uploads from the artist's, festival's, label's or event's **official** channel.
 - Before adding a video, check that it:

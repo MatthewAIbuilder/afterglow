@@ -65,6 +65,8 @@ import { useRankedFeed } from './useRankedFeed';
 import { ToeGlyph } from '../toes/Toe';
 import { useToes } from '../toes/useToes';
 import { allowClipSound } from '../../lib/audioSession';
+import { dayWord, t } from '../../i18n';
+import { datesLine } from '../festivals/format';
 
 /**
  * Full-screen vertical feed. One clip per page. Only the clip on screen plays,
@@ -160,7 +162,7 @@ export function DiscoverFeed() {
   // A station: "Sounds like SUBTRONICS", their sets and artists who sound like them (an artist no longer on Afterglow: your mix).
   const seedId = hereFestival ? undefined : likeOf(focusId);
   const seed = seedId ? catalog.artist(seedId) : undefined;
-  const stationLabel = seed ? `Sounds like ${seed.name}` : undefined;
+  const stationLabel = seed ? t('Sounds like {artist}', { artist: seed.name }) : undefined;
   const lostStation = !!seedId && !seed;
   // These draw from every lineup: each clip is shown against a festival you're going to where the artist plays.
   const wide = mix || followingFocus || !!sound || !!seed || lostStation;
@@ -181,7 +183,7 @@ export function DiscoverFeed() {
   // In Following, they're the only clips: videos from the people you follow.
   const { clips: fetched, loaded: communityLoaded } = useCommunityFeed(mix || sound || seedId ? 'mix' : followingFocus ? 'following' : festival, !!hereFestival);
   const social = useSocial();
-  const focusName = useFocusName();
+  const backHint = useBackHint();
   // Videos from the crowd you opened from Your clips stay in the feed while you're on this focus
   // (unless you hide them or block who filmed them).
   const [opened, setOpened] = useState<{ focus: Focus | undefined; clips: Clip[] }>({ focus: undefined, clips: [] });
@@ -417,7 +419,7 @@ export function DiscoverFeed() {
         <LinearGradient colors={['#1A1238', '#05040E']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
         <Animated.View style={[styles.cameraEdgeIcon, edgeIconStyle]}>
           <CameraIcon color={color.glow} size={26} />
-          <Text style={styles.cameraEdgeText}>Camera</Text>
+          <Text style={styles.cameraEdgeText}>{t('Camera')}</Text>
         </Animated.View>
       </Animated.View>
       <Animated.View style={[styles.shifting, feedShift]}>
@@ -453,7 +455,7 @@ export function DiscoverFeed() {
         }}
         ListFooterComponent={
           hasEnd ? (
-            <FeedEnd festival={festival} following={followingFocus} soundLabel={soundLabel} stationLabel={stationLabel} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
+            <FeedEnd festival={festival} following={followingFocus} soundLabel={soundLabel} station={seed?.name} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
           ) : null
         }
         getItemLayout={(_d, index) => ({ length: height, offset: height * index, index })}
@@ -498,7 +500,7 @@ export function DiscoverFeed() {
                 router.push('/tonight');
               }}
               accessibilityRole="button"
-              accessibilityLabel={`${hereFestival.name}, videos filmed here. Open tonight.`}
+              accessibilityLabel={t('{festival}, videos filmed here. Open tonight.', { festival: hereFestival.name })}
               hitSlop={8}
               style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
             >
@@ -509,7 +511,7 @@ export function DiscoverFeed() {
                 </Text>
               </View>
               <Text style={styles.dates} numberOfLines={1}>
-                {standIn ? 'Test: lineup sets stand in for videos filmed here' : 'Videos filmed here'}
+                {standIn ? t('Test: lineup sets stand in for videos filmed here') : t('Videos filmed here')}
               </Text>
             </Pressable>
           ) : (
@@ -519,17 +521,41 @@ export function DiscoverFeed() {
               router.push({ pathname: '/discover-focus', params: { current: focusId } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${tonightOn ? `Tonight, who plays ${tonight?.night ? `${tonight.night} ` : ''}at ${festival?.name}, in set order` : festival ? `${festival.name}, live sets from the lineup` : followingFocus ? 'Following, videos from people you follow' : soundLabel ? `${soundLabel}, live sets from every lineup` : stationLabel ? `${stationLabel}, their sets and artists with a similar sound` : 'Your mix, a bit of everything'}. Choose what to discover.`}
+            accessibilityLabel={
+              tonightOn
+                ? tonight?.night
+                  ? t('Tonight, who plays {night} at {festival}, in set order. Choose what to discover.', { night: dayWord(tonight.night), festival: festival?.name ?? '' })
+                  : t('Tonight, who plays at {festival}, in set order. Choose what to discover.', { festival: festival?.name ?? '' })
+                : festival
+                  ? t('{festival}, live sets from the lineup. Choose what to discover.', { festival: festival.name })
+                  : followingFocus
+                    ? t('Following, videos from people you follow. Choose what to discover.')
+                    : soundLabel
+                      ? t('{sound}, live sets from every lineup. Choose what to discover.', { sound: soundLabel })
+                      : seed
+                        ? t('Sounds like {artist}, their sets and artists with a similar sound. Choose what to discover.', { artist: seed.name })
+                        : t('Your mix, a bit of everything. Choose what to discover.')
+            }
             hitSlop={8}
             style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.headerTitle}>
-              <Text style={styles.festival} numberOfLines={1}>{tonightOn ? 'Tonight' : festival ? festival.name : followingFocus ? 'Following' : (soundLabel ?? stationLabel ?? 'Your mix')}</Text>
+              <Text style={styles.festival} numberOfLines={1}>{tonightOn ? t('Tonight') : festival ? festival.name : followingFocus ? t('Following') : (soundLabel ?? stationLabel ?? t('Your mix'))}</Text>
               {toes ? <ToeGlyph size={12} color={color.moonDim} /> : <ChevronIcon color={color.moonDim} size={13} direction="down" />}
             </View>
             {/* Short, so the title never fights the buttons: the dates, or where the clips come from. */}
             <Text style={styles.dates} numberOfLines={1}>
-              {tonightOn && tonight ? `${tonight.night ? `${tonight.night} at ` : ''}${festival?.name} · in set order` : festival ? festival.dates || 'Live sets from the lineup' : followingFocus ? 'People you follow' : stationLabel ? 'Similar sounds, every lineup' : 'Every lineup'}
+              {tonightOn && tonight
+                ? tonight.night
+                  ? t('{night} at {festival} · in set order', { night: t(tonight.night), festival: festival?.name ?? '' })
+                  : t('{festival} · in set order', { festival: festival?.name ?? '' })
+                : festival
+                  ? datesLine(festival) || t('Live sets from the lineup')
+                  : followingFocus
+                    ? t('People you follow')
+                    : seed
+                      ? t('Similar sounds, every lineup')
+                      : t('Every lineup')}
             </Text>
           </Pressable>
           )}
@@ -539,11 +565,11 @@ export function DiscoverFeed() {
             {/* Film your own video (or swipe right). The camera needs the phone app. */}
             {Platform.OS !== 'web' ? (
               <GlassCircleButton
-                label="Open the camera to film a memory"
-                hint="Hold to open Look after yourself"
+                label={t('Open the camera to film a memory')}
+                hint={t('Hold to open Look after yourself')}
                 onPress={openCamera}
                 onLongPress={openCare}
-                longPressLabel="Look after yourself"
+                longPressLabel={t('Look after yourself')}
               >
                 <CameraIcon color={color.moon} size={18} />
               </GlassCircleButton>
@@ -551,8 +577,8 @@ export function DiscoverFeed() {
             {/* Following at a tap: videos from people you follow, and back to what you were on. */}
             {social.user && !hereFestival ? (
               <GlassCircleButton
-                label="Following: videos from people you follow"
-                hint={followingFocus ? `Tap to go back to ${focusName(beforeFollowing)}` : 'Tap to watch videos from people you follow'}
+                label={t('Following: videos from people you follow')}
+                hint={followingFocus ? backHint(beforeFollowing) : t('Tap to watch videos from people you follow')}
                 selected={followingFocus}
                 onPress={() => {
                   setFocusId(followingFocus ? beforeFollowing : FOLLOWING);
@@ -563,7 +589,7 @@ export function DiscoverFeed() {
               </GlassCircleButton>
             ) : null}
             {/* Search everything: people, artists, festivals. */}
-            <GlassCircleButton label="Search artists, festivals and people" onPress={() => router.push('/search')}>
+            <GlassCircleButton label={t('Search artists, festivals and people')} onPress={() => router.push('/search')}>
               <SearchIcon color={color.moon} size={17} />
             </GlassCircleButton>
           </View>
@@ -591,17 +617,17 @@ export function DiscoverFeed() {
   );
 }
 
-/** What a focus is called, for the Following button's hint. */
-function useFocusName() {
+/** The Following button's hint while it's on: going back to what you were on. */
+function useBackHint() {
   const catalog = useCatalog();
   return (focus: Focus) => {
-    if (focus === MIX) return 'your mix';
-    if (focus === TONIGHT) return 'Tonight';
+    if (focus === TONIGHT) return t('Tap to go back to Tonight');
     const tag = soundOf(focus);
-    if (tag) return SOUND_LABEL[tag];
+    if (tag) return t('Tap to go back to {sound}', { sound: SOUND_LABEL[tag] });
     const like = likeOf(focus);
-    if (like) return `Sounds like ${catalog.artist(like)?.name ?? 'an artist'}`;
-    return catalog.festival(focus)?.name ?? 'your mix';
+    if (like) return t('Tap to go back to Sounds like {artist}', { artist: catalog.artist(like)?.name ?? t('an artist') });
+    const festival = focus === MIX ? undefined : catalog.festival(focus);
+    return festival ? t('Tap to go back to {festival}', { festival: festival.name }) : t('Tap to go back to your mix');
   };
 }
 

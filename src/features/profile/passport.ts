@@ -2,6 +2,7 @@ import type { Festival } from '../../data/models';
 import { cityOf, filmedThere } from '../badges/badges';
 import { bySoonest, isOver } from '../festivals/shelves';
 import type { Memory } from '../memories/models';
+import { t, tn } from '../../i18n';
 
 /**
  * Your festival passport: every festival you've been to and every one you're
@@ -79,8 +80,8 @@ export function citiesOf(stamps: readonly Stamp[], more: readonly string[] = [])
 export function stampLine(s: Stamp, when?: string): string {
   const parts: string[] = [];
   if (when) parts.push(when);
-  if (s.moments) parts.push(`${s.moments} ${s.moments === 1 ? 'moment' : 'moments'}`);
-  if (s.filmed.length) parts.push(`${s.filmed.length} ${s.filmed.length === 1 ? 'artist' : 'artists'} filmed`);
-  else if (s.loved) parts.push(`${s.loved} you’d love`);
+  if (s.moments) parts.push(tn(s.moments, '{n} moment', '{n} moments'));
+  if (s.filmed.length) parts.push(tn(s.filmed.length, '{n} artist filmed', '{n} artists filmed'));
+  else if (s.loved) parts.push(t('{n} you’d love', { n: s.loved }));
   return parts.join(' · ');
 }

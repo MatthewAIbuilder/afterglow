@@ -10,6 +10,8 @@
  * Reviewed figures before a public launch: see docs/app-store.md.
  */
 
+import { t, tc } from '../../i18n';
+
 /** A range in minutes, [earliest, latest]. */
 export type Range = readonly [number, number];
 
@@ -31,107 +33,107 @@ export type GuideEntry = {
 export const GUIDE: readonly GuideEntry[] = [
   {
     id: 'alcohol',
-    name: 'Alcohol',
-    how: 'per drink',
+    name: t('Alcohol'),
+    how: t('per drink'),
     onset: [10, 30],
     peak: [30, 90],
     total: [120, 240],
-    tips: ['Your body clears about one standard drink an hour, and nothing speeds that up.', 'Have water between drinks and eat something.'],
+    tips: [t('Your body clears about one standard drink an hour, and nothing speeds that up.'), t('Have water between drinks and eat something.')],
   },
   {
     id: 'mdma',
-    name: 'MDMA / molly',
-    how: 'swallowed',
+    name: t('MDMA / molly'),
+    how: t('swallowed'),
     onset: [30, 90],
     peak: [90, 180],
     total: [240, 360],
     tips: [
-      'It can take up to 2 hours on a full stomach. Taking more because you can’t feel it yet is a common way people get hurt.',
-      'Overheating is the biggest danger: take breaks from dancing somewhere cool.',
-      'Sip water, about a cup an hour while dancing. More isn’t better.',
-      'Some antidepressants and other medicines are dangerous with it.',
+      t('It can take up to 2 hours on a full stomach. Taking more because you can’t feel it yet is a common way people get hurt.'),
+      t('Overheating is the biggest danger: take breaks from dancing somewhere cool.'),
+      t('Sip water, about a cup an hour while dancing. More isn’t better.'),
+      t('Some antidepressants and other medicines are dangerous with it.'),
     ],
   },
   {
     id: 'cannabis',
-    name: 'Cannabis (smoked or vaped)',
-    how: 'smoked or vaped',
+    name: t('Cannabis (smoked or vaped)'),
+    how: t('smoked or vaped'),
     onset: [2, 10],
     peak: [15, 45],
     total: [120, 240],
-    tips: ['Feeling too high passes. Sit somewhere calm, sip water and eat something.'],
+    tips: [t('Feeling too high passes. Sit somewhere calm, sip water and eat something.')],
   },
   {
     id: 'edible',
-    name: 'Cannabis edible',
-    how: 'eaten',
+    name: t('Cannabis edible'),
+    how: t('eaten'),
     onset: [30, 120],
     peak: [120, 240],
     total: [360, 720],
-    tips: ['Edibles can take 2 hours or more to start. Don’t take more in the meantime.', 'It lasts a lot longer than smoking.'],
+    tips: [t('Edibles can take 2 hours or more to start. Don’t take more in the meantime.'), t('It lasts a lot longer than smoking.')],
   },
   {
     id: 'mushrooms',
-    name: 'Mushrooms',
-    how: 'eaten',
+    name: t('Mushrooms'),
+    how: t('eaten'),
     onset: [20, 60],
     peak: [90, 150],
     total: [240, 360],
-    tips: ['If it gets intense, find a quiet spot and a friend. It passes.'],
+    tips: [t('If it gets intense, find a quiet spot and a friend. It passes.')],
   },
   {
     id: 'lsd',
-    name: 'LSD / acid',
-    how: 'on a tab',
+    name: t('LSD / acid'),
+    how: t('on a tab'),
     onset: [30, 90],
     peak: [120, 240],
     total: [480, 720],
-    tips: ['It lasts most of the night. Don’t take more because it feels slow to start.', 'If it gets intense, find a quiet spot and a friend. It passes.'],
+    tips: [t('It lasts most of the night. Don’t take more because it feels slow to start.'), t('If it gets intense, find a quiet spot and a friend. It passes.')],
   },
   {
     id: 'ketamine',
-    name: 'Ketamine',
-    how: 'snorted',
+    name: t('Ketamine'),
+    how: t('snorted'),
     onset: [5, 15],
     peak: [15, 30],
     total: [45, 90],
-    tips: ['Sit down somewhere safe before it hits: falls and getting lost are common.', 'Stay with a friend.'],
+    tips: [t('Sit down somewhere safe before it hits: falls and getting lost are common.'), t('Stay with a friend.')],
   },
   {
     id: 'cocaine',
-    name: 'Cocaine',
-    how: 'snorted',
+    name: t('Cocaine'),
+    how: t('snorted'),
     onset: [2, 5],
     peak: [15, 30],
     total: [30, 60],
-    tips: ['It wears off fast, which makes taking more tempting. Keep count.', 'Hard on your heart, especially when you’re hot.'],
+    tips: [t('It wears off fast, which makes taking more tempting. Keep count.'), t('Hard on your heart, especially when you’re hot.')],
   },
   {
     id: 'speed',
-    name: 'Speed (amphetamine)',
-    how: 'swallowed',
+    name: t('Speed (amphetamine)'),
+    how: t('swallowed'),
     onset: [20, 60],
     peak: [60, 180],
     total: [240, 480],
-    tips: ['Hard on your heart and temperature. Take breaks and sip water.', 'You may not feel tired or hungry: eat something anyway.'],
+    tips: [t('Hard on your heart and temperature. Take breaks and sip water.'), t('You may not feel tired or hungry: eat something anyway.')],
   },
   {
     id: 'ghb',
-    name: 'GHB / G',
-    how: 'swallowed',
+    name: t('GHB / G'),
+    how: t('swallowed'),
     onset: [15, 45],
     peak: [45, 90],
     total: [90, 180],
-    tips: ['The gap between feeling good and passing out is tiny.', 'Never with alcohol.', 'If someone can’t be woken, call for help straight away.'],
+    tips: [t('The gap between feeling good and passing out is tiny.'), t('Never with alcohol.'), t('If someone can’t be woken, call for help straight away.')],
   },
   {
     id: 'nitrous',
-    name: 'Nitrous / balloons',
-    how: 'inhaled',
+    name: t('Nitrous / balloons'),
+    how: t('inhaled'),
     onset: [0, 1],
     peak: [0, 1],
     total: [2, 5],
-    tips: ['Sit down first, and never straight from a tank.'],
+    tips: [t('Sit down first, and never straight from a tank.')],
   },
 ];
 
@@ -140,16 +142,16 @@ export const OTHER_ID = 'other';
 
 /** Pairs that are riskier together than apart (not a full list). */
 export const MIXES: readonly { a: string; b: string; why: string }[] = [
-  { a: 'ghb', b: 'alcohol', why: 'Both slow your breathing. Together they’re one of the most common reasons people collapse at festivals.' },
-  { a: 'ketamine', b: 'alcohol', why: 'Both slow you right down. Together you can pass out and be sick without waking.' },
-  { a: 'ketamine', b: 'ghb', why: 'Both slow your breathing. Together they can make you pass out.' },
-  { a: 'cocaine', b: 'alcohol', why: 'Together they make a third substance that’s harder on your heart than either.' },
-  { a: 'mdma', b: 'alcohol', why: 'Both dry you out and make overheating harder to notice.' },
-  { a: 'mdma', b: 'cocaine', why: 'Two stimulants push your heart rate and temperature up together.' },
-  { a: 'mdma', b: 'speed', why: 'Two stimulants push your heart rate and temperature up together.' },
-  { a: 'cocaine', b: 'speed', why: 'Two stimulants push your heart rate and temperature up together.' },
-  { a: 'mdma', b: 'lsd', why: 'Together it can be much more intense than either. Have a sober friend close.' },
-  { a: 'mdma', b: 'mushrooms', why: 'Together it can be much more intense than either. Have a sober friend close.' },
+  { a: 'ghb', b: 'alcohol', why: t('Both slow your breathing. Together they’re one of the most common reasons people collapse at festivals.') },
+  { a: 'ketamine', b: 'alcohol', why: t('Both slow you right down. Together you can pass out and be sick without waking.') },
+  { a: 'ketamine', b: 'ghb', why: t('Both slow your breathing. Together they can make you pass out.') },
+  { a: 'cocaine', b: 'alcohol', why: t('Together they make a third substance that’s harder on your heart than either.') },
+  { a: 'mdma', b: 'alcohol', why: t('Both dry you out and make overheating harder to notice.') },
+  { a: 'mdma', b: 'cocaine', why: t('Two stimulants push your heart rate and temperature up together.') },
+  { a: 'mdma', b: 'speed', why: t('Two stimulants push your heart rate and temperature up together.') },
+  { a: 'cocaine', b: 'speed', why: t('Two stimulants push your heart rate and temperature up together.') },
+  { a: 'mdma', b: 'lsd', why: t('Together it can be much more intense than either. Have a sober friend close.') },
+  { a: 'mdma', b: 'mushrooms', why: t('Together it can be much more intense than either. Have a sober friend close.') },
 ];
 
 export const guideEntry = (id: string | undefined): GuideEntry | undefined => GUIDE.find((g) => g.id === id);
@@ -162,22 +164,22 @@ export function riskyMixes(ids: readonly string[]): { a: GuideEntry; b: GuideEnt
 
 /** "30 to 90 min", "4 to 6 h", "45 min to 2 h", "under a minute". */
 export function rangeText([lo, hi]: Range): string {
-  if (hi <= 1) return 'under a minute';
+  if (hi <= 1) return t('under a minute');
   const h = (m: number) => {
     const v = Math.round((m / 60) * 2) / 2;
     return `${v % 1 ? v.toFixed(1) : v}`;
   };
-  if (hi <= 90) return `${lo} to ${hi} min`;
-  if (lo < 60) return `${lo} min to ${h(hi)} h`;
-  return `${h(lo)} to ${h(hi)} h`;
+  if (hi <= 90) return t('{lo} to {hi} min', { lo, hi });
+  if (lo < 60) return t('{lo} min to {hi} h', { lo, hi: h(hi) });
+  return t('{lo} to {hi} h', { lo: h(lo), hi: h(hi) });
 }
 
 /** "90 min", "2 h", "1.5 h", "a minute": the latest something usually takes. */
 export function upTo(m: number): string {
-  if (m <= 1) return 'a minute';
-  if (m <= 90) return `${m} min`;
+  if (m <= 1) return t('a minute');
+  if (m <= 90) return t('{n} min', { n: m });
   const v = Math.round((m / 60) * 2) / 2;
-  return `${v % 1 ? v.toFixed(1) : v} h`;
+  return t('{n} h', { n: `${v % 1 ? v.toFixed(1) : v}` });
 }
 
 export type Phase = 'waiting' | 'coming-up' | 'peak' | 'wearing-off' | 'after';
@@ -190,15 +192,15 @@ export const PHASES: readonly Phase[] = ['waiting', 'coming-up', 'peak', 'wearin
  */
 export function phaseAt(entry: GuideEntry | undefined, minutes: number): { phase: Phase; title: string; line: string; progress: number } | undefined {
   if (!entry) return undefined;
-  const t = Math.max(0, minutes);
-  const progress = Math.min(1, t / entry.total[1]);
-  if (t < entry.onset[0])
-    return { phase: 'waiting', title: 'Waiting', line: `Usually starts in ${rangeText(entry.onset)}. Not feeling it yet is normal.`, progress };
-  if (t < entry.onset[1])
-    return { phase: 'coming-up', title: 'Coming up', line: `It can take up to ${upTo(entry.onset[1])}. Wait before taking any more.`, progress };
-  if (t < entry.peak[1]) return { phase: 'peak', title: 'Around the strongest', line: 'Take a break somewhere cool, and sip water.', progress };
-  if (t < entry.total[1]) return { phase: 'wearing-off', title: 'Wearing off', line: `It usually lasts ${rangeText(entry.total)} in all.`, progress };
-  return { phase: 'after', title: 'Should have worn off', line: 'Still feeling strong effects? Tell a friend or find a medic.', progress: 1 };
+  const mins = Math.max(0, minutes);
+  const progress = Math.min(1, mins / entry.total[1]);
+  if (mins < entry.onset[0])
+    return { phase: 'waiting', title: tc('phase', 'Waiting'), line: t('Usually starts in {range}. Not feeling it yet is normal.', { range: rangeText(entry.onset) }), progress };
+  if (mins < entry.onset[1])
+    return { phase: 'coming-up', title: tc('phase', 'Coming up'), line: t('It can take up to {time}. Wait before taking any more.', { time: upTo(entry.onset[1]) }), progress };
+  if (mins < entry.peak[1]) return { phase: 'peak', title: t('Around the strongest'), line: t('Take a break somewhere cool, and sip water.'), progress };
+  if (mins < entry.total[1]) return { phase: 'wearing-off', title: t('Wearing off'), line: t('It usually lasts {range} in all.', { range: rangeText(entry.total) }), progress };
+  return { phase: 'after', title: t('Should have worn off'), line: t('Still feeling strong effects? Tell a friend or find a medic.'), progress: 1 };
 }
 
 /** Where each phase starts on the bar, as a share of the whole usual window. */
@@ -218,8 +220,13 @@ export function tooSoon(entry: GuideEntry | undefined, minutesSinceLast: number)
 /** The warning before logging another one too soon. */
 export function tooSoonLine(entry: GuideEntry | undefined, minutesSinceLast: number): string {
   const since = Math.max(0, Math.round(minutesSinceLast));
-  const wait = entry ? `${entry.name} can take up to ${upTo(entry.onset[1])} to start` : 'Some things take up to 2 hours to start';
-  return `It’s only been ${since} min. ${wait}. Taking more before it’s kicked in is one of the most common ways people get hurt.`;
+  return entry
+    ? t('It’s only been {since} min. {name} can take up to {time} to start. Taking more before it’s kicked in is one of the most common ways people get hurt.', {
+        since,
+        name: entry.name,
+        time: upTo(entry.onset[1]),
+      })
+    : t('It’s only been {since} min. Some things take up to 2 hours to start. Taking more before it’s kicked in is one of the most common ways people get hurt.', { since });
 }
 
 /** A stopwatch face: "4:05", "12:09", "1:05:22". */
@@ -233,11 +240,11 @@ export function stopwatchText(ms: number): string {
 
 /** Before you take anything: the general advice that applies to all of it. */
 export const BEFORE_ANYTHING: readonly string[] = [
-  'Pills and powders are often not what they’re sold as, and fentanyl turns up in both. Test kits from DanceSafe help.',
-  'Go slow, and don’t mix. Most emergencies come from taking more too soon or mixing things.',
-  'Stay with friends, and tell one of them what you’ve taken.',
-  'Medics are there to help, not to get anyone in trouble.',
+  t('Pills and powders are often not what they’re sold as, and fentanyl turns up in both. Test kits from DanceSafe help.'),
+  t('Go slow, and don’t mix. Most emergencies come from taking more too soon or mixing things.'),
+  t('Stay with friends, and tell one of them what you’ve taken.'),
+  t('Medics are there to help, not to get anyone in trouble.'),
 ];
 
 /** Shown above the guide: what it is and isn't. */
-export const GUIDE_NOTE = 'Typical times from harm-reduction guides. Everyone’s body is different, food changes things, and what you have may not be what you think. Never a guide to how much to take, and not medical advice.';
+export const GUIDE_NOTE = t('Typical times from harm-reduction guides. Everyone’s body is different, food changes things, and what you have may not be what you think. Never a guide to how much to take, and not medical advice.');

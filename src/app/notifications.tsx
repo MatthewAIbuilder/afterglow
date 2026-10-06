@@ -10,6 +10,7 @@ import { useNotices } from '../state/notices';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t } from '../i18n';
 
 /** Notifications: news about the festivals you're going to, new followers and likes on your videos. Opening it marks everything read. */
 export default function NotificationsScreen() {
@@ -35,14 +36,15 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.pad}>
-          <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.meta}>{social.user ? 'Your festivals, lineup news, new sets, new followers and likes on your videos.' : 'Your festivals, artists you’d love added to lineups, and their new sets.'}</Text>
+          <Text style={styles.title}>{t('Notifications')}</Text>
+          <Text style={styles.meta}>{social.user ? t('Your festivals, lineup news, new sets, new followers and likes on your videos.') : t('Your festivals, artists you’d love added to lineups, and their new sets.')}</Text>
         </View>
         <View style={[styles.pad, styles.list]}>
           {list.length === 0 ? (
             <Text style={styles.empty}>
-              Nothing new. Tap “I’m going” on a festival and you’ll hear here when its set times come out and when
-              it’s nearly time, and whenever an artist you’d love is added to a lineup.
+              {t(
+                'Nothing new. Tap “I’m going” on a festival and you’ll hear here when its set times come out and when it’s nearly time, and whenever an artist you’d love is added to a lineup.',
+              )}
             </Text>
           ) : null}
           {list.map((n) => {
@@ -57,7 +59,7 @@ export default function NotificationsScreen() {
                   else router.push(n.href as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`${isNew ? 'New. ' : ''}${n.title}. ${n.body}`}
+                accessibilityLabel={isNew ? t('New. {title}. {body}', { title: n.title, body: n.body }) : `${n.title}. ${n.body}`}
                 style={({ pressed }) => [styles.row, isNew && styles.rowNew, pressed && styles.pressed]}
               >
                 {isNew ? <View style={styles.dot} /> : null}
@@ -73,7 +75,7 @@ export default function NotificationsScreen() {
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

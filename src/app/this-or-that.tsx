@@ -23,6 +23,7 @@ import { useReactions } from '../state/reactions';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t } from '../i18n';
 
 /**
  * This or that: two live sets, tap the one you'd rather hear, about eight
@@ -74,19 +75,19 @@ export default function ThisOrThatScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="This or that" />
+      <PageTitle title={t('This or that')} />
       <NightSky />
       <View style={[styles.top, { paddingTop: insets.top + space.md }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.title} accessibilityRole="header">
-            This or that
+            {t('This or that')}
           </Text>
           {pairs.length >= ROUNDS_MIN && round < pairs.length ? (
-            <Text style={styles.sub}>{`${roundLine(round, pairs.length)} · Tap the set you’d rather hear`}</Text>
+            <Text style={styles.sub}>{t('{round} · Tap the set you’d rather hear', { round: roundLine(round, pairs.length) })}</Text>
           ) : null}
         </View>
         <Pressable onPress={close} accessibilityRole="button" hitSlop={10}>
-          <Text style={styles.skip}>{round < pairs.length && pairs.length >= ROUNDS_MIN ? 'Skip for now' : 'Close'}</Text>
+          <Text style={styles.skip}>{round < pairs.length && pairs.length >= ROUNDS_MIN ? t('Skip for now') : t('Close')}</Text>
         </Pressable>
       </View>
 
@@ -110,15 +111,15 @@ function Round({ a, b, onAnswer, bottom }: { a: Clip; b: Clip; onAnswer: (a: Ans
       <ScrollView contentContainerStyle={[styles.round, { paddingBottom: bottom + space.xl }]}>
         <SetCard clip={a} side="a" playing={playing === 'a'} onListen={() => setPlaying('a')} onPick={() => onAnswer('a')} />
         <Text style={styles.or} accessibilityElementsHidden importantForAccessibility="no">
-          or
+          {t('or')}
         </Text>
         <SetCard clip={b} side="b" playing={playing === 'b'} onListen={() => setPlaying('b')} onPick={() => onAnswer('b')} />
         <View style={styles.answers}>
-          <Pressable onPress={() => onAnswer('both')} accessibilityRole="button" accessibilityLabel="I like both" style={({ pressed }) => [styles.small, pressed && styles.pressed]}>
-            <Text style={styles.smallText}>Both</Text>
+          <Pressable onPress={() => onAnswer('both')} accessibilityRole="button" accessibilityLabel={t('I like both')} style={({ pressed }) => [styles.small, pressed && styles.pressed]}>
+            <Text style={styles.smallText}>{t('Both')}</Text>
           </Pressable>
-          <Pressable onPress={() => onAnswer('neither')} accessibilityRole="button" accessibilityLabel="Neither, next pair" style={({ pressed }) => [styles.small, pressed && styles.pressed]}>
-            <Text style={styles.smallText}>Neither</Text>
+          <Pressable onPress={() => onAnswer('neither')} accessibilityRole="button" accessibilityLabel={t('Neither, next pair')} style={({ pressed }) => [styles.small, pressed && styles.pressed]}>
+            <Text style={styles.smallText}>{t('Neither')}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -135,7 +136,7 @@ function SetCard({ clip, side, playing, onListen, onPick }: { clip: Clip; side: 
   const [failed, setFailed] = useState(false);
   const [paused, setPaused] = useState(false);
   const sound = topSound(artist);
-  const name = artist?.name ?? 'This artist';
+  const name = artist?.name ?? t('This artist');
 
   return (
     <View style={[styles.card, playing && styles.cardOn]}>
@@ -153,7 +154,7 @@ function SetCard({ clip, side, playing, onListen, onPick }: { clip: Clip; side: 
           />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.center]}>
-            <Text style={styles.quiet}>This set can’t play here. Go by the name.</Text>
+            <Text style={styles.quiet}>{t('This set can’t play here. Go by the name.')}</Text>
           </View>
         )}
         {!playing ? (
@@ -163,10 +164,10 @@ function SetCard({ clip, side, playing, onListen, onPick }: { clip: Clip; side: 
               onListen();
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Hear ${name}`}
+            accessibilityLabel={t('Hear {artist}', { artist: name })}
             style={[StyleSheet.absoluteFill, styles.listen]}
           >
-            <Text style={styles.listenText}>▶  Tap to hear</Text>
+            <Text style={styles.listenText}>{t('▶  Tap to hear')}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -185,11 +186,11 @@ function SetCard({ clip, side, playing, onListen, onPick }: { clip: Clip; side: 
         <Pressable
           onPress={onPick}
           accessibilityRole="button"
-          accessibilityLabel={`I’d rather hear ${name}`}
+          accessibilityLabel={t('I’d rather hear {artist}', { artist: name })}
           testID={`pick-${side}`}
           style={({ pressed }) => [styles.pick, pressed && styles.pressed]}
         >
-          <Text style={styles.pickText}>This one</Text>
+          <Text style={styles.pickText}>{t('This one')}</Text>
         </Pressable>
       </View>
     </View>
@@ -202,20 +203,20 @@ function Finished({ liked, onDone, discover, bottom }: { liked: number; onDone: 
   const mix = useMemo(() => tasteMix(catalog.artists, taste, informed), [catalog.artists, taste, informed]);
   return (
     <View style={[styles.done, { paddingBottom: bottom + space.xl }]} accessibilityLiveRegion="polite">
-      <Text style={styles.doneTitle}>{liked ? 'Your sound is taking shape' : 'No picks this time'}</Text>
+      <Text style={styles.doneTitle}>{liked ? t('Your sound is taking shape') : t('No picks this time')}</Text>
       <Text style={styles.body}>
         {liked
-          ? `${pickedLine(liked)} Each one counts like a like in Discover, and spills over to artists who sound alike.`
-          : 'That’s fine: like sets in Discover or rate artists, and your sound will follow.'}
+          ? t('{picked} Each one counts like a like in Discover, and spills over to artists who sound alike.', { picked: pickedLine(liked) })
+          : t('That’s fine: like sets in Discover or rate artists, and your sound will follow.')}
       </Text>
       {liked && mix.length ? (
         <View style={styles.mix}>
-          <SoundSpectrum shares={mix} height={10} label="Your sound" />
+          <SoundSpectrum shares={mix} height={10} label={t('Your sound')} />
           <Text style={styles.mixLine}>{mix.slice(0, 3).map((s) => `${SOUND_LABEL[s.tag]} ${s.percent}%`).join(' · ')}</Text>
         </View>
       ) : null}
       <Pressable onPress={onDone} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-        <Text style={styles.primaryText}>{discover ? 'Start watching' : 'See My Sound'}</Text>
+        <Text style={styles.primaryText}>{discover ? t('Start watching') : t('See My Sound')}</Text>
       </Pressable>
     </View>
   );
@@ -226,10 +227,10 @@ function NotEnough({ onPick }: { onPick: () => void }) {
   useEffect(() => bumpQuestEvent('thisorthat'), []);
   return (
     <View style={styles.done}>
-      <Text style={styles.doneTitle}>Not enough sets yet</Text>
-      <Text style={styles.body}>There aren’t enough live sets to compare right now. New ones arrive every night; for now, pick the artists you know.</Text>
+      <Text style={styles.doneTitle}>{t('Not enough sets yet')}</Text>
+      <Text style={styles.body}>{t('There aren’t enough live sets to compare right now. New ones arrive every night; for now, pick the artists you know.')}</Text>
       <Pressable onPress={onPick} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-        <Text style={styles.primaryText}>Pick artists you know</Text>
+        <Text style={styles.primaryText}>{t('Pick artists you know')}</Text>
       </Pressable>
     </View>
   );

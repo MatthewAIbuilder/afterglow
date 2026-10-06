@@ -5,6 +5,7 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { PALETTES, rgbaOf, type ThemeId } from '../../theme/palettes';
 import { AnimatedBackdrop } from '../profile/AnimatedBackdrop';
 import { themeOf } from './themes';
+import { t } from '../../i18n';
 
 const MOON = '#F3F0FF';
 const MOON_DIM = 'rgba(243,240,255,0.62)';
@@ -44,16 +45,16 @@ export function ThemeSky({ id, width, height }: { id: ThemeId; width: number; he
  */
 export function ThemePreview({ id, width, still }: { id: ThemeId; width: number; still?: boolean }) {
   const p = PALETTES[id];
-  const t = themeOf(id);
+  const th = themeOf(id);
   const height = Math.round(width * 1.55);
   const band = Math.round(height * 0.3);
   const s = width / 220;
   return (
     <View style={[styles.phone, { width, height, borderRadius: 26 * s, borderColor: rgbaOf(p.glow, 0.35) }]}>
       <ThemeSky id={id} width={width} height={height} />
-      {t.backdrop ? (
+      {th.backdrop ? (
         <View style={[styles.band, { height: band }]}>
-          <AnimatedBackdrop id={t.backdrop} width={width} height={band} still={still} />
+          <AnimatedBackdrop id={th.backdrop} width={width} height={band} still={still} />
           <LinearGradient colors={[rgbaOf(p.night, 0), rgbaOf(p.night, 1)]} locations={[0.45, 1]} style={StyleSheet.absoluteFill} />
         </View>
       ) : null}
@@ -81,7 +82,7 @@ export function ThemePreview({ id, width, still }: { id: ThemeId; width: number;
         </View>
       </View>
       <View style={[styles.button, { marginHorizontal: 14 * s, marginTop: 10 * s, height: 26 * s, borderRadius: 13 * s, backgroundColor: p.glowDeep }]}>
-        <Text style={[styles.buttonText, { fontSize: 10 * s }]}>I’m going</Text>
+        <Text style={[styles.buttonText, { fontSize: 10 * s }]}>{t('I’m going')}</Text>
       </View>
       <View style={[styles.tabs, { left: 12 * s, right: 12 * s, bottom: 10 * s, height: 30 * s, borderRadius: 15 * s, backgroundColor: rgbaOf(p.nightRaised, 0.9), borderColor: 'rgba(255,255,255,0.1)' }]}>
         {[0, 1, 2, 3, 4].map((i) => (

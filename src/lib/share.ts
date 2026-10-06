@@ -1,6 +1,7 @@
 import { Platform, Share } from 'react-native';
 import { bumpQuestEvent } from '../state/dailyQuests';
 import { showAlert } from './dialog';
+import { t } from '../i18n';
 
 /**
  * Share some text: the system share sheet on a phone; in a browser, its own
@@ -36,7 +37,7 @@ async function shareOnce(message: string, title?: string): Promise<ShareOutcome>
   }
   try {
     await nav?.clipboard?.writeText(message);
-    showAlert('Copied', 'Paste it wherever you like.');
+    showAlert(t('Copied'), t('Paste it wherever you like.'));
     return 'copied';
   } catch {
     return 'failed';

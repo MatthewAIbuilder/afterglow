@@ -10,7 +10,8 @@ import { PageTitle } from '../components/PageTitle';
 import { SearchField } from '../components/SearchField';
 import { SOUND_LABEL } from '../data/models';
 import { COMPARE_MAX, compareFestivals, compareIds, type FestivalFit, verdictLine } from '../features/festivals/compare';
-import { distanceShort } from '../features/festivals/near';
+import { distanceLabel, distanceShort } from '../features/festivals/near';
+import { datesLine } from '../features/festivals/format';
 import { bySoonest, isOver } from '../features/festivals/shelves';
 import { searchFestivals } from '../features/festivals/search';
 import { countdown } from '../features/festivals/when';
@@ -24,9 +25,10 @@ import { useTaste } from '../state/taste';
 import { useLoves } from '../state/useLoves';
 import { useWeekends } from '../state/weekends';
 import { color, radius, space, type, glowA } from '../theme/tokens';
+import { t } from '../i18n';
 
 /** "A", "A and B", "A, B and C". */
-const andList = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : (xs[0] ?? ''));
+const andList = (xs: string[]) => (xs.length > 1 ? t('{list} and {last}', { list: xs.slice(0, -1).join(', '), last: xs[xs.length - 1] }) : (xs[0] ?? ''));
 
 /** How many festivals to offer when adding one, before you search. */
 const OFFER = 8;
@@ -69,14 +71,14 @@ export default function CompareScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Compare festivals" />
+      <PageTitle title={t('Compare festivals')} />
       <NightSky />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <Text style={styles.title}>Compare festivals</Text>
+        <Text style={styles.title}>{t('Compare festivals')}</Text>
         <Text style={styles.verdict}>{verdictLine(comparison)}</Text>
 
         <View style={styles.columns}>
@@ -95,20 +97,20 @@ export default function CompareScreen() {
                 setAdding(true);
               }}
               accessibilityRole="button"
-              accessibilityLabel="Add a festival to compare"
+              accessibilityLabel={t('Add a festival to compare')}
               style={({ pressed }) => [styles.add, pressed && { opacity: 0.7 }]}
             >
               <Text style={styles.addPlus}>+</Text>
-              <Text style={styles.addText}>Add a festival</Text>
+              <Text style={styles.addText}>{t('Add a festival')}</Text>
             </Pressable>
           ) : null}
         </View>
 
         {adding && ids.length < COMPARE_MAX ? (
           <View style={styles.picker}>
-            <Text style={styles.section}>Add a festival</Text>
-            <SearchField value={query} onChange={setQuery} placeholder="Find a festival" label="Find a festival to compare" />
-            {offer.length === 0 ? <Text style={styles.none}>No festival matches “{query.trim()}”.</Text> : null}
+            <Text style={styles.section}>{t('Add a festival')}</Text>
+            <SearchField value={query} onChange={setQuery} placeholder={t('Find a festival')} label={t('Find a festival to compare')} />
+            {offer.length === 0 ? <Text style={styles.none}>{t('No festival matches “{query}”.', { query: query.trim() })}</Text> : null}
             {offer.map((f) => (
               <Pressable
                 key={f.id}
@@ -118,7 +120,7 @@ export default function CompareScreen() {
                   setIds([...ids, f.id]);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Compare ${f.name}, ${f.dates}`}
+                accessibilityLabel={t('Compare {festival}, {dates}', { festival: f.name, dates: datesLine(f) })}
                 style={({ pressed }) => [styles.offer, pressed && { opacity: 0.7 }]}
               >
                 <View style={{ flex: 1 }}>
@@ -126,10 +128,10 @@ export default function CompareScreen() {
                     {f.name}
                   </Text>
                   <Text style={styles.offerMeta} numberOfLines={1}>
-                    {[going.includes(f.id) ? 'Going' : '', countdown(f, today) ?? f.dates].filter(Boolean).join(' · ')}
+                    {[going.includes(f.id) ? t('Going') : '', countdown(f, today) ?? datesLine(f)].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
-                <Text style={styles.offerAdd}>Add</Text>
+                <Text style={styles.offerAdd}>{t('Add')}</Text>
               </Pressable>
             ))}
           </View>
@@ -137,7 +139,7 @@ export default function CompareScreen() {
 
         {comparison.shared.length > 0 ? (
           <View style={styles.shared}>
-            <Text style={styles.section}>Playing more than one</Text>
+            <Text style={styles.section}>{t('Playing more than one')}</Text>
             {comparison.shared.slice(0, 20).map(({ artist, festivals: at }) => (
               <ArtistRow
                 key={artist.id}
@@ -159,7 +161,7 @@ function Column({ fit: f, best, onRemove }: { fit: FestivalFit; best: boolean; o
   const today = useToday();
   const { distanceTo, units } = useNearby();
   const away = distanceTo(f.festival);
-  const when = countdown(f.festival, today) ?? f.festival.dates;
+  const when = countdown(f.festival, today) ?? datesLine(f.festival);
   const only = f.onlyHere.slice(0, 3).map((a) => a.name);
   const more = f.onlyHere.length - only.length;
   return (
@@ -169,16 +171,16 @@ function Column({ fit: f, best, onRemove }: { fit: FestivalFit; best: boolean; o
       accessibilityLabel={[
         f.festival.name,
         when,
-        away !== undefined ? `${distanceShort(away, units)} away` : '',
-        f.fit !== undefined ? `${f.fit} percent fit for your sound` : 'no fit yet',
-        `${f.loved.length} artists you'd love`,
-        only.length ? `Only here: ${only.join(', ')}${more > 0 ? ` and ${more} more` : ''}` : '',
-        best ? 'Best fit' : '',
+        away !== undefined ? distanceLabel(away, units) : '',
+        f.fit !== undefined ? t('{n} percent fit for your sound', { n: f.fit }) : t('no fit yet'),
+        t("{n} artists you'd love", { n: f.loved.length }),
+        only.length ? (more > 0 ? t('Only here: {artists} and {n} more', { artists: only.join(', '), n: more }) : t('Only here: {artists}', { artists: only.join(', ') })) : '',
+        best ? t('Best fit') : '',
       ]
         .filter(Boolean)
         .join('. ')}
     >
-      {best ? <Text style={styles.bestTag}>Best fit</Text> : null}
+      {best ? <Text style={styles.bestTag}>{t('Best fit')}</Text> : null}
       <Text style={styles.name} numberOfLines={3}>
         {f.festival.name}
       </Text>
@@ -187,7 +189,7 @@ function Column({ fit: f, best, onRemove }: { fit: FestivalFit; best: boolean; o
         {away !== undefined ? ` · ${distanceShort(away, units)}` : ''}
       </Text>
       <Text style={[styles.fit, best && { color: color.glow }]}>{f.fit !== undefined ? `${f.fit}%` : '–'}</Text>
-      <Text style={styles.caption}>{f.fit !== undefined ? 'your fit' : 'new to you'}</Text>
+      <Text style={styles.caption}>{f.fit !== undefined ? t('your fit') : t('new to you')}</Text>
       <View style={styles.faces}>
         {f.loved.slice(0, 3).map((a, i) => (
           <View key={a.id} style={[styles.face, { marginLeft: i === 0 ? 0 : -10, zIndex: 10 - i }]}>
@@ -195,7 +197,7 @@ function Column({ fit: f, best, onRemove }: { fit: FestivalFit; best: boolean; o
           </View>
         ))}
       </View>
-      <Text style={styles.loved}>{f.loved.length ? `${f.loved.length} you’d love` : 'No favourites yet'}</Text>
+      <Text style={styles.loved}>{f.loved.length ? t('{n} you’d love', { n: f.loved.length }) : t('No favourites yet')}</Text>
       {f.sounds.slice(0, 2).map((s) => (
         <Text key={s.tag} style={styles.sound} numberOfLines={1}>
           {SOUND_LABEL[s.tag]} {s.percent}%
@@ -203,7 +205,7 @@ function Column({ fit: f, best, onRemove }: { fit: FestivalFit; best: boolean; o
       ))}
       {only.length ? (
         <>
-          <Text style={styles.onlyHead}>Only here</Text>
+          <Text style={styles.onlyHead}>{t('Only here')}</Text>
           <Text style={styles.only} numberOfLines={4}>
             {only.join(', ')}
             {more > 0 ? ` +${more}` : ''}
@@ -217,13 +219,13 @@ function Column({ fit: f, best, onRemove }: { fit: FestivalFit; best: boolean; o
           router.push(`/festival/${f.festival.id}`);
         }}
         accessibilityRole="button"
-        accessibilityLabel={`Open ${f.festival.name}`}
+        accessibilityLabel={t('Open {festival}', { festival: f.festival.name })}
         style={({ pressed }) => [styles.open, pressed && { opacity: 0.7 }]}
       >
-        <Text style={styles.openText}>Open</Text>
+        <Text style={styles.openText}>{t('Open')}</Text>
       </Pressable>
       {onRemove ? (
-        <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={`Remove ${f.festival.name}`} hitSlop={8} style={styles.remove}>
+        <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={t('Remove {festival}', { festival: f.festival.name })} hitSlop={8} style={styles.remove}>
           <Text style={styles.removeText}>×</Text>
         </Pressable>
       ) : null}
