@@ -77,6 +77,15 @@ jobs:
           curl -fsS https://afterglowmusic.web.app/catalogue.json -o /tmp/published.json || true
           npx --yes tsx@4 scripts/artist-photos.ts /tmp/published.json || echo "::warning::Artist photos were skipped tonight."
 
+      # Each artist's own SoundCloud page, matched by name through SoundCloud's public oEmbed answer (no key),
+      # a few a night, keeping the pages already found (docs/events-import.md). Never stops the night.
+      # Only the nightly run (and "Run workflow") asks SoundCloud; merges during the day keep what's found.
+      - name: SoundCloud pages
+        if: github.event_name != 'pull_request'
+        env:
+          SOUNDCLOUD_REQUESTS: ${{ github.event_name == 'push' && '0' || '' }}
+        run: npx --yes tsx@4 scripts/soundcloud-artists.ts /tmp/published.json || echo "::warning::SoundCloud pages were skipped tonight."
+
       # Each artist's colour, from their photo (docs/events-import.md).
       - name: Artist colours
         if: github.event_name != 'pull_request'

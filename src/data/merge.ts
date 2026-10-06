@@ -31,6 +31,7 @@ export function mergeSnapshots(base: CatalogSnapshot, top: CatalogSnapshot): Cat
   if (similarities.length) merged.similarities = similarities;
   const shows = byId(base.shows ?? [], top.shows ?? []);
   if (shows.length) merged.shows = shows;
+  if (base.soundcloud || top.soundcloud) merged.soundcloud = { ...base.soundcloud, ...top.soundcloud };
   return merged;
 }
 

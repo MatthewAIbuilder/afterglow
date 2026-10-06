@@ -1,5 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
+import { isOver, whenRank } from '../../features/festivals/shelves';
+import { goingLine } from '../../features/social/copy';
 import { CoverSwap } from '../../features/profile/CoverSwap';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -100,6 +102,17 @@ function FullProfile() {
   const me = social.profile;
   const backdrop = useProfileBackdrop(me);
   const { going } = useGoing();
+  // "Going to …" under your bio, as others see it on your profile: festivals you're going to that aren't over, soonest first.
+  const goingNote = useMemo(() => {
+    const names = [...going]
+      .map((id) => catalog.festival(id))
+      .filter((f): f is NonNullable<typeof f> => !!f && !isOver(f, today))
+      .sort((a, b) => whenRank(a, today) - whenRank(b, today))
+      .map((f) => f.name);
+    const line = goingLine(names);
+    // Your profile settings can hide your festivals from others; say so, since only you see this one.
+    return line && me && !me.showFestivals ? `${line} · only you can see this` : line;
+  }, [going, catalog, today, me]);
   const { ratings } = useRatings();
   const { reactions } = useReactions();
   const pool = useClipPool();
@@ -207,6 +220,7 @@ function FullProfile() {
         </View>
 
         <ProfileHeader
+          note={goingNote}
             socials={me?.socials}
           name={me?.displayName ?? 'You'}
           initial={!!me}

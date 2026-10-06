@@ -159,8 +159,12 @@ export function validateSnapshot(input: CatalogSnapshot): Validation {
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  // SoundCloud pages keep only artists still on Afterglow, quietly (the nightly match's, not anyone's typing).
+  const soundcloud = input.soundcloud && Object.fromEntries(Object.entries(input.soundcloud).filter(([id, p]) => artistIds.has(id) && !!p?.url));
+
   const snapshot: CatalogSnapshot = { artists, festivals, clips };
   if (shows?.length) snapshot.shows = shows;
+  if (soundcloud && Object.keys(soundcloud).length) snapshot.soundcloud = soundcloud;
   if (lineups) snapshot.lineups = lineups;
   if (similarities) snapshot.similarities = similarities;
   return { snapshot, problems };

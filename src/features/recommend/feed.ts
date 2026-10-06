@@ -89,6 +89,13 @@ const FALLBACK: Record<Lane, readonly Lane[]> = {
 /** Try not to repeat an artist within this many clips. */
 export const ARTIST_GAP = 2;
 
+/** At most one SoundCloud card in this many cards (so five others between two). */
+export const SOUNDCLOUD_EVERY = 6;
+/** A SoundCloud card is shown for a match at least this strong, or for an artist you've shown you like. */
+export const SOUNDCLOUD_MIN_MATCH = 0.6;
+
+const isPage = (clip: Clip) => clip.source?.provider === 'soundcloud';
+
 /** When you last saw each clip, in ms since the epoch. */
 export type SeenHistory = Record<string, number>;
 
@@ -149,10 +156,11 @@ export function laneOf(
   return { lane: 'discover', reason: { kind: 'new-sound' }, nearness };
 }
 
-/** Every clip, scored and placed in a lane. Not yet in feed order. */
-export function scoreClips({ clips, artists, taste, informed, reactions, seen, now, similarity, ratings = {} }: FeedInput): FeedItem[] {
-  const byId = new Map(artists.map((a) => [a.id, a]));
-  const anchors = anchorsOf(artists, taste, informed);
+/**
+ * Per artist: whether you've reacted to them at all (`touched`), and your
+ * likes, saves and loves minus your skips and "not for me"s (`net`).
+ */
+function tally(clips: Clip[], reactions: Record<string, Reaction>, ratings: Ratings) {
   const touched = new Set<string>();
   const net: Record<string, number> = {};
   for (const c of clips) {
@@ -166,6 +174,14 @@ export function scoreClips({ clips, artists, taste, informed, reactions, seen, n
     if (isCold(rating)) touched.add(id);
     net[id] = (net[id] ?? 0) + RATING_NET[rating];
   }
+  return { touched, net };
+}
+
+/** Every clip, scored and placed in a lane. Not yet in feed order. */
+export function scoreClips({ clips, artists, taste, informed, reactions, seen, now, similarity, ratings = {} }: FeedInput): FeedItem[] {
+  const byId = new Map(artists.map((a) => [a.id, a]));
+  const anchors = anchorsOf(artists, taste, informed);
+  const { touched, net } = tally(clips, reactions, ratings);
 
   const items: FeedItem[] = [];
   for (const clip of clips) {
@@ -276,7 +292,8 @@ export function rankFeed(input: FeedInput): FeedItem[] {
     if (it && !kept.includes(it)) kept.push(it);
   }
   const keptIds = new Set(kept.map((it) => it.clip.id));
-  const rest = all.filter((it) => !keptIds.has(it.clip.id));
+  const others = all.filter((it) => !keptIds.has(it.clip.id));
+  const rest = others.filter((it) => !isPage(it.clip));
 
   const recent = kept.map((it) => it.clip.artistId);
   const fresh = rest.filter((it) => !it.skipped && !it.seenRecently && !it.cooled);
@@ -292,6 +309,54 @@ export function rankFeed(input: FeedInput): FeedItem[] {
   out.push(...interleave(cooled, recent, out.length));
   out.push(...interleave(stale, recent, out.length));
   out.push(...interleave(skipped, recent, out.length));
+  return withPages(out, kept.length, pagesFor(others, input));
+}
+
+/**
+ * The SoundCloud cards that may show, best first: artists with a decent
+ * match, or more likes, saves and loves than skips; never an artist you've
+ * turned down. Fresh ones by score, then ones seen lately, then ones skipped.
+ */
+function pagesFor(items: FeedItem[], input: FeedInput): FeedItem[] {
+  const pages = items.filter((it) => isPage(it.clip));
+  if (!pages.length) return pages;
+  const { net } = tally(input.clips, input.reactions, input.ratings ?? {});
+  const fits = pages.filter((it) => !it.cooled && ((input.taste[it.clip.artistId] ?? 0) >= SOUNDCLOUD_MIN_MATCH || (net[it.clip.artistId] ?? 0) > 0));
+  const fresh = fits.filter((it) => !it.skipped && !it.seenRecently).sort(byScore);
+  const stale = fits
+    .filter((it) => !it.skipped && it.seenRecently)
+    .map((it) => ({ ...it, score: it.score - RECENCY_WEIGHT * recency(input.seen[it.clip.id], input.now) }))
+    .sort(byScore);
+  const skipped = fits.filter((it) => it.skipped).sort(byScore);
+  return [...fresh, ...stale, ...skipped];
+}
+
+/**
+ * SoundCloud cards set into the feed after what's kept: one after every
+ * SOUNDCLOUD_EVERY - 1 other cards, never beside a card of the same artist.
+ * Cards that don't fit wait for a longer feed (a later re-rank).
+ */
+function withPages(feed: FeedItem[], keptCount: number, pages: FeedItem[]): FeedItem[] {
+  if (!pages.length) return feed;
+  const out = feed.slice(0, keptCount);
+  // Cards since the last SoundCloud card (or the start).
+  let since = 0;
+  for (const it of out) since = isPage(it.clip) ? 0 : since + 1;
+  const left = [...pages];
+  const place = (next: FeedItem | undefined) => {
+    if (since < SOUNDCLOUD_EVERY - 1 || !left.length) return;
+    const before = out[out.length - 1]?.clip.artistId;
+    const i = left.findIndex((p) => p.clip.artistId !== before && p.clip.artistId !== next?.clip.artistId);
+    if (i < 0) return;
+    out.push(left.splice(i, 1)[0]);
+    since = 0;
+  };
+  for (const it of feed.slice(keptCount)) {
+    place(it);
+    out.push(it);
+    since++;
+  }
+  place(undefined);
   return out;
 }
 

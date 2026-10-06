@@ -1,4 +1,4 @@
-import type { Clip, CommunityClipSource, YouTubeClipSource } from '../../data/models';
+import type { Clip, CommunityClipSource, SoundCloudClipSource, YouTubeClipSource } from '../../data/models';
 import { playableSource, posterUrl, watchUrl } from './youtube';
 
 /**
@@ -8,6 +8,8 @@ import { playableSource, posterUrl, watchUrl } from './youtube';
  * - youtube: a section of an official upload, in YouTube's embedded player.
  * - video: a video file someone shared (a community clip), in the phone's
  *   own player (expo-video).
+ * - soundcloud: an artist's SoundCloud page (their uploads), in SoundCloud's
+ *   embedded player.
  */
 type Shared = {
   /** Length of the clip in seconds. */
@@ -36,13 +38,29 @@ export type VideoMedia = Shared & {
   community: CommunityClipSource;
 };
 
-export type ClipMedia = YouTubeMedia | VideoMedia;
+export type SoundCloudMedia = Shared & {
+  provider: 'soundcloud';
+  /** Provider details, read only by the SoundCloud player. */
+  source: SoundCloudClipSource;
+  /** The page on SoundCloud itself. */
+  externalUrl: string;
+};
+
+export type ClipMedia = YouTubeMedia | VideoMedia | SoundCloudMedia;
 
 const HTTPS = /^https:\/\//;
 
-/** The clip's playable footage, or undefined and the card shows the stage. */
-export function clipMedia(clip: Clip): ClipMedia | undefined {
+/**
+ * The clip's playable footage, or undefined and the card shows the stage.
+ * `artistImage`: the artist's photo, which a SoundCloud card shows before its own picture.
+ */
+export function clipMedia(clip: Clip, artistImage?: string): ClipMedia | undefined {
   const s = clip.source;
+  if (s?.provider === 'soundcloud') {
+    if (!/^https:\/\/soundcloud\.com\//.test(s.url)) return undefined;
+    const still = [artistImage, s.image].find((u) => !!u && HTTPS.test(u));
+    return { provider: 'soundcloud', source: s, lengthSec: 0, posterUrl: still ?? '', vertical: false, credit: 'On SoundCloud', externalUrl: s.url };
+  }
   if (s?.provider === 'community') {
     if (!HTTPS.test(s.videoUrl)) return undefined;
     return {

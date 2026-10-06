@@ -204,7 +204,8 @@ describe('catalogue files', () => {
       version: 1,
       clips: [{ id: 's', artist: 'a', festival: 'f', title: 'Short', video: { link: 'https://www.youtube.com/shorts/JssDaUK0_GQ', from: 0, to: 30, channel: 'A' } }],
     });
-    expect(parsed.snapshot!.clips[0].source?.vertical).toBe(true);
+    const source = parsed.snapshot!.clips[0].source;
+    expect(source?.provider === 'youtube' && source.vertical).toBe(true);
   });
 });
 
