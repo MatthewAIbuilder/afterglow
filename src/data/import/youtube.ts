@@ -367,3 +367,138 @@ export function clipBudget(chars: number, limit: number) {
     },
   };
 }
+
+/*
+ * Shorts: short upright crowd clips of an artist playing live, filmed on a
+ * phone (the owner, 2026-10-06: vertical clips "to see how real posts will
+ * work"). Found by a few searches a night of their own, kept apart from the
+ * long sets (their own cap, so they never crowd sets out), and played whole
+ * from their start in the tall player.
+ */
+
+/** Shorts kept per artist, on top of their MAX_CLIPS_PER_ARTIST sets. */
+export const MAX_SHORTS_PER_ARTIST = 2;
+/** Of each night's searches, this many look for Shorts (more when the sets need fewer). */
+export const SHORT_SEARCHES = 20;
+/** New Shorts one search may bring in for an artist. */
+export const NEW_SHORTS_PER_SEARCH = 2;
+/** An artist searched for Shorts with nothing new found is asked again after this many days. */
+export const RETRY_SHORTS_DAYS = 21;
+/** A Short runs this long at least (shorter is a blip, not a moment)… */
+export const MIN_SHORT_SECONDS = 15;
+/** …and at most this long (the app's longest clip). */
+export const MAX_SHORT_SECONDS = 180;
+
+/** The Shorts search: "<name> live #shorts", short embeddable videos only. */
+export const shortsUrl = (name: string, key: string) =>
+  `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoDuration=short&maxResults=${SEARCH_RESULTS}&q=${encodeURIComponent(
+    `${name} live #shorts`,
+  )}&key=${encodeURIComponent(key)}`;
+
+/** Live or crowd footage words. */
+const LIVE_WORDS = /\b(live|set|festival|stage|drop|drops|dropped|crowd|front row|rave|rail|b2b|show|concert|lost lands|edc|ultra|tomorrowland|red rocks|boiler room)\b/i;
+/** Not a moment of a show: production, reposts of tracks, reactions, edits. */
+const NOT_LIVE = /\b(reaction|reacts|tutorial|how to|how i made|interview|podcast|trailer|teaser|lyrics|lyric video|official video|music video|karaoke|cover|remix|remixes|edit|mashup|type beat|fl studio|ableton|serum|sample pack|unboxing|merch|vlog|outfit|grwm|prank)\b/i;
+
+/** A Short's title without its hashtags ("Subtronics drop at Lost Lands #shorts #edm" -> "Subtronics drop at Lost Lands"). */
+export const withoutTags = (title: string) => title.replace(/#[^\s#]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+
+export type ShortClip = { videoId: string; title: string; channel: string; seconds: number; score: number };
+
+/**
+ * Up to `max` Shorts for an artist in a details answer (asked with the
+ * player's size): upright, MIN_SHORT_SECONDS to MAX_SHORT_SECONDS, public,
+ * embeddable, not live now, the title naming the artist and saying it's live
+ * footage, never `blocked`, never a title the artist already has (`taken`).
+ * The artist's own and well-known festival channels first, then search order.
+ */
+export function pickShorts(
+  artistName: string,
+  details: unknown,
+  { blocked = new Set<string>(), taken = [], max = NEW_SHORTS_PER_SEARCH }: { blocked?: ReadonlySet<string>; taken?: readonly string[]; max?: number } = {},
+): ShortClip[] {
+  const want = fold(artistName);
+  const items = (details as { items?: unknown } | null)?.items;
+  if (want.length < 2 || !Array.isArray(items)) return [];
+  const had = new Set(taken.map((t) => fold(withoutTags(t))));
+  const found: (ShortClip & { i: number })[] = [];
+  for (const [i, raw] of items.entries()) {
+    const it = raw as {
+      id?: unknown;
+      snippet?: { title?: unknown; channelTitle?: unknown; liveBroadcastContent?: unknown };
+      contentDetails?: { duration?: unknown };
+      status?: { embeddable?: unknown; privacyStatus?: unknown };
+    };
+    const videoId = typeof it.id === 'string' ? it.id : undefined;
+    const title = typeof it.snippet?.title === 'string' ? withoutTags(it.snippet.title) : '';
+    const channel = typeof it.snippet?.channelTitle === 'string' ? it.snippet.channelTitle : '';
+    const seconds = isoSeconds(it.contentDetails?.duration);
+    if (!videoId || !title || !channel || !seconds || blocked.has(videoId)) continue;
+    if (it.status?.embeddable !== true || it.status?.privacyStatus !== 'public') continue;
+    if (it.snippet?.liveBroadcastContent && it.snippet.liveBroadcastContent !== 'none') continue;
+    if (seconds < MIN_SHORT_SECONDS || seconds > MAX_SHORT_SECONDS) continue;
+    if (uprightOf(raw) !== true) continue; // filmed on a phone held up
+    if (!fold(title).includes(want) || NOT_LIVE.test(title) || !LIVE_WORDS.test(title)) continue;
+    if (had.has(fold(title))) continue;
+    const ch = fold(channel);
+    let score = 0;
+    if (ch.includes(want) || want.includes(ch)) score += 4;
+    if (KNOWN_CHANNELS.some((k) => ch.includes(k))) score += 3;
+    found.push({ videoId, title, channel, seconds, score, i });
+  }
+  const out: ShortClip[] = [];
+  for (const { i: _i, ...s } of found.sort((a, b) => b.score - a.score || a.i - b.i)) {
+    if (out.length >= max) break;
+    if (out.some((o) => o.videoId === s.videoId || fold(o.title) === fold(s.title))) continue;
+    out.push(s);
+  }
+  return out;
+}
+
+/** A catalogue-file clip for a Short: the whole video from its start, in the tall player. */
+export function shortClip(short: ShortClip, artist: { id: string; name: string }, festivalId: string) {
+  const seconds = Math.min(MAX_SHORT_SECONDS, Math.floor(short.seconds));
+  return {
+    id: `yt-${short.videoId}`,
+    artist: artist.id,
+    festival: festivalId,
+    title: clipTitle(artist.name, withoutTags(short.title)),
+    video: {
+      link: `https://www.youtube.com/shorts/${short.videoId}`,
+      from: '0:00',
+      to: mmss(seconds),
+      channel: short.channel.slice(0, 100),
+      vertical: true,
+      short: true,
+    },
+  };
+}
+
+/**
+ * Who to search Shorts for tonight, at most `max`: artists on upcoming
+ * festivals (`wanted`) before the rest (`later`), fewest Shorts first, each
+ * in the order given; skipping anyone at `cap` or asked in the last
+ * RETRY_SHORTS_DAYS days with nothing new found (`asked`).
+ */
+export function shortsPlan(
+  wanted: readonly PlanArtist[],
+  shortCount: (artistId: string) => number,
+  asked: Record<string, string>,
+  today: string,
+  max = SHORT_SEARCHES,
+  { later = [], cap = MAX_SHORTS_PER_ARTIST }: { later?: readonly PlanArtist[]; cap?: number } = {},
+): PlannedSearch[] {
+  const seen = new Set<string>();
+  const list: (PlannedSearch & { tier: number; at: number })[] = [];
+  for (const [tier, artists] of [wanted, later].entries()) {
+    for (const a of artists) {
+      if (seen.has(a.id)) continue;
+      seen.add(a.id);
+      const have = Number(shortCount(a.id)) || 0;
+      if (have >= cap || within(asked[a.id], today, RETRY_SHORTS_DAYS)) continue;
+      list.push({ id: a.id, name: a.name, have, tier, at: list.length });
+    }
+  }
+  list.sort((p, q) => p.tier - q.tier || p.have - q.have || p.at - q.at);
+  return list.slice(0, Math.max(0, max)).map(({ id, name, have }) => ({ id, name, have }));
+}

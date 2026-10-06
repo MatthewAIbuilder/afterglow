@@ -190,9 +190,24 @@ sets**.
   clip, and the clips found on earlier nights, may fill it to 95%. When the
   file is short of room, extra sets from earlier nights are left out before
   anyone's first clip.
+- **Shorts (upright crowd clips)**: so Discover also has phone-filmed,
+  full-screen clips like real posts, 20 of the night's 90 searches (more
+  when the long sets need fewer) look for "<artist> live #shorts" among
+  short videos. A Short is kept only if it was filmed upright, runs 15
+  seconds to 3 minutes, its title names the artist and says it's live
+  footage (live, set, festival, drop, crowd, stage…), and it isn't an
+  interview, tutorial, reaction, remix, edit, lyric video or the like. Each
+  artist can have up to 2 Shorts on top of their 4 sets (so Shorts never
+  push the long sets out), artists on upcoming festivals first, fewest
+  Shorts first; an artist with nothing new waits three weeks. A Short plays
+  whole from its start in the tall player and loops like any clip. In
+  Discover they're mixed in about one in every four cards, never two in a
+  row and never the same artist twice in a row. Expect up to about 40 new
+  Shorts a night (often fewer: many crowd videos don't name the artist).
 - **What the log says**: at the end of the **YouTube clips** step, how many
-  clips there are in all, how many are new tonight (first clips and more
-  sets), and, for artists on upcoming lineups, how many have no clip yet and
+  clips there are in all (and how many are Shorts), how many are new
+  tonight (first clips, more sets and Shorts, with the searches each took),
+  and, for artists on upcoming lineups, how many have no live set yet and
   how many have fewer than 4.
 
 - **Any channel** (the owner's choice), but the video must name the artist,
@@ -204,7 +219,7 @@ sets**.
   first.
 - YouTube's free daily allowance covers about 90 searches a night (a search
   costs 100 of the 10,000 daily units; reading the videos' details costs 1),
-  so Discover gains roughly 60 to 150 clips a night until every artist has 4
+  so Discover gains roughly 50 to 110 live sets (70 searches) and up to 40 Shorts (20 searches) a night until every artist has 4
   sets or nothing new turns up. Clips found before are kept. Only the nightly run (and
   "Run workflow") searches: runs after a merge just keep the clips, so they
   don't use up the day's allowance.

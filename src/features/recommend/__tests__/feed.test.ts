@@ -5,7 +5,7 @@ import { MOCK_TASTE } from '../../../data/mock/tasteProfile';
 import type { Artist, Clip } from '../../../data/types';
 import type { Reaction } from '../../../state/reactions';
 import { computeTaste } from '../../taste/engine';
-import { ARTIST_GAP, laneOf, anchorsOf, markSeen, rankFeed, RECENT_MS, type FeedInput } from '../feed';
+import { ARTIST_GAP, isShort, laneOf, anchorsOf, markSeen, rankFeed, RECENT_MS, SHORT_EVERY, SHORT_GAP, type FeedInput } from '../feed';
 
 const NOW = 1_800_000_000_000;
 const none: Reaction = { liked: false, saved: false, skipped: false };
@@ -193,6 +193,38 @@ describe('several clips per artist (the nightly import keeps up to four sets eac
     // Turned down: their other sets wait until every fresh clip from someone else has played.
     const lastFresh = skipped.findLastIndex((it) => !it.cooled && !it.skipped);
     for (const i of rest) expect(i).toBeGreaterThan(lastFresh);
+  });
+});
+
+describe('Shorts in the feed', () => {
+  // Every artist with four long sets and two Shorts (the nightly caps).
+  const short = (c: Clip, n: number): Clip => ({
+    ...c,
+    id: `${c.artistId}-short${n}`,
+    durationSec: 40,
+    source: { provider: 'youtube', videoId: `${c.artistId}x${n}`.padEnd(11, 'x').slice(0, 11), start: 0, end: 40, channel: 'Fan', vertical: true, short: true },
+  });
+  const mixed: Clip[] = ARTISTS.flatMap((a) => {
+    const own = CLIPS.find((c) => c.artistId === a.id);
+    if (!own) return [];
+    return [0, 1, 2, 3].map((n) => ({ ...own, id: `${a.id}-set${n}` })).concat([short(own, 0), short(own, 1)]);
+  });
+
+  it('mixes Shorts in, never two close together while there are sets to put between, never one artist twice in a row', () => {
+    const { taste, informed } = computeTaste(MOCK_TASTE, ARTISTS, mixed, {});
+    const feed = rankFeed({ clips: mixed, artists: ARTISTS, taste, informed, reactions: {}, seen: {}, now: NOW });
+    expect(feed).toHaveLength(mixed.length);
+    const shorts = feed.map((it) => isShort(it.clip));
+    expect(shorts.indexOf(true)).toBe(SHORT_EVERY - 1); // mixed in early, not left to the end
+    // A Short at least every SHORT_EVERY cards while there are any…
+    const at = shorts.flatMap((s, i) => (s ? [i] : []));
+    for (let k = 1; k < at.length; k++) expect(at[k] - at[k - 1]).toBeLessThanOrEqual(SHORT_EVERY);
+    // …and never closer than SHORT_GAP while there are sets to put between.
+    const lastSet = shorts.lastIndexOf(false);
+    for (let i = 1; i < lastSet; i++) if (shorts[i]) expect(shorts.slice(Math.max(0, i - SHORT_GAP), i)).not.toContain(true);
+    const a = artistsIn(feed);
+    for (let i = 1; i < a.length; i++) expect(a[i]).not.toBe(a[i - 1]);
+    expect(isShort(mixed[0])).toBe(false);
   });
 });
 

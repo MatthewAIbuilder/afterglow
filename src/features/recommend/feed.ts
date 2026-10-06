@@ -23,8 +23,9 @@ const RATING_NET: Record<Rating, number> = { love: 1, like: 0.6, ok: 0, meh: -0.
  *
  * The feed takes turns between lanes in a fixed pattern (mostly personal,
  * regular exploring, the occasional new direction), never plays the same
- * artist twice in a row when it can avoid it, and gives each artist one clip
- * before anyone gets a second. Order of blocks: fresh clips, then clips of
+ * artist twice in a row when it can avoid it, gives each artist one clip
+ * before anyone gets a second, and spaces short crowd clips (Shorts) out
+ * among the longer sets. Order of blocks: fresh clips, then clips of
  * artists you've turned down (more skips and "not for me" than likes, saves
  * and loves), then clips
  * you saw lately, then the clips you skipped.
@@ -88,6 +89,13 @@ const FALLBACK: Record<Lane, readonly Lane[]> = {
 };
 /** Try not to repeat an artist within this many clips. */
 export const ARTIST_GAP = 2;
+
+/** Short crowd clips (YouTube Shorts) wait while one of the last this many clips was a Short: at most one in three. */
+export const SHORT_GAP = 2;
+/** …and get a turn of their own at least once in this many clips, so they're mixed in rather than left to the end. */
+export const SHORT_EVERY = 4;
+/** A short crowd clip (a YouTube Short from the nightly import). */
+export const isShort = (clip: Clip) => clip.source?.provider === 'youtube' && !!clip.source.short;
 
 /** At most one SoundCloud card in this many cards (so five others between two). */
 export const SOUNDCLOUD_EVERY = 6;
@@ -222,12 +230,14 @@ function interleave(items: FeedItem[], recent: string[], slot: number): FeedItem
   const effective = (it: FeedItem) => it.score - REPEAT * (placed[it.clip.artistId] ?? 0);
   // The highest effective score, ties to the better score (byScore). A clip never counts for more than
   // its score, and the queue is in byScore order, so once a score can't beat the best so far nothing after it can.
-  const best = (q: FeedItem[], blocked: Set<string>) => {
+  // 'none': no Shorts, 'only': Shorts only, 'any': either.
+  const best = (q: FeedItem[], blocked: Set<string>, shorts: 'none' | 'only' | 'any' = 'any') => {
     let at = -1;
     let top = -Infinity;
     for (let i = 0; i < q.length; i++) {
       if (at >= 0 && q[i].score <= top) break;
       if (blocked.has(q[i].clip.artistId)) continue;
+      if (shorts !== 'any' && isShort(q[i].clip) !== (shorts === 'only')) continue;
       const e = effective(q[i]);
       if (at < 0 || e > top) {
         at = i;
@@ -244,6 +254,9 @@ function interleave(items: FeedItem[], recent: string[], slot: number): FeedItem
 
   const out: FeedItem[] = [];
   const total = items.length;
+  // Clips placed since the last Short.
+  let sinceShort = 0;
+  let shortsLeft = items.filter((it) => isShort(it.clip)).length;
   while (out.length < total) {
     const turn = PATTERN[slot % PATTERN.length];
     let lanes = FALLBACK[turn];
@@ -258,14 +271,19 @@ function interleave(items: FeedItem[], recent: string[], slot: number): FeedItem
       blocked = new Set(Object.keys(left).filter((id) => id !== urgent));
       lanes = (['personal', 'explore', 'discover'] as const).filter((l) => queues[l].some((it) => it.clip.artistId === urgent));
     }
-    // First choice: the lane's turn, someone not heard just now. Then other lanes. Then anyone.
+    // First choice: the lane's turn, someone not heard just now; no Short right after another, and a Short
+    // when it's their turn (SHORT_EVERY). Then other lanes. Then without the Short rule. Then anyone.
     let pick: { lane: Lane; index: number } | undefined;
-    for (const lane of lanes) {
-      const index = best(queues[lane], blocked);
-      if (index >= 0) {
-        pick = { lane, index };
-        break;
+    const shortTurn = urgent || !shortsLeft ? 'any' : sinceShort < SHORT_GAP ? 'none' : sinceShort >= SHORT_EVERY - 1 ? 'only' : 'any';
+    for (const shorts of shortTurn === 'any' ? (['any'] as const) : ([shortTurn, 'any'] as const)) {
+      for (const lane of lanes) {
+        const index = best(queues[lane], blocked, shorts);
+        if (index >= 0) {
+          pick = { lane, index };
+          break;
+        }
       }
+      if (pick) break;
     }
     if (!pick) {
       const lane = lanes.find((l) => queues[l].length > 0)!;
@@ -276,6 +294,8 @@ function interleave(items: FeedItem[], recent: string[], slot: number): FeedItem
     recent.push(it.clip.artistId);
     placed[it.clip.artistId] = (placed[it.clip.artistId] ?? 0) + 1;
     left[it.clip.artistId] -= 1;
+    if (isShort(it.clip)) shortsLeft--;
+    sinceShort = isShort(it.clip) ? 0 : sinceShort + 1;
     slot++;
   }
   return out;

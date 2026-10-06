@@ -6,9 +6,13 @@ import {
   CLIP_BUDGET_SHARE,
   FIRST_CLIP_SHARE,
   MAX_CLIPS_PER_ARTIST,
+  MAX_SEARCHES,
+  MAX_SHORTS_PER_ARTIST,
   RETRY_MISSES_DAYS,
   RETRY_MORE_DAYS,
+  RETRY_SHORTS_DAYS,
   SEARCH_RESULTS,
+  SHORT_SEARCHES,
   cleanAsked,
   clipBudget,
   clipPlan,
@@ -16,14 +20,19 @@ import {
   isoSeconds,
   pickLiveSet,
   pickLiveSets,
+  pickShorts,
   sameSet,
   searchIds,
   searchUrl,
   setClip,
   setWords,
   shapesUrl,
+  shortClip,
+  shortsPlan,
+  shortsUrl,
   uprightOf,
   videoShapes,
+  withoutTags,
 } from '../youtube';
 
 // A videos.list answer shaped like YouTube's.
@@ -232,5 +241,84 @@ describe('More sets per artist', () => {
     const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile({ version: 1, clips, clipMisses: {}, clipMoreAsked: { x: '2026-10-01' } }));
     expect(built.problems).toEqual([]);
     expect(built.catalog.clipsOf('subtronics').filter((c) => c.id.startsWith('yt-v'))).toHaveLength(4);
+  });
+});
+
+describe('Shorts: upright crowd clips', () => {
+  const sid = (n: number) => `s${String(n).padStart(10, '0')}`;
+  const up = { player: { embedWidth: '405', embedHeight: '720' } };
+  const wide = { player: { embedWidth: '1280', embedHeight: '720' } };
+
+  it('searches short videos only', () => {
+    const url = shortsUrl('SUBTRONICS', 'k');
+    expect(url).toContain('videoDuration=short');
+    expect(url).toContain('videoEmbeddable=true');
+    expect(url).toContain('q=SUBTRONICS%20live%20%23shorts');
+  });
+
+  it('keeps upright live footage that names the artist, 15 s to 3 min', () => {
+    const details = {
+      items: [
+        video(sid(1), 'Subtronics drop at Lost Lands #shorts #dubstep', 'Rail Rider', 'PT42S', up),
+        video(sid(2), 'Subtronics live crowd at EDC', 'Lost Lands', 'PT58S', up), // festival channel first
+        video(sid(3), 'Subtronics live at Red Rocks', 'Fan', 'PT50S', wide), // not upright
+        video(sid(4), 'Subtronics interview backstage live', 'Fan', 'PT50S', up), // not footage of the show
+        video(sid(5), 'Subtronics drop remix', 'Fan', 'PT50S', up), // a remix upload
+        video(sid(6), 'Subtronics live #shorts', 'Fan', 'PT9S', up), // too short
+        video(sid(7), 'Subtronics live set', 'Fan', 'PT4M', up), // too long
+        video(sid(8), 'Excision live at Lost Lands', 'Fan', 'PT40S', up), // not the artist
+        video(sid(9), 'Subtronics drop at Lost Lands #fyp', 'Other fan', 'PT40S', up), // the same title again
+        video(sid(10), 'Subtronics new merch', 'Fan', 'PT40S', up), // no live words
+      ],
+    };
+    const shorts = pickShorts('SUBTRONICS', details);
+    expect(shorts.map((s) => s.videoId)).toEqual([sid(2), sid(1)]);
+    expect(shorts[1].title).toBe('Subtronics drop at Lost Lands');
+    expect(pickShorts('SUBTRONICS', details, { max: 5 }).map((s) => s.videoId)).toEqual([sid(2), sid(1)]);
+    // Already has that one, or it's used elsewhere: never twice.
+    expect(pickShorts('SUBTRONICS', details, { taken: ['Subtronics drop at Lost Lands'] }).map((s) => s.videoId)).toEqual([sid(2)]);
+    expect(pickShorts('SUBTRONICS', details, { blocked: new Set([sid(2)]) }).map((s) => s.videoId)).toEqual([sid(1)]);
+    expect(withoutTags('Drop! #shorts #edm')).toBe('Drop!');
+  });
+
+  it('plays a Short whole from its start, upright, and the app reads it as one', () => {
+    const [short] = pickShorts('SUBTRONICS', { items: [video(sid(1), 'Subtronics drop at Lost Lands #shorts', 'Rail Rider', 'PT42S', up)] });
+    const clip = shortClip(short, { id: 'subtronics', name: 'SUBTRONICS' }, 'cyclops-cove-4');
+    expect(clip).toEqual({
+      id: `yt-${sid(1)}`,
+      artist: 'subtronics',
+      festival: 'cyclops-cove-4',
+      title: 'Drop at Lost Lands',
+      video: { link: `https://www.youtube.com/shorts/${sid(1)}`, from: '0:00', to: '0:42', channel: 'Rail Rider', vertical: true, short: true },
+    });
+    const long = shortClip({ ...short, seconds: 400 }, { id: 'subtronics', name: 'SUBTRONICS' }, 'cyclops-cove-4');
+    expect(long.video.to).toBe('3:00');
+    const plain = { ...long, id: `yt-${sid(2)}`, video: { ...long.video, link: `https://youtu.be/${sid(2)}` } };
+    const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile({ version: 1, clips: [clip, plain] }));
+    expect(built.problems).toEqual([]);
+    const got = built.catalog.clipsOf('subtronics').find((c) => c.id === clip.id)!;
+    expect(got.durationSec).toBe(42);
+    expect(got.source).toMatchObject({ provider: 'youtube', start: 0, end: 42, vertical: true, short: true });
+    // "short" makes it upright even from a plain link.
+    expect(built.catalog.clipsOf('subtronics').find((c) => c.id === plain.id)?.source).toMatchObject({ vertical: true, short: true, end: 180 });
+  });
+
+  it('plans Shorts searches: upcoming lineups first, fewest Shorts first, waiting after a search with nothing new', () => {
+    const A = (id: string) => ({ id, name: id.toUpperCase() });
+    const shorts: Record<string, number> = { a: 1, b: 2, d: 1 };
+    const wanted = [A('a'), A('b'), A('c'), A('d'), A('e'), A('c')];
+    const plan = shortsPlan(wanted, (id) => shorts[id] ?? 0, { e: '2026-10-01' }, '2026-10-06', 10, { later: [A('x'), A('a')] });
+    // c has none; a and d have one; b is at the cap; e was asked 5 days ago; x isn't on an upcoming lineup.
+    expect(plan.map((p) => [p.id, p.have])).toEqual([
+      ['c', 0],
+      ['a', 1],
+      ['d', 1],
+      ['x', 0],
+    ]);
+    expect(shortsPlan([A('a'), A('c')], () => 0, {}, '2026-10-06', 1).map((p) => p.id)).toEqual(['a']);
+    expect(shortsPlan([A('e')], () => 0, { e: '2026-10-01' }, '2026-10-22', 1).map((p) => p.id)).toEqual(['e']);
+    expect(MAX_SHORTS_PER_ARTIST).toBe(2);
+    expect(SHORT_SEARCHES).toBeLessThan(MAX_SEARCHES);
+    expect(RETRY_SHORTS_DAYS).toBe(21);
   });
 });

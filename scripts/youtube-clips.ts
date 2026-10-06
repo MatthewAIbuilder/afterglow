@@ -15,9 +15,13 @@
  * sets as one-minute clips. A video is used once only (a b2b set can be the
  * best find for both artists): two clips with one video would make the app
  * refuse the whole file.
+ * A share of the searches (SHORT_SEARCHES of MAX_SEARCHES, more when the
+ * sets need fewer) looks for Shorts instead: short upright crowd clips of
+ * the artist live, up to MAX_SHORTS_PER_ARTIST each on top of their sets,
+ * played whole from the start in the tall player (`pickShorts`, `shortClip`).
  * Searches that found nothing are remembered ("clipMisses", retried after a
- * month; "clipMoreAsked" for artists who already have a clip, asked again
- * after three weeks). New extra clips stop at CLIP_BUDGET_SHARE of the app's
+ * month; "clipMoreAsked" for artists who already have a clip and
+ * "clipShortsAsked" for Shorts, asked again after three weeks). New extra clips stop at CLIP_BUDGET_SHARE of the app's
  * file size limit (first clips, and clips kept from earlier nights, at
  * FIRST_CLIP_SHARE), so the file never grows too large for the app.
  * Videos reported as wrong ("blockedVideos" in catalogue/afterglow.json) are
@@ -35,27 +39,38 @@ import {
   CLIP_BUDGET_SHARE,
   FIRST_CLIP_SHARE,
   MAX_CLIPS_PER_ARTIST,
+  MAX_SEARCHES,
+  MAX_SHORTS_PER_ARTIST,
   NEW_PER_SEARCH,
+  NEW_SHORTS_PER_SEARCH,
   RETRY_MISSES_DAYS,
   RETRY_MORE_DAYS,
+  RETRY_SHORTS_DAYS,
+  SHORT_SEARCHES,
   cleanAsked,
   clipBudget,
   clipPlan,
   detailsUrl,
   pickLiveSets,
+  pickShorts,
   searchIds,
   searchUrl,
   setClip,
   shapesUrl,
+  shortClip,
+  shortsPlan,
+  shortsUrl,
   videoShapes,
 } from '../src/data/import/youtube';
 import { buildCatalog } from '../src/data/merge';
 import { MAX_FILE_CHARS } from '../src/data/remote';
 import { bySoonest, isOver } from '../src/features/festivals/shelves';
+import { isShort } from '../src/features/recommend/feed';
 
 const OUT = resolve(__dirname, '../public/catalogue.json');
 type FileClip = ReturnType<typeof setClip>;
 /** A published clip's YouTube video id ("" when it has none). */
+const isShortFile = (c: FileClip) => (c?.video as { short?: unknown } | undefined)?.short === true;
 const videoIdOf = (c: FileClip) => (c?.id?.startsWith('yt-') ? c.id.slice(3) : (parseYouTubeLink(c?.video?.link)?.videoId ?? ''));
 
 function stop(message: string): never {
@@ -96,7 +111,7 @@ async function main() {
   const upcoming = bySoonest(catalog.festivals.filter((f) => !isOver(f, now)), now);
   const homeOf = (artistId: string): Festival | undefined => upcoming.find((f) => f.lineup.includes(artistId));
 
-  const published: { clips?: FileClip[]; clipMisses?: unknown; clipMoreAsked?: unknown }[] = [];
+  const published: { clips?: FileClip[]; clipMisses?: unknown; clipMoreAsked?: unknown; clipShortsAsked?: unknown }[] = [];
   for (const path of process.argv.slice(2)) {
     if (!existsSync(path)) continue;
     try {
@@ -105,16 +120,20 @@ async function main() {
   }
   const misses = cleanAsked(published[0]?.clipMisses, today, RETRY_MISSES_DAYS);
   const moreAsked = cleanAsked(published[0]?.clipMoreAsked, today, RETRY_MORE_DAYS);
-  const searches = process.env.CLIP_SEARCHES?.trim() ? Math.max(0, Number(process.env.CLIP_SEARCHES) || 0) : undefined;
+  const shortsAsked = cleanAsked(published[0]?.clipShortsAsked, today, RETRY_SHORTS_DAYS);
+  const searches = process.env.CLIP_SEARCHES?.trim() ? Math.max(0, Number(process.env.CLIP_SEARCHES) || 0) : MAX_SEARCHES;
 
-  // How many clips each artist has, and their titles (so a new find is a different set).
+  // How many sets and Shorts each artist has, and their titles (so a new find is a different one).
   const count: Record<string, number> = {};
+  const shortCount: Record<string, number> = {};
   const titles: Record<string, string[]> = {};
-  const note = (artist: string, title: unknown) => {
-    count[artist] = (count[artist] ?? 0) + 1;
-    if (typeof title === 'string') (titles[artist] ??= []).push(title);
+  const shortTitles: Record<string, string[]> = {};
+  const note = (artist: string, title: unknown, short: boolean) => {
+    const n = short ? shortCount : count;
+    n[artist] = (n[artist] ?? 0) + 1;
+    if (typeof title === 'string') ((short ? shortTitles : titles)[artist] ??= []).push(title);
   };
-  for (const c of catalog.clips) note(c.artistId, c.title);
+  for (const c of catalog.clips) note(c.artistId, c.title, isShort(c));
 
   // The file's size without clips: every clip kept or added has to fit (clipBudget).
   const shell = (clips: FileClip[]) => ({
@@ -122,6 +141,7 @@ async function main() {
     clips,
     clipMisses: misses,
     clipMoreAsked: moreAsked,
+    clipShortsAsked: shortsAsked,
     ...(blockedList.length ? { blockedVideos: blockedList } : {}),
   });
   // Room for the misses lists to grow tonight.
@@ -146,16 +166,17 @@ async function main() {
     if (v) used.add(v);
   }
 
-  // Clips found on earlier nights: each artist's first clip before anyone's extras, so if
-  // the file is ever short of room, the extras are what's left out.
+  // Clips found on earlier nights: each artist's first set before anyone's extras and Shorts, so if
+  // the file is ever short of room, those are what's left out.
   const carried = published
     .flatMap((p) => (Array.isArray(p.clips) ? p.clips : []))
     .filter((c) => typeof c?.id === 'string' && c.id.startsWith('yt-') && typeof c.artist === 'string' && !isBlocked(c) && !!catalog.artist(c.artist));
   let leftOut = 0;
   for (const firsts of [true, false]) {
     for (const c of carried) {
-      const n = count[c.artist] ?? 0;
-      if (firsts ? n > 0 : n >= MAX_CLIPS_PER_ARTIST) continue;
+      const short = isShortFile(c);
+      const n = (short ? shortCount : count)[c.artist] ?? 0;
+      if (firsts ? short || n > 0 : n >= (short ? MAX_SHORTS_PER_ARTIST : MAX_CLIPS_PER_ARTIST)) continue;
       if (used.has(c.id) || used.has(videoIdOf(c))) continue;
       // Its festival if still listed (even once it's over, so likes on the clip keep counting), else another the artist plays.
       const home = catalog.festival(c.festival)?.lineup.includes(c.artist)
@@ -167,50 +188,63 @@ async function main() {
         leftOut++;
         continue;
       }
-      if (keep(clip)) note(c.artist, c.title);
+      if (keep(clip)) note(c.artist, c.title, short);
     }
   }
 
   // Tonight's searches: festivals you curated first, then the rest, soonest first, in billing order;
-  // then artists with fewer clips than the cap (upcoming festivals first), fewest first.
+  // then artists with fewer clips than the cap (upcoming festivals first), fewest first. A share of
+  // the searches (more when the sets need fewer) looks for Shorts.
   const order = [...upcoming.filter((f) => !f.source), ...upcoming.filter((f) => f.source)];
   const named = (id: string) => {
     const a = catalog.artist(id);
     return a ? [{ id: a.id, name: a.name }] : [];
   };
   const wanted = order.flatMap((f) => f.lineup.flatMap(named));
-  const later = Object.keys(count).flatMap(named);
-  const plan = searches === 0 ? [] : clipPlan(wanted, (id) => count[id] ?? 0, misses, today, searches, { moreAsked, later });
+  const later = [...new Set([...Object.keys(count), ...Object.keys(shortCount)])].flatMap(named);
+  const forShorts = Math.round((searches * SHORT_SEARCHES) / MAX_SEARCHES);
+  const plan = clipPlan(wanted, (id) => count[id] ?? 0, misses, today, searches - forShorts, { moreAsked, later });
+  const planShorts = shortsPlan(wanted, (id) => shortCount[id] ?? 0, shortsAsked, today, searches - plan.length, { later });
+
+  let failures = 0;
+  let stopped = false;
+  /** One YouTube search: its answer's details (asked with the players' sizes), or undefined. */
+  const search = async (url: string) => {
+    const s = await getJson(url);
+    if (!s.ok) {
+      if (++failures >= 5) {
+        console.warn('YouTube clips: YouTube stopped answering; the rest wait for the next night.');
+        stopped = true;
+      } else if (s.status === 403) {
+        console.warn('YouTube clips: the daily quota is used up (or the key was refused); the rest wait for the next night.');
+        stopped = true;
+      }
+      return { ok: false as const };
+    }
+    const ids = searchIds(s.body);
+    const d = ids.length ? await getJson(detailsUrl(ids, key)) : undefined;
+    return { ok: true as const, details: d?.ok ? d.body : undefined };
+  };
 
   let firstFound = 0;
   let moreFound = 0;
+  let shortsFound = 0;
   let searched = 0;
-  let failures = 0;
+  let shortSearched = 0;
   let full = false;
-  // A clip of a typical size, to know before searching whether another set would still fit.
+  // A clip of a typical size, to know before searching whether another one would still fit.
   const probe = setClip({ videoId: 'x'.repeat(11), title: 'x'.repeat(40), channel: 'x'.repeat(20), seconds: 3600, score: 0 }, { id: 'x'.repeat(24), name: 'x' }, 'x'.repeat(24));
   for (const a of plan) {
+    if (stopped) break;
     // Out of room for extra clips: keep the day's allowance (first clips may still fit).
     if (a.have > 0 && !budget.fits(probe, CLIP_BUDGET_SHARE)) full = true;
     if (full && a.have > 0) continue;
     const have = count[a.id] ?? 0;
-    const s = await getJson(searchUrl(a.name, key, have));
-    if (!s.ok) {
-      if (++failures >= 5) {
-        console.warn('YouTube clips: YouTube stopped answering; the rest wait for the next night.');
-        break;
-      }
-      if (s.status === 403) {
-        console.warn('YouTube clips: the daily quota is used up (or the key was refused); the rest wait for the next night.');
-        break;
-      }
-      continue;
-    }
+    const s = await search(searchUrl(a.name, key, have));
+    if (!s.ok) continue;
     searched++;
-    const ids = searchIds(s.body);
-    const d = ids.length ? await getJson(detailsUrl(ids, key)) : undefined;
     const max = Math.min(NEW_PER_SEARCH, MAX_CLIPS_PER_ARTIST - have);
-    const sets = d?.ok ? pickLiveSets(a.name, d.body, { blocked: new Set([...blocked, ...used]), taken: titles[a.id] ?? [], max }) : [];
+    const sets = s.details ? pickLiveSets(a.name, s.details, { blocked: new Set([...blocked, ...used]), taken: titles[a.id] ?? [], max }) : [];
     const home = homeOf(a.id) ?? catalog.festivalsOf(a.id)[0];
     let added = 0;
     for (const set of home ? sets : []) {
@@ -221,7 +255,7 @@ async function main() {
         break;
       }
       if (!keep(clip)) continue;
-      note(a.id, clip.title);
+      note(a.id, clip.title, false);
       added++;
       if (first) firstFound++;
       else moreFound++;
@@ -233,6 +267,36 @@ async function main() {
       // Found, but no room: not a miss, ask again another night.
     } else if (have === 0) misses[a.id] = today;
     else moreAsked[a.id] = today;
+  }
+
+  // Shorts: upright crowd clips, played whole in the tall player.
+  for (const a of planShorts) {
+    if (stopped) break;
+    if (full || !budget.fits(probe, CLIP_BUDGET_SHARE)) {
+      full = true;
+      break;
+    }
+    const have = shortCount[a.id] ?? 0;
+    const s = await search(shortsUrl(a.name, key));
+    if (!s.ok) continue;
+    shortSearched++;
+    const max = Math.min(NEW_SHORTS_PER_SEARCH, MAX_SHORTS_PER_ARTIST - have);
+    const found = s.details ? pickShorts(a.name, s.details, { blocked: new Set([...blocked, ...used]), taken: shortTitles[a.id] ?? [], max }) : [];
+    const home = homeOf(a.id) ?? catalog.festivalsOf(a.id)[0];
+    let added = 0;
+    for (const short of home ? found : []) {
+      const clip = shortClip(short, a, home!.id);
+      if (!budget.fits(clip, CLIP_BUDGET_SHARE)) {
+        full = true;
+        break;
+      }
+      if (!keep(clip)) continue;
+      note(a.id, clip.title, true);
+      added++;
+      shortsFound++;
+    }
+    if (added) delete shortsAsked[a.id];
+    else if (!(full && found.length)) shortsAsked[a.id] = today;
   }
 
   // Each clip's shape, asked again every night (50 videos per unit of quota): upright uploads get the tall player.
@@ -261,12 +325,13 @@ async function main() {
   const none = onLineups.filter((id) => !count[id]).length;
   const below = onLineups.filter((id) => count[id] > 0 && count[id] < MAX_CLIPS_PER_ARTIST).length;
   const share = Math.round((out.length / MAX_FILE_CHARS) * 100);
+  const shortsInAll = clips.filter(isShortFile).length;
   console.log(
-    `YouTube clips: ${clips.length} clips in all (${upright} filmed upright), ${firstFound + moreFound} new tonight ` +
-      `(${firstFound} first clips, ${moreFound} more sets) from ${searched} searches. ` +
-      `On upcoming lineups: ${none} artists with no clip yet, ${below} with fewer than ${MAX_CLIPS_PER_ARTIST}. File at ${share}% of the size limit.`,
+    `YouTube clips: ${clips.length} clips in all (${shortsInAll} Shorts, ${upright} filmed upright), ${firstFound + moreFound + shortsFound} new tonight ` +
+      `(${firstFound} first clips, ${moreFound} more sets from ${searched} searches; ${shortsFound} Shorts from ${shortSearched} searches). ` +
+      `On upcoming lineups: ${none} artists with no live set yet, ${below} with fewer than ${MAX_CLIPS_PER_ARTIST}. File at ${share}% of the size limit.`,
   );
-  if (full) console.log(`YouTube clips: stopped adding more sets at ${Math.round(CLIP_BUDGET_SHARE * 100)}% of the file size limit; the rest wait until there's room.`);
+  if (full) console.log(`YouTube clips: stopped adding more clips at ${Math.round(CLIP_BUDGET_SHARE * 100)}% of the file size limit; the rest wait until there's room.`);
   if (leftOut) console.log(`YouTube clips: ${leftOut} clips from earlier nights were left out to keep the file under the size limit.`);
 }
 
