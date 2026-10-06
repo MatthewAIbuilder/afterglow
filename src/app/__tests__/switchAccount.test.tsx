@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetGoers } from '../../features/social/useGoers';
 import { forgetGuestView } from '../../state/adminView';
@@ -102,5 +103,28 @@ describe('switching accounts', () => {
     await flush();
     expect(app.getByText('Create your profile')).toBeTruthy();
     expect(app.getByLabelText('Email').props.value).toBe('new.person@example.com');
+  });
+
+  it('each account has its own likes and saves: switching puts one’s away and brings the other’s back', async () => {
+    await AsyncStorage.setItem('reactions.v1', JSON.stringify({ c11: { liked: false, saved: true, skipped: false } }));
+    const app = await renderApp('/saved');
+    await flush();
+    expect(app.getAllByLabelText(/from saved$/)).toHaveLength(1);
+
+    // The support account signs in on the same phone: none of Maya's saves.
+    await act(async () => void (await s().signIn(SUPPORT, 'support-pass')));
+    await flush(20);
+    expect(await AsyncStorage.getItem('reactions.v1')).toBeNull();
+    await act(async () => router.push('/saved'));
+    await flush();
+    expect(app.getByText('Nothing here yet. Tap Save or Like on a clip in Discover and it will wait for you here.')).toBeTruthy();
+
+    // Back to Maya: hers are back.
+    await act(async () => void (await s().signIn('maya@example.com', 'maya-pass')));
+    await flush(20);
+    expect(JSON.parse((await AsyncStorage.getItem('reactions.v1')) ?? '{}')).toEqual({ c11: { liked: false, saved: true, skipped: false } });
+    await act(async () => router.push('/saved'));
+    await flush();
+    expect(app.getAllByLabelText(/from saved$/)).toHaveLength(1);
   });
 });
