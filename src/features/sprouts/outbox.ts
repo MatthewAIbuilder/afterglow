@@ -157,6 +157,7 @@ export function sproutNotices(gifts: readonly Gift[], now: number): Notice[] {
       const who = g.claimedBy!.name ?? (g.claimedBy!.handle ? `@${g.claimedBy!.handle}` : undefined);
       return {
         id: `sprout:${g.id}`,
+        at: g.claimedAt,
         kind: 'sprout' as const,
         title: who !== undefined ? t('{name} picked up your {sprout}', { name: who, sprout: sproutName(g) }) : t('Someone picked up your {sprout}', { sprout: sproutName(g) }),
         body: g.note ? t('With your note: “{note}”. It’s growing in their garden now.', { note: g.note }) : t('It’s growing in their garden now.'),
@@ -170,9 +171,11 @@ export function bloomNotices(blooms: readonly { id: string; kind: SproutKind; at
   return blooms
     .filter((b) => b.kind !== 'seedling' && now - b.at < SPROUT_NEWS_DAYS * 86_400_000)
     .sort((a, b) => b.at - a.at)
+    // One per kind, the newest: a second sprout blooming into the same kind isn't news.
+    .filter((b, i, all) => all.findIndex((x) => x.kind === b.kind) === i)
     .map((b) => {
       const name = kindOf(b.kind).name;
-      return { id: `bloom:${b.id}`, kind: 'sprout' as const, title: t('Your sprout bloomed into a {name}', { name }), body: t('You can give {name}s now.', { name }), href: '/garden' };
+      return { id: `bloom:${b.id}`, at: b.at, kind: 'sprout' as const, title: t('Your sprout bloomed into a {name}', { name }), body: t('You can give {name}s now.', { name }), href: '/garden' };
     });
 }
 
@@ -186,6 +189,7 @@ export function arrivalNotices(garden: readonly GardenSprout[], now: number): No
       const who = g.name ?? (g.handle ? `@${g.handle}` : undefined);
       return {
         id: `sprout-in:${g.id}`,
+        at: g.at,
         kind: 'sprout' as const,
         title: who !== undefined ? t('Your {sprout} from {name} is in your garden', { sprout: sproutName(g), name: who }) : t('Your {sprout} from a friend is in your garden', { sprout: sproutName(g) }),
         body: g.note ? `“${g.note}”` : t('It grows as you go: festival days, sets, videos and sprouts you give.'),
@@ -202,6 +206,7 @@ export function wildNotices(garden: readonly GardenSprout[], now: number): Notic
     .slice(0, 10)
     .map((g) => ({
       id: `sprout-wild:${g.id}`,
+      at: g.at,
       kind: 'sprout' as const,
       title: t('A wild {sprout} appeared at {place}', { sprout: kindOf(g.kind).name, place: g.foundAt! }),
       body: t('It’s in your garden. Every festival night brings a new one.'),

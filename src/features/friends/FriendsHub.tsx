@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../../components/NightSky';
 import { PageActions } from '../../components/PageActions';
+import { NoticeBell } from '../../components/NoticeBell';
 import { PageTitle } from '../../components/PageTitle';
 import { ChevronIcon, PeopleIcon, PlusIcon } from '../../components/TabIcons';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -224,6 +225,8 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
           <Text style={styles.title} accessibilityRole="header">
             {t('Friends')}
           </Text>
+          {/* New followers, likes, tags and crew invites: the same bell as Festivals. */}
+          {inTab && social.availability.ok ? <NoticeBell /> : null}
         </View>
         {festival ? <Text style={styles.atFestival}>{t('At {festival}', { festival: festival.name })}</Text> : null}
 

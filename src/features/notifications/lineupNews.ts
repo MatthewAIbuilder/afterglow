@@ -108,6 +108,7 @@ export function lineupNotices(
       const acts = [...new Set(fs.flatMap((x) => x.loved))];
       out.push({
         id: `lineup:new:${n.at}`,
+        at: n.at,
         kind: 'lineup',
         href: '/festivals',
         title: t('{n} new festivals with artists you’d love', { n: fs.length }),
@@ -125,6 +126,7 @@ export function lineupNotices(
       n.newFestival
         ? {
             id: `lineup:${f.id}:${n.at}`,
+            at: n.at,
             kind: 'lineup',
             festivalId: f.id,
             href: `/festival/${f.id}`,
@@ -133,6 +135,7 @@ export function lineupNotices(
           }
         : {
             id: `lineup:${f.id}:${n.at}`,
+            at: n.at,
             kind: 'lineup',
             festivalId: f.id,
             href: `/festival/${f.id}`,

@@ -97,6 +97,7 @@ export function clipNotices(
     const many = clips.length > 1;
     out.push({
       id: `clips:${n.at}`,
+      at: n.at,
       kind: 'clips',
       href: `/?clip=${encodeURIComponent(clips[0].id)}`,
       title: many ? t('New live sets from {names}', { names: names(named) }) : t('A new live set from {names}', { names: names(named) }),

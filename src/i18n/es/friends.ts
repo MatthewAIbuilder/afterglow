@@ -414,4 +414,14 @@ export const es_friends: Dictionary = {
   'Yes, show it': 'Sí, mostrarlo',
   'You’re tagged. Untag yourself': 'Estás etiquetado. Quitar tu etiqueta',
   'You’re tagged · Untag me': 'Estás etiquetado · Quitarme',
+
+  // The bell, organised
+  'New sets': 'Sets nuevos',
+  'Search notifications': 'Buscar notificaciones',
+  'Nothing matches “{query}”.': 'Nada coincide con “{query}”.',
+  'Nothing here.': 'Aquí no hay nada.',
+  Earlier: 'Antes',
+  '{n}m': '{n} min',
+  '{n}h': '{n} h',
+  '{n}d': '{n} d',
 };

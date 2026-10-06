@@ -5,6 +5,7 @@ import { activityNotices } from '../features/notifications/activity';
 import { inviteNotices } from '../features/crews/invite';
 import { firstName } from '../features/crews/together';
 import { cleanRead, notices, type Notice } from '../features/notifications/inbox';
+import { sortNotices } from '../features/notifications/organize';
 import { clipNotices } from '../features/notifications/clipNews';
 import { lineupNotices } from '../features/notifications/lineupNews';
 import { recapNotices } from '../features/recap/recap';
@@ -169,9 +170,10 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
     () => [...wildNotices(garden, today.getTime()), ...arrivalNotices(garden, today.getTime()), ...bloomNotices(blooms, today.getTime()), ...sproutNotices(gifts, today.getTime())],
     [garden, blooms, gifts, today],
   );
+  // Happening now first, then the newest first (features/notifications/organize.ts).
   const all = useMemo(
-    () => [...inviteList, ...recapList, ...list, ...lineupList, ...clipList, ...sproutList, ...activityList],
-    [inviteList, recapList, list, lineupList, clipList, sproutList, activityList],
+    () => sortNotices([...inviteList, ...recapList, ...list, ...lineupList, ...clipList, ...sproutList, ...activityList], today.getTime()),
+    [inviteList, recapList, list, lineupList, clipList, sproutList, activityList, today],
   );
 
   const value = useMemo<Ctx>(() => ({ list: all, refresh, read, markRead, hydrated }), [all, refresh, read, markRead, hydrated]);

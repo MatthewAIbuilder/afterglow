@@ -60,6 +60,7 @@ export function openInvites(invites: readonly CrewInvite[], opts: { myCrews: rea
 export function inviteNotices(invites: readonly CrewInvite[], opts: { nameOf: (uid: string) => string | undefined; festivalName: (id: string) => string | undefined }): Notice[] {
   return invites.map((i) => ({
     id: `crewInvite:${i.crewId}:${i.at}`,
+    at: Date.parse(i.at) || undefined,
     kind: 'crewInvite' as const,
     title: inviteTitle(opts.nameOf(i.from), i.crewName),
     body: ((festival) => (festival ? t('Plan {festival} together. Tap to see the crew and join.', { festival }) : t('Plan the festival together. Tap to see the crew and join.')))(opts.festivalName(i.festivalId)),
