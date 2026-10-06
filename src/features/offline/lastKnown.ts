@@ -1,3 +1,5 @@
+import { months, t } from '../../i18n';
+import { formatTime } from '../festivals/format';
 import type { Crew, CrewMessage, CrewPicks, CrewUpdate, MeetSpot, Profile } from '../social/models';
 
 /**
@@ -139,17 +141,15 @@ export function keptAt(kept: readonly (Kept<unknown> | undefined)[]): number | u
 
 const clockOf = (ms: number) => {
   const d = new Date(ms);
-  const h = d.getHours();
-  return `${h % 12 === 0 ? 12 : h % 12}:${String(d.getMinutes()).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+  return formatTime(`${d.getHours()}:${d.getMinutes()}`);
 };
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const sameDay = (a: number, b: number) => new Date(a).toDateString() === new Date(b).toDateString();
 
 /** "9:41 PM" today, "Dec 4, 9:41 PM" another day. */
 export function whenRead(at: number, now: number): string {
   if (sameDay(at, now)) return clockOf(at);
   const d = new Date(at);
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${clockOf(at)}`;
+  return t('{month} {day}, {time}', { month: months(true)[d.getMonth()], day: d.getDate(), time: clockOf(at) });
 }
 
 /**
@@ -160,7 +160,7 @@ export function whenRead(at: number, now: number): string {
  * - up to date: nothing.
  */
 export function lastUpdatedLine({ at, offline, live, now }: { at?: number; offline: boolean; live: boolean; now: number }): string | undefined {
-  if (offline) return at ? `No signal, showing what you had · Last updated ${whenRead(at, now)}` : 'No signal. This fills in once you’re back online.';
-  if (!live && at) return `Last updated ${whenRead(at, now)}`;
+  if (offline) return at ? t('No signal, showing what you had · Last updated {when}', { when: whenRead(at, now) }) : t('No signal. This fills in once you’re back online.');
+  if (!live && at) return t('Last updated {when}', { when: whenRead(at, now) });
   return undefined;
 }

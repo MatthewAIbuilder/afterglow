@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { BEFORE_ANYTHING, GUIDE, GUIDE_NOTE, MIXES, guideEntry, rangeText } from './guide';
@@ -14,7 +15,7 @@ export function GuideList() {
   return (
     <View style={styles.wrap}>
       <View style={styles.before}>
-        <Text style={styles.beforeTitle}>Before you take anything</Text>
+        <Text style={styles.beforeTitle}>{t('Before you take anything')}</Text>
         {BEFORE_ANYTHING.map((line) => (
           <Text key={line} style={styles.bullet}>
             • {line}
@@ -34,33 +35,31 @@ export function GuideList() {
               }}
               accessibilityRole="button"
               accessibilityState={{ expanded: on }}
-              accessibilityLabel={`${g.name}, ${g.how}. Starts in ${rangeText(g.onset)}, lasts ${rangeText(g.total)}.`}
+              accessibilityLabel={t('{name}, {how}. Starts in {start}, lasts {total}.', { name: g.name, how: g.how, start: rangeText(g.onset), total: rangeText(g.total) })}
               style={styles.head}
             >
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{g.name}</Text>
-                <Text style={styles.times}>
-                  Starts {rangeText(g.onset)} · lasts {rangeText(g.total)}
-                </Text>
+                <Text style={styles.times}>{t('Starts {start} · lasts {total}', { start: rangeText(g.onset), total: rangeText(g.total) })}</Text>
               </View>
               <Text style={styles.chev}>{on ? '−' : '+'}</Text>
             </Pressable>
             {on ? (
               <View style={styles.body}>
                 <View style={styles.timeline}>
-                  <Stat label="Starts" value={rangeText(g.onset)} />
-                  <Stat label="Strongest until" value={rangeText(g.peak)} />
-                  <Stat label="Worn off by" value={rangeText(g.total)} />
+                  <Stat label={t('Starts')} value={rangeText(g.onset)} />
+                  <Stat label={t('Strongest until')} value={rangeText(g.peak)} />
+                  <Stat label={t('Worn off by')} value={rangeText(g.total)} />
                 </View>
-                <Text style={styles.how}>Times are for {g.how}.</Text>
-                {g.tips.map((t) => (
-                  <Text key={t} style={styles.bullet}>
-                    • {t}
+                <Text style={styles.how}>{t('Times are for {how}.', { how: g.how })}</Text>
+                {g.tips.map((tip) => (
+                  <Text key={tip} style={styles.bullet}>
+                    • {tip}
                   </Text>
                 ))}
                 {mixes.length ? (
                   <View style={styles.mixes}>
-                    <Text style={styles.mixTitle}>Riskier mixed with</Text>
+                    <Text style={styles.mixTitle}>{t('Riskier mixed with')}</Text>
                     {mixes.map((m) => {
                       const other = guideEntry(m.a === g.id ? m.b : m.a);
                       return (

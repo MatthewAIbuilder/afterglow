@@ -9,6 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { CROP_SHAPES, type CropShape, cropRect, frameFor, MAX_ZOOM, type Size } from './crop';
+import { t } from '../../i18n';
 
 export type CropSource = { uri: string; width: number; height: number };
 
@@ -137,7 +138,7 @@ function Cropper({ source, shape, onDone, onCancel }: Required<Props> & { source
   const hole = round
     ? `M ${fx} ${fy + frame.height / 2} a ${frame.width / 2} ${frame.height / 2} 0 1 0 ${frame.width} 0 a ${frame.width / 2} ${frame.height / 2} 0 1 0 ${-frame.width} 0 Z`
     : roundedRect(fx, fy, frame.width, frame.height, radius.md);
-  const title = shape === 'avatar' ? 'Move and scale your photo' : 'Move and scale your cover';
+  const title = shape === 'avatar' ? t('Move and scale your photo') : t('Move and scale your cover');
 
   return (
     <View style={styles.root}>
@@ -160,27 +161,27 @@ function Cropper({ source, shape, onDone, onCancel }: Required<Props> & { source
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>
-        <Text style={styles.hint}>Pinch to zoom, drag to move. Double-tap to start again.</Text>
+        <Text style={styles.hint}>{t('Pinch to zoom, drag to move. Double-tap to start again.')}</Text>
       </View>
 
       <View style={[styles.foot, { paddingBottom: insets.bottom + space.lg }]}>
         <View style={styles.zoomRow}>
-          <ZoomButton label="Zoom out" glyph="−" onPress={() => step(1 / 1.25)} />
-          <ZoomButton label="Zoom in" glyph="+" onPress={() => step(1.25)} />
+          <ZoomButton label={t('Zoom out')} glyph="−" onPress={() => step(1 / 1.25)} />
+          <ZoomButton label={t('Zoom in')} glyph="+" onPress={() => step(1.25)} />
         </View>
         <View style={styles.actions}>
           <Pressable onPress={onCancel} accessibilityRole="button" style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('Cancel')}</Text>
           </Pressable>
           <Pressable
             onPress={() => void choose()}
             disabled={busy}
             accessibilityRole="button"
-            accessibilityLabel={shape === 'avatar' ? 'Use this photo' : 'Use this cover'}
+            accessibilityLabel={shape === 'avatar' ? t('Use this photo') : t('Use this cover')}
             accessibilityState={{ busy }}
             style={({ pressed }) => [styles.use, pressed && styles.pressed]}
           >
-            {busy ? <ActivityIndicator color={color.night} /> : <Text style={styles.useText}>{shape === 'avatar' ? 'Use photo' : 'Use cover'}</Text>}
+            {busy ? <ActivityIndicator color={color.night} /> : <Text style={styles.useText}>{shape === 'avatar' ? t('Use photo') : t('Use cover')}</Text>}
           </Pressable>
         </View>
       </View>

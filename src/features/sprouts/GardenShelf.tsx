@@ -8,6 +8,7 @@ import { SPROUT_GREEN } from './look';
 import { SproutOf } from './SproutOf';
 import { gardenLine, sproutName } from './sprouts';
 import { useCatalog } from '../../state/catalog';
+import { t } from '../../i18n';
 
 const SHOWN = 8;
 
@@ -19,9 +20,9 @@ export function GardenShelf({ hidden, onToggle }: { hidden: boolean; onToggle: (
   const items = [
     ...artists.flatMap((a) => {
       const artist = catalog.artist(a.artistId);
-      return artist ? [{ id: `artist:${a.artistId}`, label: `${artist.name} sprout`, el: <SproutOf artist={{ id: artist.id, name: artist.name }} tier={a.tier} size={62} /> }] : [];
+      return artist ? [{ id: `artist:${a.artistId}`, label: t('{artist} sprout', { artist: artist.name }), el: <SproutOf artist={{ id: artist.id, name: artist.name }} tier={a.tier} size={62} /> }] : [];
     }),
-    ...garden.map((s) => ({ id: s.id, label: s.shown === 'seedling' && !s.artist ? 'Sprout' : sproutName({ kind: s.shown, artist: s.artist }), el: <SproutOf kind={s.shown} artist={s.artist} stage={s.stage} size={62} /> })),
+    ...garden.map((s) => ({ id: s.id, label: s.shown === 'seedling' && !s.artist ? t('Sprout') : sproutName({ kind: s.shown, artist: s.artist }), el: <SproutOf kind={s.shown} artist={s.artist} stage={s.stage} size={62} /> })),
   ].slice(0, SHOWN);
   const open = (to: '/garden' | '/give-sprout') => {
     haptic.select();
@@ -29,7 +30,7 @@ export function GardenShelf({ hidden, onToggle }: { hidden: boolean; onToggle: (
   };
   return (
     <View style={styles.wrap}>
-      <ShelfHead title="Your garden" hidden={hidden} onToggle={onToggle} link={gardenLine(garden.filter((s) => !s.artist))} onLink={() => open('/garden')} />
+      <ShelfHead title={t('Your garden')} hidden={hidden} onToggle={onToggle} link={gardenLine(garden.filter((s) => !s.artist))} onLink={() => open('/garden')} />
       {hidden ? null : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
           {items.map((s) => (
@@ -37,15 +38,15 @@ export function GardenShelf({ hidden, onToggle }: { hidden: boolean; onToggle: (
               key={s.id}
               onPress={() => open('/garden')}
               accessibilityRole="button"
-              accessibilityLabel={`${s.label}. Opens your garden.`}
+              accessibilityLabel={`${s.label}. ${t('Opens your garden.')}`}
               style={({ pressed }) => [styles.item, pressed && styles.pressed]}
             >
               {s.el}
             </Pressable>
           ))}
-          <Pressable onPress={() => open('/give-sprout')} accessibilityRole="button" accessibilityLabel="Give someone a sprout" style={({ pressed }) => [styles.give, pressed && styles.pressed]}>
+          <Pressable onPress={() => open('/give-sprout')} accessibilityRole="button" accessibilityLabel={t('Give someone a sprout')} style={({ pressed }) => [styles.give, pressed && styles.pressed]}>
             <Text style={styles.plus}>+</Text>
-            <Text style={styles.giveText}>Give</Text>
+            <Text style={styles.giveText}>{t('Give')}</Text>
           </Pressable>
         </ScrollView>
       )}

@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 /**
  * Asking for a festival that isn't in the app yet. Pure: the words and the
  * link; sending is the phone's (mail or the share sheet).
@@ -15,8 +17,8 @@ export const cleanRequest = (name: string, link?: string): FestivalRequest | und
 
 export function requestText({ name, link }: FestivalRequest, appName: string) {
   return {
-    subject: `Festival request: ${name}`,
-    body: [`Please add ${name} to ${appName}.`, link ? `Lineup or website: ${link}` : undefined, `Sent from ${appName}`]
+    subject: t('Festival request: {name}', { name }),
+    body: [t('Please add {name} to {app}.', { name, app: appName }), link ? t('Lineup or website: {link}', { link }) : undefined, t('Sent from {app}', { app: appName })]
       .filter(Boolean)
       .join('\n\n'),
   };

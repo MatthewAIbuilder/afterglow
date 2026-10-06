@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import type { View } from 'react-native';
 import { toBlob } from 'html-to-image';
 import { showAlert } from './dialog';
+import { t } from '../i18n';
 import type { ShareOutcome } from './share';
 import type { PictureInfo } from './sharePicture';
 
@@ -22,7 +23,7 @@ export async function sharePicture(ref: RefObject<View | null>, info: PictureInf
     blob = await toBlob(node, { pixelRatio: ratio, cacheBust: true, imagePlaceholder: TRANSPARENT });
     if (!blob) throw new Error('No picture');
   } catch {
-    showAlert('Couldn’t make the picture', 'Try again, or share it as text.');
+    showAlert(t('Couldn’t make the picture'), t('Try again, or share it as text.'));
     return 'failed';
   }
   const name = `${info.fileName}.png`;
@@ -38,9 +39,9 @@ export async function sharePicture(ref: RefObject<View | null>, info: PictureInf
       if (kind === 'AbortError') return 'dismissed';
       if (kind === 'NotAllowedError') {
         // Drawing took longer than the browser lets a tap count (Safari): one more tap shares it.
-        showAlert('Your picture is ready', undefined, [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Share', onPress: () => void nav.share(data).catch((err: { name?: string }) => err?.name !== 'AbortError' && download(blob, name)) },
+        showAlert(t('Your picture is ready'), undefined, [
+          { text: t('Not now'), style: 'cancel' },
+          { text: t('Share'), onPress: () => void nav.share(data).catch((err: { name?: string }) => err?.name !== 'AbortError' && download(blob, name)) },
         ]);
         return 'shared';
       }
@@ -61,7 +62,7 @@ function download(blob: Blob, name: string): ShareOutcome {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    showAlert('Picture saved', 'It’s in your downloads, ready to post or send.');
+    showAlert(t('Picture saved'), t('It’s in your downloads, ready to post or send.'));
     return 'shared';
   } catch {
     return 'failed';

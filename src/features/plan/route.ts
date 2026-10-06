@@ -1,5 +1,6 @@
 import type { Artist, Festival, SetTime, TasteProfile } from '../../data/types';
 import { cleanHours, type DayHours, freeMinutes, type Missed, missedBy } from './hours';
+import { t } from '../../i18n';
 import { toMinutes } from './plan';
 
 /**
@@ -321,9 +322,9 @@ function walks(stops: (RouteStop | RouteBreak)[]): (RouteStop | RouteBreak)[] {
 /** How much of the set a stop covers, in words: "Whole set", "First 45 min", "Last 30 min", "40 min". */
 export function stintLabel(stop: RouteStop) {
   const whole = stop.from <= stop.setStart && stop.to >= stop.setEnd;
-  if (whole) return 'Whole set';
+  if (whole) return t('Whole set');
   const min = stop.to - stop.from;
-  if (stop.from <= stop.setStart) return `First ${min} min`;
-  if (stop.to >= stop.setEnd) return `Last ${min} min`;
-  return `${min} min`;
+  if (stop.from <= stop.setStart) return t('First {n} min', { n: min });
+  if (stop.to >= stop.setEnd) return t('Last {n} min', { n: min });
+  return t('{n} min', { n: min });
 }

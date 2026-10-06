@@ -5,6 +5,7 @@ import { haptic } from '../../lib/haptics';
 import { useRatings } from '../../state/ratings';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { HeartIcon } from '../discover/icons';
+import { t } from '../../i18n';
 import { isWarm, RATING_LABEL, RATINGS } from './ratings';
 
 /**
@@ -17,9 +18,9 @@ export function RatePill({ artist }: { artist: Artist }) {
   const current = ratings[artist.id];
   const open = () => {
     haptic.select();
-    const options = [...RATINGS.map((r) => (r === current ? `${RATING_LABEL[r]} ✓` : RATING_LABEL[r])), ...(current ? ['Clear my rating'] : []), 'Cancel'];
+    const options = [...RATINGS.map((r) => (r === current ? `${RATING_LABEL[r]} ✓` : RATING_LABEL[r])), ...(current ? [t('Clear my rating')] : []), t('Cancel')];
     showActionSheet(
-      { title: `How do you feel about ${artist.name}?`, options, cancelButtonIndex: options.length - 1, destructiveButtonIndex: current ? RATINGS.length : undefined },
+      { title: t('How do you feel about {artist}?', { artist: artist.name }), options, cancelButtonIndex: options.length - 1, destructiveButtonIndex: current ? RATINGS.length : undefined },
       (i) => {
         if (i < RATINGS.length) {
           const r = RATINGS[i];
@@ -34,11 +35,11 @@ export function RatePill({ artist }: { artist: Artist }) {
     <Pressable
       onPress={open}
       accessibilityRole="button"
-      accessibilityLabel={current ? `Your rating of ${artist.name}: ${RATING_LABEL[current]}. Change it` : `Rate ${artist.name}`}
+      accessibilityLabel={current ? t('Your rating of {artist}: {rating}. Change it', { artist: artist.name, rating: RATING_LABEL[current] }) : t('Rate {artist}', { artist: artist.name })}
       style={({ pressed }) => [styles.pill, current && (warm ? styles.warm : styles.cold), pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
     >
       <HeartIcon color={warm ? color.glow : color.moon} filled={current === 'love'} size={15} />
-      <Text style={styles.text}>{current ? RATING_LABEL[current] : 'Rate'}</Text>
+      <Text style={styles.text}>{current ? RATING_LABEL[current] : t('Rate')}</Text>
     </Pressable>
   );
 }

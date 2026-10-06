@@ -1,4 +1,5 @@
 import type { Artist, Festival } from '../../data/models';
+import { t } from '../../i18n';
 import { toMinutes } from './plan';
 import type { DayRoute, RouteStop } from './route';
 
@@ -14,9 +15,9 @@ export type Elsewhere = { name: string; artist: Artist; stageId: string; start: 
 /** "Maya", "Maya and Sam", "Maya, Sam and Jo", "Maya, Sam and 2 more". */
 export function namesLine(names: readonly string[]): string {
   if (names.length <= 1) return names[0] ?? '';
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]}`;
-  return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
+  if (names.length === 2) return t('{a} and {b}', { a: names[0], b: names[1] });
+  if (names.length === 3) return t('{a}, {b} and {c}', { a: names[0], b: names[1], c: names[2] });
+  return t('{a}, {b} and {n} more', { a: names[0], b: names[1], n: names.length - 2 });
 }
 
 /**

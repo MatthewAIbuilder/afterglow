@@ -1,9 +1,10 @@
 import { stageName } from '../../data/festival';
 import type { Artist, Festival, SetTime, TasteProfile } from '../../data/models';
-import { formatTime } from '../festivals/format';
 import { toMinutes } from '../plan/plan';
 import { clockTime, type DayRoute, festivalRoute, type RouteStop } from '../plan/route';
 import { cardSection, type CardLine, type PlanCard } from '../plan/share';
+import { datesLine, formatTime } from '../festivals/format';
+import { t } from '../../i18n';
 
 /**
  * One route for the whole crew, set to set. Pure.
@@ -110,10 +111,11 @@ export function crewRoute(i: CrewRouteInput): CrewDay[] {
 
 /** "Maya", "Maya and Sam", "You and Maya", "Maya, Sam and 2 more". */
 export function namesLine(who: readonly string[], me: string, nameOf: (uid: string) => string): string {
-  const names = [...(who.includes(me) ? ['You'] : []), ...who.filter((u) => u !== me).map(nameOf)];
-  if (names.length <= 2) return names.join(' and ');
-  if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]}`;
-  return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
+  const names = [...(who.includes(me) ? [t('You')] : []), ...who.filter((u) => u !== me).map(nameOf)];
+  if (names.length <= 1) return names.join('');
+  if (names.length === 2) return t('{list} and {last}', { list: names[0], last: names[1] });
+  if (names.length === 3) return t('{list} and {last}', { list: `${names[0]}, ${names[1]}`, last: names[2] });
+  return t('{a}, {b} and {n} more', { a: names[0], b: names[1], n: names.length - 2 });
 }
 
 /**
@@ -127,10 +129,10 @@ export function crewRouteCard(festival: Festival, crewName: string, days: CrewDa
     for (const s of d.stops) {
       if (s.kind === 'set') lines.push({ time: formatTime(clockTime(s.from)), name: s.artist.name, where: stageName(festival, s.set.stageId), star: s.pinned });
     }
-    for (const s of d.splits) lines.push({ time: formatTime(s.set.start), name: s.artist.name, where: `${namesLine(s.who, me, nameOf)} split off`, star: false });
-    return lines.length ? [cardSection(d.day, lines)] : [];
+    for (const s of d.splits) lines.push({ time: formatTime(s.set.start), name: s.artist.name, where: t('{names} split off', { names: namesLine(s.who, me, nameOf) }), star: false });
+    return lines.length ? [cardSection(t(d.day), lines)] : [];
   });
   if (!sections.length) return undefined;
-  const subtitle = [`Our route at ${festival.name}`, festival.dates].filter(Boolean).join(' · ');
+  const subtitle = [t('Our route at {festival}', { festival: festival.name }), datesLine(festival)].filter(Boolean).join(' · ');
   return { title: crewName, subtitle, sections };
 }

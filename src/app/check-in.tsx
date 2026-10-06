@@ -6,7 +6,7 @@ import type { Artist, Festival, TasteProfile } from '../data/types';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PageTitle } from '../components/PageTitle';
-import { CHECK_INS, clock, cleanNote } from '../features/crews/updates';
+import { CHECK_INS, clock, cleanNote, presetLabel } from '../features/crews/updates';
 import { guessArtists, nightOf } from '../features/memories/guess';
 import { isOffline } from '../features/offline/status';
 import { StatusChips } from '../features/crews/CheckInPanel';
@@ -21,6 +21,10 @@ import { useTaste } from '../state/taste';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
+import { t } from '../i18n';
+
+/** Crew names as one line: "Bass crew and Day ones". */
+const crewNames = (crews: readonly { name: string }[]) => crews.map((c) => c.name).join(` ${t('and')} `);
 
 /**
  * Check in with your crew: one tap says where you are, stamped with the
@@ -55,21 +59,23 @@ export default function CheckInScreen() {
   const [photo, setPhoto] = useState<{ uri: string; width?: number; height?: number } | undefined>();
   const addPhoto = () => {
     const camera = Platform.OS !== 'web';
-    const options = [...(camera ? ['Take a photo'] : []), 'Choose from Photos', 'Cancel'];
-    showActionSheet({ title: 'A photo for your crew', message: 'Only your crew sees it.', options, cancelButtonIndex: options.length - 1 }, async (i) => {
+    const TAKE = t('Take a photo');
+    const CANCEL = t('Cancel');
+    const options = [...(camera ? [TAKE] : []), t('Choose from Photos'), CANCEL];
+    showActionSheet({ title: t('A photo for your crew'), message: t('Only your crew sees it.'), options, cancelButtonIndex: options.length - 1 }, async (i) => {
       const choice = options[i];
-      if (choice === 'Cancel' || !choice) return;
+      if (choice === CANCEL || !choice) return;
       try {
-        if (choice === 'Take a photo' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
-          showAlert('Camera is off for Afterglow', 'Turn it on in Settings to take a photo, or choose one from Photos.');
+        if (choice === TAKE && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
+          showAlert(t('Camera is off for {app}', { app: 'Afterglow' }), t('Turn it on in Settings to take a photo, or choose one from Photos.'));
           return;
         }
-        const pick = choice === 'Take a photo' ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+        const pick = choice === TAKE ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
         const r = await pick({ mediaTypes: ['images'], quality: 0.7 });
         const a = r.canceled ? undefined : r.assets?.[0];
         if (a) setPhoto({ uri: a.uri, width: a.width, height: a.height });
       } catch {
-        showAlert('Couldn’t get that photo', 'Try again, or choose another one.');
+        showAlert(t('Couldn’t get that photo'), t('Try again, or choose another one.'));
       }
     });
   };
@@ -77,8 +83,8 @@ export default function CheckInScreen() {
   if (!ready || !festival) {
     return (
       <View style={[styles.root, { paddingTop: space.xl }]}>
-        <Text style={styles.title}>Check in with your crew</Text>
-        <Text style={styles.body}>Start or join a crew for a festival you’re going to, and you can tell them where you are from here.</Text>
+        <Text style={styles.title}>{t('Check in with your crew')}</Text>
+        <Text style={styles.body}>{t('Start or join a crew for a festival you’re going to, and you can tell them where you are from here.')}</Text>
         <SheetClose />
       </View>
     );
@@ -105,18 +111,20 @@ export default function CheckInScreen() {
     return (
       <View style={[styles.root, styles.done, { paddingBottom: insets.bottom + space.xl }]} accessibilityLiveRegion="polite">
         <Text style={styles.doneTime}>{marked}</Text>
-        <Text style={styles.title}>{refused ? 'Couldn’t reach your crew' : !waiting ? 'Sent to your crew' : offline ? 'Saved for when there’s signal' : 'Sending…'}</Text>
+        <Text style={styles.title}>{refused ? t('Couldn’t reach your crew') : !waiting ? t('Sent to your crew') : offline ? t('Saved for when there’s signal') : t('Sending…')}</Text>
         <Text style={styles.body}>
           {refused
-            ? 'Your crew couldn’t take this check-in (the crew may have ended, or your phone’s clock may be off). Try checking in again.'
+            ? t('Your crew couldn’t take this check-in (the crew may have ended, or your phone’s clock may be off). Try checking in again.')
             : !waiting
-            ? `${crews.map((c) => c.name).join(' and ')} ${crews.length === 1 ? 'sees' : 'see'} it marked ${marked}.`
+            ? crews.length === 1
+              ? t('{crews} sees it marked {time}.', { crews: crewNames(crews), time: marked })
+              : t('{crews} see it marked {time}.', { crews: crewNames(crews), time: marked })
             : offline
-              ? `No signal right now. It sends itself as soon as there is, still marked ${marked}, so your crew knows when you were there.`
-              : `The signal’s slow. It keeps trying by itself, still marked ${marked}. You can close this.`}
+              ? t('No signal right now. It sends itself as soon as there is, still marked {time}, so your crew knows when you were there.', { time: marked })
+              : t('The signal’s slow. It keeps trying by itself, still marked {time}. You can close this.', { time: marked })}
         </Text>
         <Pressable onPress={() => goBack()} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-          <Text style={styles.primaryText}>Done</Text>
+          <Text style={styles.primaryText}>{t('Done')}</Text>
         </Pressable>
       </View>
     );
@@ -124,16 +132,18 @@ export default function CheckInScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <PageTitle title="Check in" />
+      <PageTitle title={t('Check in')} />
       <ScrollView contentContainerStyle={{ paddingTop: space.xl, paddingBottom: insets.bottom + space.xl }} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.title, styles.pad]}>Check in with your crew</Text>
+        <Text style={[styles.title, styles.pad]}>{t('Check in with your crew')}</Text>
         <Text style={[styles.body, styles.pad]}>
-          {crews.map((c) => c.name).join(' and ')} {crews.length === 1 ? 'sees' : 'see'} the time you tap, even if the signal holds it back.
+          {crews.length === 1
+            ? t('{crews} sees the time you tap, even if the signal holds it back.', { crews: crewNames(crews) })
+            : t('{crews} see the time you tap, even if the signal holds it back.', { crews: crewNames(crews) })}
         </Text>
-        {offline ? <Text style={[styles.offline, styles.pad]}>No signal right now: it’ll send itself later, marked with this moment.</Text> : null}
+        {offline ? <Text style={[styles.offline, styles.pad]}>{t('No signal right now: it’ll send itself later, marked with this moment.')}</Text> : null}
 
         {festivals.length > 1 ? (
-          <Chips label="Festival">
+          <Chips label={t('Festival')}>
             {festivals.map((f) => (
               <Chip key={f.id} label={f.name} on={f.id === festival.id} onPress={() => setChosen(f.id)} />
             ))}
@@ -141,7 +151,7 @@ export default function CheckInScreen() {
         ) : null}
 
         {playing ? (
-          <Chips label="Watching">
+          <Chips label={t('Watching')}>
             <Chip
               label={`${playing.artist.name}${playing.stage ? ` · ${playing.stage}` : ''}`}
               on={watching}
@@ -154,7 +164,7 @@ export default function CheckInScreen() {
         ) : null}
 
         {festival.stages.length > 0 ? (
-          <Chips label="Where are you?">
+          <Chips label={t('Where are you?')}>
             {festival.stages.map((s) => (
               <Chip
                 key={s.id}
@@ -169,42 +179,42 @@ export default function CheckInScreen() {
           </Chips>
         ) : null}
 
-        <Text style={[styles.section, styles.pad]}>Photo</Text>
+        <Text style={[styles.section, styles.pad]}>{t('Photo')}</Text>
         <View style={styles.pad}>
           {photo ? (
             <View style={styles.photoRow}>
-              <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" accessibilityLabel="Your photo for the crew" />
+              <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" accessibilityLabel={t('Your photo for the crew')} />
               <View style={{ flex: 1, gap: space.xs }}>
-                <Text style={styles.photoNote}>Goes with your check-in. Only your crew sees it.</Text>
-                <Pressable onPress={() => setPhoto(undefined)} accessibilityRole="button" accessibilityLabel="Remove the photo" hitSlop={8}>
-                  <Text style={styles.photoRemove}>Remove</Text>
+                <Text style={styles.photoNote}>{t('Goes with your check-in. Only your crew sees it.')}</Text>
+                <Pressable onPress={() => setPhoto(undefined)} accessibilityRole="button" accessibilityLabel={t('Remove the photo')} hitSlop={8}>
+                  <Text style={styles.photoRemove}>{t('Remove')}</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
-            <Pressable onPress={addPhoto} accessibilityRole="button" accessibilityLabel="Add a photo for your crew" style={({ pressed }) => [styles.photoAdd, pressed && styles.pressed]}>
-              <Text style={styles.photoAddText}>+ Add a photo</Text>
-              <Text style={styles.photoNote}>Just for your crew, never on Discover or your profile.</Text>
+            <Pressable onPress={addPhoto} accessibilityRole="button" accessibilityLabel={t('Add a photo for your crew')} style={({ pressed }) => [styles.photoAdd, pressed && styles.pressed]}>
+              <Text style={styles.photoAddText}>{t('+ Add a photo')}</Text>
+              <Text style={styles.photoNote}>{t('Just for your crew, never on Discover or your profile.')}</Text>
             </Pressable>
           )}
         </View>
 
-        <Text style={[styles.section, styles.pad]}>Say</Text>
+        <Text style={[styles.section, styles.pad]}>{t('Say')}</Text>
         <View style={[styles.quick, styles.pad]}>
           {CHECK_INS.map((words) => (
             <Pressable
               key={words}
               onPress={() => void send(words)}
               accessibilityRole="button"
-              accessibilityLabel={`Send “${words}” to your crew`}
+              accessibilityLabel={t('Send “{words}” to your crew', { words: presetLabel(words) })}
               style={({ pressed }) => [styles.quickButton, pressed && styles.pressed]}
             >
-              <Text style={styles.quickText}>{words}</Text>
+              <Text style={styles.quickText}>{presetLabel(words)}</Text>
             </Pressable>
           ))}
         </View>
 
-        <Text style={[styles.section, styles.pad]}>Let them know</Text>
+        <Text style={[styles.section, styles.pad]}>{t('Let them know')}</Text>
         <View style={styles.pad}>
           <StatusChips
             festivalId={festival.id}
@@ -218,21 +228,21 @@ export default function CheckInScreen() {
         <View style={[styles.own, styles.pad]}>
           <TextInput
             value={note}
-            onChangeText={(t) => setNote(t.slice(0, CREW_NOTE_MAX))}
-            placeholder="Or say something…"
+            onChangeText={(v) => setNote(v.slice(0, CREW_NOTE_MAX))}
+            placeholder={t('Or say something…')}
             placeholderTextColor={color.moonFaint}
             style={styles.input}
-            accessibilityLabel="Your own words for your crew"
+            accessibilityLabel={t('Your own words for your crew')}
             returnKeyType="send"
             onSubmitEditing={() => void (cleanNote(note) && send(note))}
           />
           <Pressable
             onPress={() => void send(cleanNote(note) || undefined)}
             accessibilityRole="button"
-            accessibilityLabel={photo ? 'Send the photo to your crew' : cleanNote(note) ? 'Send to your crew' : 'Send where you are to your crew'}
+            accessibilityLabel={photo ? t('Send the photo to your crew') : cleanNote(note) ? t('Send to your crew') : t('Send where you are to your crew')}
             style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
           >
-            <Text style={styles.primaryText}>Send</Text>
+            <Text style={styles.primaryText}>{t('Send')}</Text>
           </Pressable>
         </View>
       </ScrollView>

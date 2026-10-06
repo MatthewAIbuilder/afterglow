@@ -5,6 +5,7 @@ import type { Memory } from '../memories/models';
 import type { Milestone } from '../profile/milestones';
 import type { CrewUpdate } from '../social/models';
 import { topSound } from '../taste/thisOrThat';
+import { t } from '../../i18n';
 
 /**
  * Side quests: badges for the things that make a festival yours: meeting
@@ -17,25 +18,25 @@ export type QuestId = 'plur' | 'wavelength' | 'fam' | 'crew4' | 'sync' | 'lookou
 export type QuestSpec = { id: QuestId; title: string; how: string; about: string; target: number; kind: 'connect' | 'adventure' };
 
 export const QUESTS: readonly QuestSpec[] = [
-  { id: 'plur', kind: 'connect', target: 1, title: 'PLUR trade', how: 'Swap friend codes with someone at a festival', about: 'Peace, love, unity, respect. For scanning someone’s friend code face to face at a festival.' },
+  { id: 'plur', kind: 'connect', target: 1, title: t('PLUR trade'), how: t('Swap friend codes with someone at a festival'), about: t('Peace, love, unity, respect. For scanning someone’s friend code face to face at a festival.') },
   {
     id: 'wavelength',
     kind: 'connect',
     target: 1,
-    title: 'Same wavelength',
-    how: 'Make a friend at a set you both love',
-    about: 'For meeting someone new during a set by an artist you love, when their sound matches it too. Scan their code right there.',
+    title: t('Same wavelength'),
+    how: t('Make a friend at a set you both love'),
+    about: t('For meeting someone new during a set by an artist you love, when their sound matches it too. Scan their code right there.'),
   },
-  { id: 'fam', kind: 'connect', target: 5, title: 'Festival fam', how: 'Make 5 friends at one festival', about: 'For swapping codes with 5 people at the same festival. Strangers at the start, fam by the end.' },
-  { id: 'crew4', kind: 'connect', target: 4, title: 'Squad up', how: 'Go with a crew of 4 or more', about: 'For being at a festival with a crew of at least 4 on Afterglow.' },
-  { id: 'sync', kind: 'connect', target: 1, title: 'In sync', how: 'Post from the same set as a crewmate', about: 'For you and a crewmate posting from the same stage or set within half an hour of each other.' },
-  { id: 'lookout', kind: 'connect', target: 1, title: 'Looking out', how: 'Answer a crewmate who asks for help', about: 'For replying when someone in your crew asked for help. Festivals are better when everyone gets home.' },
-  { id: 'sproutswap', kind: 'connect', target: 2, title: 'Sprout swap', how: 'Give a sprout and get one on the same night', about: 'For giving someone a sprout and being given one, on the same night of a festival. A little rave tradition.' },
-  { id: 'sproutlove', kind: 'connect', target: 5, title: 'Spread the love', how: 'Give 5 sprouts at one festival', about: 'For giving 5 sprouts that people picked up, all at the same festival.' },
-  { id: 'beacon', kind: 'connect', target: 1, title: 'Beacon', how: 'Set a meeting spot for your crew', about: 'For picking a meeting spot for your crew, so nobody stays lost for long.' },
-  { id: 'sunrise', kind: 'adventure', target: 1, title: 'Sunrise set', how: 'Film a moment at a festival after 5 AM', about: 'For filming a moment at a festival between 5 and 8 in the morning. You stayed for the sunrise.' },
-  { id: 'everynight', kind: 'adventure', target: 2, title: 'Every night', how: 'Film a moment on every night of a festival', about: 'For filming at least one moment on every night of a festival with two or more nights.' },
-  { id: 'stages', kind: 'adventure', target: 3, title: 'Stage hopper', how: 'Post from 3 stages in one night', about: 'For posting to your crew from 3 different stages in a single night.' },
+  { id: 'fam', kind: 'connect', target: 5, title: t('Festival fam'), how: t('Make 5 friends at one festival'), about: t('For swapping codes with 5 people at the same festival. Strangers at the start, fam by the end.') },
+  { id: 'crew4', kind: 'connect', target: 4, title: t('Squad up'), how: t('Go with a crew of 4 or more'), about: t('For being at a festival with a crew of at least 4 on Afterglow.') },
+  { id: 'sync', kind: 'connect', target: 1, title: t('In sync'), how: t('Post from the same set as a crewmate'), about: t('For you and a crewmate posting from the same stage or set within half an hour of each other.') },
+  { id: 'lookout', kind: 'connect', target: 1, title: t('Looking out'), how: t('Answer a crewmate who asks for help'), about: t('For replying when someone in your crew asked for help. Festivals are better when everyone gets home.') },
+  { id: 'sproutswap', kind: 'connect', target: 2, title: t('Sprout swap'), how: t('Give a sprout and get one on the same night'), about: t('For giving someone a sprout and being given one, on the same night of a festival. A little rave tradition.') },
+  { id: 'sproutlove', kind: 'connect', target: 5, title: t('Spread the love'), how: t('Give 5 sprouts at one festival'), about: t('For giving 5 sprouts that people picked up, all at the same festival.') },
+  { id: 'beacon', kind: 'connect', target: 1, title: t('Beacon'), how: t('Set a meeting spot for your crew'), about: t('For picking a meeting spot for your crew, so nobody stays lost for long.') },
+  { id: 'sunrise', kind: 'adventure', target: 1, title: t('Sunrise set'), how: t('Film a moment at a festival after 5 AM'), about: t('For filming a moment at a festival between 5 and 8 in the morning. You stayed for the sunrise.') },
+  { id: 'everynight', kind: 'adventure', target: 2, title: t('Every night'), how: t('Film a moment on every night of a festival'), about: t('For filming at least one moment on every night of a festival with two or more nights.') },
+  { id: 'stages', kind: 'adventure', target: 3, title: t('Stage hopper'), how: t('Post from 3 stages in one night'), about: t('For posting to your crew from 3 different stages in a single night.') },
 ];
 
 /** A friend you added by scanning their code. */

@@ -5,6 +5,7 @@ import { SOUND_LABEL } from '../../data/models';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { SoundShare } from './lean';
 import { SOUND_COLOR } from '../sound-map/colors';
+import { t } from '../../i18n';
 
 type Props = {
   shares: SoundShare[];
@@ -41,7 +42,7 @@ function Row({ share, index, animate, colored }: { share: SoundShare; index: num
   const label = SOUND_LABEL[share.tag];
 
   return (
-    <View style={styles.row} accessible accessibilityLabel={`${label}, ${share.percent} percent`}>
+    <View style={styles.row} accessible accessibilityLabel={t('{sound}, {pct} percent', { sound: label, pct: share.percent })}>
       <View style={styles.labelWrap}>
         {colored ? <View style={[styles.dot, { backgroundColor: SOUND_COLOR[share.tag] }]} /> : null}
         <Text style={styles.label} numberOfLines={1}>

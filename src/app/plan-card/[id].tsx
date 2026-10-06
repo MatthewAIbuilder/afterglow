@@ -21,6 +21,7 @@ import { shareMessage } from '../../lib/share';
 import { goBack } from '../../lib/nav';
 import { shareParams } from '../../features/messages/shares';
 import { useSocial } from '../../state/social';
+import { t } from '../../i18n';
 
 /**
  * Share your plan: your must-sees (your top picks and why), a poster-like
@@ -51,7 +52,6 @@ function PlanCardView({ festival }: { festival: Festival }) {
   const showPoster = mode === 'poster' && !!poster;
   const showMustSees = mode === 'mustsee' && !!mustSees;
   const text = showPoster ? lineupPosterText(poster) : showMustSees ? mustSeeText(mustSees, APP_NAME, WEB_URL) : planText;
-  const what = showPoster ? 'lineup poster' : showMustSees ? 'must-sees' : 'plan';
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const cardRef = useRef<View>(null);
@@ -61,15 +61,15 @@ function PlanCardView({ festival }: { festival: Festival }) {
     if (busy) return;
     haptic.tap();
     setBusy(true);
-    await sharePoster(cardRef, showPoster ? `My ${festival.name} lineup` : showMustSees ? `My must-sees at ${festival.name}` : `My ${festival.name}`);
+    await sharePoster(cardRef, showPoster ? t('My {festival} lineup', { festival: festival.name }) : showMustSees ? t('My must-sees at {festival}', { festival: festival.name }) : t('My {festival}', { festival: festival.name }));
     setBusy(false);
   };
 
   return (
     <View style={styles.root}>
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.heading}>Share your plan</Text>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <Text style={styles.heading}>{t('Share your plan')}</Text>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
@@ -105,17 +105,17 @@ function PlanCardView({ festival }: { festival: Festival }) {
             <PosterCard card={card} />
           </View>
         ) : (
-          <Text style={styles.empty}>Like a few clips or rate some artists and your plan will be ready to share.</Text>
+          <Text style={styles.empty}>{t('Like a few clips or rate some artists and your plan will be ready to share.')}</Text>
         )}
         {card || showPoster || showMustSees ? (
           <Pressable
             onPress={shareImage}
             disabled={busy}
             accessibilityRole="button"
-            accessibilityLabel={`Share your ${what} as an image`}
+            accessibilityLabel={showPoster ? t('Share your lineup poster as an image') : showMustSees ? t('Share your must-sees as an image') : t('Share your plan as an image')}
             style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
           >
-            <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+            <Text style={styles.buttonText}>{busy ? t('Getting it ready…') : t('Share image')}</Text>
           </Pressable>
         ) : null}
         {showMustSees && mustSees && social.user && social.profile ? (
@@ -125,10 +125,10 @@ function PlanCardView({ festival }: { festival: Festival }) {
               router.push({ pathname: '/send', params: shareParams({ kind: 'festival', id: festival.id, picks: mustSees.lines.map((l) => l.artist.id) }) });
             }}
             accessibilityRole="button"
-            accessibilityLabel="Send your must-sees to a friend"
+            accessibilityLabel={t('Send your must-sees to a friend')}
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
           >
-            <Text style={styles.buttonText}>Send to a friend</Text>
+            <Text style={styles.buttonText}>{t('Send to a friend')}</Text>
           </Pressable>
         ) : null}
         {text ? (
@@ -138,10 +138,10 @@ function PlanCardView({ festival }: { festival: Festival }) {
               void shareMessage(text);
             }}
             accessibilityRole="button"
-            accessibilityLabel={showPoster ? 'Share your lineup as text' : `Share your ${what} as text`}
+            accessibilityLabel={showPoster ? t('Share your lineup as text') : showMustSees ? t('Share your must-sees as text') : t('Share your plan as text')}
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
           >
-            <Text style={styles.buttonText}>Share as text</Text>
+            <Text style={styles.buttonText}>{t('Share as text')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>
@@ -150,7 +150,7 @@ function PlanCardView({ festival }: { festival: Festival }) {
 }
 
 type Mode = 'mustsee' | 'plan' | 'poster';
-const MODE_LABEL: Record<Mode, string> = { mustsee: 'Must-sees', plan: 'Your plan', poster: 'Lineup poster' };
+const MODE_LABEL: Record<Mode, string> = { mustsee: t('Must-sees'), plan: t('Your plan'), poster: t('Lineup poster') };
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },

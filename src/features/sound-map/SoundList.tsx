@@ -14,6 +14,7 @@ import { HeartIcon } from '../discover/icons';
 import { RATING_SAID, type Rating } from '../taste/ratings';
 import { SOUND_COLOR } from './colors';
 import { listView, rankArtists, type ListRow, type ListSort } from './list';
+import { t, tn } from '../../i18n';
 
 /** Every row is the same height, so the list stays steady as it scrolls. */
 const ROW_H = 64;
@@ -53,13 +54,13 @@ export function SoundList({
   const chips = useMemo(() => {
     const counts = sound && !view.counts.some((c) => c.tag === sound) ? [...view.counts, { tag: sound, count: 0 }] : view.counts;
     return [
-      { key: undefined, label: 'All sounds', accessibilityLabel: 'Every sound' },
+      { key: undefined, label: t('All sounds'), accessibilityLabel: t('Every sound') },
       ...counts.map((c) => ({
         key: c.tag,
         label: SOUND_LABEL[c.tag],
         count: c.count,
         dot: SOUND_COLOR[c.tag],
-        accessibilityLabel: `Only ${SOUND_LABEL[c.tag].toLowerCase()}, ${c.count} ${c.count === 1 ? 'artist' : 'artists'}`,
+        accessibilityLabel: tn(c.count, 'Only {sound}, {n} artist', 'Only {sound}, {n} artists', { sound: SOUND_LABEL[c.tag].toLowerCase() }),
       })),
     ];
   }, [view.counts, sound]);
@@ -78,7 +79,7 @@ export function SoundList({
     <View>
       {header}
       <View style={styles.search}>
-        <SearchField value={query} onChange={setQuery} placeholder="Artist or sound, like dubstep" label="Search the list for an artist or a sound" />
+        <SearchField value={query} onChange={setQuery} placeholder={t('Artist or sound, like dubstep')} label={t('Search the list for an artist or a sound')} />
       </View>
       {chips.length > 2 || sound ? (
         <View style={styles.chips}>
@@ -88,9 +89,13 @@ export function SoundList({
       {n > 0 ? (
         <View style={styles.meta}>
           <Text style={styles.count} accessibilityLiveRegion="polite">
-            {n} {soundName ? `${soundName} ` : ''}
-            {n === 1 ? 'artist' : 'artists'}
-            {festivalName ? ` at ${festivalName}` : ''}
+            {soundName
+              ? festivalName
+                ? tn(n, '{n} {sound} artist at {festival}', '{n} {sound} artists at {festival}', { sound: soundName, festival: festivalName })
+                : tn(n, '{n} {sound} artist', '{n} {sound} artists', { sound: soundName })
+              : festivalName
+                ? tn(n, '{n} artist at {festival}', '{n} artists at {festival}', { festival: festivalName })
+                : tn(n, '{n} artist', '{n} artists')}
           </Text>
           <Pressable
             onPress={() => {
@@ -98,11 +103,11 @@ export function SoundList({
               setSort(sort === 'match' ? 'name' : 'match');
             }}
             accessibilityRole="button"
-            accessibilityLabel={sort === 'match' ? 'Sorted by best match. Sort A to Z instead' : 'Sorted A to Z. Sort by best match instead'}
+            accessibilityLabel={sort === 'match' ? t('Sorted by best match. Sort A to Z instead') : t('Sorted A to Z. Sort by best match instead')}
             hitSlop={8}
             style={({ pressed }) => [styles.sort, pressed && { opacity: 0.6 }]}
           >
-            <Text style={styles.sortText}>{sort === 'match' ? 'Best match' : 'A–Z'}</Text>
+            <Text style={styles.sortText}>{sort === 'match' ? t('Best match') : t('A–Z')}</Text>
             <ChevronIcon color={color.moonDim} size={10} direction="down" />
           </Pressable>
         </View>
@@ -113,12 +118,14 @@ export function SoundList({
   const empty = (
     <Text style={styles.empty}>
       {q
-        ? `No ${soundName ? `${soundName} ` : ''}artist or sound matches “${q}”.`
+        ? soundName
+          ? t('No {sound} artist or sound matches “{query}”.', { sound: soundName, query: q })
+          : t('No artist or sound matches “{query}”.', { query: q })
         : soundName
-          ? `No ${soundName} artists ranked yet.`
+          ? t('No {sound} artists ranked yet.', { sound: soundName })
           : festivalName
-            ? `None of ${festivalName}’s artists are ranked yet. Rate the lineup or react to their clips to rank them.`
-            : 'Nobody’s ranked yet. Like, save or skip a few clips, or pick artists you love.'}
+            ? t('None of {festival}’s artists are ranked yet. Rate the lineup or react to their clips to rank them.', { festival: festivalName })
+            : t('Nobody’s ranked yet. Like, save or skip a few clips, or pick artists you love.')}
     </Text>
   );
   const footer =
@@ -129,11 +136,11 @@ export function SoundList({
           setShowRest(true);
         }}
         accessibilityRole="button"
-        accessibilityLabel={`Show ${view.hidden} more ${view.hidden === 1 ? 'artist' : 'artists'} you haven’t reacted to yet`}
+        accessibilityLabel={tn(view.hidden, 'Show {n} more artist you haven’t reacted to yet', 'Show {n} more artists you haven’t reacted to yet')}
         style={({ pressed }) => [styles.more, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
       >
         <Text style={styles.moreText}>
-          Show {view.hidden} more you haven’t reacted to yet
+          {t('Show {n} more you haven’t reacted to yet', { n: view.hidden })}
         </Text>
       </Pressable>
     ) : null;
@@ -166,10 +173,10 @@ const SoundListRow = memo(function SoundListRow({ row, rating, following, festiv
   const { artist, rank, sounds } = row;
   const pct = Math.round(row.match * 100);
   const passed = rating === 'pass';
-  const cold = rating === 'pass' ? 'Not for you' : rating === 'meh' ? 'Not really for you' : undefined;
+  const cold = rating === 'pass' ? t('Not for you') : rating === 'meh' ? t('Not really for you') : undefined;
   const said = rating === 'love' || rating === 'like' || rating === 'ok' ? `, ${RATING_SAID[rating]}` : '';
-  const soundLine = sounds.map((t) => SOUND_LABEL[t]).join(' · ');
-  const line = [soundLine, following ? 'Following' : undefined, cold].filter(Boolean).join(' · ');
+  const soundLine = sounds.map((tag) => SOUND_LABEL[tag]).join(' · ');
+  const line = [soundLine, following ? t('Following') : undefined, cold].filter(Boolean).join(' · ');
   return (
     <Pressable
       onPress={() => {
@@ -177,7 +184,7 @@ const SoundListRow = memo(function SoundListRow({ row, rating, following, festiv
         router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festivalId } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${rank ? `Number ${rank}, ${artist.name}, ${pct} percent match` : `${artist.name}, new to your sound`}${said}${line ? `, ${line}` : ''}`}
+      accessibilityLabel={`${rank ? t('Number {rank}, {artist}, {pct} percent match', { rank, artist: artist.name, pct }) : t('{artist}, new to your sound', { artist: artist.name })}${said}${line ? `, ${line}` : ''}`}
       style={({ pressed }) => [styles.row, passed && styles.passed, pressed && { opacity: 0.6 }]}
     >
       <Text style={[styles.rank, rank !== undefined && rank <= 3 && { color: color.glow }]} numberOfLines={1}>
@@ -204,7 +211,7 @@ const SoundListRow = memo(function SoundListRow({ row, rating, following, festiv
         <Text style={[styles.pct, pct >= 80 && { color: color.glow }]}>{pct}%</Text>
       ) : (
         <View style={styles.newPill}>
-          <Text style={styles.newText}>New</Text>
+          <Text style={styles.newText}>{t('New')}</Text>
         </View>
       )}
     </Pressable>

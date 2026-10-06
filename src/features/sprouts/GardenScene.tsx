@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, Easing, runOnJS, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import { t, tn } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { useGardenLayout } from '../../state/gardenLayout';
 import { color, motion, space, type } from '../../theme/tokens';
@@ -126,7 +127,10 @@ export function GardenScene({ residents, account, width, focused, ready, onOpen,
   const spotOf = (id: string): Spot => m.spots[placement[id]] ?? m.spots[0];
   const sprouts = residents.filter((r) => 'kind' in r.look).length;
   const artists = residents.length - sprouts;
-  const label = `A night meadow with ${sprouts === 1 ? '1 sprout' : `${sprouts} sprouts`}${artists ? ` and ${artists === 1 ? '1 artist collectible' : `${artists} artist collectibles`}` : ''}. Hold and drag one to move it.`;
+  const sproutsLine = tn(sprouts, '{n} sprout', '{n} sprouts');
+  const label = artists
+    ? t('A night meadow with {sprouts} and {collectibles}. Hold and drag one to move it.', { sprouts: sproutsLine, collectibles: tn(artists, '{n} artist collectible', '{n} artist collectibles') })
+    : t('A night meadow with {sprouts}. Hold and drag one to move it.', { sprouts: sproutsLine });
 
   return (
     <View style={{ width, height: m.height }} accessible={false}>
@@ -295,7 +299,7 @@ function Creature({ r, spot, spots, colWidth, clock, running, reduce, carrying, 
             delayLongPress={LIFT_MS}
             accessibilityRole="button"
             accessibilityLabel={r.label}
-            accessibilityHint="Hold and drag to move"
+            accessibilityHint={t('Hold and drag to move')}
             style={({ pressed }) => [{ width: size, height: size }, pressed && !carrying && styles.pressed]}
           >
             {'kind' in look ? <Sprout kind={look.kind} stage={look.stage} size={size} still={reduce} scene driven={driven} /> : <Sprout artist={look.artist} tier={look.tier} size={size} still={reduce} scene driven={driven} />}

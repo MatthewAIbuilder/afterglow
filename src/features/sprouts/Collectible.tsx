@@ -82,10 +82,12 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
   const flick = useSharedValue(1);
   const blink = useSharedValue(1);
   const kick = useSharedValue(0);
-  // Each collectible keeps its own time, so a shelf of them never moves in step.
-  const pace = hashOf(`${look.name}${p.mid}`) % 1000;
+  // Each collectible keeps its own time, so a shelf of them never moves in step
+  // (from its creature and colours, not its name, so the timing is the same in every language).
+  const timeKey = `${look.creature}${p.mid}${p.accent}`;
+  const pace = hashOf(timeKey) % 1000;
   // On the garden's clock: its own beat and place in the loop.
-  const beat = driven?.pace ?? paceOf(`${look.name}${p.mid}`);
+  const beat = driven?.pace ?? paceOf(timeKey);
   const clock = driven?.clock;
   const hasClock = !!clock;
   const running = moving && (driven ? driven.running : true);

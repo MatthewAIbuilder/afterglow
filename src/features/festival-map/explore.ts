@@ -2,6 +2,7 @@ import type { Festival } from '../../data/models';
 import { searchFestivals } from '../festivals/search';
 import { whenRank } from '../festivals/shelves';
 import type { MapPoint, Marker, Region } from './map';
+import { t, tn } from '../../i18n';
 
 /**
  * Getting around the festival map. Pure.
@@ -57,7 +58,7 @@ export function spreadMarkers(markers: readonly Marker[], region: Pick<Region, '
 
 /** When: any time, starting in the next month, or in the next three. */
 export type WhenFilter = 'any' | 'month' | 'season';
-export const WHEN_LABEL: Record<WhenFilter, string> = { any: 'Any time', month: 'Next 30 days', season: 'Next 3 months' };
+export const WHEN_LABEL: Record<WhenFilter, string> = { any: t('Any time'), month: t('Next 30 days'), season: t('Next 3 months') };
 const WHEN_DAYS: Record<Exclude<WhenFilter, 'any'>, number> = { month: 30, season: 92 };
 
 /** Festivals on now or starting within the window (undated ones only for "any time"). */
@@ -85,7 +86,7 @@ export function inView(markers: readonly Marker[], region: Region, today: Date):
 
 /** "12 festivals here", "1 festival here", "Nothing here". */
 export function inViewLine(n: number): string {
-  return n === 0 ? 'No festivals here' : n === 1 ? '1 festival here' : `${n} festivals here`;
+  return n === 0 ? t('No festivals here') : tn(n, '{n} festival here', '{n} festivals here');
 }
 
 /** How far to zoom so a group sharing a spot fans out (a little past the threshold). */

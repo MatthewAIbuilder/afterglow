@@ -2,6 +2,7 @@ import type { Festival, SoundTag } from '../../data/models';
 import type { SoundShare } from '../taste/lean';
 import { STRONG_MATCH, tasteMatch } from './match';
 import type { Profile, SharedMemory } from './models';
+import { t } from '../../i18n';
 
 /**
  * What the people you follow have been up to, from what they chose to share:
@@ -66,12 +67,12 @@ export function friendActivity({ profiles, memories, upcoming, mine, blocked, no
 /** "Just now", "12 min ago", "3 h ago", "Yesterday", "4 days ago". */
 export function shortAgo(at: number, now: number): string {
   const m = Math.max(0, Math.floor((now - at) / 60000));
-  if (m < 1) return 'Just now';
-  if (m < 60) return `${m} min ago`;
+  if (m < 1) return t('Just now');
+  if (m < 60) return t('{m} min ago', { m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} h ago`;
+  if (h < 24) return t('{h} h ago', { h });
   const d = Math.floor(h / 24);
-  return d === 1 ? 'Yesterday' : `${d} days ago`;
+  return d === 1 ? t('Yesterday') : t('{n} days ago', { n: d });
 }
 
 /** What a line of activity says, for the list and for screen readers. */
@@ -79,8 +80,8 @@ export function activityText(item: ActivityItem, artistName: (id: string) => str
   const who = item.profile.displayName;
   if (item.kind === 'moment') {
     const artist = item.memory.artistId ? artistName(item.memory.artistId) : undefined;
-    return `${who} shared a moment${artist ? ` of ${artist}` : ''}`;
+    return artist ? t('{who} shared a moment of {artist}', { who, artist }) : t('{who} shared a moment', { who });
   }
-  if (item.kind === 'going') return `${who} is going to ${item.festival.name}`;
-  return `You and ${who} have a ${item.percent}% taste match`;
+  if (item.kind === 'going') return t('{who} is going to {festival}', { who, festival: item.festival.name });
+  return t('You and {who} have a {pct}% taste match', { who, pct: item.percent });
 }

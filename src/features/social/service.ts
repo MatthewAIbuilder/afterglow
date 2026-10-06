@@ -1,6 +1,7 @@
+import { t } from '../../i18n';
 import type { PastEvent } from '../memories/past';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
-import type { Published, Activity, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip } from './models';
+import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -29,7 +30,7 @@ export type ShareInput = {
 
 export type FollowCounts = { followers: number; following: number };
 
-export type ReportTarget = { kind: 'profile' | 'memory' | 'comment' | 'chat'; id: string; ownerUid: string };
+export type ReportTarget = { kind: 'profile' | 'memory' | 'comment' | 'clipComment' | 'chat'; id: string; ownerUid: string };
 
 export interface SocialService {
   availability(): SocialAvailability;
@@ -81,11 +82,13 @@ export interface SocialService {
   /** Mark a report dealt with. */
   resolveReport(id: string): Promise<void>;
   /** Take down a shared video or a comment that breaks the guidelines. */
-  takeDown(kind: 'memory' | 'comment' | 'chat', id: string): Promise<void>;
+  takeDown(kind: 'memory' | 'comment' | 'clipComment' | 'chat', id: string): Promise<void>;
   /** A reported crew chat message (`crewId/messageId`), for the support account to read. */
   reportedMessage(target: string): Promise<CrewMessage | null>;
   /** A reported comment, for the support account to read before taking it down. */
   reportedComment(id: string): Promise<Comment | null>;
+  /** A reported comment on a clip in Discover. */
+  reportedClipComment(id: string): Promise<ClipComment | null>;
   /** The headline numbers, counted on the server; `since` is a week ago. */
   adminCounts(since: string): Promise<AdminCounts>;
   /** When profiles, videos, comments, likes, follows and crews were made since then (newest first, up to `max` each), for the charts. */
@@ -174,6 +177,13 @@ export interface SocialService {
   commentCount(memoryId: string): Promise<number>;
   /** Remove a comment: your own, or any on your video. */
   deleteComment(id: string): Promise<void>;
+  /** Comment on a clip in Discover (`clipId` is the clip's own id). Needs your profile. Online only, like video comments. */
+  clipComment(clipId: string, text: string): Promise<ClipComment>;
+  /** A clip's comments, oldest first, at most `max`; `after` (the last one already read) reads the next page. */
+  clipComments(clipId: string, max: number, after?: ClipComment): Promise<ClipComment[]>;
+  clipCommentCount(clipId: string): Promise<number>;
+  /** Remove your own comment on a clip (the support account removes others with `takeDown`). */
+  deleteClipComment(id: string): Promise<void>;
   /** What happened to you lately (new followers, likes and comments on your videos), newest first. */
   activity(max: number): Promise<Activity[]>;
 
@@ -346,27 +356,27 @@ export const socialErrorKind = (e: unknown): SocialErrorKind => (e instanceof So
 
 /** Each error in plain words. */
 export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
-  'email-in-use': 'There’s already an account with that email. Sign in instead.',
-  'invalid-email': 'That email doesn’t look right.',
-  'weak-password': 'Choose a longer password (at least 8 characters).',
-  'wrong-password': 'That email and password don’t match.',
-  'no-account': 'That email and password don’t match.',
-  'too-many-attempts': 'Too many tries. Wait a few minutes and try again.',
-  'handle-taken': 'Someone already has that handle.',
-  'not-signed-in': 'Sign in to do that.',
-  'no-profile': 'Create your profile first.',
-  'too-large': 'That video is too big to share. Try a shorter clip.',
-  'crew-full': 'That crew is full.',
-  'not-invited': 'Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.',
-  'sprout-taken': 'Someone else already picked up this sprout.',
-  'already-sent': 'You’ve already sent set times for this festival. We’ll look at them soon.',
-  'sprout-gone': 'This sprout can’t be picked up any more. Ask them for a new code.',
-  'throwback-limit': 'You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.',
-  'sticker-ended': 'This sticker can’t be found any more.',
-  'not-found': 'That doesn’t exist any more.',
-  network: 'Couldn’t reach Afterglow. Check your connection and try again.',
-  unavailable: 'Profiles aren’t available in this version of Afterglow yet.',
-  unknown: 'Something went wrong. Try again.',
+  'email-in-use': t('There’s already an account with that email. Sign in instead.'),
+  'invalid-email': t('That email doesn’t look right.'),
+  'weak-password': t('Choose a longer password (at least 8 characters).'),
+  'wrong-password': t('That email and password don’t match.'),
+  'no-account': t('That email and password don’t match.'),
+  'too-many-attempts': t('Too many tries. Wait a few minutes and try again.'),
+  'handle-taken': t('Someone already has that handle.'),
+  'not-signed-in': t('Sign in to do that.'),
+  'no-profile': t('Create your profile first.'),
+  'too-large': t('That video is too big to share. Try a shorter clip.'),
+  'crew-full': t('That crew is full.'),
+  'not-invited': t('Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.'),
+  'sprout-taken': t('Someone else already picked up this sprout.'),
+  'already-sent': t('You’ve already sent set times for this festival. We’ll look at them soon.'),
+  'sprout-gone': t('This sprout can’t be picked up any more. Ask them for a new code.'),
+  'throwback-limit': t('You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.'),
+  'sticker-ended': t('This sticker can’t be found any more.'),
+  'not-found': t('That doesn’t exist any more.'),
+  network: t('Couldn’t reach Afterglow. Check your connection and try again.'),
+  unavailable: t('Profiles aren’t available in this version of Afterglow yet.'),
+  unknown: t('Something went wrong. Try again.'),
 };
 
 /** Shared videos are at most this big (the storage rules enforce it too). */

@@ -19,6 +19,7 @@ import { FindsSection } from '../features/finds/FindsSection';
 import { artistLook } from '../features/sprouts/artistLook';
 import { useCatalog } from '../state/catalog';
 import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
+import { LOCALE, t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
 import { useSocial } from '../state/social';
@@ -34,10 +35,16 @@ const TIER_SIZE = [78, 83, 88, 94] as const;
 const ARTIST_PREFIX = 'artist:';
 const CONTENT_MAX = 640;
 
-const day = (t: number) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-const fromLine = (s: GardenView) =>
-  s.id === STARTER_ID ? 'Your first sprout' : s.foundAt ? `Found at ${s.foundAt}` : `from ${s.name ?? (s.handle ? `@${s.handle}` : 'someone')}`;
-const nameOf = (s: GardenView) => (s.shown === 'seedling' ? 'Sprout' : kindOf(s.shown).name);
+const day = (at: number) => new Date(at).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric' });
+/** Who gave it: their name or @handle, if known. */
+const giverOf = (s: GardenView) => s.name ?? (s.handle ? `@${s.handle}` : undefined);
+const fromLine = (s: GardenView) => {
+  if (s.id === STARTER_ID) return t('Your first sprout');
+  if (s.foundAt) return t('Found at {place}', { place: s.foundAt });
+  const who = giverOf(s);
+  return who !== undefined ? t('from {name}', { name: who }) : t('from someone');
+};
+const nameOf = (s: GardenView) => (s.shown === 'seedling' ? t('Sprout') : kindOf(s.shown).name);
 
 /**
  * Your garden: every sprout you've been given (and your first one), growing
@@ -71,7 +78,7 @@ export default function GardenScreen() {
   const fresh = bloom ? undefined : sprouts.newArtists[0];
   const freshArtist = fresh ? catalog.artist(fresh.artistId) : undefined;
   const plain = sprouts.garden.filter((g) => !g.artist);
-  const givenArtists: GivenArtistSprout[] = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: fromLine(g).replace(/^from /, ''), at: g.at }] : []));
+  const givenArtists: GivenArtistSprout[] = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: g.id === STARTER_ID || g.foundAt ? fromLine(g) : (giverOf(g) ?? t('someone')), at: g.at }] : []));
   const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
   const collected = kinds.filter((k) => sprouts.collected.has(k.id)).length;
   const artistOf = (a: { id: string; name: string }): Artist => catalog.artist(a.id) ?? ({ id: a.id, name: a.name, sound: {} } as Artist);
@@ -80,8 +87,8 @@ export default function GardenScreen() {
   const residents: SceneResident[] = [
     ...plain.map((s) => ({
       id: s.id,
-      name: nameOf(s).replace(/ sprout$/, ''),
-      label: `${nameOf(s)}, ${fromLine(s)}. ${s.shown === 'seedling' && s.growth ? growthLine(s.growth) : STAGE_NAMES[s.stage]}.`,
+      name: kindOf(s.shown).short,
+      label: t('{name}, {from}. {growth}.', { name: nameOf(s), from: fromLine(s), growth: s.shown === 'seedling' && s.growth ? growthLine(s.growth) : STAGE_NAMES[s.stage] }),
       size: STAGE_SIZE[s.stage],
       bar: s.stage < 3 && s.growth ? { at: (s.stage + s.growth.toNext) / 3, color: SPROUT_GREEN } : undefined,
       fresh: sprouts.newBlooms.some((b) => b.id === s.id) || (s.id !== STARTER_ID && s.at > now - FRESH_MS),
@@ -95,7 +102,7 @@ export default function GardenScreen() {
         {
           id: `${ARTIST_PREFIX}${a.artistId}`,
           name: artist.name,
-          label: `${artist.name} collectible, ${tierLabel(a)}.`,
+          label: t('{artist} collectible, {tier}.', { artist: artist.name, tier: tierLabel(a) }),
           size: TIER_SIZE[a.tier],
           bar: { at: next ? (a.videos - TIER_AT[a.tier]) / (TIER_AT[next.tier] - TIER_AT[a.tier]) : 1, color: TIER_COLOR[next ? next.tier : 3] },
           fresh: sprouts.newArtists.some((n) => n.artistId === a.artistId),
@@ -105,7 +112,7 @@ export default function GardenScreen() {
     }),
     ...givenArtists.map((g) => {
       const artist = artistOf(g.artist);
-      return { id: g.id, name: artist.name, label: `${artist.name} collectible, from ${g.from}.`, size: TIER_SIZE[0], fresh: g.at > now - FRESH_MS, look: { artist: artistLook(artist), tier: 0 as const } };
+      return { id: g.id, name: artist.name, label: t('{artist} collectible, from {name}.', { artist: artist.name, name: g.from }), size: TIER_SIZE[0], fresh: g.at > now - FRESH_MS, look: { artist: artistLook(artist), tier: 0 as const } };
     }),
   ];
   const openResident = (id: string) => {
@@ -123,12 +130,12 @@ export default function GardenScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Your garden" />
+      <PageTitle title={t('Your garden')} />
       <NightSky />
       <PageActions />
       <ScrollView scrollEnabled={!carrying} contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
         <Text style={styles.title} accessibilityRole="header">
-          Your garden
+          {t('Your garden')}
         </Text>
         <Text style={styles.sub}>{gardenLine(plain)}</Text>
 
@@ -143,7 +150,7 @@ export default function GardenScreen() {
               accessibilityRole="button"
               style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryText}>Give a sprout</Text>
+              <Text style={styles.primaryText}>{t('Give a sprout')}</Text>
             </Pressable>
             {Platform.OS !== 'web' ? (
               <Pressable
@@ -152,10 +159,10 @@ export default function GardenScreen() {
                   router.push('/scan');
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Scan a sprout someone's giving you"
+                accessibilityLabel={t("Scan a sprout someone's giving you")}
                 style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
               >
-                <Text style={styles.secondaryText}>Scan a sprout</Text>
+                <Text style={styles.secondaryText}>{t('Scan a sprout')}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -167,7 +174,9 @@ export default function GardenScreen() {
               <View key={c.card.id} style={styles.waitRow}>
                 <SproutOf kind={c.card.kind} artist={c.card.artist} stage={0} size={36} still />
                 <Text style={styles.waitText}>
-                  {c.card.artist ? `A ${sproutName(c.card)}` : 'A sprout'} from {c.card.name}. {claimLine(c)}
+                  {c.card.artist
+                    ? t('A {artist} collectible from {name}. {status}', { artist: c.card.artist.name, name: c.card.name, status: claimLine(c) })
+                    : t('A sprout from {name}. {status}', { name: c.card.name, status: claimLine(c) })}
                 </Text>
               </View>
             ))}
@@ -183,27 +192,27 @@ export default function GardenScreen() {
           onOpen={openResident}
           onCarrying={setCarrying}
         />
-        <Text style={styles.hint}>{GROW_TIPS[0]} Sprouts you give help yours grow too. Hold one to move it.</Text>
+        <Text style={styles.hint}>{GROW_TIPS[0]} {t('Sprouts you give help yours grow too.')} {t('Hold one to move it.')}</Text>
 
         <FindsSection />
         <ArtistSproutsSection earned={sprouts.artists} given={givenArtists} />
 
         <View style={styles.section}>
           <Text style={styles.h2}>
-            Kinds · {collected} of {kinds.length}
+            {t('Kinds · {n} of {total}', { n: collected, total: kinds.length })}
           </Text>
           <View style={styles.kinds}>
             {kinds.map((k) => {
               const got = sprouts.collected.has(k.id);
               return (
-                <View key={k.id} style={styles.kind} accessible accessibilityLabel={got ? `${k.name}, collected. ${k.about}` : `${k.name}, not collected yet. ${k.how}.`}>
+                <View key={k.id} style={styles.kind} accessible accessibilityLabel={got ? t('{name}, collected. {about}', { name: k.name, about: k.about }) : t('{name}, not collected yet. {how}.', { name: k.name, how: k.how })}>
                   <Sprout kind={k.id} stage={3} size={52} locked={!got} still={!got} />
                   <Text style={[styles.kindName, !got && styles.dim]} numberOfLines={1}>
-                    {k.name.replace(' sprout', '')}
+                    {k.short}
                   </Text>
                   {!got ? (
                     <Text style={styles.kindHow} numberOfLines={2}>
-                      {k.how.replace('Grows from ', '')}
+                      {k.grows}
                     </Text>
                   ) : null}
                 </View>
@@ -214,14 +223,23 @@ export default function GardenScreen() {
 
         {sprouts.gifts.length ? (
           <View style={styles.section}>
-            <Text style={styles.h2}>Given · {sprouts.gifts.length}</Text>
+            <Text style={styles.h2}>{t('Given · {n}', { n: sprouts.gifts.length })}</Text>
             {sprouts.gifts.slice(0, GIVEN_SHOWN).map((g) => (
               <View key={g.id} style={styles.givenRow}>
                 <SproutOf kind={g.kind} artist={g.artist} stage={g.kind === 'seedling' ? 2 : 3} size={40} still />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.givenName}>{sproutName(g)}</Text>
                   <Text style={[styles.givenState, g.claimedBy ? { color: SPROUT_GREEN } : !g.sent ? styles.amberText : null]}>
-                    {g.claimedBy ? `Picked up by ${g.claimedBy.name ?? (g.claimedBy.handle ? `@${g.claimedBy.handle}` : 'someone')}` : g.sent ? 'Not picked up yet' : g.failed ? 'Couldn’t be sent, so your seed is back' : 'Waiting for signal'} · {day(g.at)}
+                    {g.claimedBy
+                      ? g.claimedBy.name != null || g.claimedBy.handle
+                        ? t('Picked up by {name}', { name: g.claimedBy.name ?? `@${g.claimedBy.handle}` })
+                        : t('Picked up by someone')
+                      : g.sent
+                        ? t('Not picked up yet')
+                        : g.failed
+                          ? t('Couldn’t be sent, so your seed is back')
+                          : t('Waiting for signal')}{' '}
+                    · {day(g.at)}
                   </Text>
                 </View>
               </View>
@@ -257,7 +275,7 @@ function SproutSheet({ sprout, onClose }: { sprout?: GardenView; onClose: () => 
   const s = sprout;
   return (
     <Modal visible={!!s} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close">
+      <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
         {s ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
             <Sprout kind={s.shown} stage={s.stage} size={150} />
@@ -273,18 +291,18 @@ function SproutSheet({ sprout, onClose }: { sprout?: GardenView; onClose: () => 
                   <View style={[styles.barFill, { width: `${Math.round(((s.stage + s.growth.toNext) / 3) * 100)}%` }]} />
                 </View>
                 <Text style={styles.growLine}>{growthLine(s.growth)}</Text>
-                {s.growth.leaning !== 'seedling' && s.stage >= 1 ? <Text style={styles.body}>Growing into a {kindOf(s.growth.leaning).name}.</Text> : null}
-                {GROW_TIPS.map((t) => (
-                  <Text key={t} style={styles.tip}>
-                    · {t}
+                {s.growth.leaning !== 'seedling' && s.stage >= 1 ? <Text style={styles.body}>{t('Growing into a {sprout}.', { sprout: kindOf(s.growth.leaning).name })}</Text> : null}
+                {GROW_TIPS.map((tip) => (
+                  <Text key={tip} style={styles.tip}>
+                    · {tip}
                   </Text>
                 ))}
               </>
             ) : s.kind === 'seedling' ? (
-              <Text style={styles.body}>In bloom. You can give {kindOf(s.shown).name}s now.</Text>
+              <Text style={styles.body}>{t('In bloom. You can give {name}s now.', { name: kindOf(s.shown).name })}</Text>
             ) : null}
             <Pressable onPress={onClose} accessibilityRole="button" style={({ pressed }) => [styles.secondary, styles.sheetClose, pressed && styles.pressed]}>
-              <Text style={styles.secondaryText}>Done</Text>
+              <Text style={styles.secondaryText}>{t('Done')}</Text>
             </Pressable>
           </Pressable>
         ) : null}

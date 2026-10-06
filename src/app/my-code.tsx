@@ -18,6 +18,7 @@ import { useSocial } from '../state/social';
 import { accountsOff } from '../features/social/unavailable';
 import { color, radius, space, type } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t } from '../i18n';
 
 /**
  * Your friend code: a QR code a friend scans to become friends both ways,
@@ -36,27 +37,27 @@ export default function MyCodeScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="My code" />
+      <PageTitle title={t('My code')} />
       <View style={[styles.top, { paddingTop: Platform.OS === 'ios' ? space.lg : insets.top + space.md }]}>
         <Text style={styles.title} accessibilityRole="header">
-          My code
+          {t('My code')}
         </Text>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={18} />
         </GlassCircleButton>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
         {!myCard ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{social.availability.ok ? 'Make a profile to get your code' : accountsOff(Platform.OS === 'web', 'Friend codes').title}</Text>
-            <Text style={styles.body}>{social.availability.ok ? 'Friends scan it to add you, even when the signal is bad.' : accountsOff(Platform.OS === 'web', 'Friend codes').body}</Text>
+            <Text style={styles.emptyTitle}>{social.availability.ok ? t('Make a profile to get your code') : accountsOff(Platform.OS === 'web', 'Friend codes').title}</Text>
+            <Text style={styles.body}>{social.availability.ok ? t('Friends scan it to add you, even when the signal is bad.') : accountsOff(Platform.OS === 'web', 'Friend codes').body}</Text>
             {social.availability.ok ? (
               <Pressable
                 onPress={() => router.push(social.user ? '/profile-edit' : '/account')}
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
               >
-                <Text style={styles.primaryText}>{social.user ? 'Finish your profile' : 'Create your profile'}</Text>
+                <Text style={styles.primaryText}>{social.user ? t('Finish your profile') : t('Create your profile')}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -67,7 +68,7 @@ export default function MyCodeScreen() {
                 style={styles.card}
                 accessible
                 accessibilityRole="image"
-                accessibilityLabel={`Your friend code, @${myCard.handle}. A friend scans it with Afterglow to become friends.`}
+                accessibilityLabel={t('Your friend code, @{handle}. A friend scans it with Afterglow to become friends.', { handle: myCard.handle })}
               >
                 <FriendQR value={friendLink(myCard)} size={size} theme={theme} name={myCard.name} avatarUrl={social.profile?.avatarUrl} />
                 <Text style={styles.name} numberOfLines={1}>
@@ -76,34 +77,34 @@ export default function MyCodeScreen() {
                 <Text style={styles.handle}>@{myCard.handle}</Text>
               </View>
             </LinearGradient>
-            <Text style={styles.body}>Scan to be friends on Afterglow. You’ll follow each other straight away.</Text>
+            <Text style={styles.body}>{t('Scan to be friends on Afterglow. You’ll follow each other straight away.')}</Text>
             {!codeSaved ? (
               <Text style={styles.waiting}>
-                Your code reaches Afterglow once there’s signal. Friends can scan it now: their add goes through when you’ve both had signal.
+                {t('Your code reaches Afterglow once there’s signal. Friends can scan it now: their add goes through when you’ve both had signal.')}
               </Text>
             ) : null}
 
             <View style={styles.themes} accessibilityRole="radiogroup">
-              {THEME_ORDER.map((t) => (
+              {THEME_ORDER.map((th) => (
                 <Pressable
-                  key={t}
+                  key={th}
                   onPress={() => {
                     haptic.select();
-                    setTheme(t);
+                    setTheme(th);
                     tried.current.add(theme);
-                    tried.current.add(t);
+                    tried.current.add(th);
                     if (triedAll(tried.current, THEME_ORDER)) {
                       tried.current.clear();
                       revealSecret('colours');
                     }
                   }}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: t === theme }}
-                  accessibilityLabel={`${CODE_THEMES[t].label} colours`}
+                  accessibilityState={{ selected: th === theme }}
+                  accessibilityLabel={t('{theme} colours', { theme: CODE_THEMES[th].label })}
                   hitSlop={6}
-                  style={[styles.swatchRing, t === theme && styles.swatchOn]}
+                  style={[styles.swatchRing, th === theme && styles.swatchOn]}
                 >
-                  <LinearGradient colors={[CODE_THEMES[t].glow[0], CODE_THEMES[t].glow[1]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.swatch} />
+                  <LinearGradient colors={[CODE_THEMES[th].glow[0], CODE_THEMES[th].glow[1]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.swatch} />
                 </Pressable>
               ))}
             </View>
@@ -116,37 +117,37 @@ export default function MyCodeScreen() {
                     router.replace('/scan');
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel="Scan a friend's code"
+                  accessibilityLabel={t("Scan a friend's code")}
                   style={({ pressed }) => [styles.primary, styles.row, pressed && styles.pressed]}
                 >
                   <ScanIcon color={color.moon} size={18} />
-                  <Text style={styles.primaryText}>Scan a code</Text>
+                  <Text style={styles.primaryText}>{t('Scan a code')}</Text>
                 </Pressable>
               ) : null}
               <Pressable
                 onPress={() => {
                   haptic.select();
-                  void shareMessage(`Be my friend on Afterglow: ${friendLink(myCard)}`, 'My Afterglow code');
+                  void shareMessage(t('Be my friend on Afterglow: {link}', { link: friendLink(myCard) }), t('My Afterglow code'));
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Share my friend link"
+                accessibilityLabel={t('Share my friend link')}
                 style={({ pressed }) => [styles.secondary, styles.row, pressed && styles.pressed]}
               >
                 <ShareIcon color={color.moon} size={16} />
-                <Text style={styles.secondaryText}>Share my link</Text>
+                <Text style={styles.secondaryText}>{t('Share my link')}</Text>
               </Pressable>
             </View>
             <Pressable
               onPress={() =>
-                showAlert('Make a new code?', 'Screenshots or shares of your old code stop working. Friends you already have stay friends.', [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'New code', onPress: () => newCode() },
+                showAlert(t('Make a new code?'), t('Screenshots or shares of your old code stop working. Friends you already have stay friends.'), [
+                  { text: t('Cancel'), style: 'cancel' },
+                  { text: t('New code'), onPress: () => newCode() },
                 ])
               }
               accessibilityRole="button"
               hitSlop={8}
             >
-              <Text style={styles.link}>Make a new code</Text>
+              <Text style={styles.link}>{t('Make a new code')}</Text>
             </Pressable>
           </>
         )}

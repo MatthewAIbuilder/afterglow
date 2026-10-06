@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
 import { color, space, type } from '../../theme/tokens';
+import { t } from '../../i18n';
 
 /**
  * A row's title on your profile with a quiet Hide / Show beside it, so rows
@@ -46,11 +47,11 @@ export function ShelfHead({
           onToggle();
         }}
         accessibilityRole="button"
-        accessibilityLabel={hidden ? `Show ${title.toLowerCase()}` : `Hide ${title.toLowerCase()}`}
+        accessibilityLabel={hidden ? t('Show {what}', { what: title.toLowerCase() }) : t('Hide {what}', { what: title.toLowerCase() })}
         hitSlop={8}
         style={({ pressed }) => [styles.toggle, pressed && { opacity: 0.6 }]}
       >
-        <Text style={styles.toggleText}>{hidden ? 'Show' : 'Hide'}</Text>
+        <Text style={styles.toggleText}>{hidden ? t('Show') : t('Hide')}</Text>
         <ChevronIcon color={color.moonFaint} size={10} direction={hidden ? 'down' : 'up'} />
       </Pressable>
     </View>

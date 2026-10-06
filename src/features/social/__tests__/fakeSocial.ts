@@ -1,5 +1,5 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type Comment, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
@@ -30,6 +30,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Picks as `crewId/uid`. */
   const picks = new Map<string, CrewPicks>();
   const comments = new Map<string, Comment>();
+  /** Comments on clips in Discover. */
+  const clipComments = new Map<string, ClipComment>();
   /** Crew updates as `crewId/updateId`. */
   const updates = new Map<string, CrewUpdate>();
   /** Switch the "network" off to see what happens with no signal: crew updates fail to send. */
@@ -202,6 +204,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       levels.delete(u.uid);
       for (const [k, l] of likes) if (l.uid === u.uid || l.owner === u.uid) likes.delete(k);
       for (const [k, c] of comments) if (c.uid === u.uid || c.owner === u.uid) comments.delete(k);
+      for (const [k, c] of clipComments) if (c.uid === u.uid) clipComments.delete(k);
       for (const id of [...crews.keys()]) leave(id, u.uid);
       for (const [k, i] of crewInvites) if (i.from === u.uid || i.to === u.uid) crewInvites.delete(k);
       for (const [k, sp] of sprouts) if (sp.from === u.uid || sp.to === u.uid) sprouts.delete(k);
@@ -449,6 +452,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async takeDown(kind, id) {
       needAdmin();
       if (kind === 'comment') comments.delete(id);
+      else if (kind === 'clipComment') clipComments.delete(id);
       else if (kind === 'chat') {
         chat.delete(id);
         chatChanged(id.split('/')[0]);
@@ -461,6 +465,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async reportedComment(id) {
       needAdmin();
       return comments.get(id) ?? null;
+    },
+    async reportedClipComment(id) {
+      needAdmin();
+      return clipComments.get(id) ?? null;
     },
     async adminCounts(since) {
       needAdmin();
@@ -681,6 +689,35 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!c) return;
       if (c.uid !== u.uid && c.owner !== u.uid) throw new SocialError('not-signed-in');
       comments.delete(id);
+    },
+    async clipComment(clipId, raw) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      const p = profiles.get(u.uid);
+      if (!p) throw new SocialError('no-profile');
+      if (!validClipId(clipId) || commentProblem(raw)) throw new SocialError('unknown');
+      const c: ClipComment = { id: `clip-comment-${++n}`, clipId, uid: u.uid, handle: p.handle, text: cleanComment(raw), createdAt: `${now()}#${String(n).padStart(6, '0')}` };
+      clipComments.set(c.id, c);
+      return c;
+    },
+    async clipComments(clipId, max, after) {
+      me();
+      readable();
+      const all = [...clipComments.values()].filter((c) => c.clipId === clipId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const from = after ? all.findIndex((c) => c.createdAt > after.createdAt) : 0;
+      return from < 0 ? [] : all.slice(from, from + max);
+    },
+    async clipCommentCount(clipId) {
+      me();
+      readable();
+      return [...clipComments.values()].filter((c) => c.clipId === clipId).length;
+    },
+    async deleteClipComment(id) {
+      const u = me();
+      const c = clipComments.get(id);
+      if (!c) return;
+      if (c.uid !== u.uid) throw new SocialError('not-signed-in');
+      clipComments.delete(id);
     },
     async activity(max) {
       const u = me();
@@ -1085,5 +1122,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
+  return { service, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, currentUser: () => current };
 }

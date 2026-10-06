@@ -12,6 +12,7 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/servic
 import { useSocial } from '../../state/social';
 import { color, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 type List = 'followers' | 'following';
 /** Lists show the newest this many. */
@@ -63,11 +64,11 @@ export default function FollowsScreen() {
   const empty =
     list === 'followers'
       ? mine
-        ? 'No followers yet. Share memories to your profile and people who like your videos can follow you.'
-        : `No one follows @${owner?.handle} yet.`
+        ? t('No followers yet. Share memories to your profile and people who like your videos can follow you.')
+        : t('No one follows @{handle} yet.', { handle: String(owner?.handle) })
       : mine
-        ? 'You’re not following anyone yet. Tap Follow on someone’s profile to see their videos in Discover.'
-        : `@${owner?.handle} isn’t following anyone yet.`;
+        ? t('You’re not following anyone yet. Tap Follow on someone’s profile to see their videos in Discover.')
+        : t('@{handle} isn’t following anyone yet.', { handle: String(owner?.handle) });
 
   return (
     <View style={styles.root}>
@@ -75,22 +76,22 @@ export default function FollowsScreen() {
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, gap: space.md }}>
         <View style={styles.pad}>
           <Text style={styles.title} accessibilityRole="header">
-            {owner ? `@${owner.handle}` : 'People'}
+            {owner ? `@${owner.handle}` : t('People')}
           </Text>
         </View>
         <FilterChips
           chips={[
-            { key: 'followers', label: 'Followers', accessibilityLabel: 'Followers' },
-            { key: 'following', label: 'Following', accessibilityLabel: 'Following' },
+            { key: 'followers', label: t('Followers'), accessibilityLabel: t('Followers') },
+            { key: 'following', label: t('Following'), accessibilityLabel: t('Following') },
           ]}
           value={list}
           onChange={(k) => setList(k === 'following' ? 'following' : 'followers')}
         />
         <View style={[styles.pad, styles.list]}>
           {!social.availability.ok || !signedIn ? (
-            <Text style={styles.quiet}>{social.availability.ok ? 'Sign in to see who follows whom.' : SOCIAL_ERROR_COPY.unavailable}</Text>
+            <Text style={styles.quiet}>{social.availability.ok ? t('Sign in to see who follows whom.') : SOCIAL_ERROR_COPY.unavailable}</Text>
           ) : owner === null ? (
-            <Text style={styles.quiet}>No one is called @{params.handle} on Afterglow.</Text>
+            <Text style={styles.quiet}>{t('No one is called @{handle} on Afterglow.', { handle: params.handle ?? '' })}</Text>
           ) : current?.problem ? (
             <Text style={styles.quiet}>{current.problem}</Text>
           ) : !current ? (
@@ -103,7 +104,7 @@ export default function FollowsScreen() {
         </View>
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
-        <GlassCircleButton label="Back" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
           <ChevronIcon color={color.moon} direction="left" size={18} />
         </GlassCircleButton>
       </View>

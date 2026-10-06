@@ -5,6 +5,7 @@ import type { EngineProps } from './ClipPlayer';
 import type { SoundCloudMedia } from './media';
 import { shouldPlay } from './playback';
 import { parseSoundCloudMessage, soundcloudPlayerHtml } from './soundcloud';
+import { t } from '../../i18n';
 
 /** Give up if the player hasn't loaded after this long, and show the stage instead. */
 const LOAD_TIMEOUT = 15000;
@@ -78,7 +79,7 @@ function SoundCloudPlayerBase({ media, active, live, paused, progress, onPausedC
       {createElement('iframe', {
         ref: frame,
         srcDoc: html,
-        title: 'SoundCloud player',
+        title: t('SoundCloud player'),
         allow: 'autoplay; encrypted-media',
         style: { border: 0, width: '100%', height: '100%', background: 'transparent', opacity: ready ? 1 : 0 },
       })}

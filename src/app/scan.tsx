@@ -10,6 +10,7 @@ import { CloseIcon, QrIcon } from '../components/TabIcons';
 import { type FriendCard, readFriendLink } from '../features/friends/qr';
 import { readSproutLink } from '../features/sprouts/sprouts';
 import { readFindLink } from '../features/finds/finds';
+import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { type AddResult, useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
@@ -54,7 +55,7 @@ export default function ScanScreen() {
     }
     const card = readFriendLink(text);
     if (!card) {
-      setNote('That isn’t an Afterglow friend code, sprout or sticker.');
+      setNote(t('That isn’t an Afterglow friend code, sprout or sticker.'));
       setTimeout(() => {
         lastText.current = undefined;
         setNote(undefined);
@@ -62,7 +63,7 @@ export default function ScanScreen() {
       return;
     }
     if (!social.user) {
-      setNote('Sign in to add friends. Sprouts work without an account.');
+      setNote(t('Sign in to add friends. Sprouts work without an account.'));
       setTimeout(() => {
         lastText.current = undefined;
         setNote(undefined);
@@ -76,7 +77,7 @@ export default function ScanScreen() {
     setAdding(undefined);
     if (outcome === 'self') {
       busy.current = false;
-      setNote('That’s your own code. Scan a friend’s.');
+      setNote(t('That’s your own code. Scan a friend’s.'));
       setTimeout(() => {
         lastText.current = undefined;
         setNote(undefined);
@@ -97,7 +98,7 @@ export default function ScanScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Scan a code" />
+      <PageTitle title={t('Scan a code')} />
       {showCamera ? (
         <CameraView
           style={StyleSheet.absoluteFill}
@@ -110,20 +111,20 @@ export default function ScanScreen() {
 
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
         <Text style={styles.title} accessibilityRole="header">
-          Scan a code
+          {t('Scan a code')}
         </Text>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={18} />
         </GlassCircleButton>
       </View>
 
       {Platform.OS === 'web' || !social.availability.ok ? (
-        <Card title="Scanning is in the app" body="Open Afterglow on your phone to scan a friend’s code." />
+        <Card title={t('Scanning is in the app')} body={t('Open Afterglow on your phone to scan a friend’s code.')} />
       ) : !perm ? null : !perm.granted ? (
         <Card
-          title="Scan with your camera"
-          body="Afterglow uses the camera only to read the code. Nothing is filmed or saved."
-          action={perm.canAskAgain ? 'Allow camera' : 'Open Settings'}
+          title={t('Scan with your camera')}
+          body={t('Afterglow uses the camera only to read the code. Nothing is filmed or saved.')}
+          action={perm.canAskAgain ? t('Allow camera') : t('Open Settings')}
           onAction={() => (perm.canAskAgain ? void ask() : void Linking.openSettings().catch(() => {}))}
         />
       ) : result ? (
@@ -140,16 +141,16 @@ export default function ScanScreen() {
           </View>
           <View style={[styles.bottom, { paddingBottom: insets.bottom + space.xl }]}>
             <Text style={styles.hint} accessibilityLiveRegion="polite">
-              {adding ? `Adding ${adding.name}…` : (note ?? 'Point at a friend’s code or a sprout. It works with no signal.')}
+              {adding ? t('Adding {name}…', { name: adding.name }) : (note ?? t('Point at a friend’s code or a sprout. It works with no signal.'))}
             </Text>
             <Pressable
               onPress={() => router.replace('/my-code')}
               accessibilityRole="button"
-              accessibilityLabel="Show my code instead"
+              accessibilityLabel={t('Show my code instead')}
               style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
             >
               <QrIcon color={color.moon} size={18} />
-              <Text style={styles.pillText}>Show my code</Text>
+              <Text style={styles.pillText}>{t('Show my code')}</Text>
             </Pressable>
           </View>
         </>
@@ -160,15 +161,15 @@ export default function ScanScreen() {
 
 function ResultCard({ card, outcome, onAgain }: { card: FriendCard; outcome: AddResult; onAgain: () => void }) {
   const added = outcome === 'added';
-  const title = added ? `You and ${card.name} are friends` : `Saved ${card.name}`;
+  const title = added ? t('You and {name} are friends', { name: card.name }) : t('Saved {name}', { name: card.name });
   const body = added
-    ? 'You follow each other now. Their videos show in Following.'
+    ? t('You follow each other now. Their videos show in Following.')
     : outcome === 'needs-profile'
-      ? `Make your profile and you’ll be friends with ${card.name} as soon as there’s signal.`
-      : `The signal’s weak, so it’s kept on your phone. You’ll be friends with ${card.name} as soon as there’s signal, and we’ll let you know.`;
+      ? t('Make your profile and you’ll be friends with {name} as soon as there’s signal.', { name: card.name })
+      : t('The signal’s weak, so it’s kept on your phone. You’ll be friends with {name} as soon as there’s signal, and we’ll let you know.', { name: card.name });
   return (
     <View style={styles.cardWrap}>
-      <View style={[styles.card, !added && styles.cardWaiting]} accessible accessibilityLiveRegion="polite" accessibilityLabel={`${title}. ${body}`}>
+      <View style={[styles.card, !added && styles.cardWaiting]} accessible accessibilityLiveRegion="polite" accessibilityLabel={t('{title}. {body}', { title, body })}>
         <PersonAvatar name={card.name} size={64} />
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.handle}>@{card.handle}</Text>
@@ -180,18 +181,18 @@ function ResultCard({ card, outcome, onAgain }: { card: FriendCard; outcome: Add
           accessibilityRole="button"
           style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
         >
-          <Text style={styles.primaryText}>See their profile</Text>
+          <Text style={styles.primaryText}>{t('See their profile')}</Text>
         </Pressable>
       ) : outcome === 'needs-profile' ? (
         <Pressable onPress={() => router.replace('/profile-edit')} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-          <Text style={styles.primaryText}>Make my profile</Text>
+          <Text style={styles.primaryText}>{t('Make my profile')}</Text>
         </Pressable>
       ) : null}
       <Pressable onPress={onAgain} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
-        <Text style={styles.secondaryText}>Scan another</Text>
+        <Text style={styles.secondaryText}>{t('Scan another')}</Text>
       </Pressable>
       <Pressable onPress={() => goBack()} accessibilityRole="button" hitSlop={8}>
-        <Text style={styles.link}>Done</Text>
+        <Text style={styles.link}>{t('Done')}</Text>
       </Pressable>
     </View>
   );

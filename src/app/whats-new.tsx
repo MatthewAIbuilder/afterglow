@@ -9,6 +9,7 @@ import { QUEST_GOLD, SparkIcon } from '../features/quests/QuestRing';
 import { haptic } from '../lib/haptics';
 import { color, radius, space, type, glowA, nightA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t } from '../i18n';
 
 const ICONS: Record<string, React.ReactNode> = {
   map: <MapIcon color={color.glow} size={22} />,
@@ -34,9 +35,9 @@ export default function WhatsNewScreen() {
     <View style={styles.root}>
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + 120, paddingHorizontal: space.xl }}>
-        <Text style={styles.kicker}>New in Afterglow</Text>
+        <Text style={styles.kicker}>{t('New in Afterglow')}</Text>
         <Text style={styles.title} accessibilityRole="header">
-          Fresh tonight
+          {t('Fresh tonight')}
         </Text>
         {WHATS_NEW.items.map((item, i) => (
           <Animated.View key={item.id} entering={reduced ? undefined : FadeInDown.delay(120 + i * 90).duration(320)}>
@@ -51,7 +52,7 @@ export default function WhatsNewScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
                 <Text style={styles.body}>{item.body}</Text>
-                {item.href ? <Text style={[styles.try, item.id === 'quests' && { color: QUEST_GOLD }]}>Try it ›</Text> : null}
+                {item.href ? <Text style={[styles.try, item.id === 'quests' && { color: QUEST_GOLD }]}>{t('Try it ›')}</Text> : null}
               </View>
             </Pressable>
           </Animated.View>
@@ -67,7 +68,7 @@ export default function WhatsNewScreen() {
           accessibilityRole="button"
           style={({ pressed }) => [styles.done, pressed && { opacity: 0.85 }]}
         >
-          <Text style={styles.doneText}>Let’s go</Text>
+          <Text style={styles.doneText}>{t('Let’s go')}</Text>
         </Pressable>
       </View>
     </View>

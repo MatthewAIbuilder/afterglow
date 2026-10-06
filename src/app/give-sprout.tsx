@@ -16,6 +16,7 @@ import { artistLook } from '../features/sprouts/artistLook';
 import { tierLabel } from '../features/sprouts/artistSprouts';
 import { kindOf, seedsLine, SPROUT_NOTE_MAX, type SproutArtist, type SproutCard, type SproutKind, sproutLink, sproutName } from '../features/sprouts/sprouts';
 import { useCatalog } from '../state/catalog';
+import { t } from '../i18n';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
@@ -47,7 +48,7 @@ export default function GiveSproutScreen() {
   const artistOf = (id: string) => catalog.artist(id);
   const lookOf = (a: SproutArtist) => {
     const l = artistLook(artistOf(a.id) ?? a);
-    return `${l.name}: ${l.theme.toLowerCase()}`;
+    return t('{name}: {theme}', { name: l.name, theme: l.theme.toLowerCase() });
   };
   const chosen: SproutArtist | undefined = earned && artistOf(earned.artistId) ? { id: earned.artistId, name: artistOf(earned.artistId)!.name } : undefined;
   const [note, setNote] = useState('');
@@ -74,12 +75,12 @@ export default function GiveSproutScreen() {
     if ('problem' in r) {
       setProblem(
         r.problem === 'no-seeds'
-          ? 'No seeds left today. New ones at 4 AM.'
+          ? t('No seeds left today. New ones at 4 AM.')
           : r.problem === 'loading'
-            ? 'One moment, your garden is still loading.'
+            ? t('One moment, your garden is still loading.')
             : r.problem === 'not-yours'
-              ? 'Film this artist’s set to earn their collectible first.'
-              : 'Make your profile to give sprouts.',
+              ? t('Film this artist’s set to earn their collectible first.')
+              : t('Make your profile to give sprouts.'),
       );
       return;
     }
@@ -93,25 +94,28 @@ export default function GiveSproutScreen() {
   };
   const takeBack = () => {
     if (!card) return;
-    showAlert('Take this sprout back?', 'Nobody has picked it up yet. The seed comes back to you.', [
-      { text: 'Keep giving', style: 'cancel' },
+    showAlert(t('Take this sprout back?'), t('Nobody has picked it up yet. The seed comes back to you.'), [
+      { text: t('Keep giving'), style: 'cancel' },
       {
-        text: 'Take it back',
+        text: t('Take it back'),
         style: 'destructive',
         onPress: () =>
           void sprouts.takeBack(card.id).then((ok) => {
             if (ok) another();
-            else showAlert('Someone already picked it up', 'It’s growing in their garden now.');
+            else showAlert(t('Someone already picked it up'), t('It’s growing in their garden now.'));
           }),
       },
     ]);
   };
 
   const status = useMemo(() => {
-    if (picked) return { text: `Picked up by ${picked.name ?? picked.handle ?? 'someone'}. It’s in their garden now.`, tone: 'done' as const };
-    if (gift?.failed) return { text: 'This sprout couldn’t be sent, so your seed is back. Try giving it again.', tone: 'wait' as const };
-    if (gift && !gift.sent) return { text: online ? 'Saving your sprout…' : 'No signal: they can scan it now, and it goes through once you’ve both had signal.', tone: 'wait' as const };
-    return { text: 'Waiting for them to scan it…', tone: 'idle' as const };
+    if (picked) {
+      const who = picked.name ?? picked.handle;
+      return { text: who != null ? t('Picked up by {name}. It’s in their garden now.', { name: who }) : t('Picked up by someone. It’s in their garden now.'), tone: 'done' as const };
+    }
+    if (gift?.failed) return { text: t('This sprout couldn’t be sent, so your seed is back. Try giving it again.'), tone: 'wait' as const };
+    if (gift && !gift.sent) return { text: online ? t('Saving your sprout…') : t('No signal: they can scan it now, and it goes through once you’ve both had signal.'), tone: 'wait' as const };
+    return { text: t('Waiting for them to scan it…'), tone: 'idle' as const };
   }, [picked, gift, online]);
 
   const k = kindOf(kind);
@@ -119,12 +123,12 @@ export default function GiveSproutScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Give a sprout" />
+      <PageTitle title={t('Give a sprout')} />
       <View style={[styles.top, { paddingTop: Platform.OS === 'ios' ? space.lg : insets.top + space.md }]}>
         <Text style={styles.title} accessibilityRole="header">
-          Give a sprout
+          {t('Give a sprout')}
         </Text>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} size={18} />
         </GlassCircleButton>
       </View>
@@ -132,20 +136,20 @@ export default function GiveSproutScreen() {
         {blocked ? (
           <View style={styles.empty}>
             <Sprout kind="seedling" stage={2} size={120} />
-            <Text style={styles.emptyTitle}>{social.availability.ok ? 'Make a profile to give sprouts' : accountsOff(Platform.OS === 'web', 'Sprouts').title}</Text>
+            <Text style={styles.emptyTitle}>{social.availability.ok ? t('Make a profile to give sprouts') : accountsOff(Platform.OS === 'web', 'Sprouts').title}</Text>
             <Text style={styles.body}>
-              {social.availability.ok ? 'Sprouts carry your name, so the people you give them to know who they’re from.' : accountsOff(Platform.OS === 'web', 'Sprouts').body}
+              {social.availability.ok ? t('Sprouts carry your name, so the people you give them to know who they’re from.') : accountsOff(Platform.OS === 'web', 'Sprouts').body}
             </Text>
             {social.availability.ok ? (
               <Pressable onPress={() => router.push(social.user ? '/profile-edit' : '/account')} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-                <Text style={styles.primaryText}>{social.user ? 'Finish your profile' : 'Create your profile'}</Text>
+                <Text style={styles.primaryText}>{social.user ? t('Finish your profile') : t('Create your profile')}</Text>
               </Pressable>
             ) : null}
           </View>
         ) : card ? (
           <>
             <LinearGradient colors={[...SPROUT_GLOW]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ring}>
-              <View style={styles.card} accessible accessibilityRole="image" accessibilityLabel={`A code for your ${sproutName(card)}. Someone scans it to pick it up.`}>
+              <View style={styles.card} accessible accessibilityRole="image" accessibilityLabel={t('A code for your {sprout}. Someone scans it to pick it up.', { sprout: sproutName(card) })}>
                 <FriendQR
                   value={sproutLink(card)}
                   size={size}
@@ -154,33 +158,33 @@ export default function GiveSproutScreen() {
                   centre={(s) => <SproutOf kind={card.kind} artist={card.artist} stage={card.kind === 'seedling' ? 2 : 3} size={s} still />}
                 />
                 <Text style={styles.cardName}>{sproutName(card)}</Text>
-                <Text style={styles.cardFrom}>from @{card.handle}</Text>
+                <Text style={styles.cardFrom}>{t('from {name}', { name: `@${card.handle}` })}</Text>
               </View>
             </LinearGradient>
             {picked ? <ConfettiBurst key={card.id} spread={160} /> : null}
             <Text style={[styles.status, status.tone === 'done' && styles.done, status.tone === 'wait' && styles.wait]} accessibilityLiveRegion="polite">
               {status.text}
             </Text>
-            <Text style={styles.body}>They scan it with Afterglow, or with their phone camera if they don’t have the app yet. One code, one sprout.</Text>
+            <Text style={styles.body}>{t('They scan it with Afterglow, or with their phone camera if they don’t have the app yet. One code, one sprout.')}</Text>
             <View style={styles.actions}>
               <Pressable onPress={another} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-                <Text style={styles.primaryText}>{picked ? 'Give another' : 'Give someone else one'}</Text>
+                <Text style={styles.primaryText}>{picked ? t('Give another') : t('Give someone else one')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
                   haptic.select();
-                  void shareMessage(`A sprout for you, from ${card.name} on Afterglow: ${sproutLink(card)}`, 'A sprout for you');
+                  void shareMessage(t('A sprout for you, from {name} on Afterglow: {link}', { name: card.name, link: sproutLink(card) }), t('A sprout for you'));
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Send the sprout as a link instead"
+                accessibilityLabel={t('Send the sprout as a link instead')}
                 style={({ pressed }) => [styles.secondary, styles.row, pressed && styles.pressed]}
               >
                 <ShareIcon color={color.moon} size={16} />
-                <Text style={styles.secondaryText}>Send as a link</Text>
+                <Text style={styles.secondaryText}>{t('Send as a link')}</Text>
               </Pressable>
               {!picked ? (
                 <Pressable onPress={takeBack} accessibilityRole="button" hitSlop={8}>
-                  <Text style={styles.link}>Take it back</Text>
+                  <Text style={styles.link}>{t('Take it back')}</Text>
                 </Pressable>
               ) : null}
             </View>
@@ -193,7 +197,7 @@ export default function GiveSproutScreen() {
                   <SproutOf artist={chosen} tier={earned.tier} size={150} />
                   <Text style={styles.heroName}>{sproutName({ kind: 'seedling', artist: chosen })}</Text>
                   <Text style={styles.body}>
-                    {lookOf(chosen)}. {tierLabel(earned)} of them filmed. The one you give stays yours too.
+                    {t('{look}. {tier} of them filmed. The one you give stays yours too.', { look: lookOf(chosen), tier: tierLabel(earned) })}
                   </Text>
                 </>
               ) : (
@@ -221,17 +225,17 @@ export default function GiveSproutScreen() {
                   >
                     <Sprout kind={id} stage={id === 'seedling' ? 2 : 3} size={44} still />
                     <Text style={styles.kindName} numberOfLines={1}>
-                      {kindOf(id).name.replace(' sprout', '')}
+                      {kindOf(id).short}
                     </Text>
                   </Pressable>
                 ))}
               </ScrollView>
             ) : (
-              <Text style={styles.hint}>Grow your sprouts into new kinds, and you can give those too.</Text>
+              <Text style={styles.hint}>{t('Grow your sprouts into new kinds, and you can give those too.')}</Text>
             )}
             {sprouts.artists.length ? (
               <>
-                <Text style={styles.rowTitle}>Artist collectibles</Text>
+                <Text style={styles.rowTitle}>{t('Artist collectibles')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kinds} accessibilityRole="radiogroup">
                   {sprouts.artists.flatMap((a) => {
                     const artist = artistOf(a.artistId);
@@ -246,7 +250,7 @@ export default function GiveSproutScreen() {
                         }}
                         accessibilityRole="radio"
                         accessibilityState={{ selected: on }}
-                        accessibilityLabel={`${artist.name} collectible, ${tierLabel(a)}`}
+                        accessibilityLabel={t('{artist} collectible, {tier}', { artist: artist.name, tier: tierLabel(a) })}
                         style={[styles.kind, on && styles.kindOn]}
                       >
                         <Sprout artist={artistLook(artist)} tier={a.tier} stage={3} size={44} still />
@@ -263,9 +267,9 @@ export default function GiveSproutScreen() {
               value={note}
               onChangeText={setNote}
               maxLength={SPROUT_NOTE_MAX}
-              placeholder="Add a note (optional)"
+              placeholder={t('Add a note (optional)')}
               placeholderTextColor={color.moonFaint}
-              accessibilityLabel="A note with your sprout"
+              accessibilityLabel={t('A note with your sprout')}
               style={styles.input}
             />
             <Text style={[styles.seeds, sprouts.seeds === 0 && styles.wait]}>{seedsLine(sprouts.seeds, sprouts.festivalDay)}</Text>
@@ -277,9 +281,9 @@ export default function GiveSproutScreen() {
               accessibilityState={{ disabled: sprouts.seeds === 0 }}
               style={({ pressed }) => [styles.primary, sprouts.seeds === 0 && styles.disabled, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryText}>Show the code</Text>
+              <Text style={styles.primaryText}>{t('Show the code')}</Text>
             </Pressable>
-            <Text style={styles.hint}>They scan it and it’s theirs. Works without signal.</Text>
+            <Text style={styles.hint}>{t('They scan it and it’s theirs. Works without signal.')}</Text>
           </>
         )}
       </ScrollView>

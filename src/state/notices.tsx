@@ -13,6 +13,7 @@ import { useSprouts } from './sprouts';
 import { useRecapFestivals } from '../features/recap/useRecap';
 import type { Activity, CrewInvite, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
+import { t } from '../i18n';
 import { useCatalog } from './catalog';
 import { useClipNews } from './clipNews';
 import { useGoing } from './going';
@@ -105,7 +106,7 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   const uid = social.user?.uid;
   const [activity, setActivity] = useState<{ uid: string; items: Activity[]; people: Record<string, Profile | null>; videos: Record<string, string>; invites: CrewInvite[] }>();
   const [tick, setTick] = useState(0);
-  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => st === 'active' && refresh());
     return () => sub.remove();
@@ -127,7 +128,7 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
         if (items.some((a) => a.kind === 'like' || a.kind === 'comment')) {
           for (const m of await social.service.memoriesOf(uid).catch(() => [])) {
             const name = m.artistId ? artist(m.artistId)?.name : undefined;
-            if (name) videos[m.id] = `your video of ${name}`;
+            if (name) videos[m.id] = t('your video of {artist}', { artist: name });
           }
         }
         if (live) setActivity({ uid, items, people, videos, invites });

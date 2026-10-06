@@ -9,6 +9,7 @@ import { MEET_SPOT_MAX, type Crew } from '../social/models';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../social/service';
 import { firstName } from './together';
 import { clock } from './updates';
+import { t } from '../../i18n';
 
 /**
  * A crew's meeting spot: where you all head if you lose each other. Any
@@ -23,7 +24,8 @@ export function MeetSpotCard({ crew, compact = false }: { crew: Crew; compact?: 
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const me = social.user?.uid;
-  const by = spot ? (spot.by === me ? 'you' : profileOf(spot.by) ? firstName(profileOf(spot.by)!.displayName) : 'a crewmate') : undefined;
+  const byMe = !!spot && spot.by === me;
+  const by = spot && !byMe ? (profileOf(spot.by) ? firstName(profileOf(spot.by)!.displayName) : t('a crewmate')) : '';
 
   const start = () => {
     haptic.select();
@@ -38,7 +40,7 @@ export function MeetSpotCard({ crew, compact = false }: { crew: Crew; compact?: 
       haptic.settle();
       setEditing(false);
     } catch (e) {
-      showAlert('Couldn’t save the meeting spot', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t save the meeting spot'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
       setSaving(false);
     }
@@ -48,25 +50,28 @@ export function MeetSpotCard({ crew, compact = false }: { crew: Crew; compact?: 
   if (editing) {
     return (
       <View style={styles.card}>
-        <Text style={styles.label}>Meeting spot{compact ? ` · ${crew.name}` : ''}</Text>
+        <Text style={styles.label}>
+          {t('Meeting spot')}
+          {compact ? ` · ${crew.name}` : ''}
+        </Text>
         <TextInput
           value={text}
           onChangeText={setText}
-          placeholder="Like: by the big tree left of Main Stage"
+          placeholder={t('Like: by the big tree left of Main Stage')}
           placeholderTextColor={color.moonFaint}
           maxLength={MEET_SPOT_MAX}
           autoFocus
           returnKeyType="done"
           onSubmitEditing={() => void save()}
           style={styles.input}
-          accessibilityLabel="Meeting spot"
+          accessibilityLabel={t('Meeting spot')}
         />
         <View style={styles.row}>
           <Pressable onPress={() => setEditing(false)} accessibilityRole="button" hitSlop={8}>
-            <Text style={styles.quiet}>Cancel</Text>
+            <Text style={styles.quiet}>{t('Cancel')}</Text>
           </Pressable>
-          <Pressable onPress={() => void save()} accessibilityRole="button" accessibilityLabel="Save the meeting spot" hitSlop={8}>
-            <Text style={styles.link}>{saving ? 'Saving…' : 'Save'}</Text>
+          <Pressable onPress={() => void save()} accessibilityRole="button" accessibilityLabel={t('Save the meeting spot')} hitSlop={8}>
+            <Text style={styles.link}>{saving ? t('Saving…') : t('Save')}</Text>
           </Pressable>
         </View>
       </View>
@@ -77,20 +82,29 @@ export function MeetSpotCard({ crew, compact = false }: { crew: Crew; compact?: 
     <Pressable
       onPress={start}
       accessibilityRole="button"
-      accessibilityLabel={spot ? `Meeting spot: ${spot.text}. Set by ${by}. Change it` : 'Pick a meeting spot for your crew'}
+      accessibilityLabel={
+        spot
+          ? byMe
+            ? t('Meeting spot: {spot}. Set by you. Change it', { spot: spot.text })
+            : t('Meeting spot: {spot}. Set by {by}. Change it', { spot: spot.text, by })
+          : t('Pick a meeting spot for your crew')
+      }
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <Text style={styles.label}>Meeting spot{compact ? ` · ${crew.name}` : ''}</Text>
+      <Text style={styles.label}>
+        {t('Meeting spot')}
+        {compact ? ` · ${crew.name}` : ''}
+      </Text>
       {spot ? (
         <>
           <Text style={styles.spot}>{spot.text}</Text>
           <Text style={styles.meta}>
-            Set by {by}
-            {spot.at ? ` · ${clock(spot.at)}` : ''} · Change
+            {byMe ? t('Set by you') : t('Set by {by}', { by })}
+            {spot.at ? ` · ${clock(spot.at)}` : ''} · {t('Change')}
           </Text>
         </>
       ) : (
-        <Text style={styles.empty}>Pick a spot you all head to if you lose each other. Best done while there’s signal.</Text>
+        <Text style={styles.empty}>{t('Pick a spot you all head to if you lose each other. Best done while there’s signal.')}</Text>
       )}
     </Pressable>
   );

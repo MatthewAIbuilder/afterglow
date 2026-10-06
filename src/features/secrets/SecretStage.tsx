@@ -17,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { onSecret } from '../../state/secrets';
 import { color, motion, radius, space, type } from '../../theme/tokens';
@@ -164,7 +165,7 @@ function HeartRain() {
         <FallingHeart key={i} i={i} width={width} height={height} />
       ))}
       <Animated.View style={[styles.center, wordsStyle]}>
-        <Text style={styles.plur}>Peace · Love · Unity · Respect</Text>
+        <Text style={styles.plur}>{t('Peace · Love · Unity · Respect')}</Text>
       </Animated.View>
     </View>
   );
@@ -244,7 +245,7 @@ function Sunrise() {
         <View style={styles.sun} />
       </Animated.View>
       <View style={styles.center}>
-        <Text style={styles.plur}>Up for the sunrise</Text>
+        <Text style={styles.plur}>{t('Up for the sunrise')}</Text>
       </View>
     </View>
   );
@@ -332,13 +333,13 @@ function FoundToast({ title, line }: { title: string; line: string }) {
         }}
         accessibilityRole="button"
         accessibilityLiveRegion="polite"
-        accessibilityLabel={`Secret found: ${title}. Plus ${SECRET_GLOW} glow. Opens your secrets.`}
+        accessibilityLabel={t('Secret found: {title}. Plus {glow} glow. Opens your secrets.', { title, glow: SECRET_GLOW })}
         style={styles.toast}
         testID="secret-toast"
       >
         <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.kicker}>Secret found</Text>
+          <Text style={styles.kicker}>{t('Secret found')}</Text>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.line} numberOfLines={2}>
             {line}

@@ -13,6 +13,7 @@ import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 /**
  * Your year on Afterglow: your festivals, top artists, sound and the numbers,
@@ -31,10 +32,10 @@ export default function YearScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={`Your ${year}`} />
+      <PageTitle title={t('Your {year}', { year })} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.heading}>Your year</Text>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <Text style={styles.heading}>{t('Your year')}</Text>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
@@ -42,22 +43,22 @@ export default function YearScreen() {
         {card ? (
           <>
             <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
-              <PosterCard card={card} label={`${card.title} on Afterglow`} />
+              <PosterCard card={card} label={t('{title} on Afterglow', { title: card.title })} />
             </View>
             <Pressable
               onPress={async () => {
                 if (busy) return;
                 haptic.tap();
                 setBusy(true);
-                await sharePoster(cardRef, `My ${year} on Afterglow`);
+                await sharePoster(cardRef, t('My {year} on Afterglow', { year }));
                 setBusy(false);
               }}
               disabled={busy}
               accessibilityRole="button"
-              accessibilityLabel="Share your year as an image"
+              accessibilityLabel={t('Share your year as an image')}
               style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
             >
-              <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+              <Text style={styles.buttonText}>{busy ? t('Getting it ready…') : t('Share image')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -65,15 +66,15 @@ export default function YearScreen() {
                 void shareMessage(yearText(card));
               }}
               accessibilityRole="button"
-              accessibilityLabel="Share your year as text"
+              accessibilityLabel={t('Share your year as text')}
               style={({ pressed }) => [styles.button, pressed && styles.pressed]}
             >
-              <Text style={styles.buttonText}>Share as text</Text>
+              <Text style={styles.buttonText}>{t('Share as text')}</Text>
             </Pressable>
           </>
         ) : (
           <Text style={styles.empty}>
-            Nothing here yet. Mark the festivals you’re going to, watch some sets and rate artists, and your year fills in.
+            {t('Nothing here yet. Mark the festivals you’re going to, watch some sets and rate artists, and your year fills in.')}
           </Text>
         )}
       </ScrollView>

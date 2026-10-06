@@ -9,6 +9,7 @@ import { haptic } from '../../lib/haptics';
 import { color, space, type, glowA } from '../../theme/tokens';
 import type { Profile } from '../social/models';
 import { ringPlaces, splitOrbit } from './orbit';
+import { t } from '../../i18n';
 
 /** One slow turn of the whole orbit (both rings together, so faces never cross). */
 const TURN_MS = 140_000;
@@ -75,7 +76,7 @@ export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onP
               onPick(p);
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${firstName(p.displayName)}. Quick options`}
+            accessibilityLabel={`${firstName(p.displayName)}. ${t('Quick options')}`}
             hitSlop={6}
             style={({ pressed }) => [styles.outer, pressed && styles.pressed]}
           >
@@ -95,8 +96,8 @@ export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onP
               }}
               onLongPress={() => router.push({ pathname: '/u/[handle]', params: { handle: p.handle } })}
               accessibilityRole="button"
-              accessibilityLabel={`${p.displayName}, close friend${unread ? `, ${unread} new` : ''}${next ? `. Going to ${next.name}` : ''}. Quick options`}
-              accessibilityHint="Hold for their profile"
+              accessibilityLabel={`${p.displayName}, ${t('close friend')}${unread ? `, ${t('{n} new', { n: unread })}` : ''}${next ? `. ${t('Going to {festival}', { festival: next.name })}` : ''}. ${t('Quick options')}`}
+              accessibilityHint={t('Hold for their profile')}
               style={({ pressed }) => [styles.innerWrap, pressed && styles.pressed]}
             >
               <View style={[styles.inner, unread ? styles.innerUnread : null]}>

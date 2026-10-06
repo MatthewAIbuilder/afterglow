@@ -7,6 +7,7 @@ import { haptic } from '../lib/haptics';
 import { color, space, type } from '../theme/tokens';
 import { ArtistAvatar } from './ArtistAvatar';
 import { ChevronIcon } from './TabIcons';
+import { t } from '../i18n';
 
 /**
  * `festivalId` opens the artist in that festival's context, so must-see stars apply there.
@@ -19,7 +20,7 @@ type Props = { artist: Artist; affinity: number; detail?: string; festivalId?: s
 export function ArtistRow({ artist, affinity, detail, festivalId, rating, onOpen }: Props) {
   const pct = Math.round(affinity * 100);
   const passed = rating === 'pass';
-  const cold = rating === 'pass' ? 'Not for you' : rating === 'meh' ? 'Not really for you' : undefined;
+  const cold = rating === 'pass' ? t('Not for you') : rating === 'meh' ? t('Not really for you') : undefined;
   const line = cold ? [detail, cold].filter(Boolean).join(' · ') : detail;
   const said = rating === 'love' || rating === 'like' || rating === 'ok' ? `, ${RATING_SAID[rating]}` : '';
   return (
@@ -30,7 +31,8 @@ export function ArtistRow({ artist, affinity, detail, festivalId, rating, onOpen
         router.push({ pathname: '/artist/[id]', params: { id: artist.id, festival: festivalId } });
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${artist.name}, ${pct} percent match${said}${line ? `, ${line}` : ''}`}
+      accessibilityLabel={`${t('{artist}, {pct} percent match', { artist: artist.name, pct })}${said}${line ? `, ${line}` : ''}`
+}
       style={({ pressed }) => [styles.row, passed && styles.passed, pressed && { opacity: 0.6 }]}
     >
       <ArtistAvatar artist={artist} size={48} />

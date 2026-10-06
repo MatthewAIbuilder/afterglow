@@ -29,8 +29,14 @@ const HERE_PREFIX = 'here:';
 export const hereFocus = (festivalId: string): Focus => `${HERE_PREFIX}${festivalId}`;
 export const hereOf = (focus: Focus | null | undefined): string | undefined => (focus?.startsWith(HERE_PREFIX) ? focus.slice(HERE_PREFIX.length) || undefined : undefined);
 
+/** A station from one artist: their sets and artists who sound like them, from every lineup and club show ("like:subtronics"). */
+const LIKE_PREFIX = 'like:';
+export const likeFocus = (artistId: string): Focus => `${LIKE_PREFIX}${artistId}`;
+/** The artist a station is built from, when the focus is a station. */
+export const likeOf = (focus: Focus | null | undefined): string | undefined => (focus?.startsWith(LIKE_PREFIX) ? focus.slice(LIKE_PREFIX.length) || undefined : undefined);
+
 /** Focuses that aren't one festival: they draw from every lineup. */
-export const isWide = (focus: Focus | undefined) => focus === MIX || focus === FOLLOWING || !!soundOf(focus);
+export const isWide = (focus: Focus | undefined) => focus === MIX || focus === FOLLOWING || !!soundOf(focus) || !!likeOf(focus);
 
 /** A sound is offered in Discover once this many clips carry it. */
 export const SOUND_CLIPS_MIN = 3;
@@ -56,7 +62,7 @@ export function inSound(clip: Clip, tag: SoundTag, artist: (id: string) => Artis
  * the app is open, and its own "Discover the lineup" still opens it.
  */
 export function startFocus(stored?: string | null): Focus {
-  if (stored === FOLLOWING || stored === TONIGHT || soundOf(stored)) return stored!;
+  if (stored === FOLLOWING || stored === TONIGHT || soundOf(stored) || likeOf(stored)) return stored!;
   return MIX;
 }
 
@@ -71,13 +77,13 @@ export function nextDiscoverFocus(
   asked: { festival?: string; clip?: Clip },
   festivals: Festival[],
 ): Focus | undefined {
-  if (asked.festival === MIX || asked.festival === FOLLOWING || asked.festival === TONIGHT || soundOf(asked.festival)) return asked.festival;
+  if (asked.festival === MIX || asked.festival === FOLLOWING || asked.festival === TONIGHT || soundOf(asked.festival) || likeOf(asked.festival)) return asked.festival;
   const festival = asked.festival ? festivals.find((f) => f.id === asked.festival) : undefined;
   if (festival) return festival.id;
   if (!asked.clip || current === MIX) return current;
   if (current === FOLLOWING && asked.clip.source?.provider === 'community') return current;
-  // A sound may not have that clip: the mix has every one.
-  if (soundOf(current)) return MIX;
+  // A sound or a station may not have that clip: the mix has every one.
+  if (soundOf(current) || likeOf(current)) return MIX;
   const now = festivals.find((f) => f.id === current);
   return (focusForClip(asked.clip, now, festivals) ?? now)?.id ?? current;
 }
