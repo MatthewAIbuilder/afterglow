@@ -281,6 +281,28 @@ export type Comment = {
 /** Comments are at most this long. */
 export const COMMENT_MAX = 300;
 
+/**
+ * A comment on a clip in Discover (a YouTube video, a SoundCloud card or a drawn stage): no one owns
+ * the clip, so the writer (or the support account) removes it. Anyone signed in can read them.
+ */
+export type ClipComment = {
+  id: string;
+  /** The clip's own id (`yt-…`, `soundcloud:<artist>` …). */
+  clipId: string;
+  uid: string;
+  /** The commenter's @handle when they wrote it. */
+  handle: string;
+  text: string;
+  /** The server's time, ISO 8601. */
+  createdAt: string;
+};
+
+/** A clip's comments are read this many at a time. */
+export const CLIP_COMMENTS_PAGE = 50;
+/** Clip ids a comment can be on: letters, numbers and `_ . : -`, at most 128 (the rules check the same). */
+export const CLIP_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
+export const validClipId = (id: string) => CLIP_ID_PATTERN.test(id);
+
 /** The first this many people to make a profile are founders, numbered in the order they arrived. */
 export const FOUNDERS_MAX = 100;
 
@@ -351,8 +373,8 @@ export function repliesOf(m: Pick<SupportMessage, 'reply' | 'repliedAt' | 'repli
 export type ReportRecord = {
   id: string;
   by: string;
-  /** A chat message's target is `crewId/messageId`. */
-  kind: 'profile' | 'memory' | 'comment' | 'chat';
+  /** A chat message's target is `crewId/messageId`; `clipComment` is a comment on a clip in Discover. */
+  kind: 'profile' | 'memory' | 'comment' | 'clipComment' | 'chat';
   targetId: string;
   ownerUid: string;
   reason: ReportReason;

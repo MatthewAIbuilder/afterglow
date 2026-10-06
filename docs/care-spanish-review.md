@@ -14,5 +14,6 @@ The Spanish for Look after yourself (`src/i18n/es/care.ts`, from `src/features/c
 10. **"until 6 AM"** stays "hasta las 6 AM".
 11. **Emergency numbers** come from the code unchanged ("Llamar al {number}").
 12. **Check-in** → "chequeo" (matches Settings); **stopwatch** → "cronómetro".
+13. **How you feel, redesigned** (added later on 2026-10-06): the groups "Algo no va bien" (Something’s off) and "Necesito ayuda" (Need a hand); "Registrado hace {time}" (Checked in … ago); "Avisar a mi grupo" (Tell my crew); and the recovery note "Sentiste {feeling} a las {time}, y desde entonces te has sentido mejor." (the feeling is the lower-case noun, e.g. "sentiste mucho calor"; "a las 1:05" should strictly be "a la 1:05" just after 1 AM). Only what the person said, never a guess at why.
 
 A stopwatch keeps the name it was started with (saved on the phone), so one started in English stays English after switching to Spanish.

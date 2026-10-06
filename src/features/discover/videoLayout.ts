@@ -15,8 +15,8 @@ export type TallLayout = { player: Rect; rail: Rect; info: Rect };
 
 /** YouTube's embedded player must be at least 200 by 200. */
 export const MIN_PLAYER = 200;
-/** Three rail buttons (like, save, skip): 50 icon + 5 gap + 15 label each, 24 between. */
-export const RAIL = { w: 64, h: 3 * 70 + 2 * space.xl } as const;
+/** Four rail buttons (like, comments, save, skip): 50 icon + 5 gap + 15 label each, 24 between. */
+export const RAIL = { w: 64, h: 4 * 70 + 3 * space.xl } as const;
 /** Artist row, one-line title, meta and credit. */
 export const INFO_H = 132;
 
