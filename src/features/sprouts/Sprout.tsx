@@ -1,19 +1,10 @@
-import { useEffect, useId } from 'react';
+import { type ReactNode, useEffect, useId } from 'react';
 import { View } from 'react-native';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import type { ArtistLook } from './artistLook';
 import { Collectible, MOVES_FROM } from './Collectible';
+import { blinkOf, CLOCK_MS, glanceOf, type Pace, paceOf, sine } from './motion';
 import { kindOf, type SproutKind, type Stage } from './sprouts';
 
 /**
@@ -86,7 +77,37 @@ const Spot = ({ x, y, rx, ry, id, turn = -28 }: { x: number; y: number; rx: numb
 
 /** A circle as a path, for Vy. */
 const circleD = (x: number, y: number, r: number) => `M${x - r} ${y} A${r} ${r} 0 1 0 ${x + r} ${y} A${r} ${r} 0 1 0 ${x - r} ${y}Z`;
+/** An ellipse as a path, for Vy. */
+const ellipseD = (x: number, y: number, rx: number, ry: number) => `M${x - rx} ${y} A${rx} ${ry} 0 1 0 ${x + rx} ${y} A${rx} ${ry} 0 1 0 ${x - rx} ${y}Z`;
 
+/**
+ * Driven by the garden's clock (GardenScene.tsx) instead of its own loops:
+ * `clock` runs 0 to 1 over `CLOCK_MS`, `pace` is this creature's own beat
+ * and place in it, and with `running` false everything rests (never frozen
+ * mid-blink).
+ */
+export type Driven = {
+  clock: SharedValue<number>;
+  pace: Pace;
+  running: boolean;
+  /** Picked up (0 to 1): its feet dangle more. */
+  lift?: SharedValue<number>;
+  /** A neighbour to glance at now and then: -1 to the left, 1 to the right. */
+  glance?: number;
+};
+
+export type SproutProps = {
+  kind?: SproutKind;
+  stage?: Stage;
+  size?: number;
+  still?: boolean;
+  locked?: boolean;
+  artist?: ArtistLook;
+  tier?: 0 | 1 | 2 | 3;
+  /** In the garden scene: no tile or ground shadow of its own (the scene draws them). */
+  scene?: boolean;
+  driven?: Driven;
+};
 
 /**
  * A little sprout friend. A seed peeking out of the soil, then a shoot,
@@ -94,64 +115,68 @@ const circleD = (x: number, y: number, r: number) => `M${x - r} ${y} A${r} ${r} 
  * and what it wears (PLUR a heart and kandi, Bass headphones, Melody a
  * flower crown, Groove sunglasses, Spotlight a halo of light, Sunrise a
  * rising sun, Wanderer a star and a bandana, Groove a record and a chain). Bloomed sprouts glow softly and sparkle.
- * Sways gently unless motion is reduced or `still` (small ones are still
- * unless `still={false}`). Hidden from screen
- * readers (the label around it says what it is).
+ * Sways gently, blinks and swings its little feet unless motion is reduced
+ * or `still` (small ones are still unless `still={false}`); a still one is
+ * one picture. Hidden from screen readers (the label around it says what it is).
  *
  * An artist's passes `artist` (their look, from `artistLook`) and is drawn as
  * their collectible instead (Collectible.tsx), with `tier` for its level.
  */
-export function Sprout({ artist, tier, ...props }: { kind?: SproutKind; stage?: Stage; size?: number; still?: boolean; locked?: boolean; artist?: ArtistLook; tier?: 0 | 1 | 2 | 3 }) {
-  return artist ? <Collectible look={artist} tier={tier} size={props.size} still={props.still} locked={props.locked} /> : <Plant {...props} />;
+export function Sprout({ artist, tier, ...props }: SproutProps) {
+  return artist ? <Collectible look={artist} tier={tier} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} /> : <Plant {...props} />;
 }
 
-function Plant({
-  kind = 'seedling',
-  stage = 3,
-  size = 80,
-  still = size < MOVES_FROM,
-  locked,
-}: {
-  kind?: SproutKind;
-  stage?: Stage;
-  size?: number;
-  still?: boolean;
-  locked?: boolean;
-}) {
+function Plant({ kind = 'seedling', stage = 3, size = 80, still = size < MOVES_FROM, locked, scene, driven }: Omit<SproutProps, 'artist' | 'tier'>) {
   const k = kindOf(kind);
   const reduce = useReducedMotion();
   const moving = !reduce && !still;
-  const sway = useSharedValue(0);
-  const twinkle = useSharedValue(0.6);
+  // The garden's clock, or its own when it's on its own.
+  const ownClock = useSharedValue(0);
+  const clock = driven?.clock ?? ownClock;
+  const hasClock = !!driven;
+  const running = moving && (driven ? driven.running : true);
+  // Each sprout's own pace (the garden gives each resident its own), so a garden never moves in step.
+  const pace = driven?.pace ?? paceOf(kind);
+  const phase = pace.phase;
+  const swayC = pace.sway;
+  const bobC = pace.bob;
+  const blinkC = pace.blink;
+  const twinkleC = pace.twinkle;
+  const lift = driven?.lift;
+  const glance = driven?.glance ?? 0;
   const bloom = stage === 3 && !locked;
-  // Each sprout's own pace, so a garden never moves in step.
-  const pace = kind.length;
   useEffect(() => {
-    if (!moving) return;
-    // Each sprout sways at its own pace so a garden never moves in step.
-    const ms = 1700 + ((pace * 137 + stage * 211) % 900);
-    sway.set(withRepeat(withSequence(withTiming(1, { duration: ms, easing: Easing.inOut(Easing.sin) }), withTiming(-1, { duration: ms, easing: Easing.inOut(Easing.sin) })), -1, true));
-    if (bloom) {
-      twinkle.set(
-        withDelay(
-          (pace * 97) % 700,
-          withRepeat(withSequence(withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) }), withTiming(0.15, { duration: 1100, easing: Easing.inOut(Easing.quad) })), -1, false),
-        ),
-      );
-    }
+    if (!moving || hasClock) return;
+    ownClock.set(withRepeat(withTiming(1, { duration: CLOCK_MS, easing: Easing.linear }), -1, false));
     return () => {
-      cancelAnimation(sway);
-      cancelAnimation(twinkle);
-      sway.set(0);
+      cancelAnimation(ownClock);
+      ownClock.set(0);
     };
-  }, [moving, bloom, kind, pace, stage, sway, twinkle]);
-  const top = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.get() * 5}deg` }] }));
-  const body = useAnimatedStyle(() => ({ transform: [{ scaleY: 1 + sway.get() * 0.018 }, { scaleX: 1 - sway.get() * 0.008 }] }));
-  const sparkle = useAnimatedStyle(() => ({ opacity: twinkle.get() }));
+  }, [moving, hasClock, ownClock]);
+  const top = useAnimatedStyle(() => ({ transform: [{ rotate: `${(running ? sine(clock.get(), swayC, phase) : 0) * 5}deg` }] }));
+  const body = useAnimatedStyle(() => {
+    const s = running ? sine(clock.get(), swayC, phase) : 0;
+    return { transform: [{ scaleY: 1 + s * 0.018 }, { scaleX: 1 - s * 0.008 }] };
+  });
+  // The feet swing a little behind the bob, each on its own beat, and more when picked up.
+  const footL = useAnimatedStyle(() => {
+    const up = lift ? lift.get() : 0;
+    return { transform: [{ rotate: `${running ? (9 + up * 9) * sine(clock.get(), bobC, phase + 0.25) : 0}deg` }] };
+  });
+  const footR = useAnimatedStyle(() => {
+    const up = lift ? lift.get() : 0;
+    return { transform: [{ rotate: `${running ? (9 + up * 9) * sine(clock.get(), bobC, phase + 0.39) : 0}deg` }] };
+  });
+  const eyes = useAnimatedStyle(() => {
+    const t = clock.get();
+    const look = running && glance ? glance * glanceOf(t, phase) * size * 0.016 : 0;
+    return { transform: [{ translateX: look }, { scaleY: running ? blinkOf(t, blinkC, phase) : 1 }] };
+  });
+  const sparkle = useAnimatedStyle(() => ({ opacity: running ? 0.3 + 0.7 * (0.5 + 0.5 * sine(clock.get(), twinkleC, phase)) : 0.6 }));
 
-  const own: Look = LOOKS[kind] ?? LOOKS.seedling;
+  const base: Look = LOOKS[kind] ?? LOOKS.seedling;
   // Locked: a grey silhouette of what it will be (its leaves and what it wears), so there's something to collect.
-  const look = locked ? { ...GREY, leafShape: own.leafShape } : own;
+  const look = locked ? { ...GREY, leafShape: base.leafShape } : base;
   const accent = locked ? '#8A88A0' : k.accent;
   // Each sprout's own gradient names: on the website two the same would share (and can lose) their colours.
   const id = `${kind}-${stage}-${locked ? 'g' : 'c'}-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -166,102 +191,150 @@ function Plant({
   const stemTop = [stemBase - 8, 37, 31, 29][stage];
   const leafScale = [0.45, 0.8, 1, 1.08][stage];
   const dressed = stage === 3 && kind !== 'seedling';
+  const face: Face = dressed || stage >= 1 ? look.face : 'smile';
+  const eyeX = bx;
+  const eyeY = by + (seed ? -5 : 1);
+  const faceS = seed ? 0.75 : 1;
+  // Little legs hang from hips hidden under the body, to stubby feet just below it.
+  const hipY = by + bry * 0.55;
+  const footY = by + bry * 1.18;
 
+  const defs = (
+    <Defs>
+      <RadialGradient id={`aura-${id}`} cx="50%" cy="50%" r="50%">
+        <Stop offset="0" stopColor={accent} stopOpacity={0.45} />
+        <Stop offset="0.6" stopColor={accent} stopOpacity={0.12} />
+        <Stop offset="1" stopColor={accent} stopOpacity={0} />
+      </RadialGradient>
+      <LinearGradient id={`leaf-${id}`} x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor={look.leaf[0]} />
+        <Stop offset="1" stopColor={look.leaf[1]} />
+      </LinearGradient>
+      <RadialGradient id={`body-${id}`} cx="38%" cy="30%" r="80%">
+        <Stop offset="0" stopColor={look.body[0]} />
+        <Stop offset="0.55" stopColor={look.body[1]} />
+        <Stop offset="1" stopColor={look.body[2]} />
+      </RadialGradient>
+      <LinearGradient id={`soil-${id}`} x1="0" y1="0" x2="0" y2="1">
+        <Stop offset="0" stopColor="#7A5640" />
+        <Stop offset="1" stopColor="#3A271C" />
+      </LinearGradient>
+      {vinylDefs(id, accent)}
+    </Defs>
+  );
+
+  /* Behind: a soft glow in the kind's colour once it blooms, and (on its own) the shadow on the ground. */
+  const hasBack = bloom || !scene;
+  const back = (
+    <G>
+      {bloom ? <Circle cx={50} cy={kind === 'seedling' ? 56 : 50} r={46} fill={`url(#aura-${id})`} /> : null}
+      {kind === 'spotlight' && bloom ? <Path d="M50 4 L30 70 L70 70 Z" fill={accent} opacity={0.12} /> : null}
+      {scene ? null : <Ellipse cx={50} cy={seed ? 93 : 95.5} rx={seed ? 24 : 19} ry={3.4} fill="rgba(0,0,0,0.35)" />}
+    </G>
+  );
+  /* A leg (`dir` -1 left, 1 right): a stub in the deep colour and a rounded foot, glossy like the rest. */
+  const leg = (dir: number) => {
+    const hx = bx + dir * 7.5;
+    const fx = bx + dir * 8.5;
+    return (
+      <G>
+        <Path d={`M${hx} ${hipY} L${fx} ${footY - 3}`} stroke={look.body[2]} strokeWidth={5.2} strokeLinecap="round" />
+        <Vy d={ellipseD(fx + dir * 0.6, footY - 0.4, 4.8, 3.2)} fill={look.body[2]} id={id} />
+        <Ellipse cx={fx - 1.2} cy={footY - 1.9} rx={1.7} ry={0.8} fill="#FFFFFF" opacity={0.35} />
+      </G>
+    );
+  };
+  /* Stem, leaves and bloom, swaying from the top of the body. */
+  const topPart = (
+    <G>
+      <Path d={`M${bx} ${stemBase + 2} Q${bx - 2} ${(stemBase + stemTop) / 2} ${bx} ${stemTop}`} stroke={look.leaf[1]} strokeWidth={seed ? 2.6 : 3.6} strokeLinecap="round" fill="none" />
+      <Path d={`M${bx - 0.8} ${stemBase} Q${bx - 2.8} ${(stemBase + stemTop) / 2} ${bx - 0.8} ${stemTop + 2}`} stroke={look.leaf[0]} strokeWidth={seed ? 0.8 : 1.1} strokeLinecap="round" fill="none" opacity={0.8} />
+      {seed ? (
+        <Vy d={leafPath('round', bx, stemTop + 1, 1, leafScale)} fill={`url(#leaf-${id})`} id={id} />
+      ) : (
+        <G>
+          <Vy d={leafPath(look.leafShape, bx, stemTop + 2, -1, leafScale)} fill={`url(#leaf-${id})`} id={id} stroke={look.leaf[1]} />
+          <Vy d={leafPath(look.leafShape, bx, stemTop + 2, 1, leafScale)} fill={`url(#leaf-${id})`} id={id} stroke={look.leaf[1]} />
+          <Path d={veinPath(bx, stemTop + 2, -1, leafScale)} stroke={look.leaf[1]} strokeWidth={0.9} opacity={0.55} fill="none" strokeLinecap="round" />
+          <Path d={veinPath(bx, stemTop + 2, 1, leafScale)} stroke={look.leaf[1]} strokeWidth={0.9} opacity={0.55} fill="none" strokeLinecap="round" />
+          {/* A shine along each leaf. */}
+          <Path d={shinePath(bx, stemTop + 2, -1, leafScale)} stroke="#FFFFFF" strokeWidth={1.4} opacity={0.6} fill="none" strokeLinecap="round" />
+          <Path d={shinePath(bx, stemTop + 2, 1, leafScale)} stroke="#FFFFFF" strokeWidth={1.1} opacity={0.4} fill="none" strokeLinecap="round" />
+        </G>
+      )}
+      {stage >= 2 ? <Vy d={leafPath(look.leafShape, bx - 1, stemTop + 12, -1, leafScale * 0.55)} fill={`url(#leaf-${id})`} id={id} /> : null}
+      {dressed ? <Bloom kind={kind} x={bx} y={stemTop - 4} color={accent} grey={locked} id={id} /> : null}
+    </G>
+  );
+  /* The body with its mouth and blush (and, in bloom, what it wears): one glossy vinyl bean. */
+  const bodyPart = (
+    <G>
+      <Vy d={beanPath(bx, by, brx, bry)} fill={`url(#body-${id})`} id={id} />
+      <Spot x={bx - brx * 0.36} y={by - bry * 0.55} rx={brx * 0.34} ry={bry * 0.17} id={id} />
+      <Circle cx={bx - brx * 0.66} cy={by - bry * 0.2} r={1.2} fill="#FFFFFF" opacity={0.6} />
+      <Mouth face={face} x={eyeX} y={eyeY} s={faceS} blush={!locked} />
+      {dressed ? <Wear kind={kind} x={bx} y={by} rx={brx} ry={bry} color={accent} grey={locked} id={id} /> : null}
+      {/* A seed sits in a little mound of soil. */}
+      {seed ? (
+        <G>
+          <Vy d="M20 94 Q24 84 36 85 Q50 82 64 85 Q76 84 80 94 Z" fill={`url(#soil-${id})`} id={id} />
+          <Path d="M30 86.5 Q50 83 70 86.5" stroke="#8A6A52" strokeWidth={0.8} opacity={0.6} fill="none" strokeLinecap="round" />
+          <Circle cx={33} cy={89} r={1.2} fill="#8A6A52" />
+          <Circle cx={62} cy={88.5} r={1} fill="#8A6A52" />
+          <Circle cx={70} cy={91} r={1.3} fill="#2C1E15" />
+        </G>
+      ) : null}
+    </G>
+  );
+  const eyesPart = <Eyes face={face} x={eyeX} y={eyeY} s={faceS} eye={`url(#ey-${id})`} />;
+  /* Sparkles around a bloomed sprout. */
+  const sparklePart = bloom ? (
+    <G>
+      <Path d={sparklePath(16, 30, 4.5)} fill="#FFFFFF" opacity={0.9} />
+      <Path d={sparklePath(85, 42, 3.5)} fill={accent} />
+      <Path d={sparklePath(22, 64, 2.6)} fill={accent} opacity={0.85} />
+      <Path d={sparklePath(80, 18, 2.4)} fill="#FFFFFF" opacity={0.75} />
+    </G>
+  ) : null;
+
+  const box = { width: size, height: size };
+  // Still: every part in one picture, much lighter to draw than the moving layers.
+  if (!moving) {
+    return (
+      <View style={box} accessible={false} importantForAccessibility="no-hide-descendants">
+        <Svg width={size} height={size} viewBox="0 0 100 100">
+          {defs}
+          {hasBack ? back : null}
+          {seed ? null : leg(-1)}
+          {seed ? null : leg(1)}
+          {topPart}
+          {bodyPart}
+          {eyesPart}
+          {sparklePart ? <G opacity={0.6}>{sparklePart}</G> : null}
+        </Svg>
+      </View>
+    );
+  }
+
+  const layer = (node: ReactNode) => (
+    <Svg width={size} height={size} viewBox="0 0 100 100">
+      {defs}
+      {node}
+    </Svg>
+  );
+  const fill = { position: 'absolute' as const, width: size, height: size };
+  const at = (v: number) => (v / 100) * size;
   return (
-    <View style={{ width: size, height: size }} accessible={false} importantForAccessibility="no-hide-descendants">
-      {/* Behind: a soft glow in the kind's colour once it blooms, and the shadow on the ground. */}
-      <Svg width={size} height={size} viewBox="0 0 100 100" style={{ position: 'absolute' }}>
-        <Defs>
-          <RadialGradient id={`aura-${id}`} cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={accent} stopOpacity={0.45} />
-            <Stop offset="0.6" stopColor={accent} stopOpacity={0.12} />
-            <Stop offset="1" stopColor={accent} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        {bloom ? <Circle cx={50} cy={kind === 'seedling' ? 56 : 50} r={46} fill={`url(#aura-${id})`} /> : null}
-        {kind === 'spotlight' && bloom ? <Path d="M50 4 L30 70 L70 70 Z" fill={accent} opacity={0.12} /> : null}
-        <Ellipse cx={50} cy={93} rx={seed ? 24 : 20} ry={3.6} fill="rgba(0,0,0,0.35)" />
-      </Svg>
-
-      {/* Stem, leaves and bloom, swaying from the top of the body. */}
-      <Animated.View style={[{ position: 'absolute', width: size, height: size, transformOrigin: [size / 2, size * (stemBase / 100), 0] }, top]}>
-        <Svg width={size} height={size} viewBox="0 0 100 100">
-          <Defs>
-            <LinearGradient id={`leaf-${id}`} x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor={look.leaf[0]} />
-              <Stop offset="1" stopColor={look.leaf[1]} />
-            </LinearGradient>
-            {vinylDefs(id, accent)}
-          </Defs>
-          <Path d={`M${bx} ${stemBase + 2} Q${bx - 2} ${(stemBase + stemTop) / 2} ${bx} ${stemTop}`} stroke={look.leaf[1]} strokeWidth={seed ? 2.6 : 3.6} strokeLinecap="round" fill="none" />
-          <Path d={`M${bx - 0.8} ${stemBase} Q${bx - 2.8} ${(stemBase + stemTop) / 2} ${bx - 0.8} ${stemTop + 2}`} stroke={look.leaf[0]} strokeWidth={seed ? 0.8 : 1.1} strokeLinecap="round" fill="none" opacity={0.8} />
-          {seed ? (
-            <Vy d={leafPath('round', bx, stemTop + 1, 1, leafScale)} fill={`url(#leaf-${id})`} id={id} />
-          ) : (
-            <G>
-              <Vy d={leafPath(look.leafShape, bx, stemTop + 2, -1, leafScale)} fill={`url(#leaf-${id})`} id={id} stroke={look.leaf[1]} />
-              <Vy d={leafPath(look.leafShape, bx, stemTop + 2, 1, leafScale)} fill={`url(#leaf-${id})`} id={id} stroke={look.leaf[1]} />
-              <Path d={veinPath(bx, stemTop + 2, -1, leafScale)} stroke={look.leaf[1]} strokeWidth={0.9} opacity={0.55} fill="none" strokeLinecap="round" />
-              <Path d={veinPath(bx, stemTop + 2, 1, leafScale)} stroke={look.leaf[1]} strokeWidth={0.9} opacity={0.55} fill="none" strokeLinecap="round" />
-              {/* A shine along each leaf. */}
-              <Path d={shinePath(bx, stemTop + 2, -1, leafScale)} stroke="#FFFFFF" strokeWidth={1.4} opacity={0.6} fill="none" strokeLinecap="round" />
-              <Path d={shinePath(bx, stemTop + 2, 1, leafScale)} stroke="#FFFFFF" strokeWidth={1.1} opacity={0.4} fill="none" strokeLinecap="round" />
-            </G>
-          )}
-          {stage >= 2 ? <Vy d={leafPath(look.leafShape, bx - 1, stemTop + 12, -1, leafScale * 0.55)} fill={`url(#leaf-${id})`} id={id} /> : null}
-          {dressed ? <Bloom kind={kind} x={bx} y={stemTop - 4} color={accent} grey={locked} id={id} /> : null}
-        </Svg>
-      </Animated.View>
-
-      {/* The body with its face (and, in bloom, what it wears). */}
-      <Animated.View style={[{ position: 'absolute', width: size, height: size, transformOrigin: [size / 2, size * 0.9, 0] }, body]}>
-        <Svg width={size} height={size} viewBox="0 0 100 100">
-          <Defs>
-            <RadialGradient id={`body-${id}`} cx="38%" cy="30%" r="80%">
-              <Stop offset="0" stopColor={look.body[0]} />
-              <Stop offset="0.55" stopColor={look.body[1]} />
-              <Stop offset="1" stopColor={look.body[2]} />
-            </RadialGradient>
-            <LinearGradient id={`soil-${id}`} x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#7A5640" />
-              <Stop offset="1" stopColor="#3A271C" />
-            </LinearGradient>
-            {vinylDefs(id, accent)}
-          </Defs>
-          {/* Little feet, then the body: one glossy vinyl bean. */}
-          {seed ? null : (
-            <G>
-              <Vy d={circleD(bx - 8, by + bry * 0.72, 4.2)} fill={look.body[2]} id={id} />
-              <Vy d={circleD(bx + 8, by + bry * 0.72, 4.2)} fill={look.body[2]} id={id} />
-            </G>
-          )}
-          <Vy d={beanPath(bx, by, brx, bry)} fill={`url(#body-${id})`} id={id} />
-          <Spot x={bx - brx * 0.36} y={by - bry * 0.55} rx={brx * 0.34} ry={bry * 0.17} id={id} />
-          <Circle cx={bx - brx * 0.66} cy={by - bry * 0.2} r={1.2} fill="#FFFFFF" opacity={0.6} />
-          <FaceOf face={dressed || stage >= 1 ? look.face : 'smile'} x={bx} y={by + (seed ? -5 : 1)} s={seed ? 0.75 : 1} blush={!locked} eye={`url(#ey-${id})`} />
-          {dressed ? <Wear kind={kind} x={bx} y={by} rx={brx} ry={bry} color={accent} grey={locked} id={id} /> : null}
-          {/* A seed sits in a little mound of soil. */}
-          {seed ? (
-            <G>
-              <Vy d="M20 94 Q24 84 36 85 Q50 82 64 85 Q76 84 80 94 Z" fill={`url(#soil-${id})`} id={id} />
-              <Path d="M30 86.5 Q50 83 70 86.5" stroke="#8A6A52" strokeWidth={0.8} opacity={0.6} fill="none" strokeLinecap="round" />
-              <Circle cx={33} cy={89} r={1.2} fill="#8A6A52" />
-              <Circle cx={62} cy={88.5} r={1} fill="#8A6A52" />
-              <Circle cx={70} cy={91} r={1.3} fill="#2C1E15" />
-            </G>
-          ) : null}
-        </Svg>
-      </Animated.View>
-
-      {/* Sparkles around a bloomed sprout. */}
-      {bloom ? (
-        <Animated.View style={[{ position: 'absolute', width: size, height: size }, sparkle]} pointerEvents="none">
-          <Svg width={size} height={size} viewBox="0 0 100 100">
-            <Path d={sparklePath(16, 30, 4.5)} fill="#FFFFFF" opacity={0.9} />
-            <Path d={sparklePath(85, 42, 3.5)} fill={accent} />
-            <Path d={sparklePath(22, 64, 2.6)} fill={accent} opacity={0.85} />
-            <Path d={sparklePath(80, 18, 2.4)} fill="#FFFFFF" opacity={0.75} />
-          </Svg>
+    <View style={box} accessible={false} importantForAccessibility="no-hide-descendants">
+      {hasBack ? <View style={fill}>{layer(back)}</View> : null}
+      {seed ? null : <Animated.View style={[fill, { transformOrigin: [at(bx - 7.5), at(hipY), 0] }, footL]}>{layer(leg(-1))}</Animated.View>}
+      {seed ? null : <Animated.View style={[fill, { transformOrigin: [at(bx + 7.5), at(hipY), 0] }, footR]}>{layer(leg(1))}</Animated.View>}
+      <Animated.View style={[fill, { transformOrigin: [size / 2, at(stemBase), 0] }, top]}>{layer(topPart)}</Animated.View>
+      <Animated.View style={[fill, { transformOrigin: [size / 2, size * 0.9, 0] }, body]}>{layer(bodyPart)}</Animated.View>
+      <Animated.View style={[fill, { transformOrigin: [at(eyeX), at(eyeY), 0] }, eyes]}>{layer(eyesPart)}</Animated.View>
+      {sparklePart ? (
+        <Animated.View style={[fill, sparkle]} pointerEvents="none">
+          {layer(sparklePart)}
         </Animated.View>
       ) : null}
     </View>
@@ -309,8 +382,8 @@ function sparklePath(cx: number, cy: number, r: number) {
   return `M${cx} ${cy - r} Q${cx + q} ${cy - q} ${cx + r} ${cy} Q${cx + q} ${cy + q} ${cx} ${cy + r} Q${cx - q} ${cy + q} ${cx - r} ${cy} Q${cx - q} ${cy - q} ${cx} ${cy - r} Z`;
 }
 
-/** The face: eyes, mouth and blush, drawn around (x, y), the middle of the eyes. */
-function FaceOf({ face, x, y, s, blush, eye = INK }: { face: Face; x: number; y: number; s: number; blush: boolean; eye?: string }) {
+/** The eyes, drawn around (x, y), the middle of them: their own layer, so they can blink and glance. */
+function Eyes({ face, x, y, s, eye = INK }: { face: Face; x: number; y: number; s: number; eye?: string }) {
   /** A glossy eye: a dark dome, a big window catchlight, a small one, a glint along the bottom. */
   const glossy = (cx: number, r: number) => (
     <G>
@@ -321,64 +394,57 @@ function FaceOf({ face, x, y, s, blush, eye = INK }: { face: Face; x: number; y:
     </G>
   );
   const ex = 6.5 * s;
+  switch (face) {
+    case 'joy':
+      return (
+        <G>
+          <Path d={`M${x - ex - 2.6 * s} ${y + 0.8 * s} Q${x - ex} ${y - 2.6 * s} ${x - ex + 2.6 * s} ${y + 0.8 * s}`} stroke={INK} strokeWidth={1.7 * s} fill="none" strokeLinecap="round" />
+          <Path d={`M${x + ex - 2.6 * s} ${y + 0.8 * s} Q${x + ex} ${y - 2.6 * s} ${x + ex + 2.6 * s} ${y + 0.8 * s}`} stroke={INK} strokeWidth={1.7 * s} fill="none" strokeLinecap="round" />
+        </G>
+      );
+    case 'bliss':
+    case 'sleepy':
+      return (
+        <G>
+          <Path d={`M${x - ex - 2.4 * s} ${y - 0.6 * s} Q${x - ex} ${y + 2.2 * s} ${x - ex + 2.4 * s} ${y - 0.6 * s}`} stroke={INK} strokeWidth={1.6 * s} fill="none" strokeLinecap="round" />
+          <Path d={`M${x + ex - 2.4 * s} ${y - 0.6 * s} Q${x + ex} ${y + 2.2 * s} ${x + ex + 2.4 * s} ${y - 0.6 * s}`} stroke={INK} strokeWidth={1.6 * s} fill="none" strokeLinecap="round" />
+        </G>
+      );
+    case 'wink':
+      return (
+        <G>
+          {glossy(x - ex, 2.9 * s)}
+          <Path d={`M${x + ex - 2.6 * s} ${y + 0.4 * s} Q${x + ex} ${y - 1.8 * s} ${x + ex + 2.6 * s} ${y + 0.4 * s}`} stroke={INK} strokeWidth={1.7 * s} fill="none" strokeLinecap="round" />
+        </G>
+      );
+    case 'shades':
+      // Groove's sunglasses sit where the eyes are (drawn with the body: they don't blink).
+      return null;
+    case 'sparkle':
+      return (
+        <G>
+          <Circle cx={x - ex} cy={y} r={3.2 * s} fill={eye} />
+          <Circle cx={x + ex} cy={y} r={3.2 * s} fill={eye} />
+          <Path d={sparklePath(x - ex + 0.9 * s, y - 0.9 * s, 1.6 * s)} fill="#FFFFFF" />
+          <Path d={sparklePath(x + ex + 0.9 * s, y - 0.9 * s, 1.6 * s)} fill="#FFFFFF" />
+          <Circle cx={x - ex - 1 * s} cy={y + 1.2 * s} r={0.55 * s} fill="#FFFFFF" />
+          <Circle cx={x + ex - 1 * s} cy={y + 1.2 * s} r={0.55 * s} fill="#FFFFFF" />
+        </G>
+      );
+    default:
+      return (
+        <G>
+          {glossy(x - ex, 2.9 * s)}
+          {glossy(x + ex, 2.9 * s)}
+        </G>
+      );
+  }
+}
+
+/** The rest of the face: the mouth, blush, and Groove's sunglasses. */
+function Mouth({ face, x, y, s, blush }: { face: Face; x: number; y: number; s: number; blush: boolean }) {
+  const ex = 6.5 * s;
   const mouthY = y + 5.5 * s;
-  const eyes = (() => {
-    switch (face) {
-      case 'joy':
-        return (
-          <G>
-            <Path d={`M${x - ex - 2.6 * s} ${y + 0.8 * s} Q${x - ex} ${y - 2.6 * s} ${x - ex + 2.6 * s} ${y + 0.8 * s}`} stroke={INK} strokeWidth={1.7 * s} fill="none" strokeLinecap="round" />
-            <Path d={`M${x + ex - 2.6 * s} ${y + 0.8 * s} Q${x + ex} ${y - 2.6 * s} ${x + ex + 2.6 * s} ${y + 0.8 * s}`} stroke={INK} strokeWidth={1.7 * s} fill="none" strokeLinecap="round" />
-          </G>
-        );
-      case 'bliss':
-      case 'sleepy':
-        return (
-          <G>
-            <Path d={`M${x - ex - 2.4 * s} ${y - 0.6 * s} Q${x - ex} ${y + 2.2 * s} ${x - ex + 2.4 * s} ${y - 0.6 * s}`} stroke={INK} strokeWidth={1.6 * s} fill="none" strokeLinecap="round" />
-            <Path d={`M${x + ex - 2.4 * s} ${y - 0.6 * s} Q${x + ex} ${y + 2.2 * s} ${x + ex + 2.4 * s} ${y - 0.6 * s}`} stroke={INK} strokeWidth={1.6 * s} fill="none" strokeLinecap="round" />
-          </G>
-        );
-      case 'wink':
-        return (
-          <G>
-            {glossy(x - ex, 2.9 * s)}
-            <Path d={`M${x + ex - 2.6 * s} ${y + 0.4 * s} Q${x + ex} ${y - 1.8 * s} ${x + ex + 2.6 * s} ${y + 0.4 * s}`} stroke={INK} strokeWidth={1.7 * s} fill="none" strokeLinecap="round" />
-          </G>
-        );
-      case 'shades':
-        // Groove's sunglasses sit where the eyes are.
-        return (
-          <G>
-            <Rect x={x - ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={6 * s} rx={2.6 * s} fill="#141024" />
-            <Rect x={x + ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={6 * s} rx={2.6 * s} fill="#141024" />
-            <Rect x={x - ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={3 * s} rx={2.6 * s} fill="#FFFFFF" opacity={0.12} />
-            <Rect x={x + ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={3 * s} rx={2.6 * s} fill="#FFFFFF" opacity={0.12} />
-            <Path d={`M${x - ex + 4.6 * s} ${y - 1 * s} L${x + ex - 4.6 * s} ${y - 1 * s}`} stroke="#141024" strokeWidth={1.6 * s} />
-            <Path d={`M${x - ex - 2.6 * s} ${y - 1.4 * s} L${x - ex - 0.6 * s} ${y - 1.4 * s}`} stroke="#5BE3B5" strokeWidth={1.1 * s} strokeLinecap="round" />
-            <Path d={`M${x + ex - 2.6 * s} ${y - 1.4 * s} L${x + ex - 0.6 * s} ${y - 1.4 * s}`} stroke="#5BE3B5" strokeWidth={1.1 * s} strokeLinecap="round" />
-          </G>
-        );
-      case 'sparkle':
-        return (
-          <G>
-            <Circle cx={x - ex} cy={y} r={3.2 * s} fill={eye} />
-            <Circle cx={x + ex} cy={y} r={3.2 * s} fill={eye} />
-            <Path d={sparklePath(x - ex + 0.9 * s, y - 0.9 * s, 1.6 * s)} fill="#FFFFFF" />
-            <Path d={sparklePath(x + ex + 0.9 * s, y - 0.9 * s, 1.6 * s)} fill="#FFFFFF" />
-            <Circle cx={x - ex - 1 * s} cy={y + 1.2 * s} r={0.55 * s} fill="#FFFFFF" />
-            <Circle cx={x + ex - 1 * s} cy={y + 1.2 * s} r={0.55 * s} fill="#FFFFFF" />
-          </G>
-        );
-      default:
-        return (
-          <G>
-            {glossy(x - ex, 2.9 * s)}
-            {glossy(x + ex, 2.9 * s)}
-          </G>
-        );
-    }
-  })();
   const mouth = (() => {
     switch (face) {
       case 'joy':
@@ -396,7 +462,17 @@ function FaceOf({ face, x, y, s, blush, eye = INK }: { face: Face; x: number; y:
   })();
   return (
     <G>
-      {eyes}
+      {face === 'shades' ? (
+        <G>
+          <Rect x={x - ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={6 * s} rx={2.6 * s} fill="#141024" />
+          <Rect x={x + ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={6 * s} rx={2.6 * s} fill="#141024" />
+          <Rect x={x - ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={3 * s} rx={2.6 * s} fill="#FFFFFF" opacity={0.12} />
+          <Rect x={x + ex - 4.6 * s} y={y - 3 * s} width={9.2 * s} height={3 * s} rx={2.6 * s} fill="#FFFFFF" opacity={0.12} />
+          <Path d={`M${x - ex + 4.6 * s} ${y - 1 * s} L${x + ex - 4.6 * s} ${y - 1 * s}`} stroke="#141024" strokeWidth={1.6 * s} />
+          <Path d={`M${x - ex - 2.6 * s} ${y - 1.4 * s} L${x - ex - 0.6 * s} ${y - 1.4 * s}`} stroke="#5BE3B5" strokeWidth={1.1 * s} strokeLinecap="round" />
+          <Path d={`M${x + ex - 2.6 * s} ${y - 1.4 * s} L${x + ex - 0.6 * s} ${y - 1.4 * s}`} stroke="#5BE3B5" strokeWidth={1.1 * s} strokeLinecap="round" />
+        </G>
+      ) : null}
       {mouth}
       {blush ? (
         <G>

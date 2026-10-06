@@ -319,4 +319,13 @@ export const es_sprouts: Dictionary = {
   'Latest find {date}': 'Último hallazgo: {date}',
   'You found {name}': 'Encontraste {name}',
   'It’s in your collection now.': 'Ya está en tu colección.',
+  // The living garden (sprouts/GardenScene.tsx, app/garden.tsx)
+  'Hold one to move it.': 'Mantén pulsado uno para moverlo.',
+  'Hold and drag to move': 'Mantén pulsado y arrastra para mover',
+  '{n} artist collectible': '{n} coleccionable de artista',
+  '{n} artist collectibles': '{n} coleccionables de artistas',
+  'A night meadow with {sprouts} and {collectibles}. Hold and drag one to move it.': 'Un prado de noche con {sprouts} y {collectibles}. Mantén pulsado uno y arrástralo para moverlo.',
+  'A night meadow with {sprouts}. Hold and drag one to move it.': 'Un prado de noche con {sprouts}. Mantén pulsado uno y arrástralo para moverlo.',
+  '{line} · {n} from friends. They live in your garden above.': '{line} · {n} de amigos. Viven en tu jardín, aquí arriba.',
+  '{line}. They live in your garden above.': '{line}. Viven en tu jardín, aquí arriba.',
 };

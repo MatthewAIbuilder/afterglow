@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Artist } from '../../data/models';
@@ -11,7 +11,6 @@ import { type ArtistSprout, artistGardenLine, tierLabel, tierLine } from './arti
 import { Sprout } from './Sprout';
 import { LOCALE, t } from '../../i18n';
 
-const TILE = 104;
 const day = (at: number) => (at ? new Date(at).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
 /** Artist collectibles someone gave you: the artist and who from. */
@@ -20,75 +19,30 @@ export type GivenArtistSprout = { id: string; artist: { id: string; name: string
 /**
  * The garden's artist collectibles: one for every artist you've filmed,
  * levelled up by filming them more (bronze, silver, gold), and the ones
- * friends gave you. With none yet, a few hand-made ones as grey figures to aim for.
+ * friends gave you. They live in the garden scene above; this is the count
+ * and, with none yet, a few hand-made ones as grey figures to aim for.
  */
-export function ArtistSproutsSection({ earned, given, canGive }: { earned: ArtistSprout[]; given: GivenArtistSprout[]; canGive: boolean }) {
+export function ArtistSproutsSection({ earned, given }: { earned: ArtistSprout[]; given: GivenArtistSprout[] }) {
   const catalog = useCatalog();
-  const [open, setOpen] = useState<{ artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }>();
   // A few hand-made collectibles from artists on Afterglow, to show what's out there.
   const teasers = useMemo(() => {
     const byName = new Map(catalog.artists.map((a) => [foldName(a.name), a]));
     return SIGNATURE_NAMES.map((n) => byName.get(n)).filter((a): a is Artist => !!a).slice(0, 4);
   }, [catalog]);
-  const nameOf = (id: string, fallback?: string) => catalog.artist(id)?.name ?? fallback ?? t('An artist');
 
   return (
     <View style={styles.section}>
       <Text style={styles.h2} accessibilityRole="header">
         {earned.length || given.length ? t('Artist collectibles · {n}', { n: earned.length + given.length }) : t('Artist collectibles')}
       </Text>
-      <Text style={styles.sub}>{artistGardenLine(earned)}</Text>
-      {earned.length || given.length ? (
-        <View style={styles.grid}>
-          {earned.map((s) => {
-            const artist = catalog.artist(s.artistId);
-            if (!artist) return null;
-            return (
-              <Pressable
-                key={s.artistId}
-                onPress={() => {
-                  haptic.select();
-                  setOpen({ artist, sprout: s });
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t('{artist} collectible, {tier}.', { artist: artist.name, tier: tierLabel(s) })}
-                style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
-              >
-                <Sprout artist={artistLook(artist)} tier={s.tier} stage={3} size={78} />
-                <Text style={styles.tileName} numberOfLines={1}>
-                  {artist.name}
-                </Text>
-                <Text style={styles.tileSub} numberOfLines={1}>
-                  {tierLabel(s)}
-                </Text>
-              </Pressable>
-            );
-          })}
-          {given.map((g) => {
-            const artist = catalog.artist(g.artist.id) ?? ({ id: g.artist.id, name: g.artist.name, sound: {} } as Artist);
-            return (
-              <Pressable
-                key={g.id}
-                onPress={() => {
-                  haptic.select();
-                  setOpen({ artist, given: g });
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t('{artist} collectible, from {name}.', { artist: nameOf(g.artist.id, g.artist.name), name: g.from })}
-                style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
-              >
-                <Sprout artist={artistLook(artist)} stage={3} size={78} />
-                <Text style={styles.tileName} numberOfLines={1}>
-                  {nameOf(g.artist.id, g.artist.name)}
-                </Text>
-                <Text style={styles.tileSub} numberOfLines={1}>
-                  {t('from {name}', { name: g.from })}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : teasers.length ? (
+      <Text style={styles.sub}>
+        {earned.length || given.length
+          ? given.length
+            ? t('{line} · {n} from friends. They live in your garden above.', { line: artistGardenLine(earned), n: given.length })
+            : t('{line}. They live in your garden above.', { line: artistGardenLine(earned) })
+          : artistGardenLine(earned)}
+      </Text>
+      {!earned.length && !given.length && teasers.length ? (
         <View style={styles.teasers}>
           {teasers.map((a) => {
             const look = artistLook(a);
@@ -103,12 +57,12 @@ export function ArtistSproutsSection({ earned, given, canGive }: { earned: Artis
           })}
         </View>
       ) : null}
-      <ArtistSproutSheet open={open} canGive={canGive} onClose={() => setOpen(undefined)} />
     </View>
   );
 }
 
-function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }; canGive: boolean; onClose: () => void }) {
+/** An artist collectible's sheet: the creature, its level or who gave it, and ways to give one or see the artist. */
+export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }; canGive: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const a = open?.artist;
   const s = open?.sprout;
@@ -172,10 +126,6 @@ const styles = StyleSheet.create({
   section: { gap: space.sm, marginTop: space.md },
   h2: { ...type.headline, color: color.moon },
   sub: { ...type.caption, color: color.moonDim },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  tile: { width: TILE, alignItems: 'center', paddingVertical: space.sm, paddingHorizontal: 4, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  tileName: { ...type.label, color: color.moon, marginTop: 2 },
-  tileSub: { ...type.caption, color: color.moonFaint },
   teasers: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   teaser: { width: 74, alignItems: 'center', gap: 2 },
   teaserName: { ...type.caption, fontSize: 10, color: color.moonFaint },
