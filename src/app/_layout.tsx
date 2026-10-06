@@ -23,6 +23,7 @@ import { SavedAccountSync } from '../features/accounts/SavedAccountSync';
 import { LivePatchSync } from '../features/admin/LivePatchSync';
 import { ScoutSync } from '../features/setTimes/ScoutSync';
 import { AdminReturnPill } from '../features/admin/AdminReturnPill';
+import { AccountScope } from '../state/accountScope';
 import { AutoplayProvider } from '../state/autoplay';
 import { CareProvider } from '../state/care';
 import { CatalogProvider } from '../state/catalog';
@@ -62,6 +63,8 @@ export default function RootLayout() {
       <NearbyProvider>
       <MusicConnectionsProvider>
       <MemoriesProvider>
+      {/* Everything below is per account: switching accounts puts one's things away and brings the other's back. */}
+      <AccountScope>
       <ReactionsProvider>
       <CommunityProvider>
       <RatingsProvider>
@@ -275,6 +278,7 @@ export default function RootLayout() {
       </RatingsProvider>
       </CommunityProvider>
       </ReactionsProvider>
+      </AccountScope>
       </MemoriesProvider>
       </MusicConnectionsProvider>
       </NearbyProvider>
