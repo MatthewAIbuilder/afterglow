@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { color, motion, space, type, nightA } from '../../theme/tokens';
 import { HeartIcon, SaveIcon, SkipIcon } from './icons';
+import { t } from '../../i18n';
 
 type Props = {
   liked: boolean;
@@ -18,15 +19,15 @@ type Props = {
 export function ActionRail({ liked, saved, onLike, onSave, onSkip, horizontal }: Props) {
   return (
     <View style={[styles.rail, horizontal && styles.row]}>
-      <RailButton label={liked ? 'Liked' : 'Like'} active={liked} onPress={onLike}>
+      <RailButton label={liked ? t('Liked') : t('Like')} active={liked} onPress={onLike}>
         <HeartIcon color={liked ? color.glow : color.moon} filled={liked} />
       </RailButton>
       {onSave ? (
-        <RailButton label={saved ? 'Saved' : 'Save'} active={saved} onPress={onSave}>
+        <RailButton label={saved ? t('Saved') : t('Save')} active={saved} onPress={onSave}>
           <SaveIcon color={saved ? color.glow : color.moon} filled={saved} />
         </RailButton>
       ) : null}
-      <RailButton label="Skip" active={false} onPress={onSkip} nudge>
+      <RailButton label={t('Skip')} active={false} onPress={onSkip} nudge>
         <SkipIcon color={color.moon} />
       </RailButton>
     </View>

@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 /**
  * Whether you're offline, from what the phone reports. Pure. Unknown counts
  * as online (the app never cries wolf); either "not connected" or "connected
@@ -16,6 +18,7 @@ export const BACK_ONLINE_MS = 2500;
 export type Notice = 'offline' | 'back' | undefined;
 
 export const NOTICE_TEXT: Record<'offline' | 'back', string> = {
-  offline: 'No signal · your plan, crew and lineups still work',
-  back: 'Back online',
+  offline: t('No signal · your plan, crew and lineups still work'),
+  back: t('Back online'),
+
 };

@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LOCALE, t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { useFinds } from '../../state/finds';
 import { color, radius, space, type } from '../../theme/tokens';
@@ -8,7 +9,7 @@ import { huntLine, lookOf, untilLine } from './finds';
 import { HuntRow } from './HuntRow';
 
 const TILE = 104;
-const day = (t: number) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+const day = (at: number) => new Date(at).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' });
 
 /**
  * The garden's stickers: hunts you've started (finished ones in gold) and
@@ -22,9 +23,9 @@ export function FindsSection() {
   return (
     <View style={styles.section}>
       <Text style={styles.h2} accessibilityRole="header">
-        Stickers you’ve found{count ? ` · ${count}` : ''}
+        {count ? t('Stickers you’ve found · {n}', { n: count }) : t('Stickers you’ve found')}
       </Text>
-      <Text style={styles.sub}>Scanned at festivals. Each one lives here for good.</Text>
+      <Text style={styles.sub}>{t('Scanned at festivals. Each one lives here for good.')}</Text>
       {hunts.map((p) => (
         <Pressable
           key={p.hunt.id}
@@ -33,14 +34,13 @@ export function FindsSection() {
             router.push({ pathname: '/hunt/[id]', params: { id: p.hunt.id } });
           }}
           accessibilityRole="button"
-          accessibilityLabel={`${p.hunt.name}: ${huntLine(p)}.`}
-          accessibilityHint={p.done ? 'Opens a card to share' : 'Opens the hunt'}
+          accessibilityLabel={t('{hunt}: {progress}.', { hunt: p.hunt.name, progress: huntLine(p) })}
+          accessibilityHint={p.done ? t('Opens a card to share') : t('Opens the hunt')}
           style={({ pressed }) => [styles.hunt, p.done && styles.huntDone, pressed && styles.pressed]}
         >
           <Text style={styles.huntName}>{p.hunt.name}</Text>
           <Text style={[styles.huntLine, p.done && { color: '#FFD24A' }]}>
-            {huntLine(p)}
-            {!p.done && p.hunt.until ? ` · ${untilLine(p.hunt.until)}` : ''}
+            {!p.done && p.hunt.until ? t('{progress} · {until}', { progress: huntLine(p), until: untilLine(p.hunt.until) }) : huntLine(p)}
           </Text>
           <HuntRow hunt={p.hunt} found={p.found} size={40} />
         </Pressable>
@@ -54,7 +54,7 @@ export function FindsSection() {
               router.push({ pathname: '/find/[code]', params: { code: f.code, c: f.creature, n: f.name } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${f.name}${f.state === 'checking' ? ', waiting for signal to check it' : `, found ${day(f.at)}`}.`}
+            accessibilityLabel={f.state === 'checking' ? t('{name}, waiting for signal to check it.', { name: f.name }) : t('{name}, found {date}.', { name: f.name, date: day(f.at) })}
             style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
           >
             <Collectible look={lookOf(f.creature)} size={78} locked={f.state !== 'found'} />
@@ -62,7 +62,7 @@ export function FindsSection() {
               {f.name}
             </Text>
             <Text style={styles.tileSub} numberOfLines={1}>
-              {f.state === 'found' ? day(f.at) : 'Checking…'}
+              {f.state === 'found' ? day(f.at) : t('Checking…')}
             </Text>
           </Pressable>
         ))}

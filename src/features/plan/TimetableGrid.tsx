@@ -11,6 +11,7 @@ import { formatTime } from '../festivals/format';
 import { StarIcon } from './icons';
 import { type GridBlock, gridDay, hourLabel } from './grid';
 import type { DayRoute } from './route';
+import { t } from '../../i18n';
 
 /** Points per minute: an hour is 96 points tall. */
 const PER_MIN = 1.6;
@@ -32,13 +33,13 @@ export function TimetableGrid({ festival, day, route }: { festival: Festival; da
     () => gridDay(festival, day, { artist: catalog.artist, taste, informed, pinned: mustSeesAt(festival.id), route }),
     [festival, day, catalog.artist, taste, informed, mustSeesAt, route],
   );
-  if (!grid) return <Text style={styles.empty}>No set times on this day.</Text>;
+  if (!grid) return <Text style={styles.empty}>{t('No set times on this day.')}</Text>;
   const height = (grid.to - grid.from) * PER_MIN;
   const y = (min: number) => (min - grid.from) * PER_MIN;
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.legend}>Your route glows at the edge. Tap a set to see the artist.</Text>
+      <Text style={styles.legend}>{t('Your route glows at the edge. Tap a set to see the artist.')}</Text>
       <View style={styles.row}>
         {/* The hours, fixed on the left. */}
         <View style={{ width: GUTTER, height: height + HEAD }} importantForAccessibility="no-hide-descendants">
@@ -73,10 +74,10 @@ function Block({ festival, block: b, top, height, stage }: { festival: Festival;
   const pct = `${Math.round(b.match * 100)}%`;
   const label = [
     b.artist.name,
-    `${formatTime(b.set.start)} to ${formatTime(b.set.end)}`,
+    t('{start} to {end}', { start: formatTime(b.set.start), end: formatTime(b.set.end) }),
     stage,
-    b.pinned ? 'your must-see' : b.known ? `${pct} match` : 'new to you',
-    b.onRoute ? 'on your route' : '',
+    b.pinned ? t('your must-see') : b.known ? t('{pct} match', { pct }) : t('new to you'),
+    b.onRoute ? t('on your route') : '',
   ]
     .filter(Boolean)
     .join(', ');
@@ -105,7 +106,7 @@ function Block({ festival, block: b, top, height, stage }: { festival: Festival;
       {!short && (
         <Text style={styles.meta} numberOfLines={1}>
           {formatTime(b.set.start).replace(/ (AM|PM)$/, '')}
-          {b.known ? ` · ${pct}` : ' · New'}
+          {b.known ? ` · ${pct}` : ` · ${t('New')}`}
         </Text>
       )}
     </Pressable>

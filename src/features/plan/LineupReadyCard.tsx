@@ -12,6 +12,7 @@ import { LiveNow } from './LiveNow';
 import { routePreview, routeSummary } from './ready';
 import { clockTime, stintLabel } from './route';
 import { useFestivalPlan } from './useFestivalPlan';
+import { t } from '../../i18n';
 
 const at = (min: number) => formatTime(clockTime(min));
 
@@ -37,19 +38,23 @@ export function LineupReadyCard({ festival }: { festival: Festival }) {
     <Pressable
       onPress={open}
       accessibilityRole="button"
-      accessibilityLabel={`Your lineup is ready: ${festival.name}${soon ? `, ${soon}` : ''}. ${summary ?? 'Set times are out'}. Open your set-to-set plan`}
+      accessibilityLabel={
+        soon
+          ? t('Your lineup is ready: {festival}, {countdown}. {summary}. Open your set-to-set plan', { festival: festival.name, countdown: soon, summary: summary ?? t('Set times are out') })
+          : t('Your lineup is ready: {festival}. {summary}. Open your set-to-set plan', { festival: festival.name, summary: summary ?? t('Set times are out') })
+      }
       style={({ pressed }) => [styles.card, live && styles.live, pressed && styles.pressed]}
       testID="lineup-ready"
     >
       <View style={styles.kickerRow}>
         <View style={[styles.dot, live && { backgroundColor: '#FF7EB6' }]} />
-        <Text style={[styles.kicker, live && { color: '#FF7EB6' }]}>{live ? 'Happening now' : 'Your lineup is ready'}</Text>
+        <Text style={[styles.kicker, live && { color: '#FF7EB6' }]}>{live ? t('Happening now') : t('Your lineup is ready')}</Text>
       </View>
       <Text style={styles.name} numberOfLines={2}>
         {festival.name}
       </Text>
       <Text style={styles.meta} numberOfLines={1}>
-        {[soon, summary ?? 'Set times are out'].filter(Boolean).join(' · ')}
+        {[soon, summary ?? t('Set times are out')].filter(Boolean).join(' · ')}
       </Text>
 
       {live && schedule ? (
@@ -58,7 +63,7 @@ export function LineupReadyCard({ festival }: { festival: Festival }) {
         </View>
       ) : preview ? (
         <View style={styles.stops}>
-          <Text style={styles.day}>{preview.day}, set to set</Text>
+          <Text style={styles.day}>{t('{day}, set to set', { day: t(preview.day) })}</Text>
           {preview.stops.map((s) => (
             <View key={`${s.artist.id}-${s.from}`} style={styles.stop}>
               <Text style={styles.time}>{at(s.from)}</Text>
@@ -74,12 +79,12 @@ export function LineupReadyCard({ festival }: { festival: Festival }) {
               </View>
             </View>
           ))}
-          {preview.more ? <Text style={styles.more}>and {preview.more} more that night</Text> : null}
+          {preview.more ? <Text style={styles.more}>{t('and {n} more that night', { n: preview.more })}</Text> : null}
         </View>
       ) : null}
 
       <View style={styles.button}>
-        <Text style={styles.buttonText}>{live ? 'Your night' : 'See your whole route'}</Text>
+        <Text style={styles.buttonText}>{live ? t('Your night') : t('See your whole route')}</Text>
       </View>
     </Pressable>
   );

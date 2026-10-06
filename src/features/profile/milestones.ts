@@ -1,4 +1,5 @@
 import type { QuestId } from '../quests/quests';
+import { t } from '../../i18n';
 
 /**
  * Milestone badges: a few quiet markers of your festival life, next to the
@@ -52,22 +53,22 @@ export type MilestoneInput = {
 type Spec = { id: MilestoneId; title: string; how: string; about: string; target: number; value: (i: MilestoneInput) => number };
 
 const SPECS: Spec[] = [
-  { id: 'first-festival', title: 'First festival', how: 'Go to a festival', about: 'For your first festival on Afterglow: one you marked as going to that’s now over, or one you filmed at.', target: 1, value: (i) => i.been },
-  { id: 'first-moment', title: 'First moment', how: 'Film a set', about: 'For the first set you filmed with Afterglow and kept in your Moments.', target: 1, value: (i) => i.moments },
-  { id: 'crate', title: 'Crate digger', how: 'Rate 25 artists', about: 'For rating 25 artists. The more you rate, the sharper your matches and your plans get.', target: 25, value: (i) => i.rated },
-  { id: 'collector', title: 'Set collector', how: 'Keep 25 clips', about: 'For saving or liking 25 live clips in Discover.', target: 25, value: (i) => i.kept },
-  { id: 'basshead', title: 'Basshead', how: 'Love 10 dubstep or riddim artists', about: 'For loving or liking 10 artists whose sound is mostly dubstep or riddim.', target: 10, value: (i) => i.bass },
-  { id: 'hopper', title: 'Festival hopper', how: 'Go to 5 festivals', about: 'For going to 5 festivals. Each one you’ve been to counts.', target: 5, value: (i) => i.been },
-  { id: 'road', title: 'Road warrior', how: 'Festivals in 3 towns', about: 'For festivals in 3 different towns, ones you’ve been to or are going to.', target: 3, value: (i) => i.cities },
-  { id: 'moments', title: 'Moment maker', how: 'Film 25 sets', about: 'For filming 25 sets and keeping them in your Moments.', target: 25, value: (i) => i.moments },
-  { id: 'streak7', title: 'On a roll', how: 'A 7-day quest streak', about: 'For finishing all three daily quests seven days in a row.', target: 7, value: (i) => i.streak ?? 0 },
-  { id: 'neon', title: 'Neon', how: 'Earn 450 glow', about: 'For reaching glow level 4, Neon: 450 glow from your quests, side quests, badges and secrets.', target: 450, value: (i) => i.glow ?? 0 },
-  { id: 'streak30', title: 'Afterglow forever', how: 'A 30-day quest streak', about: 'For finishing all three daily quests every day for a month. That’s devotion.', target: 30, value: (i) => i.streak ?? 0 },
-  { id: 'green', title: 'Green thumb', how: 'Grow a sprout to bloom', about: 'For growing a sprout all the way to bloom: festival days, giving, filming and watching sets all help.', target: 1, value: (i) => i.bloomed ?? 0 },
-  { id: 'giver', title: 'Kind soul', how: 'Give 10 sprouts', about: 'For giving 10 sprouts that people picked up. PLUR in action.', target: 10, value: (i) => i.given ?? 0 },
-  { id: 'gardener', title: 'Gardener', how: 'Collect all 7 sprout kinds', about: 'For a garden with every kind of sprout in it, grown yourself or given to you.', target: 7, value: (i) => i.kinds ?? 0 },
-  { id: 'scout', title: 'Set scout', how: 'Send set times that go live', about: 'For sending a festival’s set times that Afterglow checked and put live for everyone. Thank you: every plan there became a schedule.', target: 1, value: (i) => i.scouted ?? 0 },
-  { id: 'ten', title: '10 festivals', how: 'Go to 10 festivals', about: 'For going to 10 festivals. A proper festival life.', target: 10, value: (i) => i.been },
+  { id: 'first-festival', title: t('First festival'), how: t('Go to a festival'), about: t('For your first festival on Afterglow: one you marked as going to that’s now over, or one you filmed at.'), target: 1, value: (i) => i.been },
+  { id: 'first-moment', title: t('First moment'), how: t('Film a set'), about: t('For the first set you filmed with Afterglow and kept in your Moments.'), target: 1, value: (i) => i.moments },
+  { id: 'crate', title: t('Crate digger'), how: t('Rate 25 artists'), about: t('For rating 25 artists. The more you rate, the sharper your matches and your plans get.'), target: 25, value: (i) => i.rated },
+  { id: 'collector', title: t('Set collector'), how: t('Keep 25 clips'), about: t('For saving or liking 25 live clips in Discover.'), target: 25, value: (i) => i.kept },
+  { id: 'basshead', title: t('Basshead'), how: t('Love 10 dubstep or riddim artists'), about: t('For loving or liking 10 artists whose sound is mostly dubstep or riddim.'), target: 10, value: (i) => i.bass },
+  { id: 'hopper', title: t('Festival hopper'), how: t('Go to 5 festivals'), about: t('For going to 5 festivals. Each one you’ve been to counts.'), target: 5, value: (i) => i.been },
+  { id: 'road', title: t('Road warrior'), how: t('Festivals in 3 towns'), about: t('For festivals in 3 different towns, ones you’ve been to or are going to.'), target: 3, value: (i) => i.cities },
+  { id: 'moments', title: t('Moment maker'), how: t('Film 25 sets'), about: t('For filming 25 sets and keeping them in your Moments.'), target: 25, value: (i) => i.moments },
+  { id: 'streak7', title: t('On a roll'), how: t('A 7-day quest streak'), about: t('For finishing all three daily quests seven days in a row.'), target: 7, value: (i) => i.streak ?? 0 },
+  { id: 'neon', title: 'Neon', how: t('Earn 450 glow'), about: t('For reaching glow level 4, Neon: 450 glow from your quests, side quests, badges and secrets.'), target: 450, value: (i) => i.glow ?? 0 },
+  { id: 'streak30', title: t('Afterglow forever'), how: t('A 30-day quest streak'), about: t('For finishing all three daily quests every day for a month. That’s devotion.'), target: 30, value: (i) => i.streak ?? 0 },
+  { id: 'green', title: t('Green thumb'), how: t('Grow a sprout to bloom'), about: t('For growing a sprout all the way to bloom: festival days, giving, filming and watching sets all help.'), target: 1, value: (i) => i.bloomed ?? 0 },
+  { id: 'giver', title: t('Kind soul'), how: t('Give 10 sprouts'), about: t('For giving 10 sprouts that people picked up. PLUR in action.'), target: 10, value: (i) => i.given ?? 0 },
+  { id: 'gardener', title: t('Gardener'), how: t('Collect all 7 sprout kinds'), about: t('For a garden with every kind of sprout in it, grown yourself or given to you.'), target: 7, value: (i) => i.kinds ?? 0 },
+  { id: 'scout', title: t('Set scout'), how: t('Send set times that go live'), about: t('For sending a festival’s set times that Afterglow checked and put live for everyone. Thank you: every plan there became a schedule.'), target: 1, value: (i) => i.scouted ?? 0 },
+  { id: 'ten', title: t('10 festivals'), how: t('Go to 10 festivals'), about: t('For going to 10 festivals. A proper festival life.'), target: 10, value: (i) => i.been },
 ];
 
 /** Every milestone, earned first (in the usual order), then the rest. Afterglow OG only for founders. */
@@ -80,8 +81,8 @@ export function milestones(input: MilestoneInput): Milestone[] {
     list.unshift({
       id: 'og',
       title: 'Afterglow OG',
-      how: `One of the first 100 · #${input.founder}`,
-      about: `One of the first 100 people on Afterglow. You’re number ${input.founder}, and nobody else will ever be.`,
+      how: t('One of the first 100 · #{n}', { n: input.founder }),
+      about: t('One of the first 100 people on Afterglow. You’re number {n}, and nobody else will ever be.', { n: input.founder }),
       current: 1,
       target: 1,
       earned: true,
@@ -97,7 +98,7 @@ export function nextMilestone(list: readonly Milestone[]): Milestone | undefined
 }
 
 /** "3 of 5". */
-export const progressLine = (m: Milestone) => `${m.current} of ${m.target}`;
+export const progressLine = (m: Milestone) => t('{current} of {target}', { current: m.current, target: m.target });
 
 /** A badge's key in your claims: festival pins and milestones. */
 export const pinKey = (festivalId: string) => `pin:${festivalId}`;

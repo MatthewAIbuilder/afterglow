@@ -5,6 +5,7 @@ import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { APP_NAME, WEB_URL } from '../../config/app';
 import { color, radius, space, type } from '../../theme/tokens';
 import type { MustSeeCard } from './mustSeeCard';
+import { t } from '../../i18n';
 
 /**
  * Your must-sees as a picture: the festival, then your top picks, each with
@@ -13,7 +14,7 @@ import type { MustSeeCard } from './mustSeeCard';
  */
 export function MustSeeCardView({ card }: { card: MustSeeCard }) {
   return (
-    <View style={styles.card} accessible accessibilityLabel={`My must-sees at ${card.festival}: ${card.lines.map((l) => `${l.artist.name}, ${l.why}`).join(' ')}`}>
+    <View style={styles.card} accessible accessibilityLabel={t('My must-sees at {festival}: {list}', { festival: card.festival, list: card.lines.map((l) => `${l.artist.name}, ${l.why}`).join(' ') })}>
       <LinearGradient colors={['#2A1A5E', '#160F36', color.night]} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
       <Svg width={GLOW} height={GLOW} style={styles.glow} pointerEvents="none">
         <Defs>
@@ -24,7 +25,7 @@ export function MustSeeCardView({ card }: { card: MustSeeCard }) {
         </Defs>
         <Circle cx={GLOW / 2} cy={GLOW / 2} r={GLOW / 2} fill="url(#must-see-glow)" />
       </Svg>
-      <Text style={styles.kicker}>MY MUST-SEES</Text>
+      <Text style={styles.kicker}>{t('MY MUST-SEES')}</Text>
       <Text style={styles.title}>{card.festival}</Text>
       {card.subtitle ? <Text style={styles.subtitle}>{card.subtitle}</Text> : null}
       <View style={styles.list}>
@@ -46,7 +47,7 @@ export function MustSeeCardView({ card }: { card: MustSeeCard }) {
         ))}
       </View>
       <Text style={styles.foot}>
-        Made with {APP_NAME} · {WEB_URL.replace('https://', '')}
+        {t('Made with {app}', { app: APP_NAME })} · {WEB_URL.replace('https://', '')}
       </Text>
     </View>
   );

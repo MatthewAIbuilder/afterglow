@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 /**
  * Secrets: little hidden things to find around the app, each with its own
  * moment (a light show, a rain of hearts, fireworks). Found ones are kept
@@ -11,17 +13,17 @@ export type SecretEffect = 'lightshow' | 'hearts' | 'sunrise' | 'fireworks' | 'b
 export type SecretSpec = { id: SecretId; title: string; riddle: string; found: string; effect: SecretEffect };
 
 export const SECRETS: readonly SecretSpec[] = [
-  { id: 'lightshow', title: 'Light show', riddle: 'Discover likes a little movement.', found: 'Shake your phone on Discover for a light show.', effect: 'lightshow' },
-  { id: 'plur', title: 'PLUR', riddle: 'Four letters every raver knows. Look for them.', found: 'Search for “plur”: peace, love, unity, respect.', effect: 'hearts' },
-  { id: 'sunrise', title: 'Sunrise crew', riddle: 'Some things only happen at dawn.', found: 'Open Afterglow between 5 and 7 in the morning.', effect: 'sunrise' },
-  { id: 'ringspin', title: 'Light inside the light', riddle: 'Your level wants attention. Lots of it.', found: 'Tap your glow level seven times.', effect: 'sparkle' },
-  { id: 'smallprint', title: 'Small print', riddle: 'The small print hides something.', found: 'Tap the version line in Settings seven times.', effect: 'fireworks' },
-  { id: 'fireworks', title: 'Fireworks', riddle: 'Festivals don’t mind being refreshed. Again. And again.', found: 'Pull Festivals to refresh three times in a row.', effect: 'fireworks' },
-  { id: 'edge', title: 'Edge of the map', riddle: 'Get close enough on the festival map to read the street names.', found: 'Zoom the festival map down to the streets.', effect: 'sparkle' },
-  { id: 'bassdrop', title: 'Bass drop', riddle: 'Hold on to My Sound.', found: 'Press and hold the My Sound title.', effect: 'bassdrop' },
-  { id: 'nightowl', title: 'Night owl', riddle: 'Still up when everyone else has gone home?', found: 'Open Afterglow between 2 and 4 in the morning.', effect: 'sparkle' },
-  { id: 'colours', title: 'True colours', riddle: 'Your friend code has a wardrobe. Try it all on.', found: 'Try every colour of your friend code in one go.', effect: 'hearts' },
-  { id: 'pinspin', title: 'Pin polish', riddle: 'A festival pin likes a little attention.', found: 'Tap a festival pin seven times.', effect: 'fireworks' },
+  { id: 'lightshow', title: t('Light show'), riddle: t('Discover likes a little movement.'), found: t('Shake your phone on Discover for a light show.'), effect: 'lightshow' },
+  { id: 'plur', title: 'PLUR', riddle: t('Four letters every raver knows. Look for them.'), found: t('Search for “plur”: peace, love, unity, respect.'), effect: 'hearts' },
+  { id: 'sunrise', title: t('Sunrise crew'), riddle: t('Some things only happen at dawn.'), found: t('Open Afterglow between 5 and 7 in the morning.'), effect: 'sunrise' },
+  { id: 'ringspin', title: t('Light inside the light'), riddle: t('Your level wants attention. Lots of it.'), found: t('Tap your glow level seven times.'), effect: 'sparkle' },
+  { id: 'smallprint', title: t('Small print'), riddle: t('The small print hides something.'), found: t('Tap the version line in Settings seven times.'), effect: 'fireworks' },
+  { id: 'fireworks', title: t('Fireworks'), riddle: t('Festivals don’t mind being refreshed. Again. And again.'), found: t('Pull Festivals to refresh three times in a row.'), effect: 'fireworks' },
+  { id: 'edge', title: t('Edge of the map'), riddle: t('Get close enough on the festival map to read the street names.'), found: t('Zoom the festival map down to the streets.'), effect: 'sparkle' },
+  { id: 'bassdrop', title: t('Bass drop'), riddle: t('Hold on to My Sound.'), found: t('Press and hold the My Sound title.'), effect: 'bassdrop' },
+  { id: 'nightowl', title: t('Night owl'), riddle: t('Still up when everyone else has gone home?'), found: t('Open Afterglow between 2 and 4 in the morning.'), effect: 'sparkle' },
+  { id: 'colours', title: t('True colours'), riddle: t('Your friend code has a wardrobe. Try it all on.'), found: t('Try every colour of your friend code in one go.'), effect: 'hearts' },
+  { id: 'pinspin', title: t('Pin polish'), riddle: t('A festival pin likes a little attention.'), found: t('Tap a festival pin seven times.'), effect: 'fireworks' },
 ];
 
 /** Glow for each secret found (counted in your glow level). */
@@ -89,4 +91,4 @@ export function cleanFound(raw: unknown): Partial<Record<SecretId, number>> {
 }
 
 /** "3 of 8 secrets found". */
-export const secretsLine = (found: number) => (found === SECRETS.length ? `All ${SECRETS.length} secrets found` : `${found} of ${SECRETS.length} secrets found`);
+export const secretsLine = (found: number) => (found === SECRETS.length ? t('All {total} secrets found', { total: SECRETS.length }) : t('{found} of {total} secrets found', { found, total: SECRETS.length }));

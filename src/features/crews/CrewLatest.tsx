@@ -9,7 +9,8 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import type { Crew } from '../social/models';
 import { firstName } from './together';
-import { ago, lateLine, latestPerMember, outboxLine, repliesLine, updateLine } from './updates';
+import { ago, lateLine, latestPerMember, outboxLine, presetLabel, repliesLine, updateLine } from './updates';
+import { t } from '../../i18n';
 
 /**
  * On the crew page: where everyone last was, from their newest video or
@@ -29,16 +30,16 @@ export function CrewLatest({ crew, nameOf }: { crew: Crew; nameOf: (uid: string)
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.section}>Latest from the crew</Text>
+      <Text style={styles.section}>{t('Latest from the crew')}</Text>
       {rows.map(({ uid, latest }) => {
         const mine = uid === me;
         const p = mine ? social.profile : profileOf(uid);
-        const name = mine ? 'You' : (nameOf(uid) ?? (p ? firstName(p.displayName) : 'Crewmate'));
+        const name = mine ? t('You') : (nameOf(uid) ?? (p ? firstName(p.displayName) : t('Crewmate')));
         const artist = latest?.artistId ? catalog.artist(latest.artistId)?.name : undefined;
         const late = latest ? lateLine(latest) : undefined;
         const canOpen = !mine && stories.some((s) => s.uid === uid);
         // What the crew said back to your latest.
-        const answers = mine && latest ? repliesLine(repliesFor(latest).map((r) => r.reply), (id) => (id === me ? 'You' : (nameOf(id) ?? (profileOf(id) ? firstName(profileOf(id)!.displayName) : 'Crewmate')))) : undefined;
+        const answers = mine && latest ? repliesLine(repliesFor(latest).map((r) => r.reply), (id) => (id === me ? t('You') : (nameOf(id) ?? (profileOf(id) ? firstName(profileOf(id)!.displayName) : t('Crewmate'))))) : undefined;
         const body = (
           <>
             <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={40} />
@@ -48,7 +49,7 @@ export function CrewLatest({ crew, nameOf }: { crew: Crew; nameOf: (uid: string)
                 {latest ? <Text style={styles.ago}> · {ago(latest.at, now)}</Text> : null}
               </Text>
               <Text style={styles.line} numberOfLines={2}>
-                {latest ? `${updateLine(latest, artist)}${latest.note && latest.kind === 'checkin' ? ` · “${latest.note}”` : ''}` : 'No updates yet'}
+                {latest ? `${updateLine(latest, artist)}${latest.note && latest.kind === 'checkin' ? ` · “${presetLabel(latest.note)}”` : ''}` : t('No updates yet')}
               </Text>
               {late ? <Text style={styles.late}>{late}</Text> : null}
               {answers ? (
@@ -84,10 +85,10 @@ export function CrewLatest({ crew, nameOf }: { crew: Crew; nameOf: (uid: string)
           router.push('/check-in');
         }}
         accessibilityRole="button"
-        accessibilityLabel="Check in with your crew"
+        accessibilityLabel={t('Check in with your crew')}
         style={({ pressed }) => [styles.button, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
       >
-        <Text style={styles.buttonText}>Check in</Text>
+        <Text style={styles.buttonText}>{t('Check in')}</Text>
       </Pressable>
     </View>
   );

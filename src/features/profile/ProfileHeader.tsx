@@ -15,6 +15,7 @@ import { useStanding } from '../standing/useStanding';
 import { SOUND_COLOR, withAlpha } from '../sound-map/colors';
 import { type Favourite, feelingLine } from './identity';
 import { SoundOrbit } from './SoundOrbit';
+import { t } from '../../i18n';
 
 type Props = {
   name: string;
@@ -37,7 +38,7 @@ type Props = {
   children?: React.ReactNode;
   /** Your uid, for a founder's or flair's ring and caption. */
   uid?: string;
-  /** Someone else's profile: their @handle under the name, and whose they are ("Maya's") in what's read out. */
+  /** Someone else's profile: their @handle under the name, and whose they are (their name, "Maya") in what's read out. */
   handle?: string;
   whose?: string;
   /** Their Instagram, Snapchat and TikTok, as little icons under the bio. */
@@ -85,10 +86,18 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
       )}
     </View>
   );
-  const owner = whose ?? 'Your';
-  const orbitLabel = orbit.length
-    ? `${owner} sound universe: ${orbit.map((o) => o.artist.name).join(', ')}.${onOrbit ? ' Opens My Sound.' : ''}`
-    : `${owner} photo.${onOrbit ? ' Opens My Sound.' : ''}`;
+  const artistNames = orbit.map((o) => o.artist.name).join(', ');
+  const orbitLabel = `${
+    orbit.length
+      ? whose
+        ? t('{name}’s sound universe: {artists}.', { name: whose, artists: artistNames })
+        : t('Your sound universe: {artists}.', { artists: artistNames })
+      : whose
+        ? t('{name}’s photo.', { name: whose })
+        : t('Your photo.')
+  }${onOrbit ? ` ${t('Opens My Sound.')}` : ''}`;
+  const soundList = sounds.map((m) => (m.percent !== undefined ? t('{sound} {pct} percent', { sound: SOUND_LABEL[m.tag], pct: m.percent }) : SOUND_LABEL[m.tag])).join(', ');
+  const soundsLabel = `${whose ? t('{name}’s sound: {sounds}.', { name: whose, sounds: soundList }) : t('Your sound: {sounds}.', { sounds: soundList })}${onSounds ? ` ${t('Opens the full breakdown.')}` : ''}`;
   return (
     <View style={styles.root}>
       <View style={styles.orbitWrap}>
@@ -106,22 +115,18 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
         <Pressable
           onPress={onLevel}
           accessibilityRole="button"
-          accessibilityLabel={`Glow level ${shownLevel.level}, ${shownLevel.name}. Opens your quests.`}
+          accessibilityLabel={t('Glow level {level}, {name}. Opens your quests.', { level: shownLevel.level, name: shownLevel.name })}
           hitSlop={6}
           style={({ pressed }) => [styles.level, pressed && { opacity: 0.75 }]}
           testID="profile-level"
         >
           <SparkIcon size={13} />
-          <Text style={styles.levelText}>
-            Level {shownLevel.level} · {shownLevel.name}
-          </Text>
+          <Text style={styles.levelText}>{t('Level {level} · {name}', { level: shownLevel.level, name: shownLevel.name })}</Text>
         </Pressable>
       ) : shownLevel ? (
-        <View style={styles.level} accessible accessibilityLabel={`Glow level ${shownLevel.level}, ${shownLevel.name}`} testID="profile-level">
+        <View style={styles.level} accessible accessibilityLabel={t('Glow level {level}, {name}', { level: shownLevel.level, name: shownLevel.name })} testID="profile-level">
           <SparkIcon size={13} />
-          <Text style={styles.levelText}>
-            Level {shownLevel.level} · {shownLevel.name}
-          </Text>
+          <Text style={styles.levelText}>{t('Level {level} · {name}', { level: shownLevel.level, name: shownLevel.name })}</Text>
         </View>
       ) : null}
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
@@ -145,7 +150,7 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
           }}
           disabled={!onSounds}
           accessibilityRole={onSounds ? 'button' : 'text'}
-          accessibilityLabel={`${owner} sound: ${sounds.map((m) => (m.percent !== undefined ? `${SOUND_LABEL[m.tag]} ${m.percent} percent` : SOUND_LABEL[m.tag])).join(', ')}.${onSounds ? ' Opens the full breakdown.' : ''}`}
+          accessibilityLabel={soundsLabel}
           style={({ pressed }) => [styles.sounds, pressed && { opacity: 0.7 }]}
         >
           {sounds.map((m) => (

@@ -31,6 +31,7 @@ import { isOffline } from '../features/offline/status';
 import { keptAt } from '../features/offline/lastKnown';
 import type { CrewCare, CrewUpdate, CrewUpdateInput, MeetSpot, Profile } from '../features/social/models';
 import { notifyNow } from '../lib/notifyNow';
+import { t } from '../i18n';
 import { forgetCrewPhoto, keepCrewPhoto } from '../features/crews/photoFile';
 import { firstName } from '../features/crews/together';
 import { socialErrorKind } from '../features/social/service';
@@ -618,7 +619,7 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     const fresh = toNotify(careAlerts, notified);
     if (!fresh.length) return;
     for (const u of fresh) {
-      const name = (profileOf(u.uid) ? firstName(profileOf(u.uid)!.displayName) : 'Someone in your crew');
+      const name = (profileOf(u.uid) ? firstName(profileOf(u.uid)!.displayName) : t('Someone in your crew'));
       void notifyNow(`crew-help:${u.id}`, helpTitle(name), helpBody(u), `/crew-story?uid=${encodeURIComponent(u.uid)}`);
     }
     const next = withNotified(notified, fresh.map((u) => u.id));

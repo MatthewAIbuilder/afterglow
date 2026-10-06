@@ -6,6 +6,8 @@
  * when effects usually start and wear off, never how much to take. Pure.
  */
 
+import { LANGUAGE, t, tc, tn } from '../../i18n';
+
 export type CareTimer = {
   id: string;
   label: string;
@@ -49,15 +51,15 @@ export const LOG_MAX = 300;
 export const KEEP_MS = 3 * 24 * 60 * 60 * 1000;
 
 export const MOOD_LABEL: Record<Mood, string> = {
-  great: 'Great',
-  good: 'Good',
-  okay: 'Okay',
-  tired: 'Tired',
-  anxious: 'Anxious',
-  hot: 'Too hot',
-  overwhelmed: 'Overwhelmed',
-  sick: 'Sick',
-  rough: 'Not great',
+  great: tc('feeling', 'Great'),
+  good: tc('feeling', 'Good'),
+  okay: tc('feeling', 'Okay'),
+  tired: tc('feeling', 'Tired'),
+  anxious: tc('feeling', 'Anxious'),
+  hot: tc('feeling', 'Too hot'),
+  overwhelmed: tc('feeling', 'Overwhelmed'),
+  sick: tc('feeling', 'Sick'),
+  rough: tc('feeling', 'Not great'),
 };
 
 /** Where each feeling sits on the graph, 5 (great) to 1 (not great). */
@@ -68,15 +70,15 @@ export const HELP_MOODS: readonly Mood[] = ['overwhelmed', 'sick', 'rough'];
 
 /** One plain, useful thing to do for each feeling. */
 export const MOOD_TIP: Record<Mood, string> = {
-  great: 'Love that. Keep sipping water and check in again in a while.',
-  good: 'Nice. Take breaks from dancing now and then, and keep sipping water.',
-  okay: 'Take a breather somewhere calmer, eat something if you can, and check in again soon.',
-  tired: 'Sit down for a while, eat something and have some water. Taking more to push through tends to make things worse.',
-  anxious: 'Breathe slowly: in for 4, out for 6. Find a quieter spot with a friend. Feelings like this pass.',
-  hot: 'Get out of the crowd to shade or the chill-out area, take off a layer and sip water. If you stop sweating, feel confused or faint, get help now.',
-  overwhelmed: 'Find somewhere quieter with a friend and sit down. Medics and welfare tents are there for exactly this.',
-  sick: 'Sit down somewhere cool with a friend. If you’re being sick and can’t keep water down, or feel confused, get help.',
-  rough: 'Tell a friend and stay with them. Help is close if you need it.',
+  great: t('Love that. Keep sipping water and check in again in a while.'),
+  good: t('Nice. Take breaks from dancing now and then, and keep sipping water.'),
+  okay: t('Take a breather somewhere calmer, eat something if you can, and check in again soon.'),
+  tired: t('Sit down for a while, eat something and have some water. Taking more to push through tends to make things worse.'),
+  anxious: t('Breathe slowly: in for 4, out for 6. Find a quieter spot with a friend. Feelings like this pass.'),
+  hot: t('Get out of the crowd to shade or the chill-out area, take off a layer and sip water. If you stop sweating, feel confused or faint, get help now.'),
+  overwhelmed: t('Find somewhere quieter with a friend and sit down. Medics and welfare tents are there for exactly this.'),
+  sick: t('Sit down somewhere cool with a friend. If you’re being sick and can’t keep water down, or feel confused, get help.'),
+  rough: t('Tell a friend and stay with them. Help is close if you need it.'),
 };
 
 const MIN = 60_000;
@@ -130,19 +132,19 @@ export const countTonight = (care: Care, kind: CareEntry['kind'], now: number) =
 /** "Just now", "12 min", "1 h 5 min", "3 h": for elapsed times, easy to read at a glance. */
 export function elapsed(ms: number): string {
   const m = Math.max(0, Math.floor(ms / MIN));
-  if (m < 1) return 'Just now';
-  if (m < 60) return `${m} min`;
+  if (m < 1) return t('Just now');
+  if (m < 60) return t('{n} min', { n: m });
   const h = Math.floor(m / 60);
   const r = m % 60;
-  return r ? `${h} h ${r} min` : `${h} h`;
+  return r ? t('{h} h {m} min', { h, m: r }) : t('{n} h', { n: h });
 }
 
 /** "Last one 40 min ago", "None yet tonight". */
 export function lastLine(care: Care, kind: CareEntry['kind'], now: number): string {
   const last = lastOf(care, kind);
-  if (!last || last.at < nightStart(now)) return 'None yet tonight';
-  const ago = elapsed(now - last.at);
-  return ago === 'Just now' ? 'Just now' : `Last ${ago} ago`;
+  if (!last || last.at < nightStart(now)) return t('None yet tonight');
+  if (now - last.at < MIN) return t('Just now');
+  return t('Last {time} ago', { time: elapsed(now - last.at) });
 }
 
 /** Whether the latest check-in tonight was one that needs care (not great, sick, overwhelmed): help comes first then. */
@@ -173,15 +175,16 @@ export const HAND_MOODS: readonly Mood[] = ['overwhelmed', 'rough'];
 /** Every feeling once, in `MOODS` order: okay or better, then the rest, then the ones asking for a hand. */
 export const MOOD_GROUPS: readonly MoodGroup[] = [
   { id: 'fine', moods: MOODS.filter((m) => MOOD_LEVEL[m] >= 3) },
-  { id: 'off', title: 'Something’s off', moods: MOODS.filter((m) => MOOD_LEVEL[m] < 3 && !HAND_MOODS.includes(m)) },
-  { id: 'hand', title: 'Need a hand', moods: MOODS.filter((m) => HAND_MOODS.includes(m)) },
+  { id: 'off', title: t('Something’s off'), moods: MOODS.filter((m) => MOOD_LEVEL[m] < 3 && !HAND_MOODS.includes(m)) },
+  { id: 'hand', title: t('Need a hand'), moods: MOODS.filter((m) => HAND_MOODS.includes(m)) },
 ];
 
-/** "9 PM", "10:30" (short, for the graph) or "10:30 PM" (`ampm`), in the phone's time. */
+/** "9 PM", "10:30" (short, for the graph) or "10:30 PM" (`ampm`), in the phone's time; Spanish uses the 24-hour clock ("21:00", "22:30"). */
 export function clockShort(ms: number, ampm = false): string {
   const d = new Date(ms);
   const h = d.getHours();
   const m = d.getMinutes();
+  if (LANGUAGE === 'es') return `${h}:${String(m).padStart(2, '0')}`;
   const hh = h % 12 === 0 ? 12 : h % 12;
   const suffix = h >= 12 ? 'PM' : 'AM';
   if (!m) return `${hh} ${suffix}`;
@@ -203,7 +206,7 @@ export function graphTimes(from: number, now: number, between = 2): { at: number
       out.push({ at, label: clockShort(at) });
     }
   }
-  if (span >= 20 * MIN) out.push({ at: now, label: 'Now' });
+  if (span >= 20 * MIN) out.push({ at: now, label: t('Now') });
   return out;
 }
 
@@ -219,8 +222,9 @@ export function recoveryFrom(points: FeelingPoint[]): FeelingPoint | undefined {
 
 /** "You felt too hot at 10:30 PM, and you’ve been feeling better since." */
 export function recoveryLine(low: FeelingPoint): string {
-  const felt = low.mood === 'rough' ? 'You weren’t feeling great' : `You felt ${MOOD_LABEL[low.mood].toLowerCase()}`;
-  return `${felt} at ${clockShort(low.at, true)}, and you’ve been feeling better since.`;
+  const time = clockShort(low.at, true);
+  if (low.mood === 'rough') return t('You weren’t feeling great at {time}, and you’ve been feeling better since.', { time });
+  return t('You felt {feeling} at {time}, and you’ve been feeling better since.', { feeling: MOOD_LABEL[low.mood].toLowerCase(), time });
 }
 
 /** The lowest check-ins tonight, when they're lower than the rest (labelled under the graph). */
@@ -233,17 +237,18 @@ export function lowestPoints(points: FeelingPoint[]): FeelingPoint[] {
 
 /** Tonight in words for screen readers: "Tonight, 3 check-ins: 9 PM good, 10:30 PM too hot, 11:45 PM great." */
 export function nightSummary(points: FeelingPoint[]): string {
-  return `Tonight, ${points.length} check-ins: ${points.map((p) => `${clockShort(p.at, true)} ${MOOD_LABEL[p.mood].toLowerCase()}`).join(', ')}.`;
+  const list = points.map((p) => `${clockShort(p.at, true)} ${MOOD_LABEL[p.mood].toLowerCase()}`).join(', ');
+  return tn(points.length, 'Tonight, {n} check-in: {list}.', 'Tonight, {n} check-ins: {list}.', { list });
 }
 
 /** The one line on the festival page's card: what's running and when you last drank. */
 export function cardLine(care: Care, now: number): string {
   const parts: string[] = [];
-  const t = care.timers[0];
-  if (t) parts.push(`${t.label || 'Stopwatch'} ${elapsed(now - t.startedAt)}`);
+  const first = care.timers[0];
+  if (first) parts.push(t('{name} {time}', { name: first.label || t('Stopwatch'), time: elapsed(now - first.startedAt) }));
   const water = lastOf(care, 'water');
-  if (water && water.at >= nightStart(now)) parts.push(`water ${elapsed(now - water.at)} ago`);
-  return parts.length ? parts.join(' · ').replace(/^./, (c) => c.toUpperCase()) : 'Stopwatches, water and check-ins, private to you';
+  if (water && water.at >= nightStart(now)) parts.push(t('water {time} ago', { time: elapsed(now - water.at) }));
+  return parts.length ? parts.join(' · ').replace(/^./, (c) => c.toUpperCase()) : t('Stopwatches, water and check-ins, private to you');
 }
 
 /** The region in a locale: "en-US" -> "US", "es_419" -> undefined. */

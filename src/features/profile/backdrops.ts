@@ -6,6 +6,7 @@
  * beach) and nobody else can choose them. Pure.
  */
 import { TOE_FRIENDS } from '../toes/toes';
+import { t } from '../../i18n';
 
 export type BackdropId =
   | 'aurora'
@@ -45,21 +46,21 @@ export const FROG_FRIENDS: readonly string[] = ['6i9w14pQcdR05jYEUvPmadkQ6NZ2'];
 export const TOE_BEACH_FRIENDS: readonly string[] = TOE_FRIENDS;
 
 export const BACKDROPS: readonly Backdrop[] = [
-  { id: 'aurora', name: 'Aurora', about: 'Northern lights rippling across the sky', plus: false },
-  { id: 'starfield', name: 'Starfield', about: 'Twinkling stars and the odd shooting star', plus: false },
-  { id: 'nebula', name: 'Nebula', about: 'Clouds of colour drifting through space', plus: false },
-  { id: 'lasers', name: 'Laser show', about: 'Beams sweeping from both sides of the stage', plus: true },
-  { id: 'synthwave', name: 'Sunset grid', about: 'A neon sun over a grid rolling towards you', plus: true },
-  { id: 'equalizer', name: 'Equalizer', about: 'Bars bouncing to a beat', plus: true },
-  { id: 'waves', name: 'Ocean waves', about: 'Layers of water rolling past at night', plus: true },
-  { id: 'fireflies', name: 'Fireflies', about: 'Little lights rising and swaying', plus: true },
-  { id: 'bass', name: 'Bass rings', about: 'Rings rolling out with every drop', plus: true },
-  { id: 'lava', name: 'Lava lamp', about: 'Warm blobs rising and sinking', plus: true },
-  { id: 'prism', name: 'Prism', about: 'A holographic shimmer sliding across', plus: true },
-  { id: 'vortex', name: 'Vortex', about: 'Rings of light turning around the centre', plus: true },
-  { id: 'panda', name: 'Panda garden', about: 'Made just for you: pandas, bamboo and falling blossoms', plus: false, only: PANDA_FRIENDS },
-  { id: 'frog', name: 'Frog pond', about: 'Made just for you: frogs on lily pads, fireflies and a green glow', plus: false, only: FROG_FRIENDS },
-  { id: 'toes', name: 'Toe beach', about: 'Made just for you: footprints in the sand, wiggling toes and a sunset', plus: false, only: TOE_BEACH_FRIENDS },
+  { id: 'aurora', name: t('Aurora'), about: t('Northern lights rippling across the sky'), plus: false },
+  { id: 'starfield', name: t('Starfield'), about: t('Twinkling stars and the odd shooting star'), plus: false },
+  { id: 'nebula', name: t('Nebula'), about: t('Clouds of colour drifting through space'), plus: false },
+  { id: 'lasers', name: t('Laser show'), about: t('Beams sweeping from both sides of the stage'), plus: true },
+  { id: 'synthwave', name: t('Sunset grid'), about: t('A neon sun over a grid rolling towards you'), plus: true },
+  { id: 'equalizer', name: t('Equalizer'), about: t('Bars bouncing to a beat'), plus: true },
+  { id: 'waves', name: t('Ocean waves'), about: t('Layers of water rolling past at night'), plus: true },
+  { id: 'fireflies', name: t('Fireflies'), about: t('Little lights rising and swaying'), plus: true },
+  { id: 'bass', name: t('Bass rings'), about: t('Rings rolling out with every drop'), plus: true },
+  { id: 'lava', name: t('Lava lamp'), about: t('Warm blobs rising and sinking'), plus: true },
+  { id: 'prism', name: t('Prism'), about: t('A holographic shimmer sliding across'), plus: true },
+  { id: 'vortex', name: t('Vortex'), about: t('Rings of light turning around the centre'), plus: true },
+  { id: 'panda', name: t('Panda garden'), about: t('Made just for you: pandas, bamboo and falling blossoms'), plus: false, only: PANDA_FRIENDS },
+  { id: 'frog', name: t('Frog pond'), about: t('Made just for you: frogs on lily pads, fireflies and a green glow'), plus: false, only: FROG_FRIENDS },
+  { id: 'toes', name: t('Toe beach'), about: t('Made just for you: footprints in the sand, wiggling toes and a sunset'), plus: false, only: TOE_BEACH_FRIENDS },
 ];
 
 const BY_ID = new Map(BACKDROPS.map((b) => [b.id, b]));

@@ -1,5 +1,6 @@
 import { SOUNDCLOUD_PREFIX, soundcloudCardId } from '../../data/catalog';
 import type { Artist, Clip, Festival, SoundCloudProfile } from '../../data/models';
+import { t } from '../../i18n';
 
 /**
  * SoundCloud cards in Discover: one card per artist with a SoundCloud page
@@ -10,7 +11,7 @@ import type { Artist, Clip, Festival, SoundCloudProfile } from '../../data/model
  */
 
 /** The words on the card and in lists. */
-export const SOUNDCLOUD_TITLE = 'On SoundCloud';
+export const SOUNDCLOUD_TITLE = t('On SoundCloud');
 /** A card has no fixed length; this only keeps the clip shape whole. */
 const CARD_SEC = 60;
 

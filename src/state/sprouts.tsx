@@ -4,6 +4,7 @@ import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { isOffline } from '../features/offline/status';
+import { t } from '../i18n';
 import { socialErrorKind } from '../features/social/service';
 import type { Sprout } from '../features/social/models';
 import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, GIFT_REFUSED_MAX, giftsToSend, giftsToTakeBack, giftTried, nextDue, queueClaim, seedGifts, tidy } from '../features/sprouts/outbox';
@@ -323,7 +324,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
         const late = c.tries > 0 || !c.account;
         addToGarden(c.card, sprout, me, Date.now(), late, c.at);
         done('claimed');
-        if (late) void notifyNow(`sprout:${c.card.id}`, `Your sprout from ${c.card.name} is in your garden`, c.tries > 0 ? 'It went through once there was signal.' : 'It was waiting for you to sign in.', '/garden');
+        if (late) void notifyNow(`sprout:${c.card.id}`, t('Your sprout from {name} is in your garden', { name: c.card.name }), c.tries > 0 ? t('It went through once there was signal.') : t('It was waiting for you to sign in.'), '/garden');
         return 'claimed';
       } catch (e) {
         const kind = socialErrorKind(e);
@@ -421,7 +422,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
         ...st,
         gifts: st.gifts.map((g) => (g.id === s.id && !g.claimedBy ? { ...g, sent: true, takenBack: undefined, claimedBy: { uid: s.to!, ...who }, claimedAt: s.claimedAt ? Date.parse(s.claimedAt) : Date.now() } : g)),
       }));
-      if (AppState.currentState !== 'active') void notifyNow(`sprout-given:${s.id}`, `${who.name ?? 'Someone'} picked up your sprout`, 'It’s growing in their garden now.', '/garden');
+      if (AppState.currentState !== 'active') void notifyNow(`sprout-given:${s.id}`, who.name != null ? t('{name} picked up your sprout', { name: who.name }) : t('Someone picked up your sprout'), t('It’s growing in their garden now.'), '/garden');
     },
     [whoIs, setStored],
   );

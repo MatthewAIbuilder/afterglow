@@ -10,6 +10,7 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../social/service';
 import { StandingAvatar } from '../standing/StandingAvatar';
 import { inviteTitle } from './invite';
 import { firstName } from './together';
+import { t } from '../../i18n';
 
 /** Crews you've been invited to in the app: who asked, for which festival, Join or Not now. Nothing when there are none. */
 export function CrewInvitesCard() {
@@ -27,7 +28,7 @@ export function CrewInvitesCard() {
       haptic.settle();
       router.push({ pathname: '/crew/[id]', params: { id: crewId } });
     } catch (e) {
-      showAlert('Couldn’t join', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t join'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
     } finally {
       setJoining(undefined);
     }
@@ -35,24 +36,24 @@ export function CrewInvitesCard() {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.heading}>{invites.length === 1 ? 'Crew invite' : `Crew invites · ${invites.length}`}</Text>
+      <Text style={styles.heading}>{invites.length === 1 ? t('Crew invite') : t('Crew invites · {n}', { n: invites.length })}</Text>
       {invites.map((i) => {
         const who = inviters[i.from];
         const title = inviteTitle(who ? firstName(who.displayName) : undefined, i.crewName);
-        const festival = catalog.festival(i.festivalId)?.name ?? 'a festival';
+        const festivalName = catalog.festival(i.festivalId)?.name;
         return (
           <View key={i.id} style={styles.card}>
             <Pressable
               onPress={() => router.push({ pathname: '/crew/[id]', params: { id: i.crewId } })}
               accessibilityRole="button"
-              accessibilityLabel={`${title}, for ${festival}. See the crew`}
+              accessibilityLabel={festivalName ? t('{title}, for {festival}. See the crew', { title, festival: festivalName }) : t('{title}, for a festival. See the crew', { title })}
               style={styles.top}
             >
               <StandingAvatar uid={i.from} name={who?.displayName} url={who?.avatarUrl} size={40} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{title}</Text>
                 <Text style={styles.detail} numberOfLines={1}>
-                  Plan {festival} together
+                  {festivalName ? t('Plan {festival} together', { festival: festivalName }) : t('Plan a festival together')}
                 </Text>
               </View>
             </Pressable>
@@ -63,19 +64,19 @@ export function CrewInvitesCard() {
                   void declineInvite(i.crewId);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Not now: ${title}`}
+                accessibilityLabel={t('Not now: {title}', { title })}
                 style={({ pressed }) => [styles.later, pressed && styles.pressed]}
               >
-                <Text style={styles.laterText}>Not now</Text>
+                <Text style={styles.laterText}>{t('Not now')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => void accept(i.crewId)}
                 disabled={!!joining}
                 accessibilityRole="button"
-                accessibilityLabel={`Join ${i.crewName || 'the crew'}`}
+                accessibilityLabel={i.crewName ? t('Join {crew}', { crew: i.crewName }) : t('Join the crew')}
                 style={({ pressed }) => [styles.join, pressed && styles.pressed]}
               >
-                {joining === i.crewId ? <ActivityIndicator color={color.night} size="small" /> : <Text style={styles.joinText}>Join</Text>}
+                {joining === i.crewId ? <ActivityIndicator color={color.night} size="small" /> : <Text style={styles.joinText}>{t('Join')}</Text>}
               </Pressable>
             </View>
           </View>

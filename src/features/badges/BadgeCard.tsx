@@ -8,6 +8,8 @@ import type { Standing } from '../social/models';
 import { StandingAvatar } from '../standing/StandingAvatar';
 import { type Badge, earnedLine, pinLook } from './badges';
 import { EnamelPin } from './EnamelPin';
+import { t } from '../../i18n';
+import { datesLine } from '../festivals/format';
 
 /** The card is a phone story (9:16), this wide at most. */
 export const BADGE_CARD_WIDTH = 330;
@@ -32,7 +34,7 @@ export function BadgeCard({
   const height = Math.round((width * 16) / 9);
   const pin = Math.round(width * 0.72);
   return (
-    <View style={[styles.card, { width, height }]} accessible accessibilityLabel={`${festival.name} badge${person ? `, collected by ${person.name}` : ''}`} collapsable={false}>
+    <View style={[styles.card, { width, height }]} accessible accessibilityLabel={person ? t('{festival} badge, collected by {name}', { festival: festival.name, name: person.name }) : t('{festival} badge', { festival: festival.name })} collapsable={false}>
       <LinearGradient colors={[look.palette.sky[0], '#140F33', color.night]} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
       <Svg width={width} height={width} style={[styles.glow, { top: height * 0.12 }]} pointerEvents="none">
         <Defs>
@@ -47,12 +49,12 @@ export function BadgeCard({
       <View style={styles.pin}>
         <EnamelPin look={look} size={pin} />
       </View>
-      <Text style={styles.kicker}>{badge ? 'COLLECTED' : 'FESTIVAL BADGE'}</Text>
+      <Text style={styles.kicker}>{badge ? t('COLLECTED') : t('FESTIVAL BADGE')}</Text>
       <Text style={styles.name} numberOfLines={2}>
         {festival.name}
       </Text>
       <Text style={styles.meta} numberOfLines={1}>
-        {[festival.dates, festival.location?.split(',').pop()?.trim()].filter(Boolean).join(' · ')}
+        {[datesLine(festival), festival.location?.split(',').pop()?.trim()].filter(Boolean).join(' · ')}
       </Text>
       {badge ? <Text style={styles.earned}>{earnedLine(badge)}</Text> : null}
       <View style={{ flex: 1 }} />
@@ -69,7 +71,7 @@ export function BadgeCard({
           </View>
         </View>
       ) : null}
-      <Text style={styles.foot}>Only people who filmed there get one · afterglowmusic.app</Text>
+      <Text style={styles.foot}>{t('Only people who filmed there get one · {site}', { site: 'afterglowmusic.app' })}</Text>
     </View>
   );
 }

@@ -14,6 +14,7 @@ import { posterUrl } from '../discover/youtube';
 import { whereWhen } from '../festivals/format';
 import type { Profile } from '../social/models';
 import { shareRoute, type ChatShare } from './shares';
+import { t } from '../../i18n';
 
 export const SHARE_CARD_WIDTH = 236;
 
@@ -48,9 +49,9 @@ export function ShareCard({ share }: { share: ChatShare }) {
         if (!f) return undefined;
         const faces = (share.picks ?? []).map(artist).filter((a): a is Artist => !!a);
         if (faces.length)
-          return { kicker: 'Must-sees', title: f.name, subtitle: faces.map((a) => a.name).join(', '), art: <Glow letter={f.name} />, faces };
+          return { kicker: t('Must-sees'), title: f.name, subtitle: faces.map((a) => a.name).join(', '), art: <Glow letter={f.name} />, faces };
         return {
-          kicker: 'Festival',
+          kicker: t('Festival'),
           title: f.name,
           subtitle: whereWhen(f),
           art: f.posterImageUrl ? <Image source={{ uri: f.posterImageUrl }} style={styles.art} contentFit="cover" accessibilityIgnoresInvertColors /> : <Glow letter={f.name} />,
@@ -59,7 +60,7 @@ export function ShareCard({ share }: { share: ChatShare }) {
       case 'artist': {
         const a = artist(share.id);
         if (!a) return undefined;
-        return { kicker: 'Artist', title: a.name, subtitle: topSounds(a) || undefined, art: <ArtistAvatar artist={a} size={56} /> };
+        return { kicker: t('Artist'), title: a.name, subtitle: topSounds(a) || undefined, art: <ArtistAvatar artist={a} size={56} /> };
       }
       case 'clip': {
         const c = clip(share.id);
@@ -67,7 +68,7 @@ export function ShareCard({ share }: { share: ChatShare }) {
         if (!c || !a) return undefined;
         const f = festival(c.festivalId);
         return {
-          kicker: 'Live set',
+          kicker: t('Live set'),
           title: a.name,
           subtitle: f ? `${c.title} · ${f.name}` : c.title,
           art:
@@ -79,15 +80,15 @@ export function ShareCard({ share }: { share: ChatShare }) {
         };
       }
       case 'profile':
-        if (!profile) return profile === undefined ? { kicker: 'Profile', title: `@${share.handle}`, art: <PersonAvatar size={56} /> } : undefined;
-        return { kicker: 'Profile', title: profile.displayName, subtitle: `@${profile.handle}`, art: <PersonAvatar name={profile.displayName} url={profile.avatarUrl} size={56} /> };
+        if (!profile) return profile === undefined ? { kicker: t('Profile'), title: `@${share.handle}`, art: <PersonAvatar size={56} /> } : undefined;
+        return { kicker: t('Profile'), title: profile.displayName, subtitle: `@${profile.handle}`, art: <PersonAvatar name={profile.displayName} url={profile.avatarUrl} size={56} /> };
     }
   })();
 
   if (!shown)
     return (
-      <View style={[styles.card, styles.gone]} accessible accessibilityLabel="This isn’t on Afterglow any more">
-        <Text style={styles.subtitle}>This isn’t on Afterglow any more</Text>
+      <View style={[styles.card, styles.gone]} accessible accessibilityLabel={t('This isn’t on Afterglow any more')}>
+        <Text style={styles.subtitle}>{t('This isn’t on Afterglow any more')}</Text>
       </View>
     );
 
@@ -98,7 +99,7 @@ export function ShareCard({ share }: { share: ChatShare }) {
         router.push(shareRoute(share));
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${shown.kicker}: ${shown.title}${shown.subtitle ? `, ${shown.subtitle}` : ''}. Open`}
+      accessibilityLabel={`${shown.kicker}: ${shown.title}${shown.subtitle ? `, ${shown.subtitle}` : ''}. ${t('Open')}`}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.top}>
@@ -138,7 +139,7 @@ const topSounds = (a: Artist) =>
   (Object.entries(a.sound) as [SoundTag, number][])
     .sort((x, y) => y[1] - x[1])
     .slice(0, 2)
-    .map(([t]) => SOUND_LABEL[t])
+    .map(([tag]) => SOUND_LABEL[tag])
     .join(' · ');
 
 /** A festival without a picture: its first letter in the night glow. */

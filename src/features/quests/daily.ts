@@ -1,3 +1,5 @@
+import { t, weekdays } from '../../i18n';
+
 /**
  * Daily quests: three small things to do each day (one about watching, one
  * about your taste, one about planning), a bigger one each week, a streak
@@ -64,31 +66,31 @@ export type DailySpec = { id: DailyQuestId; lane: QuestLane; title: string; how:
 export type WeeklySpec = { id: WeeklyQuestId; title: string; how: string; target: number; glow: number; go?: QuestGo };
 
 export const DAILY: readonly DailySpec[] = [
-  { id: 'watch', lane: 'watch', title: 'Warm up', how: 'Watch 5 live sets', target: 5, glow: 20, go: '/' },
-  { id: 'through', lane: 'watch', title: 'All the way', how: 'Watch 2 clips to the end', target: 2, glow: 25, go: '/' },
-  { id: 'like', lane: 'watch', title: 'Feel it', how: 'Double-tap to like 3 clips', target: 3, glow: 15, go: '/' },
-  { id: 'save', lane: 'watch', title: 'Keeper', how: 'Save a set to watch again', target: 1, glow: 15, go: '/' },
-  { id: 'crowd', lane: 'watch', title: 'In the crowd', how: 'Watch 2 videos filmed by people on Afterglow', target: 2, glow: 15, go: '/' },
-  { id: 'sounds', lane: 'watch', title: 'Genre hopper', how: 'Watch sets from 3 different sounds', target: 3, glow: 25, go: '/discover-focus' },
-  { id: 'rate', lane: 'taste', title: 'Taste test', how: 'Rate 5 artists', target: 5, glow: 25, go: '/pick-artists' },
-  { id: 'warm', lane: 'taste', title: 'New love', how: 'Find an artist you love or like', target: 1, glow: 20, go: '/this-or-that' },
-  { id: 'thisorthat', lane: 'taste', title: 'Head to head', how: 'Play This or that to the end', target: 1, glow: 20, go: '/this-or-that' },
-  { id: 'bubble', lane: 'taste', title: 'Stargazer', how: 'Open 3 artists on My Sound', target: 3, glow: 15, go: '/sound' },
-  { id: 'follow', lane: 'plan', title: 'Fan club', how: 'Follow an artist', target: 1, glow: 15, go: '/search' },
-  { id: 'stars', lane: 'plan', title: 'Must-see', how: 'Star 2 sets you won’t miss', target: 2, glow: 20, go: 'festival' },
-  { id: 'map', lane: 'plan', title: 'Explorer', how: 'Look around the festival map', target: 1, glow: 10, go: '/festival-map' },
-  { id: 'share', lane: 'plan', title: 'Spread the glow', how: 'Share a set, a plan or a festival', target: 1, glow: 15 },
-  { id: 'chat', lane: 'plan', title: 'Crew call', how: 'Send a message in your crew chat', target: 1, glow: 15, go: '/together' },
-  { id: 'sprout', lane: 'plan', title: 'Pass it on', how: 'Give someone a sprout', target: 1, glow: 20, go: '/give-sprout' },
-  { id: 'door', lane: 'plan', title: 'Knock knock', how: 'Open today’s festival week door', target: 1, glow: 20, go: 'festival' },
+  { id: 'watch', lane: 'watch', title: t('Warm up'), how: t('Watch 5 live sets'), target: 5, glow: 20, go: '/' },
+  { id: 'through', lane: 'watch', title: t('All the way'), how: t('Watch 2 clips to the end'), target: 2, glow: 25, go: '/' },
+  { id: 'like', lane: 'watch', title: t('Feel it'), how: t('Double-tap to like 3 clips'), target: 3, glow: 15, go: '/' },
+  { id: 'save', lane: 'watch', title: t('Keeper'), how: t('Save a set to watch again'), target: 1, glow: 15, go: '/' },
+  { id: 'crowd', lane: 'watch', title: t('In the crowd'), how: t('Watch 2 videos filmed by people on Afterglow'), target: 2, glow: 15, go: '/' },
+  { id: 'sounds', lane: 'watch', title: t('Genre hopper'), how: t('Watch sets from 3 different sounds'), target: 3, glow: 25, go: '/discover-focus' },
+  { id: 'rate', lane: 'taste', title: t('Taste test'), how: t('Rate 5 artists'), target: 5, glow: 25, go: '/pick-artists' },
+  { id: 'warm', lane: 'taste', title: t('New love'), how: t('Find an artist you love or like'), target: 1, glow: 20, go: '/this-or-that' },
+  { id: 'thisorthat', lane: 'taste', title: t('Head to head'), how: t('Play This or that to the end'), target: 1, glow: 20, go: '/this-or-that' },
+  { id: 'bubble', lane: 'taste', title: t('Stargazer'), how: t('Open 3 artists on My Sound'), target: 3, glow: 15, go: '/sound' },
+  { id: 'follow', lane: 'plan', title: t('Fan club'), how: t('Follow an artist'), target: 1, glow: 15, go: '/search' },
+  { id: 'stars', lane: 'plan', title: t('Must-see'), how: t('Star 2 sets you won’t miss'), target: 2, glow: 20, go: 'festival' },
+  { id: 'map', lane: 'plan', title: t('Explorer'), how: t('Look around the festival map'), target: 1, glow: 10, go: '/festival-map' },
+  { id: 'share', lane: 'plan', title: t('Spread the glow'), how: t('Share a set, a plan or a festival'), target: 1, glow: 15 },
+  { id: 'chat', lane: 'plan', title: t('Crew call'), how: t('Send a message in your crew chat'), target: 1, glow: 15, go: '/together' },
+  { id: 'sprout', lane: 'plan', title: t('Pass it on'), how: t('Give someone a sprout'), target: 1, glow: 20, go: '/give-sprout' },
+  { id: 'door', lane: 'plan', title: t('Knock knock'), how: t('Open today’s festival week door'), target: 1, glow: 20, go: 'festival' },
 ];
 
 export const WEEKLY: readonly WeeklySpec[] = [
-  { id: 'w-watch', title: 'Binge week', how: 'Watch 30 different sets this week', target: 30, glow: 150, go: '/' },
-  { id: 'w-rate', title: 'Deep dig', how: 'Rate 20 artists this week', target: 20, glow: 150, go: '/pick-artists' },
-  { id: 'w-days', title: 'Regular', how: 'Finish your daily quests on 4 days', target: 4, glow: 150 },
-  { id: 'w-sounds', title: 'World tour', how: 'Watch sets from 5 different sounds', target: 5, glow: 150, go: '/discover-focus' },
-  { id: 'w-love', title: 'Heart eyes', how: 'Find 5 artists you love or like', target: 5, glow: 150, go: '/this-or-that' },
+  { id: 'w-watch', title: t('Binge week'), how: t('Watch 30 different sets this week'), target: 30, glow: 150, go: '/' },
+  { id: 'w-rate', title: t('Deep dig'), how: t('Rate 20 artists this week'), target: 20, glow: 150, go: '/pick-artists' },
+  { id: 'w-days', title: t('Regular'), how: t('Finish your daily quests on 4 days'), target: 4, glow: 150 },
+  { id: 'w-sounds', title: t('World tour'), how: t('Watch sets from 5 different sounds'), target: 5, glow: 150, go: '/discover-focus' },
+  { id: 'w-love', title: t('Heart eyes'), how: t('Find 5 artists you love or like'), target: 5, glow: 150, go: '/this-or-that' },
 ];
 
 /** Finishing all three of a day's quests earns this much more. */
@@ -392,7 +394,7 @@ export function weekRow(lit: readonly string[], today: string): { day: string; l
 /** One letter for a day: M T W T F S S. */
 export const dayLetter = (day: string) => {
   const [y, m, d] = day.split('-').map(Number);
-  return 'SMTWTFS'[new Date(y, m - 1, d).getDay()];
+  return weekdays()[new Date(y, m - 1, d).getDay()].charAt(0).toUpperCase();
 };
 
 /** Glow levels, the light getting bigger as you go. After Afterglow it counts on: Afterglow 2, 3, … */
@@ -473,9 +475,9 @@ export const totalGlow = (book: Pick<QuestBook, 'glow'> | undefined, sideQuests:
 
 /** What sharing your level says. */
 export function glowShareText(level: number, name: string, streak: number, url: string): string {
-  const lines = [`I’m glow level ${level}, ${name}, on Afterglow.`];
-  if (streak > 1) lines.push(`${streak} days in a row of daily quests.`);
-  lines.push('Find your festival sound:', url);
+  const lines = [t('I’m glow level {level}, {name}, on Afterglow.', { level, name })];
+  if (streak > 1) lines.push(t('{n} days in a row of daily quests.', { n: streak }));
+  lines.push(t('Find your festival sound:'), url);
   return lines.join('\n');
 }
 
@@ -483,7 +485,7 @@ export function glowShareText(level: number, name: string, streak: number, url: 
 export function turnsOverIn(now: number): string {
   const next = dayStart(shiftDay(questDay(now), -1));
   const min = Math.max(1, Math.round((next - now) / 60_000));
-  return min >= 60 ? `New quests in ${Math.round(min / 60)} h` : `New quests in ${min} min`;
+  return min >= 60 ? t('New quests in {n} h', { n: Math.round(min / 60) }) : t('New quests in {n} min', { n: min });
 }
 
 /** Reads a saved book back, or nothing when it's broken. */

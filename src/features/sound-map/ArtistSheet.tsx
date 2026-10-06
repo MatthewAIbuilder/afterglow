@@ -15,6 +15,7 @@ import { RateArtist } from '../taste/RateArtist';
 import { artistMix } from '../taste/lean';
 import { SOUND_COLOR } from './colors';
 import { SoundSpectrum } from './SoundSpectrum';
+import { t } from '../../i18n';
 
 type Props = {
   artistId: string | null;
@@ -80,7 +81,7 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={artistId ? 'box-none' : 'none'}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close artist details" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close artist details')} />
       </Animated.View>
 
       <GestureDetector gesture={drag}>
@@ -100,7 +101,7 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
                 {artist.name}
               </Text>
               <Text style={styles.match}>
-                {pct}% match
+                {t('{pct}% match', { pct })}
                 {tags.length ? (
                   <Text style={styles.soundLine}>
                     {'  ·  '}
@@ -118,11 +119,11 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
 
           {tags.length > 0 && (
             <View style={styles.spectrum}>
-              <SoundSpectrum shares={artistMix(artist)} label={`${artist.name}'s sound`} height={4} />
+              <SoundSpectrum shares={artistMix(artist)} label={t("{artist}'s sound", { artist: artist.name })} height={4} />
             </View>
           )}
 
-          {closest.length > 0 && <Text style={styles.body}>Sounds closest to {closest.join(' and ')}.</Text>}
+          {closest.length > 0 && <Text style={styles.body}>{closest.length > 1 ? t('Sounds closest to {a} and {b}.', { a: closest[0], b: closest[1] }) : t('Sounds closest to {a}.', { a: closest[0] })}</Text>}
 
           <RateArtist artist={artist} compact />
 
@@ -137,7 +138,7 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
               accessibilityRole="button"
               style={({ pressed }) => [styles.cta, pressed && { opacity: 0.75 }]}
             >
-              <Text style={styles.ctaText}>View artist</Text>
+              <Text style={styles.ctaText}>{t('View artist')}</Text>
             </Pressable>
             {firstClip ? (
               <Pressable
@@ -147,10 +148,10 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
                   router.navigate({ pathname: '/', params: { clip: firstClip.id } });
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Watch ${artist.name} in Discover`}
+                accessibilityLabel={t('Watch {artist} in Discover', { artist: artist.name })}
                 style={({ pressed }) => [styles.cta, styles.ctaQuiet, pressed && { opacity: 0.75 }]}
               >
-                <Text style={styles.ctaText}>Watch</Text>
+                <Text style={styles.ctaText}>{t('Watch')}</Text>
               </Pressable>
             ) : null}
           </View>

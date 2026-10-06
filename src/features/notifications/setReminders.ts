@@ -2,6 +2,7 @@ import type { Festival } from '../../data/models';
 import { formatTime } from '../festivals/format';
 import { clockTime, WALK_MINUTES, type DayRoute, type RouteStop } from '../plan/route';
 import { REMINDER_PREFIX, type Reminder } from './reminders';
+import { t } from '../../i18n';
 
 /**
  * Reminders before your sets: a nudge before each stop on your full-day
@@ -61,17 +62,17 @@ export function setReminders(festival: Festival, route: DayRoute[], now: Date): 
       // Clock time on that day (a clock change in the night is the date's to handle, not a fixed count of minutes).
       const at = new Date(midnight.getFullYear(), midnight.getMonth(), midnight.getDate(), 0, leave - SET_LEAD_MIN);
       if (at.getTime() <= now.getTime()) continue;
-      const stage = festival.stages.find((s) => s.id === stop.set.stageId)?.name ?? 'the stage';
+      const stage = festival.stages.find((s) => s.id === stop.set.stageId)?.name ?? t('the stage');
       const time = formatTime(clockTime(stop.from));
       out.push({
         // The time is in the id: if it moves (another time zone, a clock change), the old one goes and the new one is set.
         id: `${SET_PREFIX}${festival.id}:${day.day}:${stop.artist.id}:${leave}:${at.getTime()}`,
         festivalId: festival.id,
         at,
-        title: `${stop.pinned ? '★ ' : ''}${stop.artist.name} at ${time}`,
+        title: `${stop.pinned ? '★ ' : ''}${t('{artist} at {time}', { artist: stop.artist.name, time })}`,
         body: walk
-          ? `Head to ${stage} in ${SET_LEAD_MIN} min (a ${walk} min walk).`
-          : `Be at ${stage} in ${SET_LEAD_MIN} min.`,
+          ? t('Head to {stage} in {n} min (a {walk} min walk).', { stage, n: SET_LEAD_MIN, walk })
+          : t('Be at {stage} in {n} min.', { stage, n: SET_LEAD_MIN }),
       });
     }
   }

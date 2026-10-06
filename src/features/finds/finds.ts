@@ -1,4 +1,5 @@
 import { WEB_URL } from '../../config/app';
+import { LOCALE, t } from '../../i18n';
 import { type ArtistLook, stickerLook } from '../sprouts/artistLook';
 
 /**
@@ -252,31 +253,32 @@ export function huntProgress(finds: readonly Find[], hunts: Record<string, Hunt>
 }
 
 /** "3 of 6 found", "All 6 found". */
-export const huntLine = (p: Pick<HuntProgress, 'count' | 'total' | 'done'>) => (p.done ? `All ${p.total} found` : `${p.count} of ${p.total} found`);
+export const huntLine = (p: Pick<HuntProgress, 'count' | 'total' | 'done'>) => (p.done ? t('All {total} found', { total: p.total }) : t('{n} of {total} found', { n: p.count, total: p.total }));
 
 /** What goes out when you share a hunt: how far you got, and where to find Afterglow. */
 export function huntShareText(p: Pick<HuntProgress, 'count' | 'total' | 'done'> & { hunt: Pick<Hunt, 'name'> }, webUrl: string): string {
-  const what = p.done ? `I found all ${p.total} stickers in the ${p.hunt.name} hunt on Afterglow.` : `I’ve found ${p.count} of ${p.total} stickers in the ${p.hunt.name} hunt on Afterglow.`;
-  return `${what} ${webUrl}`;
+  return p.done
+    ? t('I found all {total} stickers in the {hunt} hunt on Afterglow. {link}', { total: p.total, hunt: p.hunt.name, link: webUrl })
+    : t('I’ve found {n} of {total} stickers in the {hunt} hunt on Afterglow. {link}', { n: p.count, total: p.total, hunt: p.hunt.name, link: webUrl });
 }
 
-const day = (t: number) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+const day = (at: number) => new Date(at).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' });
 /**
  * The day an end date was set for, wherever you are: end dates last until
  * that day is over everywhere (see parseEndDate), so its day is the UTC date
  * 12 hours before. (Older ones, set at the end of the day on HQ's phone, read
  * the same for HQ anywhere from UTC−12 to just under UTC+12.)
  */
-const endDay = (t: number) => new Date(t - 12 * 3_600_000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+const endDay = (at: number) => new Date(at - 12 * 3_600_000).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 /** "Can be found until Oct 12, 2026", or nothing without an end date. */
-export const untilLine = (until?: number) => (until === undefined ? '' : `Can be found until ${endDay(until)}`);
+export const untilLine = (until?: number) => (until === undefined ? '' : t('Can be found until {date}', { date: endDay(until) }));
 
 /** What a find says while it waits or once it's done. */
 export function findLine(f: Find): string {
-  if (f.state === 'gone') return 'This code isn’t an Afterglow sticker any more.';
-  if (f.state === 'ended') return f.until ? `This one could only be found until ${endDay(f.until)}.` : 'This one can’t be found any more.';
-  if (f.state === 'checking') return 'Saved on your phone. It’s checked as soon as there’s signal.';
-  return `Found ${day(f.at)}`;
+  if (f.state === 'gone') return t('This code isn’t an Afterglow sticker any more.');
+  if (f.state === 'ended') return f.until ? t('This one could only be found until {date}.', { date: endDay(f.until) }) : t('This one can’t be found any more.');
+  if (f.state === 'checking') return t('Saved on your phone. It’s checked as soon as there’s signal.');
+  return t('Found {date}', { date: day(f.at) });
 }
 
 const STATES: readonly FindState[] = ['checking', 'found', 'ended', 'gone'];
@@ -348,4 +350,4 @@ export function parseEndDate(text: string): number | undefined | 'bad' {
 }
 
 /** "Finished Oct 10, 2026" for a finished hunt, else "Latest find Oct 9, 2026". */
-export const huntDateLine = (p: Pick<HuntProgress, 'done' | 'last'>) => `${p.done ? 'Finished' : 'Latest find'} ${day(p.last)}`;
+export const huntDateLine = (p: Pick<HuntProgress, 'done' | 'last'>) => (p.done ? t('Finished {date}', { date: day(p.last) }) : t('Latest find {date}', { date: day(p.last) }));

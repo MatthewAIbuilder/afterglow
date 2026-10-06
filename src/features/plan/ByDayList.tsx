@@ -7,6 +7,7 @@ import { exploreLine, TIER_LABEL } from './copy';
 import { PickRow } from './MustSeeList';
 import { usePickReasons } from './usePickReasons';
 import { exploreReason, type Pick } from './plan';
+import { t } from '../../i18n';
 
 /**
  * Before set times, when the poster says who plays which day: your picks day
@@ -22,9 +23,9 @@ export function ByDayList({ festival, picks }: { festival: Festival; picks: Pick
       {days.map((d) => (
         <View key={d.day} style={styles.day}>
           <View style={styles.head}>
-            <Text style={styles.dayName}>{d.day}</Text>
+            <Text style={styles.dayName}>{t(d.day)}</Text>
             <Text style={styles.count}>
-              {d.planned.length ? `${d.planned.length} for you` : 'Nothing you love yet'}
+              {d.planned.length ? t('{n} for you', { n: d.planned.length }) : t('Nothing you love yet')}
             </Text>
           </View>
           {d.planned.map((p) => (
@@ -32,7 +33,7 @@ export function ByDayList({ festival, picks }: { festival: Festival; picks: Pick
           ))}
           {d.explore.length > 0 && (
             <>
-              <Text style={styles.sub}>Worth a look</Text>
+              <Text style={styles.sub}>{t('Worth a look')}</Text>
               {d.explore.map((p) => (
                 <PickRow
                   key={p.artist.id}
@@ -48,7 +49,7 @@ export function ByDayList({ festival, picks }: { festival: Festival; picks: Pick
       {noDay.length > 0 && (
         <View style={styles.day}>
           <View style={styles.head}>
-            <Text style={styles.dayName}>Day to come</Text>
+            <Text style={styles.dayName}>{t('Day to come')}</Text>
           </View>
           {noDay.map((p) => (
             <PickRow key={p.artist.id} festivalId={festival.id} pick={p} note={p.tier === 'explore' ? TIER_LABEL[p.tier] : reason(p)} />

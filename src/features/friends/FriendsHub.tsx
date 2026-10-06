@@ -46,6 +46,7 @@ import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA, glowDeepA } from '../../theme/tokens';
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
+import { t } from '../../i18n';
 
 /** How many of your festivals are asked who else is going. */
 const GOER_FESTIVALS = 3;
@@ -127,7 +128,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
   // Your crews: they're what you do with friends at a festival. Each card is the crew's chat (the crew's page,
   // with its settings, opens from the chat's header).
   const crewsSection = me ? (
-    <Section title="Crews">
+    <Section title={t('Crews')}>
       {crews.map((c) => {
         const festival = catalog.festival(c.festivalId);
         const news = stories.find((s) => s.updates.some((u) => u.crewId === c.id));
@@ -136,8 +137,8 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
         const place = news ? updatePlace(news.latest, artist) : '';
         const unread = chat.unreadFor(c.id);
         const latest = chat.latestFor(c.id);
-        const said = chatPreview(latest, meUid, (u) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : 'Someone'));
-        const when = festival ? (isOver(festival, today) ? 'Over' : countdown(festival, today)) : undefined;
+        const said = chatPreview(latest, meUid, (u) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : t('Someone')));
+        const when = festival ? (isOver(festival, today) ? t('Over') : countdown(festival, today)) : undefined;
         const mates = c.members.filter((m) => m !== meUid);
         const faces = (mates.length ? mates.map((m) => profileOf(m)) : [me]).filter((p): p is Profile => !!p).map((p) => ({ name: p.displayName, url: p.avatarUrl }));
         return (
@@ -148,8 +149,8 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
               router.push({ pathname: '/crew-chat/[id]', params: { id: c.id } });
             }}
             accessibilityRole="button"
-            accessibilityLabel={`${c.name}, ${festival?.name ?? 'a festival'}, ${crewPeopleLine(c.members.length)}${said ? `. ${said}` : news ? `. Latest: ${who ? firstName(who.displayName) : 'a crewmate'} at ${clock(news.latest.at)}${place ? `, ${place}` : ''}` : ''}${unread ? `. ${unreadLine(unread)}` : ''}`}
-            accessibilityHint="Opens the crew’s chat"
+            accessibilityLabel={`${c.name}, ${festival?.name ?? t('a festival')}, ${crewPeopleLine(c.members.length)}${said ? `. ${said}` : news ? `. ${t('Latest: {who} at {time}', { who: who ? firstName(who.displayName) : t('a crewmate'), time: clock(news.latest.at) })}${place ? `, ${place}` : ''}` : ''}${unread ? `. ${unreadLine(unread)}` : ''}`}
+            accessibilityHint={t('Opens the crew’s chat')}
             style={({ pressed }) => [styles.crewCard, pressed && styles.pressed]}
           >
             <LinearGradient colors={[glowDeepA(0.28), glowDeepA(0.04)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -159,7 +160,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 {c.name}
               </Text>
               <Text style={styles.cardDetail} numberOfLines={1}>
-                {festival?.name ?? 'Festival'} · {crewPeopleLine(c.members.length)}
+                {festival?.name ?? t('Festival')} · {crewPeopleLine(c.members.length)}
               </Text>
               {said ? (
                 <Text style={[styles.cardDetail, unread > 0 && styles.fresh]} numberOfLines={1}>
@@ -167,7 +168,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 </Text>
               ) : news ? (
                 <Text style={[styles.cardDetail, news.fresh && styles.fresh]} numberOfLines={1}>
-                  {who ? firstName(who.displayName) : 'Crewmate'} · {clock(news.latest.at)}
+                  {who ? firstName(who.displayName) : t('Crewmate')} · {clock(news.latest.at)}
                   {place ? ` · ${place}` : ''}
                 </Text>
               ) : null}
@@ -194,16 +195,16 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
           router.push('/start-crew');
         }}
         accessibilityRole="button"
-        accessibilityLabel="Start a crew for a festival"
+        accessibilityLabel={t('Start a crew for a festival')}
         style={({ pressed }) => [styles.card, styles.startCard, pressed && styles.pressed]}
       >
         <View style={styles.plusCircle}>
           <PlusIcon color={color.night} size={16} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Start a crew</Text>
+          <Text style={styles.cardTitle}>{t('Start a crew')}</Text>
           <Text style={styles.cardDetail}>
-            {crews.length ? 'For another festival.' : 'Plan a festival with friends: shared picks, one route, and where everyone is on the day.'}
+            {crews.length ? t('For another festival.') : t('Plan a festival with friends: shared picks, one route, and where everyone is on the day.')}
           </Text>
         </View>
       </Pressable>
@@ -212,7 +213,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
 
   return (
     <View style={styles.root}>
-      <PageTitle title="Friends" />
+      <PageTitle title={t('Friends')} />
       <NightSky />
       {inTab ? null : <PageActions />}
       <ScrollView
@@ -221,10 +222,10 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
       >
         <View style={styles.titleRow}>
           <Text style={styles.title} accessibilityRole="header">
-            Friends
+            {t('Friends')}
           </Text>
         </View>
-        {festival ? <Text style={styles.atFestival}>At {festival.name}</Text> : null}
+        {festival ? <Text style={styles.atFestival}>{t('At {festival}', { festival: festival.name })}</Text> : null}
 
         {!social.availability.ok ? (
           <>
@@ -234,11 +235,11 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
         ) : !me ? (
           <>
             <Hero
-              title="Festivals are better together"
-              body="Make a profile to follow friends and watch their videos, start a crew for a festival, see which sets you all want, and see where everyone is on the day."
-              action={social.user ? 'Finish your profile' : 'Create your profile'}
+              title={t('Festivals are better together')}
+              body={t('Make a profile to follow friends and watch their videos, start a crew for a festival, see which sets you all want, and see where everyone is on the day.')}
+              action={social.user ? t('Finish your profile') : t('Create your profile')}
               onAction={() => router.push(social.user ? '/profile-edit' : '/account')}
-              secondary={social.user ? undefined : 'I already have one: sign in'}
+              secondary={social.user ? undefined : t('I already have one: sign in')}
               onSecondary={() => router.push('/account')}
             />
             <InviteCard festivals={upcoming} />
@@ -259,7 +260,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                     <CrewHelpAlerts festivalId={festival.id} />
                     {updatesReady ? <CheckInPanel festivalId={festival.id} /> : null}
                     {here.map((c) => (
-                      <CrewChatCard key={`chat-${c.id}`} crew={c} nameOf={(u) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : 'Someone')} />
+                      <CrewChatCard key={`chat-${c.id}`} crew={c} nameOf={(u) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : t('Someone'))} />
                     ))}
                     <CrewWhereCard festival={festival} crews={here} />
                     {here.map((c) => (
@@ -276,19 +277,19 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                       router.push('/start-crew');
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Start a crew for ${festival.name}`}
+                    accessibilityLabel={t('Start a crew for {festival}', { festival: festival.name })}
                     style={({ pressed }) => [styles.card, styles.startCard, pressed && styles.pressed]}
                   >
                     <View style={styles.plusCircle}>
                       <PlusIcon color={color.night} size={16} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitle}>Start a crew for {festival.name}</Text>
-                      <Text style={styles.cardDetail}>Check in with each other, see where everyone is, and pick a meeting spot.</Text>
+                      <Text style={styles.cardTitle}>{t('Start a crew for {festival}', { festival: festival.name })}</Text>
+                      <Text style={styles.cardDetail}>{t('Check in with each other, see where everyone is, and pick a meeting spot.')}</Text>
                     </View>
                   </Pressable>
                 )}
-                <Section title="Side quests">
+                <Section title={t('Side quests')}>
                   <SideQuestsCard max={2} />
                 </Section>
               </>
@@ -306,7 +307,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 <FriendsActivity profiles={circle.profiles} memories={circle.memories} />
 
                 {mayKnow.length ? (
-                  <Section title="People you may know">
+                  <Section title={t('People you may know')}>
                     {(showAllMayKnow ? mayKnow : mayKnow.slice(0, MAY_KNOW_SHOWN)).map((m) => (
                       <View key={m.profile.uid}>
                         <PersonRow profile={m.profile} follow />
@@ -315,16 +316,16 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                     ))}
                     {mayKnow.length > MAY_KNOW_SHOWN && !showAllMayKnow ? (
                       <Pressable onPress={() => setShowAllMayKnow(true)} accessibilityRole="button" hitSlop={8} style={styles.more}>
-                        <Text style={styles.link}>Show {mayKnow.length - MAY_KNOW_SHOWN} more</Text>
+                        <Text style={styles.link}>{t('Show {n} more', { n: mayKnow.length - MAY_KNOW_SHOWN })}</Text>
                       </Pressable>
                     ) : null}
                   </Section>
                 ) : upcoming.length === 0 ? (
-                  <Text style={styles.quiet}>Tap I’m going on a festival to see who else is going.</Text>
+                  <Text style={styles.quiet}>{t('Tap I’m going on a festival to see who else is going.')}</Text>
                 ) : null}
 
                 {social.following.size ? (
-                  <Row label="Videos from people you follow" detail="In Discover" onPress={() => router.navigate({ pathname: '/', params: { festival: FOLLOWING } })} />
+                  <Row label={t('Videos from people you follow')} detail={t('In Discover')} onPress={() => router.navigate({ pathname: '/', params: { festival: FOLLOWING } })} />
                 ) : null}
               </>
             )}

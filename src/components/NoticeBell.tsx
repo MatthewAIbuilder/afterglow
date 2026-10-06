@@ -6,6 +6,7 @@ import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
 import { color, type } from '../theme/tokens';
 import { BellIcon } from './TabIcons';
+import { t } from '../i18n';
 
 /** The notifications bell: a glass circle with a glowing count when something is new. */
 export function NoticeBell() {
@@ -18,7 +19,7 @@ export function NoticeBell() {
         router.push('/notifications');
       }}
       accessibilityRole="button"
-      accessibilityLabel={unread ? `Notifications, ${unread} new` : 'Notifications'}
+      accessibilityLabel={unread ? t('Notifications, {n} new', { n: unread }) : t('Notifications')}
       hitSlop={10}
       style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
     >

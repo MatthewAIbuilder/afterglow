@@ -1,0 +1,17 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Afterglow",
+    "NSPhotoLibraryUsageDescription": "Afterglow abre tus videos para que guardes momentos de festival en Recuerdos, y lee cuándo y dónde se grabó un video para adivinar quién tocaba.",
+    "NSPhotoLibraryAddUsageDescription": "Afterglow guarda tus recuerdos en Fotos cuando se lo pides.",
+    "NSCameraUsageDescription": "Afterglow usa la cámara para grabar momentos de festival para tus Recuerdos.",
+    "NSMicrophoneUsageDescription": "Afterglow graba el sonido de tus videos de festival.",
+    "NSLocationWhenInUseUsageDescription": "Afterglow usa tu ubicación para mostrarte festivales cerca y, cuando grabas, para saber en qué festival estás.",
+    "NSCalendarsUsageDescription": "Afterglow añade a tu calendario los festivales a los que vas.",
+    "NSCalendarsFullAccessUsageDescription": "Afterglow añade a tu calendario los festivales a los que vas.",
+    "NSCalendarsWriteOnlyAccessUsageDescription": "Afterglow añade a tu calendario los festivales a los que vas.",
+    "NSRemindersUsageDescription": "Afterglow no usa tus recordatorios.",
+    "NSRemindersFullAccessUsageDescription": "Afterglow no usa tus recordatorios.",
+    "NSFaceIDUsageDescription": "Afterglow usa Face ID para mantener privadas tus notas de Cuídate.",
+    "NSMotionUsageDescription": "Afterglow cuenta tus pasos en una noche de festival en Cuídate. Tus pasos se quedan en este teléfono."
+  }
+}

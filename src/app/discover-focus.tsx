@@ -10,6 +10,7 @@ import { tonightClips } from '../features/tonight/tonight';
 import { useTonight } from '../features/tonight/useTonight';
 import { PlayIcon } from '../features/discover/icons';
 import { countdown } from '../features/festivals/when';
+import { datesLine } from '../features/festivals/format';
 import { coverPhotos } from '../features/festivals/cover';
 import { FestivalCover } from '../features/festivals/FestivalCover';
 import { SOUND_COLOR } from '../features/sound-map/colors';
@@ -22,6 +23,7 @@ import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA, glowDeepA, nightA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { t, tn } from '../i18n';
 import { SheetClose } from '../components/SheetClose';
 
 /**
@@ -55,10 +57,10 @@ export default function DiscoverFocusScreen() {
   };
 
   const followingDetail = !social.user
-    ? 'Sign in to follow people'
+    ? t('Sign in to follow people')
     : social.following.size
-      ? `${social.following.size} ${social.following.size === 1 ? 'person' : 'people'} you follow`
-      : 'Follow people to see their videos';
+      ? tn(social.following.size, '{n} person you follow', '{n} people you follow')
+      : t('Follow people to see their videos');
   // A few of the faces your mix draws from, for its tile.
   const mixFaces = [...new Set(catalog.clips.map((c) => c.artistId))]
     .map((id) => catalog.artist(id))
@@ -71,13 +73,17 @@ export default function DiscoverFocusScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
-        <Text style={styles.title}>What to discover</Text>
-        <Text style={styles.body}>Everything at once, one sound, or one festival’s lineup.</Text>
+        <Text style={styles.title}>{t('What to discover')}</Text>
+        <Text style={styles.body}>{t('Everything at once, one sound, or one festival’s lineup.')}</Text>
 
         {tonight && tonightSets > 0 ? (
           <Tile
-            title="Tonight"
-            detail={`${tonight.night ? `${tonight.night} at ` : ''}${tonight.festival.name} · ${tonightSets} ${tonightSets === 1 ? 'artist' : 'artists'}, in set order`}
+            title={t('Tonight')}
+            detail={
+              tonight.night
+                ? tn(tonightSets, '{night} at {festival} · {n} artist, in set order', '{night} at {festival} · {n} artists, in set order', { night: t(tonight.night), festival: tonight.festival.name })
+                : tn(tonightSets, '{festival} · {n} artist, in set order', '{festival} · {n} artists, in set order', { festival: tonight.festival.name })
+            }
             selected={current === TONIGHT}
             onPress={() => pick(TONIGHT)}
             wide
@@ -91,8 +97,8 @@ export default function DiscoverFocusScreen() {
 
         <View style={styles.tiles}>
           <Tile
-            title="Your mix"
-            detail="A bit of everything, from every lineup"
+            title={t('Your mix')}
+            detail={t('A bit of everything, from every lineup')}
             selected={current === MIX}
             onPress={() => pick(MIX)}
             art={
@@ -113,9 +119,15 @@ export default function DiscoverFocusScreen() {
           />
           {social.availability.ok ? (
             <Tile
-              title="Following"
+              title={t('Following')}
               detail={followingDetail}
-              label={`Following, ${!social.user ? 'Sign in to follow people and see their videos' : social.following.size ? `Videos from the ${social.following.size === 1 ? 'person' : `${social.following.size} people`} you follow` : 'Follow people to see their videos here'}`}
+              label={
+                !social.user
+                  ? t('Following, Sign in to follow people and see their videos')
+                  : social.following.size
+                    ? tn(social.following.size, 'Following, Videos from the person you follow', 'Following, Videos from the {n} people you follow')
+                    : t('Following, Follow people to see their videos here')
+              }
               selected={current === FOLLOWING}
               onPress={() => pick(FOLLOWING)}
               art={
@@ -129,7 +141,7 @@ export default function DiscoverFocusScreen() {
 
         {sounds.length > 1 && (
           <>
-            <Text style={styles.section}>By sound</Text>
+            <Text style={styles.section}>{t('By sound')}</Text>
             <View style={styles.sounds}>
               {sounds.map(({ tag, clips }) => {
                 const on = current === soundFocus(tag);
@@ -139,7 +151,7 @@ export default function DiscoverFocusScreen() {
                     key={tag}
                     onPress={() => pick(soundFocus(tag))}
                     accessibilityRole="button"
-                    accessibilityLabel={`${SOUND_LABEL[tag]}, ${clips} clips from every lineup`}
+                    accessibilityLabel={t('{sound}, {n} clips from every lineup', { sound: SOUND_LABEL[tag], n: clips })}
                     accessibilityState={{ selected: on }}
                     style={({ pressed }) => [styles.sound, on && { backgroundColor: `${hue}2E`, borderColor: `${hue}99` }, pressed && styles.pressed]}
                   >
@@ -155,11 +167,11 @@ export default function DiscoverFocusScreen() {
 
         {watchable.length > 0 && (
           <>
-            <Text style={styles.section}>Festivals</Text>
+            <Text style={styles.section}>{t('Festivals')}</Text>
             <View style={styles.list}>
               {watchable.map(({ festival, clips, going }) => {
-                const when = countdown(festival, today) ?? festival.dates;
-                const detail = `${clips} ${clips === 1 ? 'clip' : 'clips'} · ${when}`;
+                const when = countdown(festival, today) ?? datesLine(festival);
+                const detail = tn(clips, '{n} clip · {when}', '{n} clips · {when}', { when });
                 const selected = current === festival.id;
                 const cover = coverPhotos(festival, catalog.artist, 4);
                 return (
@@ -167,7 +179,7 @@ export default function DiscoverFocusScreen() {
                     key={festival.id}
                     onPress={() => pick(festival.id)}
                     accessibilityRole="button"
-                    accessibilityLabel={`${festival.name}, ${detail}${going ? ', going' : ''}`}
+                    accessibilityLabel={going ? t('{festival}, {detail}, going', { festival: festival.name, detail }) : `${festival.name}, ${detail}`}
                     accessibilityState={{ selected }}
                     style={({ pressed }) => [styles.festival, selected && styles.selected, pressed && styles.pressed]}
                   >
@@ -183,7 +195,7 @@ export default function DiscoverFocusScreen() {
                     </View>
                     {going ? (
                       <View style={styles.going}>
-                        <Text style={styles.goingText}>Going</Text>
+                        <Text style={styles.goingText}>{t('Going')}</Text>
                       </View>
                     ) : null}
                     {selected ? <CheckIcon color={color.glow} size={18} /> : null}
@@ -195,41 +207,41 @@ export default function DiscoverFocusScreen() {
         )}
         {waiting.length > 0 && (
           <View style={styles.waiting}>
-            <Text style={styles.waitingTitle}>Clips on the way</Text>
+            <Text style={styles.waitingTitle}>{t('Clips on the way')}</Text>
             {waiting.map(({ festival }) => (
               <View
                 key={festival.id}
                 style={styles.waitingRow}
                 accessible
-                accessibilityLabel={`${festival.name}, No clips yet · ${countdown(festival, today) ?? festival.dates}`}
+                accessibilityLabel={t('{festival}, No clips yet · {when}', { festival: festival.name, when: countdown(festival, today) ?? datesLine(festival) })}
                 accessibilityState={{ disabled: true }}
               >
                 <Text style={styles.waitingName} numberOfLines={1}>
                   {festival.name}
                 </Text>
-                <Text style={styles.waitingWhen}>{countdown(festival, today) ?? festival.dates}</Text>
+                <Text style={styles.waitingWhen}>{countdown(festival, today) ?? datesLine(festival)}</Text>
               </View>
             ))}
-            <Text style={styles.waitingNote}>New live sets are found every night.</Text>
+            <Text style={styles.waitingNote}>{t('New live sets are found every night.')}</Text>
           </View>
         )}
         {choices.going.length === 0 && (
-          <Text style={styles.hint}>Mark the festivals you’re going to on the Festivals tab and they’ll show up first.</Text>
+          <Text style={styles.hint}>{t('Mark the festivals you’re going to on the Festivals tab and they’ll show up first.')}</Text>
         )}
 
-        <Text style={styles.section}>Playing</Text>
+        <Text style={styles.section}>{t('Playing')}</Text>
         <View style={styles.group}>
           {social.availability.ok && (
             <>
               <View style={styles.switchRow}>
                 <View style={styles.rowText}>
-                  <Text style={styles.switchTitle}>Videos from the crowd</Text>
+                  <Text style={styles.switchTitle}>{t('Videos from the crowd')}</Text>
                   <Text style={styles.switchDetail}>
                     {!social.user
-                      ? 'Sign in on your profile to see videos people shared from the festival.'
+                      ? t('Sign in on your profile to see videos people shared from the festival.')
                       : community.enabled
-                        ? 'Videos people shared from the festival, beside the official clips.'
-                        : 'Only official clips.'}
+                        ? t('Videos people shared from the festival, beside the official clips.')
+                        : t('Only official clips.')}
                   </Text>
                 </View>
                 <Switch
@@ -240,7 +252,7 @@ export default function DiscoverFocusScreen() {
                   }}
                   trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
                   thumbColor={color.moon}
-                  accessibilityLabel="Videos from the crowd"
+                  accessibilityLabel={t('Videos from the crowd')}
                   testID="community-switch"
                 />
               </View>
@@ -249,9 +261,9 @@ export default function DiscoverFocusScreen() {
           )}
           <View style={styles.switchRow}>
             <View style={styles.rowText}>
-              <Text style={styles.switchTitle}>Play the next clip</Text>
+              <Text style={styles.switchTitle}>{t('Play the next clip')}</Text>
               <Text style={styles.switchDetail}>
-                {autoplay.enabled ? 'When you’ve watched a clip to the end, the next one starts after a short countdown.' : 'Clips loop until you swipe.'}
+                {autoplay.enabled ? t('When you’ve watched a clip to the end, the next one starts after a short countdown.') : t('Clips loop until you swipe.')}
               </Text>
             </View>
             <Switch
@@ -262,7 +274,7 @@ export default function DiscoverFocusScreen() {
               }}
               trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }}
                   thumbColor={color.moon}
-              accessibilityLabel="Play the next clip"
+              accessibilityLabel={t('Play the next clip')}
               testID="autoplay-switch"
             />
           </View>
@@ -276,10 +288,10 @@ export default function DiscoverFocusScreen() {
               router.push(`/festival/${currentFestival.id}`);
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Open ${currentFestival.name}, its lineup and your plan`}
+            accessibilityLabel={t('Open {festival}, its lineup and your plan', { festival: currentFestival.name })}
             style={({ pressed }) => [styles.link, pressed && { opacity: 0.7 }]}
           >
-            <Text style={styles.linkText}>Open {currentFestival.name}</Text>
+            <Text style={styles.linkText}>{t('Open {festival}', { festival: currentFestival.name })}</Text>
             <ChevronIcon color={color.moonDim} size={12} />
           </Pressable>
         )}

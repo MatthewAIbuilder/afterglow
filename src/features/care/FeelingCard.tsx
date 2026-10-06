@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { t, tn } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { color, glowA, radius, space, tintA, type } from '../../theme/tokens';
 import { type Care, elapsed, feelingsBetween, HELP_MOODS, lastFeeling, type Mood, MOOD_GROUPS, MOOD_LABEL, MOOD_LEVEL, MOOD_TIP, nightStart, recoveryFrom, recoveryLine } from './care';
-import { moodColor } from './feelings';
+import { FEELING_LINE, moodColor } from './feelings';
 import { MoodOrb } from './MoodOrb';
 import { TonightGraph } from './TonightGraph';
 import { CareButtons } from '../crews/CareButtons';
@@ -62,19 +63,19 @@ export function FeelingCard({ care, now, onFeel, crewFestival }: { care: Care; n
         />
       ) : (
         <Picker
-          title={stale ? 'It’s been a while. How are you now?' : last ? 'How are you now?' : 'How are you right now?'}
+          title={stale ? t('It’s been a while. How are you now?') : last ? t('How are you now?') : t('How are you right now?')}
           earlier={stale && last ? last : undefined}
           now={now}
           onPick={pick}
           onCancel={changing ? () => setChanging(false) : undefined}
         />
       )}
-      {!last ? <Text style={styles.intro}>Check in now and then. It’s the quickest way to notice when things change, for you or a friend.</Text> : null}
+      {!last ? <Text style={styles.intro}>{t('Check in now and then. It’s the quickest way to notice when things change, for you or a friend.')}</Text> : null}
       {tonight.length >= 2 ? (
         <View style={styles.graph}>
           <View style={styles.graphHead}>
-            <Text style={styles.graphTitle}>Tonight</Text>
-            <Text style={styles.graphCount}>{tonight.length} check-ins</Text>
+            <Text style={styles.graphTitle}>{t('Tonight')}</Text>
+            <Text style={styles.graphCount}>{tn(tonight.length, '{n} check-in', '{n} check-ins')}</Text>
           </View>
           <TonightGraph points={tonight} now={now} />
         </View>
@@ -87,13 +88,13 @@ export function FeelingCard({ care, now, onFeel, crewFestival }: { care: Care; n
 /** Right after a check-in: the feeling, when, what to do, and Tell my crew / Change. */
 function After({ mood, ago, bloom, crew, crewOpen, onCrew, onChange }: { mood: Mood; ago: string; bloom: boolean; crew?: string; crewOpen: boolean; onCrew: () => void; onChange: () => void }) {
   const careful = HELP_MOODS.includes(mood);
-  const when = ago === 'Just now' ? 'Checked in just now' : `Checked in ${ago} ago`;
+  const when = ago === t('Just now') ? t('Checked in just now') : t('Checked in {time} ago', { time: ago });
   // A smaller phone (iPhone SE) gets a smaller orb and, for a long word, smaller type.
   const narrow = useWindowDimensions().width < 360;
   const orb = narrow ? SMALL_BIG_ORB : BIG_ORB;
   return (
     <View style={styles.after}>
-      <View style={[styles.nowRow, narrow && styles.nowRowNarrow]} accessible accessibilityLabel={`Last check-in: ${MOOD_LABEL[mood]}, ${ago} ago. ${MOOD_TIP[mood]}`}>
+      <View style={[styles.nowRow, narrow && styles.nowRowNarrow]} accessible accessibilityLabel={t('Last check-in: {feeling}, {time} ago. {tip}', { feeling: MOOD_LABEL[mood], time: ago, tip: MOOD_TIP[mood] })}>
         <View style={{ width: orb, height: orb, alignItems: 'center', justifyContent: 'center' }}>
           <MoodOrb key={mood} tint={moodColor(mood)} size={orb} glow={0.5} rings breathe bloom={bloom} />
         </View>
@@ -113,15 +114,15 @@ function After({ mood, ago, bloom, crew, crewOpen, onCrew, onChange }: { mood: M
               onCrew();
             }}
             accessibilityRole="button"
-            accessibilityLabel="Tell my crew how I am"
+            accessibilityLabel={t('Tell my crew how I am')}
             accessibilityState={{ expanded: crewOpen }}
             style={({ pressed }) => [styles.button, styles.buttonGlow, crewOpen && styles.buttonOn, pressed && styles.pressed]}
           >
-            <Text style={styles.buttonText}>Tell my crew</Text>
+            <Text style={styles.buttonText}>{t('Tell my crew')}</Text>
           </Pressable>
         ) : null}
-        <Pressable onPress={onChange} accessibilityRole="button" accessibilityLabel="Change how I feel" style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-          <Text style={styles.buttonText}>Change</Text>
+        <Pressable onPress={onChange} accessibilityRole="button" accessibilityLabel={t('Change how I feel')} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+          <Text style={styles.buttonText}>{t('Change')}</Text>
         </Pressable>
       </View>
       {/* Never sent by itself: the one that fits, sent only when tapped. */}
@@ -135,10 +136,10 @@ function Picker({ title, earlier, now, onPick, onCancel }: { title: string; earl
   return (
     <View>
       {earlier ? (
-        <View style={styles.earlier} accessible accessibilityLabel={`Last check-in: ${MOOD_LABEL[earlier.mood]}, ${elapsed(now - earlier.at)} ago. ${MOOD_TIP[earlier.mood]}`}>
+        <View style={styles.earlier} accessible accessibilityLabel={t('Last check-in: {feeling}, {time} ago. {tip}', { feeling: MOOD_LABEL[earlier.mood], time: elapsed(now - earlier.at), tip: MOOD_TIP[earlier.mood] })}>
           <View style={[styles.dot, { backgroundColor: moodColor(earlier.mood) }]} />
           <Text style={styles.earlierText} numberOfLines={1}>
-            Earlier: {MOOD_LABEL[earlier.mood]} · {elapsed(now - earlier.at)} ago
+            {t('Earlier: {feeling} · {time} ago', { feeling: MOOD_LABEL[earlier.mood], time: elapsed(now - earlier.at) })}
           </Text>
         </View>
       ) : null}
@@ -147,8 +148,8 @@ function Picker({ title, earlier, now, onPick, onCancel }: { title: string; earl
           {title}
         </Text>
         {onCancel ? (
-          <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel="Keep how I said I feel" hitSlop={10} style={({ pressed }) => pressed && styles.pressed}>
-            <Text style={styles.cancel}>Cancel</Text>
+          <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel={t('Keep how I said I feel')} hitSlop={10} style={({ pressed }) => pressed && styles.pressed}>
+            <Text style={styles.cancel}>{t('Cancel')}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -160,7 +161,7 @@ function Picker({ title, earlier, now, onPick, onCancel }: { title: string; earl
                 key={m}
                 onPress={() => onPick(m)}
                 accessibilityRole="button"
-                accessibilityLabel={`I'm feeling ${MOOD_LABEL[m].toLowerCase()}`}
+                accessibilityLabel={FEELING_LINE[m]}
                 style={({ pressed }) => [styles.orbButton, pressed && styles.orbPressed]}
               >
                 <View style={styles.orbSlot}>
@@ -181,7 +182,7 @@ function Picker({ title, earlier, now, onPick, onCancel }: { title: string; earl
                   key={m}
                   onPress={() => onPick(m)}
                   accessibilityRole="button"
-                  accessibilityLabel={`I'm feeling ${MOOD_LABEL[m].toLowerCase()}`}
+                  accessibilityLabel={FEELING_LINE[m]}
                   style={({ pressed }) => [styles.pill, g.id === 'hand' && styles.pillHand, pressed && styles.pressed]}
                 >
                   <View style={[styles.dot, { backgroundColor: moodColor(m) }]} />

@@ -11,6 +11,7 @@ import { color, radius, space, type } from '../theme/tokens';
 import { shareMessage } from '../lib/share';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
+import { t } from '../i18n';
 
 /**
  * Request a festival that isn't in the app yet: its name and, if you have
@@ -66,43 +67,43 @@ export default function RequestScreen() {
             <View style={styles.check}>
               <CheckIcon color={color.moon} size={22} />
             </View>
-            <Text style={styles.title}>Thanks for asking</Text>
+            <Text style={styles.title}>{t('Thanks for asking')}</Text>
             <Text style={styles.body}>
-              {sent} is on the list. When its lineup is in, it’ll show up on your Festivals tab.
+              {t('{festival} is on the list. When its lineup is in, it’ll show up on your Festivals tab.', { festival: sent })}
             </Text>
             <Pressable
               onPress={() => goBack()}
               accessibilityRole="button"
               style={({ pressed }) => [styles.button, pressed && styles.pressed]}
             >
-              <Text style={styles.buttonText}>Done</Text>
+              <Text style={styles.buttonText}>{t('Done')}</Text>
             </Pressable>
           </View>
         ) : (
           <>
-            <Text style={styles.title}>Request a festival</Text>
-            <Text style={styles.body}>Tell us which one you’re going to and we’ll add its lineup.</Text>
+            <Text style={styles.title}>{t('Request a festival')}</Text>
+            <Text style={styles.body}>{t('Tell us which one you’re going to and we’ll add its lineup.')}</Text>
 
-            <Text style={styles.label}>Festival</Text>
+            <Text style={styles.label}>{t('Festival')}</Text>
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Name and year, like Lost Lands 2027"
+              placeholder={t('Name and year, like Lost Lands 2027')}
               placeholderTextColor={color.moonFaint}
-              accessibilityLabel="Festival name"
+              accessibilityLabel={t('Festival name')}
               autoFocus={!typed}
               autoCapitalize="words"
               returnKeyType="next"
               maxLength={80}
               style={styles.input}
             />
-            <Text style={styles.label}>Link to the lineup (optional)</Text>
+            <Text style={styles.label}>{t('Link to the lineup (optional)')}</Text>
             <TextInput
               value={link}
               onChangeText={setLink}
-              placeholder="Website or lineup post"
+              placeholder={t('Website or lineup post')}
               placeholderTextColor={color.moonFaint}
-              accessibilityLabel="Link to the lineup, optional"
+              accessibilityLabel={t('Link to the lineup, optional')}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
@@ -117,10 +118,10 @@ export default function RequestScreen() {
               disabled={!request}
               accessibilityRole="button"
               accessibilityState={{ disabled: !request }}
-              accessibilityLabel={request ? `Send request for ${request.name}` : 'Send request. Type a festival name first'}
+              accessibilityLabel={request ? t('Send request for {festival}', { festival: request.name }) : t('Send request. Type a festival name first')}
               style={({ pressed }) => [styles.button, !request && styles.disabled, pressed && styles.pressed]}
             >
-              <Text style={styles.buttonText}>Send request</Text>
+              <Text style={styles.buttonText}>{t('Send request')}</Text>
             </Pressable>
           </>
         )}

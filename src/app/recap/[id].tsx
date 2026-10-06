@@ -13,6 +13,7 @@ import { shareMessage } from '../../lib/share';
 import { useCatalog } from '../../state/catalog';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+import { t } from '../../i18n';
 
 /**
  * Your recap of a festival that's over: your artists there, your nights, your
@@ -30,10 +31,10 @@ export default function RecapScreen() {
 
   return (
     <View style={styles.root}>
-      <PageTitle title={festival ? `Your ${festival.name}` : 'Your recap'} />
+      <PageTitle title={festival ? t('Your {festival}', { festival: festival.name }) : t('Your recap')} />
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.heading}>Your recap</Text>
-        <GlassCircleButton label="Close" onPress={() => goBack()}>
+        <Text style={styles.heading}>{t('Your recap')}</Text>
+        <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
@@ -41,22 +42,22 @@ export default function RecapScreen() {
         {card ? (
           <>
             <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
-              <PosterCard card={card} label={`Your recap of ${card.title}`} />
+              <PosterCard card={card} label={t('Your recap of {festival}', { festival: card.title })} />
             </View>
             <Pressable
               onPress={async () => {
                 if (busy) return;
                 haptic.tap();
                 setBusy(true);
-                await sharePoster(cardRef, `My ${card.title}`);
+                await sharePoster(cardRef, t('My {festival}', { festival: card.title }));
                 setBusy(false);
               }}
               disabled={busy}
               accessibilityRole="button"
-              accessibilityLabel="Share your recap as an image"
+              accessibilityLabel={t('Share your recap as an image')}
               style={({ pressed }) => [styles.button, styles.primary, (pressed || busy) && styles.pressed]}
             >
-              <Text style={styles.buttonText}>{busy ? 'Getting it ready…' : 'Share image'}</Text>
+              <Text style={styles.buttonText}>{busy ? t('Getting it ready…') : t('Share image')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -64,15 +65,15 @@ export default function RecapScreen() {
                 void shareMessage(recapText(card));
               }}
               accessibilityRole="button"
-              accessibilityLabel="Share your recap as text"
+              accessibilityLabel={t('Share your recap as text')}
               style={({ pressed }) => [styles.button, pressed && styles.pressed]}
             >
-              <Text style={styles.buttonText}>Share as text</Text>
+              <Text style={styles.buttonText}>{t('Share as text')}</Text>
             </Pressable>
           </>
         ) : (
           <Text style={styles.empty}>
-            Your recap is ready once the festival is over, if you were going, filmed something there or starred sets.
+            {t('Your recap is ready once the festival is over, if you were going, filmed something there or starred sets.')}
           </Text>
         )}
       </ScrollView>

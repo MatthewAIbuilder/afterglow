@@ -19,6 +19,8 @@ import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
+import { datesLine } from '../features/festivals/format';
+import { t } from '../i18n';
 
 /** At most this many festivals are listed while searching. */
 const LIST_MAX = 20;
@@ -55,7 +57,7 @@ export default function StartCrewScreen() {
       haptic.settle();
       router.replace({ pathname: '/crew/[id]', params: { id: crew.id, fresh: '1' } });
     } catch (e) {
-      showAlert('Couldn’t start a crew', SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      showAlert(t('Couldn’t start a crew'), SOCIAL_ERROR_COPY[socialErrorKind(e)]);
       setBusy(undefined);
     }
   };
@@ -69,7 +71,11 @@ export default function StartCrewScreen() {
         onPress={() => void start(f)}
         disabled={!!busy}
         accessibilityRole="button"
-        accessibilityLabel={`Start a crew for ${f.name}${had.length ? `. You already have ${had.map((c) => c.name).join(' and ')}` : ''}`}
+        accessibilityLabel={
+          had.length
+            ? t('Start a crew for {festival}. You already have {crews}', { festival: f.name, crews: had.map((c) => c.name).join(` ${t('and')} `) })
+            : t('Start a crew for {festival}', { festival: f.name })
+        }
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       >
         <View style={{ flex: 1 }}>
@@ -77,7 +83,7 @@ export default function StartCrewScreen() {
             {f.name}
           </Text>
           <Text style={styles.detail} numberOfLines={1}>
-            {[when ?? f.dates, had.length ? `You have ${had[0].name}` : undefined].filter(Boolean).join(' · ')}
+            {[when ?? datesLine(f), had.length ? t('You have {crew}', { crew: had[0].name }) : undefined].filter(Boolean).join(' · ')}
           </Text>
         </View>
         {busy === f.id ? <ActivityIndicator color={color.glow} /> : <ChevronIcon color={color.moonFaint} size={12} />}
@@ -88,20 +94,20 @@ export default function StartCrewScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.root} contentContainerStyle={{ padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Start a crew</Text>
-        <Text style={styles.body}>Pick the festival. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.</Text>
+        <Text style={styles.title}>{t('Start a crew')}</Text>
+        <Text style={styles.body}>{t('Pick the festival. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.')}</Text>
         {yours.length ? (
           <>
-            <Text style={styles.section}>You’re going to</Text>
+            <Text style={styles.section}>{t('You’re going to')}</Text>
             {yours.map(row)}
           </>
         ) : (
-          <Text style={styles.quiet}>Not going anywhere yet? Pick any festival below, or tap I’m going on a festival’s page first.</Text>
+          <Text style={styles.quiet}>{t('Not going anywhere yet? Pick any festival below, or tap I’m going on a festival’s page first.')}</Text>
         )}
-        <Text style={styles.section}>{yours.length ? 'Another festival' : 'Coming up'}</Text>
-        <SearchField value={query} onChange={setQuery} placeholder="Find a festival" label="Find a festival for your crew" />
+        <Text style={styles.section}>{yours.length ? t('Another festival') : t('Coming up')}</Text>
+        <SearchField value={query} onChange={setQuery} placeholder={t('Find a festival')} label={t('Find a festival for your crew')} />
         {others.map(row)}
-        {q && !others.length ? <Text style={styles.quiet}>No festival matches “{q}”.</Text> : null}
+        {q && !others.length ? <Text style={styles.quiet}>{t('No festival matches “{query}”.', { query: q })}</Text> : null}
       </ScrollView>
       <SheetClose />
     </View>

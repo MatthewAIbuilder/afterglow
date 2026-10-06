@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { APP_NAME } from '../../config/app';
+import { t } from '../../i18n';
 import { color, radius, space, type } from '../../theme/tokens';
 import { Collectible, TIER_COLOR } from '../sprouts/Collectible';
 import { counts, huntDateLine, huntLine, type HuntProgress, lookOf } from './finds';
@@ -24,7 +25,7 @@ export function HuntCard({ progress, width }: { progress: HuntProgress; width: n
   const glow = done ? GOLD : color.glow;
   const g = width * 1.1;
   return (
-    <View style={[styles.card, { width }, done && styles.done]} accessible accessibilityLabel={`${hunt.name}: ${huntLine(progress)}.`}>
+    <View style={[styles.card, { width }, done && styles.done]} accessible accessibilityLabel={t('{hunt}: {progress}.', { hunt: hunt.name, progress: huntLine(progress) })}>
       <LinearGradient colors={done ? ['#3A2A10', '#17112B', color.night] : ['#2A1A5E', '#140F33', color.night]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
       <Svg width={g} height={g} style={[styles.glow, { left: (width - g) / 2 }]} pointerEvents="none">
         <Defs>
@@ -36,14 +37,14 @@ export function HuntCard({ progress, width }: { progress: HuntProgress; width: n
         <Circle cx={g / 2} cy={g / 2} r={g / 2} fill="url(#hunt-card-glow)" />
       </Svg>
       <Text style={styles.brand}>{APP_NAME.toUpperCase()}</Text>
-      <Text style={[styles.kicker, { color: done ? GOLD : color.glow }]}>{done ? 'HUNT COMPLETE' : 'STICKER HUNT'}</Text>
+      <Text style={[styles.kicker, { color: done ? GOLD : color.glow }]}>{done ? t('HUNT COMPLETE') : t('STICKER HUNT')}</Text>
       <Text style={styles.title}>{hunt.name}</Text>
       <View style={[styles.grid, { gap: GAP }]}>
         {shown.map(({ item, i }) => (
           <View key={i} style={{ width: size, alignItems: 'center' }}>
             <Collectible look={lookOf(item.creature)} size={size} tier={found[i] && done ? 3 : 0} locked={!found[i]} still />
             <Text style={[styles.name, !found[i] && styles.faint]} numberOfLines={2}>
-              {found[i] ? item.name : 'Still out there'}
+              {found[i] ? item.name : t('Still out there')}
             </Text>
           </View>
         ))}

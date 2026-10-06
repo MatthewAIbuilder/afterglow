@@ -8,6 +8,7 @@ import type { ShareOutcome } from '../../lib/share';
 import { sharePicture } from '../../lib/sharePicture';
 import { color, radius, space, type } from '../../theme/tokens';
 import type { PlanCard } from './share';
+import { t } from '../../i18n';
 
 /**
  * The poster-like card that goes out as a picture: your plan (plan-card) or
@@ -28,7 +29,7 @@ export function sharePoster(ref: RefObject<View | null>, title: string, text?: s
 /** The picture: night gradient, festival name, then each day (or tier) with its sets. */
 export function PosterCard({ card, label }: { card: PlanCard; label?: string }) {
   return (
-    <View style={styles.card} accessible accessibilityLabel={label ?? `Your plan for ${card.title}`}>
+    <View style={styles.card} accessible accessibilityLabel={label ?? t('Your plan for {festival}', { festival: card.title })}>
       <LinearGradient colors={['#2A1A5E', '#140F33', color.night]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
       <Svg width={GLOW} height={GLOW} style={styles.glow} pointerEvents="none">
         <Defs>
@@ -59,10 +60,10 @@ export function PosterCard({ card, label }: { card: PlanCard; label?: string }) 
               ) : null}
             </View>
           ))}
-          {s.more > 0 ? <Text style={styles.more}>and {s.more} more</Text> : null}
+          {s.more > 0 ? <Text style={styles.more}>{t('and {n} more', { n: s.more })}</Text> : null}
         </View>
       ))}
-      <Text style={styles.foot}>Made with {APP_NAME}</Text>
+      <Text style={styles.foot}>{t('Made with {app}', { app: APP_NAME })}</Text>
     </View>
   );
 }
