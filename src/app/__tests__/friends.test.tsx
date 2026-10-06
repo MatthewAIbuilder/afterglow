@@ -167,4 +167,25 @@ describe('Friends', () => {
     expect(app.getByText('1 close friend · 1 friend')).toBeTruthy();
     expect(app.getByLabelText('Maya Lin, close friend. Going to Cyclops Cove 4. Quick options')).toBeTruthy();
   });
+
+  it('the Friends tab opens with the orbit tucked away behind a button that opens it (and folds it again)', async () => {
+    await person('maya', 'Maya Lin', ['cyclops-cove-4']);
+    await s().signOut();
+    await person('sam', 'Sam');
+    const maya = [...mockSocial.profiles.values()].find((p) => p.handle === 'maya')!.uid;
+    await s().follow(maya);
+    const app = await renderApp('/together');
+    await flush();
+    expect(app.queryByLabelText(/Quick options$/)).toBeNull();
+    expect(app.getByText('1 friend')).toBeTruthy();
+    expect(app.getByText('Find')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Show your friend orbit. 1 friend'));
+    await flush();
+    expect(app.getByText('Your friends')).toBeTruthy();
+    expect(app.getByLabelText(/Quick options$/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Hide your friend orbit'));
+    await flush();
+    expect(app.queryByText('Your friends')).toBeNull();
+    expect(app.getByLabelText('Show your friend orbit. 1 friend')).toBeTruthy();
+  });
 });
