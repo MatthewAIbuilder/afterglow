@@ -8,7 +8,7 @@ import type { ProfileStat } from '../../features/profile/profileView';
 import { ProfileCover } from '../../components/ProfileCover';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
@@ -153,12 +153,14 @@ export default function PublicProfileScreen() {
   const gap = space.xs;
   const tileW = Math.floor((width - space.xl * 2 - gap * (cols - 1)) / cols);
   const taggedShown = tagged.filter((m) => !social.blocked.has(m.uid));
-  const tile = (m: SharedMemory) => {
+  // A tile opens the video to swipe through the rest of its grid, like Discover.
+  const tile = (list: readonly SharedMemory[]) => (m: SharedMemory) => tileOf(m, list);
+  const tileOf = (m: SharedMemory, list: readonly SharedMemory[]) => {
     const artist = m.artistId ? catalog.artist(m.artistId) : undefined;
     return (
       <Pressable
         key={m.id}
-        onPress={() => router.push({ pathname: '/shared/[id]', params: { id: m.id } })}
+        onPress={() => router.push({ pathname: '/shared/[id]', params: { id: m.id, ids: list.map((x) => x.id).join(',') } })}
         accessibilityRole="button"
         accessibilityLabel={artist ? t('Video of {artist}', { artist: artist.name }) : t('Video')}
         style={({ pressed }) => [styles.tile, { width: tileW, height: Math.round((tileW * 16) / 9) }, pressed && styles.pressed]}
@@ -182,6 +184,8 @@ export default function PublicProfileScreen() {
     () => publicOrbit(profile?.showArtists ? profile.artists : [], memories.map((m) => m.artistId), catalog.artist),
     [profile, memories, catalog],
   );
+  const scroller = useRef<ScrollView>(null);
+  const sectionY = useRef({ badges: 0, moments: 0 });
   const stats: ProfileStat[] = [
     ...(counts
       ? [
@@ -189,7 +193,8 @@ export default function PublicProfileScreen() {
           { key: 'following' as const, n: counts.following, label: t('Following'), a11y: `${followingLabel(counts.following)}. ${t('Opens the list.')}` },
         ]
       : []),
-    { key: 'festivals', n: going.length, label: going.length === 1 ? t('Festival') : t('Festivals'), a11y: tn(going.length, '{n} festival', '{n} festivals') },
+    // Where they're going, and festivals they've been to before Afterglow (throwbacks); one-night shows aren't festivals.
+    { key: 'festivals', n: going.length + throwbacks.length, label: going.length + throwbacks.length === 1 ? t('Festival') : t('Festivals'), a11y: tn(going.length + throwbacks.length, '{n} festival', '{n} festivals') },
     { key: 'moments', n: memories.length, label: memories.length === 1 ? t('Moment') : t('Moments'), a11y: tn(memories.length, '{n} shared moment', '{n} shared moments') },
     {
       key: 'badges',
@@ -251,10 +256,12 @@ export default function PublicProfileScreen() {
             bio={profile.bio || undefined}
             note={goingLine(going) || undefined}
             stats={stats}
-            tappable={['followers', 'following']}
+            tappable={['followers', 'following', 'festivals', 'moments', 'badges']}
             onStat={(key) => {
-              if (key !== 'followers' && key !== 'following') return;
-              router.push({ pathname: '/follows/[handle]', params: { handle: profile.handle, list: key } });
+              // Festivals and badges scroll to their pins, moments to their videos.
+              if (key === 'festivals' || key === 'badges') scroller.current?.scrollTo({ y: Math.max(0, sectionY.current.badges - space.md), animated: true });
+              else if (key === 'moments') scroller.current?.scrollTo({ y: Math.max(0, sectionY.current.moments - space.md), animated: true });
+              else if (key === 'followers' || key === 'following') router.push({ pathname: '/follows/[handle]', params: { handle: profile.handle, list: key } });
             }}
             sounds={profile.sounds.map((tag) => ({ tag }))}
             orbit={orbit}
@@ -311,14 +318,16 @@ export default function PublicProfileScreen() {
           </View>
         ) : null}
         {badges.length || throwbacks.length ? (
-          <View style={styles.badges}>
+          <View style={styles.badges} onLayout={(e) => (sectionY.current.badges = e.nativeEvent.layout.y)}>
             <BadgesGrid badges={badges} throwbacks={throwbacks} festivalOf={catalog.festival} uid={profile.uid} width={width - space.xl * 2 + space.lg * 2} />
           </View>
         ) : null}
-        <Text style={styles.section}>{memories.length ? t('Memories · {n}', { n: memories.length }) : t('Memories')}</Text>
+        <Text style={styles.section} onLayout={(e) => (sectionY.current.moments = e.nativeEvent.layout.y)}>
+          {memories.length ? t('Memories · {n}', { n: memories.length }) : t('Memories')}
+        </Text>
         {memories.length ? (
           <View style={[styles.grid, { gap }]}>
-            {memories.map(tile)}
+            {memories.map(tile(memories))}
           </View>
         ) : (
           <Text style={styles.body}>
@@ -328,7 +337,7 @@ export default function PublicProfileScreen() {
         {taggedShown.length ? (
           <>
             <Text style={styles.section}>{t('Tagged · {n}', { n: taggedShown.length })}</Text>
-            <View style={[styles.grid, { gap }]}>{taggedShown.map(tile)}</View>
+            <View style={[styles.grid, { gap }]}>{taggedShown.map(tile(taggedShown))}</View>
           </>
         ) : null}
       </>
@@ -339,7 +348,7 @@ export default function PublicProfileScreen() {
     <View style={styles.root}>
       <PageTitle title={handle ? `@${handle}` : undefined} />
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>
+      <ScrollView ref={scroller} contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>
         <View style={{ marginHorizontal: -space.xl, marginTop: -(insets.top + 64) }}>
           <ProfileCover url={profile && !blocked ? profile.coverUrl : undefined} backdrop={blocked ? undefined : backdrop} height={insets.top + 64 + 236} fadeFrom={(insets.top + 64 + 100) / (insets.top + 64 + 236)} />
         </View>

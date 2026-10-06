@@ -3,7 +3,7 @@ import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
 import { isOver, whenRank } from '../../features/festivals/shelves';
 import { goingLine } from '../../features/social/copy';
 import { CoverSwap } from '../../features/profile/CoverSwap';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
@@ -215,9 +215,12 @@ function FullProfile() {
   );
   const taggedHere = meUid ? (tagged?.uid === meUid ? tagged.list : []) : undefined;
 
+  const scroller = useRef<ScrollView>(null);
+  const tabsY = useRef(0);
   const stats = profileStats({
     social: !!me,
-    festivals: mySet.been.length + mySet.planning.length,
+    // Festivals you've been to (on Afterglow or before it, as throwbacks) and are going to; one-night shows aren't festivals.
+    festivals: mySet.been.length + mySet.planning.length + b.throwbacks.length,
     followers: followers?.uid === me?.uid ? followers?.n : undefined,
     following: social.following.size,
     artists: Object.keys(ratings).length,
@@ -236,7 +239,7 @@ function FullProfile() {
     <View style={styles.root}>
       <PageTitle title={t('Profile')} />
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scroller} contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
         <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} fadeFrom={(insets.top + COVER_SOLID) / (insets.top + COVER_H)} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
@@ -257,9 +260,14 @@ function FullProfile() {
           uid={me?.uid}
           stats={stats}
           onStat={(key) => {
-            if (key === 'festivals') setTab('festivals');
-            else if (key === 'moments') setTab('videos');
-            else if (key === 'badges') setTab('badges');
+            // Festivals, Moments and Badges open their tab below, scrolled into view.
+            const open = (to: Tab) => {
+              setTab(to);
+              scroller.current?.scrollTo({ y: Math.max(0, tabsY.current - space.md), animated: true });
+            };
+            if (key === 'festivals') open('festivals');
+            else if (key === 'moments') open('videos');
+            else if (key === 'badges') open('badges');
             else if (key === 'artists') router.push('/your-artists');
             else if (me) router.push({ pathname: '/follows/[handle]', params: { handle: me.handle, list: key } });
           }}
@@ -298,13 +306,13 @@ function FullProfile() {
 
         <GardenShelf hidden={shelves.hidden.has('garden')} onToggle={() => shelves.toggle('garden')} />
 
-        <View style={styles.tabs}>
+        <View style={styles.tabs} onLayout={(e) => (tabsY.current = e.nativeEvent.layout.y)}>
           <Tabs<Tab>
             value={tab}
             onChange={setTab}
             items={[
               { key: 'videos', label: t('Moments'), count: memories.length, icon: (c) => <TilesIcon color={c} size={16} /> },
-              { key: 'festivals', label: t('Festivals'), count: mySet.been.length + mySet.planning.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
+              { key: 'festivals', label: t('Festivals'), count: mySet.been.length + mySet.planning.length + b.throwbacks.length, icon: (c) => <FestivalsIcon color={c} size={17} /> },
               { key: 'badges', label: t('Badges'), count: earned, icon: (c) => <PinIcon color={c} size={17} /> },
               { key: 'saved', label: t('Saved'), count: kept, icon: (c) => <BookmarkIcon color={c} size={16} /> },
             ]}

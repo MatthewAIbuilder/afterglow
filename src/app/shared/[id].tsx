@@ -29,6 +29,7 @@ import { useClipLoop } from '../../features/memories/useClipLoop';
 import { VideoTags } from '../../features/social/VideoTags';
 import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
+import { pagerIds, VerticalPager } from '../../components/VerticalPager';
 import { t } from '../../i18n';
 
 /**
@@ -38,7 +39,14 @@ import { t } from '../../i18n';
  * people liked it and who, or remove it.
  */
 export default function SharedMemoryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `ids`: the videos to swipe through (a profile's moments, in the order shown), this one among them.
+  const { id, ids } = useLocalSearchParams<{ id: string; ids?: string }>();
+  const list = pagerIds(ids, id);
+  if (list.length < 2) return <SharedMemoryPage id={id} active />;
+  return <VerticalPager ids={list} start={id} renderPage={(page, active) => <SharedMemoryPage id={page} active={active} />} />;
+}
+
+function SharedMemoryPage({ id, active }: { id: string; active: boolean }) {
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const catalog = useCatalog();
@@ -79,7 +87,7 @@ export default function SharedMemoryScreen() {
   // Someone else's video, watched here, counts as seen (each video once), like one in Discover:
   // that's what the "In the crowd" daily quest counts.
   const { markSeen } = useSeen();
-  const othersVideo = m && me && m.uid !== me ? m.id : undefined;
+  const othersVideo = active && m && me && m.uid !== me ? m.id : undefined;
   useEffect(() => {
     if (othersVideo) markSeen(communityClipId(othersVideo));
   }, [othersVideo, markSeen]);
@@ -128,9 +136,13 @@ export default function SharedMemoryScreen() {
   const player = useVideoPlayer(m?.videoUrl ?? null, (p) => {
     p.loop = true;
     p.muted = Platform.OS === 'web';
-    p.play();
   });
   useClipLoop(player, m?.clip);
+  // Only the video in view plays (swiping through a profile's moments).
+  useEffect(() => {
+    if (active) player.play();
+    else player.pause();
+  }, [active, player]);
   const tapVideo = () => {
     haptic.select();
     if (quiet) {
