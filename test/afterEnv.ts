@@ -12,6 +12,7 @@ import { forgetBadgeClaims } from '../src/state/badgeClaims';
 import { forgetScouted } from '../src/state/scouted';
 import { forgetLastKnown } from '../src/state/lastKnown';
 import { forgetDayHours } from '../src/state/dayHours';
+import { forgetAccountGlow } from '../src/state/accountGlow';
 import { forgetCommentCounts } from '../src/features/social/commentCounts';
 
 // Shared stores (daily quests, secrets, tips): start every test with fresh ones.
@@ -29,5 +30,6 @@ beforeEach(() => {
   forgetScouted();
   forgetLastKnown();
   forgetDayHours();
+  forgetAccountGlow();
   forgetCommentCounts();
 });

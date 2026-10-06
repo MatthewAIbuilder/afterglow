@@ -55,10 +55,13 @@ export default function QuestsScreen() {
       <PageTitle title="Quests" />
       <NightSky />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
-        <LevelHero level={q.level.level} name={q.level.name} progress={q.level.progress} />
-        <Text style={styles.toNext}>
-          {q.level.glow} glow · {toNext} to {next ? next.name : `level ${q.level.level + 1}`}
-        </Text>
+        {/* Hidden (its room kept) until your level is known, so it never shows a stand-in. */}
+        <View style={!q.ready && styles.waiting} accessibilityElementsHidden={!q.ready} importantForAccessibility={q.ready ? 'auto' : 'no-hide-descendants'}>
+          <LevelHero level={q.level.level} name={q.level.name} progress={q.level.progress} />
+          <Text style={styles.toNext}>
+            {q.level.glow} glow · {toNext} to {next ? next.name : `level ${q.level.level + 1}`}
+          </Text>
+        </View>
 
         <View style={styles.card} accessible accessibilityLabel={streakLabel(q.streak, q.doneToday, q.rows.length)}>
           <View style={styles.streakHead}>
@@ -272,6 +275,7 @@ function Bar({ value, slim }: { value: number; slim?: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  waiting: { opacity: 0 },
   root: { flex: 1, backgroundColor: color.night },
   hero: { alignItems: 'center' },
   ring: { width: 148, height: 148, alignItems: 'center', justifyContent: 'center' },

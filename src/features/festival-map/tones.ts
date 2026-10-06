@@ -10,3 +10,6 @@ export const TONE_COLOR = {
 
 /** Where you are on the map. */
 export const HERE_COLOR = '#6FC3FF';
+
+/** A club show on an artist's tour: the accent, as a small hollow light (festivals are filled). */
+export const SHOW_COLOR = color.glow;

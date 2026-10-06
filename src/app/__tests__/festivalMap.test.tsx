@@ -58,7 +58,7 @@ describe('the festival map', () => {
   it("an artist's festivals, as their tour", async () => {
     const app = await renderApp('/artist/subtronics');
     await flush();
-    await fireEvent.press(app.getByLabelText("See SUBTRONICS's festivals on the map"));
+    await fireEvent.press(app.getByLabelText("See SUBTRONICS's festivals and shows on the map"));
     await flush();
     expect(app.getByText('SUBTRONICS on tour')).toBeTruthy();
     expect(app.getByTestId('map-card-cyclops-cove-4')).toBeTruthy();
