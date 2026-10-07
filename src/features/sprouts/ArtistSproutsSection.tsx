@@ -16,6 +16,8 @@ import { useSocial } from '../../state/social';
 import { LOCALE, t, tn } from '../../i18n';
 import { StoryPreview } from './StoryShare';
 import { HoloTilt } from './HoloTilt';
+import { useMyShowcase } from './useMyShowcase';
+import { showAlert } from '../../lib/dialog';
 
 const day = (at: number) => (at ? new Date(at).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
@@ -76,6 +78,8 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
   const s = open?.sprout;
   const look = a ? artistLook(a) : undefined;
   const [story, setStory] = useState(false);
+  const showcase = useMyShowcase();
+  const pinned = !!a && showcase.pinned.includes(a.id);
   const close = () => {
     setStory(false);
     onClose();
@@ -102,6 +106,20 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
               <Text style={styles.body}>
                 {t('From {name} · {date}', { name: open.given.from, date: day(open.given.at) })}
               </Text>
+            ) : null}
+            {s ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  if (showcase.toggle(a.id) === 'full') showAlert(t('Your showcase is full'), t('Three cards show on your profile. Unpin one to make room.'));
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: pinned }}
+                accessibilityLabel={pinned ? t('Pinned to your profile. Unpin it.') : t('Pin this card to your profile')}
+                style={({ pressed }) => [styles.pin, pinned && styles.pinOn, pressed && styles.pressed]}
+              >
+                <Text style={[styles.pinText, pinned && styles.pinTextOn]}>{pinned ? t('★ In your showcase') : t('☆ Pin to my profile')}</Text>
+              </Pressable>
             ) : null}
             <View style={styles.buttons}>
               {s && handle ? (
@@ -190,6 +208,10 @@ const styles = StyleSheet.create({
   label: { ...type.label, color: color.moon },
   body: { ...type.body, color: color.moonDim, textAlign: 'center' },
   sheetScroll: { alignItems: 'center', gap: space.sm },
+  pin: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, borderWidth: 1, borderColor: color.hairline, marginTop: space.xs },
+  pinOn: { borderColor: '#FFE58A', backgroundColor: 'rgba(255,229,138,0.12)' },
+  pinText: { ...type.label, color: color.moonDim },
+  pinTextOn: { color: '#FFE58A' },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignSelf: 'stretch', marginTop: space.md },
   primary: { flex: 1, minWidth: 120, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: '#1E8F4A' },
   primaryText: { ...type.headline, color: color.moon },

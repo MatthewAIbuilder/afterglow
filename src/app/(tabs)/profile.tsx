@@ -20,6 +20,8 @@ import { groupFestivals } from '../../features/festivals/going';
 import { countdown } from '../../features/festivals/when';
 import { Highlights } from '../../features/profile/Highlights';
 import { GardenShelf } from '../../features/sprouts/GardenShelf';
+import { ShowcaseRow } from '../../features/sprouts/ShowcaseRow';
+import { useMyShowcase } from '../../features/sprouts/useMyShowcase';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
 import { useDailyQuests } from '../../features/quests/useDailyQuests';
 import { CrewsList, SavedTab, VideosTab } from '../../features/profile/ProfileTabsContent';
@@ -94,6 +96,8 @@ function FullProfile() {
   // The kandi you wear on your profile, as visitors see it.
   const { worn } = useKandi();
   const wornKandi = worn ? { word: worn.word, beads: worn.beads, ...(worn.charm ? { charm: worn.charm } : {}), ...(worn.fromHandle ? { from: worn.fromHandle } : {}) } : undefined;
+  // The collectible cards you pinned, shown above your garden.
+  const showcase = useMyShowcase();
   const quests = useDailyQuests();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
@@ -328,6 +332,8 @@ function FullProfile() {
               hidden={shelves.hidden.has('festivals')}
               onToggle={() => shelves.toggle('festivals')}
             />
+
+            <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own />
 
             <GardenShelf hidden={shelves.hidden.has('garden')} onToggle={() => shelves.toggle('garden')} />
           </>

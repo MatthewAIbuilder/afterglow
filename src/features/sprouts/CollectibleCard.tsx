@@ -60,6 +60,8 @@ export function CollectibleCard({
   const num = cardNumber(artistName);
   // Type scales with the card, so a small one reads like a big one.
   const k = width / 280;
+  // Small (a profile's showcase): the essentials only, in type that still reads.
+  const mini = width < 170;
   const reduce = useReducedMotion() || still;
   const sweep = useSharedValue(0);
   useEffect(() => {
@@ -82,34 +84,44 @@ export function CollectibleCard({
   return (
     <View style={{ width, height }} accessible accessibilityRole="image" accessibilityLabel={label}>
       <LinearGradient colors={shiny ? [...SHINY_FRAME] : [...FRAME[tier]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.frame, { borderRadius: width * 0.08 }]}>
-        <View style={[styles.inner, { borderRadius: width * 0.07 }]}>
+        <View style={[styles.inner, { borderRadius: width * 0.07 }, mini && styles.innerMini]}>
           <LinearGradient colors={[p.deep, color.night]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
           {/* Top line: the set number and the level. */}
-          <View style={styles.top}>
-            <Text style={[styles.num, { color: p.light }]}>{num ? `No. ${String(num.n).padStart(2, '0')}` : t('Sound series')}</Text>
-            {shiny ? <Text style={[styles.badge, styles.shinyBadge]}>{t('Shiny')}</Text> : tier ? <Text style={[styles.badge, { color: TIER_COLOR[tier], borderColor: TIER_COLOR[tier] }]}>{TIER_LABEL[tier]}</Text> : null}
+          <View style={[styles.top, mini && styles.topMini]}>
+            <Text style={[styles.num, { color: p.light }, mini && styles.numMini]} numberOfLines={1}>
+              {num ? (mini ? `${num.n}` : `No. ${String(num.n).padStart(2, '0')}`) : mini ? '' : t('Sound series')}
+            </Text>
+            {shiny ? (
+              <Text style={[styles.badge, styles.shinyBadge, mini && styles.badgeMini]}>{mini ? '✦' : t('Shiny')}</Text>
+            ) : tier ? (
+              <Text style={[styles.badge, { color: TIER_COLOR[tier], borderColor: TIER_COLOR[tier] }, mini && styles.badgeMini]}>{mini ? '●' : TIER_LABEL[tier]}</Text>
+            ) : null}
           </View>
           {/* The window: the creature in its own light. */}
-          <View style={[styles.window, { borderColor: `${p.glow}55` }]}>
+          <View style={[styles.window, { borderColor: `${p.glow}55` }, mini && styles.windowMini]}>
             <LinearGradient colors={[`${p.glow}40`, `${p.alt}22`, 'rgba(0,0,0,0)']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
             {shiny ? <LinearGradient colors={['rgba(255,138,216,0.25)', 'rgba(138,184,255,0.18)', 'rgba(138,255,208,0.25)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /> : null}
             <Collectible look={look} size={Math.round(width * 0.56)} tier={0} shiny={shiny} still={reduce} />
           </View>
-          <Text style={[styles.name, { color: shiny ? '#FFFFFF' : look.accent, fontSize: 22 * k, lineHeight: 30 * k }]} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={[styles.name, { color: shiny ? '#FFFFFF' : look.accent, fontSize: mini ? 12 : 22 * k, lineHeight: mini ? 16 : 30 * k }]} numberOfLines={1} adjustsFontSizeToFit>
             {look.name}
           </Text>
-          <Text style={[styles.artist, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={1}>
+          <Text style={[styles.artist, { fontSize: mini ? 8.5 : 12 * k, lineHeight: mini ? 12 : 16 * k }]} numberOfLines={1}>
             {artistName}
           </Text>
-          <Text style={[styles.flavour, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={2}>
-            {look.theme}.
-          </Text>
-          <View style={[styles.foot, { borderTopColor: `${p.glow}33` }]}>
-            <Text style={[styles.footText, { fontSize: 11 * k, lineHeight: 15 * k }]} numberOfLines={1}>
-              {[owner, line].filter(Boolean).join(' · ') || 'Afterglow'}
-            </Text>
-            <Text style={[styles.mark, { color: p.glow }]}>✦</Text>
-          </View>
+          {mini ? null : (
+            <>
+              <Text style={[styles.flavour, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={2}>
+                {look.theme}.
+              </Text>
+              <View style={[styles.foot, { borderTopColor: `${p.glow}33` }]}>
+                <Text style={[styles.footText, { fontSize: 11 * k, lineHeight: 15 * k }]} numberOfLines={1}>
+                  {[owner, line].filter(Boolean).join(' · ') || 'Afterglow'}
+                </Text>
+                <Text style={[styles.mark, { color: p.glow }]}>✦</Text>
+              </View>
+            </>
+          )}
           {/* A band of light sweeping across the foil. */}
           {reduce ? null : <Animated.View pointerEvents="none" style={[styles.sweep, { height: height * 1.6, top: -height * 0.3 }, sweepStyle]}>
             <LinearGradient colors={['rgba(255,255,255,0)', shiny ? 'rgba(255,230,255,0.28)' : 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0)']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
@@ -136,6 +148,11 @@ const styles = StyleSheet.create({
   mark: { ...type.caption },
   how: { textTransform: 'none', letterSpacing: 0 },
   sweep: { position: 'absolute', left: 0, width: 90 },
+  innerMini: { padding: 6, gap: 0 },
+  topMini: { marginBottom: 4, minHeight: 14 },
+  numMini: { fontSize: 9, lineHeight: 12, letterSpacing: 0.4 },
+  badgeMini: { fontSize: 8, lineHeight: 12, paddingHorizontal: 4, paddingVertical: 0, borderWidth: 0 },
+  windowMini: { marginBottom: 4 },
   back: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   backRing: { position: 'absolute', borderWidth: 2, borderColor: 'rgba(185,156,255,0.55)' },
   backMark: { color: '#E8DCFF', textShadowColor: '#B99CFF', textShadowRadius: 18 },

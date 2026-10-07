@@ -7,13 +7,14 @@ import { OrgDjs, OrgEvents } from '../../features/organizers/OrgProfileParts';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
+import { ShowcaseRow } from '../../features/sprouts/ShowcaseRow';
 import { publicOrbit } from '../../features/profile/identity';
 import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
 import type { ProfileStat } from '../../features/profile/profileView';
 import { ProfileCover } from '../../components/ProfileCover';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
-import type { PublicResident } from '../../features/sprouts/publicGarden';
+import { type PublicResident, showcaseOf } from '../../features/sprouts/publicGarden';
 import { Sprout } from '../../features/sprouts/Sprout';
 import { artistLook } from '../../features/sprouts/artistLook';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -365,6 +366,8 @@ export default function PublicProfileScreen() {
             ))}
           </View>
         ) : null}
+        {/* The collectible cards they pinned. */}
+        {runs ? null : <ShowcaseRow cards={showcaseOf(garden ?? [])} handle={profile.handle} own={mine} />}
         {/* Their garden: a peek, and the way in. */}
         {runs ? null : garden?.length ? (
           <Pressable

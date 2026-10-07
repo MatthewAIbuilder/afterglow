@@ -5,6 +5,7 @@ import { useSprouts } from '../../state/sprouts';
 import { useKandi } from '../../state/kandi';
 import { gardenKey, publicGarden } from './publicGarden';
 import { useGardenDecor } from './useGardenDecor';
+import { useMyShowcase } from './useMyShowcase';
 
 /** Changes settle this long before the garden on your profile is updated. */
 const SETTLE_MS = 4000;
@@ -21,7 +22,9 @@ export function GardenPublisher() {
   const catalog = useCatalog();
   const uid = social.user?.uid;
   const ready = !!uid && !!social.profile && social.availability.ok && sprouts.hydrated;
-  const list = useMemo(() => publicGarden(sprouts.garden, sprouts.artists, (id) => catalog.artist(id)?.name), [sprouts.garden, sprouts.artists, catalog]);
+  // Collectibles pinned to your showcase, marked so visitors see them first.
+  const { pinned } = useMyShowcase();
+  const list = useMemo(() => publicGarden(sprouts.garden, sprouts.artists, (id) => catalog.artist(id)?.name, pinned), [sprouts.garden, sprouts.artists, catalog, pinned]);
   // Kandi hanging in your garden: the word, beads and who made it.
   const { shown: kandi } = useKandi();
   // Decorations in its sky.

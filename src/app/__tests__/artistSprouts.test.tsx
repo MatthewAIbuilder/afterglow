@@ -69,6 +69,26 @@ describe('artist sprouts', () => {
     expect(app.getByText(/^Bronze now: you’ve filmed SUBTRONICS 3 times/)).toBeTruthy();
   });
 
+  it('pin a card to your profile: it shows in your showcase, and goes out with your garden', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await filmed('subtronics', 3);
+    const app = await renderApp('/garden');
+    await flush();
+    await fireEvent.press(app.getByLabelText('SUBTRONICS collectible, Bronze · 3 videos.'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Pin this card to your profile'));
+    await flush();
+    expect(app.getByText('★ In your showcase')).toBeTruthy();
+    await settle(5000);
+    await flush();
+    expect(mockSocial.gardens.get(maya)?.residents.find((r) => r.k === 'a')).toMatchObject({ artistId: 'subtronics', pin: 1 });
+    await app.unmount();
+    const profile = await renderApp('/profile');
+    await flush();
+    expect(profile.getByText('Your showcase')).toBeTruthy();
+    expect(profile.getByLabelText('The Watcher, from SUBTRONICS. Opens the card.')).toBeTruthy();
+  });
+
   it('videos from before the update grow their sprouts quietly', async () => {
     await filmed('subtronics', 1);
     const app = await renderApp('/garden');

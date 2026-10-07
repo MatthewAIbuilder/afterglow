@@ -255,4 +255,22 @@ describe('gardens', () => {
     expect(app.queryByText('Kandi from @sam')).toBeNull();
     expect(app.getByText('Wear it on my profile')).toBeTruthy();
   });
+
+  it('visitors see the cards someone pinned, and a tap opens one', async () => {
+    await person('maya', 'Maya Lin');
+    await s().publishGarden([
+      { k: 's', kind: 'plur', stage: 3 },
+      { k: 'a', artistId: 'subtronics', name: 'SUBTRONICS', tier: 2, pin: 1 },
+      { k: 'a', artistId: 'hedex', name: 'HEDEX', tier: 1 },
+    ]);
+    await s().signOut();
+    await person('sam', 'Sam');
+    const app = await renderApp('/u/maya');
+    await flush();
+    expect(app.getByText('Showcase')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('The Watcher, from SUBTRONICS. Opens the card.'));
+    await flush();
+    expect(app.getByText('@maya’s collectible')).toBeTruthy();
+    expect(app.getByText('Silver')).toBeTruthy();
+  });
 });

@@ -37,6 +37,7 @@ export const ACCOUNT_KEYS = [
   'secrets.v1',
   'badgeClaims.v1',
   'gardenLayout.v1',
+  'showcase.v1',
   'sprouts.v1',
   'kandi.v1',
   'finds.v1',
