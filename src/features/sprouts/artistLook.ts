@@ -86,7 +86,9 @@ export type Creature =
   | 'gorgon'
   | 'nightmare'
   | 'gramophone'
-  | 'trancestar';
+  | 'trancestar'
+  | 'hedgehog'
+  | 'door';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -143,6 +145,8 @@ const SIGNATURES: Record<string, Spec> = {
   nghtmre: { creature: 'nightmare', palette: P('#FFF3C8', '#3A3458', '#14102A', '#5A3AA8', '#2A1A5A', '#FFE58A', '#8A6AFF'), name: t('The Night mare'), theme: t('A dark horse with a mane of stars, under a crescent moon') },
   vintageculture: { creature: 'gramophone', palette: P('#FFF4D8', '#D8A85A', '#5A3A1A', '#7A4A2A', '#3A2214', '#FFD86B', '#FFC861'), name: t('The Gramophone'), theme: t('An old gramophone playing a brand new record') },
   arminvanbuuren: { creature: 'trancestar', palette: P('#FFFFFF', '#8AC8FF', '#2A4AA8', '#B99CFF', '#3A2A8A', '#FFE58A', '#7FB8FF'), name: t('The Trance star'), theme: t('A bright star with rings of light pulsing out from it') },
+  hedex: { creature: 'hedgehog', palette: P('#FFF0E0', '#E8C8A8', '#3A2A3A', '#5AE8FF', '#2A7AA8', '#B6FF5A', '#5AE8FF'), name: t('The Hedgehog'), theme: t('A hedgehog curled up tight, its spikes lit in neon') },
+  knock2: { creature: 'door', palette: P('#FFF4E0', '#C86A3A', '#4A2214', '#8A3A1E', '#3A1A0E', '#FFD24A', '#FFB86B'), name: t('The Door'), theme: t('Knock knock: a little door with the party behind it') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },

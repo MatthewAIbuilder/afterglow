@@ -4004,6 +4004,100 @@ const trancestar: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** HEDEX: a hedgehog curled up tight, its spikes lit in neon, bouncing to drum and bass. */
+const hedgehog: Draw = (p, f) => {
+  // Spikes round its back, from the left side over the top to the right.
+  const spikes = Array.from({ length: 13 }, (_, i) => {
+    const a = Math.PI * (1.05 + (i / 12) * 0.95);
+    return { a, x: 50 + Math.cos(a) * 30, y: 62 + Math.sin(a) * 28, tx: 50 + Math.cos(a) * 44, ty: 62 + Math.sin(a) * 42 };
+  });
+  return {
+    ground: [50, 90, 30],
+    back: <Ellipse cx={50} cy={56} rx={44} ry={36} fill={p.glow} opacity={0.14} />,
+    body: (
+      <G>
+        {spikes.map((s, i) => {
+          const w = 0.12;
+          const l = { x: 50 + Math.cos(s.a - w) * 28, y: 62 + Math.sin(s.a - w) * 26 };
+          const r = { x: 50 + Math.cos(s.a + w) * 28, y: 62 + Math.sin(s.a + w) * 26 };
+          return <Path key={i} d={`M${r1(l.x)} ${r1(l.y)} L${r1(s.tx)} ${r1(s.ty)} L${r1(r.x)} ${r1(r.y)}Z`} fill={i % 2 ? p.alt : p.altDeep} />;
+        })}
+        {/* Its round body and pale face. */}
+        <V d="M20 66 C20 44 34 34 50 34 C66 34 80 44 80 66 C80 80 68 88 50 88 C32 88 20 80 20 66Z" fill={p.deep} f={f} />
+        <V d="M30 70 C30 56 40 48 50 48 C60 48 70 56 70 70 C70 80 62 86 50 86 C38 86 30 80 30 70Z" fill={p.mid} f={f} gloss={[40, 56, 6, 3, -10]} />
+        {/* Nose and grin. */}
+        <Ellipse cx={50} cy={70} rx={3} ry={2.2} fill={p.deep} />
+        <Path d="M45 75 Q50 79 55 75" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+        <Ellipse cx={38} cy={72} rx={3.4} ry={2} fill="#FF8AB8" opacity={0.4} />
+        <Ellipse cx={62} cy={72} rx={3.4} ry={2} fill="#FF8AB8" opacity={0.4} />
+      </G>
+    ),
+    eyes: {
+      box: [38, 58, 24, 8],
+      el: (
+        <G>
+          <VEye x={42.5} y={62} r={3} f={f} />
+          <VEye x={57.5} y={62} r={3} f={f} />
+        </G>
+      ),
+    },
+    flicker: (
+      <G>
+        {spikes
+          .filter((_, i) => i % 3 === 1)
+          .map((s, i) => (
+            <Glow key={i} x={r1(s.tx)} y={r1(s.ty)} r={1.4} color={i % 2 ? p.accent : p.glow} />
+          ))}
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
+/** KNOCK2: a little door with a face, a knocker for a nose, light spilling out from round its edges. */
+const door: Draw = (p, f) => ({
+  ground: [50, 92, 24],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={44} ry={40} fill={p.glow} opacity={0.14} />
+      {/* Light spilling round the frame. */}
+      <Path d="M26 90 L26 30 Q26 10 50 10 Q74 10 74 30 L74 90Z" fill={p.accent} opacity={0.35} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The frame and the door. */}
+      <V d="M28 90 L28 32 Q28 14 50 14 Q72 14 72 32 L72 90Z" fill={p.alt} f={f} />
+      <V d="M32 90 L32 33 Q32 18 50 18 Q68 18 68 33 L68 90Z" fill={p.mid} f={f} gloss={[38, 26, 4, 10, 0]} />
+      {/* Panels. */}
+      <Path d="M38 64 L62 64 L62 84 L38 84Z" stroke={p.deep} strokeWidth={1.2} fill="none" opacity={0.6} />
+      <Path d="M38 30 Q50 24 62 30 L62 40 L38 40Z" stroke={p.deep} strokeWidth={1.2} fill="none" opacity={0.6} />
+      {/* The knocker, for a nose, and a handle. */}
+      <Circle cx={50} cy={53} r={4.4} fill="none" stroke={p.accent} strokeWidth={1.8} />
+      <Circle cx={50} cy={48.6} r={1.6} fill={p.accent} />
+      <Circle cx={63} cy={70} r={1.8} fill={p.accent} />
+      <Path d="M44 60 Q50 63 56 60" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [38, 42, 24, 8],
+    el: (
+      <G>
+        <VEye x={42.5} y={46} r={3} f={f} />
+        <VEye x={57.5} y={46} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Knock, knock. */}
+      <Path d="M80 40 l6 -4 M82 48 l7 0 M80 56 l6 4" stroke={p.accent} strokeWidth={1.6} strokeLinecap="round" />
+      <Path d="M20 40 l-6 -4 M18 48 l-7 0 M20 56 l-6 4" stroke={p.accent} strokeWidth={1.6} strokeLinecap="round" />
+    </G>
+  ),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -4080,4 +4174,6 @@ export const DRAW: Record<Creature, Draw> = {
   nightmare,
   gramophone,
   trancestar,
+  hedgehog,
+  door,
 };
