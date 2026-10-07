@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, Easing, runOnJS, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { useNow } from '../../lib/useNow';
+import { skyAt } from './sky';
 import { t, tn } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { useGardenLayout } from '../../state/gardenLayout';
@@ -68,6 +70,8 @@ const lagSpring = { damping: 16, stiffness: 150, mass: 0.6 };
 export function GardenScene({ residents, account, width, focused, ready, onOpen, onCarrying, visiting = false, decor = [] }: Props) {
   const reduce = useReducedMotion();
   const running = focused && !reduce;
+  // The sky follows the hour (checked every ten minutes).
+  const now = useNow(600_000);
   // One clock for the whole garden.
   const clock = useSharedValue(0);
   useEffect(() => {
@@ -142,7 +146,7 @@ export function GardenScene({ residents, account, width, focused, ready, onOpen,
 
   return (
     <View style={{ width, height: m.height }} accessible={false}>
-      <Ground decor={decor} width={width} m={m} pools={residents.map((r) => ({ ...spotOf(r.id), gold: 'artist' in r.look }))} clock={clock} running={running} label={label} />
+      <Ground hour={now.getHours()} decor={decor} width={width} m={m} pools={residents.map((r) => ({ ...spotOf(r.id), gold: 'artist' in r.look }))} clock={clock} running={running} label={label} />
       {residents.map((r) => {
         const spot = spotOf(r.id);
         // The nearest neighbour in its row, to glance at now and then.
@@ -376,8 +380,9 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
 }
 
 /** The meadow: a rolling horizon, far stars, a soft glow where each resident stands, grass, and fireflies drifting about. */
-function Ground({ decor, width, m, pools, clock, running, label }: { decor: readonly DecorId[]; width: number; m: Meadow; pools: { x: number; y: number; gold: boolean }[]; clock: SharedValue<number>; running: boolean; label: string }) {
+function Ground({ hour, decor, width, m, pools, clock, running, label }: { hour: number; decor: readonly DecorId[]; width: number; m: Meadow; pools: { x: number; y: number; gold: boolean }[]; clock: SharedValue<number>; running: boolean; label: string }) {
   const h = m.height;
+  const sky = skyAt(hour, SPROUT_GLOW[1]);
   const hz = HORIZON;
   const far = mix(color.night, '#3AA86A', 0.16);
   const near = mix(color.night, SPROUT_DEEP, 0.22);
@@ -405,9 +410,13 @@ function Ground({ decor, width, m, pools, clock, running, label }: { decor: read
             <Stop offset="1" stopColor={deep} stopOpacity={0} />
           </LinearGradient>
           <RadialGradient id="garden-dawn" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={SPROUT_GLOW[1]} stopOpacity={0.22} />
-            <Stop offset="1" stopColor={SPROUT_GLOW[1]} stopOpacity={0} />
+            <Stop offset="0" stopColor={sky.glow} stopOpacity={sky.glowOpacity} />
+            <Stop offset="1" stopColor={sky.glow} stopOpacity={0} />
           </RadialGradient>
+          <LinearGradient id="garden-wash" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={sky.wash ?? sky.glow} stopOpacity={sky.washOpacity} />
+            <Stop offset="1" stopColor={sky.wash ?? sky.glow} stopOpacity={0} />
+          </LinearGradient>
           <RadialGradient id="garden-pool" cx="50%" cy="50%" r="50%">
             <Stop offset="0" stopColor={SPROUT_GREEN} stopOpacity={0.2} />
             <Stop offset="1" stopColor={SPROUT_GREEN} stopOpacity={0} />
@@ -417,12 +426,13 @@ function Ground({ decor, width, m, pools, clock, running, label }: { decor: read
             <Stop offset="1" stopColor="#FFD58A" stopOpacity={0} />
           </RadialGradient>
         </Defs>
+        {sky.washOpacity ? <Rect x={0} y={0} width={width} height={hz + 30} fill="url(#garden-wash)" /> : null}
         {stars.map((s, i) => (
-          <Circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#F3F0FF" opacity={s.o} />
+          <Circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#F3F0FF" opacity={s.o * sky.stars} />
         ))}
         <DecorBehind decor={decor} width={width} hz={hz} />
         {/* A glow low on the horizon, like the last of the light behind the hills. */}
-        <Ellipse cx={width * 0.5} cy={hz + 20} rx={width * 0.55} ry={46} fill="url(#garden-dawn)" />
+        <Ellipse cx={width * 0.5} cy={hz + 20} rx={width * (sky.phase === 'night' ? 0.55 : 0.7)} ry={sky.phase === 'night' ? 46 : 64} fill="url(#garden-dawn)" />
         <Path d={farHill} fill="url(#garden-far)" />
         <Path d={nearHill} fill="url(#garden-near)" />
         <Path d={nearTop} stroke={SPROUT_GLOW[1]} strokeWidth={9} opacity={0.07} fill="none" />
