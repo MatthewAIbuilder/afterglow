@@ -10,6 +10,7 @@ import type { Artist } from '../data/models';
 import { SPROUT_GREEN } from '../features/sprouts/look';
 import { claimLine } from '../features/sprouts/outbox';
 import { Sprout } from '../features/sprouts/Sprout';
+import { SproutCard } from '../features/sprouts/CollectibleCard';
 import { SproutOf } from '../features/sprouts/SproutOf';
 import { ArtistSproutSheet, ArtistSproutsSection, type GivenArtistSprout } from '../features/sprouts/ArtistSproutsSection';
 import { type ArtistSprout, TIER_AT, tierLabel, toNextTier } from '../features/sprouts/artistSprouts';
@@ -369,19 +370,27 @@ function KandiSheet({ kandi: k, onClose, onRemove }: { kandi?: ReceivedKandi; on
 
 function SproutSheet({ sprout, onClose }: { sprout?: GardenView; onClose: () => void }) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const s = sprout;
   return (
     <Modal visible={!!s} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
         {s ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
-            <Sprout kind={s.shown} stage={s.stage} size={150} />
-            <Text style={styles.sheetName}>{nameOf(s)}</Text>
-            <Text style={styles.sub}>
-              {fromLine(s)} · {day(s.at)}
-            </Text>
+            {s.stage === 3 && s.shown !== 'seedling' ? (
+              // In bloom: its card.
+              <SproutCard kind={s.shown} from={fromLine(s)} line={day(s.at)} width={Math.min(250, Math.round((height - insets.top - 320) / 1.4))} />
+            ) : (
+              <>
+                <Sprout kind={s.shown} stage={s.stage} size={150} />
+                <Text style={styles.sheetName}>{nameOf(s)}</Text>
+                <Text style={styles.sub}>
+                  {fromLine(s)} · {day(s.at)}
+                </Text>
+              </>
+            )}
             {s.note ? <Text style={styles.note}>“{s.note}”</Text> : null}
-            {s.shown !== 'seedling' ? <Text style={styles.body}>{kindOf(s.shown).about}</Text> : null}
+            {s.shown !== 'seedling' && s.stage < 3 ? <Text style={styles.body}>{kindOf(s.shown).about}</Text> : null}
             {s.kind === 'seedling' && s.growth && s.stage < 3 ? (
               <>
                 <View style={[styles.bar, styles.barWide]}>

@@ -7,6 +7,8 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { type ArtistLook, foldName, shinyLook, SIGNATURE_NAMES } from './artistLook';
 import { type Tier, TIER_LABEL } from './artistSprouts';
 import { Collectible, TIER_COLOR } from './Collectible';
+import { Sprout } from './Sprout';
+import { kindOf, SPROUT_KINDS, type SproutKind } from './sprouts';
 
 /** Card frames by level: a soft night edge, then bronze, silver and gold foil. */
 const FRAME: Record<Tier, readonly [string, string, string]> = {
@@ -129,6 +131,7 @@ const styles = StyleSheet.create({
   foot: { marginTop: 'auto', alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: space.xs },
   footText: { ...type.caption, color: color.moonDim, flex: 1 },
   mark: { ...type.caption },
+  how: { textTransform: 'none', letterSpacing: 0 },
   sweep: { position: 'absolute', left: 0, width: 90 },
   back: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   backRing: { position: 'absolute', borderWidth: 2, borderColor: 'rgba(185,156,255,0.55)' },
@@ -171,4 +174,49 @@ export function CardReveal(props: Parameters<typeof CollectibleCard>[0]) {
   // Squeeze to nothing at the halfway mark, then open on the other side.
   const style = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(0.02, Math.abs(1 - turn.get() * 2)) }] }));
   return <Animated.View style={style}>{front ? <CollectibleCard {...props} /> : <CardBack width={props.width} />}</Animated.View>;
+}
+
+/**
+ * A sprout as a card, in its kind's colours: its number among the kinds, the
+ * sprout in bloom, its name, who it's from and the line about it. Shown
+ * for a sprout in bloom (one still growing shows how it's growing instead).
+ */
+export function SproutCard({ kind, from, line, width = 260 }: { kind: SproutKind; from?: string; line?: string; width?: number }) {
+  const height = Math.round(width * 1.4);
+  const k = width / 280;
+  const spec = kindOf(kind);
+  const n = SPROUT_KINDS.findIndex((x) => x.id === kind) + 1;
+  const [light, deep] = spec.body;
+  return (
+    <View style={{ width, height }} accessible accessibilityRole="image" accessibilityLabel={[t('Card {n} of {of}', { n, of: SPROUT_KINDS.length }), spec.name, from].filter(Boolean).join(', ')}>
+      <LinearGradient colors={[light, spec.accent, deep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.frame, { borderRadius: width * 0.08 }]}>
+        <View style={[styles.inner, { borderRadius: width * 0.07 }]}>
+          <LinearGradient colors={['#0F2A1E', color.night]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+          <View style={styles.top}>
+            <Text style={[styles.num, { color: light }]}>{`No. ${String(n).padStart(2, '0')}`}</Text>
+            <Text style={[styles.badge, { color: spec.accent, borderColor: spec.accent }]}>{t('Sprout')}</Text>
+          </View>
+          <View style={[styles.window, { borderColor: `${spec.accent}55` }]}>
+            <LinearGradient colors={[`${spec.accent}40`, `${light}1F`, 'rgba(0,0,0,0)']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+            <Sprout kind={kind} stage={3} size={Math.round(width * 0.56)} />
+          </View>
+          <Text style={[styles.name, { color: spec.accent, fontSize: 22 * k, lineHeight: 27 * k }]} numberOfLines={1} adjustsFontSizeToFit>
+            {spec.name}
+          </Text>
+          <Text style={[styles.artist, styles.how, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={1} adjustsFontSizeToFit>
+            {spec.how}
+          </Text>
+          <Text style={[styles.flavour, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={2}>
+            {spec.about}
+          </Text>
+          <View style={[styles.foot, { borderTopColor: `${spec.accent}33` }]}>
+            <Text style={[styles.footText, { fontSize: 11 * k, lineHeight: 15 * k }]} numberOfLines={1}>
+              {[from, line].filter(Boolean).join(' · ') || 'Afterglow'}
+            </Text>
+            <Text style={[styles.mark, { color: spec.accent }]}>✿</Text>
+          </View>
+        </View>
+      </LinearGradient>
+    </View>
+  );
 }
