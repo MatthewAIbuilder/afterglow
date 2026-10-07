@@ -62,7 +62,7 @@ import { useToes } from '../toes/useToes';
 import { useCommentCount } from '../social/useCommentCount';
 import { commentCaption } from '../social/copy';
 import { t } from '../../i18n';
-import { shownClipTitle } from '../community/clips';
+import { crowdPlace, shownClipTitle } from '../community/clips';
 import { OrgWatermark } from '../organizers/OrgWatermark';
 
 type Props = {
@@ -333,14 +333,17 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const players = [artist, ...partnersOf(clip).map((id) => catalog.artist(id)).filter((a): a is Artist => !!a && a.id !== artist.id)];
   const shown = together(players) ?? artist;
   const pct = Math.round(Math.max(...players.map((a) => taste[a.id] ?? 0)) * 100);
-  const title = shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title);
   // Where the artist plays next (the festival you're discovering, or one you're going to), as a ticket;
   // without one, the clip's own festival in plain words.
   const ticket = festival ? ticketLine(festival, artist.id, isGoing(festival.id), today) : undefined;
   const context = ticket ? festival : undefined;
   const own = catalog.festival(clip.festivalId);
   const ownSet = own && setFor(own, artist.id);
-  const meta = own && ownSet ? describeSet(own, ownSet) : (own?.name ?? '');
+  // A crowd video's title is just where it was filmed (no "From the crowd" or "Throwback"), so no line repeats it.
+  const title = community
+    ? crowdPlace(clip.title, own?.name)
+    : shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title);
+  const meta = community ? '' : own && ownSet ? describeSet(own, ownSet) : (own?.name ?? '');
 
   const openArtist = (id: string) => {
     haptic.select();
@@ -529,9 +532,11 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       <>
         {upNextPill}
         {artistButton}
-        <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
-          {title}
-        </Text>
+        {title ? (
+          <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
+            {title}
+          </Text>
+        ) : null}
         {community ? null : metaLine(!!tall)}
         {community ? (
           // Who filmed it is their photo on the rail; the menu sits beside where they play.
@@ -738,7 +743,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {upNextPill}
         {artistButton}
-        <Text style={styles.title}>{title}</Text>
+        {title ? <Text style={styles.title}>{title}</Text> : null}
         {metaLine(false)}
         {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>{t('This video isn’t available right now.')}</Text>}
         {media?.provider === 'soundcloud' && videoFailed && (

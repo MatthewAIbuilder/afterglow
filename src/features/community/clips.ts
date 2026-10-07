@@ -185,6 +185,18 @@ export function keptClips(kept: Record<string, Clip>, f: Pick<CommunityFilter, '
  * reports to support), so they're translated here, at display. Any other
  * title (a video's own) is shown as it is.
  */
+/**
+ * A crowd clip's title in Discover: just where it was filmed ("Lost Lands
+ * 2025", a show), without "From the crowd" or "Throwback". The festival's
+ * name (`festivalName`) for one filmed at a festival on Afterglow; undefined
+ * when there's no place to name. A video's own title is shown as it is.
+ */
+export function crowdPlace(title: string, festivalName: string | undefined): string | undefined {
+  if (title === 'From the crowd') return festivalName;
+  const tagged = /^(?:Throwback|From the crowd) · (.+)$/.exec(title);
+  return tagged ? tagged[1] : title;
+}
+
 export function shownClipTitle(title: string): string {
   if (title === 'From the crowd') return t('From the crowd');
   const throwback = /^Throwback · (.+)$/.exec(title);

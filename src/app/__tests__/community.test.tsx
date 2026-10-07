@@ -76,7 +76,8 @@ describe('community clips in Discover', () => {
     await mayaShares();
     const app = await openFeed();
     expect(app.getByLabelText(CREDIT)).toBeTruthy();
-    expect(app.getByText('From the crowd')).toBeTruthy();
+    // Titled just by where it was filmed: no "From the crowd" in Discover.
+    expect(app.queryByText('From the crowd')).toBeNull();
     // The clip next to the one on screen loads its player once a swipe would have settled.
     await settle(NEAR_LOAD_DELAY_MS);
     expect(app.getByTestId('video-view')).toBeTruthy();
@@ -208,7 +209,8 @@ describe('community clips in Discover', () => {
     await fireEvent.press(app.getByLabelText('Play HEDEX, From the crowd'));
     await flush();
     expect(app.getByLabelText(CREDIT)).toBeTruthy();
-    expect(app.getByText('Cyclops Cove 4')).toBeTruthy();
+    // Discover moved back to its festival (the header), and the clip is titled by it too.
+    expect(app.getAllByText('Cyclops Cove 4').length).toBeGreaterThan(1);
     // Back in the Discover that was already open, not a second copy stacked on top.
     expect(router.canGoBack()).toBe(false);
   });
