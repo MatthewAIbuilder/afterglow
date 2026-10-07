@@ -11,7 +11,7 @@ import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
 import { useCatalog } from '../state/catalog';
 import { useMusic } from '../state/music';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
@@ -42,7 +42,7 @@ export default function MusicScreen() {
     <View style={styles.root}>
       <NightSky />
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }}
+        contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.pad}>

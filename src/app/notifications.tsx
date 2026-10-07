@@ -12,7 +12,7 @@ import { BellIcon, ChevronIcon } from '../components/TabIcons';
 import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
 import { useSocial } from '../state/social';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
 import { EmptyState } from '../components/EmptyState';
@@ -76,7 +76,7 @@ export default function NotificationsScreen() {
     <View style={styles.root}>
       <NightSky />
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }}
+        contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.pad}>

@@ -9,7 +9,7 @@ import { Sprout } from '../features/sprouts/Sprout';
 import { WHATS_NEW } from '../features/whatsNew/whatsNew';
 import { QUEST_GOLD, SparkIcon } from '../features/quests/QuestRing';
 import { haptic } from '../lib/haptics';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
 import { BottomFade } from '../components/BottomFade';
@@ -41,7 +41,7 @@ export default function WhatsNewScreen() {
   return (
     <View style={styles.root}>
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + 120, paddingHorizontal: space.xl }}>
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + 120, paddingHorizontal: space.xl }]}>
         <Text style={styles.kicker}>{t('New in Afterglow')}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {t('Fresh tonight')}
@@ -103,6 +103,6 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: color.moonDim, marginTop: 2 },
   try: { ...type.label, color: color.glow, marginTop: space.sm },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md },
-  done: { paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow, alignItems: 'center' },
+  done: { alignSelf: 'center', width: '100%', maxWidth: 600, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow, alignItems: 'center' },
   doneText: { ...type.headline, color: color.night },
 });

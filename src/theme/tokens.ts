@@ -41,6 +41,8 @@ export const nightA = (alpha: number) => rgbaOf(palette.night, alpha);
 export const raisedA = (alpha: number) => rgbaOf(palette.nightRaised, alpha);
 /** A solid accent button as tinted glass: light caught along its top edge, a soft glow around the rest. */
 export const accentEdge = { borderWidth: 1, borderColor: glowA(0.35), borderTopColor: 'rgba(255,255,255,0.3)' };
+/** A page's content on a wide screen (the website): a centred column, like Settings. Phones are narrower, so it changes nothing there. */
+export const pageColumn = { alignSelf: 'center', width: '100%', maxWidth: 640 } as const;
 /** A fixed colour token (amber, coral) at an opacity. */
 export const tintA = (hex: string, alpha: number) => rgbaOf(hex, alpha);
 

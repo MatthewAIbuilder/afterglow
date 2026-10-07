@@ -20,7 +20,7 @@ import { setQuestReminder, useQuestReminder } from '../state/questReminder';
 import { markQuestTipDone } from '../state/questTip';
 import { secretsLine } from '../features/secrets/secrets';
 import { t, tc } from '../i18n';
-import { color, motion, radius, space, type } from '../theme/tokens';
+import { color, motion, radius, space, type, pageColumn } from '../theme/tokens';
 
 /** Taps on the level ring that wake the secret. */
 const SECRET_TAPS = 7;
@@ -55,7 +55,7 @@ export default function QuestsScreen() {
     <View style={styles.root}>
       <PageTitle title={t('Quests')} />
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]} showsVerticalScrollIndicator={false}>
         {/* Hidden (its room kept) until your level is known, so it never shows a stand-in. */}
         <View style={!q.ready && styles.waiting} accessibilityElementsHidden={!q.ready} importantForAccessibility={q.ready ? 'auto' : 'no-hide-descendants'}>
           <LevelHero level={q.level.level} name={q.level.name} progress={q.level.progress} />

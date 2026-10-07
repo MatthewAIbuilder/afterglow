@@ -56,7 +56,7 @@ import { localDay, showDateBlock, showLabel, showTitle, showWhere, SHOWS_SHOWN, 
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, nightA, pageColumn } from '../../theme/tokens';
 import { dayWord, t, tc } from '../../i18n';
 
 const HERO = 132;
@@ -172,7 +172,7 @@ export default function ArtistScreen() {
         </View>
       ) : null}
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom + space.xxxl }}
+        contentContainerStyle={[pageColumn, { paddingTop: insets.top + 56, paddingBottom: insets.bottom + space.xxxl }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>

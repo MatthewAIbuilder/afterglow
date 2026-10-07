@@ -8,7 +8,7 @@ import { SECRET_GLOW, SECRETS, secretsLine } from '../features/secrets/secrets';
 import { haptic } from '../lib/haptics';
 import { revealSecret, useSecrets } from '../state/secrets';
 import { months, t } from '../i18n';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 
 const foundOn = (at: number) => {
   const d = new Date(at);
@@ -27,7 +27,7 @@ export default function SecretsScreen() {
     <View style={styles.root}>
       <PageTitle title={t('Secrets')} />
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
           <Text style={styles.title} accessibilityRole="header">
             {t('Secrets')}

@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   matchRow: { alignSelf: 'stretch', maxWidth: 600, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.sm },
   matchText: { ...type.body, color: color.moon },
   lockNote: { ...type.caption, color: '#FFD66B', marginBottom: space.sm },
-  primary: { alignSelf: 'stretch', maxWidth: 600, height: 50, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  primary: { alignSelf: 'center', width: '100%', maxWidth: 600, height: 50, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   primaryText: { ...type.headline, color: color.moon },
   dim: { opacity: 0.5 },
   pressed: { opacity: 0.75 },
