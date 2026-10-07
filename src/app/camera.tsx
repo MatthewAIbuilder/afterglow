@@ -21,9 +21,10 @@ import { useGoing } from '../state/going';
 import { useMemories } from '../state/memories';
 import { useSocial } from '../state/social';
 import { OrgWatermark } from '../features/organizers/OrgWatermark';
-import { color, radius, space, type, glowA, raisedA, accentEdge } from '../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
+import { GlassFill } from '../components/LiquidGlass';
 
 /**
  * The camera: film a moment at a festival. Reached by swiping right on
@@ -198,6 +199,7 @@ function Camera() {
             <View style={styles.spacer} />
           )}
           <View style={styles.chip} accessibilityRole="text">
+            <GlassFill radius={radius.pill} tint={0.45} />
             {recording ? (
               <View style={styles.timerRow} accessibilityLiveRegion="polite" accessibilityLabel={t('Recording, {time}', { time: elapsedLabel(elapsed) })}>
                 <View style={styles.recDot} />
@@ -260,7 +262,10 @@ function Camera() {
               hitSlop={10}
               style={({ pressed }) => [styles.side, recording && styles.hidden, pressed && styles.pressed]}
             >
-              <PhotosIcon color={color.moon} size={22} />
+              <GlassFill radius={radius.md} tint={0.5} interactive />
+              <View pointerEvents="none">
+                <PhotosIcon color={color.moon} size={22} />
+              </View>
             </Pressable>
             <RecordButton
               recording={recording}
@@ -283,7 +288,10 @@ function Camera() {
               hitSlop={10}
               style={({ pressed }) => [styles.side, (recording || !allowed) && styles.hidden, pressed && styles.pressed]}
             >
-              <FlipIcon color={color.moon} size={22} />
+              <GlassFill radius={radius.md} tint={0.5} interactive />
+              <View pointerEvents="none">
+                <FlipIcon color={color.moon} size={22} />
+              </View>
             </Pressable>
           </View>
         </View>
@@ -341,9 +349,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.xs + 2,
     borderRadius: radius.pill,
-    backgroundColor: raisedA(0.45),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
   chipText: { ...type.label, color: color.moon },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -376,9 +381,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: raisedA(0.5),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
   hidden: { opacity: 0 },
   pressed: { opacity: 0.75, transform: [{ scale: 0.95 }] },

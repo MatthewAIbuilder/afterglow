@@ -31,7 +31,7 @@ import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
-import { color, radius, space, type, glowA, nightA, raisedA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Festival } from '../../data/types';
 import type { TasteSummary } from '../../features/taste/engine';
@@ -46,6 +46,7 @@ import { useMusic } from '../../state/music';
 import { showActionSheet, showAlert } from '../../lib/dialog';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { dayWord, t, tn } from '../../i18n';
+import { GlassFill } from '../../components/LiquidGlass';
 
 /** Where the header ends before it has been measured (it's measured on layout). */
 const HEADER_GUESS = 210;
@@ -595,6 +596,7 @@ function NewcomerNote({ scopeId, connect, bottom }: { scopeId?: string; connect?
   );
   return (
     <View style={[styles.sparse, styles.slim, { bottom }]} pointerEvents="box-none" accessible={false}>
+      <GlassFill radius={radius.lg} tint={0.72} deep />
       <Text style={styles.slimTitle} accessibilityLabel={connect ? t('Make this map yours. Pick a few artists you love and it rearranges around you. {connect}', { connect }) : t('Make this map yours. Pick a few artists you love and it rearranges around you.')}>
         {t('Make this map yours')}
       </Text>
@@ -627,6 +629,7 @@ function SearchNote({ search, query, extra, bottom }: { search: MapSearch; query
           : tn(n, '{n} artist. Tap one to see more.', '{n} artists. Tap one to see more.');
   return (
     <View style={[styles.sparse, { bottom }]} pointerEvents="box-none" accessibilityLiveRegion="polite">
+      <GlassFill radius={radius.lg} tint={0.82} deep />
       <Text style={styles.sparseText}>{text}</Text>
       {watchable && tag && n > 0 ? (
         <Pressable
@@ -653,6 +656,7 @@ function SparseNote({ festival, shown, bottom }: { festival: Festival; shown: nu
   const total = festival.lineup.filter((a) => catalog.artist(a)).length;
   return (
     <View style={[styles.sparse, { bottom }]} pointerEvents="box-none">
+      <GlassFill radius={radius.lg} tint={0.82} deep />
       <Text style={styles.sparseText}>
         {shown === 0
           ? t('None of {festival}’s {total} artists are on your map yet.', { festival: festival.name, total })
@@ -682,6 +686,7 @@ function SparseNote({ festival, shown, bottom }: { festival: Festival; shown: nu
 function MusicNoteView({ note, bottom }: { note: MusicNote; bottom: number }) {
   return (
     <View style={[styles.sparse, { bottom }]} pointerEvents="box-none" accessibilityLiveRegion="polite">
+      <GlassFill radius={radius.lg} tint={0.82} deep />
       <Text style={styles.sparseText}>{note.text}</Text>
       {note.action && (
         <Pressable
@@ -828,13 +833,10 @@ const styles = StyleSheet.create({
     padding: space.lg,
     gap: space.md,
     borderRadius: radius.lg,
-    backgroundColor: raisedA(0.82),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
   sparseText: { ...type.body, color: color.moonDim },
   // The newcomer note: a slim strip, so the map stays the star.
-  slim: { paddingVertical: space.md, paddingHorizontal: space.md, gap: space.sm, backgroundColor: raisedA(0.72) },
+  slim: { paddingVertical: space.md, paddingHorizontal: space.md, gap: space.sm },
   slimTitle: { ...type.label, color: color.moonDim, paddingHorizontal: space.xs },
   slimText: { ...type.caption, color: color.moonDim, paddingHorizontal: space.xs },
   sparseButton: {

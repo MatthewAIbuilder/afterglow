@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import Animated, { FadeIn, FadeOut, useReducedMotion } from 'react-native-reanimated';
-import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
+import { color, radius, space, type } from '../../theme/tokens';
 import { upNextA11y, upNextLabel } from './autoplay';
 import { t } from '../../i18n';
+import { GlassFill } from '../../components/LiquidGlass';
 
 /** "Next clip in 3 · Stay": shown under a clip you've watched to the end, before the feed moves on. Tap to stay. */
 export function UpNextPill({ left, onStay }: { left: number; onStay: () => void }) {
@@ -17,6 +18,7 @@ export function UpNextPill({ left, onStay }: { left: number; onStay: () => void 
         hitSlop={8}
         style={({ pressed }) => [styles.pill, pressed && { opacity: 0.75 }]}
       >
+        <GlassFill radius={radius.pill} tint={0.45} />
         <Text style={styles.text}>
           {upNextLabel(left)}
           <Text style={styles.stay}>{`   ${t('Stay')}`}</Text>
@@ -32,9 +34,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.xs + 2,
     borderRadius: radius.pill,
-    backgroundColor: nightA(0.55),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glowA(0.45),
   },
   text: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   stay: { color: color.glow, fontWeight: '600' },
