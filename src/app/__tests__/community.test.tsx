@@ -90,16 +90,29 @@ describe('community clips in Discover', () => {
     const app = await openFeed();
     await fireEvent.press(app.getByLabelText(CREDIT));
     await flush();
+    // Their profile opens over the feed.
+    expect(app.queryByTestId('filmer-face')).toBeNull();
     expect(app.getByText('@maya')).toBeTruthy();
   });
 
-  it('who filmed it is their photo on the rail, with their glow level, not an @ line', async () => {
+  it('who filmed it is their photo on the rail with their @ under it, and no glow level', async () => {
     await mayaShares('signed-in', 7);
     const app = await openFeed();
     expect(app.getByTestId('filmer-face')).toBeTruthy();
     expect(app.queryByText('Filmed by @maya')).toBeNull();
-    expect(app.getByText('7')).toBeTruthy();
-    expect(app.getByLabelText(`${CREDIT} Glow level 7`)).toBeTruthy();
+    expect(app.getByText('@maya')).toBeTruthy();
+    expect(app.queryByText('7')).toBeNull();
+    expect(app.getByLabelText(CREDIT)).toBeTruthy();
+  });
+
+  it('where it was filmed comes first, and opens every video filmed there', async () => {
+    await mayaShares();
+    const app = await openFeed();
+    await fireEvent.press(app.getByLabelText('Cyclops Cove 4. Opens every video filmed there.'));
+    await flush();
+    expect(app.getByText('VIDEOS FROM THE CROWD')).toBeTruthy();
+    expect(app.getByLabelText('HEDEX, filmed by @maya, Friday')).toBeTruthy();
+    expect(app.getByText('Festival page')).toBeTruthy();
   });
 
   it('every clip shows where the artist plays next as a ticket to the festival', async () => {

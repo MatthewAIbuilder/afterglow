@@ -39,6 +39,7 @@ import NotificationsScreen from '../notifications';
 import PeopleScreen from '../people';
 import FollowsScreen from '../follows/[handle]';
 import LikesScreen from '../likes/[id]';
+import PlaceVideosScreen from '../videos/[id]';
 import CommentsScreen from '../comments/[id]';
 import GoingScreen from '../going/[id]';
 import CrewScreen from '../crew/[id]';
@@ -172,6 +173,7 @@ export const APP_ROUTES = {
   'legal/[doc]': LegalScreen,
   'follows/[handle]': FollowsScreen,
   'likes/[id]': LikesScreen,
+  'videos/[id]': PlaceVideosScreen,
   'comments/[id]': CommentsScreen,
   'going/[id]': GoingScreen,
   'crew/[id]': CrewScreen,

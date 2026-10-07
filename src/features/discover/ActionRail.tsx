@@ -9,7 +9,6 @@ import { t } from '../../i18n';
 import { StandingAvatar } from '../standing/StandingAvatar';
 import { ringOf } from '../standing/standing';
 import { useStanding } from '../standing/useStanding';
-import { LEVEL_SHOWN_FROM } from '../quests/daily';
 import { usePersonFace } from '../social/usePersonFace';
 
 type Props = {
@@ -20,7 +19,7 @@ type Props = {
   onSave?: () => void;
   /** Not for me: you didn't like it (counts against the artist and sounds like theirs), and the feed moves on. */
   onSkip: () => void;
-  /** Who filmed a crowd video: their photo first (with their ring and glow level), opening their profile. */
+  /** Who filmed a crowd video: their photo first (with their ring) and their @, opening their profile. */
   filmer?: Filmer;
   /** The speech bubble: opens the clip's comments; `caption` is the count (or the word when there are none). */
   comments?: { caption: string; label: string; onPress: () => void };
@@ -58,15 +57,14 @@ const FACE = 44;
 
 /**
  * The person who filmed it, like TikTok: their photo above the buttons, with
- * their ring (founder, artist, team, partner) and their glow level when they
- * show it. Tapping opens their profile. Their first letter until the photo
- * is read (or when signed out).
+ * their ring (founder, artist, team, partner) and their @ under it, like the
+ * other buttons' words. Tapping opens their profile. Their first letter until
+ * the photo is read (or when signed out).
  */
 function FilmerButton({ filmer }: { filmer: Filmer }) {
   const face = usePersonFace(filmer.uid);
   const standing = useStanding(filmer.uid);
   const ringed = !!ringOf(standing);
-  const level = standing?.level && standing.level >= LEVEL_SHOWN_FROM ? standing.level : undefined;
   const s = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: s.get() }] }));
   return (
@@ -75,7 +73,7 @@ function FilmerButton({ filmer }: { filmer: Filmer }) {
       onPressIn={() => s.set(withSpring(0.9, motion.snappy))}
       onPressOut={() => s.set(withSpring(1, motion.snappy))}
       accessibilityRole="link"
-      accessibilityLabel={level ? `${filmer.label} ${t('Glow level {level}', { level })}` : filmer.label}
+      accessibilityLabel={filmer.label}
       hitSlop={8}
       style={styles.button}
       testID="filmer-face"
@@ -88,12 +86,10 @@ function FilmerButton({ filmer }: { filmer: Filmer }) {
             <StandingAvatar standing={standing} uid={filmer.uid} name={face?.name ?? filmer.handle} url={face?.avatarUrl} size={FACE - 4} />
           </View>
         )}
-        {level ? (
-          <View style={styles.level}>
-            <Text style={styles.levelText}>{level}</Text>
-          </View>
-        ) : null}
       </Animated.View>
+      <Text style={[styles.label, styles.handle]} numberOfLines={1}>
+        @{filmer.handle}
+      </Text>
     </Pressable>
   );
 }
@@ -204,19 +200,7 @@ const styles = StyleSheet.create({
   },
   face: { alignItems: 'center', justifyContent: 'center', minWidth: 50, minHeight: 50 },
   plainRing: { padding: 1.5, borderRadius: FACE / 2 + 1.5, borderWidth: 1.5, borderColor: color.moon, backgroundColor: nightA(0.35) },
-  level: {
-    position: 'absolute',
-    bottom: -7,
-    minWidth: 20,
-    height: 16,
-    paddingHorizontal: 5,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFD36E',
-    borderWidth: 1.5,
-    borderColor: color.night,
-  },
-  levelText: { fontSize: 10, lineHeight: 12, fontWeight: '800', color: color.night, fontVariant: ['tabular-nums'] },
   label: { ...type.caption, color: color.moon, marginTop: 5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 6 },
+  // A long @ is cut short rather than pushing the rail wider.
+  handle: { maxWidth: 84, textAlign: 'center' },
 });
