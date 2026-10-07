@@ -422,6 +422,8 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  '@{handle} left a glow on your garden': '@{handle} dejó un destello en tu jardín',
+  'They visited and liked what they saw. Visit theirs back?': 'Lo visitó y le gustó lo que vio. ¿Visitas el suyo?',
   'Glowing garden': 'Jardín radiante',
   'Get 10 glows on your garden': 'Recibe 10 destellos en tu jardín',
   'For ten glows left on your garden by people who visited it and liked what they saw.': 'Por diez destellos que dejaron en tu jardín personas que lo visitaron y les gustó lo que vieron.',

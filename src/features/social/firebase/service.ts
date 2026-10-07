@@ -1161,6 +1161,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const k = kandiFrom(d.id, d.data());
           if (k) items.push({ kind: 'kandi', id: k.id, from: k.from, word: k.word, createdAt: k.createdAt });
         }
+        // Glows on your garden (on their own too).
+        const glows = await getDocs(query(collection(db, 'gardens', user.uid, 'glows'), orderBy('at', 'desc'), limit(max))).catch(() => undefined);
+        for (const d of glows?.docs ?? []) {
+          const at = (d.data() as { at?: { toMillis?: () => number } }).at;
+          if (typeof at?.toMillis === 'function') items.push({ kind: 'glow', id: `${user.uid}_${d.id}`, from: d.id, createdAt: new Date(at.toMillis()).toISOString() });
+        }
         return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
       }),
 

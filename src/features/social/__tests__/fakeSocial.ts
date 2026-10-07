@@ -828,6 +828,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         ...[...likes.values()].filter((l) => l.owner === u.uid).map((l): Activity => ({ kind: 'like', id: `${l.memoryId}_${l.uid}`, from: l.uid, memoryId: l.memoryId, createdAt: l.createdAt })),
         ...[...videoTags.values()].filter((v) => v.uid === u.uid).map((v): Activity => ({ kind: 'tag', id: v.id, from: v.owner, memoryId: v.memoryId, createdAt: v.createdAt })),
         ...[...kandi.values()].filter((k) => k.to === u.uid).map((k): Activity => ({ kind: 'kandi', id: k.id, from: k.from, word: k.word, createdAt: k.createdAt })),
+        ...[...(glows.get(u.uid) ?? new Map<string, string>())].map(([from, at]): Activity => ({ kind: 'glow', id: `${u.uid}_${from}`, from, createdAt: at })),
       ];
       return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
