@@ -152,6 +152,10 @@ export type Creature =
   | 'nighttape'
   | 'vault'
   | 'tumbleweed'
+  | 'mic'
+  | 'megaphone'
+  | 'origami'
+  | 'llama'
   | 'portapotty'
   | 'refill'
   | 'charger'
@@ -287,6 +291,10 @@ const SIGNATURES: Record<string, Spec> = {
   nighttapes: { creature: 'nighttape', palette: P('#FFFFFF', '#3A2A6A', '#120A2A', '#1E2E5A', '#0A0A1A', '#FFE08A', '#8A7AE8'), name: t('The Night tape'), theme: t('A cassette with a moon on its label') },
   devault: { creature: 'vault', palette: P('#FFFFFF', '#8A94A8', '#2A3040', '#C8A84A', '#5A4A1A', '#FFD24A', '#B8C0D8'), name: t('The Vault'), theme: t('A little bank vault, its big dial turning') },
   chasewest: { creature: 'tumbleweed', palette: P('#FFF4E0', '#C89A5A', '#5A3A1A', '#E8A85A', '#3A6A3A', '#FF8A3D', '#FFB86B'), name: t('The Tumbleweed'), theme: t('A tumbleweed rolling west into the sunset') },
+  live: { creature: 'mic', palette: P('#FFFFFF', '#C8D0DC', '#1A1E28', '#3A3E4A', '#0A0A10', '#FF3A3A', '#B8C8E8'), name: t('The Mic'), theme: t('A vintage microphone, the on-air light glowing') },
+  bleachers: { creature: 'megaphone', palette: P('#FFFFFF', '#F0F0F4', '#2A2A34', '#E8323A', '#3A1A1A', '#FFD24A', '#FF8A8A'), name: t('The Megaphone'), theme: t('A cheer squad megaphone, shouting the chorus back') },
+  parispaloma: { creature: 'origami', palette: P('#FFFFFF', '#E8E4F0', '#4A4A5A', '#8A7AC8', '#2A2A3A', '#FFB84A', '#D8D0F0'), name: t('The Paper dove'), theme: t('An origami dove, folded from a page of a song') },
+  roddylima: { creature: 'llama', palette: P('#FFFFFF', '#F4E8D8', '#4A3A2A', '#E8323A', '#2A6AC8', '#FFD24A', '#F0D8B8'), name: t('The Llama'), theme: t('A fluffy llama in a woven blanket, tassels on its ears') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },

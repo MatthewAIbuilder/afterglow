@@ -6606,6 +6606,146 @@ const tumbleweed: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** LIVE: the Mic — a vintage microphone on its stand, the on-air light glowing. */
+const mic: Draw = (p, f) => ({
+  ground: [50, 92, 22],
+  back: <Ellipse cx={50} cy={48} rx={40} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The stand and its base. */}
+      <Path d="M50 66 L50 88" stroke={p.deep} strokeWidth={3} />
+      <VE cx={50} cy={89} rx={14} ry={3.4} fill={p.deep} f={f} gloss={false} />
+      <Path d="M36 50 Q36 66 50 66 Q64 66 64 50" stroke={p.alt} strokeWidth={2.4} fill="none" />
+      {/* The head: a grille in a chrome capsule. */}
+      <VE cx={50} cy={40} rx={14} ry={20} fill={p.mid} f={f} />
+      {[28, 34, 40, 46, 52].map((y) => (
+        <Path key={y} d={`M38 ${y} L62 ${y}`} stroke={p.deep} strokeWidth={0.7} opacity={0.35} />
+      ))}
+      <Path d="M36 40 L64 40" stroke={p.alt} strokeWidth={2.4} />
+      <Circle cx={42} cy={48} r={1.8} fill={p.accent} opacity={0.4} />
+      <Circle cx={58} cy={48} r={1.8} fill={p.accent} opacity={0.4} />
+      <Path d="M47 50 Q50 52.6 53 50" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [42, 29, 16, 7],
+    el: (
+      <G>
+        <VEye x={45.6} y={32.6} r={2.3} f={f} />
+        <VEye x={54.4} y={32.6} r={2.3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* On air. */}
+      <Glow x={76} y={18} r={2.4} color={p.accent} />
+      <Path d="M20 30 Q16 36 20 42 M14 26 Q8 36 14 46" stroke={p.light} strokeWidth={1.2} fill="none" strokeLinecap="round" opacity={0.6} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** BLEACHERS: the Megaphone — a cheer squad megaphone, shouting the chorus back. */
+const megaphone: Draw = (p, f) => ({
+  ground: [50, 88, 28],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={36} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The handle, the cone and its bell. */}
+      <Path d="M34 64 L30 78" stroke={p.deep} strokeWidth={5} strokeLinecap="round" />
+      <V d="M22 46 L64 30 Q70 28 72 34 L80 64 Q82 70 76 70 L30 66 Q22 64 22 56Z" fill={p.mid} f={f} gloss={[40, 40, 8, 2, -20]} />
+      <Path d="M30 50 L70 36 M32 58 L74 50" stroke={p.alt} strokeWidth={2.4} />
+      <VE cx={76} cy={50} rx={6} ry={18} fill={p.alt} f={f} turn={-14} />
+      <VE cx={76} cy={50} rx={3.6} ry={13} fill={p.deep} f={f} turn={-14} gloss={false} />
+      <Circle cx={36} cy={60} r={1.8} fill={p.accent} opacity={0.4} />
+      <Circle cx={52} cy={58} r={1.8} fill={p.accent} opacity={0.4} />
+      <Path d="M41 60 Q44 62.4 47 60" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [36, 49, 16, 7],
+    el: (
+      <G>
+        <VEye x={39.6} y={52.6} r={2.3} f={f} />
+        <VEye x={48.4} y={51.4} r={2.3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Path d="M86 34 Q90 40 86 46 M84 56 Q88 62 84 68" stroke={p.accent} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      {sparkles(p.accent, [[20, 24, 1.6]])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** PARIS PALOMA: the Paper dove — an origami dove (paloma), folded from a page of a song. */
+const origami: Draw = (p, f) => ({
+  ground: [50, 90, 20],
+  back: <Ellipse cx={50} cy={50} rx={40} ry={38} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* Wings, folded flat, then the body, tail and head. */}
+      <V d="M46 52 L26 20 L56 46Z" fill={p.light} f={f} />
+      <V d="M50 50 L78 26 L58 52Z" fill={p.mid} f={f} />
+      <V d="M18 56 L46 50 L70 52 L58 66 L36 66Z" fill={p.light} f={f} gloss={[40, 56, 8, 1.4, 0]} />
+      <V d="M18 56 L10 46 L28 54Z" fill={p.mid} f={f} />
+      <V d="M70 52 L80 44 L84 48 L78 52Z" fill={p.light} f={f} />
+      <Path d="M84 48 L88 49 L84 50Z" fill={p.accent} />
+      {/* Fold lines, and a line of a song on the paper. */}
+      <Path d="M46 52 L36 66 M56 46 L58 66" stroke={p.deep} strokeWidth={0.7} opacity={0.35} />
+      <Path d="M26 60 Q30 58 34 60 Q38 62 42 60" stroke={p.alt} strokeWidth={0.8} fill="none" opacity={0.6} />
+    </G>
+  ),
+  eyes: { box: [76, 45, 6, 5], el: <VEye x={78.6} y={47.4} r={1.5} f={f} /> },
+  flicker: sparkles(p.accent, [
+    [20, 80, 1.4],
+    [86, 76, 1.4],
+    [60, 14, 1.6],
+  ]),
+  flickerOver: true,
+});
+
+/** RODDY LIMA: the Llama — a fluffy llama in a woven blanket, tassels on its ears. */
+const llama: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* Legs, body and its blanket. */}
+      <Path d="M36 74 L36 90 M44 76 L44 90 M58 76 L58 90 M66 74 L66 90" stroke={p.mid} strokeWidth={4} strokeLinecap="round" />
+      <VE cx={52} cy={68} rx={22} ry={12} fill={p.mid} f={f} />
+      <V d="M38 58 L66 58 L64 74 L40 74Z" fill={p.alt} f={f} />
+      <Path d="M40 63 L64 63 M41 69 L63 69" stroke={p.accent} strokeWidth={1.6} />
+      {/* The long neck and head, ears with tassels. */}
+      <V d="M28 64 L26 34 Q26 28 32 28 Q38 28 38 34 L40 62Z" fill={p.mid} f={f} gloss={[30, 40, 1.6, 6, 0]} />
+      <VE cx={32} cy={30} rx={9} ry={8} fill={p.mid} f={f} />
+      <V d="M26 24 L25 14 L30 22Z" fill={p.mid} f={f} />
+      <V d="M38 24 L39 14 L34 22Z" fill={p.mid} f={f} />
+      <Circle cx={25} cy={13} r={1.8} fill={p.accent} />
+      <Circle cx={39} cy={13} r={1.8} fill={p.altDeep} />
+      <VE cx={33} cy={35} rx={4.4} ry={3} fill={p.light} f={f} gloss={false} />
+      <Path d="M31.4 36.4 Q33 37.6 34.6 36.4" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [27, 26, 12, 5],
+    el: (
+      <G>
+        <VEye x={29.4} y={28.6} r={1.7} f={f} />
+        <VEye x={35.6} y={28.6} r={1.7} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [80, 24, 1.6],
+    [86, 44, 1.3],
+  ]),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -7579,6 +7719,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  mic,
+  megaphone,
+  origami,
+  llama,
   convertible,
   nighttape,
   vault,
