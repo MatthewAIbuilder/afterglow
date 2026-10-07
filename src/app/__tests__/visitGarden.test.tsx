@@ -349,5 +349,12 @@ describe('gardens', () => {
     await flush();
     expect(garden.getByText('✦ 1 glow from visitors')).toBeTruthy();
     expect(garden.getByText('@sam')).toBeTruthy();
+    // Who glowed, with a way to visit theirs back.
+    await fireEvent.press(garden.getByText('✦ 1 glow from visitors'));
+    await flush();
+    expect(garden.getByText('Glows on your garden')).toBeTruthy();
+    await fireEvent.press(garden.getByLabelText('Visit @sam’s garden'));
+    await flush();
+    expect(garden.getByText('@sam’s garden')).toBeTruthy();
   });
 });
