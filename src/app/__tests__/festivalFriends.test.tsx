@@ -65,6 +65,26 @@ describe('Friends at a festival', () => {
     await app.unmount();
   });
 
+  it('is laid out for the night: where you are and with whom, check in, your crew once, then chats and meeting people', async () => {
+    await person('sam', 'Sam');
+    const crew = await s().createCrew('cyclops-cove-4', 'Bass crew');
+    await s().signOut();
+    await person('maya', 'Maya');
+    await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
+    const app = await renderApp('/together');
+    await flush();
+    expect(app.getByLabelText('At Cyclops Cove 4. With Sam')).toBeTruthy();
+    // The crew is its own section, named after it, with its chat as one card: never listed again under Chats.
+    expect(app.getByText('Bass crew')).toBeTruthy();
+    expect(app.getAllByLabelText(/^Crew chat\. /)).toHaveLength(1);
+    expect(app.getByText('Meet people here')).toBeTruthy();
+    // In that order down the page.
+    const order = ['Check in', 'Bass crew', 'Meet people here', 'Side quests'].map((label) => JSON.stringify(app.toJSON()).indexOf(`"${label}"`));
+    expect(order.every((at) => at >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    await app.unmount();
+  });
+
   it('without a crew there, offers to start one', async () => {
     await person('maya', 'Maya');
     const app = await renderApp('/together');
