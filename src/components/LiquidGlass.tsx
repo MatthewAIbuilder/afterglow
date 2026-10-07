@@ -44,7 +44,7 @@ export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep }: {
         glassEffectStyle="regular"
         colorScheme="dark"
         isInteractive={interactive}
-        tintColor={lit ? light(0.42) : deep ? raisedA(0.6) : hue ? tintA(hue, 0.1) : glowDeepA(0.12)}
+        tintColor={lit ? light(deep ? 0.24 : 0.42) : deep ? raisedA(0.6) : hue ? tintA(hue, 0.1) : glowDeepA(0.12)}
         style={[StyleSheet.absoluteFill, shape]}
       />
     );
@@ -52,7 +52,9 @@ export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep }: {
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, shape, styles.clip]}>
       <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: lit ? light(0.32) : raisedA(deep ? Math.max(tint, 0.6) : tint) }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: deep ? raisedA(Math.max(tint, 0.6)) : lit ? light(0.32) : raisedA(tint) }]} />
+      {/* Lit glass that holds words: the glow over a darker night, so coloured words still stand out. */}
+      {lit && deep ? <View style={[StyleSheet.absoluteFill, { backgroundColor: light(0.16) }]} /> : null}
       {/* Light caught in the glass: a sheen from the top, the theme's glow pooling at the bottom. */}
       <LinearGradient
         colors={['rgba(255,255,255,0.13)', 'rgba(255,255,255,0.02)', light(0), light(lit ? 0.2 : 0.09)]}
