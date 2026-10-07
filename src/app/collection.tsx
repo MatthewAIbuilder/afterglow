@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
@@ -22,6 +21,9 @@ import { useCatalog } from '../state/catalog';
 import { useFinds } from '../state/finds';
 import { useKandi } from '../state/kandi';
 import { useSprouts } from '../state/sprouts';
+import { useSocial } from '../state/social';
+import { StoryPreview } from '../features/sprouts/StoryShare';
+import { CollectionStory, Ring } from '../features/sprouts/CollectionStory';
 import { color, glowA, radius, space, type } from '../theme/tokens';
 
 const TILE = 68;
@@ -56,6 +58,19 @@ export default function CollectionScreen() {
     [sprouts.collected, sprouts.artists, catalog, finds, kandi.received, decor],
   );
   const pct = book.total ? Math.round((book.have / book.total) * 100) : 0;
+  const handle = useSocial().profile?.handle;
+  const [story, setStory] = useState(false);
+  // The best of what you have, for the picture: shiny first, then the highest level, hand-made before sound.
+  const best = useMemo(
+    () =>
+      [...sprouts.artists]
+        .map((a) => ({ a, artist: catalog.artist(a.artistId) }))
+        .filter((x) => !!x.artist)
+        .map((x) => ({ ...x, look: artistLook(x.artist!) }))
+        .sort((x, y) => Number(!!y.a.shiny) - Number(!!x.a.shiny) || y.a.tier - x.a.tier || Number(y.look.signature) - Number(x.look.signature) || y.a.videos - x.a.videos)
+        .slice(0, 5),
+    [sprouts.artists, catalog],
+  );
 
   const tile = (s: CollectionSet, key: string, have: boolean) => {
     switch (s.id) {
@@ -113,6 +128,19 @@ export default function CollectionScreen() {
             {book.shiny ? <Text style={styles.shiny}>{t('✦ {n} shiny', { n: book.shiny })}</Text> : null}
           </View>
         </View>
+        {book.have ? (
+          <Pressable
+            onPress={() => {
+              haptic.tap();
+              setStory(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Share your collection as a picture')}
+            style={({ pressed }) => [styles.shareBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.shareText}>{t('Share my collection')}</Text>
+          </Pressable>
+        ) : null}
         {book.sets.map((s) => (
           <View key={s.id} style={styles.set}>
             <View style={styles.setHead}>
@@ -152,28 +180,18 @@ export default function CollectionScreen() {
           </View>
         ))}
       </ScrollView>
-    </View>
-  );
-}
-
-/** The share of everything you've found, as a ring of light. */
-function Ring({ pct }: { pct: number }) {
-  const r = 42;
-  const c = 2 * Math.PI * r;
-  return (
-    <View style={styles.ring}>
-      <Svg width={104} height={104} viewBox="0 0 104 104">
-        <Defs>
-          <LinearGradient id="collRing" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#B99CFF" />
-            <Stop offset="0.5" stopColor="#FF8AD8" />
-            <Stop offset="1" stopColor="#8AFFD0" />
-          </LinearGradient>
-        </Defs>
-        <Circle cx={52} cy={52} r={r} stroke={glowA(0.15)} strokeWidth={9} fill="none" />
-        <Circle cx={52} cy={52} r={r} stroke="url(#collRing)" strokeWidth={9} fill="none" strokeLinecap="round" strokeDasharray={`${(c * pct) / 100} ${c}`} transform="rotate(-90 52 52)" />
-      </Svg>
-      <Text style={styles.pct}>{`${pct}%`}</Text>
+      {story ? (
+        <StoryPreview
+          title={t('My Afterglow collection')}
+          tint="#2A1A5E"
+          glow="#B99CFF"
+          headline={handle ? t('@{handle}’s collection', { handle }) : t('My Afterglow collection')}
+          sub={book.shiny ? t('{have} of {total} found · {n} shiny', { have: book.have, total: book.total, n: book.shiny }) : t('{have} of {total} found', { have: book.have, total: book.total })}
+          onClose={() => setStory(false)}
+        >
+          {(w) => <CollectionStory width={w} pct={pct} best={best} sets={book.sets} />}
+        </StoryPreview>
+      ) : null}
     </View>
   );
 }
@@ -187,8 +205,6 @@ const styles = StyleSheet.create({
   big: { ...type.title, color: color.moon, fontVariant: ['tabular-nums'] },
   sub: { ...type.body, color: color.moonDim },
   shiny: { ...type.label, color: '#FFE58A', marginTop: space.xs },
-  ring: { width: 104, height: 104, alignItems: 'center', justifyContent: 'center' },
-  pct: { ...type.title, color: color.moon, position: 'absolute', fontVariant: ['tabular-nums'] },
   set: { gap: space.xs },
   setHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   setTitle: { ...type.headline, color: color.moon },
@@ -205,4 +221,6 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.22 },
   locked: { opacity: 0.6 },
   pressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
+  shareBtn: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  shareText: { ...type.headline, color: color.moon },
 });

@@ -51,4 +51,31 @@ describe('your collection', () => {
     expect(app.getByText('Film these artists’ sets')).toBeTruthy();
     await app.unmount();
   });
+
+  it('goes out as a picture: the ring, a bar per set, and what you’ve found', async () => {
+    // Someone gives Maya kandi, so there's something in her collection.
+    const s = mockSocial.service;
+    const maya = (await s.signUp('maya@example.com', 'password123')).uid;
+    await s.saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    await s.signOut();
+    await s.signUp('sam@example.com', 'password123');
+    await s.saveProfile({ handle: 'sam', displayName: 'Sam', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    await s.giveKandi({ to: maya, word: 'HI', beads: 'galaxy', charm: 'alien' });
+    await s.signOut();
+    await s.signIn('maya@example.com', 'password123');
+    const app = await renderApp('/collection');
+    await flush();
+    await flush();
+    await flush();
+    await fireEvent.press(app.getByLabelText('Share your collection as a picture'));
+    await flush();
+    expect(app.getByText('@maya’s collection')).toBeTruthy();
+    expect(app.getByText(/^\d+ of \d+ found$/)).toBeTruthy();
+    const Sharing = jest.requireMock<{ shareAsync: jest.Mock }>('expo-sharing');
+    Sharing.shareAsync.mockClear();
+    await fireEvent.press(app.getByLabelText('Share this picture'));
+    await flush();
+    expect(Sharing.shareAsync).toHaveBeenCalled();
+    await app.unmount();
+  });
 });
