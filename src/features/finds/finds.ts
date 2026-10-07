@@ -136,6 +136,10 @@ export function placeLine(creature: string): string | undefined {
       return t('Take five. The music will still be there.');
     case 'shuttle':
       return t('Know which bus gets you home tonight.');
+    case 'foodtruck':
+      return t('Eat something proper. Your feet will thank you at 3am.');
+    case 'caretent':
+      return t('Friendly people are here all night if you or a friend need anything.');
     case 'silentdisco':
       return t('Try another channel. Everyone’s dancing to something different.');
     default:

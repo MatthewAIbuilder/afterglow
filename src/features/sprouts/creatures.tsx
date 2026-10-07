@@ -4410,6 +4410,96 @@ const monarch: Draw = (p, f) => {
   };
 };
 
+/** A sticker for the food court: a food truck with its hatch up, a sign on top, steam rising. */
+const foodtruck: Draw = (p, f) => ({
+  ground: [50, 92, 36],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* Wheels, the truck and its cab. */}
+      <Circle cx={30} cy={84} r={6} fill={p.altDeep} />
+      <Circle cx={70} cy={84} r={6} fill={p.altDeep} />
+      <Circle cx={30} cy={84} r={2.4} fill={p.light} opacity={0.6} />
+      <Circle cx={70} cy={84} r={2.4} fill={p.light} opacity={0.6} />
+      <V d="M14 38 Q14 34 18 34 L82 34 Q86 34 86 38 L86 80 Q86 82 84 82 L16 82 Q14 82 14 80Z" fill={p.mid} f={f} gloss={[22, 42, 3, 8, 0]} />
+      {/* The sign on the roof. */}
+      <V d="M30 22 Q30 20 32 20 L68 20 Q70 20 70 22 L70 32 Q70 34 68 34 L32 34 Q30 34 30 32Z" fill={p.alt} f={f} />
+      <Path d="M36 27 L44 27 M48 27 L64 27" stroke={p.light} strokeWidth={2} strokeLinecap="round" />
+      {/* The hatch propped up, the counter and its stripe. */}
+      <Path d="M22 44 L78 44 L82 38 L18 38Z" fill={p.deep} opacity={0.5} />
+      <Path d="M24 46 L76 46 L76 62 L24 62Z" fill={p.altDeep} />
+      <Path d="M22 62 L78 62 L78 66 L22 66Z" fill={p.light} />
+      <Path d="M14 72 L86 72" stroke={p.alt} strokeWidth={3} />
+      <Circle cx={36} cy={57} r={2.2} fill={p.accent} opacity={0.5} />
+      <Circle cx={64} cy={57} r={2.2} fill={p.accent} opacity={0.5} />
+      <Path d="M45 57 Q50 61 55 57" stroke={p.light} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [39, 47, 22, 8],
+    el: (
+      <G>
+        <VEye x={43.6} y={51} r={3} f={f} />
+        <VEye x={56.4} y={51} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Steam off the grill. */}
+      <Path d="M72 18 Q69 13 73 9.4 M78 20 Q75 15 79 12" stroke={p.light} strokeWidth={1.6} fill="none" strokeLinecap="round" opacity={0.55} />
+      {sparkles(p.accent, [
+        [14, 18, 1.8],
+        [90, 50, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker for the care tent: a soft tent with a heart on its flag, the flap open and a lantern lit. */
+const caretent: Draw = (p, f) => ({
+  ground: [50, 92, 36],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* The flag with its heart. */}
+      <Path d="M50 22 L50 8" stroke={p.deep} strokeWidth={1.4} strokeLinecap="round" />
+      <V d="M50 8 L66 11 L50 15Z" fill={p.light} f={f} />
+      <Path d="M56.6 11.8 C55 10 52.8 11.2 54 12.8 L56.6 14.6 L59.2 12.8 C60.4 11.2 58.2 10 56.6 11.8Z" fill={p.accent} />
+      {/* The tent and its open flap. */}
+      <V d="M50 20 L86 84 Q87 86 85 86 L15 86 Q13 86 14 84Z" fill={p.mid} f={f} gloss={[38, 44, 3, 12, 28]} />
+      <Path d="M50 20 L36 86 L64 86Z" fill={p.alt} />
+      <Path d="M50 20 L36 86 Q42 70 50 60Z" fill={p.light} opacity={0.18} />
+      {/* A lantern lit inside. */}
+      <Circle cx={50} cy={76} r={5} fill={p.accent} opacity={0.25} />
+      <VE cx={50} cy={76} rx={2.6} ry={3.4} fill={p.accent} f={f} gloss={false} />
+      <Circle cx={36} cy={66} r={2.2} fill={p.accent} opacity={0.4} />
+      <Circle cx={64} cy={66} r={2.2} fill={p.accent} opacity={0.4} />
+      <Path d="M46 66 Q50 69.6 54 66" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [37, 54, 26, 8],
+    el: (
+      <G>
+        <VEye x={41} y={58} r={2.8} f={f} />
+        <VEye x={59} y={58} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Glow x={50} y={76} r={1.6} color={p.accent} />
+      {sparkles(p.accent, [
+        [16, 24, 1.8],
+        [86, 30, 1.5],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -5388,6 +5478,8 @@ export const DRAW: Record<Creature, Draw> = {
   alleycat,
   monarch,
   silentdisco,
+  foodtruck,
+  caretent,
   shuttle,
   hammock,
   croissant,
