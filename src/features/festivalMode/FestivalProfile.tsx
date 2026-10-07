@@ -111,7 +111,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
                 <Button label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
                 <Button label={t('Share profile')} icon={<ShareIcon color={color.moon} size={15} />} onPress={share} />
               </View>
-              {/* Your garden (sprouts, collectibles and the gifts you were given) and giving one, still a tap away at the festival. */}
+              {/* Your garden (sprouts, collectibles and the gifts you were given; giving one is inside), still a tap away at the festival. */}
               <View style={styles.rowTight}>
                 <Button
                   label={t('My garden')}
@@ -119,7 +119,6 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
                   icon={<Sprout kind="seedling" stage={3} size={22} still />}
                   onPress={() => router.push('/garden')}
                 />
-                <Button label={t('Give a sprout')} icon={<Sprout kind="seedling" stage={1} size={22} still />} onPress={() => router.push('/give-sprout')} />
               </View>
               <Pressable
                 onPress={() => {
