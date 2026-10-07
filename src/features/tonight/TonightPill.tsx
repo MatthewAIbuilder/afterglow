@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../../components/TabIcons';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, type } from '../../theme/tokens';
+import { GlassFill } from '../../components/LiquidGlass';
 import { tonightTitle, type Tonight } from './tonight';
 import { t } from '../../i18n';
 
@@ -22,11 +23,15 @@ export function TonightPill({ tonight }: { tonight: Tonight }) {
         accessibilityLabel={t('Tonight: {title}. Your plan, your crew and looking after yourself.', { title: tonightTitle(tonight) })}
         style={({ pressed }) => [styles.pill, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
       >
+        <GlassFill radius={radius.pill} lit interactive />
         <View style={styles.dot} />
         <Text style={styles.text} numberOfLines={1}>
           {t('Tonight · {title}', { title: tonightTitle(tonight) })}
         </Text>
-        <ChevronIcon color={color.moonDim} size={11} />
+        {/* Its own layer, so the glass (positioned) never paints over the chevron in a browser. */}
+        <View>
+          <ChevronIcon color={color.moonDim} size={11} />
+        </View>
       </Pressable>
     </View>
   );
@@ -42,9 +47,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: glowA(0.2),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glowA(0.55),
     maxWidth: '100%',
   },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.glow, shadowColor: color.glow, shadowOpacity: 1, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } },
