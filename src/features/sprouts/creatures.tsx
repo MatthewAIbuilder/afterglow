@@ -5187,6 +5187,153 @@ const twoface: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** THE XX: the X — a soft white X glowing in the dark, quiet and still. */
+const xmark: Draw = (p, f) => ({
+  ground: [50, 90, 22],
+  back: <Circle cx={50} cy={50} r={36} fill={p.glow} opacity={0.12} />,
+  body: (
+    <G>
+      <V d="M22 18 Q26 14 30 18 L50 40 L70 18 Q74 14 78 18 Q82 22 78 26 L58 48 L78 72 Q82 76 78 80 Q74 84 70 80 L50 56 L30 80 Q26 84 22 80 Q18 76 22 72 L42 48 L22 26 Q18 22 22 18Z" fill={p.mid} f={f} gloss={[30, 24, 4, 1.4, 45]} />
+      <Circle cx={43} cy={54} r={1.8} fill={p.accent} opacity={0.3} />
+      <Circle cx={57} cy={54} r={1.8} fill={p.accent} opacity={0.3} />
+      <Path d="M47.4 54 Q50 56 52.6 54" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [43, 45, 14, 6],
+    el: (
+      <G>
+        <VEye x={46.6} y={48.4} r={1.9} f={f} />
+        <VEye x={53.4} y={48.4} r={1.9} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [14, 48, 1.4],
+    [86, 50, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** RAY VOLPE: the Laser fox — a little fox (volpe), laser beams fanning from behind it. */
+const laserfox: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.14} />
+      {/* Lasers. */}
+      {[-60, -35, -12, 12, 35, 60].map((a, i) => (
+        <Path key={a} d={`M50 60 L${r1(50 + Math.sin((a * Math.PI) / 180) * 48)} ${r1(60 - Math.cos((a * Math.PI) / 180) * 48)}`} stroke={i % 2 ? p.accent : p.alt} strokeWidth={1.4} opacity={0.6} />
+      ))}
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Tail, body, ears and face. */}
+      <V d="M64 82 C80 84 86 70 80 60 C78 70 72 74 64 74Z" fill={p.mid} f={f} />
+      <Path d="M80 60 C83 64 84 68 82 72" stroke={p.light} strokeWidth={3} strokeLinecap="round" opacity={0.9} />
+      <V d="M36 88 C32 74 38 62 50 62 C62 62 68 74 64 88Z" fill={p.mid} f={f} />
+      <V d="M44 66 C46 76 54 76 56 66 C54 82 46 82 44 66Z" fill={p.light} f={f} />
+      <V d="M33 38 L30 18 L44 30Z" fill={p.mid} f={f} />
+      <V d="M67 38 L70 18 L56 30Z" fill={p.mid} f={f} />
+      <Path d="M33.6 33 L32 22.6 L40 29.6Z M66.4 33 L68 22.6 L60 29.6Z" fill={p.deep} opacity={0.6} />
+      <V d="M30 40 C30 28 70 28 70 40 C70 52 58 62 50 64 C42 62 30 52 30 40Z" fill={p.mid} f={f} gloss={[38, 34, 4, 2, -20]} />
+      <V d="M36 46 C40 56 46 60 50 64 C54 60 60 56 64 46 C58 52 42 52 36 46Z" fill={p.light} f={f} />
+      <VE cx={50} cy={58} rx={2.6} ry={2} fill={p.deep} f={f} gloss={false} />
+    </G>
+  ),
+  eyes: {
+    box: [38, 39, 24, 8],
+    el: (
+      <G>
+        <VEye x={42.6} y={43} r={2.8} f={f} iris={p.accent} />
+        <VEye x={57.4} y={43} r={2.8} f={f} iris={p.accent} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Glow x={16} y={34} r={1.4} color={p.accent} />
+      <Glow x={84} y={30} r={1.4} color={p.alt} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** LABRINTH: the Maze — a round labyrinth with a face at its heart, a glowing dot finding its way in. */
+const maze: Draw = (p, f) => ({
+  ground: [50, 92, 24],
+  back: <Circle cx={50} cy={52} r={40} fill={p.glow} opacity={0.12} />,
+  body: (
+    <G>
+      <VE cx={50} cy={52} rx={34} ry={34} fill={p.mid} f={f} />
+      {/* The walls: rings with gaps, joined by little spokes. */}
+      <Path d="M50 22 A30 30 0 1 1 26.3 33.6" stroke={p.deep} strokeWidth={2.2} fill="none" strokeLinecap="round" />
+      <Path d="M71.2 34.6 A23 23 0 1 1 53 29.2" stroke={p.deep} strokeWidth={2.2} fill="none" strokeLinecap="round" />
+      <Path d="M34.4 46 A16 16 0 1 1 41 65.4" stroke={p.deep} strokeWidth={2.2} fill="none" strokeLinecap="round" />
+      <Path d="M50 22 L50 29 M73 52 L80 52 M50 68 L50 75 M27 52 L34 52" stroke={p.deep} strokeWidth={2.2} strokeLinecap="round" />
+      <Circle cx={50} cy={52} r={9.6} fill={p.light} />
+      <Path d="M47.6 55.6 Q50 57.6 52.4 55.6" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [44, 47, 12, 6],
+    el: (
+      <G>
+        <VEye x={46.8} y={50.6} r={1.8} f={f} />
+        <VEye x={53.2} y={50.6} r={1.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Someone finding their way in. */}
+      <Glow x={30} y={52} r={1.8} color={p.accent} />
+      {sparkles(p.accent, [
+        [14, 16, 1.6],
+        [88, 84, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** PARCELS: the Parcel — a parcel tied up in string with a big bow, a label with a heart. */
+const parcel: Draw = (p, f) => ({
+  ground: [50, 90, 32],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={36} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      <V d="M18 40 Q18 36 22 36 L78 36 Q82 36 82 40 L82 84 Q82 88 78 88 L22 88 Q18 88 18 84Z" fill={p.mid} f={f} gloss={[26, 44, 4, 9, 0]} />
+      {/* The string, the bow and the label. */}
+      <Path d="M50 36 L50 88 M18 62 L82 62" stroke={p.alt} strokeWidth={3} />
+      <V d="M50 36 C40 24 30 26 34 34 C36 38 44 38 50 36Z" fill={p.alt} f={f} />
+      <V d="M50 36 C60 24 70 26 66 34 C64 38 56 38 50 36Z" fill={p.alt} f={f} />
+      <VE cx={50} cy={36} rx={3.6} ry={3} fill={p.altDeep} f={f} gloss={false} />
+      <Path d="M66 66 L78 66 L78 78 L66 78Z" fill={p.light} />
+      <Path d="M72 70.4 C70.8 69 69 70 70 71.6 L72 73.6 L74 71.6 C75 70 73.2 69 72 70.4Z" fill={p.accent} />
+      <Circle cx={30} cy={74} r={2.2} fill={p.alt} opacity={0.4} />
+      <Circle cx={50} cy={74} r={2.2} fill={p.alt} opacity={0.4} />
+      <Path d="M36 76 Q40 79.6 44 76" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [30, 46, 20, 8],
+    el: (
+      <G>
+        <VEye x={34} y={50} r={2.8} f={f} />
+        <VEye x={44} y={50} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [12, 26, 1.8],
+    [88, 26, 1.6],
+    [88, 92, 1.2],
+  ]),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -6160,6 +6307,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  xmark,
+  laserfox,
+  maze,
+  parcel,
   sippycup,
   parrot,
   twoface,
