@@ -57,3 +57,14 @@ export function totemPopup(s: Pick<TotemSettings, 'codes' | 'everyMin' | 'showSe
   const index = (k - 1) % s.codes.length;
   return { code: s.codes[index], index, left: Math.ceil((show - into) / 1000) };
 }
+
+/** The next sticker to pop up and how long until it does (seconds), for the "Next one in" teaser. */
+export function totemNext(s: Pick<TotemSettings, 'codes' | 'everyMin'>, start: number, now: number): { code: string; inSec: number } | undefined {
+  if (!s.codes.length) return undefined;
+  const every = s.everyMin * 60_000;
+  const k = Math.max(0, Math.floor((now - start) / every));
+  return { code: s.codes[k % s.codes.length], inSec: Math.ceil((start + (k + 1) * every - now) / 1000) };
+}
+
+/** Seconds as the totem's countdown: "4:05". */
+export const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;

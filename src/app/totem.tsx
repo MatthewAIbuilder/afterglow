@@ -9,7 +9,7 @@ import { NightSky } from '../components/NightSky';
 import { PageTitle } from '../components/PageTitle';
 import { WEB_URL } from '../config/app';
 import { isSupportAccount } from '../features/admin/admin';
-import { cleanTotem, DEFAULT_TOTEM, TOTEM_CODES_MAX, TOTEM_EVERY, TOTEM_SHOW, TOTEM_SUBTITLE_MAX, totemPopup, type TotemSettings } from '../features/admin/totem';
+import { cleanTotem, DEFAULT_TOTEM, TOTEM_CODES_MAX, TOTEM_EVERY, TOTEM_SHOW, TOTEM_SUBTITLE_MAX, clock, totemNext, totemPopup, type TotemSettings } from '../features/admin/totem';
 import { TotemOrb } from '../features/admin/TotemOrb';
 import { findLink, lookOf, type Sticker } from '../features/finds/finds';
 import { PortalSwirl } from '../features/finds/PortalSwirl';
@@ -205,6 +205,8 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
   // Only stickers it still knows about (one HQ took down drops out).
   const live = useMemo(() => ({ ...settings, codes: settings.codes.filter((c) => known.has(c)) }), [settings, known]);
   const popup = totemPopup(live, start, now, nudge);
+  const next = totemNext(live, start, now);
+  const nextSticker = next ? known.get(next.code) : undefined;
   const sticker = popup ? known.get(popup.code) : undefined;
   // How many people have claimed the sticker on show, kept fresh while it's up.
   const { service } = useSocial();
@@ -252,6 +254,15 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
           <Text style={[styles.tagline, { fontSize: Math.round(short * 0.026) }]}>
             {live.codes.length ? t('Stay close: something to claim pops up here every few minutes.') : t('Find Afterglow stickers around the festival. Scan one to collect it.')}
           </Text>
+          {next && nextSticker && !popup ? (
+            <View style={styles.next} accessibilityLabel={t('Next one in {time}', { time: clock(next.inSec) })}>
+              <Collectible look={lookOf(nextSticker.creature)} size={Math.round(short * 0.08)} locked still />
+              <View>
+                <Text style={[styles.nextKicker, { fontSize: Math.round(short * 0.018) }]}>{t('NEXT ONE IN')}</Text>
+                <Text style={[styles.nextTime, { fontSize: Math.round(short * 0.05) }]}>{clock(next.inSec)}</Text>
+              </View>
+            </View>
+          ) : null}
           <Text style={[styles.site, { fontSize: Math.round(short * 0.022) }]}>{WEB_URL.replace(/^https?:\/\//, '')}</Text>
         </View>
       </Pressable>
@@ -366,6 +377,9 @@ const styles = StyleSheet.create({
   word: { color: color.moon, fontWeight: '800', textAlign: 'center', textShadowColor: '#A97CFF', textShadowRadius: 24 },
   subtitle: { color: GOLD, fontWeight: '600', textAlign: 'center', letterSpacing: 1 },
   tagline: { color: color.moonDim, textAlign: 'center', marginTop: space.lg, maxWidth: 900 },
+  next: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingLeft: space.sm, paddingRight: space.xl, paddingVertical: space.sm, borderRadius: radius.pill, borderWidth: 1, borderColor: 'rgba(255,229,138,0.35)', backgroundColor: 'rgba(255,229,138,0.06)' },
+  nextKicker: { color: GOLD, fontWeight: '700', letterSpacing: 2 },
+  nextTime: { color: color.moon, fontWeight: '800', fontVariant: ['tabular-nums'] },
   site: { color: color.moonFaint, letterSpacing: 2, textAlign: 'center' },
   popScrim: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(5,4,10,0.72)', alignItems: 'center', justifyContent: 'center' },
   popCard: { borderRadius: radius.lg * 1.5, padding: space.xl, gap: space.lg, alignItems: 'center', backgroundColor: 'rgba(24,18,44,0.96)', borderWidth: 2, borderColor: GOLD, shadowColor: GOLD, shadowOpacity: 0.6, shadowRadius: 40, shadowOffset: { width: 0, height: 0 } },

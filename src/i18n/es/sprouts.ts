@@ -422,6 +422,8 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'Next one in {time}': 'El siguiente en {time}',
+  'NEXT ONE IN': 'EL SIGUIENTE EN',
   'The Refill': 'El Rellenito',
   'Fill up, drink up, keep dancing': 'Rellena, bebe y sigue bailando',
   'The Charger': 'El Cargador',

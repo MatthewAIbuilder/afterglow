@@ -48,6 +48,8 @@ describe('the totem', () => {
     expect(app.getByText('AFTERGLOW')).toBeTruthy();
     expect(app.getByText('Lost Lands · Stage 3')).toBeTruthy();
     expect(app.queryByText('FREE COLLECTIBLE · SCAN TO CLAIM')).toBeNull();
+    // A teaser counts down to the next one.
+    expect(app.getByLabelText('Next one in 1:00')).toBeTruthy();
     // A minute on, the sticker pops up.
     await settle(61_000);
     await flush();
