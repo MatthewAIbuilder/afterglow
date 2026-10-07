@@ -27,6 +27,11 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   giver: ['#9EF2C0', '#C2477E'],
   gardener: ['#C2F0A0', '#1F7F6E'],
   scout: ['#8FE3FF', '#5B3BC4'],
+  kandi: ['#FF9AD8', '#5BA8FF'],
+  lucky: ['#FFE58A', '#FF8AD8'],
+  hunter: ['#9AFFD8', '#2C7FB8'],
+  golden: ['#FFF1A8', '#B8860B'],
+  halfway: ['#B99CFF', '#2C9F8A'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -140,6 +145,50 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
           <Path d="M6.5 9 H13.5 M6.5 12.5 H11" {...p} />
           <Circle cx={16.5} cy={16} r={4.5} {...p} />
           <Path d="M16.5 13.8 V16 L18 17" {...p} />
+        </G>
+      );
+    case 'kandi':
+      // A bracelet of beads with a letter cube.
+      return (
+        <G>
+          {Array.from({ length: 10 }, (_, i) => {
+            const a = (i / 10) * Math.PI * 2;
+            return <Circle key={i} cx={12 + Math.cos(a) * 8.6} cy={11 + Math.sin(a) * 6.6} r={1.8} {...p} />;
+          })}
+          <Rect x={9.4} y={15.4} width={5.2} height={5.2} rx={1} {...p} />
+        </G>
+      );
+    case 'lucky':
+      // A sparkle with a smaller one.
+      return (
+        <G>
+          <Path d="M10 3 C10.5 8 13 10.5 18 11 C13 11.5 10.5 14 10 19 C9.5 14 7 11.5 2 11 C7 10.5 9.5 8 10 3 Z" {...p} />
+          <Path d="M18.5 14 C18.7 16 19.6 16.9 21.5 17 C19.6 17.2 18.7 18 18.5 20 C18.3 18 17.4 17.2 15.5 17 C17.4 16.9 18.3 16 18.5 14 Z" {...p} />
+        </G>
+      );
+    case 'hunter':
+      // A magnifier over a star.
+      return (
+        <G>
+          <Circle cx={10} cy={10} r={6} {...p} />
+          <Path d="M14.5 14.5 L20 20" {...p} />
+          <Path d="M10 7 L10.9 9 L13 9.2 L11.4 10.6 L11.9 12.8 L10 11.7 L8.1 12.8 L8.6 10.6 L7 9.2 L9.1 9 Z" {...p} strokeWidth={1.2} />
+        </G>
+      );
+    case 'golden':
+      // A crown.
+      return (
+        <G>
+          <Path d="M4 17 L5 8 L9.5 12 L12 6 L14.5 12 L19 8 L20 17 Z" {...p} />
+          <Path d="M5 20 L19 20" {...p} />
+        </G>
+      );
+    case 'halfway':
+      // A circle half filled.
+      return (
+        <G>
+          <Circle cx={12} cy={12} r={8} {...p} />
+          <Path d="M12 4 A8 8 0 0 1 12 20 Z" fill={stroke} stroke={stroke} strokeWidth={1.8} strokeLinejoin="round" />
         </G>
       );
     case 'basshead':
