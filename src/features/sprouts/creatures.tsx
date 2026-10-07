@@ -3809,6 +3809,112 @@ const titaniumheart: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** MEDUZA: a gorgon with a head of little snakes, each with its own eyes, and a look that won't turn you to stone. */
+const gorgon: Draw = (p, f) => {
+  // The snakes: where each starts on the head and where its head ends up.
+  const snakes = [
+    [30, 40, 16, 32, 18, 22],
+    [36, 31, 28, 18, 34, 13],
+    [50, 27, 46, 14, 52, 10],
+    [64, 31, 72, 18, 66, 13],
+    [70, 40, 84, 32, 82, 22],
+    [27, 52, 14, 50, 13, 40],
+    [73, 52, 86, 50, 87, 40],
+  ] as const;
+  return {
+    ground: [50, 92, 24],
+    back: <Ellipse cx={50} cy={50} rx={44} ry={42} fill={p.glow} opacity={0.14} />,
+    pivot: [50, 40],
+    sway: (
+      <G>
+        {snakes.map(([x0, y0, cx, cy, x1, y1], i) => (
+          <G key={i}>
+            <Path d={`M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}`} stroke={p.alt} strokeWidth={6} fill="none" strokeLinecap="round" />
+            <Path d={`M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}`} stroke={p.light} strokeWidth={1.4} fill="none" strokeLinecap="round" strokeDasharray="2 3" opacity={0.7} />
+            <VE cx={x1} cy={y1} rx={4.4} ry={3.6} fill={p.alt} f={f} gloss={false} />
+            <Circle cx={x1 - 1.4} cy={y1 - 0.8} r={0.9} fill={p.deep} />
+            <Circle cx={x1 + 1.4} cy={y1 - 0.8} r={0.9} fill={p.deep} />
+            <Path d={`M${x1} ${r1(y1 + 3)} l-0.8 2 M${x1} ${r1(y1 + 3)} l0.8 2`} stroke={p.accent} strokeWidth={0.6} />
+          </G>
+        ))}
+      </G>
+    ),
+    body: (
+      <G>
+        {/* Her face. */}
+        <V d="M50 30 C66 30 74 42 74 56 C74 72 64 84 50 84 C36 84 26 72 26 56 C26 42 34 30 50 30Z" fill={p.mid} f={f} gloss={[38, 38, 7, 5, -20]} />
+        {/* A gold band across the brow. */}
+        <Path d="M28 46 Q50 38 72 46" stroke={p.accent} strokeWidth={2.4} fill="none" />
+        <Circle cx={50} cy={41.6} r={2.2} fill={p.light} stroke={p.accent} strokeWidth={0.8} />
+        <Path d="M44 68 Q50 72 56 68" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+        <Ellipse cx={36} cy={64} rx={4} ry={2.4} fill="#FF8AB8" opacity={0.35} />
+        <Ellipse cx={64} cy={64} rx={4} ry={2.4} fill="#FF8AB8" opacity={0.35} />
+      </G>
+    ),
+    eyes: {
+      box: [36, 52, 28, 10],
+      el: (
+        <G>
+          <VEye x={41} y={57} r={4} f={f} />
+          <VEye x={59} y={57} r={4} f={f} />
+        </G>
+      ),
+    },
+    flicker: sparkles(p.accent, [
+      [20, 88, 1.6],
+      [84, 86, 1.4],
+    ]),
+    flickerOver: true,
+  };
+};
+
+/** NGHTMRE: a night mare — a dark horse with a mane and tail of stars, a crescent moon behind it. */
+const nightmare: Draw = (p, f) => ({
+  ground: [52, 92, 26],
+  back: (
+    <G>
+      <Path d="M70 14 A16 16 0 1 0 84 40 A12.6 12.6 0 1 1 70 14Z" fill={p.light} opacity={0.9} />
+      <Circle cx={74} cy={26} r={22} fill={p.light} opacity={0.08} />
+    </G>
+  ),
+  pivot: [40, 40],
+  sway: (
+    <G>
+      {/* The starry mane flowing back. */}
+      <Path d="M44 22 C30 22 20 32 18 46 C16 58 22 70 16 80 C28 76 32 66 32 56 C32 46 38 38 46 34Z" fill={p.alt} opacity={0.95} />
+      {[
+        [24, 40, 1.4],
+        [22, 56, 1.1],
+        [20, 72, 1.3],
+        [30, 30, 1],
+        [28, 64, 0.9],
+      ].map(([x, y, r]) => (
+        <Path key={`${x}${y}`} d={star(x, y, r * 2)} fill={p.accent} />
+      ))}
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The neck and head, in profile, looking right. */}
+      <V d="M34 90 C32 74 34 58 40 46 C44 36 48 28 54 24 L52 16 L58 20 L62 14 L64 24 C70 28 76 34 82 44 C86 50 84 56 78 56 C74 56 70 54 66 52 C62 58 60 66 62 74 C64 82 64 88 62 92Z" fill={p.mid} f={f} gloss={[56, 30, 6, 3, -30]} />
+      {/* Muzzle and nostril. */}
+      <Path d="M78 44 C82 48 84 52 80 55" stroke={p.deep} strokeWidth={1} fill="none" />
+      <Circle cx={80} cy={51} r={1.1} fill={p.deep} />
+      <Path d="M70 54 Q74 57 78 55" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [62, 32, 10, 8],
+    el: <VEye x={66} y={36} r={3.2} f={f} />,
+  },
+  flicker: sparkles(p.accent, [
+    [12, 20, 1.8],
+    [90, 66, 1.4],
+    [86, 84, 1.2],
+  ]),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -3881,4 +3987,6 @@ export const DRAW: Record<Creature, Draw> = {
   desertsun,
   wave,
   titaniumheart,
+  gorgon,
+  nightmare,
 };
