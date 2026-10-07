@@ -9,7 +9,7 @@ import { color, radius, space, type, glowA } from '../../../theme/tokens';
  * Afterglow HQ (docs/translations.md).
  */
 
-export function Card({ title, sub, children }: { title?: string; sub?: string; children: ReactNode }) {
+export function Card({ title, sub, children }: { title?: string; sub?: string; children?: ReactNode }) {
   return (
     <View style={s.card}>
       {title ? <Text style={s.h3}>{title}</Text> : null}

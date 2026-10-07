@@ -12,7 +12,7 @@ export type NoticeFilter = 'all' | 'people' | 'tagged' | 'festivals' | 'sets' | 
 export const FILTER_KINDS: Record<Exclude<NoticeFilter, 'all'>, readonly Notice['kind'][]> = {
   people: ['follow', 'like', 'comment', 'crewInvite'],
   tagged: ['tag'],
-  festivals: ['now', 'soon', 'setTimes', 'lineup', 'recap'],
+  festivals: ['now', 'soon', 'setTimes', 'lineup', 'recap', 'org'],
   sets: ['clips'],
   sprouts: ['sprout', 'kandi'],
 };

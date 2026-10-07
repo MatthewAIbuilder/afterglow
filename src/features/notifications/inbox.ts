@@ -12,7 +12,7 @@ import { t } from '../../i18n';
 export type Notice = {
   /** Stable, so a notice you've read stays read; changes when the news does (e.g. new dates). */
   id: string;
-  kind: 'now' | 'soon' | 'setTimes' | 'lineup' | 'clips' | 'follow' | 'like' | 'comment' | 'recap' | 'crewInvite' | 'sprout' | 'tag' | 'kandi';
+  kind: 'now' | 'soon' | 'setTimes' | 'lineup' | 'clips' | 'follow' | 'like' | 'comment' | 'recap' | 'crewInvite' | 'sprout' | 'tag' | 'kandi' | 'org';
   title: string;
   body: string;
   /** Where tapping it goes. */

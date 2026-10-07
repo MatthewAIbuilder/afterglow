@@ -2,6 +2,8 @@ import type { Artist, CatalogSnapshot, Festival, SetTime, Show, SoundTag } from 
 import { SOUND_TAGS } from '../../data/models';
 import type { OrgStarter } from '../../config/organizers';
 import { matchesName, nameRank, normalize } from '../festivals/search';
+import type { Notice } from '../notifications/inbox';
+import { t } from '../../i18n';
 
 /**
  * Event organizers, pure: an organizer's page (who they are, their events and
@@ -716,6 +718,40 @@ export function withHosted<T extends { id: string; organizer?: string }>(found: 
   const ids = new Set(orgs.map((o) => o.id));
   const seen = new Set(found.map((x) => x.id));
   return [...found, ...all.filter((x) => x.organizer && ids.has(x.organizer) && !seen.has(x.id))].slice(0, Math.max(max, found.length));
+}
+
+// ---- Updates to followers ---------------------------------------------------
+
+/** An update is at most this long. */
+export const POST_TEXT_MAX = 280;
+/** What an organizer sends its followers: a few words, maybe an event of its and a gift (one of its gift stickers, by code). */
+export type OrgPostInput = { text: string; festivalId?: string; gift?: string; giftName?: string };
+export type OrgPost = OrgPostInput & { id: string; orgId: string; uid: string; createdAt: string };
+
+/** An update ready to send: trimmed and capped; nothing when there are no words. */
+export function cleanPostInput(input: OrgPostInput): OrgPostInput | undefined {
+  const text = input.text.trim().slice(0, POST_TEXT_MAX);
+  if (!text) return undefined;
+  const festivalId = input.festivalId?.trim().slice(0, 120);
+  const gift = input.gift && /^[a-z0-9]{6,24}$/.test(input.gift) ? input.gift : undefined;
+  const giftName = gift ? input.giftName?.trim().slice(0, 60) : undefined;
+  return { text, ...(festivalId ? { festivalId } : {}), ...(gift ? { gift } : {}), ...(giftName ? { giftName } : {}) };
+}
+
+/** The organizers whose accounts you follow (their updates reach you). */
+export const followedOrgs = (orgs: readonly Org[], following: ReadonlySet<string>): Org[] => orgs.filter((o) => o.uids.some((u) => following.has(u)));
+
+/** Where an update opens: its gift to collect, else its event, else the organizer's page. */
+export const postHref = (p: Pick<OrgPost, 'orgId' | 'festivalId' | 'gift'>) => (p.gift ? `/find/${p.gift}` : p.festivalId ? `/festival/${p.festivalId}` : `/org/${p.orgId}`);
+
+/** Updates from organizers you follow, for the bell: who it's from (or that it's a gift from them) and what they said. */
+export function orgPostNotices(posts: readonly OrgPost[], orgs: readonly Org[]): Notice[] {
+  return posts.flatMap((p) => {
+    const org = orgs.find((o) => o.id === p.orgId);
+    if (!org) return [];
+    const at = Date.parse(p.createdAt);
+    return [{ id: `org:${p.id}`, kind: 'org' as const, title: p.gift ? t('A gift from {organizer}', { organizer: org.name }) : org.name, body: p.text, href: postHref(p), ...(Number.isFinite(at) ? { at } : {}) }];
+  });
 }
 
 // ---- Promotion --------------------------------------------------------------

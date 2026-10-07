@@ -9,7 +9,7 @@ import { cleanNote, cleanPublicKandi, cleanWord, isPattern, type Kandi, type Pub
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
-import { cleanOrg, findsByCode, isCounter, type Org, type OrgRequest, orgToDoc, utcDay } from '../../organizers/organizers';
+import { cleanOrg, cleanPostInput, findsByCode, isCounter, type Org, type OrgPost, type OrgRequest, orgToDoc, utcDay } from '../../organizers/organizers';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -120,6 +120,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const orgMembers = new Map<string, string>();
   const orgRequests = new Map<string, OrgRequest>();
   const orgViews = new Map<string, number>();
+  const orgPosts = new Map<string, OrgPost>();
   /** The organizer the signed-in (confirmed) email runs. */
   const orgOfMe = () => (current?.email && verified.has(current.email) ? orgMembers.get(current.email.toLowerCase()) : undefined);
   const needOrg = (orgId: string | undefined) => {
@@ -146,7 +147,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     return c;
   };
   // 1-to-1 chats: rooms like crews' (`dm_<a>_<b>`), between two people who follow each other.
-  const dms = new Map<string, DirectChat>();
+  const dms = new Map<string, DirectChat & { org?: string }>();
   const dmWatchers = new Set<{ uid: string; listener: (chats: DirectChat[]) => void }>();
   const dmsOf = (uid: string) => [...dms.values()].filter((d) => d.members.includes(uid));
   const mutual = (a: string, b: string) => follows.has(`${a}>${b}`) && follows.has(`${b}>${a}`);
@@ -158,8 +159,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     const u = me().uid;
     if (!d || !d.members.includes(u)) throw new SocialError('unknown');
     const other = otherInRoom(id, u);
-    if (writing && (!mutual(u, other) || blockedBy(other, u))) throw new SocialError('unknown');
+    if (writing && ((!mutual(u, other) && !orgChat(d)) || blockedBy(other, u))) throw new SocialError('unknown');
   };
+  /** A chat with an organizer's account: `org` names it and one of the two runs it (firestore.rules orgChat). */
+  const orgChat = (d: { members: readonly string[]; org?: string }) => !!d.org && !!orgs.get(d.org)?.uids.some((u) => d.members.includes(u));
   const dropPicks = (id: string, uid?: string) => {
     for (const k of picks.keys()) if (k.startsWith(`${id}/`) && (!uid || k === `${id}/${uid}`)) picks.delete(k);
   };
@@ -1036,13 +1039,16 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       chat.delete(`${crewId}/${id}`);
       chatChanged(crewId);
     },
-    async openDirectChat(uid) {
+    async openDirectChat(uid, org) {
       const u = me();
       if (network.down) throw new SocialError('network');
-      if (uid === u.uid || !mutual(u.uid, uid) || blockedBy(uid, u.uid) || blockedBy(u.uid, uid)) throw new SocialError('unknown');
+      const members = [u.uid, uid].sort() as [string, string];
       const id = directRoom(u.uid, uid);
-      if (!dms.has(id)) {
-        dms.set(id, { id, members: [u.uid, uid].sort() as [string, string] });
+      const made = dms.get(id);
+      const allowed = made ? true : mutual(u.uid, uid) || orgChat({ members, org });
+      if (uid === u.uid || !allowed || blockedBy(uid, u.uid) || blockedBy(u.uid, uid)) throw new SocialError('unknown');
+      if (!made) {
+        dms.set(id, { id, members, ...(org ? { org } : {}) });
         for (const w of dmWatchers) w.listener(dmsOf(w.uid));
       }
       return id;
@@ -1355,6 +1361,29 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async orgFinds(orgId) {
       return findsByCode(await service.orgViews(orgId, '2026-01-01'));
     },
+    async postOrgUpdate(orgId, raw) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      needOrg(orgId);
+      const input = cleanPostInput(raw);
+      if (!input) throw new SocialError('unknown');
+      const post: OrgPost = { id: `post${++n}`, orgId, uid: u.uid, ...input, createdAt: `${now()}#${String(n).padStart(6, '0')}` };
+      orgPosts.set(post.id, post);
+      return post;
+    },
+    async orgPosts(orgIds, max) {
+      if (network.down) throw new SocialError('network');
+      me();
+      const ids = new Set(orgIds.slice(0, 30));
+      return [...orgPosts.values()].filter((p) => ids.has(p.orgId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+    },
+    async deleteOrgPost(id) {
+      if (network.down) throw new SocialError('network');
+      const p = orgPosts.get(id);
+      if (!p) return;
+      needOrg(p.orgId);
+      orgPosts.delete(id);
+    },
     async takeBackSprout(id) {
       if (network.down) throw new SocialError('network');
       const u = me();
@@ -1385,5 +1414,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, currentUser: () => current };
+  return { service, gardens, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current };
 }

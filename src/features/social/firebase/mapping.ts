@@ -9,7 +9,7 @@ import { SOUND_TAGS, type SoundTag } from '../../../data/models';
 import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply, type VideoTag } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 import { GIFT_NOTE_MAX } from '../../finds/finds';
-import { isCounter, isEventId, type OrgDay, type OrgRequest, REQUEST_KINDS, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX } from '../../organizers/organizers';
+import { cleanPostInput, isCounter, isEventId, type OrgDay, type OrgPost, type OrgRequest, REQUEST_KINDS, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX } from '../../organizers/organizers';
 import { cleanHunt, cleanName, type Hunt, isHuntId, isStickerCode, type Sticker } from '../../finds/finds';
 
 /**
@@ -490,6 +490,18 @@ export function stickerFromDoc(code: string, d: unknown): Sticker | null {
 }
 
 /** A request an organizer sent HQ, from its document. */
+/** An organizer's update to its followers, read back safely. */
+export function orgPostFromDoc(id: string, d: unknown): OrgPost | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const orgId = str(o.orgId);
+  const uid = str(o.uid);
+  const createdAt = whenOf(o.createdAt);
+  const input = cleanPostInput({ text: str(o.text) ?? '', festivalId: str(o.festivalId), gift: str(o.gift), giftName: str(o.giftName) });
+  if (!orgId || !uid || !createdAt || !input) return null;
+  return { id, orgId, uid, createdAt, ...input };
+}
+
 export function orgRequestFromDoc(id: string, d: unknown): OrgRequest | null {
   if (!d || typeof d !== 'object') return null;
   const o = d as Record<string, unknown>;

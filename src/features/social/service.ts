@@ -5,7 +5,7 @@ import type { ClipWindow } from '../memories/trim';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
 import type { PublicResident } from '../sprouts/publicGarden';
 import type { Kandi, KandiInput, PublicKandi } from '../kandi/kandi';
-import type { Org, OrgCounter, OrgDay, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
+import type { Org, OrgCounter, OrgDay, OrgPost, OrgPostInput, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
 /**
@@ -289,10 +289,11 @@ export interface SocialService {
   deleteCrewMessage(crewId: string, id: string): Promise<void>;
   /**
    * Open the 1-to-1 chat with a friend (made the first time): only between two
-   * people who follow each other, and not if they've blocked you. Returns its
+   * people who follow each other, and not if they've blocked you. With `org`
+   * (the organizer one of the two runs), anyone may start it. Returns its
    * room id, which the crew chat functions above take.
    */
-  openDirectChat(uid: string): Promise<string>;
+  openDirectChat(uid: string, org?: string): Promise<string>;
   /** Follow your 1-to-1 chats, now and whenever one starts. Returns a stop function. */
   watchDirectChats(listener: (chats: DirectChat[]) => void, onError?: (e: SocialError) => void): () => void;
   /** The crew's meeting spot, if one's set. Members only. */
@@ -402,6 +403,12 @@ export interface SocialService {
   orgHunts(orgId: string, max: number): Promise<Hunt[]>;
   /** How many people found each of an organizer's stickers and gifts (code -> count; counts only). Its team or HQ. */
   orgFinds(orgId: string): Promise<Record<string, number>>;
+  /** Send an update to an organizer's followers (its team). */
+  postOrgUpdate(orgId: string, input: OrgPostInput): Promise<OrgPost>;
+  /** The newest updates from these organizers (at most 30), newest first. Anyone signed in. */
+  orgPosts(orgIds: string[], max: number): Promise<OrgPost[]>;
+  /** Take an update back (its team or HQ). */
+  deleteOrgPost(id: string): Promise<void>;
 
   report(target: ReportTarget, reason: ReportReason, note?: string): Promise<void>;
   blocked(): Promise<string[]>;

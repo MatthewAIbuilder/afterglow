@@ -1271,6 +1271,32 @@ await t('organizers: logos and icons upload into your own folder (pictures under
   await assertFails(updateDoc(doc(A.firestore(), 'orgs', 'underground-alchemy'), { logoUrl: 'https://evil.example/logo.png', updatedAt: serverTimestamp() }));
   await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { iconUrl: 'x'.repeat(2001), updatedAt: serverTimestamp() }));
 });
+await t('organizers: anyone messages an organizer’s account without following; its team sends updates everyone signed in reads', async () => {
+  const L = env.authenticatedContext('uidLinked');
+  const B = env.authenticatedContext('uidB');
+  const org = 'underground-alchemy';
+  const msg = (uid) => ({ uid, text: 'Hi', atMs: Date.now(), sentAt: serverTimestamp() });
+  // Not friends: only a chat that names the organizer one of the two runs.
+  await assertFails(setDoc(doc(B.firestore(), 'dms', 'uidB_uidLinked'), { members: ['uidB', 'uidLinked'], createdAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(B.firestore(), 'dms', 'uidB_uidZed'), { members: ['uidB', 'uidZed'], createdAt: serverTimestamp(), org }));
+  await assertFails(setDoc(doc(B.firestore(), 'dms', 'uidB_uidLinked'), { members: ['uidB', 'uidLinked'], createdAt: serverTimestamp(), org: 'nobody' }));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'dms', 'uidB_uidLinked'), { members: ['uidB', 'uidLinked'], createdAt: serverTimestamp(), org }));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'dms', 'uidB_uidLinked', 'chat', 'msg-b-0001'), msg('uidB')));
+  await assertSucceeds(setDoc(doc(L.firestore(), 'dms', 'uidB_uidLinked', 'chat', 'msg-l-0001'), msg('uidLinked')));
+  await assertFails(getDoc(doc(A.firestore(), 'dms', 'uidB_uidLinked', 'chat', 'msg-b-0001')));
+  // Updates: its team posts and takes back; anyone signed in reads; nobody else posts.
+  const post = (over = {}) => ({ orgId: org, uid: 'uidLinked', text: 'Doors at 11.', festivalId: 'underground-alchemy--transmutation-11-14', gift: 'abc123def', giftName: 'Thank you', createdAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(doc(L.firestore(), 'orgPosts', 'p1'), post()));
+  await assertFails(setDoc(doc(L.firestore(), 'orgPosts', 'p2'), post({ text: 'x'.repeat(281) })));
+  await assertFails(setDoc(doc(L.firestore(), 'orgPosts', 'p3'), post({ uid: 'uidB' })));
+  await assertFails(setDoc(doc(L.firestore(), 'orgPosts', 'p4'), post({ gift: 'Not A Code!' })));
+  await assertFails(setDoc(doc(B.firestore(), 'orgPosts', 'p5'), post({ uid: 'uidB' })));
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'orgPosts'), where('orgId', 'in', [org]), orderBy('createdAt', 'desc'), limit(20))));
+  await assertFails(getDocs(query(collection(anon.firestore(), 'orgPosts'), where('orgId', 'in', [org]))));
+  await assertFails(updateDoc(doc(L.firestore(), 'orgPosts', 'p1'), { text: 'Changed' }));
+  await assertFails(deleteDoc(doc(B.firestore(), 'orgPosts', 'p1')));
+  await assertSucceeds(deleteDoc(doc(L.firestore(), 'orgPosts', 'p1')));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

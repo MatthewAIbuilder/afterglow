@@ -16,7 +16,7 @@ import { markCareTipDone, useCareTip } from '../state/careTip';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../lib/haptics';
 import { color, motion, radius, space, type, glowA, raisedA } from '../theme/tokens';
-import { DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
+import { CommentIcon, DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
 import { HiddenToe } from '../features/toes/Toe';
 import { t } from '../i18n';
 
@@ -114,11 +114,12 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           if (!route) return null;
           const focused = state.index === i;
           const { options } = descriptors[route.key];
-          const title = options.title ?? route.name;
+          // An organizer's Friends tab is its Messages.
+          const title = organizer && !active && route.name === 'together' ? t('Messages') : (options.title ?? route.name);
 
           const news = route.name === 'together' && freshCrew;
           const label = news ? t('{tab}, new from your crew', { tab: title }) : title;
-          const Icon = ICONS[route.name] ?? DiscoverIcon;
+          const Icon = organizer && !active && route.name === 'together' ? CommentIcon : (ICONS[route.name] ?? DiscoverIcon);
           const tint = focused ? color.moon : color.moonFaint;
           return (
             <Pressable

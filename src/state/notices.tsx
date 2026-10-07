@@ -25,6 +25,8 @@ import { useSeen } from './seen';
 import { useSocial } from './social';
 import { useLoves } from './useLoves';
 import { useWeekends } from './weekends';
+import { useOrgs } from './orgs';
+import { followedOrgs, orgPostNotices, type OrgPost } from '../features/organizers/organizers';
 
 /**
  * The bell's notices: news about your festivals (worked out on the phone),
@@ -45,6 +47,8 @@ type Ctx = {
 const STORAGE_KEY = 'noticesRead.v1';
 /** How much recent activity the bell reads. */
 const ACTIVITY_MAX = 30;
+/** How many updates from organizers you follow the bell reads. */
+const ORG_POSTS_MAX = 20;
 
 const NoticesContext = createContext<Ctx | null>(null);
 
@@ -163,6 +167,22 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
     const open = activity.invites.filter((i) => !social.blocked.has(i.from));
     return inviteNotices(open, { nameOf, festivalName: (id) => festival(id)?.name });
   }, [activity, uid, social.blocked, festival]);
+  // Updates from event organizers you follow (read with your activity).
+  const orgs = useOrgs();
+  const followedKey = useMemo(() => followedOrgs(orgs, social.following).map((o) => o.id).sort().join(','), [orgs, social.following]);
+  const [orgPosts, setOrgPosts] = useState<{ uid: string; posts: OrgPost[] }>();
+  useEffect(() => {
+    if (!uid || !social.availability.ok || !followedKey) return;
+    let live = true;
+    social.service
+      .orgPosts(followedKey.split(','), ORG_POSTS_MAX)
+      .then((posts) => live && setOrgPosts({ uid, posts }))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [uid, social.availability.ok, social.service, followedKey, tick]);
+  const orgList = useMemo(() => (orgPosts && orgPosts.uid === uid && followedKey ? orgPostNotices(orgPosts.posts.filter((p) => followedKey.split(',').includes(p.orgId)), orgs) : []), [orgPosts, uid, followedKey, orgs]);
   // Festivals that ended lately with a recap for you.
   const recapFestivals = useRecapFestivals();
   const recapList = useMemo(() => recapNotices(recapFestivals, today), [recapFestivals, today]);
@@ -180,8 +200,8 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   );
   // Happening now first, then the newest first (features/notifications/organize.ts).
   const all = useMemo(
-    () => sortNotices([...inviteList, ...recapList, ...list, ...lineupList, ...clipList, ...sproutList, ...activityList], today.getTime()),
-    [inviteList, recapList, list, lineupList, clipList, sproutList, activityList, today],
+    () => sortNotices([...inviteList, ...recapList, ...list, ...lineupList, ...clipList, ...sproutList, ...orgList, ...activityList], today.getTime()),
+    [inviteList, recapList, list, lineupList, clipList, sproutList, orgList, activityList, today],
   );
 
   const value = useMemo<Ctx>(() => ({ list: all, refresh, read, markRead, hydrated }), [all, refresh, read, markRead, hydrated]);

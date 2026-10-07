@@ -233,6 +233,54 @@ describe('organizers', () => {
     await app.unmount();
   });
 
+  it('anyone messages it without following; its Messages tab answers them and sends updates its followers get', async () => {
+    seed();
+    const u = await s().signUp('ugrnd@example.com', 'password123');
+    await s().saveProfile({ handle: 'undergroundalchemy', displayName: 'Underground Alchemy', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    mockSocial.orgs.set(ORG, { ...mockSocial.orgs.get(ORG)!, uids: [u.uid], handle: 'undergroundalchemy' });
+    await s().signOut();
+    const fan = await s().signUp('fan@example.com', 'password123');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+
+    // A fan who doesn't follow it messages it from its page.
+    let app = await renderApp(`/org/${ORG}`);
+    await flush();
+    await fireEvent.press(app.getByLabelText('Message Underground Alchemy'));
+    await flush();
+    const [dm] = [...mockSocial.dms.values()];
+    expect(dm).toMatchObject({ org: ORG, members: [fan.uid, u.uid].sort() });
+    // It follows the organizer, to get its updates.
+    await s().follow(u.uid);
+    await app.unmount();
+    await s().signOut();
+
+    // The organizer's Friends tab is Messages: its inbox, and an update to its followers with its event.
+    await s().signIn('ugrnd@example.com', 'password123');
+    app = await renderApp('/');
+    await flush();
+    await fireEvent.press(app.getByLabelText('View the app as everyone sees it'));
+    await flush();
+    await fireEvent.press(app.getByRole('tab', { name: /^Messages/ }));
+    await flush();
+    expect(app.getByText('Send an update to your followers')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Your update'), 'Doors at 11. See you down there.');
+    await fireEvent.press(app.getByLabelText('Add Transmutation'));
+    answerAlerts();
+    await fireEvent.press(app.getByText('Send to your followers'));
+    await flush();
+    expect([...mockSocial.orgPosts.values()]).toEqual([expect.objectContaining({ orgId: ORG, text: 'Doors at 11. See you down there.', festivalId: EVENT })]);
+    expect(app.getByText('Doors at 11. See you down there.')).toBeTruthy();
+    await app.unmount();
+    await s().signOut();
+
+    // Its follower sees it in their notifications.
+    await s().signIn('fan@example.com', 'password123');
+    app = await renderApp('/notifications');
+    await flush();
+    expect(app.getByText('Doors at 11. See you down there.')).toBeTruthy();
+    await app.unmount();
+  });
+
   it('a promotion asked in the studio and approved in HQ shows, labelled, on everyone’s Festivals tab', async () => {
     seed();
     const app = await organizer();
