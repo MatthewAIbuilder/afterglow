@@ -70,6 +70,7 @@ import { t } from '../../i18n';
 import { crowdPlace, shownClipTitle } from '../community/clips';
 import { OrgWatermark } from '../organizers/OrgWatermark';
 import { eventPath } from '../festivalMode/showEvent';
+import { useEventLookup } from '../festivalMode/useEvent';
 
 type Props = {
   clip: Clip;
@@ -123,6 +124,7 @@ function B2bNames({ players, onOpen }: { players: readonly Artist[]; onOpen: (id
 
 function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, index, onSkip, onNext, onHold, topExtra = 0 }: Props) {
   const catalog = useCatalog();
+  const lookupEvent = useEventLookup();
   const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
   const { get, setLiked, toggleSaved, markSkipped, recordWatch } = useReactions();
@@ -351,6 +353,34 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
     ? crowdPlace(clip.title, own?.name)
     : shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title);
   const meta = community ? '' : own && ownSet ? describeSet(own, ownSet) : (own?.name ?? '');
+  // A crowd video leads with where it was filmed; when that's a festival or show on Afterglow, it opens every video tagged there.
+  const place = community && title ? lookupEvent(clip.festivalId) : undefined;
+  const placeTitle = (lines?: number) =>
+    title ? (
+      place ? (
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            // Going to look at the place isn't passing on this video.
+            if (watch.current) watch.current = excuseWatch(watch.current);
+            router.push({ pathname: '/videos/[id]', params: { id: place.id } });
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('{place}. Opens every video filmed there.', { place: title })}
+          hitSlop={6}
+          style={({ pressed }) => [styles.placeRow, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={[styles.title, styles.placeTitle]} numberOfLines={lines}>
+            {title}
+          </Text>
+          <Text style={styles.placeChevron}>›</Text>
+        </Pressable>
+      ) : (
+        <Text style={[styles.title, styles.placeTitle, styles.placeAlone]} numberOfLines={lines}>
+          {title}
+        </Text>
+      )
+    ) : null;
 
   const openArtist = (id: string) => {
     haptic.select();
@@ -548,8 +578,9 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
     const info = (
       <>
         {upNextPill}
+        {community ? placeTitle(tall ? 1 : undefined) : null}
         {artistButton}
-        {title ? (
+        {title && !community ? (
           <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
             {title}
           </Text>
@@ -765,8 +796,9 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
 
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {upNextPill}
+        {community ? placeTitle() : null}
         {artistButton}
-        {title ? <Text style={styles.title}>{title}</Text> : null}
+        {title && !community ? <Text style={styles.title}>{title}</Text> : null}
         {metaLine(false)}
         {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>{t('This video isn’t available right now.')}</Text>}
         {media?.provider === 'soundcloud' && videoFailed && (
@@ -829,6 +861,11 @@ const styles = StyleSheet.create({
   match: { ...type.label, color: color.glow, fontVariant: ['tabular-nums'], marginTop: 1, ...shadow },
   note: { color: color.moonDim, fontWeight: '500' },
   title: { ...type.title, fontSize: 22, lineHeight: 27, color: color.moon, marginTop: space.lg, ...shadow },
+  // A crowd video's place, above the artist.
+  placeRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: space.xs, maxWidth: '100%', marginBottom: space.md },
+  placeTitle: { marginTop: 0, flexShrink: 1 },
+  placeAlone: { marginBottom: space.md },
+  placeChevron: { ...type.title, fontSize: 22, lineHeight: 27, color: color.moonDim, ...shadow },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs, ...shadow },
   ticket: {
     flexDirection: 'row',
