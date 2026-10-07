@@ -6746,6 +6746,159 @@ const llama: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** JESSE WELLES: the Wishing well — a stone wishing well with a little roof, a coin glinting in it. */
+const well: Draw = (p, f) => ({
+  ground: [50, 90, 32],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* Posts, roof and the bucket on its rope. */}
+      <Path d="M24 60 L24 30 M76 60 L76 30" stroke={p.altDeep} strokeWidth={3.4} strokeLinecap="round" />
+      <V d="M16 32 L50 14 L84 32 Q84 34 82 34 L18 34 Q16 34 16 32Z" fill={p.alt} f={f} gloss={[36, 24, 6, 1.4, -20]} />
+      <Path d="M24 38 L76 38" stroke={p.altDeep} strokeWidth={2} />
+      <Path d="M50 38 L50 48" stroke={p.light} strokeWidth={0.8} />
+      <V d="M45 48 L55 48 L54 56 L46 56Z" fill={p.altDeep} f={f} />
+      {/* The stone wall. */}
+      <V d="M18 60 Q18 56 22 56 L78 56 Q82 56 82 60 L80 86 Q80 88 78 88 L22 88 Q20 88 20 86Z" fill={p.mid} f={f} gloss={[26, 62, 4, 6, 0]} />
+      <Path d="M20 66 L80 66 M20 76 L80 76 M34 56 L34 66 M56 56 L56 66 M28 66 L28 76 M46 66 L46 76 M70 66 L70 76 M38 76 L38 88 M62 76 L62 88" stroke={p.deep} strokeWidth={0.8} opacity={0.4} />
+      <Circle cx={36} cy={80} r={2} fill={p.accent} opacity={0.35} />
+      <Circle cx={64} cy={80} r={2} fill={p.accent} opacity={0.35} />
+      <Path d="M46 81 Q50 84 54 81" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [39, 67, 22, 7],
+    el: (
+      <G>
+        <VEye x={43.6} y={70.6} r={2.4} f={f} />
+        <VEye x={56.4} y={70.6} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Glow x={50} y={58} r={1.6} color={p.accent} />
+      {sparkles(p.accent, [
+        [12, 20, 1.6],
+        [88, 22, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** KI/KI: the Kiwi — a round little kiwi bird with a long beak, poking about at night. */
+const kiwi: Draw = (p, f) => ({
+  ground: [48, 88, 28],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={54} rx={42} ry={36} fill={p.glow} opacity={0.15} />
+      <Path d="M30 28 A8 8 0 1 0 36 40 A6 6 0 1 1 30 28Z" fill={p.light} opacity={0.4} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Legs, the round fluffy body and its head with that long beak. */}
+      <Path d="M40 80 L38 88 L34 88 M50 80 L52 88 L56 88" stroke={p.alt} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <VE cx={44} cy={64} rx={24} ry={18} fill={p.mid} f={f} />
+      {[32, 40, 48, 56].map((x, i) => (
+        <Path key={x} d={`M${x} ${58 + (i % 2) * 6} q2 3 4 0`} stroke={p.deep} strokeWidth={0.8} fill="none" opacity={0.4} />
+      ))}
+      <VE cx={64} cy={52} rx={10} ry={9} fill={p.mid} f={f} />
+      <Path d="M72 54 Q82 60 90 72" stroke={p.alt} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <Circle cx={66} cy={57} r={1.8} fill={p.accent} opacity={0.4} />
+    </G>
+  ),
+  eyes: { box: [62, 47, 8, 6], el: <VEye x={66} y={50.4} r={2.2} f={f} /> },
+  flicker: sparkles(p.light, [
+    [16, 50, 1.4],
+    [80, 30, 1.6],
+  ]),
+  flickerOver: true,
+});
+
+/** FAKEMINK: the Mink — a sleek little mink curled in a loop, glossy and very pleased with itself. */
+const mink: Draw = (p, f) => ({
+  ground: [50, 88, 30],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={36} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* The long body looped round, the bushy tail tip. */}
+      <Path d="M30 80 C14 76 14 56 30 52 C44 48 58 56 70 52" stroke={p.mid} strokeWidth={14} fill="none" strokeLinecap="round" />
+      <Path d="M30 80 C46 84 62 82 72 74" stroke={p.mid} strokeWidth={12} fill="none" strokeLinecap="round" />
+      <Path d="M72 74 C80 70 86 72 86 78" stroke={p.alt} strokeWidth={9} fill="none" strokeLinecap="round" />
+      <Path d="M24 62 C26 70 32 74 40 76" stroke={p.light} strokeWidth={2} fill="none" opacity={0.5} strokeLinecap="round" />
+      {/* The head, ears and a little nose. */}
+      <VE cx={70} cy={44} rx={12} ry={10} fill={p.mid} f={f} />
+      <VE cx={61} cy={36} rx={3.4} ry={3.4} fill={p.mid} f={f} gloss={false} />
+      <VE cx={79} cy={36} rx={3.4} ry={3.4} fill={p.mid} f={f} gloss={false} />
+      <VE cx={70} cy={49} rx={5} ry={3.6} fill={p.light} f={f} gloss={false} />
+      <Circle cx={70} cy={47.6} r={1.2} fill={p.deep} />
+      <Path d="M67.6 50.4 Q70 52 72.4 50.4" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [63, 39, 14, 6],
+    el: (
+      <G>
+        <VEye x={66} y={42.4} r={1.9} f={f} />
+        <VEye x={74} y={42.4} r={1.9} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [18, 26, 1.8],
+    [44, 18, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** KOMPANY: the Crew — three little friends arm in arm, the one in the middle the loudest. */
+const crew: Draw = (p, f) => {
+  const pal = (x: number, y: number, r: number, c: string, k: string) => (
+    <G key={k}>
+      <VE cx={x} cy={y} rx={r} ry={r * 1.1} fill={c} f={f} />
+      <Path d={`M${x - r * 0.5} ${y + r * 1.04} L${x - r * 0.5} ${y + r * 1.5} M${x + r * 0.5} ${y + r * 1.04} L${x + r * 0.5} ${y + r * 1.5}`} stroke={p.deep} strokeWidth={2} strokeLinecap="round" />
+    </G>
+  );
+  return {
+    ground: [50, 88, 40],
+    back: <Ellipse cx={50} cy={56} rx={42} ry={36} fill={p.glow} opacity={0.15} />,
+    body: (
+      <G>
+        {pal(24, 62, 12, p.alt, 'l')}
+        {pal(76, 62, 12, p.altDeep, 'r')}
+        {/* Arms linked. */}
+        <Path d="M34 60 Q42 54 48 60 M52 60 Q58 54 66 60" stroke={p.light} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+        {pal(50, 56, 16, p.mid, 'm')}
+        {/* The quiet ones' faces. */}
+        <Circle cx={20.6} cy={60} r={1.4} fill={INK} />
+        <Circle cx={27.4} cy={60} r={1.4} fill={INK} />
+        <Path d="M22 65 Q24 66.6 26 65" stroke={INK} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+        <Circle cx={72.6} cy={60} r={1.4} fill={INK} />
+        <Circle cx={79.4} cy={60} r={1.4} fill={INK} />
+        <Path d="M74 65 Q76 66.6 78 65" stroke={INK} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+        <Ellipse cx={50} cy={63} rx={3.4} ry={4} fill={p.deep} />
+      </G>
+    ),
+    eyes: {
+      box: [42, 50, 16, 7],
+      el: (
+        <G>
+          <VEye x={45.4} y={53.6} r={2.4} f={f} />
+          <VEye x={54.6} y={53.6} r={2.4} f={f} />
+        </G>
+      ),
+    },
+    flicker: (
+      <G>
+        <Path d="M38 34 L34 28 M50 30 L50 22 M62 34 L66 28" stroke={p.accent} strokeWidth={1.6} strokeLinecap="round" />
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -7719,6 +7872,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  well,
+  kiwi,
+  mink,
+  crew,
   mic,
   megaphone,
   origami,
