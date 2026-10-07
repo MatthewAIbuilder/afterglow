@@ -10,6 +10,7 @@ import { CloseIcon, QrIcon } from '../components/TabIcons';
 import { type FriendCard, readFriendLink } from '../features/friends/qr';
 import { readSproutLink } from '../features/sprouts/sprouts';
 import { readFindLink } from '../features/finds/finds';
+import { readKandiLink } from '../features/kandi/kandi';
 import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { type AddResult, useFriendAdds } from '../state/friendAdds';
@@ -46,6 +47,13 @@ export default function ScanScreen() {
       router.replace({ pathname: '/sprout/[id]', params: { id: sprout.id, u: sprout.from, h: sprout.handle, k: sprout.kind, n: sprout.name, ...(sprout.artist ? { a: sprout.artist.id, an: sprout.artist.name } : {}) } });
       return;
     }
+    const bracelet = readKandiLink(text);
+    if (bracelet) {
+      // Kandi someone's giving you: its own page picks it up.
+      haptic.settle();
+      router.replace({ pathname: '/kandi/[id]', params: { id: bracelet.id, u: bracelet.from, h: bracelet.handle, w: bracelet.word, b: bracelet.beads } });
+      return;
+    }
     const sticker = readFindLink(text);
     if (sticker) {
       // A sticker in the wild: its own page keeps it.
@@ -55,7 +63,7 @@ export default function ScanScreen() {
     }
     const card = readFriendLink(text);
     if (!card) {
-      setNote(t('That isn’t an Afterglow friend code, sprout or sticker.'));
+      setNote(t('That isn’t an Afterglow friend code, sprout, kandi or sticker.'));
       setTimeout(() => {
         lastText.current = undefined;
         setNote(undefined);

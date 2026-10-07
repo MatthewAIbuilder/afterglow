@@ -16,13 +16,17 @@ export function useMemoryPicker() {
   const { setDraft } = useMemories();
 
   const from = useCallback(
-    /** `replace`: the tagging sheet takes this screen's place (from the camera, so you don't land back on it). */
-    async (source: 'camera' | 'library', { replace = false }: { replace?: boolean } = {}) => {
+    /**
+     * `replace`: the tagging sheet takes this screen's place (from the camera, so you don't land back on it).
+     * `params`: passed on to the tagging sheet (who you're filming, from their page).
+     */
+    async (source: 'camera' | 'library', { replace = false, params }: { replace?: boolean; params?: Record<string, string> } = {}) => {
       const r = await pickVideo(source);
       if (r.ok) {
         setDraft(r.video);
-        if (replace) router.replace('/memory-tag');
-        else router.push('/memory-tag');
+        const to = params ? { pathname: '/memory-tag' as const, params } : '/memory-tag';
+        if (replace) router.replace(to);
+        else router.push(to);
         return;
       }
       if (r.reason === 'no-permission') {
