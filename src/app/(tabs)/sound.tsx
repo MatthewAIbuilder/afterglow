@@ -481,7 +481,7 @@ function SoundSummary({
       style={({ pressed }) => [styles.summary, pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}
     >
       <View style={styles.summaryTop}>
-        <Text style={[styles.summaryTitle, shaped && top && { color: SOUND_COLOR[top] }]} numberOfLines={1}>
+        <Text style={[styles.summaryTitle, shaped && top && { color: SOUND_COLOR[top] }]} numberOfLines={2}>
           {headline}
         </Text>
         <View style={styles.summaryLink}>
