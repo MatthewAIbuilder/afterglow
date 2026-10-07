@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View, type GestureResponderEvent } from 'r
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { color, glowA, radius, space, type } from '../../theme/tokens';
-import { CLIP_LENGTHS, CLIP_MAX, clockOf, isWhole, movedTo, needsTrim, withLength, type ClipWindow } from './trim';
+import { CLIP_LENGTHS, CLIP_MAX, clipMaxFor, clockOf, isWhole, movedTo, needsTrim, withLength, type ClipWindow } from './trim';
 
 /**
  * Choosing the part of a video that plays: the whole length as a bar, the
@@ -11,17 +11,19 @@ import { CLIP_LENGTHS, CLIP_MAX, clockOf, isWhole, movedTo, needsTrim, withLengt
  * a minute), and a second either way for fine tuning. A video longer than a
  * minute always has a part; a shorter one can play whole.
  */
-export function TrimBar({ durationSec, value, onChange }: { durationSec: number; value: ClipWindow | undefined; onChange: (w: ClipWindow | undefined) => void }) {
+export function TrimBar({ durationSec, bytes, value, onChange }: { durationSec: number; bytes?: number; value: ClipWindow | undefined; onChange: (w: ClipWindow | undefined) => void }) {
   const [width, setWidth] = useState(0);
   const drag = useRef<{ x: number; start: number } | undefined>(undefined);
-  const must = needsTrim(durationSec);
+  // A big file (4K, say) can share less than a minute: the part is cut out and uploaded on its own.
+  const max = clipMaxFor(durationSec, bytes);
+  const must = needsTrim(durationSec, bytes);
   const part = value ?? { start: 0, end: durationSec };
   const length = part.end - part.start;
   const left = width ? (part.start / durationSec) * width : 0;
   const barW = width ? Math.max(12, (length / durationSec) * width) : 0;
 
   const move = (start: number) => {
-    const next = movedTo(part, start, durationSec);
+    const next = movedTo(part, start, durationSec, max);
     if (next && (next.start !== part.start || next.end !== part.end)) onChange(next);
   };
   const grant = (e: GestureResponderEvent) => {
@@ -32,7 +34,7 @@ export function TrimBar({ durationSec, value, onChange }: { durationSec: number;
     if (!drag.current || !width) return;
     move(drag.current.start + ((e.nativeEvent.pageX - drag.current.x) / width) * durationSec);
   };
-  const lengths = CLIP_LENGTHS.filter((l) => l < durationSec);
+  const lengths = CLIP_LENGTHS.filter((l) => l < durationSec && l <= max);
 
   return (
     <View style={styles.root}>
@@ -70,7 +72,7 @@ export function TrimBar({ durationSec, value, onChange }: { durationSec: number;
               key={l}
               onPress={() => {
                 haptic.select();
-                onChange(withLength(part, l, durationSec));
+                onChange(withLength(part, l, durationSec, max));
               }}
               accessibilityRole="button"
               accessibilityState={{ selected: Math.round(length) === l }}
@@ -96,7 +98,13 @@ export function TrimBar({ durationSec, value, onChange }: { durationSec: number;
         </View>
         <Nudge label="+1s" a11y={t('A second later')} onPress={() => move(part.start + 1)} />
       </View>
-      {must ? <Text style={styles.note}>{t('Discover plays up to {n} seconds. Drag the bright part to the moment you want.', { n: CLIP_MAX })}</Text> : null}
+      {must ? (
+        <Text style={styles.note}>
+          {max < CLIP_MAX
+            ? t('This video is a big file, so up to {n} seconds of it can be shared. Drag the bright part to the moment you want.', { n: max })
+            : t('Discover plays up to {n} seconds. Drag the bright part to the moment you want.', { n: CLIP_MAX })}
+        </Text>
+      ) : null}
     </View>
   );
 }

@@ -186,7 +186,7 @@ export const es_memories: Dictionary = {
   'On the website, videos are kept by sharing them. Nothing is uploaded until you tap Share.':
     'En la web, los videos se guardan al compartirlos. No se sube nada hasta que tocas Compartir.',
   'That video is too big': 'Ese video es demasiado grande',
-  'Choose one under 150 MB. A shorter clip usually is.': 'Elige uno de menos de 150 MB. Un clip más corto suele serlo.',
+  'Choose one under 4 GB.': 'Elige uno de menos de 4 GB.',
   'That isn’t a video Afterglow can share': 'Afterglow no puede compartir ese video',
   'Choose a video from your Photos or Files (MP4 or MOV).': 'Elige un video de tus Fotos o Archivos (MP4 o MOV).',
 
@@ -216,6 +216,7 @@ export const es_memories: Dictionary = {
   Whole: 'Entero',
   'A second later': 'Un segundo después',
   'Discover plays up to {n} seconds. Drag the bright part to the moment you want.': 'Descubrir reproduce hasta {n} segundos. Arrastra la parte iluminada al momento que quieras.',
+  'This video is a big file, so up to {n} seconds of it can be shared. Drag the bright part to the moment you want.': 'Este video es un archivo grande, así que se pueden compartir hasta {n} segundos. Arrastra la parte iluminada al momento que quieras.',
   'Choose one of ten minutes or less. You can trim it to the best part next.': 'Elige uno de diez minutos o menos. Después puedes recortarlo a la mejor parte.',
   'Pick who was playing to share it to Discover.': 'Elige quién estaba tocando para compartirlo en Descubrir.',
 

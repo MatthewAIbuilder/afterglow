@@ -38,7 +38,7 @@ export function useMemoryPicker() {
         // The website takes longer videos and trims them on the tagging sheet; the phone's picker trims them itself.
         showAlert(t('That video is too long'), Platform.OS === 'web' ? t('Choose one of ten minutes or less. You can trim it to the best part next.') : t('Choose a clip of a minute or less.'));
       } else if (r.reason === 'too-large') {
-        showAlert(t('That video is too big'), t('Choose one under 150 MB. A shorter clip usually is.'));
+        showAlert(t('That video is too big'), t('Choose one under 4 GB.'));
       } else if (r.reason === 'wrong-type') {
         showAlert(t('That isn’t a video Afterglow can share'), t('Choose a video from your Photos or Files (MP4 or MOV).'));
       } else if (r.reason === 'app-only') {

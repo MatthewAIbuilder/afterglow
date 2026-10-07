@@ -29,6 +29,8 @@ export type PickedVideo = {
   moment: Moment;
   /** Chosen on the website: a browser keeps no files, so it's kept by sharing it to Discover. */
   keptBySharing?: boolean;
+  /** The file's size, from the website's chooser (a big one can share a shorter part). */
+  bytes?: number;
 };
 
 export type PickResult =

@@ -15,8 +15,13 @@ import type { Memory } from './models';
 export const WEB_MAX_CLIP_SECONDS = 60;
 /** A longer video can be chosen and trimmed to WEB_MAX_CLIP_SECONDS on the tagging sheet, up to this long. */
 export const WEB_MAX_SOURCE_SECONDS = 600;
-/** The same cap as a share's upload (and storage.rules). */
-export const WEB_MAX_VIDEO_BYTES = MAX_SHARE_BYTES;
+/**
+ * The biggest file the website takes. Only the chosen part is uploaded (cut out in the page, `cutPart.web.ts`),
+ * and it has to fit a share's upload cap (MAX_SHARE_BYTES, as storage.rules), so the file itself can be far bigger.
+ */
+export const WEB_MAX_VIDEO_BYTES = 4 * 1024 * 1024 * 1024;
+/** A share's upload cap, which the part that plays has to fit. */
+export const WEB_MAX_PART_BYTES = MAX_SHARE_BYTES;
 
 export type WebVideoFormat = 'video/mp4' | 'video/quicktime' | 'video/x-m4v';
 
@@ -114,7 +119,7 @@ export type WebPickDeps<F extends WebFile> = {
 };
 
 export type WebPickResult =
-  | { ok: true; video: { uri: string; source: 'camera' | 'library'; durationSec: number; width?: number; height?: number; moment: Moment; format: WebVideoFormat } }
+  | { ok: true; video: { uri: string; source: 'camera' | 'library'; durationSec: number; width?: number; height?: number; bytes: number; moment: Moment; format: WebVideoFormat } }
   | { ok: false; reason: 'cancelled' | 'too-long' | 'too-large' | 'wrong-type' | 'failed' };
 
 /** Choosing a video on the website: the same limits as the app, checked before anything is kept or uploaded. */
@@ -148,6 +153,7 @@ export async function pickWebVideo<F extends WebFile>(source: 'camera' | 'librar
       durationSec: metaCheck.durationSec,
       width: metaCheck.width,
       height: metaCheck.height,
+      bytes: file.size,
       moment: source === 'camera' ? { when: new Date(deps.now()) } : webMoment(file.lastModified, deps.now()),
       format: fileCheck.format,
     },

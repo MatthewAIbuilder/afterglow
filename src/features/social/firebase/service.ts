@@ -22,6 +22,7 @@ import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
 import { cleanDecor } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
+import { cutVideoPart } from '../../memories/cutPart';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
@@ -456,8 +457,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         }
         // The file's type decides its name (a video chosen on the website has no name of its own: an iPhone's
         // .mov says video/quicktime), so storage.rules and the player both see what it really is.
-        const video = await (await fetch(input.videoUri)).blob();
-        const contentType = videoType(input.videoUri, video.type);
+        const chosen = await (await fetch(input.videoUri)).blob();
+        // A trimmed video: only its part is uploaded (cut out on the website), with the window moved to match.
+        const part = input.clip ? await cutVideoPart(chosen, input.clip) : undefined;
+        const video = part?.blob ?? chosen;
+        const clip = part?.clip ?? input.clip;
+        const contentType = videoType(input.videoUri, chosen.type);
         const ext = contentType === 'video/quicktime' ? 'mov' : contentType === 'video/x-m4v' ? 'm4v' : 'mp4';
         const videoPath = `memories/${user.uid}/${memRef.id}.${ext}`;
         try {
@@ -494,7 +499,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
                 }
               : {}),
             // A trimmed video: the part that plays.
-            ...(input.clip ? { clipStart: input.clip.start, clipEnd: input.clip.end } : {}),
+            ...(clip ? { clipStart: clip.start, clipEnd: clip.end } : {}),
             capturedAt: input.capturedAt,
             ...(input.durationSec ? { durationSec: input.durationSec } : {}),
             ...(input.width && input.height ? { width: input.width, height: input.height } : {}),

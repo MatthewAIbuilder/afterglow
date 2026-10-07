@@ -1,11 +1,30 @@
 import { describe, expect, it } from '@jest/globals';
-import { CLIP_MAX, clampWindow, cleanClip, clockOf, isWhole, loopPosition, movedTo, needsTrim, suggestWindow, withLength } from '../trim';
+import { CLIP_MAX, clampWindow, clipMaxFor, cleanClip, clockOf, isWhole, loopPosition, movedTo, needsTrim, suggestWindow, withLength } from '../trim';
 
 describe('trimming a video', () => {
   it('only a video longer than a minute has to be trimmed', () => {
     expect(needsTrim(61)).toBe(false);
     expect(needsTrim(62)).toBe(true);
     expect(needsTrim(undefined)).toBe(false);
+  });
+
+  it('a big file shares a shorter part, so the part cut out of it fits the upload cap', () => {
+    const MB = 1024 * 1024;
+    // An ordinary phone video: a minute, as before.
+    expect(clipMaxFor(95, 120 * MB)).toBe(CLIP_MAX);
+    expect(clipMaxFor(95, undefined)).toBe(CLIP_MAX);
+    // 4K at 30 fps (about 170 MB a minute): a bit under a minute.
+    expect(clipMaxFor(120, 340 * MB)).toBe(44);
+    // 4K at 60 fps (about 400 MB a minute): around 17 seconds.
+    expect(clipMaxFor(120, 800 * MB)).toBe(17);
+    // A 50-second 4K video is too big to share whole, so it has to be trimmed too.
+    expect(needsTrim(50, 330 * MB)).toBe(true);
+    expect(needsTrim(50, 100 * MB)).toBe(false);
+    // The suggestion and the window keep to it.
+    expect(suggestWindow(120, undefined, 30, 17)).toEqual({ start: 0, end: 17 });
+    expect(withLength({ start: 50, end: 67 }, 15, 120, 17)).toEqual({ start: 51, end: 66 });
+    expect(clampWindow({ start: 50, end: 95 }, 120, 17)).toEqual({ start: 50, end: 67 });
+    expect(movedTo({ start: 10, end: 27 }, 50, 120, 17)).toEqual({ start: 50, end: 67 });
   });
 
   it('keeps the part inside the video and at most a minute long', () => {

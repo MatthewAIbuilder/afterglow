@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import type { SharedMemory } from '../../social/models';
 import type { Memory } from '../models';
-import { checkWebFile, checkWebMeta, onServer, pickWebVideo, sharedAsMemory, webMoment, webMoments, webVideoFormat, WEB_MAX_CLIP_SECONDS, WEB_MAX_VIDEO_BYTES, type WebFile, type WebPickDeps } from '../webVideo';
+import { checkWebFile, checkWebMeta, onServer, pickWebVideo, sharedAsMemory, webMoment, webMoments, webVideoFormat, WEB_MAX_CLIP_SECONDS, WEB_MAX_PART_BYTES, WEB_MAX_VIDEO_BYTES, type WebFile, type WebPickDeps } from '../webVideo';
 import { MAX_CLIP_SECONDS } from '../device';
 import { MAX_SHARE_BYTES } from '../../social/service';
 
@@ -10,7 +10,9 @@ const MB = 1024 * 1024;
 describe('which files the website takes', () => {
   it('the same limits as the app', () => {
     expect(WEB_MAX_CLIP_SECONDS).toBe(MAX_CLIP_SECONDS);
-    expect(WEB_MAX_VIDEO_BYTES).toBe(MAX_SHARE_BYTES);
+    // The part that plays is cut out and uploaded on its own, so it has to fit the upload cap; the file itself can be far bigger.
+    expect(WEB_MAX_PART_BYTES).toBe(MAX_SHARE_BYTES);
+    expect(WEB_MAX_VIDEO_BYTES).toBe(4 * 1024 * MB);
   });
 
   it('MP4 and an iPhone’s MOV, by type or by name when the browser gives none', () => {
@@ -25,12 +27,13 @@ describe('which files the website takes', () => {
     expect(webVideoFormat('', 'notes.txt')).toBeUndefined();
   });
 
-  it('refuses other files, empty ones and ones over the upload cap', () => {
+  it('refuses other files, empty ones and ones over 4 GB (a big one is cut down before it uploads)', () => {
     expect(checkWebFile({ type: 'video/quicktime', name: 'a.mov', size: 40 * MB })).toEqual({ ok: true, format: 'video/quicktime' });
     expect(checkWebFile({ type: 'video/webm', name: 'a.webm', size: MB })).toEqual({ ok: false, reason: 'wrong-type' });
     expect(checkWebFile({ type: 'video/mp4', name: 'a.mp4', size: 0 })).toEqual({ ok: false, reason: 'failed' });
-    expect(checkWebFile({ type: 'video/mp4', name: 'a.mp4', size: 150 * MB - 1 })).toMatchObject({ ok: true });
-    expect(checkWebFile({ type: 'video/mp4', name: 'a.mp4', size: 150 * MB })).toEqual({ ok: false, reason: 'too-large' });
+    expect(checkWebFile({ type: 'video/mp4', name: 'a.mp4', size: 150 * MB })).toMatchObject({ ok: true });
+    expect(checkWebFile({ type: 'video/quicktime', name: 'IMG_0412.MOV', size: 900 * MB })).toMatchObject({ ok: true });
+    expect(checkWebFile({ type: 'video/mp4', name: 'a.mp4', size: 4 * 1024 * MB })).toEqual({ ok: false, reason: 'too-large' });
   });
 
   it('up to ten minutes (longer ones are trimmed on the tagging sheet), upright or not as the file says, and unreadable ones refused', () => {
@@ -77,10 +80,15 @@ describe('choosing a video on the website', () => {
         durationSec: 24,
         width: 1080,
         height: 1920,
+        bytes: 30 * MB,
         moment: { when: new Date(Date.UTC(2026, 9, 4, 23)) },
         format: 'video/quicktime',
       },
     });
+  });
+
+  it('a big 4K video is taken (only the part that plays is uploaded), with its size for the trim', async () => {
+    expect(await pickWebVideo('library', deps(file({ size: 900 * MB }), { duration: 150, width: 2160, height: 3840 }).d)).toMatchObject({ ok: true, video: { durationSec: 150, bytes: 900 * MB } });
   });
 
   it('cancelled, too long, too big, the wrong kind, or unreadable: plain reasons, and the page lets go of the file', async () => {
@@ -88,7 +96,7 @@ describe('choosing a video on the website', () => {
     const long = deps(file(), { duration: 700, width: 1080, height: 1920 });
     expect(await pickWebVideo('library', long.d)).toEqual({ ok: false, reason: 'too-long' });
     expect(long.revoke).toHaveBeenCalledWith('blob:https://afterglowmusic.app/abc');
-    expect(await pickWebVideo('library', deps(file({ size: 400 * MB })).d)).toEqual({ ok: false, reason: 'too-large' });
+    expect(await pickWebVideo('library', deps(file({ size: 4 * 1024 * MB })).d)).toEqual({ ok: false, reason: 'too-large' });
     expect(await pickWebVideo('library', deps(file({ type: 'video/webm', name: 'a.webm' })).d)).toEqual({ ok: false, reason: 'wrong-type' });
     const unreadable = deps(file());
     unreadable.d.readMeta = async () => undefined;
