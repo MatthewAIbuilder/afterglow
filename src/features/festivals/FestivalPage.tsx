@@ -227,7 +227,9 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
           <View style={styles.lineupTab}>
             <View style={[styles.pad, styles.lineupHead]}>
               <Text style={styles.lineupCount}>
-                {shown.length === lineup.length ? t('{n} acts', { n: lineup.length }) : t('{shown} of {total} acts', { shown: shown.length, total: lineup.length })}
+                {festival.lineupTba && !lineup.length
+                  ? t('Artists to be announced')
+                  : `${shown.length === lineup.length ? t('{n} acts', { n: lineup.length }) : t('{shown} of {total} acts', { shown: shown.length, total: lineup.length })}${festival.lineupTba ? ` · ${t('more to be announced')}` : ''}`}
               </Text>
               <Segmented value={order} onChange={setOrder} />
             </View>

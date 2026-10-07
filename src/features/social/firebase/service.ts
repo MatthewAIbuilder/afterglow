@@ -1584,6 +1584,14 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await updateDoc(doc(fb().db, 'orgs', orgId), { [field]: url, updatedAt: serverTimestamp() });
         return url;
       }),
+    uploadOrgPoster: (orgId, uri) =>
+      guard(async () => {
+        const user = me();
+        const blob = await (await fetch(uri)).blob();
+        const type = /^image\/(png|jpeg|webp)$/.test(blob.type) ? blob.type : 'image/jpeg';
+        const ext = type === 'image/jpeg' ? 'jpg' : type.slice(6);
+        return upload(`orgs/${orgId}/${user.uid}/poster-${Date.now()}.${ext}`, blob, type);
+      }),
     setOrgHandle: (orgId, handle) =>
       guard(async () => {
         await updateDoc(doc(fb().db, 'orgs', orgId), { handle: handle ?? deleteField(), updatedAt: serverTimestamp() });

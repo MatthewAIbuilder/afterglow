@@ -47,9 +47,11 @@ export type OrgEvent = {
   /** "Orlando, FL". */
   city: string;
   about?: string;
-  /** Tickets and a flyer or poster (https). */
+  /** Tickets and a flyer or poster (https; a poster can be uploaded from the studio). */
   tickets?: string;
   poster?: string;
+  /** More artists are still to be announced (with no lineup yet: all of them). */
+  tba?: boolean;
   /** The festival on Afterglow it's the after party of (its id). */
   afterOf?: string;
   lineup: OrgAct[];
@@ -256,6 +258,7 @@ export function cleanEvent(raw: unknown): OrgEvent | undefined {
     about: text(r.about, EVENT_ABOUT_MAX) || undefined,
     tickets: httpsLink(r.tickets),
     poster: httpsLink(r.poster),
+    tba: r.tba === true ? true : undefined,
     afterOf: typeof r.afterOf === 'string' && /^[A-Za-z0-9_.-]{1,64}$/.test(r.afterOf) ? r.afterOf : undefined,
     lineup,
     published: r.published === true,
@@ -443,6 +446,7 @@ export function eventToFestival(org: Org, e: OrgEvent, index: ArtistIndex): { fe
     ...(sets.length ? { sets } : {}),
     ...(Object.keys(links).length ? { links } : {}),
     ...(e.poster ? { posterImageUrl: e.poster } : {}),
+    ...(e.tba || !lineup.length ? { lineupTba: true } : {}),
   };
   return { festival, acts: acts.map(({ id, name, isNew }) => ({ id, name, isNew })) };
 }
@@ -530,7 +534,11 @@ export function withOrgs(base: CatalogSnapshot, orgs: readonly Org[]): CatalogSn
 // ---- Imported events (EDMTrain) --------------------------------------------
 
 /** One line on an organizer's page: its own event, or an imported one it claimed. */
-export type Listing = { key: string; name: string; date: string; endDate?: string; venue: string; city: string; href: string; imported: boolean };
+/** `poster`: its poster picture; `tba`: artists still to be announced. */
+export type Listing = { key: string; name: string; date: string; endDate?: string; venue: string; city: string; href: string; imported: boolean; poster?: string; tba?: boolean };
+
+/** An event's poster and whether its artists are still to be announced, for a listing. */
+export const eventExtras = (e: OrgEvent) => ({ ...(e.poster ? { poster: e.poster } : {}), ...(e.tba || !e.lineup.length ? { tba: true } : {}) });
 
 /** "Venue, Orlando, FL" -> venue "Venue", city "Orlando, FL"; a place with no comma is the city. */
 export function splitPlace(location: string): { venue: string; city: string } {
@@ -545,7 +553,7 @@ export function importedListing(id: string, look: Lookups): Listing | undefined 
   const f = look.festival(id);
   if (f?.startDate) {
     const { venue, city } = splitPlace(f.location);
-    return { key: `f:${id}`, name: f.name, date: f.startDate, ...(f.endDate && f.endDate !== f.startDate ? { endDate: f.endDate } : {}), venue, city, href: `/festival/${id}`, imported: true };
+    return { key: `f:${id}`, name: f.name, date: f.startDate, ...(f.endDate && f.endDate !== f.startDate ? { endDate: f.endDate } : {}), venue, city, href: `/festival/${id}`, imported: true, ...(f.posterImageUrl ? { poster: f.posterImageUrl } : {}) };
   }
   const s = look.show(id);
   if (s) return { key: `s:${id}`, name: s.name ?? s.venue, date: s.date, venue: s.name ? s.venue : '', city: s.location, href: `/show/${id}`, imported: true };
@@ -557,7 +565,7 @@ export function orgListings(org: Org, look: Lookups, today: string): { upcoming:
   const copied = new Set(org.events.filter((e) => e.published && e.from).map((e) => e.from!));
   const own: Listing[] = org.events
     .filter((e) => e.published)
-    .map((e) => ({ key: `e:${e.id}`, name: e.name, date: e.date, ...(e.endDate ? { endDate: e.endDate } : {}), venue: e.venue, city: e.city, href: `/festival/${eventFestivalIdOf(org, e)}`, imported: false }));
+    .map((e) => ({ key: `e:${e.id}`, name: e.name, date: e.date, ...(e.endDate ? { endDate: e.endDate } : {}), venue: e.venue, city: e.city, href: `/festival/${eventFestivalIdOf(org, e)}`, imported: false, ...eventExtras(e) }));
   const claimed = org.claims.filter((c) => !copied.has(c)).flatMap((c) => importedListing(c, look) ?? []);
   const all = [...own, ...claimed];
   const last = (l: Listing) => l.endDate ?? l.date;

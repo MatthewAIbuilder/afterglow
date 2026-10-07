@@ -1361,6 +1361,12 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async orgFinds(orgId) {
       return findsByCode(await service.orgViews(orgId, '2026-01-01'));
     },
+    async uploadOrgPoster(orgId, uri) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      needOrg(orgId);
+      return `https://files.example/orgs/${orgId}/${u.uid}/poster-${++n}.jpg?from=${encodeURIComponent(uri)}`;
+    },
     async postOrgUpdate(orgId, raw) {
       if (network.down) throw new SocialError('network');
       const u = me();

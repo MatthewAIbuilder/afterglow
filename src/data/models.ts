@@ -130,6 +130,12 @@ export type Festival = {
    * carry the venue's coordinates; the phone looks up the rest from `location`.
    */
   place?: { lat: number; lon: number };
+  /**
+   * More of the lineup is still to be announced (an organizer's own event,
+   * features/organizers); with an empty lineup, all of it. Never set in a
+   * catalogue file.
+   */
+  lineupTba?: boolean;
   /** Link to the official lineup poster, if you have one. Tap to view full screen. */
   posterImageUrl?: string;
   /**

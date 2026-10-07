@@ -133,6 +133,40 @@ describe('organizers', () => {
     await app.unmount();
   });
 
+  it('an event can go up with its poster from the phone and its artists to be announced', async () => {
+    seed({ events: [] });
+    const app = await organizer();
+    await showTab(app, 'Events');
+    await fireEvent.press(app.getByText('Add an event'));
+    await fireEvent.changeText(app.getByLabelText('Name'), 'Halloween Ritual');
+    await fireEvent.changeText(app.getByLabelText('Night'), '2026-10-31');
+    await fireEvent.changeText(app.getByLabelText('Venue'), 'The Vault');
+    await fireEvent.changeText(app.getByLabelText('City'), 'Orlando, FL');
+    const picker = jest.requireMock<{ launchImageLibraryAsync: jest.Mock }>('expo-image-picker');
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///poster.jpg', width: 1080, height: 1350 }] }));
+    await fireEvent.press(app.getByText('Choose a poster from your phone'));
+    await flush();
+    expect(app.getByLabelText('Halloween Ritual’s poster')).toBeTruthy();
+    // No artists yet: it goes up as "to be announced".
+    answerAlerts('Publish');
+    await fireEvent.press(app.getByText('Publish'));
+    await flush();
+    const [event] = mockSocial.orgs.get(ORG)!.events;
+    expect(event).toMatchObject({ name: 'Halloween Ritual', published: true, lineup: [] });
+    expect(event.poster).toMatch(/^https:\/\/files\.example\/orgs\/underground-alchemy\/.+\/poster-/);
+
+    await act(async () => router.push(`/festival/${ORG}--halloween-ritual-10-31`));
+    await flush();
+    await fireEvent.press(app.getByRole('tab', { name: /^Lineup/ }));
+    await flush();
+    expect(app.getByText('Artists to be announced')).toBeTruthy();
+    // On its profile's list: its poster and "Lineup TBA".
+    await act(async () => router.push(`/org/${ORG}`));
+    await flush();
+    expect(app.getAllByText('Lineup TBA').length).toBeGreaterThan(0);
+    await app.unmount();
+  });
+
   it('drafts stay in the studio; a non-organizer and an unconfirmed email can’t open it', async () => {
     seed();
     await s().signUp('someone@example.com', 'password123');

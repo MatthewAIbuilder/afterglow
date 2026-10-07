@@ -403,6 +403,8 @@ export interface SocialService {
   orgHunts(orgId: string, max: number): Promise<Hunt[]>;
   /** How many people found each of an organizer's stickers and gifts (code -> count; counts only). Its team or HQ. */
   orgFinds(orgId: string): Promise<Record<string, number>>;
+  /** Upload an event poster from the phone for an organizer (its team); its link, to put on the event. */
+  uploadOrgPoster(orgId: string, uri: string): Promise<string>;
   /** Send an update to an organizer's followers (its team). */
   postOrgUpdate(orgId: string, input: OrgPostInput): Promise<OrgPost>;
   /** The newest updates from these organizers (at most 30), newest first. Anyone signed in. */

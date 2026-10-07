@@ -30,14 +30,16 @@ service firebase.storage {
         );
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
-    // An event organizer's logo and icon (features/organizers): anyone can see them (its page is public).
-    // You upload only into your own folder; which picture an organizer shows is set on its page in the
-    // database, where only its team or HQ may set it (firestore.rules). PNG, JPEG or WebP under 5 MB.
+    // An event organizer's logo, icon and event posters (features/organizers): anyone can see them (its page
+    // is public). You upload only into your own folder; which picture an organizer or event shows is set on
+    // its page in the database, where only its team or HQ may set it (firestore.rules). PNG, JPEG or WebP:
+    // a logo or icon under 5 MB, a poster under 10 MB.
     match /orgs/{orgId}/{uid}/{file} {
       allow read: if true;
       allow create: if request.auth != null && request.auth.uid == uid
-        && file.matches('^(logo|icon)-[0-9]{1,15}[.](png|jpg|webp)$')
-        && request.resource.contentType.matches('image/(png|jpeg|webp)') && request.resource.size < 5 * 1024 * 1024;
+        && file.matches('^(logo|icon|poster)-[0-9]{1,15}[.](png|jpg|webp)$')
+        && request.resource.contentType.matches('image/(png|jpeg|webp)')
+        && request.resource.size < (file.matches('^poster-.*') ? 10 : 5) * 1024 * 1024;
     }
     // A profile's cover photo: your own, a JPEG under 8 MB.
     match /covers/{file} {

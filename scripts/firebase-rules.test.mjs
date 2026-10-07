@@ -1266,6 +1266,11 @@ await t('organizers: logos and icons upload into your own folder (pictures under
   await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidA/logo-1700000000001.png'), png, { contentType: 'image/png' }));
   await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000002.png'), png, { contentType: 'video/mp4' }));
   await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/anything.png'), png, { contentType: 'image/png' }));
+  // Event posters too, up to 10 MB (a logo stays under 5 MB).
+  const big = new Uint8Array(6 * 1024 * 1024);
+  await assertSucceeds(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/poster-1700000000003.jpg'), big, { contentType: 'image/jpeg' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000004.jpg'), big, { contentType: 'image/jpeg' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/banner-1700000000005.jpg'), png, { contentType: 'image/jpeg' }));
   await assertSucceeds(getBytes(ref(anon.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000000.png')));
   await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { logoUrl: 'https://firebasestorage.googleapis.com/x/logo.png', iconUrl: 'https://firebasestorage.googleapis.com/x/icon.png', updatedAt: serverTimestamp() }));
   await assertFails(updateDoc(doc(A.firestore(), 'orgs', 'underground-alchemy'), { logoUrl: 'https://evil.example/logo.png', updatedAt: serverTimestamp() }));

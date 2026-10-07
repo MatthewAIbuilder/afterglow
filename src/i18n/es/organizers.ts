@@ -49,6 +49,10 @@ export const es_organizers: Dictionary = {
   'Publish an event in your studio and it shows here.': 'Publica un evento en tu estudio y aparecerá aquí.',
   'The DJs on your events show here, with how often they play for you.': 'Aquí aparecen los DJs de tus eventos, con cuántas veces tocan para ti.',
   '@{handle} keeps who follows them private.': '@{handle} mantiene en privado quién le sigue.',
+  // Lineups still being announced
+  'Artists to be announced': 'Artistas por anunciar',
+  'more to be announced': 'más por anunciar',
+  'Lineup TBA': 'Cartel por anunciar',
   // Search
   'Event organizer': 'Organizador de eventos',
   '{organizer}, event organizer. Open their page': '{organizer}, organizador de eventos. Abre su página',
