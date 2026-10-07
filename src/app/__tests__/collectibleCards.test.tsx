@@ -30,6 +30,10 @@ describe('shared collectible cards', () => {
     expect(app.getByText('@maya’s collectible')).toBeTruthy();
     expect(app.getByText('Shiny')).toBeTruthy();
     expect(app.getByText('Where HEDEX plays')).toBeTruthy();
+    // It turns over to how far they've come.
+    await fireEvent.press(app.getByText('Turn it over'));
+    await flush();
+    expect(app.getByLabelText(/^7 videos of HEDEX\./)).toBeTruthy();
     await app.unmount();
   });
   it('a link to an artist Afterglow doesn’t have says so', async () => {

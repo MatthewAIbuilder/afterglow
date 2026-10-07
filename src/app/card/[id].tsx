@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +9,7 @@ import { PageTitle } from '../../components/PageTitle';
 import { artistLook } from '../../features/sprouts/artistLook';
 import { tierLabel } from '../../features/sprouts/artistSprouts';
 import { cardFrom } from '../../features/sprouts/cards';
-import { CollectibleCard } from '../../features/sprouts/CollectibleCard';
+import { CardStatsBack, CollectibleCard, FlipCard } from '../../features/sprouts/CollectibleCard';
 import { HoloTilt } from '../../features/sprouts/HoloTilt';
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
@@ -30,6 +31,8 @@ export default function SharedCardScreen() {
   const { width } = useWindowDimensions();
   const cardW = Math.min(300, width - space.xl * 2);
   const artist = card ? catalog.artist(card.artistId) : undefined;
+  // Turned over: how far they've come with this artist.
+  const [turned, setTurned] = useState(false);
   if (!card || !artist) return <Missing title={t('Card not found')} line={t('This card’s artist isn’t on Afterglow any more, or the link isn’t quite right.')} />;
   const look = artistLook(artist);
   const mine = artists.find((a) => a.artistId === artist.id);
@@ -41,9 +44,25 @@ export default function SharedCardScreen() {
       <PageActions />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
         <Text style={styles.kicker}>{owner ? t('{owner}’s collectible', { owner }) : t('A collectible')}</Text>
-        <HoloTilt width={cardW} height={Math.round(cardW * 1.4)} shiny={card.shiny}>
-          <CollectibleCard look={look} artistName={artist.name} tier={card.tier} shiny={card.shiny} owner={owner} line={card.videos ? tierLabel({ tier: card.tier, videos: card.videos }) : undefined} width={cardW} />
+        <HoloTilt width={cardW} height={Math.round(cardW * 1.4)} shiny={card.shiny} onTap={card.videos ? () => setTurned((v) => !v) : undefined}>
+          <FlipCard
+            flipped={turned && !!card.videos}
+            front={<CollectibleCard look={look} artistName={artist.name} tier={card.tier} shiny={card.shiny} owner={owner} line={card.videos ? tierLabel({ tier: card.tier, videos: card.videos }) : undefined} width={cardW} />}
+            back={card.videos ? <CardStatsBack look={look} artistName={artist.name} tier={card.tier} shiny={card.shiny} videos={card.videos} width={cardW} /> : null}
+          />
         </HoloTilt>
+        {card.videos ? (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              setTurned((v) => !v);
+            }}
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={styles.turn}>{turned ? t('Turn it back') : t('Turn it over')}</Text>
+          </Pressable>
+        ) : null}
         {mine ? (
           <>
             <Text style={styles.body}>{t('You have this one too: {line}.', { line: tierLabel(mine) })}</Text>
@@ -73,6 +92,7 @@ export default function SharedCardScreen() {
 }
 
 const styles = StyleSheet.create({
+  turn: { ...type.caption, color: color.moonFaint, textDecorationLine: 'underline' },
   root: { flex: 1, backgroundColor: color.night },
   content: { paddingHorizontal: space.xl, gap: space.md, alignItems: 'center', maxWidth: 560, width: '100%', alignSelf: 'center' },
   kicker: { ...type.label, color: color.moonDim, letterSpacing: 1.2, textTransform: 'uppercase' },
