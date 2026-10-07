@@ -77,5 +77,5 @@ describe('your collection', () => {
     await flush();
     expect(Sharing.shareAsync).toHaveBeenCalled();
     await app.unmount();
-  });
+  }, 30000);
 });

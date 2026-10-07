@@ -31,6 +31,7 @@ import { KandiLine } from '../features/kandi/KandiLine';
 import { KandiBracelet } from '../features/kandi/KandiBracelet';
 import { patternOf } from '../features/kandi/kandi';
 import { StoryPreview } from '../features/sprouts/StoryShare';
+import { HoloTilt } from '../features/sprouts/HoloTilt';
 import { showAlert } from '../lib/dialog';
 import { color, glowA, radius, space, type } from '../theme/tokens';
 
@@ -424,6 +425,7 @@ function SproutSheet({ sprout, onClose: close }: { sprout?: GardenView; onClose:
     close();
   };
   const bloomed = !!s && s.stage === 3 && s.shown !== 'seedling';
+  const cardW = Math.min(250, Math.round((height - insets.top - 320) / 1.4));
   return (
     <Modal visible={!!s} transparent animationType="fade" onRequestClose={() => (story ? setStory(false) : onClose())}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
@@ -431,7 +433,9 @@ function SproutSheet({ sprout, onClose: close }: { sprout?: GardenView; onClose:
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
             {s.stage === 3 && s.shown !== 'seedling' ? (
               // In bloom: its card.
-              <SproutCard kind={s.shown} from={fromLine(s)} line={day(s.at)} width={Math.min(250, Math.round((height - insets.top - 320) / 1.4))} />
+              <HoloTilt width={cardW} height={Math.round(cardW * 1.4)}>
+                <SproutCard kind={s.shown} from={fromLine(s)} line={day(s.at)} width={cardW} />
+              </HoloTilt>
             ) : (
               <>
                 <Sprout kind={s.shown} stage={s.stage} size={150} />

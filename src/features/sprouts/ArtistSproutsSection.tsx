@@ -15,6 +15,7 @@ import { shareMessage } from '../../lib/share';
 import { useSocial } from '../../state/social';
 import { LOCALE, t, tn } from '../../i18n';
 import { StoryPreview } from './StoryShare';
+import { HoloTilt } from './HoloTilt';
 
 const day = (at: number) => (at ? new Date(at).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
@@ -87,7 +88,9 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
         {a && look ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl, maxHeight: height - insets.top }]} onPress={() => {}} accessible={false}>
             <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-            <CollectibleCard look={look} artistName={a.name} tier={s?.tier ?? 0} shiny={!!s?.shiny} owner={handle && (s || open?.given) ? `@${handle}` : undefined} line={s ? tierLabel(s) : undefined} width={cardWidth} />
+            <HoloTilt width={cardWidth} height={Math.round(cardWidth * 1.4)} shiny={!!s?.shiny}>
+              <CollectibleCard look={look} artistName={a.name} tier={s?.tier ?? 0} shiny={!!s?.shiny} owner={handle && (s || open?.given) ? `@${handle}` : undefined} line={s ? tierLabel(s) : undefined} width={cardWidth} />
+            </HoloTilt>
             {s ? (
               <>
                 <Text style={styles.label}>{tierLabel(s)}</Text>

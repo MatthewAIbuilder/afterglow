@@ -9,6 +9,7 @@ import { artistLook } from '../../features/sprouts/artistLook';
 import { tierLabel } from '../../features/sprouts/artistSprouts';
 import { cardFrom } from '../../features/sprouts/cards';
 import { CollectibleCard } from '../../features/sprouts/CollectibleCard';
+import { HoloTilt } from '../../features/sprouts/HoloTilt';
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
@@ -27,6 +28,7 @@ export default function SharedCardScreen() {
   const { artists } = useSprouts();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const cardW = Math.min(300, width - space.xl * 2);
   const artist = card ? catalog.artist(card.artistId) : undefined;
   if (!card || !artist) return <Missing title={t('Card not found')} line={t('This card’s artist isn’t on Afterglow any more, or the link isn’t quite right.')} />;
   const look = artistLook(artist);
@@ -39,7 +41,9 @@ export default function SharedCardScreen() {
       <PageActions />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
         <Text style={styles.kicker}>{owner ? t('{owner}’s collectible', { owner }) : t('A collectible')}</Text>
-        <CollectibleCard look={look} artistName={artist.name} tier={card.tier} shiny={card.shiny} owner={owner} line={card.videos ? tierLabel({ tier: card.tier, videos: card.videos }) : undefined} width={Math.min(300, width - space.xl * 2)} />
+        <HoloTilt width={cardW} height={Math.round(cardW * 1.4)} shiny={card.shiny}>
+          <CollectibleCard look={look} artistName={artist.name} tier={card.tier} shiny={card.shiny} owner={owner} line={card.videos ? tierLabel({ tier: card.tier, videos: card.videos }) : undefined} width={cardW} />
+        </HoloTilt>
         {mine ? (
           <>
             <Text style={styles.body}>{t('You have this one too: {line}.', { line: tierLabel(mine) })}</Text>
