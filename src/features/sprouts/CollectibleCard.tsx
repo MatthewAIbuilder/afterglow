@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { t } from '../../i18n';
 import { color, radius, space, type } from '../../theme/tokens';
-import { type ArtistLook, foldName, SIGNATURE_NAMES } from './artistLook';
+import { type ArtistLook, foldName, shinyLook, SIGNATURE_NAMES } from './artistLook';
 import { type Tier, TIER_LABEL } from './artistSprouts';
 import { Collectible, TIER_COLOR } from './Collectible';
 
@@ -50,7 +50,11 @@ export function CollectibleCard({
   width?: number;
 }) {
   const height = Math.round(width * 1.4);
+  const own = look;
+  look = shiny ? shinyLook(own) : own;
   const num = cardNumber(artistName);
+  // Type scales with the card, so a small one reads like a big one.
+  const k = width / 280;
   const reduce = useReducedMotion();
   const sweep = useSharedValue(0);
   useEffect(() => {
@@ -84,19 +88,19 @@ export function CollectibleCard({
           <View style={[styles.window, { borderColor: `${p.glow}55` }]}>
             <LinearGradient colors={[`${p.glow}40`, `${p.alt}22`, 'rgba(0,0,0,0)']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
             {shiny ? <LinearGradient colors={['rgba(255,138,216,0.25)', 'rgba(138,184,255,0.18)', 'rgba(138,255,208,0.25)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /> : null}
-            <Collectible look={look} size={Math.round(width * 0.62)} tier={0} still={reduce} />
+            <Collectible look={look} size={Math.round(width * 0.56)} tier={0} shiny={shiny} still={reduce} />
           </View>
-          <Text style={[styles.name, { color: shiny ? '#FFFFFF' : look.accent }]} numberOfLines={1}>
+          <Text style={[styles.name, { color: shiny ? '#FFFFFF' : look.accent, fontSize: 22 * k, lineHeight: 27 * k }]} numberOfLines={1} adjustsFontSizeToFit>
             {look.name}
           </Text>
-          <Text style={styles.artist} numberOfLines={1}>
+          <Text style={[styles.artist, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={1}>
             {artistName}
           </Text>
-          <Text style={styles.flavour} numberOfLines={2}>
+          <Text style={[styles.flavour, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={2}>
             {look.theme}.
           </Text>
           <View style={[styles.foot, { borderTopColor: `${p.glow}33` }]}>
-            <Text style={styles.footText} numberOfLines={1}>
+            <Text style={[styles.footText, { fontSize: 11 * k, lineHeight: 15 * k }]} numberOfLines={1}>
               {[owner, line].filter(Boolean).join(' · ') || 'Afterglow'}
             </Text>
             <Text style={[styles.mark, { color: p.glow }]}>✦</Text>
@@ -118,7 +122,7 @@ const styles = StyleSheet.create({
   num: { ...type.caption, fontWeight: '700', letterSpacing: 1.2, fontVariant: ['tabular-nums'], opacity: 0.85 },
   badge: { ...type.caption, fontWeight: '700', letterSpacing: 0.8, paddingHorizontal: space.sm, paddingVertical: 1, borderRadius: radius.pill, borderWidth: 1, overflow: 'hidden' },
   shinyBadge: { color: '#1A1030', backgroundColor: '#FFE58A', borderColor: '#FFE58A' },
-  window: { alignSelf: 'stretch', aspectRatio: 1.05, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, borderWidth: 1, overflow: 'hidden', marginBottom: space.sm },
+  window: { alignSelf: 'stretch', aspectRatio: 1.18, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, borderWidth: 1, overflow: 'hidden', marginBottom: space.sm },
   name: { ...type.title, textAlign: 'center' },
   artist: { ...type.label, color: color.moon, letterSpacing: 1, textTransform: 'uppercase' },
   flavour: { ...type.caption, color: color.moonDim, textAlign: 'center', fontStyle: 'italic', marginTop: 2 },

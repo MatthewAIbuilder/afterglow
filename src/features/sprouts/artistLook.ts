@@ -211,6 +211,45 @@ export function artistLook(a: ArtistLike): ArtistLook {
   return { ...spec, palette, accent: palette.glow, signature: false };
 }
 
+/** A colour turned round the colour wheel (`deg`), its lightness kept. */
+function turned(c: string, deg: number): string {
+  const [r, g, b] = hex(c).map((v) => v / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return c;
+  const sat = d / (1 - Math.abs(2 * l - 1));
+  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (((h * 60 + deg) % 360) + 360) % 360;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = sat * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return toHex([f(0), f(8), f(4)].map((v) => Math.round(v * 255)));
+}
+
+/**
+ * A shiny one: the same creature in a rare second colouring, its colours
+ * turned round the wheel (the eyes' and details' accent too). One in
+ * `SHINY_ODDS` of anyone's collectibles is shiny (see `shinyFor`).
+ */
+export function shinyLook(look: ArtistLook): ArtistLook {
+  const deg = 150;
+  const p = look.palette;
+  const palette: Palette = { light: turned(p.light, deg), mid: turned(p.mid, deg), deep: turned(p.deep, deg), alt: turned(p.alt, deg), altDeep: turned(p.altDeep, deg), accent: turned(p.accent, deg), glow: turned(p.glow, deg) };
+  return { ...look, palette, accent: palette.glow };
+}
+
+/** One in this many collectibles is shiny. */
+export const SHINY_ODDS = 12;
+
+/** Whether this account's collectible of this artist is shiny: decided once, the same on every phone. */
+export function shinyFor(account: string, artistId: string): boolean {
+  let h = 2166136261;
+  for (const ch of `${account}:${artistId}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  return h % SHINY_ODDS === 0;
+}
+
 /** Which artists have a hand-made collectible (folded names). */
 export const SIGNATURE_NAMES = Object.keys(SIGNATURES);
 

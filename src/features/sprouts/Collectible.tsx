@@ -53,7 +53,7 @@ const ellipseD = (x: number, y: number, rx: number, ry: number) => `M${x - rx} $
  * is its ground) and keeps time by the garden's clock (`driven`).
  * Hidden from screen readers (the label around it says what it is).
  */
-export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FROM, locked, scene, driven }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean; scene?: boolean; driven?: Driven }) {
+export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FROM, locked, scene, driven, shiny = false }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean; scene?: boolean; driven?: Driven; shiny?: boolean }) {
   // Ends with `_`, so a fill's name ends `_vs`, `_vh` … (creatures.tsx's `mirror` reads them).
   const uid = `c${useId().replace(/[^a-zA-Z0-9]/g, '')}_`;
   const p = locked ? LOCKED : look.palette;
@@ -236,6 +236,12 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
         <Stop offset="0.6" stopColor="#000000" stopOpacity={0.22} />
         <Stop offset="1" stopColor="#000000" stopOpacity={0} />
       </RadialGradient>
+      <LinearGradient id={`${uid}sh`} x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#FF8AD8" />
+        <Stop offset="0.3" stopColor="#8AB8FF" />
+        <Stop offset="0.6" stopColor="#8AFFD0" />
+        <Stop offset="1" stopColor="#FFE58A" />
+      </LinearGradient>
       <RadialGradient id={`${uid}g`} cx="50%" cy="50%" r="50%">
         <Stop offset="0" stopColor={p.glow} stopOpacity={locked ? 0.15 : 0.55} />
         <Stop offset="0.6" stopColor={p.glow} stopOpacity={locked ? 0.05 : 0.16} />
@@ -303,6 +309,16 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       )}
       <Circle cx={50} cy={50} r={47.5} fill="none" stroke={ring} strokeWidth={tier ? 2.6 : 1} opacity={tier ? 0.95 : 0.45} />
       {tier === 3 && !locked ? <Circle cx={50} cy={50} r={45.4} fill="none" stroke="#FFF3B0" strokeWidth={0.6} opacity={0.6} /> : null}
+      {/* A shiny one: a rainbow ring inside its level's, and gold sparkles. */}
+      {shiny && !locked ? (
+        <>
+          <Circle cx={50} cy={50} r={tier ? 44.6 : 47} fill="none" stroke={`url(#${uid}sh)`} strokeWidth={1.8} opacity={0.95} />
+          <Path d={star(22, 18, 3.2)} fill="#FFE58A" />
+          <Path d={star(80, 26, 2.2)} fill="#FFFFFF" opacity={0.9} />
+          <Path d={star(84, 70, 2.8)} fill="#FFE58A" />
+          <Path d={star(14, 64, 1.8)} fill="#FFFFFF" opacity={0.85} />
+        </>
+      ) : null}
     </>
   );
   const box = { width: size, height: size, overflow: scene ? ('visible' as const) : ('hidden' as const) };

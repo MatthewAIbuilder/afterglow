@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useId } from 'react';
 import { View } from 'react-native';
 import Animated, { cancelAnimation, Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
-import type { ArtistLook } from './artistLook';
+import { type ArtistLook, shinyLook } from './artistLook';
 import { Collectible, MOVES_FROM } from './Collectible';
 import { blinkOf, CLOCK_MS, glanceOf, type Pace, paceOf, sine } from './motion';
 import { kindOf, type SproutKind, type Stage } from './sprouts';
@@ -104,6 +104,8 @@ export type SproutProps = {
   locked?: boolean;
   artist?: ArtistLook;
   tier?: 0 | 1 | 2 | 3;
+  /** A rare shiny collectible: its second colouring, a rainbow ring and sparkles. */
+  shiny?: boolean;
   /** In the garden scene: no tile or ground shadow of its own (the scene draws them). */
   scene?: boolean;
   driven?: Driven;
@@ -122,11 +124,11 @@ export type SproutProps = {
  * An artist's passes `artist` (their look, from `artistLook`) and is drawn as
  * their collectible instead (Collectible.tsx), with `tier` for its level.
  */
-export function Sprout({ artist, tier, ...props }: SproutProps) {
-  return artist ? <Collectible look={artist} tier={tier} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} /> : <Plant {...props} />;
+export function Sprout({ artist, tier, shiny, ...props }: SproutProps) {
+  return artist ? <Collectible look={shiny ? shinyLook(artist) : artist} shiny={shiny} tier={tier} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} /> : <Plant {...props} />;
 }
 
-function Plant({ kind = 'seedling', stage = 3, size = 80, still = size < MOVES_FROM, locked, scene, driven }: Omit<SproutProps, 'artist' | 'tier'>) {
+function Plant({ kind = 'seedling', stage = 3, size = 80, still = size < MOVES_FROM, locked, scene, driven }: Omit<SproutProps, 'artist' | 'tier' | 'shiny'>) {
   const k = kindOf(kind);
   const reduce = useReducedMotion();
   const moving = !reduce && !still;

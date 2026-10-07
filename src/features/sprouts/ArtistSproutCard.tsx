@@ -30,7 +30,7 @@ export function ArtistSproutCard({ artist }: { artist: Pick<Artist, 'id' | 'name
       accessibilityLabel={label}
       style={({ pressed }) => [styles.card, mine && { borderColor: `${look.accent}66` }, pressed && styles.pressed]}
     >
-      <Sprout artist={look} tier={mine?.tier ?? 0} stage={3} size={68} locked={!mine} still={!mine} />
+      <Sprout artist={look} tier={mine?.tier ?? 0} shiny={!!mine?.shiny} stage={3} size={68} locked={!mine} still={!mine} />
       <View style={styles.text}>
         <Text style={[styles.kicker, { color: mine ? look.accent : color.moonFaint }]}>{mine ? t('YOUR COLLECTIBLE') : t('THEIR COLLECTIBLE')}</Text>
         <Text style={styles.title}>{look.name}</Text>

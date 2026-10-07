@@ -7,7 +7,7 @@ import { isKind, type GardenView, type SproutKind, type Stage } from './sprouts'
  * (no notes, no sprout codes, no dates). The owner publishes it
  * (`gardens/{uid}`), anyone signed in can visit it from their profile.
  */
-export type PublicResident = { k: 's'; kind: SproutKind; stage: Stage } | { k: 'a'; artistId: string; name: string; tier: Tier };
+export type PublicResident = { k: 's'; kind: SproutKind; stage: Stage } | { k: 'a'; artistId: string; name: string; tier: Tier; shiny?: true };
 
 /** At most this many live in a published garden. */
 export const PUBLIC_GARDEN_MAX = 120;
@@ -23,7 +23,7 @@ export function publicGarden(garden: readonly GardenView[], artists: readonly Ar
   for (const g of garden) if (!g.artist) out.push({ k: 's', kind: g.shown, stage: g.stage });
   for (const a of artists) {
     const name = nameOf(a.artistId);
-    if (name) out.push({ k: 'a', artistId: a.artistId, name: name.slice(0, NAME_MAX), tier: a.tier });
+    if (name) out.push({ k: 'a', artistId: a.artistId, name: name.slice(0, NAME_MAX), tier: a.tier, ...(a.shiny ? { shiny: true as const } : {}) });
   }
   for (const g of garden) if (g.artist && ID.test(g.artist.id)) out.push({ k: 'a', artistId: g.artist.id, name: (nameOf(g.artist.id) ?? g.artist.name).slice(0, NAME_MAX), tier: 0 });
   return out.slice(0, PUBLIC_GARDEN_MAX);
@@ -38,13 +38,13 @@ export function cleanPublicGarden(raw: unknown): PublicResident[] {
     const o = r as Record<string, unknown>;
     if (o.k === 's' && isKind(o.kind) && isStage(o.stage)) out.push({ k: 's', kind: o.kind, stage: o.stage });
     else if (o.k === 'a' && typeof o.artistId === 'string' && ID.test(o.artistId) && typeof o.name === 'string' && o.name.trim() && isTier(o.tier))
-      out.push({ k: 'a', artistId: o.artistId, name: o.name.trim().slice(0, NAME_MAX), tier: o.tier });
+      out.push({ k: 'a', artistId: o.artistId, name: o.name.trim().slice(0, NAME_MAX), tier: o.tier, ...(o.shiny === true ? { shiny: true as const } : {}) });
   }
   return out;
 }
 
 /** Whether two published gardens are the same (so nothing is written when nothing changed). */
-export const gardenKey = (list: readonly PublicResident[]) => list.map((r) => (r.k === 's' ? `s${r.kind}${r.stage}` : `a${r.artistId}${r.tier}`)).join('|');
+export const gardenKey = (list: readonly PublicResident[]) => list.map((r) => (r.k === 's' ? `s${r.kind}${r.stage}` : `a${r.artistId}${r.tier}${r.shiny ? '*' : ''}`)).join('|');
 
 /** "12 sprouts · 3 collectibles"-style counts. */
 export function gardenCounts(list: readonly PublicResident[]) {

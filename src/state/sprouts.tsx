@@ -42,6 +42,7 @@ import { useCatalog } from './catalog';
 import { bumpQuestEvent } from './dailyQuests';
 import { useGoing } from './going';
 import { useMemories } from './memories';
+import { shinyFor } from '../features/sprouts/artistLook';
 import { artistSprouts, type ArtistSprout, cleanShown, newArtistSprouts, shownMark, withPosted } from '../features/sprouts/artistSprouts';
 import { useSeen } from './seen';
 import { useSocial } from './social';
@@ -735,7 +736,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   }, [account, online, social.availability.ok, social.service, back]);
   const artists = useMemo(() => {
     const known = (id: string) => !!catalog.artist(id);
-    return withPosted(artistSprouts(memories, known), posted && posted.account === account ? posted.list : [], known);
+    const list = withPosted(artistSprouts(memories, known), posted && posted.account === account ? posted.list : [], known);
+    // A rare few are shiny: decided by your account and the artist, the same on every phone.
+    return account ? list.map((a) => (shinyFor(account, a.artistId) ? { ...a, shiny: true } : a)) : list;
   }, [memories, catalog, posted, account]);
   useEffect(() => {
     artistsRef.current = artists;

@@ -36,7 +36,7 @@ export type SceneResident = {
   bar?: { at: number; color: string };
   /** Its first appearance: it glows. */
   fresh?: boolean;
-  look: { kind: SproutKind; stage: Stage } | { artist: ArtistLook; tier: Tier };
+  look: { kind: SproutKind; stage: Stage } | { artist: ArtistLook; tier: Tier; shiny?: boolean };
 };
 
 type Props = {
@@ -353,7 +353,7 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
             accessibilityHint={visiting ? t('Tap to make it dance') : t('Hold and drag to move')}
             style={({ pressed }) => [{ width: size, height: size }, pressed && !carrying && styles.pressed]}
           >
-            {'kind' in look ? <Sprout kind={look.kind} stage={look.stage} size={size} still={reduce} scene driven={driven} /> : <Sprout artist={look.artist} tier={look.tier} size={size} still={reduce} scene driven={driven} />}
+            {'kind' in look ? <Sprout kind={look.kind} stage={look.stage} size={size} still={reduce} scene driven={driven} /> : <Sprout artist={look.artist} tier={look.tier} shiny={look.shiny} size={size} still={reduce} scene driven={driven} />}
           </Pressable>
         </Animated.View>
         {names ? (

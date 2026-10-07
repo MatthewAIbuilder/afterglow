@@ -16,7 +16,7 @@ import { type ArtistSprout, TIER_AT, tierLabel, toNextTier } from '../features/s
 import { TIER_COLOR } from '../features/sprouts/Collectible';
 import { GardenScene, type SceneResident } from '../features/sprouts/GardenScene';
 import { FindsSection } from '../features/finds/FindsSection';
-import { artistLook } from '../features/sprouts/artistLook';
+import { artistLook, shinyLook } from '../features/sprouts/artistLook';
 import { useCatalog } from '../state/catalog';
 import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
 import { LOCALE, t } from '../i18n';
@@ -108,11 +108,11 @@ export default function GardenScreen() {
         {
           id: `${ARTIST_PREFIX}${a.artistId}`,
           name: artist.name,
-          label: t('{artist} collectible, {tier}.', { artist: artist.name, tier: tierLabel(a) }),
+          label: a.shiny ? t('Shiny {artist} collectible, {tier}.', { artist: artist.name, tier: tierLabel(a) }) : t('{artist} collectible, {tier}.', { artist: artist.name, tier: tierLabel(a) }),
           size: TIER_SIZE[a.tier],
           bar: { at: next ? (a.videos - TIER_AT[a.tier]) / (TIER_AT[next.tier] - TIER_AT[a.tier]) : 1, color: TIER_COLOR[next ? next.tier : 3] },
           fresh: sprouts.newArtists.some((n) => n.artistId === a.artistId),
-          look: { artist: artistLook(artist), tier: a.tier },
+          look: { artist: artistLook(artist), tier: a.tier, shiny: !!a.shiny },
         },
       ];
     }),
@@ -295,7 +295,7 @@ export default function GardenScreen() {
             : bloom
               ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt }
               : fresh && freshArtist
-                ? { kind: 'artistSprout', name: freshArtist.name, look: artistLook(freshArtist), tier: fresh.tier, videos: fresh.videos }
+                ? { kind: 'artistSprout', name: freshArtist.name, look: fresh.shiny ? shinyLook(artistLook(freshArtist)) : artistLook(freshArtist), tier: fresh.tier, videos: fresh.videos }
                 : undefined
         }
         onDone={() => {

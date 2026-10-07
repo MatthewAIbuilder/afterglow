@@ -374,7 +374,7 @@ export default function PublicProfileScreen() {
                 r.k === 's' ? (
                   <Sprout key={i} kind={r.kind} stage={r.stage} size={40} still />
                 ) : (
-                  <Sprout key={i} artist={artistLook(catalog.artist(r.artistId) ?? { id: r.artistId, name: r.name, sound: {} })} tier={r.tier} size={40} still />
+                  <Sprout key={i} artist={artistLook(catalog.artist(r.artistId) ?? { id: r.artistId, name: r.name, sound: {} })} tier={r.tier} shiny={!!r.shiny} size={40} still />
                 ),
               )}
             </View>
