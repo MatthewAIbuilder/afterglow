@@ -6,12 +6,14 @@
  * starts at the beginning instead.
  */
 export const LOUDNESS_MAX_SEC = 240;
+/** Nor for a file bigger than this (a few minutes of 4K would be read whole into memory). */
+export const LOUDNESS_MAX_BYTES = 300 * 1024 * 1024;
 const SLICE_SEC = 0.5;
 
 type AudioCtx = { decodeAudioData(b: ArrayBuffer): Promise<{ sampleRate: number; numberOfChannels: number; length: number; getChannelData(i: number): Float32Array }>; close(): Promise<void> };
 
-export async function loudnessOf(uri: string, durationSec: number): Promise<number[] | undefined> {
-  if (!(durationSec > 0) || durationSec > LOUDNESS_MAX_SEC || typeof window === 'undefined') return undefined;
+export async function loudnessOf(uri: string, durationSec: number, bytes?: number): Promise<number[] | undefined> {
+  if (!(durationSec > 0) || durationSec > LOUDNESS_MAX_SEC || (bytes !== undefined && bytes > LOUDNESS_MAX_BYTES) || typeof window === 'undefined') return undefined;
   const Ctor = (window as unknown as { AudioContext?: new () => AudioCtx; webkitAudioContext?: new () => AudioCtx }).AudioContext ?? (window as unknown as { webkitAudioContext?: new () => AudioCtx }).webkitAudioContext;
   if (!Ctor) return undefined;
   let ctx: AudioCtx | undefined;

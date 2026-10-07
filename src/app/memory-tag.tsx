@@ -25,7 +25,7 @@ import { allArtists, B2B_MAX, b2bLine } from '../features/memories/b2b';
 import { TagPeople } from '../features/social/TagPeople';
 import { VideoPreview } from '../features/memories/VideoPreview';
 import { loudnessOf } from '../features/memories/loudness';
-import { needsTrim, suggestWindow, type ClipWindow } from '../features/memories/trim';
+import { CLIP_SUGGESTED, clipMaxFor, needsTrim, suggestWindow, type ClipWindow } from '../features/memories/trim';
 import { type PastEvent, pastLabel } from '../features/memories/past';
 import { throwbackSharesLine } from '../features/memories/throwbackLimit';
 import { useThrowbackShares } from '../features/memories/useThrowbackShares';
@@ -233,20 +233,25 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
 
   // The part that plays, for a new video (a long one always has one; it starts on the loudest stretch).
   const draftLength = draft?.durationSec;
-  const [clip, setClip] = useState<ClipWindow | undefined>(() => (draftLength && needsTrim(draftLength) ? suggestWindow(draftLength, undefined) : undefined));
+  // A big file can share less than a minute (its part is cut out and uploaded on its own).
+  const draftBytes = draft?.bytes;
+  const clipMax = clipMaxFor(draftLength, draftBytes);
+  const [clip, setClip] = useState<ClipWindow | undefined>(() =>
+    draftLength && needsTrim(draftLength, draftBytes) ? suggestWindow(draftLength, undefined, Math.min(CLIP_SUGGESTED, clipMax), clipMax) : undefined,
+  );
   const touchedClip = useRef(false);
   const draftUri = draft?.uri;
   useEffect(() => {
-    if (!draftUri || !draftLength || !needsTrim(draftLength)) return;
+    if (!draftUri || !draftLength || !needsTrim(draftLength, draftBytes)) return;
     let live = true;
-    void loudnessOf(draftUri, draftLength).then((loud) => {
-      const w = loud ? suggestWindow(draftLength, loud) : undefined;
+    void loudnessOf(draftUri, draftLength, draftBytes).then((loud) => {
+      const w = loud ? suggestWindow(draftLength, loud, Math.min(CLIP_SUGGESTED, clipMax), clipMax) : undefined;
       if (live && w && !touchedClip.current) setClip(w);
     });
     return () => {
       live = false;
     };
-  }, [draftUri, draftLength, setClip]);
+  }, [draftUri, draftLength, draftBytes, clipMax, setClip]);
 
   // People in it, tagged once it's on Discover (it shows on their profiles; they can hide it).
   const [people, setPeople] = useState<string[]>(() => existing?.people ?? []);
@@ -477,9 +482,10 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
         {/* On the website (on the phone, the iPhone's own picker trims). */}
         {draft && webPost && draftLength && draftLength > 10 ? (
           <>
-            <Text style={styles.section}>{needsTrim(draftLength) ? t('Trim') : t('Trim (optional)')}</Text>
+            <Text style={styles.section}>{needsTrim(draftLength, draftBytes) ? t('Trim') : t('Trim (optional)')}</Text>
             <TrimBar
               durationSec={draftLength}
+              bytes={draftBytes}
               value={clip}
               onChange={(w) => {
                 touchedClip.current = true;

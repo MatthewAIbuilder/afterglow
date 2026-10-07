@@ -3,6 +3,6 @@
  * website reads the sound (loudness.web.ts); the phone's own picker trims a
  * long video before Afterglow sees it, so here there's nothing to read.
  */
-export async function loudnessOf(_uri: string, _durationSec: number): Promise<number[] | undefined> {
+export async function loudnessOf(_uri: string, _durationSec: number, _bytes?: number): Promise<number[] | undefined> {
   return undefined;
 }
