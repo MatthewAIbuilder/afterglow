@@ -142,4 +142,12 @@ export const es_artist: Dictionary = {
   'Discover more like {artist}': 'Descubrir más como {artist}',
   'Starts a station in Discover: their sets and artists with a similar sound': 'Empieza una emisora en Descubrir: sus sets y artistas de sonido parecido',
   'More like this': 'Más como esto',
+  // Film the set, at their show
+  'TONIGHT · {place}': 'ESTA NOCHE · {place}',
+  'AT THE SHOW?': '¿ESTÁS EN EL SHOW?',
+  'Film the set': 'Graba el set',
+  'Post a minute of {artist} from the crowd. It shows on this page and in Discover for every fan.': 'Publica un minuto de {artist} desde el público. Se ve en esta página y en Descubrir para todos sus fans.',
+  'Post a video of {artist}': 'Publicar un video de {artist}',
+  'Film {artist}': 'Grabar a {artist}',
+  'Film it': 'Grabar',
 };

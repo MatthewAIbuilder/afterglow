@@ -16,7 +16,7 @@ import { sharedAsMemory } from '../features/memories/webVideo';
 import { momentLine } from '../features/memories/organize';
 import { PastPicker } from '../features/memories/PastPicker';
 import { ShowPicker } from '../features/memories/ShowPicker';
-import { showBill, showLabel, type ShowTag } from '../features/memories/show';
+import { showBill, showLabel, showTagOf, type ShowTag } from '../features/memories/show';
 import { TrimBar } from '../features/memories/TrimBar';
 import { allArtists, B2B_MAX, b2bLine } from '../features/memories/b2b';
 import { TagPeople } from '../features/social/TagPeople';
@@ -87,7 +87,8 @@ export default function MemoryTagScreen() {
 
 function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   // `fresh`: a video just filmed, already kept untagged (so it's never lost) and tagged here for the first time.
-  const { id, fresh: freshParam } = useLocalSearchParams<{ id?: string; fresh?: string }>();
+  // `artist` and `show`: filmed from their page ("Film the set"), so who was playing (and where) is already known.
+  const { id, fresh: freshParam, artist: artistParam, show: showParam } = useLocalSearchParams<{ id?: string; fresh?: string; artist?: string; show?: string }>();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const catalog = useCatalog();
@@ -100,6 +101,9 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const fresh = !!existing && freshParam === '1';
   // Retagging something already saved, rather than tagging a new video.
   const retagging = !!existing && !fresh;
+  const presetArtist = !retagging && artistParam && catalog.artist(artistParam) ? artistParam : undefined;
+  const presetShowOf = catalog.shows.find((s) => s.id === showParam);
+  const presetShow = !retagging && presetShowOf ? showTagOf(presetShowOf) : undefined;
   // Chosen on the website: a browser keeps no files, so the video is kept by sharing it to Discover.
   const webPost = !!draft?.keptBySharing;
 
@@ -136,18 +140,18 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const topFestival = guesses[0];
   const festivalSure = festivalConfidence(topFestival) !== 'maybe';
 
-  const [festivalId, setFestivalId] = useState<string | undefined>(() => existing?.festivalId ?? (festivalSure ? topFestival?.festival.id : undefined));
+  const [festivalId, setFestivalId] = useState<string | undefined>(() => existing?.festivalId ?? (festivalSure && !presetShow ? topFestival?.festival.id : undefined));
   // A festival from before Afterglow (a video from your camera roll): its name and year instead of a festival on Afterglow.
   const capturedAt = existing?.capturedAt ?? (whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs).toISOString() : new Date().toISOString());
   const [past, setPast] = useState<PastEvent | undefined>(existing?.past);
   // Filmed a while ago, at nothing on Afterglow: open on finding the past festival.
   const [pickingPast, setPickingPast] = useState(() => !retagging && !guesses.length && whenMs !== undefined && Date.now() - whenMs > OLD_VIDEO_MS);
   // A one-night show (a club night or concert) instead of a festival.
-  const [show, setShow] = useState<ShowTag | undefined>(existing?.show);
+  const [show, setShow] = useState<ShowTag | undefined>(existing?.show ?? presetShow);
   const [pickingShow, setPickingShow] = useState(false);
   const festival = festivalId ? catalog.festival(festivalId) : undefined;
   const guessedHere = guesses.find((g) => g.festival.id === festivalId);
-  const [night, setNight] = useState<string | undefined>(() => existing?.night ?? (festivalSure ? topFestival?.night : undefined));
+  const [night, setNight] = useState<string | undefined>(() => existing?.night ?? (festivalSure && !presetShow ? topFestival?.night : undefined));
   // A new festival starts on the night the date says (or none).
   const pickFestival = (f: Festival | undefined) => {
     haptic.select();
@@ -175,7 +179,8 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const [artistIds, setArtistIds] = useState<string[]>(() => (existing ? allArtists(existing) : []));
   const [touchedArtist, setTouchedArtist] = useState(retagging);
   const guessed = artistSure !== 'maybe' ? artistGuesses[0]?.artist.id : undefined;
-  const chosenList = touchedArtist ? artistIds : guessed ? [guessed] : [];
+  // Filmed from their page: them, until you choose otherwise.
+  const chosenList = touchedArtist ? artistIds : presetArtist ? [presetArtist] : guessed ? [guessed] : [];
   const chosenArtist = chosenList[0];
   /** Tick or untick someone (ticking a second makes it a back to back). */
   const toggleArtist = (id: string) => {
