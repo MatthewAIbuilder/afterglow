@@ -29,6 +29,9 @@ import { useProfileBadges } from '../profile/useProfileBadges';
 import { t } from '../../i18n';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { showEventId } from './showEvent';
+import { Sprout } from '../sprouts/Sprout';
+import { gardenLine } from '../sprouts/sprouts';
+import { useSprouts } from '../../state/sprouts';
 
 /**
  * Profile in festival mode: just you. Your photo, name and bio (still
@@ -53,6 +56,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
   const here = useMemo(() => all.filter((m) => m.festivalId === festival.id || (!!m.show?.showId && showEventId(m.show.showId) === festival.id)), [all, festival.id]);
   const shown = here.length ? here : all;
   const b = useProfileBadges();
+  const { garden } = useSprouts();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = useState<'moments' | 'badges'>(params.tab === 'badges' ? 'badges' : 'moments');
   const [seenParam, setSeenParam] = useState(params.tab);
@@ -106,6 +110,16 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
               <View style={styles.row}>
                 <Button label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
                 <Button label={t('Share profile')} icon={<ShareIcon color={color.moon} size={15} />} onPress={share} />
+              </View>
+              {/* Your garden (sprouts, collectibles and the gifts you were given) and giving one, still a tap away at the festival. */}
+              <View style={styles.rowTight}>
+                <Button
+                  label={t('My garden')}
+                  a11y={t('My garden: {what}. Your sprouts, collectibles and gifts', { what: gardenLine(garden.filter((g) => !g.artist)) })}
+                  icon={<Sprout kind="seedling" stage={3} size={22} still />}
+                  onPress={() => router.push('/garden')}
+                />
+                <Button label={t('Give a sprout')} icon={<Sprout kind="seedling" stage={1} size={22} still />} onPress={() => router.push('/give-sprout')} />
               </View>
               <Pressable
                 onPress={() => {
@@ -164,7 +178,7 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
   );
 }
 
-function Button({ label, onPress, icon }: { label: string; onPress: () => void; icon?: React.ReactNode }) {
+function Button({ label, onPress, icon, a11y }: { label: string; onPress: () => void; icon?: React.ReactNode; a11y?: string }) {
   return (
     <Pressable
       onPress={() => {
@@ -172,6 +186,7 @@ function Button({ label, onPress, icon }: { label: string; onPress: () => void; 
         onPress();
       }}
       accessibilityRole="button"
+      accessibilityLabel={a11y ?? label}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
       {icon}
@@ -190,6 +205,7 @@ const styles = StyleSheet.create({
   where: { ...type.label, color: '#FF7EB6' },
   bio: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.xs },
   row: { flexDirection: 'row', gap: space.sm, marginTop: space.lg, alignSelf: 'stretch' },
+  rowTight: { flexDirection: 'row', gap: space.sm, marginTop: space.sm, alignSelf: 'stretch' },
   button: {
     flex: 1,
     flexDirection: 'row',

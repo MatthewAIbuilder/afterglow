@@ -39,4 +39,6 @@ export const es_festivalMode: Dictionary = {
   'With {a}, {b} and {n} more': 'Con {a}, {b} y {n} más',
   'With {n} crewmate': 'Con {n} persona de tu crew',
   'With {n} crewmates': 'Con {n} personas de tu crew',
+  // Profile at a festival or show
+  'My garden: {what}. Your sprouts, collectibles and gifts': 'Mi jardín: {what}. Tus brotes, coleccionables y regalos',
 };
