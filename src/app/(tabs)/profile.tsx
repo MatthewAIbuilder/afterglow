@@ -4,7 +4,7 @@ import { isOver, whenRank } from '../../features/festivals/shelves';
 import { goingLine } from '../../features/social/copy';
 import { CoverSwap } from '../../features/profile/CoverSwap';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
@@ -39,7 +39,6 @@ import { type Highlight, profileHighlights, profileStats, videoGrid } from '../.
 import { useRecapFestivals, useYear } from '../../features/recap/useRecap';
 import { isYearSoFar } from '../../features/recap/year';
 import { tasteMix } from '../../features/taste/lean';
-import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
@@ -67,6 +66,7 @@ import { useGoingShows } from '../../state/goingShows';
 import { color, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
 import { datesLine } from '../../features/festivals/format';
+import { GlassCircleButton } from '../../components/GlassCircleButton';
 
 /** How far the cover photo reaches below the safe area. */
 /** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
@@ -257,9 +257,9 @@ function FullProfile() {
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
             {me ? `@${me.handle}` : t('Profile')}
           </Text>
-          <IconButton label={t('Settings and more')} onPress={() => router.push('/settings')}>
-            <MenuIcon color={color.moon} size={22} />
-          </IconButton>
+          <GlassCircleButton label={t('Settings and more')} onPress={() => router.push('/settings')}>
+            <MenuIcon color={color.moon} size={20} />
+          </GlassCircleButton>
         </View>
 
         <ProfileHeader
@@ -382,28 +382,10 @@ function FullProfile() {
   );
 }
 
-function IconButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
-  return (
-    <Pressable
-      onPress={() => {
-        haptic.select();
-        onPress();
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={8}
-      style={({ pressed }) => [styles.icon, pressed && { opacity: 0.6 }]}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
-  bar: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.xl, paddingRight: space.md, marginBottom: space.lg },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.xl, paddingRight: space.xl, marginBottom: space.lg },
   handle: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
-  icon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   tabs: { marginTop: space.xl },
 
 });

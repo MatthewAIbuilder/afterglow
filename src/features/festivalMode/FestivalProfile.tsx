@@ -27,6 +27,7 @@ import { BadgeCelebration } from '../profile/BadgeCelebration';
 import { BadgesPanel, ClaimBanner } from '../profile/BadgesPanel';
 import { useProfileBadges } from '../profile/useProfileBadges';
 import { t } from '../../i18n';
+import { GlassCircleButton } from '../../components/GlassCircleButton';
 
 /**
  * Profile in festival mode: just you. Your photo, name and bio (still
@@ -78,18 +79,9 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
           <Text style={styles.at} numberOfLines={1}>
             {me ? `@${me.handle}` : t('Profile')}
           </Text>
-          <Pressable
-            onPress={() => {
-              haptic.select();
-              router.push('/settings');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={t('Settings and more')}
-            hitSlop={8}
-            style={({ pressed }) => [styles.round, pressed && styles.pressed]}
-          >
+          <GlassCircleButton label={t('Settings and more')} onPress={() => router.push('/settings')}>
             <MenuIcon color={color.moon} size={20} />
-          </Pressable>
+          </GlassCircleButton>
         </View>
 
         <View style={styles.hero}>
@@ -190,7 +182,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
   bar: { flexDirection: 'row', alignItems: 'center', paddingLeft: space.xl, paddingRight: space.md },
   at: { ...type.headline, color: color.moonDim, flex: 1 },
-  round: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   hero: { alignItems: 'center', paddingHorizontal: space.xl, marginTop: space.md, gap: space.xs },
   ring: { padding: 4, borderRadius: 60, borderWidth: 2, borderColor: '#FF7EB6' },
   name: { ...type.largeTitle, color: color.moon, marginTop: space.md, textAlign: 'center' },
