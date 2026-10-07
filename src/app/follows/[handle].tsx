@@ -1,4 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
+import { useOrgs } from '../../state/orgs';
+import { orgOfAccount } from '../../features/organizers/organizers';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,8 +43,11 @@ export default function FollowsScreen() {
     };
   }, [params.handle, signedIn, social.service]);
 
+  // An event organizer's lists are only its own to see.
+  const orgs = useOrgs();
+  const hidden = !!owner && owner.uid !== social.user?.uid && !!orgOfAccount(orgs, owner.uid);
   useEffect(() => {
-    if (!owner) return;
+    if (!owner || hidden) return;
     let live = true;
     (async () => {
       try {
@@ -56,7 +61,7 @@ export default function FollowsScreen() {
     return () => {
       live = false;
     };
-  }, [owner, list, social.service]);
+  }, [owner, list, social.service, hidden]);
 
   const current = answer?.list === list ? answer : undefined;
   const shown = (current?.people ?? []).filter((p) => !social.blocked.has(p.uid));
@@ -92,6 +97,8 @@ export default function FollowsScreen() {
             <Text style={styles.quiet}>{social.availability.ok ? t('Sign in to see who follows whom.') : SOCIAL_ERROR_COPY.unavailable}</Text>
           ) : owner === null ? (
             <Text style={styles.quiet}>{t('No one is called @{handle} on Afterglow.', { handle: params.handle ?? '' })}</Text>
+          ) : hidden ? (
+            <Text style={styles.quiet}>{t('@{handle} keeps who follows them private.', { handle: String(owner?.handle) })}</Text>
           ) : current?.problem ? (
             <Text style={styles.quiet}>{current.problem}</Text>
           ) : !current ? (

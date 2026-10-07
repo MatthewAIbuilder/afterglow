@@ -278,7 +278,8 @@ export default function PublicProfileScreen() {
             avatarUrl={profile.avatarUrl}
             bio={profile.bio || undefined}
             note={goingLine(going) || undefined}
-            stats={runs ? stats.filter((st) => st.key === 'followers' || st.key === 'following' || st.key === 'moments') : stats}
+            // An event organizer's followers and following are its own business: only it sees them.
+            stats={runs ? stats.filter((st) => st.key === 'moments' || (mine && (st.key === 'followers' || st.key === 'following'))) : stats}
             face={runs ? <OrgDot org={runs} size={94} /> : undefined}
             tappable={['followers', 'following', 'festivals', 'moments', 'badges']}
             onStat={(key) => {

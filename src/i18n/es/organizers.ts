@@ -48,6 +48,7 @@ export const es_organizers: Dictionary = {
   'Plays {n} of your events': 'Toca en {n} de tus eventos',
   'Publish an event in your studio and it shows here.': 'Publica un evento en tu estudio y aparecerá aquí.',
   'The DJs on your events show here, with how often they play for you.': 'Aquí aparecen los DJs de tus eventos, con cuántas veces tocan para ti.',
+  '@{handle} keeps who follows them private.': '@{handle} mantiene en privado quién le sigue.',
   // Artists, stickers and gifts
   'From {organizer}': 'De {organizer}',
   'A gift from {organizer}': 'Un regalo de {organizer}',

@@ -277,6 +277,16 @@ describe('organizers', () => {
     expect(app.getAllByLabelText('Underground Alchemy').length).toBeGreaterThan(0);
     expect(app.getByRole('tab', { name: /^DJs/ })).toBeTruthy();
     expect(app.queryByText('Your artists')).toBeNull();
+    // Festivals shows only its own events, unless it asks for every festival.
+    await act(async () => router.push('/festivals'));
+    await flush();
+    expect(app.getByText('Your events')).toBeTruthy();
+    await fireEvent.press(app.getByText('See all festivals'));
+    await flush();
+    expect(app.getByText('Festivals & shows')).toBeTruthy();
+    await fireEvent.press(app.getByText('← Only your events'));
+    await flush();
+    expect(app.getByText('Add or edit events')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Back to your studio'));
     await flush();
     expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
@@ -303,6 +313,13 @@ describe('organizers', () => {
     expect(fan.getByText('Runs')).toBeTruthy();
     expect(fan.getByText('See their events')).toBeTruthy();
     expect(fan.getByText('Their DJs')).toBeTruthy();
+    // Who follows it, and whom it follows, are its own to see.
+    expect(fan.queryByLabelText(/followers/i)).toBeNull();
+    await act(async () => router.push({ pathname: '/follows/[handle]', params: { handle: 'undergroundalchemy' } }));
+    await flush();
+    expect(fan.getByText('@undergroundalchemy keeps who follows them private.')).toBeTruthy();
+    await act(async () => router.push('/u/undergroundalchemy'));
+    await flush();
     // Fans follow it.
     await fireEvent.press(fan.getByLabelText(/^Follow /));
     await flush();

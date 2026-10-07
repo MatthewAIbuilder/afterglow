@@ -17,6 +17,9 @@ import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
 import { byMonth, bySoonest, festivalShelf, isMany, isOver } from '../../features/festivals/shelves';
 import { NextUpCard } from '../../features/festivals/NextUpCard';
+import { OrgFestivals } from '../../features/organizers/OrgFestivals';
+import { useMyOrg, useOrg } from '../../state/orgs';
+import { useSocial } from '../../state/social';
 import { PromotedEvents } from '../../features/organizers/OrgCards';
 import { FestivalWeekCard } from '../../features/festivalWeek/FestivalWeekCard';
 import { LineupReadyCard } from '../../features/plan/LineupReadyCard';
@@ -55,7 +58,19 @@ const MORE_PAGE = 20;
 /** Shows listed in search results. */
 const SHOWS_FOUND = 8;
 
-export default function FestivalsScreen() {
+/**
+ * An event organizer's account sees its own events here (its studio adds
+ * them), unless it asks to see every festival; everyone else, every festival.
+ */
+export default function FestivalsTab() {
+  const { user } = useSocial();
+  const org = useOrg(useMyOrg(user?.uid) ?? undefined);
+  const [all, setAll] = useState(false);
+  if (org && !all) return <OrgFestivals org={org} onShowAll={() => setAll(true)} />;
+  return <FestivalsScreen onlyOurs={org ? () => setAll(false) : undefined} />;
+}
+
+function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const { taste } = useTaste();
@@ -165,6 +180,11 @@ export default function FestivalsScreen() {
           <Text style={styles.title} accessibilityRole="header">
             {t('Festivals & shows')}
           </Text>
+          {onlyOurs ? (
+            <Pressable onPress={onlyOurs} accessibilityRole="button" hitSlop={8} style={{ alignSelf: 'flex-start', marginTop: space.xs }}>
+              <Text style={{ ...type.label, color: color.glow }}>← Only your events</Text>
+            </Pressable>
+          ) : null}
           <View style={styles.searchWrap}>
             <SearchField
               value={query}
