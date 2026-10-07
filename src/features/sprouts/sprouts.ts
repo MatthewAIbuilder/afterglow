@@ -22,7 +22,7 @@ import { questDay } from '../quests/daily';
  *   kind are already grown.
  */
 
-export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise';
+export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise' | 'moonlight';
 
 export type KindSpec = {
   id: SproutKind;
@@ -48,6 +48,7 @@ export const SPROUT_KINDS: readonly KindSpec[] = [
   { id: 'melody', name: t('Melody sprout'), short: t('Melody'), how: t('Grows from watching melodic sets'), grows: t('watching melodic sets'), about: t('Grown on melodic bass and big feelings.'), body: ['#A4EFC0', '#2FB36B'], accent: '#A97CFF' },
   { id: 'groove', name: t('Groove sprout'), short: t('Groove'), how: t('Grows from watching house and techno'), grows: t('watching house and techno'), about: t('Grown on four to the floor. Never stops moving.'), body: ['#8DEBD2', '#1F9C86'], accent: '#5BE3B5' },
   { id: 'spotlight', name: t('Spotlight sprout'), short: t('Spotlight'), how: t('Grows from filming your own videos'), grows: t('filming your own videos'), about: t('Grown by catching the moment.'), body: ['#B4F0A8', '#45A84F'], accent: '#FFD58A' },
+  { id: 'moonlight', name: t('Moonlight sprout'), short: t('Moonlight'), how: t('Grows from watching sets after midnight'), grows: t('watching sets after midnight'), about: t('Grown in the small hours, glowing softly by moonlight.'), body: ['#C8D8FF', '#5A7AD8'], accent: '#B8C8FF' },
   { id: 'sunrise', name: t('Sunrise sprout'), short: t('Sunrise'), how: t('Grows from filming at sunrise'), grows: t('filming at sunrise'), about: t('Grown by the ones still dancing when the sun comes up.'), body: ['#C2F0A0', '#4DA844'], accent: '#FF9F5A' },
 ];
 
@@ -240,6 +241,7 @@ export function growthOf(journey: Journey, since: number, now: number): Growth {
     if (top === 'festivalDay') leaning = 'wanderer';
     else if (top === 'give') leaning = 'plur';
     else if (top === 'film') leaning = filmed.some((t) => { const h = new Date(t).getHours(); return h >= 5 && h < 8; }) ? 'sunrise' : 'spotlight';
+    else if (watched.filter((w) => new Date(w.at).getHours() < 5).length * 2 >= watched.length) leaning = 'moonlight';
     else {
       const counts: Record<string, number> = {};
       for (const w of watched) if (w.sound) counts[w.sound] = (counts[w.sound] ?? 0) + 1;

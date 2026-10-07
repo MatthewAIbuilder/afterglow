@@ -26,6 +26,7 @@ const LOOKS: Record<SproutKind, Look> = {
   groove: { body: ['#A8F2DD', '#45CFA6', '#14876C'], leaf: ['#86EBCB', '#178A6A'], face: 'shades', leafShape: 'wide' },
   spotlight: { body: ['#E3F7B4', '#A9DB5E', '#5C9A2C'], leaf: ['#CFF29A', '#5E9C30'], face: 'sparkle', leafShape: 'round' },
   sunrise: { body: ['#F2F2B0', '#C3D96A', '#7A9C34'], leaf: ['#E2EE9C', '#7E9E36'], face: 'sleepy', leafShape: 'pointed' },
+  moonlight: { body: ['#E0E6FF', '#9AAEF2', '#4A5AB8'], leaf: ['#C8D4FF', '#5464C0'], face: 'bliss', leafShape: 'petal' },
 };
 const GREY: Look = { body: ['#7C7A92', '#5A5870', '#3A3850'], leaf: ['#7A7890', '#4A4860'], face: 'smile', leafShape: 'round' };
 const INK = '#0E2A1A';
@@ -650,6 +651,15 @@ function Bloom({ kind, x, y, color, grey, id }: { kind: SproutKind; x: number; y
             />
           ))}
           <Path d={`M${x - 13} ${cy + 4.4} L${x + 13} ${cy + 4.4}`} stroke={t('#FFD58A')} strokeWidth={1.2} strokeLinecap="round" opacity={0.8} />
+        </G>
+      );
+    case 'moonlight':
+      // A crescent moon with two stars.
+      return (
+        <G>
+          <Vy d={`M${x + 2} ${cy - 9} A9 9 0 1 0 ${x + 8} ${cy + 5} A7 7 0 1 1 ${x + 2} ${cy - 9} Z`} fill={color} id={id} />
+          <Path d={starPath(x + 9, cy - 7, 2.6, 1.1)} fill={t('#FFFFFF')} />
+          <Path d={starPath(x + 12, cy + 1, 1.6, 0.7)} fill={t('#FFF3B0')} />
         </G>
       );
     default:

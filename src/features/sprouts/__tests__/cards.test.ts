@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { cardFrom, cardLink } from '../cards';
+import { growthOf } from '../sprouts';
 import { artistLook, shinyFor, shinyLook } from '../artistLook';
 import { cleanPublicGarden, gardenKey, publicGarden } from '../publicGarden';
 
@@ -39,5 +40,16 @@ describe('shiny collectibles', () => {
     expect(list).toEqual([{ k: 'a', artistId: 'rezz', name: 'REZZ', tier: 0, shiny: true }]);
     expect(cleanPublicGarden(list)).toEqual(list);
     expect(gardenKey(list)).not.toBe(gardenKey([{ k: 'a', artistId: 'rezz', name: 'REZZ', tier: 0 }]));
+  });
+});
+
+describe('the Moonlight sprout', () => {
+  it('grows from watching sets after midnight', () => {
+    const night = (h: number, i: number) => new Date(2026, 9, 10 + i, h, 30).getTime();
+    const watched = Array.from({ length: 40 }, (_, i) => ({ at: night(i % 4 === 0 ? 23 : 2, i % 20), sound: 'dubstep' }));
+    const g = growthOf({ watched, filmed: [], gave: [], festivalDays: [] }, new Date(2026, 9, 1).getTime(), new Date(2026, 10, 1).getTime());
+    expect(g.leaning).toBe('moonlight');
+    const day = watched.map((w) => ({ ...w, at: w.at + 12 * 3600_000 }));
+    expect(growthOf({ watched: day, filmed: [], gave: [], festivalDays: [] }, new Date(2026, 9, 1).getTime(), new Date(2026, 10, 2).getTime()).leaning).toBe('bass');
   });
 });
