@@ -121,7 +121,7 @@ function Nudge({ label, a11y, onPress }: { label: string; a11y: string; onPress:
 const styles = StyleSheet.create({
   root: { gap: space.sm, paddingHorizontal: space.xl },
   line: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'], textAlign: 'center' },
-  track: { height: 44, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
+  track: { height: 44, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, overflow: 'hidden' },
   window: {
     position: 'absolute',
     top: 0,

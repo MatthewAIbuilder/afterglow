@@ -154,7 +154,7 @@ export function AdminReports() {
 const styles = StyleSheet.create({
   wrap: { gap: space.md },
   empty: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.xl, paddingHorizontal: space.xl },
-  card: { marginHorizontal: space.lg, padding: space.lg, gap: space.xs, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { marginHorizontal: space.lg, padding: space.lg, gap: space.xs, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   cardOpen: { borderColor: 'rgba(255,140,140,0.5)', borderWidth: 1 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   what: { ...type.headline, color: color.moon },

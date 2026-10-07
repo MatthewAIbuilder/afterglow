@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   faces: { flexDirection: 'row', gap: 6 },
   watch: { paddingHorizontal: space.lg, paddingVertical: 7, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth },
   watchText: { ...type.label, color: color.moon },
-  tips: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
+  tips: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
   rowLast: { borderBottomWidth: 0 },
   rowTitle: { ...type.label, color: color.moon },

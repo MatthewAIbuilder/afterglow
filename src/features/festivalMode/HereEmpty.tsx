@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.md },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xl },
-  button: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  button: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   primary: { backgroundColor: color.glowDeep, borderColor: glowA(0.6) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   buttonText: { ...type.label, color: color.moon },

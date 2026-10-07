@@ -95,7 +95,7 @@ export function CrewWhereCard({ festival, crews }: { festival: Festival; crews: 
 }
 
 const styles = StyleSheet.create({
-  card: { padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, gap: space.md },
+  card: { padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, gap: space.md },
   title: { ...type.headline, color: color.moon },
   group: { gap: space.xs },
   stage: { ...type.label, color: color.glow },

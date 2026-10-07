@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   sheetTitle: { ...type.title, color: color.moon, marginTop: 2, textAlign: 'center' },
   sheetAbout: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.sm },
   sheetProgress: { alignSelf: 'stretch', marginTop: space.md, gap: 4 },
-  sheetButton: { marginTop: space.lg, alignSelf: 'stretch', minHeight: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  sheetButton: { marginTop: space.lg, alignSelf: 'stretch', minHeight: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   sheetButtonText: { ...type.headline, color: color.moon },
   halo: { position: 'absolute', shadowOpacity: 0.75, shadowRadius: 10, shadowOffset: { width: 0, height: 0 }, backgroundColor: 'rgba(0,0,0,0.01)' },
   next: {

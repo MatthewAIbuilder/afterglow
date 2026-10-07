@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   chipOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.45) },
   text: { ...type.caption, color: color.moonDim },

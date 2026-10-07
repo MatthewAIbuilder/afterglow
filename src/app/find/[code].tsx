@@ -18,7 +18,7 @@ import { haptic } from '../../lib/haptics';
 import { goBack } from '../../lib/nav';
 import { useFinds } from '../../state/finds';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../../theme/tokens';
 
 /**
  * A sticker you found: what you see after scanning its code, in the app or
@@ -211,9 +211,9 @@ const styles = StyleSheet.create({
   amber: { color: '#FFB86B' },
   box: { alignSelf: 'stretch', padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass, gap: space.xs, alignItems: 'center' },
   boxTitle: { ...type.headline, color: color.moon, textAlign: 'center' },
-  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
+  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.sm },
   primaryText: { ...type.headline, color: color.moon },
-  secondary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });

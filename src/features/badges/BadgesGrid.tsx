@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   addPlus: { ...type.title, color: '#F2B8A6' },
   hint: { ...type.caption, color: color.moonDim, marginTop: space.md, paddingHorizontal: space.xs },
   claim: { ...type.caption, fontSize: 11, color: '#FFE38A', marginTop: -2 },
-  empty: { padding: space.xl, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  empty: { padding: space.xl, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   emptyTitle: { ...type.headline, color: color.moon },
   emptyBody: { ...type.body, color: color.moonDim },
 });

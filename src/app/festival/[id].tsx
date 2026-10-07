@@ -88,7 +88,7 @@ function SentPicks({ artists }: { artists: Artist[] }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
-  picks: { gap: space.sm, padding: space.md, marginHorizontal: space.xl, marginBottom: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  picks: { gap: space.sm, padding: space.md, marginHorizontal: space.xl, marginBottom: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   picksTitle: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: glowA(0.16), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.4) },

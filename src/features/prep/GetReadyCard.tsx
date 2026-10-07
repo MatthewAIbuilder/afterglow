@@ -46,6 +46,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   title: { ...type.headline, color: color.moon },
   sub: { ...type.caption, color: color.moonDim, marginTop: 2 },

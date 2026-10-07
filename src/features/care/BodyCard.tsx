@@ -190,7 +190,7 @@ function Pulse({ now }: { now: number }) {
 
 const styles = StyleSheet.create({
   wrap: { gap: space.sm },
-  tile: { padding: space.lg, gap: space.xs, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  tile: { padding: space.lg, gap: space.xs, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   label: { ...type.label, color: color.moonDim },
   big: { ...type.largeTitle, color: color.moon, fontVariant: ['tabular-nums'] },
   unit: { ...type.body, color: color.moonDim },

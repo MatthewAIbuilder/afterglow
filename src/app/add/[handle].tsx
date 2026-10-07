@@ -11,7 +11,7 @@ import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { type AddResult, useFriendAdds } from '../../state/friendAdds';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../../theme/tokens';
 
 /**
  * A friend link (what a friend code says, opened from a phone's own camera
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   handle: { ...type.body, color: color.moonDim },
   body: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.md },
   amber: { color: '#FFB86B' },
-  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.lg },
+  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.lg },
   primaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.7 },
 });

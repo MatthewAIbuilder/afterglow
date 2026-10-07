@@ -42,7 +42,7 @@ export function ArtistSproutCard({ artist }: { artist: Pick<Artist, 'id' | 'name
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   text: { flex: 1, minWidth: 0, gap: 2 },
   kicker: { ...type.caption, fontSize: 11, letterSpacing: 1.2, fontWeight: '700' },
   title: { ...type.headline, color: color.moon },

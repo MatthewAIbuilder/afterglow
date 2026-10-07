@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   section: { gap: space.sm, marginTop: space.md },
   h2: { ...type.headline, color: color.moon },
   sub: { ...type.caption, color: color.moonDim },
-  hunt: { padding: space.md, gap: space.xs, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center' },
+  hunt: { padding: space.md, gap: space.xs, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, alignItems: 'center' },
   huntDone: { borderColor: 'rgba(255,210,74,0.5)' },
   huntName: { ...type.label, color: color.moon },
   huntLine: { ...type.caption, color: color.moonDim },

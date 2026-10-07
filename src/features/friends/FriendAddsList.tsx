@@ -68,7 +68,7 @@ export function FriendAddsList() {
 const styles = StyleSheet.create({
   wrap: { marginTop: space.lg, gap: space.sm },
   title: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginLeft: space.xs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   rowWaiting: { borderStyle: 'dashed', borderColor: 'rgba(255,184,107,0.6)' },
   name: { ...type.headline, color: color.moon },
   handle: { ...type.body, color: color.moonDim },

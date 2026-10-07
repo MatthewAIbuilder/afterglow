@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   title: { ...type.headline, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.xs },

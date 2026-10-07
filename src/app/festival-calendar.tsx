@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   titleWrap: { flex: 1, alignItems: 'center' },
   title: { ...type.title, color: color.moon },
   sub: { ...type.caption, color: color.moonDim, marginTop: 2 },
-  grid: { marginTop: space.md, marginHorizontal: space.md, padding: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  grid: { marginTop: space.md, marginHorizontal: space.md, padding: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   week: { flexDirection: 'row' },
   weekday: { flex: 1, textAlign: 'center', ...type.caption, color: color.moonFaint, paddingVertical: space.xs },
   cell: { flex: 1, aspectRatio: 0.9, margin: 2, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },

@@ -33,7 +33,8 @@ import { describeSet } from '../festivals/format';
 import { festivalLine } from '../festivals/links';
 import { StarIcon } from '../plan/icons';
 import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
-import { color, motion, radius, space, type, nightA } from '../../theme/tokens';
+import { color, motion, radius, space, type } from '../../theme/tokens';
+import { GlassFill } from '../../components/LiquidGlass';
 import { ActionRail } from './ActionRail';
 import { AUTOPLAY_COUNTDOWN_SEC, countdownTick, passFinished } from './autoplay';
 import { UpNextPill } from './UpNextPill';
@@ -611,7 +612,10 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
               <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(3,2,10,0.82)']} style={[styles.scrim, { height: height * 0.5 }]} pointerEvents="none" />
               <Animated.View style={[styles.center, pauseStyle]} pointerEvents="none">
                 <View style={styles.playDisc}>
-                  <PlayIcon color={color.moon} />
+                  <GlassFill radius={42} tint={0.35} frost={false} />
+                  <View pointerEvents="none">
+                    <PlayIcon color={color.moon} />
+                  </View>
                 </View>
               </Animated.View>
               {burst}
@@ -697,7 +701,10 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
 
           <Animated.View style={[styles.center, pauseStyle]} pointerEvents="none">
             <View style={styles.playDisc}>
-              <PlayIcon color={color.moon} />
+              <GlassFill radius={42} tint={0.35} frost={false} />
+              <View pointerEvents="none">
+                <PlayIcon color={color.moon} />
+              </View>
             </View>
           </Animated.View>
 
@@ -759,7 +766,6 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: nightA(0.45),
   },
   burst: { position: 'absolute', width: BURST, height: BURST },
   info: { position: 'absolute', left: space.xl, right: 96 },

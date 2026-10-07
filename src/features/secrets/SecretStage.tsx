@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -21,6 +20,7 @@ import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { onSecret } from '../../state/secrets';
 import { color, motion, radius, space, type } from '../../theme/tokens';
+import { GlassFill } from '../../components/LiquidGlass';
 import { SECRET_GLOW, SECRETS, type SecretEffect, type SecretId } from './secrets';
 
 /** The festival colours every moment draws from. */
@@ -337,7 +337,7 @@ function FoundToast({ title, line }: { title: string; line: string }) {
         style={styles.toast}
         testID="secret-toast"
       >
-        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+        <GlassFill radius={radius.lg} lit deep />
         <View style={{ flex: 1 }}>
           <Text style={styles.kicker}>{t('Secret found')}</Text>
           <Text style={styles.title}>{title}</Text>
@@ -377,9 +377,6 @@ const styles = StyleSheet.create({
     padding: space.lg,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: 'rgba(40,20,80,0.55)',
-    borderWidth: 1,
-    borderColor: color.glow,
   },
   kicker: { ...type.caption, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: color.glow },
   title: { ...type.headline, color: color.moon },

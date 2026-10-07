@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import type { Show } from '../../../data/models';
 import { filmParams, filmTonight } from '../filmTonight';
 

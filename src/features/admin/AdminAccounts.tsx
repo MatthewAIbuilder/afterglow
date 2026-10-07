@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   lead: { ...type.body, color: color.moonDim, marginBottom: space.xs },
   section: { ...type.title, color: color.moon, marginTop: space.lg },
   small: { ...type.caption, color: color.moonDim },
-  person: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  person: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   name: { ...type.headline, color: color.moon },
   handle: { ...type.label, color: color.moonDim, fontWeight: '500' },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

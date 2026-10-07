@@ -9,7 +9,7 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { EMAIL_RE, PASSWORD_MIN } from '../features/social/validate';
 import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
@@ -85,7 +85,7 @@ export default function AccountScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={[styles.pad, { paddingTop: space.xxl, paddingBottom: insets.bottom + space.xxl }]} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[pageColumn, styles.pad, { paddingTop: space.xxl, paddingBottom: insets.bottom + space.xxl }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title} accessibilityRole="header">
           {create ? t('Create your profile') : t('Welcome back')}
         </Text>
@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   guidelines: { gap: space.xs, padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass },
   guideTitle: { ...type.label, color: color.moon, marginBottom: space.xs },

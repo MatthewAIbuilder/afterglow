@@ -18,10 +18,11 @@ import { useCrews } from '../state/crews';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { usePlan } from '../state/plan';
 import { useTaste } from '../state/taste';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /** Crew names as one line: "Bass crew and Day ones". */
 const crewNames = (crews: readonly { name: string }[]) => crews.map((c) => c.name).join(` ${t('and')} `);
@@ -133,7 +134,7 @@ export default function CheckInScreen() {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <PageTitle title={t('Check in')} />
-      <ScrollView contentContainerStyle={{ paddingTop: space.xl, paddingBottom: insets.bottom + space.xl }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: space.xl, paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled">
         <Text style={[styles.title, styles.pad]}>{t('Check in with your crew')}</Text>
         <Text style={[styles.body, styles.pad]}>
           {crews.length === 1
@@ -297,7 +298,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   pad: { paddingHorizontal: space.xl },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.sm },
@@ -311,6 +312,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   chipOn: { backgroundColor: glowA(0.2), borderColor: glowA(0.55) },
   chipText: { ...type.label, color: color.moonDim },
@@ -341,9 +343,10 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
-  sendButton: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
-  primary: { marginTop: space.xl, alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  sendButton: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
+  primary: { marginTop: space.xl, alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   primaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   done: { justifyContent: 'center', paddingHorizontal: space.xl },

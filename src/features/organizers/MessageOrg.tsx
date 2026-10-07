@@ -34,6 +34,6 @@ export function MessageOrg({ org }: { org: Org }) {
 }
 
 const styles = StyleSheet.create({
-  button: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  button: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   text: { ...type.headline, color: color.moon },
 });

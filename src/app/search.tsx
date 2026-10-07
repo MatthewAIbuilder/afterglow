@@ -33,7 +33,7 @@ import { useRecentSearches } from '../state/recentSearches';
 import { useSocial } from '../state/social';
 import { useTaste } from '../state/taste';
 import { useWeekends } from '../state/weekends';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t, tn } from '../i18n';
 
@@ -155,7 +155,7 @@ export default function SearchScreen() {
         </Pressable>
       </View>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: space.xl, paddingBottom: insets.bottom + space.xxxl }}
+        contentContainerStyle={[pageColumn, { paddingHorizontal: space.xl, paddingBottom: insets.bottom + space.xxxl }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >

@@ -17,10 +17,11 @@ import { useCatalog } from '../state/catalog';
 import { useCrews } from '../state/crews';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, pageColumn } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { datesLine } from '../features/festivals/format';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /** At most this many festivals are listed while searching. */
 const LIST_MAX = 20;
@@ -93,7 +94,7 @@ export default function StartCrewScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.root} contentContainerStyle={{ padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.root} contentContainerStyle={[pageColumn, { padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>{t('Start a crew')}</Text>
         <Text style={styles.body}>{t('Pick the festival. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.')}</Text>
         {yours.length ? (
@@ -115,12 +116,12 @@ export default function StartCrewScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.md },
   quiet: { ...type.body, color: color.moonDim },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   name: { ...type.headline, color: color.moon },
   detail: { ...type.caption, color: color.moonDim, marginTop: 2 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

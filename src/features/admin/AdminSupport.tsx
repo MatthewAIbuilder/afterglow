@@ -146,7 +146,7 @@ function SupportCard({ message: m, onChanged }: { message: SupportMessage; onCha
 const styles = StyleSheet.create({
   wrap: { gap: space.md },
   empty: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.xl, paddingHorizontal: space.xl },
-  card: { marginHorizontal: space.lg, padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { marginHorizontal: space.lg, padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   cardOpen: { borderColor: 'rgba(255,184,107,0.5)', borderWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
   who: { ...type.headline, color: color.moon, flex: 1 },

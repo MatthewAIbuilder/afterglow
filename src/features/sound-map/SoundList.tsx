@@ -219,7 +219,8 @@ const SoundListRow = memo(function SoundListRow({ row, rating, following, festiv
 });
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: space.xl },
+  // A column on a wide screen (the website), like Settings.
+  content: { paddingHorizontal: space.xl, alignSelf: 'center', width: '100%', maxWidth: 640 },
   search: { marginTop: space.md },
   chips: { marginTop: space.md, marginHorizontal: -space.xl },
   meta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg, marginBottom: space.xs },
@@ -248,6 +249,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   moreText: { ...type.label, color: color.moon },
 });

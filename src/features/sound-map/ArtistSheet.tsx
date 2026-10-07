@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,7 +7,7 @@ import { SheetClose } from '../../components/SheetClose';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { SOUND_LABEL, type SoundTag, type TasteProfile } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { color, motion, radius, space, type, glowA, raisedA } from '../../theme/tokens';
+import { color, motion, radius, space, type, glowA } from '../../theme/tokens';
 import { useCatalog } from '../../state/catalog';
 import { useTaste } from '../../state/taste';
 import { RateArtist } from '../taste/RateArtist';
@@ -16,6 +15,7 @@ import { artistMix } from '../taste/lean';
 import { SOUND_COLOR } from './colors';
 import { SoundSpectrum } from './SoundSpectrum';
 import { t } from '../../i18n';
+import { GlassFill } from '../../components/LiquidGlass';
 
 type Props = {
   artistId: string | null;
@@ -88,8 +88,7 @@ export function ArtistSheet({ artistId, taste, bottomInset, onClose }: Props) {
         <Animated.View
           style={[styles.sheet, { bottom: bottomInset + space.sm }, sheetStyle]}
         >
-          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={[StyleSheet.absoluteFill, styles.tint]} />
+          <GlassFill radius={radius.sheet} tint={0.55} deep />
           <View style={styles.grabber} />
           {/* A way out that doesn't need a swipe (browsers can't drag a sheet down). */}
           <SheetClose onPress={onClose} />
@@ -173,10 +172,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     paddingTop: space.md,
     paddingBottom: space.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
-  tint: { backgroundColor: raisedA(0.55) },
   grabber: {
     alignSelf: 'center',
     width: 36,

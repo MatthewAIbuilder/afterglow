@@ -4,16 +4,17 @@ import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { PageTitle } from '../../components/PageTitle';
-import { CloseIcon } from '../../components/TabIcons';
+import { CalendarIcon, CloseIcon } from '../../components/TabIcons';
 import { CARD_MAX_WIDTH, PosterCard, sharePoster } from '../../features/plan/PosterCard';
 import { useYear } from '../../features/recap/useRecap';
 import { yearText } from '../../features/recap/year';
 import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, pageColumn } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
+import { EmptyState } from '../../components/EmptyState';
 
 /**
  * Your year on Afterglow: your festivals, top artists, sound and the numbers,
@@ -39,7 +40,7 @@ export default function YearScreen() {
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
+      <ScrollView contentContainerStyle={[pageColumn, styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
         {card ? (
           <>
             <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
@@ -73,9 +74,9 @@ export default function YearScreen() {
             </Pressable>
           </>
         ) : (
-          <Text style={styles.empty}>
+          <EmptyState icon={<CalendarIcon color={color.moon} size={24} />}>
             {t('Nothing here yet. Mark the festivals you’re going to, watch some sets and rate artists, and your year fills in.')}
-          </Text>
+          </EmptyState>
         )}
       </ScrollView>
     </View>
@@ -87,7 +88,6 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, paddingBottom: space.md },
   heading: { ...type.title, color: color.moon },
   content: { paddingHorizontal: space.xl, paddingTop: space.md, gap: space.md },
-  empty: { ...type.body, color: color.moonDim },
   button: {
     minHeight: 52,
     borderRadius: radius.pill,
@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   primary: { backgroundColor: color.glowDeep, borderColor: color.glowDeep, marginTop: space.md },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

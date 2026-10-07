@@ -8,13 +8,14 @@ import { useNow } from '../lib/useNow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
-import { ChevronIcon } from '../components/TabIcons';
+import { BellIcon, ChevronIcon } from '../components/TabIcons';
 import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
 import { useSocial } from '../state/social';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
+import { EmptyState } from '../components/EmptyState';
 
 /**
  * Notifications: news about the festivals you're going to, new followers, likes, comments and tags. Newest
@@ -75,7 +76,7 @@ export default function NotificationsScreen() {
     <View style={styles.root}>
       <NightSky />
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }}
+        contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.pad}>
@@ -107,11 +108,11 @@ export default function NotificationsScreen() {
         ) : null}
         <View style={[styles.pad, styles.list]}>
           {list.length === 0 ? (
-            <Text style={styles.empty}>
+            <EmptyState icon={<BellIcon color={color.moon} size={24} />}>
               {t(
                 'Nothing new. Tap “I’m going” on a festival and you’ll hear here when its set times come out and when it’s nearly time, and whenever an artist you’d love is added to a lineup.',
               )}
-            </Text>
+            </EmptyState>
           ) : !shown.length ? (
             <Text style={styles.empty}>{query.trim() ? t('Nothing matches “{query}”.', { query: query.trim() }) : t('Nothing here.')}</Text>
           ) : null}
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
   list: { marginTop: space.lg, gap: space.sm },
   search: { marginTop: space.lg },
   chips: { paddingHorizontal: space.xl, gap: space.sm, marginTop: space.md },
-  chip: { paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  chip: { paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   chipOn: { backgroundColor: glowA(0.2), borderColor: glowA(0.55) },
   chipText: { ...type.label, color: color.moonDim },
   chipTextOn: { color: color.moon },
@@ -156,6 +157,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   rowNew: { backgroundColor: glowA(0.14), borderColor: glowA(0.4) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },

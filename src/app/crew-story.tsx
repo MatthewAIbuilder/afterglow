@@ -20,6 +20,7 @@ import { useSocial } from '../state/social';
 import { color, radius, space, type } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
+import { GlassCircleButton } from '../components/GlassCircleButton';
 
 /**
  * A crewmate's story, full screen: their latest update first, then earlier
@@ -134,9 +135,9 @@ export default function CrewStoryScreen() {
               </Text>
             ) : null}
           </View>
-          <Pressable onPress={() => goBack()} accessibilityRole="button" accessibilityLabel={t('Close')} hitSlop={12} style={styles.close}>
-            <CloseIcon color={color.moon} size={18} />
-          </Pressable>
+          <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
+            <CloseIcon color={color.moon} size={16} />
+          </GlassCircleButton>
         </View>
       </View>
 
@@ -196,7 +197,6 @@ const styles = StyleSheet.create({
   ago: { ...type.caption, color: color.moonDim, fontWeight: '400' },
   line: { ...type.label, color: color.moon, marginTop: 1 },
   late: { ...type.caption, color: '#FFB86B', marginTop: 2 },
-  close: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
   card: { paddingHorizontal: space.xxl, alignItems: 'center', gap: space.md },
   cardWords: { fontSize: 34, lineHeight: 40, fontWeight: '700', color: color.moon, textAlign: 'center', letterSpacing: -0.6 },
   cardPlace: { ...type.headline, color: color.glow, textAlign: 'center' },

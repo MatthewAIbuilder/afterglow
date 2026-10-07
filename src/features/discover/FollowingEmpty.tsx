@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   primary: { backgroundColor: color.glowDeep, borderColor: glowA(0.6) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },

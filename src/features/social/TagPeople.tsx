@@ -118,6 +118,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   rowOn: { borderColor: glowA(0.6), backgroundColor: glowA(0.12) },
   text: { flex: 1, gap: 1 },

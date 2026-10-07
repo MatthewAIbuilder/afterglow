@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { useNetworkState } from 'expo-network';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -34,8 +33,9 @@ import { useGoing } from '../state/going';
 import { useLoves } from '../state/useLoves';
 import { useNearby } from '../state/nearby';
 import { useWeekends } from '../state/weekends';
-import { color, radius, space, type, nightA, raisedA, glowA } from '../theme/tokens';
+import { color, radius, space, type, nightA, glowA } from '../theme/tokens';
 import { t, tn } from '../i18n';
+import { GlassFill } from '../components/LiquidGlass';
 
 const CARD_GAP = 12;
 const CARDS_H = 132;
@@ -280,13 +280,13 @@ export default function FestivalMapScreen() {
 
       {cards.length === 0 && view && lit ? (
         <View style={[styles.empty, { bottom: insets.bottom + space.xl }]} pointerEvents="none">
-          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+          <GlassFill radius={radius.lg} tint={0.55} deep />
           <Text style={styles.emptyTitle}>{t('No festivals here')}</Text>
           <Text style={styles.emptyText}>{t('Zoom out, or tap Show all.')}</Text>
         </View>
       ) : lit === 0 ? (
         <View style={[styles.empty, { bottom: insets.bottom + space.xl }]}>
-          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+          <GlassFill radius={radius.lg} tint={0.55} deep />
           <Text style={styles.emptyTitle}>
             {applied || when !== 'any' ? t('No festivals match') : filter === 'going' ? t('None of your festivals are on the map yet') : t('No festivals on the map yet')}
           </Text>
@@ -361,7 +361,7 @@ function MapCard({ marker, width, chosen, onFocus }: { marker: Marker; width: nu
       testID={`map-card-${f.id}`}
       style={({ pressed }) => [styles.card, { width }, chosen && { borderColor: tint }, pressed && { transform: [{ scale: 0.98 }] }]}
     >
-      <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+      <GlassFill radius={radius.lg} tint={0.55} deep />
       <View style={styles.cardRow}>
         <View style={[styles.date, marker.going && { backgroundColor: tint }]}>
           <Text style={[styles.month, marker.going && styles.onTint]}>{block?.month ?? t('TBA')}</Text>
@@ -412,7 +412,7 @@ function ShowCard({ pin, width, chosen, onFocus }: { pin: ShowPin; width: number
       testID={`map-card-${show.id}`}
       style={({ pressed }) => [styles.card, { width }, chosen && { borderColor: SHOW_COLOR }, pressed && { transform: [{ scale: 0.98 }] }]}
     >
-      <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+      <GlassFill radius={radius.lg} tint={0.55} deep />
       <View style={styles.cardRow}>
         <View style={styles.date}>
           <Text style={styles.month}>{block.month}</Text>
@@ -458,6 +458,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   whenOn: { borderColor: color.glow, backgroundColor: glowA(0.18) },
   whenText: { ...type.label, color: color.moonDim },
@@ -474,7 +475,6 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderWidth: 1,
     borderColor: color.hairline,
-    backgroundColor: raisedA(0.55),
     justifyContent: 'space-between',
   },
   cardRow: { flexDirection: 'row', gap: space.md, alignItems: 'center' },

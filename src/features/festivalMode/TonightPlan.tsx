@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   sub: { ...type.body, color: color.moonDim },
   chipsWrap: { marginTop: space.lg, marginHorizontal: -space.xl },
   chips: { gap: space.sm, paddingHorizontal: space.xl },
-  chip: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  chip: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   chipOn: { backgroundColor: glowA(0.22), borderColor: glowA(0.6) },
   chipText: { ...type.label, color: color.moonDim },
   chipTextOn: { color: color.moon },

@@ -15,7 +15,7 @@ import { useCatalog } from '../state/catalog';
 import { useMoments } from '../features/memories/useMoments';
 import { onServer } from '../features/memories/webVideo';
 import { useSocial } from '../state/social';
-import { color, radius, space, type, glowA, glowDeepA } from '../theme/tokens';
+import { color, radius, space, type, glowA, glowDeepA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t, tn } from '../i18n';
 
@@ -40,7 +40,7 @@ export default function MemoriesScreen() {
   return (
     <View style={styles.root}>
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.pad}>
           <Text style={styles.title} accessibilityRole="header">
             {t('Memories')}
@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   emptyTitle: { ...type.title, color: color.moon },
   emptyBody: { ...type.body, color: color.moonDim },
@@ -213,6 +214,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
     gap: 2,
   },
   sectionHeadQuiet: { borderColor: glowA(0.35) },

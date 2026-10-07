@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   warm: { backgroundColor: glowA(0.18), borderColor: glowA(0.45) },
   cold: { borderColor: 'rgba(255,255,255,0.22)' },
