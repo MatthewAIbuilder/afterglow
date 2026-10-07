@@ -3837,6 +3837,233 @@ const balloon: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** PEEKABOO: the Peekaboo — a little creature peeking over a speaker, paws on the edge. */
+const peeker: Draw = (p, f) => ({
+  ground: [50, 93, 36],
+  back: <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* Ears, then the head peeking up. */}
+      <V d="M30 38 C25 27 29 20 36 22 C38 26 39 31 37 38Z" fill={p.mid} f={f} />
+      <V d="M70 38 C75 27 71 20 64 22 C62 26 61 31 63 38Z" fill={p.mid} f={f} />
+      <Path d="M31.6 34 C29.6 28 31 24 34.4 25" stroke={p.accent} strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.6} />
+      <Path d="M68.4 34 C70.4 28 69 24 65.6 25" stroke={p.accent} strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.6} />
+      <VE cx={50} cy={48} rx={22} ry={18} fill={p.mid} f={f} />
+      {/* The speaker it hides behind. */}
+      <V d="M14 56 L86 56 Q88 56 88 58 L88 92 L12 92 L12 58 Q12 56 14 56Z" fill={p.alt} f={f} />
+      <Path d="M14 60.4 L86 60.4" stroke={p.altDeep} strokeWidth={1} />
+      {[32, 68].map((x) => (
+        <G key={x}>
+          <Circle cx={x} cy={76} r={10.4} fill={p.altDeep} />
+          <Circle cx={x} cy={76} r={6.4} fill={p.alt} />
+          <Circle cx={x} cy={76} r={2.4} fill={p.accent} opacity={0.8} />
+        </G>
+      ))}
+      {/* Paws over the edge. */}
+      <VE cx={37} cy={56} rx={5.4} ry={3.6} fill={p.mid} f={f} />
+      <VE cx={63} cy={56} rx={5.4} ry={3.6} fill={p.mid} f={f} />
+      <Path d="M35 56.4 L35 58.4 M39 56.4 L39 58.4 M61 56.4 L61 58.4 M65 56.4 L65 58.4" stroke={p.deep} strokeWidth={0.7} strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [37, 40, 26, 9],
+    el: (
+      <G>
+        <VEye x={43} y={44.5} r={3.6} f={f} />
+        <VEye x={57} y={44.5} r={3.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [14, 22, 2],
+    [86, 18, 1.6],
+    [90, 46, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** HABSTRAKT: the Croissant — a croissant in a beret, fresh from Paris. */
+const croissant: Draw = (p, f) => ({
+  ground: [50, 86, 34],
+  back: <Ellipse cx={50} cy={60} rx={42} ry={34} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* Its segments, tips curling down, the middle one plumpest. */}
+      <VE cx={19} cy={76} rx={7.6} ry={5.6} fill={p.mid} f={f} turn={-50} gloss={false} />
+      <VE cx={81} cy={76} rx={7.6} ry={5.6} fill={p.mid} f={f} turn={50} gloss={false} />
+      <VE cx={32} cy={68} rx={11} ry={9} fill={p.mid} f={f} turn={-28} />
+      <VE cx={68} cy={68} rx={11} ry={9} fill={p.mid} f={f} turn={28} />
+      <VE cx={50} cy={63} rx={15} ry={12} fill={p.mid} f={f} />
+      <Path d="M38 58 C44 54 56 54 62 58" stroke={p.light} strokeWidth={1.2} fill="none" opacity={0.6} strokeLinecap="round" />
+      {/* The beret. */}
+      <V d="M38 54 C35 46 43 41 52 41 C63 41 67 47 63 54 C56 51.6 45 51.6 38 54Z" fill={p.alt} f={f} />
+      <Path d="M52 41 L53 37" stroke={p.alt} strokeWidth={1.8} strokeLinecap="round" />
+      <Circle cx={41} cy={67} r={2.2} fill={p.accent} opacity={0.4} />
+      <Circle cx={59} cy={67} r={2.2} fill={p.accent} opacity={0.4} />
+      <Path d="M46 68 Q50 71 54 68" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 58, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.5} y={62.4} r={2.8} f={f} />
+        <VEye x={55.5} y={62.4} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Crumbs, and a little sparkle. */}
+      <Circle cx={22} cy={88} r={0.9} fill={p.light} />
+      <Circle cx={80} cy={89} r={0.8} fill={p.light} />
+      <Circle cx={30} cy={91} r={0.6} fill={p.light} />
+      {sparkles(p.accent, [
+        [18, 30, 2],
+        [84, 36, 1.6],
+        [70, 18, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** AFROJACK: the Jack-in-the-box — sprung out of its box, a jester's hat with bells. */
+const jackbox: Draw = (p, f) => ({
+  ground: [50, 93, 30],
+  back: <Ellipse cx={50} cy={52} rx={42} ry={40} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The open lid, the spring and the box with its crank. */}
+      <V d="M24 62 L18 50 L70 50 L76 62Z" fill={p.altDeep} f={f} />
+      <Path d="M50 62 L44 59 L56 55 L44 51 L56 47 L50 44" stroke={p.light} strokeWidth={2} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+      <V d="M24 62 L76 62 L76 90 Q76 92 74 92 L26 92 Q24 92 24 90Z" fill={p.alt} f={f} gloss={[30, 68, 3, 8, 0]} />
+      <Path d={`${star5(38, 77, 5)} ${star5(62, 77, 5)}`} fill={p.mid} />
+      <Path d="M76 77 L84 77 L84 70" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      <Circle cx={84} cy={69} r={2.2} fill={p.mid} />
+      {/* The jester: face, cheeks and nose, then the hat. */}
+      <VE cx={50} cy={34} rx={14} ry={13} fill={p.light} f={f} />
+      <Circle cx={41.6} cy={38} r={2.2} fill={p.mid} opacity={0.45} />
+      <Circle cx={58.4} cy={38} r={2.2} fill={p.mid} opacity={0.45} />
+      <VE cx={50} cy={37} rx={2.4} ry={2.2} fill={p.mid} f={f} />
+      <Path d="M45 41 Q50 45 55 41" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+      <V d="M36 29 L28 13 L43 22 L50 8 L57 22 L72 13 L64 29 Q50 24 36 29Z" fill={p.mid} f={f} />
+      <Path d="M50 8 L57 22 L64 29 Q57 26.6 50 26" fill={p.deep} opacity={0.25} />
+    </G>
+  ),
+  eyes: {
+    box: [41, 29, 18, 8],
+    el: (
+      <G>
+        <VEye x={45} y={32.6} r={2.6} f={f} />
+        <VEye x={55} y={32.6} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Bells on the hat. */}
+      <Glow x={28} y={13} r={1.8} color={p.accent} />
+      <Glow x={50} y={8} r={1.8} color={p.accent} />
+      <Glow x={72} y={13} r={1.8} color={p.accent} />
+      {sparkles(p.accent, [
+        [12, 40, 1.6],
+        [90, 44, 1.6],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ARTBAT: the Bat — a little bat flapping by the moon, fangs and all. */
+const bat: Draw = (p, f) => ({
+  ground: [50, 90, 16],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.15} />
+      <Circle cx={76} cy={22} r={9} fill={p.light} opacity={0.22} />
+    </G>
+  ),
+  pivot: [50, 50],
+  flap: true,
+  sway: (
+    <G>
+      <V d="M38 46 C28 36 14 34 6 40 C10 44 12 48 12 53 C16 50 20 52 22 57 C26 53 30 55 34 59Z" fill={p.alt} f={f} />
+      <V d="M62 46 C72 36 86 34 94 40 C90 44 88 48 88 53 C84 50 80 52 78 57 C74 53 70 55 66 59Z" fill={p.alt} f={f} />
+      <Path d="M36 47 L20 42 M36 50 L16 50 M62 47 L80 42 M64 50 L84 50" stroke={p.deep} strokeWidth={0.8} opacity={0.6} strokeLinecap="round" />
+    </G>
+  ),
+  body: (
+    <G>
+      <V d="M37 42 L35 24 L46 36Z" fill={p.mid} f={f} />
+      <V d="M63 42 L65 24 L54 36Z" fill={p.mid} f={f} />
+      <Path d="M38.6 38 L37.6 29 L43 35Z M61.4 38 L62.4 29 L57 35Z" fill={p.accent} opacity={0.5} />
+      <VE cx={50} cy={54} rx={17} ry={19} fill={p.mid} f={f} />
+      <Ellipse cx={50} cy={63} rx={9} ry={8} fill={p.light} opacity={0.18} />
+      <Path d="M45 57.4 Q50 60.6 55 57.4" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+      <Path d="M47.2 58.4 L48.2 61.4 L49.2 58.8Z M50.8 58.8 L51.8 61.4 L52.8 58.4Z" fill={p.light} />
+      <Path d="M45 72 L44 77 M55 72 L56 77" stroke={p.deep} strokeWidth={1.4} strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [39, 46, 22, 8],
+    el: (
+      <G>
+        <VEye x={44} y={50} r={3.2} f={f} iris={p.accent} />
+        <VEye x={56} y={50} r={3.2} f={f} iris={p.accent} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [14, 18, 1.8],
+    [88, 70, 1.6],
+    [16, 74, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** I HATE MODELS: the Black rose — dark petals edged in red light, thorns on its stem. */
+const rose: Draw = (p, f) => ({
+  ground: [50, 92, 16],
+  back: <Ellipse cx={50} cy={46} rx={40} ry={38} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* Stem, thorns and a leaf. */}
+      <Path d="M50 91 C48 80 52 70 50 58" stroke={p.alt} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <Path d="M49 82 L45 80 L49 79Z M51 72 L55 70 L51 69Z" fill={p.altDeep} />
+      <V d="M50 80 C40 78 34 72 32 64 C40 66 46 72 50 76Z" fill={p.alt} f={f} />
+      {/* The bloom, its edges lit. */}
+      <V d="M28 40 C26 26 36 18 50 18 C64 18 74 26 72 40 C72 54 62 62 50 62 C38 62 28 54 28 40Z" fill={p.mid} f={f} gloss={[38, 28, 5, 2, -20]} />
+      <Path d="M28 40 C26 26 36 18 50 18 C64 18 74 26 72 40 C72 54 62 62 50 62 C38 62 28 54 28 40Z" fill="none" stroke={p.accent} strokeWidth={1} opacity={0.65} />
+      <Path d="M36 30 C41 23 59 23 64 30" stroke={p.accent} strokeWidth={1} fill="none" opacity={0.8} strokeLinecap="round" />
+      <Path d="M33 42 C33 51 41 57 50 57 C59 57 67 51 67 42" stroke={p.accent} strokeWidth={0.9} fill="none" opacity={0.55} strokeLinecap="round" />
+      <Path d="M43 33 C45 28.6 55 28.6 57 33 C57 36.4 53 37.6 50 36" stroke={p.accent} strokeWidth={0.9} fill="none" opacity={0.75} strokeLinecap="round" />
+      <Path d="M45 49 Q50 52.4 55 49" stroke={p.accent} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 40, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.5} y={44} r={2.7} f={f} />
+        <VEye x={55.5} y={44} r={2.7} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* A petal falling. */}
+      <Path d="M76 70 C80 66 86 68 84 72 C82 76 76 76 76 70Z" fill={p.accent} opacity={0.8} />
+      {sparkles(p.accent, [
+        [18, 18, 1.8],
+        [84, 24, 1.6],
+        [16, 70, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -4809,4 +5036,9 @@ export const DRAW: Record<Creature, Draw> = {
   hero,
   gumbo,
   balloon,
+  peeker,
+  croissant,
+  jackbox,
+  bat,
+  rose,
 };
