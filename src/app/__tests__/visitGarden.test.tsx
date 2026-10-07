@@ -155,5 +155,35 @@ describe('gardens', () => {
     expect(late.queryByText('Put it in my garden')).toBeNull();
     expect(late.getByText(/isn’t on Afterglow yet, or it was taken back/)).toBeTruthy();
   });
+
+  it('kandi with a charm and galaxy beads, and making one back from your garden', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    const sam = await person('sam', 'Sam');
+    const app = await renderApp(`/kandi-make?uid=${maya}&name=Maya&handle=maya`);
+    await flush();
+    await fireEvent.press(app.getByLabelText('Galaxy'));
+    await fireEvent.press(app.getByLabelText('Alien'));
+    await fireEvent.press(app.getByText('Leave it in Maya’s garden'));
+    await flush();
+    await settle(1000);
+    await flush();
+    const made = [...mockSocial.kandi.values()].find((k) => k.from === sam);
+    expect(made).toMatchObject({ to: maya, beads: 'galaxy', charm: 'alien' });
+    await app.unmount();
+
+    // Maya opens it in her garden and makes one back.
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const hers = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    await fireEvent.press(hers.getByLabelText('Kandi spelling PLUR, from @sam'));
+    await flush();
+    await fireEvent.press(hers.getByLabelText('Make kandi back for @sam'));
+    await flush();
+    expect(hers.getByText('Kandi for Sam')).toBeTruthy();
+  });
 });
 
