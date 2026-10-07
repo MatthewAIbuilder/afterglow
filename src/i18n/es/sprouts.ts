@@ -422,6 +422,7 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'Caught {name} at the totem!': '¡He pillado {name} en el tótem!',
   'The Anvil': 'El Yunque',
   'A blacksmith’s anvil, sparks flying on every kick': 'Un yunque de herrero que echa chispas con cada bombo',
   'The Lizard': 'La Lagartija',

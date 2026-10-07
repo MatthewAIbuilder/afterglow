@@ -122,7 +122,7 @@ export default function FindScreen() {
       insets={insets}
       overlay={
         story && found ? (
-          <StoryPreview title={shown.name} tint={`${look.palette.deep}AA`} glow={look.palette.glow} headline={holo ? t('A holo {name}!', { name: shown.name }) : t('I found {name}', { name: shown.name })} sub={look.name} onClose={() => setStory(false)}>
+          <StoryPreview title={shown.name} tint={`${look.palette.deep}AA`} glow={look.palette.glow} headline={holo ? t('A holo {name}!', { name: shown.name }) : via === 'totem' ? t('Caught {name} at the totem!', { name: shown.name }) : t('I found {name}', { name: shown.name })} sub={look.name} onClose={() => setStory(false)}>
             {(w) => (
               <View>
                 {shown.creature === 'portapotty' ? <PortalSwirl size={Math.round(w * 0.95)} colors={look.palette} /> : null}
