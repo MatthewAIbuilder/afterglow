@@ -23,6 +23,10 @@ export function DecorBehind({ decor, width, hz }: { decor: readonly DecorId[]; w
           <Stop offset="0.65" stopColor="#B99CFF" stopOpacity={0.3} />
           <Stop offset="1" stopColor="#B99CFF" stopOpacity={0} />
         </LinearGradient>
+        <LinearGradient id="decor-tail" x1="1" y1="0" x2="0" y2="0">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.9} />
+          <Stop offset="1" stopColor="#8AB8FF" stopOpacity={0} />
+        </LinearGradient>
       </Defs>
       {has('aurora') ? (
         <G>
@@ -35,6 +39,51 @@ export function DecorBehind({ decor, width, hz }: { decor: readonly DecorId[]; w
           {['#FF6A8A', '#FFB86B', '#FFE58A', '#8AFFB0', '#8AB8FF', '#B99CFF'].map((c, i) => (
             <Path key={c} d={`M${width * 0.12 + i * 3} ${hz + 20} A${width * 0.38 - i * 3} ${hz + 6 - i * 3} 0 0 1 ${width * 0.88 - i * 3} ${hz + 20}`} stroke={c} strokeWidth={3} fill="none" />
           ))}
+        </G>
+      ) : null}
+      {has('stars') ? (
+        <G>
+          {[
+            [0.62, 0.12, 34],
+            [0.8, 0.3, 26],
+            [0.44, 0.04, 20],
+          ].map(([fx, fy, len], i) => {
+            const x = width * fx;
+            const y = hz * fy;
+            return (
+              <G key={i}>
+                <Path d={`M${x} ${y} L${x - len} ${y - len * 0.42}`} stroke="url(#decor-tail)" strokeWidth={1.6} strokeLinecap="round" />
+                <Circle cx={x} cy={y} r={3.4} fill="#E8F4FF" opacity={0.2} />
+                <Circle cx={x} cy={y} r={1.4} fill="#FFFFFF" />
+              </G>
+            );
+          })}
+        </G>
+      ) : null}
+      {has('fireworks') ? (
+        <G>
+          {[
+            [0.7, 0.32, 15, '#FF6AD5'],
+            [0.86, 0.14, 11, '#FFE58A'],
+            [0.56, 0.18, 9, '#8AE6FF'],
+          ].map(([fx, fy, r, c], i) => {
+            const x = width * Number(fx);
+            const y = hz * Number(fy);
+            const R = Number(r);
+            return (
+              <G key={i}>
+                <Circle cx={x} cy={y} r={R * 1.3} fill={String(c)} opacity={0.08} />
+                {Array.from({ length: 12 }, (_, k) => {
+                  const a = (k / 12) * Math.PI * 2;
+                  return <Path key={k} d={`M${x + Math.cos(a) * R * 0.35} ${y + Math.sin(a) * R * 0.35} L${x + Math.cos(a) * R} ${y + Math.sin(a) * R}`} stroke={String(c)} strokeWidth={1.1} strokeLinecap="round" opacity={0.85} />;
+                })}
+                {Array.from({ length: 12 }, (_, k) => {
+                  const a = ((k + 0.5) / 12) * Math.PI * 2;
+                  return <Circle key={`d${k}`} cx={x + Math.cos(a) * R * 1.12} cy={y + Math.sin(a) * R * 1.12 + 1} r={0.7} fill={String(c)} opacity={0.7} />;
+                })}
+              </G>
+            );
+          })}
         </G>
       ) : null}
       {has('moon') ? (
@@ -145,6 +194,41 @@ export function DecorIcon({ id, size = 64 }: { id: DecorId; size?: number }) {
               <Circle cx={Number(x)} cy={32} r={14} fill={String(c)} opacity={0.18} />
               <Ellipse cx={Number(x)} cy={32} rx={8.4} ry={10.4} fill={String(c)} />
               <Ellipse cx={Number(x) - 2.6} cy={28} rx={2} ry={3} fill="#FFFFFF" opacity={0.35} />
+            </G>
+          ))}
+        </G>
+      ) : id === 'stars' ? (
+        <G>
+          <Defs>
+            <LinearGradient id="icon-tail" x1="1" y1="0" x2="0" y2="0">
+              <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
+              <Stop offset="1" stopColor="#8AB8FF" stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          {[
+            [46, 20, 26],
+            [40, 40, 20],
+            [24, 28, 14],
+          ].map(([x, y, len]) => (
+            <G key={`${x}${y}`}>
+              <Path d={`M${x} ${y} L${x - len} ${y - len * 0.42}`} stroke="url(#icon-tail)" strokeWidth={2.4} strokeLinecap="round" />
+              <Circle cx={x} cy={y} r={4} fill="#E8F4FF" opacity={0.25} />
+              <Circle cx={x} cy={y} r={2} fill="#FFFFFF" />
+            </G>
+          ))}
+        </G>
+      ) : id === 'fireworks' ? (
+        <G>
+          {[
+            [26, 28, 13, '#FF6AD5'],
+            [44, 38, 9, '#FFE58A'],
+          ].map(([x, y, r, c]) => (
+            <G key={String(c)}>
+              <Circle cx={Number(x)} cy={Number(y)} r={Number(r) * 1.3} fill={String(c)} opacity={0.12} />
+              {Array.from({ length: 12 }, (_, k) => {
+                const a = (k / 12) * Math.PI * 2;
+                return <Path key={k} d={`M${Number(x) + Math.cos(a) * Number(r) * 0.35} ${Number(y) + Math.sin(a) * Number(r) * 0.35} L${Number(x) + Math.cos(a) * Number(r)} ${Number(y) + Math.sin(a) * Number(r)}`} stroke={String(c)} strokeWidth={1.6} strokeLinecap="round" />;
+              })}
             </G>
           ))}
         </G>

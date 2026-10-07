@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
@@ -12,6 +12,7 @@ import { claimLine } from '../features/sprouts/outbox';
 import { Sprout } from '../features/sprouts/Sprout';
 import { SproutCard } from '../features/sprouts/CollectibleCard';
 import { useGardenDecor } from '../features/sprouts/useGardenDecor';
+import { useDecorSeen } from '../state/decorSeen';
 import { SproutOf } from '../features/sprouts/SproutOf';
 import { ArtistSproutSheet, ArtistSproutsSection, type GivenArtistSprout } from '../features/sprouts/ArtistSproutsSection';
 import { type ArtistSprout, TIER_AT, tierLabel, toNextTier } from '../features/sprouts/artistSprouts';
@@ -90,6 +91,13 @@ export default function GardenScreen() {
   // After blooms, a new or levelled-up artist sprout gets its moment.
   const fresh = bloom ? undefined : sprouts.newArtists[0];
   const freshArtist = fresh ? catalog.artist(fresh.artistId) : undefined;
+  // Then a decoration you've just earned. The first time on this phone, what's already there is simply there.
+  const decorSeen = useDecorSeen(social.user?.uid ?? 'guest');
+  const { ready: seenReady, seen: seenDecor, save: saveSeen } = decorSeen;
+  useEffect(() => {
+    if (seenReady && sprouts.hydrated && !seenDecor) saveSeen(decor);
+  }, [seenReady, seenDecor, saveSeen, sprouts.hydrated, decor]);
+  const freshDecor = bloom || fresh || !seenDecor ? undefined : decor.find((d) => !seenDecor.includes(d));
   const plain = sprouts.garden.filter((g) => !g.artist);
   const givenArtists: GivenArtistSprout[] = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: g.id === STARTER_ID || g.foundAt ? fromLine(g) : (giverOf(g) ?? t('someone')), at: g.at }] : []));
   const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
@@ -308,7 +316,7 @@ export default function GardenScreen() {
       <ArtistSproutSheet open={openArtist} canGive={sprouts.ready} onClose={() => setOpenArtist(undefined)} />
       {/* A sprout that bloomed since you last looked gets its moment, one at a time. */}
       <BadgeCelebration
-        id={bloom?.id ?? (fresh ? `artist:${fresh.artistId}:${fresh.tier}` : undefined)}
+        id={bloom?.id ?? (fresh ? `artist:${fresh.artistId}:${fresh.tier}` : freshDecor ? `decor:${freshDecor}` : undefined)}
         unlock={
           open || openArtist
             ? undefined
@@ -316,11 +324,14 @@ export default function GardenScreen() {
               ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt }
               : fresh && freshArtist
                 ? { kind: 'artistSprout', name: freshArtist.name, look: artistLook(freshArtist), tier: fresh.tier, videos: fresh.videos, shiny: !!fresh.shiny }
-                : undefined
+                : freshDecor
+                  ? { kind: 'decor', id: freshDecor }
+                  : undefined
         }
         onDone={() => {
           if (bloom) sprouts.bloomShown(bloom.id);
           else if (fresh) sprouts.artistShown(fresh);
+          else if (freshDecor) saveSeen([...(seenDecor ?? []), freshDecor]);
         }}
       />
     </View>

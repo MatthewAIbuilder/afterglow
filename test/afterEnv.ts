@@ -15,6 +15,7 @@ import { forgetDayHours } from '../src/state/dayHours';
 import { forgetAccountGlow } from '../src/state/accountGlow';
 import { forgetGardenLayout } from '../src/state/gardenLayout';
 import { forgetShowcase } from '../src/state/showcase';
+import { forgetDecorSeen } from '../src/state/decorSeen';
 import { forgetGoingShows } from '../src/state/goingShows';
 import { forgetCommentCounts } from '../src/features/social/commentCounts';
 import { forgetExtraArtists } from '../src/data/extraArtists';
@@ -38,6 +39,7 @@ beforeEach(() => {
   forgetAccountGlow();
   forgetGardenLayout();
   forgetShowcase();
+  forgetDecorSeen();
   forgetGoingShows();
   forgetCommentCounts();
   forgetExtraArtists();

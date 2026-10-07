@@ -15,10 +15,12 @@ describe('garden decorations', () => {
     expect(decorFor({ ...none, kandi: 5 })).toEqual(['lanterns']);
     expect(decorFor({ ...none, artists: [{ id: 'a', tier: 3, shiny: true } as never] })).toEqual(['rainbow', 'aurora']);
     expect(decorFor({ ...none, artists: [{ id: 'a', tier: 2 } as never] })).toEqual([]);
+    expect(decorFor({ ...none, pinned: 3, completeSets: 1 })).toEqual(['stars', 'fireworks']);
+    expect(decorFor({ ...none, pinned: 2 })).toEqual([]);
   });
 
   it('reads back only known decorations, once each', () => {
-    expect(cleanDecor(['moon', 'moon', 'fireworks', 3, 'aurora'])).toEqual(['moon', 'aurora']);
+    expect(cleanDecor(['moon', 'moon', 'confetti', 3, 'aurora'])).toEqual(['moon', 'aurora']);
     expect(cleanDecor('moon')).toEqual([]);
     expect(cleanDecor(undefined)).toEqual([]);
   });

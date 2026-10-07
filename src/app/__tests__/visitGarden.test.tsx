@@ -273,4 +273,41 @@ describe('gardens', () => {
     expect(app.getByText('@maya’s collectible')).toBeTruthy();
     expect(app.getByText('Silver')).toBeTruthy();
   });
+
+  it('a decoration you earn gets its moment once; ones you had before the update are simply there', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    for (const word of ['A', 'B', 'C', 'D', 'E']) await s().giveKandi({ to: maya, word, beads: 'neon' });
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    // Seen nothing yet on this phone: the lanterns are new.
+    await AsyncStorage.setItem('decorSeen.v1', JSON.stringify({ [maya]: [] }));
+    const app = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    expect(app.getByText('New in your garden’s sky')).toBeTruthy();
+    expect(app.getAllByText('Paper lanterns').length).toBeGreaterThan(0);
+    await settle(500);
+    await fireEvent.press(app.getByText('Lovely'));
+    await flush();
+    expect(app.queryByText('New in your garden’s sky')).toBeNull();
+    expect(JSON.parse((await AsyncStorage.getItem('decorSeen.v1'))!)[maya]).toEqual(['lanterns']);
+  });
+
+  it('decorations already earned when you first look are not celebrated', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    for (const word of ['A', 'B', 'C', 'D', 'E']) await s().giveKandi({ to: maya, word, beads: 'neon' });
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    await AsyncStorage.setItem('kandi.v1', JSON.stringify({ outbox: [], received: ['A', 'B', 'C', 'D', 'E'].map((w, i) => ({ id: `k${i}`, word: w, beads: 'neon', from: 'x', fromHandle: 'sam', createdAt: new Date(2026, 9, 1).toISOString() })) }));
+    const app = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    expect(app.queryByText('New in your garden’s sky')).toBeNull();
+  });
 });
