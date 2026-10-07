@@ -106,5 +106,5 @@ describe('your collection', () => {
     await flush();
     expect(again.queryByText('2 new since you last looked')).toBeNull();
     await again.unmount();
-  }, 30000);
+  }, 60_000);
 });

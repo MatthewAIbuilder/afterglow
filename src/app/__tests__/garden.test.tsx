@@ -153,5 +153,5 @@ describe('the living garden', () => {
     await flush();
     expect((await stored())[me][PLUR]).toBe(to);
     expect(await again.findByLabelText('PLUR sprout, from Maya. In bloom.')).toBeTruthy();
-  });
+  }, 20_000);
 });

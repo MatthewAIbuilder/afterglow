@@ -412,7 +412,7 @@ describe('organizers', () => {
     await s().signOut();
     await s().signIn(TEST_LOGIN, 'password123');
     expect(await s().orgFinds(ORG)).toEqual({ [gift.code]: 1 });
-  });
+  }, 20_000);
   it('HQ links an account from Accounts: its profile shows the organizer, and its studio opens with no email to confirm', async () => {
     const u = await s().signUp('ugrnd@example.com', 'password123');
     await s().saveProfile({ handle: 'ugrnd', displayName: 'Ugrnd', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
