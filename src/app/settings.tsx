@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
   // The label always reads in full; the detail gives way (it's a hint, the label is the thing).
-  rowLabel: { ...type.body, color: color.moon, flexShrink: 0, maxWidth: '72%' },
+  rowLabel: { ...type.body, color: color.moon, flexShrink: 0, maxWidth: '86%' },
   rowDetail: { ...type.body, color: color.moonDim, flex: 1, textAlign: 'right' },
   version: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.xxl },
 });
