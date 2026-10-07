@@ -28,7 +28,7 @@ import { type ReceivedKandi, useKandi } from '../state/kandi';
 import { KandiLine } from '../features/kandi/KandiLine';
 import { KandiBracelet } from '../features/kandi/KandiBracelet';
 import { showAlert } from '../lib/dialog';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, glowA, radius, space, type } from '../theme/tokens';
 
 const GIVEN_SHOWN = 12;
 /** A sprout or collectible that arrived this recently glows in the garden. */
@@ -144,6 +144,18 @@ export default function GardenScreen() {
           {t('Your garden')}
         </Text>
         <Text style={styles.sub}>{gardenLine(plain)}</Text>
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            router.push('/collection');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('Your collection: every set, and what’s still out there')}
+          style={({ pressed }) => [styles.collection, pressed && styles.pressed]}
+        >
+          <Text style={styles.collectionText}>{t('Your collection')}</Text>
+          <Text style={styles.collectionArrow}>›</Text>
+        </Pressable>
 
         <View style={styles.seedCard}>
           <Text style={styles.seeds}>{seedsLine(sprouts.seeds, sprouts.festivalDay)}</Text>
@@ -410,6 +422,9 @@ const styles = StyleSheet.create({
   seedCard: { padding: space.lg, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(110,231,160,0.08)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,231,160,0.35)' },
   seeds: { ...type.label, color: SPROUT_GREEN },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  collection: { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: glowA(0.16), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
+  collectionText: { ...type.label, color: color.moon },
+  collectionArrow: { ...type.headline, color: color.glow, lineHeight: 18 },
   kandi: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
   primary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: '#1E8F4A' },
   primaryText: { ...type.headline, color: color.moon },

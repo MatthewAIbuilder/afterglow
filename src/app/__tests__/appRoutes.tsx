@@ -21,6 +21,7 @@ import GardenVisitScreen from '../garden-visit';
 import KandiMakeScreen from '../kandi-make';
 import KandiCodeScreen from '../kandi/[id]';
 import SharedCardScreen from '../card/[id]';
+import CollectionScreen from '../collection';
 import AddFriendScreen from '../add/[handle]';
 import AccountScreen from '../account';
 import CameraScreen from '../camera';
@@ -110,6 +111,7 @@ export const APP_ROUTES = {
   'kandi-make': KandiMakeScreen,
   'kandi/[id]': KandiCodeScreen,
   'card/[id]': SharedCardScreen,
+  collection: CollectionScreen,
   'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,
   'festival/[id]': FestivalScreen,

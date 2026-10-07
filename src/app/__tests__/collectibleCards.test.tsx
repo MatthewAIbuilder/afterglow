@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { act } from '@testing-library/react-native';
+import { act, fireEvent } from '@testing-library/react-native';
 import { renderApp } from './appRoutes';
 
 /** A collectible card someone shared: its page shows the card as they have it, and how to earn your own. */
@@ -31,6 +31,19 @@ describe('shared collectible cards', () => {
     const app = await renderApp('/card/nobody-at-all?h=maya');
     await flush();
     expect(app.getByText('Card not found')).toBeTruthy();
+    await app.unmount();
+  });
+});
+
+describe('your collection', () => {
+  it('opens from the garden and shows every set with what’s still out there', async () => {
+    const app = await renderApp('/garden');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Your collection: every set, and what’s still out there'));
+    await flush();
+    expect(app.getAllByText('Your collection').length).toBeGreaterThan(0);
+    for (const set of ['Sprout kinds', 'Hand-made collectibles', 'Sound creatures', 'Stickers', 'Kandi beads', 'Kandi charms']) expect(app.getByText(set)).toBeTruthy();
+    expect(app.getByText('Film these artists’ sets')).toBeTruthy();
     await app.unmount();
   });
 });
