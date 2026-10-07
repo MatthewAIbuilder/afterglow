@@ -77,6 +77,12 @@ describe('stickers', () => {
     expect(app.getByText('Night Market 2027')).toBeTruthy();
     expect(app.getByText('1 of 2 found')).toBeTruthy();
     expect(app.getByText('Create a free account')).toBeTruthy();
+    // It goes out as a picture.
+    await fireEvent.press(app.getByLabelText('Share what you found as a picture'));
+    await flush();
+    expect(app.getByText('I found Ferris wheel · Night Market')).toBeTruthy();
+    await fireEvent.press(app.getAllByLabelText('Close').at(-1)!);
+    await flush();
     // Kept on the phone, then sent once you sign in.
     expect(JSON.parse((await AsyncStorage.getItem('finds.v1')) ?? '{}').finds).toEqual([expect.objectContaining({ code: 'ferris2027', state: 'found', sent: false })]);
     const u = await act(() => s().signUp('maya@example.com', 'password123'));

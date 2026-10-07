@@ -10,6 +10,7 @@ import { CloseIcon } from '../../components/TabIcons';
 import { APP_STORE_URL } from '../../config/app';
 import { findCardFrom, findLine, huntLine, isHolo, lookOf, type Sticker, untilLine } from '../../features/finds/finds';
 import { shinyLook } from '../../features/sprouts/artistLook';
+import { StoryPreview } from '../../features/sprouts/StoryShare';
 import { useOrg } from '../../state/orgs';
 import { HuntRow } from '../../features/finds/HuntRow';
 import { accountsOff } from '../../features/social/unavailable';
@@ -69,6 +70,8 @@ export default function FindScreen() {
 
   // Lighting up: a pop and confetti the moment it's confirmed while you watch.
   const [celebrate, setCelebrate] = useState(0);
+  // Sharing what you found, as a picture.
+  const [story, setStory] = useState(false);
   const pop = useSharedValue(1);
   const was = useRef(find?.state);
   useEffect(() => {
@@ -107,7 +110,16 @@ export default function FindScreen() {
   const progress = hunt ? finds.hunts.find((h) => h.hunt.id === hunt.id) : undefined;
 
   return (
-    <Shell insets={insets}>
+    <Shell
+      insets={insets}
+      overlay={
+        story && found ? (
+          <StoryPreview title={shown.name} tint={`${look.palette.deep}AA`} glow={look.palette.glow} headline={holo ? t('A holo {name}!', { name: shown.name }) : t('I found {name}', { name: shown.name })} sub={look.name} onClose={() => setStory(false)}>
+            {(w) => <Collectible look={look} shiny={holo} size={Math.round(w * 0.66)} still />}
+          </StoryPreview>
+        ) : null
+      }
+    >
       <View style={styles.stage}>
         <Animated.View style={popStyle}>
           <Collectible look={look} shiny={holo} size={200} locked={!found} />
@@ -144,6 +156,19 @@ export default function FindScreen() {
         </View>
       ) : null}
 
+      {found ? (
+        <Pressable
+          onPress={() => {
+            haptic.tap();
+            setStory(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('Share what you found as a picture')}
+          style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+        >
+          <Text style={styles.secondaryText}>{t('Share picture')}</Text>
+        </Pressable>
+      ) : null}
       {found || shown.state === 'checking' ? (
         social.user ? (
           <Primary label={t('See your collection')} onPress={() => router.replace('/garden')} />
@@ -173,7 +198,7 @@ export default function FindScreen() {
   );
 }
 
-function Shell({ children, insets }: { children: React.ReactNode; insets: { top: number; bottom: number } }) {
+function Shell({ children, insets, overlay }: { children: React.ReactNode; insets: { top: number; bottom: number }; overlay?: React.ReactNode }) {
   return (
     <View style={styles.root}>
       <PageTitle title={t('A sticker you found')} />
@@ -182,6 +207,7 @@ function Shell({ children, insets }: { children: React.ReactNode; insets: { top:
         <CloseIcon color={color.moon} size={18} />
       </Pressable>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxxl, paddingBottom: insets.bottom + space.xl }]}>{children}</ScrollView>
+      {overlay}
     </View>
   );
 }
