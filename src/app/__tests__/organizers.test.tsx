@@ -167,6 +167,41 @@ describe('organizers', () => {
     await app.unmount();
   });
 
+  it('adds the past events found on its ticket pages; its profile links its website and Instagram', async () => {
+    seed({ events: [] });
+    const app = await organizer();
+    await showTab(app, 'Events');
+    expect(app.getByText('Events we found · 5')).toBeTruthy();
+    await fireEvent.press(app.getByText('Add these 5 events'));
+    await flush();
+    const saved = mockSocial.orgs.get(ORG)!;
+    expect(saved.events.map((e) => e.name)).toEqual(expect.arrayContaining(['Journey', 'After The Kingdom']));
+    expect(saved.events.every((e) => e.published && !e.lineup.length)).toBe(true);
+    expect(app.queryByText('Events we found · 5')).toBeNull();
+    const uid = mockSocial.currentUser()!.uid;
+    await s().saveProfile({ handle: 'undergroundalchemy', displayName: 'Underground Alchemy', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    await app.unmount();
+    await s().signOut();
+
+    await s().signUp('fan@example.com', 'password123');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    expect(mockSocial.orgs.get(ORG)!.uids).toContain(uid);
+    const fan = await renderApp('/u/undergroundalchemy');
+    await flush();
+    expect(fan.getByLabelText('Underground Alchemy website')).toBeTruthy();
+    expect(fan.getByLabelText('Underground Alchemy on Instagram')).toBeTruthy();
+    // Its profile lists its events, past ones too.
+    expect(fan.getByText('Their events')).toBeTruthy();
+    expect(fan.getAllByText('After The Kingdom').length).toBeGreaterThan(0);
+    // Its page lists them as past events, with no "to be announced".
+    await act(async () => router.push(`/org/${ORG}`));
+    await flush();
+    expect(fan.getByText('Past events')).toBeTruthy();
+    expect(fan.getAllByText('Journey').length).toBeGreaterThan(0);
+    expect(fan.queryByText('Lineup TBA')).toBeNull();
+    await fan.unmount();
+  });
+
   it('drafts stay in the studio; a non-organizer and an unconfirmed email can’t open it', async () => {
     seed();
     await s().signUp('someone@example.com', 'password123');

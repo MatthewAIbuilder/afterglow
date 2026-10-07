@@ -10,8 +10,10 @@ place. How the organizer features work in general: `../organizers.md`.
   account is ready).
 - **Website**: https://undergroundalchemy.net
 - **Instagram**: @underground.alchemy (https://www.instagram.com/underground.alchemy)
-- **On EDMTrain**: his events are listed there too; Afterglow imports them each
-  night, and he claims them in his studio (see below).
+- **On EDMTrain**: username **u-alchemy** (the user told us on 2026-10-07).
+  His events are listed there too; Afterglow imports them each night, and he
+  claims them in his studio (see below).
+- **Tickets**: Posh, https://posh.vip/g/events-by-undergroundalchemy
 
 ## On Afterglow
 
@@ -48,6 +50,33 @@ with his name or at his venues; he taps **This is ours** on each. To change
 one, **Edit on Afterglow** copies it into the studio; once published his
 version shows instead of EDMTrain's. EDMTrain's own listing is never changed,
 and comes back if he unpublishes or deletes his copy.
+
+Linking everything **u-alchemy** posts automatically isn't possible yet:
+EDMTrain's event feed (the API Afterglow imports from) doesn't say which
+account posted an event. Suggestions use his name and his venues instead
+(Space Underground, 4910 Edgewater Dr, …, from the events on his page). If
+EDMTrain ever adds who posted an event to its feed, the import can claim his
+automatically by this username (`edmtrain` in `src/config/organizers.ts`).
+
+## His past events
+
+Found on his Posh ticket pages on 2026-10-07 (web search; exactly as listed,
+no lineups were listed, no town where none was given), in
+`src/config/organizers.ts` (`pastEvents`). HQ → Organizers → **Add 5 past
+events found on its ticket pages**, or in his studio, Events → **Events we
+found** → Add these events. They then show on his page and profile under
+Events (past), and he can edit each one (add a lineup, poster, town).
+
+| Night | Event | Venue | Source |
+| --- | --- | --- | --- |
+| 2024-10-26 | Underground Alchemy Presents: A Halloween Forest Rave | 1401 C CO RD 13, Orlando, FL | https://posh.vip/e/halloween-forest-rave-2 |
+| 2025-04-25 | Journey | (not listed) | https://posh.vip/e/journey-1 |
+| 2025-11-07 | Afterglow - Festival Afterparty 18+ | 4910 Edgewater Dr, Orlando | https://posh.vip/e/wizards-dungeon-edc-afters |
+| 2026-01-24 | Back to 80's (An 80's themed No-Phones EDM party) | Space Underground | https://posh.vip/e/back-to-80s-an-80s-themed-edm-party |
+| 2026-04-26 | After The Kingdom (with Vivid Vybz) | Space Underground | https://posh.vip/e/after-the-kingdom-1 |
+
+Not his (same-sounding names, left out): Alchemy Boston, Norfolk's Alchemy
+Underground, undergroundalchemy.org.
 
 ## Logos
 

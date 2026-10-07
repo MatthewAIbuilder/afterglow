@@ -10,7 +10,7 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { localDay } from '../artists/shows';
 import { OrgDot } from '../organizers/OrgMark';
-import { handleFor, type Org, orgFromStarter, type OrgRequest, promotionUntil, REQUEST_LABEL } from '../organizers/organizers';
+import { foundEvents, handleFor, type Org, ORG_EVENTS_MAX, orgFromStarter, type OrgRequest, promotionUntil, REQUEST_LABEL } from '../organizers/organizers';
 import { refreshOrgs } from '../organizers/OrgSync';
 import { STATUS_LABEL } from '../organizers/studio/StudioPromote';
 import { socialErrorKind, SOCIAL_ERROR_COPY } from '../social/service';
@@ -113,6 +113,8 @@ function OrgCard({ org, emails, busy, run }: { org: Org; emails: string[]; busy:
     void run(() => service.setOrgHandle(org.id, h || null));
   };
   const promoted = Object.entries(org.promoted).filter(([, until]) => until >= today);
+  // Past events found on its own ticket pages, not on its page yet.
+  const found = foundEvents(org, ORG_STARTERS.find((x) => x.id === org.id)?.pastEvents);
   const addEmail = () => {
     const e = email.trim().toLowerCase();
     if (!EMAIL.test(e)) return showAlert('That email doesn’t look right', 'Like stefan@example.com');
@@ -142,6 +144,16 @@ function OrgCard({ org, emails, busy, run }: { org: Org; emails: string[]; busy:
           <Text style={styles.secondaryText}>View its page</Text>
         </Pressable>
       </View>
+      {found.length ? (
+        <Pressable
+          onPress={() => void run(() => service.saveOrg({ ...org, events: [...org.events, ...found].slice(0, ORG_EVENTS_MAX) }))}
+          disabled={busy}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+        >
+          <Text style={styles.secondaryText}>Add {found.length} past events found on its ticket pages</Text>
+        </Pressable>
+      ) : null}
 
       <Text style={styles.label}>Its profile</Text>
       <Text style={styles.body}>Accounts that run it show as {org.name}, with this @handle (they take it the next time they open the studio).</Text>

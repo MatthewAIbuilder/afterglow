@@ -11,7 +11,8 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../social/service';
 import { useToday } from '../../../lib/useToday';
 import { localDay } from '../../artists/shows';
 import { color, radius, space, type } from '../../../theme/tokens';
-import { cleanEvent, draftFrom, importedCandidates, importedListing, ORG_CLAIMS_MAX, eventFestivalIdOf, foldName, httpsLink, isDay, isTime, LINEUP_MAX, newEventId, type Org, type OrgAct, type OrgEvent, ORG_EVENTS_MAX, splitEvents, EVENT_ABOUT_MAX, EVENT_NAME_MAX, EVENT_PLACE_MAX } from '../organizers';
+import { ORG_STARTERS } from '../../../config/organizers';
+import { cleanEvent, draftFrom, foundEvents, importedCandidates, importedListing, ORG_CLAIMS_MAX, eventFestivalIdOf, foldName, httpsLink, isDay, isTime, LINEUP_MAX, newEventId, type Org, type OrgAct, type OrgEvent, ORG_EVENTS_MAX, splitEvents, EVENT_ABOUT_MAX, EVENT_NAME_MAX, EVENT_PLACE_MAX } from '../organizers';
 import { Action, Button, Card, Chip, Field, studio } from './ui';
 
 const blank = (): OrgEvent => ({ id: '', name: '', date: '', venue: '', city: '', lineup: [], published: false });
@@ -50,6 +51,7 @@ export function StudioEvents({ org, save }: { org: Org; save: (next: Org) => Pro
     <View style={studio.wrap}>
       <Text style={studio.lead}>Add your events here. A draft is only seen in the studio; publish it and it shows on Afterglow like a festival, with its own page, plans, crowd videos and your badge.</Text>
       <Button label="Add an event" onPress={add} />
+      <FoundEvents org={org} save={save} />
       {upcoming.length ? <Text style={studio.h3}>Coming up</Text> : null}
       {upcoming.map(row)}
       {past.length ? <Text style={studio.h3}>Past</Text> : null}
@@ -57,6 +59,29 @@ export function StudioEvents({ org, save }: { org: Org; save: (next: Org) => Pro
       {!org.events.length ? <Text style={studio.muted}>No events yet.</Text> : null}
       <OnEdmtrain org={org} save={save} edit={(draft) => setEditing({ event: draft, isNew: true })} />
     </View>
+  );
+}
+
+/** Past events found on the organizer's own ticket pages, added to its page with one tap (then edited like any other). */
+export function FoundEvents({ org, save }: { org: Org; save: (next: Org) => Promise<boolean> }) {
+  const [busy, setBusy] = useState(false);
+  const found = foundEvents(org, ORG_STARTERS.find((x) => x.id === org.id)?.pastEvents);
+  if (!found.length) return null;
+  const add = async () => {
+    setBusy(true);
+    await save({ ...org, events: [...org.events, ...found].slice(0, ORG_EVENTS_MAX) });
+    setBusy(false);
+  };
+  return (
+    <Card title={`Events we found · ${found.length}`} sub="Found on your Posh ticket pages: name, night and venue as they’re listed there. They go on your page as past events, with no lineup (add one if you like).">
+      {found.map((e) => (
+        <Text key={e.id} style={studio.rowSub}>
+          {e.date} · {e.name}
+          {e.venue ? ` · ${e.venue}` : ''}
+        </Text>
+      ))}
+      <Button label={found.length === 1 ? 'Add this event' : `Add these ${found.length} events`} busy={busy} onPress={() => void add()} />
+    </Card>
   );
 }
 

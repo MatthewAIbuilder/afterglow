@@ -1,6 +1,6 @@
 import type { Artist, CatalogSnapshot, Festival, SetTime, Show, SoundTag } from '../../data/models';
 import { SOUND_TAGS } from '../../data/models';
-import type { OrgStarter } from '../../config/organizers';
+import type { FoundEvent, OrgStarter } from '../../config/organizers';
 import { matchesName, nameRank, normalize } from '../festivals/search';
 import type { Notice } from '../notifications/inbox';
 import { t } from '../../i18n';
@@ -247,7 +247,7 @@ export function cleanEvent(raw: unknown): OrgEvent | undefined {
     .map(cleanAct)
     .filter((a): a is OrgAct => !!a && !seen.has(foldName(a.name)) && !!seen.add(foldName(a.name)))
     .slice(0, LINEUP_MAX);
-  return some({
+  const event = some({
     id: r.id,
     name,
     date: r.date,
@@ -265,6 +265,8 @@ export function cleanEvent(raw: unknown): OrgEvent | undefined {
     from: typeof r.from === 'string' && IMPORTED_ID.test(r.from) && (r.fromKind === 'festival' || r.fromKind === 'show') ? r.from : undefined,
     fromKind: typeof r.from === 'string' && IMPORTED_ID.test(r.from) && (r.fromKind === 'festival' || r.fromKind === 'show') ? r.fromKind : undefined,
   }) as OrgEvent;
+  // Venue and town are always there, empty when not known.
+  return { ...event, venue: event.venue ?? '', city: event.city ?? '' };
 }
 
 export function cleanOrgArtist(raw: unknown): OrgArtist | undefined {
@@ -336,6 +338,23 @@ export function orgToDoc(org: Org): Record<string, unknown> {
 /** A new organizer page from its starter. */
 export function orgFromStarter(s: OrgStarter): Org {
   return some({ id: s.id, name: s.name, tagline: s.tagline, website: s.website, instagram: s.instagram, mark: s.mark, color: s.color, handle: s.handle, events: [], artists: {}, claims: [], promoted: {}, uids: [] }) as Org;
+}
+
+/**
+ * Events found on an organizer's public pages (its starter's `pastEvents`)
+ * that its page doesn't have yet (none on the same night with the same name
+ * or source link), ready to add as published events: no lineup, the page
+ * kept as their link. Pure.
+ */
+export function foundEvents(org: Pick<Org, 'events'>, found: readonly FoundEvent[] | undefined): OrgEvent[] {
+  const out: OrgEvent[] = [];
+  for (const f of found ?? []) {
+    const all = [...org.events, ...out];
+    if (all.some((e) => (e.date === f.date && foldName(e.name) === foldName(f.name)) || (!!e.tickets && e.tickets === f.source))) continue;
+    const e = cleanEvent({ id: newEventId({ events: all }, f.name, f.date), name: f.name, date: f.date, venue: f.venue, city: f.city, tickets: f.source, lineup: [], published: true });
+    if (e) out.push(e);
+  }
+  return out;
 }
 
 /** A new event's id from its name and night, not already used. */
