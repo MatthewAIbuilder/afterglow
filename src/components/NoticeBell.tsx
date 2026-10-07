@@ -23,7 +23,7 @@ export function NoticeBell() {
       hitSlop={10}
       style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
     >
-      <GlassFill radius={20} interactive />
+      <GlassFill radius={20} />
       {/* Its own layer, so the glass never paints over the bell in a browser. */}
       <View pointerEvents="none">
         <BellIcon color={unread ? color.moon : color.moonDim} />

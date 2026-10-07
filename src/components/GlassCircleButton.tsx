@@ -42,7 +42,7 @@ export function GlassCircleButton({
       hitSlop={10}
       style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
     >
-      <GlassFill radius={20} lit={selected} interactive />
+      <GlassFill radius={20} lit={selected} />
       {/* Its own layer, so the glass (positioned) never paints over the icon in a browser. */}
       <View style={styles.content} pointerEvents="none">
         {children}

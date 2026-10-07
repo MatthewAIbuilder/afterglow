@@ -8,21 +8,19 @@ import { color, glowA, glowDeepA, raisedA, tintA } from '../theme/tokens';
 /**
  * Liquid Glass: the material of everything that floats over the app (the tab
  * bar, the round buttons). On an iPhone with iOS 26 it is Apple's own glass,
- * which bends the light behind it and answers a touch; everywhere else
+ * which bends the light behind it; everywhere else
  * (older iPhones, Android, the website) a close copy: frosted blur, a lit
  * rim along the top, and the theme's glow gathering at the bottom edge.
  * With Reduce transparency on, a calm solid surface instead.
  *
- * Drawn as the back layer of its parent (which clips it to its shape), so
- * whatever the parent holds sits on top.
+ * Drawn as the first child of its parent, filling it with the parent's
+ * corner `radius`, so whatever the parent holds sits on top.
  */
-export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep, frost = true }: {
+export function GlassFill({ radius, lit, tint = 0.4, hue, deep, frost = true }: {
   /** The parent's corner radius (the glass needs its own to bend at the edges). */
   radius: number;
   /** A toggle that's on: the glass takes the theme's glow. */
   lit?: boolean;
-  /** Answers a touch (a button): the real glass shimmers and swells under the finger. */
-  interactive?: boolean;
   /** How much night the copy's surface holds (0 to 1). */
   tint?: number;
   /** A colour of its own instead of the theme's glow (the quests' gold), as hex. */
@@ -41,11 +39,10 @@ export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep, fro
   if (nativeGlass()) {
     return (
       <GlassView
-        // A button's glass takes the touch too (it shimmers under the finger); the press still reaches the button around it.
-        pointerEvents={interactive ? 'auto' : 'none'}
+        // Never in the touch's way: the press always reaches the button it belongs to, which answers with its own spring.
+        pointerEvents="none"
         glassEffectStyle="regular"
         colorScheme="dark"
-        isInteractive={interactive}
         tintColor={lit ? light(deep ? 0.24 : 0.42) : deep ? raisedA(0.6) : hue ? tintA(hue, 0.1) : glowDeepA(0.12)}
         style={[StyleSheet.absoluteFill, shape]}
       />

@@ -95,7 +95,7 @@ function RailButton({
       <View>
         {burst ? <Burst key={burst} /> : null}
         <Animated.View style={[styles.icon, style]}>
-          <GlassFill radius={25} interactive tint={0.3} frost={false} />
+          <GlassFill radius={25} tint={0.3} frost={false} />
           {/* Its own layer, so the glass (positioned) never paints over the icon in a browser. */}
           <View pointerEvents="none">{children}</View>
         </Animated.View>

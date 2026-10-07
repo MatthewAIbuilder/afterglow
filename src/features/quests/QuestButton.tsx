@@ -49,7 +49,7 @@ export function QuestButton() {
       style={({ pressed }) => [pressed && { transform: [{ scale: 0.92 }] }]}
     >
       <Animated.View style={[styles.button, all && styles.lit, style]}>
-        <GlassFill radius={SIZE / 2} interactive />
+        <GlassFill radius={SIZE / 2} />
         <View style={styles.ring} pointerEvents="none">
           <QuestRing size={SIZE} stroke={2.5} parts={of} progress={q.ready ? q.doneToday / of : 0} done={all} track="rgba(243,240,255,0.16)" />
         </View>

@@ -273,7 +273,7 @@ export function FestivalMap({
             accessibilityLabel={lit > 1 ? t('Show all these festivals again') : t('Back to the festival')}
             style={({ pressed }) => [styles.againPill, pressed && { opacity: 0.8 }]}
           >
-            <GlassFill radius={radius.pill} tint={0.5} interactive />
+            <GlassFill radius={radius.pill} tint={0.5} />
             <Text style={styles.againText}>{lit > 1 ? t('Show all') : t('Back to it')}</Text>
           </Pressable>
         </View>

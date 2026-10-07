@@ -262,7 +262,7 @@ function Camera() {
               hitSlop={10}
               style={({ pressed }) => [styles.side, recording && styles.hidden, pressed && styles.pressed]}
             >
-              <GlassFill radius={radius.md} tint={0.5} interactive />
+              <GlassFill radius={radius.md} tint={0.5} />
               <View pointerEvents="none">
                 <PhotosIcon color={color.moon} size={22} />
               </View>
@@ -288,7 +288,7 @@ function Camera() {
               hitSlop={10}
               style={({ pressed }) => [styles.side, (recording || !allowed) && styles.hidden, pressed && styles.pressed]}
             >
-              <GlassFill radius={radius.md} tint={0.5} interactive />
+              <GlassFill radius={radius.md} tint={0.5} />
               <View pointerEvents="none">
                 <FlipIcon color={color.moon} size={22} />
               </View>

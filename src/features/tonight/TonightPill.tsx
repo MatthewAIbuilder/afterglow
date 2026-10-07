@@ -23,7 +23,7 @@ export function TonightPill({ tonight }: { tonight: Tonight }) {
         accessibilityLabel={t('Tonight: {title}. Your plan, your crew and looking after yourself.', { title: tonightTitle(tonight) })}
         style={({ pressed }) => [styles.pill, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
       >
-        <GlassFill radius={radius.pill} lit interactive />
+        <GlassFill radius={radius.pill} lit />
         <View style={styles.dot} />
         <Text style={styles.text} numberOfLines={1}>
           {t('Tonight · {title}', { title: tonightTitle(tonight) })}

@@ -150,7 +150,7 @@ export default function ScanScreen() {
               accessibilityLabel={t('Show my code instead')}
               style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
             >
-              <GlassFill radius={radius.pill} tint={0.5} interactive />
+              <GlassFill radius={radius.pill} tint={0.5} />
               {/* Its own layer, so the glass (positioned) never paints over the icon in a browser. */}
               <View pointerEvents="none">
                 <QrIcon color={color.moon} size={18} />
