@@ -30,6 +30,7 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   kandi: ['#FF9AD8', '#5BA8FF'],
   lucky: ['#FFE58A', '#FF8AD8'],
   hunter: ['#9AFFD8', '#2C7FB8'],
+  roamer: ['#FFE08A', '#2A7A5A'],
   golden: ['#FFF1A8', '#B8860B'],
   halfway: ['#B99CFF', '#2C9F8A'],
   lit: ['#FFE9A8', '#C2477E'],
@@ -177,6 +178,15 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
           <Circle cx={10} cy={10} r={6} {...p} />
           <Path d="M14.5 14.5 L20 20" {...p} />
           <Path d="M10 7 L10.9 9 L13 9.2 L11.4 10.6 L11.9 12.8 L10 11.7 L8.1 12.8 L8.6 10.6 L7 9.2 L9.1 9 Z" {...p} strokeWidth={1.2} />
+        </G>
+      );
+    case 'roamer':
+      // A signpost pointing two ways.
+      return (
+        <G>
+          <Path d="M12 3 L12 21" {...p} />
+          <Path d="M12 5.5 L19 5.5 L21 7.75 L19 10 L12 10" {...p} />
+          <Path d="M12 12 L5 12 L3 14.25 L5 16.5 L12 16.5" {...p} />
         </G>
       );
     case 'golden':

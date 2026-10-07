@@ -30,7 +30,7 @@ import { useScouted } from '../../state/scouted';
 import { useFinds } from '../../state/finds';
 import { useKandi } from '../../state/kandi';
 import { collection } from '../sprouts/collection';
-import { artistLook } from '../sprouts/artistLook';
+import { artistLook, PLACE_CREATURES } from '../sprouts/artistLook';
 import { useGardenDecor } from '../sprouts/useGardenDecor';
 import { isHolo } from '../finds/finds';
 import { useMyShowcase } from '../sprouts/useMyShowcase';
@@ -120,6 +120,7 @@ export function useProfileBadges() {
         kandi: kandi.received.length,
         shiny: book.shiny,
         stickers: finds.filter((f) => f.state === 'found').length,
+        places: [...found].filter((c) => (PLACE_CREATURES as readonly string[]).includes(c)).length,
         gold: sprouts.artists.filter((a) => a.tier === 3).length,
         collected: book.total ? Math.floor((book.have / book.total) * 100) : 0,
         decor: decor.length,
@@ -127,7 +128,7 @@ export function useProfileBadges() {
         completeSets: book.sets.filter((x) => x.total > 0 && x.have === x.total).length,
         glows: glows.length,
       }),
-    [glows.length, decor.length, showcase.pinned.length, book, kandi.received.length, finds, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
+    [glows.length, decor.length, showcase.pinned.length, book, kandi.received.length, finds, found, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();

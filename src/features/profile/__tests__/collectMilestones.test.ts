@@ -11,6 +11,9 @@ describe('collecting milestones', () => {
     const all = milestones({ ...base, kandi: 5, shiny: 1, stickers: 6, gold: 1, collected: 50 });
     for (const id of ['kandi', 'lucky', 'hunter', 'golden', 'halfway']) expect(by(all, id).earned).toBe(true);
     expect(by(milestones({ ...base, collected: 23 }), 'halfway').current).toBe(23);
+    // Around the grounds: stickers from five different places.
+    expect(by(milestones({ ...base, stickers: 9, places: 4 }), 'roamer')).toMatchObject({ current: 4, earned: false });
+    expect(by(milestones({ ...base, places: 5 }), 'roamer').earned).toBe(true);
   });
 
   it('decorations, a full showcase and a completed set', () => {
