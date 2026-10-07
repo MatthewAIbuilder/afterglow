@@ -57,15 +57,17 @@ describe('Friends at a festival', () => {
     expect(app.queryByText('Ask my crew for help')).toBeNull();
     expect(app.getByLabelText('Check in with a stage, a photo or your own words')).toBeTruthy();
     expect(app.getAllByText('Side quests').length).toBeGreaterThan(0);
-    // At the festival: your code, scanning and finding people up top; no inviting or activity feed.
+    // At the festival: the round buttons up top (find, your code, scanning, sprouts, inviting); no activity feed.
+    expect(app.getByLabelText('Find people')).toBeTruthy();
     expect(app.getByLabelText('Show my friend code')).toBeTruthy();
     expect(app.getByLabelText('Scan a friend\'s code')).toBeTruthy();
-    expect(app.queryByLabelText('Invite friends to Afterglow')).toBeNull();
+    expect(app.getByLabelText('Your garden: give a sprout or kandi')).toBeTruthy();
+    expect(app.getByLabelText('Invite friends to Afterglow')).toBeTruthy();
     expect(app.queryByText('People you may know')).toBeNull();
     await app.unmount();
   });
 
-  it('is laid out for the night: where you are and with whom, check in, your crew once, then chats and meeting people', async () => {
+  it('is laid out for the night: the round buttons, then each crew as one card with its chat and checking in, then messages, then tonight', async () => {
     await person('sam', 'Sam');
     const crew = await s().createCrew('cyclops-cove-4', 'Bass crew');
     await s().signOut();
@@ -73,15 +75,19 @@ describe('Friends at a festival', () => {
     await s().joinCrew(crew.id, mockSocial.codeOf(crew.id));
     const app = await renderApp('/together');
     await flush();
-    expect(app.getByLabelText('At Cyclops Cove 4. With Sam')).toBeTruthy();
-    // The crew is its own section, named after it, with its chat as one card: never listed again under Chats.
-    expect(app.getByText('Bass crew')).toBeTruthy();
-    expect(app.getAllByLabelText(/^Crew chat\. /)).toHaveLength(1);
-    expect(app.getByText('Meet people here')).toBeTruthy();
+    // The crew's card: its chat (once, never again under Messages), checking in and the meeting spot, all inside.
+    expect(app.getAllByLabelText(/^Bass crew: open the crew chat/)).toHaveLength(1);
+    expect(app.getByText('Tell your crew')).toBeTruthy();
+    expect(app.getByLabelText('Pick a meeting spot for if you lose each other')).toBeTruthy();
     // In that order down the page.
-    const order = ['Check in', 'Bass crew', 'Meet people here', 'Side quests'].map((label) => JSON.stringify(app.toJSON()).indexOf(`"${label}"`));
+    const tree = JSON.stringify(app.toJSON());
+    const order = ['Find', 'Your crew', 'Tell your crew', 'Tonight', 'Badges to collect'].map((label) => tree.indexOf(`"${label}"`));
     expect(order.every((at) => at >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
+    // Opening the crew from its card goes to its chat.
+    await fireEvent.press(app.getByLabelText(/^Bass crew: open the crew chat/));
+    await flush();
+    expect(app.getByLabelText('Crew settings')).toBeTruthy();
     await app.unmount();
   });
 
