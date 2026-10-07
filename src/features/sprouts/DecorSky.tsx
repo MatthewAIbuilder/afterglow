@@ -6,6 +6,16 @@ const swag = (x0: number, y0: number, x1: number, y1: number, sag: number, t: nu
 const swagPath = (x0: number, y0: number, x1: number, y1: number, sag: number) => `M${x0} ${y0} Q${(x0 + x1) / 2} ${(y0 + y1) / 2 + sag * 2} ${x1} ${y1}`;
 
 const BULBS = ['#FFE58A', '#FF8AD8', '#8AE6FF', '#B8FF8A', '#FFB86B'];
+/** The constellation's stars (fractions of the width and of the sky's height), joined in this order; GUIDE is the gold one. */
+const CONSTELLATION = [
+  [0.1, 0.42],
+  [0.16, 0.26],
+  [0.23, 0.34],
+  [0.3, 0.2],
+  [0.36, 0.38],
+  [0.28, 0.52],
+] as const;
+const GUIDE = 3;
 
 /**
  * Decorations in a garden's sky, behind the hills (the aurora, a rainbow,
@@ -84,6 +94,18 @@ export function DecorBehind({ decor, width, hz }: { decor: readonly DecorId[]; w
               </G>
             );
           })}
+        </G>
+      ) : null}
+      {has('constellation') ? (
+        <G>
+          {/* Stars joined up, a gold one to steer by. */}
+          <Path d={CONSTELLATION.map(([fx, fy], i) => `${i ? 'L' : 'M'}${width * fx} ${hz * fy}`).join(' ')} stroke="#CFE8FF" strokeWidth={0.8} fill="none" opacity={0.35} />
+          {CONSTELLATION.map(([fx, fy], i) => (
+            <G key={i}>
+              <Circle cx={width * fx} cy={hz * fy} r={i === GUIDE ? 6 : 3.6} fill={i === GUIDE ? '#FFC94A' : '#CFE8FF'} opacity={0.18} />
+              <Circle cx={width * fx} cy={hz * fy} r={i === GUIDE ? 2 : 1.3} fill={i === GUIDE ? '#FFE9A8' : '#FFFFFF'} />
+            </G>
+          ))}
         </G>
       ) : null}
       {has('moon') ? (
@@ -214,6 +236,23 @@ export function DecorIcon({ id, size = 64 }: { id: DecorId; size?: number }) {
               <Path d={`M${x} ${y} L${x - len} ${y - len * 0.42}`} stroke="url(#icon-tail)" strokeWidth={2.4} strokeLinecap="round" />
               <Circle cx={x} cy={y} r={4} fill="#E8F4FF" opacity={0.25} />
               <Circle cx={x} cy={y} r={2} fill="#FFFFFF" />
+            </G>
+          ))}
+        </G>
+      ) : id === 'constellation' ? (
+        <G>
+          <Path d="M12 38 L22 22 L32 30 L42 14 L50 32 L38 46" stroke="#CFE8FF" strokeWidth={1} fill="none" opacity={0.45} />
+          {[
+            [12, 38],
+            [22, 22],
+            [32, 30],
+            [42, 14],
+            [50, 32],
+            [38, 46],
+          ].map(([x, y], i) => (
+            <G key={i}>
+              <Circle cx={x} cy={y} r={i === GUIDE ? 6 : 4} fill={i === GUIDE ? '#FFC94A' : '#CFE8FF'} opacity={0.22} />
+              <Circle cx={x} cy={y} r={i === GUIDE ? 2.6 : 1.8} fill={i === GUIDE ? '#FFE9A8' : '#FFFFFF'} />
             </G>
           ))}
         </G>

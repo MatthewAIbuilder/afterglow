@@ -17,6 +17,7 @@ describe('garden decorations', () => {
     expect(decorFor({ ...none, artists: [{ id: 'a', tier: 2 } as never] })).toEqual([]);
     expect(decorFor({ ...none, pinned: 3, completeSets: 1 })).toEqual(['stars', 'fireworks']);
     expect(decorFor({ ...none, pinned: 2 })).toEqual([]);
+    expect(decorFor({ ...none, kinds: new Set(['seeker'] as const) })).toEqual(['constellation']);
   });
 
   it('reads back only known decorations, once each', () => {

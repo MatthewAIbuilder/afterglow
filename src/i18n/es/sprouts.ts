@@ -422,6 +422,8 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'A constellation': 'Una constelación',
+  'Grow a Seeker sprout': 'Haz crecer un brote buscador',
   'The Peekaboo': 'El Cucú',
   'Peeking over the speakers, waiting for the drop': 'Asomándose por encima de los altavoces, esperando el drop',
   'The Croissant': 'El Cruasán',
