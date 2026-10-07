@@ -3,7 +3,7 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, useReducedMotion, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { PageTitle } from '../components/PageTitle';
@@ -16,7 +16,7 @@ import { PortalSwirl } from '../features/finds/PortalSwirl';
 import { FriendQR } from '../features/friends/FriendQR';
 import { OrgLogo } from '../features/organizers/OrgMark';
 import { Collectible } from '../features/sprouts/Collectible';
-import { t } from '../i18n';
+import { t, tn } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { goBack } from '../lib/nav';
 import { useNow } from '../lib/useNow';
@@ -27,6 +27,8 @@ import { color, radius, space, type } from '../theme/tokens';
 const STORAGE_KEY = 'totem.v1';
 /** Controls show this long after a tap. */
 const CONTROLS_MS = 6000;
+/** How often a pop-up checks how many people have claimed its sticker. */
+const CLAIMS_POLL_MS = 15_000;
 
 /**
  * The totem (HQ only): a tablet at the festival, full screen. Afterglow's
@@ -204,6 +206,28 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
   const live = useMemo(() => ({ ...settings, codes: settings.codes.filter((c) => known.has(c)) }), [settings, known]);
   const popup = totemPopup(live, start, now, nudge);
   const sticker = popup ? known.get(popup.code) : undefined;
+  // How many people have claimed the sticker on show, kept fresh while it's up.
+  const { service } = useSocial();
+  const showing = popup && sticker ? popup.code : undefined;
+  const [claims, setClaims] = useState<{ code: string; n: number; up: boolean }>();
+  useEffect(() => {
+    if (!showing) return;
+    let live = true;
+    const read = () =>
+      service
+        .stickerFinds(showing)
+        .then((n) => {
+          if (live) setClaims((cur) => ({ code: showing, n, up: cur?.code === showing && n > cur.n }));
+        })
+        .catch(() => {});
+    read();
+    const timer = setInterval(read, CLAIMS_POLL_MS);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [showing, service]);
+  const claimed = claims && claims.code === showing && claims.n > 0 ? claims : undefined;
   useEffect(() => {
     if (controls === undefined) return;
     const timer = setTimeout(() => setControls(undefined), CONTROLS_MS);
@@ -245,6 +269,11 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
                 {sticker.name}
               </Text>
               <Text style={styles.popTheme}>{lookOf(sticker.creature).theme}.</Text>
+              {claimed ? (
+                <Animated.Text key={claimed.n} entering={reduce || !claimed.up ? undefined : ZoomIn.springify().damping(8)} style={[styles.claimed, claimed.up && styles.claimedUp]} accessibilityLiveRegion="polite">
+                  {claimed.up ? t('✦ Just claimed! {count}', { count: tn(claimed.n, '{n} so far', '{n} so far') }) : tn(claimed.n, 'Claimed by {n} person', 'Claimed by {n} people')}
+                </Animated.Text>
+              ) : null}
             </View>
             <View style={styles.popSide}>
               <FriendQR value={findLink(sticker)} size={Math.round(short * (landscape ? 0.42 : 0.5))} theme="glow" centre={(sz) => <Collectible look={lookOf(sticker.creature)} size={sz} still />} />
@@ -345,6 +374,8 @@ const styles = StyleSheet.create({
   popKicker: { ...type.label, color: GOLD, letterSpacing: 2, textAlign: 'center' },
   popName: { color: color.moon, fontWeight: '800', textAlign: 'center' },
   popTheme: { ...type.body, color: color.moonDim, textAlign: 'center', maxWidth: 360 },
+  claimed: { ...type.label, color: GOLD, textAlign: 'center', marginTop: space.xs },
+  claimedUp: { textShadowColor: GOLD, textShadowRadius: 12 },
   popScan: { ...type.headline, color: color.moon, textAlign: 'center' },
   bar: { width: 240, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' },
   barFill: { height: 6, borderRadius: 3, backgroundColor: GOLD },

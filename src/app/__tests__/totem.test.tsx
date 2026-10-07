@@ -32,6 +32,7 @@ describe('the totem', () => {
     mockSocial.verified.add(SUPPORT);
     await s().signUp(SUPPORT, 'password123');
     await s().addSticker({ code: 'potty00001', name: 'Portal potty · Main stage loos', creature: 'portapotty' });
+    await s().recordFind('potty00001', Date.now());
     const app = await renderApp('/');
     await flush();
     await act(async () => router.push('/totem'));
@@ -52,6 +53,8 @@ describe('the totem', () => {
     await flush();
     expect(app.getByText('FREE COLLECTIBLE · SCAN TO CLAIM')).toBeTruthy();
     expect(app.getByText('Portal potty · Main stage loos')).toBeTruthy();
+    // How many people have claimed it so far.
+    expect(app.getByText('Claimed by 1 person')).toBeTruthy();
     // Half a minute later it's gone again (up for half the gap at most).
     await settle(31_000);
     await flush();
