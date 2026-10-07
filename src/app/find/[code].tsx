@@ -20,6 +20,7 @@ import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { goBack } from '../../lib/nav';
 import { useFinds } from '../../state/finds';
+import { revealSecret } from '../../state/secrets';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 
@@ -30,7 +31,7 @@ import { color, radius, space, type } from '../../theme/tokens';
  * no signal it's kept on the phone and checked once there is.
  */
 export default function FindScreen() {
-  const { code, c, n } = useLocalSearchParams<{ code: string; c?: string; n?: string }>();
+  const { code, c, n, via } = useLocalSearchParams<{ code: string; c?: string; n?: string; via?: string }>();
   const card = useMemo(() => findCardFrom({ code, c, n }), [code, c, n]);
   const insets = useSafeAreaInsets();
   const social = useSocial();
@@ -45,6 +46,12 @@ export default function FindScreen() {
     kept.current = true;
     finds.scan(card);
   }, [card, finds]);
+
+  // Caught from a totem's screen: a secret.
+  const fromTotem = via === 'totem' && find?.state === 'found';
+  useEffect(() => {
+    if (fromTotem) revealSecret('totem');
+  }, [fromTotem]);
 
   // Afterglow's copy, for who it's from: an organizer's sticker or gift, and a gift's few words.
   const [sticker, setSticker] = useState<Sticker | null>(null);

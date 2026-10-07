@@ -9,6 +9,7 @@ import {
   findCardFrom,
   findLine,
   findLink,
+  fromTotemLink,
   findsFor,
   findsToCheck,
   findsToSend,
@@ -36,6 +37,12 @@ describe('sticker codes', () => {
     expect(readFindLink(link)).toEqual(card);
     expect(readFindLink('https://afterglowmusic.web.app/find/ferris2027')).toEqual({ code: 'ferris2027', creature: 'wisp', name: 'A sticker' });
     expect(readFindLink('afterglow://find/ferris2027?c=frog&n=Hi')).toEqual({ code: 'ferris2027', creature: 'frog', name: 'Hi' });
+    // A totem's screen marks its links; they still read as the same sticker.
+    const totem = findLink(card, undefined, 'totem');
+    expect(totem).toBe(`${link}&via=totem`);
+    expect(readFindLink(totem)).toEqual(readFindLink(link));
+    expect(fromTotemLink(totem)).toBe(true);
+    expect(fromTotemLink(link)).toBe(false);
   });
 
   it('turns down anything else', () => {

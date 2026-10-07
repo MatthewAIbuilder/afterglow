@@ -287,7 +287,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
               ) : null}
             </View>
             <View style={styles.popSide}>
-              <FriendQR value={findLink(sticker)} size={Math.round(short * (landscape ? 0.42 : 0.5))} theme="glow" centre={(sz) => <Collectible look={lookOf(sticker.creature)} size={sz} still />} />
+              <FriendQR value={findLink(sticker, undefined, 'totem')} size={Math.round(short * (landscape ? 0.42 : 0.5))} theme="glow" centre={(sz) => <Collectible look={lookOf(sticker.creature)} size={sz} still />} />
               <Text style={styles.popScan}>{t('Point your phone’s camera here')}</Text>
               <View style={styles.bar}>
                 <View style={[styles.barFill, { width: `${Math.max(0, Math.min(1, popup.left / live.showSec)) * 100}%` }]} />

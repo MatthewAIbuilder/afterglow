@@ -5,7 +5,7 @@ import { t } from '../../i18n';
  * moment (a light show, a rain of hearts, fireworks). Found ones are kept
  * and add to your glow; the rest show only a riddle. Pure.
  */
-export type SecretId = 'lightshow' | 'plur' | 'sunrise' | 'ringspin' | 'smallprint' | 'fireworks' | 'edge' | 'bassdrop' | 'nightowl' | 'colours' | 'pinspin';
+export type SecretId = 'lightshow' | 'plur' | 'sunrise' | 'ringspin' | 'smallprint' | 'fireworks' | 'edge' | 'bassdrop' | 'nightowl' | 'colours' | 'pinspin' | 'totem';
 
 /** What plays when a secret is found (or found again). */
 export type SecretEffect = 'lightshow' | 'hearts' | 'sunrise' | 'fireworks' | 'bassdrop' | 'sparkle';
@@ -24,6 +24,7 @@ export const SECRETS: readonly SecretSpec[] = [
   { id: 'nightowl', title: t('Night owl'), riddle: t('Still up when everyone else has gone home?'), found: t('Open Afterglow between 2 and 4 in the morning.'), effect: 'sparkle' },
   { id: 'colours', title: t('True colours'), riddle: t('Your friend code has a wardrobe. Try it all on.'), found: t('Try every colour of your friend code in one go.'), effect: 'hearts' },
   { id: 'pinspin', title: t('Pin polish'), riddle: t('A festival pin likes a little attention.'), found: t('Tap a festival pin seven times.'), effect: 'fireworks' },
+  { id: 'totem', title: t('Totem catch'), riddle: t('Some things only pop up for a minute. Be there.'), found: t('Claim a collectible from an Afterglow totem at a festival.'), effect: 'fireworks' },
 ];
 
 /** Glow for each secret found (counted in your glow level). */

@@ -203,4 +203,14 @@ describe('stickers', () => {
     await flush();
     expect(app.getByText('YOU FOUND')).toBeTruthy();
   });
+
+  it('a sticker caught off a totem’s screen finds a secret', async () => {
+    seed();
+    const app = await renderApp('/scan');
+    await flush();
+    await fireEvent(app.getByTestId('camera-view'), 'barcodeScanned', { data: `https://afterglowmusic.app${link()}&via=totem`, type: 'qr' });
+    await flush();
+    expect(app.getByText('YOU FOUND')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('secrets.v1')) ?? '{}')).toHaveProperty('totem');
+  });
 });

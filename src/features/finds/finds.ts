@@ -112,8 +112,8 @@ export const findLook = (f: Pick<Find, 'code' | 'account' | 'state' | 'creature'
 /** What a code says: enough to show it with no signal. */
 export type FindCard = { code: string; creature: string; name: string };
 
-export function findLink(card: FindCard, base = WEB_URL): string {
-  return `${base.replace(/\/+$/, '')}/find/${card.code}?c=${encodeURIComponent(card.creature)}&n=${encodeURIComponent(cleanName(card.name))}`;
+export function findLink(card: FindCard, base = WEB_URL, via?: 'totem'): string {
+  return `${base.replace(/\/+$/, '')}/find/${card.code}?c=${encodeURIComponent(card.creature)}&n=${encodeURIComponent(cleanName(card.name))}${via ? `&via=${via}` : ''}`;
 }
 
 /** A card from a link's parts or `/find/[code]`'s params. An unknown creature or a missing name still reads (Afterglow's copy fills them in). */
@@ -124,6 +124,9 @@ export function findCardFrom(parts: { code?: unknown; c?: unknown; n?: unknown }
 }
 
 /** A scanned code, if it's an Afterglow sticker (from any Afterglow address, or `afterglow://find/…`). */
+/** A sticker link scanned off a totem's screen (`findLink(…, 'totem')`). */
+export const fromTotemLink = (text: string) => /[?&]via=totem(?:[&#]|$)/.test(text.trim());
+
 export function readFindLink(text: string): FindCard | undefined {
   const m = /^(?:https:\/\/(?:www\.)?(?:afterglowmusic\.app|afterglowmusic\.web\.app)|afterglow:\/)\/find\/([a-z0-9]+)(?:\?([^#]*))?$/i.exec(text.trim());
   if (!m) return undefined;
