@@ -68,7 +68,13 @@ export type Creature =
   | 'dove'
   | 'cake'
   | 'stainedglass'
-  | 'chromemask';
+  | 'chromemask'
+  | 'discoball'
+  | 'totem'
+  | 'tent'
+  | 'glowstick'
+  | 'glowshroom'
+  | 'bassbin';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -261,9 +267,15 @@ const PLACES: Record<PlaceCreature, Spec> = {
   lantern: { creature: 'lantern', palette: P('#FFF4D6', '#FFCF6B', '#B8761E', '#6A4C36', '#2E2018', '#FFE9A0', '#FFC861'), name: t('The Camp lantern'), theme: t('A lantern that keeps the campsite cosy') },
   confetti: { creature: 'confetti', palette: P('#F2E8FF', '#A97CFF', '#5A3EB0', '#FF7EB6', '#5BE3B5', '#FFE36B', '#A97CFF'), name: t('The Confetti popper'), theme: t('A burst of confetti at the drop') },
   frog: { creature: 'frog', palette: P('#DFFFD0', '#6CD85A', '#2A8A2E', '#BFEFFF', '#3A9AE0', '#FFFFFF', '#6CD85A'), name: t('The Water frog'), theme: t('A frog that reminds you to drink water') },
+  discoball: { creature: 'discoball', palette: P('#FFFFFF', '#C8CEDE', '#4A5068', '#FF7EF0', '#7AE0FF', '#FFE36B', '#B8A8FF'), name: t('The Mirror ball'), theme: t('A mirror ball throwing colours round the room') },
+  totem: { creature: 'totem', palette: P('#FFF0FB', '#FF7EB6', '#3A2A4A', '#7FD3FF', '#FFE36B', '#FFFFFF', '#FF7EB6'), name: t('The Totem'), theme: t('A totem to find your friends by') },
+  tent: { creature: 'tent', palette: P('#FFE9C8', '#FF9A5A', '#8A3A1E', '#2A1A30', '#14101C', '#FFE36B', '#FFB070'), name: t('The Tent'), theme: t('Home at the campsite, fairy lights on') },
+  glowstick: { creature: 'glowstick', palette: P('#EFFFD0', '#7CFF6A', '#1E7A2A', '#FF5FD0', '#7FD3FF', '#FFFFFF', '#7CFF6A'), name: t('The Glow stick'), theme: t('Cracked and glowing till sunrise') },
+  glowshroom: { creature: 'glowshroom', palette: P('#E0FFFF', '#5A7CFF', '#2A2A8A', '#F0E8FF', '#6A5AA8', '#8AFFF0', '#7AA8FF'), name: t('The Glow shroom'), theme: t('A mushroom glowing by the forest stage') },
+  bassbin: { creature: 'bassbin', palette: P('#E0E4F0', '#2E3244', '#1E2030', '#4A4E66', '#0E0F18', '#5BE3B5', '#8A7CFF'), name: t('The Bass bin'), theme: t('A speaker stack you can feel in your chest') },
   flask: { creature: 'flask', palette: P('#F3EEFF', '#A97CFF', '#4A2E9A', '#D9B48A', '#7A5634', '#C9F7FF', '#A97CFF'), name: t('The Alchemist'), theme: t('A bubbling potion from the underground') },
 };
-export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask';
+export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin';
 export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];
 
 /** The sound creatures (no artist's identity), which stickers can use too. */
