@@ -4,8 +4,12 @@ import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, 
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 import { type ArtistLook, type Creature, hashOf, mix, type Palette } from './artistLook';
 import { DRAW, type Fills, star, V } from './creatures';
-import { blinkOf, paceOf, sine } from './motion';
+import { blinkOf, CLOCK_MS, paceOf, sine } from './motion';
 import type { Driven } from './Sprout';
+
+/** A spinning part turns once in this long (SPINS_PER_CLOCK times a garden loop). */
+const SPIN_MS = 6000;
+const SPINS_PER_CLOCK = Math.round(CLOCK_MS / SPIN_MS);
 
 /** One decimal, for tidy drawing numbers. */
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -85,6 +89,8 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
   const flick = useSharedValue(1);
   const blink = useSharedValue(1);
   const kick = useSharedValue(0);
+  const turn = useSharedValue(0);
+  const hasSpin = !!art.spin;
   // Each collectible keeps its own time, so a shelf of them never moves in step
   // (from its creature and colours, not its name, so the timing is the same in every language).
   const timeKey = `${look.creature}${p.mid}${p.accent}`;
@@ -121,7 +127,10 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       ),
     );
     blink.set(withRepeat(withSequence(withDelay(2600 + ((pace * 13) % 2200), withTiming(0.08, { duration: 90 })), withTiming(1, { duration: 130 })), -1, false));
+    if (hasSpin) turn.set(withRepeat(withTiming(1, { duration: SPIN_MS, easing: Easing.linear }), -1, false));
     return () => {
+      cancelAnimation(turn);
+      turn.set(0);
       cancelAnimation(bob);
       cancelAnimation(sway);
       cancelAnimation(flick);
@@ -134,7 +143,7 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       blink.set(1);
       kick.set(0);
     };
-  }, [moving, hasClock, pace, bob, sway, flick, blink, kick]);
+  }, [moving, hasClock, hasSpin, pace, bob, sway, flick, blink, kick, turn]);
 
   const flap = !!art.flap;
   // In the scene the creature's wrapper does the floating.
@@ -147,6 +156,8 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
     const v = clock ? (running ? 1 - 0.16 * (0.5 + 0.5 * sine(clock.get(), 20, phase)) * (0.5 + 0.5 * sine(clock.get(), 33, phase + 0.3)) : 1) : flick.get();
     return { opacity: v, transform: [{ scale: 0.985 + v * 0.015 }] };
   });
+  // A spinning part turns all the way round: on the garden's clock, a whole number of turns a loop.
+  const spinStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${(clock ? (running ? (clock.get() * SPINS_PER_CLOCK) % 1 : 0) : turn.get()) * 360}deg` }] }));
   const blinkStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: clock ? (running ? blinkOf(clock.get(), blinkC, phase) : 1) : blink.get() }] }));
   const legL = useAnimatedStyle(() => {
     const up = lift ? lift.get() : 0;
@@ -384,6 +395,7 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
             {art.sway}
             {art.flickerOver ? null : art.flicker}
             {art.body}
+            {art.spin}
             {eyes?.el}
             {art.flickerOver ? art.flicker : null}
             {art.front}
@@ -404,6 +416,7 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
         {art.sway ? around(art.sway, art.pivot ?? [50, 50], swayStyle, 'sway') : null}
         {art.flickerOver ? null : flicker}
         <View style={fill}>{layer(art.body)}</View>
+        {art.spin ? around(art.spin, art.spinAt ?? [50, 50], spinStyle, 'spin') : null}
         {eyes ? around(eyes.el, [eyes.box[0] + eyes.box[2] / 2, eyes.box[1] + eyes.box[3] / 2], blinkStyle, 'eyes') : null}
         {art.flickerOver ? flicker : null}
         {art.front ? <View style={fill}>{layer(art.front)}</View> : null}

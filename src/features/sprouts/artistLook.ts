@@ -91,7 +91,8 @@ export type Creature =
   | 'door'
   | 'stampede'
   | 'boombox'
-  | 'tulip';
+  | 'tulip'
+  | 'portapotty';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -307,9 +308,10 @@ const PLACES: Record<PlaceCreature, Spec> = {
   mainstage: { creature: 'mainstage', palette: P('#F0E8FF', '#8A92B0', '#2A2E44', '#7A5CFF', '#14102A', '#FF5FD0', '#8A6AFF'), name: t('The Main stage'), theme: t('Lasers over a sea of hands') },
   bubbles: { creature: 'bubbles', palette: P('#F0FFFF', '#9AE8FF', '#2A6A98', '#FFB8F0', '#B85AD0', '#FFE36B', '#9AE8FF'), name: t('The Bubble'), theme: t('Blown across the crowd in rainbow sheen') },
   mixtape: { creature: 'mixtape', palette: P('#FFF6E0', '#FF7EB6', '#2A1A2E', '#3A3448', '#18141E', '#5BE3B5', '#FF7EB6'), name: t('The Mixtape'), theme: t('A tape of the sets you can’t stop playing') },
+  portapotty: { creature: 'portapotty', palette: P('#CFE8FF', '#3A86E0', '#163A78', '#4FD86A', '#123A2A', '#B6FF5A', '#5BE3B5'), name: t('The Portal potty'), theme: t('Open the door and step through to somewhere else') },
   flask: { creature: 'flask', palette: P('#F3EEFF', '#A97CFF', '#4A2E9A', '#D9B48A', '#7A5634', '#C9F7FF', '#A97CFF'), name: t('The Alchemist'), theme: t('A bubbling potion from the underground') },
 };
-export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape';
+export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape' | 'portapotty';
 export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];
 
 /** The sound creatures (no artist's identity), which stickers can use too. */

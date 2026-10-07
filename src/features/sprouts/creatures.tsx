@@ -41,6 +41,9 @@ export type Art = {
   sway?: ReactNode;
   pivot?: [number, number];
   flap?: boolean;
+  /** Turns round and round about `spinAt` (a portal, a record): over the body, under the eyes and `front`. */
+  spin?: ReactNode;
+  spinAt?: [number, number];
   /** Flickers like a flame. Behind the body unless `flickerOver`. */
   flicker?: ReactNode;
   flickerOver?: boolean;
@@ -4240,6 +4243,92 @@ const tulip: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** A sticker for the loos: a portal potty — door swung open on a swirling portal, someone peeking out of it. */
+const portapotty: Draw = (p, f) => {
+  // The portal's arms: three spirals from its eye out to its rim.
+  const arm = (base: number) =>
+    Array.from({ length: 22 }, (_, i) => {
+      const t = i / 21;
+      const r = 2 + 17 * t;
+      const a = base + t * 4.4;
+      return `${i ? 'L' : 'M'}${r1(50 + Math.cos(a) * r)} ${r1(58 + Math.sin(a) * r)}`;
+    }).join(' ');
+  return {
+    ground: [50, 92, 32],
+    back: (
+      <G>
+        <Ellipse cx={50} cy={52} rx={44} ry={40} fill={p.glow} opacity={0.16} />
+        {/* The portal's light spilling out of the door. */}
+        <Ellipse cx={50} cy={86} rx={30} ry={5} fill={p.accent} opacity={0.3} />
+      </G>
+    ),
+    body: (
+      <G>
+        {/* The cabin and its domed roof with a vent. */}
+        <V d="M24 22 L76 22 L76 88 Q76 90 74 90 L26 90 Q24 90 24 88Z" fill={p.mid} f={f} gloss={[28, 30, 6, 10, 0]} />
+        <V d="M20 22 Q20 12 50 10 Q80 12 80 22Z" fill={p.light} f={f} />
+        <Path d="M42 15 L58 15" stroke={p.deep} strokeWidth={1.4} strokeLinecap="round" opacity={0.6} />
+        {/* Ridges down its sides. */}
+        {[27, 73].map((x) => (
+          <Path key={x} d={`M${x} 26 L${x} 86`} stroke={p.deep} strokeWidth={1} opacity={0.35} />
+        ))}
+        {/* The doorway: dark, waiting for the portal. */}
+        <Path d="M31 30 L69 30 L69 86 L31 86Z" fill={p.altDeep} />
+      </G>
+    ),
+    spinAt: [50, 58],
+    spin: (
+      <G>
+        <Circle cx={50} cy={58} r={19} fill={p.alt} />
+        <Circle cx={50} cy={58} r={19} fill={p.accent} opacity={0.25} />
+        {[0, (2 * Math.PI) / 3, (4 * Math.PI) / 3].map((b, i) => (
+          <Path key={i} d={arm(b)} stroke={i === 1 ? p.light : p.accent} strokeWidth={3.2 - i * 0.6} fill="none" strokeLinecap="round" opacity={0.9} />
+        ))}
+        <Circle cx={50} cy={58} r={5} fill={p.altDeep} opacity={0.7} />
+        <Circle cx={50} cy={58} r={19} fill="none" stroke={p.light} strokeWidth={1.2} opacity={0.8} />
+      </G>
+    ),
+    eyes: {
+      box: [42, 52, 16, 8],
+      el: (
+        <G>
+          <VEye x={45} y={56} r={2.8} f={f} />
+          <VEye x={55} y={56} r={2.8} f={f} />
+        </G>
+      ),
+    },
+    front: (
+      <G>
+        <Path d="M45 63 Q50 66.4 55 63" stroke={p.altDeep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+        {/* The door frame over the portal's edge. */}
+        <Path d="M31 30 L69 30 L69 86 L31 86Z" fill="none" stroke={p.deep} strokeWidth={3} strokeLinejoin="round" />
+        {/* The door, swung open, its moon cut out. */}
+        <V d="M69 30 L86 36 L86 82 L69 86Z" fill={p.mid} f={f} />
+        <Path d="M69 30 L86 36 L86 82 L69 86Z" fill={p.deep} opacity={0.25} />
+        <Path d="M80 42 A4 4 0 1 0 82 49 A3.1 3.1 0 1 1 80 42Z" fill={p.accent} />
+        <Circle cx={73} cy={62} r={1.4} fill={p.light} />
+        {/* OCCUPIED, kind of. */}
+        <Path d="M42 25.4 L58 25.4" stroke={p.accent} strokeWidth={2.4} strokeLinecap="round" opacity={0.85} />
+      </G>
+    ),
+    flicker: (
+      <G>
+        {(
+          [
+            [18, 40, 1.4],
+            [16, 66, 1],
+            [88, 22, 1.2],
+            [50, 4, 0.9],
+          ] as const
+        ).map(([x, y, r], i) => (
+          <Glow key={i} x={x} y={y} r={r} color={i % 2 ? p.accent : p.light} />
+        ))}
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -4321,4 +4410,5 @@ export const DRAW: Record<Creature, Draw> = {
   stampede,
   boombox,
   tulip,
+  portapotty,
 };

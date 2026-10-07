@@ -422,6 +422,8 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'The Portal potty': 'El Váter portal',
+  'Open the door and step through to somewhere else': 'Abre la puerta y pasa a otro lugar',
   'The Stampede': 'La Estampida',
   'A little bull charging, head down, horns lit': 'Un torito embistiendo, cabeza gacha y cuernos encendidos',
   'The Boombox': 'El Radiocasete',
