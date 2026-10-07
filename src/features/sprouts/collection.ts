@@ -54,7 +54,7 @@ export function collection(input: CollectionInput): { sets: CollectionSet[]; hav
   const beads = new Set(input.kandi.map((k) => k.beads));
   const charms = new Set(input.kandi.flatMap((k) => (k.charm ? [k.charm] : [])));
   const sets = [
-    set('kinds', t('Sprout kinds'), t('Grow sprouts to bloom, or be given them'), SPROUT_KINDS.map((k) => ({ key: k.id, have: input.kinds.has(k.id) }))),
+    set('kinds', t('Sprout kinds'), t('Grow sprouts to bloom, or be given them'), SPROUT_KINDS.filter((k) => k.id !== 'seedling').map((k) => ({ key: k.id, have: input.kinds.has(k.id) }))),
     set('signatures', t('Hand-made collectibles'), t('Film these artists’ sets'), [...signatureArtists.values()].map((id) => ({ key: id, have: mine.has(id) }))),
     set('sounds', t('Sound creatures'), t('Film any artist: their sound decides the creature'), SOUND_CREATURES.map((c) => ({ key: c, have: sounds.has(c) }))),
     set('stickers', t('Stickers'), t('Find them in the wild and scan them'), PLACE_CREATURES.map((c) => ({ key: c, have: input.stickers.has(c) }))),
