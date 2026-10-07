@@ -612,7 +612,7 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
               <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(3,2,10,0.82)']} style={[styles.scrim, { height: height * 0.5 }]} pointerEvents="none" />
               <Animated.View style={[styles.center, pauseStyle]} pointerEvents="none">
                 <View style={styles.playDisc}>
-                  <GlassFill radius={42} tint={0.35} />
+                  <GlassFill radius={42} tint={0.35} frost={false} />
                   <View pointerEvents="none">
                     <PlayIcon color={color.moon} />
                   </View>
@@ -701,7 +701,7 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
 
           <Animated.View style={[styles.center, pauseStyle]} pointerEvents="none">
             <View style={styles.playDisc}>
-              <GlassFill radius={42} tint={0.35} />
+              <GlassFill radius={42} tint={0.35} frost={false} />
               <View pointerEvents="none">
                 <PlayIcon color={color.moon} />
               </View>

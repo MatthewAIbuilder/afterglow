@@ -16,7 +16,7 @@ import { color, glowA, glowDeepA, raisedA, tintA } from '../theme/tokens';
  * Drawn as the back layer of its parent (which clips it to its shape), so
  * whatever the parent holds sits on top.
  */
-export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep }: {
+export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep, frost = true }: {
   /** The parent's corner radius (the glass needs its own to bend at the edges). */
   radius: number;
   /** A toggle that's on: the glass takes the theme's glow. */
@@ -29,12 +29,14 @@ export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep }: {
   hue?: string;
   /** Holds words (a sheet, a dialog, a toast): a darker glass, so they read over anything. */
   deep?: boolean;
+  /** The copy blurs what's behind it; off for glass repeated down a scrolling feed (each blur costs), where the night behind is plain anyway. */
+  frost?: boolean;
 }) {
   const solid = useReduceTransparency();
   const shape = { borderRadius: radius };
   const light = (alpha: number) => (hue ? tintA(hue, alpha) : glowA(alpha));
   if (solid) {
-    return <View pointerEvents="none" style={[StyleSheet.absoluteFill, shape, { backgroundColor: raisedA(0.96) }, lit && { backgroundColor: hue ? tintA(hue, 0.5) : glowDeepA(0.9) }]} />;
+    return <View pointerEvents="none" testID="glass-solid" style={[StyleSheet.absoluteFill, shape, { backgroundColor: raisedA(0.96) }, lit && { backgroundColor: hue ? tintA(hue, 0.5) : glowDeepA(0.9) }]} />;
   }
   if (nativeGlass()) {
     return (
@@ -51,7 +53,7 @@ export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep }: {
   }
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, shape, styles.clip]}>
-      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+      {frost ? <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> : null}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: deep ? raisedA(Math.max(tint, 0.6)) : lit ? light(0.32) : raisedA(tint) }]} />
       {/* Lit glass that holds words: the glow over a darker night, so coloured words still stand out. */}
       {lit && deep ? <View style={[StyleSheet.absoluteFill, { backgroundColor: light(0.16) }]} /> : null}
