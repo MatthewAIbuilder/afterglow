@@ -12,6 +12,7 @@ import { isSupportAccount } from '../features/admin/admin';
 import { cleanTotem, DEFAULT_TOTEM, TOTEM_CODES_MAX, TOTEM_EVERY, TOTEM_SHOW, TOTEM_SUBTITLE_MAX, totemPopup, type TotemSettings } from '../features/admin/totem';
 import { TotemOrb } from '../features/admin/TotemOrb';
 import { findLink, lookOf, type Sticker } from '../features/finds/finds';
+import { PortalSwirl } from '../features/finds/PortalSwirl';
 import { FriendQR } from '../features/friends/FriendQR';
 import { OrgLogo } from '../features/organizers/OrgMark';
 import { Collectible } from '../features/sprouts/Collectible';
@@ -236,7 +237,10 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
           <Animated.View entering={reduce ? undefined : SlideInDown.springify().damping(16)} exiting={reduce ? undefined : SlideOutDown.duration(400)} style={[styles.popCard, landscape ? styles.popRow : null, { width: Math.min(width - 2 * space.xl, landscape ? 900 : 560) }]}>
             <View style={styles.popSide}>
               <Text style={styles.popKicker}>{t('FREE COLLECTIBLE · SCAN TO CLAIM')}</Text>
-              <Collectible look={lookOf(sticker.creature)} size={Math.round(short * (landscape ? 0.34 : 0.4))} />
+              <View>
+                {sticker.creature === 'portapotty' ? <PortalSwirl size={Math.round(short * (landscape ? 0.5 : 0.58))} colors={lookOf(sticker.creature).palette} /> : null}
+                <Collectible look={lookOf(sticker.creature)} size={Math.round(short * (landscape ? 0.34 : 0.4))} />
+              </View>
               <Text style={[styles.popName, { fontSize: Math.round(short * 0.05) }]} numberOfLines={2}>
                 {sticker.name}
               </Text>

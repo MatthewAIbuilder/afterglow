@@ -13,6 +13,7 @@ import { shinyLook } from '../../features/sprouts/artistLook';
 import { StoryPreview } from '../../features/sprouts/StoryShare';
 import { useOrg } from '../../state/orgs';
 import { HuntRow } from '../../features/finds/HuntRow';
+import { PortalSwirl } from '../../features/finds/PortalSwirl';
 import { accountsOff } from '../../features/social/unavailable';
 import { Collectible } from '../../features/sprouts/Collectible';
 import { t } from '../../i18n';
@@ -121,6 +122,7 @@ export default function FindScreen() {
       }
     >
       <View style={styles.stage}>
+        {shown.creature === 'portapotty' ? <PortalSwirl size={300} colors={look.palette} open={found} /> : null}
         <Animated.View style={popStyle}>
           <Collectible look={look} shiny={holo} size={200} locked={!found} />
         </Animated.View>
