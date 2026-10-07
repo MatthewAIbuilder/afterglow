@@ -7048,6 +7048,176 @@ const scooter: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** WHETHAN: the Kite — a bright diamond kite up in the wind, its bow tail fluttering. */
+const kite: Draw = (p, f) => ({
+  ground: null,
+  back: <Ellipse cx={50} cy={48} rx={40} ry={38} fill={p.glow} opacity={0.14} />,
+  pivot: [50, 62],
+  sway: (
+    <G>
+      {/* The tail with its bows. */}
+      <Path d="M50 62 Q44 70 50 76 Q56 82 50 88" stroke={p.light} strokeWidth={1} fill="none" />
+      <Path d="M46 72 L50 70 L46 68Z M54 72 L50 70 L54 68Z" fill={p.accent} />
+      <Path d="M46 84 L50 82 L46 80Z M54 84 L50 82 L54 80Z" fill={p.alt} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The kite: four panels and its cross. */}
+      <V d="M50 12 L74 38 L50 62 L26 38Z" fill={p.mid} f={f} gloss={[40, 26, 4, 8, -40]} />
+      <Path d="M50 12 L50 38 L26 38Z" fill={p.alt} opacity={0.9} />
+      <Path d="M50 38 L74 38 L50 62Z" fill={p.alt} opacity={0.9} />
+      <Path d="M50 12 L50 62 M26 38 L74 38" stroke={p.deep} strokeWidth={0.9} opacity={0.5} />
+      <Circle cx={40} cy={44} r={1.8} fill={p.accent} opacity={0.5} />
+      <Circle cx={60} cy={44} r={1.8} fill={p.accent} opacity={0.5} />
+      <Path d="M46.6 46 Q50 48.6 53.4 46" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [41, 37, 18, 6],
+    el: (
+      <G>
+        <VEye x={44.6} y={40.4} r={2.2} f={f} />
+        <VEye x={55.4} y={40.4} r={2.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* The wind. */}
+      <Path d="M12 30 Q20 26 28 30 M74 60 Q82 56 90 60 M14 58 Q20 55 26 58" stroke={p.light} strokeWidth={1} fill="none" strokeLinecap="round" opacity={0.6} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** PROSPA: the Strobe — a strobe light on its stand, flashing white across the room. */
+const strobe: Draw = (p, f) => ({
+  ground: [50, 90, 26],
+  back: <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.12} />,
+  body: (
+    <G>
+      {/* The stand. */}
+      <Path d="M50 62 L50 86 M50 86 L38 90 M50 86 L62 90" stroke={p.deep} strokeWidth={2.6} strokeLinecap="round" />
+      <Path d="M36 54 L36 62 L64 62 L64 54" stroke={p.alt} strokeWidth={2.4} fill="none" />
+      {/* The lamp housing and its lens. */}
+      <V d="M24 28 Q24 22 30 22 L70 22 Q76 22 76 28 L76 52 Q76 58 70 58 L30 58 Q24 58 24 52Z" fill={p.mid} f={f} gloss={[30, 26, 6, 1.4, 0]} />
+      <V d="M30 28 L70 28 L70 52 L30 52Z" fill={p.light} f={f} />
+      {[34, 40, 46].map((y) => (
+        <Path key={y} d={`M30 ${y} L70 ${y}`} stroke={p.deep} strokeWidth={0.6} opacity={0.25} />
+      ))}
+      <Circle cx={38} cy={46} r={2} fill={p.accent} opacity={0.4} />
+      <Circle cx={62} cy={46} r={2} fill={p.accent} opacity={0.4} />
+      <Path d="M46.6 47 Q50 49.6 53.4 47" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 34, 20, 7],
+    el: (
+      <G>
+        <VEye x={44.4} y={38} r={2.4} f={f} />
+        <VEye x={55.6} y={38} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* The flash. */}
+      <Ellipse cx={50} cy={40} rx={34} ry={22} fill={p.light} opacity={0.35} />
+      <Path d="M22 20 L17 16 M78 20 L83 16 M18 40 L12 40 M82 40 L88 40" stroke={p.light} strokeWidth={1.6} strokeLinecap="round" />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** AARON HIBELL: the Lighthouse — a striped lighthouse on its rock, its beam sweeping the sea. */
+const lighthouse: Draw = (p, f) => ({
+  ground: [50, 90, 30],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.12} />
+      <Path d="M12 80 Q50 74 88 80 Q84 86 78 88 Q50 92 22 88 Q16 86 12 80Z" fill={p.alt} opacity={0.6} />
+    </G>
+  ),
+  spinAt: [50, 26],
+  spin: (
+    <G>
+      <Path d="M50 26 L80 18 L80 34Z" fill={p.accent} opacity={0.35} />
+      <Path d="M50 26 L20 18 L20 34Z" fill={p.accent} opacity={0.15} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The rock, the tower and its stripes. */}
+      <V d="M28 86 Q30 76 40 76 L60 76 Q70 76 72 86Z" fill={p.altDeep} f={f} />
+      <V d="M40 76 L43 34 L57 34 L60 76Z" fill={p.light} f={f} gloss={[45, 44, 1.6, 8, 0]} />
+      <Path d="M42 66 L58 66 L58.8 72 L41.2 72Z M43 50 L57 50 L57.6 56 L42.4 56Z" fill={p.mid} />
+      {/* The lantern room and its cap. */}
+      <Path d="M42 34 L58 34 L58 30 L42 30Z" fill={p.deep} />
+      <V d="M44 30 L44 22 L56 22 L56 30Z" fill={p.accent} f={f} />
+      <V d="M42 22 L50 14 L58 22Z" fill={p.mid} f={f} />
+      <Circle cx={45.6} cy={62} r={1.4} fill={p.mid} opacity={0.5} />
+      <Circle cx={54.4} cy={62} r={1.4} fill={p.mid} opacity={0.5} />
+      <Path d="M48.4 62.4 Q50 63.8 51.6 62.4" stroke={p.deep} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [44, 56, 12, 5],
+    el: (
+      <G>
+        <VEye x={47.2} y={58.6} r={1.6} f={f} />
+        <VEye x={52.8} y={58.6} r={1.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: <Glow x={50} y={26} r={2} color={p.accent} />,
+  flickerOver: true,
+});
+
+/** MAI IACHETTI: the Sailboat — a little sailboat on gentle waves, its sails full. */
+const sailboat: Draw = (p, f) => ({
+  ground: null,
+  back: (
+    <G>
+      <Ellipse cx={50} cy={48} rx={42} ry={38} fill={p.glow} opacity={0.14} />
+      <Circle cx={74} cy={24} r={8} fill={p.accent} opacity={0.4} />
+      <Path d="M12 74 Q50 68 88 74 Q86 84 78 88 Q50 94 22 88 Q14 84 12 74Z" fill={p.alt} opacity={0.6} />
+    </G>
+  ),
+  pivot: [50, 72],
+  sway: (
+    <G>
+      {/* The mast and sails. */}
+      <Path d="M50 18 L50 66" stroke={p.deep} strokeWidth={1.6} />
+      <V d="M52 20 L76 62 L52 62Z" fill={p.light} f={f} gloss={[60, 46, 2, 8, 30]} />
+      <V d="M48 26 L28 62 L48 62Z" fill={p.mid} f={f} />
+      <Path d="M50 18 L58 21 L50 24Z" fill={p.accent} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The hull. */}
+      <V d="M22 66 L78 66 L70 78 Q68 80 64 80 L36 80 Q32 80 30 78Z" fill={p.altDeep} f={f} gloss={[32, 70, 8, 1.4, 0]} />
+      <Path d="M26 70 L74 70" stroke={p.light} strokeWidth={1} opacity={0.5} />
+      <Circle cx={38} cy={74} r={1.8} fill={p.accent} opacity={0.4} />
+      <Circle cx={62} cy={74} r={1.8} fill={p.accent} opacity={0.4} />
+      <Path d="M46.6 75 Q50 77.4 53.4 75" stroke={p.light} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+      <Path d="M24 86 Q30 84 36 86 M62 88 Q68 86 74 88" stroke={p.light} strokeWidth={1} fill="none" opacity={0.5} strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 69, 20, 6],
+    el: (
+      <G>
+        <VEye x={44.6} y={72.2} r={2.1} f={f} />
+        <VEye x={55.4} y={72.2} r={2.1} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [[16, 24, 1.6]]),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -8021,6 +8191,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  kite,
+  strobe,
+  lighthouse,
+  sailboat,
   spirograph,
   cub,
   snooze,
