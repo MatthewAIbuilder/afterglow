@@ -132,6 +132,10 @@ export type Creature =
   | 'houseboat'
   | 'friday'
   | 'bouquet'
+  | 'telephone'
+  | 'palace'
+  | 'notebook'
+  | 'sharkfin'
   | 'portapotty'
   | 'refill'
   | 'charger'
@@ -247,6 +251,10 @@ const SIGNATURES: Record<string, Spec> = {
   sukiwaterhouse: { creature: 'houseboat', palette: P('#FFF4E8', '#F0C8A8', '#3A2A4A', '#3A5A8A', '#6A3A2A', '#FFD86B', '#B8A8E8'), name: t('The Water house'), theme: t('A little house afloat on still water, its window lit') },
   rebeccablack: { creature: 'friday', palette: P('#FFFFFF', '#FF5AA8', '#3A2A4A', '#B85AFF', '#2A1A3A', '#FFD24A', '#FF8AC8'), name: t('The Friday'), theme: t('A calendar page with the best day of the week circled') },
   brandonflowers: { creature: 'bouquet', palette: P('#FFF8F0', '#FF7E9A', '#3A2A2A', '#4AA85A', '#8A1A3A', '#FFD24A', '#FF9AB8'), name: t('The Bouquet'), theme: t('A bunch of flowers wrapped in paper, tied with a ribbon') },
+  brigittecallsmebaby: { creature: 'telephone', palette: P('#FFF4E8', '#E8324A', '#5A0A1A', '#2A2A34', '#121218', '#FFD24A', '#FF6A7A'), name: t('The Telephone'), theme: t('A retro telephone ringing, its curly cord trailing') },
+  palace: { creature: 'palace', palette: P('#FFF8EC', '#F0E0C8', '#5A4A3A', '#6A8AD8', '#2A3A6A', '#FFD86B', '#C8B8F0'), name: t('The Palace'), theme: t('A little palace with domes, its windows lit at night') },
+  natashabedingfield: { creature: 'notebook', palette: P('#FFFFFF', '#B8C8E8', '#2A2A3A', '#E8A8C8', '#8A3A5A', '#FF7EB6', '#F0C8E0'), name: t('The Notebook'), theme: t('An open notebook, its pages still unwritten') },
+  finnwolfhard: { creature: 'sharkfin', palette: P('#E8F4FF', '#6A8AA8', '#1A2A3A', '#2A6AA8', '#0A1A2A', '#7FD3FF', '#8AB8E8'), name: t('The Fin'), theme: t('A shark fin cutting through the water, friendlier than it looks') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },

@@ -5789,6 +5789,164 @@ const bouquet: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** BRIGITTE CALLS ME BABY: the Telephone — a retro rotary phone ringing, its curly cord trailing. */
+const telephone: Draw = (p, f) => ({
+  ground: [50, 90, 32],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* The curly cord. */}
+      <Path d="M80 74 q4 -3 0 -6 q-4 -3 0 -6 q4 -3 0 -6 q-4 -3 0 -6" stroke={p.alt} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      {/* The base, the dial and the handset on top. */}
+      <V d="M22 84 L30 52 Q32 46 38 46 L62 46 Q68 46 70 52 L78 84 Q78 88 74 88 L26 88 Q22 88 22 84Z" fill={p.mid} f={f} gloss={[32, 58, 3, 9, 14]} />
+      <Circle cx={50} cy={70} r={11} fill={p.light} />
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = (i / 8) * Math.PI * 1.6 - Math.PI * 1.1;
+        return <Circle key={i} cx={r1(50 + Math.cos(a) * 7.6)} cy={r1(70 + Math.sin(a) * 7.6)} r={1.5} fill={p.deep} opacity={0.5} />;
+      })}
+      <Circle cx={50} cy={70} r={2.6} fill={p.alt} />
+      <V d="M16 38 Q16 30 24 30 L76 30 Q84 30 84 38 L84 42 Q84 46 78 46 L74 46 Q70 46 70 42 L70 40 L30 40 L30 42 Q30 46 26 46 L22 46 Q16 46 16 42Z" fill={p.mid} f={f} gloss={[30, 33, 10, 1.4, 0]} />
+      <Circle cx={38} cy={56} r={2} fill={p.alt} opacity={0.45} />
+      <Circle cx={62} cy={56} r={2} fill={p.alt} opacity={0.45} />
+      <Path d="M47 58 Q50 60.4 53 58" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 48, 20, 7],
+    el: (
+      <G>
+        <VEye x={44.4} y={51.6} r={2.4} f={f} />
+        <VEye x={55.6} y={51.6} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Ring ring. */}
+      <Path d="M18 20 Q16 24 18 28 M14 18 Q11.6 24 14 30 M82 20 Q84 24 82 28 M86 18 Q88.4 24 86 30" stroke={p.accent} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** PALACE: the Palace — a little palace with domes and a flag, its windows lit at night. */
+const palace: Draw = (p, f) => ({
+  ground: [50, 90, 36],
+  back: <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* Towers and domes either side. */}
+      <V d="M16 88 L16 50 L30 50 L30 88Z" fill={p.mid} f={f} />
+      <V d="M70 88 L70 50 L84 50 L84 88Z" fill={p.mid} f={f} />
+      <V d="M16 50 C16 40 23 36 23 32 C23 36 30 40 30 50Z" fill={p.alt} f={f} />
+      <V d="M70 50 C70 40 77 36 77 32 C77 36 84 40 84 50Z" fill={p.alt} f={f} />
+      {/* The middle hall, its big dome and flag. */}
+      <Path d="M50 18 L50 8" stroke={p.light} strokeWidth={1} />
+      <Path d="M50 8 L58 11 L50 14Z" fill={p.accent} />
+      <V d="M30 88 L30 46 L70 46 L70 88Z" fill={p.mid} f={f} gloss={[36, 52, 3, 8, 0]} />
+      <V d="M32 46 C32 30 42 24 50 18 C58 24 68 30 68 46Z" fill={p.alt} f={f} gloss={[42, 32, 3, 7, -20]} />
+      {/* Windows and the door. */}
+      {[21, 79].map((x) => (
+        <Path key={x} d={`M${x} 60 Q${x + 2.4} 56 ${x + 4.8} 60 L${x + 4.8} 68 L${x} 68Z`} transform={`translate(${-2.4} 0)`} fill={p.accent} />
+      ))}
+      <Path d="M44 88 L44 78 Q50 72 56 78 L56 88Z" fill={p.deep} />
+      <Circle cx={39} cy={66} r={2} fill={p.accent} opacity={0.4} />
+      <Circle cx={61} cy={66} r={2} fill={p.accent} opacity={0.4} />
+      <Path d="M46.6 66.4 Q50 69 53.4 66.4" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 54, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.4} y={58} r={2.6} f={f} />
+        <VEye x={55.6} y={58} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [12, 22, 1.6],
+    [88, 22, 1.6],
+    [30, 14, 1.2],
+  ]),
+  flickerOver: true,
+});
+
+/** NATASHA BEDINGFIELD: the Notebook — an open notebook, its pages still unwritten, a pen ready. */
+const notebook: Draw = (p, f) => ({
+  ground: [50, 88, 36],
+  back: <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The cover and the two open pages. */}
+      <V d="M10 78 L14 34 Q50 40 50 40 Q50 40 86 34 L90 78 Q50 84 50 84 Q50 84 10 78Z" fill={p.alt} f={f} />
+      <V d="M14 74 L18 32 Q34 30 50 38 L50 80 Q34 72 14 74Z" fill={p.light} f={f} gloss={[26, 40, 4, 6, -10]} />
+      <V d="M86 74 L82 32 Q66 30 50 38 L50 80 Q66 72 86 74Z" fill={p.light} f={f} />
+      {/* Faint lines, nothing written yet. */}
+      {[48, 56, 64].map((y) => (
+        <Path key={y} d={`M54 ${y - 4} Q68 ${y - 8} 82 ${y - 6}`} stroke={p.mid} strokeWidth={0.7} fill="none" opacity={0.5} />
+      ))}
+      {/* The pen. */}
+      <V d="M70 72 L88 46 L92 49 L74 75Z" fill={p.deep} f={f} />
+      <Path d="M70 72 L68 77 L74 75Z" fill={p.accent} />
+      <Circle cx={26} cy={60} r={2.2} fill={p.accent} opacity={0.35} />
+      <Circle cx={42} cy={60} r={2.2} fill={p.accent} opacity={0.35} />
+      <Path d="M31 61 Q34 63.6 37 61" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [25, 48, 18, 8],
+    el: (
+      <G>
+        <VEye x={29.4} y={52} r={2.6} f={f} />
+        <VEye x={38.6} y={52} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [20, 18, 1.8],
+    [60, 14, 1.4],
+    [88, 30, 1.2],
+  ]),
+  flickerOver: true,
+});
+
+/** FINN WOLFHARD: the Fin — a shark fin cutting through the water, friendlier than it looks. */
+const sharkfin: Draw = (p, f) => ({
+  ground: null,
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      <Path d="M10 66 Q50 58 90 66 Q88 80 78 88 Q50 96 22 88 Q12 80 10 66Z" fill={p.alt} opacity={0.6} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The fin, rising from the water. */}
+      <V d="M30 68 C36 50 48 26 66 16 C62 32 64 52 74 68Z" fill={p.mid} f={f} gloss={[54, 32, 3, 9, 30]} />
+      <Path d="M24 68 Q34 64 44 68 Q54 72 64 68 Q72 64 80 68" stroke={p.light} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      <Path d="M28 76 Q36 74 44 76 M58 80 Q66 78 74 80" stroke={p.light} strokeWidth={1} fill="none" opacity={0.5} strokeLinecap="round" />
+      <Circle cx={50} cy={56} r={2} fill={p.accent} opacity={0.4} />
+      <Circle cx={64} cy={56} r={2} fill={p.accent} opacity={0.4} />
+      <Path d="M54 58 Q57 60.4 60 58" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [50, 45, 16, 7],
+    el: (
+      <G>
+        <VEye x={53.6} y={48.6} r={2.4} f={f} />
+        <VEye x={62.4} y={48.6} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [18, 24, 1.6],
+    [84, 28, 1.4],
+  ]),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -6762,6 +6920,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  telephone,
+  palace,
+  notebook,
+  sharkfin,
   snowflake,
   houseboat,
   friday,
