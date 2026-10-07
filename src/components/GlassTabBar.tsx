@@ -91,6 +91,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           accessibilityLabel={t('Testing festival mode with {festival}. End the test', { festival: active.festival.name })}
           style={styles.test}
         >
+          <GlassFill radius={radius.pill} hue="#FF7EB6" tint={0.85} lit deep />
           <View style={styles.testDot} />
           <Text style={styles.testText} numberOfLines={1}>
             {t('Testing festival mode')}
@@ -325,9 +326,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: raisedA(0.85),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,126,182,0.6)',
   },
   testDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#FF7EB6' },
   testText: { ...type.caption, color: color.moon },
