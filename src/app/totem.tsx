@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, useReducedMotion, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ConfettiBurst } from '../components/ConfettiBurst';
 import { NightSky } from '../components/NightSky';
 import { PageTitle } from '../components/PageTitle';
 import { WEB_URL } from '../config/app';
@@ -275,6 +276,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
               <View>
                 {sticker.creature === 'portapotty' ? <PortalSwirl size={Math.round(short * (landscape ? 0.5 : 0.58))} colors={lookOf(sticker.creature).palette} /> : null}
                 <Collectible look={lookOf(sticker.creature)} size={Math.round(short * (landscape ? 0.34 : 0.4))} />
+                {claimed?.up ? <ConfettiBurst key={claimed.n} spread={Math.round(short * 0.3)} /> : null}
               </View>
               <Text style={[styles.popName, { fontSize: Math.round(short * 0.05) }]} numberOfLines={2}>
                 {sticker.name}
