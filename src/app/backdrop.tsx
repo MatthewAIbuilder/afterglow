@@ -16,6 +16,7 @@ import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
 import { useSprouts } from '../state/sprouts';
 import { color, radius, space, type, nightA, accentEdge } from '../theme/tokens';
+import { BottomFade } from '../components/BottomFade';
 
 /** The "cover photo" choice: no animated background. */
 const PHOTO = 'photo';
@@ -143,6 +144,7 @@ export default function BackdropScreen() {
       </ScrollView>
 
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.md }]}>
+        <BottomFade />
         {locked ? <Text style={styles.lockNote}>{t('Part of Afterglow Plus. Preview it as much as you like.')}</Text> : null}
         <Pressable
           onPress={() => void save()}
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.4, color: '#1B1230' },
   check: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: color.glow, alignItems: 'center', justifyContent: 'center' },
   checkText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: nightA(0.92), borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline, alignItems: 'center' },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, alignItems: 'center' },
   lockNote: { ...type.caption, color: '#FFD66B', marginBottom: space.sm },
   primary: { alignSelf: 'stretch', maxWidth: 600, height: 50, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, alignItems: 'center', justifyContent: 'center' },
   primaryLocked: { backgroundColor: 'rgba(255,214,107,0.25)' },
