@@ -31,6 +31,8 @@ export type CollectionInput = {
   kandi: readonly { beads: PatternId; charm?: CharmId }[];
   /** Decorations you've earned for your garden. */
   decor?: readonly DecorId[];
+  /** Holographic stickers you found (counted with the shiny ones). */
+  holo?: number;
 };
 
 const set = (id: SetId, title: string, how: string, items: CollectionItem[]): CollectionSet => ({ id, title, how, items, have: items.filter((i) => i.have).length, total: items.length });
@@ -62,5 +64,5 @@ export function collection(input: CollectionInput): { sets: CollectionSet[]; hav
   ].filter((s) => s.total > 0);
   const have = sets.reduce((n, s) => n + s.have, 0);
   const total = sets.reduce((n, s) => n + s.total, 0);
-  return { sets, have, total, shiny: input.artists.filter((a) => a.shiny).length };
+  return { sets, have, total, shiny: input.artists.filter((a) => a.shiny).length + (input.holo ?? 0) };
 }

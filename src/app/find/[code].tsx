@@ -8,7 +8,8 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { CloseIcon } from '../../components/TabIcons';
 import { APP_STORE_URL } from '../../config/app';
-import { findCardFrom, findLine, huntLine, lookOf, type Sticker, untilLine } from '../../features/finds/finds';
+import { findCardFrom, findLine, huntLine, isHolo, lookOf, type Sticker, untilLine } from '../../features/finds/finds';
+import { shinyLook } from '../../features/sprouts/artistLook';
 import { useOrg } from '../../state/orgs';
 import { HuntRow } from '../../features/finds/HuntRow';
 import { accountsOff } from '../../features/social/unavailable';
@@ -98,8 +99,10 @@ export default function FindScreen() {
   }
 
   const shown = find ?? { ...card, state: 'checking' as const, at: 0, sent: false, tries: 0 };
-  const look = lookOf(shown.creature);
   const found = shown.state === 'found';
+  // About one in twelve come out holographic.
+  const holo = isHolo({ ...shown, account: shown.account ?? social.user?.uid });
+  const look = holo ? shinyLook(lookOf(shown.creature)) : lookOf(shown.creature);
   const hunt = shown.huntId ? finds.huntOf(shown.huntId) : undefined;
   const progress = hunt ? finds.hunts.find((h) => h.hunt.id === hunt.id) : undefined;
 
@@ -107,12 +110,12 @@ export default function FindScreen() {
     <Shell insets={insets}>
       <View style={styles.stage}>
         <Animated.View style={popStyle}>
-          <Collectible look={look} size={200} locked={!found} />
+          <Collectible look={look} shiny={holo} size={200} locked={!found} />
         </Animated.View>
         {celebrate ? <ConfettiBurst key={celebrate} spread={160} /> : null}
       </View>
       <Text style={[styles.kicker, { color: found ? look.accent : color.moonFaint }]}>
-        {found ? (progress?.done ? t('HUNT COMPLETE') : t('YOU FOUND')) : shown.state === 'checking' ? (finds.online ? t('CHECKING') : t('SAVED')) : t('NOT THIS TIME')}
+        {found ? (progress?.done ? t('HUNT COMPLETE') : holo ? t('A HOLO ONE! YOU FOUND') : t('YOU FOUND')) : shown.state === 'checking' ? (finds.online ? t('CHECKING') : t('SAVED')) : t('NOT THIS TIME')}
       </Text>
       <Text style={styles.title} accessibilityRole="header">
         {shown.name}

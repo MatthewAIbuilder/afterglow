@@ -1,6 +1,6 @@
 import { WEB_URL } from '../../config/app';
 import { LOCALE, t } from '../../i18n';
-import { type ArtistLook, stickerLook } from '../sprouts/artistLook';
+import { type ArtistLook, shinyFor, shinyLook, stickerLook } from '../sprouts/artistLook';
 
 /**
  * Stickers: collectibles you find in the wild by scanning a code, pure.
@@ -98,6 +98,16 @@ export const cleanName = (raw: unknown, max = STICKER_NAME_MAX) => (typeof raw =
 
 /** A sticker's look, or the wisp when its creature isn't one this version knows. */
 export const lookOf = (creature: string): ArtistLook => stickerLook(creature) ?? stickerLook('wisp')!;
+
+/**
+ * Whether a sticker you found came out holographic: about one in twelve,
+ * decided by your account and the sticker's code, so it's the same on every
+ * phone and nobody can pick it. Never for a find not yet tied to an account.
+ */
+export const isHolo = (f: Pick<Find, 'code' | 'account' | 'state'>) => f.state === 'found' && !!f.account && shinyFor(f.account, `sticker:${f.code}`);
+
+/** A found sticker's look: in its holo colours when it's a holo one. */
+export const findLook = (f: Pick<Find, 'code' | 'account' | 'state' | 'creature'>): ArtistLook => (isHolo(f) ? shinyLook(lookOf(f.creature)) : lookOf(f.creature));
 
 /** What a code says: enough to show it with no signal. */
 export type FindCard = { code: string; creature: string; name: string };

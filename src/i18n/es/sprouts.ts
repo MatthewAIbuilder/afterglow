@@ -422,6 +422,8 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'A HOLO ONE! YOU FOUND': '¡HOLOGRÁFICO! ENCONTRASTE',
+  'Holo': 'Holo',
   'See who': 'Ver quién',
   'Glows on your garden': 'Destellos en tu jardín',
   'People who visited and liked it. Visit theirs back?': 'Gente que lo visitó y le gustó. ¿Visitas el suyo?',

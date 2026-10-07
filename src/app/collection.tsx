@@ -21,6 +21,7 @@ import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useFinds } from '../state/finds';
+import { isHolo } from '../features/finds/finds';
 import { useKandi } from '../state/kandi';
 import { useSprouts } from '../state/sprouts';
 import { useSocial } from '../state/social';
@@ -56,6 +57,7 @@ export default function CollectionScreen() {
           return a ? artistLook(a) : undefined;
         },
         stickers: new Set(finds.filter((f) => f.state === 'found').map((f) => f.creature)),
+        holo: finds.filter(isHolo).length,
         kandi: kandi.received,
         decor,
       }),

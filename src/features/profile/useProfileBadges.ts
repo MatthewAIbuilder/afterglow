@@ -32,6 +32,7 @@ import { useKandi } from '../../state/kandi';
 import { collection } from '../sprouts/collection';
 import { artistLook } from '../sprouts/artistLook';
 import { useGardenDecor } from '../sprouts/useGardenDecor';
+import { isHolo } from '../finds/finds';
 import { useMyShowcase } from '../sprouts/useMyShowcase';
 import { useGardenGlows } from '../sprouts/useGardenGlows';
 
@@ -90,10 +91,11 @@ export function useProfileBadges() {
           return a ? artistLook(a) : undefined;
         },
         stickers: found,
+        holo: finds.filter(isHolo).length,
         kandi: kandi.received,
         decor,
       }),
-    [sprouts.collected, sprouts.artists, catalog, found, kandi.received, decor],
+    [sprouts.collected, sprouts.artists, catalog, found, finds, kandi.received, decor],
   );
   const marks = useMemo(
     () =>
