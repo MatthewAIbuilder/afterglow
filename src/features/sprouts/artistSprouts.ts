@@ -97,3 +97,32 @@ export function artistGardenLine(list: readonly ArtistSprout[]): string {
     ? tn(list.length, '{n} artist filmed, {gold} at gold', '{n} artists filmed, {gold} at gold', { gold })
     : tn(list.length, '{n} artist filmed', '{n} artists filmed');
 }
+
+/**
+ * Videos you posted to Afterglow count too, once each artist: every artist
+ * you've shared a video of (and anyone back to back with them) gives you
+ * their collectible at its first level, even when the video isn't in this
+ * phone's Memories any more (a new phone, a cleared browser) or was an old
+ * one you posted. Levelling up still comes from the videos in your Memories.
+ */
+export function withPosted(
+  list: readonly ArtistSprout[],
+  posted: readonly { artistId?: string; withArtistIds?: readonly string[]; capturedAt: string }[],
+  known?: (id: string) => boolean,
+): ArtistSprout[] {
+  const have = new Set(list.map((a) => a.artistId));
+  const extra = new Map<string, ArtistSprout>();
+  for (const m of posted) {
+    const at = Date.parse(m.capturedAt);
+    const time = Number.isNaN(at) ? 0 : at;
+    for (const id of [m.artistId, ...(m.artistId ? (m.withArtistIds ?? []) : [])]) {
+      if (!id || have.has(id) || (known && !known(id))) continue;
+      const cur = extra.get(id);
+      if (cur) {
+        cur.firstAt = Math.min(cur.firstAt, time);
+        cur.lastAt = Math.max(cur.lastAt, time);
+      } else extra.set(id, { artistId: id, videos: 1, tier: 0, firstAt: time, lastAt: time });
+    }
+  }
+  return [...list, ...[...extra.values()].sort((a, b) => b.lastAt - a.lastAt)];
+}

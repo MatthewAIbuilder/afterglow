@@ -94,4 +94,17 @@ describe('garden backups', () => {
     expect(mockSocial.gardenBackups.get(u.uid)).toContain(PLUR);
     await later.unmount();
   });
+
+  it('a video you posted gives you that artist’s collectible, even when it isn’t on this phone', async () => {
+    await s().signUp('cara@example.com', 'password123');
+    await s().saveProfile({ handle: 'cara', displayName: 'Cara', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    await s().shareMemory({ memoryId: 'old1', videoUri: 'file:///old1.mov', festivalId: 'cyclops-cove-4', night: 'Friday', artistId: 'hedex', capturedAt: '2025-12-04T22:30:00.000Z', durationSec: 30, width: 1080, height: 1920 });
+    const app = await renderApp('/artist/hedex');
+    await flush();
+    await settle(1000);
+    await flush();
+    expect(app.getByText('YOUR COLLECTIBLE')).toBeTruthy();
+    await app.unmount();
+  });
 });
+

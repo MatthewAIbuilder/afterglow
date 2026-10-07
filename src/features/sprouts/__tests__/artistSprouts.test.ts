@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { ALL_LOOKS, artistLook, foldName, mix } from '../artistLook';
 import { DRAW } from '../creatures';
-import { artistGardenLine, artistSprouts, cleanShown, newArtistSprouts, shownMark, tierFor, tierLabel, tierLine, toNextTier } from '../artistSprouts';
+import { artistGardenLine, artistSprouts, cleanShown, newArtistSprouts, shownMark, tierFor, tierLabel, tierLine, toNextTier, withPosted } from '../artistSprouts';
 import { aSprout, cleanSproutArtist, giftTitle, readSproutLink, sproutLink, sproutName } from '../sprouts';
 
 const at = (d: number) => new Date(2026, 9, d).toISOString();
@@ -97,5 +97,29 @@ describe('artist sprout codes', () => {
     expect(cleanSproutArtist({ id: 'DJ_Snake.2', name: 'DJ Snake' })).toEqual({ id: 'DJ_Snake.2', name: 'DJ Snake' });
     expect(cleanSproutArtist({ id: 'ok', name: '  ' })).toBeUndefined();
     expect(readSproutLink('https://afterglowmusic.app/sprout/abcdefghijkmnpqrstuv?u=uid1&h=maya&k=plur&a=Bad%20Id&an=X')?.artist).toBeUndefined();
+  });
+});
+
+describe('collectibles from videos you posted', () => {
+  it('gives each posted artist (and b2b partners) one collectible, without changing ones you filmed', () => {
+    const mine = artistSprouts([
+      { artistId: 'subtronics', capturedAt: '2026-01-01T00:00:00Z' },
+      { artistId: 'subtronics', capturedAt: '2026-01-02T00:00:00Z' },
+      { artistId: 'subtronics', capturedAt: '2026-01-03T00:00:00Z' },
+    ]);
+    const posted = [
+      { artistId: 'subtronics', capturedAt: '2025-06-01T00:00:00Z' },
+      { artistId: 'rezz', capturedAt: '2025-06-02T00:00:00Z' },
+      { artistId: 'rezz', capturedAt: '2025-06-03T00:00:00Z' },
+      { artistId: 'layz', withArtistIds: ['kompany'], capturedAt: '2025-06-04T00:00:00Z' },
+      { artistId: 'nobody', capturedAt: '2025-06-05T00:00:00Z' },
+    ];
+    const all = withPosted(mine, posted, (id) => id !== 'nobody');
+    expect(all.map((a) => [a.artistId, a.videos, a.tier])).toEqual([
+      ['subtronics', 3, 1],
+      ['layz', 1, 0],
+      ['kompany', 1, 0],
+      ['rezz', 1, 0],
+    ]);
   });
 });

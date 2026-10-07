@@ -7,7 +7,7 @@ import { AppState } from 'react-native';
 import { isOffline } from '../features/offline/status';
 import { t } from '../i18n';
 import { socialErrorKind } from '../features/social/service';
-import type { Sprout } from '../features/social/models';
+import type { Sprout, SharedMemory } from '../features/social/models';
 import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, GIFT_REFUSED_MAX, giftsToSend, giftsToTakeBack, giftTried, nextDue, queueClaim, seedGifts, tidy } from '../features/sprouts/outbox';
 import {
   cleanBloomed,
@@ -42,7 +42,7 @@ import { useCatalog } from './catalog';
 import { bumpQuestEvent } from './dailyQuests';
 import { useGoing } from './going';
 import { useMemories } from './memories';
-import { artistSprouts, type ArtistSprout, cleanShown, newArtistSprouts, shownMark } from '../features/sprouts/artistSprouts';
+import { artistSprouts, type ArtistSprout, cleanShown, newArtistSprouts, shownMark, withPosted } from '../features/sprouts/artistSprouts';
 import { useSeen } from './seen';
 import { useSocial } from './social';
 import { canGiveThemes, giftThemesOf, isGiftTheme, type ThemeGift } from '../features/themes/gifts';
@@ -720,7 +720,23 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
 
   // Artist sprouts: one per artist you've filmed, levelling up with more videos.
   const { hydrated: memoriesLoaded } = useMemories();
-  const artists = useMemo(() => artistSprouts(memories, (id) => !!catalog.artist(id)), [memories, catalog]);
+  // Videos you posted (read from Afterglow): each artist in them gives their collectible once, wherever you are.
+  const [posted, setPosted] = useState<{ account: string; list: SharedMemory[] }>();
+  useEffect(() => {
+    if (!account || !online || !social.availability.ok) return;
+    let live = true;
+    social.service
+      .memoriesOf(account)
+      .then((list) => live && setPosted({ account, list }))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [account, online, social.availability.ok, social.service, back]);
+  const artists = useMemo(() => {
+    const known = (id: string) => !!catalog.artist(id);
+    return withPosted(artistSprouts(memories, known), posted && posted.account === account ? posted.list : [], known);
+  }, [memories, catalog, posted, account]);
   useEffect(() => {
     artistsRef.current = artists;
   }, [artists]);
