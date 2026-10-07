@@ -5,7 +5,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
 import { cleanPublicGarden, type PublicResident } from '../../sprouts/publicGarden';
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
-import { cleanNote, cleanPublicKandi, cleanWord, isPattern, type Kandi, type PublicKandi } from '../../kandi/kandi';
+import { cleanNote, cleanPublicKandi, cleanWord, isPattern, KANDI_ID, type Kandi, type PublicKandi } from '../../kandi/kandi';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -1155,6 +1155,41 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const k: Kandi = { id: `k${kandi.size + 1}`, from: u.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() };
       kandi.set(k.id, k);
       return k;
+    },
+    async leaveOpenKandi(input) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      if (!profiles.has(u.uid)) throw new SocialError('no-profile');
+      const word = cleanWord(input.word);
+      if (!KANDI_ID.test(input.id) || !word || !isPattern(input.beads)) throw new SocialError('unknown');
+      const there = kandi.get(input.id);
+      if (there) {
+        if (there.from === u.uid) return;
+        throw new SocialError('unknown');
+      }
+      const note = cleanNote(input.note);
+      kandi.set(input.id, { id: input.id, from: u.uid, to: '', word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() });
+    },
+    async kandiById(id) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      const k = kandi.get(id);
+      // Like the rules: anyone signed in reads kandi nobody has picked up; otherwise only the two of them.
+      if (!k || (k.to && k.to !== u.uid && k.from !== u.uid)) return null;
+      return k;
+    },
+    async claimKandi(id) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      if (!profiles.has(u.uid)) throw new SocialError('no-profile');
+      const k = kandi.get(id);
+      if (!k) throw new SocialError('not-found');
+      if (k.to === u.uid) return k;
+      if (k.to) throw new SocialError('kandi-taken');
+      if (k.from === u.uid || (blocks.get(k.from) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      const got = { ...k, to: u.uid, createdAt: now() };
+      kandi.set(id, got);
+      return got;
     },
     async myKandi(max) {
       if (network.down) throw new SocialError('network');
