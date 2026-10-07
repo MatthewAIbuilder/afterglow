@@ -16,6 +16,8 @@ import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
 import { useCrews } from '../state/crews';
 import { useGoing } from '../state/going';
+import { useGoingShows } from '../state/goingShows';
+import { upcomingShowEvents } from '../features/festivalMode/showEvent';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, pageColumn } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
@@ -41,7 +43,12 @@ export default function StartCrewScreen() {
   const [busy, setBusy] = useState<string | undefined>();
 
   const upcoming = useMemo(() => bySoonest(catalog.festivals.filter((f) => !isOver(f, today)), today), [catalog.festivals, today]);
-  const yours = upcoming.filter((f) => going.includes(f.id));
+  // One-night shows you're going to sit among your festivals, by date.
+  const { shows } = useGoingShows();
+  const yours = useMemo(
+    () => bySoonest([...upcoming.filter((f) => going.includes(f.id)), ...upcomingShowEvents(shows, catalog.shows, today)], today),
+    [upcoming, going, shows, catalog.shows, today],
+  );
   const q = query.trim();
   const others = q ? upcoming.filter((f) => matchesName(f.name, q)).slice(0, LIST_MAX) : yours.length ? [] : upcoming.slice(0, 8);
 
@@ -96,14 +103,14 @@ export default function StartCrewScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.root} contentContainerStyle={[pageColumn, { padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>{t('Start a crew')}</Text>
-        <Text style={styles.body}>{t('Pick the festival. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.')}</Text>
+        <Text style={styles.body}>{t('Pick the festival or show. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.')}</Text>
         {yours.length ? (
           <>
             <Text style={styles.section}>{t('You’re going to')}</Text>
             {yours.map(row)}
           </>
         ) : (
-          <Text style={styles.quiet}>{t('Not going anywhere yet? Pick any festival below, or tap I’m going on a festival’s page first.')}</Text>
+          <Text style={styles.quiet}>{t('Not going anywhere yet? Pick any festival below, or tap I’m going on a festival or show first.')}</Text>
         )}
         <Text style={styles.section}>{yours.length ? t('Another festival') : t('Coming up')}</Text>
         <SearchField value={query} onChange={setQuery} placeholder={t('Find a festival')} label={t('Find a festival for your crew')} />

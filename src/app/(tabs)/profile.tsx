@@ -76,6 +76,7 @@ import { t } from '../../i18n';
 import { useKandi } from '../../state/kandi';
 import { datesLine } from '../../features/festivals/format';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
+import { useEventLookup } from '../../features/festivalMode/useEvent';
 
 /** How far the cover photo reaches below the safe area. */
 /** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
@@ -114,6 +115,7 @@ function FullProfile() {
   // On a wide screen (the website) the page is a column, like Settings; its grids size to it.
   const width = Math.min(useWindowDimensions().width, PAGE_MAX);
   const catalog = useCatalog();
+  const eventOf = useEventLookup();
   const today = useToday();
   // `?tab=badges` (a side quest notification) opens on that tab.
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -399,7 +401,7 @@ function FullProfile() {
             onAddPast={() => void pickPast('library')}
           >
             <CrewsList
-              crews={social.user ? crews.map((c) => ({ id: c.id, name: c.name, festival: catalog.festival(c.festivalId)?.name, people: c.members.length })) : []}
+              crews={social.user ? crews.map((c) => ({ id: c.id, name: c.name, festival: eventOf(c.festivalId)?.name, people: c.members.length })) : []}
             />
             {/* One-night shows: their own list (they aren't festivals, so they don't count as one). */}
             <GoingShowsList title={t('Shows you’re going to')} shows={showsSplit.upcoming} />

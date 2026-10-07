@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
-import { useCatalog } from '../../state/catalog';
 import { useCrews } from '../../state/crews';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../social/service';
@@ -11,11 +10,12 @@ import { StandingAvatar } from '../standing/StandingAvatar';
 import { inviteTitle } from './invite';
 import { firstName } from './together';
 import { t } from '../../i18n';
+import { useEventLookup } from '../festivalMode/useEvent';
 
 /** Crews you've been invited to in the app: who asked, for which festival, Join or Not now. Nothing when there are none. */
 export function CrewInvitesCard() {
   const { invites, inviters, join, declineInvite } = useCrews();
-  const catalog = useCatalog();
+  const eventOf = useEventLookup();
   const [joining, setJoining] = useState<string>();
   if (!invites.length) return null;
 
@@ -40,7 +40,7 @@ export function CrewInvitesCard() {
       {invites.map((i) => {
         const who = inviters[i.from];
         const title = inviteTitle(who ? firstName(who.displayName) : undefined, i.crewName);
-        const festivalName = catalog.festival(i.festivalId)?.name;
+        const festivalName = eventOf(i.festivalId)?.name;
         return (
           <View key={i.id} style={styles.card}>
             <Pressable

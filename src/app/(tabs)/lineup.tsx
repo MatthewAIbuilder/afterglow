@@ -12,6 +12,8 @@ import { countdown } from '../../features/festivals/when';
 import { festivalShelf, isMany } from '../../features/festivals/shelves';
 import { useLoves } from '../../state/useLoves';
 import { TonightPlan } from '../../features/festivalMode/TonightPlan';
+import { ShowNight } from '../../features/festivalMode/ShowNight';
+import { isShowEvent } from '../../features/festivalMode/showEvent';
 import { useFestivalMode } from '../../state/festivalMode';
 import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
@@ -28,7 +30,8 @@ import { t } from '../../i18n';
 export default function LineupScreen() {
   // In festival mode the tab is your night, planned for you.
   const { active } = useFestivalMode();
-  return active ? <TonightPlan mode={active} /> : <FullLineup />;
+  // At a one-night show: the night at a glance (where, tickets, the bill).
+  return active ? isShowEvent(active.festival) ? <ShowNight mode={active} /> : <TonightPlan mode={active} /> : <FullLineup />;
 }
 
 function FullLineup() {

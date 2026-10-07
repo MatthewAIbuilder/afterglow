@@ -165,7 +165,7 @@ export interface SocialService {
   /** Videos someone is tagged in and said yes to, newest first. */
   taggedMemoriesOf(uid: string): Promise<SharedMemory[]>;
   memoriesOf(uid: string): Promise<SharedMemory[]>;
-  /** Shared memories tagged with this festival, newest first (community clips in Discover). */
+  /** Shared memories tagged with this festival (or, for "show:<id>", that one-night show), newest first (community clips in Discover). */
   festivalMemories(festivalId: string, max: number): Promise<SharedMemory[]>;
   /** Everyone's shared videos of an artist, newest first (a database without that index yet has none). */
   artistMemories(artistId: string, max: number): Promise<SharedMemory[]>;

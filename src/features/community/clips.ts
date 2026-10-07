@@ -82,7 +82,9 @@ export function communityClips(memories: SharedMemory[], f: CommunityFilter): Cl
     if (seen.has(m.id) || f.blocked.has(m.uid) || f.hidden.has(m.id) || m.uid === f.me) continue;
     // A festival's own videos, and throwbacks from its earlier years, of artists on its lineup.
     const here = m.festivalId === f.festival?.id || (!m.festivalId && m.past?.seriesId === f.festival?.id);
-    if (f.festival && (!here || !lineup!.has(m.artistId ?? ''))) continue;
+    // A one-night show (festival mode at a show): videos tagged with it, of anyone (its bill on Afterglow is often short).
+    const atShow = !!f.festival && !m.festivalId && !!m.show?.showId && f.festival.id === `${SHOW_PREFIX}${m.show.showId}`;
+    if (f.festival && !atShow && (!here || !lineup!.has(m.artistId ?? ''))) continue;
     const clip = communityClip(m, f.artists);
     if (!clip) continue;
     seen.add(m.id);

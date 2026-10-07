@@ -638,6 +638,14 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     festivalMemories: (festivalId, max) =>
       guard(async () => {
         const memories = collection(fb().db, 'memories');
+        // A one-night show ("show:<id>"): videos tagged with it. One field, so no extra index; newest first here.
+        if (festivalId.startsWith('show:')) {
+          const snap = await getDocs(query(memories, where('showId', '==', festivalId.slice('show:'.length)), limit(max)));
+          return snap.docs
+            .map((d) => memoryFromDoc(d.id, d.data()))
+            .filter((m): m is NonNullable<typeof m> => !!m)
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        }
         const [here, before] = await Promise.all([
           getDocs(query(memories, where('festivalId', '==', festivalId), orderBy('createdAt', 'desc'), limit(max))),
           // Throwbacks from earlier years of the same festival; a database without that index yet just has none.
