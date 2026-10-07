@@ -5947,6 +5947,160 @@ const sharkfin: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** LP: the Record — a long player spinning, light catching its grooves, a face on its label. */
+const record: Draw = (p, f) => ({
+  ground: [50, 90, 30],
+  back: <Circle cx={50} cy={52} r={40} fill={p.glow} opacity={0.14} />,
+  body: <Circle cx={50} cy={52} r={34} fill={p.deep} />,
+  spinAt: [50, 52],
+  spin: (
+    <G>
+      <Circle cx={50} cy={52} r={34} fill={p.mid} />
+      {[30, 26, 22, 18].map((r) => (
+        <Circle key={r} cx={50} cy={52} r={r} fill="none" stroke={p.deep} strokeWidth={0.7} opacity={0.7} />
+      ))}
+      <Path d="M28 34 A28 28 0 0 1 44 25" stroke={p.light} strokeWidth={1.6} fill="none" opacity={0.4} strokeLinecap="round" />
+      <Path d="M72 70 A28 28 0 0 1 58 79" stroke={p.light} strokeWidth={1.2} fill="none" opacity={0.3} strokeLinecap="round" />
+      <Circle cx={50} cy={52} r={13} fill={p.alt} />
+      <Circle cx={50} cy={52} r={1.6} fill={p.deep} />
+    </G>
+  ),
+  eyes: {
+    box: [43, 45, 14, 6],
+    el: (
+      <G>
+        <VEye x={46.4} y={48.2} r={1.8} f={f} />
+        <VEye x={53.6} y={48.2} r={1.8} f={f} />
+      </G>
+    ),
+  },
+  front: <Path d="M46.6 56.4 Q50 58.6 53.4 56.4" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />,
+  flicker: sparkles(p.accent, [
+    [14, 20, 1.6],
+    [86, 82, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** CMAT: the Cat on the mat — a contented cat curled on a woven mat, tail wrapped round. */
+const catmat: Draw = (p, f) => ({
+  ground: [50, 88, 34],
+  back: <Ellipse cx={50} cy={56} rx={42} ry={36} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The mat with its weave and tassels. */}
+      <V d="M12 82 L18 70 L82 70 L88 82Z" fill={p.alt} f={f} />
+      <Path d="M20 74 L80 74 M17 78 L83 78" stroke={p.altDeep} strokeWidth={1} opacity={0.6} />
+      <Path d="M14 82 L13 86 M20 82 L19 86 M80 82 L81 86 M86 82 L87 86" stroke={p.alt} strokeWidth={1.2} strokeLinecap="round" />
+      {/* The cat curled up: body, tail, head and ears. */}
+      <V d="M28 72 C26 58 40 52 54 54 C68 56 74 64 72 72Z" fill={p.mid} f={f} gloss={[40, 58, 6, 2, -10]} />
+      <Path d="M70 70 C76 66 76 60 70 58" stroke={p.mid} strokeWidth={5} fill="none" strokeLinecap="round" />
+      <V d="M24 50 L26 38 L34 46Z" fill={p.mid} f={f} />
+      <V d="M44 46 L48 36 L50 48Z" fill={p.mid} f={f} />
+      <VE cx={37} cy={56} rx={13} ry={11} fill={p.mid} f={f} />
+      <Path d="M35.6 59 L38.4 59 L37 60.6Z" fill={p.accent} />
+      <Path d="M34.6 62 Q37 64 39.4 62" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+      <Path d="M28 60 L20 59 M28 62 L21 64 M46 60 L54 59 M46 62 L53 64" stroke={p.light} strokeWidth={0.6} opacity={0.7} strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [30, 51, 14, 6],
+    el: (
+      <G>
+        <VEye x={33.4} y={54.4} r={2.2} f={f} />
+        <VEye x={40.6} y={54.4} r={2.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Purring. */}
+      <Path d="M58 40 Q60 38 62 40 Q64 42 66 40 M62 32 Q64 30 66 32 Q68 34 70 32" stroke={p.accent} strokeWidth={1.2} fill="none" strokeLinecap="round" opacity={0.8} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** LYKKE LI: the Clover — a four-leaf clover (lykke: luck), a dewdrop shining on one leaf. */
+const clover: Draw = (p, f) => ({
+  ground: [50, 92, 18],
+  back: <Ellipse cx={50} cy={48} rx={40} ry={38} fill={p.glow} opacity={0.15} />,
+  pivot: [50, 70],
+  sway: (
+    <G>
+      {[0, 90, 180, 270].map((a) => {
+        const r = ((a + 45) * Math.PI) / 180;
+        const x = r1(50 + Math.cos(r) * 13);
+        const y = r1(44 + Math.sin(r) * 13);
+        return <V key={a} d={`M50 44 C${r1(50 + Math.cos(r - 0.9) * 24)} ${r1(44 + Math.sin(r - 0.9) * 24)} ${r1(x + Math.cos(r) * 12)} ${r1(y + Math.sin(r) * 12)} ${x} ${y} C${r1(x + Math.cos(r) * 12)} ${r1(y + Math.sin(r) * 12)} ${r1(50 + Math.cos(r + 0.9) * 24)} ${r1(44 + Math.sin(r + 0.9) * 24)} 50 44Z`} fill={p.mid} f={f} />;
+      })}
+      <Path d="M50 44 L50 32 M50 44 L62 44 M50 44 L50 56 M50 44 L38 44" stroke={p.deep} strokeWidth={0.8} opacity={0.4} />
+      <Circle cx={60} cy={34} r={2} fill={p.light} opacity={0.85} />
+    </G>
+  ),
+  body: (
+    <G>
+      <Path d="M50 50 C50 64 48 74 52 90" stroke={p.alt} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+      <VE cx={50} cy={44} rx={8} ry={8} fill={p.light} f={f} gloss={false} />
+      <Path d="M47.6 47 Q50 49 52.4 47" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [44, 39, 12, 6],
+    el: (
+      <G>
+        <VEye x={47.2} y={42.4} r={1.7} f={f} />
+        <VEye x={52.8} y={42.4} r={1.7} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [16, 22, 1.8],
+    [84, 20, 1.5],
+    [82, 76, 1.3],
+  ]),
+  flickerOver: true,
+});
+
+/** SKYE NEWMAN: the Cloud — a soft cloud drifting, a little rain falling and a rainbow peeking out. */
+const cloud: Draw = (p, f) => ({
+  ground: null,
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={40} ry={38} fill={p.glow} opacity={0.15} />
+      {[p.accent, p.alt, p.altDeep].map((c, i) => (
+        <Path key={i} d={`M${24 + i * 3} 64 A${26 - i * 3} ${26 - i * 3} 0 0 1 ${76 - i * 3} 64`} stroke={c} strokeWidth={3} fill="none" opacity={0.55} />
+      ))}
+    </G>
+  ),
+  body: (
+    <G>
+      <V d="M24 62 C14 62 14 48 24 48 C24 36 40 32 46 40 C50 30 68 30 70 42 C82 40 86 54 76 60 C76 64 72 66 68 66 L28 66 C26 66 24 64 24 62Z" fill={p.mid} f={f} gloss={[36, 40, 6, 3, -10]} />
+      <Circle cx={36} cy={56} r={2.4} fill={p.accent} opacity={0.35} />
+      <Circle cx={64} cy={56} r={2.4} fill={p.accent} opacity={0.35} />
+      <Path d="M46 57 Q50 60 54 57" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [38, 46, 24, 8],
+    el: (
+      <G>
+        <VEye x={43} y={50.4} r={2.6} f={f} />
+        <VEye x={57} y={50.4} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* A little rain. */}
+      {[34, 46, 58, 70].map((x, i) => (
+        <Path key={x} d={`M${x} ${72 + (i % 2) * 4} l-2 6`} stroke={p.light} strokeWidth={1.4} strokeLinecap="round" opacity={0.8} />
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -6920,6 +7074,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  record,
+  catmat,
+  clover,
+  cloud,
   telephone,
   palace,
   notebook,
