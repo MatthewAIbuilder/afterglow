@@ -25,6 +25,7 @@ import { KandiStack } from '../../features/kandi/KandiStack';
 import { ProfileStory } from '../../features/profile/ProfileStory';
 import { StoryPreview } from '../../features/sprouts/StoryShare';
 import { useSprouts } from '../../state/sprouts';
+import { useMyCollection } from '../../features/sprouts/useMyCollection';
 import { showActionSheet } from '../../lib/dialog';
 import { useMyShowcase } from '../../features/sprouts/useMyShowcase';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
@@ -104,6 +105,7 @@ function FullProfile() {
   // The collectible cards you pinned, shown above your garden.
   const showcase = useMyShowcase();
   const sprouts = useSprouts();
+  const myCollection = useMyCollection();
   // Your profile as a story picture (from Share profile).
   const [profileStory, setProfileStory] = useState(false);
   const quests = useDailyQuests();
@@ -349,7 +351,7 @@ function FullProfile() {
               onToggle={() => shelves.toggle('festivals')}
             />
 
-            <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own canPin={showcase.canPin} />
+            <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own canPin={showcase.canPin} collected={myCollection.book.total ? Math.round((myCollection.book.have / myCollection.book.total) * 100) : undefined} />
 
             <KandiStack items={kandiShown} own onOpen={() => router.push('/garden')} />
 

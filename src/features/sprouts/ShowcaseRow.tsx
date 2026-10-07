@@ -19,7 +19,7 @@ const ROW_MAX = 600;
  * tilts, and anyone can see how to earn their own). Nothing when none are
  * pinned.
  */
-export function ShowcaseRow({ cards, handle, own, canPin }: { cards: readonly ShowcaseCard[]; handle?: string; own?: boolean; canPin?: boolean }) {
+export function ShowcaseRow({ cards, handle, own, canPin, collected }: { cards: readonly ShowcaseCard[]; handle?: string; own?: boolean; canPin?: boolean; /** How much of Your collection you have, in percent (own only). */ collected?: number }) {
   const catalog = useCatalog();
   const { width: ww } = useWindowDimensions();
   if (!cards.length && !(own && canPin)) return null;
@@ -40,7 +40,7 @@ export function ShowcaseRow({ cards, handle, own, canPin }: { cards: readonly Sh
             accessibilityRole="link"
             hitSlop={8}
           >
-            <Text style={styles.link}>{t('Your collection ›')}</Text>
+            <Text style={styles.link}>{collected !== undefined ? t('Your collection · {pct}% ›', { pct: collected }) : t('Your collection ›')}</Text>
           </Pressable>
         ) : null}
       </View>
