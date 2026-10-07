@@ -59,6 +59,9 @@ describe('the dashboard numbers', () => {
     await app.unmount();
     // Someone who drifted away two months ago.
     mockSocial.presence.set('old', { uid: 'old', firstSeenAt: new Date(2026, 7, 1).toISOString(), lastSeenAt: new Date(2026, 8, 1).toISOString(), days: ['2026-08-01', '2026-09-01'], platform: 'android', hasProfile: false });
+    // Two "Get tickets" taps on a festival (a number per festival and day, nothing about who).
+    await s().countTicketTap('eternal-nye-26');
+    await s().countTicketTap('eternal-nye-26');
     await s().signOut();
 
     await supportAccount();
@@ -84,6 +87,7 @@ describe('the dashboard numbers', () => {
     await fireEvent.press(hq.getByRole('tab', { name: 'Festivals' }));
     await flush();
     expect(hq.getByText(/People who show they’re going/)).toBeTruthy();
+    expect(hq.getByLabelText(/, 2 ticket taps$/)).toBeTruthy();
   });
 });
 

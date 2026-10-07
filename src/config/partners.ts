@@ -8,3 +8,10 @@
  *   earplugs: 'https://www.amazon.com/dp/XXXXXXXXXX?tag=afterglow-20',
  */
 export const SHOP_LINKS: Readonly<Record<string, string>> = {};
+
+/**
+ * Whether Amazon has approved the phone app for Associates links (a separate
+ * approval from the website, given once the app is in the App Store). Until
+ * it's true, Amazon shop links show on the website only. See docs/money.md.
+ */
+export const AMAZON_APP_APPROVED = false;

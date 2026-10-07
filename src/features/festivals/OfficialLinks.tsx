@@ -2,6 +2,8 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { earnsFrom, PARTNER_NOTE } from '../partners/partners';
+import { countTicketTapOnce } from '../partners/ticketTaps';
+import { useSocialMaybe } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { t } from '../../i18n';
 
@@ -9,12 +11,14 @@ import { t } from '../../i18n';
  * A festival's links, from the catalogue: "Get tickets" (until the festival is
  * over), "Official site" and "Places to stay" (a partner link, until it's
  * over). Afterglow sells nothing itself; when a link earns a commission a
- * short notice says so under the row. Nothing shows when there are no links.
+ * short notice says so under the row. Ticket taps are counted for HQ (a number
+ * per festival, signed in only). Nothing shows when there are no links.
  */
 export function OfficialLinks({ festival, over }: { festival: Festival; over: boolean }) {
   const tickets = over ? undefined : festival.links?.tickets;
   const website = festival.links?.website;
   const stay = over ? undefined : festival.links?.stay;
+  const social = useSocialMaybe();
   if (!tickets && !website && !stay) return null;
   const open = (url: string) => {
     haptic.select();
@@ -25,7 +29,10 @@ export function OfficialLinks({ festival, over }: { festival: Festival; over: bo
       <View style={styles.row}>
         {tickets ? (
           <Pressable
-            onPress={() => open(tickets)}
+            onPress={() => {
+              if (social) countTicketTapOnce(social.service, festival.id, !!social.user);
+              open(tickets);
+            }}
             accessibilityRole="link"
             accessibilityLabel={t('Get tickets for {festival} on the official site', { festival: festival.name })}
             style={({ pressed }) => [styles.link, styles.tickets, pressed && styles.pressed]}

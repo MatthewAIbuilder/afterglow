@@ -5,11 +5,13 @@ import { usePrepTicks } from '../../state/prep';
 import { useRatings } from '../../state/ratings';
 import { useSetReminders } from '../../state/setReminders';
 import { canRemindSets } from '../notifications/setReminders';
-import { SHOP_LINKS } from '../../config/partners';
-import { cleanShopLinks } from '../partners/partners';
+import { Platform } from 'react-native';
+import { AMAZON_APP_APPROVED, SHOP_LINKS } from '../../config/partners';
+import { cleanShopLinks, shopLinksFor } from '../partners/partners';
 import { prepChecklist, prepProgress } from './checklist';
 
-const SHOP = cleanShopLinks(SHOP_LINKS);
+// Amazon's links stay on the website until Amazon approves the app.
+const SHOP = shopLinksFor(cleanShopLinks(SHOP_LINKS), { web: Platform.OS === 'web', amazonInApp: AMAZON_APP_APPROVED });
 
 /** A festival's Get ready list, from what you've done in the app and what you've ticked. */
 export function usePrep(festival: Festival) {

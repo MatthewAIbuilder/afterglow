@@ -713,6 +713,20 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['n'])
         && request.resource.data.n == resource.data.n + 1;
     }
+    // "Get tickets" taps on a festival (features/partners/ticketTaps.ts): one number per festival and day,
+    // added to one at a time by anyone signed in, nothing about who. Only HQ reads them.
+    match /ticketTaps/{id} {
+      allow read: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['festivalId', 'day', 'n'])
+        && request.resource.data.festivalId is string && request.resource.data.festivalId.matches('^[A-Za-z0-9_.-]{1,120}$')
+        && isToday(request.resource.data.day)
+        && id == request.resource.data.festivalId + '_' + request.resource.data.day
+        && request.resource.data.n == 1;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['n'])
+        && request.resource.data.n == resource.data.n + 1;
+    }
 
     // 1-to-1 chats: `dms/<a>_<b>` (the two uids in order) between two people who follow each other, or
     // with an event organizer's account (see orgChat), started by either of them unless one blocked the other. Only the two of them read it. Messages and

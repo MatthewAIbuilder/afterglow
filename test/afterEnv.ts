@@ -18,6 +18,7 @@ import { forgetGoingShows } from '../src/state/goingShows';
 import { forgetCommentCounts } from '../src/features/social/commentCounts';
 import { forgetExtraArtists } from '../src/data/extraArtists';
 import { forgetMyOrg, forgetOrgs } from '../src/state/orgs';
+import { forgetTicketTaps } from '../src/features/partners/ticketTaps';
 
 // Shared stores (daily quests, secrets, tips): start every test with fresh ones.
 beforeEach(() => {
@@ -38,6 +39,7 @@ beforeEach(() => {
   forgetGardenLayout();
   forgetGoingShows();
   forgetCommentCounts();
+  forgetTicketTaps();
   forgetExtraArtists();
   forgetOrgs();
   forgetMyOrg();

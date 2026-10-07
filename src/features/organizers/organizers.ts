@@ -49,6 +49,8 @@ export type OrgEvent = {
   about?: string;
   /** Tickets and a flyer or poster (https; a poster can be uploaded from the studio). */
   tickets?: string;
+  /** The tickets link earns Afterglow a commission (a referral link, like Posh Kickback): the commission notice shows beside it. */
+  ticketsPartner?: boolean;
   poster?: string;
   /** More artists are still to be announced (with no lineup yet: all of them). */
   tba?: boolean;
@@ -257,6 +259,7 @@ export function cleanEvent(raw: unknown): OrgEvent | undefined {
     city: oneLine(r.city, EVENT_PLACE_MAX),
     about: text(r.about, EVENT_ABOUT_MAX) || undefined,
     tickets: httpsLink(r.tickets),
+    ticketsPartner: r.ticketsPartner === true && httpsLink(r.tickets) ? true : undefined,
     poster: httpsLink(r.poster),
     tba: r.tba === true ? true : undefined,
     afterOf: typeof r.afterOf === 'string' && /^[A-Za-z0-9_.-]{1,64}$/.test(r.afterOf) ? r.afterOf : undefined,
@@ -449,7 +452,7 @@ export function eventToFestival(org: Org, e: OrgEvent, index: ArtistIndex): { fe
   const acts = e.lineup.map((a) => ({ ...actArtistId(a, index, org.id), name: a.name, act: a }));
   const lineup = [...new Set(acts.map((a) => a.id))];
   const sets: SetTime[] = acts.filter((a) => a.act.start && a.act.end).map((a) => ({ artistId: a.id, day: days[0], stageId: 'main', start: a.act.start!, end: a.act.end! }));
-  const links = some({ tickets: e.tickets, website: org.website });
+  const links = some({ tickets: e.tickets, website: org.website, ticketsPartner: e.tickets && e.ticketsPartner ? true : undefined });
   const festival: Festival = {
     id: eventFestivalIdOf(org, e),
     name: e.name,

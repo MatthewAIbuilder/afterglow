@@ -1,9 +1,10 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import { parseCatalogFile } from '../../../data/file';
 import type { Festival } from '../../../data/models';
 import { legalDocument, PARTNER_PRIVACY, PARTNER_TERMS } from '../../legal/documents';
 import { prepChecklist, sectionNotes } from '../../prep/checklist';
-import { AMAZON_NOTE, cleanShopLinks, earnsFrom, hasPartnerLinks, isAmazonLink, PARTNER_NOTE, partnerLinks, SHOP_NOTE, shopNotes } from '../partners';
+import { AMAZON_NOTE, cleanShopLinks, earnsFrom, hasPartnerLinks, isAmazonLink, isTapFestivalId, PARTNER_NOTE, partnerLinks, SHOP_NOTE, shopLinksFor, shopNotes } from '../partners';
+import { countTicketTapOnce } from '../ticketTaps';
 
 const fest = (links?: Festival['links']) =>
   ({ id: 'f', name: 'F Fest', dates: '', location: '', lineup: [], days: [], stages: [], startDate: '2026-12-04', endDate: '2026-12-06', links }) as unknown as Festival;
@@ -92,5 +93,45 @@ describe('partner links in the legal pages', () => {
     expect(words('privacy')).not.toContain(PARTNER_PRIVACY);
     expect(words('terms', true)).toContain(PARTNER_TERMS);
     expect(words('privacy', true)).toContain(PARTNER_PRIVACY);
+  });
+});
+
+describe('Amazon in the app', () => {
+  const links = { earplugs: 'https://amzn.to/1', water: 'https://brand.example.com/bottle' };
+
+  it('shows Amazon links on the website only until Amazon approves the app', () => {
+    expect(shopLinksFor(links, { web: true, amazonInApp: false })).toEqual(links);
+    expect(shopLinksFor(links, { web: false, amazonInApp: false })).toEqual({ water: 'https://brand.example.com/bottle' });
+    expect(shopLinksFor(links, { web: false, amazonInApp: true })).toEqual(links);
+  });
+});
+
+describe('Get tickets taps', () => {
+  it('counts each festival once while the app is open, signed in only', async () => {
+    const countTicketTap = jest.fn(async (_id: string) => {});
+    countTicketTapOnce({ countTicketTap }, 'f', false);
+    expect(countTicketTap).not.toHaveBeenCalled();
+    countTicketTapOnce({ countTicketTap }, 'f', true);
+    countTicketTapOnce({ countTicketTap }, 'f', true);
+    countTicketTapOnce({ countTicketTap }, 'g', true);
+    expect(countTicketTap.mock.calls.map((c) => c[0])).toEqual(['f', 'g']);
+  });
+
+  it('tries again after a failed count', async () => {
+    const countTicketTap = jest.fn(async (_id: string) => {
+      throw new Error('no signal');
+    });
+    countTicketTapOnce({ countTicketTap }, 'f', true);
+    await Promise.resolve();
+    await Promise.resolve();
+    countTicketTapOnce({ countTicketTap }, 'f', true);
+    expect(countTicketTap).toHaveBeenCalledTimes(2);
+  });
+
+  it('only festival ids that can name a count', () => {
+    expect(isTapFestivalId('edc-orlando-26')).toBe(true);
+    expect(isTapFestivalId('underground-alchemy--transmutation-11-14')).toBe(true);
+    expect(isTapFestivalId('a/b')).toBe(false);
+    expect(isTapFestivalId('')).toBe(false);
   });
 });

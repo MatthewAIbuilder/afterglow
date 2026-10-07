@@ -15,7 +15,18 @@ works fully. There are no placeholders and no "coming soon" text.
 | Get ready → Before you go | "Places to stay nearby ↗" under "Sort travel" | the same `stay` link |
 | Festival page and Get ready | the note "Afterglow may earn a commission… It doesn’t change your price." | a `stay` link, or `"ticketsPartner": true` beside `tickets` |
 | Get ready → Pack | "Shop ↗" under an item, then Amazon's required sentence ("As an Amazon Associate, Afterglow earns from qualifying purchases.") or a general note | a link for that item in `src/config/partners.ts` (`SHOP_LINKS`) |
+| An organizer's event page (Hosted by) and its Info tab | the commission note under "Get tickets" | in the organizer studio, the event's switch "This link pays Afterglow a commission" (for a referral link like Posh Kickback) |
 | Terms of Use and Privacy Policy | a paragraph about partner links | any partner link at all |
+
+Amazon shop links show on the website only until `AMAZON_APP_APPROVED` in
+`src/config/partners.ts` is `true`: Amazon allows its links inside a phone app
+only after a separate approval, once the app is in the App Store.
+
+Afterglow HQ → Festivals has a **tickets** column: "Get tickets" taps on each
+festival in the last 30 days (signed-in people, once per festival each time
+they open the app; a number per festival and day, nothing about who). It's
+the number to quote to promoters and sponsors. It shows "–" until the newest
+Firestore rules and indexes are deployed.
 
 Partner links open in the phone's browser (or the seller's app). Afterglow
 sends nothing about the person and adds no trackers, so the App Store privacy
@@ -60,12 +71,16 @@ Booking.com and Expedia have partner programs too, but they're harder to join fo
 1. Go to **affiliate-program.amazon.com** and sign up with your normal Amazon account.
 2. Add https://afterglowmusic.app as your website. Add the app's App Store link once it's live.
 3. **Timing matters:** Amazon closes accounts that don't make 3 sales within 180 days. Apply close to launch, not months before.
+   Links inside the phone app need Amazon's separate mobile app approval (ask in Associates Central once the app is in the App Store). Until then the app keeps Amazon links on the website; when Amazon approves, tell Claude to set `AMAZON_APP_APPROVED` to `true`.
 4. Once you're in, open amazon.com while signed in. A grey "SiteStripe" bar sits at the top of every product page. Find a good product (a power bank, high-fidelity earplugs, a collapsible water bottle, a festival-safe sunscreen, a poncho), click **Get link**, and copy it.
 5. Send Claude the links. Don't send prices: Amazon doesn't allow showing prices copied from its site, and Afterglow doesn't show them.
 
 Better rates elsewhere: festival brands like earplug and hydration pack makers often pay 10 to 15% through networks like Impact, ShareASale or Awin (look for "affiliate" or "partners" at the bottom of their websites). Their links work the same way, and the app shows the general note instead of Amazon's.
 
 ### 4. Tickets
+
+**Underground Alchemy first (Posh Kickback).** Stefan sells on Posh, which has a built-in referral system called Kickback. He makes a private affiliate offer for Afterglow (he chooses the payout, taken from his ticket money automatically), you accept it and add your bank details in Posh, and you get a referral link per event. Then either he pastes it as the event's tickets link in the studio and turns on "This link pays Afterglow a commission", or you send it to Claude. Promotion stays free for him for now (the user, 2026-10-07).
+
 
 Only the festival's official seller, ever. Afterglow never links to resale sites as "Get tickets".
 

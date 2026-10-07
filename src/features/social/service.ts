@@ -139,8 +139,14 @@ export interface SocialService {
   privileged(): Promise<Privileges[]>;
   /** Notes that you opened the app now (your own `activity` record; merged with what's there). Never for the support account. */
   markActive(input: { platform: string; version: string; hasProfile: boolean; now: Date }): Promise<void>;
-  /** For each festival: how many show they're going, and how many videos were shared there. */
-  adminFestivals(ids: string[]): Promise<Record<string, { going: number; videos: number }>>;
+  /**
+   * For each festival: how many show they're going, how many videos were
+   * shared there, and how many "Get tickets" taps it had since `ticketsSince`
+   * ("YYYY-MM-DD"; left out when those counts can't be read yet).
+   */
+  adminFestivals(ids: string[], ticketsSince?: string): Promise<Record<string, { going: number; videos: number; tickets?: number }>>;
+  /** Count a "Get tickets" tap on a festival (signed in only; a number per festival and day, nothing about who). */
+  countTicketTap(festivalId: string): Promise<void>;
   /** Someone's founder number and flair, for their border and caption. */
   standingOf(uid: string): Promise<Standing>;
   /** How many throwbacks (past festival videos) you've shared, which the free plan limits. */

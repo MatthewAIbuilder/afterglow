@@ -10,6 +10,7 @@ import { isOver } from '../festivals/shelves';
 import type { AdminActivity, AdminCounts, AdminPresence } from '../social/models';
 import { FOUNDERS_MAX } from '../social/models';
 import { byDay, daysAgo, weekLine, weeks } from './admin';
+import { utcDay } from '../organizers/organizers';
 import { Bars, CohortTable, GrowthLine, HourStrip, RankList, Section, ShareBars, Tile, Tiles } from './AdminCharts';
 import {
   activeIn,
@@ -30,6 +31,8 @@ import {
 
 /** The festivals compared on the dashboard: those not over, soonest first, at most this many. */
 const FESTIVALS_SHOWN = 12;
+/** "Get tickets" taps are counted over this many days. */
+const TICKET_DAYS = 30;
 /** Records read back per kind for the charts (newest first). */
 const READ_MAX = 5000;
 
@@ -47,7 +50,7 @@ type Data = {
   presence: AdminPresence[];
   /** The last-active records couldn't be read (rules not deployed yet). */
   presenceMissing: boolean;
-  festivals: { festival: Festival; going: number; videos: number }[];
+  festivals: { festival: Festival; going: number; videos: number; tickets?: number }[];
   at: Date;
 };
 
@@ -83,7 +86,10 @@ export function AdminOverview() {
           presenceMissing = true;
           return [] as AdminPresence[];
         }),
-        service.adminFestivals(fests.map((f) => f.id)),
+        service.adminFestivals(
+          fests.map((f) => f.id),
+          utcDay(new Date(now.getTime() - (TICKET_DAYS - 1) * 86_400_000)),
+        ),
       ]);
       setData({
         counts,
@@ -258,14 +264,17 @@ export function AdminOverview() {
 
       {view === 'festivals' ? (
         <>
-          <Text style={styles.sectionNote}>People who show they’re going, and videos shared there. Soonest festivals, most people first. Tap one to open it.</Text>
+          <Text style={styles.sectionNote}>
+            People who show they’re going, videos shared there, and “Get tickets” taps in the last {TICKET_DAYS} days (signed-in people, once each time they open the app). Soonest festivals, most people first. Tap one to open it.
+          </Text>
           <View style={styles.table}>
             <View style={styles.rowHead}>
               <Text style={[styles.rowHeadText, { flex: 1 }]} />
               <Text style={styles.rowHeadText}>going</Text>
               <Text style={styles.rowHeadText}>videos</Text>
+              <Text style={styles.rowHeadText}>tickets</Text>
             </View>
-            {data.festivals.map(({ festival, going, videos }) => {
+            {data.festivals.map(({ festival, going, videos, tickets }) => {
               const max = Math.max(1, ...data.festivals.map((x) => x.going));
               return (
                 <Pressable
@@ -273,7 +282,7 @@ export function AdminOverview() {
                   onPress={() => router.push(`/festival/${festival.id}`)}
                   style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
                   accessibilityRole="button"
-                  accessibilityLabel={`${festival.name}: ${going} going, ${videos} videos`}
+                  accessibilityLabel={`${festival.name}: ${going} going, ${videos} videos, ${tickets ?? 'no count of'} ticket taps`}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowName} numberOfLines={1}>
@@ -285,6 +294,7 @@ export function AdminOverview() {
                   </View>
                   <Text style={styles.rowNum}>{going}</Text>
                   <Text style={styles.rowNumDim}>{videos}</Text>
+                  <Text style={styles.rowNumDim}>{tickets ?? '–'}</Text>
                 </Pressable>
               );
             })}

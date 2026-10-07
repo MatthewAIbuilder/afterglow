@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Alert, type AlertButton, Share } from 'react-native';
+import { Alert, type AlertButton, Linking, Share } from 'react-native';
 import { ORG_STARTERS } from '../../config/organizers';
 import { orgFromStarter, type Org } from '../../features/organizers/organizers';
 import { forgetOrgViews } from '../../features/organizers/useOrgView';
@@ -218,6 +218,30 @@ describe('organizers', () => {
     await unconfirmed.unmount();
     // The database refuses it too.
     await expect(s().saveOrg({ ...seed(), name: 'Taken over' })).rejects.toThrow();
+  });
+
+  it('a referral tickets link (like Posh Kickback) says Afterglow may earn, and ticket taps are counted for HQ', async () => {
+    seed();
+    const app = await organizer();
+    await showTab(app, 'Events');
+    await fireEvent.press(app.getByLabelText('Edit Transmutation'));
+    expect(app.queryByText(/For a referral link made for Afterglow/)).toBeNull();
+    await fireEvent.press(app.getByLabelText('Say this tickets link pays Afterglow a commission'));
+    expect(app.getByText(/For a referral link made for Afterglow/)).toBeTruthy();
+    await fireEvent.press(app.getByText('Save changes'));
+    await flush();
+    expect(mockSocial.orgs.get(ORG)!.events[0].ticketsPartner).toBe(true);
+
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    await act(async () => router.push(`/festival/${EVENT}`));
+    await flush();
+    expect(app.getAllByText(/Afterglow may earn a commission/).length).toBeGreaterThan(0);
+    await fireEvent.press(app.getByLabelText('Get tickets for Transmutation from Underground Alchemy'));
+    await fireEvent.press(app.getByLabelText('Get tickets for Transmutation from Underground Alchemy'));
+    expect(open).toHaveBeenCalledWith('https://tickets.example/transmutation');
+    // Once per festival while the app is open.
+    expect([...mockSocial.ticketTaps.values()]).toEqual([1]);
+    await app.unmount();
   });
 
   it('its page shows the logo, events, badge and creature; its artists carry its words', async () => {
