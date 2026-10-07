@@ -3600,6 +3600,119 @@ const mixtape: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** SKRILLEX: a scary monster (and nice sprites) — a shaggy little beast with horns and a jagged grin, sprites buzzing round it. */
+const scarymonster: Draw = (p, f) => ({
+  ground: [50, 91, 28],
+  back: <Ellipse cx={50} cy={54} rx={44} ry={38} fill={p.glow} opacity={0.16} />,
+  pivot: [50, 30],
+  sway: (
+    <G>
+      {/* Horns. */}
+      <V d="M30 32 C24 22 24 12 30 6 C30 14 34 22 40 28Z" fill={p.alt} f={f} />
+      <V d="M70 32 C76 22 76 12 70 6 C70 14 66 22 60 28Z" fill={p.alt} f={f} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Shaggy body: a jagged fringe all round. */}
+      <V
+        d="M50 22 L56 18 L60 24 L67 21 L69 28 L77 28 L75 35 L83 39 L77 44 L83 51 L76 54 L80 62 L72 63 L74 71 L66 70 L64 78 L57 74 L50 81 L43 74 L36 78 L34 70 L26 71 L28 63 L20 62 L24 54 L17 51 L23 44 L17 39 L25 35 L23 28 L31 28 L33 21 L40 24 L44 18Z"
+        fill={p.mid}
+        f={f}
+        gloss={[38, 34, 9, 4, -16]}
+      />
+      <Path d="M50 30 L54 27 L57 32 L63 30 L64 36 L70 37 L66 42 L71 47 L65 50 L67 56 L60 57 L59 63 L53 60 L50 66 L47 60 L41 63 L40 57 L33 56 L35 50 L29 47 L34 42 L30 37 L36 36 L37 30 L43 32 L46 27Z" fill={p.light} opacity={0.22} />
+      {/* Little feet. */}
+      <VE cx={40} cy={84} rx={7} ry={4} fill={p.deep} f={f} gloss={false} />
+      <VE cx={60} cy={84} rx={7} ry={4} fill={p.deep} f={f} gloss={false} />
+      {/* The jagged grin. */}
+      <Path d="M36 58 Q50 70 64 58 Q50 64 36 58Z" fill={p.altDeep} />
+      <Path d="M39 59.6 L42 63 L45 60.8 L48 64 L51 61 L54 64 L57 60.8 L60 63 L62 59.8" stroke="#FFFFFF" strokeWidth={1.4} fill="none" strokeLinejoin="round" />
+    </G>
+  ),
+  eyes: {
+    box: [34, 40, 32, 12],
+    el: (
+      <G>
+        <VEye x={41} y={46} r={5} f={f} />
+        <VEye x={59} y={46} r={5} f={f} />
+        <Path d="M34 38 L46 42 M66 38 L54 42" stroke={p.deep} strokeWidth={2} strokeLinecap="round" />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Nice sprites: little winged lights. */}
+      {(
+        [
+          [14, 22, 1],
+          [86, 18, 1.2],
+          [88, 70, 1],
+          [12, 76, 0.9],
+        ] as const
+      ).map(([x, y, s], i) => (
+        <G key={i}>
+          <Ellipse cx={x - 2.4 * s} cy={y - 1.4 * s} rx={2.4 * s} ry={1.4 * s} fill="#FFFFFF" opacity={0.55} />
+          <Ellipse cx={x + 2.4 * s} cy={y - 1.4 * s} rx={2.4 * s} ry={1.4 * s} fill="#FFFFFF" opacity={0.55} />
+          <Glow x={x} y={y} r={1.4 * s} color={i % 2 ? p.accent : p.glow} />
+        </G>
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** RÜFÜS DU SOL: the desert at sunset — a saguaro with a face before a huge low sun, the dunes going violet. */
+const desertsun: Draw = (p, f) => ({
+  ground: [50, 92, 30],
+  back: (
+    <G>
+      {/* The sun, huge and low, its bands cut by the haze. */}
+      <Circle cx={50} cy={58} r={34} fill={p.accent} opacity={0.95} />
+      <Circle cx={50} cy={58} r={34} fill={p.glow} opacity={0.35} />
+      {[44, 52, 60, 68].map((y, i) => {
+        // Each band only across the sun.
+        const half = r1(Math.sqrt(34 * 34 - (y - 58) * (y - 58)));
+        return <Path key={y} d={`M${r1(50 - half)} ${y} L${r1(50 + half)} ${y}`} stroke={p.deep} strokeWidth={1.4 + i * 0.6} opacity={0.5} />;
+      })}
+      {/* Dunes, inside the round tile. */}
+      <Path d="M9.7 76 C24 68 38 72 50 75 C64 78 78 70 90.3 76 A48 48 0 0 1 9.7 76Z" fill={p.altDeep} />
+      <Path d="M18.3 86 C30 80 44 84 58 86 C68 87.4 76 84 81.7 86 A48 48 0 0 1 18.3 86Z" fill={p.deep} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The saguaro: trunk and two arms. */}
+      <V d="M43 90 L43 30 Q43 22 50 22 Q57 22 57 30 L57 90Z" fill={p.mid} f={f} gloss={[48, 30, 2, 8, 0]} />
+      <V d="M43 58 L36 58 Q30 58 30 52 L30 40 Q30 36 34 36 Q38 36 38 40 L38 50 L43 50Z" fill={p.mid} f={f} />
+      <V d="M57 50 L64 50 L64 34 Q64 30 68 30 Q72 30 72 34 L72 50 Q72 58 64 58 L57 58Z" fill={p.mid} f={f} />
+      {/* Ribs. */}
+      {[46.5, 53.5].map((x) => (
+        <Path key={x} d={`M${x} 26 L${x} 88`} stroke={p.alt} strokeWidth={0.8} opacity={0.6} />
+      ))}
+      {/* A flower on top. */}
+      <Circle cx={50} cy={21} r={3} fill={p.light} />
+      <Circle cx={50} cy={21} r={1.2} fill={p.accent} />
+      <Path d="M45 46 Q50 50 55 46" stroke={p.altDeep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [44, 34, 12, 6],
+    el: (
+      <G>
+        <VEye x={47} y={38} r={2.4} f={f} />
+        <VEye x={53} y={38} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [18, 18, 1.6],
+    [82, 14, 1.4],
+    [70, 24, 1],
+  ]),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -3668,4 +3781,6 @@ export const DRAW: Record<Creature, Draw> = {
   mainstage,
   bubbles,
   mixtape,
+  scarymonster,
+  desertsun,
 };
