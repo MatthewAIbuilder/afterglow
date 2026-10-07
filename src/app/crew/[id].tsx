@@ -32,6 +32,8 @@ import { goBack } from '../../lib/nav';
 import { LastUpdated } from '../../features/offline/LastUpdated';
 import { CrewOrb } from '../../features/friends/CrewOrb';
 import { t } from '../../i18n';
+import { useEventLookup } from '../../features/festivalMode/useEvent';
+import { eventPath } from '../../features/festivalMode/showEvent';
 
 /**
  * A festival crew. Someone who opens an invite sees the crew and who's in it,
@@ -124,7 +126,7 @@ const nameOf = (profiles: Record<string, Profile>) => (uid: string) => (profiles
 function Invite({ crew, profiles, code, onJoined }: { crew: Crew; profiles: Record<string, Profile>; code?: string; onJoined: () => void }) {
   const social = useSocial();
   const { join, invites, inviters, declineInvite } = useCrews();
-  const festival = useCatalog().festival(crew.festivalId);
+  const festival = useEventLookup()(crew.festivalId);
   const [busy, setBusy] = useState(false);
   // Invited in the app: say by whom, and offer No thanks.
   const invited = invites.find((i) => i.crewId === crew.id);
@@ -252,7 +254,8 @@ function Member({
   const me = social.user?.uid;
   const crews = useCrews();
   const catalog = useCatalog();
-  const festival = catalog.festival(crew.festivalId);
+  const eventOf = useEventLookup();
+  const festival = eventOf(crew.festivalId);
   const plan = usePlan();
   const { taste } = useTaste();
   const owner = crew.owner === me;
@@ -371,7 +374,7 @@ function Member({
       </View>
       {festival ? (
         <Pressable
-          onPress={() => router.push({ pathname: '/festival/[id]', params: { id: festival.id } })}
+          onPress={() => router.push(eventPath(festival))}
           accessibilityRole="link"
           accessibilityLabel={t('{festival}. Open the festival.', { festival: festival.name })}
           style={styles.festivalLink}

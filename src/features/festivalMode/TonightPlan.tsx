@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistRow } from '../../components/ArtistRow';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { showAlert } from '../../lib/dialog';
+import { directionsUrl } from '../../lib/directions';
 import { haptic } from '../../lib/haptics';
 import { useFestivalMode } from '../../state/festivalMode';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
@@ -31,7 +32,6 @@ const NIGHT_PICKS = 8;
 export function TonightPlan({ mode }: { mode: ModeNow }) {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
-  const { leave } = useFestivalMode();
   const { festival } = mode;
   const { picks, schedule, route } = useFestivalPlan(festival);
   const days = route?.length ? route.map((r) => r.day) : lineupDays(festival);
@@ -49,18 +49,6 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
         })()
       : picks.filter((p) => p.tier !== 'explore')
   ).slice(0, NIGHT_PICKS);
-
-  const askLeave = () =>
-    showAlert(mode.preview ? t('End the test?') : t('Back to the full app?'), mode.preview ? undefined : t('Festival mode comes back if you switch it on from Tonight.'), [
-      { text: t('Cancel'), style: 'cancel' },
-      {
-        text: mode.preview ? t('End test') : t('Full app'),
-        onPress: () => {
-          haptic.select();
-          leave();
-        },
-      },
-    ]);
 
   return (
     <View style={styles.root}>
@@ -136,16 +124,45 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
           />
           <Action label={t('Full lineup')} onPress={() => router.push(`/festival/${festival.id}`)} />
         </View>
+        {/* Getting there: the site on the phone's maps app. */}
+        {festival.place || festival.location ? (
+          <View style={styles.actions}>
+            <Action
+              label={t('Directions')}
+              a11y={t('Directions to {place}. Opens your maps app.', { place: festival.location || festival.name })}
+              onPress={() => void Linking.openURL(directionsUrl({ place: festival.place, name: [festival.name, festival.location].filter(Boolean).join(', ') }, Platform.OS)).catch(() => {})}
+            />
+          </View>
+        ) : null}
         <Text style={styles.footnote}>{t('Your plan and the lineup work without signal.')}</Text>
-        <Pressable onPress={askLeave} accessibilityRole="button" accessibilityLabel={mode.preview ? t('End the festival mode test') : t('Leave festival mode for the full app')} hitSlop={8}>
-          <Text style={styles.leave}>{mode.preview ? t('End the test') : t('Back to the full app')}</Text>
-        </Pressable>
+        <LeaveLink mode={mode} />
       </ScrollView>
     </View>
   );
 }
 
-function Action({ label, onPress }: { label: string; onPress: () => void }) {
+/** Back to the full app (or the end of a test), after asking. */
+export function LeaveLink({ mode }: { mode: ModeNow }) {
+  const { leave } = useFestivalMode();
+  const askLeave = () =>
+    showAlert(mode.preview ? t('End the test?') : t('Back to the full app?'), mode.preview ? undefined : t('Festival mode comes back if you switch it on from Tonight.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: mode.preview ? t('End test') : t('Full app'),
+        onPress: () => {
+          haptic.select();
+          leave();
+        },
+      },
+    ]);
+  return (
+    <Pressable onPress={askLeave} accessibilityRole="button" accessibilityLabel={mode.preview ? t('End the festival mode test') : t('Leave festival mode for the full app')} hitSlop={8}>
+      <Text style={styles.leave}>{mode.preview ? t('End the test') : t('Back to the full app')}</Text>
+    </Pressable>
+  );
+}
+
+export function Action({ label, onPress, a11y }: { label: string; onPress: () => void; a11y?: string }) {
   return (
     <Pressable
       onPress={() => {
@@ -153,6 +170,7 @@ function Action({ label, onPress }: { label: string; onPress: () => void }) {
         onPress();
       }}
       accessibilityRole="button"
+      accessibilityLabel={a11y}
       style={({ pressed }) => [styles.action, pressed && styles.pressed]}
     >
       <Text style={styles.actionText} numberOfLines={1}>

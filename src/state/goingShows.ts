@@ -39,6 +39,8 @@ export function forgetGoingShows() {
   loading = undefined;
 }
 
+const NONE: GoingShow[] = [];
+
 export function useGoingShows(): { shows: GoingShow[]; isGoing: (id: string) => boolean; setGoing: (show: Show, on: boolean) => void; ready: boolean } {
   const [, bump] = useState(0);
   useEffect(() => {
@@ -49,7 +51,7 @@ export function useGoingShows(): { shows: GoingShow[]; isGoing: (id: string) => 
       listeners.delete(l);
     };
   }, []);
-  const shows = list ?? [];
+  const shows = list ?? NONE;
   const isGoing = useCallback((id: string) => (list ?? []).some((s) => s.id === id), []);
   return { shows, isGoing, setGoing: setGoingShow, ready: list !== undefined };
 }

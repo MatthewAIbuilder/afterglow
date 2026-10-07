@@ -30,6 +30,9 @@ import { useReactions } from '../../state/reactions';
 import { useTaste } from '../../state/taste';
 import { color, glowA, radius, space, type } from '../../theme/tokens';
 import { t, tc } from '../../i18n';
+import { TryFestivalMode } from '../../features/festivalMode/FestivalModeCard';
+import { showAsEvent } from '../../features/festivalMode/showEvent';
+import { goingShowOf } from '../../features/festivals/goingShows';
 
 /**
  * One club show from the nightly EDMTrain feed: when and where, who's on the
@@ -136,6 +139,12 @@ export default function ShowScreen() {
               <CalendarPill event={event} name={title} />
             </View>
           )}
+          {/* On the night, festival mode works for a show too: try it any day. */}
+          {over ? null : (
+            <View style={styles.tryMode}>
+              <TryFestivalMode festival={showAsEvent(goingShowOf(show), show)} />
+            </View>
+          )}
         </View>
         {/* Claimed by an event organizer on Afterglow: who's hosting it. */}
         <HostedBy show={show} />
@@ -201,6 +210,7 @@ const styles = StyleSheet.create({
   },
   ticketsText: { ...type.headline, color: color.night },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
+  tryMode: { marginTop: space.lg },
   going: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   goingOn: { backgroundColor: glowA(0.28), borderColor: glowA(0.6) },
   goingText: { ...type.label, color: color.moon },

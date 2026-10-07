@@ -16,6 +16,7 @@ import { es_profile } from './es/profile';
 import { es_profileLogic } from './es/profileLogic';
 import { es_sound } from './es/sound';
 import { es_sprouts } from './es/sprouts';
+import { es_festivalMode } from './es/festivalMode';
 
 /**
  * Spanish, keyed by the English line exactly as it's written in the code
@@ -38,6 +39,7 @@ export const es: Dictionary = {
   ...es_artist,
   ...es_memories,
   ...es_play,
+  ...es_festivalMode,
   ...es_sprouts,
   ...es_care,
   ...es_festivalsMore,

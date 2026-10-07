@@ -16,7 +16,10 @@ import { sharedAsMemory } from '../features/memories/webVideo';
 import { momentLine } from '../features/memories/organize';
 import { PastPicker } from '../features/memories/PastPicker';
 import { ShowPicker } from '../features/memories/ShowPicker';
-import { showBill, showLabel, type ShowTag } from '../features/memories/show';
+import { goingShowTag, showBill, showLabel, showTagOf, type ShowTag } from '../features/memories/show';
+import { nightDate, showIdOf } from '../features/festivalMode/showEvent';
+import { useTonight } from '../features/tonight/useTonight';
+import { useGoingShows } from '../state/goingShows';
 import { TrimBar } from '../features/memories/TrimBar';
 import { allArtists, B2B_MAX, b2bLine } from '../features/memories/b2b';
 import { TagPeople } from '../features/social/TagPeople';
@@ -142,8 +145,23 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const [past, setPast] = useState<PastEvent | undefined>(existing?.past);
   // Filmed a while ago, at nothing on Afterglow: open on finding the past festival.
   const [pickingPast, setPickingPast] = useState(() => !retagging && !guesses.length && whenMs !== undefined && Date.now() - whenMs > OLD_VIDEO_MS);
-  // A one-night show (a club night or concert) instead of a festival.
-  const [show, setShow] = useState<ShowTag | undefined>(existing?.show);
+  // A one-night show (a club night or concert) instead of a festival. Filmed tonight at the show you're going to: tagged with it from the start.
+  const tonight = useTonight();
+  const { shows: goingShows } = useGoingShows();
+  const tonightShowId = showIdOf(tonight?.festival.id);
+  const tonightShow = useMemo(() => {
+    if (!tonightShowId) return undefined;
+    const live = catalog.shows.find((x) => x.id === tonightShowId);
+    const mine = goingShows.find((x) => x.id === tonightShowId);
+    return live ? showTagOf(live) : mine ? goingShowTag(mine) : undefined;
+  }, [tonightShowId, catalog.shows, goingShows]);
+  const [show, setShow] = useState<ShowTag | undefined>(
+    () =>
+      existing?.show ??
+      (!retagging && !existing?.festivalId && !festivalSure && tonightShow && whenMs !== undefined && Number.isFinite(whenMs) && nightDate(new Date(whenMs)) === tonightShow.date
+        ? tonightShow
+        : undefined),
+  );
   const [pickingShow, setPickingShow] = useState(false);
   const festival = festivalId ? catalog.festival(festivalId) : undefined;
   const guessedHere = guesses.find((g) => g.festival.id === festivalId);

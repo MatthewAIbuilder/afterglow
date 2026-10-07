@@ -60,6 +60,7 @@ import { commentCaption } from '../social/copy';
 import { t } from '../../i18n';
 import { shownClipTitle } from '../community/clips';
 import { OrgWatermark } from '../organizers/OrgWatermark';
+import { eventPath } from '../festivalMode/showEvent';
 
 type Props = {
   clip: Clip;
@@ -371,7 +372,7 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
       <Pressable
         onPress={() => {
           haptic.select();
-          router.push(`/festival/${context.id}`);
+          router.push(eventPath(context));
         }}
         accessibilityRole="button"
         accessibilityLabel={mustSee ? t('{set} at {festival}, one of your must sees. Opens the festival.', { set: meta, festival: context.name }) : t('{set} at {festival}. Opens the festival.', { set: meta, festival: context.name })}

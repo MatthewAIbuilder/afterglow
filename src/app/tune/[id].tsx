@@ -32,6 +32,8 @@ import { lineupDays, playsOn } from '../../features/festivals/days';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { dayWord, t, tn } from '../../i18n';
+import { useEventLookup } from '../../features/festivalMode/useEvent';
+import { eventPath, isShowEvent } from '../../features/festivalMode/showEvent';
 
 type Answer = Rating | 'unsure';
 
@@ -65,7 +67,8 @@ export default function TuneScreen() {
   const catalog = useCatalog();
   // Your weekend of a two-weekend festival: only the acts playing it.
   const { forYou } = useWeekends();
-  const whole = catalog.festival(id);
+  // A festival, or a one-night show's bill (`show:<id>`).
+  const whole = useEventLookup()(id);
   const festival = whole && forYou(whole);
   const { ratings, rate } = useRatings();
   const { taste, informed, similarity } = useTaste();
@@ -303,12 +306,13 @@ export default function TuneScreen() {
         ) : (
           <>
             <Pressable
-              onPress={() => (after === 'festival' ? router.replace(`/festival/${festival.id}`) : goBack())}
+              onPress={() => (after === 'festival' ? router.replace(eventPath(festival)) : goBack())}
               accessibilityRole="button"
               style={({ pressed }) => [styles.choice, styles.love, styles.wide, pressed && styles.pressed]}
             >
-              <Text style={[styles.choiceText, { color: color.moon }]}>{t('See your festival')}</Text>
+              <Text style={[styles.choiceText, { color: color.moon }]}>{isShowEvent(festival) ? t('Done') : t('See your festival')}</Text>
             </Pressable>
+            {isShowEvent(festival) ? null : (
             <Pressable
               onPress={() => {
                 haptic.select();
@@ -321,6 +325,7 @@ export default function TuneScreen() {
             >
               <Text style={styles.unsureText}>{t('See it on My Sound')}</Text>
             </Pressable>
+            )}
           </>
         )}
       </View>

@@ -433,7 +433,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       return [...memories.values()].filter((m) => m.uid === uid).sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
     },
     async festivalMemories(festivalId, max) {
-      return [...memories.values()].filter((m) => m.festivalId === festivalId || m.past?.seriesId === festivalId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
+      return [...memories.values()].filter((m) => m.festivalId === festivalId || m.past?.seriesId === festivalId || (!!m.show?.showId && festivalId === `show:${m.show.showId}`)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
     async artistMemories(artistId, max) {
       return [...memories.values()].filter((m) => m.artistId === artistId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);

@@ -3,7 +3,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PersonAvatar } from '../../components/PersonAvatar';
 import { haptic } from '../../lib/haptics';
-import { useCatalog } from '../../state/catalog';
 import { useCrewChat } from '../../state/crewChat';
 import { useCrews } from '../../state/crews';
 import { useCrewUpdates } from '../../state/crewUpdates';
@@ -16,6 +15,7 @@ import { CrewOrb } from './CrewOrb';
 import { chatTime } from './orbit';
 import { SectionHeader } from './SectionHeader';
 import { t } from '../../i18n';
+import { useEventLookup } from '../festivalMode/useEvent';
 
 /** Chats shown before "Show all". */
 const SHOWN = 5;
@@ -36,7 +36,7 @@ export function MessagesList({ skipCrews = [], directOnly = false }: { skipCrews
   const me = social.user?.uid;
   const chat = useCrewChat();
   const { crews } = useCrews();
-  const { festival } = useCatalog();
+  const festival = useEventLookup();
   const [all, setAll] = useState(false);
   const { profileOf: crewProfileOf } = useCrewUpdates();
   const now = useNow();

@@ -3,13 +3,16 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Festival } from '../data/models';
 import { cleanMode, festivalMode, leave as leaveMode, type ModeNow, type ModeSaved, NO_MODE, withChoice, withPreview } from '../features/festivalMode/mode';
 import { useTonight } from '../features/tonight/useTonight';
+import { showIdOf } from '../features/festivalMode/showEvent';
+import { useEventLookup } from '../features/festivalMode/useEvent';
 import { useNow } from '../lib/useNow';
 import { useCatalog } from './catalog';
 import { useWeekends } from './weekends';
 
 /**
- * Festival mode: a simpler app while you're at a festival (Discover with
- * videos filmed there, tonight's plan, the camera in the middle, friends).
+ * Festival mode: a simpler app while you're at a festival or a one-night
+ * show (Discover with videos filmed there, tonight's plan or the bill, the
+ * camera in the middle, friends).
  * Your answers are kept on this phone (AsyncStorage `festivalMode.v1`).
  */
 type Ctx = {
@@ -57,7 +60,14 @@ export function FestivalModeProvider({ children }: { children: ReactNode }) {
 
   // Checked every minute, so a preview also ends on time.
   const minute = Math.floor(useNow().getTime() / 60_000) * 60_000;
-  const festivals = useMemo(() => catalog.festivals.map(forYou), [catalog.festivals, forYou]);
+  // A test may be for a one-night show (`show:<id>`): found among the shows you're going to, else the catalogue's.
+  const eventOf = useEventLookup();
+  const previewId = saved.preview?.festivalId;
+  const festivals = useMemo(() => {
+    const list = catalog.festivals.map(forYou);
+    const show = previewId && showIdOf(previewId) ? eventOf(previewId) : undefined;
+    return show ? [...list, show] : list;
+  }, [catalog.festivals, forYou, previewId, eventOf]);
   const mode = useMemo(() => (hydrated ? festivalMode(saved, tonight, festivals, minute) : {}), [hydrated, saved, tonight, festivals, minute]);
   const active = mode.active;
 

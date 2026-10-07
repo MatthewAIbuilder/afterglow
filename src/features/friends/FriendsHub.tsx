@@ -48,6 +48,7 @@ import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA, glowDeepA } from '../../theme/tokens';
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 import { t } from '../../i18n';
+import { useEventLookup } from '../festivalMode/useEvent';
 
 /** How many of your festivals are asked who else is going. */
 const GOER_FESTIVALS = 3;
@@ -64,6 +65,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
   const social = useSocial();
   const me = social.profile;
   const catalog = useCatalog();
+  const eventOf = useEventLookup();
   const today = useToday();
   const { crews, crewsAt, confirmed: crewsConfirmed, keptAt: crewsKeptAt } = useCrews();
   const { stories, profileOf, ready: updatesReady } = useCrewUpdates();
@@ -131,7 +133,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
   const crewsSection = me ? (
     <Section title={t('Crews')}>
       {crews.map((c) => {
-        const festival = catalog.festival(c.festivalId);
+        const festival = eventOf(c.festivalId);
         const news = stories.find((s) => s.updates.some((u) => u.crewId === c.id));
         const who = news ? profileOf(news.uid) : undefined;
         const artist = news?.latest.artistId ? catalog.artist(news.latest.artistId)?.name : undefined;
