@@ -15,7 +15,7 @@ describe('kandi', () => {
     const k = kandiFrom('k1', { from: 'a', to: 'b', word: 'plur', beads: 'neon', note: 'x'.repeat(200), createdAt: '2026-10-06T10:00:00.000Z' });
     expect(k).toMatchObject({ id: 'k1', word: 'PLUR', beads: 'neon' });
     expect(k?.note).toHaveLength(NOTE_MAX);
-    expect(kandiFrom('k2', { from: 'a', to: 'b', word: 'plur', beads: 'gold' })).toBeUndefined();
+    expect(kandiFrom('k2', { from: 'a', to: 'b', word: 'plur', beads: 'chrome' })).toBeUndefined();
     expect(kandiFrom('k3', { from: 'a', to: 'b', word: '~~', beads: 'neon' })).toBeUndefined();
   });
 

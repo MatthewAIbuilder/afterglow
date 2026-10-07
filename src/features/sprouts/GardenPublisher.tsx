@@ -23,7 +23,7 @@ export function GardenPublisher() {
   const list = useMemo(() => publicGarden(sprouts.garden, sprouts.artists, (id) => catalog.artist(id)?.name), [sprouts.garden, sprouts.artists, catalog]);
   // Kandi hanging in your garden: the word, beads and who made it.
   const { shown: kandi } = useKandi();
-  const key = sprouts.gardenShown ? `${gardenKey(list)}#${kandi.map((k) => `${k.word}${k.beads}${k.from ?? ''}`).join('|')}` : 'hidden';
+  const key = sprouts.gardenShown ? `${gardenKey(list)}#${kandi.map((k) => `${k.word}${k.beads}${k.charm ?? ''}${k.from ?? ''}`).join('|')}` : 'hidden';
   const listRef = useRef(list);
   const kandiRef = useRef(kandi);
   useEffect(() => {

@@ -929,9 +929,14 @@ await t('kandi: made as yourself for someone else with a profile who hasn’t bl
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k5'), k({ to: 'uidNobody' })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k6'), k({ word: 'plur' })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k7'), k({ word: 'THIRTEEN CHARS' })));
-  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k8'), k({ beads: 'gold' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k8'), k({ beads: 'chrome' })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k9'), k({ note: 'x'.repeat(141) })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k10'), k({ extra: 1 })));
+  // New beads and charms.
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'k11'), k({ beads: 'galaxy', charm: 'alien' })));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'k12'), k({ beads: 'glow' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k13'), k({ charm: 'skull' })));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'open9'), { from: 'uidKa', word: 'HI', beads: 'gold', charm: 'moon', createdAt: now }));
   await assertSucceeds(getDoc(doc(L.firestore(), 'kandi', 'k1')));
   await assertFails(getDoc(doc(M.firestore(), 'kandi', 'k1')));
   await assertSucceeds(getDocs(query(collection(L.firestore(), 'kandi'), where('to', '==', 'uidKb'))));

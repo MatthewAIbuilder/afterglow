@@ -85,7 +85,7 @@ export default function GardenVisitScreen() {
             <GardenScene residents={residents} account={`visit:${uid}`} width={Math.min(CONTENT_MAX, windowWidth) - 2 * space.xl} focused={focused} ready visiting onOpen={() => {}} />
           </>
         )}
-        <KandiLine items={kandi.map((k, i) => ({ key: String(i), word: k.word, beads: k.beads, from: k.from }))} />
+        <KandiLine items={kandi.map((k, i) => ({ key: String(i), word: k.word, beads: k.beads, charm: k.charm, from: k.from }))} />
         {signedIn && uid && uid !== social.user?.uid && visit !== null ? (
           <Pressable
             onPress={() => {

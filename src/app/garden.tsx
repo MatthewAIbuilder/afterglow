@@ -211,7 +211,7 @@ export default function GardenScreen() {
         />
         <Text style={styles.hint}>{GROW_TIPS[0]} {t('Sprouts you give help yours grow too.')} {t('Hold one to move it.')}</Text>
         {/* Kandi friends left here. */}
-        <KandiLine items={kandi.received.map((k) => ({ key: k.id, word: k.word, beads: k.beads, from: k.fromHandle }))} onOpen={(id) => setOpenKandi(kandi.received.find((k) => k.id === id))} />
+        <KandiLine items={kandi.received.map((k) => ({ key: k.id, word: k.word, beads: k.beads, charm: k.charm, from: k.fromHandle }))} onOpen={(id) => setOpenKandi(kandi.received.find((k) => k.id === id))} />
         {social.profile ? (
           <View style={styles.showRow}>
             <View style={{ flex: 1 }}>
@@ -314,11 +314,25 @@ function KandiSheet({ kandi: k, onClose, onRemove }: { kandi?: ReceivedKandi; on
       <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
         {k ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
-            <KandiBracelet word={k.word} beads={k.beads} size={220} label={t('A kandi bracelet spelling {word}', { word: k.word })} />
+            <KandiBracelet word={k.word} beads={k.beads} charm={k.charm} size={220} label={t('A kandi bracelet spelling {word}', { word: k.word })} />
             <Text style={styles.sub}>
               {k.fromHandle ? t('from {name}', { name: `@${k.fromHandle}` }) : t('from someone')} · {day(Date.parse(k.createdAt))}
             </Text>
             {k.note ? <Text style={styles.note}>“{k.note}”</Text> : null}
+            {k.fromHandle ? (
+              <Pressable
+                onPress={() => {
+                  haptic.tap();
+                  onClose();
+                  router.push({ pathname: '/kandi-make', params: { uid: k.from, name: k.fromName ?? k.fromHandle, handle: k.fromHandle } });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('Make kandi back for @{handle}', { handle: k.fromHandle })}
+                style={({ pressed }) => [styles.kandi, styles.sheetClose, pressed && styles.pressed]}
+              >
+                <Text style={styles.primaryText}>{t('Make one back')}</Text>
+              </Pressable>
+            ) : null}
             <Pressable onPress={onClose} accessibilityRole="button" style={({ pressed }) => [styles.secondary, styles.sheetClose, pressed && styles.pressed]}>
               <Text style={styles.secondaryText}>{t('Done')}</Text>
             </Pressable>

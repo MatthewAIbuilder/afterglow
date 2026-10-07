@@ -84,7 +84,7 @@ export default function KandiCodeScreen() {
         </Text>
         {from ? <Text style={styles.from}>{t('from {name}', { name: from })}</Text> : null}
         <View style={styles.preview}>
-          <KandiBracelet word={word} beads={beads} size={240} label={t('A kandi bracelet spelling {word}', { word })} />
+          <KandiBracelet word={word} beads={beads} charm={k?.charm} size={240} label={t('A kandi bracelet spelling {word}', { word })} />
           {state.at === 'got' && state.now ? <ConfettiBurst spread={160} /> : null}
         </View>
         {!signedIn ? (

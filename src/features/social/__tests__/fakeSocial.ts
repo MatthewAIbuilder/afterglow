@@ -5,7 +5,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
 import { cleanPublicGarden, type PublicResident } from '../../sprouts/publicGarden';
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
-import { cleanNote, cleanPublicKandi, cleanWord, isPattern, KANDI_ID, type Kandi, type PublicKandi } from '../../kandi/kandi';
+import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, type Kandi, type PublicKandi } from '../../kandi/kandi';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -1152,7 +1152,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!profiles.has(u.uid)) throw new SocialError('no-profile');
       if (!word || !isPattern(input.beads) || input.to === u.uid || !profiles.has(input.to) || (blocks.get(input.to) ?? []).includes(u.uid)) throw new SocialError('unknown');
       const note = cleanNote(input.note);
-      const k: Kandi = { id: `k${kandi.size + 1}`, from: u.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() };
+      const k: Kandi = { id: `k${kandi.size + 1}`, from: u.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), ...(isCharm(input.charm) ? { charm: input.charm } : {}), createdAt: now() };
       kandi.set(k.id, k);
       return k;
     },
@@ -1168,7 +1168,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         throw new SocialError('unknown');
       }
       const note = cleanNote(input.note);
-      kandi.set(input.id, { id: input.id, from: u.uid, to: '', word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() });
+      kandi.set(input.id, { id: input.id, from: u.uid, to: '', word, beads: input.beads, ...(note ? { note } : {}), ...(isCharm(input.charm) ? { charm: input.charm } : {}), createdAt: now() });
     },
     async kandiById(id) {
       if (network.down) throw new SocialError('network');

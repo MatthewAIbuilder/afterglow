@@ -531,14 +531,15 @@ service cloud.firestore {
       allow get: if signedIn() && (resource.data.from == me() || resource.data.get('to', '') == me() || !('to' in resource.data));
       allow list: if signedIn() && (resource.data.from == me() || resource.data.to == me());
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['from', 'to', 'word', 'beads', 'note', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['from', 'to', 'word', 'beads', 'note', 'charm', 'createdAt'])
         && request.resource.data.from == me()
         && (!('to' in request.resource.data)
           || (request.resource.data.to is string && request.resource.data.to != me()
             && exists(path('profiles', request.resource.data.to))
             && !hasBlocked(request.resource.data.to, me())))
         && request.resource.data.word is string && request.resource.data.word.matches('^[A-Z0-9 ♥★✿☺!?&+.]{1,12}$')
-        && request.resource.data.beads in ['rainbow', 'pastel', 'neon', 'uv', 'sunset', 'ocean', 'mono', 'candy']
+        && request.resource.data.beads in ['rainbow', 'pastel', 'neon', 'uv', 'sunset', 'ocean', 'mono', 'candy', 'glow', 'galaxy', 'pride', 'gold', 'fire']
+        && (!('charm' in request.resource.data) || request.resource.data.charm in ['heart', 'star', 'alien', 'mushroom', 'smiley', 'moon'])
         && shortOrAbsent(request.resource.data, 'note', 140)
         && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40
         && exists(path('profiles', me()));

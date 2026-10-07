@@ -18,7 +18,7 @@ import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
 import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden';
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
-import { cleanNote, cleanPublicKandi, cleanWord, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
+import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
@@ -1357,8 +1357,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const note = cleanNote(input.note);
         if (!word || !isPattern(input.beads) || input.to === user.uid) throw new SocialError('unknown');
         const ref = doc(collection(fb().db, 'kandi'));
-        await withTimeout(setDoc(ref, { from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
-        return { id: ref.id, from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() };
+        const charm = isCharm(input.charm) ? { charm: input.charm } : {};
+        await withTimeout(setDoc(ref, { from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), ...charm, createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
+        return { id: ref.id, from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), ...charm, createdAt: now() };
       }),
     leaveOpenKandi: (input) =>
       guard(async () => {
@@ -1368,7 +1369,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!KANDI_ID.test(input.id) || !word || !isPattern(input.beads)) throw new SocialError('unknown');
         const ref = doc(fb().db, 'kandi', input.id);
         try {
-          await withTimeout(setDoc(ref, { from: user.uid, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
+          await withTimeout(setDoc(ref, { from: user.uid, word, beads: input.beads, ...(note ? { note } : {}), ...(isCharm(input.charm) ? { charm: input.charm } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
         } catch (e) {
           // Sent before and the answer was lost: it's there and it's yours.
           if (asSocialError(e).kind !== 'network' && kandiFrom(input.id, (await getDoc(ref).catch(() => null))?.data())?.from === user.uid) return;
