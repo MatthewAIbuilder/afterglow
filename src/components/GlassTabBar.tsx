@@ -313,7 +313,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     gap: 2,
   },
-  glider: { position: 'absolute', top: 6, bottom: 6, left: 6, borderRadius: radius.pill, backgroundColor: glowA(0.14) },
+  // A lens of lit glass: the glow, light along its top edge.
+  glider: { position: 'absolute', top: 6, bottom: 6, left: 6, borderRadius: radius.pill, backgroundColor: glowA(0.14), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.22), borderTopColor: color.rim },
   label: { ...type.caption, fontSize: 11 },
   newsDot: { position: 'absolute', top: -1, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow, borderWidth: 1.5, borderColor: color.night },
   test: {
