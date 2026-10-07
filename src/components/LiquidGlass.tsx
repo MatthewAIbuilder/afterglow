@@ -39,7 +39,8 @@ export function GlassFill({ radius, lit, interactive, tint = 0.4, hue, deep }: {
   if (nativeGlass()) {
     return (
       <GlassView
-        pointerEvents="none"
+        // A button's glass takes the touch too (it shimmers under the finger); the press still reaches the button around it.
+        pointerEvents={interactive ? 'auto' : 'none'}
         glassEffectStyle="regular"
         colorScheme="dark"
         isInteractive={interactive}
