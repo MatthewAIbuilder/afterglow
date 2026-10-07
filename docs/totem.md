@@ -6,7 +6,7 @@ The totem turns a tablet into a glowing Afterglow screen for a festival. It show
 
 1. **Make the stickers.** On a computer, open Afterglow HQ → **Stickers**.
    - The quickest way is the **festival places kit**. Type a hunt name, like "Lost Lands 2027". Add an end date if you want one, then press **Make the festival places kit**.
-   - That makes one sticker for each place: the Portal potty, Refill (water), Charger, Care tent, Food truck, Lost and found, Pick-up point, Silent disco, Shuttle, Hammock, Main stage, Campfire and Tent.
+   - That makes one sticker for each place: the Gates, Portal potty, Refill (water), Charger, Care tent, Food truck, Lost and found, Pick-up point, Silent disco, Shuttle, Hammock, Main stage, Campfire, Tent and Merch tee.
    - You can also make single stickers yourself.
 2. **Print them** (optional, for the real stickers you put up around the grounds). Press **Print all** next to the hunt and choose **Save as PDF** for a sticker printer.
    - Each one says what to do there, like "Scan to open the portal" on the porta potty ones.
