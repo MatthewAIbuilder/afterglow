@@ -23,6 +23,8 @@ const arm = (base: number, from: number, to: number, twist: number) =>
  */
 export function PortalSwirl({ size, colors, open = true }: { size: number; colors: { glow: string; accent: string; light: string; deep: string }; open?: boolean }) {
   const reduce = useReducedMotion();
+  // Big portals keep fine lines (strokes are drawn in a 100-wide box).
+  const w = Math.min(1, Math.sqrt(300 / size));
   const well = `portal-well-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const turn = useSharedValue(0);
   const scale = useSharedValue(reduce || open ? 1 : 0.35);
@@ -61,27 +63,27 @@ export function PortalSwirl({ size, colors, open = true }: { size: number; color
           <Circle cx={50} cy={50} r={50} fill={`url(#${well})`} />
           <G opacity={0.75}>
             {Array.from({ length: ARMS }, (_, i) => (
-              <Path key={i} d={arm((i * 2 * Math.PI) / ARMS, 6, 46, 3.6)} stroke={i % 2 ? colors.light : colors.accent} strokeWidth={i % 2 ? 0.7 : 1.3} strokeLinecap="round" fill="none" opacity={0.55 + (i % 2) * 0.2} />
+              <Path key={i} d={arm((i * 2 * Math.PI) / ARMS, 6, 46, 3.6)} stroke={i % 2 ? colors.light : colors.accent} strokeWidth={(i % 2 ? 0.7 : 1.3) * w} strokeLinecap="round" fill="none" opacity={0.55 + (i % 2) * 0.2} />
             ))}
           </G>
           {/* Motes caught in it. */}
           {Array.from({ length: 10 }, (_, i) => {
             const a = i * 2.4;
             const r = 14 + ((i * 7) % 30);
-            return <Circle key={`m${i}`} cx={50 + Math.cos(a) * r} cy={50 + Math.sin(a) * r} r={0.9 + (i % 3) * 0.4} fill={colors.light} opacity={0.8} />;
+            return <Circle key={`m${i}`} cx={50 + Math.cos(a) * r} cy={50 + Math.sin(a) * r} r={(0.9 + (i % 3) * 0.4) * w} fill={colors.light} opacity={0.8} />;
           })}
         </Svg>
       </Animated.View>
       <Animated.View style={[styles.layer, box, inner]}>
         <Svg width={size} height={size} viewBox="0 0 100 100">
           {Array.from({ length: 3 }, (_, i) => (
-            <Path key={i} d={arm((i * 2 * Math.PI) / 3, 4, 44, 4.4)} stroke={colors.accent} strokeWidth={1.2} strokeLinecap="round" fill="none" opacity={0.45} />
+            <Path key={i} d={arm((i * 2 * Math.PI) / 3, 4, 44, 4.4)} stroke={colors.accent} strokeWidth={1.2 * w} strokeLinecap="round" fill="none" opacity={0.45} />
           ))}
         </Svg>
       </Animated.View>
       <Animated.View style={[styles.layer, box, burst]}>
         <Svg width={size} height={size} viewBox="0 0 100 100">
-          <Circle cx={50} cy={50} r={44} stroke={colors.light} strokeWidth={2} fill="none" />
+          <Circle cx={50} cy={50} r={44} stroke={colors.light} strokeWidth={2 * w} fill="none" />
           <Circle cx={50} cy={50} r={30} fill={colors.accent} opacity={0.4} />
         </Svg>
       </Animated.View>

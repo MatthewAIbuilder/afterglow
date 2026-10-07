@@ -3,7 +3,7 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, useReducedMotion, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, useReducedMotion, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfettiBurst } from '../components/ConfettiBurst';
 import { NightSky } from '../components/NightSky';
@@ -235,6 +235,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
     };
   }, [showing, service]);
   const claimed = claims && claims.code === showing && claims.n > 0 ? claims : undefined;
+  const portal = sticker?.creature === 'portapotty';
   const sinceStart = Object.values(session).reduce((n, c) => n + Math.max(0, c.last - c.first), 0);
   useEffect(() => {
     if (controls === undefined) return;
@@ -276,7 +277,9 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
 
       {popup && sticker ? (
         <Animated.View key={`${popup.code}${popup.index}`} entering={reduce ? undefined : FadeIn.duration(500)} exiting={reduce ? undefined : FadeOut.duration(400)} style={styles.popScrim} pointerEvents="box-none">
-          <Animated.View entering={reduce ? undefined : SlideInDown.springify().damping(16)} exiting={reduce ? undefined : SlideOutDown.duration(400)} style={[styles.popCard, landscape ? styles.popRow : null, { width: Math.min(width - 2 * space.xl, landscape ? 900 : 560) }]}>
+          {/* The Portal potty comes through a portal that opens across the screen. */}
+          {portal ? <PortalSwirl size={Math.round(Math.max(width, height) * 1.1)} colors={lookOf(sticker.creature).palette} /> : null}
+          <Animated.View entering={reduce ? undefined : portal ? ZoomIn.delay(250).springify().damping(13) : SlideInDown.springify().damping(16)} exiting={reduce ? undefined : portal ? ZoomOut.duration(400) : SlideOutDown.duration(400)} style={[styles.popCard, landscape ? styles.popRow : null, { width: Math.min(width - 2 * space.xl, landscape ? 900 : 560) }]}>
             <View style={styles.popSide}>
               <Text style={styles.popKicker}>{t('FREE COLLECTIBLE · SCAN TO CLAIM')}</Text>
               <View>
