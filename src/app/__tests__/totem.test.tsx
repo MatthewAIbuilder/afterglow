@@ -80,6 +80,21 @@ describe('the totem', () => {
     expect(app.getByText('Start the totem')).toBeTruthy();
   }, 30000);
 
+  it('puts a whole hunt on the totem in one tap', async () => {
+    mockSocial.verified.add(SUPPORT);
+    await s().signUp(SUPPORT, 'password123');
+    const hunt = await s().addHunt({ id: 'lostlands27', name: 'Lost Lands 2027' });
+    await s().addSticker({ code: 'potty00001', name: 'Portal potty · Lost Lands', creature: 'portapotty', huntId: hunt.id });
+    await s().addSticker({ code: 'water00001', name: 'Refill · Lost Lands', creature: 'refill', huntId: hunt.id });
+    const app = await renderApp('/');
+    await flush();
+    await act(async () => router.push('/totem'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Use every sticker in Lost Lands 2027'));
+    await flush();
+    expect(JSON.parse((await AsyncStorage.getItem('totem.v1'))!).codes).toEqual(['potty00001', 'water00001']);
+  }, 30000);
+
   it('is HQ’s only', async () => {
     await s().signUp('maya@example.com', 'password123');
     const app = await renderApp('/totem');

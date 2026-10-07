@@ -12,7 +12,7 @@ import { isSupportAccount } from '../features/admin/admin';
 import { cleanTotem, DEFAULT_TOTEM, TOTEM_CODES_MAX, TOTEM_EVERY, TOTEM_SHOW, TOTEM_SUBTITLE_MAX, clock, showFor, totemNext, totemPopup, type TotemNudge, type TotemSettings } from '../features/admin/totem';
 import { TotemOrb } from '../features/admin/TotemOrb';
 import { useScreenOn } from '../features/admin/useScreenOn';
-import { findLink, lookOf, type Sticker } from '../features/finds/finds';
+import { findLink, type Hunt, lookOf, type Sticker } from '../features/finds/finds';
 import { PortalSwirl } from '../features/finds/PortalSwirl';
 import { FriendQR } from '../features/friends/FriendQR';
 import { OrgLogo } from '../features/organizers/OrgMark';
@@ -46,6 +46,7 @@ export default function TotemScreen() {
   const [settings, setSettings] = useState<TotemSettings>(DEFAULT_TOTEM);
   const [stickers, setStickers] = useState<Sticker[]>();
   const [running, setRunning] = useState<number>();
+  const [hunts, setHunts] = useState<Hunt[]>([]);
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => setSettings(cleanTotem(raw ? JSON.parse(raw) : undefined)))
@@ -62,6 +63,10 @@ export default function TotemScreen() {
         .then((s) => live && setStickers(s))
         .catch(() => live && setStickers((cur) => cur ?? []));
     read();
+    service
+      .hunts(50)
+      .then((h) => live && setHunts(h))
+      .catch(() => {});
     // Read again now and then, so one HQ takes down drops out of a running totem.
     const timer = setInterval(read, STICKERS_POLL_MS);
     return () => {
@@ -78,15 +83,26 @@ export default function TotemScreen() {
   return running !== undefined ? (
     <TotemShow settings={settings} stickers={stickers ?? []} start={running} onStop={() => setRunning(undefined)} />
   ) : (
-    <TotemSetup settings={settings} stickers={stickers} onChange={save} onStart={(at) => setRunning(at)} />
+    <TotemSetup settings={settings} stickers={stickers} hunts={hunts} onChange={save} onStart={(at) => setRunning(at)} />
   );
 }
 
-function TotemSetup({ settings, stickers, onChange, onStart }: { settings: TotemSettings; stickers?: Sticker[]; onChange: (s: TotemSettings) => void; onStart: (at: number) => void }) {
+function TotemSetup({ settings, stickers, hunts, onChange, onStart }: { settings: TotemSettings; stickers?: Sticker[]; hunts: Hunt[]; onChange: (s: TotemSettings) => void; onStart: (at: number) => void }) {
   const insets = useSafeAreaInsets();
   const orgs = useOrgs();
   const now = useNow();
   const chosen = new Set(settings.codes);
+  // Each hunt's stickers that can still be found, in hunt order: one tap puts them all on the totem.
+  const huntSets = hunts
+    .map((h) => ({
+      id: h.id,
+      name: h.name,
+      codes: (stickers ?? [])
+        .filter((st) => st.huntId === h.id && st.takenDownAt === undefined && (st.until === undefined || now.getTime() < st.until))
+        .sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0))
+        .map((st) => st.code),
+    }))
+    .filter((h) => h.codes.length);
   const brands = [{ id: 'afterglow', name: 'Afterglow' }, ...orgs.map((o) => ({ id: o.id, name: o.name }))];
   return (
     <View style={styles.root}>
@@ -127,6 +143,24 @@ function TotemSetup({ settings, stickers, onChange, onStart }: { settings: Totem
         />
 
         <Text style={styles.label}>Stickers it pops up ({settings.codes.length} chosen, in this order)</Text>
+        {huntSets.length ? (
+          <View style={styles.chips}>
+            {huntSets.map((h) => (
+              <Pressable
+                key={h.id}
+                onPress={() => {
+                  haptic.select();
+                  onChange({ ...settings, codes: h.codes.slice(0, TOTEM_CODES_MAX) });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Use every sticker in ${h.name}`}
+                style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+              >
+                <Text style={styles.chipText}>{`All of ${h.name} (${h.codes.length})`}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         {stickers === undefined ? (
           <Text style={styles.body}>Loading your stickers…</Text>
         ) : !stickers.length ? (
