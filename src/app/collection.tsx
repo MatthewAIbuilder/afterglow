@@ -9,23 +9,19 @@ import { CHARMS, PATTERNS } from '../features/kandi/kandi';
 import { CharmIcon, KandiBracelet } from '../features/kandi/KandiBracelet';
 import { artistLook, shinyLook, stickerLook } from '../features/sprouts/artistLook';
 import { Collectible } from '../features/sprouts/Collectible';
-import { collection, type CollectionSet } from '../features/sprouts/collection';
+import type { CollectionSet } from '../features/sprouts/collection';
 import { Sprout } from '../features/sprouts/Sprout';
 import { SproutCard } from '../features/sprouts/CollectibleCard';
 import { HoloTilt } from '../features/sprouts/HoloTilt';
 import { DECOR } from '../features/sprouts/decor';
 import { DecorIcon } from '../features/sprouts/DecorSky';
-import { useGardenDecor } from '../features/sprouts/useGardenDecor';
 import { kindOf, type SproutKind } from '../features/sprouts/sprouts';
 import { t, tn } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
-import { useFinds } from '../state/finds';
-import { isHolo } from '../features/finds/finds';
-import { useKandi } from '../state/kandi';
 import { useSprouts } from '../state/sprouts';
+import { useMyCollection } from '../features/sprouts/useMyCollection';
 import { useSocial } from '../state/social';
-import { useCollectionSeen } from '../state/collectionSeen';
 import { StoryPreview } from '../features/sprouts/StoryShare';
 import { CollectionStory, Ring } from '../features/sprouts/CollectionStory';
 import { color, glowA, radius, space, type } from '../theme/tokens';
@@ -43,36 +39,12 @@ export default function CollectionScreen() {
   const insets = useSafeAreaInsets();
   const sprouts = useSprouts();
   const catalog = useCatalog();
-  const { finds, hydrated: findsReady } = useFinds();
-  const kandi = useKandi();
-  const decor = useGardenDecor();
   const owned = useMemo(() => new Map(sprouts.artists.map((a) => [a.artistId, a])), [sprouts.artists]);
-  const book = useMemo(
-    () =>
-      collection({
-        kinds: sprouts.collected,
-        artists: sprouts.artists,
-        catalogArtists: catalog.artists,
-        lookOf: (id) => {
-          const a = catalog.artist(id);
-          return a ? artistLook(a) : undefined;
-        },
-        stickers: new Set(finds.filter((f) => f.state === 'found').map((f) => f.creature)),
-        holo: finds.filter(isHolo).length,
-        kandi: kandi.received,
-        decor,
-      }),
-    [sprouts.collected, sprouts.artists, catalog, finds, kandi.received, decor],
-  );
+  const { book, ready: allRead, haveKeys, fresh, seen: seenList, saveSeen } = useMyCollection();
   const pct = book.total ? Math.round((book.have / book.total) * 100) : 0;
   const social = useSocial();
   const handle = social.profile?.handle;
   // What's new since you last looked (nothing, the first time); all of it counts as seen once you leave.
-  const seenStore = useCollectionSeen(social.user?.uid ?? 'guest');
-  const haveKeys = useMemo(() => book.sets.flatMap((x) => x.items.filter((i) => i.have).map((i) => `${x.id}:${i.key}`)), [book]);
-  const allRead = seenStore.ready && sprouts.hydrated && findsReady && kandi.hydrated;
-  const { seen: seenList, save: saveSeen } = seenStore;
-  const fresh = useMemo(() => new Set(allRead && seenList ? haveKeys.filter((k) => !seenList.includes(k)) : []), [allRead, seenList, haveKeys]);
   const leaving = useRef({ allRead, seenList, haveKeys, saveSeen });
   useEffect(() => {
     leaving.current = { allRead, seenList, haveKeys, saveSeen };

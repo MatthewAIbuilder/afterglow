@@ -69,6 +69,12 @@ describe('your collection', () => {
     await s.signIn('maya@example.com', 'password123');
     // Maya last looked before the kandi came: its beads and charm are new.
     await AsyncStorage.setItem('collectionSeen.v1', JSON.stringify({ [maya]: [] }));
+    // The garden says so on its way in.
+    const garden = await renderApp('/garden');
+    await flush();
+    await flush();
+    expect(garden.getByText('2 new')).toBeTruthy();
+    await garden.unmount();
     const app = await renderApp('/collection');
     await flush();
     await flush();

@@ -17,6 +17,7 @@ import { useFinds } from '../state/finds';
 import { useMyShowcase } from '../features/sprouts/useMyShowcase';
 import { useGardenGlows } from '../features/sprouts/useGardenGlows';
 import { GlowsLine } from '../features/sprouts/GlowsLine';
+import { useMyCollection } from '../features/sprouts/useMyCollection';
 import { SproutOf } from '../features/sprouts/SproutOf';
 import { ArtistSproutSheet, ArtistSproutsSection, type GivenArtistSprout } from '../features/sprouts/ArtistSproutsSection';
 import { type ArtistSprout, TIER_AT, tierLabel, toNextTier } from '../features/sprouts/artistSprouts';
@@ -26,7 +27,7 @@ import { FindsSection } from '../features/finds/FindsSection';
 import { artistLook } from '../features/sprouts/artistLook';
 import { useCatalog } from '../state/catalog';
 import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
-import { LOCALE, t } from '../i18n';
+import { LOCALE, t, tn } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
 import { useSocial } from '../state/social';
@@ -77,6 +78,8 @@ export default function GardenScreen() {
   // Decorations you've earned for its sky.
   const decor = useGardenDecor();
   const glows = useGardenGlows();
+  // What's new in Your collection since you last looked.
+  const myCollection = useMyCollection();
   const [openKandi, setOpenKandi] = useState<ReceivedKandi>();
   const [openArtist, setOpenArtist] = useState<{ artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }>();
   // The garden moves only while this screen is showing; the page doesn't scroll while something's carried.
@@ -178,6 +181,7 @@ export default function GardenScreen() {
           style={({ pressed }) => [styles.collection, pressed && styles.pressed]}
         >
           <Text style={styles.collectionText}>{t('Your collection')}</Text>
+          {myCollection.fresh.size ? <Text style={styles.collectionNew}>{tn(myCollection.fresh.size, '{n} new', '{n} new')}</Text> : null}
           <Text style={styles.collectionArrow}>›</Text>
         </Pressable>
 
@@ -522,6 +526,7 @@ function SproutSheet({ sprout, onClose: close }: { sprout?: GardenView; onClose:
 }
 
 const styles = StyleSheet.create({
+  collectionNew: { ...type.caption, fontWeight: '700', color: color.night, backgroundColor: '#FFE58A', paddingHorizontal: 6, borderRadius: radius.pill, overflow: 'hidden', marginLeft: space.xs },
   removeKandi: { ...type.label, color: color.moonDim, textAlign: 'center', marginTop: space.sm },
   showRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm },
   showTitle: { ...type.headline, color: color.moon },
