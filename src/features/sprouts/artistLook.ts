@@ -114,6 +114,9 @@ export type Creature =
   | 'lizard'
   | 'palm'
   | 'bomb'
+  | 'sippycup'
+  | 'parrot'
+  | 'twoface'
   | 'portapotty'
   | 'refill'
   | 'charger'
@@ -211,6 +214,9 @@ const SIGNATURES: Record<string, Spec> = {
   frankyrizardo: { creature: 'lizard', palette: P('#F4FFE0', '#6ACF5A', '#1E6A2A', '#C89A6A', '#6A4A2A', '#FFD36E', '#8AE87A'), name: t('The Lizard'), theme: t('A little lizard sunning itself on a warm rock') },
   denniscruz: { creature: 'palm', palette: P('#FFE8C8', '#B8865A', '#1E4A3A', '#3AA8C8', '#6A3A1A', '#FF8A4A', '#FFB86B'), name: t('The Palm'), theme: t('A palm tree on a little island at sunset') },
   madvktm: { creature: 'bomb', palette: P('#FFFFFF', '#2A2A3A', '#0E0E16', '#E8C88A', '#5A4A2A', '#FF5A2A', '#FF7A3D'), name: t('The Bomb'), theme: t('A cartoon bomb, its fuse fizzing, ready to drop') },
+  sippy: { creature: 'sippycup', palette: P('#FFFFFF', '#E8F0FF', '#5A6A9A', '#7FD3FF', '#2A4A8A', '#B6FF5A', '#9AD8FF'), name: t('The Sippy cup'), theme: t('A sippy cup full of something glowing, wobbling with the bass') },
+  sofitukker: { creature: 'parrot', palette: P('#FFFFFF', '#E8322A', '#2A1A1A', '#2A7AE8', '#123A8A', '#FFD24A', '#FF6A4A'), name: t('The Parrot'), theme: t('A bright macaw on a branch, wings of blue and gold') },
+  jkylhyde: { creature: 'twoface', palette: P('#FFF4E0', '#E8D8B8', '#5A4A3A', '#3A1E5A', '#14081E', '#FF3A5A', '#B99CFF'), name: t('The Two faces'), theme: t('Half sunny and kind, half dark with fangs') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },
