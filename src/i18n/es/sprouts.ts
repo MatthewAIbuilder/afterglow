@@ -422,6 +422,7 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'Open Afterglow': 'Abre Afterglow',
   'The Food truck': 'La Food truck',
   'Something hot from the grill between sets': 'Algo caliente de la plancha entre sets',
   'The Care tent': 'La Carpa de cuidado',

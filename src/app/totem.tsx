@@ -321,6 +321,16 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
         </View>
       </Pressable>
 
+      {/* In the corner: a code for Afterglow itself, for anyone passing. */}
+      {!popup ? (
+        <View style={[styles.appCode, { bottom: insets.bottom + space.lg }]} pointerEvents="none">
+          <View style={styles.appCodeQr}>
+            <FriendQR value={WEB_URL} size={Math.round(short * 0.13)} theme="glow" />
+          </View>
+          <Text style={styles.appCodeText}>{t('Open Afterglow')}</Text>
+        </View>
+      ) : null}
+
       {popup && sticker ? (
         <Animated.View key={`${popup.code}${popup.index}`} entering={reduce ? undefined : FadeIn.duration(500)} exiting={reduce ? undefined : FadeOut.duration(400)} style={styles.popScrim} pointerEvents="box-none">
           {/* The Portal potty comes through a portal that opens across the screen. */}
@@ -438,6 +448,9 @@ const styles = StyleSheet.create({
   next: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingLeft: space.sm, paddingRight: space.xl, paddingVertical: space.sm, borderRadius: radius.pill, borderWidth: 1, borderColor: 'rgba(255,229,138,0.35)', backgroundColor: 'rgba(255,229,138,0.06)' },
   nextKicker: { color: GOLD, fontWeight: '700', letterSpacing: 2 },
   nextTime: { color: color.moon, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  appCode: { position: 'absolute', right: space.lg, alignItems: 'center', gap: space.xs, opacity: 0.9 },
+  appCodeQr: { padding: 4, borderRadius: radius.md, backgroundColor: '#FBF9FF' },
+  appCodeText: { ...type.caption, color: color.moonDim },
   site: { color: color.moonFaint, letterSpacing: 2, textAlign: 'center' },
   popScrim: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(5,4,10,0.72)', alignItems: 'center', justifyContent: 'center' },
   popCard: { borderRadius: radius.lg * 1.5, padding: space.xl, gap: space.lg, alignItems: 'center', backgroundColor: 'rgba(24,18,44,0.96)', borderWidth: 2, borderColor: GOLD, shadowColor: GOLD, shadowOpacity: 0.6, shadowRadius: 40, shadowOffset: { width: 0, height: 0 } },
