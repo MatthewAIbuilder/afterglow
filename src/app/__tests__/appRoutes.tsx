@@ -79,6 +79,7 @@ import TuneScreen from '../tune/[id]';
 import BadgeScreen from '../badge/[id]';
 import BadgeCardScreen from '../badge-card/[id]';
 import AdminScreen from '../admin';
+import TotemScreen from '../totem';
 import SwitchAccountScreen from '../switch-account';
 import SupportScreen from '../support';
 import OrgScreen from '../org/[id]';
@@ -161,6 +162,7 @@ export const APP_ROUTES = {
   'badge/[id]': BadgeScreen,
   'badge-card/[id]': BadgeCardScreen,
   admin: AdminScreen,
+  totem: TotemScreen,
   'switch-account': SwitchAccountScreen,
   support: SupportScreen,
   'org/[id]': OrgScreen,
