@@ -105,7 +105,10 @@ export type Creature =
   | 'portapotty'
   | 'refill'
   | 'charger'
-  | 'fan';
+  | 'fan'
+  | 'silentdisco'
+  | 'shuttle'
+  | 'hammock';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -335,9 +338,12 @@ const PLACES: Record<PlaceCreature, Spec> = {
   refill: { creature: 'refill', palette: P('#E6FBFF', '#4FC3F7', '#1B5E9A', '#B8C4D0', '#4A5868', '#FF9AC8', '#6FD8FF'), name: t('The Refill'), theme: t('Fill up, drink up, keep dancing') },
   charger: { creature: 'charger', palette: P('#F0FFE6', '#7CE85A', '#2A7A1E', '#3A3F4A', '#1C2028', '#FFE36B', '#9BFF6A'), name: t('The Charger'), theme: t('Topped up and ready for the headliner') },
   fan: { creature: 'fan', palette: P('#FFF0FA', '#FF5FCB', '#7A1E6A', '#7FD3FF', '#2A4A9A', '#FFE36B', '#FF7EDB'), name: t('The Fan'), theme: t('Clacked open on the drop') },
+  silentdisco: { creature: 'silentdisco', palette: P('#E8F0FF', '#8A7AFF', '#3A2A8A', '#2A2A36', '#121218', '#5BFFB0', '#5BC8FF'), name: t('The Silent disco'), theme: t('Dancing to a song only its headphones can hear') },
+  shuttle: { creature: 'shuttle', palette: P('#FFFFFF', '#FFC23A', '#B87A10', '#2A3A5A', '#121A2A', '#FF5A7A', '#FFD36E'), name: t('The Shuttle'), theme: t('The bus that takes you to the gates and back') },
+  hammock: { creature: 'hammock', palette: P('#FFF0E0', '#7FD3B0', '#2A7A5A', '#FF8A5A', '#7A4A2A', '#FFE08A', '#7FD3B0'), name: t('The Hammock'), theme: t('Taking five in the chill zone') },
   flask: { creature: 'flask', palette: P('#F3EEFF', '#A97CFF', '#4A2E9A', '#D9B48A', '#7A5634', '#C9F7FF', '#A97CFF'), name: t('The Alchemist'), theme: t('A bubbling potion from the underground') },
 };
-export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape' | 'portapotty' | 'refill' | 'charger' | 'fan';
+export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape' | 'portapotty' | 'refill' | 'charger' | 'fan' | 'silentdisco' | 'shuttle' | 'hammock';
 export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];
 
 /** The sound creatures (no artist's identity), which stickers can use too. */

@@ -16,6 +16,9 @@ const INVITE: Record<string, string> = {
   fan: 'Scan it, then clack',
   campfire: 'Scan by the fire',
   mainstage: 'Scan before the drop',
+  silentdisco: 'Scan between songs',
+  shuttle: 'Scan while you wait for the bus',
+  hammock: 'Scan and take five',
 };
 export const stickerInvite = (creature: string) => INVITE[creature] ?? 'Scan to collect';
 

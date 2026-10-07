@@ -4064,6 +4064,141 @@ const rose: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** A sticker for the silent disco: a little blob in big headphones, their cups glowing, singing along. */
+const silentdisco: Draw = (p, f) => ({
+  ground: [50, 90, 26],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      <VE cx={50} cy={60} rx={24} ry={24} fill={p.mid} f={f} />
+      {/* The headphones: the band over its head, a cup either side, lit. */}
+      <Path d="M25 56 C25 20 75 20 75 56" stroke={p.alt} strokeWidth={5} fill="none" strokeLinecap="round" />
+      <Path d="M30 40 C36 30 64 30 70 40" stroke={p.light} strokeWidth={1} fill="none" opacity={0.35} strokeLinecap="round" />
+      <VE cx={25} cy={60} rx={8.4} ry={12.4} fill={p.alt} f={f} />
+      <VE cx={75} cy={60} rx={8.4} ry={12.4} fill={p.alt} f={f} />
+      <Ellipse cx={23.4} cy={60} rx={4} ry={8} fill={p.accent} opacity={0.85} />
+      <Ellipse cx={76.6} cy={60} rx={4} ry={8} fill={p.accent} opacity={0.85} />
+      <Circle cx={40} cy={68} r={2.4} fill={p.light} opacity={0.3} />
+      <Circle cx={60} cy={68} r={2.4} fill={p.light} opacity={0.3} />
+      {/* Singing along. */}
+      <Ellipse cx={50} cy={70} rx={3} ry={3.6} fill={p.altDeep} />
+    </G>
+  ),
+  eyes: {
+    box: [40, 54, 20, 8],
+    el: (
+      <G>
+        <VEye x={44} y={58} r={3} f={f} />
+        <VEye x={56} y={58} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* The other channel lighting up, and notes only it can hear. */}
+      <Ellipse cx={23.4} cy={60} rx={4} ry={8} fill={p.glow} />
+      <Ellipse cx={76.6} cy={60} rx={4} ry={8} fill={p.glow} />
+      <Path d="M84 30 L84 22 L89 20.6 L89 28" stroke={p.accent} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+      <Circle cx={83} cy={30} r={1.7} fill={p.accent} />
+      <Circle cx={88} cy={28.4} r={1.7} fill={p.accent} />
+      <Path d="M14 26 L14 19" stroke={p.glow} strokeWidth={1.2} strokeLinecap="round" />
+      <Circle cx={13} cy={26.4} r={1.7} fill={p.glow} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker for the shuttle stop: a festival bus head on, headlights for cheeks, its sign lit. */
+const shuttle: Draw = (p, f) => ({
+  ground: [50, 94, 30],
+  back: <Ellipse cx={50} cy={52} rx={42} ry={40} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* Wheels and mirrors, then the bus. */}
+      <V d="M26 84 L36 84 L36 90 Q36 93 33 93 L29 93 Q26 93 26 90Z" fill={p.altDeep} f={f} />
+      <V d="M64 84 L74 84 L74 90 Q74 93 71 93 L67 93 Q64 93 64 90Z" fill={p.altDeep} f={f} />
+      <Path d="M22 30 L16 30 L16 40 M78 30 L84 30 L84 40" stroke={p.altDeep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      <V d="M22 20 Q22 12 30 12 L70 12 Q78 12 78 20 L78 82 Q78 86 74 86 L26 86 Q22 86 22 82Z" fill={p.mid} f={f} gloss={[28, 30, 3, 9, 0]} />
+      {/* The sign, the windscreen, bumper and smile. */}
+      <Path d="M34 15 L66 15 Q67.4 15 67.4 16.4 L67.4 19.6 Q67.4 21 66 21 L34 21 Q32.6 21 32.6 19.6 L32.6 16.4 Q32.6 15 34 15Z" fill={p.altDeep} />
+      {[40, 45, 50, 55, 60].map((x) => (
+        <Circle key={x} cx={x} cy={18} r={1} fill={p.accent} />
+      ))}
+      <V d="M27 26 L73 26 L71 54 L29 54Z" fill={p.alt} f={f} gloss={[60, 32, 8, 1.4, -30]} />
+      <Path d="M52 52 L66 28" stroke={p.light} strokeWidth={1.4} opacity={0.18} />
+      <Path d="M30 72 L70 72 Q72 72 72 74 L72 77 Q72 79 70 79 L30 79 Q28 79 28 77 L28 74 Q28 72 30 72Z" fill={p.deep} />
+      <VE cx={31} cy={65} rx={4} ry={4} fill={p.light} f={f} />
+      <VE cx={69} cy={65} rx={4} ry={4} fill={p.light} f={f} />
+      <Path d="M42 61 Q50 67 58 61" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [37, 36, 26, 9],
+    el: (
+      <G>
+        <VEye x={43} y={40.4} r={3.4} f={f} />
+        <VEye x={57} y={40.4} r={3.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Glow x={31} y={65} r={1.6} color={p.light} />
+      <Glow x={69} y={65} r={1.6} color={p.light} />
+      {sparkles(p.accent, [
+        [12, 16, 1.8],
+        [90, 60, 1.5],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker for the chill zone: a sleepy blob in a striped hammock between two posts. */
+const hammock: Draw = (p, f) => ({
+  ground: [50, 92, 38],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={54} rx={42} ry={36} fill={p.glow} opacity={0.14} />
+      {/* The posts and ropes. */}
+      <Path d="M14 36 L15 92 M86 36 L85 92" stroke={p.altDeep} strokeWidth={3.4} strokeLinecap="round" />
+      <Path d="M14.4 42 L24 55 M85.6 42 L76 55" stroke={p.light} strokeWidth={0.9} opacity={0.7} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Lying back in it. */}
+      <VE cx={50} cy={58} rx={17} ry={11} fill={p.mid} f={f} />
+      {/* The sling, striped, over its middle. */}
+      <V d="M22 54 Q50 88 78 54 Q50 74 22 54Z" fill={p.alt} f={f} />
+      <Path d="M30 61 Q50 77 70 61 M36 66.4 Q50 77 64 66.4" stroke={p.light} strokeWidth={1.2} fill="none" opacity={0.6} />
+      <Circle cx={40.4} cy={61} r={2} fill={p.alt} opacity={0.45} />
+      <Circle cx={59.6} cy={61} r={2} fill={p.alt} opacity={0.45} />
+      <Path d="M47 62 Q50 64.4 53 62" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [41, 51, 18, 8],
+    el: (
+      <G>
+        <VEye x={45} y={55.4} r={2.6} f={f} />
+        <VEye x={55} y={55.4} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Zzz. */}
+      <Path d="M62 36 L67 36 L62 41 L67 41 M70 26 L74 26 L70 30 L74 30" stroke={p.light} strokeWidth={1.2} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity={0.8} />
+      {sparkles(p.accent, [
+        [24, 18, 1.8],
+        [80, 14, 1.5],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -5037,6 +5172,9 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  silentdisco,
+  shuttle,
+  hammock,
   croissant,
   jackbox,
   bat,
