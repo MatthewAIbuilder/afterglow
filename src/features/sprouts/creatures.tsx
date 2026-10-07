@@ -4500,6 +4500,183 @@ const caretent: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** HOL!: the Exclamation — an exclamation mark shouting with joy, its dot bouncing below. */
+const exclaim: Draw = (p, f) => ({
+  ground: [50, 90, 14],
+  back: <Ellipse cx={50} cy={48} rx={40} ry={40} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      <V d="M38 17 Q38 10 50 10 Q62 10 62 17 L58 60 Q57 65 50 65 Q43 65 42 60Z" fill={p.mid} f={f} gloss={[44, 20, 3, 6, 0]} />
+      <VE cx={50} cy={79} rx={8.4} ry={8.4} fill={p.alt} f={f} />
+      <Circle cx={42.6} cy={40} r={2} fill={p.light} opacity={0.3} />
+      <Circle cx={57.4} cy={40} r={2} fill={p.light} opacity={0.3} />
+      <Ellipse cx={50} cy={44} rx={3} ry={4} fill={p.deep} />
+    </G>
+  ),
+  eyes: {
+    box: [41, 28, 18, 8],
+    el: (
+      <G>
+        <VEye x={45} y={32} r={2.8} f={f} />
+        <VEye x={55} y={32} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* The shout. */}
+      <Path d="M30 22 L23 17 M29 32 L21 32 M30 42 L23 46 M70 22 L77 17 M71 32 L79 32 M70 42 L77 46" stroke={p.accent} strokeWidth={1.8} strokeLinecap="round" />
+      {sparkles(p.alt, [
+        [16, 62, 1.6],
+        [84, 64, 1.6],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** DISCOVERY PROJECT: the Observatory — a little observatory, its telescope out of the dome, a shooting star overhead. */
+const telescope: Draw = (p, f) => ({
+  ground: [50, 92, 38],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      {/* The telescope, out through the dome. */}
+      <V d="M47 42 L74 15 Q76 13 78 15 L81 18 Q83 20 81 22 L54 49Z" fill={p.alt} f={f} gloss={[66, 22, 6, 1.2, -45]} />
+      <Circle cx={79.6} cy={16.4} r={3.2} fill={p.accent} />
+    </G>
+  ),
+  body: (
+    <G>
+      <V d="M18 72 L82 72 L82 84 Q82 86 80 86.6 Q50 92 20 86.6 Q18 86 18 84Z" fill={p.deep} f={f} />
+      <Path d="M46 89 L46 80 Q50 76 54 80 L54 89Z" fill={p.alt} opacity={0.7} />
+      <V d="M18 72 C18 44 32 34 50 34 C68 34 82 44 82 72Z" fill={p.mid} f={f} gloss={[32, 46, 4, 9, 30]} />
+      <Path d="M45 35 L55 35 L55 44 L45 44Z" fill={p.deep} />
+      <Path d="M18 72 L82 72" stroke={p.light} strokeWidth={1} opacity={0.4} />
+      <Circle cx={36} cy={62} r={2.4} fill={p.accent} opacity={0.35} />
+      <Circle cx={64} cy={62} r={2.4} fill={p.accent} opacity={0.35} />
+      <Path d="M45 63 Q50 67 55 63" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [38, 51, 24, 9],
+    el: (
+      <G>
+        <VEye x={43} y={55.6} r={3.2} f={f} />
+        <VEye x={57} y={55.6} r={3.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Path d="M24 22 L12 16" stroke={p.light} strokeWidth={1.2} strokeLinecap="round" opacity={0.8} />
+      <Circle cx={24} cy={22} r={1.4} fill={p.light} />
+      {sparkles(p.accent, [
+        [34, 12, 1.6],
+        [88, 40, 1.4],
+        [12, 46, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** KLANGKUENSTLER: the Gear — a heavy steel cog turning, red light behind it, a face on its hub. */
+const cog: Draw = (p, f) => {
+  const teeth = Array.from({ length: 10 }, (_, i) => {
+    const a = (i / 10) * Math.PI * 2;
+    const at = (r: number, da: number) => `${r1(50 + Math.cos(a + da) * r)} ${r1(52 + Math.sin(a + da) * r)}`;
+    return `M${at(28, -0.17)} L${at(36, -0.11)} L${at(36, 0.11)} L${at(28, 0.17)}Z`;
+  }).join(' ');
+  return {
+    ground: [50, 92, 26],
+    back: <Ellipse cx={50} cy={52} rx={42} ry={40} fill={p.glow} opacity={0.18} />,
+    body: <Circle cx={50} cy={52} r={4} fill={p.deep} />,
+    spinAt: [50, 52],
+    spin: (
+      <G>
+        <Path d={teeth} fill={p.mid} />
+        <VE cx={50} cy={52} rx={30} ry={30} fill={p.mid} f={f} gloss={false} />
+        {Array.from({ length: 6 }, (_, i) => {
+          const a = (i / 6) * Math.PI * 2;
+          return <Circle key={i} cx={r1(50 + Math.cos(a) * 23)} cy={r1(52 + Math.sin(a) * 23)} r={3.4} fill={p.deep} />;
+        })}
+        <Circle cx={50} cy={52} r={17} fill={p.light} />
+        <Circle cx={50} cy={52} r={17} fill="none" stroke={p.deep} strokeWidth={1} opacity={0.5} />
+      </G>
+    ),
+    eyes: {
+      box: [40, 45, 20, 8],
+      el: (
+        <G>
+          <VEye x={44.5} y={49} r={2.8} f={f} />
+          <VEye x={55.5} y={49} r={2.8} f={f} />
+        </G>
+      ),
+    },
+    front: (
+      <G>
+        <Circle cx={41} cy={56} r={2} fill={p.accent} opacity={0.35} />
+        <Circle cx={59} cy={56} r={2} fill={p.accent} opacity={0.35} />
+        <Path d="M46 57 Q50 60.4 54 57" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+      </G>
+    ),
+    flicker: (
+      <G>
+        <Glow x={18} y={22} r={1.4} color={p.accent} />
+        <Glow x={84} y={78} r={1.2} color={p.accent} />
+        <Glow x={82} y={20} r={1} color={p.accent} />
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
+/** HAYLA: the Songbird — a round little bird mid-song on a branch, notes drifting from its beak. */
+const songbird: Draw = (p, f) => ({
+  ground: [50, 92, 24],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.15} />
+      <Path d="M12 80 Q50 74 88 80" stroke={p.altDeep} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <Path d="M76 78 Q80 70 86 70 Q82 76 76 78Z" fill={p.glow} opacity={0.5} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Tail, body, belly and wing. */}
+      <V d="M30 58 L14 50 Q12 56 16 60 L28 66Z" fill={p.deep} f={f} />
+      <VE cx={48} cy={57} rx={21} ry={19} fill={p.mid} f={f} />
+      <VE cx={50} cy={64} rx={13} ry={10} fill={p.light} f={f} gloss={false} />
+      <V d="M34 56 C38 50 48 52 50 60 C44 64 36 62 34 56Z" fill={p.deep} f={f} />
+      {/* The open beak, singing. */}
+      <V d="M66 48 L76 46 L67 51Z" fill={p.alt} f={f} />
+      <V d="M66 53 L75 56 L67 51.4Z" fill={p.altDeep} f={f} />
+      <Path d="M43 76 L42 80 M53 76 L54 80" stroke={p.alt} strokeWidth={1.4} strokeLinecap="round" />
+      <Circle cx={60} cy={56} r={2.2} fill={p.accent} opacity={0.45} />
+    </G>
+  ),
+  eyes: {
+    box: [49, 42, 18, 8],
+    el: (
+      <G>
+        <VEye x={53} y={46} r={2.6} f={f} />
+        <VEye x={62} y={46} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Path d="M80 36 L80 28 L85 26.6 L85 34" stroke={p.accent} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+      <Circle cx={79} cy={36} r={1.7} fill={p.accent} />
+      <Circle cx={84} cy={34.4} r={1.7} fill={p.accent} />
+      <Path d="M72 26 L72 20" stroke={p.alt} strokeWidth={1.2} strokeLinecap="round" />
+      <Circle cx={71} cy={26.4} r={1.6} fill={p.alt} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -5473,6 +5650,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  exclaim,
+  telescope,
+  cog,
+  songbird,
   ufo,
   nightlight,
   alleycat,
