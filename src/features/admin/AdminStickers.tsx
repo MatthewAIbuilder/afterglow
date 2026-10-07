@@ -18,7 +18,7 @@ const HQ_CREATURES = [...PLACE_CREATURES, ...SOUND_CREATURES];
 const ORG_CREATURES: string[] = ['flask', ...HQ_CREATURES.filter((c) => c !== 'flask')];
 
 /** The festival places kit: one sticker for each spot people pass, in this order. */
-export const PLACES_KIT = ['portapotty', 'refill', 'charger', 'silentdisco', 'shuttle', 'hammock', 'mainstage', 'campfire', 'tent'] as const;
+export const PLACES_KIT = ['portapotty', 'refill', 'charger', 'caretent', 'foodtruck', 'silentdisco', 'shuttle', 'hammock', 'mainstage', 'campfire', 'tent'] as const;
 
 function newCode(): string {
   try {
@@ -194,7 +194,7 @@ export function AdminStickers({ orgId }: { orgId?: string } = {}) {
         <Pressable onPress={() => void makeHunt()} disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
           <Text style={styles.secondaryText}>Make hunt</Text>
         </Pressable>
-        <Text style={styles.body}>Or make the festival places kit: this hunt with a sticker for each spot people pass (porta potties, water, charging, silent disco, the shuttle, the chill zone, the main stage, the campfire, the tents).</Text>
+        <Text style={styles.body}>Or make the festival places kit: this hunt with a sticker for each spot people pass (porta potties, water, charging, the care tent, food, silent disco, the shuttle, the chill zone, the main stage, the campfire, the tents).</Text>
         <View style={styles.kitRow}>
           {PLACES_KIT.map((c) => (
             <Collectible key={c} look={lookOf(c)} size={30} still />

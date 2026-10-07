@@ -81,10 +81,10 @@ describe('stickers', () => {
     await flush(20);
     const [hunt] = [...mockSocial.hunts.values()];
     expect(hunt.name).toBe('Lost Lands 2027');
-    expect(hunt.items.map((i) => i.creature)).toEqual(['portapotty', 'refill', 'charger', 'silentdisco', 'shuttle', 'hammock', 'mainstage', 'campfire', 'tent']);
+    expect(hunt.items.map((i) => i.creature)).toEqual(['portapotty', 'refill', 'charger', 'caretent', 'foodtruck', 'silentdisco', 'shuttle', 'hammock', 'mainstage', 'campfire', 'tent']);
     expect(hunt.items[0].name).toBe('Portal potty · Lost Lands 2027');
     expect([...mockSocial.stickers.values()].every((st) => st.huntId === hunt.id)).toBe(true);
-    expect(alert.mock.calls[0].slice(0, 2)).toEqual(['The kit is ready', expect.stringContaining('9 stickers')]);
+    expect(alert.mock.calls[0].slice(0, 2)).toEqual(['The kit is ready', expect.stringContaining('11 stickers')]);
   }, 20_000);
 
   it('opening a sticker’s code keeps it, lights it up and fills in its hunt; signing in sends it', async () => {
