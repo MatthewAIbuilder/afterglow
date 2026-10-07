@@ -123,6 +123,28 @@ export function findCardFrom(parts: { code?: unknown; c?: unknown; n?: unknown }
   return { code: parts.code, creature, name: cleanName(parts.n) || 'A sticker' };
 }
 
+/** Where a place sticker you haven't found yet tends to be (for Your collection), if it's a place. */
+export function placeHint(creature: string): string | undefined {
+  const hints: Record<string, string> = {
+    portapotty: t('Look in the porta potties.'),
+    refill: t('Look by the water.'),
+    charger: t('Look where people charge their phones.'),
+    caretent: t('Look by the care tent.'),
+    foodtruck: t('Look by the food trucks.'),
+    lostfound: t('Ask at lost and found.'),
+    pickup: t('Look at the pick-up point.'),
+    silentdisco: t('Look at the silent disco.'),
+    shuttle: t('Look at the shuttle stop.'),
+    hammock: t('Look in the chill zone.'),
+    gates: t('Look at the gates on your way in.'),
+    merch: t('Look by the merch stand.'),
+    shower: t('Look by the showers.'),
+    mainstage: t('Look by the main stage.'),
+    campfire: t('Look by the campfire.'),
+  };
+  return hints[creature];
+}
+
 /** A word from the place a sticker was found, shown when it's yours (some places only). */
 export function placeLine(creature: string): string | undefined {
   switch (creature) {

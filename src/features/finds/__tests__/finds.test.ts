@@ -10,6 +10,7 @@ import {
   findLine,
   findLink,
   fromTotemLink,
+  placeHint,
   placeLine,
   findsFor,
   findsToCheck,
@@ -47,6 +48,9 @@ describe('sticker codes', () => {
     // Some places have a word of their own.
     expect(placeLine('refill')).toBe('While you’re here: fill your bottle and have a drink.');
     expect(placeLine('ferris')).toBeUndefined();
+    // …and a hint where to look for the ones you haven't found.
+    expect(placeHint('portapotty')).toBe('Look in the porta potties.');
+    expect(placeHint('frog')).toBeUndefined();
   });
 
   it('turns down anything else', () => {

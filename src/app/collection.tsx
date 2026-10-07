@@ -8,6 +8,7 @@ import { PageTitle } from '../components/PageTitle';
 import { CHARMS, PATTERNS } from '../features/kandi/kandi';
 import { CharmIcon, KandiBracelet } from '../features/kandi/KandiBracelet';
 import { artistLook, shinyLook, stickerLook } from '../features/sprouts/artistLook';
+import { placeHint } from '../features/finds/finds';
 import { PortalSwirl } from '../features/finds/PortalSwirl';
 import { Collectible } from '../features/sprouts/Collectible';
 import type { CollectionSet } from '../features/sprouts/collection';
@@ -126,7 +127,9 @@ export default function CollectionScreen() {
                 title: look.name,
                 body: `${look.theme}.`,
               }
-            : undefined,
+            : s.id === 'stickers' && placeHint(key)
+              ? { el: <Collectible look={look} size={DETAIL} locked still />, title: t('Still out there'), body: placeHint(key)! }
+              : undefined,
         };
       }
       case 'beads': {
