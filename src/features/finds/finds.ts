@@ -123,6 +123,26 @@ export function findCardFrom(parts: { code?: unknown; c?: unknown; n?: unknown }
   return { code: parts.code, creature, name: cleanName(parts.n) || 'A sticker' };
 }
 
+/** A word from the place a sticker was found, shown when it's yours (some places only). */
+export function placeLine(creature: string): string | undefined {
+  switch (creature) {
+    case 'portapotty':
+      return t('You found the portal. Step through, then wash your hands.');
+    case 'refill':
+      return t('While you’re here: fill your bottle and have a drink.');
+    case 'charger':
+      return t('Top up your phone, and yourself: a snack, some water.');
+    case 'hammock':
+      return t('Take five. The music will still be there.');
+    case 'shuttle':
+      return t('Know which bus gets you home tonight.');
+    case 'silentdisco':
+      return t('Try another channel. Everyone’s dancing to something different.');
+    default:
+      return undefined;
+  }
+}
+
 /** A sticker link scanned off a totem's screen (`findLink(…, 'totem')`). */
 export const fromTotemLink = (text: string) => /[?&]via=totem(?:[&#]|$)/.test(text.trim());
 

@@ -8,7 +8,7 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { CloseIcon } from '../../components/TabIcons';
 import { APP_STORE_URL } from '../../config/app';
-import { findCardFrom, findLine, huntLine, isHolo, lookOf, type Sticker, untilLine } from '../../features/finds/finds';
+import { findCardFrom, findLine, huntLine, isHolo, lookOf, placeLine, type Sticker, untilLine } from '../../features/finds/finds';
 import { shinyLook } from '../../features/sprouts/artistLook';
 import { StoryPreview } from '../../features/sprouts/StoryShare';
 import { useOrg } from '../../state/orgs';
@@ -155,6 +155,7 @@ export default function FindScreen() {
       {found ? (
         <Text style={styles.body}>{look.theme}.</Text>
       ) : null}
+      {found && placeLine(shown.creature) ? <Text style={[styles.body, { color: look.accent }]}>{placeLine(shown.creature)}</Text> : null}
       <Text style={[styles.status, shown.state === 'ended' || shown.state === 'gone' ? styles.amber : null]} accessibilityLiveRegion="polite">
         {findLine(shown)}
       </Text>
