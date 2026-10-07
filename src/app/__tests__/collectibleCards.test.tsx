@@ -67,10 +67,14 @@ describe('your collection', () => {
     await s.giveKandi({ to: maya, word: 'HI', beads: 'galaxy', charm: 'alien' });
     await s.signOut();
     await s.signIn('maya@example.com', 'password123');
+    // Maya last looked before the kandi came: its beads and charm are new.
+    await AsyncStorage.setItem('collectionSeen.v1', JSON.stringify({ [maya]: [] }));
     const app = await renderApp('/collection');
     await flush();
     await flush();
     await flush();
+    expect(app.getByText('2 new since you last looked')).toBeTruthy();
+    expect(app.getAllByText('New').length).toBe(2);
     await fireEvent.press(app.getByLabelText('Share your collection as a picture'));
     await flush();
     expect(app.getByText('@maya’s collection')).toBeTruthy();
@@ -90,5 +94,11 @@ describe('your collection', () => {
     await flush();
     expect(app.queryByText('Galaxy beads')).toBeNull();
     await app.unmount();
+    // Once looked at, they aren't new any more.
+    const again = await renderApp('/collection');
+    await flush();
+    await flush();
+    expect(again.queryByText('2 new since you last looked')).toBeNull();
+    await again.unmount();
   }, 30000);
 });

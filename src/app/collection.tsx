@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
@@ -17,7 +17,7 @@ import { DECOR } from '../features/sprouts/decor';
 import { DecorIcon } from '../features/sprouts/DecorSky';
 import { useGardenDecor } from '../features/sprouts/useGardenDecor';
 import { kindOf, type SproutKind } from '../features/sprouts/sprouts';
-import { t } from '../i18n';
+import { t, tn } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useFinds } from '../state/finds';
@@ -25,6 +25,7 @@ import { isHolo } from '../features/finds/finds';
 import { useKandi } from '../state/kandi';
 import { useSprouts } from '../state/sprouts';
 import { useSocial } from '../state/social';
+import { useCollectionSeen } from '../state/collectionSeen';
 import { StoryPreview } from '../features/sprouts/StoryShare';
 import { CollectionStory, Ring } from '../features/sprouts/CollectionStory';
 import { color, glowA, radius, space, type } from '../theme/tokens';
@@ -42,7 +43,7 @@ export default function CollectionScreen() {
   const insets = useSafeAreaInsets();
   const sprouts = useSprouts();
   const catalog = useCatalog();
-  const { finds } = useFinds();
+  const { finds, hydrated: findsReady } = useFinds();
   const kandi = useKandi();
   const decor = useGardenDecor();
   const owned = useMemo(() => new Map(sprouts.artists.map((a) => [a.artistId, a])), [sprouts.artists]);
@@ -64,7 +65,25 @@ export default function CollectionScreen() {
     [sprouts.collected, sprouts.artists, catalog, finds, kandi.received, decor],
   );
   const pct = book.total ? Math.round((book.have / book.total) * 100) : 0;
-  const handle = useSocial().profile?.handle;
+  const social = useSocial();
+  const handle = social.profile?.handle;
+  // What's new since you last looked (nothing, the first time); all of it counts as seen once you leave.
+  const seenStore = useCollectionSeen(social.user?.uid ?? 'guest');
+  const haveKeys = useMemo(() => book.sets.flatMap((x) => x.items.filter((i) => i.have).map((i) => `${x.id}:${i.key}`)), [book]);
+  const allRead = seenStore.ready && sprouts.hydrated && findsReady && kandi.hydrated;
+  const { seen: seenList, save: saveSeen } = seenStore;
+  const fresh = useMemo(() => new Set(allRead && seenList ? haveKeys.filter((k) => !seenList.includes(k)) : []), [allRead, seenList, haveKeys]);
+  const leaving = useRef({ allRead, seenList, haveKeys, saveSeen });
+  useEffect(() => {
+    leaving.current = { allRead, seenList, haveKeys, saveSeen };
+  });
+  useEffect(
+    () => () => {
+      const l = leaving.current;
+      if (l.allRead) l.saveSeen([...(l.seenList ?? []), ...l.haveKeys]);
+    },
+    [],
+  );
   const [story, setStory] = useState(false);
   // One you have, opened big.
   const [detail, setDetail] = useState<{ el: ReactNode; title: string; body?: string }>();
@@ -168,6 +187,7 @@ export default function CollectionScreen() {
             <Text style={styles.big}>{t('{have} of {total}', { have: book.have, total: book.total })}</Text>
             <Text style={styles.sub}>{t('found across every set')}</Text>
             {book.shiny ? <Text style={styles.shiny}>{t('✦ {n} shiny', { n: book.shiny })}</Text> : null}
+            {fresh.size ? <Text style={styles.newLine}>{tn(fresh.size, '{n} new since you last looked', '{n} new since you last looked')}</Text> : null}
           </View>
         </View>
         {book.have ? (
@@ -213,6 +233,7 @@ export default function CollectionScreen() {
                       style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
                     >
                       <View style={!i.have && styles.locked}>{shown.el}</View>
+                      {fresh.has(`${s.id}:${i.key}`) ? <Text style={styles.newTag}>{t('New')}</Text> : null}
                       <Text style={[styles.tileName, !i.have && styles.tileNameOff]} numberOfLines={1}>
                         {shown.name}
                       </Text>
@@ -278,6 +299,8 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.22 },
   locked: { opacity: 0.6 },
   pressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
+  newTag: { position: 'absolute', top: 0, right: 0, ...type.caption, fontSize: 10, fontWeight: '700', color: color.night, backgroundColor: '#FFE58A', paddingHorizontal: 6, borderRadius: radius.pill, overflow: 'hidden' },
+  newLine: { ...type.label, color: '#FFE58A', marginTop: space.xs },
   scrim: { flex: 1, backgroundColor: 'rgba(5,4,14,0.86)', alignItems: 'center', justifyContent: 'center', padding: space.xl },
   detail: { alignItems: 'center', gap: space.sm, maxWidth: 360 },
   detailTitle: { ...type.title, color: color.moon, textAlign: 'center', marginTop: space.md },

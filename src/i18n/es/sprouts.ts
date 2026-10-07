@@ -422,6 +422,7 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  '{n} new since you last looked': '{n} nuevos desde la última vez',
   'The Hedgehog': 'El Erizo',
   'A hedgehog curled up tight, its spikes lit in neon': 'Un erizo hecho una bola, con las púas encendidas en neón',
   'The Door': 'La Puerta',

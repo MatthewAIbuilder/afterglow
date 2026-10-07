@@ -16,6 +16,7 @@ import { forgetAccountGlow } from '../src/state/accountGlow';
 import { forgetGardenLayout } from '../src/state/gardenLayout';
 import { forgetShowcase } from '../src/state/showcase';
 import { forgetDecorSeen } from '../src/state/decorSeen';
+import { forgetCollectionSeen } from '../src/state/collectionSeen';
 import { forgetGardenGlows } from '../src/state/gardenGlows';
 import { forgetGoingShows } from '../src/state/goingShows';
 import { forgetCommentCounts } from '../src/features/social/commentCounts';
@@ -41,6 +42,7 @@ beforeEach(() => {
   forgetGardenLayout();
   forgetShowcase();
   forgetDecorSeen();
+  forgetCollectionSeen();
   forgetGardenGlows();
   forgetGoingShows();
   forgetCommentCounts();

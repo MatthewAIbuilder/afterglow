@@ -39,6 +39,7 @@ export const ACCOUNT_KEYS = [
   'gardenLayout.v1',
   'showcase.v1',
   'decorSeen.v1',
+  'collectionSeen.v1',
   'sprouts.v1',
   'kandi.v1',
   'finds.v1',
