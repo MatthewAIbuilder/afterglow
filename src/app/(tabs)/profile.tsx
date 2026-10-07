@@ -21,6 +21,7 @@ import { countdown } from '../../features/festivals/when';
 import { Highlights } from '../../features/profile/Highlights';
 import { GardenShelf } from '../../features/sprouts/GardenShelf';
 import { ShowcaseRow } from '../../features/sprouts/ShowcaseRow';
+import { KandiStack } from '../../features/kandi/KandiStack';
 import { useMyShowcase } from '../../features/sprouts/useMyShowcase';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
 import { useDailyQuests } from '../../features/quests/useDailyQuests';
@@ -94,7 +95,7 @@ export default function ProfileScreen() {
 
 function FullProfile() {
   // The kandi you wear on your profile, as visitors see it.
-  const { worn } = useKandi();
+  const { worn, shown: kandiShown } = useKandi();
   const wornKandi = worn ? { word: worn.word, beads: worn.beads, ...(worn.charm ? { charm: worn.charm } : {}), ...(worn.fromHandle ? { from: worn.fromHandle } : {}) } : undefined;
   // The collectible cards you pinned, shown above your garden.
   const showcase = useMyShowcase();
@@ -334,6 +335,8 @@ function FullProfile() {
             />
 
             <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own canPin={showcase.canPin} />
+
+            <KandiStack items={kandiShown} own onOpen={() => router.push('/garden')} />
 
             <GardenShelf hidden={shelves.hidden.has('garden')} onToggle={() => shelves.toggle('garden')} />
           </>

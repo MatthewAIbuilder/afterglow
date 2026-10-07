@@ -8,6 +8,7 @@ import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
 import { ShowcaseRow } from '../../features/sprouts/ShowcaseRow';
+import { KandiStack } from '../../features/kandi/KandiStack';
 import { publicOrbit } from '../../features/profile/identity';
 import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
 import type { ProfileStat } from '../../features/profile/profileView';
@@ -78,6 +79,7 @@ export default function PublicProfileScreen() {
   const [garden, setGarden] = useState<PublicResident[] | null | undefined>(undefined);
   // The kandi they wear on their profile.
   const [worn, setWorn] = useState<PublicKandi>();
+  const [kandiList, setKandiList] = useState<PublicKandi[]>([]);
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
   const [counts, setCounts] = useState<FollowCounts | undefined>();
@@ -110,6 +112,7 @@ export default function PublicProfileScreen() {
           if (!live) return;
           setGarden(g?.residents ?? null);
           setWorn(g?.kandi.find((k) => k.worn));
+          setKandiList(g?.kandi ?? []);
         })
         .catch(() => {});
       // Videos they're tagged in and said yes to (a separate read: if it fails, their own still show).
@@ -368,6 +371,14 @@ export default function PublicProfileScreen() {
         ) : null}
         {/* The collectible cards they pinned. */}
         {runs ? null : <ShowcaseRow cards={showcaseOf(garden ?? [])} handle={profile.handle} own={mine} />}
+        {/* Kandi they were given, stacked up an arm. */}
+        {runs ? null : (
+          <KandiStack
+            items={kandiList}
+            own={mine}
+            onOpen={() => (mine ? router.push('/garden') : router.push({ pathname: '/garden-visit', params: { uid: profile.uid, handle: profile.handle } }))}
+          />
+        )}
         {/* Their garden: a peek, and the way in. */}
         {runs ? null : garden?.length ? (
           <Pressable

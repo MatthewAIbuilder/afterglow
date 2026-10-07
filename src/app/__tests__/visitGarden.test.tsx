@@ -213,6 +213,11 @@ describe('gardens', () => {
     const visit = await renderApp('/u/maya');
     await flush();
     expect(visit.getByText('Wearing kandi from @sam')).toBeTruthy();
+    // Their kandi stacked up an arm, opening their garden.
+    expect(visit.getByText('Their kandi')).toBeTruthy();
+    await fireEvent.press(visit.getByLabelText('Their kandi: 1 bracelet, made by @sam. Opens their garden.'));
+    await flush();
+    expect(visit.getByText('@maya’s garden')).toBeTruthy();
   });
 
   it('decorations they earned hang in their sky for visitors', async () => {
