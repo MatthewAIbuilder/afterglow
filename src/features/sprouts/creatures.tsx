@@ -6899,6 +6899,155 @@ const crew: Draw = (p, f) => {
   };
 };
 
+/** SIENNA SPIRO: the Spirograph — looping petals of light drawn round and round, a face at the centre. */
+const spirograph: Draw = (p, f) => ({
+  ground: null,
+  back: <Circle cx={50} cy={50} r={40} fill={p.glow} opacity={0.14} />,
+  spinAt: [50, 50],
+  spin: (
+    <G>
+      {Array.from({ length: 12 }, (_, i) => (
+        <Ellipse key={i} cx={50} cy={34} rx={8} ry={16} fill="none" stroke={i % 3 === 0 ? p.accent : i % 3 === 1 ? p.mid : p.alt} strokeWidth={1.1} opacity={0.85} transform={`rotate(${i * 30} 50 50)`} />
+      ))}
+    </G>
+  ),
+  body: <G />,
+  front: (
+    <G>
+      <Circle cx={50} cy={50} r={9} fill={p.light} />
+      <Path d="M47.4 53 Q50 55 52.6 53" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+      <Circle cx={46.6} cy={48.4} r={1.4} fill={INK} />
+      <Circle cx={53.4} cy={48.4} r={1.4} fill={INK} />
+      <Circle cx={46.2} cy={47.9} r={0.45} fill="#FFFFFF" />
+      <Circle cx={53} cy={47.9} r={0.45} fill="#FFFFFF" />
+    </G>
+  ),
+  flicker: sparkles(p.accent, [
+    [14, 16, 1.6],
+    [86, 84, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** BALU BRIGADA: the Bear cub — a little bear cub sat in the jungle leaves, paws up. */
+const cub: Draw = (p, f) => ({
+  ground: [50, 90, 28],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.14} />
+      <Path d="M8 60 C20 46 34 46 40 52 C30 52 20 56 8 60Z M92 56 C80 44 66 44 60 50 C70 50 80 52 92 56Z" fill={p.alt} opacity={0.5} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Body, feet, belly, paws up; head and ears. */}
+      <VE cx={50} cy={72} rx={20} ry={16} fill={p.mid} f={f} />
+      <VE cx={38} cy={86} rx={6} ry={4} fill={p.mid} f={f} gloss={false} />
+      <VE cx={62} cy={86} rx={6} ry={4} fill={p.mid} f={f} gloss={false} />
+      <VE cx={50} cy={74} rx={11} ry={9} fill={p.light} f={f} gloss={false} />
+      <VE cx={30} cy={62} rx={5} ry={6} fill={p.mid} f={f} turn={-20} />
+      <VE cx={70} cy={62} rx={5} ry={6} fill={p.mid} f={f} turn={20} />
+      <VE cx={36} cy={30} rx={6} ry={6} fill={p.mid} f={f} gloss={false} />
+      <VE cx={64} cy={30} rx={6} ry={6} fill={p.mid} f={f} gloss={false} />
+      <Circle cx={36} cy={30} r={3} fill={p.light} />
+      <Circle cx={64} cy={30} r={3} fill={p.light} />
+      <VE cx={50} cy={44} rx={17} ry={15} fill={p.mid} f={f} />
+      <VE cx={50} cy={50} rx={7} ry={5.4} fill={p.light} f={f} gloss={false} />
+      <VE cx={50} cy={47.6} rx={2.6} ry={2} fill={p.deep} f={f} gloss={false} />
+      <Path d="M47.4 51.6 Q50 53.6 52.6 51.6" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 38, 20, 7],
+    el: (
+      <G>
+        <VEye x={43.6} y={41.6} r={2.2} f={f} />
+        <VEye x={56.4} y={41.6} r={2.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [18, 20, 1.6],
+    [82, 22, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** LAYZ: the Snooze — an alarm clock fast asleep, its bells quiet, the snooze button pressed. */
+const snooze: Draw = (p, f) => ({
+  ground: [50, 90, 28],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* Bells, the hammer and the legs. */}
+      <VE cx={30} cy={30} rx={9} ry={8} fill={p.alt} f={f} turn={-30} />
+      <VE cx={70} cy={30} rx={9} ry={8} fill={p.alt} f={f} turn={30} />
+      <Path d="M50 22 L50 28" stroke={p.alt} strokeWidth={2.4} strokeLinecap="round" />
+      <Path d="M34 80 L30 86 M66 80 L70 86" stroke={p.alt} strokeWidth={3} strokeLinecap="round" />
+      {/* The clock face. */}
+      <VE cx={50} cy={58} rx={28} ry={28} fill={p.mid} f={f} />
+      <Circle cx={50} cy={58} r={22} fill={p.light} />
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2;
+        return <Circle key={i} cx={r1(50 + Math.cos(a) * 18.6)} cy={r1(58 + Math.sin(a) * 18.6)} r={0.9} fill={p.deep} opacity={0.5} />;
+      })}
+      <Path d="M50 58 L50 46 M50 58 L58 62" stroke={p.deep} strokeWidth={1.6} strokeLinecap="round" />
+      {/* Asleep: closed eyes, a soft mouth. */}
+      <Path d="M39 54 Q42 56.4 45 54 M55 54 Q58 56.4 61 54" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+      <Ellipse cx={50} cy={70} rx={2.4} ry={1.6} fill={p.deep} opacity={0.7} />
+    </G>
+  ),
+  flicker: (
+    <G>
+      {/* Zzz. */}
+      <Path d="M76 50 L81 50 L76 55 L81 55 M84 40 L88 40 L84 44 L88 44" stroke={p.accent} strokeWidth={1.3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ROSSI.: the Scooter — a little red scooter (rosso), round headlight beaming, a basket of flowers. */
+const scooter: Draw = (p, f) => ({
+  ground: [50, 88, 36],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={36} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* Wheels. */}
+      <Circle cx={26} cy={78} r={9} fill={p.altDeep} />
+      <Circle cx={74} cy={78} r={9} fill={p.altDeep} />
+      <Circle cx={26} cy={78} r={3.4} fill={p.light} opacity={0.7} />
+      <Circle cx={74} cy={78} r={3.4} fill={p.light} opacity={0.7} />
+      {/* The steering column and handlebars, the body and seat. */}
+      <Path d="M66 70 L60 34 M54 32 L68 32" stroke={p.alt} strokeWidth={3} strokeLinecap="round" />
+      <V d="M18 72 Q16 58 30 56 L48 56 Q56 56 58 64 L64 70 Q68 74 64 78 L22 78 Q18 78 18 72Z" fill={p.mid} f={f} gloss={[26, 60, 6, 1.6, 0]} />
+      <V d="M24 52 Q24 48 30 48 L44 48 Q48 48 48 52 L48 56 L24 56Z" fill={p.deep} f={f} />
+      {/* The front shield, headlight, basket and flowers. */}
+      <V d="M58 40 L66 40 L72 72 L62 72Z" fill={p.mid} f={f} />
+      <VE cx={66} cy={44} rx={4} ry={4} fill={p.light} f={f} />
+      <Path d="M70 36 L80 36 L78 44 L72 44Z" fill={p.alt} />
+      <Circle cx={74} cy={33} r={2} fill={p.accent} />
+      <Circle cx={78} cy={34} r={1.6} fill={p.light} />
+      <Path d="M36 68 Q40 70.6 44 68" stroke={p.light} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [32, 59, 16, 7],
+    el: (
+      <G>
+        <VEye x={35.6} y={62.6} r={2.3} f={f} />
+        <VEye x={44.4} y={62.6} r={2.3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Path d="M70 44 L86 40 M70 44 L86 48" stroke={p.light} strokeWidth={1} opacity={0.5} />
+      {sparkles(p.accent, [[16, 26, 1.6]])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -7872,6 +8021,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  spirograph,
+  cub,
+  snooze,
+  scooter,
   well,
   kiwi,
   mink,
