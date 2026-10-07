@@ -4850,6 +4850,89 @@ const bomb: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** A sticker for lost and found: a cardboard box with a bucket hat, a phone and a glow stick poking out. */
+const lostfound: Draw = (p, f) => ({
+  ground: [50, 91, 32],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* What's in it: a bucket hat, a phone and a glow stick. */}
+      <V d="M24 44 C24 34 44 32 46 42 L50 46 L20 46Z" fill={p.alt} f={f} />
+      <V d="M56 24 L68 22 Q70 22 70 24 L72 44 L58 46Z" fill={p.deep} f={f} />
+      <Path d="M58.6 27 L67.6 25.6 L69 42 L60 43Z" fill={p.accent} opacity={0.6} />
+      <Path d="M76 30 L70 48" stroke={p.accent} strokeWidth={3} strokeLinecap="round" />
+      {/* The box, its flaps open. */}
+      <V d="M16 46 L84 46 L80 86 Q80 88 78 88 L22 88 Q20 88 20 86Z" fill={p.mid} f={f} gloss={[26, 54, 3, 8, 0]} />
+      <V d="M16 46 L8 38 L30 38 L36 46Z" fill={p.mid} f={f} />
+      <V d="M84 46 L92 38 L70 38 L64 46Z" fill={p.mid} f={f} />
+      <Path d="M30 72 L70 72" stroke={p.deep} strokeWidth={1.4} opacity={0.3} />
+      <Circle cx={36} cy={66} r={2.4} fill={p.accent} opacity={0.35} />
+      <Circle cx={64} cy={66} r={2.4} fill={p.accent} opacity={0.35} />
+      <Path d="M45 66 Q50 70 55 66" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [38, 54, 24, 8],
+    el: (
+      <G>
+        <VEye x={43} y={58} r={3} f={f} />
+        <VEye x={57} y={58} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Glow x={76} y={30} r={1.4} color={p.accent} />
+      {sparkles(p.accent, [
+        [16, 24, 1.6],
+        [88, 68, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker for the pick-up point: a map pin with a little car in it, so you know where your ride's waiting. */
+const pickup: Draw = (p, f) => ({
+  ground: [50, 92, 18],
+  back: <Ellipse cx={50} cy={48} rx={40} ry={40} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The pin. */}
+      <V d="M50 90 C40 76 22 60 22 40 C22 22 36 10 50 10 C64 10 78 22 78 40 C78 60 60 76 50 90Z" fill={p.mid} f={f} gloss={[36, 22, 6, 4, -30]} />
+      <VE cx={50} cy={40} rx={20} ry={20} fill={p.light} f={f} gloss={false} />
+      {/* The little car inside it. */}
+      <V d="M36 48 L36 42 Q36 40 38 39 L42 33 Q43 32 45 32 L55 32 Q57 32 58 33 L62 39 Q64 40 64 42 L64 48Z" fill={p.alt} f={f} />
+      <Path d="M43 34.6 L57 34.6 L60 39 L40 39Z" fill={p.light} opacity={0.6} />
+      <Circle cx={42} cy={49} r={3} fill={p.altDeep} />
+      <Circle cx={58} cy={49} r={3} fill={p.altDeep} />
+      <Circle cx={38.6} cy={43.6} r={1.4} fill={p.accent} />
+      <Circle cx={61.4} cy={43.6} r={1.4} fill={p.accent} />
+      <Path d="M47.4 45.4 Q50 47.2 52.6 45.4" stroke={p.altDeep} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [42, 39, 16, 6],
+    el: (
+      <G>
+        <VEye x={46} y={42.4} r={1.9} f={f} />
+        <VEye x={54} y={42.4} r={1.9} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* It's here: a pulse round the pin's point. */}
+      <Ellipse cx={50} cy={90} rx={12} ry={3} fill="none" stroke={p.accent} strokeWidth={1.2} opacity={0.7} />
+      {sparkles(p.accent, [
+        [16, 18, 1.6],
+        [86, 22, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -5838,6 +5921,8 @@ export const DRAW: Record<Creature, Draw> = {
   silentdisco,
   foodtruck,
   caretent,
+  lostfound,
+  pickup,
   shuttle,
   hammock,
   croissant,

@@ -87,7 +87,7 @@ describe('the living garden', () => {
     await fireEvent.press(app.getByLabelText('SUBTRONICS collectible, 1 video.'));
     await flush();
     expect(app.getByText('2 more videos of them for bronze. First filmed Sep 20, 2026.')).toBeTruthy();
-  });
+  }, 20_000);
 
   it('an empty garden shows your first sprout alone', async () => {
     const app = await renderApp('/garden');

@@ -122,7 +122,9 @@ export type Creature =
   | 'shuttle'
   | 'hammock'
   | 'foodtruck'
-  | 'caretent';
+  | 'caretent'
+  | 'lostfound'
+  | 'pickup';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -369,9 +371,11 @@ const PLACES: Record<PlaceCreature, Spec> = {
   hammock: { creature: 'hammock', palette: P('#FFF0E0', '#7FD3B0', '#2A7A5A', '#FF8A5A', '#7A4A2A', '#FFE08A', '#7FD3B0'), name: t('The Hammock'), theme: t('Taking five in the chill zone') },
   foodtruck: { creature: 'foodtruck', palette: P('#FFF6E0', '#FF6A4A', '#8A2A1A', '#FFD24A', '#2A1E2E', '#FFB86B', '#FF8A5A'), name: t('The Food truck'), theme: t('Something hot from the grill between sets') },
   caretent: { creature: 'caretent', palette: P('#FFFFFF', '#7FC8FF', '#2A5A9A', '#1E2E4A', '#121A2A', '#FF7EB6', '#9AD8FF'), name: t('The Care tent'), theme: t('Where people look after each other, lantern lit all night') },
+  lostfound: { creature: 'lostfound', palette: P('#FFF4E0', '#D8A86A', '#7A5228', '#7FD3FF', '#2A2A3A', '#7CFF8A', '#FFC88A'), name: t('The Lost and found'), theme: t('Where lost bucket hats and phones turn up again') },
+  pickup: { creature: 'pickup', palette: P('#FFFFFF', '#FF5A7A', '#8A1A3A', '#FFD24A', '#2A2A3A', '#7FD3FF', '#FF8AA8'), name: t('The Pick-up point'), theme: t('Where your ride home is waiting') },
   flask: { creature: 'flask', palette: P('#F3EEFF', '#A97CFF', '#4A2E9A', '#D9B48A', '#7A5634', '#C9F7FF', '#A97CFF'), name: t('The Alchemist'), theme: t('A bubbling potion from the underground') },
 };
-export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape' | 'portapotty' | 'refill' | 'charger' | 'fan' | 'silentdisco' | 'shuttle' | 'hammock' | 'foodtruck' | 'caretent';
+export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape' | 'portapotty' | 'refill' | 'charger' | 'fan' | 'silentdisco' | 'shuttle' | 'hammock' | 'foodtruck' | 'caretent' | 'lostfound' | 'pickup';
 export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];
 
 /** The sound creatures (no artist's identity), which stickers can use too. */

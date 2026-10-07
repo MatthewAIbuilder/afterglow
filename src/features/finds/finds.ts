@@ -140,6 +140,10 @@ export function placeLine(creature: string): string | undefined {
       return t('Eat something proper. Your feet will thank you at 3am.');
     case 'caretent':
       return t('Friendly people are here all night if you or a friend need anything.');
+    case 'lostfound':
+      return t('Lost something, or found something? This is where it comes back.');
+    case 'pickup':
+      return t('Remember this spot: it’s where your ride home finds you.');
     case 'silentdisco':
       return t('Try another channel. Everyone’s dancing to something different.');
     default:

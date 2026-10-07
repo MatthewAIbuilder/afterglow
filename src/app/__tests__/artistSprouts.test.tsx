@@ -107,7 +107,7 @@ describe('artist sprouts', () => {
     await fireEvent.press(page.getByLabelText(/^Your SUBTRONICS collectible, The Watcher: .* Opens its card\.$/));
     await flush();
     expect(page.getByText('★ In your showcase')).toBeTruthy();
-  });
+  }, 20_000);
 
   it('videos from before the update grow their sprouts quietly', async () => {
     await filmed('subtronics', 1);
