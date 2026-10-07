@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
@@ -33,6 +33,21 @@ export function OrgProfileCard({ org, own }: { org: Org; own: boolean }) {
           {next ? t('Next: {event} · {when}', { event: next.name, when: when! }) : t('No events announced yet')}
         </Text>
       </Pressable>
+      {/* Its website and Instagram, as on its page. */}
+      {org.website || org.instagram ? (
+        <View style={styles.links}>
+          {org.website ? (
+            <Pressable onPress={go(() => Linking.openURL(org.website!).catch(() => {}))} accessibilityRole="link" accessibilityLabel={t('{organizer} website', { organizer: org.name })} style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+              <Text style={styles.buttonText}>{t('Website ↗')}</Text>
+            </Pressable>
+          ) : null}
+          {org.instagram ? (
+            <Pressable onPress={go(() => Linking.openURL(`https://www.instagram.com/${org.instagram}/`).catch(() => {}))} accessibilityRole="link" accessibilityLabel={t('{organizer} on Instagram', { organizer: org.name })} style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+              <Text style={styles.buttonText}>{`Instagram ↗`}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
       <View style={styles.row}>
         {own ? (
           <Pressable onPress={go(() => router.push('/studio'))} accessibilityRole="button" accessibilityLabel={t('Open the organizer studio')} style={({ pressed }) => [styles.button, styles.glow, pressed && styles.pressed]}>
@@ -54,6 +69,8 @@ const styles = StyleSheet.create({
   tagline: { ...type.label, color: color.moonDim, textTransform: 'uppercase', letterSpacing: 2 },
   next: { ...type.caption, color: color.moonDim },
   row: { flexDirection: 'row', gap: space.sm },
+  links: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap', justifyContent: 'center' },
+  link: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   buttonText: { ...type.label, color: color.moon },
   glow: { backgroundColor: glowA(0.2), borderColor: glowA(0.5) },

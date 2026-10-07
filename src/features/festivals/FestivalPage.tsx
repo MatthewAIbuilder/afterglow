@@ -25,6 +25,7 @@ import { lineupReach } from './links';
 import { filterLineup, lineupSounds, SEARCH_FROM } from './search';
 import { countdown, isLive, setLine } from './when';
 import { useToday } from '../../lib/useToday';
+import { isOver } from './shelves';
 import { leftToRate } from './tune';
 import { YourFestival } from '../plan/YourFestival';
 import { haptic } from '../../lib/haptics';
@@ -228,8 +229,10 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
             <View style={[styles.pad, styles.lineupHead]}>
               <Text style={styles.lineupCount}>
                 {festival.lineupTba && !lineup.length
-                  ? t('Artists to be announced')
-                  : `${shown.length === lineup.length ? t('{n} acts', { n: lineup.length }) : t('{shown} of {total} acts', { shown: shown.length, total: lineup.length })}${festival.lineupTba ? ` · ${t('more to be announced')}` : ''}`}
+                  ? isOver(festival, today)
+                    ? t('No lineup listed')
+                    : t('Artists to be announced')
+                  : `${shown.length === lineup.length ? t('{n} acts', { n: lineup.length }) : t('{shown} of {total} acts', { shown: shown.length, total: lineup.length })}${festival.lineupTba && !isOver(festival, today) ? ` · ${t('more to be announced')}` : ''}`}
               </Text>
               <Segmented value={order} onChange={setOrder} />
             </View>

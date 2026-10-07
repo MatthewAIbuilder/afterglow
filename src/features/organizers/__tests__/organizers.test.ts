@@ -29,6 +29,7 @@ import {
   handleFor,
   orgProfileInput,
   searchOrgs,
+  foundEvents,
   withHosted,
   orgDjs,
   importedCandidates,
@@ -280,5 +281,18 @@ describe('organizers', () => {
     expect(withHosted([festivals[1]], festivals, [ua]).map((f) => f.id)).toEqual(['b']);
     expect(withHosted([festivals[0]], festivals, []).map((f) => f.id)).toEqual(['a']);
     expect(withHosted([festivals[0]], festivals, [ua], 1).map((f) => f.id)).toEqual(['a']);
+  });
+
+  it('adds the events found on its ticket pages once, as listed, with no lineup', () => {
+    const found = ORG_STARTERS[0].pastEvents!;
+    const org = orgFromStarter(ORG_STARTERS[0]);
+    const events = foundEvents(org, found);
+    expect(events).toHaveLength(found.length);
+    expect(new Set(events.map((e) => e.id)).size).toBe(found.length);
+    expect(events[0]).toEqual({ id: expect.any(String), name: 'Underground Alchemy Presents: A Halloween Forest Rave', date: '2024-10-26', venue: '1401 C CO RD 13', city: 'Orlando, FL', tickets: 'https://posh.vip/e/halloween-forest-rave-2', lineup: [], published: true });
+    // Already there (by name and night, or by its page): not again.
+    expect(foundEvents({ events }, found)).toEqual([]);
+    expect(foundEvents({ events: [{ ...events[1], name: 'Journey (renamed)' }] }, found).map((e) => e.name)).not.toContain('Journey');
+    expect(foundEvents(org, undefined)).toEqual([]);
   });
 });

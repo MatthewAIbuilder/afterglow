@@ -3,7 +3,7 @@ import { useMyOrg, useOrgs } from '../../state/orgs';
 import { orgOfAccount } from '../../features/organizers/organizers';
 import { OrgProfileCard } from '../../features/organizers/OrgProfileCard';
 import { OrgDot } from '../../features/organizers/OrgMark';
-import { OrgDjs } from '../../features/organizers/OrgProfileParts';
+import { OrgDjs, OrgEvents } from '../../features/organizers/OrgProfileParts';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
@@ -329,6 +329,8 @@ export default function PublicProfileScreen() {
         {runs ? <OrgProfileCard org={runs} own={mine} /> : null}
         {runs ? (
           <>
+            <Text style={styles.section}>{mine ? t('Your events') : t('Their events')}</Text>
+            <OrgEvents org={runs} own={mine} />
             <Text style={styles.section}>{mine ? t('Your DJs') : t('Their DJs')}</Text>
             <OrgDjs org={runs} own={mine} />
           </>

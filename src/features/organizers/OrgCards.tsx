@@ -75,6 +75,8 @@ export function HostedBy({ festival, show }: { festival?: Festival; show?: Show 
 
 /** One line on an organizer's page: their mark, its name, when and where. */
 function ListingRow({ org, l }: { org: Org; l: Listing }) {
+  // "Lineup TBA" only while it's still to come.
+  const coming = (l.endDate ?? l.date) >= localDay(useToday());
   const when = datesLine({ dates: datesText({ date: l.date, endDate: l.endDate }), startDate: l.date, endDate: l.endDate ?? l.date });
   return (
     <Pressable
@@ -94,7 +96,7 @@ function ListingRow({ org, l }: { org: Org; l: Listing }) {
         <Text style={styles.line} numberOfLines={1}>
           {[when, l.venue, l.city].filter(Boolean).join(' · ')}
         </Text>
-        {l.tba ? <Text style={styles.tba}>{t('Lineup TBA')}</Text> : null}
+        {l.tba && coming ? <Text style={styles.tba}>{t('Lineup TBA')}</Text> : null}
       </View>
       <ChevronIcon color={color.moonFaint} size={12} />
     </Pressable>

@@ -53,6 +53,9 @@ export const es_organizers: Dictionary = {
   'Artists to be announced': 'Artistas por anunciar',
   'more to be announced': 'más por anunciar',
   'Lineup TBA': 'Cartel por anunciar',
+  'No lineup listed': 'Sin cartel publicado',
+  'Their events': 'Sus eventos',
+  'Your events': 'Tus eventos',
   // Search
   'Event organizer': 'Organizador de eventos',
   '{organizer}, event organizer. Open their page': '{organizer}, organizador de eventos. Abre su página',
