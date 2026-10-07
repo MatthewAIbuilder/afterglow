@@ -289,6 +289,12 @@ describe('gardens', () => {
     await flush();
     expect(app.getByText('New in your garden’s sky')).toBeTruthy();
     expect(app.getAllByText('Paper lanterns').length).toBeGreaterThan(0);
+    // It can go out as a picture first.
+    await fireEvent.press(app.getByLabelText('Share Paper lanterns as a picture'));
+    await flush();
+    expect(app.getByText('New in your garden’s sky, on Afterglow')).toBeTruthy();
+    await fireEvent.press(app.getAllByLabelText('Close').at(-1)!);
+    await flush();
     await settle(500);
     await fireEvent.press(app.getByText('Lovely'));
     await flush();

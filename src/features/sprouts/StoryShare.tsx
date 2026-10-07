@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   headline: { ...type.title, color: color.moon, textAlign: 'center' },
   sub: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.xs },
   site: { ...type.caption, color: 'rgba(232,220,255,0.6)', letterSpacing: 1, marginTop: space.lg },
-  preview: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30, elevation: 30, backgroundColor: 'rgba(5,4,10,0.94)', alignItems: 'center', justifyContent: 'center', gap: space.lg },
+  preview: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30, elevation: 30, backgroundColor: 'rgba(5,4,10,0.985)', alignItems: 'center', justifyContent: 'center', gap: space.lg },
   close: { position: 'absolute', right: space.lg, zIndex: 31, elevation: 31 },
   shot: { borderRadius: radius.lg, overflow: 'hidden' },
   share: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
