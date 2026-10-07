@@ -62,7 +62,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
   const eventOf = useEventLookup();
   const today = useToday();
   const { crews, crewsAt, confirmed: crewsConfirmed, keptAt: crewsKeptAt } = useCrews();
-  const { stories, profileOf, ready: updatesReady } = useCrewUpdates();
+  const { stories, profileOf } = useCrewUpdates();
   const chat = useCrewChat();
   // At the festival: your crews there come first, with where everyone is.
   const here = festival && me ? crewsAt(festival.id) : [];
@@ -224,7 +224,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
           {/* New followers, likes, tags and crew invites: the same bell as Festivals. */}
           {inTab && social.availability.ok ? <NoticeBell /> : null}
         </View>
-        {festival && !me ? <Text style={styles.atFestival}>{t('At {festival}', { festival: festival.name })}</Text> : null}
+        {festival ? <Text style={styles.atFestival}>{t('At {festival}', { festival: festival.name })}</Text> : null}
 
         {!social.availability.ok ? (
           <>
@@ -251,8 +251,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 festival={festival}
                 crews={here}
                 handle={me.handle}
-                circle={circle}
-                crewsReady={updatesReady}
+                festivals={upcoming}
                 crewsUnknown={!crewsConfirmed && crewsKeptAt === undefined && !!social.user}
               />
             ) : (
