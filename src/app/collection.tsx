@@ -8,6 +8,7 @@ import { PageTitle } from '../components/PageTitle';
 import { CHARMS, PATTERNS } from '../features/kandi/kandi';
 import { CharmIcon, KandiBracelet } from '../features/kandi/KandiBracelet';
 import { artistLook, shinyLook, stickerLook } from '../features/sprouts/artistLook';
+import { PortalSwirl } from '../features/finds/PortalSwirl';
 import { Collectible } from '../features/sprouts/Collectible';
 import type { CollectionSet } from '../features/sprouts/collection';
 import { Sprout } from '../features/sprouts/Sprout';
@@ -111,7 +112,21 @@ export default function CollectionScreen() {
           el: <Collectible look={look} size={TILE} locked={!have} still />,
           name: have ? look.name.replace(/^The /, '') : '?',
           label: have ? look.name : t('One still to find'),
-          detail: have ? { el: <Collectible look={look} size={DETAIL} />, title: look.name, body: `${look.theme}.` } : undefined,
+          detail: have
+            ? {
+                el:
+                  key === 'portapotty' ? (
+                    <View>
+                      <PortalSwirl size={Math.round(DETAIL * 1.4)} colors={look.palette} />
+                      <Collectible look={look} size={DETAIL} />
+                    </View>
+                  ) : (
+                    <Collectible look={look} size={DETAIL} />
+                  ),
+                title: look.name,
+                body: `${look.theme}.`,
+              }
+            : undefined,
         };
       }
       case 'beads': {
