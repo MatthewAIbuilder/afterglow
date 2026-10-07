@@ -23,6 +23,7 @@ import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { useMemories } from '../../state/memories';
 import { useSocial } from '../../state/social';
+import { OrgWatermark } from '../../features/organizers/OrgWatermark';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { whereLine } from '../../features/memories/where';
 import { b2bLine } from '../../features/memories/b2b';
@@ -214,6 +215,8 @@ function SharedMemoryPage({ id, active }: { id: string; active: boolean }) {
         </Pressable>
       ) : null}
       {m && !blocked && showsGlow(filmer) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label /> : null}
+      {/* An event organizer's own video carries its logo, faintly. */}
+      {m && !blocked ? <OrgWatermark uid={m.uid} style={{ top: insets.top + 64, right: space.lg }} /> : null}
       {signedOut ? (
         <View style={[styles.center, styles.signIn]}>
           <Text style={styles.gone}>{t('Sign in to watch videos from the crowd.')}</Text>

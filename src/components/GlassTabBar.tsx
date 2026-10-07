@@ -38,10 +38,12 @@ const CAMERA = 'camera';
  */
 export const FULL_TABS = ['index', 'festivals', 'sound', 'together', 'profile'];
 export const FESTIVAL_TABS = ['index', 'lineup', CAMERA, 'together', 'profile'];
-/** An event organizer's account: no My Sound (its profile shows its DJs instead). */
-export const ORG_TABS = ['index', 'festivals', 'together', 'profile'];
+/** An event organizer's account: no My Sound (its profile shows its DJs instead), and the camera in the middle. */
+export const ORG_TABS = ['index', 'festivals', CAMERA, 'together', 'profile'];
 /** The festival's colours for the camera button (the record button's). */
 const CAMERA_COLORS = ['#A97CFF', '#FF7EB6', '#FFB86B'] as const;
+/** An organizer's camera button: pearl, like its white logo on the night. */
+const ORG_CAMERA_COLORS = ['#F6F4FB', '#C9C3DA'] as const;
 
 export const TAB_BAR_HEIGHT = 64;
 
@@ -106,7 +108,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
         {/* One highlight that glides to the tab you pick. */}
         {pillW > 0 && slot >= 0 ? <Glider index={slot} width={(pillW - 12) / order.length} /> : null}
         {order.map((name) => {
-          if (name === CAMERA) return <CameraTab key={CAMERA} hold={hold} burst={burst} />;
+          if (name === CAMERA) return active ? <CameraTab key={CAMERA} hold={hold} burst={burst} /> : <OrgCameraTab key={CAMERA} />;
           const i = state.routes.findIndex((r) => r.name === name);
           const route = state.routes[i];
           if (!route) return null;
@@ -270,7 +272,28 @@ function CameraTab({ hold, burst }: { hold: SharedValue<number>; burst: SharedVa
   );
 }
 
+/** An event organizer's middle button: straight to the camera (what it films carries its logo, faintly). */
+function OrgCameraTab() {
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.tap();
+        router.push('/camera');
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={t('Film a video')}
+      style={({ pressed }) => [styles.item, pressed && { transform: [{ scale: 0.94 }] }]}
+    >
+      <View style={[styles.camera, styles.orgCamera]}>
+        <LinearGradient colors={ORG_CAMERA_COLORS} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, styles.cameraFill]} />
+        <CameraIcon color={color.night} size={24} />
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  orgCamera: { shadowColor: '#FFFFFF', shadowOpacity: 0.35 },
   peek: { bottom: TAB_BAR_HEIGHT - 5, right: '23%' },
   wrap: { position: 'absolute', left: space.md, right: space.md, alignItems: 'center' },
   pill: {

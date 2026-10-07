@@ -213,6 +213,26 @@ describe('organizers', () => {
     await app.unmount();
   });
 
+  it('videos its account posts carry its logo, faintly; everyone else’s don’t', async () => {
+    seed();
+    const u = await s().signUp('ugrnd@example.com', 'password123');
+    await s().saveProfile({ handle: 'undergroundalchemy', displayName: 'Underground Alchemy', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    mockSocial.orgs.set(ORG, { ...mockSocial.orgs.get(ORG)!, uids: [u.uid], handle: 'undergroundalchemy' });
+    const ours = await s().shareMemory({ memoryId: 'm1', videoUri: 'file:///m1.mov', festivalId: EVENT, capturedAt: '2026-11-15T01:30:00.000Z', durationSec: 30, width: 1080, height: 1920 });
+    await s().signOut();
+    await s().signUp('fan@example.com', 'password123');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    const theirs = await s().shareMemory({ memoryId: 'm2', videoUri: 'file:///m2.mov', festivalId: EVENT, capturedAt: '2026-11-15T02:00:00.000Z', durationSec: 30, width: 1080, height: 1920 });
+
+    const app = await renderApp(`/shared/${ours.id}`);
+    await flush();
+    expect(app.getByTestId('org-watermark', { includeHiddenElements: true })).toBeTruthy();
+    await act(async () => router.push(`/shared/${theirs.id}`));
+    await flush();
+    expect(app.queryAllByTestId('org-watermark', { includeHiddenElements: true })).toHaveLength(1);
+    await app.unmount();
+  });
+
   it('a promotion asked in the studio and approved in HQ shows, labelled, on everyone’s Festivals tab', async () => {
     seed();
     const app = await organizer();
@@ -314,6 +334,8 @@ describe('organizers', () => {
     await flush();
     expect(app.getByText('From your events')).toBeTruthy();
     expect(app.queryByRole('tab', { name: /^My Sound/ })).toBeNull();
+    // The camera sits in the middle of its bar.
+    expect(app.getByLabelText('Film a video')).toBeTruthy();
     await act(async () => router.push('/profile'));
     await flush();
     // Its profile is the organizer's: its logo, its DJs and videos instead of a fan's sound.

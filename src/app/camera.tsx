@@ -19,6 +19,8 @@ import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useMemories } from '../state/memories';
+import { useSocial } from '../state/social';
+import { OrgWatermark } from '../features/organizers/OrgWatermark';
 import { color, radius, space, type, glowA, raisedA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
@@ -37,6 +39,7 @@ export default function CameraScreen() {
 
 function Camera() {
   const insets = useSafeAreaInsets();
+  const { user } = useSocial();
   const { width } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const cam = useRef<CameraView>(null);
@@ -180,6 +183,8 @@ function Camera() {
           />
         ) : null}
 
+        {/* An event organizer's account sees where its logo will sit on what it films. */}
+        {allowed ? <OrgWatermark uid={user?.uid} style={{ top: insets.top + 72, right: space.lg }} /> : null}
         {/* Night fades at the top and bottom, so the controls read over any picture. */}
         <LinearGradient colors={['rgba(5,4,14,0.75)', 'rgba(5,4,14,0)']} style={[styles.fadeTop, { height: insets.top + 110 }]} pointerEvents="none" />
         <LinearGradient colors={['rgba(5,4,14,0)', 'rgba(5,4,14,0.85)']} style={[styles.fadeBottom, { height: insets.bottom + 220 }]} pointerEvents="none" />
