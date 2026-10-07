@@ -5463,6 +5463,153 @@ const greenlight: Draw = (p, f) => ({
   flickerOver: false,
 });
 
+/** BLOOD ORANGE: the Orange — a blood orange with a leaf, cut open to its deep red inside. */
+const orange: Draw = (p, f) => ({
+  ground: [50, 90, 30],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* The whole one behind, with its leaf. */}
+      <VE cx={60} cy={50} rx={26} ry={26} fill={p.mid} f={f} />
+      <Path d="M60 24 Q62 18 66 16" stroke={p.alt} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+      <V d="M64 18 C70 10 82 12 84 18 C76 22 70 22 64 18Z" fill={p.alt} f={f} />
+      {[48, 66, 72, 56].map((x, i) => (
+        <Circle key={i} cx={x} cy={38 + i * 6} r={0.7} fill={p.deep} opacity={0.4} />
+      ))}
+      {/* The half, cut open: rind, pith and red segments. */}
+      <VE cx={38} cy={66} rx={22} ry={22} fill={p.mid} f={f} gloss={false} />
+      <Circle cx={38} cy={66} r={19.6} fill={p.light} />
+      <Circle cx={38} cy={66} r={17.6} fill={p.altDeep} />
+      {Array.from({ length: 9 }, (_, i) => {
+        const a = (i / 9) * Math.PI * 2;
+        return <Path key={i} d={`M38 66 L${r1(38 + Math.cos(a) * 17.6)} ${r1(66 + Math.sin(a) * 17.6)}`} stroke={p.light} strokeWidth={1.2} opacity={0.6} />;
+      })}
+      <Circle cx={38} cy={66} r={2.4} fill={p.light} />
+      <Path d="M60 60 Q64 63 68 60" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [56, 49, 16, 7],
+    el: (
+      <G>
+        <VEye x={59.6} y={53} r={2.4} f={f} />
+        <VEye x={68.4} y={53} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [14, 24, 1.8],
+    [88, 74, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** TURNSTILE: the Turnstile — a turnstile at the gate, its three arms turning, a ticket light on top. */
+const turnstile: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The post and its little light. */}
+      <V d="M34 40 Q34 34 40 34 L60 34 Q66 34 66 40 L66 88 Q66 90 64 90 L36 90 Q34 90 34 88Z" fill={p.mid} f={f} gloss={[38, 42, 2.4, 8, 0]} />
+      <Path d="M40 38 L60 38 L60 44 L40 44Z" fill={p.deep} />
+      <Circle cx={50} cy={41} r={1.6} fill={p.accent} />
+      <Circle cx={42} cy={76} r={2} fill={p.alt} opacity={0.45} />
+      <Circle cx={58} cy={76} r={2} fill={p.alt} opacity={0.45} />
+      <Path d="M46 77 Q50 80 54 77" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  spinAt: [50, 58],
+  spin: (
+    <G>
+      {[0, 120, 240].map((d) => {
+        const a = ((d - 90) * Math.PI) / 180;
+        return <Path key={d} d={`M50 58 L${r1(50 + Math.cos(a) * 30)} ${r1(58 + Math.sin(a) * 30)}`} stroke={p.light} strokeWidth={3.4} strokeLinecap="round" />;
+      })}
+      <Circle cx={50} cy={58} r={6} fill={p.alt} />
+      <Circle cx={50} cy={58} r={2.4} fill={p.light} />
+    </G>
+  ),
+  eyes: {
+    box: [40, 64, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.4} y={68} r={2.6} f={f} />
+        <VEye x={55.6} y={68} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: <Glow x={50} y={41} r={1.6} color={p.accent} />,
+  flickerOver: true,
+});
+
+/** GEESE: the Goose — a goose, neck out, honking at nobody in particular. */
+const goose: Draw = (p, f) => ({
+  ground: [46, 92, 28],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* Body, wing, tail and feet. */}
+      <Path d="M40 88 L38 92 L44 92 M54 88 L52 92 L58 92" stroke={p.alt} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <V d="M20 66 C20 56 32 52 46 54 C60 56 70 64 68 76 C66 86 52 90 38 88 C26 86 20 78 20 66Z" fill={p.mid} f={f} gloss={[30, 62, 6, 3, -10]} />
+      <V d="M14 58 L22 62 L20 68Z" fill={p.mid} f={f} />
+      <V d="M30 66 C40 62 52 66 56 74 C46 78 34 76 30 66Z" fill={p.light} f={f} />
+      {/* The long neck and head, beak open. */}
+      <Path d="M58 60 C60 46 58 36 62 28" stroke={p.mid} strokeWidth={9} fill="none" strokeLinecap="round" />
+      <VE cx={64} cy={26} rx={8.6} ry={7.6} fill={p.mid} f={f} />
+      <V d="M71 23 L82 23 L72 27Z" fill={p.alt} f={f} />
+      <V d="M71 28 L80 31 L72 27.4Z" fill={p.altDeep} f={f} />
+    </G>
+  ),
+  eyes: {
+    box: [60, 21, 10, 6],
+    el: <VEye x={65} y={24.4} r={2.2} f={f} />,
+  },
+  flicker: (
+    <G>
+      {/* HONK. */}
+      <Path d="M83 32 L87 30 M84 36.6 L89 37 M83 41 L87 44" stroke={p.accent} strokeWidth={1.6} strokeLinecap="round" />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** KINGS OF LEON: the Crown — a gold crown with jewels, a little face on its band. */
+const crown: Draw = (p, f) => ({
+  ground: [50, 86, 32],
+  back: <Ellipse cx={50} cy={56} rx={42} ry={36} fill={p.glow} opacity={0.18} />,
+  body: (
+    <G>
+      <V d="M18 76 L16 36 L32 52 L50 24 L68 52 L84 36 L82 76Z" fill={p.mid} f={f} gloss={[30, 50, 3, 10, 10]} />
+      <V d="M18 70 L82 70 L82 80 Q82 82 80 82 L20 82 Q18 82 18 80Z" fill={p.alt} f={f} />
+      {/* Jewels on the points and the band. */}
+      <VE cx={50} cy={24} rx={3.4} ry={3.4} fill={p.accent} f={f} />
+      <VE cx={16} cy={36} rx={2.8} ry={2.8} fill={p.altDeep} f={f} />
+      <VE cx={84} cy={36} rx={2.8} ry={2.8} fill={p.altDeep} f={f} />
+      <VE cx={30} cy={76} rx={2.6} ry={2.6} fill={p.accent} f={f} gloss={false} />
+      <VE cx={70} cy={76} rx={2.6} ry={2.6} fill={p.altDeep} f={f} gloss={false} />
+      <Circle cx={40} cy={62} r={2.2} fill={p.altDeep} opacity={0.35} />
+      <Circle cx={60} cy={62} r={2.2} fill={p.altDeep} opacity={0.35} />
+      <Path d="M46 63 Q50 66 54 63" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 52, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.4} y={56} r={2.6} f={f} />
+        <VEye x={55.6} y={56} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [50, 12, 2],
+    [10, 24, 1.4],
+    [90, 24, 1.4],
+  ]),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -6436,6 +6583,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  orange,
+  turnstile,
+  goose,
+  crown,
   biplane,
   lime,
   greenlight,
