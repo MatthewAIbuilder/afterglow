@@ -3603,6 +3603,162 @@ const mixtape: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
+const refill: Draw = (p, f) => ({
+  ground: [50, 90, 28],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={56} rx={42} ry={38} fill={p.glow} opacity={0.16} />
+      {/* The tap, with its pipe and handle. */}
+      <V d="M24 11 L46 11 Q50 11 50 15 L50 18 L44 18 L44 16.5 L24 16.5 Q22 16.5 22 13.75 Q22 11 24 11Z" fill={p.alt} f={f} gloss={[32, 12.6, 6, 0.9, 0]} />
+      <Path d="M43 18 L51 18 L51 20.4 Q51 21.4 50 21.4 L44 21.4 Q43 21.4 43 20.4Z" fill={p.altDeep} />
+      <Path d="M34 11 L34 7.4 M29 7.4 L39 7.4" stroke={p.altDeep} strokeWidth={2} strokeLinecap="round" />
+    </G>
+  ),
+  body: (
+    <G>
+      <V d="M50 20 C58 34 74 46 74 63 C74 78 63 88 50 88 C37 88 26 78 26 63 C26 46 42 34 50 20Z" fill={p.mid} f={f} gloss={[39, 50, 4, 9, -24]} />
+      {/* The water inside, sloshing. */}
+      <Path d="M28.5 70 Q36 65 43 69 Q50 73 57 69 Q64 65 71.5 70" stroke={p.light} strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.6} />
+      <Circle cx={60} cy={78} r={1.4} fill={p.light} opacity={0.6} />
+      <Circle cx={42} cy={80} r={1} fill={p.light} opacity={0.5} />
+      <Circle cx={39} cy={66} r={2.2} fill={p.accent} opacity={0.35} />
+      <Circle cx={61} cy={66} r={2.2} fill={p.accent} opacity={0.35} />
+      <Path d="M45 66 Q50 70 55 66" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 54, 20, 9],
+    el: (
+      <G>
+        <VEye x={44} y={58.5} r={3.2} f={f} />
+        <VEye x={56} y={58.5} r={3.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Drops still falling, and the shine on the water. */}
+      <Path d="M47 23 Q47 26 48 26 Q49 26 49 23 L48 21.4Z" fill={p.mid} />
+      <Path d="M82 52 C84 56 86 58 86 60 C86 62 84 63 82 63 C80 63 78 62 78 60 C78 58 80 56 82 52Z" fill={p.mid} opacity={0.8} />
+      <Path d="M17 40 C18.5 43 20 44.5 20 46 C20 47.5 18.5 48.4 17 48.4 C15.5 48.4 14 47.5 14 46 C14 44.5 15.5 43 17 40Z" fill={p.light} opacity={0.8} />
+      {sparkles(p.accent, [
+        [88, 30, 1.8],
+        [12, 72, 1.6],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker for the charging tent: a battery topping up, its bars filling, a cable curled out to its plug. */
+const charger: Draw = (p, f) => ({
+  ground: [50, 91, 30],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />
+      {/* The cable, curled out to its plug. */}
+      <Path d="M62 86 C70 94 82 92 82 82 C82 74 72 74 74 66 C75 62 78 60 81 60" stroke={p.altDeep} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+      <V d="M80 56 L86 56 Q88 56 88 58 L88 62 Q88 64 86 64 L80 64Z" fill={p.alt} f={f} />
+      <Path d="M88 58 L91 58 M88 62 L91 62" stroke={p.light} strokeWidth={1.2} strokeLinecap="round" />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The cap and the case. */}
+      <V d="M42 14 Q42 12 44 12 L56 12 Q58 12 58 14 L58 20 L42 20Z" fill={p.alt} f={f} />
+      <V d="M28 24 Q28 18 34 18 L66 18 Q72 18 72 24 L72 84 Q72 90 66 90 L34 90 Q28 90 28 84Z" fill={p.alt} f={f} gloss={[35, 30, 3, 10, 0]} />
+      {/* The window with its charge bars. */}
+      <Path d="M34 50 Q34 48 36 48 L64 48 Q66 48 66 50 L66 82 Q66 84 64 84 L36 84 Q34 84 34 82Z" fill={p.altDeep} />
+      {[76, 67, 58].map((y) => (
+        <V key={y} d={`M37 ${y} L63 ${y} L63 ${y + 5.6} L37 ${y + 5.6}Z`} fill={p.mid} f={f} />
+      ))}
+      <Circle cx={38} cy={41} r={2.2} fill={p.accent} opacity={0.35} />
+      <Circle cx={62} cy={41} r={2.2} fill={p.accent} opacity={0.35} />
+      <Path d="M45.4 40.6 Q50 44 54.6 40.6" stroke={p.light} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 28, 20, 9],
+    el: (
+      <G>
+        <VEye x={44} y={33} r={3} f={f} />
+        <VEye x={56} y={33} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* The bar still filling, and a bolt of charge. */}
+      <Path d="M37 49.6 L63 49.6 L63 55.2 L37 55.2Z" fill={p.mid} opacity={0.85} />
+      <Path d="M51.5 49 L46.5 56.5 L50.5 56.5 L48.5 63 L54 54.5 L50 54.5 L52.5 49Z" fill={p.accent} />
+      {sparkles(p.accent, [
+        [16, 22, 2.2],
+        [86, 30, 1.8],
+        [14, 70, 1.6],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker for the dance floor: a rave fan clacked wide open, painted panels and a smile. */
+const fan: Draw = (p, f) => {
+  const at = (deg: number, r: number) => [r1(50 + Math.cos((deg * Math.PI) / 180) * r), r1(80 + Math.sin((deg * Math.PI) / 180) * r)] as const;
+  const PANELS = 10;
+  const from = 196;
+  const step = (344 - from) / PANELS;
+  return {
+    ground: [50, 92, 20],
+    back: <Ellipse cx={50} cy={50} rx={46} ry={40} fill={p.glow} opacity={0.16} />,
+    body: (
+      <G>
+        <V d={`M50 80 L${at(from, 46).join(' ')} A46 46 0 0 1 ${at(from + step * PANELS, 46).join(' ')}Z`} fill={p.mid} f={f} gloss={[30, 44, 8, 3, -40]} />
+        {Array.from({ length: PANELS }, (_, i) => {
+          const a0 = from + step * i;
+          const a1 = a0 + step;
+          return i % 2 ? <Path key={i} d={`M50 80 L${at(a0, 46).join(' ')} A46 46 0 0 1 ${at(a1, 46).join(' ')}Z`} fill={p.alt} opacity={0.85} /> : null;
+        })}
+        {/* A band of light painted across it. */}
+        <Path d={`M${at(from, 33).join(' ')} A33 33 0 0 1 ${at(from + step * PANELS, 33).join(' ')}`} stroke={p.accent} strokeWidth={2.4} fill="none" opacity={0.9} />
+        <Path d={`M${at(from, 41).join(' ')} A41 41 0 0 1 ${at(from + step * PANELS, 41).join(' ')}`} stroke={p.light} strokeWidth={1} fill="none" opacity={0.6} />
+        {/* Its ribs. */}
+        {Array.from({ length: PANELS + 1 }, (_, i) => {
+          const [x, y] = at(from + step * i, 46);
+          return <Line key={`r${i}`} x1={50} y1={80} x2={x} y2={y} stroke={p.deep} strokeWidth={0.8} opacity={0.5} />;
+        })}
+        {/* The guards and the rivet at the bottom. */}
+        <V d="M48 80 L52 80 L54 92 Q54 94 52 94 L48 94 Q46 94 46 92Z" fill={p.altDeep} f={f} />
+        <VE cx={50} cy={80} rx={3.6} ry={3.6} fill={p.accent} f={f} gloss={false} />
+        <Circle cx={39} cy={62} r={2.2} fill={p.light} opacity={0.4} />
+        <Circle cx={61} cy={62} r={2.2} fill={p.light} opacity={0.4} />
+        <Path d="M45.4 62.6 Q50 66.4 54.6 62.6" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+      </G>
+    ),
+    eyes: {
+      box: [40, 51, 20, 9],
+      el: (
+        <G>
+          <VEye x={44} y={56} r={3} f={f} />
+          <VEye x={56} y={56} r={3} f={f} />
+        </G>
+      ),
+    },
+    flicker: (
+      <G>
+        {/* The clack: little lines of sound off its edge. */}
+        <Path d="M14 38 L9 35 M15 30 L11 25 M86 38 L91 35 M85 30 L89 25" stroke={p.accent} strokeWidth={1.6} strokeLinecap="round" />
+        {sparkles(p.accent, [
+          [20, 12, 2],
+          [80, 10, 1.8],
+          [88, 70, 1.6],
+        ])}
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
 /** SKRILLEX: a scary monster (and nice sprites) — a shaggy little beast with horns and a jagged grin, sprites buzzing round it. */
 const scarymonster: Draw = (p, f) => ({
   ground: [50, 91, 28],
@@ -4411,4 +4567,7 @@ export const DRAW: Record<Creature, Draw> = {
   boombox,
   tulip,
   portapotty,
+  refill,
+  charger,
+  fan,
 };
