@@ -6101,6 +6101,171 @@ const cloud: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** MPH: the Speedometer — a speedometer with its needle in the red, going flat out. */
+const speedo: Draw = (p, f) => ({
+  ground: [50, 86, 34],
+  back: <Ellipse cx={50} cy={56} rx={42} ry={36} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      <V d="M12 70 C12 46 30 28 50 28 C70 28 88 46 88 70 Q88 76 82 76 L18 76 Q12 76 12 70Z" fill={p.deep} f={f} gloss={[30, 40, 8, 2, -30]} />
+      <Path d="M20 70 A30 30 0 0 1 80 70" stroke={p.mid} strokeWidth={4} fill="none" />
+      <Path d="M68 46 A30 30 0 0 1 80 70" stroke={p.accent} strokeWidth={4} fill="none" />
+      {Array.from({ length: 7 }, (_, i) => {
+        const a = Math.PI + (i / 6) * Math.PI;
+        return <Path key={i} d={`M${r1(50 + Math.cos(a) * 24)} ${r1(70 + Math.sin(a) * 24)} L${r1(50 + Math.cos(a) * 20)} ${r1(70 + Math.sin(a) * 20)}`} stroke={p.light} strokeWidth={1.4} strokeLinecap="round" />;
+      })}
+      {/* The needle, in the red. */}
+      <Path d="M50 70 L74 52" stroke={p.accent} strokeWidth={2.4} strokeLinecap="round" />
+      <Circle cx={50} cy={70} r={3.4} fill={p.light} />
+      <Path d="M44 64 Q47 66 50 64" stroke={p.light} strokeWidth={1} fill="none" strokeLinecap="round" opacity={0.8} />
+    </G>
+  ),
+  eyes: {
+    box: [36, 52, 18, 7],
+    el: (
+      <G>
+        <VEye x={40} y={55.6} r={2.4} f={f} />
+        <VEye x={49} y={55.6} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Speed lines. */}
+      <Path d="M14 38 L24 38 M12 46 L20 46 M16 30 L24 30" stroke={p.accent} strokeWidth={1.4} strokeLinecap="round" opacity={0.8} />
+      <Glow x={74} y={52} r={1.4} color={p.accent} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** PEGASSI: the Pegasus — a little winged horse, its wings beating, a star on its brow. */
+const pegasus: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  pivot: [50, 52],
+  flap: true,
+  sway: (
+    <G>
+      <V d="M44 54 C36 40 22 34 12 36 C18 40 20 44 20 48 C26 46 30 48 32 52 C36 50 40 52 44 58Z" fill={p.alt} f={f} />
+      <V d="M56 54 C64 40 78 34 88 36 C82 40 80 44 80 48 C74 46 70 48 68 52 C64 50 60 52 56 58Z" fill={p.alt} f={f} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Legs, body, tail. */}
+      <Path d="M38 74 L37 88 M46 76 L46 88 M56 76 L56 88 M64 74 L65 88" stroke={p.mid} strokeWidth={4} strokeLinecap="round" />
+      <Path d="M36 87.6 L38 87.6 M45 87.6 L47 87.6 M55 87.6 L57 87.6 M64 87.6 L66 87.6" stroke={p.deep} strokeWidth={3} strokeLinecap="round" />
+      <Path d="M30 62 C22 64 20 72 24 78" stroke={p.accent} strokeWidth={4} fill="none" strokeLinecap="round" />
+      <VE cx={50} cy={66} rx={20} ry={12} fill={p.mid} f={f} />
+      {/* Neck, head, mane and the star. */}
+      <V d="M58 60 C60 50 62 42 66 36 L74 40 C70 46 68 54 66 62Z" fill={p.mid} f={f} />
+      <VE cx={72} cy={36} rx={9} ry={7} fill={p.mid} f={f} turn={20} />
+      <Path d="M64 34 C60 40 60 48 58 56" stroke={p.accent} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <V d="M68 28 L70 22 L72 29Z" fill={p.mid} f={f} />
+      <Path d={star5(74, 31, 2.2)} fill={p.light} />
+      <Path d="M76 40.4 Q78 41.6 80 40.4" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [70, 33, 10, 5],
+    el: <VEye x={75} y={35.4} r={1.9} f={f} />,
+  },
+  flicker: sparkles(p.accent, [
+    [16, 20, 1.6],
+    [86, 64, 1.4],
+    [50, 14, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** RAVENSCOON: the Raccoon — a raccoon in its bandit mask, ringed tail curled, up to no good. */
+const raccoon: Draw = (p, f) => ({
+  ground: [50, 92, 28],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The ringed tail. */}
+      <Path d="M64 84 C80 86 88 74 82 62" stroke={p.mid} strokeWidth={7} fill="none" strokeLinecap="round" />
+      <Path d="M72 85 L71 79 M79 81 L76 77 M84 72 L79 71" stroke={p.deep} strokeWidth={2.4} strokeLinecap="round" />
+      {/* Body, ears and head. */}
+      <V d="M34 88 C30 74 36 62 50 62 C64 62 70 74 66 88Z" fill={p.mid} f={f} />
+      <VE cx={50} cy={80} rx={9} ry={7} fill={p.light} f={f} gloss={false} />
+      <V d="M30 36 L28 24 L40 30Z" fill={p.mid} f={f} />
+      <V d="M70 36 L72 24 L60 30Z" fill={p.mid} f={f} />
+      <VE cx={50} cy={44} rx={20} ry={16} fill={p.mid} f={f} />
+      <V d="M38 54 C42 60 46 62 50 62 C54 62 58 60 62 54 C58 56 42 56 38 54Z" fill={p.light} f={f} />
+      {/* The mask. */}
+      <Path d="M30 42 Q40 36 50 42 Q60 36 70 42 Q68 50 60 50 Q54 50 50 46 Q46 50 40 50 Q32 50 30 42Z" fill={p.deep} />
+      <VE cx={50} cy={53} rx={2.6} ry={2} fill={p.deep} f={f} gloss={false} />
+      <Path d="M47 57 Q50 59 53 57" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [37, 40, 26, 8],
+    el: (
+      <G>
+        <VEye x={41.6} y={44.4} r={2.6} f={f} />
+        <VEye x={58.4} y={44.4} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [14, 24, 1.6],
+    [86, 22, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** KREAM: the Ice cream — a double scoop in a waffle cone, a cherry on top, melting a little. */
+const icecream: Draw = (p, f) => ({
+  ground: [50, 92, 14],
+  back: <Ellipse cx={50} cy={48} rx={40} ry={38} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* The cone and its waffle. */}
+      <V d="M34 54 L66 54 L52 92 Q50 94 48 92Z" fill={p.alt} f={f} />
+      <Path d="M38 60 L60 82 M44 56 L64 64 M62 60 L42 82 M56 56 L36 66" stroke={p.altDeep} strokeWidth={0.8} opacity={0.6} />
+      {/* Two scoops, a drip and the cherry. */}
+      <VE cx={50} cy={52} rx={19} ry={11} fill={p.mid} f={f} />
+      <Path d="M40 58 Q40 64 42 64 Q44 64 44 59" fill={p.mid} />
+      <VE cx={50} cy={36} rx={16} ry={12} fill={p.light} f={f} />
+      <Path d="M58 42 Q58 47 60 47 Q62 47 62 42" fill={p.light} />
+      <Path d="M52 24 Q54 18 58 16" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+      <VE cx={51} cy={24} rx={4} ry={4} fill={p.accent} f={f} />
+      <Circle cx={42} cy={40} r={1.8} fill={p.accent} opacity={0.4} />
+      <Circle cx={58} cy={40} r={1.8} fill={p.accent} opacity={0.4} />
+      <Path d="M47 41 Q50 43.4 53 41" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+      {/* Sprinkles. */}
+      {(
+        [
+          [40, 48, p.accent],
+          [56, 50, p.deep],
+          [48, 56, p.accent],
+          [62, 54, p.light],
+        ] as const
+      ).map(([x, y, c], i) => (
+        <Path key={i} d={`M${x} ${y} l2 -1`} stroke={c} strokeWidth={1.2} strokeLinecap="round" />
+      ))}
+    </G>
+  ),
+  eyes: {
+    box: [41, 32, 18, 7],
+    el: (
+      <G>
+        <VEye x={45} y={35.6} r={2.3} f={f} />
+        <VEye x={55} y={35.6} r={2.3} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [18, 20, 1.6],
+    [82, 20, 1.4],
+    [80, 76, 1.2],
+  ]),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -7074,6 +7239,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  speedo,
+  pegasus,
+  raccoon,
+  icecream,
   record,
   catmat,
   clover,
