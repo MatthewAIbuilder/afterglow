@@ -29,7 +29,7 @@ describe('your collection', () => {
     });
     const of = (id: string) => book.sets.find((s) => s.id === id)!;
     expect(of('kinds').have).toBe(1);
-    expect(of('kinds').total).toBe(8);
+    expect(of('kinds').total).toBe(9);
     // Only the hand-made ones whose artists are on Afterglow.
     expect(of('signatures')).toMatchObject({ have: 1, total: 2 });
     // A sound artist's collectible fills in its sound creature.

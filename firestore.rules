@@ -477,7 +477,7 @@ service cloud.firestore {
         && id.matches('^[a-z0-9]{12,40}$')
         && request.resource.data.keys().hasOnly(['from', 'kind', 'note', 'festivalId', 'artistId', 'artistName', 'theme', 'createdAt'])
         && request.resource.data.from == me()
-        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight']
+        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight', 'seeker']
         && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 60))
         && (!('festivalId' in request.resource.data) || (request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 120))
         // An artist's sprout names the artist (id and name, together).

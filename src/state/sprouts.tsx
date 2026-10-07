@@ -45,6 +45,7 @@ import { useMemories } from './memories';
 import { shinyFor } from '../features/sprouts/artistLook';
 import { artistSprouts, type ArtistSprout, cleanShown, newArtistSprouts, shownMark, withPosted } from '../features/sprouts/artistSprouts';
 import { useSeen } from './seen';
+import { useFinds } from './finds';
 import { useSocial } from './social';
 import { canGiveThemes, giftThemesOf, isGiftTheme, type ThemeGift } from '../features/themes/gifts';
 import type { ThemeId } from '../theme/palettes';
@@ -270,6 +271,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const { going, hydrated: goingLoaded } = useGoing();
   const { seen } = useSeen();
   const { memories } = useMemories();
+  const { finds } = useFinds();
   const tonight = useTonight();
   const now = useNow().getTime();
   const net = useNetworkState();
@@ -674,8 +676,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       filmed: memories.map((m) => Date.parse(m.capturedAt)).filter((t) => !Number.isNaN(t)),
       gave: gifts.map((g) => g.at),
       festivalDays: festivalDaysOf(catalog.festivals, going, now, goingSince),
+      found: finds.filter((f) => f.state === 'found').map((f) => f.at),
     };
-  }, [seen, catalog, memories, gifts, going, now, goingSince]);
+  }, [seen, catalog, memories, gifts, going, now, goingSince, finds]);
 
   const sprouts = useMemo<GardenSprout[]>(() => {
     const mine = account ? stored.garden.filter((g) => g.account === account) : [];

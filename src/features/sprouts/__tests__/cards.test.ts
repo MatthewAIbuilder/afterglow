@@ -53,3 +53,18 @@ describe('the Moonlight sprout', () => {
     expect(growthOf({ watched: day, filmed: [], gave: [], festivalDays: [] }, new Date(2026, 9, 1).getTime(), new Date(2026, 10, 2).getTime()).leaning).toBe('bass');
   });
 });
+
+describe('the Seeker sprout', () => {
+  it('grows from finding stickers', () => {
+    const at = (i: number) => new Date(2026, 9, 10 + i, 20).getTime();
+    const since = new Date(2026, 9, 1).getTime();
+    const now = new Date(2026, 10, 1).getTime();
+    const watched = Array.from({ length: 8 }, (_, i) => ({ at: at(i), sound: 'house' }));
+    const g = growthOf({ watched, filmed: [], gave: [], festivalDays: [], found: [at(1), at(2), at(3), at(4)] }, since, now);
+    // Four stickers (3 each) outgrow eight sets (1 each).
+    expect(g.points).toBe(20);
+    expect(g.leaning).toBe('seeker');
+    // Stickers found before the sprout reached you don't count.
+    expect(growthOf({ watched, filmed: [], gave: [], festivalDays: [], found: [since - 1] }, since, now).leaning).toBe('groove');
+  });
+});

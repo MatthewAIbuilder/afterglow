@@ -27,6 +27,7 @@ const LOOKS: Record<SproutKind, Look> = {
   spotlight: { body: ['#E3F7B4', '#A9DB5E', '#5C9A2C'], leaf: ['#CFF29A', '#5E9C30'], face: 'sparkle', leafShape: 'round' },
   sunrise: { body: ['#F2F2B0', '#C3D96A', '#7A9C34'], leaf: ['#E2EE9C', '#7E9E36'], face: 'sleepy', leafShape: 'pointed' },
   moonlight: { body: ['#E0E6FF', '#9AAEF2', '#4A5AB8'], leaf: ['#C8D4FF', '#5464C0'], face: 'bliss', leafShape: 'petal' },
+  seeker: { body: ['#ECF6BE', '#B4D25E', '#6A8A26'], leaf: ['#DCEFA0', '#6E8E2C'], face: 'sparkle', leafShape: 'pointed' },
 };
 const GREY: Look = { body: ['#7C7A92', '#5A5870', '#3A3850'], leaf: ['#7A7890', '#4A4860'], face: 'smile', leafShape: 'round' };
 const INK = '#0E2A1A';
@@ -488,7 +489,7 @@ function Mouth({ face, x, y, s, blush }: { face: Face; x: number; y: number; s: 
 }
 
 /** Colours for what a sprout wears: as drawn, or greys for a locked silhouette (darks stay darker). */
-const DARKS = new Set(['#22305C', '#141024', '#2A2638', '#3A3458']);
+const DARKS = new Set(['#22305C', '#141024', '#2A2638', '#3A3458', '#8A5A2A']);
 const toner = (grey?: boolean) => (c: string) => (!grey ? c : DARKS.has(c) ? '#46445C' : c === '#FFFFFF' ? '#9A98B0' : '#7C7A92');
 
 /** What a bloomed sprout wears on its body. */
@@ -543,6 +544,16 @@ function Wear({ kind, x, y, rx, ry, color, grey, id }: { kind: SproutKind; x: nu
           <Path d={`M${x + rx + 2} ${y - 4} l0 -8 l5 -1.5 l0 7`} stroke={color} strokeWidth={1.4} fill="none" strokeLinecap="round" />
           <Circle cx={x + rx + 0.8} cy={y - 3.6} r={1.9} fill={color} />
           <Circle cx={x + rx + 5.8} cy={y - 5} r={1.9} fill={color} />
+        </G>
+      );
+    case 'seeker':
+      // A little satchel on its side, for the stickers it finds.
+      return (
+        <G>
+          <Path d={`M${x + rx * 0.5} ${y + ry * 0.3} Q${x + rx * 0.62} ${y - ry * 0.5} ${x + rx * 0.9} ${y - ry * 0.42}`} stroke={t('#8A5A2A')} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+          <Vy d={`M${x + rx * 0.36} ${y + ry * 0.26} L${x + rx * 0.98} ${y + ry * 0.26} Q${x + rx} ${y + ry * 0.7} ${x + rx * 0.67} ${y + ry * 0.74} Q${x + rx * 0.34} ${y + ry * 0.7} ${x + rx * 0.36} ${y + ry * 0.26} Z`} fill={color} id={id} />
+          <Path d={`M${x + rx * 0.36} ${y + ry * 0.26} Q${x + rx * 0.67} ${y + ry * 0.5} ${x + rx * 0.98} ${y + ry * 0.26}`} stroke={t('#8A5A2A')} strokeWidth={1} fill="none" />
+          <Circle cx={x + rx * 0.67} cy={y + ry * 0.42} r={0.9} fill={t('#FFFFFF')} opacity={0.9} />
         </G>
       );
     case 'groove':
@@ -651,6 +662,21 @@ function Bloom({ kind, x, y, color, grey, id }: { kind: SproutKind; x: number; y
             />
           ))}
           <Path d={`M${x - 13} ${cy + 4.4} L${x + 13} ${cy + 4.4}`} stroke={t('#FFD58A')} strokeWidth={1.2} strokeLinecap="round" opacity={0.8} />
+        </G>
+      );
+    case 'seeker':
+      // A compass, its needle pointing at the next find.
+      return (
+        <G>
+          <Vy d={circleD(x, cy, 9.5)} fill={color} id={id} />
+          <Circle cx={x} cy={cy} r={7} fill={t('#FFF8E0')} />
+          {[0, 90, 180, 270].map((a) => (
+            <Circle key={a} cx={x + Math.sin((a * Math.PI) / 180) * 5.6} cy={cy - Math.cos((a * Math.PI) / 180) * 5.6} r={0.6} fill={t('#8A5A2A')} />
+          ))}
+          <Path d={`M${x + 2.6} ${cy - 5.2} L${x + 1} ${cy + 0.8} L${x - 1} ${cy - 0.8} Z`} fill={t('#FF5A5A')} />
+          <Path d={`M${x - 2.6} ${cy + 5.2} L${x - 1} ${cy - 0.8} L${x + 1} ${cy + 0.8} Z`} fill={t('#22305C')} />
+          <Circle cx={x} cy={cy} r={1} fill={color} />
+          <Spot x={x - 4} y={cy - 4.2} rx={2.2} ry={1.1} id={id} />
         </G>
       );
     case 'moonlight':

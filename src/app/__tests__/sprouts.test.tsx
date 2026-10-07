@@ -96,7 +96,7 @@ describe('sprouts', () => {
     await flush();
     expect(app.getByLabelText('PLUR sprout, from Maya. In bloom.')).toBeTruthy();
     expect(app.getByLabelText(/^Sprout, Your first sprout\. Seed/)).toBeTruthy();
-    expect(app.getByText('Kinds · 1 of 8')).toBeTruthy();
+    expect(app.getByText('Kinds · 1 of 9')).toBeTruthy();
   });
 
   it('after picking one up, you can follow whoever gave it in one tap', async () => {

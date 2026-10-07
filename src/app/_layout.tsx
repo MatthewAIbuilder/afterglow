@@ -86,9 +86,9 @@ export default function RootLayout() {
       <LineupNewsProvider>
       <ClipNewsProvider>
       <SocialProvider>
+      <FindsProvider>
       <SproutsProvider>
       <KandiProvider>
-      <FindsProvider>
       <NoticesProvider>
       <CrewsProvider>
       <CrewUpdatesProvider>
@@ -270,9 +270,9 @@ export default function RootLayout() {
       </CrewUpdatesProvider>
       </CrewsProvider>
       </NoticesProvider>
-      </FindsProvider>
       </KandiProvider>
       </SproutsProvider>
+      </FindsProvider>
       </SocialProvider>
       </ClipNewsProvider>
       </LineupNewsProvider>
