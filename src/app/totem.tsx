@@ -10,7 +10,7 @@ import { NightSky } from '../components/NightSky';
 import { PageTitle } from '../components/PageTitle';
 import { WEB_URL } from '../config/app';
 import { isSupportAccount } from '../features/admin/admin';
-import { cleanTotem, DEFAULT_TOTEM, TOTEM_CODES_MAX, TOTEM_EVERY, TOTEM_SHOW, TOTEM_SUBTITLE_MAX, clock, totemNext, totemPopup, type TotemSettings } from '../features/admin/totem';
+import { cleanTotem, DEFAULT_TOTEM, TOTEM_CODES_MAX, TOTEM_EVERY, TOTEM_SHOW, TOTEM_SUBTITLE_MAX, clock, showFor, totemNext, totemPopup, type TotemSettings } from '../features/admin/totem';
 import { TotemOrb } from '../features/admin/TotemOrb';
 import { findLink, lookOf, type Sticker } from '../features/finds/finds';
 import { PortalSwirl } from '../features/finds/PortalSwirl';
@@ -30,6 +30,8 @@ const STORAGE_KEY = 'totem.v1';
 const CONTROLS_MS = 6000;
 /** How often a pop-up checks how many people have claimed its sticker. */
 const CLAIMS_POLL_MS = 15_000;
+/** How often a running totem reads its stickers again. */
+const STICKERS_POLL_MS = 5 * 60_000;
 
 /**
  * The totem (HQ only): a tablet at the festival, full screen. Afterglow's
@@ -54,12 +56,17 @@ export default function TotemScreen() {
   useEffect(() => {
     if (!allowed) return;
     let live = true;
-    service
-      .stickers(200)
-      .then((s) => live && setStickers(s))
-      .catch(() => live && setStickers([]));
+    const read = () =>
+      service
+        .stickers(200)
+        .then((s) => live && setStickers(s))
+        .catch(() => live && setStickers((cur) => cur ?? []));
+    read();
+    // Read again now and then, so one HQ takes down drops out of a running totem.
+    const timer = setInterval(read, STICKERS_POLL_MS);
     return () => {
       live = false;
+      clearInterval(timer);
     };
   }, [allowed, service]);
   if (social.ready && !allowed) return <Redirect href="/" />;
@@ -132,7 +139,7 @@ function TotemSetup({ settings, stickers, onChange, onStart }: { settings: Totem
               return (
                 <Pressable
                   key={st.code}
-                  disabled={ended}
+                  disabled={ended && !on}
                   onPress={() => {
                     haptic.select();
                     const codes = on ? settings.codes.filter((c) => c !== st.code) : [...settings.codes, st.code].slice(0, TOTEM_CODES_MAX);
@@ -170,6 +177,7 @@ function TotemSetup({ settings, stickers, onChange, onStart }: { settings: Totem
             </Pressable>
           ))}
         </View>
+        {showFor(settings) < settings.showSec ? <Text style={styles.hint}>{`With a pop-up every ${settings.everyMin === 1 ? 'minute' : `${settings.everyMin} minutes`}, each stays up ${showFor(settings)} seconds at most, so the logo gets its time too.`}</Text> : null}
 
         <Pressable
           onPress={() => {
@@ -204,7 +212,8 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
   const [nudge, setNudge] = useState<number>();
   const known = useMemo(() => new Map(stickers.map((s) => [s.code, s])), [stickers]);
   // Only stickers it still knows about (one HQ took down drops out).
-  const live = useMemo(() => ({ ...settings, codes: settings.codes.filter((c) => known.has(c)) }), [settings, known]);
+  // (or whose end date has passed).
+  const live = { ...settings, codes: settings.codes.filter((c) => { const st = known.get(c); return !!st && st.takenDownAt === undefined && (st.until === undefined || now < st.until); }) };
   const popup = totemPopup(live, start, now, nudge);
   const next = totemNext(live, start, now);
   const nextSticker = next ? known.get(next.code) : undefined;
@@ -212,19 +221,22 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
   // How many people have claimed the sticker on show, kept fresh while it's up.
   const { service } = useSocial();
   const showing = popup && sticker ? popup.code : undefined;
-  const [claims, setClaims] = useState<{ code: string; n: number; up: boolean }>();
+  // Each time a sticker comes up is its own round: "Just claimed!" only for claims while it's on screen.
+  const round = popup && sticker ? `${popup.code}:${popup.index}:${nudge ?? ''}` : undefined;
+  const [claims, setClaims] = useState<{ round: string; n: number; up: boolean }>();
   // Each sticker's count when the totem first read it, and now: claims since it started.
   const [session, setSession] = useState<Record<string, { first: number; last: number }>>({});
   useEffect(() => {
-    if (!showing) return;
+    if (!showing || !round) return;
     let live = true;
     const read = () =>
       service
         .stickerFinds(showing)
         .then((n) => {
           if (!live) return;
-          setClaims((cur) => ({ code: showing, n, up: cur?.code === showing && n > cur.n }));
-          setSession((cur) => ({ ...cur, [showing]: { first: cur[showing]?.first ?? n, last: n } }));
+          // Answers can arrive out of order: a count never goes down.
+          setClaims((cur) => (cur?.round !== round ? { round, n, up: false } : n > cur.n ? { round, n, up: true } : cur));
+          setSession((cur) => ({ ...cur, [showing]: { first: cur[showing]?.first ?? n, last: Math.max(n, cur[showing]?.last ?? n) } }));
         })
         .catch(() => {});
     read();
@@ -233,8 +245,8 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
       live = false;
       clearInterval(timer);
     };
-  }, [showing, service]);
-  const claimed = claims && claims.code === showing && claims.n > 0 ? claims : undefined;
+  }, [showing, round, service]);
+  const claimed = claims && claims.round === round && claims.n > 0 ? claims : undefined;
   const portal = sticker?.creature === 'portapotty';
   const sinceStart = Object.values(session).reduce((n, c) => n + Math.max(0, c.last - c.first), 0);
   useEffect(() => {
@@ -261,7 +273,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
           <Text style={[styles.tagline, { fontSize: Math.round(short * 0.026) }]}>
             {live.codes.length ? t('Stay close: something to claim pops up here every few minutes.') : t('Find Afterglow stickers around the festival. Scan one to collect it.')}
           </Text>
-          {sinceStart > 0 ? <Text style={[styles.since, { fontSize: Math.round(short * 0.024) }]}>{tn(sinceStart, '✦ {n} claimed here so far', '✦ {n} claimed here so far')}</Text> : null}
+          {sinceStart > 0 ? <Text style={[styles.since, { fontSize: Math.round(short * 0.024) }]}>{tn(sinceStart, '✦ {n} claimed since the totem started', '✦ {n} claimed since the totem started')}</Text> : null}
           {next && nextSticker && !popup ? (
             <View style={styles.next} accessibilityLabel={t('Next one in {time}', { time: clock(next.inSec) })}>
               <Collectible look={lookOf(nextSticker.creature)} size={Math.round(short * 0.08)} locked still />
@@ -301,7 +313,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
               <FriendQR value={findLink(sticker, undefined, 'totem')} size={Math.round(short * (landscape ? 0.42 : 0.5))} theme="glow" centre={(sz) => <Collectible look={lookOf(sticker.creature)} size={sz} still />} />
               <Text style={styles.popScan}>{t('Point your phone’s camera here')}</Text>
               <View style={styles.bar}>
-                <View style={[styles.barFill, { width: `${Math.max(0, Math.min(1, popup.left / live.showSec)) * 100}%` }]} />
+                <View style={[styles.barFill, { width: `${Math.max(0, Math.min(1, popup.left / showFor(live))) * 100}%` }]} />
               </View>
               <Text style={styles.popLeft}>{t('{n}s left', { n: popup.left })}</Text>
             </View>

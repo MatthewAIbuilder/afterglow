@@ -315,14 +315,16 @@ export type GardenSprout = {
  * that festival and night (the same for everyone there that night).
  */
 export const WILD_PREFIX = 'wild:';
+/** The kinds wild sprouts come in, kept as they were so a night's kind never changes when a new kind is added. */
+const WILD_KINDS: readonly SproutKind[] = ['plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight'];
 export function wildKind(nightId: string): SproutKind {
-  const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
+  const kinds = WILD_KINDS;
   let h = 2166136261;
   for (let i = 0; i < nightId.length; i++) {
     h ^= nightId.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return kinds[(h >>> 0) % kinds.length].id;
+  return kinds[(h >>> 0) % kinds.length];
 }
 
 /** The sprout everyone starts with. */

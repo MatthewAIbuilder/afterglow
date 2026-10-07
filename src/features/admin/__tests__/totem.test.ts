@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { clock, cleanTotem, DEFAULT_TOTEM, totemNext, totemPopup } from '../totem';
+import { clock, cleanTotem, DEFAULT_TOTEM, showFor, totemNext, totemPopup } from '../totem';
 
 const s = { codes: ['aaaaaa1', 'bbbbbb2'], everyMin: 5, showSec: 60 };
 const min = 60_000;
@@ -37,8 +37,12 @@ describe('the totem', () => {
       subtitle: 'Lost Lands',
       codes: ['aaaaaa1'],
       everyMin: 1,
-      showSec: 30,
+      showSec: 120,
     });
+    // Up for half the gap at most, without losing the choice for a longer gap.
+    expect(showFor({ everyMin: 1, showSec: 120 })).toBe(30);
+    expect(showFor({ everyMin: 5, showSec: 120 })).toBe(120);
+    expect(totemPopup({ codes: ['aaaaaa1'], everyMin: 1, showSec: 120 }, 0, min + 31_000)).toBeUndefined();
     expect(cleanTotem({ everyMin: 7, showSec: 5 })).toMatchObject({ everyMin: 5, showSec: 60 });
   });
 });

@@ -449,7 +449,7 @@ export const es_sprouts: Dictionary = {
   'Share your garden as a picture': 'Comparte tu jardín como imagen',
   'Share your garden': 'Compartir tu jardín',
   'My garden': 'Mi jardín',
-  '✦ {n} claimed here so far': '✦ {n} reclamados aquí hasta ahora',
+  '✦ {n} claimed since the totem started': '✦ {n} reclamados desde que empezó el tótem',
   'Seeker sprout': 'Brote buscador',
   'Seeker': 'Buscador',
   'Grows from finding stickers': 'Crece encontrando pegatinas',

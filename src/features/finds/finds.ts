@@ -123,10 +123,10 @@ export function findCardFrom(parts: { code?: unknown; c?: unknown; n?: unknown }
   return { code: parts.code, creature, name: cleanName(parts.n) || 'A sticker' };
 }
 
-/** A scanned code, if it's an Afterglow sticker (from any Afterglow address, or `afterglow://find/…`). */
 /** A sticker link scanned off a totem's screen (`findLink(…, 'totem')`). */
 export const fromTotemLink = (text: string) => /[?&]via=totem(?:[&#]|$)/.test(text.trim());
 
+/** A scanned code, if it's an Afterglow sticker (from any Afterglow address, or `afterglow://find/…`). */
 export function readFindLink(text: string): FindCard | undefined {
   const m = /^(?:https:\/\/(?:www\.)?(?:afterglowmusic\.app|afterglowmusic\.web\.app)|afterglow:\/)\/find\/([a-z0-9]+)(?:\?([^#]*))?$/i.exec(text.trim());
   if (!m) return undefined;

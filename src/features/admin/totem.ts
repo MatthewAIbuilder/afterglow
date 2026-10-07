@@ -34,9 +34,11 @@ export function cleanTotem(raw: unknown): TotemSettings {
   const codes = Array.isArray(o.codes) ? [...new Set(o.codes.filter(isStickerCode))].slice(0, TOTEM_CODES_MAX) : [];
   const everyMin = (TOTEM_EVERY as readonly number[]).includes(o.everyMin as number) ? (o.everyMin as number) : DEFAULT_TOTEM.everyMin;
   const showSec = (TOTEM_SHOW as readonly number[]).includes(o.showSec as number) ? (o.showSec as number) : DEFAULT_TOTEM.showSec;
-  // A pop-up stays up for half the gap at most, so the logo always gets its time too.
-  return { brand, subtitle, codes, everyMin, showSec: Math.min(showSec, everyMin * 30) };
+  return { brand, subtitle, codes, everyMin, showSec };
 }
+
+/** How long each pop-up really stays up (seconds): half the gap at most, so the logo always gets its time too. */
+export const showFor = (s: Pick<TotemSettings, 'everyMin' | 'showSec'>) => Math.min(s.showSec, s.everyMin * 30);
 
 /**
  * What's on screen `now` for a totem started at `start`: after each gap of
@@ -45,7 +47,7 @@ export function cleanTotem(raw: unknown): TotemSettings {
  */
 export function totemPopup(s: Pick<TotemSettings, 'codes' | 'everyMin' | 'showSec'>, start: number, now: number, nudge?: number): { code: string; index: number; left: number } | undefined {
   if (!s.codes.length) return undefined;
-  const show = s.showSec * 1000;
+  const show = showFor(s) * 1000;
   if (nudge !== undefined && now >= nudge && now < nudge + show) {
     const index = Math.floor((nudge - start) / (s.everyMin * 60_000)) % s.codes.length;
     return { code: s.codes[index], index, left: Math.ceil((nudge + show - now) / 1000) };

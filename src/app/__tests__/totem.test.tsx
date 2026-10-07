@@ -66,7 +66,7 @@ describe('the totem', () => {
     await settle(16_000);
     await flush();
     expect(app.queryByText('FREE COLLECTIBLE · SCAN TO CLAIM')).toBeNull();
-    expect(app.getByText('✦ 1 claimed here so far')).toBeTruthy();
+    expect(app.getByText('✦ 1 claimed since the totem started')).toBeTruthy();
     // A tap shows the controls: pop one now, and stop.
     await fireEvent.press(app.getByLabelText('Show the controls'));
     await flush();
