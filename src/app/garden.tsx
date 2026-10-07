@@ -85,6 +85,8 @@ export default function GardenScreen() {
   // The garden moves only while this screen is showing; the page doesn't scroll while something's carried.
   const [focused, setFocused] = useState(false);
   const [carrying, setCarrying] = useState(false);
+  // Sharing the whole garden as a picture.
+  const [gardenStory, setGardenStory] = useState(false);
   const { refresh } = sprouts;
   useFocusEffect(
     useCallback(() => {
@@ -253,6 +255,19 @@ export default function GardenScreen() {
         />
         {/* Glows visitors left. */}
         <GlowsLine glows={glows} />
+        {residents.length ? (
+          <Pressable
+            onPress={() => {
+              haptic.tap();
+              setGardenStory(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Share your garden as a picture')}
+            style={({ pressed }) => [styles.secondary, styles.shareGarden, pressed && styles.pressed]}
+          >
+            <Text style={styles.secondaryText}>{t('Share your garden')}</Text>
+          </Pressable>
+        ) : null}
         <Text style={styles.hint}>{GROW_TIPS[0]} {t('Sprouts you give help yours grow too.')} {t('Hold one to move it.')}</Text>
         {/* Kandi friends left here. */}
         <KandiLine items={kandi.received.map((k) => ({ key: k.id, word: k.word, beads: k.beads, charm: k.charm, from: k.fromHandle }))} onOpen={(id) => setOpenKandi(kandi.received.find((k) => k.id === id))} />
@@ -350,6 +365,15 @@ export default function GardenScreen() {
           else if (freshDecor) saveSeen([...(seenDecor ?? []), freshDecor]);
         }}
       />
+      {gardenStory ? (
+        <StoryPreview title={t('Your garden')} tint="rgba(47,179,107,0.45)" glow={SPROUT_GREEN} headline={t('My garden')} sub={gardenLine(plain)} onClose={() => setGardenStory(false)}>
+          {(w) => (
+            <View style={styles.storyGarden}>
+              <GardenScene decor={decor} glows={glows.length} residents={residents} account={social.user?.uid ?? 'guest'} width={Math.round(w * 0.94)} focused={false} ready={false} visiting onOpen={() => {}} />
+            </View>
+          )}
+        </StoryPreview>
+      ) : null}
     </View>
   );
 }
@@ -549,6 +573,8 @@ const styles = StyleSheet.create({
   primaryText: { ...type.headline, color: color.moon },
   secondary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   secondaryText: { ...type.headline, color: color.moon },
+  storyGarden: { borderRadius: radius.lg, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(143,240,180,0.35)' },
+  shareGarden: { flex: 0, alignSelf: 'center', paddingHorizontal: space.xl, marginTop: space.sm },
   section: { gap: space.sm, marginTop: space.md },
   waitRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: radius.md, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,184,107,0.6)' },
   waitText: { ...type.caption, color: '#FFB86B', flex: 1 },

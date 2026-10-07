@@ -97,6 +97,26 @@ describe('the living garden', () => {
     expect((await stored()).guest).toEqual({ starter: 2 });
   });
 
+  it('shares the whole garden as a picture, without moving anyone', async () => {
+    const me = await person('jojo', 'Jo');
+    await gardenOf(me);
+    const app = await renderApp('/garden');
+    await flush();
+    expect(await app.findByLabelText(/^A night meadow with 4 sprouts/)).toBeTruthy();
+    await flush();
+    const before = (await stored())[me];
+    await fireEvent.press(app.getByLabelText('Share your garden as a picture'));
+    await flush();
+    expect(app.getByText('My garden')).toBeTruthy();
+    // The picture has the meadow too (a second one, only to look at).
+    expect(app.getAllByLabelText(/^A night meadow with 4 sprouts/).length).toBe(2);
+    expect(app.getByText('Share picture')).toBeTruthy();
+    expect((await stored())[me]).toEqual(before);
+    await fireEvent.press(app.getByLabelText('Close'));
+    await flush();
+    expect(app.queryByText('My garden')).toBeNull();
+  });
+
   it('holding a sprout and carrying it to another spot keeps it there, swapping with whoever stood there', async () => {
     const me = await person('jojo', 'Jo');
     await gardenOf(me);
@@ -134,5 +154,4 @@ describe('the living garden', () => {
     expect((await stored())[me][PLUR]).toBe(to);
     expect(await again.findByLabelText('PLUR sprout, from Maya. In bloom.')).toBeTruthy();
   });
-
 });
