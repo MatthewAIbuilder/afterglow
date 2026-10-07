@@ -1,6 +1,7 @@
 import type { Artist, CatalogSnapshot, Festival, SetTime, Show, SoundTag } from '../../data/models';
 import { SOUND_TAGS } from '../../data/models';
 import type { OrgStarter } from '../../config/organizers';
+import { matchesName, nameRank, normalize } from '../festivals/search';
 
 /**
  * Event organizers, pure: an organizer's page (who they are, their events and
@@ -682,6 +683,40 @@ export function orgDjs(org: Org, look: Pick<Lookups, 'festival' | 'show'>, artis
 
 /** The organizer an account runs, by account (HQ linked it, or it linked itself). */
 export const orgOfAccount = (orgs: readonly Org[], uid: string | undefined): Org | undefined => (uid ? orgs.find((o) => o.uids.includes(uid)) : undefined);
+
+/**
+ * Organizers whose name, @handle or Instagram matches a search ("under",
+ * "alchemy", "@undergroundalchemy"), best first: names that start with it,
+ * then words that do, then the rest. Nothing for an empty search. Pure.
+ */
+export function searchOrgs(orgs: readonly Org[], query: string, max = 3): Org[] {
+  const raw = query.trim();
+  const plain = raw.replace(/^@+/, '');
+  if (plain.length < 2) return [];
+  const q = normalize(plain);
+  const handles = (o: Org) => [o.handle, o.instagram].filter((x): x is string => !!x);
+  return orgs
+    .map((o, i) => {
+      if (!raw.startsWith('@') && matchesName(o.name, plain)) return { o, i, r: nameRank(o.name, q) };
+      const h = handles(o).filter((x) => matchesName(x, plain));
+      return { o, i, r: h.length ? 3 + Math.min(...h.map((x) => nameRank(x, q))) : -1 };
+    })
+    .filter((x) => x.r >= 0)
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .slice(0, max)
+    .map((x) => x.o);
+}
+
+/**
+ * A search's festivals or shows with the found organizers' own events added
+ * after them (each once), so typing an organizer's name finds what it hosts.
+ */
+export function withHosted<T extends { id: string; organizer?: string }>(found: readonly T[], all: readonly T[], orgs: readonly Org[], max = Infinity): T[] {
+  if (!orgs.length) return [...found];
+  const ids = new Set(orgs.map((o) => o.id));
+  const seen = new Set(found.map((x) => x.id));
+  return [...found, ...all.filter((x) => x.organizer && ids.has(x.organizer) && !seen.has(x.id))].slice(0, Math.max(max, found.length));
+}
 
 // ---- Promotion --------------------------------------------------------------
 

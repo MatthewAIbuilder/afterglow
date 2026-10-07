@@ -169,6 +169,50 @@ describe('organizers', () => {
     await app.unmount();
   });
 
+  it('anyone finds it by name in Search, Festivals and Find people, with its logo on its account', async () => {
+    seed();
+    const u = await s().signUp('ugrnd@example.com', 'password123');
+    await s().saveProfile({ handle: 'undergroundalchemy', displayName: 'Underground Alchemy', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    mockSocial.orgs.set(ORG, { ...mockSocial.orgs.get(ORG)!, uids: [u.uid], handle: 'undergroundalchemy' });
+    await s().signOut();
+    await s().signUp('fan@example.com', 'password123');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+
+    const app = await renderApp('/search');
+    await flush();
+    // Any word of its name finds it (people search only by the start of a name).
+    await fireEvent.changeText(app.getByLabelText('Search Afterglow'), 'alchemy');
+    await settle(400);
+    await flush();
+    expect(app.getByText('Organizers')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Search Afterglow'), 'underground');
+    await settle(400);
+    await flush();
+    // Its account, in People, wears its logo instead of a photo.
+    expect(app.getByLabelText(/^Underground Alchemy, @undergroundalchemy/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Underground Alchemy, event organizer. Open their page'));
+    await flush();
+    expect(app.getByText('After parties till sunrise.')).toBeTruthy();
+
+    // On the Festivals tab its name finds it and the events it hosts.
+    await act(async () => router.push('/festivals'));
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Find an artist, festival or show'), 'underground');
+    await flush();
+    expect(app.getByLabelText('Underground Alchemy, event organizer. Open their page')).toBeTruthy();
+    expect(app.getAllByText('Transmutation').length).toBeGreaterThan(0);
+
+    // And in Find people.
+    await act(async () => router.push('/people'));
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Search people'), 'undergr');
+    await settle(400);
+    await flush();
+    expect(app.getAllByLabelText('Underground Alchemy, event organizer. Open their page').length).toBeGreaterThan(0);
+    expect(app.getAllByLabelText('Underground Alchemy').length).toBeGreaterThan(0);
+    await app.unmount();
+  });
+
   it('a promotion asked in the studio and approved in HQ shows, labelled, on everyone’s Festivals tab', async () => {
     seed();
     const app = await organizer();

@@ -105,7 +105,7 @@ export default function SendScreen() {
     return {
       name: p?.displayName ?? ' ',
       sub: closeSet.has(r.uid) ? t('Close friend') : p ? `@${p.handle}` : ' ',
-      avatar: <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={40} />,
+      avatar: <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={40} uid={r.uid} />,
       gone: p === null,
     };
   };

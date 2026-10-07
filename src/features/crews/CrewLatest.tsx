@@ -42,7 +42,7 @@ export function CrewLatest({ crew, nameOf }: { crew: Crew; nameOf: (uid: string)
         const answers = mine && latest ? repliesLine(repliesFor(latest).map((r) => r.reply), (id) => (id === me ? t('You') : (nameOf(id) ?? (profileOf(id) ? firstName(profileOf(id)!.displayName) : t('Crewmate'))))) : undefined;
         const body = (
           <>
-            <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={40} />
+            <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={40} uid={uid} />
             <View style={{ flex: 1 }}>
               <Text style={styles.name} numberOfLines={1}>
                 {name}

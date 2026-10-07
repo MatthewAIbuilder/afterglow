@@ -81,7 +81,7 @@ export function ShareCard({ share }: { share: ChatShare }) {
       }
       case 'profile':
         if (!profile) return profile === undefined ? { kicker: t('Profile'), title: `@${share.handle}`, art: <PersonAvatar size={56} /> } : undefined;
-        return { kicker: t('Profile'), title: profile.displayName, subtitle: `@${profile.handle}`, art: <PersonAvatar name={profile.displayName} url={profile.avatarUrl} size={56} /> };
+        return { kicker: t('Profile'), title: profile.displayName, subtitle: `@${profile.handle}`, art: <PersonAvatar name={profile.displayName} url={profile.avatarUrl} size={56} uid={profile.uid} /> };
     }
   })();
 

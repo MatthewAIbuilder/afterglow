@@ -191,9 +191,40 @@ export function OrgEventRows({ org, listings }: { org: Org; listings: Listing[] 
   );
 }
 
+/**
+ * An organizer found by a search: its logo, name and what it puts on,
+ * opening its page. `onOpen` runs first (to remember the search).
+ */
+export function OrgResultRow({ org, onOpen }: { org: Org; onOpen?: () => void }) {
+  const what = [t('Event organizer'), org.tagline].filter(Boolean).join(' · ');
+  return (
+    <Pressable
+      onPress={() => {
+        onOpen?.();
+        openOrg(org.id);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={t('{organizer}, event organizer. Open their page', { organizer: org.name })}
+      style={({ pressed }) => [styles.foundRow, pressed && { opacity: 0.75 }]}
+    >
+      <OrgDot org={org} size={44} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name} numberOfLines={1}>
+          {org.name}
+        </Text>
+        <Text style={styles.line} numberOfLines={1}>
+          {org.handle ? `@${org.handle} · ${what}` : what}
+        </Text>
+      </View>
+      <ChevronIcon color={color.moonFaint} size={12} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   card: { gap: space.sm, padding: space.lg, marginHorizontal: space.xl, marginBottom: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  foundRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
   kicker: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1 },
   name: { ...type.headline, color: color.moon },
   line: { ...type.caption, color: color.moonDim },

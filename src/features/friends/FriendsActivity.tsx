@@ -84,7 +84,7 @@ export function FriendsActivity({ between, profiles, memories }: { between?: Rea
                   accessibilityLabel={`${text}. ${detail}`}
                   style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
                 >
-                  <PersonAvatar name={item.profile.displayName} url={item.profile.avatarUrl} size={40} />
+                  <PersonAvatar name={item.profile.displayName} url={item.profile.avatarUrl} size={40} uid={item.profile.uid} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowText} numberOfLines={2}>
                       {text}
