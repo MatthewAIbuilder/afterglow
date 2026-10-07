@@ -152,7 +152,11 @@ export function AdminStickers({ orgId }: { orgId?: string } = {}) {
       setHuntName('');
       setHuntUntil('');
       await load();
-      showAlert('The kit is ready', `${PLACES_KIT.length} stickers in “${hunt}”, one for each place. Print all of them from the hunt below.`);
+      showAlert(
+        'The kit is ready',
+        `${PLACES_KIT.length} stickers in “${hunt}”, one for each place. Print all of them from the hunt below.${orgId ? '' : ' To show them on a tablet, open the totem and choose All of this hunt.'}`,
+        orgId ? undefined : [{ text: 'Done', style: 'cancel' }, { text: 'Open the totem', onPress: () => router.push('/totem') }],
+      );
     } catch (e) {
       if (huntId) {
         setKitPart({ huntId, name: hunt, made });
