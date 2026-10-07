@@ -437,7 +437,6 @@ export function DiscoverFeed() {
               clip={item.clip}
               note={reasonNote(item.reason, catalog.artist)}
               festival={context}
-              nameFestival={wide}
               mustSee={!!context && mustSeesAt(context.id).has(item.clip.artistId)}
               width={width}
               height={height}

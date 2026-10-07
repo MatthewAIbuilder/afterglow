@@ -1,7 +1,7 @@
 import { setFor } from '../../data/festival';
-import { describeSet } from './format';
 import { dayList, daysOf } from './days';
-import { setLine } from './when';
+import { nextRun, runsOf, setLine } from './when';
+import { datesLine, describeSet } from './format';
 import type { Clip, Festival } from '../../data/types';
 import { t } from '../../i18n';
 
@@ -109,6 +109,35 @@ export function festivalLine(festival: Festival, artistId: string, named = false
         : t('On the lineup, set time to come');
   const line = setLine(when, festival.notes?.[artistId]);
   return named ? `${festival.name} · ${line}` : line;
+}
+
+/**
+ * Discover's ticket chip: where the artist plays next, set apart from the
+ * clip's own words (a throwback from another festival never reads as filmed
+ * there). `title` says whose show it is ("You'll see them at EDC Orlando
+ * 2026" when you're going), `detail` when: their set once set times are out,
+ * else their days or the festival's dates, "set time to come". Undefined when
+ * they're not on its lineup.
+ */
+export function ticketLine(festival: Festival, artistId: string, going: boolean, today: Date): { title: string; detail: string } | undefined {
+  if (!playsAt(festival, artistId)) return undefined;
+  const over = runsOf(festival).length > 0 && !nextRun(festival, today);
+  const title = over
+    ? t('Played {festival}', { festival: festival.name })
+    : going
+      ? t('You’ll see them at {festival}', { festival: festival.name })
+      : t('Playing {festival}', { festival: festival.name });
+  const set = setFor(festival, artistId);
+  const day = dayList(daysOf(festival, artistId));
+  const dates = datesLine(festival);
+  const when = set
+    ? describeSet(festival, set)
+    : day
+      ? t('{day}, set time to come', { day })
+      : dates
+        ? t('{dates} · set time to come', { dates })
+        : t('Set time to come');
+  return { title, detail: setLine(when, festival.notes?.[artistId]) ?? when };
 }
 
 /** How many clips and artists Discover has for a festival's lineup. */

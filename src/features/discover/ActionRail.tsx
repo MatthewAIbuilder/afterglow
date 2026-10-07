@@ -3,8 +3,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { color, motion, space, type, nightA } from '../../theme/tokens';
 import { CommentIcon } from '../../components/TabIcons';
-import { HeartIcon, SaveIcon, SkipIcon } from './icons';
+import { HeartIcon, SaveIcon, ThumbDownIcon } from './icons';
 import { t } from '../../i18n';
+import { StandingAvatar } from '../standing/StandingAvatar';
+import { ringOf } from '../standing/standing';
+import { useStanding } from '../standing/useStanding';
+import { LEVEL_SHOWN_FROM } from '../quests/daily';
+import { usePersonFace } from '../social/usePersonFace';
 
 type Props = {
   liked: boolean;
@@ -12,16 +17,22 @@ type Props = {
   onLike: () => void;
   /** Without it there's no Save button (community clips can't be kept in Your clips). */
   onSave?: () => void;
+  /** Not for me: you didn't like it (counts against the artist and sounds like theirs), and the feed moves on. */
   onSkip: () => void;
+  /** Who filmed a crowd video: their photo first (with their ring and glow level), opening their profile. */
+  filmer?: Filmer;
   /** The speech bubble: opens the clip's comments; `caption` is the count (or the word when there are none). */
   comments?: { caption: string; label: string; onPress: () => void };
   /** Row sits under a video instead of floating beside the stage. */
   horizontal?: boolean;
 };
 
-export function ActionRail({ liked, saved, onLike, onSave, onSkip, comments, horizontal }: Props) {
+type Filmer = { uid: string; handle: string; label: string; onPress: () => void };
+
+export function ActionRail({ liked, saved, onLike, onSave, onSkip, filmer, comments, horizontal }: Props) {
   return (
     <View style={[styles.rail, horizontal && styles.row]}>
+      {filmer ? <FilmerButton filmer={filmer} /> : null}
       <RailButton label={liked ? t('Liked') : t('Like')} active={liked} onPress={onLike}>
         <HeartIcon color={liked ? color.glow : color.moon} filled={liked} />
       </RailButton>
@@ -35,10 +46,54 @@ export function ActionRail({ liked, saved, onLike, onSave, onSkip, comments, hor
           <SaveIcon color={saved ? color.glow : color.moon} filled={saved} />
         </RailButton>
       ) : null}
-      <RailButton label={t('Skip')} active={false} onPress={onSkip} nudge>
-        <SkipIcon color={color.moon} />
+      <RailButton label={t('Not for me')} active={false} onPress={onSkip} nudge>
+        <ThumbDownIcon color={color.moon} />
       </RailButton>
     </View>
+  );
+}
+
+const FACE = 44;
+
+/**
+ * The person who filmed it, like TikTok: their photo above the buttons, with
+ * their ring (founder, artist, team, partner) and their glow level when they
+ * show it. Tapping opens their profile. Their first letter until the photo
+ * is read (or when signed out).
+ */
+function FilmerButton({ filmer }: { filmer: Filmer }) {
+  const face = usePersonFace(filmer.uid);
+  const standing = useStanding(filmer.uid);
+  const ringed = !!ringOf(standing);
+  const level = standing?.level && standing.level >= LEVEL_SHOWN_FROM ? standing.level : undefined;
+  const s = useSharedValue(1);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: s.get() }] }));
+  return (
+    <Pressable
+      onPress={filmer.onPress}
+      onPressIn={() => s.set(withSpring(0.9, motion.snappy))}
+      onPressOut={() => s.set(withSpring(1, motion.snappy))}
+      accessibilityRole="link"
+      accessibilityLabel={level ? `${filmer.label} ${t('Glow level {level}', { level })}` : filmer.label}
+      hitSlop={8}
+      style={styles.button}
+      testID="filmer-face"
+    >
+      <Animated.View style={[styles.face, style]}>
+        {ringed ? (
+          <StandingAvatar standing={standing} uid={filmer.uid} name={face?.name ?? filmer.handle} url={face?.avatarUrl} size={FACE - 4} />
+        ) : (
+          <View style={styles.plainRing}>
+            <StandingAvatar standing={standing} uid={filmer.uid} name={face?.name ?? filmer.handle} url={face?.avatarUrl} size={FACE - 4} />
+          </View>
+        )}
+        {level ? (
+          <View style={styles.level}>
+            <Text style={styles.levelText}>{level}</Text>
+          </View>
+        ) : null}
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -55,13 +110,13 @@ function RailButton({
   caption?: string;
   active: boolean;
   onPress: () => void;
-  /** Skip: the icon darts forward when tapped. */
+  /** Not for me: the icon dips down when tapped. */
   nudge?: boolean;
   children: React.ReactNode;
 }) {
   const reduced = useReducedMotion();
   const s = useSharedValue(1);
-  const x = useSharedValue(0);
+  const y = useSharedValue(0);
   // Each time the button turns on (not when it shows up already on): a pop, a ring and sparks.
   const [burst, setBurst] = useState(0);
   const [prev, setPrev] = useState(active);
@@ -75,12 +130,12 @@ function RailButton({
     was.current = active;
   }, [active, s]);
 
-  const style = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }, { scale: s.get() }] }));
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.get() }, { scale: s.get() }] }));
 
   return (
     <Pressable
       onPress={() => {
-        if (nudge && !reduced) x.set(withSequence(withTiming(9, { duration: 90 }), withSpring(0, motion.snappy)));
+        if (nudge && !reduced) y.set(withSequence(withTiming(7, { duration: 90 }), withSpring(0, motion.snappy)));
         onPress();
       }}
       onPressIn={() => s.set(withSpring(0.86, motion.snappy))}
@@ -145,5 +200,21 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
   },
+  face: { alignItems: 'center', justifyContent: 'center', minWidth: 50, minHeight: 50 },
+  plainRing: { padding: 1.5, borderRadius: FACE / 2 + 1.5, borderWidth: 1.5, borderColor: color.moon, backgroundColor: nightA(0.35) },
+  level: {
+    position: 'absolute',
+    bottom: -7,
+    minWidth: 20,
+    height: 16,
+    paddingHorizontal: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFD36E',
+    borderWidth: 1.5,
+    borderColor: color.night,
+  },
+  levelText: { fontSize: 10, lineHeight: 12, fontWeight: '800', color: color.night, fontVariant: ['tabular-nums'] },
   label: { ...type.caption, color: color.moon, marginTop: 5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 6 },
 });
