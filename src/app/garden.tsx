@@ -29,6 +29,8 @@ import { useSprouts } from '../state/sprouts';
 import { type ReceivedKandi, useKandi } from '../state/kandi';
 import { KandiLine } from '../features/kandi/KandiLine';
 import { KandiBracelet } from '../features/kandi/KandiBracelet';
+import { patternOf } from '../features/kandi/kandi';
+import { StoryPreview } from '../features/sprouts/StoryShare';
 import { showAlert } from '../lib/dialog';
 import { color, glowA, radius, space, type } from '../theme/tokens';
 
@@ -324,10 +326,16 @@ export default function GardenScreen() {
   );
 }
 
-function KandiSheet({ kandi: k, worn, onWear, onClose, onRemove }: { kandi?: ReceivedKandi; worn: boolean; onWear: (on: boolean) => void; onClose: () => void; onRemove: (id: string) => void }) {
+function KandiSheet({ kandi: k, worn, onWear, onClose: close, onRemove }: { kandi?: ReceivedKandi; worn: boolean; onWear: (on: boolean) => void; onClose: () => void; onRemove: (id: string) => void }) {
   const insets = useSafeAreaInsets();
+  const [story, setStory] = useState(false);
+  const onClose = () => {
+    setStory(false);
+    close();
+  };
+  const from = k?.fromHandle ? `@${k.fromHandle}` : undefined;
   return (
-    <Modal visible={!!k} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={!!k} transparent animationType="fade" onRequestClose={() => (story ? setStory(false) : onClose())}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
         {k ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
@@ -346,6 +354,17 @@ function KandiSheet({ kandi: k, worn, onWear, onClose, onRemove }: { kandi?: Rec
               style={({ pressed }) => [styles.secondary, styles.sheetClose, worn && styles.wearing, pressed && styles.pressed]}
             >
               <Text style={styles.secondaryText}>{worn ? t('Wearing it on your profile · Take it off') : t('Wear it on my profile')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                haptic.tap();
+                setStory(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Share this kandi as a picture')}
+              style={({ pressed }) => [styles.secondary, styles.sheetClose, pressed && styles.pressed]}
+            >
+              <Text style={styles.secondaryText}>{t('Share picture')}</Text>
             </Pressable>
             {k.fromHandle ? (
               <Pressable
@@ -379,16 +398,34 @@ function KandiSheet({ kandi: k, worn, onWear, onClose, onRemove }: { kandi?: Rec
           </Pressable>
         ) : null}
       </Pressable>
+      {story && k ? (
+        <StoryPreview
+          title={t('Kandi from {name}', { name: from ?? t('a friend') })}
+          tint={`${patternOf(k.beads).colors[0]}66`}
+          glow={patternOf(k.beads).colors[1] ?? patternOf(k.beads).colors[0]}
+          headline={from ? t('Kandi from {name}', { name: from }) : t('Someone made me kandi')}
+          sub={k.note ? `“${k.note}”` : t('PLUR, one bead at a time')}
+          onClose={() => setStory(false)}
+        >
+          {(w) => <KandiBracelet word={k.word} beads={k.beads} charm={k.charm} size={Math.round(w * 0.86)} label={t('A kandi bracelet spelling {word}', { word: k.word })} />}
+        </StoryPreview>
+      ) : null}
     </Modal>
   );
 }
 
-function SproutSheet({ sprout, onClose }: { sprout?: GardenView; onClose: () => void }) {
+function SproutSheet({ sprout, onClose: close }: { sprout?: GardenView; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const s = sprout;
+  const [story, setStory] = useState(false);
+  const onClose = () => {
+    setStory(false);
+    close();
+  };
+  const bloomed = !!s && s.stage === 3 && s.shown !== 'seedling';
   return (
-    <Modal visible={!!s} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={!!s} transparent animationType="fade" onRequestClose={() => (story ? setStory(false) : onClose())}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
         {s ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]} onPress={() => {}} accessible={false}>
@@ -422,12 +459,37 @@ function SproutSheet({ sprout, onClose }: { sprout?: GardenView; onClose: () => 
             ) : s.kind === 'seedling' ? (
               <Text style={styles.body}>{t('In bloom. You can give {name}s now.', { name: kindOf(s.shown).name })}</Text>
             ) : null}
+            {bloomed ? (
+              <Pressable
+                onPress={() => {
+                  haptic.tap();
+                  setStory(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('Share this sprout as a picture')}
+                style={({ pressed }) => [styles.secondary, styles.sheetClose, pressed && styles.pressed]}
+              >
+                <Text style={styles.secondaryText}>{t('Share picture')}</Text>
+              </Pressable>
+            ) : null}
             <Pressable onPress={onClose} accessibilityRole="button" style={({ pressed }) => [styles.secondary, styles.sheetClose, pressed && styles.pressed]}>
               <Text style={styles.secondaryText}>{t('Done')}</Text>
             </Pressable>
           </Pressable>
         ) : null}
       </Pressable>
+      {story && s && bloomed ? (
+        <StoryPreview
+          title={t('My {sprout}', { sprout: kindOf(s.shown).name })}
+          tint={`${kindOf(s.shown).body[1]}88`}
+          glow={kindOf(s.shown).accent}
+          headline={t('A {sprout}, in bloom', { sprout: kindOf(s.shown).name })}
+          sub={fromLine(s)}
+          onClose={() => setStory(false)}
+        >
+          {(w) => <SproutCard kind={s.shown} from={fromLine(s)} line={day(s.at)} width={Math.round(w * 0.74)} still />}
+        </StoryPreview>
+      ) : null}
     </Modal>
   );
 }

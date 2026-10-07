@@ -40,6 +40,7 @@ export function CollectibleCard({
   owner,
   line,
   width = 280,
+  still = false,
 }: {
   look: ArtistLook;
   artistName: string;
@@ -50,6 +51,8 @@ export function CollectibleCard({
   /** "Filmed 4 times", shown at the foot. */
   line?: string;
   width?: number;
+  /** Held still (no light sweeping, the creature not moving): for a picture. */
+  still?: boolean;
 }) {
   const height = Math.round(width * 1.4);
   const own = look;
@@ -57,7 +60,7 @@ export function CollectibleCard({
   const num = cardNumber(artistName);
   // Type scales with the card, so a small one reads like a big one.
   const k = width / 280;
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotion() || still;
   const sweep = useSharedValue(0);
   useEffect(() => {
     if (reduce) return;
@@ -92,7 +95,7 @@ export function CollectibleCard({
             {shiny ? <LinearGradient colors={['rgba(255,138,216,0.25)', 'rgba(138,184,255,0.18)', 'rgba(138,255,208,0.25)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /> : null}
             <Collectible look={look} size={Math.round(width * 0.56)} tier={0} shiny={shiny} still={reduce} />
           </View>
-          <Text style={[styles.name, { color: shiny ? '#FFFFFF' : look.accent, fontSize: 22 * k, lineHeight: 27 * k }]} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={[styles.name, { color: shiny ? '#FFFFFF' : look.accent, fontSize: 22 * k, lineHeight: 30 * k }]} numberOfLines={1} adjustsFontSizeToFit>
             {look.name}
           </Text>
           <Text style={[styles.artist, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={1}>
@@ -108,9 +111,9 @@ export function CollectibleCard({
             <Text style={[styles.mark, { color: p.glow }]}>✦</Text>
           </View>
           {/* A band of light sweeping across the foil. */}
-          <Animated.View pointerEvents="none" style={[styles.sweep, { height: height * 1.6, top: -height * 0.3 }, sweepStyle]}>
+          {reduce ? null : <Animated.View pointerEvents="none" style={[styles.sweep, { height: height * 1.6, top: -height * 0.3 }, sweepStyle]}>
             <LinearGradient colors={['rgba(255,255,255,0)', shiny ? 'rgba(255,230,255,0.28)' : 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0)']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
-          </Animated.View>
+          </Animated.View>}
         </View>
       </LinearGradient>
     </View>
@@ -181,7 +184,7 @@ export function CardReveal(props: Parameters<typeof CollectibleCard>[0]) {
  * sprout in bloom, its name, who it's from and the line about it. Shown
  * for a sprout in bloom (one still growing shows how it's growing instead).
  */
-export function SproutCard({ kind, from, line, width = 260 }: { kind: SproutKind; from?: string; line?: string; width?: number }) {
+export function SproutCard({ kind, from, line, width = 260, still }: { kind: SproutKind; from?: string; line?: string; width?: number; still?: boolean }) {
   const height = Math.round(width * 1.4);
   const k = width / 280;
   const spec = kindOf(kind);
@@ -198,12 +201,12 @@ export function SproutCard({ kind, from, line, width = 260 }: { kind: SproutKind
           </View>
           <View style={[styles.window, { borderColor: `${spec.accent}55` }]}>
             <LinearGradient colors={[`${spec.accent}40`, `${light}1F`, 'rgba(0,0,0,0)']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
-            <Sprout kind={kind} stage={3} size={Math.round(width * 0.56)} />
+            <Sprout kind={kind} stage={3} size={Math.round(width * 0.56)} still={still} />
           </View>
-          <Text style={[styles.name, { color: spec.accent, fontSize: 22 * k, lineHeight: 27 * k }]} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={[styles.name, { color: spec.accent, fontSize: 22 * k, lineHeight: 30 * k }]} numberOfLines={1} adjustsFontSizeToFit>
             {spec.name}
           </Text>
-          <Text style={[styles.artist, styles.how, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={[styles.artist, styles.how, { fontSize: 12 * k, lineHeight: 18 * k }]} numberOfLines={1} adjustsFontSizeToFit>
             {spec.how}
           </Text>
           <Text style={[styles.flavour, { fontSize: 12 * k, lineHeight: 16 * k }]} numberOfLines={2}>

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Artist } from '../../data/models';
@@ -13,7 +13,8 @@ import { CollectibleCard } from './CollectibleCard';
 import { cardLink } from './cards';
 import { shareMessage } from '../../lib/share';
 import { useSocial } from '../../state/social';
-import { LOCALE, t } from '../../i18n';
+import { LOCALE, t, tn } from '../../i18n';
+import { StoryPreview } from './StoryShare';
 
 const day = (at: number) => (at ? new Date(at).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
@@ -73,11 +74,16 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
   const a = open?.artist;
   const s = open?.sprout;
   const look = a ? artistLook(a) : undefined;
+  const [story, setStory] = useState(false);
+  const close = () => {
+    setStory(false);
+    onClose();
+  };
   // The card, as tall as the screen allows.
   const cardWidth = Math.max(200, Math.min(280, Math.round((height - insets.top - 300) / 1.4)));
   return (
-    <Modal visible={!!open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Close')}>
+    <Modal visible={!!open} transparent animationType="fade" onRequestClose={() => (story ? setStory(false) : close())}>
+      <Pressable style={styles.scrim} onPress={close} accessibilityRole="button" accessibilityLabel={t('Close')}>
         {a && look ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl, maxHeight: height - insets.top }]} onPress={() => {}} accessible={false}>
             <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
@@ -106,14 +112,27 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
                   accessibilityLabel={t('Share your {artist} card', { artist: a.name })}
                   style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
                 >
-                  <Text style={styles.secondaryText}>{t('Share card')}</Text>
+                  <Text style={styles.secondaryText}>{t('Share link')}</Text>
+                </Pressable>
+              ) : null}
+              {s || open?.given ? (
+                <Pressable
+                  onPress={() => {
+                    haptic.tap();
+                    setStory(true);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Share your {artist} card as a picture', { artist: a.name })}
+                  style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+                >
+                  <Text style={styles.secondaryText}>{t('Share picture')}</Text>
                 </Pressable>
               ) : null}
               {s && canGive ? (
                 <Pressable
                   onPress={() => {
                     haptic.tap();
-                    onClose();
+                    close();
                     router.push({ pathname: '/give-sprout', params: { artist: a.id } });
                   }}
                   accessibilityRole="button"
@@ -139,6 +158,18 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
           </Pressable>
         ) : null}
       </Pressable>
+      {story && a && look ? (
+        <StoryPreview
+          title={t('My {artist} card', { artist: a.name })}
+          tint={s?.shiny ? '#3A1E5E' : look.palette.deep}
+          glow={s?.shiny ? '#FF8AD8' : look.palette.glow}
+          headline={s?.shiny ? t('A shiny {artist}!', { artist: a.name }) : handle ? t('@{handle} collected {artist}', { handle, artist: a.name }) : t('{artist}, collected', { artist: a.name })}
+          sub={s ? tn(s.videos, 'Earned by filming them live, {n} time', 'Earned by filming them live, {n} times') : open?.given ? t('A gift from {name}', { name: open.given.from }) : undefined}
+          onClose={() => setStory(false)}
+        >
+          {(w) => <CollectibleCard look={look} artistName={a.name} tier={s?.tier ?? 0} shiny={!!s?.shiny} owner={handle ? `@${handle}` : undefined} line={s ? tierLabel(s) : undefined} width={Math.round(w * 0.74)} still />}
+        </StoryPreview>
+      ) : null}
     </Modal>
   );
 }

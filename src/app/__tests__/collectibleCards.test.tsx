@@ -1,7 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { renderApp } from './appRoutes';
+
+let mockSocial = fakeSocial();
+jest.mock('../../features/social/services', () => ({ defaultSocialService: () => mockSocial.service }));
 
 /** A collectible card someone shared: its page shows the card as they have it, and how to earn your own. */
 const flush = async () => {
@@ -16,6 +20,7 @@ beforeEach(async () => {
   jest.useFakeTimers({ now: new Date(2026, 9, 7, 20, 0) });
   await AsyncStorage.clear();
   await AsyncStorage.setItem('welcomed.v1', 'true');
+  mockSocial = fakeSocial();
 });
 
 describe('shared collectible cards', () => {
@@ -42,7 +47,7 @@ describe('your collection', () => {
     await fireEvent.press(app.getByLabelText('Your collection: every set, and what’s still out there'));
     await flush();
     expect(app.getAllByText('Your collection').length).toBeGreaterThan(0);
-    for (const set of ['Sprout kinds', 'Hand-made collectibles', 'Sound creatures', 'Stickers', 'Kandi beads', 'Kandi charms']) expect(app.getByText(set)).toBeTruthy();
+    for (const set of ['Sprout kinds', 'Hand-made collectibles', 'Sound creatures', 'Stickers', 'Kandi beads', 'Kandi charms', 'Garden decorations']) expect(app.getByText(set)).toBeTruthy();
     expect(app.getByText('Film these artists’ sets')).toBeTruthy();
     await app.unmount();
   });

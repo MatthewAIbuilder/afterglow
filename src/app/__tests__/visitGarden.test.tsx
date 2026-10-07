@@ -226,4 +226,33 @@ describe('gardens', () => {
     await flush();
     expect(app.getByText('In their sky: fairy lights, the moon')).toBeTruthy();
   });
+
+  it('kandi you were given goes out as a story picture', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().giveKandi({ to: maya, word: 'RAIL', beads: 'galaxy', charm: 'alien', note: 'see you at the rail' });
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const app = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    await fireEvent.press(app.getByLabelText('Kandi spelling RAIL, from @sam'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Share this kandi as a picture'));
+    await flush();
+    expect(app.getByText('Kandi from @sam')).toBeTruthy();
+    expect(app.getAllByText('“see you at the rail”').length).toBeGreaterThan(0);
+    const Sharing = jest.requireMock<{ shareAsync: jest.Mock }>('expo-sharing');
+    Sharing.shareAsync.mockClear();
+    await fireEvent.press(app.getByLabelText('Share this picture'));
+    await flush();
+    expect(Sharing.shareAsync).toHaveBeenCalledWith(expect.stringMatching(/\.png$/), expect.objectContaining({ mimeType: 'image/png' }));
+    // Closing the picture goes back to the kandi.
+    await fireEvent.press(app.getAllByLabelText('Close').at(-1)!);
+    await flush();
+    expect(app.queryByText('Kandi from @sam')).toBeNull();
+    expect(app.getByText('Wear it on my profile')).toBeTruthy();
+  });
 });
