@@ -850,7 +850,7 @@ const styles = StyleSheet.create({
   },
   sparseButtonText: { ...type.label, color: color.moon },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  overview: { paddingHorizontal: space.xl },
+  overview: { paddingHorizontal: space.xl, alignSelf: 'center', width: '100%', maxWidth: 640 },
   toggle: { flexDirection: 'row', alignSelf: 'flex-start', padding: 3, marginTop: space.md, marginBottom: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   toggleItem: { paddingHorizontal: space.lg, paddingVertical: 7, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: 'transparent' },
   toggleOn: { backgroundColor: glowA(0.28), borderColor: glowA(0.3), borderTopColor: color.rim },

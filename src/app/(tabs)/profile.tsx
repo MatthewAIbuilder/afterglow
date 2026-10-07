@@ -93,7 +93,8 @@ function FullProfile() {
   const quests = useDailyQuests();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
-  const { width } = useWindowDimensions();
+  // On a wide screen (the website) the page is a column, like Settings; its grids size to it.
+  const width = Math.min(useWindowDimensions().width, PAGE_MAX);
   const catalog = useCatalog();
   const today = useToday();
   // `?tab=badges` (a side quest notification) opens on that tab.
@@ -251,7 +252,7 @@ function FullProfile() {
     <View style={styles.root}>
       <PageTitle title={t('Profile')} />
       <NightSky />
-      <ScrollView ref={scroller} contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scroller} contentContainerStyle={[styles.page, { paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }]} showsVerticalScrollIndicator={false}>
         <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} fadeFrom={(insets.top + COVER_SOLID) / (insets.top + COVER_H)} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
@@ -382,7 +383,10 @@ function FullProfile() {
   );
 }
 
+const PAGE_MAX = 640;
+
 const styles = StyleSheet.create({
+  page: { alignSelf: 'center', width: '100%', maxWidth: PAGE_MAX },
   root: { flex: 1, backgroundColor: color.night },
   bar: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.xl, paddingRight: space.xl, marginBottom: space.lg },
   handle: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
