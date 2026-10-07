@@ -12,6 +12,9 @@ import { artistLook, shinyLook, stickerLook } from '../features/sprouts/artistLo
 import { Collectible } from '../features/sprouts/Collectible';
 import { collection, type CollectionSet } from '../features/sprouts/collection';
 import { Sprout } from '../features/sprouts/Sprout';
+import { DECOR } from '../features/sprouts/decor';
+import { DecorIcon } from '../features/sprouts/DecorSky';
+import { useGardenDecor } from '../features/sprouts/useGardenDecor';
 import { kindOf, type SproutKind } from '../features/sprouts/sprouts';
 import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
@@ -34,6 +37,7 @@ export default function CollectionScreen() {
   const catalog = useCatalog();
   const { finds } = useFinds();
   const kandi = useKandi();
+  const decor = useGardenDecor();
   const owned = useMemo(() => new Map(sprouts.artists.map((a) => [a.artistId, a])), [sprouts.artists]);
   const book = useMemo(
     () =>
@@ -47,8 +51,9 @@ export default function CollectionScreen() {
         },
         stickers: new Set(finds.filter((f) => f.state === 'found').map((f) => f.creature)),
         kandi: kandi.received,
+        decor,
       }),
-    [sprouts.collected, sprouts.artists, catalog, finds, kandi.received],
+    [sprouts.collected, sprouts.artists, catalog, finds, kandi.received, decor],
   );
   const pct = book.total ? Math.round((book.have / book.total) * 100) : 0;
 
@@ -79,6 +84,10 @@ export default function CollectionScreen() {
       case 'beads': {
         const p = PATTERNS.find((x) => x.id === key)!;
         return { el: <View style={!have && styles.dim}><KandiBracelet word="" beads={p.id} size={TILE} /></View>, name: p.name, label: have ? p.name : t('{pattern} beads: not given to you yet', { pattern: p.name }) };
+      }
+      case 'decor': {
+        const d = DECOR.find((x) => x.id === key)!;
+        return { el: <View style={!have && styles.dim}><DecorIcon id={d.id} size={TILE} /></View>, name: d.name, label: have ? d.name : t('{name}: {how}', { name: d.name, how: d.how }) };
       }
       case 'charms': {
         const c = CHARMS.find((x) => x.id === key)!;

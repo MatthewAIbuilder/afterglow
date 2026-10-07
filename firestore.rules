@@ -515,9 +515,10 @@ service cloud.firestore {
     match /gardens/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['residents', 'kandi', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['residents', 'kandi', 'decor', 'updatedAt'])
         && request.resource.data.residents is list && request.resource.data.residents.size() <= 120
         && (!('kandi' in request.resource.data) || (request.resource.data.kandi is list && request.resource.data.kandi.size() <= 40))
+        && (!('decor' in request.resource.data) || (request.resource.data.decor is list && request.resource.data.decor.size() <= 12))
         && request.resource.data.updatedAt == request.time;
       allow delete: if signedIn() && me() == uid;
     }

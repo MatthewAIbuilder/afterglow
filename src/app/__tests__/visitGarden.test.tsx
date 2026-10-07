@@ -49,6 +49,7 @@ describe('gardens', () => {
     await flush();
     expect(app.getByText('@maya’s garden')).toBeTruthy();
     expect(app.getByText('2 sprouts and 1 artist collectible. Tap one to make it dance.')).toBeTruthy();
+    expect(app.queryByText(/In their sky/)).toBeNull();
     // Nothing to move; a tap dances (and opens nothing).
     await fireEvent.press(app.getByLabelText('PLUR sprout, In bloom.'));
     await settle(1000);
@@ -213,5 +214,16 @@ describe('gardens', () => {
     await flush();
     expect(visit.getByText('Wearing kandi from @sam')).toBeTruthy();
   });
-});
 
+  it('decorations they earned hang in their sky for visitors', async () => {
+    await person('maya', 'Maya Lin');
+    await s().publishGarden([{ k: 's', kind: 'moonlight', stage: 3 }], [], ['lights', 'moon', 'nonsense' as never]);
+    await s().signOut();
+    await person('sam', 'Sam');
+    const app = await renderApp('/u/maya');
+    await flush();
+    await fireEvent.press(app.getByTestId('visit-garden'));
+    await flush();
+    expect(app.getByText('In their sky: fairy lights, the moon')).toBeTruthy();
+  });
+});

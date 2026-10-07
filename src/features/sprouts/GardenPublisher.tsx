@@ -4,6 +4,7 @@ import { useSocial } from '../../state/social';
 import { useSprouts } from '../../state/sprouts';
 import { useKandi } from '../../state/kandi';
 import { gardenKey, publicGarden } from './publicGarden';
+import { useGardenDecor } from './useGardenDecor';
 
 /** Changes settle this long before the garden on your profile is updated. */
 const SETTLE_MS = 4000;
@@ -23,12 +24,16 @@ export function GardenPublisher() {
   const list = useMemo(() => publicGarden(sprouts.garden, sprouts.artists, (id) => catalog.artist(id)?.name), [sprouts.garden, sprouts.artists, catalog]);
   // Kandi hanging in your garden: the word, beads and who made it.
   const { shown: kandi } = useKandi();
-  const key = sprouts.gardenShown ? `${gardenKey(list)}#${kandi.map((k) => `${k.word}${k.beads}${k.charm ?? ''}${k.from ?? ''}${k.worn ? '*' : ''}`).join('|')}` : 'hidden';
+  // Decorations in its sky.
+  const decor = useGardenDecor();
+  const key = sprouts.gardenShown ? `${gardenKey(list)}#${kandi.map((k) => `${k.word}${k.beads}${k.charm ?? ''}${k.from ?? ''}${k.worn ? '*' : ''}`).join('|')}#${decor.join(',')}` : 'hidden';
   const listRef = useRef(list);
   const kandiRef = useRef(kandi);
+  const decorRef = useRef(decor);
   useEffect(() => {
     listRef.current = list;
     kandiRef.current = kandi;
+    decorRef.current = decor;
   });
   // What's on Afterglow now, per account ('hidden' once taken down).
   const sent = useRef<Record<string, string>>({});
@@ -38,7 +43,7 @@ export function GardenPublisher() {
     const timer = setTimeout(() => {
       const shown = key !== 'hidden';
       void service
-        .publishGarden(shown ? listRef.current : null, kandiRef.current)
+        .publishGarden(shown ? listRef.current : null, kandiRef.current, decorRef.current)
         .then(() => {
           sent.current[uid] = key;
         })

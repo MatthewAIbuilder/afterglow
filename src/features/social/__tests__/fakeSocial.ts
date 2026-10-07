@@ -5,6 +5,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
 import { cleanPublicGarden, type PublicResident } from '../../sprouts/publicGarden';
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
+import { cleanDecor, type DecorId } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, type Kandi, type PublicKandi } from '../../kandi/kandi';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
@@ -37,7 +38,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Gift themes granted, as `uid_theme`. */
   const themeGrants = new Set<string>();
   /** Gardens as shown on profiles. */
-  const gardens = new Map<string, { residents: PublicResident[]; kandi: PublicKandi[] }>();
+  const gardens = new Map<string, { residents: PublicResident[]; kandi: PublicKandi[]; decor: DecorId[] }>();
   const gardenBackups = new Map<string, string>();
   /** Kandi, by id. */
   const kandi = new Map<string, Kandi>();
@@ -1123,10 +1124,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const u = me();
       return [...sprouts.values()].filter((s) => s.from === u.uid).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
     },
-    async publishGarden(residents, kandiList) {
+    async publishGarden(residents, kandiList, decor) {
       if (network.down) throw new SocialError('network');
       const u = me();
-      if (residents) gardens.set(u.uid, { residents: cleanPublicGarden(residents), kandi: cleanPublicKandi(kandiList ?? []) });
+      if (residents) gardens.set(u.uid, { residents: cleanPublicGarden(residents), kandi: cleanPublicKandi(kandiList ?? []), decor: cleanDecor(decor ?? []) });
       else gardens.delete(u.uid);
     },
     async gardenOf(uid) {

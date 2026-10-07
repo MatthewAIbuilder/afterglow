@@ -12,6 +12,7 @@ import { GardenScene } from '../features/sprouts/GardenScene';
 import { gardenCounts, type PublicResident } from '../features/sprouts/publicGarden';
 import type { PublicKandi } from '../features/kandi/kandi';
 import { visitResidents } from '../features/sprouts/visitGarden';
+import { DECOR, type DecorId } from '../features/sprouts/decor';
 import { t, tn } from '../i18n';
 import { useCatalog } from '../state/catalog';
 import { useSocial } from '../state/social';
@@ -30,7 +31,7 @@ export default function GardenVisitScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const social = useSocial();
   const catalog = useCatalog();
-  const [visit, setVisit] = useState<{ residents: PublicResident[]; kandi: PublicKandi[] } | null>();
+  const [visit, setVisit] = useState<{ residents: PublicResident[]; kandi: PublicKandi[]; decor?: DecorId[] } | null>();
   const garden = visit === undefined ? undefined : (visit?.residents ?? null);
   const kandi = visit?.kandi ?? [];
   const [focused, setFocused] = useState(false);
@@ -82,7 +83,10 @@ export default function GardenVisitScreen() {
                 ? t('{sprouts} and {collectibles}. Tap one to make it dance.', { sprouts: tn(counts.sprouts, '{n} sprout', '{n} sprouts'), collectibles: tn(counts.collectibles, '{n} artist collectible', '{n} artist collectibles') })
                 : t('{sprouts}. Tap one to make it dance.', { sprouts: tn(counts.sprouts, '{n} sprout', '{n} sprouts') })}
             </Text>
-            <GardenScene residents={residents} account={`visit:${uid}`} width={Math.min(CONTENT_MAX, windowWidth) - 2 * space.xl} focused={focused} ready visiting onOpen={() => {}} />
+            <GardenScene residents={residents} account={`visit:${uid}`} width={Math.min(CONTENT_MAX, windowWidth) - 2 * space.xl} focused={focused} ready visiting decor={visit?.decor ?? []} onOpen={() => {}} />
+            {visit?.decor?.length ? (
+              <Text style={styles.sky}>{t('In their sky: {list}', { list: DECOR.filter((d) => visit.decor?.includes(d.id)).map((d) => d.name.toLowerCase()).join(', ') })}</Text>
+            ) : null}
           </>
         )}
         <KandiLine items={kandi.map((k, i) => ({ key: String(i), word: k.word, beads: k.beads, charm: k.charm, from: k.from }))} />
@@ -108,6 +112,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.xl, gap: space.md, maxWidth: CONTENT_MAX, width: '100%', alignSelf: 'center' },
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.body, color: color.moonDim },
+  sky: { ...type.caption, color: color.moonDim, textAlign: 'center' },
   kandi: { alignItems: 'center', paddingVertical: space.md, borderRadius: 999, backgroundColor: color.glowDeep, marginTop: space.md },
   kandiText: { ...type.headline, color: color.moon },
 });

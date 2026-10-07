@@ -18,6 +18,7 @@ import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
 import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden';
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
+import { cleanDecor } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
@@ -1317,7 +1318,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('to', '==', user.uid), orderBy('claimedAt', 'desc'), limit(max)));
         return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
       }),
-    publishGarden: (residents, kandi) =>
+    publishGarden: (residents, kandi, decor) =>
       guard(async () => {
         const user = me();
         const ref = doc(fb().db, 'gardens', user.uid);
@@ -1326,6 +1327,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await setDoc(ref, {
             residents: residents.slice(0, PUBLIC_GARDEN_MAX),
             ...(kandi?.length ? { kandi: kandi.slice(0, PUBLIC_KANDI_MAX) } : {}),
+            ...(decor?.length ? { decor: cleanDecor(decor) } : {}),
             updatedAt: serverTimestamp(),
           });
       }),
@@ -1333,8 +1335,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const d = await getDoc(doc(fb().db, 'gardens', uid));
         if (!d.exists()) return null;
-        const o = d.data() as { residents?: unknown; kandi?: unknown };
-        return { residents: cleanPublicGarden(o.residents), kandi: cleanPublicKandi(o.kandi) };
+        const o = d.data() as { residents?: unknown; kandi?: unknown; decor?: unknown };
+        return { residents: cleanPublicGarden(o.residents), kandi: cleanPublicKandi(o.kandi), decor: cleanDecor(o.decor) };
       }),
     saveGardenBackup: (data) =>
       guard(async () => {

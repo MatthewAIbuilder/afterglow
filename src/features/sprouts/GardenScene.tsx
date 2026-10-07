@@ -13,6 +13,8 @@ import { HORIZON, type Meadow, meadow, moveTo, nearestSpot, placeResidents, same
 import { SPROUT_DEEP, SPROUT_GLOW, SPROUT_GREEN } from './look';
 import { CLOCK_MS, type Pace, paceOf, sine, WANDER_X, WANDER_Y, wander } from './motion';
 import { Sprout } from './Sprout';
+import type { DecorId } from './decor';
+import { DecorBehind, DecorFront } from './DecorSky';
 import type { SproutKind, Stage } from './sprouts';
 
 /**
@@ -54,6 +56,8 @@ type Props = {
   onCarrying?: (on: boolean) => void;
   /** Visiting someone else's garden: nothing can be moved, and a tap makes a resident dance. */
   visiting?: boolean;
+  /** Decorations in its sky (decor.ts). */
+  decor?: readonly DecorId[];
 };
 
 /** Hold this long to pick something up (a shorter touch is a tap, or a scroll). */
@@ -61,7 +65,7 @@ export const LIFT_MS = 260;
 /** Arrivals since this long ago glow. */
 const lagSpring = { damping: 16, stiffness: 150, mass: 0.6 };
 
-export function GardenScene({ residents, account, width, focused, ready, onOpen, onCarrying, visiting = false }: Props) {
+export function GardenScene({ residents, account, width, focused, ready, onOpen, onCarrying, visiting = false, decor = [] }: Props) {
   const reduce = useReducedMotion();
   const running = focused && !reduce;
   // One clock for the whole garden.
@@ -138,7 +142,7 @@ export function GardenScene({ residents, account, width, focused, ready, onOpen,
 
   return (
     <View style={{ width, height: m.height }} accessible={false}>
-      <Ground width={width} m={m} pools={residents.map((r) => ({ ...spotOf(r.id), gold: 'artist' in r.look }))} clock={clock} running={running} label={label} />
+      <Ground decor={decor} width={width} m={m} pools={residents.map((r) => ({ ...spotOf(r.id), gold: 'artist' in r.look }))} clock={clock} running={running} label={label} />
       {residents.map((r) => {
         const spot = spotOf(r.id);
         // The nearest neighbour in its row, to glance at now and then.
@@ -372,7 +376,7 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
 }
 
 /** The meadow: a rolling horizon, far stars, a soft glow where each resident stands, grass, and fireflies drifting about. */
-function Ground({ width, m, pools, clock, running, label }: { width: number; m: Meadow; pools: { x: number; y: number; gold: boolean }[]; clock: SharedValue<number>; running: boolean; label: string }) {
+function Ground({ decor, width, m, pools, clock, running, label }: { decor: readonly DecorId[]; width: number; m: Meadow; pools: { x: number; y: number; gold: boolean }[]; clock: SharedValue<number>; running: boolean; label: string }) {
   const h = m.height;
   const hz = HORIZON;
   const far = mix(color.night, '#3AA86A', 0.16);
@@ -416,12 +420,14 @@ function Ground({ width, m, pools, clock, running, label }: { width: number; m: 
         {stars.map((s, i) => (
           <Circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#F3F0FF" opacity={s.o} />
         ))}
+        <DecorBehind decor={decor} width={width} hz={hz} />
         {/* A glow low on the horizon, like the last of the light behind the hills. */}
         <Ellipse cx={width * 0.5} cy={hz + 20} rx={width * 0.55} ry={46} fill="url(#garden-dawn)" />
         <Path d={farHill} fill="url(#garden-far)" />
         <Path d={nearHill} fill="url(#garden-near)" />
         <Path d={nearTop} stroke={SPROUT_GLOW[1]} strokeWidth={9} opacity={0.07} fill="none" />
         <Path d={nearTop} stroke={SPROUT_GLOW[0]} strokeWidth={1.2} opacity={0.28} fill="none" />
+        <DecorFront decor={decor} width={width} hz={hz} />
         {pools.map((p, i) => (
           <Ellipse key={i} cx={p.x} cy={p.y + 2} rx={m.colWidth * 0.46} ry={16} fill={p.gold ? 'url(#garden-pool-gold)' : 'url(#garden-pool)'} />
         ))}

@@ -2,6 +2,7 @@ import { t } from '../../i18n';
 import { CHARMS, type CharmId, PATTERNS, type PatternId } from '../kandi/kandi';
 import { type ArtistLook, type Creature, PLACE_CREATURES, SIGNATURE_NAMES, SOUND_CREATURES, foldName } from './artistLook';
 import type { ArtistSprout } from './artistSprouts';
+import { DECOR, type DecorId } from './decor';
 import { SPROUT_KINDS, type SproutKind } from './sprouts';
 
 /**
@@ -12,7 +13,7 @@ import { SPROUT_KINDS, type SproutKind } from './sprouts';
  * wild, and kandi beads and charms you've been given. Shiny ones are
  * counted on their own (they're luck, not a set).
  */
-export type SetId = 'kinds' | 'signatures' | 'sounds' | 'stickers' | 'beads' | 'charms';
+export type SetId = 'kinds' | 'signatures' | 'sounds' | 'stickers' | 'beads' | 'charms' | 'decor';
 export type CollectionItem = { key: string; have: boolean };
 export type CollectionSet = { id: SetId; title: string; how: string; items: CollectionItem[]; have: number; total: number };
 
@@ -28,6 +29,8 @@ export type CollectionInput = {
   stickers: ReadonlySet<string>;
   /** Kandi given to you. */
   kandi: readonly { beads: PatternId; charm?: CharmId }[];
+  /** Decorations you've earned for your garden. */
+  decor?: readonly DecorId[];
 };
 
 const set = (id: SetId, title: string, how: string, items: CollectionItem[]): CollectionSet => ({ id, title, how, items, have: items.filter((i) => i.have).length, total: items.length });
@@ -55,6 +58,7 @@ export function collection(input: CollectionInput): { sets: CollectionSet[]; hav
     set('stickers', t('Stickers'), t('Find them in the wild and scan them'), PLACE_CREATURES.map((c) => ({ key: c, have: input.stickers.has(c) }))),
     set('beads', t('Kandi beads'), t('Be given kandi in every pattern'), PATTERNS.map((p) => ({ key: p.id, have: beads.has(p.id) }))),
     set('charms', t('Kandi charms'), t('Be given kandi with every charm'), CHARMS.map((c) => ({ key: c.id, have: charms.has(c.id) }))),
+    set('decor', t('Garden decorations'), t('Earn them for your garden’s sky'), DECOR.map((d) => ({ key: d.id, have: (input.decor ?? []).includes(d.id) }))),
   ].filter((s) => s.total > 0);
   const have = sets.reduce((n, s) => n + s.have, 0);
   const total = sets.reduce((n, s) => n + s.total, 0);

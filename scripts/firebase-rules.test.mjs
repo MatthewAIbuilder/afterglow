@@ -890,6 +890,8 @@ await t('gardens: you show yours (a short list, server-timed), anyone signed in 
   await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ note: 'secret' })));
   await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ residents: Array.from({ length: 121 }, () => ({ k: 's' })) })));
   await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ updatedAt: new Date(0) })));
+  await assertSucceeds(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ decor: ['lights', 'moon'] })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ decor: Array.from({ length: 13 }, () => 'moon') })));
   await assertSucceeds(getDoc(doc(H.firestore(), 'gardens', 'uidGa')));
   await assertFails(getDoc(doc(anon.firestore(), 'gardens', 'uidGa')));
   await assertFails(deleteDoc(doc(H.firestore(), 'gardens', 'uidGa')));

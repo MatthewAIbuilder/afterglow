@@ -11,6 +11,7 @@ import { SPROUT_GREEN } from '../features/sprouts/look';
 import { claimLine } from '../features/sprouts/outbox';
 import { Sprout } from '../features/sprouts/Sprout';
 import { SproutCard } from '../features/sprouts/CollectibleCard';
+import { useGardenDecor } from '../features/sprouts/useGardenDecor';
 import { SproutOf } from '../features/sprouts/SproutOf';
 import { ArtistSproutSheet, ArtistSproutsSection, type GivenArtistSprout } from '../features/sprouts/ArtistSproutsSection';
 import { type ArtistSprout, TIER_AT, tierLabel, toNextTier } from '../features/sprouts/artistSprouts';
@@ -65,6 +66,8 @@ export default function GardenScreen() {
   const now = useNow().getTime();
   const [open, setOpen] = useState<GardenView>();
   const kandi = useKandi();
+  // Decorations you've earned for its sky.
+  const decor = useGardenDecor();
   const [openKandi, setOpenKandi] = useState<ReceivedKandi>();
   const [openArtist, setOpenArtist] = useState<{ artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }>();
   // The garden moves only while this screen is showing; the page doesn't scroll while something's carried.
@@ -214,6 +217,7 @@ export default function GardenScreen() {
         ) : null}
 
         <GardenScene
+          decor={decor}
           residents={residents}
           account={social.user?.uid ?? 'guest'}
           width={Math.min(CONTENT_MAX, windowWidth) - 2 * space.xl}
