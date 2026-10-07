@@ -5334,6 +5334,135 @@ const parcel: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** TWENTY ONE PILOTS: the Pilot — a little pilot in goggles flying a biplane, its propeller turning. */
+const biplane: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.14} />
+      <Path d="M8 72 Q8 66 14 66 Q16 60 22 62 Q28 60 28 66 Q32 68 30 72Z" fill={p.light} opacity={0.18} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Top wing and struts. */}
+      <V d="M14 36 Q14 32 18 32 L82 32 Q86 32 86 36 L86 40 L14 40Z" fill={p.alt} f={f} />
+      <Path d="M26 40 L26 58 M74 40 L74 58" stroke={p.deep} strokeWidth={1.6} />
+      {/* The pilot in the cockpit: head, goggles up, scarf. */}
+      <VE cx={50} cy={36} rx={10} ry={9.4} fill={p.light} f={f} />
+      <Path d="M40.6 32 Q50 26 59.4 32" stroke={p.deep} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <Circle cx={45} cy={29.6} r={2.6} fill={p.accent} stroke={p.deep} strokeWidth={0.8} />
+      <Circle cx={55} cy={29.6} r={2.6} fill={p.accent} stroke={p.deep} strokeWidth={0.8} />
+      <Path d="M44 44 Q36 46 30 42" stroke={p.accent} strokeWidth={2.6} fill="none" strokeLinecap="round" />
+      {/* The fuselage, bottom wing and wheels. */}
+      <V d="M24 50 Q24 44 30 44 L74 44 Q80 44 82 50 L82 58 Q80 64 74 64 L30 64 Q24 64 24 58Z" fill={p.mid} f={f} gloss={[34, 48, 8, 1.4, 0]} />
+      <V d="M12 58 Q12 56 14 56 L86 56 Q88 56 88 58 L88 62 L12 62Z" fill={p.alt} f={f} />
+      <Path d="M38 64 L36 74 M62 64 L64 74" stroke={p.deep} strokeWidth={1.4} />
+      <Circle cx={36} cy={76} r={3.6} fill={p.altDeep} />
+      <Circle cx={64} cy={76} r={3.6} fill={p.altDeep} />
+      <Circle cx={47} cy={39.6} r={1.6} fill={p.accent} opacity={0.35} />
+      <Circle cx={53} cy={39.6} r={1.6} fill={p.accent} opacity={0.35} />
+      <Path d="M48 40.6 Q50 42 52 40.6" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  spinAt: [88, 53],
+  spin: (
+    <G>
+      <Path d="M88 41 Q91 53 88 65 Q85 53 88 41Z" fill={p.light} opacity={0.75} />
+      <Circle cx={88} cy={53} r={2} fill={p.accent} />
+    </G>
+  ),
+  eyes: {
+    box: [44, 33, 12, 6],
+    el: (
+      <G>
+        <VEye x={46.6} y={36.4} r={1.8} f={f} />
+        <VEye x={53.4} y={36.4} r={1.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [14, 18, 1.6],
+    [84, 18, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** CHARLI XCX: the Lime — a slice of lime in sunglasses, bright green and unbothered. */
+const lime: Draw = (p, f) => ({
+  ground: [50, 90, 30],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.18} />,
+  body: (
+    <G>
+      {/* Rind, pith and the segments. */}
+      <VE cx={50} cy={56} rx={32} ry={32} fill={p.deep} f={f} gloss={false} />
+      <Circle cx={50} cy={56} r={29} fill={p.light} />
+      <Circle cx={50} cy={56} r={26.6} fill={p.mid} />
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = (i / 8) * Math.PI * 2;
+        return <Path key={i} d={`M50 56 L${r1(50 + Math.cos(a) * 26.6)} ${r1(56 + Math.sin(a) * 26.6)}`} stroke={p.light} strokeWidth={1.6} opacity={0.75} />;
+      })}
+      <Circle cx={50} cy={56} r={3} fill={p.light} />
+      {/* The shades. */}
+      <Path d="M30 46 L70 46" stroke={p.altDeep} strokeWidth={2} />
+      <V d="M31 45 L47 45 Q48 45 47.6 47 L46 53 Q45.4 55 43 55 L35 55 Q32.6 55 32 53 L30.4 47 Q30 45 31 45Z" fill={p.altDeep} f={f} />
+      <V d="M53 45 L69 45 Q70 45 69.6 47 L68 53 Q67.4 55 65 55 L57 55 Q54.6 55 54 53 L52.4 47 Q52 45 53 45Z" fill={p.altDeep} f={f} />
+      <Path d="M34 47.4 L38 47.4 M56 47.4 L60 47.4" stroke={p.light} strokeWidth={1} opacity={0.6} strokeLinecap="round" />
+      <Path d="M44 68 Q50 72 56 67" stroke={p.altDeep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  flicker: sparkles(p.accent, [
+    [14, 22, 1.8],
+    [86, 26, 1.6],
+    [86, 82, 1.3],
+  ]),
+  flickerOver: true,
+});
+
+/** LORDE: the Green light — a traffic light with its green on, glowing, telling you to go. */
+const greenlight: Draw = (p, f) => ({
+  ground: [50, 92, 18],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      <Circle cx={50} cy={64} r={22} fill={p.accent} opacity={0.18} />
+    </G>
+  ),
+  body: (
+    <G>
+      <Path d="M50 80 L50 92" stroke={p.deep} strokeWidth={4} />
+      <V d="M36 20 Q36 14 42 14 L58 14 Q64 14 64 20 L64 76 Q64 82 58 82 L42 82 Q36 82 36 76Z" fill={p.mid} f={f} gloss={[40, 22, 2, 6, 0]} />
+      {/* Its hoods and lamps: red and amber off, green lit. */}
+      <Circle cx={50} cy={26} r={7.4} fill={p.altDeep} />
+      <Circle cx={50} cy={26} r={6} fill={p.alt} opacity={0.35} />
+      <Circle cx={50} cy={45} r={7.4} fill={p.altDeep} />
+      <Circle cx={50} cy={45} r={6} fill="#FFB84A" opacity={0.3} />
+      <Circle cx={50} cy={64} r={7.4} fill={p.altDeep} />
+      <VE cx={50} cy={64} rx={6} ry={6} fill={p.accent} f={f} />
+      <Path d="M47.4 67 Q50 69 52.6 67" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [45, 59, 10, 6],
+    el: (
+      <G>
+        <VEye x={47.6} y={62.4} r={1.6} f={f} />
+        <VEye x={52.4} y={62.4} r={1.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Circle cx={50} cy={64} r={10} fill={p.accent} opacity={0.3} />
+      {sparkles(p.accent, [
+        [18, 30, 1.6],
+        [82, 40, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: false,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -6307,6 +6436,9 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  biplane,
+  lime,
+  greenlight,
   xmark,
   laserfox,
   maze,

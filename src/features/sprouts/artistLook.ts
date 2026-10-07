@@ -121,6 +121,9 @@ export type Creature =
   | 'laserfox'
   | 'maze'
   | 'parcel'
+  | 'biplane'
+  | 'lime'
+  | 'greenlight'
   | 'portapotty'
   | 'refill'
   | 'charger'
@@ -225,6 +228,9 @@ const SIGNATURES: Record<string, Spec> = {
   rayvolpe: { creature: 'laserfox', palette: P('#FFF4E8', '#FF7A2A', '#3A1A0A', '#FF3ACF', '#5A1A4A', '#5BFFE0', '#FF9A4A'), name: t('The Laser fox'), theme: t('A little fox with laser beams fanning out behind it') },
   labrinth: { creature: 'maze', palette: P('#FFF8E8', '#C8B8F0', '#3A2A6A', '#FFD24A', '#2A1E4A', '#FFD24A', '#B99CFF'), name: t('The Maze'), theme: t('A round labyrinth with a face at its heart') },
   parcels: { creature: 'parcel', palette: P('#FFF8EC', '#D8A86A', '#6A4A2A', '#E8322A', '#8A1A1A', '#FF7EB6', '#FFC88A'), name: t('The Parcel'), theme: t('A parcel tied up with string and a big red bow') },
+  twentyonepilots: { creature: 'biplane', palette: P('#FFF4E8', '#E8E4D8', '#3A2E2A', '#E8322A', '#2A2A3A', '#FFD24A', '#FF8A6A'), name: t('The Pilot'), theme: t('A little pilot in goggles, flying a biplane') },
+  charlixcx: { creature: 'lime', palette: P('#F4FFD8', '#8ACE00', '#3A6A0A', '#2A2A2A', '#0A0A0A', '#B6FF3A', '#8ACE00'), name: t('The Lime'), theme: t('A slice of lime in sunglasses, bright green and unbothered') },
+  lorde: { creature: 'greenlight', palette: P('#E8FFE8', '#3A3A44', '#14141A', '#FF3A3A', '#0A0A10', '#5BFF8A', '#5BFF8A'), name: t('The Green light'), theme: t('A traffic light gone green: go on, then') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },
