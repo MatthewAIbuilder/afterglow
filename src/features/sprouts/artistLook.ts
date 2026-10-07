@@ -110,6 +110,10 @@ export type Creature =
   | 'telescope'
   | 'cog'
   | 'songbird'
+  | 'anvil'
+  | 'lizard'
+  | 'palm'
+  | 'bomb'
   | 'portapotty'
   | 'refill'
   | 'charger'
@@ -198,6 +202,10 @@ const SIGNATURES: Record<string, Spec> = {
   discoveryproject: { creature: 'telescope', palette: P('#E8F0FF', '#7A8AB8', '#2A3458', '#FFD36E', '#8A6A1A', '#B8FFF0', '#8AB8FF'), name: t('The Observatory'), theme: t('A little observatory, its telescope out to the stars') },
   klangkuenstler: { creature: 'cog', palette: P('#E8ECF4', '#8A94A8', '#3A4252', '#FF3A3A', '#5A1010', '#FF3A3A', '#FF4A4A'), name: t('The Gear'), theme: t('A heavy steel cog, turning and turning') },
   hayla: { creature: 'songbird', palette: P('#FFF4F8', '#7FB8FF', '#2A4A8A', '#FFD36E', '#B8861A', '#FF7EB6', '#9AC8FF'), name: t('The Songbird'), theme: t('A little bird singing its heart out') },
+  nicomoreno: { creature: 'anvil', palette: P('#F0F0F4', '#5A5E6A', '#22242C', '#FFB84A', '#8A4A10', '#FF6A2A', '#FF8A3D'), name: t('The Anvil'), theme: t('A blacksmith’s anvil, sparks flying on every kick') },
+  frankyrizardo: { creature: 'lizard', palette: P('#F4FFE0', '#6ACF5A', '#1E6A2A', '#C89A6A', '#6A4A2A', '#FFD36E', '#8AE87A'), name: t('The Lizard'), theme: t('A little lizard sunning itself on a warm rock') },
+  denniscruz: { creature: 'palm', palette: P('#FFE8C8', '#B8865A', '#1E4A3A', '#3AA8C8', '#6A3A1A', '#FF8A4A', '#FFB86B'), name: t('The Palm'), theme: t('A palm tree on a little island at sunset') },
+  madvktm: { creature: 'bomb', palette: P('#FFFFFF', '#2A2A3A', '#0E0E16', '#E8C88A', '#5A4A2A', '#FF5A2A', '#FF7A3D'), name: t('The Bomb'), theme: t('A cartoon bomb, its fuse fizzing, ready to drop') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },

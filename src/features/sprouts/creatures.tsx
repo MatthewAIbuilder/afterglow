@@ -4677,6 +4677,179 @@ const songbird: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** NICO MORENO: the Anvil — a blacksmith's anvil, sparks flying off it on every kick. */
+const anvil: Draw = (p, f) => ({
+  ground: [50, 90, 30],
+  back: <Ellipse cx={50} cy={56} rx={42} ry={36} fill={p.glow} opacity={0.18} />,
+  body: (
+    <G>
+      {/* The foot, the waist and the face of the anvil with its horn. */}
+      <V d="M30 88 L70 88 L64 78 L36 78Z" fill={p.deep} f={f} />
+      <V d="M40 78 L60 78 L58 64 L42 64Z" fill={p.mid} f={f} />
+      <V d="M10 44 C18 44 22 46 26 48 L80 48 Q84 48 84 52 L84 60 Q84 64 80 64 L28 64 C22 60 16 52 10 44Z" fill={p.mid} f={f} gloss={[54, 51, 14, 1.4, 0]} />
+      <Path d="M26 48.6 L83 48.6" stroke={p.light} strokeWidth={1} opacity={0.5} />
+      <Circle cx={46} cy={58} r={2} fill={p.accent} opacity={0.4} />
+      <Circle cx={68} cy={58} r={2} fill={p.accent} opacity={0.4} />
+      <Path d="M53 59 Q57 62 61 59" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [48, 51, 18, 7],
+    el: (
+      <G>
+        <VEye x={52} y={54.4} r={2.4} f={f} />
+        <VEye x={62} y={54.4} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Sparks. */}
+      {(
+        [
+          [56, 40, 48, 26],
+          [60, 40, 66, 22],
+          [64, 42, 78, 30],
+          [52, 42, 40, 32],
+        ] as const
+      ).map(([x0, y0, x1, y1], i) => (
+        <Path key={i} d={`M${x0} ${y0} L${x1} ${y1}`} stroke={i % 2 ? p.accent : p.alt} strokeWidth={1.4} strokeLinecap="round" />
+      ))}
+      <Glow x={66} y={22} r={1.2} color={p.accent} />
+      <Glow x={48} y={26} r={1} color={p.alt} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** FRANKY RIZARDO: the Lizard — a little lizard sunning itself on a warm rock, tail curled. */
+const lizard: Draw = (p, f) => ({
+  ground: [50, 90, 34],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.15} />
+      <Circle cx={74} cy={24} r={9} fill={p.accent} opacity={0.35} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The rock. */}
+      <V d="M14 84 C14 74 24 68 36 68 L66 68 C78 68 86 74 86 84 Q86 88 82 88 L18 88 Q14 88 14 84Z" fill={p.alt} f={f} gloss={[30, 72, 6, 1.6, 0]} />
+      {/* Tail curling round, legs, body and head. */}
+      <Path d="M30 66 C20 66 16 58 22 54 C26 51 30 54 28 58" stroke={p.mid} strokeWidth={4.4} fill="none" strokeLinecap="round" />
+      <Path d="M38 66 L34 70 M46 66 L48 70 M58 64 L56 69 M66 62 L70 67" stroke={p.deep} strokeWidth={2.6} strokeLinecap="round" />
+      <V d="M28 62 C34 56 48 56 58 58 C64 59 66 62 62 66 C52 68 38 68 28 66Z" fill={p.mid} f={f} gloss={[40, 59, 6, 1.4, 0]} />
+      <VE cx={68} cy={56} rx={11} ry={8.6} fill={p.mid} f={f} />
+      {[36, 44, 52].map((x) => (
+        <Circle key={x} cx={x} cy={60.4} r={1.3} fill={p.light} opacity={0.6} />
+      ))}
+      <Path d="M70 61 Q74 63 78 60" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [62, 49, 16, 7],
+    el: (
+      <G>
+        <VEye x={66} y={53} r={2.4} f={f} />
+        <VEye x={74} y={53} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [18, 22, 1.8],
+    [88, 46, 1.5],
+  ]),
+  flickerOver: true,
+});
+
+/** DENNIS CRUZ: the Palm — a palm tree on a little island, the sun going down behind it. */
+const palm: Draw = (p, f) => ({
+  ground: [50, 90, 30],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      <Circle cx={50} cy={66} r={22} fill={p.accent} opacity={0.4} />
+      <Path d="M14 78 Q50 74 86 78 L86 82 Q50 78 14 82Z" fill={p.alt} opacity={0.5} />
+    </G>
+  ),
+  pivot: [52, 34],
+  sway: (
+    <G>
+      {/* Fronds. */}
+      <V d="M52 32 C42 22 28 22 20 30 C30 28 40 30 50 36Z" fill={p.deep} f={f} />
+      <V d="M52 32 C62 22 76 22 84 30 C74 28 64 30 54 36Z" fill={p.deep} f={f} />
+      <V d="M52 32 C48 20 52 10 60 8 C56 16 56 24 54 34Z" fill={p.deep} f={f} />
+      <V d="M52 33 C42 34 34 42 32 50 C38 42 46 38 53 37Z" fill={p.deep} f={f} />
+      <V d="M52 33 C62 34 70 42 72 50 C66 42 58 38 51 37Z" fill={p.deep} f={f} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The trunk, the island and coconuts. */}
+      <V d="M48 86 C48 66 50 50 50 34 L55 34 C55 50 54 66 56 86Z" fill={p.mid} f={f} />
+      {[44, 54, 64, 74].map((y) => (
+        <Path key={y} d={`M${48.6 + (86 - y) * 0.02} ${y} L${55.4} ${y - 1}`} stroke={p.deep} strokeWidth={0.8} opacity={0.5} />
+      ))}
+      <V d="M24 88 C30 80 70 80 76 88Z" fill={p.light} f={f} />
+      <Circle cx={50} cy={37} r={2.4} fill={p.altDeep} />
+      <Circle cx={55} cy={38} r={2.4} fill={p.altDeep} />
+      <Path d="M48 68 Q52 71 56 68" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [46, 58, 14, 7],
+    el: (
+      <G>
+        <VEye x={49.6} y={62} r={2.2} f={f} />
+        <VEye x={56} y={62} r={2.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [16, 20, 1.6],
+    [86, 52, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** MADVKTM: the Bomb — a round cartoon bomb, its fuse fizzing, about to drop. */
+const bomb: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* The fuse and its cap. */}
+      <Path d="M62 30 C65 24 69 22 72 20" stroke={p.alt} strokeWidth={2} fill="none" strokeLinecap="round" />
+      <V d="M54 32 L64 26 L68 32 L58 38Z" fill={p.deep} f={f} />
+      <VE cx={48} cy={60} rx={27} ry={27} fill={p.mid} f={f} />
+      <Circle cx={36} cy={68} r={2.6} fill={p.accent} opacity={0.35} />
+      <Circle cx={60} cy={68} r={2.6} fill={p.accent} opacity={0.35} />
+      <Path d="M42 70 Q48 75 54 70" stroke={p.light} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [36, 54, 24, 9],
+    el: (
+      <G>
+        <VEye x={41} y={58.4} r={3.4} f={f} />
+        <VEye x={55} y={58.4} r={3.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* The fizz. */}
+      <Glow x={72.6} y={19.4} r={2} color={p.accent} />
+      <Path d="M73 14 L73 11 M77.6 16.4 L80 14.6 M78 21 L80.6 22 M68.6 15.4 L67 13" stroke={p.accent} strokeWidth={1.2} strokeLinecap="round" />
+      {sparkles(p.accent, [
+        [16, 30, 1.6],
+        [86, 74, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -5650,6 +5823,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  anvil,
+  lizard,
+  palm,
+  bomb,
   exclaim,
   telescope,
   cog,
