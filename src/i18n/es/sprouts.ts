@@ -422,6 +422,8 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'A portal': 'Un portal',
+  'Find the Portal potty': 'Encuentra el Váter portal',
   'The Exclamation': 'La Exclamación',
   'An exclamation mark shouting for joy': 'Un signo de exclamación que grita de alegría',
   'The Observatory': 'El Observatorio',

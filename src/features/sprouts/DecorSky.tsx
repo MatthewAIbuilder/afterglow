@@ -16,6 +16,14 @@ const CONSTELLATION = [
   [0.28, 0.52],
 ] as const;
 const GUIDE = 3;
+/** A spiral into (x, y), squashed into a tall oval: a portal's swirl, `k` its size. */
+const portalSwirl = (x: number, y: number, k: number) =>
+  Array.from({ length: 24 }, (_, i) => {
+    const t = i / 23;
+    const a = t * Math.PI * 3.4;
+    const r = (1 - t) * 11 * k;
+    return `${i ? 'L' : 'M'}${(x + Math.cos(a) * r).toFixed(1)} ${(y + Math.sin(a) * r * 1.3).toFixed(1)}`;
+  }).join(' ');
 
 /**
  * Decorations in a garden's sky, behind the hills (the aurora, a rainbow,
@@ -106,6 +114,15 @@ export function DecorBehind({ decor, width, hz }: { decor: readonly DecorId[]; w
               <Circle cx={width * fx} cy={hz * fy} r={i === GUIDE ? 2 : 1.3} fill={i === GUIDE ? '#FFE9A8' : '#FFFFFF'} />
             </G>
           ))}
+        </G>
+      ) : null}
+      {has('portal') ? (
+        <G>
+          {/* A portal on the far hill, swirling green, half behind the horizon. */}
+          <Circle cx={width * 0.84} cy={hz * 0.86} r={26} fill="#B6FF5A" opacity={0.1} />
+          <Ellipse cx={width * 0.84} cy={hz * 0.86} rx={13} ry={17} fill="#123A2A" stroke="#3A86E0" strokeWidth={1.6} />
+          <Path d={portalSwirl(width * 0.84, hz * 0.86, 1)} stroke="#B6FF5A" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+          <Path d={portalSwirl(width * 0.84, hz * 0.86, 0.6)} stroke="#CFE8FF" strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.7} />
         </G>
       ) : null}
       {has('moon') ? (
@@ -238,6 +255,13 @@ export function DecorIcon({ id, size = 64 }: { id: DecorId; size?: number }) {
               <Circle cx={x} cy={y} r={2} fill="#FFFFFF" />
             </G>
           ))}
+        </G>
+      ) : id === 'portal' ? (
+        <G>
+          <Circle cx={32} cy={32} r={22} fill="#B6FF5A" opacity={0.12} />
+          <Ellipse cx={32} cy={32} rx={14} ry={19} fill="#123A2A" stroke="#3A86E0" strokeWidth={2} />
+          <Path d={portalSwirl(32, 32, 1.1)} stroke="#B6FF5A" strokeWidth={2} fill="none" strokeLinecap="round" />
+          <Path d={portalSwirl(32, 32, 0.65)} stroke="#CFE8FF" strokeWidth={1.2} fill="none" strokeLinecap="round" opacity={0.75} />
         </G>
       ) : id === 'constellation' ? (
         <G>
