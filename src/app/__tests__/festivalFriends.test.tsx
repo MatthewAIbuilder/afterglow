@@ -108,12 +108,13 @@ describe('Profile at a festival', () => {
     await app.unmount();
   });
 
-  it('keeps your garden and gifts, and giving a sprout, a tap away', async () => {
+  it('keeps your garden and gifts a tap away', async () => {
     await person('maya', 'Maya');
     const app = await renderApp('/profile');
     await flush();
     expect(app.getByLabelText(/^My garden: .*\. Your sprouts, collectibles and gifts$/)).toBeTruthy();
-    expect(app.getByLabelText('Give a sprout')).toBeTruthy();
+    // Giving a sprout is inside the garden, so it isn't a second button here.
+    expect(app.queryByLabelText('Give a sprout')).toBeNull();
     await fireEvent.press(app.getByLabelText(/^My garden: /));
     await flush();
     expect(app.getByRole('header', { name: 'Your garden' })).toBeTruthy();
