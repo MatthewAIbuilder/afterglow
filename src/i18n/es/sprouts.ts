@@ -422,6 +422,7 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'Your {artist} collectible, {name}: {theme}. {tier}. {next}. Opens its card.': 'Tu coleccionable de {artist}, {name}: {theme}. {tier}. {next}. Abre su carta.',
   'Share your profile': 'Compartir tu perfil',
   'Share a picture': 'Compartir una imagen',
   'Share the link': 'Compartir el enlace',

@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
@@ -7,24 +8,28 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { artistLook } from './artistLook';
 import { tierLabel, tierLine } from './artistSprouts';
 import { Sprout } from './Sprout';
+import { ArtistSproutSheet } from './ArtistSproutsSection';
 import { t } from '../../i18n';
 
 /**
  * An artist's collectible on their page: yours with its level and what's
- * next, or a grey figure and how to earn it (film their set). Opens your garden.
+ * next, or a grey figure and how to earn it (film their set). Yours opens
+ * its card (to turn over, share, pin or give); otherwise it opens your garden.
  */
-export function ArtistSproutCard({ artist }: { artist: Pick<Artist, 'id' | 'name' | 'sound' | 'color'> }) {
-  const { artists } = useSprouts();
+export function ArtistSproutCard({ artist }: { artist: Pick<Artist, 'id' | 'name' | 'sound' | 'color'> & Partial<Artist> }) {
+  const { artists, ready } = useSprouts();
+  const [open, setOpen] = useState(false);
   const mine = artists.find((a) => a.artistId === artist.id);
   const look = artistLook(artist);
   const label = mine
-    ? t('Your {artist} collectible, {name}: {theme}. {tier}. {next}. Opens your garden.', { artist: artist.name, name: look.name, theme: look.theme.toLowerCase(), tier: tierLabel(mine), next: tierLine(mine.videos) })
+    ? t('Your {artist} collectible, {name}: {theme}. {tier}. {next}. Opens its card.', { artist: artist.name, name: look.name, theme: look.theme.toLowerCase(), tier: tierLabel(mine), next: tierLine(mine.videos) })
     : t("{artist}'s collectible, {name}: {theme}. Film their set to earn it. Opens your garden.", { artist: artist.name, name: look.name, theme: look.theme.toLowerCase() });
   return (
     <Pressable
       onPress={() => {
         haptic.select();
-        router.push('/garden');
+        if (mine) setOpen(true);
+        else router.push('/garden');
       }}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -37,6 +42,7 @@ export function ArtistSproutCard({ artist }: { artist: Pick<Artist, 'id' | 'name
         <Text style={styles.sub}>{look.theme}</Text>
         <Text style={styles.sub}>{mine ? `${tierLabel(mine)} · ${tierLine(mine.videos)}` : t('Film their set to earn it for your garden.')}</Text>
       </View>
+      {mine ? <ArtistSproutSheet open={open ? { artist: artist as Artist, sprout: mine } : undefined} canGive={ready} onClose={() => setOpen(false)} /> : null}
     </Pressable>
   );
 }

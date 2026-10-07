@@ -100,6 +100,13 @@ describe('artist sprouts', () => {
     await flush();
     expect(profile.getByText('Find me on Afterglow')).toBeTruthy();
     expect(profile.getByText('1 collectible · 1 sprout')).toBeTruthy();
+    await profile.unmount();
+    // On the artist's page, yours opens its card.
+    const page = await renderApp('/artist/subtronics');
+    await flush();
+    await fireEvent.press(page.getByLabelText(/^Your SUBTRONICS collectible, The Watcher: .* Opens its card\.$/));
+    await flush();
+    expect(page.getByText('★ In your showcase')).toBeTruthy();
   });
 
   it('videos from before the update grow their sprouts quietly', async () => {
