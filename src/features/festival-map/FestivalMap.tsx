@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Circle, type LatLng, Marker, Polyline } from 'react-native-maps';
@@ -7,7 +6,7 @@ import { NEAR_KM } from '../festivals/near';
 import type { Point } from '../festivals/near';
 import { haptic } from '../../lib/haptics';
 import { revealSecret } from '../../state/secrets';
-import { color, radius, space, type, raisedA } from '../../theme/tokens';
+import { color, radius, space, type } from '../../theme/tokens';
 import {
   type Cluster,
   type MapPoint,
@@ -30,6 +29,7 @@ import { HERE_COLOR, SHOW_COLOR, TONE_COLOR } from './tones';
 import { type ShowPin, showPinLabel } from './tour';
 import { t } from '../../i18n';
 import { datesLine } from '../festivals/format';
+import { GlassFill } from '../../components/LiquidGlass';
 
 /** Lights closer than this many pixels share one. */
 const CLUSTER_PX = 30;
@@ -273,7 +273,7 @@ export function FestivalMap({
             accessibilityLabel={lit > 1 ? t('Show all these festivals again') : t('Back to the festival')}
             style={({ pressed }) => [styles.againPill, pressed && { opacity: 0.8 }]}
           >
-            <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+            <GlassFill radius={radius.pill} tint={0.5} interactive />
             <Text style={styles.againText}>{lit > 1 ? t('Show all') : t('Back to it')}</Text>
           </Pressable>
         </View>
@@ -448,7 +448,6 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     borderWidth: 1,
     borderColor: color.hairline,
-    backgroundColor: raisedA(0.5),
   },
   againText: { ...type.label, color: color.moon },
 });
