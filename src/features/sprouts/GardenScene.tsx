@@ -19,6 +19,9 @@ import type { DecorId } from './decor';
 import { DecorBehind, DecorFront } from './DecorSky';
 import type { SproutKind, Stage } from './sprouts';
 
+/** Golden fireflies for glows, at most. */
+const GLOW_FLIES = 12;
+
 /**
  * The living garden: a night meadow where every sprout and artist
  * collectible stands at its own spot, bobbing, swaying and blinking on one
@@ -58,6 +61,8 @@ type Props = {
   onCarrying?: (on: boolean) => void;
   /** Visiting someone else's garden: nothing can be moved, and a tap makes a resident dance. */
   visiting?: boolean;
+  /** Glows visitors left: each adds a golden firefly (up to twelve). */
+  glows?: number;
   /** Decorations in its sky (decor.ts). */
   decor?: readonly DecorId[];
 };
@@ -67,7 +72,7 @@ export const LIFT_MS = 260;
 /** Arrivals since this long ago glow. */
 const lagSpring = { damping: 16, stiffness: 150, mass: 0.6 };
 
-export function GardenScene({ residents, account, width, focused, ready, onOpen, onCarrying, visiting = false, decor = [] }: Props) {
+export function GardenScene({ residents, account, width, focused, ready, onOpen, onCarrying, visiting = false, decor = [], glows = 0 }: Props) {
   const reduce = useReducedMotion();
   const running = focused && !reduce;
   // The sky follows the hour (checked every ten minutes).
@@ -146,7 +151,7 @@ export function GardenScene({ residents, account, width, focused, ready, onOpen,
 
   return (
     <View style={{ width, height: m.height }} accessible={false}>
-      <Ground hour={now.getHours()} decor={decor} width={width} m={m} pools={residents.map((r) => ({ ...spotOf(r.id), gold: 'artist' in r.look }))} clock={clock} running={running} label={label} />
+      <Ground hour={now.getHours()} glows={glows} decor={decor} width={width} m={m} pools={residents.map((r) => ({ ...spotOf(r.id), gold: 'artist' in r.look }))} clock={clock} running={running} label={label} />
       {residents.map((r) => {
         const spot = spotOf(r.id);
         // The nearest neighbour in its row, to glance at now and then.
@@ -380,7 +385,7 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
 }
 
 /** The meadow: a rolling horizon, far stars, a soft glow where each resident stands, grass, and fireflies drifting about. */
-function Ground({ hour, decor, width, m, pools, clock, running, label }: { hour: number; decor: readonly DecorId[]; width: number; m: Meadow; pools: { x: number; y: number; gold: boolean }[]; clock: SharedValue<number>; running: boolean; label: string }) {
+function Ground({ hour, glows, decor, width, m, pools, clock, running, label }: { hour: number; glows: number; decor: readonly DecorId[]; width: number; m: Meadow; pools: { x: number; y: number; gold: boolean }[]; clock: SharedValue<number>; running: boolean; label: string }) {
   const h = m.height;
   const sky = skyAt(hour, SPROUT_GLOW[1]);
   const hz = HORIZON;
@@ -394,7 +399,9 @@ function Ground({ hour, decor, width, m, pools, clock, running, label }: { hour:
   const nearHill = `${nearTop} L${width} ${h} L0 ${h} Z`;
   const stars = Array.from({ length: 11 }, (_, i) => ({ x: at(i, 'sx') * width, y: 4 + at(i, 'sy') * (hz - 10), r: 0.7 + at(i, 'sr') * 0.8, o: 0.25 + at(i, 'so') * 0.45 }));
   const tufts = Array.from({ length: Math.round(width / 28) * m.rows }, (_, i) => ({ x: at(i, 'tx') * width, y: hz + 46 + at(i, 'ty') * (h - hz - 60), s: 0.7 + at(i, 'ts') * 0.6 }));
-  const flies = Array.from({ length: 7 }, (_, i) => ({ x: 20 + at(i, 'fx') * (width - 40), y: hz + 10 + at(i, 'fy') * Math.max(40, h * 0.55 - hz) }));
+  // Seven fireflies always; one more, golden, for each glow visitors left (up to twelve).
+  const gold = Math.min(GLOW_FLIES, Math.max(0, Math.floor(glows)));
+  const flies = Array.from({ length: 7 + gold }, (_, i) => ({ x: 20 + at(i, 'fx') * (width - 40), y: hz + 10 + at(i, 'fy') * Math.max(40, h * 0.55 - hz), gold: i >= 7 }));
   return (
     <View style={StyleSheet.absoluteFill} accessible accessibilityRole="image" accessibilityLabel={label}>
       <Svg width={width} height={h} pointerEvents="none">
@@ -446,13 +453,13 @@ function Ground({ hour, decor, width, m, pools, clock, running, label }: { hour:
         ))}
       </Svg>
       {flies.map((f, i) => (
-        <Firefly key={i} i={i} x={f.x} y={f.y} clock={clock} running={running} />
+        <Firefly key={i} i={i} x={f.x} y={f.y} gold={f.gold} clock={clock} running={running} />
       ))}
     </View>
   );
 }
 
-function Firefly({ i, x, y, clock, running }: { i: number; x: number; y: number; clock: SharedValue<number>; running: boolean }) {
+function Firefly({ i, x, y, gold, clock, running }: { i: number; x: number; y: number; gold?: boolean; clock: SharedValue<number>; running: boolean }) {
   const pace = paceOf(`firefly${i}`);
   const glow = pace.blink;
   const phase = pace.phase;
@@ -463,8 +470,8 @@ function Firefly({ i, x, y, clock, running }: { i: number; x: number; y: number;
     return { opacity: 0.08 + 0.85 * a * a * a, transform: [{ translateX: 7 * sine(t, 3, phase) }, { translateY: 5 * sine(t, 4, phase + 0.3) }] };
   });
   return (
-    <Animated.View pointerEvents="none" style={[styles.firefly, { left: x - 5, top: y - 5 }, style]}>
-      <View style={styles.fireflyCore} />
+    <Animated.View pointerEvents="none" style={[styles.firefly, gold && styles.fireflyGold, { left: x - 5, top: y - 5 }, style]}>
+      <View style={[styles.fireflyCore, gold && styles.fireflyCoreGold]} />
     </Animated.View>
   );
 }
@@ -480,4 +487,6 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 2 },
   firefly: { position: 'absolute', width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(214,255,160,0.2)', alignItems: 'center', justifyContent: 'center' },
   fireflyCore: { width: 3, height: 3, borderRadius: 2, backgroundColor: '#E8FFB8' },
+  fireflyGold: { backgroundColor: 'rgba(255,229,138,0.28)' },
+  fireflyCoreGold: { backgroundColor: '#FFE58A', width: 3.6, height: 3.6 },
 });

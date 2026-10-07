@@ -232,6 +232,7 @@ export default function GardenScreen() {
 
         <GardenScene
           decor={decor}
+          glows={glows.length}
           residents={residents}
           account={social.user?.uid ?? 'guest'}
           width={Math.min(CONTENT_MAX, windowWidth) - 2 * space.xl}
