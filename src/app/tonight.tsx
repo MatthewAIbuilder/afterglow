@@ -30,6 +30,7 @@ import { bySoonest, isOver } from '../features/festivals/shelves';
 import { countdown } from '../features/festivals/when';
 import { useTonight } from '../features/tonight/useTonight';
 import { Sprout } from '../features/sprouts/Sprout';
+import { KandiBracelet } from '../features/kandi/KandiBracelet';
 import { haptic } from '../lib/haptics';
 import { useCrews } from '../state/crews';
 import { useCrewUpdates } from '../state/crewUpdates';
@@ -213,6 +214,9 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
         {ready && crews.length ? <Action label={t('Check in')} a11y={t('Check in with your crew')} onPress={() => router.push('/check-in')} /> : null}
         {ready ? (
           <Action label={t('Sprout')} a11y={t('Give someone a sprout')} onPress={() => router.push('/give-sprout')} icon={<Sprout kind="seedling" stage={2} size={26} still />} />
+        ) : null}
+        {ready ? (
+          <Action label={t('Kandi')} a11y={t('Make kandi for someone you met')} onPress={() => router.push('/kandi-make')} icon={<KandiBracelet word="" beads="rainbow" size={30} />} />
         ) : null}
         {previewable ? (
           <Action
