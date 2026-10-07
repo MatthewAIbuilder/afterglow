@@ -31,4 +31,6 @@ export const es_festivalMode: Dictionary = {
   'Best for you first. Artists on Afterglow only: the full lineup is on the show page.': 'Lo mejor para ti primero. Solo artistas en Afterglow: el cartel completo está en la página del show.',
   'Rate the bill': 'Califica el cartel',
   'The bill works without signal.': 'El cartel funciona sin señal.',
+  // Profile at a festival or show
+  'My garden: {what}. Your sprouts, collectibles and gifts': 'Mi jardín: {what}. Tus brotes, coleccionables y regalos',
 };
