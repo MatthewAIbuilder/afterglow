@@ -234,4 +234,6 @@ export const es_memories: Dictionary = {
   'Add {name} as a new artist': 'Añadir a {name} como artista nuevo',
   '+ Add “{name}”': '+ Añadir «{name}»',
   'Not on Afterglow yet. Your video shows them by this name, and we’ll add them properly.': 'Aún no está en Afterglow. Tu video lo muestra con este nombre, y lo añadiremos como es debido.',
+  // The camera, opened from an artist's page.
+  'Filming {artist}': 'Grabando a {artist}',
 };

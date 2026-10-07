@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -33,6 +33,12 @@ import { GlassFill } from '../components/LiquidGlass';
  * tagging sheet works out who was playing. Swipe left or tap close to go
  * back. Videos stay on the phone unless you share them.
  */
+/** Who you're filming, when the camera was opened from their page ("Film the set"): passed on to the tagging sheet. */
+function useFilming(): Record<string, string> | undefined {
+  const { artist, show } = useLocalSearchParams<{ artist?: string; show?: string }>();
+  return useMemo(() => (artist ? { artist, ...(show ? { show } : {}) } : undefined), [artist, show]);
+}
+
 export default function CameraScreen() {
   if (Platform.OS === 'web') return <ChooseOnWeb />;
   return <Camera />;
@@ -57,6 +63,8 @@ function Camera() {
   // Keeping the clip you just filmed (reading where you are, copying the file): the button waits meanwhile.
   const [saving, setSaving] = useState(false);
   const pick = useMemoryPicker();
+  const filming = useFilming();
+  const filmingName = useCatalog().artist(filming?.artist ?? '')?.name;
 
   // Where you are, when you're at a festival you're going to.
   const { festivals } = useCatalog();
@@ -93,17 +101,17 @@ function Camera() {
         const kept = await keepNow(video);
         // Gone back meanwhile: it's in your Memories (with a Tag badge), but don't open anything over where you are now.
         if (leaving.current) return;
-        if (kept) router.replace({ pathname: '/memory-tag', params: { id: kept.id, fresh: '1' } });
+        if (kept) router.replace({ pathname: '/memory-tag', params: { id: kept.id, fresh: '1', ...filming } });
         else {
           // Couldn't copy it (a full phone): tag it from where the camera left it, as before.
           setDraft(video);
-          router.replace('/memory-tag');
+          router.replace(filming ? { pathname: '/memory-tag', params: filming } : '/memory-tag');
         }
       } finally {
         if (!leaving.current) setSaving(false);
       }
     },
-    [setDraft, keepNow],
+    [setDraft, keepNow, filming],
   );
 
   const start = useCallback(
@@ -207,7 +215,7 @@ function Camera() {
               </View>
             ) : (
               <Text style={styles.chipText} numberOfLines={1}>
-                {at ? t('Filming at {festival}', { festival: at }) : t('New memory')}
+                {at ? t('Filming at {festival}', { festival: at }) : filmingName ? t('Filming {artist}', { artist: filmingName }) : t('New memory')}
               </Text>
             )}
           </View>
@@ -254,7 +262,7 @@ function Camera() {
             <Pressable
               onPress={() => {
                 haptic.select();
-                void pick('library', { replace: true });
+                void pick('library', { replace: true, params: filming });
               }}
               disabled={recording || saving}
               accessibilityRole="button"
@@ -309,20 +317,22 @@ function Camera() {
 function ChooseOnWeb() {
   const insets = useSafeAreaInsets();
   const pick = useMemoryPicker();
+  const filming = useFilming();
+  const filmingName = useCatalog().artist(filming?.artist ?? '')?.name;
   return (
     <View style={[styles.root, styles.web, { paddingTop: insets.top + space.xxl }]}>
       <PageTitle title={t('Post a video')} />
       <View style={styles.permIcon}>
         <CameraIcon color={color.moon} size={26} />
       </View>
-      <Text style={styles.permTitle}>{t('Post a festival moment')}</Text>
+      <Text style={styles.permTitle}>{filmingName ? t('Post a video of {artist}', { artist: filmingName }) : t('Post a festival moment')}</Text>
       <Text style={styles.permBody}>
         {t('Choose a video from your Photos or Files, or take one, up to ten minutes long. Trim it to the best part, tag who was playing and share it to Discover.')}
       </Text>
       <Pressable
         onPress={() => {
           haptic.tap();
-          void pick('library', { replace: true });
+          void pick('library', { replace: true, params: filming });
         }}
         accessibilityRole="button"
         style={({ pressed }) => [styles.permButton, pressed && styles.pressed]}

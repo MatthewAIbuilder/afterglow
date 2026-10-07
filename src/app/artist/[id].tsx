@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
@@ -52,11 +52,13 @@ import { artistStory, hasStory, nextShow, nextShowLine, storyLines } from '../..
 import { ArtistSproutCard } from '../../features/sprouts/ArtistSproutCard';
 import { ArtistRow } from '../../components/ArtistRow';
 import { ArtistCrowdRow } from '../../features/artists/ArtistCrowdRow';
+import { filmParams, filmTonight } from '../../features/artists/filmTonight';
+import { CameraIcon } from '../../features/camera/icons';
 import { localDay, showDateBlock, showLabel, showTitle, showWhere, SHOWS_SHOWN, withLine } from '../../features/artists/shows';
 import { useReactions } from '../../state/reactions';
 import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type, glowA, nightA, pageColumn } from '../../theme/tokens';
+import { color, radius, space, type, glowA, nightA, accentEdge } from '../../theme/tokens';
 import { dayWord, t, tc } from '../../i18n';
 
 const HERO = 132;
@@ -78,7 +80,8 @@ const HALO = HERO * 2;
 
 export default function ArtistScreen() {
   // `festival` is set when opened from a festival page; must-see stars apply to that festival only.
-  const { id, festival: festivalId } = useLocalSearchParams<{ id: string; festival?: string }>();
+  // `film=1`: opened from a code printed on a sticker or poster at their show.
+  const { id, festival: festivalId, film } = useLocalSearchParams<{ id: string; festival?: string; film?: string }>();
   const catalog = useCatalog();
   const artist = catalog.artist(id);
   const insets = useSafeAreaInsets();
@@ -116,6 +119,8 @@ export default function ArtistScreen() {
   // Their club shows from the nightly EDMTrain feed, from today on.
   const shows = catalog.showsOf(artist.id, localDay(today));
   const showsListed = allShows ? shows : shows.slice(0, SHOWS_SHOWN);
+  // At their show tonight (or opened from a code handed out there): film the set and post it.
+  const filmCard = filmTonight(shows, localDay(today), film === '1');
   // Their tour on the map: any festival or upcoming show with a place.
   const tourOnMap = festivals.some((f) => placeOf(f)) || shows.some((s) => s.place);
   const tourLink = (
@@ -172,7 +177,7 @@ export default function ArtistScreen() {
         </View>
       ) : null}
       <ScrollView
-        contentContainerStyle={[pageColumn, { paddingTop: insets.top + 56, paddingBottom: insets.bottom + space.xxxl }]}
+        contentContainerStyle={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom + space.xxxl }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
@@ -276,6 +281,29 @@ export default function ArtistScreen() {
                 {nextShowLine(next, artist.id, today, (f, a) => dayList(daysOf(f, a)))}
               </Text>
             </Pressable>
+          ) : null}
+          {filmCard ? (
+            <View style={styles.film}>
+              <Text style={styles.nextKicker}>
+                {filmCard.show ? t('TONIGHT · {place}', { place: showTitle(filmCard.show).toUpperCase() }) : t('AT THE SHOW?')}
+              </Text>
+              <Text style={styles.filmTitle}>{t('Film the set')}</Text>
+              <Text style={styles.filmLine}>
+                {t('Post a minute of {artist} from the crowd. It shows on this page and in Discover for every fan.', { artist: artist.name })}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  haptic.tap();
+                  router.push({ pathname: '/camera', params: filmParams(artist.id, filmCard) });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={Platform.OS === 'web' ? t('Post a video of {artist}', { artist: artist.name }) : t('Film {artist}', { artist: artist.name })}
+                style={({ pressed }) => [styles.filmButton, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
+              >
+                <CameraIcon color={color.moon} size={16} />
+                <Text style={styles.filmButtonText}>{Platform.OS === 'web' ? t('Post a video') : t('Film it')}</Text>
+              </Pressable>
+            </View>
           ) : null}
           {/* Crewmates who starred them at this festival. */}
           {starFestival && crewLine ? (
@@ -442,6 +470,8 @@ export default function ArtistScreen() {
           </Section>
         )}
 
+        {/* Everyone's videos of them, before the uploads: footage from the crowd is what plays everywhere. */}
+        <ArtistCrowdRow artist={artist} />
         {clips.length > 0 && (
           <Section title={t('Live clips')}>
             {clips.map((c) => {
@@ -500,8 +530,6 @@ export default function ArtistScreen() {
           </Section>
         )}
 
-        {/* Everyone's videos of them. */}
-        <ArtistCrowdRow artist={artist} />
 
         {/* Your own videos of them, from Memories. */}
         {yours.length > 0 && (
@@ -577,6 +605,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 const styles = StyleSheet.create({
   cards: { gap: space.sm, marginTop: space.sm },
   nextShow: { alignSelf: 'stretch', marginTop: space.lg, paddingVertical: space.md, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, alignItems: 'center', gap: 2 },
+  film: { alignSelf: 'stretch', marginTop: space.lg, paddingVertical: space.lg, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: glowA(0.12), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.55), alignItems: 'center', gap: 4 },
+  filmTitle: { ...type.title, color: color.moon },
+  filmLine: { ...type.body, color: color.moonDim, textAlign: 'center', maxWidth: 320 },
+  filmButton: { marginTop: space.md, flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
+  filmButtonText: { ...type.headline, color: color.moon },
   nextShowGoing: { borderColor: glowA(0.55), backgroundColor: glowA(0.10) },
   nextKicker: { ...type.caption, fontSize: 10, letterSpacing: 1.5, fontWeight: '700', color: color.glow },
   nextName: { ...type.headline, color: color.moon },

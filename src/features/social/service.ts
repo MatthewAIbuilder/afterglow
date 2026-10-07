@@ -4,7 +4,7 @@ import type { ShowTag } from '../memories/show';
 import type { ClipWindow } from '../memories/trim';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
 import type { PublicResident } from '../sprouts/publicGarden';
-import type { Kandi, KandiInput, PublicKandi } from '../kandi/kandi';
+import type { Kandi, KandiInput, OpenKandiInput, PublicKandi } from '../kandi/kandi';
 import type { Org, OrgCounter, OrgDay, OrgPost, OrgPostInput, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
@@ -337,6 +337,12 @@ export interface SocialService {
   gardenBackup(): Promise<string | null>;
   /** Leave kandi in someone's garden (they need a profile, and not to have blocked you). */
   giveKandi(input: KandiInput): Promise<Kandi>;
+  /** Make kandi given by code: whoever picks it up first gets it (saying so again with the same id is the same as once). */
+  leaveOpenKandi(input: OpenKandiInput): Promise<void>;
+  /** One kandi by its code; null when it isn't there (taken back). */
+  kandiById(id: string): Promise<Kandi | null>;
+  /** Pick up kandi given by code: it's yours (`kandi-taken` when someone else has it). */
+  claimKandi(id: string): Promise<Kandi>;
   /** Kandi left for you, newest first. */
   myKandi(max: number): Promise<Kandi[]>;
   /** Take kandi out of your garden (or take back one you gave). */
@@ -431,6 +437,7 @@ export type SocialErrorKind =
   | 'crew-full'
   | 'not-invited'
   | 'sprout-taken'
+  | 'kandi-taken'
   | 'sprout-gone'
   | 'throwback-limit'
   | 'sticker-ended'
@@ -466,6 +473,7 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'crew-full': t('That crew is full.'),
   'not-invited': t('Crews are invite only. Ask someone in the crew to invite you, or to send you a new invite link.'),
   'sprout-taken': t('Someone else already picked up this sprout.'),
+  'kandi-taken': t('Someone else already picked up this kandi.'),
   'already-sent': t('You’ve already sent set times for this festival. We’ll look at them soon.'),
   'sprout-gone': t('This sprout can’t be picked up any more. Ask them for a new code.'),
   'throwback-limit': t('You’ve shared as many throwbacks as the free plan allows. It’s still saved in your Memories, with its badge.'),
