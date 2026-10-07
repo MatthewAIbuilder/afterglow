@@ -5610,6 +5610,185 @@ const crown: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** SNOW STRIPPERS: the Snowflake — a glittering snowflake with a little face, cold light around it. */
+const snowflake: Draw = (p, f) => ({
+  ground: null,
+  back: <Circle cx={50} cy={50} r={38} fill={p.glow} opacity={0.14} />,
+  spinAt: [50, 50],
+  spin: (
+    <G>
+      {Array.from({ length: 6 }, (_, i) => {
+        const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+        const at = (r: number, da = 0) => `${r1(50 + Math.cos(a + da) * r)} ${r1(50 + Math.sin(a + da) * r)}`;
+        return (
+          <Path key={i} d={`M50 50 L${at(36)} M${at(22)} L${at(29, 0.32)} M${at(22)} L${at(29, -0.32)} M${at(30)} L${at(35, 0.22)} M${at(30)} L${at(35, -0.22)}`} stroke={p.mid} strokeWidth={3} strokeLinecap="round" />
+        );
+      })}
+    </G>
+  ),
+  body: <G />,
+  front: (
+    <G>
+      <Circle cx={50} cy={50} r={11} fill={p.light} />
+      <Circle cx={50} cy={50} r={11} fill="none" stroke={p.mid} strokeWidth={1.2} />
+      <Path d="M47 54 Q50 56.4 53 54" stroke={p.deep} strokeWidth={1.1} fill="none" strokeLinecap="round" />
+      <Circle cx={45.6} cy={48} r={1.5} fill={INK} />
+      <Circle cx={54.4} cy={48} r={1.5} fill={INK} />
+      <Circle cx={45.1} cy={47.5} r={0.5} fill="#FFFFFF" />
+      <Circle cx={53.9} cy={47.5} r={0.5} fill="#FFFFFF" />
+    </G>
+  ),
+  flicker: sparkles(p.accent, [
+    [18, 18, 1.8],
+    [84, 22, 1.5],
+    [82, 82, 1.6],
+    [18, 80, 1.3],
+  ]),
+  flickerOver: true,
+});
+
+/** SUKI WATERHOUSE: the Water house — a little house afloat on still water, its window lit. */
+const houseboat: Draw = (p, f) => ({
+  ground: null,
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      <Circle cx={74} cy={24} r={7} fill={p.light} opacity={0.3} />
+      {/* Water and its ripples. */}
+      <Path d="M12 72 Q50 66 88 72 Q86 82 80 88 Q50 94 20 88 Q14 82 12 72Z" fill={p.alt} opacity={0.6} />
+      <Path d="M22 80 Q30 78 38 80 M60 84 Q68 82 76 84" stroke={p.light} strokeWidth={1} fill="none" opacity={0.5} strokeLinecap="round" />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The hull, the house and its roof. */}
+      <V d="M20 66 L80 66 L74 78 Q73 80 70 80 L30 80 Q27 80 26 78Z" fill={p.altDeep} f={f} />
+      <V d="M28 66 L28 44 L72 44 L72 66Z" fill={p.mid} f={f} gloss={[34, 50, 3, 6, 0]} />
+      <V d="M24 46 L50 26 L76 46Z" fill={p.deep} f={f} />
+      <Path d="M58 52 L66 52 L66 60 L58 60Z" fill={p.accent} />
+      <Path d="M62 52 L62 60 M58 56 L66 56" stroke={p.deep} strokeWidth={0.8} />
+      <Circle cx={36} cy={58} r={2} fill={p.accent} opacity={0.35} />
+      <Circle cx={50} cy={58} r={2} fill={p.accent} opacity={0.35} />
+      <Path d="M40 59 Q43 61.4 46 59" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [35, 49, 16, 7],
+    el: (
+      <G>
+        <VEye x={38.6} y={52.6} r={2.2} f={f} />
+        <VEye x={47.4} y={52.6} r={2.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* The window's light on the water. */}
+      <Path d="M58 84 L66 84 M60 88 L64 88" stroke={p.accent} strokeWidth={1.4} strokeLinecap="round" opacity={0.7} />
+      {sparkles(p.light, [[18, 22, 1.6]])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** REBECCA BLACK: the Friday — a calendar page, the week's fifth day circled and glowing. */
+const friday: Draw = (p, f) => ({
+  ground: [50, 92, 30],
+  back: <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* The page, its binding and rings. */}
+      <V d="M18 24 Q18 20 22 20 L78 20 Q82 20 82 24 L82 84 Q82 88 78 88 L22 88 Q18 88 18 84Z" fill={p.light} f={f} gloss={[26, 30, 3, 10, 0]} />
+      <V d="M18 24 Q18 20 22 20 L78 20 Q82 20 82 24 L82 34 L18 34Z" fill={p.mid} f={f} />
+      <Path d="M32 16 L32 24 M50 16 L50 24 M68 16 L68 24" stroke={p.deep} strokeWidth={2.4} strokeLinecap="round" />
+      {/* The days: a grid of seven, Friday ringed. */}
+      {Array.from({ length: 21 }, (_, i) => {
+        const col = i % 7;
+        const row = Math.floor(i / 7);
+        return <Circle key={i} cx={24 + col * 8.6} cy={64 + row * 8} r={1.6} fill={p.deep} opacity={col === 4 && row === 1 ? 0 : 0.35} />;
+      })}
+      <Circle cx={58.4} cy={72} r={4.6} fill={p.accent} />
+      <Circle cx={58.4} cy={72} r={6.6} fill="none" stroke={p.alt} strokeWidth={1.6} />
+      <Circle cx={30} cy={52} r={2} fill={p.alt} opacity={0.4} />
+      <Circle cx={70} cy={52} r={2} fill={p.alt} opacity={0.4} />
+      <Path d="M46 52 Q50 55.6 54 52" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [39, 41, 22, 8],
+    el: (
+      <G>
+        <VEye x={43.6} y={45} r={2.8} f={f} />
+        <VEye x={56.4} y={45} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [12, 50, 1.6],
+    [88, 54, 1.6],
+    [66, 78, 1.2],
+  ]),
+  flickerOver: true,
+});
+
+/** BRANDON FLOWERS: the Bouquet — a bunch of flowers wrapped in paper, tied with a ribbon. */
+const bouquet: Draw = (p, f) => ({
+  ground: [50, 92, 18],
+  back: <Ellipse cx={50} cy={46} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  pivot: [50, 60],
+  sway: (
+    <G>
+      {/* Stems, leaves and the flowers. */}
+      <Path d="M50 62 L36 34 M50 62 L50 26 M50 62 L64 34 M50 62 L28 46 M50 62 L72 46" stroke={p.alt} strokeWidth={1.6} />
+      <V d="M40 44 C32 42 28 36 30 32 C36 34 40 38 40 44Z" fill={p.alt} f={f} />
+      <V d="M60 44 C68 42 72 36 70 32 C64 34 60 38 60 44Z" fill={p.alt} f={f} />
+      {(
+        [
+          [36, 30, p.mid],
+          [50, 22, p.accent],
+          [64, 30, p.mid],
+          [27, 44, p.accent],
+          [73, 44, p.mid],
+        ] as const
+      ).map(([x, y, c], i) => (
+        <G key={i}>
+          {[0, 72, 144, 216, 288].map((a) => (
+            <Ellipse key={a} cx={x + Math.sin((a * Math.PI) / 180) * 3.6} cy={y - Math.cos((a * Math.PI) / 180) * 3.6} rx={2.8} ry={3.6} fill={c} transform={`rotate(${a} ${x + Math.sin((a * Math.PI) / 180) * 3.6} ${y - Math.cos((a * Math.PI) / 180) * 3.6})`} />
+          ))}
+          <Circle cx={x} cy={y} r={2} fill={p.light} />
+        </G>
+      ))}
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The paper wrap and the ribbon. */}
+      <V d="M30 52 L70 52 L56 90 Q50 92 44 90Z" fill={p.light} f={f} gloss={[38, 58, 2, 8, -20]} />
+      <Path d="M36 52 L48 88 M64 52 L52 88" stroke={p.deep} strokeWidth={0.6} opacity={0.3} />
+      <Path d="M43 74 L57 74" stroke={p.altDeep} strokeWidth={3} />
+      <V d="M50 74 C44 68 38 70 40 76 C42 79 47 77 50 74Z" fill={p.altDeep} f={f} />
+      <V d="M50 74 C56 68 62 70 60 76 C58 79 53 77 50 74Z" fill={p.altDeep} f={f} />
+      <Circle cx={44} cy={66} r={1.6} fill={p.mid} opacity={0.4} />
+      <Circle cx={56} cy={66} r={1.6} fill={p.mid} opacity={0.4} />
+      <Path d="M48 66 Q50 67.6 52 66" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [44, 57, 12, 6],
+    el: (
+      <G>
+        <VEye x={46.6} y={60.4} r={1.8} f={f} />
+        <VEye x={53.4} y={60.4} r={1.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [14, 22, 1.6],
+    [86, 18, 1.4],
+  ]),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -6583,6 +6762,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  snowflake,
+  houseboat,
+  friday,
+  bouquet,
   orange,
   turnstile,
   goose,
