@@ -57,10 +57,16 @@ describe('the totem', () => {
     expect(app.getByText('Portal potty · Main stage loos')).toBeTruthy();
     // How many people have claimed it so far.
     expect(app.getByText('Claimed by 1 person')).toBeTruthy();
-    // Half a minute later it's gone again (up for half the gap at most).
-    await settle(31_000);
+    // Someone scans it: the count goes up and the totem says so.
+    mockSocial.finds.set('someone_potty00001', Date.now());
+    await settle(15_000);
+    await flush();
+    expect(app.getByText('✦ Just claimed! 2 so far')).toBeTruthy();
+    // Half a minute later it's gone again (up for half the gap at most), and the totem keeps count.
+    await settle(16_000);
     await flush();
     expect(app.queryByText('FREE COLLECTIBLE · SCAN TO CLAIM')).toBeNull();
+    expect(app.getByText('✦ 1 claimed here so far')).toBeTruthy();
     // A tap shows the controls: pop one now, and stop.
     await fireEvent.press(app.getByLabelText('Show the controls'));
     await flush();

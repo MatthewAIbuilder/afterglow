@@ -422,6 +422,7 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  '✦ {n} claimed here so far': '✦ {n} reclamados aquí hasta ahora',
   'Seeker sprout': 'Brote buscador',
   'Seeker': 'Buscador',
   'Grows from finding stickers': 'Crece encontrando pegatinas',

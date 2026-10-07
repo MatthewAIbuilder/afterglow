@@ -213,6 +213,8 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
   const { service } = useSocial();
   const showing = popup && sticker ? popup.code : undefined;
   const [claims, setClaims] = useState<{ code: string; n: number; up: boolean }>();
+  // Each sticker's count when the totem first read it, and now: claims since it started.
+  const [session, setSession] = useState<Record<string, { first: number; last: number }>>({});
   useEffect(() => {
     if (!showing) return;
     let live = true;
@@ -220,7 +222,9 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
       service
         .stickerFinds(showing)
         .then((n) => {
-          if (live) setClaims((cur) => ({ code: showing, n, up: cur?.code === showing && n > cur.n }));
+          if (!live) return;
+          setClaims((cur) => ({ code: showing, n, up: cur?.code === showing && n > cur.n }));
+          setSession((cur) => ({ ...cur, [showing]: { first: cur[showing]?.first ?? n, last: n } }));
         })
         .catch(() => {});
     read();
@@ -231,6 +235,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
     };
   }, [showing, service]);
   const claimed = claims && claims.code === showing && claims.n > 0 ? claims : undefined;
+  const sinceStart = Object.values(session).reduce((n, c) => n + Math.max(0, c.last - c.first), 0);
   useEffect(() => {
     if (controls === undefined) return;
     const timer = setTimeout(() => setControls(undefined), CONTROLS_MS);
@@ -255,6 +260,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
           <Text style={[styles.tagline, { fontSize: Math.round(short * 0.026) }]}>
             {live.codes.length ? t('Stay close: something to claim pops up here every few minutes.') : t('Find Afterglow stickers around the festival. Scan one to collect it.')}
           </Text>
+          {sinceStart > 0 ? <Text style={[styles.since, { fontSize: Math.round(short * 0.024) }]}>{tn(sinceStart, '✦ {n} claimed here so far', '✦ {n} claimed here so far')}</Text> : null}
           {next && nextSticker && !popup ? (
             <View style={styles.next} accessibilityLabel={t('Next one in {time}', { time: clock(next.inSec) })}>
               <Collectible look={lookOf(nextSticker.creature)} size={Math.round(short * 0.08)} locked still />
@@ -379,6 +385,7 @@ const styles = StyleSheet.create({
   word: { color: color.moon, fontWeight: '800', textAlign: 'center', textShadowColor: '#A97CFF', textShadowRadius: 24 },
   subtitle: { color: GOLD, fontWeight: '600', textAlign: 'center', letterSpacing: 1 },
   tagline: { color: color.moonDim, textAlign: 'center', marginTop: space.lg, maxWidth: 900 },
+  since: { color: GOLD, fontWeight: '600', textAlign: 'center', letterSpacing: 0.5 },
   next: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingLeft: space.sm, paddingRight: space.xl, paddingVertical: space.sm, borderRadius: radius.pill, borderWidth: 1, borderColor: 'rgba(255,229,138,0.35)', backgroundColor: 'rgba(255,229,138,0.06)' },
   nextKicker: { color: GOLD, fontWeight: '700', letterSpacing: 2 },
   nextTime: { color: color.moon, fontWeight: '800', fontVariant: ['tabular-nums'] },
