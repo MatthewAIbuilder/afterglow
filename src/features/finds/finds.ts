@@ -144,6 +144,10 @@ export function placeLine(creature: string): string | undefined {
       return t('Lost something, or found something? This is where it comes back.');
     case 'pickup':
       return t('Remember this spot: it’s where your ride home finds you.');
+    case 'gates':
+      return t('Welcome in. Drink water, find your people, have the best time.');
+    case 'shower':
+      return t('Fresh as day one. Don’t forget your towel.');
     case 'silentdisco':
       return t('Try another channel. Everyone’s dancing to something different.');
     default:

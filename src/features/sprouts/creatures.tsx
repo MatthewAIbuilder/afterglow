@@ -4933,6 +4933,138 @@ const pickup: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** A sticker for the merch stand: a festival tee on its hanger, a star printed on the front. */
+const merch: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The hanger. */}
+      <Path d="M50 22 Q50 14 55 14 Q60 14 58 19 M50 22 L30 30 M50 22 L70 30" stroke={p.light} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      {/* The tee. */}
+      <V d="M36 28 Q42 33 50 33 Q58 33 64 28 L84 38 L78 52 L70 48 L70 86 Q70 88 68 88 L32 88 Q30 88 30 86 L30 48 L22 52 L16 38Z" fill={p.mid} f={f} gloss={[38, 44, 3, 10, 0]} />
+      <Path d="M40 30 Q50 38 60 30" stroke={p.deep} strokeWidth={1.4} fill="none" opacity={0.5} />
+      <Path d={star5(50, 74, 7)} fill={p.accent} />
+      <Circle cx={38} cy={62} r={2.2} fill={p.alt} opacity={0.45} />
+      <Circle cx={62} cy={62} r={2.2} fill={p.alt} opacity={0.45} />
+      <Path d="M46 62 Q50 65.6 54 62" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [39, 50, 22, 8],
+    el: (
+      <G>
+        <VEye x={43.6} y={54} r={2.8} f={f} />
+        <VEye x={56.4} y={54} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [14, 22, 1.8],
+    [86, 64, 1.5],
+    [84, 18, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** A sticker for the entrance: the festival gates, an arch of lights with flags on top. */
+const gates: Draw = (p, f) => ({
+  ground: [50, 92, 38],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.15} />
+      {/* The way in, glowing. */}
+      <Path d="M32 84 L32 54 C32 42 68 42 68 54 L68 84Z" fill={p.accent} opacity={0.14} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Flags on the posts. */}
+      <Path d="M24 28 L24 16 M76 28 L76 16" stroke={p.light} strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M24 16 L33 19 L24 22Z" fill={p.alt} />
+      <Path d="M76 16 L85 19 L76 22Z" fill={p.accent} />
+      {/* The posts and the arch over them. */}
+      <V d="M18 84 L18 32 Q18 28 22 28 L28 28 Q32 28 32 32 L32 84 Q25 86 18 84Z" fill={p.mid} f={f} />
+      <V d="M68 84 L68 32 Q68 28 72 28 L78 28 Q82 28 82 32 L82 84 Q75 86 68 84Z" fill={p.mid} f={f} />
+      <V d="M18 44 C18 22 82 22 82 44 L72 44 C72 32 28 32 28 44Z" fill={p.mid} f={f} gloss={[36, 31, 8, 1.6, -10]} />
+      {/* Bulbs round the arch. */}
+      {Array.from({ length: 9 }, (_, i) => {
+        const a = Math.PI + (i / 8) * Math.PI;
+        return <Circle key={i} cx={r1(50 + Math.cos(a) * 27)} cy={r1(40 + Math.sin(a) * 13)} r={1.5} fill={i % 2 ? p.accent : p.light} />;
+      })}
+      <Circle cx={25} cy={64} r={1.8} fill={p.alt} opacity={0.5} />
+      <Circle cx={75} cy={64} r={1.8} fill={p.alt} opacity={0.5} />
+      <Path d="M22 69 Q25 71.6 28 69 M72 69 Q75 71.6 78 69" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [19, 54, 62, 8],
+    el: (
+      <G>
+        <VEye x={22.4} y={58} r={1.9} f={f} />
+        <VEye x={27.6} y={58} r={1.9} f={f} />
+        <VEye x={72.4} y={58} r={1.9} f={f} />
+        <VEye x={77.6} y={58} r={1.9} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {Array.from({ length: 9 }, (_, i) => {
+        const a = Math.PI + (i / 8) * Math.PI;
+        return i % 2 ? null : <Circle key={i} cx={r1(50 + Math.cos(a) * 27)} cy={r1(40 + Math.sin(a) * 13)} r={2.2} fill={p.accent} opacity={0.8} />;
+      })}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker for the camping showers: a happy shower head, water pouring, a rubber duck below. */
+const shower: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The pipe and the shower head. */}
+      <Path d="M50 8 L50 24" stroke={p.alt} strokeWidth={3.4} fill="none" strokeLinecap="round" />
+      <V d="M30 30 C30 22 70 22 70 30 L66 42 Q64 46 60 46 L40 46 Q36 46 34 42Z" fill={p.mid} f={f} gloss={[40, 30, 8, 2, 0]} />
+      {[38, 44, 50, 56, 62].map((x) => (
+        <Circle key={x} cx={x} cy={44} r={0.9} fill={p.deep} opacity={0.6} />
+      ))}
+      {/* Water. */}
+      {[39, 45, 51, 57, 62].map((x, i) => (
+        <Path key={x} d={`M${x} 50 L${x - 2 + i} 76`} stroke={p.accent} strokeWidth={1.6} strokeLinecap="round" opacity={0.75} />
+      ))}
+      {/* The rubber duck. */}
+      <VE cx={48} cy={84} rx={10} ry={6} fill={p.altDeep} f={f} />
+      <VE cx={54} cy={76} rx={5.4} ry={5} fill={p.altDeep} f={f} />
+      <Path d="M58.4 76.4 L63 77 L58.6 78.6Z" fill={p.alt} />
+      <Circle cx={55.4} cy={75} r={0.9} fill={INK} />
+      <Circle cx={42} cy={36} r={2} fill={p.light} opacity={0.4} />
+      <Circle cx={58} cy={36} r={2} fill={p.light} opacity={0.4} />
+      <Path d="M46.6 38 Q50 40.6 53.4 38" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [41, 28, 18, 7],
+    el: (
+      <G>
+        <VEye x={45} y={32} r={2.4} f={f} />
+        <VEye x={55} y={32} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Bubbles. */}
+      <Circle cx={30} cy={70} r={2.4} fill="none" stroke={p.light} strokeWidth={0.8} opacity={0.8} />
+      <Circle cx={70} cy={64} r={1.8} fill="none" stroke={p.light} strokeWidth={0.8} opacity={0.8} />
+      <Circle cx={74} cy={78} r={1.4} fill="none" stroke={p.light} strokeWidth={0.8} opacity={0.8} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -5923,6 +6055,9 @@ export const DRAW: Record<Creature, Draw> = {
   caretent,
   lostfound,
   pickup,
+  merch,
+  gates,
+  shower,
   shuttle,
   hammock,
   croissant,

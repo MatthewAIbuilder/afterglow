@@ -23,6 +23,9 @@ const INVITE: Record<string, string> = {
   caretent: 'Scan, and look after each other',
   lostfound: 'Scan, then check your pockets',
   pickup: 'Scan while your ride pulls up',
+  merch: 'Scan while you queue for merch',
+  gates: 'Scan on your way in',
+  shower: 'Scan while you wait your turn',
 };
 export const stickerInvite = (creature: string) => INVITE[creature] ?? 'Scan to collect';
 
