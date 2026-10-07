@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { MOCK_CATALOG } from '../../../data/mock';
 import type { Clip, Festival } from '../../../data/types';
-import { defaultFocus, festivalLine, festivalsOf, focusForClip, lineupClips, lineupReach, nextFocus, otherFestivalsWithClips, playsAt } from '../links';
+import { defaultFocus, festivalLine, ticketLine, festivalsOf, focusForClip, lineupClips, lineupReach, nextFocus, otherFestivalsWithClips, playsAt } from '../links';
 
 const { artists: ARTISTS, clips: CLIPS, festivals: FESTIVALS, festival: festivalById } = MOCK_CATALOG;
 
@@ -65,6 +65,18 @@ describe('festival and artist relationships', () => {
     expect(festivalLine(solstice, 'illenium', true)).toBe('Solstice 2026 · Friday 11:40 PM, Main Stage');
     expect(festivalLine(horizon, 'levity', true)).toBe('Horizon 2027 · Set time to come');
     expect(festivalLine(horizon, 'illenium', true)).toBeUndefined();
+  });
+
+  it('the ticket under a Discover clip: whose show, then when, in both phases', () => {
+    const today = new Date(2026, 9, 7);
+    expect(ticketLine(solstice, 'illenium', true, today)).toEqual({ title: 'You’ll see them at Solstice 2026', detail: 'Friday 11:40 PM, Main Stage' });
+    expect(ticketLine(horizon, 'levity', false, today)).toEqual({ title: 'Playing Horizon 2027', detail: 'Mar 12 to 14 · set time to come' });
+    expect(ticketLine(horizon, 'illenium', true, today)).toBeUndefined();
+    // Once it's over it says so, even if you went.
+    const past: Festival = { ...horizon, startDate: '2026-03-12', endDate: '2026-03-14' };
+    expect(ticketLine(past, 'levity', true, today)?.title).toBe('Played Horizon 2027');
+    const soon: Festival = { ...horizon, startDate: '2026-11-12', endDate: '2026-11-14' };
+    expect(ticketLine(soon, 'levity', true, today)?.title).toBe('You’ll see them at Horizon 2027');
   });
 
   it('moves Discover between festivals: a festival page wins, then a requested clip, otherwise it stays', () => {

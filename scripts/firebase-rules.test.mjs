@@ -1260,6 +1260,23 @@ await t('organizers: requests go to HQ, which answers; numbers are counts only, 
   await assertSucceeds(getDocs(query(collection(O.firestore(), 'orgViews'), where('orgId', '==', 'underground-alchemy'), where('day', '>=', '2026-01-01'))));
   await assertFails(getDocs(query(collection(A.firestore(), 'orgViews'), where('orgId', '==', 'underground-alchemy'))));
 });
+await t('Get tickets taps: today, one at a time, a number per festival; only HQ reads them', async () => {
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const day = new Date().toISOString().slice(0, 10);
+  const id = `edc-orlando-26_${day}`;
+  await assertFails(setDoc(doc(anon.firestore(), 'ticketTaps', id), { festivalId: 'edc-orlando-26', day, n: 1 }));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'ticketTaps', id), { festivalId: 'edc-orlando-26', day, n: 1 }));
+  await assertSucceeds(updateDoc(doc(B.firestore(), 'ticketTaps', id), { n: 2 }));
+  await assertFails(updateDoc(doc(B.firestore(), 'ticketTaps', id), { n: 50 }));
+  await assertFails(updateDoc(doc(B.firestore(), 'ticketTaps', id), { n: 3, festivalId: 'acl-26' }));
+  await assertFails(setDoc(doc(A.firestore(), 'ticketTaps', 'edc-orlando-26_2020-01-01'), { festivalId: 'edc-orlando-26', day: '2020-01-01', n: 1 }));
+  await assertFails(setDoc(doc(A.firestore(), 'ticketTaps', `acl-26_${day}`), { festivalId: 'acl-26', day, n: 5 }));
+  await assertFails(setDoc(doc(A.firestore(), 'ticketTaps', `acl-26_${day}`), { festivalId: 'acl-26', day, n: 1, uid: 'uidA' }));
+  await assertFails(setDoc(doc(A.firestore(), 'ticketTaps', `other_${day}`), { festivalId: 'acl-26', day, n: 1 }));
+  await assertSucceeds(getDocs(query(collection(H.firestore(), 'ticketTaps'), where('festivalId', '==', 'edc-orlando-26'), where('day', '>=', '2026-01-01'))));
+  await assertFails(getDocs(query(collection(A.firestore(), 'ticketTaps'), where('festivalId', '==', 'edc-orlando-26'))));
+  await assertFails(getDoc(doc(A.firestore(), 'ticketTaps', id)));
+});
 await t('organizers: their own stickers, hunts and gifts, and the finds of them', async () => {
   const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
   const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });

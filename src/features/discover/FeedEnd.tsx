@@ -13,6 +13,7 @@ import { leftToRate } from '../festivals/tune';
 import { MIX } from './focus';
 import { HeartIcon, PlayIcon } from './icons';
 import { t } from '../../i18n';
+import { eventPath, isShowEvent } from '../festivalMode/showEvent';
 
 type Props = {
   /** The lineup you were discovering; none when it was your mix or Following. */
@@ -93,7 +94,7 @@ export function FeedEnd({ festival, following = false, soundLabel, station, widt
         {festival &&
           toRate > 0 &&
           row(t('Tune your lineup'), t('{n} to rate', { n: toRate }), () => router.push(`/tune/${festival.id}`), <HeartIcon color={color.moon} size={16} />, true)}
-        {festival && row(t('See your festival'), undefined, () => router.push(`/festival/${festival.id}`))}
+        {festival && row(isShowEvent(festival) ? t('The show') : t('See your festival'), undefined, () => router.push(eventPath(festival)))}
         {others.map((f) =>
           row(t('Discover {festival}', { festival: f.name }), undefined, () => router.navigate({ pathname: '/', params: { festival: f.id } }), <PlayIcon color={color.moonDim} size={14} />),
         )}

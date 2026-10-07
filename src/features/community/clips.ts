@@ -82,7 +82,9 @@ export function communityClips(memories: SharedMemory[], f: CommunityFilter): Cl
     if (seen.has(m.id) || f.blocked.has(m.uid) || f.hidden.has(m.id) || m.uid === f.me) continue;
     // A festival's own videos, and throwbacks from its earlier years, of artists on its lineup.
     const here = m.festivalId === f.festival?.id || (!m.festivalId && m.past?.seriesId === f.festival?.id);
-    if (f.festival && (!here || !lineup!.has(m.artistId ?? ''))) continue;
+    // A one-night show (festival mode at a show): videos tagged with it, of anyone (its bill on Afterglow is often short).
+    const atShow = !!f.festival && !m.festivalId && !!m.show?.showId && f.festival.id === `${SHOW_PREFIX}${m.show.showId}`;
+    if (f.festival && !atShow && (!here || !lineup!.has(m.artistId ?? ''))) continue;
     const clip = communityClip(m, f.artists);
     if (!clip) continue;
     seen.add(m.id);
@@ -185,6 +187,18 @@ export function keptClips(kept: Record<string, Clip>, f: Pick<CommunityFilter, '
  * reports to support), so they're translated here, at display. Any other
  * title (a video's own) is shown as it is.
  */
+/**
+ * A crowd clip's title in Discover: just where it was filmed ("Lost Lands
+ * 2025", a show), without "From the crowd" or "Throwback". The festival's
+ * name (`festivalName`) for one filmed at a festival on Afterglow; undefined
+ * when there's no place to name. A video's own title is shown as it is.
+ */
+export function crowdPlace(title: string, festivalName: string | undefined): string | undefined {
+  if (title === 'From the crowd') return festivalName;
+  const tagged = /^(?:Throwback|From the crowd) · (.+)$/.exec(title);
+  return tagged ? tagged[1] : title;
+}
+
 export function shownClipTitle(title: string): string {
   if (title === 'From the crowd') return t('From the crowd');
   const throwback = /^Throwback · (.+)$/.exec(title);

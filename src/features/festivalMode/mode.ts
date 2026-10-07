@@ -4,8 +4,9 @@ import { bySoonest, isOver } from '../festivals/shelves';
 import type { Tonight } from '../tonight/tonight';
 
 /**
- * Festival mode, pure: a simpler app while you're at a festival. It asks on
- * the first night of a festival you're going to, then stays on for that
+ * Festival mode, pure: a simpler app while you're at a festival or a
+ * one-night show (`showEvent.ts`). It asks on the first night of a festival
+ * (or the night of a show) you're going to, then stays on for that
  * festival's nights (until the morning after the last) unless you leave it.
  * A preview lets you try it any time from a festival you're going to.
  */
@@ -77,14 +78,18 @@ export function cleanMode(raw: unknown, now: number): ModeSaved {
 
 /**
  * Which festival "Test festival mode" shows, any day of the year: the
- * soonest festival you're going to that isn't over; else one with set times
+ * soonest festival or one-night show you're going to that isn't over; else one with set times
  * (so the night shows set to set); else one whose lineup has days; else the
  * soonest coming up. Undefined only with no festivals at all.
  */
-export function testFestival(festivals: readonly Festival[], going: readonly string[], today: Date): Festival | undefined {
+export function testFestival(festivals: readonly Festival[], going: readonly string[], today: Date, shows: readonly Festival[] = []): Festival | undefined {
   const upcoming = bySoonest(festivals.filter((f) => !isOver(f, today)), today);
+  const mine = upcoming.find((f) => going.includes(f.id));
+  // A one-night show you're going to (as an event, soonest first), when it comes before your next festival.
+  const show = shows[0];
+  if (show?.startDate && (!mine?.startDate || show.startDate < mine.startDate)) return show;
   return (
-    upcoming.find((f) => going.includes(f.id)) ??
+    mine ??
     upcoming.find((f) => f.sets?.length) ??
     upcoming.find((f) => lineupDays(f).length) ??
     upcoming[0] ??

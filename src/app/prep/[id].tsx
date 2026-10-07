@@ -12,7 +12,9 @@ import { usePrep } from '../../features/prep/usePrep';
 import { countdown } from '../../features/festivals/when';
 import { haptic } from '../../lib/haptics';
 import { useToday } from '../../lib/useToday';
+import { countTicketTapOnce } from '../../features/partners/ticketTaps';
 import { useCatalog } from '../../state/catalog';
+import { useSocial } from '../../state/social';
 import { useWeekends } from '../../state/weekends';
 import { color, space, type } from '../../theme/tokens';
 import { t, tc } from '../../i18n';
@@ -41,6 +43,7 @@ function PrepView({ festival }: { festival: Festival }) {
   const insets = useSafeAreaInsets();
   const today = useToday();
   const { sections, progress, toggle } = usePrep(festival);
+  const { service, user } = useSocial();
   const soon = countdown(festival, today);
 
   const onItem = (item: PrepItem) => {
@@ -92,6 +95,7 @@ function PrepView({ festival }: { festival: Festival }) {
                   <Pressable
                     onPress={() => {
                       haptic.select();
+                      countTicketTapOnce(service, festival.id, !!user);
                       void Linking.openURL(festival.links!.tickets!).catch(() => {});
                     }}
                     accessibilityRole="link"

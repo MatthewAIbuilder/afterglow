@@ -42,6 +42,8 @@ import { useCrews } from './crews';
 import { lastKnownFor, rememberLastKnown } from './lastKnown';
 import { useMemories } from './memories';
 import { useSocial } from './social';
+import { useEventLookup } from '../features/festivalMode/useEvent';
+import { showEventId } from '../features/festivalMode/showEvent';
 
 /**
  * Crew updates: your crewmates' latest videos and check-ins, and your own
@@ -129,7 +131,9 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const net = useNetworkState();
   const online = !isOffline(net);
 
-  const live = useMemo(() => liveCrews(crews, (id) => catalog.festival(id), today), [crews, catalog, today]);
+  // A crew's festival, or its one-night show.
+  const eventOf = useEventLookup();
+  const live = useMemo(() => liveCrews(crews, eventOf, today), [crews, eventOf, today]);
 
   // --- Your outbox and what you've seen, kept on this phone.
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
@@ -537,19 +541,21 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
 
   const sendVideo = useCallback(
     (m: Memory) => {
-      if (!m.festivalId) return false;
-      const crewIds = crewIdsAt(m.festivalId);
+      // Filmed at a festival, or at a one-night show on Afterglow (its crews are filed under the show).
+      const eventId = m.festivalId ?? (m.show?.showId ? showEventId(m.show.showId) : undefined);
+      if (!eventId) return false;
+      const crewIds = crewIdsAt(eventId);
       if (!ready || !crewIds.length) return false;
       const now = Date.now();
       const id = updateId(now);
-      const festival = catalog.festival(m.festivalId);
+      const festival = m.festivalId ? catalog.festival(m.festivalId) : undefined;
       const stage = festival ? stageOf(festival, m.artistId) : undefined;
       const input: CrewUpdateInput = {
         id,
         kind: 'video',
         // When it was filmed: that's the time the crew sees.
         at: m.capturedAt,
-        festivalId: m.festivalId,
+        festivalId: eventId,
         ...(m.artistId ? { artistId: m.artistId } : {}),
         ...(stage ? { stage } : {}),
         ...(m.durationSec ? { durationSec: Math.round(m.durationSec) } : {}),

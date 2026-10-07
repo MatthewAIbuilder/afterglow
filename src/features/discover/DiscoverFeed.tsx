@@ -53,6 +53,7 @@ import { defaultFocus } from '../festivals/links';
 import { SOUND_LABEL } from '../../data/models';
 import { HereEmpty } from '../festivalMode/HereEmpty';
 import { useFestivalMode } from '../../state/festivalMode';
+import { isShowEvent } from '../festivalMode/showEvent';
 import { FOLLOWING, type Focus, hereFocus, likeOf, MIX, mixContext, nextDiscoverFocus, soundOf, startFocus, TONIGHT } from './focus';
 import { useRecentStations } from '../../state/recentStations';
 import { reasonNote } from '../recommend/copy';
@@ -199,9 +200,11 @@ export function DiscoverFeed() {
     const extra = wanted.filter((c) => pool.find(c.id) && !fetched.some((f) => f.id === c.id));
     return extra.length ? [...fetched, ...extra] : fetched;
   }, [opened, focusId, asked, pool, fetched]);
-  // Testing festival mode on an ordinary day, with nothing filmed there yet: the lineup's sets stand in, so there's something to see.
+  // Testing festival mode on an ordinary day, or at a one-night show (few film there), with nothing filmed there yet:
+  // the lineup's sets stand in, so there's something to see.
   const testing = useFestivalMode().active?.preview;
-  const standIn = !!hereFestival && !!testing && communityLoaded && fetched.length === 0;
+  const atShow = isShowEvent(hereFestival);
+  const standIn = !!hereFestival && (!!testing || atShow) && communityLoaded && fetched.length === 0;
   const feed = useRankedFeed(
     activeIndex,
     hereFestival ? (standIn ? hereFestival : viewFocus) : mix || lostStation ? MIX : followingFocus ? FOLLOWING : sound || seed ? focusId : tonightOn ? TONIGHT : festival,
@@ -437,7 +440,6 @@ export function DiscoverFeed() {
               clip={item.clip}
               note={reasonNote(item.reason, catalog.artist)}
               festival={context}
-              nameFestival={wide}
               mustSee={!!context && mustSeesAt(context.id).has(item.clip.artistId)}
               width={width}
               height={height}
@@ -512,7 +514,7 @@ export function DiscoverFeed() {
                 </Text>
               </View>
               <Text style={styles.dates} numberOfLines={1}>
-                {standIn ? t('Test: lineup sets stand in for videos filmed here') : t('Videos filmed here')}
+                {standIn ? (testing ? t('Test: lineup sets stand in for videos filmed here') : t('Sets from tonight’s bill, until videos come in')) : t('Videos filmed here')}
               </Text>
             </Pressable>
           ) : (

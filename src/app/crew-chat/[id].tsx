@@ -18,7 +18,6 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/servic
 import { showActionSheet, showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/useNow';
-import { useCatalog } from '../../state/catalog';
 import { useCrewChat } from '../../state/crewChat';
 import { searchSecret } from '../../features/secrets/secrets';
 import { revealSecret } from '../../state/secrets';
@@ -34,6 +33,7 @@ import { useCrewUpdates } from '../../state/crewUpdates';
 import { isOffline } from '../../features/offline/status';
 import { parseShare, shareNoun } from '../../features/messages/shares';
 import { t, tn } from '../../i18n';
+import { useEventLookup } from '../../features/festivalMode/useEvent';
 
 const AMBER = '#FFB86B';
 
@@ -56,7 +56,7 @@ export default function CrewChatScreen() {
   const chat = useCrewChat();
   const offline = isOffline(useNetworkState());
   const { page } = useCrewPage(id);
-  const catalog = useCatalog();
+  const eventOf = useEventLookup();
   const now = useNow().getTime();
   const [text, setText] = useState('');
   const scroller = useRef<ScrollView>(null);
@@ -84,7 +84,7 @@ export default function CrewChatScreen() {
     [direct, other, otherProfile, page],
   );
   const otherName = other && otherProfile ? firstName(otherProfile.displayName) : t('your friend');
-  const festival = crew ? catalog.festival(crew.festivalId) : undefined;
+  const festival = crew ? eventOf(crew.festivalId) : undefined;
   // Checking in from the chat (crews only, while their festival isn't over): open as the chat opens, folded once you scroll or send.
   const canCheckIn = !!crew && member && updatesReady && crewFestivals.includes(crew.festivalId);
   const [checkInOpen, setCheckInOpen] = useState(true);

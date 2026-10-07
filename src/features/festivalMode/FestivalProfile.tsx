@@ -28,6 +28,7 @@ import { BadgesPanel, ClaimBanner } from '../profile/BadgesPanel';
 import { useProfileBadges } from '../profile/useProfileBadges';
 import { t } from '../../i18n';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
+import { showEventId } from './showEvent';
 
 /**
  * Profile in festival mode: just you. Your photo, name and bio (still
@@ -48,7 +49,8 @@ export function FestivalProfile({ festival }: { festival: Festival }) {
   const catalog = useCatalog();
   const { memories, uriOf } = useMoments();
   const all = useMemo(() => videoGrid(memories), [memories]);
-  const here = useMemo(() => all.filter((m) => m.festivalId === festival.id), [all, festival.id]);
+  // From here: the festival, or the one-night show (videos tagged with it).
+  const here = useMemo(() => all.filter((m) => m.festivalId === festival.id || (!!m.show?.showId && showEventId(m.show.showId) === festival.id)), [all, festival.id]);
   const shown = here.length ? here : all;
   const b = useProfileBadges();
   const params = useLocalSearchParams<{ tab?: string }>();

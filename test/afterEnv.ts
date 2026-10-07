@@ -4,6 +4,8 @@ import { forgetSecrets } from '../src/state/secrets';
 import { forgetQuestReminder } from '../src/state/questReminder';
 import { forgetQuestTip } from '../src/state/questTip';
 import { forgetCareTip } from '../src/state/careTip';
+import { forgetNotForMeTip } from '../src/state/notForMeTip';
+import { forgetFaces } from '../src/features/social/faces';
 import { forgetFestivalWeek } from '../src/state/festivalWeek';
 import { forgetShowLevel } from '../src/state/showLevel';
 import { forgetCloseFriends } from '../src/state/closeFriends';
@@ -22,6 +24,7 @@ import { forgetGoingShows } from '../src/state/goingShows';
 import { forgetCommentCounts } from '../src/features/social/commentCounts';
 import { forgetExtraArtists } from '../src/data/extraArtists';
 import { forgetMyOrg, forgetOrgs } from '../src/state/orgs';
+import { forgetTicketTaps } from '../src/features/partners/ticketTaps';
 
 // Shared stores (daily quests, secrets, tips): start every test with fresh ones.
 beforeEach(() => {
@@ -30,6 +33,8 @@ beforeEach(() => {
   forgetQuestReminder();
   forgetQuestTip();
   forgetCareTip();
+  forgetNotForMeTip();
+  forgetFaces();
   forgetFestivalWeek();
   forgetShowLevel();
   forgetCloseFriends();
@@ -46,6 +51,7 @@ beforeEach(() => {
   forgetGardenGlows();
   forgetGoingShows();
   forgetCommentCounts();
+  forgetTicketTaps();
   forgetExtraArtists();
   forgetOrgs();
   forgetMyOrg();

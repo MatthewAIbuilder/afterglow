@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { ActionSheetIOS, Alert, type AlertButton } from 'react-native';
 import { NEAR_LOAD_DELAY_MS } from '../../features/discover/ClipPlayer';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
+import { forgetStandings } from '../../features/standing/useStanding';
 import { renderApp } from './appRoutes';
 
 /**
@@ -26,11 +27,12 @@ const flush = async () => {
 };
 
 /** Maya shares a video of HEDEX at Cyclops Cove 4 (no official clips of them, so it comes early); then you sign in (or stay out). */
-async function mayaShares(viewer: 'signed-in' | 'signed-out' = 'signed-in') {
+async function mayaShares(viewer: 'signed-in' | 'signed-out' = 'signed-in', level?: number) {
   const s = mockSocial.service;
   await s.signUp('maya@example.com', 'password123');
   await s.saveProfile({ handle: 'maya', displayName: 'Maya', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
   await s.shareMemory({ memoryId: 'm1', videoUri: 'file:///m1.mov', thumbUri: 'file:///m1.jpg', festivalId: 'cyclops-cove-4', night: 'Friday', artistId: 'hedex', capturedAt: '2026-12-04T22:30:00.000Z', durationSec: 42, width: 1080, height: 1920 });
+  if (level) await s.setLevel(level);
   await s.signOut();
   if (viewer === 'signed-in') await s.signUp('sam@example.com', 'password123');
 }
@@ -58,6 +60,8 @@ const openMenu = async (app: Awaited<ReturnType<typeof renderApp>>, choose: numb
 };
 
 beforeEach(async () => {
+  // Standings are kept a while: each test reads Maya's afresh.
+  forgetStandings();
   await AsyncStorage.clear();
   await AsyncStorage.setItem('welcomed.v1', 'true');
   mockSocial = fakeSocial();
@@ -72,7 +76,8 @@ describe('community clips in Discover', () => {
     await mayaShares();
     const app = await openFeed();
     expect(app.getByLabelText(CREDIT)).toBeTruthy();
-    expect(app.getByText('From the crowd')).toBeTruthy();
+    // Titled just by where it was filmed: no "From the crowd" in Discover.
+    expect(app.queryByText('From the crowd')).toBeNull();
     // The clip next to the one on screen loads its player once a swipe would have settled.
     await settle(NEAR_LOAD_DELAY_MS);
     expect(app.getByTestId('video-view')).toBeTruthy();
@@ -86,6 +91,37 @@ describe('community clips in Discover', () => {
     await fireEvent.press(app.getByLabelText(CREDIT));
     await flush();
     expect(app.getByText('@maya')).toBeTruthy();
+  });
+
+  it('who filmed it is their photo on the rail, with their glow level, not an @ line', async () => {
+    await mayaShares('signed-in', 7);
+    const app = await openFeed();
+    expect(app.getByTestId('filmer-face')).toBeTruthy();
+    expect(app.queryByText('Filmed by @maya')).toBeNull();
+    expect(app.getByText('7')).toBeTruthy();
+    expect(app.getByLabelText(`${CREDIT} Glow level 7`)).toBeTruthy();
+  });
+
+  it('every clip shows where the artist plays next as a ticket to the festival', async () => {
+    const app = await renderApp('/?festival=solstice-26');
+    await flush();
+    // The clip on screen (a YouTube set) and the next one both carry it.
+    expect(app.getAllByLabelText(/^Playing Solstice 2026, .+\. Opens the festival\.$/).length).toBe(app.getAllByTestId('clip-ticket').length);
+    expect(app.getAllByTestId('clip-ticket').length).toBeGreaterThan(1);
+  });
+
+  it('the first Not for me says it counts, once', async () => {
+    await mayaShares();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const app = await openFeed();
+    await fireEvent.press(app.getAllByLabelText('Not for me')[0]);
+    await flush();
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(alert.mock.calls[0][0]).toBe('Noted, less like this');
+    await fireEvent.press(app.getAllByLabelText('Not for me')[0]);
+    await flush();
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(await AsyncStorage.getItem('notForMeTip.v1')).toBe('1');
   });
 
   it('none when you’re signed out', async () => {
@@ -173,7 +209,8 @@ describe('community clips in Discover', () => {
     await fireEvent.press(app.getByLabelText('Play HEDEX, From the crowd'));
     await flush();
     expect(app.getByLabelText(CREDIT)).toBeTruthy();
-    expect(app.getByText('Cyclops Cove 4')).toBeTruthy();
+    // Discover moved back to its festival (the header), and the clip is titled by it too.
+    expect(app.getAllByText('Cyclops Cove 4').length).toBeGreaterThan(1);
     // Back in the Discover that was already open, not a second copy stacked on top.
     expect(router.canGoBack()).toBe(false);
   });

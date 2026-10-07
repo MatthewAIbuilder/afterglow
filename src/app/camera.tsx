@@ -25,6 +25,8 @@ import { color, radius, space, type, glowA, accentEdge } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
 import { GlassFill } from '../components/LiquidGlass';
+import { isShowEvent } from '../features/festivalMode/showEvent';
+import { useTonight } from '../features/tonight/useTonight';
 
 /**
  * The camera: film a moment at a festival. Reached by swiping right on
@@ -70,7 +72,9 @@ function Camera() {
   const { festivals } = useCatalog();
   const { going } = useGoing();
   const [now] = useState(() => new Date());
-  const at = filmingAt(festivals, going, now);
+  // Or the one-night show you're going to tonight.
+  const tonight = useTonight();
+  const at = filmingAt(festivals, going, now) ?? (tonight && isShowEvent(tonight.festival) ? tonight.festival.name : undefined);
 
   // The timer while recording.
   const startedAt = recording ? rec.startedAt : undefined;

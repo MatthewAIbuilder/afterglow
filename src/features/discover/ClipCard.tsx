@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
-import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
+import { ChevronIcon, FestivalsIcon, ShareIcon } from '../../components/TabIcons';
 import { APP_NAME } from '../../config/app';
 import { setFor } from '../../data/festival';
 import type { Artist, Clip, Festival } from '../../data/types';
@@ -30,10 +30,14 @@ import { useReactions } from '../../state/reactions';
 import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
 import { describeSet } from '../festivals/format';
-import { festivalLine } from '../festivals/links';
+import { ticketLine } from '../festivals/links';
+import { useGoing } from '../../state/going';
+import { useToday } from '../../lib/useToday';
+import { showAlert } from '../../lib/dialog';
+import { takeNotForMeTip } from '../../state/notForMeTip';
 import { StarIcon } from '../plan/icons';
 import { addPlayed, excuseWatch, startWatch, watchOf, type WatchSession } from '../taste/watch';
-import { color, motion, radius, space, type } from '../../theme/tokens';
+import { color, glowA, motion, radius, space, type, nightA } from '../../theme/tokens';
 import { GlassFill } from '../../components/LiquidGlass';
 import { ActionRail } from './ActionRail';
 import { AUTOPLAY_COUNTDOWN_SEC, countdownTick, passFinished } from './autoplay';
@@ -63,8 +67,9 @@ import { useToes } from '../toes/useToes';
 import { useCommentCount } from '../social/useCommentCount';
 import { commentCaption } from '../social/copy';
 import { t } from '../../i18n';
-import { shownClipTitle } from '../community/clips';
+import { crowdPlace, shownClipTitle } from '../community/clips';
 import { OrgWatermark } from '../organizers/OrgWatermark';
+import { eventPath } from '../festivalMode/showEvent';
 
 type Props = {
   clip: Clip;
@@ -72,8 +77,6 @@ type Props = {
   note?: string;
   /** The festival Discover is focused on. The clip shows the artist's place there and links to it. */
   festival?: Festival;
-  /** The feed mixes festivals (your mix, a sound, Following): the line under the clip names the festival. */
-  nameFestival?: boolean;
   /** You starred this artist as a must-see at that festival. */
   mustSee?: boolean;
   width: number;
@@ -118,13 +121,15 @@ function B2bNames({ players, onOpen }: { players: readonly Artist[]; onOpen: (id
   ));
 }
 
-function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, index, onSkip, onNext, onHold, topExtra = 0 }: Props) {
+function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, live, isNear, bottomSpace, pager, index, onSkip, onNext, onHold, topExtra = 0 }: Props) {
   const catalog = useCatalog();
   const artist = catalog.artist(clip.artistId);
   const reduceMotion = useReducedMotion();
   const { get, setLiked, toggleSaved, markSkipped, recordWatch } = useReactions();
   const reaction = get(clip.id);
   const { taste } = useTaste();
+  const { isGoing } = useGoing();
+  const today = useToday();
   const [paused, setPaused] = useState(false);
   // Plays only while on screen, with Discover visible and the app in the foreground.
   const playing = shouldPlay({ active: isActive, live }, paused);
@@ -335,13 +340,17 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
   const players = [artist, ...partnersOf(clip).map((id) => catalog.artist(id)).filter((a): a is Artist => !!a && a.id !== artist.id)];
   const shown = together(players) ?? artist;
   const pct = Math.round(Math.max(...players.map((a) => taste[a.id] ?? 0)) * 100);
-  const title = shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title);
-  // The artist's place at the festival you're discovering; without a focus, the clip's own festival.
-  const line = festival ? festivalLine(festival, artist.id, nameFestival) : undefined;
-  const context = line ? festival : undefined;
+  // Where the artist plays next (the festival you're discovering, or one you're going to), as a ticket;
+  // without one, the clip's own festival in plain words.
+  const ticket = festival ? ticketLine(festival, artist.id, isGoing(festival.id), today) : undefined;
+  const context = ticket ? festival : undefined;
   const own = catalog.festival(clip.festivalId);
   const ownSet = own && setFor(own, artist.id);
-  const meta = line ?? (own && ownSet ? describeSet(own, ownSet) : (own?.name ?? ''));
+  // A crowd video's title is just where it was filmed (no "From the crowd" or "Throwback"), so no line repeats it.
+  const title = community
+    ? crowdPlace(clip.title, own?.name)
+    : shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title);
+  const meta = community ? '' : own && ownSet ? describeSet(own, ownSet) : (own?.name ?? '');
 
   const openArtist = (id: string) => {
     haptic.select();
@@ -381,30 +390,45 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
     </Pressable>
   );
 
-  // Where they play: opens the festival, with its lineup and your plan.
+  // Where they play next: a ticket that opens the festival, with its lineup and your plan.
   const metaLine = (singleLine: boolean) =>
-    context ? (
+    context && ticket ? (
       <Pressable
         onPress={() => {
           haptic.select();
-          router.push(`/festival/${context.id}`);
+          router.push(eventPath(context));
         }}
         accessibilityRole="button"
-        accessibilityLabel={mustSee ? t('{set} at {festival}, one of your must sees. Opens the festival.', { set: meta, festival: context.name }) : t('{set} at {festival}. Opens the festival.', { set: meta, festival: context.name })}
+        accessibilityLabel={
+          mustSee
+            ? t('{title}, {detail}, one of your must sees. Opens the festival.', { title: ticket.title, detail: ticket.detail })
+            : t('{title}, {detail}. Opens the festival.', { title: ticket.title, detail: ticket.detail })
+        }
         hitSlop={6}
-        style={({ pressed }) => [styles.metaRow, pressed && { opacity: 0.7 }]}
+        style={({ pressed }) => [styles.ticket, pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }]}
+        testID="clip-ticket"
       >
-        {mustSee && <StarIcon color={color.glow} filled size={13} />}
-        <Text style={[styles.meta, styles.metaInRow]} numberOfLines={singleLine ? 1 : undefined}>
-          {meta}
-        </Text>
+        <View style={styles.ticketIcon}>
+          <FestivalsIcon color={color.glow} size={17} />
+        </View>
+        <View style={styles.ticketText}>
+          <Text style={styles.ticketTitle} numberOfLines={1}>
+            {ticket.title}
+          </Text>
+          <View style={styles.ticketDetailRow}>
+            {mustSee && <StarIcon color={color.glow} filled size={11} />}
+            <Text style={styles.ticketDetail} numberOfLines={singleLine ? 1 : 2}>
+              {ticket.detail}
+            </Text>
+          </View>
+        </View>
         <ChevronIcon color={color.moonFaint} size={11} />
       </Pressable>
-    ) : (
+    ) : meta ? (
       <Text style={styles.meta} numberOfLines={singleLine ? 1 : undefined}>
         {meta}
       </Text>
-    );
+    ) : null;
 
   const actions = (horizontal: boolean) => (
     <ActionRail
@@ -430,7 +454,30 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
         haptic.soft();
         markSkipped(clip.id);
         onSkip(index);
+        // The first time: your no counts, so say how.
+        void takeNotForMeTip().then((first) => {
+          if (first)
+            showAlert(
+              t('Noted, less like this'),
+              t('Not for me tells {app} you didn’t like this one. You’ll see less of {artist} and sounds like theirs, and their match goes down. Likes do the opposite.', { app: APP_NAME, artist: shown.name }),
+              [{ text: t('Got it') }],
+            );
+        });
       }}
+      filmer={
+        community && media
+          ? {
+              uid: community.uid,
+              handle: community.handle,
+              label: t('{credit}. Opens their profile.', { credit: media.credit }),
+              onPress: () => {
+                haptic.select();
+                if (watch.current) watch.current = excuseWatch(watch.current);
+                router.push({ pathname: '/u/[handle]', params: { handle: community.handle } });
+              },
+            }
+          : undefined
+      }
       comments={{
         caption: commentCaption(commentCount),
         label: commentCount ? t('Comments, {n}', { n: commentCount }) : t('Comments'),
@@ -502,27 +549,16 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
       <>
         {upNextPill}
         {artistButton}
-        <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
-          {title}
-        </Text>
-        {metaLine(!!tall)}
+        {title ? (
+          <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
+            {title}
+          </Text>
+        ) : null}
+        {community ? null : metaLine(!!tall)}
         {community ? (
-          <View style={styles.creditRow}>
-            <Pressable
-              onPress={() => {
-                haptic.select();
-                if (watch.current) watch.current = excuseWatch(watch.current);
-                router.push({ pathname: '/u/[handle]', params: { handle: community.handle } });
-              }}
-              accessibilityRole="link"
-              accessibilityLabel={t('{credit}. Opens their profile.', { credit: media.credit })}
-              hitSlop={6}
-              style={({ pressed }) => [styles.creditText, pressed && { opacity: 0.7 }]}
-            >
-              <Text style={styles.credit} numberOfLines={1}>
-                {media.credit}
-              </Text>
-            </Pressable>
+          // Who filmed it is their photo on the rail; the menu sits beside where they play.
+          <View style={styles.metaWithMore}>
+            <View style={styles.metaShrink}>{metaLine(!!tall)}</View>
             <Pressable
               onPress={() =>
                 communityMenu(community, { report: social.report, hide: communityState.hide, block: social.setBlocked })
@@ -530,7 +566,7 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
               accessibilityRole="button"
               accessibilityLabel={t('More: report, hide or block @{handle}', { handle: community.handle })}
               hitSlop={12}
-              style={({ pressed }) => [styles.share, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
+              style={({ pressed }) => [styles.moreButton, pressed && { opacity: 0.6, transform: [{ scale: 0.92 }] }]}
             >
               <Text style={styles.more}>•••</Text>
             </Pressable>
@@ -730,7 +766,7 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {upNextPill}
         {artistButton}
-        <Text style={styles.title}>{title}</Text>
+        {title ? <Text style={styles.title}>{title}</Text> : null}
         {metaLine(false)}
         {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>{t('This video isn’t available right now.')}</Text>}
         {media?.provider === 'soundcloud' && videoFailed && (
@@ -794,8 +830,36 @@ const styles = StyleSheet.create({
   note: { color: color.moonDim, fontWeight: '500' },
   title: { ...type.title, fontSize: 22, lineHeight: 27, color: color.moon, marginTop: space.lg, ...shadow },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs, ...shadow },
-  metaRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, marginTop: space.xs, maxWidth: '100%' },
-  metaInRow: { marginTop: 0, flexShrink: 1 },
+  ticket: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    gap: space.sm,
+    marginTop: space.md,
+    paddingLeft: space.sm,
+    paddingRight: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.md,
+    backgroundColor: nightA(0.5),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
+  ticketIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: glowA(0.16),
+  },
+  ticketText: { flexShrink: 1 },
+  ticketTitle: { ...type.label, color: color.moon },
+  ticketDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  ticketDetail: { ...type.caption, color: color.moonDim, flexShrink: 1 },
+  metaWithMore: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
+  metaShrink: { flexShrink: 1 },
+  moreButton: { marginLeft: 'auto', paddingHorizontal: space.xs, paddingBottom: space.sm },
   rail: { position: 'absolute', right: space.lg },
   track: {
     position: 'absolute',

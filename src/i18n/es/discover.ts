@@ -284,4 +284,14 @@ export const es_discover: Dictionary = {
   'Tap to go back to your mix': 'Toca para volver a tu mezcla',
   'That’s the station': 'Esa es la emisora',
   'You’ve seen everything that sounds like {artist}': 'Ya viste todo lo que suena como {artist}',
+  'Glow level {level}': 'Nivel de brillo {level}',
+  '{title}, {detail}, one of your must sees. Opens the festival.': '{title}, {detail}, uno de tus imprescindibles. Abre el festival.',
+  '{title}, {detail}. Opens the festival.': '{title}, {detail}. Abre el festival.',
+  'Noted, less like this': 'Entendido, menos de esto',
+  'Not for me tells {app} you didn’t like this one. You’ll see less of {artist} and sounds like theirs, and their match goes down. Likes do the opposite.':
+    'No es lo mío le dice a {app} que esto no te gustó. Verás menos de {artist} y de sonidos parecidos, y su afinidad baja. Los me gusta hacen lo contrario.',
+  'Got it': 'Entendido',
+  'Played {festival}': 'Tocó en {festival}',
+  'You’ll see them at {festival}': 'Lo verás en {festival}',
+  '{dates} · set time to come': '{dates} · horario por confirmar',
 };

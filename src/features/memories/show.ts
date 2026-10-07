@@ -49,6 +49,12 @@ export function showTagOf(s: Show): ShowTag {
   return { name: (s.name?.trim() || s.venue).slice(0, SHOW_NAME_MAX), date: s.date, ...(city ? { city: city.slice(0, SHOW_CITY_MAX) } : {}), showId: s.id };
 }
 
+/** A show you're going to (the copy kept on the phone), as a tag. */
+export function goingShowTag(g: { id: string; date: string; title: string; where: string }): ShowTag {
+  const city = townOf(g.where);
+  return { name: g.title.slice(0, SHOW_NAME_MAX) || 'Show', date: g.date, ...(city ? { city: city.slice(0, SHOW_CITY_MAX) } : {}), showId: g.id };
+}
+
 /** A name someone typed, tidied: spaces collapsed, at most SHOW_NAME_MAX. */
 export const cleanShowName = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, SHOW_NAME_MAX).trim();
 

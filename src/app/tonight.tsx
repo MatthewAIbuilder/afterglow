@@ -39,6 +39,8 @@ import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { dayWord, t } from '../i18n';
 import { datesLine } from '../features/festivals/format';
+import { eventPath, isShowEvent, upcomingShowEvents } from '../features/festivalMode/showEvent';
+import { useGoingShows } from '../state/goingShows';
 
 /** Picks shown for tonight before set times are out. */
 const TONIGHT_PICKS = 6;
@@ -62,7 +64,7 @@ export default function TonightScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.kicker}>{t('Tonight')}</Text>
             <Text style={styles.title} accessibilityRole="header">
-              {tonight ? tonightTitle(tonight) : t('No festival tonight')}
+              {tonight ? tonightTitle(tonight) : t('Nothing on tonight')}
             </Text>
           </View>
           <GlassCircleButton label={t('Close')} onPress={() => goBack()}>
@@ -81,30 +83,40 @@ export default function TonightScreen() {
 
 /** Between festivals: the next one you're going to and how long until it, or a way to find one. */
 function NextUp() {
-  const { festivals, festival } = useCatalog();
+  const { festivals, festival, shows: catalogShows } = useCatalog();
   const { going } = useGoing();
   const { forYou } = useWeekends();
   const today = useToday();
-  const next = bySoonest(
+  const { shows } = useGoingShows();
+  const nextFestival = bySoonest(
     going.map(festival).filter((f): f is Festival => !!f && !isOver(f, today)),
     today,
   )[0];
-  const f = next ? forYou(next) : undefined;
+  // A one-night show you're going to counts too, when it comes first.
+  const nextShow = upcomingShowEvents(shows, catalogShows, today)[0];
+  const next = nextShow && (!nextFestival?.startDate || nextShow.startDate! < nextFestival.startDate) ? nextShow : nextFestival;
+  const f = next ? (isShowEvent(next) ? next : forYou(next)) : undefined;
   const soon = f ? countdown(f, today) : undefined;
   return (
     <>
-      <Text style={styles.quiet}>{t('Tonight opens here while a festival you’re going to is on: where to be, what’s next, your crew and looking after yourself, all in one place.')}</Text>
+      <Text style={styles.quiet}>{t('Tonight opens here while a festival or show you’re going to is on: where to be, what’s next, your crew and looking after yourself, all in one place.')}</Text>
       {f ? (
         <Pressable
           onPress={() => {
             haptic.select();
-            router.push({ pathname: '/festival/[id]', params: { id: f.id } });
+            router.push(eventPath(f));
           }}
           accessibilityRole="button"
-          accessibilityLabel={soon ? t('Your next festival: {festival}, {when}. Open', { festival: f.name, when: soon }) : t('Your next festival: {festival}. Open', { festival: f.name })}
+          accessibilityLabel={
+            isShowEvent(f)
+              ? t('Your next show: {show}, {when}. Open', { show: f.name, when: soon ?? datesLine(f) })
+              : soon
+                ? t('Your next festival: {festival}, {when}. Open', { festival: f.name, when: soon })
+                : t('Your next festival: {festival}. Open', { festival: f.name })
+          }
           style={({ pressed }) => [styles.next, pressed && { opacity: 0.8 }]}
         >
-          <Text style={styles.nextKicker}>{t('Your next festival')}</Text>
+          <Text style={styles.nextKicker}>{isShowEvent(f) ? t('Your next show') : t('Your next festival')}</Text>
           <Text style={styles.nextName}>{f.name}</Text>
           <Text style={styles.nextWhen}>{[soon, datesLine(f)].filter(Boolean).join(' · ')}</Text>
         </Pressable>
@@ -128,6 +140,8 @@ function NextUp() {
 
 function TonightBody({ festival, night }: { festival: Festival; night?: string }) {
   const { picks, schedule, route } = useFestivalPlan(festival);
+  // A one-night show: its bill, no set times or route.
+  const show = isShowEvent(festival);
   const social = useSocial();
   const { crewsAt } = useCrews();
   const { ready } = useCrewUpdates();
@@ -136,7 +150,9 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
   const catalog = useCatalog();
   const previewable = tonightClips(festival, catalog.clips, night).length > 0;
   // Before set times: tonight's picks from the lineup's days (or your top picks when days aren't known).
-  const tonightPicks = schedule
+  const tonightPicks = show
+    ? picks.slice(0, TONIGHT_PICKS)
+    : schedule
     ? []
     : ((night ? picksByDay(festival, picks).days.find((d) => d.day === night)?.planned : undefined) ??
         picks.filter((p) => p.tier !== 'explore')
@@ -147,24 +163,24 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
       <FestivalModeCard festival={festival} />
       <LiveCrowdRow festival={festival} inset={0} />
 
-      <Section title={schedule ? t('Your route') : night ? t('Your picks for {night}', { night: dayWord(night) }) : t('Your picks')}>
+      <Section title={show ? t('On the bill') : schedule ? t('Your route') : night ? t('Your picks for {night}', { night: dayWord(night) }) : t('Your picks')}>
         {schedule ? (
           <LiveNow festival={festival} schedule={schedule} route={route} />
         ) : tonightPicks.length ? (
-          tonightPicks.map((p) => <ArtistRow key={p.artist.id} artist={p.artist} affinity={p.match} festivalId={festival.id} detail={p.pinned ? t('Must see') : undefined} />)
+          tonightPicks.map((p) => <ArtistRow key={p.artist.id} artist={p.artist} affinity={p.match} festivalId={show ? undefined : festival.id} detail={p.pinned ? t('Must see') : undefined} />)
         ) : (
-          <Text style={styles.quiet}>{t('No picks yet. Rate the lineup to fill your night.')}</Text>
+          <Text style={styles.quiet}>{show ? t('Nobody on the bill is on Afterglow yet.') : t('No picks yet. Rate the lineup to fill your night.')}</Text>
         )}
         <Pressable
           onPress={() => {
             haptic.select();
-            router.push(`/festival/${festival.id}`);
+            router.push(eventPath(festival));
           }}
           accessibilityRole="button"
-          accessibilityLabel={t('Your whole plan for {festival}', { festival: festival.name })}
+          accessibilityLabel={show ? t('{show}: the show page', { show: festival.name }) : t('Your whole plan for {festival}', { festival: festival.name })}
           hitSlop={8}
         >
-          <Text style={styles.link}>{t('Your whole plan ›')}</Text>
+          <Text style={styles.link}>{show ? t('The show ›') : t('Your whole plan ›')}</Text>
         </Pressable>
       </Section>
 
@@ -225,7 +241,7 @@ function TonightBody({ festival, night }: { festival: Festival; night?: string }
             onPress={() => router.dismissTo({ pathname: '/', params: { festival: TONIGHT } })}
           />
         ) : null}
-        <Action label={t('Lineup')} a11y={t('{festival} lineup', { festival: festival.name })} onPress={() => router.push(`/festival/${festival.id}`)} />
+        <Action label={show ? t('The show') : t('Lineup')} a11y={show ? t('{show}: the show page', { show: festival.name }) : t('{festival} lineup', { festival: festival.name })} onPress={() => router.push(eventPath(festival))} />
       </View>
       <Text style={styles.footnote}>{t('Your plan, lineup and route work without signal.')}</Text>
     </>
