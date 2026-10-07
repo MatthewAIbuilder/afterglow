@@ -31,4 +31,12 @@ export const es_festivalMode: Dictionary = {
   'Best for you first. Artists on Afterglow only: the full lineup is on the show page.': 'Lo mejor para ti primero. Solo artistas en Afterglow: el cartel completo está en la página del show.',
   'Rate the bill': 'Califica el cartel',
   'The bill works without signal.': 'El cartel funciona sin señal.',
+  // The Friends tab at a festival or show
+  'Your crews': 'Tus crews',
+  'Meet people here': 'Conoce gente aquí',
+  'With {a}': 'Con {a}',
+  'With {a} and {b}': 'Con {a} y {b}',
+  'With {a}, {b} and {n} more': 'Con {a}, {b} y {n} más',
+  'With {n} crewmate': 'Con {n} persona de tu crew',
+  'With {n} crewmates': 'Con {n} personas de tu crew',
 };

@@ -1,5 +1,4 @@
 import { router, useFocusEffect } from 'expo-router';
-import { LastUpdated } from '../offline/LastUpdated';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,11 +9,6 @@ import { PageTitle } from '../../components/PageTitle';
 import { ChevronIcon, PeopleIcon, PlusIcon } from '../../components/TabIcons';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import type { Festival } from '../../data/models';
-import { CrewWhereCard } from '../crews/CrewWhereCard';
-import { CheckInPanel } from '../crews/CheckInPanel';
-import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
-import { MeetSpotCard } from '../crews/MeetSpotCard';
-import { CrewChatCard } from '../crews/CrewChatCard';
 import { FriendAddsList } from './FriendAddsList';
 import { InviteCard } from './InviteCard';
 import { QuickActions } from './QuickActions';
@@ -25,7 +19,6 @@ import { useFriendsCircle } from './useFriendsCircle';
 import { LinearGradient } from 'expo-linear-gradient';
 import { countdown } from '../festivals/when';
 import { MessagesList } from './MessagesList';
-import { SideQuestsCard } from '../quests/SideQuestsCard';
 import { FriendsActivity } from './FriendsActivity';
 import { accountsOff } from '../social/unavailable';
 import { firstName } from '../../features/crews/together';
@@ -49,6 +42,7 @@ import { color, radius, space, type, glowA, glowDeepA, accentEdge } from '../../
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 import { t } from '../../i18n';
 import { useEventLookup } from '../festivalMode/useEvent';
+import { FestivalFriends } from '../festivalMode/FestivalFriends';
 
 /** How many of your festivals are asked who else is going. */
 const GOER_FESTIVALS = 3;
@@ -230,7 +224,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
           {/* New followers, likes, tags and crew invites: the same bell as Festivals. */}
           {inTab && social.availability.ok ? <NoticeBell /> : null}
         </View>
-        {festival ? <Text style={styles.atFestival}>{t('At {festival}', { festival: festival.name })}</Text> : null}
+        {festival && !me ? <Text style={styles.atFestival}>{t('At {festival}', { festival: festival.name })}</Text> : null}
 
         {!social.availability.ok ? (
           <>
@@ -252,52 +246,15 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
         ) : (
           <>
             {festival ? (
-              <>
-                {/* At the festival: add the people in front of you, then your crew. */}
-                <QuickActions handle={me.handle} atFestival />
-                <FriendsCircle profiles={circle.profiles} close={circle.close} />
-                <MessagesList skipCrews={here.map((c) => c.id)} />
-                <CrewInvitesCard />
-                <FriendAddsList />
-                {here.length ? (
-                  <>
-                    {/* A crewmate asking for help comes before anything else. */}
-                    <CrewHelpAlerts festivalId={festival.id} />
-                    {updatesReady ? <CheckInPanel festivalId={festival.id} /> : null}
-                    {here.map((c) => (
-                      <CrewChatCard key={`chat-${c.id}`} crew={c} nameOf={(u) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : t('Someone'))} />
-                    ))}
-                    <CrewWhereCard festival={festival} crews={here} />
-                    {here.map((c) => (
-                      <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={here.length > 1} />
-                    ))}
-                  </>
-                ) : !crewsConfirmed && crewsKeptAt === undefined && social.user ? (
-                  // No signal and nothing kept on this phone yet: say so, rather than offer a new crew.
-                  <LastUpdated live={false} />
-                ) : (
-                  <Pressable
-                    onPress={() => {
-                      haptic.select();
-                      router.push('/start-crew');
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('Start a crew for {festival}', { festival: festival.name })}
-                    style={({ pressed }) => [styles.card, styles.startCard, pressed && styles.pressed]}
-                  >
-                    <View style={styles.plusCircle}>
-                      <PlusIcon color={color.night} size={16} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitle}>{t('Start a crew for {festival}', { festival: festival.name })}</Text>
-                      <Text style={styles.cardDetail}>{t('Check in with each other, see where everyone is, and pick a meeting spot.')}</Text>
-                    </View>
-                  </Pressable>
-                )}
-                <Section title={t('Side quests')}>
-                  <SideQuestsCard max={2} />
-                </Section>
-              </>
+              // At the festival or show: one page laid out for the night (features/festivalMode/FestivalFriends).
+              <FestivalFriends
+                festival={festival}
+                crews={here}
+                handle={me.handle}
+                circle={circle}
+                crewsReady={updatesReady}
+                crewsUnknown={!crewsConfirmed && crewsKeptAt === undefined && !!social.user}
+              />
             ) : (
               <>
                 {/* Your people as an orbit: close friends on the inner ring (only you see who's on it). On the tab it starts tucked behind a bouncing button. */}
