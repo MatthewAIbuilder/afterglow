@@ -40,32 +40,36 @@ export function cleanTotem(raw: unknown): TotemSettings {
 /** How long each pop-up really stays up (seconds): half the gap at most, so the logo always gets its time too. */
 export const showFor = (s: Pick<TotemSettings, 'everyMin' | 'showSec'>) => Math.min(s.showSec, s.everyMin * 30);
 
+/** "Pop one now" pressed at `at`, the `skips`th time: it shows the next sticker early, and the turn moves on past it. */
+export type TotemNudge = { at: number; skips: number };
+
 /**
  * What's on screen `now` for a totem started at `start`: after each gap of
  * `everyMin`, the next sticker in turn for `showSec` (counting down `left`
  * seconds). `nudge` brings one up straight away (from "Pop one now").
  */
-export function totemPopup(s: Pick<TotemSettings, 'codes' | 'everyMin' | 'showSec'>, start: number, now: number, nudge?: number): { code: string; index: number; left: number } | undefined {
+export function totemPopup(s: Pick<TotemSettings, 'codes' | 'everyMin' | 'showSec'>, start: number, now: number, nudge?: TotemNudge): { code: string; index: number; left: number } | undefined {
   if (!s.codes.length) return undefined;
   const show = showFor(s) * 1000;
-  if (nudge !== undefined && now >= nudge && now < nudge + show) {
-    const index = Math.floor((nudge - start) / (s.everyMin * 60_000)) % s.codes.length;
-    return { code: s.codes[index], index, left: Math.ceil((nudge + show - now) / 1000) };
-  }
   const every = s.everyMin * 60_000;
+  const skips = nudge?.skips ?? 0;
+  if (nudge && now >= nudge.at && now < nudge.at + show) {
+    const index = (Math.max(0, Math.floor((nudge.at - start) / every)) + skips - 1) % s.codes.length;
+    return { code: s.codes[index], index, left: Math.ceil((nudge.at + show - now) / 1000) };
+  }
   const k = Math.floor((now - start) / every);
   const into = now - start - k * every;
   if (k < 1 || into >= show) return undefined;
-  const index = (k - 1) % s.codes.length;
+  const index = (k - 1 + skips) % s.codes.length;
   return { code: s.codes[index], index, left: Math.ceil((show - into) / 1000) };
 }
 
 /** The next sticker to pop up and how long until it does (seconds), for the "Next one in" teaser. */
-export function totemNext(s: Pick<TotemSettings, 'codes' | 'everyMin'>, start: number, now: number): { code: string; inSec: number } | undefined {
+export function totemNext(s: Pick<TotemSettings, 'codes' | 'everyMin'>, start: number, now: number, nudge?: TotemNudge): { code: string; inSec: number } | undefined {
   if (!s.codes.length) return undefined;
   const every = s.everyMin * 60_000;
   const k = Math.max(0, Math.floor((now - start) / every));
-  return { code: s.codes[k % s.codes.length], inSec: Math.ceil((start + (k + 1) * every - now) / 1000) };
+  return { code: s.codes[(k + (nudge?.skips ?? 0)) % s.codes.length], inSec: Math.ceil((start + (k + 1) * every - now) / 1000) };
 }
 
 /** Seconds as the totem's countdown: "4:05". */

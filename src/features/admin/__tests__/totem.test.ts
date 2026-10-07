@@ -26,8 +26,12 @@ describe('the totem', () => {
   });
 
   it('“Pop one now” brings one up straight away', () => {
-    expect(totemPopup(s, 0, 2 * min, 2 * min)).toMatchObject({ code: 'aaaaaa1', left: 60 });
-    expect(totemPopup(s, 0, 3 * min + 1, 2 * min)).toBeUndefined();
+    const nudge = { at: 2 * min, skips: 1 };
+    expect(totemPopup(s, 0, 2 * min, nudge)).toMatchObject({ code: 'aaaaaa1', left: 60 });
+    expect(totemPopup(s, 0, 3 * min + 1, nudge)).toBeUndefined();
+    // …and the turn moves on, so the same one doesn't come straight back.
+    expect(totemNext(s, 0, 3 * min, nudge)).toMatchObject({ code: 'bbbbbb2' });
+    expect(totemPopup(s, 0, 5 * min, nudge)).toMatchObject({ code: 'bbbbbb2' });
   });
 
   it('reads its settings back safely', () => {

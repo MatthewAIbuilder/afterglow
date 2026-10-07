@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useKeepAwake } from 'expo-keep-awake';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
@@ -10,8 +9,9 @@ import { NightSky } from '../components/NightSky';
 import { PageTitle } from '../components/PageTitle';
 import { WEB_URL } from '../config/app';
 import { isSupportAccount } from '../features/admin/admin';
-import { cleanTotem, DEFAULT_TOTEM, TOTEM_CODES_MAX, TOTEM_EVERY, TOTEM_SHOW, TOTEM_SUBTITLE_MAX, clock, showFor, totemNext, totemPopup, type TotemSettings } from '../features/admin/totem';
+import { cleanTotem, DEFAULT_TOTEM, TOTEM_CODES_MAX, TOTEM_EVERY, TOTEM_SHOW, TOTEM_SUBTITLE_MAX, clock, showFor, totemNext, totemPopup, type TotemNudge, type TotemSettings } from '../features/admin/totem';
 import { TotemOrb } from '../features/admin/TotemOrb';
+import { useScreenOn } from '../features/admin/useScreenOn';
 import { findLink, lookOf, type Sticker } from '../features/finds/finds';
 import { PortalSwirl } from '../features/finds/PortalSwirl';
 import { FriendQR } from '../features/friends/FriendQR';
@@ -197,7 +197,7 @@ function TotemSetup({ settings, stickers, onChange, onStart }: { settings: Totem
 
 /** Keeps the screen on while it's shown. */
 function KeepOn() {
-  useKeepAwake('afterglow-totem');
+  useScreenOn();
   return null;
 }
 
@@ -209,20 +209,20 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
   const orgs = useOrgs();
   const org = orgs.find((o) => o.id === settings.brand);
   const [controls, setControls] = useState<number>();
-  const [nudge, setNudge] = useState<number>();
+  const [nudge, setNudge] = useState<TotemNudge>();
   const known = useMemo(() => new Map(stickers.map((s) => [s.code, s])), [stickers]);
   // Only stickers it still knows about (one HQ took down drops out).
   // (or whose end date has passed).
   const live = { ...settings, codes: settings.codes.filter((c) => { const st = known.get(c); return !!st && st.takenDownAt === undefined && (st.until === undefined || now < st.until); }) };
   const popup = totemPopup(live, start, now, nudge);
-  const next = totemNext(live, start, now);
+  const next = totemNext(live, start, now, nudge);
   const nextSticker = next ? known.get(next.code) : undefined;
   const sticker = popup ? known.get(popup.code) : undefined;
   // How many people have claimed the sticker on show, kept fresh while it's up.
   const { service } = useSocial();
   const showing = popup && sticker ? popup.code : undefined;
   // Each time a sticker comes up is its own round: "Just claimed!" only for claims while it's on screen.
-  const round = popup && sticker ? `${popup.code}:${popup.index}:${nudge ?? ''}` : undefined;
+  const round = popup && sticker ? `${popup.code}:${popup.index}:${nudge?.at ?? ''}` : undefined;
   const [claims, setClaims] = useState<{ round: string; n: number; up: boolean }>();
   // Each sticker's count when the totem first read it, and now: claims since it started.
   const [session, setSession] = useState<Record<string, { first: number; last: number }>>({});
@@ -327,7 +327,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
             <Pressable
               onPress={() => {
                 haptic.tap();
-                setNudge(Date.now());
+                setNudge((cur) => ({ at: Date.now(), skips: (cur?.skips ?? 0) + 1 }));
                 setControls(undefined);
               }}
               accessibilityRole="button"
