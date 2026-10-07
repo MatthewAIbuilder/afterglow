@@ -7,7 +7,7 @@ import { APP_NAME, REQUEST_EMAIL } from '../config/app';
 import { cleanRequest, requestMailto, requestText } from '../features/festivals/request';
 import { haptic } from '../lib/haptics';
 import { useRequests } from '../state/requests';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../theme/tokens';
 import { shareMessage } from '../lib/share';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
@@ -157,6 +157,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.glowDeep,
+    ...accentEdge,
   },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

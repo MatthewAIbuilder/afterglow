@@ -7,7 +7,7 @@ import { artistColors } from '../../components/ArtistAvatar';
 import { BookmarkIcon, ChevronIcon, PlusIcon } from '../../components/TabIcons';
 import type { Artist, Clip, Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge } from '../../theme/tokens';
 import { CameraIcon } from '../camera/icons';
 import { HeartIcon, PlayIcon } from '../discover/icons';
 import { posterUrl } from '../discover/youtube';
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: color.hairline, marginBottom: space.lg },
   emptyTitle: { ...type.headline, color: color.moon, textAlign: 'center' },
   emptyBody: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.xs },
-  emptyButton: { marginTop: space.lg, paddingHorizontal: space.xl, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  emptyButton: { marginTop: space.lg, paddingHorizontal: space.xl, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   emptyButtonText: { ...type.label, color: color.moon },
   list: { paddingHorizontal: space.xl, paddingTop: space.sm },
   listHead: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.lg, marginBottom: space.xs },

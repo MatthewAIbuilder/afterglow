@@ -15,7 +15,7 @@ import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useSocial } from '../state/social';
 import { useSprouts } from '../state/sprouts';
-import { color, radius, space, type, nightA } from '../theme/tokens';
+import { color, radius, space, type, nightA, accentEdge } from '../theme/tokens';
 
 /** The "cover photo" choice: no animated background. */
 const PHOTO = 'photo';
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   checkText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: nightA(0.92), borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline, alignItems: 'center' },
   lockNote: { ...type.caption, color: '#FFD66B', marginBottom: space.sm },
-  primary: { alignSelf: 'stretch', maxWidth: 600, height: 50, borderRadius: radius.pill, backgroundColor: color.glowDeep, alignItems: 'center', justifyContent: 'center' },
+  primary: { alignSelf: 'stretch', maxWidth: 600, height: 50, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, alignItems: 'center', justifyContent: 'center' },
   primaryLocked: { backgroundColor: 'rgba(255,214,107,0.25)' },
   primaryText: { ...type.headline, color: color.moon },
   dim: { opacity: 0.5 },

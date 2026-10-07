@@ -21,7 +21,7 @@ import { useGoing } from '../state/going';
 import { useMemories } from '../state/memories';
 import { useSocial } from '../state/social';
 import { OrgWatermark } from '../features/organizers/OrgWatermark';
-import { color, radius, space, type, glowA, raisedA } from '../theme/tokens';
+import { color, radius, space, type, glowA, raisedA, accentEdge } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
 
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   },
   permTitle: { ...type.title, color: color.moon, marginTop: space.lg, textAlign: 'center' },
   permBody: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center', maxWidth: 320 },
-  permButton: { marginTop: space.xl, paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  permButton: { marginTop: space.xl, paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   permButtonText: { ...type.headline, color: color.moon },
   webBack: { marginTop: space.lg, paddingVertical: space.sm, paddingHorizontal: space.lg },
   webBackText: { ...type.label, color: color.moonDim },

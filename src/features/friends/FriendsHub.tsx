@@ -45,7 +45,7 @@ import { useCrewChat } from '../../state/crewChat';
 import { chatPreview, unreadLine } from '../crews/chat';
 import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type, glowA, glowDeepA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, glowDeepA, accentEdge } from '../../theme/tokens';
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 import { t } from '../../i18n';
 
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   heroIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.16) },
   heroTitle: { ...type.title, color: color.moon, textAlign: 'center' },
   heroBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
-  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
+  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.sm },
   primaryText: { ...type.headline, color: color.moon },
   link: { ...type.label, color: color.glow },
   section: { gap: space.sm },

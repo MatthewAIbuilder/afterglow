@@ -19,7 +19,7 @@ import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../../theme/tokens';
 import { t } from '../../i18n';
 import { SHEET_BACKGROUND } from '../../components/LiquidGlass';
 
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   moreText: { ...type.label, color: color.glow },
   compose: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline },
   input: { flex: 1, ...type.body, color: color.moon, maxHeight: 120, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.md, backgroundColor: color.glass },
-  send: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  send: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   sendText: { ...type.headline, color: color.moon },
   dim: { opacity: 0.4 },
 });

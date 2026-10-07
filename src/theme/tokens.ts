@@ -39,6 +39,8 @@ export const glowA = (alpha: number) => rgbaOf(palette.glow, alpha);
 export const glowDeepA = (alpha: number) => rgbaOf(palette.glowDeep, alpha);
 export const nightA = (alpha: number) => rgbaOf(palette.night, alpha);
 export const raisedA = (alpha: number) => rgbaOf(palette.nightRaised, alpha);
+/** A solid accent button as tinted glass: light caught along its top edge, a soft glow around the rest. */
+export const accentEdge = { borderWidth: 1, borderColor: glowA(0.35), borderTopColor: 'rgba(255,255,255,0.3)' };
 /** A fixed colour token (amber, coral) at an opacity. */
 export const tintA = (hex: string, alpha: number) => rgbaOf(hex, alpha);
 

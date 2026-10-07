@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import { color, motion, space, type, nightA } from '../../theme/tokens';
+import { color, motion, space, type } from '../../theme/tokens';
+import { GlassFill } from '../../components/LiquidGlass';
 import { CommentIcon } from '../../components/TabIcons';
 import { HeartIcon, SaveIcon, SkipIcon } from './icons';
 import { t } from '../../i18n';
@@ -93,7 +94,11 @@ function RailButton({
     >
       <View>
         {burst ? <Burst key={burst} /> : null}
-        <Animated.View style={[styles.icon, style]}>{children}</Animated.View>
+        <Animated.View style={[styles.icon, style]}>
+          <GlassFill radius={25} interactive tint={0.3} />
+          {/* Its own layer, so the glass (positioned) never paints over the icon in a browser. */}
+          <View pointerEvents="none">{children}</View>
+        </Animated.View>
       </View>
       <Text style={[styles.label, active && { color: color.glow }]}>{caption ?? label}</Text>
     </Pressable>
@@ -141,9 +146,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: nightA(0.35),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
   label: { ...type.caption, color: color.moon, marginTop: 5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 6 },
 });

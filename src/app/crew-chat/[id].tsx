@@ -23,7 +23,7 @@ import { useCrewChat } from '../../state/crewChat';
 import { searchSecret } from '../../features/secrets/secrets';
 import { revealSecret } from '../../state/secrets';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type, glowA, nightA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, nightA, accentEdge } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { WEB_URL } from '../../config/app';
 import { ShareCard } from '../../features/messages/ShareCard';
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   chipText: { ...type.label, color: color.moon },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, paddingHorizontal: space.lg },
   input: { flex: 1, ...type.body, color: color.moon, maxHeight: 120, minHeight: 40, paddingHorizontal: space.md, paddingTop: 10, paddingBottom: 10, borderRadius: 20, backgroundColor: color.glass },
-  send: { paddingHorizontal: space.lg, height: 40, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  send: { paddingHorizontal: space.lg, height: 40, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   sendText: { ...type.headline, color: color.moon },
   dim: { opacity: 0.4 },
   pressed: { opacity: 0.8 },

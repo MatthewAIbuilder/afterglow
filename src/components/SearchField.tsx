@@ -24,42 +24,42 @@ export function SearchField({
   return (
     <View style={styles.search}>
       <GlassFill radius={radius.md} tint={0.3} />
-      <SearchIcon color={color.moonFaint} />
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={color.moonFaint}
-        style={styles.input}
-        autoCorrect={false}
-        autoCapitalize="none"
-        returnKeyType="search"
-        clearButtonMode="never"
-        keyboardAppearance="dark"
-        selectionColor={color.glow}
-        accessibilityLabel={label}
-        autoFocus={autoFocus}
-        onSubmitEditing={onSubmit}
-      />
-      {value ? (
-        <Pressable onPress={() => onChange('')} accessibilityRole="button" accessibilityLabel={t('Clear the search')}
- hitSlop={10}>
-          <CloseIcon color={color.moonDim} size={14} />
-        </Pressable>
-      ) : null}
+      {/* Its own layer, so the glass (positioned) never paints over the icon and the words in a browser. */}
+      <View style={styles.row}>
+        <SearchIcon color={color.moonFaint} />
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={color.moonFaint}
+          style={styles.input}
+          autoCorrect={false}
+          autoCapitalize="none"
+          returnKeyType="search"
+          clearButtonMode="never"
+          keyboardAppearance="dark"
+          selectionColor={color.glow}
+          accessibilityLabel={label}
+          autoFocus={autoFocus}
+          onSubmitEditing={onSubmit}
+        />
+        {value ? (
+          <Pressable onPress={() => onChange('')} accessibilityRole="button" accessibilityLabel={t('Clear the search')}
+   hitSlop={10}>
+            <CloseIcon color={color.moonDim} size={14} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingHorizontal: space.md,
     height: 40,
     borderRadius: radius.md,
   },
+  row: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md },
   // In a browser the field you're in shows the site's soft focus glow (public/index.html).
-  input: { ...type.body, flex: 1, color: color.moon, paddingVertical: 0 },
+  input: { ...type.body, flex: 1, minWidth: 0, color: color.moon, paddingVertical: 0 },
 });

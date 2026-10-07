@@ -16,7 +16,7 @@ import { shareMessage } from '../lib/share';
 import { useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
 import { accountsOff } from '../features/social/unavailable';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
 
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   swatch: { width: 30, height: 30, borderRadius: 15 },
   actions: { alignSelf: 'stretch', gap: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
-  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   primaryText: { ...type.headline, color: color.moon },
   secondary: { alignSelf: 'stretch', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },

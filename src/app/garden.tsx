@@ -28,7 +28,7 @@ import { type ReceivedKandi, useKandi } from '../state/kandi';
 import { KandiLine } from '../features/kandi/KandiLine';
 import { KandiBracelet } from '../features/kandi/KandiBracelet';
 import { showAlert } from '../lib/dialog';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../theme/tokens';
 
 const GIVEN_SHOWN = 12;
 /** A sprout or collectible that arrived this recently glows in the garden. */
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   seedCard: { padding: space.lg, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(110,231,160,0.08)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,231,160,0.35)' },
   seeds: { ...type.label, color: SPROUT_GREEN },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  kandi: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  kandi: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   primary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: '#1E8F4A' },
   primaryText: { ...type.headline, color: color.moon },
   secondary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },

@@ -15,7 +15,7 @@ import { haptic } from '../lib/haptics';
 import { goBack } from '../lib/nav';
 import { useKandi } from '../state/kandi';
 import { useSocial } from '../state/social';
-import { color, glowA, radius, space, type } from '../theme/tokens';
+import { color, glowA, radius, space, type, accentEdge } from '../theme/tokens';
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   person: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   personName: { ...type.headline, color: color.moon },
   personHandle: { ...type.caption, color: color.moonDim },
-  primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.md },
+  primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.md },
   primaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });

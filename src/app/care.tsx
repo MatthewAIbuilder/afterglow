@@ -24,7 +24,7 @@ import { haptic } from '../lib/haptics';
 import { shareMessage } from '../lib/share';
 import { useNow } from '../lib/useNow';
 import { useCare } from '../state/care';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge } from '../theme/tokens';
 
 const HARM_REDUCTION_URL = 'https://dancesafe.org';
 
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
     borderTopColor: color.rim,
   },
-  startButton: { minHeight: 44, paddingHorizontal: space.xl, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep },
+  startButton: { minHeight: 44, paddingHorizontal: space.xl, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep, ...accentEdge },
   startText: { ...type.label, color: color.moon },
   pair: { flexDirection: 'row', gap: space.sm },
   tile: { flex: 1, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },

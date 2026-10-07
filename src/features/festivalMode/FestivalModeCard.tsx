@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { useFestivalMode } from '../../state/festivalMode';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge } from '../../theme/tokens';
 import { t } from '../../i18n';
 
 /** What festival mode is, in a line. */
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim },
   buttons: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
-  primary: { flex: 1, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  primary: { flex: 1, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   primaryText: { ...type.headline, color: color.moon },
   secondary: { flex: 1, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },

@@ -14,7 +14,7 @@ import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { type AddResult, useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 
 /** A code that isn't a friend code says so for this long before scanning carries on. */
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   handle: { ...type.body, color: color.moonDim },
   cardBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
   amber: { color: '#FFB86B' },
-  primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   primaryText: { ...type.headline, color: color.moon },
   secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },

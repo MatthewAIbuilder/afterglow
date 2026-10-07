@@ -15,7 +15,7 @@ import { visitResidents } from '../features/sprouts/visitGarden';
 import { t, tn } from '../i18n';
 import { useCatalog } from '../state/catalog';
 import { useSocial } from '../state/social';
-import { color, space, type } from '../theme/tokens';
+import { color, space, type, accentEdge } from '../theme/tokens';
 
 const CONTENT_MAX = 640;
 
@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.xl, gap: space.md, maxWidth: CONTENT_MAX, width: '100%', alignSelf: 'center' },
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.body, color: color.moonDim },
-  kandi: { alignItems: 'center', paddingVertical: space.md, borderRadius: 999, backgroundColor: color.glowDeep, marginTop: space.md },
+  kandi: { alignItems: 'center', paddingVertical: space.md, borderRadius: 999, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.md },
   kandiText: { ...type.headline, color: color.moon },
 });
