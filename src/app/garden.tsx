@@ -13,6 +13,8 @@ import { Sprout } from '../features/sprouts/Sprout';
 import { SproutCard } from '../features/sprouts/CollectibleCard';
 import { useGardenDecor } from '../features/sprouts/useGardenDecor';
 import { useDecorSeen } from '../state/decorSeen';
+import { useGardenGlows } from '../features/sprouts/useGardenGlows';
+import { GlowsLine } from '../features/sprouts/GlowsLine';
 import { SproutOf } from '../features/sprouts/SproutOf';
 import { ArtistSproutSheet, ArtistSproutsSection, type GivenArtistSprout } from '../features/sprouts/ArtistSproutsSection';
 import { type ArtistSprout, TIER_AT, tierLabel, toNextTier } from '../features/sprouts/artistSprouts';
@@ -72,6 +74,7 @@ export default function GardenScreen() {
   const kandi = useKandi();
   // Decorations you've earned for its sky.
   const decor = useGardenDecor();
+  const glows = useGardenGlows();
   const [openKandi, setOpenKandi] = useState<ReceivedKandi>();
   const [openArtist, setOpenArtist] = useState<{ artist: Artist; sprout?: ArtistSprout; given?: GivenArtistSprout }>();
   // The garden moves only while this screen is showing; the page doesn't scroll while something's carried.
@@ -237,6 +240,8 @@ export default function GardenScreen() {
           onOpen={openResident}
           onCarrying={setCarrying}
         />
+        {/* Glows visitors left. */}
+        <GlowsLine glows={glows} />
         <Text style={styles.hint}>{GROW_TIPS[0]} {t('Sprouts you give help yours grow too.')} {t('Hold one to move it.')}</Text>
         {/* Kandi friends left here. */}
         <KandiLine items={kandi.received.map((k) => ({ key: k.id, word: k.word, beads: k.beads, charm: k.charm, from: k.fromHandle }))} onOpen={(id) => setOpenKandi(kandi.received.find((k) => k.id === id))} />

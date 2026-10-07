@@ -897,6 +897,35 @@ await t('gardens: you show yours (a short list, server-timed), anyone signed in 
   await assertFails(deleteDoc(doc(H.firestore(), 'gardens', 'uidGa')));
   await assertSucceeds(deleteDoc(doc(G.firestore(), 'gardens', 'uidGa')));
 });
+await t('garden glows: a visitor with a profile leaves one (server-timed) on a shown garden; the owner reads them all', async () => {
+  const G = env.authenticatedContext('uidGlA'), V = env.authenticatedContext('uidGlB'), X = env.authenticatedContext('uidGlC'), B = env.authenticatedContext('uidGlD');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    for (const [uid, h] of [['uidGlA', 'glowa'], ['uidGlB', 'glowb'], ['uidGlD', 'glowd']]) await setDoc(doc(ctx.firestore(), 'profiles', uid), { handle: h });
+    await setDoc(doc(ctx.firestore(), 'blocks', 'uidGlA'), { uids: ['uidGlD'] });
+  });
+  const glow = () => ({ at: serverTimestamp() });
+  // No garden shown yet: nothing to glow on.
+  await assertFails(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), glow()));
+  await assertSucceeds(setDoc(doc(G.firestore(), 'gardens', 'uidGlA'), { residents: [], updatedAt: serverTimestamp() }));
+  await assertSucceeds(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), glow()));
+  // Once each, as yourself, timed by the server, nothing else in it; not on your own garden; no profile, or blocked: no.
+  await assertFails(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), glow()));
+  await assertFails(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlD'), glow()));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlA'), glow()));
+  await assertFails(setDoc(doc(X.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlC'), glow()));
+  await assertFails(setDoc(doc(B.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlD'), glow()));
+  await assertFails(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), { at: new Date(0) }));
+  // The owner reads them all; a visitor only their own.
+  await assertSucceeds(getDocs(collection(G.firestore(), 'gardens', 'uidGlA', 'glows')));
+  await assertFails(getDocs(collection(V.firestore(), 'gardens', 'uidGlA', 'glows')));
+  await assertSucceeds(getDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+  await assertFails(getDoc(doc(X.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+  // Taken back by the visitor, or by the owner.
+  await assertFails(deleteDoc(doc(X.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+  await assertSucceeds(deleteDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+  await assertSucceeds(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), glow()));
+  await assertSucceeds(deleteDoc(doc(G.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+});
 await t('garden backups: only you write (a bounded text, server-timed), read or remove your own', async () => {
   const G = env.authenticatedContext('uidBa'), H = env.authenticatedContext('uidBb');
   const copy = (over = {}) => ({ data: '{"v":1}', updatedAt: serverTimestamp(), ...over });

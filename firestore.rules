@@ -521,6 +521,20 @@ service cloud.firestore {
         && (!('decor' in request.resource.data) || (request.resource.data.decor is list && request.resource.data.decor.size() <= 12))
         && request.resource.data.updatedAt == request.time;
       allow delete: if signedIn() && me() == uid;
+      // Glows: a visitor's little light on someone's shown garden, one each (keyed by the visitor), the
+      // time from the server. The garden's owner reads them all; a visitor reads only their own. Either
+      // can take one away; nobody edits one.
+      match /glows/{visitor} {
+        allow get: if signedIn() && (me() == uid || me() == visitor);
+        allow list: if signedIn() && me() == uid;
+        allow create: if signedIn() && me() == visitor && visitor != uid
+          && request.resource.data.keys().hasOnly(['at'])
+          && request.resource.data.at == request.time
+          && exists(path('profiles', me()))
+          && exists(path('gardens', uid))
+          && !hasBlocked(uid, me());
+        allow delete: if signedIn() && (me() == visitor || me() == uid);
+      }
     }
     // Kandi: a friendship bracelet left in someone's garden. Made as yourself (with a profile) for someone
     // else with one, who hasn't blocked you: a word in letter beads, a bead pattern, a short note. Only the

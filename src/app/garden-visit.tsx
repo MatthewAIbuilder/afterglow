@@ -2,6 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { KandiLine } from '../features/kandi/KandiLine';
+import { GlowButton } from '../features/sprouts/GlowButton';
 import { haptic } from '../lib/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
@@ -84,6 +85,7 @@ export default function GardenVisitScreen() {
                 : t('{sprouts}. Tap one to make it dance.', { sprouts: tn(counts.sprouts, '{n} sprout', '{n} sprouts') })}
             </Text>
             <GardenScene residents={residents} account={`visit:${uid}`} width={Math.min(CONTENT_MAX, windowWidth) - 2 * space.xl} focused={focused} ready visiting decor={visit?.decor ?? []} onOpen={() => {}} />
+            {uid && uid !== social.user?.uid ? <GlowButton uid={uid} handle={handle} /> : null}
             {visit?.decor?.length ? (
               <Text style={styles.sky}>{t('In their sky: {list}', { list: DECOR.filter((d) => visit.decor?.includes(d.id)).map((d) => d.name.toLowerCase()).join(', ') })}</Text>
             ) : null}

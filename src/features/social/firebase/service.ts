@@ -1338,6 +1338,29 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const o = d.data() as { residents?: unknown; kandi?: unknown; decor?: unknown };
         return { residents: cleanPublicGarden(o.residents), kandi: cleanPublicKandi(o.kandi), decor: cleanDecor(o.decor) };
       }),
+    glowGarden: (uid, on) =>
+      guard(async () => {
+        const user = me();
+        if (uid === user.uid) throw new SocialError('unknown');
+        const ref = doc(fb().db, 'gardens', uid, 'glows', user.uid);
+        if (!on) return void (await deleteDoc(ref));
+        if ((await getDoc(ref)).exists()) return;
+        await setDoc(ref, { at: serverTimestamp() });
+      }),
+    glowedGarden: (uid) =>
+      guard(async () => {
+        const user = me();
+        return (await getDoc(doc(fb().db, 'gardens', uid, 'glows', user.uid))).exists();
+      }),
+    gardenGlows: () =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'gardens', user.uid, 'glows'), orderBy('at', 'desc'), limit(100)));
+        return snap.docs.map((d) => {
+          const at = (d.data() as { at?: { toMillis?: () => number } }).at;
+          return { from: d.id, at: new Date(typeof at?.toMillis === 'function' ? at.toMillis() : Date.now()).toISOString() };
+        });
+      }),
     saveGardenBackup: (data) =>
       guard(async () => {
         const user = me();

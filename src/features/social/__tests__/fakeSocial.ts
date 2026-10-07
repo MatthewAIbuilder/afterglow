@@ -39,6 +39,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const themeGrants = new Set<string>();
   /** Gardens as shown on profiles. */
   const gardens = new Map<string, { residents: PublicResident[]; kandi: PublicKandi[]; decor: DecorId[] }>();
+  /** Glows on gardens: owner uid → who left one → when. */
+  const glows = new Map<string, Map<string, string>>();
   const gardenBackups = new Map<string, string>();
   /** Kandi, by id. */
   const kandi = new Map<string, Kandi>();
@@ -1135,6 +1137,25 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       me();
       return gardens.get(uid) ?? null;
     },
+    async glowGarden(uid, on) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      if (uid === u.uid || !profiles.has(u.uid) || !gardens.has(uid) || (blocks.get(uid) ?? []).includes(u.uid)) throw new SocialError('unknown');
+      const mine = glows.get(uid) ?? new Map<string, string>();
+      if (on && !mine.has(u.uid)) mine.set(u.uid, new Date().toISOString());
+      if (!on) mine.delete(u.uid);
+      glows.set(uid, mine);
+    },
+    async glowedGarden(uid) {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      return !!glows.get(uid)?.has(u.uid);
+    },
+    async gardenGlows() {
+      if (network.down) throw new SocialError('network');
+      const u = me();
+      return [...(glows.get(u.uid) ?? new Map<string, string>())].map(([from, at]) => ({ from, at })).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 100);
+    },
     async saveGardenBackup(data) {
       if (network.down) throw new SocialError('network');
       const u = me();
@@ -1456,5 +1477,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current };
 }

@@ -332,6 +332,12 @@ export interface SocialService {
   publishGarden(residents: PublicResident[] | null, kandi?: PublicKandi[], decor?: DecorId[]): Promise<void>;
   /** Someone's garden as they show it; null when they don't. */
   gardenOf(uid: string): Promise<{ residents: PublicResident[]; kandi: PublicKandi[]; decor: DecorId[] } | null>;
+  /** Leave a glow on someone's shown garden (once each: again changes nothing), or take yours back. Not on your own; not if they blocked you. */
+  glowGarden(uid: string, on: boolean): Promise<void>;
+  /** Whether you've left a glow on this garden. */
+  glowedGarden(uid: string): Promise<boolean>;
+  /** Glows on your own garden: who left them, newest first (at most 100). */
+  gardenGlows(): Promise<{ from: string; at: string }[]>;
   /** Keep a private copy of your garden (as saved on the phone) with your account, so a new phone, a cleared browser or a reinstall gets it back. Only you can read it. */
   saveGardenBackup(data: string): Promise<void>;
   /** Your garden's private copy; null when there's none yet. */

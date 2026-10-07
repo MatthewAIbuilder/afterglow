@@ -310,4 +310,33 @@ describe('gardens', () => {
     await flush();
     expect(app.queryByText('New in your garden’s sky')).toBeNull();
   });
+
+  it('visitors leave a glow (once, and can take it back); the garden’s owner sees who', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().publishGarden([{ k: 's', kind: 'plur', stage: 3 }]);
+    await s().signOut();
+    const sam = await person('sam', 'Sam');
+    const app = await renderApp('/u/maya');
+    await flush();
+    await fireEvent.press(app.getByTestId('visit-garden'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Leave a glow for @maya'));
+    await flush();
+    expect(app.getByText('You left a glow')).toBeTruthy();
+    expect([...(mockSocial.glows.get(maya)?.keys() ?? [])]).toEqual([sam]);
+    // Again takes it back, then once more leaves it.
+    await fireEvent.press(app.getByLabelText('You left a glow for @maya. Take it back.'));
+    await flush();
+    expect(mockSocial.glows.get(maya)?.size).toBe(0);
+    await fireEvent.press(app.getByLabelText('Leave a glow for @maya'));
+    await flush();
+    await app.unmount();
+
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const garden = await renderApp('/garden');
+    await flush();
+    expect(garden.getByText('✦ 1 glow from visitors')).toBeTruthy();
+    expect(garden.getByText('@sam')).toBeTruthy();
+  });
 });

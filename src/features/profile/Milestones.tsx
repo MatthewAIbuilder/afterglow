@@ -35,6 +35,7 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   lit: ['#FFE9A8', '#C2477E'],
   display: ['#FFE58A', '#5B3BC4'],
   complete: ['#8AFFD0', '#2C7FB8'],
+  glowing: ['#FFE58A', '#FF8AD8'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -211,6 +212,14 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
           <Rect x={2.5} y={7} width={7} height={10} rx={1.4} {...p} transform="rotate(-10 6 12)" />
           <Rect x={14.5} y={7} width={7} height={10} rx={1.4} {...p} transform="rotate(10 18 12)" />
           <Rect x={8} y={5} width={8} height={12} rx={1.6} {...p} />
+        </G>
+      );
+    case 'glowing':
+      // A four-pointed glow over a little hill.
+      return (
+        <G>
+          <Path d="M12 3 C12.6 7.6 14.4 9.4 19 10 C14.4 10.6 12.6 12.4 12 17 C11.4 12.4 9.6 10.6 5 10 C9.6 9.4 11.4 7.6 12 3 Z" {...p} />
+          <Path d="M3 21 Q12 16 21 21" {...p} />
         </G>
       );
     case 'complete':
