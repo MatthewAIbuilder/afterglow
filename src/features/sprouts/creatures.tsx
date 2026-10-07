@@ -3713,6 +3713,102 @@ const desertsun: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** KASKADE: a wave curling over at sunset, a face in its curl, foam on its crest. */
+const wave: Draw = (p, f) => ({
+  ground: null,
+  back: (
+    <G>
+      {/* The sky going pink, a sun on the horizon. */}
+      <Circle cx={66} cy={46} r={16} fill={p.accent} opacity={0.9} />
+      <Circle cx={66} cy={46} r={22} fill={p.accent} opacity={0.18} />
+      <Path d="M9.7 76 C26 72 40 74 54 72 C68 70 80 74 90.3 76 A48 48 0 0 1 9.7 76Z" fill={p.deep} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The wave: a body of water rising and curling over to the right. */}
+      <V d="M17 84 C19 60 26 34 46 24 C62 17 78 22 82 34 C84 42 78 50 70 48 C64 47 62 40 66 36 C58 34 50 40 48 52 C46 64 54 76 70 82 Q42 92 17 84Z" fill={p.mid} f={f} gloss={[30, 44, 4, 12, 20]} />
+      {/* Its inside, darker. */}
+      <Path d="M66 36 C58 34 50 40 48 52 C46 62 52 72 62 78 C56 70 54 60 58 50 C60 44 63 40 66 36Z" fill={p.deep} opacity={0.55} />
+      {/* Foam along the crest. */}
+      <Path d="M46 24 C62 17 78 22 82 34 C84 42 78 50 70 48" stroke={p.light} strokeWidth={3.2} fill="none" strokeLinecap="round" />
+      {[
+        [56, 20, 2.4],
+        [70, 21, 2],
+        [80, 28, 2.2],
+        [82, 40, 1.6],
+        [44, 26, 1.8],
+      ].map(([x, y, r]) => (
+        <Circle key={`${x}${y}`} cx={x} cy={y} r={r} fill={p.light} />
+      ))}
+      <Path d="M24 62 Q30 66 36 62" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [22, 48, 18, 8],
+    el: (
+      <G>
+        <VEye x={26} y={52} r={2.8} f={f} />
+        <VEye x={35} y={52} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [86, 58, 1.6],
+    [16, 30, 1.4],
+    [30, 14, 1.2],
+  ]),
+  flickerOver: true,
+});
+
+/** DAVID GUETTA: a titanium heart, polished chrome with rivets, light glinting off it. */
+const titaniumheart: Draw = (p, f) => ({
+  ground: [50, 90, 26],
+  back: <Ellipse cx={50} cy={50} rx={44} ry={40} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      <V d="M50 86 C34 74 14 60 14 40 C14 26 24 18 34 18 C42 18 47 22 50 28 C53 22 58 18 66 18 C76 18 86 26 86 40 C86 60 66 74 50 86Z" fill={p.mid} f={f} gloss={[30, 28, 10, 5, -20]} />
+      {/* The plates and their seam. */}
+      <Path d="M50 28 C48 44 52 62 50 86" stroke={p.deep} strokeWidth={1.2} fill="none" opacity={0.7} />
+      <Path d="M20 44 C34 48 66 48 80 44" stroke={p.deep} strokeWidth={1} fill="none" opacity={0.5} />
+      {/* A band of reflection. */}
+      <Path d="M24 30 C30 24 38 24 42 28" stroke={p.light} strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.9} />
+      <Path d="M70 64 C66 70 60 74 56 76" stroke={p.light} strokeWidth={1.6} fill="none" strokeLinecap="round" opacity={0.6} />
+      {/* Rivets. */}
+      {[
+        [26, 40],
+        [74, 40],
+        [36, 62],
+        [64, 62],
+        [50, 76],
+      ].map(([x, y]) => (
+        <G key={`${x}${y}`}>
+          <Circle cx={x} cy={y} r={1.8} fill={p.alt} />
+          <Circle cx={x - 0.5} cy={y - 0.5} r={0.6} fill="#FFFFFF" opacity={0.8} />
+        </G>
+      ))}
+      <Path d="M43 58 Q50 63 57 58" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [38, 44, 24, 10],
+    el: (
+      <G>
+        <VEye x={42.5} y={49} r={3.6} f={f} />
+        <VEye x={57.5} y={49} r={3.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Path d={star(78, 22, 4)} fill="#FFFFFF" />
+      <Path d={star(20, 66, 2.6)} fill={p.accent} />
+      <Path d={star(84, 72, 2)} fill="#FFFFFF" opacity={0.8} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -3783,4 +3879,6 @@ export const DRAW: Record<Creature, Draw> = {
   mixtape,
   scarymonster,
   desertsun,
+  wave,
+  titaniumheart,
 };

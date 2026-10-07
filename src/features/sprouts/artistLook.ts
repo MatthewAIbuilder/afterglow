@@ -80,7 +80,9 @@ export type Creature =
   | 'bubbles'
   | 'mixtape'
   | 'scarymonster'
-  | 'desertsun';
+  | 'desertsun'
+  | 'wave'
+  | 'titaniumheart';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -131,6 +133,8 @@ const SIGNATURES: Record<string, Spec> = {
   wooli: { creature: 'mammoth', palette: P('#D9A877', '#9A6438', '#4E2C14', '#F6EBD2', '#CDB68C', '#FFE9B0', '#A9D4FF'), name: t('The Mammoth'), theme: t('A shaggy woolly mammoth with great curling tusks') },
   skrillex: { creature: 'scarymonster', palette: P('#E8FFD0', '#7CD84A', '#2A5A1A', '#E8E0FF', '#2A1A3A', '#FF4FD0', '#9CFF5A'), name: t('The Scary monster'), theme: t('A shaggy little monster with horns, nice sprites buzzing round it') },
   rufusdusol: { creature: 'desertsun', palette: P('#FFF0E0', '#5A8A5A', '#3A1E4A', '#8A5AA8', '#5A2A6A', '#FF8A4A', '#FFB86B'), name: t('The Desert sun'), theme: t('A saguaro standing before a huge sun going down over the dunes') },
+  kaskade: { creature: 'wave', palette: P('#FFFFFF', '#3FB8E8', '#1A4A8A', '#FFC8E0', '#5A2A6A', '#FF9A6A', '#7FD8FF'), name: t('The Sunset wave'), theme: t('A wave curling over as the sun goes down') },
+  davidguetta: { creature: 'titaniumheart', palette: P('#FFFFFF', '#C8D0DE', '#4A5268', '#8A92A8', '#2A2E3A', '#7FD3FF', '#D8E4FF'), name: t('The Titanium heart'), theme: t('A heart of polished titanium, bulletproof') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },
