@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { ActionSheetIOS } from 'react-native';
 import { router } from 'expo-router';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { renderApp } from './appRoutes';
@@ -93,6 +94,12 @@ describe('artist sprouts', () => {
     await flush();
     expect(profile.getByText('Your showcase')).toBeTruthy();
     expect(profile.getByLabelText('The Watcher, from SUBTRONICS. Opens the card.')).toBeTruthy();
+    // Share profile offers a picture: your card in it.
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Share a picture')));
+    await fireEvent.press(profile.getByText('Share profile'));
+    await flush();
+    expect(profile.getByText('Find me on Afterglow')).toBeTruthy();
+    expect(profile.getByText('1 collectible · 1 sprout')).toBeTruthy();
   });
 
   it('videos from before the update grow their sprouts quietly', async () => {
