@@ -422,6 +422,7 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'Your {artist} collectible: {level}': 'Tu coleccionable de {artist}: {level}',
   'Your collection · {pct}% ›': 'Tu colección · {pct}% ›',
   'A holo {name}!': '¡Un {name} holográfico!',
   'I found {name}': 'Encontré {name}',
