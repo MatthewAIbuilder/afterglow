@@ -179,6 +179,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   warmupIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep },
   warmupTitle: { ...type.label, color: color.moon },

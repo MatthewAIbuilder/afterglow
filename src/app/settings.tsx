@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon, marginBottom: space.md },
   group: { marginTop: space.xl },
   groupTitle: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: space.sm, marginLeft: space.xs },
-  card: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
   // The label always reads in full; the detail gives way (it's a hint, the label is the thing).
-  rowLabel: { ...type.body, color: color.moon, flexShrink: 0, maxWidth: '72%' },
+  rowLabel: { ...type.body, color: color.moon, flexShrink: 0, maxWidth: '86%' },
   rowDetail: { ...type.body, color: color.moonDim, flex: 1, textAlign: 'right' },
   version: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.xxl },
 });

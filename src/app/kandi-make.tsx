@@ -19,7 +19,7 @@ import { haptic } from '../lib/haptics';
 import { goBack } from '../lib/nav';
 import { useKandi } from '../state/kandi';
 import { useSocial } from '../state/social';
-import { color, glowA, radius, space, type } from '../theme/tokens';
+import { color, glowA, radius, space, type, accentEdge } from '../theme/tokens';
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 
@@ -280,10 +280,10 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: color.moonDim },
   hint: { ...type.caption, color: color.moonFaint, textAlign: 'center' },
   label: { ...type.label, color: color.moonDim, marginTop: space.sm },
-  input: { ...type.headline, color: color.moon, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, letterSpacing: 2 },
+  input: { ...type.headline, color: color.moon, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, letterSpacing: 2 },
   note: { ...type.body, letterSpacing: 0, minHeight: 72, textAlignVertical: 'top' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  chip: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   chipOn: { backgroundColor: glowA(0.2), borderColor: glowA(0.55) },
   chipText: { ...type.label, color: color.moon, letterSpacing: 1 },
   patterns: { gap: space.sm },
@@ -293,12 +293,12 @@ const styles = StyleSheet.create({
   people: { gap: space.sm },
   charm: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, borderWidth: 1, borderColor: color.hairline, backgroundColor: color.glass },
   codeOption: { borderColor: glowA(0.5), backgroundColor: glowA(0.12) },
-  codeCard: { alignItems: 'center', gap: space.xs, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  person: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  codeCard: { alignItems: 'center', gap: space.xs, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
+  secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
+  person: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   personName: { ...type.headline, color: color.moon },
   personHandle: { ...type.caption, color: color.moonDim },
-  primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.md },
+  primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.md },
   primaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });

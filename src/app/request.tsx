@@ -7,11 +7,12 @@ import { APP_NAME, REQUEST_EMAIL } from '../config/app';
 import { cleanRequest, requestMailto, requestText } from '../features/festivals/request';
 import { haptic } from '../lib/haptics';
 import { useRequests } from '../state/requests';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, accentEdge, pageColumn } from '../theme/tokens';
 import { shareMessage } from '../lib/share';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /**
  * Request a festival that isn't in the app yet: its name and, if you have
@@ -59,7 +60,7 @@ export default function RequestScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView
         style={styles.root}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}
+        contentContainerStyle={[pageColumn, styles.content, { paddingBottom: insets.bottom + space.xl }]}
         keyboardShouldPersistTaps="handled"
       >
         {sent ? (
@@ -132,7 +133,7 @@ export default function RequestScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   content: { paddingHorizontal: space.xl, paddingTop: space.xxl },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.xs },
@@ -146,6 +147,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   button: {
     alignSelf: 'stretch',
@@ -155,6 +157,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.glowDeep,
+    ...accentEdge,
   },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

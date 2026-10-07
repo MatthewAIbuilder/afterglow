@@ -3,6 +3,7 @@ import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-
 import { closeDialog, subscribeDialogs, type WebDialog } from '../lib/dialog';
 import { color, radius, space, type } from '../theme/tokens';
 import { t } from '../i18n';
+import { GlassFill } from './LiquidGlass';
 
 /**
  * Shows `showAlert` / `showActionSheet` in a browser, one at a time: a glass
@@ -53,6 +54,7 @@ export function DialogHost() {
  accessibilityRole="button" focusable={false} />
       <View style={styles.middle} pointerEvents="box-none">
         <View style={[styles.card, d.sheet && styles.sheet]} accessibilityRole="alert" accessibilityViewIsModal aria-modal>
+          <GlassFill radius={radius.lg} tint={0.82} deep />
           {d.title ? <Text style={styles.title}>{d.title}</Text> : null}
           {d.message ? <Text style={styles.message}>{d.message}</Text> : null}
           <View style={[styles.buttons, row && styles.row]}>
@@ -88,9 +90,6 @@ const styles = StyleSheet.create({
     maxWidth: 340,
     padding: space.xl,
     borderRadius: radius.lg,
-    backgroundColor: color.nightRaised,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
     gap: space.sm,
   },
   sheet: { maxWidth: 380 },
@@ -99,7 +98,7 @@ const styles = StyleSheet.create({
   buttons: { gap: space.sm, marginTop: space.md },
   row: { flexDirection: 'row' },
   half: { flex: 1 },
-  button: { minHeight: 44, paddingHorizontal: space.lg, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  button: { minHeight: 44, paddingHorizontal: space.lg, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   cancel: { backgroundColor: 'transparent' },
   pressed: { opacity: 0.75 },
   buttonText: { ...type.headline, color: color.moon },

@@ -9,7 +9,7 @@ import { SHOP_LINKS } from '../../config/partners';
 import { hasPartnerLinks } from '../../features/partners/partners';
 import { useCatalog } from '../../state/catalog';
 import { isLegalDoc, LEGAL_DOCS, legalDocument, legalPath, type LegalDoc } from '../../features/legal/documents';
-import { color, space, type } from '../../theme/tokens';
+import { color, space, type, pageColumn } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { LANGUAGE, t } from '../../i18n';
 
@@ -31,7 +31,7 @@ export default function LegalScreen() {
     <View style={styles.root}>
       <PageTitle title={d.title} />
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }}>
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl }]}>
         <View style={styles.page}>
           <Text style={styles.title} accessibilityRole="header">
             {d.title}

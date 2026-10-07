@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   zoom: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   zoomText: { fontSize: 22, lineHeight: 26, color: color.moon },
   actions: { flexDirection: 'row', gap: space.md },
-  cancel: { flex: 1, minHeight: 50, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  cancel: { flex: 1, minHeight: 50, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   cancelText: { ...type.headline, color: color.moon },
   use: { flex: 1, minHeight: 50, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glow },
   useText: { ...type.headline, color: color.night },

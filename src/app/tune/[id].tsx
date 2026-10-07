@@ -354,6 +354,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   tagText: { ...type.caption, color: color.moon },
   doneText: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center' },

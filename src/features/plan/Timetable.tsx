@@ -397,6 +397,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
     overflow: 'hidden',
   },
   clash: { borderColor: glowA(0.4), paddingTop: space.md },

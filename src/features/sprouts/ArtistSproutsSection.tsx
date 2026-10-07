@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignSelf: 'stretch', marginTop: space.md },
   primary: { flex: 1, minWidth: 120, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: '#1E8F4A' },
   primaryText: { ...type.headline, color: color.moon },
-  secondary: { flex: 1, minWidth: 120, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { flex: 1, minWidth: 120, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });

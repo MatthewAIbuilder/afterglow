@@ -183,6 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   must: { borderColor: glowA(0.55), backgroundColor: glowA(0.1) },
   time: { ...type.label, color: color.moonDim, width: 64, fontVariant: ['tabular-nums'] },

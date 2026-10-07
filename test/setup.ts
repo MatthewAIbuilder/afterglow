@@ -258,6 +258,19 @@ jest.mock('expo-media-library', () => ({
   ),
 }));
 jest.mock('expo-video-thumbnails', () => ({ getThumbnailAsync: jest.fn(async () => ({ uri: 'file:///cache/still.jpg', width: 90, height: 160 })) }));
+// Liquid Glass: the copy by default (as on the website); `__state.available` draws Apple's glass for a test.
+jest.mock('expo-glass-effect', () => {
+  const { createElement } = jest.requireActual<typeof import('react')>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+  const __state = { available: false };
+  return {
+    __state,
+    GlassView: (props: object) => createElement(View, { testID: 'liquid-glass', ...props }),
+    GlassContainer: View,
+    isLiquidGlassAvailable: () => __state.available,
+    isGlassEffectAPIAvailable: () => __state.available,
+  };
+});
 jest.mock('expo-audio', () => ({ setAudioModeAsync: jest.fn(() => Promise.resolve()) }));
 jest.mock('expo-video', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');

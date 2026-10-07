@@ -226,7 +226,7 @@ export function OrgResultRow({ org, onOpen }: { org: Org; onOpen?: () => void })
 }
 
 const styles = StyleSheet.create({
-  card: { gap: space.sm, padding: space.lg, marginHorizontal: space.xl, marginBottom: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { gap: space.sm, padding: space.lg, marginHorizontal: space.xl, marginBottom: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   poster: { width: 36, height: 48, borderRadius: radius.sm, backgroundColor: color.glass },
   tba: { ...type.caption, color: color.glow },

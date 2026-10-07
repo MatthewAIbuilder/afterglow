@@ -111,7 +111,7 @@ export function MeetSpotCard({ crew, compact = false }: { crew: Crew; compact?: 
 }
 
 const styles = StyleSheet.create({
-  card: { padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, gap: space.xs },
+  card: { padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, gap: space.xs },
   pressed: { opacity: 0.8 },
   label: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
   spot: { ...type.headline, color: color.moon },

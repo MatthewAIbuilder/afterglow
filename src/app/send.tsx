@@ -24,7 +24,7 @@ import { useCrewChat } from '../state/crewChat';
 import { useCrews } from '../state/crews';
 import { bumpQuestEvent } from '../state/dailyQuests';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../theme/tokens';
 import { t } from '../i18n';
 
 const NOTE_MAX = 200;
@@ -249,6 +249,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
     color: color.moon,
     ...type.body,
   },
@@ -257,8 +258,8 @@ const styles = StyleSheet.create({
   words: { flex: 1 },
   name: { ...type.headline, color: color.moon },
   sub: { ...type.caption, color: color.moonFaint, marginTop: 1 },
-  send: { minWidth: 72, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glowDeep, alignItems: 'center' },
-  sent: { backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  send: { minWidth: 72, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, alignItems: 'center' },
+  sent: { backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   sendText: { ...type.label, color: color.moon },
   sentText: { color: color.moonDim },
   more: {
@@ -269,6 +270,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   moreText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

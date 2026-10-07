@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   actions: { alignSelf: 'stretch', gap: space.sm, marginTop: space.xl },
   primary: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glow },
   primaryText: { ...type.headline, color: color.night },
-  secondary: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

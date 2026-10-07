@@ -109,7 +109,7 @@ export function FriendsActivity({ between, profiles, memories }: { between?: Rea
 }
 
 const styles = StyleSheet.create({
-  list: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
+  list: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
   rowText: { ...type.body, color: color.moon },
   rowDetail: { ...type.caption, color: color.moonDim, marginTop: 2 },

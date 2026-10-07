@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   tileInfo: { position: 'absolute', left: 6, right: 6, bottom: 6 },
   tileArtist: { ...type.caption, fontWeight: '700', color: color.moon },
   tileHandle: { ...type.caption, fontSize: 11, color: color.moonDim },
-  note: { margin: space.lg, padding: space.xl, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  note: { margin: space.lg, padding: space.xl, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   noteTitle: { ...type.headline, color: color.moon },
   noteBody: { ...type.body, color: color.moonDim },
   noteButton: { alignSelf: 'flex-start', marginTop: space.xs, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glow },

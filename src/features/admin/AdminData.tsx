@@ -706,7 +706,7 @@ function Button({ label, onPress, disabled, primary }: { label: string; onPress:
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: space.lg, gap: space.md },
   lead: { ...type.body, color: color.moonDim },
-  card: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   reviewCard: { borderColor: glowA(0.55), backgroundColor: glowA(0.08) },
   cardTitle: { ...type.headline, color: color.moon, flexShrink: 1 },
   kicker: { ...type.label, color: color.glow, textTransform: 'uppercase', letterSpacing: 1 },
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
   preview: { padding: space.md, borderRadius: radius.md, backgroundColor: 'rgba(0,0,0,0.25)', gap: 2 },
   previewLine: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   buttons: { flexDirection: 'row', gap: space.sm, justifyContent: 'flex-end', flexWrap: 'wrap' },
-  button: { alignSelf: 'flex-start', paddingHorizontal: space.lg, minHeight: 42, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  button: { alignSelf: 'flex-start', paddingHorizontal: space.lg, minHeight: 42, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   primary: { backgroundColor: color.glow, borderColor: color.glow },
   buttonText: { ...type.label, color: color.moon },
   primaryText: { color: color.night },

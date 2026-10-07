@@ -58,6 +58,7 @@ import { SproutsProvider } from '../state/sprouts';
 import { KandiProvider } from '../state/kandi';
 import { FindsProvider } from '../state/finds';
 import { color } from '../theme/tokens';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 export default function RootLayout() {
   return (
@@ -140,7 +141,7 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.7, 0.95],
             sheetGrabberVisible: true,
             sheetCornerRadius: 32,
-            contentStyle: { backgroundColor: color.nightRaised },
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
@@ -169,7 +170,7 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.75, 0.95],
             sheetGrabberVisible: true,
             sheetCornerRadius: 32,
-            contentStyle: { backgroundColor: color.nightRaised },
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
         <Stack.Screen
@@ -179,7 +180,7 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.75, 0.95],
             sheetGrabberVisible: true,
             sheetCornerRadius: 32,
-            contentStyle: { backgroundColor: color.nightRaised },
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
         <Stack.Screen name="crew-story" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
@@ -191,7 +192,7 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.6, 0.95],
             sheetGrabberVisible: true,
             sheetCornerRadius: 32,
-            contentStyle: { backgroundColor: color.nightRaised },
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
         <Stack.Screen
@@ -201,7 +202,7 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.6, 0.95],
             sheetGrabberVisible: true,
             sheetCornerRadius: 32,
-            contentStyle: { backgroundColor: color.nightRaised },
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
         <Stack.Screen
@@ -211,7 +212,7 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.6, 0.95],
             sheetGrabberVisible: true,
             sheetCornerRadius: 32,
-            contentStyle: { backgroundColor: color.nightRaised },
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
         <Stack.Screen
@@ -221,7 +222,7 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.6, 0.95],
             sheetGrabberVisible: true,
             sheetCornerRadius: 32,
-            contentStyle: { backgroundColor: color.nightRaised },
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
         <Stack.Screen
@@ -231,7 +232,7 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.6, 0.95],
             sheetGrabberVisible: true,
             sheetCornerRadius: 32,
-            contentStyle: { backgroundColor: color.nightRaised },
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
         <Stack.Screen name="poster/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />

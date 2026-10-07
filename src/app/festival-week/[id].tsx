@@ -16,7 +16,7 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { openDoor } from '../../state/festivalWeek';
 import { useWeekends } from '../../state/weekends';
-import { color, motion, radius, space, type, glowA } from '../../theme/tokens';
+import { color, motion, radius, space, type, glowA, accentEdge } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
 
@@ -199,6 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   tileReady: { borderWidth: 1.5, borderColor: GOLD, backgroundColor: 'rgba(255,213,138,0.10)', shadowColor: GOLD, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
   tileOpen: { backgroundColor: glowA(0.14), borderColor: glowA(0.45) },
@@ -212,6 +213,6 @@ const styles = StyleSheet.create({
   cardKicker: { ...type.caption, color: GOLD, letterSpacing: 1.5, fontWeight: '700' },
   cardTitle: { ...type.title, color: color.moon },
   cardLine: { ...type.body, color: color.moonDim },
-  action: { alignSelf: 'flex-start', marginTop: space.xs, paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  action: { alignSelf: 'flex-start', marginTop: space.xs, paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   actionText: { ...type.headline, color: color.moon },
 });

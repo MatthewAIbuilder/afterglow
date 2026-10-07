@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   faceClose: { borderColor: color.glow, shadowColor: color.glow, shadowOpacity: 0.7, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
   name: { ...type.headline, color: color.moon },
   sub: { ...type.caption, color: color.moonDim },
-  rows: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  rows: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 52, paddingHorizontal: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
   rowAccent: { backgroundColor: glowA(0.12) },
   rowIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.14) },

@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { DEFAULT_THEME, isThemeId, PALETTES, rgbaOf, type ThemeId } from './palettes';
+import { DEFAULT_THEME, isThemeId, PALETTES, rgbaOf, SPECTRUM, type ThemeId } from './palettes';
 import { readStoredTheme } from './storedTheme';
 
 /**
@@ -17,8 +17,9 @@ const palette = PALETTES[THEME_ID];
 export const color = {
   night: palette.night, // app background
   nightRaised: palette.nightRaised, // sheets, raised surfaces (under blur)
-  glass: 'rgba(255,255,255,0.06)',
+  glass: glassOf(0.06), // cards and rows: clear glass holding a breath of the theme's glow
   hairline: 'rgba(255,255,255,0.10)',
+  rim: 'rgba(255,255,255,0.2)', // the lit top edge of glass, where the light lands
 
   moon: '#F3F0FF', // primary text
   moonDim: 'rgba(243,240,255,0.62)', // secondary text
@@ -33,13 +34,27 @@ export const color = {
   coral: '#FF8A8A', // care that needs a hand: soft, never a siren
 };
 
+/** The six festival lights (rose, tangerine, gold, mint, sky, violet): each festival and show has one (`features/festivals/light.ts`). */
+export const spectrum = SPECTRUM;
+
 /** The accent, the deeper accent, the night and raised surfaces at an opacity, in the theme's colours. */
 export const glowA = (alpha: number) => rgbaOf(palette.glow, alpha);
 export const glowDeepA = (alpha: number) => rgbaOf(palette.glowDeep, alpha);
 export const nightA = (alpha: number) => rgbaOf(palette.night, alpha);
 export const raisedA = (alpha: number) => rgbaOf(palette.nightRaised, alpha);
+/** A solid accent button as tinted glass: light caught along its top edge, a soft glow around the rest. */
+export const accentEdge = { borderWidth: 1, borderColor: glowA(0.35), borderTopColor: 'rgba(255,255,255,0.3)' };
+/** A page's content on a wide screen (the website): a centred column, like Settings. Phones are narrower, so it changes nothing there. */
+export const pageColumn = { alignSelf: 'center', width: '100%', maxWidth: 640 } as const;
 /** A fixed colour token (amber, coral) at an opacity. */
 export const tintA = (hex: string, alpha: number) => rgbaOf(hex, alpha);
+
+/** White glass leaning 15% toward the theme's glow, at an opacity: Aurora's cards hold a little green, Lava's a little warmth. */
+function glassOf(alpha: number): string {
+  const n = parseInt(palette.glow.slice(1, 7), 16);
+  const lean = (c: number) => Math.round(255 + (c - 255) * 0.15);
+  return `rgba(${lean((n >> 16) & 255)},${lean((n >> 8) & 255)},${lean(n & 255)},${alpha})`;
+}
 
 function startingTheme(): ThemeId {
   const id = readStoredTheme();

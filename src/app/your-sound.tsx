@@ -10,9 +10,10 @@ import { SoundBreakdown } from '../features/taste/SoundBreakdown';
 import { useCatalog } from '../state/catalog';
 import { useTaste } from '../state/taste';
 import { useWeekends } from '../state/weekends';
-import { color, space, type } from '../theme/tokens';
+import { color, space, type, pageColumn } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /**
  * Your sound as a breakdown: how much of your taste is each sound, from the
@@ -35,7 +36,7 @@ export default function YourSoundScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
+      <ScrollView style={styles.root} contentContainerStyle={[pageColumn, styles.content, { paddingBottom: insets.bottom + space.xl }]}>
         <Text style={styles.title}>{festival ? t('Your sound at {festival}', { festival: festival.name }) : t('Your sound')}</Text>
         <Text style={styles.body}>
           {yours
@@ -63,7 +64,7 @@ export default function YourSoundScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   content: { paddingHorizontal: space.xl, paddingTop: space.xxl },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.xs },

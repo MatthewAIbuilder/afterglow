@@ -11,9 +11,10 @@ import { PICK_PAGE, pickCandidates, pickDoneLabel } from '../features/taste/quic
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useRatings } from '../state/ratings';
-import { color, radius, space, type, nightA } from '../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
+import { BottomFade } from '../components/BottomFade';
 
 /**
  * Pick the artists you know: tap everyone you love in a grid of faces from
@@ -118,6 +119,7 @@ export default function PickArtistsScreen() {
         {candidates.length === 0 ? <Text style={styles.sub}>{t('You’ve rated everyone here already.')}</Text> : null}
       </ScrollView>
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.lg }]}>
+        <BottomFade />
         <Pressable
           onPress={done}
           accessibilityRole="button"
@@ -156,8 +158,8 @@ const styles = StyleSheet.create({
   nameOn: { color: color.moon },
   more: { alignSelf: 'center', marginTop: space.lg, paddingVertical: space.sm, paddingHorizontal: space.xl, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   moreText: { ...type.label, color: color.moonDim },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.lg, backgroundColor: nightA(0.92) },
-  primary: { minHeight: 54, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep, alignSelf: 'center', width: '100%', maxWidth: 520 },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.lg },
+  primary: { minHeight: 54, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep, ...accentEdge, alignSelf: 'center', width: '100%', maxWidth: 520 },
   quiet: { backgroundColor: color.glass },
   primaryText: { ...type.headline, color: color.moon },
 });

@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { useSocial } from '../state/social';
 import { useMyOrg } from '../state/orgs';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +17,7 @@ import { haptic } from '../lib/haptics';
 import { color, motion, radius, space, type, glowA, raisedA } from '../theme/tokens';
 import { CommentIcon, DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
 import { HiddenToe } from '../features/toes/Toe';
+import { GlassFill } from './LiquidGlass';
 import { t } from '../i18n';
 
 const ICONS: Record<string, typeof DiscoverIcon> = {
@@ -57,7 +57,7 @@ export const useTabBarSpace = () => {
 /** The "Testing festival mode" banner's height, with its gap. */
 const TEST_BANNER_H = 36;
 
-/** A floating glass pill. Quiet until touched. */
+/** A floating Liquid Glass pill. Quiet until touched. */
 export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { active, leave, hydrated } = useFestivalMode();
@@ -91,6 +91,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           accessibilityLabel={t('Testing festival mode with {festival}. End the test', { festival: active.festival.name })}
           style={styles.test}
         >
+          <GlassFill radius={radius.pill} hue="#FF7EB6" tint={0.85} lit deep />
           <View style={styles.testDot} />
           <Text style={styles.testText} numberOfLines={1}>
             {t('Testing festival mode')}
@@ -103,8 +104,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       {/* A toe peeking over the top of the bar (one person's app only). */}
       <HiddenToe size={13} opacity={0.4} turn={-14} style={styles.peek} />
       <View style={styles.pill} onLayout={(e) => setPillW(e.nativeEvent.layout.width)}>
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, styles.tint]} />
+        <GlassFill radius={TAB_BAR_HEIGHT / 2} tint={0.45} />
         {/* One highlight that glides to the tab you pick. */}
         {pillW > 0 && slot >= 0 ? <Glider index={slot} width={(pillW - 12) / order.length} /> : null}
         {order.map((name) => {
@@ -306,10 +306,7 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: radius.pill,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
-  tint: { backgroundColor: raisedA(0.45) },
   item: {
     flex: 1,
     alignItems: 'center',
@@ -317,7 +314,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     gap: 2,
   },
-  glider: { position: 'absolute', top: 6, bottom: 6, left: 6, borderRadius: radius.pill, backgroundColor: glowA(0.14) },
+  // A lens of lit glass: the glow, light along its top edge.
+  glider: { position: 'absolute', top: 6, bottom: 6, left: 6, borderRadius: radius.pill, backgroundColor: glowA(0.14), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.22), borderTopColor: color.rim },
   label: { ...type.caption, fontSize: 11 },
   newsDot: { position: 'absolute', top: -1, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow, borderWidth: 1.5, borderColor: color.night },
   test: {
@@ -328,9 +326,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: raisedA(0.85),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,126,182,0.6)',
   },
   testDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#FF7EB6' },
   testText: { ...type.caption, color: color.moon },

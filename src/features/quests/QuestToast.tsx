@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -20,6 +19,7 @@ import { color, motion, radius, space, type } from '../../theme/tokens';
 import type { Finished } from './daily';
 import { QUEST_GOLD, SparkIcon } from './QuestRing';
 import { useDailyQuests } from './useDailyQuests';
+import { GlassFill } from '../../components/LiquidGlass';
 
 type Toast = { key: number; title: string; line: string; glow: number; big?: boolean };
 
@@ -112,10 +112,10 @@ export function QuestToast() {
             ? t('{title}. {line}. Plus {glow} glow. Opens your quests.', { title: current.title, line: current.line, glow: current.glow })
             : t('{title}. {line}. Opens your quests.', { title: current.title, line: current.line })
         }
-        style={[styles.toast, current.big && styles.big]}
+        style={styles.toast}
         testID="quest-toast"
       >
-        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+        <GlassFill radius={radius.lg} hue={QUEST_GOLD} lit={current.big} deep />
         <View style={styles.mark}>
           {Array.from({ length: SPARKS }, (_, i) => (
             <Spark key={`${current.key}-${i}`} i={i} burst={burst} />
@@ -164,15 +164,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: 'rgba(30,22,10,0.55)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,211,110,0.45)',
     shadowColor: QUEST_GOLD,
     shadowOpacity: 0.35,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
   },
-  big: { borderColor: QUEST_GOLD, backgroundColor: 'rgba(45,30,8,0.62)' },
   mark: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   spark: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: QUEST_GOLD },
   text: { flex: 1, minWidth: 0 },

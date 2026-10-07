@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge } from '../../theme/tokens';
 import { LABEL_MAX } from './care';
 import { GUIDE, rangeText } from './guide';
 
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   chipSub: { ...type.caption, fontSize: 11, color: color.moonFaint, marginTop: 1 },
   own: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
   input: { flex: 1, ...type.body, color: color.moon, minHeight: 44, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
-  go: { minHeight: 44, paddingHorizontal: space.xl, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep },
+  go: { minHeight: 44, paddingHorizontal: space.xl, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glowDeep, ...accentEdge },
   goText: { ...type.label, color: color.moon },
   cancel: { ...type.label, color: color.moonFaint, textAlign: 'center', marginTop: space.xs },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

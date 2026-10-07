@@ -27,7 +27,7 @@ import { useCrews } from '../../state/crews';
 import { usePlan } from '../../state/plan';
 import { useSocial } from '../../state/social';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { LastUpdated } from '../../features/offline/LastUpdated';
 import { CrewOrb } from '../../features/friends/CrewOrb';
@@ -80,7 +80,7 @@ export default function CrewScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }}
+          contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }]}
         >
           {social.availability.ok ? body : <Intro title={t('Festival crews')} line={SOCIAL_ERROR_COPY.unavailable} />}
         </ScrollView>
@@ -503,7 +503,7 @@ const mineNote = (festivalName?: string) => (
 );
 
 const styles = StyleSheet.create({
-  rulesCard: { padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, gap: 4 },
+  rulesCard: { padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, gap: 4 },
   rulesTitle: { ...type.label, color: color.moon, marginBottom: 2 },
   rule: { ...type.caption, color: color.moonDim, lineHeight: 17 },
   endAll: { alignSelf: 'center', paddingVertical: space.sm },
@@ -535,6 +535,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   editRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.md },
   quietButton: { paddingHorizontal: space.lg, paddingVertical: space.sm },
@@ -551,7 +552,7 @@ const styles = StyleSheet.create({
   },
   inviteRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },
   primaryText: { ...type.headline, color: color.moon },
-  memberCard: { gap: space.sm, padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  memberCard: { gap: space.sm, padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   memberHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   memberName: { ...type.headline, color: color.moon, flex: 1 },
   ownerTag: { ...type.caption, color: color.moonFaint, fontWeight: '400' },

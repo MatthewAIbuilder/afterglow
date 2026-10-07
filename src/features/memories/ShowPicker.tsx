@@ -137,6 +137,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   rowText: { flex: 1, gap: 1 },
   rowName: { ...type.headline, color: color.moon },

@@ -1,9 +1,11 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, type, tintA } from '../../theme/tokens';
+import { festivalLight } from './light';
 import { distanceLabel } from './near';
 import { PlayIcon } from '../discover/icons';
 import { isOver } from './shelves';
@@ -16,7 +18,8 @@ import { t, tn } from '../../i18n';
 /**
  * One festival on the Festivals tab's timeline: a calendar date block, its
  * name and place, what's there for you and when, and a few faces. Finished
- * festivals are dimmed. Tapping opens the festival; its clips are an action
+ * festivals are dimmed. It wears the festival's own light: its date block, a
+ * wash from the left and its clips button. Tapping opens the festival; its clips are an action
  * for screen readers.
  */
 export function TimelineRow({ festival, going }: { festival: Festival; going?: boolean }) {
@@ -24,6 +27,7 @@ export function TimelineRow({ festival, going }: { festival: Festival; going?: b
   const block = dateBlock(festival);
   const over = isOver(festival, s.today);
   const live = isLive(festival, s.today);
+  const light = festivalLight(festival.id);
   const when = [s.soon && s.soon !== t('Over') ? s.soon : undefined, s.timesOut && !over ? t('Set times out') : undefined].filter(Boolean).join(' · ');
   const watch = () => {
     haptic.tap();
@@ -50,12 +54,13 @@ export function TimelineRow({ festival, going }: { festival: Festival; going?: b
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'discover') watch();
       }}
-      style={({ pressed }) => [styles.row, over && styles.over, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.row, { borderColor: tintA(light, 0.22) }, over && styles.over, pressed && styles.pressed]}
     >
-      <View style={[styles.block, going && styles.blockGoing, live && styles.blockLive]}>
+      <LinearGradient colors={[tintA(light, 0.16), tintA(light, 0)]} start={{ x: 0, y: 0.5 }} end={{ x: 0.7, y: 0.5 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <View style={[styles.block, { backgroundColor: tintA(light, 0.16), borderColor: tintA(light, 0.5) }, going && { backgroundColor: light, borderColor: light }, live && styles.blockLive]}>
         {block ? (
           <>
-            <Text style={[styles.month, going && { color: color.night }]}>{block.month}</Text>
+            <Text style={[styles.month, { color: light }, going && { color: color.night }]}>{block.month}</Text>
             <Text style={[styles.days, going && { color: color.night }]} numberOfLines={1} adjustsFontSizeToFit>
               {block.days}
             </Text>
@@ -84,7 +89,7 @@ export function TimelineRow({ festival, going }: { festival: Festival; going?: b
           accessibilityRole="button"
           accessibilityLabel={tn(s.reach.clips, 'Discover the {festival} lineup, {n} clip', 'Discover the {festival} lineup, {n} clips', { festival: festival.name })}
           hitSlop={8}
-          style={({ pressed }) => [styles.clips, pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] }]}
+          style={({ pressed }) => [styles.clips, { backgroundColor: tintA(light, 0.18), borderColor: tintA(light, 0.45) }, pressed && { opacity: 0.75, transform: [{ scale: 0.96 }] }]}
         >
           <PlayIcon color={color.moon} size={11} />
           <Text style={styles.clipsText}>{s.reach.clips}</Text>
@@ -113,7 +118,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
+    overflow: 'hidden',
   },
   over: { opacity: 0.55 },
   pressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
@@ -123,13 +128,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: glowA(0.14),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glowA(0.4),
   },
-  blockGoing: { backgroundColor: color.glow, borderColor: color.glow },
   blockLive: { borderColor: '#FF7EB6', borderWidth: 1.5 },
-  month: { ...type.caption, fontSize: 11, fontWeight: '700', color: color.glow, letterSpacing: 1 },
+  month: { ...type.caption, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   days: { fontSize: 18, fontWeight: '700', color: color.moon, fontVariant: ['tabular-nums'] },
   tba: { ...type.caption, fontWeight: '700', color: color.moonFaint, letterSpacing: 1 },
   body: { flex: 1, gap: 1 },
@@ -145,9 +147,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm + 2,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glowA(0.4),
   },
   clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   face: { borderRadius: 16, borderWidth: 2, borderColor: color.night },

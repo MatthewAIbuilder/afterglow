@@ -39,7 +39,7 @@ import { patternOf } from '../features/kandi/kandi';
 import { StoryPreview } from '../features/sprouts/StoryShare';
 import { HoloTilt } from '../features/sprouts/HoloTilt';
 import { showAlert } from '../lib/dialog';
-import { color, glowA, radius, space, type } from '../theme/tokens';
+import { color, glowA, radius, space, type, accentEdge } from '../theme/tokens';
 
 const GIVEN_SHOWN = 12;
 /** A sprout or collectible that arrived this recently glows in the garden. */
@@ -568,10 +568,10 @@ const styles = StyleSheet.create({
   collection: { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: glowA(0.16), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
   collectionText: { ...type.label, color: color.moon },
   collectionArrow: { ...type.headline, color: color.glow, lineHeight: 18 },
-  kandi: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  kandi: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   primary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: '#1E8F4A' },
   primaryText: { ...type.headline, color: color.moon },
-  secondary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },
   storyGarden: { borderRadius: radius.lg, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(143,240,180,0.35)' },
   shareGarden: { flex: 0, alignSelf: 'center', paddingHorizontal: space.xl, marginTop: space.sm },

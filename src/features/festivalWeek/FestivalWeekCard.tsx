@@ -56,6 +56,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   cardReady: { borderColor: 'rgba(255,213,138,0.55)', backgroundColor: 'rgba(255,213,138,0.07)' },
   kicker: { ...type.caption, fontSize: 11, color: GOLD, letterSpacing: 1.5, fontWeight: '700' },

@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   help: { borderColor: 'rgba(255,140,140,0.45)', backgroundColor: 'rgba(255,120,120,0.07)' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow },

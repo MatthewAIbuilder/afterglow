@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   pressed: { opacity: 0.75 },
   plus: { width: 28, height: 28, borderRadius: 14, backgroundColor: color.glowDeep, alignItems: 'center', justifyContent: 'center' },

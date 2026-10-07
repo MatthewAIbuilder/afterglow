@@ -48,7 +48,7 @@ import { haptic } from '../../lib/haptics';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { useSprouts } from '../../state/sprouts';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge } from '../../theme/tokens';
 import { showActionSheet } from '../../lib/dialog';
 import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { goBack } from '../../lib/nav';
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   more: { ...type.caption, color: color.moon, letterSpacing: 1 },
   headWrap: { marginHorizontal: -space.xl },
   follow: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: space.sm },
-  message: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  message: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   messageText: { ...type.headline, color: color.moon },
   badges: { marginHorizontal: -space.lg, marginTop: space.sm },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.xxl, marginBottom: space.md },
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   invite: { alignItems: 'center', gap: space.md, marginTop: space.xxl, alignSelf: 'center', width: '100%', maxWidth: 520 },
   inviteTitle: { ...type.title, color: color.moon, textAlign: 'center' },
   inviteBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
-  invitePrimary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
+  invitePrimary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.sm },
   invitePrimaryText: { ...type.headline, color: color.moon },
   link: { ...type.label, color: color.glow },
   signIn: { paddingTop: space.xxxl * 2 },

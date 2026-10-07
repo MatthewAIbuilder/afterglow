@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   late: { ...type.caption, color: '#FFB86B' },
   body: { ...type.body, color: color.moonDim },
   actions: { flexDirection: 'row', gap: space.sm },
-  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   primary: { backgroundColor: 'rgba(255,140,140,0.9)', borderColor: 'transparent' },
   done: { opacity: 0.6 },
   buttonText: { ...type.label, color: color.moon },

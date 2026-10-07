@@ -8,6 +8,7 @@ import { t } from '../../i18n';
 import { showDateSpoken } from '../artists/shows';
 import type { GoingShow } from './goingShows';
 import { ShowDateBlock } from './ShowCards';
+import { festivalLight } from './light';
 
 /**
  * One-night shows someone is going to (or went to), as a short list: date,
@@ -40,7 +41,7 @@ export function GoingShowsList({ title, shows }: { title: string; shows: readonl
             accessibilityLabel={[s.title, showDateSpoken(s.date), s.where, who].filter(Boolean).join(', ')}
             style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
           >
-            <ShowDateBlock date={s.date} />
+            <ShowDateBlock date={s.date} light={festivalLight(s.id)} />
             <View style={styles.text}>
               <Text style={styles.name} numberOfLines={1}>
                 {s.title}

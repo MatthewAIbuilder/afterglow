@@ -3,15 +3,22 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
-import { CalendarIcon, MapIcon } from '../components/TabIcons';
+import { CalendarIcon, CommentIcon, MapIcon } from '../components/TabIcons';
+import { PhotosIcon } from '../features/camera/icons';
+import { Sprout } from '../features/sprouts/Sprout';
 import { WHATS_NEW } from '../features/whatsNew/whatsNew';
 import { QUEST_GOLD, SparkIcon } from '../features/quests/QuestRing';
 import { haptic } from '../lib/haptics';
-import { color, radius, space, type, glowA, nightA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
+import { BottomFade } from '../components/BottomFade';
 
 const ICONS: Record<string, React.ReactNode> = {
+  sprouts: <Sprout kind="seedling" stage={2} size={34} still />,
+  chat: <CommentIcon color={color.glow} size={20} />,
+  week: <CalendarIcon color={color.glow} size={20} />,
+  throwbacks: <PhotosIcon color={color.glow} size={20} />,
   map: <MapIcon color={color.glow} size={22} />,
   quests: <SparkIcon size={22} />,
   secrets: <Text style={{ fontSize: 20, color: color.glow }}>?</Text>,
@@ -34,7 +41,7 @@ export default function WhatsNewScreen() {
   return (
     <View style={styles.root}>
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + 120, paddingHorizontal: space.xl }}>
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + 120, paddingHorizontal: space.xl }]}>
         <Text style={styles.kicker}>{t('New in Afterglow')}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {t('Fresh tonight')}
@@ -59,6 +66,7 @@ export default function WhatsNewScreen() {
         ))}
       </ScrollView>
       <View style={[styles.bottom, { paddingBottom: insets.bottom + space.lg }]}>
+        <BottomFade />
         <Pressable
           onPress={() => {
             haptic.tap();
@@ -88,12 +96,13 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   icon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.14) },
   cardTitle: { ...type.headline, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: 2 },
   try: { ...type.label, color: color.glow, marginTop: space.sm },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: nightA(0.9) },
-  done: { paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow, alignItems: 'center' },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md },
+  done: { alignSelf: 'center', width: '100%', maxWidth: 600, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow, alignItems: 'center' },
   doneText: { ...type.headline, color: color.night },
 });

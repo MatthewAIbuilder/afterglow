@@ -306,6 +306,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   buttonGlow: { backgroundColor: color.glowDeep, borderColor: glowA(0.6) },
   buttonText: { ...type.label, color: color.moon },

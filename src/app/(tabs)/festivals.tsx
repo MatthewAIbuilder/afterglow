@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
+import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { ArtistRow } from '../../components/ArtistRow';
 import { FestivalRow } from '../../components/FestivalRow';
 import { SearchField } from '../../components/SearchField';
@@ -47,7 +47,8 @@ import { useGoing } from '../../state/going';
 import { useWeekends } from '../../state/weekends';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, spectrum, tintA, type } from '../../theme/tokens';
+import { festivalLight, monthLight } from '../../features/festivals/light';
 import { datesLine } from '../../features/festivals/format';
 import { t, tn } from '../../i18n';
 
@@ -150,7 +151,7 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
   return (
     <View style={styles.root}>
       <PageTitle title={t('Festivals & shows')} />
-      <NightSky />
+      <NightSky festive />
       <ScrollView
         contentContainerStyle={{
           paddingTop: insets.top + space.lg,
@@ -187,6 +188,8 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
           <Text style={styles.title} accessibilityRole="header">
             {t('Festivals & shows')}
           </Text>
+          {/* The six festival lights, one for every festival below. */}
+          <LinearGradient colors={spectrum} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.lights} pointerEvents="none" />
           {onlyOurs ? (
             <Pressable onPress={onlyOurs} accessibilityRole="button" hitSlop={8} style={{ alignSelf: 'flex-start', marginTop: space.xs }}>
               <Text style={{ ...type.label, color: color.glow }}>← Only your events</Text>
@@ -303,7 +306,7 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
             {rest.length > 0 && <SectionHead title={groups.going.length || shelf ? t('All festivals') : t('Coming up')} count={rest.length} calendar />}
             {byMonth(rest.slice(0, restShown), today).map((g) => (
               <View key={g.label}>
-                <Text style={[styles.section, styles.month]}>{g.label}</Text>
+                <MonthHead label={g.label} tint={isOver(g.festivals[0], today) ? undefined : monthLight(g.festivals[0].startDate)} />
                 {list(g.festivals)}
               </View>
             ))}
@@ -365,6 +368,19 @@ function SectionHead({ title, count, calendar, seeAll }: { title: string; count?
           <Text style={styles.calText}>{t('See all')}</Text>
         </Pressable>
       ) : null}
+    </View>
+  );
+}
+
+/** A month on the timeline, in its own light (the year walks through the six), with a line fading out after it. */
+function MonthHead({ label, tint }: { label: string; tint?: string }) {
+  const c = tint ?? color.moonFaint;
+  return (
+    <View style={styles.monthRow}>
+      <Text style={[styles.section, styles.month, { color: c }]} accessibilityRole="header">
+        {label}
+      </Text>
+      <LinearGradient colors={[tintA(c, 0.45), tintA(c, 0)]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.monthLine} pointerEvents="none" />
     </View>
   );
 }
@@ -446,8 +462,8 @@ function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; ta
   const timesOut = !!festival.sets?.length;
   const { distanceTo, units } = useNearby();
   const away = distanceTo(festival);
-  // The colour of your best match there tints the tile.
-  const [, bright] = artistColors(ranked[0]?.id ?? festival.id, ranked[0]?.color);
+  // The festival's own light tints the tile.
+  const light = festivalLight(festival.id);
   const cover = coverPhotos(festival, artistById);
   const discover = () => {
     haptic.tap();
@@ -466,13 +482,13 @@ function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; ta
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'discover') discover();
       }}
-      style={({ pressed }) => [styles.tile, { width: size, height: size }, cover.length > 0 && { backgroundColor: color.night }, pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 }]}
+      style={({ pressed }) => [styles.tile, { width: size, height: size, borderColor: tintA(light, 0.3) }, cover.length > 0 && { backgroundColor: color.night }, pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 }]}
     >
       {/* The headliners' faces behind it all, when they have photos. */}
       <FestivalCover photos={cover} style={StyleSheet.absoluteFill} />
       {cover.length > 0 && <View style={styles.coverGlass} pointerEvents="none" />}
-      <LinearGradient colors={[`${bright}33`, 'rgba(0,0,0,0)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
-      <Text style={[styles.tileWhen, timesOut && { color: color.glow }]} numberOfLines={1}>
+      <LinearGradient colors={[tintA(light, 0.3), tintA(light, 0.04)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <Text style={[styles.tileWhen, { color: light }, timesOut && { color: color.glow }]} numberOfLines={1}>
         {timesOut ? t('Set times out') : (soon ?? datesLine(festival))}
       </Text>
       <Text style={styles.tileName} numberOfLines={3}>
@@ -496,7 +512,7 @@ function FestivalTile({ festival, taste, size: fixed }: { festival: Festival; ta
             accessibilityRole="button"
             accessibilityLabel={tn(reach.clips, 'Discover the {festival} lineup, {n} clip', 'Discover the {festival} lineup, {n} clips', { festival: festival.name })}
             hitSlop={8}
-            style={({ pressed }) => [styles.tileClips, pressed && { opacity: 0.75 }]}
+            style={({ pressed }) => [styles.tileClips, { backgroundColor: tintA(light, 0.2), borderColor: tintA(light, 0.5) }, pressed && { opacity: 0.75 }]}
           >
             <PlayIcon color={color.moon} size={10} />
             <Text style={styles.clipsText}>{reach.clips}</Text>
@@ -525,7 +541,10 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   resultsHead: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.md, marginBottom: space.xs },
-  month: { marginTop: space.md, marginBottom: space.sm, fontSize: 12, color: color.glow },
+  monthRow: { flexDirection: 'row', alignItems: 'center', marginTop: space.md, marginBottom: space.sm, paddingRight: space.xl },
+  month: { marginBottom: 0, paddingRight: space.md, fontSize: 12 },
+  monthLine: { flex: 1, height: StyleSheet.hairlineWidth * 2, borderRadius: 1 },
+  lights: { width: 64, height: 3, borderRadius: 2, marginTop: space.sm, opacity: 0.9 },
   sectionRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.lg, paddingRight: space.xl },
   sectionTitle: { ...type.headline, fontSize: 20, textTransform: 'none', letterSpacing: 0, color: color.moon, paddingRight: 0, marginBottom: space.sm },
   sectionCount: { ...type.label, color: color.moonFaint, fontVariant: ['tabular-nums'] },
@@ -565,9 +584,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: 4,
     borderRadius: radius.pill,
-    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glowA(0.4),
   },
   title: { ...type.largeTitle, color: color.moon },
   subtitle: { ...type.body, color: color.moonDim, marginTop: space.xs },
@@ -575,18 +592,6 @@ const styles = StyleSheet.create({
   results: { paddingHorizontal: space.xl },
   // Show rows have their own side margin; line them up with the other results.
   foundShows: { marginHorizontal: -space.lg },
-  clips: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingLeft: space.sm,
-    paddingRight: space.md,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    backgroundColor: glowA(0.18),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glowA(0.4),
-  },
   clipsText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   noMatch: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
   nearHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: space.xl },

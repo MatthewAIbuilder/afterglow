@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { color, radius, space, type, glowA, raisedA } from '../../theme/tokens';
+import { color, radius, space, type } from '../../theme/tokens';
 import { BACK_ONLINE_MS, isOffline, NOTICE_TEXT, OFFLINE_AFTER_MS, type Notice } from './status';
+import { GlassFill } from '../../components/LiquidGlass';
 
 /**
  * A quiet glass pill near the bottom of the screen when the signal drops
@@ -44,10 +45,11 @@ export function OfflineNotice() {
         key={notice}
         entering={reduced ? undefined : FadeIn.duration(250)}
         exiting={reduced ? undefined : FadeOut.duration(250)}
-        style={[styles.pill, notice === 'back' && styles.back]}
+        style={styles.pill}
         accessibilityLiveRegion="polite"
         accessibilityRole="text"
       >
+        <GlassFill radius={radius.pill} tint={0.85} deep />
         <View style={[styles.dot, notice === 'back' && styles.dotBack]} />
         <Text style={styles.text}>{NOTICE_TEXT[notice]}</Text>
       </Animated.View>
@@ -64,11 +66,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
-    backgroundColor: raisedA(0.92),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
-  back: { borderColor: glowA(0.45) },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.moonFaint },
   dotBack: { backgroundColor: color.glow },
   text: { ...type.caption, color: color.moon },

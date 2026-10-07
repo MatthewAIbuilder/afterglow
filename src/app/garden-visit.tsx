@@ -18,7 +18,7 @@ import { DECOR, type DecorId } from '../features/sprouts/decor';
 import { t, tn } from '../i18n';
 import { useCatalog } from '../state/catalog';
 import { useSocial } from '../state/social';
-import { color, space, type } from '../theme/tokens';
+import { color, space, type, accentEdge } from '../theme/tokens';
 
 const CONTENT_MAX = 640;
 
@@ -124,6 +124,6 @@ const styles = StyleSheet.create({
   // The row brings its own side margin; the page already has one.
   showcase: { marginHorizontal: -space.xl },
   sky: { ...type.caption, color: color.moonDim, textAlign: 'center' },
-  kandi: { alignItems: 'center', paddingVertical: space.md, borderRadius: 999, backgroundColor: color.glowDeep, marginTop: space.md },
+  kandi: { alignItems: 'center', paddingVertical: space.md, borderRadius: 999, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.md },
   kandiText: { ...type.headline, color: color.moon },
 });

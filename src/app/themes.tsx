@@ -18,7 +18,8 @@ import { useSocial } from '../state/social';
 import { useSprouts } from '../state/sprouts';
 import { PALETTES, type ThemeId } from '../theme/palettes';
 import { writeStoredTheme } from '../theme/storedTheme';
-import { color, glowA, nightA, radius, space, THEME_ID, type } from '../theme/tokens';
+import { color, radius, space, THEME_ID, type } from '../theme/tokens';
+import { BottomFade } from '../components/BottomFade';
 
 /** How long the new theme's colours fill the screen before Afterglow starts again in them. */
 const SWAP_MS = 650;
@@ -172,6 +173,7 @@ export default function ThemesScreen() {
       </ScrollView>
 
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.md }]}>
+        <BottomFade />
         {canMatch && changed && !locked ? (
           <View style={styles.matchRow}>
             <Text style={styles.matchText}>{t('Match my profile background')}</Text>
@@ -234,11 +236,11 @@ const styles = StyleSheet.create({
   tileDetail: { ...type.caption, color: color.moonFaint, marginBottom: space.sm },
   rowLink: { marginTop: space.lg, paddingVertical: space.sm },
   link: { ...type.label, color: color.glow },
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: nightA(0.96), borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: glowA(0.18), alignItems: 'center' },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, alignItems: 'center' },
   matchRow: { alignSelf: 'stretch', maxWidth: 600, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.sm },
   matchText: { ...type.body, color: color.moon },
   lockNote: { ...type.caption, color: '#FFD66B', marginBottom: space.sm },
-  primary: { alignSelf: 'stretch', maxWidth: 600, height: 50, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  primary: { alignSelf: 'center', width: '100%', maxWidth: 600, height: 50, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   primaryText: { ...type.headline, color: color.moon },
   dim: { opacity: 0.5 },
   pressed: { opacity: 0.75 },

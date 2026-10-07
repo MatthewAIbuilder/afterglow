@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   before: { padding: space.lg, gap: space.xs, borderRadius: radius.lg, backgroundColor: 'rgba(255,184,107,0.08)', borderWidth: 1, borderColor: 'rgba(255,184,107,0.35)' },
   beforeTitle: { ...type.headline, color: color.moon, marginBottom: space.xs },
   note: { ...type.caption, color: color.moonFaint, marginVertical: space.xs },
-  row: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
+  row: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, overflow: 'hidden' },
   rowOn: { borderColor: glowA(0.45) },
   head: { flexDirection: 'row', alignItems: 'center', padding: space.lg, gap: space.md },
   name: { ...type.headline, color: color.moon },

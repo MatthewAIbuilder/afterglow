@@ -45,7 +45,7 @@ import { useCrewChat } from '../../state/crewChat';
 import { chatPreview, unreadLine } from '../crews/chat';
 import { useGoing } from '../../state/going';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type, glowA, glowDeepA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, glowDeepA, accentEdge } from '../../theme/tokens';
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 import { t } from '../../i18n';
 
@@ -417,11 +417,11 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.largeTitle, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  hero: { marginTop: space.xl, padding: space.xl, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', gap: space.md },
+  hero: { marginTop: space.xl, padding: space.xl, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, alignItems: 'center', gap: space.md },
   heroIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.16) },
   heroTitle: { ...type.title, color: color.moon, textAlign: 'center' },
   heroBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
-  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
+  primary: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.sm },
   primaryText: { ...type.headline, color: color.moon },
   link: { ...type.label, color: color.glow },
   section: { gap: space.sm },
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   chipText: { ...type.caption, color: color.moonDim },
   chipNew: { backgroundColor: glowA(0.22) },
   chipNewText: { color: color.moon },
-  card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   startCard: { borderStyle: 'dashed', borderColor: glowA(0.45) },
   plusCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glow },
   cardTitle: { ...type.headline, color: color.moon },
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   fresh: { color: color.glow },
   why: { ...type.caption, color: color.moonFaint, marginLeft: 44 + space.md, marginTop: -6, marginBottom: space.xs },
   quiet: { ...type.body, color: color.moonDim, marginTop: space.xl },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   rowLabel: { ...type.body, color: color.moon, flex: 1 },
   rowDetail: { ...type.body, color: color.moonDim },
 });

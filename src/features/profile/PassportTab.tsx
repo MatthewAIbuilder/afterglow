@@ -6,7 +6,7 @@ import { FilterChips } from '../../components/FilterChips';
 import { MapIcon } from '../../components/TabIcons';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge } from '../../theme/tokens';
 import { type ThrowbackBadge, pinLook, throwbackId, throwbackLine, throwbackLook, townOf } from '../badges/badges';
 import { pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
@@ -253,6 +253,6 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingHorizontal: space.xxl, paddingVertical: space.xxl, gap: space.sm },
   emptyTitle: { ...type.headline, color: color.moon },
   emptyBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
-  emptyButton: { marginTop: space.sm, paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  emptyButton: { marginTop: space.sm, paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   emptyButtonText: { ...type.headline, color: color.moon },
 });

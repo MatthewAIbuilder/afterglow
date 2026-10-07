@@ -51,6 +51,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   text: { flex: 1, gap: 2 },
   label: { ...type.headline, color: color.moon },

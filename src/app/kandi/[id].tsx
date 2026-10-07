@@ -14,7 +14,7 @@ import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { useKandi } from '../../state/kandi';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, accentEdge } from '../../theme/tokens';
 
 type State = { at: 'loading' } | { at: 'missing' } | { at: 'open'; k: Kandi } | { at: 'mine'; k: Kandi } | { at: 'got'; k: Kandi; now?: boolean } | { at: 'failed'; text: string };
 
@@ -138,8 +138,8 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: color.moonDim },
   hint: { ...type.caption, color: color.moonFaint, textAlign: 'center' },
   note: { ...type.title, color: color.moon, textAlign: 'center' },
-  primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.sm },
-  secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.sm },
+  secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   primaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });

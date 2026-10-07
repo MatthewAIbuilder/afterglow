@@ -4,7 +4,7 @@ import { isOver, whenRank } from '../../features/festivals/shelves';
 import { goingLine } from '../../features/social/copy';
 import { CoverSwap } from '../../features/profile/CoverSwap';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
@@ -47,7 +47,6 @@ import { type Highlight, profileHighlights, profileStats, videoGrid } from '../.
 import { useRecapFestivals, useYear } from '../../features/recap/useRecap';
 import { isYearSoFar } from '../../features/recap/year';
 import { tasteMix } from '../../features/taste/lean';
-import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
@@ -76,6 +75,7 @@ import { color, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
 import { useKandi } from '../../state/kandi';
 import { datesLine } from '../../features/festivals/format';
+import { GlassCircleButton } from '../../components/GlassCircleButton';
 
 /** How far the cover photo reaches below the safe area. */
 /** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
@@ -111,7 +111,8 @@ function FullProfile() {
   const quests = useDailyQuests();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
-  const { width } = useWindowDimensions();
+  // On a wide screen (the website) the page is a column, like Settings; its grids size to it.
+  const width = Math.min(useWindowDimensions().width, PAGE_MAX);
   const catalog = useCatalog();
   const today = useToday();
   // `?tab=badges` (a side quest notification) opens on that tab.
@@ -269,15 +270,15 @@ function FullProfile() {
     <View style={styles.root}>
       <PageTitle title={t('Profile')} />
       <NightSky />
-      <ScrollView ref={scroller} contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scroller} contentContainerStyle={[styles.page, { paddingTop: insets.top + space.sm, paddingBottom: tabSpace + space.xl }]} showsVerticalScrollIndicator={false}>
         <ProfileCover url={me?.coverUrl} backdrop={backdrop} height={insets.top + COVER_H} fadeFrom={(insets.top + COVER_SOLID) / (insets.top + COVER_H)} />
         <View style={styles.bar}>
           <Text style={styles.handle} numberOfLines={1} accessibilityRole="header">
             {me ? `@${me.handle}` : t('Profile')}
           </Text>
-          <IconButton label={t('Settings and more')} onPress={() => router.push('/settings')}>
-            <MenuIcon color={color.moon} size={22} />
-          </IconButton>
+          <GlassCircleButton label={t('Settings and more')} onPress={() => router.push('/settings')}>
+            <MenuIcon color={color.moon} size={20} />
+          </GlassCircleButton>
         </View>
 
         <ProfileHeader
@@ -429,28 +430,13 @@ function FullProfile() {
   );
 }
 
-function IconButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
-  return (
-    <Pressable
-      onPress={() => {
-        haptic.select();
-        onPress();
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={8}
-      style={({ pressed }) => [styles.icon, pressed && { opacity: 0.6 }]}
-    >
-      {children}
-    </Pressable>
-  );
-}
+const PAGE_MAX = 640;
 
 const styles = StyleSheet.create({
+  page: { alignSelf: 'center', width: '100%', maxWidth: PAGE_MAX },
   root: { flex: 1, backgroundColor: color.night },
-  bar: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.xl, paddingRight: space.md, marginBottom: space.lg },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.xl, paddingRight: space.xl, marginBottom: space.lg },
   handle: { ...type.title, fontSize: 22, color: color.moon, flex: 1 },
-  icon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   tabs: { marginTop: space.xl },
 
 });
