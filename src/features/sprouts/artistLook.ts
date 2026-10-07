@@ -74,7 +74,11 @@ export type Creature =
   | 'tent'
   | 'glowstick'
   | 'glowshroom'
-  | 'bassbin';
+  | 'bassbin'
+  | 'campfire'
+  | 'mainstage'
+  | 'bubbles'
+  | 'mixtape';
 
 /** A creature's colours: its body (light, mid, deep), a second colour pair, its glowing details and the light around it. */
 export type Palette = { light: string; mid: string; deep: string; alt: string; altDeep: string; accent: string; glow: string };
@@ -273,9 +277,13 @@ const PLACES: Record<PlaceCreature, Spec> = {
   glowstick: { creature: 'glowstick', palette: P('#EFFFD0', '#7CFF6A', '#1E7A2A', '#FF5FD0', '#7FD3FF', '#FFFFFF', '#7CFF6A'), name: t('The Glow stick'), theme: t('Cracked and glowing till sunrise') },
   glowshroom: { creature: 'glowshroom', palette: P('#E0FFFF', '#5A7CFF', '#2A2A8A', '#F0E8FF', '#6A5AA8', '#8AFFF0', '#7AA8FF'), name: t('The Glow shroom'), theme: t('A mushroom glowing by the forest stage') },
   bassbin: { creature: 'bassbin', palette: P('#E0E4F0', '#2E3244', '#1E2030', '#4A4E66', '#0E0F18', '#5BE3B5', '#8A7CFF'), name: t('The Bass bin'), theme: t('A speaker stack you can feel in your chest') },
+  campfire: { creature: 'campfire', palette: P('#FFF4C0', '#FF8A2A', '#C2361E', '#8A5A36', '#4A2E1A', '#FFE36B', '#FF9A3D'), name: t('The Campfire'), theme: t('Where everyone ends up after the last set') },
+  mainstage: { creature: 'mainstage', palette: P('#F0E8FF', '#8A92B0', '#2A2E44', '#7A5CFF', '#14102A', '#FF5FD0', '#8A6AFF'), name: t('The Main stage'), theme: t('Lasers over a sea of hands') },
+  bubbles: { creature: 'bubbles', palette: P('#F0FFFF', '#9AE8FF', '#2A6A98', '#FFB8F0', '#B85AD0', '#FFE36B', '#9AE8FF'), name: t('The Bubble'), theme: t('Blown across the crowd in rainbow sheen') },
+  mixtape: { creature: 'mixtape', palette: P('#FFF6E0', '#FF7EB6', '#2A1A2E', '#3A3448', '#18141E', '#5BE3B5', '#FF7EB6'), name: t('The Mixtape'), theme: t('A tape of the sets you can’t stop playing') },
   flask: { creature: 'flask', palette: P('#F3EEFF', '#A97CFF', '#4A2E9A', '#D9B48A', '#7A5634', '#C9F7FF', '#A97CFF'), name: t('The Alchemist'), theme: t('A bubbling potion from the underground') },
 };
-export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin';
+export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape';
 export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];
 
 /** The sound creatures (no artist's identity), which stickers can use too. */

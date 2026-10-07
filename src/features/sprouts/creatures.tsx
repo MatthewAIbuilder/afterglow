@@ -3378,6 +3378,228 @@ const bassbin: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** A sticker: a campfire with a face in its flames, logs crossed, embers rising into the night. */
+const campfire: Draw = (p, f) => ({
+  ground: [50, 91, 32],
+  back: <Ellipse cx={50} cy={56} rx={44} ry={40} fill={p.glow} opacity={0.18} />,
+  pivot: [50, 80],
+  sway: (
+    <G>
+      {/* The flames, swaying a little. */}
+      <V d="M50 14 C58 26 72 38 71 58 C70 74 60 82 50 82 C40 82 30 74 29 58 C28 44 38 34 42 24 C44 32 46 36 50 38 C50 30 49 22 50 14Z" fill={p.mid} f={f} gloss={[40, 42, 3, 9, -14]} />
+      <Path d="M50 36 C57 44 63 52 62 63 C61 73 56 78 50 78 C44 78 39 73 38 63 C37 55 43 49 46 42 C47 47 48 49 50 50 C50 46 49 41 50 36Z" fill={p.light} />
+      <Path d="M44 70 Q50 75 56 70" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Stones round it. */}
+      {(
+        [
+          [22, 86, 6, 4],
+          [33, 90, 6.4, 4],
+          [46, 92, 6.6, 4],
+          [60, 92, 6.6, 4],
+          [72, 89, 6.2, 4],
+          [81, 84, 5.4, 3.6],
+        ] as const
+      ).map(([x, y, rx, ry], i) => (
+        <VE key={i} cx={x} cy={y} rx={rx} ry={ry} fill={i % 2 ? p.altDeep : p.alt} f={f} gloss={false} />
+      ))}
+      {/* Two logs, crossed. */}
+      <V d="M24 80 L74 70 Q78 70 78 74 Q78 78 74 78 L26 88 Q22 88 22 84 Q22 80 24 80Z" fill={p.alt} f={f} />
+      <V d="M28 70 L76 80 Q80 81 79 85 Q78 88 74 87 L26 78 Q22 77 23 73 Q24 70 28 70Z" fill={p.altDeep} f={f} />
+      <Circle cx={76} cy={74} r={2.6} fill={p.light} opacity={0.5} />
+      <Circle cx={25} cy={74} r={2.6} fill={p.light} opacity={0.4} />
+    </G>
+  ),
+  eyes: {
+    box: [41, 58, 18, 8],
+    el: (
+      <G>
+        <VEye x={45} y={62} r={2.8} f={f} />
+        <VEye x={55} y={62} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {(
+        [
+          [34, 20, 1.4],
+          [66, 14, 1.2],
+          [58, 6, 1],
+          [40, 8, 0.9],
+          [76, 30, 1.1],
+          [22, 34, 1],
+        ] as const
+      ).map(([x, y, r], i) => (
+        <Glow key={i} x={x} y={y} r={r} color={i % 2 ? p.accent : p.mid} />
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker: the main stage, its screen for a face, lasers fanning out over the crowd. */
+const mainstage: Draw = (p, f) => ({
+  ground: [50, 92, 40],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={46} ry={40} fill={p.glow} opacity={0.14} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The truss: an arch of steel. */}
+      <V d="M12 88 L12 34 Q12 14 32 14 L68 14 Q88 14 88 34 L88 88 L80 88 L80 36 Q80 22 66 22 L34 22 Q20 22 20 36 L20 88Z" fill={p.mid} f={f} gloss={[30, 18, 8, 2, 0]} />
+      {Array.from({ length: 6 }, (_, i) => (
+        <Path key={i} d={`M12 ${40 + i * 8} L20 ${44 + i * 8} M80 ${44 + i * 8} L88 ${40 + i * 8}`} stroke={p.deep} strokeWidth={1} />
+      ))}
+      {/* The screen. */}
+      <V d="M26 30 Q26 28 28 28 L72 28 Q74 28 74 30 L74 64 Q74 66 72 66 L28 66 Q26 66 26 64Z" fill={p.alt} f={f} />
+      <Path d="M28 30 L72 30 L72 64 L28 64Z" fill={p.deep} opacity={0.55} />
+      <Path d="M40 54 Q50 61 60 54" stroke={p.accent} strokeWidth={2} fill="none" strokeLinecap="round" />
+      {/* The deck, and the crowd's hands. */}
+      <V d="M8 76 L92 76 L90 90 L10 90Z" fill={p.altDeep} f={f} />
+      <Path d="M8 76 L92 76" stroke={p.light} strokeWidth={0.8} opacity={0.5} />
+      {[18, 30, 44, 58, 70, 82].map((x, i) => (
+        <Path key={x} d={`M${x} 94 L${x + (i % 2 ? 2 : -2)} ${84 - (i % 3) * 2}`} stroke={p.altDeep} strokeWidth={3} strokeLinecap="round" />
+      ))}
+    </G>
+  ),
+  eyes: {
+    box: [36, 38, 28, 10],
+    el: (
+      <G>
+        <VEye x={41} y={44} r={4} f={f} />
+        <VEye x={59} y={44} r={4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Lights on the truss, beaming down across the screen's edges. */}
+      {[
+        [26, 22, 8, 74],
+        [26, 22, 22, 78],
+        [74, 22, 92, 74],
+        [74, 22, 78, 78],
+        [50, 22, 36, 78],
+        [50, 22, 64, 78],
+      ].map(([x0, y0, x1, y1], i) => (
+        <Path key={i} d={`M${x0} ${y0} L${x1} ${y1}`} stroke={i % 2 ? p.accent : p.light} strokeWidth={0.8} strokeLinecap="round" opacity={0.55} />
+      ))}
+      {[26, 50, 74].map((x, i) => (
+        <G key={x}>
+          <Circle cx={x} cy={22} r={3.4} fill={i === 1 ? p.light : p.accent} opacity={0.3} />
+          <Circle cx={x} cy={22} r={1.8} fill={i === 1 ? p.light : p.accent} />
+        </G>
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker: a bubble with a face, blown from a wand, little bubbles drifting off in rainbow sheen. */
+const bubbles: Draw = (p, f) => ({
+  ground: [50, 92, 18],
+  back: <Ellipse cx={50} cy={46} rx={42} ry={40} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* The wand. */}
+      <Path d="M58 74 L72 92" stroke={p.altDeep} strokeWidth={4} strokeLinecap="round" />
+      <Circle cx={54} cy={68} r={8} stroke={p.alt} strokeWidth={3} fill="none" />
+      {/* The big bubble. */}
+      <Circle cx={46} cy={42} r={30} fill={p.mid} opacity={0.32} />
+      <Circle cx={46} cy={42} r={30} stroke={p.light} strokeWidth={1.4} fill="none" opacity={0.9} />
+      <Path d="M22 36 A26 26 0 0 1 40 16" stroke="#FFFFFF" strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.75} />
+      <Path d="M70 50 A26 26 0 0 1 56 68" stroke={p.alt} strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.6} />
+      <Path d="M64 24 A26 26 0 0 1 72 38" stroke={p.accent} strokeWidth={1.6} fill="none" strokeLinecap="round" opacity={0.7} />
+      <Path d="M40 52 Q46 57 52 52" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [36, 38, 20, 8],
+    el: (
+      <G>
+        <VEye x={40} y={42} r={3.2} f={f} />
+        <VEye x={52} y={42} r={3.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {(
+        [
+          [80, 20, 6],
+          [86, 42, 4],
+          [16, 74, 5],
+          [26, 88, 3],
+          [74, 10, 3],
+        ] as const
+      ).map(([x, y, r], i) => (
+        <G key={i}>
+          <Circle cx={x} cy={y} r={r} fill={p.mid} opacity={0.25} stroke={i % 2 ? p.alt : p.light} strokeWidth={0.8} />
+          <Circle cx={x - r * 0.35} cy={y - r * 0.35} r={r * 0.25} fill="#FFFFFF" opacity={0.8} />
+        </G>
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** A sticker: a mixtape, its reels for eyes and a hand-written label, tape spilling out in a loop. */
+const mixtape: Draw = (p, f) => ({
+  ground: [50, 86, 36],
+  back: <Ellipse cx={50} cy={52} rx={44} ry={36} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* Tape spilling out of the bottom. */}
+      <Path d="M30 78 C24 90 40 96 48 88 C54 82 66 90 74 84" stroke={p.altDeep} strokeWidth={2.2} fill="none" strokeLinecap="round" />
+      {/* The shell. */}
+      <V d="M12 26 Q12 20 18 20 L82 20 Q88 20 88 26 L88 74 Q88 80 82 80 L18 80 Q12 80 12 74Z" fill={p.alt} f={f} gloss={[24, 24, 10, 2, 0]} />
+      {/* The label. */}
+      <Path d="M18 26 L82 26 L82 62 L18 62Z" fill={p.light} />
+      <Path d="M18 30 L82 30" stroke={p.mid} strokeWidth={2.4} />
+      <Path d="M18 58 L82 58" stroke={p.accent} strokeWidth={2.4} />
+      <Path d="M24 36 Q32 33 40 36" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+      {/* The window, with the reels. */}
+      <V d="M28 40 Q28 38 30 38 L70 38 Q72 38 72 40 L72 54 Q72 56 70 56 L30 56 Q28 56 28 54Z" fill={p.altDeep} f={f} />
+      <Circle cx={38} cy={47} r={6.6} fill={p.deep} />
+      <Circle cx={62} cy={47} r={6.6} fill={p.deep} />
+      {/* The bottom, with its holes and screws. */}
+      <V d="M26 80 L32 68 L68 68 L74 80Z" fill={p.altDeep} f={f} />
+      <Circle cx={40} cy={74} r={1.6} fill={p.alt} />
+      <Circle cx={60} cy={74} r={1.6} fill={p.alt} />
+      {[
+        [16, 24],
+        [84, 24],
+        [16, 76],
+        [84, 76],
+      ].map(([x, y]) => (
+        <Circle key={`${x}${y}`} cx={x} cy={y} r={1.2} fill={p.light} opacity={0.7} />
+      ))}
+      <Path d="M44 63.6 Q50 66.4 56 63.6" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [32, 41, 36, 12],
+    el: (
+      <G>
+        <VEye x={38} y={47} r={4.2} f={f} />
+        <VEye x={62} y={47} r={4.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [8, 14, 2],
+    [92, 12, 1.6],
+    [90, 88, 1.8],
+  ]),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -3442,4 +3664,8 @@ export const DRAW: Record<Creature, Draw> = {
   glowstick,
   glowshroom,
   bassbin,
+  campfire,
+  mainstage,
+  bubbles,
+  mixtape,
 };
