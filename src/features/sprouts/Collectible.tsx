@@ -7,6 +7,9 @@ import { DRAW, type Fills, star, V } from './creatures';
 import { blinkOf, paceOf, sine } from './motion';
 import type { Driven } from './Sprout';
 
+/** One decimal, for tidy drawing numbers. */
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
 /** Bronze, silver and gold, for the ring round a collectible's tile. */
 export const TIER_COLOR = ['', '#D08A4E', '#D6DDEA', '#FFD24A'] as const;
 
@@ -307,6 +310,14 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
           <Circle cx={74} cy={14 + (pace % 6)} r={0.7} fill="#FFFFFF" opacity={0.5} />
         </>
       )}
+      {/* Gold: soft rays of light behind it. */}
+      {tier === 3 && !locked
+        ? Array.from({ length: 12 }, (_, i) => {
+            const a = (i / 12) * Math.PI * 2 + 0.13;
+            const w = 0.09;
+            return <Path key={`ray${i}`} d={`M50 50 L${r1(50 + Math.cos(a - w) * 46)} ${r1(50 + Math.sin(a - w) * 46)} L${r1(50 + Math.cos(a + w) * 46)} ${r1(50 + Math.sin(a + w) * 46)}Z`} fill="#FFE9A0" opacity={0.07} />;
+          })
+        : null}
       <Circle cx={50} cy={50} r={47.5} fill="none" stroke={ring} strokeWidth={tier ? 2.6 : 1} opacity={tier ? 0.95 : 0.45} />
       {tier === 3 && !locked ? <Circle cx={50} cy={50} r={45.4} fill="none" stroke="#FFF3B0" strokeWidth={0.6} opacity={0.6} /> : null}
       {/* A shiny one: a rainbow ring inside its level's, and gold sparkles. */}
@@ -321,6 +332,43 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       ) : null}
     </>
   );
+  /* Its level, worn over everything (in the tile, not the scene): gold's laurel round the bottom and a star on top; silver's star. */
+  const marks =
+    scene || locked || tier < 2 ? null : (
+      <>
+        {/* Gold: a laurel round the bottom of its ring and a star on top. Silver: the star. */}
+        {tier === 3
+          ? [-1, 1].map((side) => {
+              // A branch from the bottom of the ring up each side: a stem, and leaves in pairs along it.
+              const at = (deg: number, r: number) => {
+                const a = (deg * Math.PI) / 180;
+                return [r1(50 + Math.cos(a) * r), r1(50 + Math.sin(a) * r)] as const;
+              };
+              const [sx, sy] = at(90 + side * 8, 43);
+              const [ex, ey] = at(90 + side * 78, 43);
+              return (
+                <G key={`laurel${side}`}>
+                  <Path d={`M${sx} ${sy} A43 43 0 0 ${side > 0 ? 1 : 0} ${ex} ${ey}`} stroke="#C9961E" strokeWidth={0.9} fill="none" />
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const deg = 90 + side * (16 + i * 13);
+                    const tangent = deg + 90;
+                    return [-1, 1].map((face) => {
+                      const [x, y] = at(deg, 43 + face * 2.2);
+                      return <Ellipse key={`${i}${face}`} cx={x} cy={y} rx={3.6 - i * 0.25} ry={1.5} fill={face > 0 ? '#FFD24A' : '#E8B42A'} stroke="#8A6410" strokeWidth={0.25} transform={`rotate(${r1(tangent + side * face * 34)} ${x} ${y})`} />;
+                    });
+                  })}
+                </G>
+              );
+            })
+          : null}
+        {tier >= 2 ? (
+          <G>
+            <Circle cx={50} cy={7.6} r={tier === 3 ? 5 : 4} fill="#0E0A1E" stroke={TIER_COLOR[tier]} strokeWidth={1} />
+            <Path d={star(50, 7.6, tier === 3 ? 3.6 : 2.8)} fill={tier === 3 ? '#FFE58A' : '#E6ECF6'} />
+          </G>
+        ) : null}
+      </>
+    );
   const box = { width: size, height: size, overflow: scene ? ('visible' as const) : ('hidden' as const) };
 
   // Still: every part in one picture, much lighter to draw than the moving layers.
@@ -339,6 +387,7 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
             {eyes?.el}
             {art.flickerOver ? art.flicker : null}
             {art.front}
+            {marks}
           </>,
         )}
       </View>
@@ -359,6 +408,7 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
         {art.flickerOver ? flicker : null}
         {art.front ? <View style={fill}>{layer(art.front)}</View> : null}
       </Animated.View>
+      {marks ? <View style={fill}>{layer(marks)}</View> : null}
     </View>
   );
 }
