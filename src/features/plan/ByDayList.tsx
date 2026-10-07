@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   dayName: { ...type.headline, color: color.moon },

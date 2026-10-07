@@ -291,6 +291,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   mustSee: { borderColor: glowA(0.45), backgroundColor: glowA(0.10) },
   discovery: { backgroundColor: 'transparent', borderStyle: 'dashed', borderWidth: 1 },
