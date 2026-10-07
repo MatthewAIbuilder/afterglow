@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { ArtistAvatar, artistColors } from '../../components/ArtistAvatar';
+import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { ChevronIcon } from '../../components/TabIcons';
 import type { Artist } from '../../data/models';
 import { haptic } from '../../lib/haptics';
@@ -11,9 +11,10 @@ import { useFollowedArtists } from '../../state/followedArtists';
 import { useNearby } from '../../state/nearby';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
-import { color, glowA, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, tintA, type } from '../../theme/tokens';
 import { t } from '../../i18n';
 import { showDateBlock, showDateSpoken, showTitle, showWhere } from '../artists/shows';
+import { festivalLight } from './light';
 import { distanceLabel, distanceShort } from './near';
 import { matchLabel, type RankedShow, type ShowTaste } from './showsForYou';
 
@@ -43,12 +44,12 @@ function spoken(r: RankedShow, best: Artist | undefined, away: string | undefine
   return [`${showTitle(r.show)}, ${showDateSpoken(r.show.date)}`, where, away, match].filter(Boolean).join('. ') + t('. Opens the show.');
 }
 
-/** The calendar block: "OCT" over "18" over "Sat". */
-export function ShowDateBlock({ date, big }: { date: string; big?: boolean }) {
+/** The calendar block: "OCT" over "18" over "Sat", in the show's own light (`festivalLight` of its id). */
+export function ShowDateBlock({ date, light, big }: { date: string; light: string; big?: boolean }) {
   const b = showDateBlock(date);
   return (
-    <View style={[styles.block, big && styles.blockBig]}>
-      <Text style={[styles.month, big && styles.monthBig]}>{b.month}</Text>
+    <View style={[styles.block, { backgroundColor: tintA(light, 0.16), borderColor: tintA(light, 0.5) }, big && styles.blockBig]}>
+      <Text style={[styles.month, { color: light }, big && styles.monthBig]}>{b.month}</Text>
       <Text style={[styles.day, big && styles.dayBig]}>{b.day}</Text>
       <Text style={[styles.weekday, big && styles.weekdayBig]}>{b.weekday}</Text>
     </View>
@@ -64,14 +65,16 @@ export function ShowRow({ ranked: r }: { ranked: RankedShow }) {
   const where = [showWhere(r.show), away].filter(Boolean).join(' · ');
   const names = bill.map((a) => a.name);
   const pct = matchLabel(r);
+  const light = festivalLight(r.show.id);
   return (
     <Pressable
       onPress={() => openShow(r.show.id)}
       accessibilityRole="button"
       accessibilityLabel={spoken(r, best, away)}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.row, { borderColor: tintA(light, 0.22) }, pressed && styles.pressed]}
     >
-      <ShowDateBlock date={r.show.date} />
+      <LinearGradient colors={[tintA(light, 0.14), tintA(light, 0)]} start={{ x: 0, y: 0.5 }} end={{ x: 0.7, y: 0.5 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <ShowDateBlock date={r.show.date} light={light} />
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={1}>
           {showTitle(r.show)}
@@ -101,20 +104,20 @@ export function ShowCard({ ranked: r }: { ranked: RankedShow }) {
   const best = r.best ? bill.find((a) => a.id === r.best!.id) : undefined;
   const away = r.km !== undefined ? distanceShort(r.km, units) : undefined;
   const town = r.show.location || r.show.venue;
-  const [, bright] = artistColors(best?.id ?? r.show.id, best?.color);
+  const light = festivalLight(r.show.id);
   const pct = matchLabel(r);
   return (
     <Pressable
       onPress={() => openShow(r.show.id)}
       accessibilityRole="button"
       accessibilityLabel={spoken(r, best, away && t('{distance} away', { distance: away }))}
-      style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 }]}
+      style={({ pressed }) => [styles.card, { borderColor: tintA(light, 0.3) }, pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 }]}
     >
-      <LinearGradient colors={[`${bright}33`, 'rgba(0,0,0,0)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <LinearGradient colors={[tintA(light, 0.28), tintA(light, 0.03)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
       <View style={styles.cardTop}>
-        <ShowDateBlock date={r.show.date} />
+        <ShowDateBlock date={r.show.date} light={light} />
         {pct ? (
-          <View style={styles.match}>
+          <View style={[styles.match, { backgroundColor: tintA(light, 0.2), borderColor: tintA(light, 0.5) }]}>
             <Text style={styles.matchText}>{pct}</Text>
           </View>
         ) : null}
@@ -149,12 +152,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: radius.sm,
     alignItems: 'center',
-    backgroundColor: glowA(0.14),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glowA(0.4),
   },
   blockBig: { width: 76, paddingVertical: space.sm, borderRadius: radius.md },
-  month: { ...type.caption, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: color.glow },
+  month: { ...type.caption, fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },
   monthBig: { fontSize: 12 },
   day: { ...type.headline, fontSize: 19, lineHeight: 23, color: color.moon, fontVariant: ['tabular-nums'] },
   dayBig: { ...type.largeTitle },
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
+    overflow: 'hidden',
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
   body: { flex: 1, gap: 1 },
@@ -185,7 +186,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
     overflow: 'hidden',
   },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
@@ -193,9 +193,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: 4,
     borderRadius: radius.pill,
-    backgroundColor: glowA(0.18),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glowA(0.4),
   },
   matchText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
   cardName: { ...type.headline, color: color.moon, marginTop: space.md },

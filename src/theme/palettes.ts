@@ -61,6 +61,13 @@ export const PALETTES: Record<ThemeId, Palette> = {
   daisy: { night: '#0E0620', nightRaised: '#190B31', glow: '#FF6AD5', glowDeep: '#B5289E', haze: '#4E1A86', dusk: '#123A8C', stage: '#FFE14D' },
 };
 
+/**
+ * The six festival lights, the same in every theme: rose, tangerine, gold,
+ * mint, sky and violet. Each festival and club show wears one (its date block,
+ * a wash across its card); bright enough to carry night-coloured text.
+ */
+export const SPECTRUM = ['#FF6F91', '#FF9A5C', '#FFD166', '#5FE3A1', '#5BB8FF', '#B48CFF'] as const;
+
 export const isThemeId = (v: unknown): v is ThemeId => typeof v === 'string' && (THEME_IDS as readonly string[]).includes(v);
 
 /** "#RRGGBB" at an opacity, as an rgba() string. */
