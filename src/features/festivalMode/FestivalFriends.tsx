@@ -1,145 +1,96 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { PersonAvatar } from '../../components/PersonAvatar';
-import { PlusIcon } from '../../components/TabIcons';
+import { ChevronIcon, PlusIcon } from '../../components/TabIcons';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { useCrewUpdates } from '../../state/crewUpdates';
-import { useSocial } from '../../state/social';
 import { color, glowA, radius, space, type } from '../../theme/tokens';
-import { CheckInPanel } from '../crews/CheckInPanel';
-import { CrewChatCard } from '../crews/CrewChatCard';
 import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
-import { CrewWhereCard } from '../crews/CrewWhereCard';
-import { MeetSpotCard } from '../crews/MeetSpotCard';
-import { firstName } from '../crews/together';
 import { FriendAddsList } from '../friends/FriendAddsList';
-import { FriendsCircle } from '../friends/FriendsCircle';
 import { MessagesList } from '../friends/MessagesList';
 import { QuickActions } from '../friends/QuickActions';
 import { SectionHeader } from '../friends/SectionHeader';
 import { LastUpdated } from '../offline/LastUpdated';
 import { SideQuestsCard } from '../quests/SideQuestsCard';
-import type { Crew, Profile } from '../social/models';
-import { t, tn } from '../../i18n';
-
-/** Faces shown in the strip under the title. */
-const FACES = 5;
+import type { Crew } from '../social/models';
+import { t } from '../../i18n';
+import { CrewNightCard } from './CrewNightCard';
+import { isShowEvent } from './showEvent';
 
 /**
- * The Friends tab at a festival or show, laid out for the night in one
- * order: who's here with you, anyone asking for help, checking in, your
- * crew (its chat, where everyone is, the meeting spot), your other chats,
- * then adding the people you meet, and side quests last. Each crew's chat
- * shows once (as its card), never again in Chats.
+ * The Friends tab at a festival or show, laid out for the night: the round
+ * buttons first (find people, your code, scan, sprout, invite), then your
+ * crew as one card each (its chat, where everyone is, checking in in one
+ * tap, the meeting spot), then your other messages, and tonight's extras
+ * last (side quests, badges to collect, looking after yourself, your plan).
+ * Each crew's chat shows once (as its card), never again under Messages.
  */
 export function FestivalFriends({
   festival,
   crews,
   handle,
-  circle,
-  crewsReady,
+  festivals,
   crewsUnknown,
 }: {
   festival: Festival;
   /** Your crews at this festival. */
   crews: readonly Crew[];
   handle: string;
-  circle: { profiles: Profile[] | undefined; close: readonly string[] };
-  /** Crew updates are ready (checking in works). */
-  crewsReady: boolean;
+  /** Your festivals still to come, for the Invite menu. */
+  festivals: readonly Festival[];
   /** No signal and nothing kept yet: your crews couldn't be read. */
   crewsUnknown: boolean;
 }) {
-  const { profileOf } = useCrewUpdates();
-  const nameOf = (u: string) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : t('Someone'));
-  const many = crews.length > 1;
-
   return (
     <View style={styles.wrap}>
-      <HereStrip festival={festival} crews={crews} />
+      <View>
+        <QuickActions handle={handle} festivals={festivals} />
+        <FriendAddsList />
+      </View>
 
-      {/* A crewmate asking for help, or an invite to a crew here: first, before anything else. */}
-      <CrewHelpAlerts festivalId={festival.id} />
-      <CrewInvitesCard />
-
-      {crews.length ? (
-        <>
-          {crewsReady ? <CheckInPanel festivalId={festival.id} /> : null}
-          <Group title={many ? t('Your crews') : crews[0].name}>
-            {crews.map((c) => (
-              <CrewChatCard key={`chat-${c.id}`} crew={c} title={many ? c.name : undefined} nameOf={nameOf} />
-            ))}
-            <CrewWhereCard festival={festival} crews={crews} />
-            {crews.map((c) => (
-              <MeetSpotCard key={`meet-${c.id}`} crew={c} compact={many} />
-            ))}
-          </Group>
-        </>
-      ) : crewsUnknown ? (
-        <LastUpdated live={false} />
-      ) : (
-        <StartCrew festival={festival} />
-      )}
+      <Group title={crews.length > 1 ? t('Your crews') : t('Your crew')}>
+        {/* A crewmate asking for help, or an invite to a crew: before anything else. */}
+        <CrewHelpAlerts festivalId={festival.id} />
+        <CrewInvitesCard />
+        {crews.length ? (
+          crews.map((c) => <CrewNightCard key={c.id} crew={c} festival={festival} />)
+        ) : crewsUnknown ? (
+          <LastUpdated live={false} />
+        ) : (
+          <StartCrew festival={festival} />
+        )}
+      </Group>
 
       {/* Everyone else: 1-to-1 chats and crews for other nights. */}
       <MessagesList skipCrews={crews.map((c) => c.id)} />
 
-      <Group title={t('Meet people here')}>
-        <QuickActions handle={handle} atFestival />
-        <FriendAddsList />
-        <FriendsCircle profiles={circle.profiles} close={circle.close} folded />
-      </Group>
-
-      <Group title={t('Side quests')}>
+      <Group title={t('Tonight')}>
         <SideQuestsCard max={2} />
+        <View style={styles.rows}>
+          <LinkRow label={t('Badges to collect')} onPress={() => router.navigate({ pathname: '/profile', params: { tab: 'badges' } })} />
+          <LinkRow label={t('Look after yourself')} onPress={() => router.push('/care')} />
+          <LinkRow label={isShowEvent(festival) ? t('The bill') : t('Your plan for tonight')} onPress={() => router.navigate('/lineup')} />
+        </View>
       </Group>
     </View>
   );
 }
 
-/** Under the title: where you are, with your crew's faces. */
-function HereStrip({ festival, crews }: { festival: Festival; crews: readonly Crew[] }) {
-  const social = useSocial();
-  const { profileOf } = useCrewUpdates();
-  const me = social.user?.uid;
-  const others = [...new Set(crews.flatMap((c) => c.members))].filter((u) => u !== me && !social.blocked.has(u));
-  const shown = others.slice(0, FACES);
-  const names = others.map((u) => (profileOf(u) ? firstName(profileOf(u)!.displayName) : undefined)).filter((n): n is string => !!n);
-  const line = !others.length
-    ? undefined
-    : names.length >= 2 && others.length > 2
-      ? tn(others.length - 2, 'With {a}, {b} and {n} more', 'With {a}, {b} and {n} more', { a: names[0], b: names[1] })
-      : names.length === 2 && others.length === 2
-        ? t('With {a} and {b}', { a: names[0], b: names[1] })
-        : names.length === 1 && others.length === 1
-          ? t('With {a}', { a: names[0] })
-          : tn(others.length, 'With {n} crewmate', 'With {n} crewmates');
+function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <View style={styles.strip} accessible accessibilityLabel={[t('At {festival}', { festival: festival.name }), line].filter(Boolean).join('. ')}>
-      <View style={styles.dot} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.at} numberOfLines={1}>
-          {t('At {festival}', { festival: festival.name })}
-        </Text>
-        {line ? (
-          <Text style={styles.with} numberOfLines={1}>
-            {line}
-          </Text>
-        ) : null}
-      </View>
-      {shown.length ? (
-        <View style={styles.faces}>
-          {shown.map((u, i) => (
-            <View key={u} style={[styles.face, i > 0 && { marginLeft: -10 }]}>
-              <PersonAvatar uid={u} name={profileOf(u)?.displayName} url={profileOf(u)?.avatarUrl} size={28} />
-            </View>
-          ))}
-        </View>
-      ) : null}
-    </View>
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <Text style={styles.rowText}>{label}</Text>
+      <ChevronIcon color={color.moonFaint} size={12} />
+    </Pressable>
   );
 }
 
@@ -175,24 +126,11 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: space.xl, marginTop: space.md },
+  wrap: { gap: space.xl },
+  rows: { gap: space.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
+  rowText: { ...type.body, color: color.moon, flex: 1 },
   group: { gap: space.sm },
-  strip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.md,
-    paddingHorizontal: space.lg,
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,126,182,0.08)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,126,182,0.35)',
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF7EB6' },
-  at: { ...type.headline, color: color.moon },
-  with: { ...type.caption, color: color.moonDim, marginTop: 1 },
-  faces: { flexDirection: 'row' },
-  face: { borderRadius: 16, borderWidth: 2, borderColor: color.night },
   start: {
     flexDirection: 'row',
     alignItems: 'center',

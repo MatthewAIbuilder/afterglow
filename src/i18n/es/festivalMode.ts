@@ -33,12 +33,18 @@ export const es_festivalMode: Dictionary = {
   'The bill works without signal.': 'El cartel funciona sin señal.',
   // The Friends tab at a festival or show
   'Your crews': 'Tus crews',
-  'Meet people here': 'Conoce gente aquí',
-  'With {a}': 'Con {a}',
-  'With {a} and {b}': 'Con {a} y {b}',
-  'With {a}, {b} and {n} more': 'Con {a}, {b} y {n} más',
-  'With {n} crewmate': 'Con {n} persona de tu crew',
-  'With {n} crewmates': 'Con {n} personas de tu crew',
   // Profile at a festival or show
   'My garden: {what}. Your sprouts, collectibles and gifts': 'Mi jardín: {what}. Tus brotes, coleccionables y regalos',
+  // A crew's card at a festival or show
+  '{crew}: open the crew chat': '{crew}: abrir el chat del crew',
+  Chat: 'Chat',
+  'No check-ins yet. Be the first: tap one below.': 'Todavía no hay check-ins. Sé el primero: toca uno abajo.',
+  'Just you so far. Invite friends from the crew’s page.': 'Por ahora solo tú. Invita amigos desde la página del crew.',
+  'Tell your crew': 'Avísale a tu crew',
+  'Meeting spot: {spot}. Open the crew': 'Punto de encuentro: {spot}. Abrir el crew',
+  'Pick a meeting spot for if you lose each other': 'Elige un punto de encuentro por si se pierden',
+  'Pick one for if you lose each other': 'Elige uno por si se pierden',
+  'Badges to collect': 'Insignias por conseguir',
+  'The bill': 'El cartel',
+  'Your plan for tonight': 'Tu plan para esta noche',
 };
