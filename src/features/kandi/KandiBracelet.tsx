@@ -54,6 +54,68 @@ function Charm({ id }: { id: CharmId }) {
           <Circle cx={-3.6} cy={1} r={0.9} fill="#E0CC80" />
         </G>
       );
+    case 'bolt':
+      return (
+        <G>
+          <Path d="M2.6 -8.4 L-5 1 L-0.6 1 L-2.6 8.4 L5 -1.4 L0.6 -1.4Z" fill="#FFE14D" stroke="#E0A81E" strokeWidth={0.6} strokeLinejoin="round" />
+          <Path d="M1.4 -5.6 L-2.6 -0.2" stroke="#FFFFFF" strokeWidth={0.9} strokeLinecap="round" opacity={0.75} />
+        </G>
+      );
+    case 'butterfly':
+      return (
+        <G>
+          <Path d="M-0.6 -1 C-3 -8 -9 -7.6 -8 -2.4 C-7.4 0.4 -4 0.6 -0.8 0 Z" fill="#8AB8FF" />
+          <Path d="M0.6 -1 C3 -8 9 -7.6 8 -2.4 C7.4 0.4 4 0.6 0.8 0 Z" fill="#8AB8FF" />
+          <Path d="M-0.8 0.6 C-3.6 1 -6.6 3 -5 5.6 C-3.6 7.4 -1.4 4.6 -0.6 1.6 Z" fill="#FF8AD8" />
+          <Path d="M0.8 0.6 C3.6 1 6.6 3 5 5.6 C3.6 7.4 1.4 4.6 0.6 1.6 Z" fill="#FF8AD8" />
+          <Circle cx={-4.6} cy={-3.6} r={1.2} fill="#FFFFFF" opacity={0.7} />
+          <Circle cx={4.6} cy={-3.6} r={1.2} fill="#FFFFFF" opacity={0.7} />
+          <Path d="M0 -3.6 L0 5" stroke="#2A1A3A" strokeWidth={1.4} strokeLinecap="round" />
+          <Path d="M0 -3.4 Q-1.4 -6.6 -2.6 -7.6 M0 -3.4 Q1.4 -6.6 2.6 -7.6" stroke="#2A1A3A" strokeWidth={0.5} fill="none" strokeLinecap="round" />
+        </G>
+      );
+    case 'crown':
+      return (
+        <G>
+          <Path d="M-7.6 5 L-8 -4.4 L-3.8 -0.6 L0 -7 L3.8 -0.6 L8 -4.4 L7.6 5Z" fill="#FFD24A" stroke="#C9961E" strokeWidth={0.6} strokeLinejoin="round" />
+          <Rect x={-7.6} y={3.2} width={15.2} height={2.6} rx={0.6} fill="#E8B42A" />
+          <Circle cx={0} cy={0.6} r={1.5} fill="#FF4F8B" />
+          <Circle cx={-4.6} cy={1.6} r={1} fill="#4FB6FF" />
+          <Circle cx={4.6} cy={1.6} r={1} fill="#5BE37A" />
+          <Circle cx={0} cy={-7} r={1} fill="#FFF4C8" />
+          <Path d="M-6 -2 L-5.4 2" stroke="#FFFFFF" strokeWidth={0.8} strokeLinecap="round" opacity={0.7} />
+        </G>
+      );
+    case 'flower':
+      return (
+        <G>
+          {[0, 72, 144, 216, 288].map((a) => (
+            <Ellipse key={a} cx={0} cy={-4.4} rx={3} ry={4.2} fill="#FF9AD5" stroke="#E86AB0" strokeWidth={0.4} transform={`rotate(${a})`} />
+          ))}
+          <Circle cx={0} cy={0} r={2.8} fill="#FFE14D" />
+          <Circle cx={-0.8} cy={-0.8} r={0.9} fill="#FFFFFF" opacity={0.7} />
+        </G>
+      );
+    case 'peace':
+      return (
+        <G>
+          <Circle cx={0} cy={0} r={7.4} fill="#9AFFD8" />
+          <Circle cx={0} cy={0} r={5.6} fill="none" stroke="#1E6A5A" strokeWidth={1.6} />
+          <Path d="M0 -5.6 L0 5.6 M0 0.4 L-4 4 M0 0.4 L4 4" stroke="#1E6A5A" strokeWidth={1.6} strokeLinecap="round" />
+          <Ellipse cx={-3.2} cy={-5} rx={2} ry={0.9} fill="#FFFFFF" opacity={0.6} transform="rotate(-30 -3.2 -5)" />
+        </G>
+      );
+    case 'planet':
+      return (
+        <G>
+          <Path d="M-8.4 2.6 C-9.4 4.6 -2 3.6 3 0.8 C7.6 -1.8 9.8 -4.4 8.4 -5" stroke="#FFD86B" strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.85} />
+          <Circle cx={0} cy={0} r={5.6} fill="#B99CFF" />
+          <Path d="M-5.4 -1.6 Q0 -0.4 5.4 -2" stroke="#8A6AE0" strokeWidth={1.1} fill="none" />
+          <Path d="M-5 1.8 Q0 3 5 1.4" stroke="#8A6AE0" strokeWidth={0.9} fill="none" />
+          <Circle cx={-2} cy={-2.8} r={1.2} fill="#FFFFFF" opacity={0.6} />
+          <Path d="M-8.4 2.6 C-7 4.4 -1 3.4 3 1.8 C5.4 0.8 7.2 -0.2 8.2 -1.4" stroke="#FFD86B" strokeWidth={1.4} fill="none" strokeLinecap="round" />
+        </G>
+      );
   }
 }
 

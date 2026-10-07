@@ -539,8 +539,8 @@ service cloud.firestore {
             && exists(path('profiles', request.resource.data.to))
             && !hasBlocked(request.resource.data.to, me())))
         && request.resource.data.word is string && request.resource.data.word.matches('^[A-Z0-9 ♥★✿☺!?&+.]{1,12}$')
-        && request.resource.data.beads in ['rainbow', 'pastel', 'neon', 'uv', 'sunset', 'ocean', 'mono', 'candy', 'glow', 'galaxy', 'pride', 'gold', 'fire']
-        && (!('charm' in request.resource.data) || request.resource.data.charm in ['heart', 'star', 'alien', 'mushroom', 'smiley', 'moon'])
+        && request.resource.data.beads in ['rainbow', 'pastel', 'neon', 'uv', 'sunset', 'ocean', 'mono', 'candy', 'glow', 'galaxy', 'pride', 'gold', 'fire', 'holo', 'toxic', 'berry']
+        && (!('charm' in request.resource.data) || request.resource.data.charm in ['heart', 'star', 'alien', 'mushroom', 'smiley', 'moon', 'bolt', 'butterfly', 'crown', 'flower', 'peace', 'planet'])
         && shortOrAbsent(request.resource.data, 'note', 140)
         && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40
         && exists(path('profiles', me()));

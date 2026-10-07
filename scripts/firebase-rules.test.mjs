@@ -939,6 +939,8 @@ await t('kandi: made as yourself for someone else with a profile who hasn’t bl
   await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'k12'), k({ beads: 'glow' })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k13'), k({ charm: 'skull' })));
   await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'open9'), { from: 'uidKa', word: 'HI', beads: 'gold', charm: 'moon', createdAt: now }));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'open10'), { from: 'uidKa', word: 'HI', beads: 'holo', charm: 'butterfly', createdAt: now }));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'open11'), { from: 'uidKa', word: 'HI', beads: 'holo', charm: 'dragon', createdAt: now }));
   await assertSucceeds(getDoc(doc(L.firestore(), 'kandi', 'k1')));
   await assertFails(getDoc(doc(M.firestore(), 'kandi', 'k1')));
   await assertSucceeds(getDocs(query(collection(L.firestore(), 'kandi'), where('to', '==', 'uidKb'))));

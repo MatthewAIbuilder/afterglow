@@ -34,7 +34,7 @@ export type OpenKandiInput = { id: string; word: string; beads: PatternId; note?
 export const WORD_MAX = 12;
 export const NOTE_MAX = 140;
 
-export type PatternId = 'rainbow' | 'pastel' | 'neon' | 'uv' | 'sunset' | 'ocean' | 'mono' | 'candy' | 'glow' | 'galaxy' | 'pride' | 'gold' | 'fire';
+export type PatternId = 'rainbow' | 'pastel' | 'neon' | 'uv' | 'sunset' | 'ocean' | 'mono' | 'candy' | 'glow' | 'galaxy' | 'pride' | 'gold' | 'fire' | 'holo' | 'toxic' | 'berry';
 
 /** Bead patterns: the colours repeat round the bracelet. Some glow in the dark, some sparkle, some shine like metal. */
 export const PATTERNS: readonly { id: PatternId; name: string; colors: readonly string[]; glow?: true; sparkle?: true; metal?: true }[] = [
@@ -51,10 +51,13 @@ export const PATTERNS: readonly { id: PatternId; name: string; colors: readonly 
   { id: 'pride', name: t('Pride'), colors: ['#E40303', '#FF8C00', '#FFED00', '#008026', '#004DFF', '#750787', '#FFFFFF', '#FFAFC8', '#74D7EE', '#613915'] },
   { id: 'gold', name: t('Gold'), colors: ['#FFD86B', '#FFF4C8', '#C9961E'], metal: true },
   { id: 'fire', name: t('Fire'), colors: ['#FFE14D', '#FF9A3D', '#FF4F2E', '#B8142A'] },
+  { id: 'holo', name: t('Holographic'), colors: ['#E8F4FF', '#FFD6F4', '#D6FFF0', '#FFF4C8', '#E2D6FF'], sparkle: true, metal: true },
+  { id: 'toxic', name: t('Toxic'), colors: ['#B6FF2E', '#6AFF5A', '#E8FF6A', '#3AFFB0'], glow: true },
+  { id: 'berry', name: t('Berry'), colors: ['#8A1E5A', '#D6336C', '#5A1E8A', '#FF8AB8'] },
 ];
 
 /** Charms that hang from a bracelet. */
-export type CharmId = 'heart' | 'star' | 'alien' | 'mushroom' | 'smiley' | 'moon';
+export type CharmId = 'heart' | 'star' | 'alien' | 'mushroom' | 'smiley' | 'moon' | 'bolt' | 'butterfly' | 'crown' | 'flower' | 'peace' | 'planet';
 export const CHARMS: readonly { id: CharmId; name: string }[] = [
   { id: 'heart', name: t('Heart') },
   { id: 'star', name: t('Star') },
@@ -62,6 +65,12 @@ export const CHARMS: readonly { id: CharmId; name: string }[] = [
   { id: 'mushroom', name: t('Mushroom') },
   { id: 'smiley', name: t('Smiley') },
   { id: 'moon', name: t('Moon') },
+  { id: 'bolt', name: t('Lightning bolt') },
+  { id: 'butterfly', name: t('Butterfly') },
+  { id: 'crown', name: t('Crown') },
+  { id: 'flower', name: t('Flower') },
+  { id: 'peace', name: t('Peace') },
+  { id: 'planet', name: t('Planet') },
 ];
 export const isCharm = (v: unknown): v is CharmId => CHARMS.some((c) => c.id === v);
 
