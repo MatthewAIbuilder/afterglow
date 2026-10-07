@@ -37,6 +37,9 @@ const DETAIL = 220;
  * collectibles, sound creatures, stickers, kandi beads and charms), what
  * you have and, as silhouettes, what's still out there and how to find it.
  */
+/** Tiles a set shows before "Show all". */
+const SHOW_FIRST = 24;
+
 export default function CollectionScreen() {
   const insets = useSafeAreaInsets();
   const sprouts = useSprouts();
@@ -61,6 +64,8 @@ export default function CollectionScreen() {
   const [story, setStory] = useState(false);
   // One you have, opened big.
   const [detail, setDetail] = useState<{ el: ReactNode; title: string; body?: string }>();
+  // Big sets show their first tiles until opened (each tile is a drawing).
+  const [openSets, setOpenSets] = useState<Set<string>>(() => new Set());
   // The best of what you have, for the picture: shiny first, then the highest level, hand-made before sound.
   const best = useMemo(
     () =>
@@ -206,6 +211,7 @@ export default function CollectionScreen() {
             <View style={styles.grid}>
               {[...s.items]
                 .sort((a, b) => Number(b.have) - Number(a.have))
+                .slice(0, openSets.has(s.id) ? undefined : SHOW_FIRST)
                 .map((i) => {
                   const shown = tile(s, i.key, i.have);
                   if (!shown) return null;
@@ -231,6 +237,23 @@ export default function CollectionScreen() {
                   );
                 })}
             </View>
+            {s.items.length > SHOW_FIRST ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  setOpenSets((cur) => {
+                    const next = new Set(cur);
+                    if (next.has(s.id)) next.delete(s.id);
+                    else next.add(s.id);
+                    return next;
+                  });
+                }}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+              >
+                <Text style={styles.moreText}>{openSets.has(s.id) ? t('Show fewer') : t('Show all {n}', { n: s.items.length })}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ))}
       </ScrollView>
@@ -265,6 +288,8 @@ export default function CollectionScreen() {
 }
 
 const styles = StyleSheet.create({
+  more: { alignSelf: 'center', paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, marginTop: space.sm },
+  moreText: { ...type.label, color: color.moon },
   root: { flex: 1, backgroundColor: color.night },
   content: { paddingHorizontal: space.xl, gap: space.lg, maxWidth: 640, width: '100%', alignSelf: 'center' },
   title: { ...type.largeTitle, color: color.moon },

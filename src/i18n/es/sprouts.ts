@@ -422,6 +422,8 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'Show all {n}': 'Ver los {n}',
+  'Show fewer': 'Ver menos',
   'The Kite': 'La Cometa',
   'A bright diamond kite up in the wind': 'Una cometa de colores volando con el viento',
   'The Strobe': 'El Estrobo',
