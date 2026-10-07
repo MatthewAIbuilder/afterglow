@@ -6437,6 +6437,175 @@ const conga: Draw = (p, f) => {
   };
 };
 
+/** ARCY DRIVE: the Convertible — a little open-top car out for a drive, headlights for eyes. */
+const convertible: Draw = (p, f) => ({
+  ground: [50, 86, 36],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={56} rx={42} ry={36} fill={p.glow} opacity={0.15} />
+      <Path d="M18 84 L82 84" stroke={p.deep} strokeWidth={1.4} opacity={0.5} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The windscreen and the body. */}
+      <Path d="M36 50 L42 36 L58 36 L64 50" stroke={p.light} strokeWidth={2} fill="none" opacity={0.7} strokeLinejoin="round" />
+      <V d="M12 70 Q12 58 22 56 L32 50 L68 50 L78 56 Q88 58 88 70 L88 74 Q88 78 84 78 L16 78 Q12 78 12 74Z" fill={p.mid} f={f} gloss={[26, 58, 8, 1.6, 0]} />
+      <Path d="M14 66 L86 66" stroke={p.alt} strokeWidth={2.4} />
+      {/* Wheels. */}
+      <Circle cx={28} cy={78} r={8} fill={p.altDeep} />
+      <Circle cx={72} cy={78} r={8} fill={p.altDeep} />
+      <Circle cx={28} cy={78} r={3.2} fill={p.light} opacity={0.7} />
+      <Circle cx={72} cy={78} r={3.2} fill={p.light} opacity={0.7} />
+      <Path d="M44 70 Q50 74 56 70" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [14, 56, 72, 8],
+    el: (
+      <G>
+        <VEye x={18.6} y={60} r={2.8} f={f} />
+        <VEye x={81.4} y={60} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Speed and a wind of music. */}
+      <Path d="M8 56 L12 56 M7 62 L11 62" stroke={p.accent} strokeWidth={1.4} strokeLinecap="round" opacity={0.7} />
+      {sparkles(p.accent, [
+        [20, 26, 1.6],
+        [80, 24, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** NIGHT TAPES: the Night tape — a cassette with a moon on its label, stars on its spools. */
+const nighttape: Draw = (p, f) => ({
+  ground: [50, 84, 36],
+  back: <Ellipse cx={50} cy={52} rx={44} ry={36} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      <V d="M12 30 Q12 24 18 24 L82 24 Q88 24 88 30 L88 74 Q88 80 82 80 L18 80 Q12 80 12 74Z" fill={p.mid} f={f} gloss={[24, 28, 10, 2, 0]} />
+      <Path d="M18 30 L82 30 L82 62 L18 62Z" fill={p.alt} />
+      {/* The moon on the label, and stars. */}
+      <Path d="M30 36 A8 8 0 1 0 36 48 A6 6 0 1 1 30 36Z" fill={p.accent} />
+      <Path d={star5(70, 36, 2.4)} fill={p.light} />
+      <Path d={star5(76, 44, 1.6)} fill={p.light} />
+      <V d="M28 44 Q28 42 30 42 L70 42 Q72 42 72 44 L72 56 Q72 58 70 58 L30 58 Q28 58 28 56Z" fill={p.deep} f={f} />
+      <Circle cx={39} cy={50} r={5.4} fill={p.altDeep} />
+      <Circle cx={61} cy={50} r={5.4} fill={p.altDeep} />
+      <V d="M26 80 L32 70 L68 70 L74 80Z" fill={p.deep} f={f} />
+      <Path d="M44 75 Q50 77.6 56 75" stroke={p.light} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [33, 45, 34, 10],
+    el: (
+      <G>
+        <VEye x={39} y={50} r={3.4} f={f} />
+        <VEye x={61} y={50} r={3.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [10, 14, 1.6],
+    [90, 14, 1.4],
+    [88, 88, 1.2],
+  ]),
+  flickerOver: true,
+});
+
+/** DEVAULT: the Vault — a little bank vault, its big dial turning, treasure behind the door. */
+const vault: Draw = (p, f) => ({
+  ground: [50, 90, 34],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      <V d="M16 24 Q16 18 22 18 L78 18 Q84 18 84 24 L84 82 Q84 88 78 88 L22 88 Q16 88 16 82Z" fill={p.mid} f={f} gloss={[24, 26, 4, 10, 0]} />
+      <Path d="M22 24 L78 24 L78 82 L22 82Z" fill="none" stroke={p.deep} strokeWidth={1.2} opacity={0.5} />
+      {/* Hinges and the handle. */}
+      <Path d="M22 32 L18 32 M22 72 L18 72" stroke={p.deep} strokeWidth={3} strokeLinecap="round" />
+      <Path d="M70 50 L70 66" stroke={p.alt} strokeWidth={3} strokeLinecap="round" />
+      <Circle cx={36} cy={74} r={2} fill={p.accent} opacity={0.4} />
+      <Circle cx={56} cy={74} r={2} fill={p.accent} opacity={0.4} />
+      <Path d="M42 76 Q46 79 50 76" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  spinAt: [46, 44],
+  spin: (
+    <G>
+      <Circle cx={46} cy={44} r={14} fill={p.alt} />
+      <Circle cx={46} cy={44} r={11} fill={p.light} />
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2;
+        return <Path key={i} d={`M${r1(46 + Math.cos(a) * 11)} ${r1(44 + Math.sin(a) * 11)} L${r1(46 + Math.cos(a) * 8.6)} ${r1(44 + Math.sin(a) * 8.6)}`} stroke={p.deep} strokeWidth={0.8} />;
+      })}
+      <Path d="M46 44 L46 35" stroke={p.accent} strokeWidth={1.6} strokeLinecap="round" />
+      <Circle cx={46} cy={44} r={2.4} fill={p.alt} />
+    </G>
+  ),
+  eyes: {
+    box: [34, 62, 24, 7],
+    el: (
+      <G>
+        <VEye x={39.6} y={66} r={2.4} f={f} />
+        <VEye x={52.4} y={66} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [12, 14, 1.6],
+    [88, 14, 1.6],
+    [90, 60, 1.2],
+  ]),
+  flickerOver: true,
+});
+
+/** CHASEWEST: the Tumbleweed — a tumbleweed rolling west, the desert sun going down behind it. */
+const tumbleweed: Draw = (p, f) => ({
+  ground: [50, 88, 26],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.14} />
+      <Circle cx={72} cy={62} r={16} fill={p.accent} opacity={0.4} />
+      <Path d="M12 76 Q50 70 88 76 L86 80 Q50 74 14 80Z" fill={p.alt} opacity={0.6} />
+      {/* A cactus on the horizon. */}
+      <Path d="M20 76 L20 56 M20 64 Q14 64 14 58 M20 62 Q26 62 26 56" stroke={p.altDeep} strokeWidth={3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  spinAt: [50, 62],
+  spin: (
+    <G>
+      <Circle cx={50} cy={62} r={20} fill={p.mid} opacity={0.35} />
+      {Array.from({ length: 9 }, (_, i) => {
+        const a = (i / 9) * Math.PI;
+        return <Path key={i} d={`M${r1(50 + Math.cos(a) * 20)} ${r1(62 + Math.sin(a) * 20)} Q${r1(50 + Math.cos(a + 1.4) * 8)} ${r1(62 + Math.sin(a + 1.4) * 8)} ${r1(50 - Math.cos(a) * 20)} ${r1(62 - Math.sin(a) * 20)}`} stroke={p.mid} strokeWidth={1.6} fill="none" strokeLinecap="round" />;
+      })}
+    </G>
+  ),
+  body: <G />,
+  eyes: {
+    box: [42, 56, 16, 7],
+    el: (
+      <G>
+        <VEye x={45.6} y={59.6} r={2.4} f={f} />
+        <VEye x={54.4} y={59.6} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  front: <Path d="M46.6 66 Q50 68.6 53.4 66" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />,
+  flicker: (
+    <G>
+      {/* Dust behind it. */}
+      <Path d="M22 82 Q26 80 30 82 M70 84 Q74 82 78 84" stroke={p.light} strokeWidth={1} fill="none" opacity={0.5} strokeLinecap="round" />
+    </G>
+  ),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -7410,6 +7579,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  convertible,
+  nighttape,
+  vault,
+  tumbleweed,
   loaf,
   saucepan,
   robotskull,
