@@ -152,6 +152,15 @@ describe('organizers', () => {
     });
   });
 
+  it('a tickets link that pays Afterglow is marked as a partner link, and only with a link', () => {
+    const e = { ...org().events[0], tickets: 'https://posh.vip/e/transmutation?ref=afterglow', ticketsPartner: true };
+    expect(cleanEvent(e)?.ticketsPartner).toBe(true);
+    expect(cleanEvent({ ...e, tickets: undefined })?.ticketsPartner).toBeUndefined();
+    expect(cleanEvent({ ...e, ticketsPartner: 'yes' })?.ticketsPartner).toBeUndefined();
+    expect(eventToFestival(org(), e, artistIndex(artists)).festival.links).toEqual({ tickets: e.tickets, website: 'https://undergroundalchemy.net', ticketsPartner: true });
+    expect(eventToFestival(org(), { ...e, ticketsPartner: undefined }, artistIndex(artists)).festival.links).toEqual({ tickets: e.tickets, website: 'https://undergroundalchemy.net' });
+  });
+
   it('adds published events after the catalogue, with the organizer’s words on its artists', () => {
     const merged = withOrgs(base, [org()]);
     expect(merged.festivals.map((f) => f.id)).toEqual(['edc-orlando-26', 'underground-alchemy--transmutation-11-07']);

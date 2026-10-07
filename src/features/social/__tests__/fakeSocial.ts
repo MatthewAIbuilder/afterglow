@@ -11,6 +11,7 @@ import { SUPPORT_EMAIL } from '../../../config/app';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
 import { cleanOrg, cleanPostInput, findsByCode, isCounter, type Org, type OrgPost, type OrgRequest, orgToDoc, utcDay } from '../../organizers/organizers';
+import { isTapFestivalId } from '../../partners/partners';
 import { MAX_SHARE_BYTES, SocialError, type ReportTarget, type ShareInput, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 
@@ -123,6 +124,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const orgMembers = new Map<string, string>();
   const orgRequests = new Map<string, OrgRequest>();
   const orgViews = new Map<string, number>();
+  /** `ticketTaps/<festival>_<day>` -> taps. */
+  const ticketTaps = new Map<string, number>();
   const orgPosts = new Map<string, OrgPost>();
   /** The organizer the signed-in (confirmed) email runs. */
   const orgOfMe = () => (current?.email && verified.has(current.email) ? orgMembers.get(current.email.toLowerCase()) : undefined);
@@ -701,11 +704,24 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (network.down) throw new SocialError('network');
       presence.set(u.uid, { uid: u.uid, ...nextPresence(presence.get(u.uid), input) });
     },
-    async adminFestivals(ids) {
+    async adminFestivals(ids, ticketsSince) {
       needAdmin();
       return Object.fromEntries(
-        ids.map((id) => [id, { going: [...profiles.values()].filter((p) => p.festivals.includes(id)).length, videos: [...memories.values()].filter((m) => m.festivalId === id).length }]),
+        ids.map((id) => [
+          id,
+          {
+            going: [...profiles.values()].filter((p) => p.festivals.includes(id)).length,
+            videos: [...memories.values()].filter((m) => m.festivalId === id).length,
+            ...(ticketsSince ? { tickets: [...ticketTaps].filter(([k]) => k.startsWith(`${id}_`) && k.slice(id.length + 1) >= ticketsSince).reduce((n, [, v]) => n + v, 0) } : {}),
+          },
+        ]),
       );
+    },
+    async countTicketTap(festivalId) {
+      if (!current || !isTapFestivalId(festivalId)) return;
+      if (network.down) throw new SocialError('network');
+      const k = `${festivalId}_${utcDay(new Date())}`;
+      ticketTaps.set(k, (ticketTaps.get(k) ?? 0) + 1);
     },
     async setFriendCode(code) {
       if (network.down) throw new SocialError('network');
@@ -1478,5 +1494,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps };
 }

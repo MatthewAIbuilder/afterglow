@@ -264,6 +264,15 @@ function EventEditor({ org, start, isNew, save, done }: { org: Org; start: OrgEv
         <Field label="City" value={e.city} onChangeText={(v) => set('city', v)} placeholder="Like Orlando, FL" maxLength={EVENT_PLACE_MAX} />
         <Field label="About the night" value={e.about ?? ''} onChangeText={(v) => set('about', v || undefined)} placeholder="What to expect, dress code, age limit…" multiline maxLength={EVENT_ABOUT_MAX} />
         <Field label="Tickets link" value={e.tickets ?? ''} onChangeText={(v) => set('tickets', v.trim() || undefined)} placeholder="https://" autoCapitalize="none" keyboardType="url" />
+        {e.tickets ? (
+          <Chip
+            label="This link pays Afterglow a commission"
+            on={!!e.ticketsPartner}
+            onPress={() => set('ticketsPartner', e.ticketsPartner ? undefined : true)}
+            a11y={e.ticketsPartner ? 'This link pays Afterglow a commission: on. Turn off' : 'Say this tickets link pays Afterglow a commission'}
+          />
+        ) : null}
+        {e.tickets && e.ticketsPartner ? <Text style={studio.rowSub}>For a referral link made for Afterglow, like a Posh Kickback link. The event’s page then says Afterglow may earn a commission.</Text> : null}
       </Card>
 
       <Card title="Poster" sub="Shown big on the event’s page and beside it in your lists. Use a picture you have the rights to.">

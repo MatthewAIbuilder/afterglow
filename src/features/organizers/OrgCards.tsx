@@ -15,6 +15,8 @@ import { datesLine, formatTime } from '../festivals/format';
 import { OrgDot } from './OrgMark';
 import { activePromotions, datesText, eventAt, eventExtras, eventFestivalIdOf, isCounter, type Listing, type Org, type OrgCounter, type OrgEvent, type Promoted } from './organizers';
 import { countOrgOnce, useOrgView } from './useOrgView';
+import { PARTNER_NOTE } from '../partners/partners';
+import { countTicketTapOnce } from '../partners/ticketTaps';
 
 const openOrg = (id: string) => {
   haptic.select();
@@ -60,6 +62,7 @@ export function HostedBy({ festival, show }: { festival?: Festival; show?: Show 
           onPress={() => {
             haptic.select();
             countOrgOnce(service, org.id, 'tickets', !!user);
+            if (festival) countTicketTapOnce(service, festival.id, !!user);
             Linking.openURL(tickets).catch(() => {});
           }}
           accessibilityRole="link"
@@ -69,6 +72,7 @@ export function HostedBy({ festival, show }: { festival?: Festival; show?: Show 
           <Text style={styles.ticketsText}>{t('Get tickets ↗')}</Text>
         </Pressable>
       ) : null}
+      {tickets && !over && (event ? event.ticketsPartner : festival?.links?.ticketsPartner) ? <Text style={styles.partnerNote}>{PARTNER_NOTE}</Text> : null}
     </View>
   );
 }
@@ -237,6 +241,7 @@ const styles = StyleSheet.create({
   about: { ...type.body, color: color.moonDim },
   tickets: { alignSelf: 'flex-start', paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: glowA(0.18), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.4) },
   ticketsText: { ...type.label, color: color.moon },
+  partnerNote: { ...type.caption, color: color.moonFaint, marginTop: space.sm },
   eventRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
   eventName: { ...type.headline, color: color.moon },
   promoWrap: { gap: space.md, marginHorizontal: space.xl, marginBottom: space.lg },

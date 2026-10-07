@@ -79,3 +79,20 @@ export function hasPartnerLinks(
     )
   );
 }
+
+/**
+ * Shop links as this platform may show them. Amazon only allows its links
+ * inside a phone app once it has approved the app (`AMAZON_APP_APPROVED` in
+ * `config/partners.ts`), so until then they show on the website only.
+ */
+export function shopLinksFor(
+  links: Readonly<Record<string, string>>,
+  where: { web: boolean; amazonInApp: boolean },
+): Record<string, string> {
+  if (where.web || where.amazonInApp) return { ...links };
+  return Object.fromEntries(Object.entries(links).filter(([, url]) => !isAmazonLink(url)));
+}
+
+/** A festival id that can name a ticket-tap count (`ticketTaps/<festival>_<day>`). */
+export const isTapFestivalId = (id: unknown): id is string =>
+  typeof id === "string" && /^[A-Za-z0-9_.-]{1,120}$/.test(id);

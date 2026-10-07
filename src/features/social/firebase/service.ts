@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
 import { createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, initializeAuth, onAuthStateChanged, reauthenticateWithCredential, reload, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type Auth, type Persistence } from 'firebase/auth';
-import { arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, getCountFromServer, getDoc, getDocs, increment, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, getAggregateFromServer, getCountFromServer, getDoc, getDocs, increment, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, sum, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
@@ -12,6 +12,7 @@ import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { FIND_GRACE_DAYS, GIFT_NOTE_MAX } from '../../finds/finds';
+import { isTapFestivalId } from '../../partners/partners';
 import { cleanOrg, cleanPostInput, findsByCode, isCounter, isOrgId, ORG_FIELDS, orgToDoc, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX, utcDay } from '../../organizers/organizers';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
@@ -1002,20 +1003,32 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const prev = presenceFromDoc(me().uid, (await getDoc(ref_)).data());
         await setDoc(ref_, nextPresence(prev, input));
       }),
-    adminFestivals: (ids) =>
+    adminFestivals: (ids, ticketsSince) =>
       guard(async () => {
         const { db } = fb();
-        const out: Record<string, { going: number; videos: number }> = {};
+        const out: Record<string, { going: number; videos: number; tickets?: number }> = {};
         await Promise.all(
           ids.map(async (id) => {
-            const [going, videos] = await Promise.all([
+            const [going, videos, tickets] = await Promise.all([
               getCountFromServer(query(collection(db, 'profiles'), where('festivals', 'array-contains', id))),
               getCountFromServer(query(collection(db, 'memories'), where('festivalId', '==', id))),
+              // Until the rules for ticket taps are deployed this is refused: the rest still shows.
+              ticketsSince
+                ? getAggregateFromServer(query(collection(db, 'ticketTaps'), where('festivalId', '==', id), where('day', '>=', ticketsSince)), { n: sum('n') })
+                    .then((r) => r.data().n ?? 0)
+                    .catch(() => undefined)
+                : Promise.resolve(undefined),
             ]);
-            out[id] = { going: going.data().count, videos: videos.data().count };
+            out[id] = { going: going.data().count, videos: videos.data().count, ...(tickets !== undefined ? { tickets } : {}) };
           }),
         );
         return out;
+      }),
+    countTicketTap: (festivalId) =>
+      guard(async () => {
+        if (!fb().auth.currentUser || !isTapFestivalId(festivalId)) return;
+        const day = utcDay(new Date());
+        await setDoc(doc(fb().db, 'ticketTaps', `${festivalId}_${day}`), { festivalId, day, n: increment(1) }, { merge: true });
       }),
     setFriendCode: (code) => guard(async () => setDoc(doc(fb().db, 'friendCodes', me().uid), { code, updatedAt: serverTimestamp() })),
     addFriend: (uid, code) =>
