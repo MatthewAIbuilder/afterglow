@@ -8,6 +8,17 @@ import { findLink, lookOf, type Sticker } from './finds';
 export const STICKER_W = 288;
 export const STICKER_H = 360;
 
+/** What a printed sticker says, for the places some of them go (printed stickers are in English, like HQ). */
+const INVITE: Record<string, string> = {
+  portapotty: 'Scan to open the portal',
+  refill: 'Scan while you fill up',
+  charger: 'Scan while you charge',
+  fan: 'Scan it, then clack',
+  campfire: 'Scan by the fire',
+  mainstage: 'Scan before the drop',
+};
+export const stickerInvite = (creature: string) => INVITE[creature] ?? 'Scan to collect';
+
 /**
  * One printed sticker: the creature on its night tile, its name, and its
  * code on a white square (with the creature in the middle) so any phone
@@ -24,7 +35,7 @@ export function StickerCard({ sticker }: { sticker: Pick<Sticker, 'code' | 'name
       <View style={styles.qr}>
         <FriendQR value={findLink(sticker)} size={140} theme="glow" centre={(s) => <Collectible look={look} size={s} still />} />
       </View>
-      <Text style={styles.scan}>Scan to collect · afterglowmusic.app</Text>
+      <Text style={styles.scan}>{`${stickerInvite(sticker.creature)} · afterglowmusic.app`}</Text>
     </View>
   );
 }
