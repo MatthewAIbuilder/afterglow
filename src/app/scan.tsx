@@ -16,6 +16,7 @@ import { type AddResult, useFriendAdds } from '../state/friendAdds';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA, accentEdge } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { GlassFill } from '../components/LiquidGlass';
 
 /** A code that isn't a friend code says so for this long before scanning carries on. */
 const NOT_A_CODE_MS = 2500;
@@ -149,7 +150,11 @@ export default function ScanScreen() {
               accessibilityLabel={t('Show my code instead')}
               style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
             >
-              <QrIcon color={color.moon} size={18} />
+              <GlassFill radius={radius.pill} tint={0.5} interactive />
+              {/* Its own layer, so the glass (positioned) never paints over the icon in a browser. */}
+              <View pointerEvents="none">
+                <QrIcon color={color.moon} size={18} />
+              </View>
               <Text style={styles.pillText}>{t('Show my code')}</Text>
             </Pressable>
           </View>
@@ -229,7 +234,7 @@ const styles = StyleSheet.create({
   br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 20 },
   bottom: { alignItems: 'center', gap: space.md, paddingHorizontal: space.xl },
   hint: { ...type.body, color: color.moon, textAlign: 'center' },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.35)' },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill },
   pillText: { ...type.headline, color: color.moon },
   cardWrap: { flex: 1, justifyContent: 'center', paddingHorizontal: space.xl, gap: space.md, alignSelf: 'center', width: '100%', maxWidth: 520 },
   card: { padding: space.xl, borderRadius: radius.lg, backgroundColor: color.nightRaised, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45), alignItems: 'center', gap: space.sm },
