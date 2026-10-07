@@ -15,7 +15,7 @@ const INVITE_FESTIVALS = 3;
 
 /**
  * The Friends page's one row of round buttons: find people, show your code,
- * scan a friend's (phones), give a sprout, and invite friends to Afterglow (or to plan one
+ * scan a friend's (phones), your garden (to give a sprout or kandi), and invite friends to Afterglow (or to plan one
  * of your festivals). At a festival, inviting gives way: what matters there
  * is adding the people in front of you.
  */
@@ -39,7 +39,7 @@ export function QuickActions({ handle, festivals = [], atFestival = false }: { h
       {atFestival ? null : <Action label={t('Find')} a11y={t('Find people')} icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />}
       <Action label={t('My code')} a11y={t('Show my friend code')} icon={<QrIcon color={color.moon} size={22} />} onPress={() => router.push('/my-code')} />
       {phone ? <Action label={t('Scan')} a11y={t("Scan a friend's code")} icon={<ScanIcon color={color.night} size={22} />} onPress={() => router.push('/scan')} glow /> : null}
-      <Action label={t('Sprout')} a11y={t('Give someone a sprout')} icon={<Sprout kind="seedling" stage={2} size={40} still />} onPress={() => router.push('/give-sprout')} />
+      <Action label={t('Sprout')} a11y={t('Your garden: give a sprout or kandi')} icon={<Sprout kind="seedling" stage={2} size={40} still />} onPress={() => router.push('/garden')} />
       {atFestival ? (
         <Action label={t('Find')} a11y={t('Find people')} icon={<SearchIcon color={color.moon} size={20} />} onPress={() => router.push('/people')} />
       ) : (

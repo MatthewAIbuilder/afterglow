@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,8 @@ import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
 import { cleanWord, NOTE_MAX, PATTERNS, type PatternId, WORD_IDEAS, WORD_MAX } from '../features/kandi/kandi';
 import { KandiBracelet } from '../features/kandi/KandiBracelet';
+import { useFriendsCircle } from '../features/friends/useFriendsCircle';
+import { PersonAvatar } from '../components/PersonAvatar';
 import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { goBack } from '../lib/nav';
@@ -34,6 +36,9 @@ export default function KandiMakeScreen() {
   const who = firstName(name ?? (handle ? `@${handle}` : t('them')));
   const shownWord = cleanWord(word) || '♥';
   const canMake = !!uid && !!social.user && !!social.profile && uid !== social.user.uid;
+  // Opened without anyone chosen (from your garden): pick one of the people you follow first.
+  const { profiles: friends } = useFriendsCircle();
+  const choosing = !uid && !!social.profile;
 
   const leave = () => {
     if (!uid || !canMake) return;
@@ -50,13 +55,47 @@ export default function KandiMakeScreen() {
       <PageActions />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title} accessibilityRole="header">
-          {left ? t('Left in {name}’s garden', { name: who }) : t('Kandi for {name}', { name: who })}
+          {choosing ? t('Who’s it for?') : left ? t('Left in {name}’s garden', { name: who }) : t('Kandi for {name}', { name: who })}
         </Text>
-        <View style={styles.preview}>
-          <KandiBracelet word={shownWord} beads={beads} size={240} label={t('A kandi bracelet spelling {word}', { word: shownWord })} />
-          {left ? <ConfettiBurst spread={160} /> : null}
-        </View>
-        {left ? (
+        {choosing ? (
+          <View style={styles.people}>
+            <Text style={styles.body}>{t('Kandi hangs in their garden, with a note only they read.')}</Text>
+            {friends === undefined ? null : friends.length ? (
+              friends.map((p) => (
+                <Pressable
+                  key={p.uid}
+                  onPress={() => {
+                    haptic.select();
+                    router.setParams({ uid: p.uid, name: p.displayName, handle: p.handle });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Make kandi for {name}', { name: p.displayName })}
+                  style={({ pressed }) => [styles.person, pressed && styles.pressed]}
+                  testID={`kandi-for-${p.handle}`}
+                >
+                  <PersonAvatar name={p.displayName} url={p.avatarUrl} uid={p.uid} size={40} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.personName}>{p.displayName}</Text>
+                    <Text style={styles.personHandle}>@{p.handle}</Text>
+                  </View>
+                </Pressable>
+              ))
+            ) : (
+              <>
+                <Text style={styles.body}>{t('Follow a friend first, then make them kandi.')}</Text>
+                <Pressable onPress={() => router.push('/people')} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+                  <Text style={styles.primaryText}>{t('Find people')}</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        ) : (
+          <View style={styles.preview}>
+            <KandiBracelet word={shownWord} beads={beads} size={240} label={t('A kandi bracelet spelling {word}', { word: shownWord })} />
+            {left ? <ConfettiBurst spread={160} /> : null}
+          </View>
+        )}
+        {choosing ? null : left ? (
           <>
             <Text style={styles.body}>{t('It hangs in their garden now (once there’s signal), and they can read your note.')}</Text>
             <Pressable onPress={() => goBack()} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
@@ -154,6 +193,10 @@ const styles = StyleSheet.create({
   pattern: { alignItems: 'center', width: 76, paddingVertical: space.xs, borderRadius: radius.md, borderWidth: 1, borderColor: 'transparent' },
   patternOn: { borderColor: glowA(0.6), backgroundColor: glowA(0.12) },
   patternName: { ...type.caption, color: color.moonDim },
+  people: { gap: space.sm },
+  person: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  personName: { ...type.headline, color: color.moon },
+  personHandle: { ...type.caption, color: color.moonDim },
   primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, marginTop: space.md },
   primaryText: { ...type.headline, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

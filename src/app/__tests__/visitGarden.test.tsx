@@ -85,4 +85,20 @@ describe('gardens', () => {
     expect(app.getByText('Not shared yet. It shows here once Maya opens the latest Afterglow with something growing.')).toBeTruthy();
     expect(app.getByText('Make kandi for Maya')).toBeTruthy();
   });
+
+  it('Make kandi from your garden: pick a friend you follow, then make theirs', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().follow(maya);
+    const app = await renderApp('/garden');
+    await flush();
+    await fireEvent.press(app.getByLabelText('Make kandi for a friend'));
+    await flush();
+    expect(app.getByText('Who’s it for?')).toBeTruthy();
+    await fireEvent.press(app.getByTestId('kandi-for-maya'));
+    await flush();
+    expect(app.getByText('Kandi for Maya')).toBeTruthy();
+    expect(app.getByText('Leave it in Maya’s garden')).toBeTruthy();
+  });
 });
