@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { type ReactNode, useMemo, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
@@ -11,6 +11,8 @@ import { artistLook, shinyLook, stickerLook } from '../features/sprouts/artistLo
 import { Collectible } from '../features/sprouts/Collectible';
 import { collection, type CollectionSet } from '../features/sprouts/collection';
 import { Sprout } from '../features/sprouts/Sprout';
+import { SproutCard } from '../features/sprouts/CollectibleCard';
+import { HoloTilt } from '../features/sprouts/HoloTilt';
 import { DECOR } from '../features/sprouts/decor';
 import { DecorIcon } from '../features/sprouts/DecorSky';
 import { useGardenDecor } from '../features/sprouts/useGardenDecor';
@@ -27,6 +29,8 @@ import { CollectionStory, Ring } from '../features/sprouts/CollectionStory';
 import { color, glowA, radius, space, type } from '../theme/tokens';
 
 const TILE = 68;
+/** One you have, opened big. */
+const DETAIL = 220;
 
 /**
  * Your collection: every set there is (sprout kinds, hand-made artist
@@ -60,6 +64,8 @@ export default function CollectionScreen() {
   const pct = book.total ? Math.round((book.have / book.total) * 100) : 0;
   const handle = useSocial().profile?.handle;
   const [story, setStory] = useState(false);
+  // One you have, opened big.
+  const [detail, setDetail] = useState<{ el: ReactNode; title: string; body?: string }>();
   // The best of what you have, for the picture: shiny first, then the highest level, hand-made before sound.
   const best = useMemo(
     () =>
@@ -76,7 +82,21 @@ export default function CollectionScreen() {
     switch (s.id) {
       case 'kinds': {
         const k = kindOf(key as SproutKind);
-        return { el: <Sprout kind={k.id} stage={3} size={TILE} locked={!have} still />, name: have ? k.short : '?', label: have ? k.name : t('A sprout kind you haven’t found: {how}', { how: k.how.toLowerCase() }) };
+        return {
+          el: <Sprout kind={k.id} stage={3} size={TILE} locked={!have} still />,
+          name: have ? k.short : '?',
+          label: have ? k.name : t('A sprout kind you haven’t found: {how}', { how: k.how.toLowerCase() }),
+          detail: have
+            ? {
+                el: (
+                  <HoloTilt width={DETAIL} height={Math.round(DETAIL * 1.4)}>
+                    <SproutCard kind={k.id} line={k.how} width={DETAIL} />
+                  </HoloTilt>
+                ),
+                title: k.name,
+              }
+            : undefined,
+        };
       }
       case 'signatures': {
         const a = catalog.artist(key);
@@ -94,19 +114,39 @@ export default function CollectionScreen() {
       case 'stickers': {
         const look = stickerLook(key);
         if (!look) return undefined;
-        return { el: <Collectible look={look} size={TILE} locked={!have} still />, name: have ? look.name.replace(/^The /, '') : '?', label: have ? look.name : t('One still to find') };
+        return {
+          el: <Collectible look={look} size={TILE} locked={!have} still />,
+          name: have ? look.name.replace(/^The /, '') : '?',
+          label: have ? look.name : t('One still to find'),
+          detail: have ? { el: <Collectible look={look} size={DETAIL} />, title: look.name, body: `${look.theme}.` } : undefined,
+        };
       }
       case 'beads': {
         const p = PATTERNS.find((x) => x.id === key)!;
-        return { el: <View style={!have && styles.dim}><KandiBracelet word="" beads={p.id} size={TILE} /></View>, name: p.name, label: have ? p.name : t('{pattern} beads: not given to you yet', { pattern: p.name }) };
+        return {
+          el: <View style={!have && styles.dim}><KandiBracelet word="" beads={p.id} size={TILE} /></View>,
+          name: p.name,
+          label: have ? p.name : t('{pattern} beads: not given to you yet', { pattern: p.name }),
+          detail: have ? { el: <KandiBracelet word={p.name.toUpperCase().slice(0, 12)} beads={p.id} size={DETAIL} />, title: t('{pattern} beads', { pattern: p.name }) } : undefined,
+        };
       }
       case 'decor': {
         const d = DECOR.find((x) => x.id === key)!;
-        return { el: <View style={!have && styles.dim}><DecorIcon id={d.id} size={TILE} /></View>, name: d.name, label: have ? d.name : t('{name}: {how}', { name: d.name, how: d.how }) };
+        return {
+          el: <View style={!have && styles.dim}><DecorIcon id={d.id} size={TILE} /></View>,
+          name: d.name,
+          label: have ? d.name : t('{name}: {how}', { name: d.name, how: d.how }),
+          detail: have ? { el: <DecorIcon id={d.id} size={DETAIL * 0.8} />, title: d.name, body: t('Earned: {how}. It hangs in your garden’s sky.', { how: d.how.toLowerCase() }) } : undefined,
+        };
       }
       case 'charms': {
         const c = CHARMS.find((x) => x.id === key)!;
-        return { el: <View style={[styles.charmTile, !have && styles.dim]}><CharmIcon id={c.id} size={40} /></View>, name: c.name, label: have ? c.name : t('The {charm} charm: not given to you yet', { charm: c.name }) };
+        return {
+          el: <View style={[styles.charmTile, !have && styles.dim]}><CharmIcon id={c.id} size={40} /></View>,
+          name: c.name,
+          label: have ? c.name : t('The {charm} charm: not given to you yet', { charm: c.name }),
+          detail: have ? { el: <CharmIcon id={c.id} size={DETAIL * 0.6} />, title: t('The {charm} charm', { charm: c.name }) } : undefined,
+        };
       }
     }
   };
@@ -160,12 +200,13 @@ export default function CollectionScreen() {
                   return (
                     <Pressable
                       key={i.key}
-                      disabled={!shown.open}
+                      disabled={!shown.open && !shown.detail}
                       onPress={() => {
                         haptic.select();
-                        shown.open?.();
+                        if (shown.open) shown.open();
+                        else if (shown.detail) setDetail(shown.detail);
                       }}
-                      accessibilityRole={shown.open ? 'button' : 'image'}
+                      accessibilityRole={shown.open || shown.detail ? 'button' : 'image'}
                       accessibilityLabel={shown.label}
                       style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
                     >
@@ -180,6 +221,20 @@ export default function CollectionScreen() {
           </View>
         ))}
       </ScrollView>
+      <Modal visible={!!detail} transparent animationType="fade" onRequestClose={() => setDetail(undefined)}>
+        <Pressable style={styles.scrim} onPress={() => setDetail(undefined)} accessibilityRole="button" accessibilityLabel={t('Close')}>
+          {detail ? (
+            <View style={styles.detail}>
+              {detail.el}
+              <Text style={styles.detailTitle}>{detail.title}</Text>
+              {detail.body ? <Text style={styles.detailBody}>{detail.body}</Text> : null}
+              <Pressable onPress={() => setDetail(undefined)} accessibilityRole="button" style={({ pressed }) => [styles.detailDone, pressed && styles.pressed]}>
+                <Text style={styles.shareText}>{t('Done')}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
       {story ? (
         <StoryPreview
           title={t('My Afterglow collection')}
@@ -221,6 +276,11 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.22 },
   locked: { opacity: 0.6 },
   pressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
+  scrim: { flex: 1, backgroundColor: 'rgba(5,4,14,0.86)', alignItems: 'center', justifyContent: 'center', padding: space.xl },
+  detail: { alignItems: 'center', gap: space.sm, maxWidth: 360 },
+  detailTitle: { ...type.title, color: color.moon, textAlign: 'center', marginTop: space.md },
+  detailBody: { ...type.body, color: color.moonDim, textAlign: 'center' },
+  detailDone: { marginTop: space.lg, paddingHorizontal: space.xxl, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
   shareBtn: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
   shareText: { ...type.headline, color: color.moon },
 });

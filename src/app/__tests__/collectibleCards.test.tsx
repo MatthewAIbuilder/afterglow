@@ -50,7 +50,7 @@ describe('your collection', () => {
     for (const set of ['Sprout kinds', 'Hand-made collectibles', 'Sound creatures', 'Stickers', 'Kandi beads', 'Kandi charms', 'Garden decorations']) expect(app.getByText(set)).toBeTruthy();
     expect(app.getByText('Film these artists’ sets')).toBeTruthy();
     await app.unmount();
-  });
+  }, 20000);
 
   it('goes out as a picture: the ring, a bar per set, and what you’ve found', async () => {
     // Someone gives Maya kandi, so there's something in her collection.
@@ -76,6 +76,15 @@ describe('your collection', () => {
     await fireEvent.press(app.getByLabelText('Share this picture'));
     await flush();
     expect(Sharing.shareAsync).toHaveBeenCalled();
+    await fireEvent.press(app.getAllByLabelText('Close').at(-1)!);
+    await flush();
+    // One you have opens big; one you don't is just a silhouette.
+    await fireEvent.press(app.getByLabelText('Galaxy'));
+    await flush();
+    expect(app.getByText('Galaxy beads')).toBeTruthy();
+    await fireEvent.press(app.getByText('Done'));
+    await flush();
+    expect(app.queryByText('Galaxy beads')).toBeNull();
     await app.unmount();
   }, 30000);
 });

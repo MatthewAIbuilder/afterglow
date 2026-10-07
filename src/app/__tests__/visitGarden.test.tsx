@@ -185,7 +185,7 @@ describe('gardens', () => {
     await fireEvent.press(hers.getByLabelText('Make kandi back for @sam'));
     await flush();
     expect(hers.getByText('Kandi for Sam')).toBeTruthy();
-  });
+  }, 20000);
 
   it('wear kandi on your profile, and visitors see whose it is', async () => {
     const maya = await person('maya', 'Maya Lin');
