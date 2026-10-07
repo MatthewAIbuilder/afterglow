@@ -40,7 +40,10 @@ export function StickerCard({ sticker }: { sticker: Pick<Sticker, 'code' | 'name
       <View style={styles.qr}>
         <FriendQR value={findLink(sticker)} size={140} theme="glow" centre={(s) => <Collectible look={look} size={s} still />} />
       </View>
-      <Text style={styles.scan}>{`${stickerInvite(sticker.creature)} · afterglowmusic.app`}</Text>
+      <View style={styles.foot}>
+        <Text style={[styles.invite, { color: look.accent }]}>{stickerInvite(sticker.creature)}</Text>
+        <Text style={styles.scan}>afterglowmusic.app</Text>
+      </View>
     </View>
   );
 }
@@ -49,5 +52,7 @@ const styles = StyleSheet.create({
   sticker: { width: STICKER_W, height: STICKER_H, borderRadius: 28, backgroundColor: '#0A0918', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 14, borderWidth: 2, borderColor: 'rgba(169,124,255,0.45)' },
   name: { ...typeScale.headline, textAlign: 'center' },
   qr: { padding: 6, borderRadius: 14, backgroundColor: '#FBF9FF' },
-  scan: { ...typeScale.caption, fontSize: 11, color: 'rgba(243,240,255,0.75)' },
+  foot: { alignItems: 'center' },
+  invite: { ...typeScale.caption, fontSize: 12, lineHeight: 15, fontWeight: '700', textAlign: 'center' },
+  scan: { ...typeScale.caption, fontSize: 10, lineHeight: 13, color: 'rgba(243,240,255,0.7)', letterSpacing: 0.6 },
 });
