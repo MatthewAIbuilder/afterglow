@@ -4199,6 +4199,217 @@ const hammock: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** INTERPLANETARY CRIMINAL: the Getaway — a flying saucer, a masked little alien at the controls, its beam on. */
+const ufo: Draw = (p, f) => ({
+  ground: [50, 94, 24],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      {/* The tractor beam. */}
+      <Path d="M40 68 L32 88 Q50 92 68 88 L60 68Z" fill={p.glow} opacity={0.16} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The pilot: antennae, head and bandit mask. */}
+      <Path d="M45 38 L41 29 M55 38 L59 29" stroke={p.alt} strokeWidth={1.4} strokeLinecap="round" />
+      <Circle cx={41} cy={28.4} r={1.8} fill={p.accent} />
+      <Circle cx={59} cy={28.4} r={1.8} fill={p.accent} />
+      <VE cx={50} cy={46} rx={10.4} ry={10} fill={p.alt} f={f} />
+      <Path d="M39.4 43.6 Q50 39.6 60.6 43.6 L60.6 48.6 Q50 45.6 39.4 48.6Z" fill={INK} />
+      <Path d="M47 52 Q50 54 53 52" stroke={p.altDeep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+      {/* The glass dome over it. */}
+      <Path d="M33 52 C33 32 67 32 67 52Z" fill={p.light} opacity={0.18} />
+      <Path d="M37 44 C38 38 42 35 47 34" stroke={p.light} strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.6} />
+      {/* The saucer, its lights and underside. */}
+      <V d="M14 60 C14 52 30 49 50 49 C70 49 86 52 86 60 C86 66 70 70 50 70 C30 70 14 66 14 60Z" fill={p.mid} f={f} gloss={[30, 54, 10, 1.6, 0]} />
+      {[24, 37, 50, 63, 76].map((x) => (
+        <Circle key={x} cx={x} cy={62} r={2.1} fill={p.accent} />
+      ))}
+      <VE cx={50} cy={69} rx={14} ry={3} fill={p.deep} f={f} gloss={false} />
+    </G>
+  ),
+  eyes: {
+    box: [43, 43, 14, 6],
+    el: (
+      <G>
+        <VEye x={46} y={46} r={2.2} f={f} />
+        <VEye x={54} y={46} r={2.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {[30.5, 43.5, 56.5, 69.5].map((x) => (
+        <Circle key={x} cx={x} cy={63} r={1.5} fill={p.glow} />
+      ))}
+      {sparkles(p.accent, [
+        [14, 18, 2],
+        [86, 22, 1.6],
+        [88, 84, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** TAIKI NULIGHT: the Night light — a little lamp glowing warm, a pull chain, light pooling below. */
+const nightlight: Draw = (p, f) => ({
+  ground: [50, 89, 20],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={44} rx={42} ry={38} fill={p.glow} opacity={0.22} />
+      <Path d="M26 60 L18 84 Q50 92 82 84 L74 60Z" fill={p.glow} opacity={0.12} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Stem and base. */}
+      <Path d="M47.4 60 L52.6 60 L52.6 82 L47.4 82Z" fill={p.alt} />
+      <VE cx={50} cy={85} rx={16} ry={5} fill={p.alt} f={f} />
+      {/* The shade, lit from inside. */}
+      <V d="M34 22 L66 22 Q68 22 69 24 L80 58 Q80.6 60 78.6 60 L21.4 60 Q19.4 60 20 58 L31 24 Q32 22 34 22Z" fill={p.mid} f={f} gloss={[34, 30, 3, 10, 18]} />
+      <Path d="M20.6 59 L79.4 59" stroke={p.deep} strokeWidth={1.4} opacity={0.5} />
+      <Path d="M62 60 L62 72" stroke={p.deep} strokeWidth={0.8} />
+      <Circle cx={62} cy={73.2} r={1.4} fill={p.deep} />
+      <Circle cx={39} cy={49} r={2.2} fill={p.deep} opacity={0.25} />
+      <Circle cx={61} cy={49} r={2.2} fill={p.deep} opacity={0.25} />
+      <Path d="M45.6 49 Q50 52.6 54.4 49" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 38, 20, 8],
+    el: (
+      <G>
+        <VEye x={44} y={42} r={2.8} f={f} />
+        <VEye x={56} y={42} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Glow x={50} y={61.4} r={2.2} color={p.light} />
+      {sparkles(p.glow, [
+        [14, 20, 1.8],
+        [86, 16, 1.6],
+        [84, 74, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ALLEYCVT: the Alley cat — a cat in a beanie sat by a tagged brick wall. */
+const alleycat: Draw = (p, f) => ({
+  ground: [50, 92, 26],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={42} ry={38} fill={p.glow} opacity={0.12} />
+      {/* The wall, its bricks and a tag. */}
+      <Path d="M16 30 L84 30 L84 82 Q50 92 16 82Z" fill={p.deep} opacity={0.55} />
+      <Path d="M16 42 L84 42 M16 54 L84 54 M16 66 L84 66 M16 78 L84 78 M28 30 L28 42 M50 30 L50 42 M72 30 L72 42 M38 42 L38 54 M62 42 L62 54 M28 54 L28 66 M72 54 L72 66 M22 66 L22 78 M78 66 L78 78" stroke={p.mid} strokeWidth={0.7} opacity={0.35} />
+      <Path d="M19 40 C22 33 25 44 28 37 C30 33 32 38 34 35" stroke={p.accent} strokeWidth={2} fill="none" strokeLinecap="round" opacity={0.75} />
+      <Path d="M80 70 C76 66 72 70 76 74 L80 78 L84 74 C88 70 84 66 80 70Z" fill={p.alt} opacity={0.75} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Tail, body and head. */}
+      <Path d="M64 86 C80 88 86 74 78 64" stroke={p.mid} strokeWidth={5} fill="none" strokeLinecap="round" />
+      <V d="M34 90 C30 74 34 60 50 58 C66 60 70 74 66 90Z" fill={p.mid} f={f} gloss={[40, 66, 3, 7, 0]} />
+      <VE cx={50} cy={44} rx={16} ry={14} fill={p.mid} f={f} />
+      {/* The beanie, its band and bobble. */}
+      <V d="M33 38 C33 22 67 22 67 38 Q50 33 33 38Z" fill={p.alt} f={f} />
+      <Path d="M33.4 37 Q50 32 66.6 37" stroke={p.altDeep} strokeWidth={3} fill="none" />
+      <Circle cx={50} cy={23} r={3.4} fill={p.light} />
+      {/* Nose, mouth and whiskers. */}
+      <Path d="M48.4 49 L51.6 49 L50 51Z" fill={p.alt} />
+      <Path d="M47 53 Q48.6 54.6 50 53 Q51.4 54.6 53 53" stroke={p.light} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+      <Path d="M38 50 L28 48 M38 52.6 L28 54 M62 50 L72 48 M62 52.6 L72 54" stroke={p.light} strokeWidth={0.6} opacity={0.7} strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 40, 20, 8],
+    el: (
+      <G>
+        <VEye x={44} y={44} r={3} f={f} iris={p.accent} />
+        <VEye x={56} y={44} r={3} f={f} iris={p.accent} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [20, 16, 1.8],
+    [82, 18, 1.6],
+  ]),
+  flickerOver: true,
+});
+
+/** JESSICA AUDIFFRED: the Monarch — a monarch butterfly, wings flapping, white dots on their black edges. */
+const monarch: Draw = (p, f) => {
+  const upper = 'M48 48 C40 30 18 22 12 32 C8 40 18 50 46 54Z';
+  const lower = 'M47 56 C30 58 20 68 26 76 C32 82 42 72 48 60Z';
+  const mirror = (d: string) => d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g, (_, x, y) => `${r1(100 - Number(x))} ${y}`);
+  const wing = (d: string, k: string) => (
+    <G key={k}>
+      <V d={d} fill={p.mid} f={f} />
+      <Path d={d} stroke={p.deep} strokeWidth={2} fill="none" strokeLinejoin="round" />
+    </G>
+  );
+  return {
+    ground: [50, 92, 14],
+    back: <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />,
+    pivot: [50, 52],
+    flap: true,
+    sway: (
+      <G>
+        {wing(upper, 'ul')}
+        {wing(lower, 'll')}
+        {wing(mirror(upper), 'ur')}
+        {wing(mirror(lower), 'lr')}
+        {/* Veins and the white dots on the edges. */}
+        <Path d={`M46 50 L22 32 M46 52 L16 40 M46 58 L30 70 ${mirror('M46 50 L22 32 M46 52 L16 40 M46 58 L30 70')}`} stroke={p.deep} strokeWidth={1} opacity={0.75} />
+        {[
+          [15, 31],
+          [20, 26],
+          [12, 38],
+          [27, 77],
+          [24, 71],
+        ].map(([x, y]) => (
+          <G key={`${x}${y}`}>
+            <Circle cx={x} cy={y} r={0.9} fill={p.accent} />
+            <Circle cx={100 - x} cy={y} r={0.9} fill={p.accent} />
+          </G>
+        ))}
+      </G>
+    ),
+    body: (
+      <G>
+        <Path d="M47 40 Q42 28 38 25 M53 40 Q58 28 62 25" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+        <Circle cx={38} cy={25} r={1.6} fill={p.alt} />
+        <Circle cx={62} cy={25} r={1.6} fill={p.alt} />
+        <VE cx={50} cy={62} rx={3.8} ry={13} fill={p.deep} f={f} gloss={false} />
+        <VE cx={50} cy={45} rx={8.4} ry={7.6} fill={p.alt} f={f} />
+        <Path d="M48 48.4 Q50 50 52 48.4" stroke={p.deep} strokeWidth={1} fill="none" strokeLinecap="round" />
+      </G>
+    ),
+    eyes: {
+      box: [44, 41, 12, 6],
+      el: (
+        <G>
+          <VEye x={46.8} y={44.4} r={1.9} f={f} />
+          <VEye x={53.2} y={44.4} r={1.9} f={f} />
+        </G>
+      ),
+    },
+    flicker: sparkles(p.alt, [
+      [14, 14, 1.8],
+      [86, 86, 1.6],
+      [86, 14, 1.4],
+    ]),
+    flickerOver: true,
+  };
+};
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -5172,6 +5383,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  ufo,
+  nightlight,
+  alleycat,
+  monarch,
   silentdisco,
   shuttle,
   hammock,
