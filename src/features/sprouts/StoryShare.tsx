@@ -68,15 +68,16 @@ export function StoryFrame({ width, tint, glow, headline, sub, children }: { wid
  * Share button under it and a close button at the top. Lays over its parent
  * (no second pop-up), so it works inside a sheet too.
  */
-export function StoryPreview({ title, tint, glow, headline, sub, onClose, children }: { title: string; tint: string; glow: string; headline: string; sub?: string; onClose: () => void; children: (width: number) => ReactNode }) {
+export function StoryPreview({ title, tint, glow, headline, sub, onClose, bottomSpace, children }: { title: string; tint: string; glow: string; headline: string; sub?: string; onClose: () => void; /** Room to keep clear at the bottom (a tab bar), instead of the safe area. */ bottomSpace?: number; children: (width: number) => ReactNode }) {
   const insets = useSafeAreaInsets();
   const { width: ww, height: wh } = useWindowDimensions();
   const ref = useRef<View>(null);
   const [busy, setBusy] = useState(false);
   // As big as fits between the close button and the Share button.
-  const width = Math.round(Math.min(360, ww - 2 * space.xl, ((wh - insets.top - insets.bottom - 150) * 9) / 16));
+  const bottom = bottomSpace ?? insets.bottom;
+  const width = Math.round(Math.min(360, ww - 2 * space.xl, ((wh - insets.top - bottom - 150) * 9) / 16));
   return (
-    <View style={[styles.preview, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.lg }]}>
+    <View style={[styles.preview, { paddingTop: insets.top + space.xl, paddingBottom: bottom + space.lg }]}>
       <View style={[styles.close, { top: insets.top + space.md }]}>
         <GlassCircleButton label={t('Close')} onPress={onClose}>
           <CloseIcon color={color.moon} size={16} />

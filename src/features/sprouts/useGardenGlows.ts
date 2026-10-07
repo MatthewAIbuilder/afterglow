@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { type GardenGlow, lastGlows as last } from '../../state/gardenGlows';
 import { useSocial } from '../../state/social';
 
@@ -27,7 +27,10 @@ export function useGardenGlows(): GardenGlow[] {
       live = false;
     };
   }, [uid, service]);
-  return (uid && last.get(uid)) || NONE;
+  // Someone you blocked doesn't show, or count.
+  const { blocked } = social;
+  const list = (uid && last.get(uid)) || NONE;
+  return useMemo(() => (blocked.size ? list.filter((g) => !blocked.has(g.from)) : list), [list, blocked]);
 }
 
 const NONE: GardenGlow[] = [];

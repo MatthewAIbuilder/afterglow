@@ -32,6 +32,11 @@ function load(): Promise<void> {
 
 /** Save an account's showcase. */
 export function setShowcase(account: string, list: readonly string[]) {
+  // Not read yet: wait, so what's saved for other accounts isn't written over.
+  if (!byAccount) {
+    void load().then(() => setShowcase(account, list));
+    return;
+  }
   byAccount = { ...(byAccount ?? {}), [account]: cleanShowcase(list) };
   listeners.forEach((l) => l());
   AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(byAccount)).catch(() => {});

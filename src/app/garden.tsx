@@ -13,6 +13,8 @@ import { Sprout } from '../features/sprouts/Sprout';
 import { SproutCard } from '../features/sprouts/CollectibleCard';
 import { useGardenDecor } from '../features/sprouts/useGardenDecor';
 import { useDecorSeen } from '../state/decorSeen';
+import { useFinds } from '../state/finds';
+import { useMyShowcase } from '../features/sprouts/useMyShowcase';
 import { useGardenGlows } from '../features/sprouts/useGardenGlows';
 import { GlowsLine } from '../features/sprouts/GlowsLine';
 import { SproutOf } from '../features/sprouts/SproutOf';
@@ -96,11 +98,15 @@ export default function GardenScreen() {
   const freshArtist = fresh ? catalog.artist(fresh.artistId) : undefined;
   // Then a decoration you've just earned. The first time on this phone, what's already there is simply there.
   const decorSeen = useDecorSeen(social.user?.uid ?? 'guest');
+  const finds = useFinds();
+  const { ready: showcaseReady } = useMyShowcase();
   const { ready: seenReady, seen: seenDecor, save: saveSeen } = decorSeen;
+  // Everything decorations are earned from has been read (so nothing already there looks new).
+  const decorInputsReady = sprouts.hydrated && kandi.hydrated && finds.hydrated && showcaseReady;
   useEffect(() => {
-    if (seenReady && sprouts.hydrated && !seenDecor) saveSeen(decor);
-  }, [seenReady, seenDecor, saveSeen, sprouts.hydrated, decor]);
-  const freshDecor = bloom || fresh || !seenDecor ? undefined : decor.find((d) => !seenDecor.includes(d));
+    if (seenReady && decorInputsReady && !seenDecor) saveSeen(decor);
+  }, [seenReady, seenDecor, saveSeen, decorInputsReady, decor]);
+  const freshDecor = bloom || fresh || !seenDecor || !decorInputsReady ? undefined : decor.find((d) => !seenDecor.includes(d));
   const plain = sprouts.garden.filter((g) => !g.artist);
   const givenArtists: GivenArtistSprout[] = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: g.id === STARTER_ID || g.foundAt ? fromLine(g) : (giverOf(g) ?? t('someone')), at: g.at }] : []));
   const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');

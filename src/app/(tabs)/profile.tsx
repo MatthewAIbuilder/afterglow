@@ -408,7 +408,7 @@ function FullProfile() {
       </ScrollView>
       <BadgeCelebration unlock={b.unlock} onDone={b.finishUnlock} />
       {profileStory && me ? (
-        <StoryPreview title={t('@{handle} on Afterglow', { handle: me.handle })} tint="#2A1A5E" glow="#B99CFF" headline={t('Find me on Afterglow')} sub={`${WEB_URL.replace(/^https?:\/\//, '')}/u/${me.handle}`} onClose={() => setProfileStory(false)}>
+        <StoryPreview title={t('@{handle} on Afterglow', { handle: me.handle })} tint="#2A1A5E" glow="#B99CFF" bottomSpace={tabSpace} headline={t('Find me on Afterglow')} sub={`${WEB_URL.replace(/^https?:\/\//, '')}/u/${me.handle}`} onClose={() => setProfileStory(false)}>
           {(w) => (
             <ProfileStory
               width={w}

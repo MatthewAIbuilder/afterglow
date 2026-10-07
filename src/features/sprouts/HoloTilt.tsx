@@ -33,8 +33,10 @@ export function HoloTilt({ width, height, shiny, onTap, children }: { width: num
     y.set(withSpring(0.5, motion.gentle));
     lit.set(withTiming(0, { duration: 450 }));
   };
+  // A sideways drag tilts it; an up-and-down one is left to the page, so it still scrolls.
   const pan = Gesture.Pan()
-    .minDistance(0)
+    .activeOffsetX([-6, 6])
+    .failOffsetY([-10, 10])
     .onBegin((e) => {
       to(e.x, e.y);
       lit.set(withTiming(1, { duration: 160 }));

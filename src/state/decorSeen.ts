@@ -32,6 +32,11 @@ function load(): Promise<void> {
 }
 
 export function setDecorSeen(account: string, list: readonly DecorId[]) {
+  // Not read yet: wait, so what's saved for other accounts isn't written over.
+  if (!byAccount) {
+    void load().then(() => setDecorSeen(account, list));
+    return;
+  }
   byAccount = { ...(byAccount ?? {}), [account]: cleanDecor(list) };
   listeners.forEach((l) => l());
   AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(byAccount)).catch(() => {});

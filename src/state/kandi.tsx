@@ -40,6 +40,8 @@ type Stored = { outbox: PendingKandi[]; received: ReceivedKandi[]; worn?: string
 const EMPTY: Stored = { outbox: [], received: [] };
 
 type Ctx = {
+  /** The phone's saved kandi has been read. */
+  hydrated: boolean;
   /** Waiting for signal. */
   outbox: PendingKandi[];
   /** In your garden, newest first. */
@@ -82,6 +84,7 @@ export function KandiProvider({ children }: { children: ReactNode }) {
   const account = social.user?.uid;
   const [stored, setStored] = useState<Stored>(EMPTY);
   const loaded = useRef(false);
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     AsyncStorage.getItem(KANDI_KEY)
       .then((raw) => {
@@ -94,6 +97,7 @@ export function KandiProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
       .finally(() => {
         loaded.current = true;
+        setHydrated(true);
       });
   }, []);
   useEffect(() => {
@@ -205,7 +209,7 @@ export function KandiProvider({ children }: { children: ReactNode }) {
   );
   const worn = useMemo(() => stored.received.find((k) => k.id === stored.worn), [stored.received, stored.worn]);
   const wear = useCallback((id: string | undefined) => setStored((s) => (id ? { ...s, worn: id } : { outbox: s.outbox, received: s.received })), []);
-  const value = useMemo<Ctx>(() => ({ outbox: stored.outbox, received: stored.received, give, giveByCode, remove, refresh, shown, worn, wear }), [stored, give, giveByCode, remove, refresh, shown, worn, wear]);
+  const value = useMemo<Ctx>(() => ({ hydrated, outbox: stored.outbox, received: stored.received, give, giveByCode, remove, refresh, shown, worn, wear }), [hydrated, stored, give, giveByCode, remove, refresh, shown, worn, wear]);
   return <KandiContext.Provider value={value}>{children}</KandiContext.Provider>;
 }
 
