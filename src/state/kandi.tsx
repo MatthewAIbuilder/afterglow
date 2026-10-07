@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { bumpQuestEvent } from './dailyQuests';
 import * as Crypto from 'expo-crypto';
 import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -106,6 +107,7 @@ export function KandiProvider({ children }: { children: ReactNode }) {
       const n = cleanNote(note);
       const item: PendingKandi = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`, to: to.uid, toName: to.name, word: w, beads, ...(isCharm(charm) ? { charm } : {}), ...(n ? { note: n } : {}), at: Date.now(), tries: 0 };
       setStored((s) => ({ ...s, outbox: [...s.outbox, item] }));
+      bumpQuestEvent('kandi');
       return true;
     },
     [account],
@@ -118,6 +120,7 @@ export function KandiProvider({ children }: { children: ReactNode }) {
       if (!w || !isPattern(beads) || !account || !handle) return undefined;
       const n = cleanNote(note);
       const id = codeId();
+      bumpQuestEvent('kandi');
       setStored((s) => ({ ...s, outbox: [...s.outbox, { id, to: '', toName: '', open: true, word: w, beads, ...(isCharm(charm) ? { charm } : {}), ...(n ? { note: n } : {}), at: Date.now(), tries: 0 }] }));
       return { id, from: account, handle, word: w, beads };
     },

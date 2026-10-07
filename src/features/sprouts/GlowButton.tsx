@@ -5,6 +5,7 @@ import { t } from '../../i18n';
 import { showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
 import { useSocial } from '../../state/social';
+import { bumpQuestEvent } from '../../state/dailyQuests';
 import { radius, space, type } from '../../theme/tokens';
 
 const GOLD = '#FFE58A';
@@ -51,6 +52,7 @@ export function GlowButton({ uid, handle }: { uid: string; handle?: string }) {
     } else haptic.select();
     try {
       await service.glowGarden(uid, next);
+      if (next) bumpQuestEvent('glow');
     } catch {
       setGlowed(!next);
       showAlert(t('Couldn’t leave your glow'), t('Check your signal and try again.'));

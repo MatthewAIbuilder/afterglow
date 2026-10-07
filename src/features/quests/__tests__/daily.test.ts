@@ -73,7 +73,7 @@ describe('picking quests', () => {
   it('leaves out what you can’t do right now', () => {
     for (let i = 0; i < 40; i++) {
       const picks = dailyPicks(shiftDay('2026-10-03', -i), canDo({ planning: false, enoughSets: false }));
-      expect(picks.some((q) => ['stars', 'thisorthat', 'chat', 'door', 'crowd', 'sprout'].includes(q.id))).toBe(false);
+      expect(picks.some((q) => ['stars', 'thisorthat', 'chat', 'door', 'crowd', 'sprout', 'glow', 'kandi'].includes(q.id))).toBe(false);
       expect(picks).toHaveLength(3);
     }
   });
@@ -99,6 +99,11 @@ describe('picking quests', () => {
     const sprout = DAILY.find((q) => q.id === 'sprout')!;
     expect(dailyCurrent(sprout, snap(), NO_COUNTS, { sprout: 1 }, since)).toBe(1);
     expect(canDo({ planning: true, enoughSets: true })('sprout')).toBe(false);
+    // Garden hopper and Kandi kid need someone you follow.
+    expect(canDo({ planning: true, enoughSets: true, sprout: true })('glow')).toBe(false);
+    expect(canDo({ planning: true, enoughSets: true, sprout: true, friends: true })('kandi')).toBe(true);
+    expect(dailyCurrent(DAILY.find((q) => q.id === 'glow')!, snap(), NO_COUNTS, { glow: 1 }, since)).toBe(1);
+    expect(dailyCurrent(DAILY.find((q) => q.id === 'kandi')!, snap(), NO_COUNTS, { kandi: 2 }, since)).toBe(1);
     const door = DAILY.find((q) => q.id === 'door')!;
     expect(dailyCurrent(door, snap(), NO_COUNTS, { door: 1 }, since)).toBe(1);
   });
