@@ -939,6 +939,29 @@ await t('kandi: made as yourself for someone else with a profile who hasn’t bl
   await assertFails(updateDoc(doc(L.firestore(), 'kandi', 'k1'), { word: 'HI' }));
   await assertFails(deleteDoc(doc(M.firestore(), 'kandi', 'k1')));
   await assertSucceeds(deleteDoc(doc(L.firestore(), 'kandi', 'k1')));
+  // Kandi given by code: no `to` until someone picks it up; anyone signed in with the code reads it until then.
+  const open = (over = {}) => ({ from: 'uidKa', word: 'PLUR', beads: 'neon', note: 'Found you', createdAt: now, ...over });
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'open1'), open()));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'open2'), open({ from: 'uidKb' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'open3'), open({ extra: true })));
+  await assertSucceeds(getDoc(doc(M.firestore(), 'kandi', 'open1')));
+  await assertFails(getDoc(doc(anon.firestore(), 'kandi', 'open1')));
+  // Its maker can't pick it up; nor can someone they've blocked (uidKc blocked uidKa, not the other way: block Kobe from Kaya).
+  await assertFails(updateDoc(doc(K.firestore(), 'kandi', 'open1'), { to: 'uidKa', claimedAt: now }));
+  // Picking it up writes only yourself in, once.
+  await assertFails(updateDoc(doc(L.firestore(), 'kandi', 'open1'), { to: 'uidKc', claimedAt: now }));
+  await assertFails(updateDoc(doc(L.firestore(), 'kandi', 'open1'), { to: 'uidKb', claimedAt: now, word: 'HI' }));
+  await assertSucceeds(updateDoc(doc(L.firestore(), 'kandi', 'open1'), { to: 'uidKb', claimedAt: now }));
+  await assertFails(updateDoc(doc(M.firestore(), 'kandi', 'open1'), { to: 'uidKc', claimedAt: now }));
+  // Once picked up, only the two of them read it.
+  await assertFails(getDoc(doc(M.firestore(), 'kandi', 'open1')));
+  await assertSucceeds(getDoc(doc(L.firestore(), 'kandi', 'open1')));
+  // Someone the maker blocked can't pick theirs up.
+  await env.withSecurityRulesDisabled(async (ctx) => setDoc(doc(ctx.firestore(), 'blocks', 'uidKa'), { uids: ['uidKb'] }));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'open4'), open()));
+  await assertFails(updateDoc(doc(L.firestore(), 'kandi', 'open4'), { to: 'uidKb', claimedAt: now }));
+  await assertSucceeds(deleteDoc(doc(K.firestore(), 'kandi', 'open4')));
+  await env.withSecurityRulesDisabled(async (ctx) => deleteDoc(doc(ctx.firestore(), 'blocks', 'uidKa')));
   // A garden may show its kandi (at most 40).
   await assertSucceeds(setDoc(doc(L.firestore(), 'gardens', 'uidKb'), { residents: [], kandi: [{ word: 'PLUR', beads: 'uv', from: 'kaya' }], updatedAt: serverTimestamp() }));
   await assertFails(setDoc(doc(L.firestore(), 'gardens', 'uidKb'), { residents: [], kandi: Array.from({ length: 41 }, () => ({})), updatedAt: serverTimestamp() }));

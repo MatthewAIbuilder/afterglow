@@ -102,7 +102,7 @@ describe('friends by QR code', () => {
     await flush();
     await fireEvent(app.getByTestId('camera-view'), 'barcodeScanned', { data: 'https://example.com/menu', type: 'qr' });
     await flush();
-    expect(app.getByText('That isn’t an Afterglow friend code, sprout or sticker.')).toBeTruthy();
+    expect(app.getByText('That isn’t an Afterglow friend code, sprout, kandi or sticker.')).toBeTruthy();
     await fireEvent(app.getByTestId('camera-view'), 'barcodeScanned', {
       data: friendLink({ uid: maya, handle: 'maya', name: 'Maya', code: 'mayacode2345' }),
       type: 'qr',

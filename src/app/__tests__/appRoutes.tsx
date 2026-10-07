@@ -19,6 +19,7 @@ import StickerSheetScreen from '../sticker-sheet';
 import GardenScreen from '../garden';
 import GardenVisitScreen from '../garden-visit';
 import KandiMakeScreen from '../kandi-make';
+import KandiCodeScreen from '../kandi/[id]';
 import AddFriendScreen from '../add/[handle]';
 import AccountScreen from '../account';
 import CameraScreen from '../camera';
@@ -106,6 +107,7 @@ export const APP_ROUTES = {
   garden: GardenScreen,
   'garden-visit': GardenVisitScreen,
   'kandi-make': KandiMakeScreen,
+  'kandi/[id]': KandiCodeScreen,
   'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,
   'festival/[id]': FestivalScreen,

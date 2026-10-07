@@ -1,12 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfettiBurst } from '../components/ConfettiBurst';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
-import { cleanWord, NOTE_MAX, PATTERNS, type PatternId, WORD_IDEAS, WORD_MAX } from '../features/kandi/kandi';
+import { cleanWord, type KandiCard, kandiLink, NOTE_MAX, PATTERNS, type PatternId, WORD_IDEAS, WORD_MAX } from '../features/kandi/kandi';
+import { FriendQR } from '../features/friends/FriendQR';
+import { SearchField } from '../components/SearchField';
+import type { Profile } from '../features/social/models';
+import { shareMessage } from '../lib/share';
 import { KandiBracelet } from '../features/kandi/KandiBracelet';
 import { useFriendsCircle } from '../features/friends/useFriendsCircle';
 import { PersonAvatar } from '../components/PersonAvatar';
@@ -23,9 +27,11 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
  * Make kandi for someone: a word in letter beads, a bead pattern and a note
  * only they read, then leave it in their garden (`?uid=…&name=…`). Kept on
  * this phone the moment you make it; it reaches them once there's signal.
+ * Opened with nobody chosen: pick someone you follow or search for anyone,
+ * or give it by code (`?code=1`): a QR whoever scans first picks it up from.
  */
 export default function KandiMakeScreen() {
-  const { uid, name, handle } = useLocalSearchParams<{ uid?: string; name?: string; handle?: string }>();
+  const { uid, name, handle, code } = useLocalSearchParams<{ uid?: string; name?: string; handle?: string; code?: string }>();
   const insets = useSafeAreaInsets();
   const social = useSocial();
   const kandi = useKandi();
@@ -35,14 +41,44 @@ export default function KandiMakeScreen() {
   const [left, setLeft] = useState(false);
   const who = firstName(name ?? (handle ? `@${handle}` : t('them')));
   const shownWord = cleanWord(word) || '♥';
-  const canMake = !!uid && !!social.user && !!social.profile && uid !== social.user.uid;
-  // Opened without anyone chosen (from your garden): pick one of the people you follow first.
+  // Given by code: for whoever scans it first.
+  const byCode = code === '1' && !uid && !!social.profile;
+  const canMake = byCode || (!!uid && !!social.user && !!social.profile && uid !== social.user.uid);
+  // Opened without anyone chosen (from your garden): pick one of the people you follow, search, or make a code.
   const { profiles: friends } = useFriendsCircle();
-  const choosing = !uid && !!social.profile;
+  const choosing = !uid && !byCode && !!social.profile;
+  const [query, setQuery] = useState('');
+  const [found, setFound] = useState<{ query: string; list: Profile[] }>();
+  const q = query.trim();
+  useEffect(() => {
+    if (q.length < 2) return;
+    let live = true;
+    const timer = setTimeout(() => {
+      social.service
+        .searchProfiles(q)
+        .then((list) => live && setFound({ query: q, list }))
+        .catch(() => live && setFound({ query: q, list: [] }));
+    }, 300);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [q, social.service]);
+  const me = social.user?.uid;
+  const people = (q.length >= 2 ? (found?.query === q ? found.list : undefined) : friends)?.filter((p) => p.uid !== me && !social.blocked.has(p.uid));
+  const [card, setCard] = useState<KandiCard>();
 
   const leave = () => {
-    if (!uid || !canMake) return;
-    if (kandi.give({ uid, name: who }, shownWord, beads, note)) {
+    if (!canMake) return;
+    if (byCode) {
+      const made = kandi.giveByCode(shownWord, beads, note);
+      if (made) {
+        haptic.celebrate();
+        setCard(made);
+      }
+      return;
+    }
+    if (uid && kandi.give({ uid, name: who }, shownWord, beads, note)) {
       haptic.celebrate();
       setLeft(true);
     }
@@ -55,13 +91,30 @@ export default function KandiMakeScreen() {
       <PageActions />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title} accessibilityRole="header">
-          {choosing ? t('Who’s it for?') : left ? t('Left in {name}’s garden', { name: who }) : t('Kandi for {name}', { name: who })}
+          {choosing ? t('Who’s it for?') : card ? t('Show them this code') : byCode ? t('Kandi to give in person') : left ? t('Left in {name}’s garden', { name: who }) : t('Kandi for {name}', { name: who })}
         </Text>
         {choosing ? (
           <View style={styles.people}>
             <Text style={styles.body}>{t('Kandi hangs in their garden, with a note only they read.')}</Text>
-            {friends === undefined ? null : friends.length ? (
-              friends.map((p) => (
+            {/* In person: a code whoever scans first picks it up from. */}
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.setParams({ code: '1' });
+              }}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.person, styles.codeOption, pressed && styles.pressed]}
+              testID="kandi-by-code"
+            >
+              <KandiBracelet word="" beads="neon" size={40} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.personName}>{t('Give it in person')}</Text>
+                <Text style={styles.personHandle}>{t('Make a code they scan, like a sprout')}</Text>
+              </View>
+            </Pressable>
+            <SearchField value={query} onChange={setQuery} placeholder={t('Search for anyone')} label={t('Search for someone to make kandi for')} />
+            {people === undefined ? null : people.length ? (
+              people.map((p) => (
                 <Pressable
                   key={p.uid}
                   onPress={() => {
@@ -80,6 +133,8 @@ export default function KandiMakeScreen() {
                   </View>
                 </Pressable>
               ))
+            ) : q.length >= 2 ? (
+              <Text style={styles.body}>{t('Nobody called “{query}”.', { query: q })}</Text>
             ) : (
               <>
                 <Text style={styles.body}>{t('Follow a friend first, then make them kandi.')}</Text>
@@ -89,13 +144,36 @@ export default function KandiMakeScreen() {
               </>
             )}
           </View>
+        ) : card ? (
+          <View style={styles.preview}>
+            <View style={styles.codeCard} accessible accessibilityRole="image" accessibilityLabel={t('A code for your kandi spelling {word}. Someone scans it to pick it up.', { word: card.word })}>
+              <FriendQR value={kandiLink(card)} size={220} theme="aurora" centre={(sz) => <KandiBracelet word="" beads={card.beads} size={sz} />} />
+              <Text style={styles.personName}>{card.word}</Text>
+              <Text style={styles.personHandle}>{t('from {name}', { name: `@${card.handle}` })}</Text>
+            </View>
+            <ConfettiBurst key={card.id} spread={160} />
+          </View>
         ) : (
           <View style={styles.preview}>
             <KandiBracelet word={shownWord} beads={beads} size={240} label={t('A kandi bracelet spelling {word}', { word: shownWord })} />
             {left ? <ConfettiBurst spread={160} /> : null}
           </View>
         )}
-        {choosing ? null : left ? (
+        {choosing ? null : card ? (
+          <>
+            <Text style={styles.body}>{t('They scan it with Afterglow, or with their phone camera if they don’t have the app yet. Whoever picks it up first gets it, note and all.')}</Text>
+            <Pressable
+              onPress={() => void shareMessage(t('Kandi for you, from @{handle} on Afterglow: {link}', { handle: card.handle, link: kandiLink(card) }), t('Kandi for you'))}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+            >
+              <Text style={styles.primaryText}>{t('Send the link instead')}</Text>
+            </Pressable>
+            <Pressable onPress={() => goBack()} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+              <Text style={styles.primaryText}>{t('Done')}</Text>
+            </Pressable>
+          </>
+        ) : left ? (
           <>
             <Text style={styles.body}>{t('It hangs in their garden now (once there’s signal), and they can read your note.')}</Text>
             <Pressable onPress={() => goBack()} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
@@ -153,7 +231,7 @@ export default function KandiMakeScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-            <Text style={styles.label}>{t('A note (only {name} reads it)', { name: who })}</Text>
+            <Text style={styles.label}>{byCode ? t('A note (only whoever picks it up reads it)') : t('A note (only {name} reads it)', { name: who })}</Text>
             <TextInput
               value={note}
               onChangeText={setNote}
@@ -165,7 +243,7 @@ export default function KandiMakeScreen() {
               style={[styles.input, styles.note]}
             />
             <Pressable onPress={leave} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-              <Text style={styles.primaryText}>{t('Leave it in {name}’s garden', { name: who })}</Text>
+              <Text style={styles.primaryText}>{byCode ? t('Make the code') : t('Leave it in {name}’s garden', { name: who })}</Text>
             </Pressable>
             <Text style={styles.hint}>{t('Everyone visiting their garden sees the bracelet and who made it. Your note stays between you two.')}</Text>
           </>
@@ -194,6 +272,9 @@ const styles = StyleSheet.create({
   patternOn: { borderColor: glowA(0.6), backgroundColor: glowA(0.12) },
   patternName: { ...type.caption, color: color.moonDim },
   people: { gap: space.sm },
+  codeOption: { borderColor: glowA(0.5), backgroundColor: glowA(0.12) },
+  codeCard: { alignItems: 'center', gap: space.xs, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   person: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   personName: { ...type.headline, color: color.moon },
   personHandle: { ...type.caption, color: color.moonDim },

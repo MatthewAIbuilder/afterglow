@@ -18,7 +18,7 @@ import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
 import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden';
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
-import { cleanNote, cleanPublicKandi, cleanWord, isPattern, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
+import { cleanNote, cleanPublicKandi, cleanWord, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
@@ -1359,6 +1359,59 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const ref = doc(collection(fb().db, 'kandi'));
         await withTimeout(setDoc(ref, { from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
         return { id: ref.id, from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() };
+      }),
+    leaveOpenKandi: (input) =>
+      guard(async () => {
+        const user = me();
+        const word = cleanWord(input.word);
+        const note = cleanNote(input.note);
+        if (!KANDI_ID.test(input.id) || !word || !isPattern(input.beads)) throw new SocialError('unknown');
+        const ref = doc(fb().db, 'kandi', input.id);
+        try {
+          await withTimeout(setDoc(ref, { from: user.uid, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
+        } catch (e) {
+          // Sent before and the answer was lost: it's there and it's yours.
+          if (asSocialError(e).kind !== 'network' && kandiFrom(input.id, (await getDoc(ref).catch(() => null))?.data())?.from === user.uid) return;
+          throw e;
+        }
+      }),
+    kandiById: (id) =>
+      guard(async () => {
+        try {
+          return kandiFrom(id, (await getDoc(doc(fb().db, 'kandi', id))).data()) ?? null;
+        } catch (e) {
+          // Picked up by someone else: no longer readable, as good as gone.
+          if ((e as { code?: string })?.code === 'permission-denied') return null;
+          throw e;
+        }
+      }),
+    claimKandi: (id) =>
+      guard(async () => {
+        const user = me();
+        const ref = doc(fb().db, 'kandi', id);
+        const read = async () => {
+          try {
+            return kandiFrom(id, (await getDoc(ref)).data());
+          } catch (e) {
+            // Someone else has it (it's theirs to read now).
+            if ((e as { code?: string })?.code === 'permission-denied') throw new SocialError('kandi-taken');
+            throw e;
+          }
+        };
+        const k = await read();
+        if (!k) throw new SocialError('not-found');
+        if (k.to === user.uid) return k;
+        if (k.to) throw new SocialError('kandi-taken');
+        const at = now();
+        try {
+          await updateDoc(ref, { to: user.uid, claimedAt: at });
+        } catch (e) {
+          const again = await read().catch((x: unknown) => (x instanceof SocialError && x.kind === 'kandi-taken' ? ('taken' as const) : undefined));
+          if (again === 'taken' || (again && again.to && again.to !== user.uid)) throw new SocialError('kandi-taken');
+          if (again && again.to === user.uid) return again;
+          throw e;
+        }
+        return { ...k, to: user.uid, createdAt: at };
       }),
     myKandi: (max) =>
       guard(async () => {
