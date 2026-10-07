@@ -3,7 +3,7 @@ import { computeTaste } from '../../taste/engine';
 import { CLIPS } from '../../../data/mock/clips';
 import { MOCK_CATALOG, MOCK_TASTE } from '../../../data/mock';
 import type { SharedMemory } from '../../social/models';
-import { ARTIST_MEMORY_MAX, cleanKept, COMMUNITY_MAX, keepClip, KEPT_MAX, keptClips, communityClip, communityClipId, communityClips, isCommunityClip, rememberArtist, rememberedClips } from '../clips';
+import { ARTIST_MEMORY_MAX, cleanKept, COMMUNITY_MAX, keepClip, KEPT_MAX, keptClips, communityClip, communityClipId, crowdPlace, communityClips, isCommunityClip, rememberArtist, rememberedClips } from '../clips';
 
 const ARTISTS = new Set(['illenium', 'subtronics', 'seven-lions']);
 const NONE = new Set<string>();
@@ -138,5 +138,15 @@ describe('keeping liked community clips for Your clips', () => {
     const shown = keptClips(kept, { artists: ARTISTS, blocked: new Set(['u2']), hidden: new Set(['c']) }).map((c) => c.id);
     expect(shown).toEqual(['community:a']);
     expect(keptClips(kept, { artists: new Set(), blocked: NONE, hidden: NONE })).toEqual([]);
+  });
+});
+
+describe('crowd clip titles in Discover', () => {
+  it('name only where it was filmed', () => {
+    expect(crowdPlace('From the crowd', 'Solstice 2026')).toBe('Solstice 2026');
+    expect(crowdPlace('From the crowd', undefined)).toBeUndefined();
+    expect(crowdPlace('Throwback · Lost Lands 2025', 'EDC Orlando 2026')).toBe('Lost Lands 2025');
+    expect(crowdPlace('From the crowd · Red Rocks, Oct 3', undefined)).toBe('Red Rocks, Oct 3');
+    expect(crowdPlace('Sunrise set', undefined)).toBe('Sunrise set');
   });
 });
