@@ -57,7 +57,7 @@ export const PATTERNS: readonly { id: PatternId; name: string; colors: readonly 
 ];
 
 /** Charms that hang from a bracelet. */
-export type CharmId = 'heart' | 'star' | 'alien' | 'mushroom' | 'smiley' | 'moon' | 'bolt' | 'butterfly' | 'crown' | 'flower' | 'peace' | 'planet';
+export type CharmId = 'heart' | 'star' | 'alien' | 'mushroom' | 'smiley' | 'moon' | 'bolt' | 'butterfly' | 'crown' | 'flower' | 'peace' | 'planet' | 'portal' | 'compass';
 export const CHARMS: readonly { id: CharmId; name: string }[] = [
   { id: 'heart', name: t('Heart') },
   { id: 'star', name: t('Star') },
@@ -71,6 +71,8 @@ export const CHARMS: readonly { id: CharmId; name: string }[] = [
   { id: 'flower', name: t('Flower') },
   { id: 'peace', name: t('Peace') },
   { id: 'planet', name: t('Planet') },
+  { id: 'portal', name: t('Portal') },
+  { id: 'compass', name: t('Compass') },
 ];
 export const isCharm = (v: unknown): v is CharmId => CHARMS.some((c) => c.id === v);
 

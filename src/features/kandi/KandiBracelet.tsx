@@ -116,6 +116,28 @@ function Charm({ id }: { id: CharmId }) {
           <Path d="M-8.4 2.6 C-7 4.4 -1 3.4 3 1.8 C5.4 0.8 7.2 -0.2 8.2 -1.4" stroke="#FFD86B" strokeWidth={1.4} fill="none" strokeLinecap="round" />
         </G>
       );
+    case 'portal':
+      // A little swirling portal, green light spiralling in.
+      return (
+        <G>
+          <Circle cx={0} cy={0} r={7.6} fill="#123A2A" stroke="#3A86E0" strokeWidth={1} />
+          <Path d="M0 0 C0 -2.4 3 -2.6 3.6 0 C4.4 3.6 -0.6 5.6 -3.4 3.4 C-7 0.6 -4.6 -6 0.6 -6.2" stroke="#B6FF5A" strokeWidth={1.4} fill="none" strokeLinecap="round" />
+          <Path d="M0.6 -6.2 C4.6 -6.4 7 -3.4 6.6 0.2" stroke="#CFE8FF" strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.8} />
+          <Circle cx={0} cy={0} r={1.2} fill="#E8FFD0" />
+        </G>
+      );
+    case 'compass':
+      // A brass compass, its needle pointing north.
+      return (
+        <G>
+          <Circle cx={0} cy={0} r={7.6} fill="#E8B84A" stroke="#9A6A1E" strokeWidth={0.6} />
+          <Circle cx={0} cy={0} r={5.8} fill="#FFF8E0" />
+          <Path d="M0 -5 L1.6 0 L-1.6 0Z" fill="#FF4A4A" />
+          <Path d="M0 5 L1.6 0 L-1.6 0Z" fill="#22305C" />
+          <Circle cx={0} cy={0} r={0.9} fill="#9A6A1E" />
+          <Ellipse cx={-3} cy={-5.2} rx={1.8} ry={0.8} fill="#FFFFFF" opacity={0.6} transform="rotate(-30 -3 -5.2)" />
+        </G>
+      );
   }
 }
 
