@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Share } from 'react-native';
+import { Alert, Share } from 'react-native';
 import { findLink } from '../../features/finds/finds';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { renderApp } from './appRoutes';
@@ -66,6 +66,25 @@ describe('stickers', () => {
     expect(app.getByText('Water frog · Station 3')).toBeTruthy();
     expect(app.getByText(/^Found by 0 · Night Market 2027 · Can be found until Jun 14, 2027$/)).toBeTruthy();
     // HQ's creature picker draws every creature, which takes a while when the whole suite runs at once.
+  }, 20_000);
+
+  it('HQ makes the festival places kit in one go', async () => {
+    mockSocial.verified.add(SUPPORT);
+    await s().signUp(SUPPORT, 'password123');
+    const alert = jest.spyOn(Alert, 'alert');
+    const app = await renderApp('/admin');
+    await flush();
+    await fireEvent.press(app.getByText('Stickers'));
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Hunt name'), 'Lost Lands 2027');
+    await fireEvent.press(app.getByText('Make the festival places kit'));
+    await flush(20);
+    const [hunt] = [...mockSocial.hunts.values()];
+    expect(hunt.name).toBe('Lost Lands 2027');
+    expect(hunt.items.map((i) => i.creature)).toEqual(['portapotty', 'refill', 'charger', 'silentdisco', 'shuttle', 'hammock', 'mainstage', 'campfire', 'tent']);
+    expect(hunt.items[0].name).toBe('Portal potty · Lost Lands 2027');
+    expect([...mockSocial.stickers.values()].every((st) => st.huntId === hunt.id)).toBe(true);
+    expect(alert.mock.calls[0].slice(0, 2)).toEqual(['The kit is ready', expect.stringContaining('9 stickers')]);
   }, 20_000);
 
   it('opening a sticker’s code keeps it, lights it up and fills in its hunt; signing in sends it', async () => {

@@ -17,6 +17,9 @@ const HQ_CREATURES = [...PLACE_CREATURES, ...SOUND_CREATURES];
 /** In an organizer's studio, its own creature first. */
 const ORG_CREATURES: string[] = ['flask', ...HQ_CREATURES.filter((c) => c !== 'flask')];
 
+/** The festival places kit: one sticker for each spot people pass, in this order. */
+export const PLACES_KIT = ['portapotty', 'refill', 'charger', 'silentdisco', 'shuttle', 'hammock', 'mainstage', 'campfire', 'tent'] as const;
+
 function newCode(): string {
   try {
     return codeFrom(Crypto.getRandomBytes(CODE_LENGTH));
@@ -107,6 +110,32 @@ export function AdminStickers({ orgId }: { orgId?: string } = {}) {
     }
   };
 
+  // A whole hunt in one go: one sticker for each festival place, named after the hunt.
+  const makeKit = async () => {
+    const end = parseEndDate(huntUntil);
+    if (!huntName.trim()) return showAlert('Give the hunt a name first', 'Like “Lost Lands 2027”. Each sticker is named after its place and the hunt.');
+    if (end === 'bad') return showAlert('That end date doesn’t look right', 'Write it as year-month-day, like 2027-06-14, or leave it empty.');
+    setBusy(true);
+    try {
+      const hunt = huntName.trim();
+      const h = await social.service.addHunt({ id: newCode(), name: hunt, ...(end !== undefined ? { until: end } : {}), ...(orgId ? { orgId } : {}) });
+      for (const c of PLACES_KIT) {
+        const place = lookOf(c).name.replace(/^The /, '');
+        await social.service.addSticker({ code: newCode(), name: `${place} · ${hunt}`.slice(0, STICKER_NAME_MAX), creature: c, huntId: h.id, ...(end !== undefined ? { until: end } : {}), ...(orgId ? { orgId } : {}) });
+      }
+      haptic.settle();
+      setHuntName('');
+      setHuntUntil('');
+      await load();
+      showAlert('The kit is ready', `${PLACES_KIT.length} stickers in “${hunt}”, one for each place. Print all of them from the hunt below.`);
+    } catch (e) {
+      fail(e);
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const takeDown = (s: Sticker) =>
     showAlert(`Take down “${s.name}”?`, 'Its code stops working for anyone who hasn’t found it yet. People who found it keep it.', [
       { text: 'Cancel', style: 'cancel' },
@@ -165,6 +194,15 @@ export function AdminStickers({ orgId }: { orgId?: string } = {}) {
         <Pressable onPress={() => void makeHunt()} disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
           <Text style={styles.secondaryText}>Make hunt</Text>
         </Pressable>
+        <Text style={styles.body}>Or make the festival places kit: this hunt with a sticker for each spot people pass (porta potties, water, charging, silent disco, the shuttle, the chill zone, the main stage, the campfire, the tents).</Text>
+        <View style={styles.kitRow}>
+          {PLACES_KIT.map((c) => (
+            <Collectible key={c} look={lookOf(c)} size={30} still />
+          ))}
+        </View>
+        <Pressable onPress={() => void makeKit()} disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+          <Text style={styles.secondaryText}>Make the festival places kit</Text>
+        </Pressable>
       </View>
 
       {hunts.map((h) => (
@@ -215,6 +253,7 @@ export function AdminStickers({ orgId }: { orgId?: string } = {}) {
 }
 
 const styles = StyleSheet.create({
+  kitRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   wrap: { paddingHorizontal: space.lg, gap: space.md },
   lead: { ...type.body, color: color.moonDim },
   card: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
