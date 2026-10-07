@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { artistColors } from '../components/ArtistAvatar';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
-import { ChevronIcon } from '../components/TabIcons';
+import { BookmarkIcon, ChevronIcon } from '../components/TabIcons';
 import type { Clip } from '../data/types';
 import { HeartIcon, PlayIcon, SaveIcon } from '../features/discover/icons';
 import { listedClips, openedWith, yourClips } from '../features/discover/saved';
@@ -21,6 +21,7 @@ import { color, radius, space, type, nightA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { shownClipTitle } from '../features/community/clips';
 import { t, tc } from '../i18n';
+import { EmptyState } from '../components/EmptyState';
 
 type Shelf = 'saved' | 'liked';
 
@@ -49,9 +50,9 @@ export default function YourClipsScreen() {
 
         <View style={[styles.pad, styles.list]}>
           {empty ? (
-            <Text style={styles.empty}>
+            <EmptyState icon={<BookmarkIcon color={color.moon} size={24} />}>
               {t('Nothing here yet. Tap Save or Like on a clip in Discover and it will wait for you here.')}
-            </Text>
+            </EmptyState>
           ) : null}
           {listed.saved.length > 0 && <Text style={styles.section}>{tc('shelf', 'Saved')}</Text>}
           {listed.saved.map((c) => (
@@ -161,7 +162,6 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon },
   meta: { ...type.body, color: color.moonDim, marginTop: space.xs },
   list: { marginTop: space.xl },
-  empty: { ...type.body, color: color.moonDim, paddingVertical: space.lg },
   section: {
     ...type.label,
     color: color.moonFaint,

@@ -8,13 +8,14 @@ import { useNow } from '../lib/useNow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
-import { ChevronIcon } from '../components/TabIcons';
+import { BellIcon, ChevronIcon } from '../components/TabIcons';
 import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
+import { EmptyState } from '../components/EmptyState';
 
 /**
  * Notifications: news about the festivals you're going to, new followers, likes, comments and tags. Newest
@@ -107,11 +108,11 @@ export default function NotificationsScreen() {
         ) : null}
         <View style={[styles.pad, styles.list]}>
           {list.length === 0 ? (
-            <Text style={styles.empty}>
+            <EmptyState icon={<BellIcon color={color.moon} size={24} />}>
               {t(
                 'Nothing new. Tap “I’m going” on a festival and you’ll hear here when its set times come out and when it’s nearly time, and whenever an artist you’d love is added to a lineup.',
               )}
-            </Text>
+            </EmptyState>
           ) : !shown.length ? (
             <Text style={styles.empty}>{query.trim() ? t('Nothing matches “{query}”.', { query: query.trim() }) : t('Nothing here.')}</Text>
           ) : null}
