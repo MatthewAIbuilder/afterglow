@@ -59,6 +59,10 @@ const OLD_VIDEO_MS = 30 * 24 * 3600_000;
  * and your plan), so saving is usually one tap; everything is a tap or a
  * short search to change. The same sheet retags a saved memory (`id`).
  */
+/** Festivals shown as choices before searching, and search results shown. */
+const FESTIVAL_CHIPS = 5;
+const FESTIVAL_RESULTS = 8;
+
 export default function MemoryTagScreen() {
   // `shared`: a video you already shared (on the website, the only copy is the shared one): its tags change there.
   const { shared } = useLocalSearchParams<{ shared?: string }>();
@@ -133,8 +137,8 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const [searchingFestival, setSearchingFestival] = useState(false);
   const festivals = useMemo(() => {
     const first = guesses.map((g) => g.festival);
-    if (!many) return [...first, ...catalog.festivals.filter((f) => !first.includes(f))];
     if (festivalQuery.trim()) return searchFestivals(catalog.festivals, festivalQuery);
+    if (!many) return [...first, ...catalog.festivals.filter((f) => !first.includes(f))];
     const chosen = existing?.festivalId ? catalog.festival(existing.festivalId) : undefined;
     const mine = catalog.festivals.filter((f) => going.includes(f.id));
     const when = whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs) : undefined;
@@ -264,7 +268,12 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const social = useSocial();
   // Already on Discover as yours: saving changes the shared copy's tags too.
   const sharedCopy = !!sharedMemory || (!!existing?.sharedId && !!social.user && existing.sharedBy === social.user.uid);
+  // Once shared, a throwback stays one (its year and name can change) and nothing else becomes one.
   const throwbackLocked = sharedCopy && !!existing?.past && !existing.festivalId;
+  // The choices wrap rather than scroll off the edges, so only the likeliest few festivals show; the rest are a search away.
+  const listed = [...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals];
+  const shownFestivals = searchingFestival && festivalQuery.trim() ? listed.slice(0, FESTIVAL_RESULTS) : listed.slice(0, FESTIVAL_CHIPS);
+  const moreFestivals = many || listed.length > FESTIVAL_CHIPS;
   // Who's tagged in it already, from Discover (where the tags live once it's shared).
   const sharedTagsId = sharedCopy ? existing?.sharedId : undefined;
   useEffect(() => {
@@ -481,26 +490,37 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
         ) : null}
 
         <Text style={styles.section}>{t('Festival or show')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {past ? <Chip label={pastLabel(past)} on onPress={() => setPickingPast((v) => !v)} /> : null}
-          {/* Once shared, a throwback stays one (its year and name can change) and nothing else becomes one. */}
-          {throwbackLocked ? null : (
-          <>
-          {show ? <Chip label={showLabel(show)} on onPress={() => setPickingShow((v) => !v)} /> : null}
-          {[...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals].map((f) => (
-            <Chip key={f.id} label={f.name} on={f.id === festivalId} onPress={() => pickFestival(f.id === festivalId ? undefined : f)} />
-          ))}
-          {past || sharedCopy ? null : (
-            <Chip
-              label={t('A past festival…')}
-              on={pickingPast}
-              onPress={() => {
-                haptic.select();
-                setPickingPast((v) => !v);
-              }}
-            />
-          )}
-          {show ? null : (
+        {/* A throwback or a show, once chosen, shows as its card below (with Change and Remove), so the choices step aside. */}
+        {past || show ? null : throwbackLocked ? (
+          <View style={styles.wrap}>
+            <Chip label={t('A past festival…')} on={pickingPast} onPress={() => setPickingPast(true)} />
+          </View>
+        ) : (
+          <View style={styles.wrap}>
+            {shownFestivals.map((f) => (
+              <Chip key={f.id} label={f.name} on={f.id === festivalId} onPress={() => pickFestival(f.id === festivalId ? undefined : f)} />
+            ))}
+            {moreFestivals && !searchingFestival ? (
+              <Chip
+                label={t('Another festival…')}
+                on={false}
+                onPress={() => {
+                  haptic.select();
+                  setSearchingFestival(true);
+                }}
+              />
+            ) : null}
+            {sharedCopy ? null : (
+              <Chip
+                label={t('A past festival…')}
+                on={pickingPast}
+                onPress={() => {
+                  haptic.select();
+                  setPickingPast((v) => !v);
+                  setPickingShow(false);
+                }}
+              />
+            )}
             <Chip
               label={t('A one-night show…')}
               on={pickingShow}
@@ -510,22 +530,10 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
                 setPickingPast(false);
               }}
             />
-          )}
-          <Chip label={t('Not at a festival or show')} on={!festivalId && !past && !show} onPress={() => pickFestival(undefined)} />
-          {many && !searchingFestival ? (
-            <Chip
-              label={t('Another festival…')}
-              on={false}
-              onPress={() => {
-                haptic.select();
-                setSearchingFestival(true);
-              }}
-            />
-          ) : null}
-          </>
-          )}
-        </ScrollView>
-        {many && searchingFestival ? (
+            <Chip label={t('Not at a festival or show')} on={!festivalId && !past && !show} onPress={() => pickFestival(undefined)} />
+          </View>
+        )}
+        {searchingFestival && !past && !show ? (
           <View style={styles.festivalSearch}>
             <SearchField value={festivalQuery} onChange={setFestivalQuery} placeholder={t('Find the festival')} label={t('Find the festival')} />
           </View>
@@ -849,6 +857,7 @@ const styles = StyleSheet.create({
   when: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, paddingHorizontal: space.xl, marginTop: space.xl, marginBottom: space.sm },
   chips: { paddingHorizontal: space.xl, gap: space.sm },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: space.xl, gap: space.sm },
   festivalSearch: { paddingHorizontal: space.xl, marginTop: space.md },
   chip: {
     paddingHorizontal: space.md + 2,
