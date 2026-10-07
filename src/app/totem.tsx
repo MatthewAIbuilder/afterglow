@@ -256,7 +256,7 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
   const { service } = useSocial();
   const showing = popup && sticker ? popup.code : undefined;
   // Each time a sticker comes up is its own round: "Just claimed!" only for claims while it's on screen.
-  const round = popup && sticker ? `${popup.code}:${popup.index}:${nudge?.at ?? ''}` : undefined;
+  const round = popup && sticker ? `${popup.code}:${popup.at}` : undefined;
   const [claims, setClaims] = useState<{ round: string; n: number; up: boolean }>();
   // Each sticker's count when the totem first read it, and now: claims since it started.
   const [session, setSession] = useState<Record<string, { first: number; last: number }>>({});

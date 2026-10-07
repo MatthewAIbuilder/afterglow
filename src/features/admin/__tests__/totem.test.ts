@@ -7,7 +7,7 @@ const min = 60_000;
 describe('the totem', () => {
   it('shows the logo, then after each gap a sticker in turn for a minute', () => {
     expect(totemPopup(s, 0, 4 * min)).toBeUndefined();
-    expect(totemPopup(s, 0, 5 * min)).toEqual({ code: 'aaaaaa1', index: 0, left: 60 });
+    expect(totemPopup(s, 0, 5 * min)).toEqual({ code: 'aaaaaa1', index: 0, left: 60, at: 5 * min });
     expect(totemPopup(s, 0, 5 * min + 45_000)).toMatchObject({ code: 'aaaaaa1', left: 15 });
     expect(totemPopup(s, 0, 6 * min)).toBeUndefined();
     expect(totemPopup(s, 0, 10 * min + 1000)).toMatchObject({ code: 'bbbbbb2', index: 1 });

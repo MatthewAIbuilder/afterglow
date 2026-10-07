@@ -19,6 +19,20 @@ const ORG_CREATURES: string[] = ['flask', ...HQ_CREATURES.filter((c) => c !== 'f
 
 /** The festival places kit: one sticker for each spot people pass, in this order. */
 export const PLACES_KIT = ['portapotty', 'refill', 'charger', 'caretent', 'foodtruck', 'silentdisco', 'shuttle', 'hammock', 'mainstage', 'campfire', 'tent'] as const;
+/** The kit's names as they're kept and printed: in English, whatever the phone's language (like the rest of HQ). */
+const KIT_NAMES: Record<(typeof PLACES_KIT)[number], string> = {
+  portapotty: 'Portal potty',
+  refill: 'Refill',
+  charger: 'Charger',
+  caretent: 'Care tent',
+  foodtruck: 'Food truck',
+  silentdisco: 'Silent disco',
+  shuttle: 'Shuttle',
+  hammock: 'Hammock',
+  mainstage: 'Main stage',
+  campfire: 'Campfire',
+  tent: 'Tent',
+};
 
 function newCode(): string {
   try {
@@ -111,25 +125,35 @@ export function AdminStickers({ orgId }: { orgId?: string } = {}) {
   };
 
   // A whole hunt in one go: one sticker for each festival place, named after the hunt.
+  // If the signal drops partway, pressing again finishes the same hunt (only the places still missing).
+  const [kitPart, setKitPart] = useState<{ huntId: string; name: string; made: string[] }>();
   const makeKit = async () => {
     const end = parseEndDate(huntUntil);
     if (!huntName.trim()) return showAlert('Give the hunt a name first', 'Like “Lost Lands 2027”. Each sticker is named after its place and the hunt.');
     if (end === 'bad') return showAlert('That end date doesn’t look right', 'Write it as year-month-day, like 2027-06-14, or leave it empty.');
     setBusy(true);
+    const hunt = huntName.trim();
+    const part = kitPart?.name === hunt ? kitPart : undefined;
+    const made = [...(part?.made ?? [])];
+    let huntId = part?.huntId;
     try {
-      const hunt = huntName.trim();
-      const h = await social.service.addHunt({ id: newCode(), name: hunt, ...(end !== undefined ? { until: end } : {}), ...(orgId ? { orgId } : {}) });
+      if (!huntId) huntId = (await social.service.addHunt({ id: newCode(), name: hunt, ...(end !== undefined ? { until: end } : {}), ...(orgId ? { orgId } : {}) })).id;
       for (const c of PLACES_KIT) {
-        const place = lookOf(c).name.replace(/^The /, '');
-        await social.service.addSticker({ code: newCode(), name: `${place} · ${hunt}`.slice(0, STICKER_NAME_MAX), creature: c, huntId: h.id, ...(end !== undefined ? { until: end } : {}), ...(orgId ? { orgId } : {}) });
+        if (made.includes(c)) continue;
+        await social.service.addSticker({ code: newCode(), name: `${KIT_NAMES[c]} · ${hunt}`.slice(0, STICKER_NAME_MAX), creature: c, huntId, ...(end !== undefined ? { until: end } : {}), ...(orgId ? { orgId } : {}) });
+        made.push(c);
       }
       haptic.settle();
+      setKitPart(undefined);
       setHuntName('');
       setHuntUntil('');
       await load();
       showAlert('The kit is ready', `${PLACES_KIT.length} stickers in “${hunt}”, one for each place. Print all of them from the hunt below.`);
     } catch (e) {
-      fail(e);
+      if (huntId) {
+        setKitPart({ huntId, name: hunt, made });
+        showAlert('The kit isn’t finished', `${made.length} of ${PLACES_KIT.length} stickers made in “${hunt}”. Press Make the festival places kit again to finish it.`);
+      } else fail(e);
       await load();
     } finally {
       setBusy(false);

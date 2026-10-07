@@ -250,7 +250,7 @@ export const es_profileLogic: Dictionary = {
   'For giving 10 sprouts that people picked up. PLUR in action.': 'Por regalar 10 brotes que la gente recogió. PLUR en acción.',
   Gardener: 'Jardinero',
   'Collect all 7 sprout kinds': 'Reúne los 7 tipos de brote',
-  'For a garden with every kind of sprout in it, grown yourself or given to you.': 'Por un jardín con todos los tipos de brote, cultivados por ti o regalados.',
+  'For a garden with eight kinds of sprout in it, grown yourself or given to you.': 'Por un jardín con ocho tipos de brote, cultivados por ti o regalados.',
   'Set scout': 'Explorador de horarios',
   'Send set times that go live': 'Envía horarios que se publiquen',
   'For sending a festival’s set times that Afterglow checked and put live for everyone. Thank you: every plan there became a schedule.':

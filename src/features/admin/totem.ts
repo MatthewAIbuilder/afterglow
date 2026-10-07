@@ -46,22 +46,22 @@ export type TotemNudge = { at: number; skips: number };
 /**
  * What's on screen `now` for a totem started at `start`: after each gap of
  * `everyMin`, the next sticker in turn for `showSec` (counting down `left`
- * seconds). `nudge` brings one up straight away (from "Pop one now").
+ * seconds; `at` is when this pop-up began). `nudge` brings one up straight away (from "Pop one now").
  */
-export function totemPopup(s: Pick<TotemSettings, 'codes' | 'everyMin' | 'showSec'>, start: number, now: number, nudge?: TotemNudge): { code: string; index: number; left: number } | undefined {
+export function totemPopup(s: Pick<TotemSettings, 'codes' | 'everyMin' | 'showSec'>, start: number, now: number, nudge?: TotemNudge): { code: string; index: number; left: number; at: number } | undefined {
   if (!s.codes.length) return undefined;
   const show = showFor(s) * 1000;
   const every = s.everyMin * 60_000;
   const skips = nudge?.skips ?? 0;
   if (nudge && now >= nudge.at && now < nudge.at + show) {
     const index = (Math.max(0, Math.floor((nudge.at - start) / every)) + skips - 1) % s.codes.length;
-    return { code: s.codes[index], index, left: Math.ceil((nudge.at + show - now) / 1000) };
+    return { code: s.codes[index], index, left: Math.ceil((nudge.at + show - now) / 1000), at: nudge.at };
   }
   const k = Math.floor((now - start) / every);
   const into = now - start - k * every;
   if (k < 1 || into >= show) return undefined;
   const index = (k - 1 + skips) % s.codes.length;
-  return { code: s.codes[index], index, left: Math.ceil((show - into) / 1000) };
+  return { code: s.codes[index], index, left: Math.ceil((show - into) / 1000), at: start + k * every };
 }
 
 /** The next sticker to pop up and how long until it does (seconds), for the "Next one in" teaser. */
