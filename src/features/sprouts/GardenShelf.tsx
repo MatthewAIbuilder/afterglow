@@ -21,7 +21,7 @@ export function GardenShelf({ hidden, onToggle }: { hidden: boolean; onToggle: (
   const items = [
     ...artists.flatMap((a) => {
       const artist = catalog.artist(a.artistId);
-      return artist ? [{ id: `artist:${a.artistId}`, count: 1, label: t('{artist} sprout', { artist: artist.name }), el: <SproutOf artist={{ id: artist.id, name: artist.name }} tier={a.tier} size={62} /> }] : [];
+      return artist ? [{ id: `artist:${a.artistId}`, count: 1, label: t('{artist} sprout', { artist: artist.name }), el: <SproutOf artist={{ id: artist.id, name: artist.name }} tier={a.tier} shiny={a.shiny} size={62} /> }] : [];
     }),
     // The same sprout more than once shows once, with how many.
     ...stackSame(garden).map(({ item: s, count }) => ({

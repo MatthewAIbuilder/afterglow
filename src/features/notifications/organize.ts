@@ -14,7 +14,7 @@ export const FILTER_KINDS: Record<Exclude<NoticeFilter, 'all'>, readonly Notice[
   tagged: ['tag'],
   festivals: ['now', 'soon', 'setTimes', 'lineup', 'recap', 'org'],
   sets: ['clips'],
-  sprouts: ['sprout', 'kandi'],
+  sprouts: ['sprout', 'kandi', 'glow'],
 };
 
 /** Now first, then newest first; a notice with no time counts as the start of today. Stable otherwise. */

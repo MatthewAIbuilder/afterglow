@@ -477,7 +477,7 @@ service cloud.firestore {
         && id.matches('^[a-z0-9]{12,40}$')
         && request.resource.data.keys().hasOnly(['from', 'kind', 'note', 'festivalId', 'artistId', 'artistName', 'theme', 'createdAt'])
         && request.resource.data.from == me()
-        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise']
+        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight', 'seeker']
         && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 60))
         && (!('festivalId' in request.resource.data) || (request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 120))
         // An artist's sprout names the artist (id and name, together).
@@ -515,11 +515,26 @@ service cloud.firestore {
     match /gardens/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['residents', 'kandi', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['residents', 'kandi', 'decor', 'updatedAt'])
         && request.resource.data.residents is list && request.resource.data.residents.size() <= 120
         && (!('kandi' in request.resource.data) || (request.resource.data.kandi is list && request.resource.data.kandi.size() <= 40))
+        && (!('decor' in request.resource.data) || (request.resource.data.decor is list && request.resource.data.decor.size() <= 12))
         && request.resource.data.updatedAt == request.time;
       allow delete: if signedIn() && me() == uid;
+      // Glows: a visitor's little light on someone's shown garden, one each (keyed by the visitor), the
+      // time from the server. The garden's owner reads them all; a visitor reads only their own. Either
+      // can take one away; nobody edits one.
+      match /glows/{visitor} {
+        allow get: if signedIn() && (me() == uid || me() == visitor);
+        allow list: if signedIn() && me() == uid;
+        allow create: if signedIn() && me() == visitor && visitor != uid
+          && request.resource.data.keys().hasOnly(['at'])
+          && request.resource.data.at == request.time
+          && exists(path('profiles', me()))
+          && exists(path('gardens', uid))
+          && !hasBlocked(uid, me());
+        allow delete: if signedIn() && (me() == visitor || me() == uid);
+      }
     }
     // Kandi: a friendship bracelet left in someone's garden. Made as yourself (with a profile) for someone
     // else with one, who hasn't blocked you: a word in letter beads, a bead pattern, a short note. Only the
@@ -531,14 +546,15 @@ service cloud.firestore {
       allow get: if signedIn() && (resource.data.from == me() || resource.data.get('to', '') == me() || !('to' in resource.data));
       allow list: if signedIn() && (resource.data.from == me() || resource.data.to == me());
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['from', 'to', 'word', 'beads', 'note', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['from', 'to', 'word', 'beads', 'note', 'charm', 'createdAt'])
         && request.resource.data.from == me()
         && (!('to' in request.resource.data)
           || (request.resource.data.to is string && request.resource.data.to != me()
             && exists(path('profiles', request.resource.data.to))
             && !hasBlocked(request.resource.data.to, me())))
         && request.resource.data.word is string && request.resource.data.word.matches('^[A-Z0-9 ♥★✿☺!?&+.]{1,12}$')
-        && request.resource.data.beads in ['rainbow', 'pastel', 'neon', 'uv', 'sunset', 'ocean', 'mono', 'candy']
+        && request.resource.data.beads in ['rainbow', 'pastel', 'neon', 'uv', 'sunset', 'ocean', 'mono', 'candy', 'glow', 'galaxy', 'pride', 'gold', 'fire', 'holo', 'toxic', 'berry']
+        && (!('charm' in request.resource.data) || request.resource.data.charm in ['heart', 'star', 'alien', 'mushroom', 'smiley', 'moon', 'bolt', 'butterfly', 'crown', 'flower', 'peace', 'planet', 'portal', 'compass'])
         && shortOrAbsent(request.resource.data, 'note', 140)
         && request.resource.data.createdAt is string && request.resource.data.createdAt.size() <= 40
         && exists(path('profiles', me()));

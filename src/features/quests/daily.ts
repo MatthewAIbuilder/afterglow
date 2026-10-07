@@ -32,8 +32,8 @@ export const added = (now: readonly string[], base: readonly string[]) => {
 };
 
 /** Things counted as they happen. */
-export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble' | 'chat' | 'door' | 'crowd' | 'sprout';
-export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble', 'chat', 'door', 'crowd', 'sprout'];
+export type QuestEvent = 'map' | 'thisorthat' | 'share' | 'bubble' | 'chat' | 'door' | 'crowd' | 'sprout' | 'glow' | 'kandi';
+export const QUEST_EVENTS: readonly QuestEvent[] = ['map', 'thisorthat', 'share', 'bubble', 'chat', 'door', 'crowd', 'sprout', 'glow', 'kandi'];
 
 export type DailyQuestId =
   | 'watch'
@@ -52,7 +52,9 @@ export type DailyQuestId =
   | 'chat'
   | 'door'
   | 'crowd'
-  | 'sprout';
+  | 'sprout'
+  | 'glow'
+  | 'kandi';
 
 export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-love';
 
@@ -60,7 +62,7 @@ export type WeeklyQuestId = 'w-watch' | 'w-rate' | 'w-days' | 'w-sounds' | 'w-lo
 export type QuestLane = 'watch' | 'taste' | 'plan';
 
 /** Where tapping a quest takes you. `festival` = your next festival's page (or Festivals). */
-export type QuestGo = '/together' | '/give-sprout' | '/' | '/sound' | '/pick-artists' | '/this-or-that' | '/search' | '/festival-map' | 'festival' | '/discover-focus';
+export type QuestGo = '/together' | '/give-sprout' | '/kandi-make' | '/' | '/sound' | '/pick-artists' | '/this-or-that' | '/search' | '/festival-map' | 'festival' | '/discover-focus';
 
 export type DailySpec = { id: DailyQuestId; lane: QuestLane; title: string; how: string; target: number; glow: number; go?: QuestGo };
 export type WeeklySpec = { id: WeeklyQuestId; title: string; how: string; target: number; glow: number; go?: QuestGo };
@@ -82,6 +84,8 @@ export const DAILY: readonly DailySpec[] = [
   { id: 'share', lane: 'plan', title: t('Spread the glow'), how: t('Share a set, a plan or a festival'), target: 1, glow: 15 },
   { id: 'chat', lane: 'plan', title: t('Crew call'), how: t('Send a message in your crew chat'), target: 1, glow: 15, go: '/together' },
   { id: 'sprout', lane: 'plan', title: t('Pass it on'), how: t('Give someone a sprout'), target: 1, glow: 20, go: '/give-sprout' },
+  { id: 'glow', lane: 'plan', title: t('Garden hopper'), how: t('Leave a glow on a friend’s garden'), target: 1, glow: 15, go: '/together' },
+  { id: 'kandi', lane: 'plan', title: t('Kandi kid'), how: t('Make kandi for someone'), target: 1, glow: 20, go: '/kandi-make' },
   { id: 'door', lane: 'plan', title: t('Knock knock'), how: t('Open today’s festival week door'), target: 1, glow: 20, go: 'festival' },
 ];
 
@@ -177,6 +181,8 @@ export type QuestAbility = {
   crowd?: boolean;
   /** Signed in with a profile: you can give a sprout. */
   sprout?: boolean;
+  /** Following someone (with a profile yourself): gardens to glow on, friends to make kandi for. */
+  friends?: boolean;
   /** Everything above has loaded (until then, the day's quests aren't drawn). */
   settled?: boolean;
 };
@@ -195,7 +201,9 @@ export const canDo =
               ? !!a.crowd
               : id === 'sprout'
                 ? !!a.sprout
-                : true;
+                : id === 'glow' || id === 'kandi'
+                  ? !!a.friends
+                  : true;
 
 /** Videos from the crowd on screen since a moment (their clip ids start with "community:"). */
 export const crowdSince = (seen: Readonly<Record<string, number>>, since: number) =>
@@ -253,6 +261,8 @@ export function dailyCurrent(spec: DailySpec, snap: QuestSnapshot, base: Counter
     // Each crowd video once: in Discover or on its own page, it's marked seen.
     crowd: () => crowdSince(snap.seen, since),
     sprout: () => events.sprout ?? 0,
+    glow: () => events.glow ?? 0,
+    kandi: () => events.kandi ?? 0,
   }[spec.id]();
   return Math.min(spec.target, n);
 }

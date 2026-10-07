@@ -20,22 +20,24 @@ export type Kandi = {
   beads: PatternId;
   /** Only the person it's for reads this. */
   note?: string;
+  /** A charm hanging from it (`CHARMS`). */
+  charm?: CharmId;
   /** When it reached them (ISO). */
   createdAt: string;
 };
 
-export type KandiInput = { to: string; word: string; beads: PatternId; note?: string };
+export type KandiInput = { to: string; word: string; beads: PatternId; note?: string; charm?: CharmId };
 /** Kandi given by code (a QR to scan or a link): for whoever picks it up first. Its id is made on the phone, so the code shows straight away. */
-export type OpenKandiInput = { id: string; word: string; beads: PatternId; note?: string };
+export type OpenKandiInput = { id: string; word: string; beads: PatternId; note?: string; charm?: CharmId };
 
 /** At most this many letter beads. */
 export const WORD_MAX = 12;
 export const NOTE_MAX = 140;
 
-export type PatternId = 'rainbow' | 'pastel' | 'neon' | 'uv' | 'sunset' | 'ocean' | 'mono' | 'candy';
+export type PatternId = 'rainbow' | 'pastel' | 'neon' | 'uv' | 'sunset' | 'ocean' | 'mono' | 'candy' | 'glow' | 'galaxy' | 'pride' | 'gold' | 'fire' | 'holo' | 'toxic' | 'berry';
 
-/** Bead patterns: the colours repeat round the bracelet. */
-export const PATTERNS: readonly { id: PatternId; name: string; colors: readonly string[] }[] = [
+/** Bead patterns: the colours repeat round the bracelet. Some glow in the dark, some sparkle, some shine like metal. */
+export const PATTERNS: readonly { id: PatternId; name: string; colors: readonly string[]; glow?: true; sparkle?: true; metal?: true }[] = [
   { id: 'rainbow', name: t('Rainbow'), colors: ['#FF4F6E', '#FF9A3D', '#FFE14D', '#5BE37A', '#4FB6FF', '#9B6BFF'] },
   { id: 'pastel', name: t('Pastel'), colors: ['#FFC4DD', '#FFE6A8', '#C4F2D2', '#C4E2FF', '#E2CCFF'] },
   { id: 'neon', name: t('Neon'), colors: ['#39FF88', '#FF2FD6', '#2FE4FF', '#FFF23A'] },
@@ -44,7 +46,35 @@ export const PATTERNS: readonly { id: PatternId; name: string; colors: readonly 
   { id: 'ocean', name: t('Ocean'), colors: ['#1FB7C9', '#3F7BFF', '#9FE8FF', '#1E3FA8'] },
   { id: 'mono', name: t('Black and white'), colors: ['#F4F4F6', '#1A1A22'] },
   { id: 'candy', name: t('Candy'), colors: ['#FF6AA8', '#FFFFFF', '#6AD7FF', '#FFFFFF'] },
+  { id: 'glow', name: t('Glow in the dark'), colors: ['#C8FFB0', '#9AFFD8', '#E8FFB0'], glow: true },
+  { id: 'galaxy', name: t('Galaxy'), colors: ['#2A1A6E', '#5A2AB0', '#1A2A7A', '#8A4ADF'], sparkle: true },
+  { id: 'pride', name: t('Pride'), colors: ['#E40303', '#FF8C00', '#FFED00', '#008026', '#004DFF', '#750787', '#FFFFFF', '#FFAFC8', '#74D7EE', '#613915'] },
+  { id: 'gold', name: t('Gold'), colors: ['#FFD86B', '#FFF4C8', '#C9961E'], metal: true },
+  { id: 'fire', name: t('Fire'), colors: ['#FFE14D', '#FF9A3D', '#FF4F2E', '#B8142A'] },
+  { id: 'holo', name: t('Holographic'), colors: ['#E8F4FF', '#FFD6F4', '#D6FFF0', '#FFF4C8', '#E2D6FF'], sparkle: true, metal: true },
+  { id: 'toxic', name: t('Toxic'), colors: ['#B6FF2E', '#6AFF5A', '#E8FF6A', '#3AFFB0'], glow: true },
+  { id: 'berry', name: t('Berry'), colors: ['#8A1E5A', '#D6336C', '#5A1E8A', '#FF8AB8'] },
 ];
+
+/** Charms that hang from a bracelet. */
+export type CharmId = 'heart' | 'star' | 'alien' | 'mushroom' | 'smiley' | 'moon' | 'bolt' | 'butterfly' | 'crown' | 'flower' | 'peace' | 'planet' | 'portal' | 'compass';
+export const CHARMS: readonly { id: CharmId; name: string }[] = [
+  { id: 'heart', name: t('Heart') },
+  { id: 'star', name: t('Star') },
+  { id: 'alien', name: t('Alien') },
+  { id: 'mushroom', name: t('Mushroom') },
+  { id: 'smiley', name: t('Smiley') },
+  { id: 'moon', name: t('Moon') },
+  { id: 'bolt', name: t('Lightning bolt') },
+  { id: 'butterfly', name: t('Butterfly') },
+  { id: 'crown', name: t('Crown') },
+  { id: 'flower', name: t('Flower') },
+  { id: 'peace', name: t('Peace') },
+  { id: 'planet', name: t('Planet') },
+  { id: 'portal', name: t('Portal') },
+  { id: 'compass', name: t('Compass') },
+];
+export const isCharm = (v: unknown): v is CharmId => CHARMS.some((c) => c.id === v);
 
 export const isPattern = (v: unknown): v is PatternId => PATTERNS.some((p) => p.id === v);
 export const patternOf = (id: PatternId) => PATTERNS.find((p) => p.id === id) ?? PATTERNS[0];
@@ -73,11 +103,12 @@ export function kandiFrom(id: string, d: unknown): Kandi | undefined {
   const word = cleanWord(o.word);
   if (typeof o.from !== 'string' || (o.to !== undefined && typeof o.to !== 'string') || !word || !isPattern(o.beads)) return undefined;
   const note = cleanNote(o.note);
-  return { id, from: o.from, to: typeof o.to === 'string' ? o.to : '', word, beads: o.beads, createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(0).toISOString(), ...(note ? { note } : {}) };
+  return { id, from: o.from, to: typeof o.to === 'string' ? o.to : '', word, beads: o.beads, createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(0).toISOString(), ...(note ? { note } : {}), ...(isCharm(o.charm) ? { charm: o.charm } : {}) };
 }
 
 /** Kandi as visitors see it in a garden: the word, the beads and who made it (never the note). */
-export type PublicKandi = { word: string; beads: PatternId; from?: string };
+/** Kandi as visitors see it in a garden; `worn` is the one shown on its owner's profile. */
+export type PublicKandi = { word: string; beads: PatternId; from?: string; charm?: CharmId; worn?: true };
 export const PUBLIC_KANDI_MAX = 40;
 
 export function cleanPublicKandi(raw: unknown): PublicKandi[] {
@@ -89,7 +120,7 @@ export function cleanPublicKandi(raw: unknown): PublicKandi[] {
     const word = cleanWord(o.word);
     if (!word || !isPattern(o.beads)) continue;
     const from = typeof o.from === 'string' && /^[a-z0-9._]{1,30}$/.test(o.from) ? o.from : undefined;
-    out.push({ word, beads: o.beads, ...(from ? { from } : {}) });
+    out.push({ word, beads: o.beads, ...(from ? { from } : {}), ...(isCharm(o.charm) ? { charm: o.charm } : {}), ...(o.worn === true ? { worn: true as const } : {}) });
   }
   return out;
 }

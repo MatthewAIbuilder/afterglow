@@ -16,6 +16,8 @@ import { giftTitle, kindOf, sproutCardFrom, sproutName } from '../../features/sp
 import { SproutOf } from '../../features/sprouts/SproutOf';
 import { artistLook } from '../../features/sprouts/artistLook';
 import { FollowGiver } from '../../features/sprouts/FollowGiver';
+import { CardReveal } from '../../features/sprouts/CollectibleCard';
+import { HoloTilt } from '../../features/sprouts/HoloTilt';
 import { useCatalog } from '../../state/catalog';
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
@@ -23,6 +25,9 @@ import { useSocial } from '../../state/social';
 import { useSprouts } from '../../state/sprouts';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
+
+/** A gifted collectible's card, as wide as this. */
+const CARD_W = 220;
 
 /**
  * A sprout someone gave you: what you see after scanning its code, in the
@@ -110,14 +115,24 @@ export default function SproutScreen() {
 
   return (
     <Shell insets={insets}>
-      <View style={styles.stage}>
-        <Animated.View style={[styles.halo, haloStyle]} pointerEvents="none" />
-        <Animated.View style={sproutStyle}>
-          <SproutOf kind={card.kind} artist={card.artist} stage={card.kind === 'seedling' ? 2 : 3} size={170} />
-        </Animated.View>
-        <View style={styles.ground} />
-        {celebrate ? <ConfettiBurst key={celebrate} spread={150} /> : null}
-      </View>
+      {card.artist ? (
+        // An artist's collectible arrives as its card, face down, and turns over.
+        <View style={styles.cardStage}>
+          <HoloTilt width={CARD_W} height={Math.round(CARD_W * 1.4)}>
+            <CardReveal look={look(card.artist)} artistName={card.artist.name} owner={mine ? undefined : t('From @{handle}', { handle: card.handle })} width={CARD_W} />
+          </HoloTilt>
+          {celebrate ? <ConfettiBurst key={celebrate} spread={170} /> : null}
+        </View>
+      ) : (
+        <View style={styles.stage}>
+          <Animated.View style={[styles.halo, haloStyle]} pointerEvents="none" />
+          <Animated.View style={sproutStyle}>
+            <SproutOf kind={card.kind} artist={card.artist} stage={card.kind === 'seedling' ? 2 : 3} size={170} />
+          </Animated.View>
+          <View style={styles.ground} />
+          {celebrate ? <ConfettiBurst key={celebrate} spread={150} /> : null}
+        </View>
+      )}
       <Text style={styles.kicker}>{card?.artist ? (mine ? t('YOUR COLLECTIBLE') : t('A COLLECTIBLE FOR YOU')) : mine ? t('YOUR SPROUT') : t('A SPROUT FOR YOU')}</Text>
       <Text style={styles.title} accessibilityRole="header">
         {mine ? t('Your {sprout}', { sprout: sproutName(card) }) : giftTitle(card)}
@@ -218,6 +233,7 @@ const styles = StyleSheet.create({
   close: { position: 'absolute', right: space.xl, zIndex: 2, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: color.glass },
   content: { paddingHorizontal: space.xl, gap: space.md, alignItems: 'center', maxWidth: 520, width: '100%', alignSelf: 'center' },
   stage: { width: 240, height: 210, alignItems: 'center', justifyContent: 'flex-end' },
+  cardStage: { alignItems: 'center', justifyContent: 'center', marginBottom: space.md },
   halo: { position: 'absolute', bottom: 10, width: 180, height: 180, borderRadius: 90, borderWidth: 2, borderColor: SPROUT_GREEN },
   ground: { width: 124, height: 12, borderRadius: 62, marginTop: -14, backgroundColor: 'rgba(110,231,160,0.1)', transform: [{ scaleY: 0.8 }] },
   kicker: { ...type.caption, color: SPROUT_GREEN, letterSpacing: 2, fontWeight: '700' },

@@ -68,6 +68,9 @@ export default function AdminScreen() {
             <Pressable onPress={viewApp} accessibilityRole="button" accessibilityLabel="View the app as everyone sees it" style={({ pressed }) => [styles.pill, pressed && styles.pressed]}>
               <Text style={styles.pillText}>View the app</Text>
             </Pressable>
+            <Pressable onPress={() => router.push('/totem')} accessibilityRole="button" accessibilityLabel="Totem: the festival tablet screen" style={({ pressed }) => [styles.pill, pressed && styles.pressed]}>
+              <Text style={styles.pillText}>Totem</Text>
+            </Pressable>
             <Pressable onPress={() => router.push('/switch-account')} accessibilityRole="button" accessibilityLabel="Switch account" hitSlop={6}>
               <Text style={styles.switchText}>Switch account</Text>
             </Pressable>

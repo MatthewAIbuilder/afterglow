@@ -25,7 +25,7 @@ export function visitResidents(list: readonly PublicResident[], lookOf: (artistI
           name: r.name,
           label: t('{artist} collectible.', { artist: r.name }),
           size: TIER_SIZE[r.tier as Tier],
-          look: { artist: lookOf(r.artistId, r.name), tier: r.tier as Tier },
+          look: { artist: lookOf(r.artistId, r.name), tier: r.tier as Tier, shiny: !!r.shiny },
         },
   );
 }

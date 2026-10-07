@@ -9,6 +9,9 @@ import {
   findCardFrom,
   findLine,
   findLink,
+  fromTotemLink,
+  placeHint,
+  placeLine,
   findsFor,
   findsToCheck,
   findsToSend,
@@ -36,6 +39,18 @@ describe('sticker codes', () => {
     expect(readFindLink(link)).toEqual(card);
     expect(readFindLink('https://afterglowmusic.web.app/find/ferris2027')).toEqual({ code: 'ferris2027', creature: 'wisp', name: 'A sticker' });
     expect(readFindLink('afterglow://find/ferris2027?c=frog&n=Hi')).toEqual({ code: 'ferris2027', creature: 'frog', name: 'Hi' });
+    // A totem's screen marks its links; they still read as the same sticker.
+    const totem = findLink(card, undefined, 'totem');
+    expect(totem).toBe(`${link}&via=totem`);
+    expect(readFindLink(totem)).toEqual(readFindLink(link));
+    expect(fromTotemLink(totem)).toBe(true);
+    expect(fromTotemLink(link)).toBe(false);
+    // Some places have a word of their own.
+    expect(placeLine('refill')).toBe('While you’re here: fill your bottle and have a drink.');
+    expect(placeLine('ferris')).toBeUndefined();
+    // …and a hint where to look for the ones you haven't found.
+    expect(placeHint('portapotty')).toBe('Look in the porta potties.');
+    expect(placeHint('frog')).toBeUndefined();
   });
 
   it('turns down anything else', () => {

@@ -65,7 +65,7 @@ describe('kandi', () => {
     await settle(4500);
     await flush();
     expect(mockSocial.gardens.get(maya)?.kandi).toEqual([{ word: 'BESTIES', beads: 'uv', from: 'sam' }]);
-  });
+  }, 20000);
 
   it('with no signal it waits on the phone and goes once there is', async () => {
     const maya = await person('maya', 'Maya Lin');

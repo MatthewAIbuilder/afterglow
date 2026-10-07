@@ -27,6 +27,14 @@ import { bestStreakOf } from '../quests/daily';
 import { useDailyQuests } from '../quests/useDailyQuests';
 import { useSprouts } from '../../state/sprouts';
 import { useScouted } from '../../state/scouted';
+import { useFinds } from '../../state/finds';
+import { useKandi } from '../../state/kandi';
+import { collection } from '../sprouts/collection';
+import { artistLook, PLACE_CREATURES } from '../sprouts/artistLook';
+import { useGardenDecor } from '../sprouts/useGardenDecor';
+import { isHolo } from '../finds/finds';
+import { useMyShowcase } from '../sprouts/useMyShowcase';
+import { useGardenGlows } from '../sprouts/useGardenGlows';
 
 /**
  * Everything your badges need, in one place, for the Profile tab and the
@@ -65,6 +73,30 @@ export function useProfileBadges() {
   );
   const standing = useStanding(me?.uid);
   const scouted = useScouted(social.user?.uid);
+  // Collecting: kandi, shinies, stickers, gold, and how much of Your collection you have.
+  const { finds } = useFinds();
+  const kandi = useKandi();
+  const decor = useGardenDecor();
+  const showcase = useMyShowcase();
+  const glows = useGardenGlows();
+  const found = useMemo(() => new Set(finds.filter((f) => f.state === 'found').map((f) => f.creature)), [finds]);
+  const book = useMemo(
+    () =>
+      collection({
+        kinds: sprouts.collected,
+        artists: sprouts.artists,
+        catalogArtists: catalog.artists,
+        lookOf: (id) => {
+          const a = catalog.artist(id);
+          return a ? artistLook(a) : undefined;
+        },
+        stickers: found,
+        holo: finds.filter(isHolo).length,
+        kandi: kandi.received,
+        decor,
+      }),
+    [sprouts.collected, sprouts.artists, catalog, found, finds, kandi.received, decor],
+  );
   const marks = useMemo(
     () =>
       milestones({
@@ -85,8 +117,18 @@ export function useProfileBadges() {
         given: sprouts.gifts.filter((g) => g.claimedBy).length,
         kinds: [...sprouts.collected].filter((k) => k !== 'seedling').length,
         scouted: scouted.length,
+        kandi: kandi.received.length,
+        shiny: book.shiny,
+        stickers: finds.filter((f) => f.state === 'found').length,
+        places: [...found].filter((c) => (PLACE_CREATURES as readonly string[]).includes(c)).length,
+        gold: sprouts.artists.filter((a) => a.tier === 3).length,
+        collected: book.total ? Math.floor((book.have / book.total) * 100) : 0,
+        decor: decor.length,
+        pinned: showcase.pinned.length,
+        completeSets: book.sets.filter((x) => x.total > 0 && x.have === x.total).length,
+        glows: glows.length,
       }),
-    [scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
+    [glows.length, decor.length, showcase.pinned.length, book, kandi.received.length, finds, found, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();
@@ -126,7 +168,7 @@ export function useProfileBadges() {
     }
   };
   const finishUnlock = () => {
-    if (!unlock || unlock.kind === 'sprout' || unlock.kind === 'artistSprout') return setUnlock(undefined);
+    if (!unlock || unlock.kind === 'sprout' || unlock.kind === 'artistSprout' || unlock.kind === 'decor') return setUnlock(undefined);
     claim(unlock.kind === 'pin' ? pinKey(unlock.festival.id) : unlock.kind === 'throwback' ? throwbackKey(pastKey(unlock.past)) : milestoneKey(unlock.milestone.id));
     setUnlock(undefined);
   };

@@ -6,12 +6,12 @@ import { ConfettiBurst } from '../components/ConfettiBurst';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
-import { cleanWord, type KandiCard, kandiLink, NOTE_MAX, PATTERNS, type PatternId, WORD_IDEAS, WORD_MAX } from '../features/kandi/kandi';
+import { CHARMS, type CharmId, cleanWord, type KandiCard, kandiLink, NOTE_MAX, PATTERNS, type PatternId, WORD_IDEAS, WORD_MAX } from '../features/kandi/kandi';
 import { FriendQR } from '../features/friends/FriendQR';
 import { SearchField } from '../components/SearchField';
 import type { Profile } from '../features/social/models';
 import { shareMessage } from '../lib/share';
-import { KandiBracelet } from '../features/kandi/KandiBracelet';
+import { CharmIcon, KandiBracelet } from '../features/kandi/KandiBracelet';
 import { useFriendsCircle } from '../features/friends/useFriendsCircle';
 import { PersonAvatar } from '../components/PersonAvatar';
 import { t } from '../i18n';
@@ -37,6 +37,7 @@ export default function KandiMakeScreen() {
   const kandi = useKandi();
   const [word, setWord] = useState('PLUR');
   const [beads, setBeads] = useState<PatternId>('rainbow');
+  const [charm, setCharm] = useState<CharmId>();
   const [note, setNote] = useState('');
   const [left, setLeft] = useState(false);
   const who = firstName(name ?? (handle ? `@${handle}` : t('them')));
@@ -71,14 +72,14 @@ export default function KandiMakeScreen() {
   const leave = () => {
     if (!canMake) return;
     if (byCode) {
-      const made = kandi.giveByCode(shownWord, beads, note);
+      const made = kandi.giveByCode(shownWord, beads, note, charm);
       if (made) {
         haptic.celebrate();
         setCard(made);
       }
       return;
     }
-    if (uid && kandi.give({ uid, name: who }, shownWord, beads, note)) {
+    if (uid && kandi.give({ uid, name: who }, shownWord, beads, note, charm)) {
       haptic.celebrate();
       setLeft(true);
     }
@@ -147,7 +148,7 @@ export default function KandiMakeScreen() {
         ) : card ? (
           <View style={styles.preview}>
             <View style={styles.codeCard} accessible accessibilityRole="image" accessibilityLabel={t('A code for your kandi spelling {word}. Someone scans it to pick it up.', { word: card.word })}>
-              <FriendQR value={kandiLink(card)} size={220} theme="aurora" centre={(sz) => <KandiBracelet word="" beads={card.beads} size={sz} />} />
+              <FriendQR value={kandiLink(card)} size={220} theme="aurora" centre={(sz) => <KandiBracelet word="" beads={card.beads} charm={charm} size={sz} />} />
               <Text style={styles.personName}>{card.word}</Text>
               <Text style={styles.personHandle}>{t('from {name}', { name: `@${card.handle}` })}</Text>
             </View>
@@ -155,7 +156,7 @@ export default function KandiMakeScreen() {
           </View>
         ) : (
           <View style={styles.preview}>
-            <KandiBracelet word={shownWord} beads={beads} size={240} label={t('A kandi bracelet spelling {word}', { word: shownWord })} />
+            <KandiBracelet word={shownWord} beads={beads} charm={charm} size={240} label={t('A kandi bracelet spelling {word}', { word: shownWord })} />
             {left ? <ConfettiBurst spread={160} /> : null}
           </View>
         )}
@@ -231,6 +232,24 @@ export default function KandiMakeScreen() {
                 </Pressable>
               ))}
             </ScrollView>
+            <Text style={styles.label}>{t('A charm')}</Text>
+            <View style={styles.chips} accessibilityRole="radiogroup">
+              {[undefined, ...CHARMS.map((c) => c.id)].map((id) => (
+                <Pressable
+                  key={id ?? 'none'}
+                  onPress={() => {
+                    haptic.select();
+                    setCharm(id);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: charm === id }}
+                  accessibilityLabel={id ? CHARMS.find((c) => c.id === id)!.name : t('No charm')}
+                  style={({ pressed }) => [styles.charm, charm === id && styles.patternOn, pressed && styles.pressed]}
+                >
+                  {id ? <CharmIcon id={id} size={34} /> : <Text style={styles.chipText}>{t('None')}</Text>}
+                </Pressable>
+              ))}
+            </View>
             <Text style={styles.label}>{byCode ? t('A note (only whoever picks it up reads it)') : t('A note (only {name} reads it)', { name: who })}</Text>
             <TextInput
               value={note}
@@ -272,6 +291,7 @@ const styles = StyleSheet.create({
   patternOn: { borderColor: glowA(0.6), backgroundColor: glowA(0.12) },
   patternName: { ...type.caption, color: color.moonDim },
   people: { gap: space.sm },
+  charm: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, borderWidth: 1, borderColor: color.hairline, backgroundColor: color.glass },
   codeOption: { borderColor: glowA(0.5), backgroundColor: glowA(0.12) },
   codeCard: { alignItems: 'center', gap: space.xs, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },

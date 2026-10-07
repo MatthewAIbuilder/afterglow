@@ -890,10 +890,41 @@ await t('gardens: you show yours (a short list, server-timed), anyone signed in 
   await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ note: 'secret' })));
   await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ residents: Array.from({ length: 121 }, () => ({ k: 's' })) })));
   await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ updatedAt: new Date(0) })));
+  await assertSucceeds(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ decor: ['lights', 'moon'] })));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGa'), garden({ decor: Array.from({ length: 13 }, () => 'moon') })));
   await assertSucceeds(getDoc(doc(H.firestore(), 'gardens', 'uidGa')));
   await assertFails(getDoc(doc(anon.firestore(), 'gardens', 'uidGa')));
   await assertFails(deleteDoc(doc(H.firestore(), 'gardens', 'uidGa')));
   await assertSucceeds(deleteDoc(doc(G.firestore(), 'gardens', 'uidGa')));
+});
+await t('garden glows: a visitor with a profile leaves one (server-timed) on a shown garden; the owner reads them all', async () => {
+  const G = env.authenticatedContext('uidGlA'), V = env.authenticatedContext('uidGlB'), X = env.authenticatedContext('uidGlC'), B = env.authenticatedContext('uidGlD');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    for (const [uid, h] of [['uidGlA', 'glowa'], ['uidGlB', 'glowb'], ['uidGlD', 'glowd']]) await setDoc(doc(ctx.firestore(), 'profiles', uid), { handle: h });
+    await setDoc(doc(ctx.firestore(), 'blocks', 'uidGlA'), { uids: ['uidGlD'] });
+  });
+  const glow = () => ({ at: serverTimestamp() });
+  // No garden shown yet: nothing to glow on.
+  await assertFails(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), glow()));
+  await assertSucceeds(setDoc(doc(G.firestore(), 'gardens', 'uidGlA'), { residents: [], updatedAt: serverTimestamp() }));
+  await assertSucceeds(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), glow()));
+  // Once each, as yourself, timed by the server, nothing else in it; not on your own garden; no profile, or blocked: no.
+  await assertFails(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), glow()));
+  await assertFails(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlD'), glow()));
+  await assertFails(setDoc(doc(G.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlA'), glow()));
+  await assertFails(setDoc(doc(X.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlC'), glow()));
+  await assertFails(setDoc(doc(B.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlD'), glow()));
+  await assertFails(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), { at: new Date(0) }));
+  // The owner reads them all; a visitor only their own.
+  await assertSucceeds(getDocs(collection(G.firestore(), 'gardens', 'uidGlA', 'glows')));
+  await assertFails(getDocs(collection(V.firestore(), 'gardens', 'uidGlA', 'glows')));
+  await assertSucceeds(getDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+  await assertFails(getDoc(doc(X.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+  // Taken back by the visitor, or by the owner.
+  await assertFails(deleteDoc(doc(X.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+  await assertSucceeds(deleteDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
+  await assertSucceeds(setDoc(doc(V.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB'), glow()));
+  await assertSucceeds(deleteDoc(doc(G.firestore(), 'gardens', 'uidGlA', 'glows', 'uidGlB')));
 });
 await t('garden backups: only you write (a bounded text, server-timed), read or remove your own', async () => {
   const G = env.authenticatedContext('uidBa'), H = env.authenticatedContext('uidBb');
@@ -929,9 +960,16 @@ await t('kandi: made as yourself for someone else with a profile who hasn’t bl
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k5'), k({ to: 'uidNobody' })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k6'), k({ word: 'plur' })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k7'), k({ word: 'THIRTEEN CHARS' })));
-  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k8'), k({ beads: 'gold' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k8'), k({ beads: 'chrome' })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k9'), k({ note: 'x'.repeat(141) })));
   await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k10'), k({ extra: 1 })));
+  // New beads and charms.
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'k11'), k({ beads: 'galaxy', charm: 'alien' })));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'k12'), k({ beads: 'glow' })));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'k13'), k({ charm: 'skull' })));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'open9'), { from: 'uidKa', word: 'HI', beads: 'gold', charm: 'moon', createdAt: now }));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'kandi', 'open10'), { from: 'uidKa', word: 'HI', beads: 'holo', charm: 'butterfly', createdAt: now }));
+  await assertFails(setDoc(doc(K.firestore(), 'kandi', 'open11'), { from: 'uidKa', word: 'HI', beads: 'holo', charm: 'dragon', createdAt: now }));
   await assertSucceeds(getDoc(doc(L.firestore(), 'kandi', 'k1')));
   await assertFails(getDoc(doc(M.firestore(), 'kandi', 'k1')));
   await assertSucceeds(getDocs(query(collection(L.firestore(), 'kandi'), where('to', '==', 'uidKb'))));

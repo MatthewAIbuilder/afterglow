@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
+import { ActionSheetIOS } from 'react-native';
 import { router } from 'expo-router';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { renderApp } from './appRoutes';
@@ -68,6 +69,45 @@ describe('artist sprouts', () => {
     expect(app.getByText('Collectible levelled up')).toBeTruthy();
     expect(app.getByText(/^Bronze now: you’ve filmed SUBTRONICS 3 times/)).toBeTruthy();
   });
+
+  it('pin a card to your profile: it shows in your showcase, and goes out with your garden', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await filmed('subtronics', 3);
+    const app = await renderApp('/garden');
+    await flush();
+    await fireEvent.press(app.getByLabelText('SUBTRONICS collectible, Bronze · 3 videos.'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Pin this card to your profile'));
+    await flush();
+    expect(app.getByText('★ In your showcase')).toBeTruthy();
+    // The card turns over to your story with them.
+    await fireEvent.press(app.getByText('Turn it over'));
+    await flush();
+    expect(app.getByLabelText('3 videos of SUBTRONICS. First filmed Sep 20, 2026. 3 more videos of them for silver')).toBeTruthy();
+    await fireEvent.press(app.getByText('Turn it back'));
+    await flush();
+    await settle(5000);
+    await flush();
+    expect(mockSocial.gardens.get(maya)?.residents.find((r) => r.k === 'a')).toMatchObject({ artistId: 'subtronics', pin: 1 });
+    await app.unmount();
+    const profile = await renderApp('/profile');
+    await flush();
+    expect(profile.getByText('Your showcase')).toBeTruthy();
+    expect(profile.getByLabelText('The Watcher, from SUBTRONICS. Opens the card.')).toBeTruthy();
+    // Share profile offers a picture: your card in it.
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((o, cb) => cb(o.options.indexOf('Share a picture')));
+    await fireEvent.press(profile.getByText('Share profile'));
+    await flush();
+    expect(profile.getByText('Find me on Afterglow')).toBeTruthy();
+    expect(profile.getByText('1 collectible · 1 sprout')).toBeTruthy();
+    await profile.unmount();
+    // On the artist's page, yours opens its card.
+    const page = await renderApp('/artist/subtronics');
+    await flush();
+    await fireEvent.press(page.getByLabelText(/^Your SUBTRONICS collectible, The Watcher: .* Opens its card\.$/));
+    await flush();
+    expect(page.getByText('★ In your showcase')).toBeTruthy();
+  }, 20_000);
 
   it('videos from before the update grow their sprouts quietly', async () => {
     await filmed('subtronics', 1);

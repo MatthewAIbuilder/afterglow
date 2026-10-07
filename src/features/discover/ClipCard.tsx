@@ -50,6 +50,10 @@ import { clipShareText } from './share';
 import { communityMenu } from '../community/menu';
 import { flagMenu } from './flagMenu';
 import { useClipFlags } from '../../state/clipFlags';
+import { useSprouts } from '../../state/sprouts';
+import { Collectible } from '../sprouts/Collectible';
+import { artistLook } from '../sprouts/artistLook';
+import { tierLabel } from '../sprouts/artistSprouts';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
 import { fillsScreen, MIN_PLAYER, tallLayout } from './videoLayout';
@@ -139,6 +143,7 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
   const glow = !!media && showsGlow(filmer);
   const communityState = useCommunity();
   const clipFlags = useClipFlags();
+  const { artists: collectibles } = useSprouts();
   const social = useSocial();
   const sendOrShare = useSendOrShare();
   // Comments: a shared video keeps its own (on the video); every other clip has the clip's.
@@ -345,6 +350,8 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
     // In the festival's context, so you can star them as a must-see there.
     router.push({ pathname: '/artist/[id]', params: { id, festival: context?.id } });
   };
+  // Their collectible, when it's yours: a little badge by their name.
+  const mineSprout = collectibles.find((a) => a.artistId === artist.id);
   const artistButton = (
     <Pressable
       onPress={() => openArtist(artist.id)}
@@ -362,6 +369,14 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
           {t('{pct}% match', { pct })}
           {note ? <Text style={styles.note}>{`  ·  ${note}`}</Text> : null}
         </Text>
+        {mineSprout ? (
+          <View style={styles.mine} accessible accessibilityLabel={t('Your {artist} collectible: {level}', { artist: artist.name, level: tierLabel(mineSprout) })}>
+            <Collectible look={artistLook(artist)} tier={mineSprout.tier} shiny={!!mineSprout.shiny} size={20} still />
+            <Text style={styles.mineText} numberOfLines={1}>
+              {tierLabel(mineSprout)}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -756,6 +771,8 @@ export const ClipCard = memo(ClipCardBase);
 const shadow = { textShadowColor: 'rgba(0,0,0,0.55)', textShadowRadius: 10 } as const;
 
 const styles = StyleSheet.create({
+  mine: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  mineText: { ...type.caption, fontSize: 11, color: 'rgba(255,229,138,0.9)', fontWeight: '600' },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   topFade: { position: 'absolute', left: 0, right: 0, top: 0 },
   center: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },

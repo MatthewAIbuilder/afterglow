@@ -5,7 +5,7 @@ import { haptic } from '../../lib/haptics';
 import { useFinds } from '../../state/finds';
 import { color, radius, space, type } from '../../theme/tokens';
 import { Collectible } from '../sprouts/Collectible';
-import { huntLine, lookOf, untilLine } from './finds';
+import { findLook, huntLine, isHolo, untilLine } from './finds';
 import { HuntRow } from './HuntRow';
 
 const TILE = 104;
@@ -57,7 +57,8 @@ export function FindsSection() {
             accessibilityLabel={f.state === 'checking' ? t('{name}, waiting for signal to check it.', { name: f.name }) : t('{name}, found {date}.', { name: f.name, date: day(f.at) })}
             style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
           >
-            <Collectible look={lookOf(f.creature)} size={78} locked={f.state !== 'found'} />
+            <Collectible look={findLook(f)} shiny={isHolo(f)} size={78} locked={f.state !== 'found'} />
+            {isHolo(f) ? <Text style={styles.holo}>{t('Holo')}</Text> : null}
             <Text style={styles.tileName} numberOfLines={2}>
               {f.name}
             </Text>
@@ -78,6 +79,7 @@ const styles = StyleSheet.create({
   hunt: { padding: space.md, gap: space.xs, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, alignItems: 'center' },
   huntDone: { borderColor: 'rgba(255,210,74,0.5)' },
   huntName: { ...type.label, color: color.moon },
+  holo: { ...type.caption, fontSize: 10, fontWeight: '700', color: '#1A1030', backgroundColor: '#FFE58A', paddingHorizontal: 6, borderRadius: radius.pill, overflow: 'hidden', marginTop: -6 },
   huntLine: { ...type.caption, color: color.moonDim },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   tile: { width: TILE, alignItems: 'center', paddingVertical: space.sm, paddingHorizontal: 4, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },

@@ -8,15 +8,19 @@ import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { CloseIcon } from '../../components/TabIcons';
 import { APP_STORE_URL } from '../../config/app';
-import { findCardFrom, findLine, huntLine, lookOf, type Sticker, untilLine } from '../../features/finds/finds';
+import { findCardFrom, findLine, huntLine, isHolo, lookOf, placeLine, type Sticker, untilLine } from '../../features/finds/finds';
+import { shinyLook } from '../../features/sprouts/artistLook';
+import { StoryPreview } from '../../features/sprouts/StoryShare';
 import { useOrg } from '../../state/orgs';
 import { HuntRow } from '../../features/finds/HuntRow';
+import { PortalSwirl } from '../../features/finds/PortalSwirl';
 import { accountsOff } from '../../features/social/unavailable';
 import { Collectible } from '../../features/sprouts/Collectible';
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { goBack } from '../../lib/nav';
 import { useFinds } from '../../state/finds';
+import { revealSecret } from '../../state/secrets';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type, accentEdge } from '../../theme/tokens';
 
@@ -27,7 +31,7 @@ import { color, radius, space, type, accentEdge } from '../../theme/tokens';
  * no signal it's kept on the phone and checked once there is.
  */
 export default function FindScreen() {
-  const { code, c, n } = useLocalSearchParams<{ code: string; c?: string; n?: string }>();
+  const { code, c, n, via } = useLocalSearchParams<{ code: string; c?: string; n?: string; via?: string }>();
   const card = useMemo(() => findCardFrom({ code, c, n }), [code, c, n]);
   const insets = useSafeAreaInsets();
   const social = useSocial();
@@ -42,6 +46,12 @@ export default function FindScreen() {
     kept.current = true;
     finds.scan(card);
   }, [card, finds]);
+
+  // Caught from a totem's screen: a secret.
+  const fromTotem = via === 'totem' && find?.state === 'found';
+  useEffect(() => {
+    if (fromTotem) revealSecret('totem');
+  }, [fromTotem]);
 
   // Afterglow's copy, for who it's from: an organizer's sticker or gift, and a gift's few words.
   const [sticker, setSticker] = useState<Sticker | null>(null);
@@ -68,6 +78,8 @@ export default function FindScreen() {
 
   // Lighting up: a pop and confetti the moment it's confirmed while you watch.
   const [celebrate, setCelebrate] = useState(0);
+  // Sharing what you found, as a picture.
+  const [story, setStory] = useState(false);
   const pop = useSharedValue(1);
   const was = useRef(find?.state);
   useEffect(() => {
@@ -98,21 +110,38 @@ export default function FindScreen() {
   }
 
   const shown = find ?? { ...card, state: 'checking' as const, at: 0, sent: false, tries: 0 };
-  const look = lookOf(shown.creature);
   const found = shown.state === 'found';
+  // About one in twelve come out holographic.
+  const holo = isHolo({ ...shown, account: shown.account ?? social.user?.uid });
+  const look = holo ? shinyLook(lookOf(shown.creature)) : lookOf(shown.creature);
   const hunt = shown.huntId ? finds.huntOf(shown.huntId) : undefined;
   const progress = hunt ? finds.hunts.find((h) => h.hunt.id === hunt.id) : undefined;
 
   return (
-    <Shell insets={insets}>
+    <Shell
+      insets={insets}
+      overlay={
+        story && found ? (
+          <StoryPreview title={shown.name} tint={`${look.palette.deep}AA`} glow={look.palette.glow} headline={holo ? t('A holo {name}!', { name: shown.name }) : via === 'totem' ? t('Caught {name} at the totem!', { name: shown.name }) : t('I found {name}', { name: shown.name })} sub={look.name} onClose={() => setStory(false)}>
+            {(w) => (
+              <View>
+                {shown.creature === 'portapotty' ? <PortalSwirl size={Math.round(w * 0.95)} colors={look.palette} /> : null}
+                <Collectible look={look} shiny={holo} size={Math.round(w * 0.66)} still />
+              </View>
+            )}
+          </StoryPreview>
+        ) : null
+      }
+    >
       <View style={styles.stage}>
+        {shown.creature === 'portapotty' ? <PortalSwirl size={300} colors={look.palette} open={found} /> : null}
         <Animated.View style={popStyle}>
-          <Collectible look={look} size={200} locked={!found} />
+          <Collectible look={look} shiny={holo} size={200} locked={!found} />
         </Animated.View>
         {celebrate ? <ConfettiBurst key={celebrate} spread={160} /> : null}
       </View>
       <Text style={[styles.kicker, { color: found ? look.accent : color.moonFaint }]}>
-        {found ? (progress?.done ? t('HUNT COMPLETE') : t('YOU FOUND')) : shown.state === 'checking' ? (finds.online ? t('CHECKING') : t('SAVED')) : t('NOT THIS TIME')}
+        {found ? (progress?.done ? t('HUNT COMPLETE') : holo ? t('A HOLO ONE! YOU FOUND') : t('YOU FOUND')) : shown.state === 'checking' ? (finds.online ? t('CHECKING') : t('SAVED')) : t('NOT THIS TIME')}
       </Text>
       <Text style={styles.title} accessibilityRole="header">
         {shown.name}
@@ -126,6 +155,7 @@ export default function FindScreen() {
       {found ? (
         <Text style={styles.body}>{look.theme}.</Text>
       ) : null}
+      {found && placeLine(shown.creature) ? <Text style={[styles.body, { color: look.accent }]}>{placeLine(shown.creature)}</Text> : null}
       <Text style={[styles.status, shown.state === 'ended' || shown.state === 'gone' ? styles.amber : null]} accessibilityLiveRegion="polite">
         {findLine(shown)}
       </Text>
@@ -141,6 +171,19 @@ export default function FindScreen() {
         </View>
       ) : null}
 
+      {found ? (
+        <Pressable
+          onPress={() => {
+            haptic.tap();
+            setStory(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('Share what you found as a picture')}
+          style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+        >
+          <Text style={styles.secondaryText}>{t('Share picture')}</Text>
+        </Pressable>
+      ) : null}
       {found || shown.state === 'checking' ? (
         social.user ? (
           <Primary label={t('See your collection')} onPress={() => router.replace('/garden')} />
@@ -170,7 +213,7 @@ export default function FindScreen() {
   );
 }
 
-function Shell({ children, insets }: { children: React.ReactNode; insets: { top: number; bottom: number } }) {
+function Shell({ children, insets, overlay }: { children: React.ReactNode; insets: { top: number; bottom: number }; overlay?: React.ReactNode }) {
   return (
     <View style={styles.root}>
       <PageTitle title={t('A sticker you found')} />
@@ -179,6 +222,7 @@ function Shell({ children, insets }: { children: React.ReactNode; insets: { top:
         <CloseIcon color={color.moon} size={18} />
       </Pressable>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxxl, paddingBottom: insets.bottom + space.xl }]}>{children}</ScrollView>
+      {overlay}
     </View>
   );
 }

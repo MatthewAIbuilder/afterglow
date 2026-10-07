@@ -5,6 +5,7 @@ import type { ClipWindow } from '../memories/trim';
 import type { Hunt, HuntInput, Sticker, StickerInput } from '../finds/finds';
 import type { PublicResident } from '../sprouts/publicGarden';
 import type { Kandi, KandiInput, OpenKandiInput, PublicKandi } from '../kandi/kandi';
+import type { DecorId } from '../sprouts/decor';
 import type { Org, OrgCounter, OrgDay, OrgPost, OrgPostInput, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
@@ -328,9 +329,15 @@ export interface SocialService {
    */
   grantTheme(sproutId: string, theme: string): Promise<void>;
   /** Show your garden on your profile as it is now (who lives there and the kandi in it, nothing private), or take it down (null). */
-  publishGarden(residents: PublicResident[] | null, kandi?: PublicKandi[]): Promise<void>;
+  publishGarden(residents: PublicResident[] | null, kandi?: PublicKandi[], decor?: DecorId[]): Promise<void>;
   /** Someone's garden as they show it; null when they don't. */
-  gardenOf(uid: string): Promise<{ residents: PublicResident[]; kandi: PublicKandi[] } | null>;
+  gardenOf(uid: string): Promise<{ residents: PublicResident[]; kandi: PublicKandi[]; decor: DecorId[] } | null>;
+  /** Leave a glow on someone's shown garden (once each: again changes nothing), or take yours back. Not on your own; not if they blocked you. */
+  glowGarden(uid: string, on: boolean): Promise<void>;
+  /** Whether you've left a glow on this garden. */
+  glowedGarden(uid: string): Promise<boolean>;
+  /** Glows on your own garden: who left them, newest first (at most 100). */
+  gardenGlows(): Promise<{ from: string; at: string }[]>;
   /** Keep a private copy of your garden (as saved on the phone) with your account, so a new phone, a cleared browser or a reinstall gets it back. Only you can read it. */
   saveGardenBackup(data: string): Promise<void>;
   /** Your garden's private copy; null when there's none yet. */

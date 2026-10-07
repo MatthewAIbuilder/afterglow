@@ -93,6 +93,8 @@ jest.mock('expo-local-authentication', () => {
     authenticateAsync: jest.fn(async () => state.result),
   };
 });
+// Keeping the screen awake (the totem).
+jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn(), activateKeepAwakeAsync: jest.fn(async () => {}), deactivateKeepAwake: jest.fn(async () => {}) }));
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(async () => true), shareAsync: jest.fn(async () => {}) }));
 
 // The secure store: an in-memory keychain the tests can read (`__items`).

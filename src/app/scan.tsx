@@ -9,7 +9,7 @@ import { PersonAvatar } from '../components/PersonAvatar';
 import { CloseIcon, QrIcon } from '../components/TabIcons';
 import { type FriendCard, readFriendLink } from '../features/friends/qr';
 import { readSproutLink } from '../features/sprouts/sprouts';
-import { readFindLink } from '../features/finds/finds';
+import { fromTotemLink, readFindLink } from '../features/finds/finds';
 import { readKandiLink } from '../features/kandi/kandi';
 import { t } from '../i18n';
 import { haptic } from '../lib/haptics';
@@ -59,7 +59,7 @@ export default function ScanScreen() {
     if (sticker) {
       // A sticker in the wild: its own page keeps it.
       haptic.settle();
-      router.replace({ pathname: '/find/[code]', params: { code: sticker.code, c: sticker.creature, n: sticker.name } });
+      router.replace({ pathname: '/find/[code]', params: { code: sticker.code, c: sticker.creature, n: sticker.name, ...(fromTotemLink(text) ? { via: 'totem' } : {}) } });
       return;
     }
     const card = readFriendLink(text);

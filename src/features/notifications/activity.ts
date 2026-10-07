@@ -28,6 +28,8 @@ export function activityNotices(items: Activity[], look: ActivityLookups): Notic
       out.push({ at: a.createdAt, notice: { at: Date.parse(a.createdAt) || undefined, id: `tag:${a.id}`, kind: 'tag', title: t('@{handle} tagged you in a video', { handle }), body: t('It’s on your profile under Tagged. Open it to watch, or hide it.'), href: `/shared/${a.memoryId}` } });
     } else if (a.kind === 'kandi') {
       out.push({ at: a.createdAt, notice: { at: Date.parse(a.createdAt) || undefined, id: `kandi:${a.id}`, kind: 'kandi', title: t('@{handle} left you kandi: “{word}”', { handle, word: a.word }), body: t('It’s hanging in your garden. Open it to read their note.'), href: '/garden' } });
+    } else if (a.kind === 'glow') {
+      out.push({ at: a.createdAt, notice: { at: Date.parse(a.createdAt) || undefined, id: `glow:${a.id}`, kind: 'glow', title: t('@{handle} left a glow on your garden', { handle }), body: t('They visited and liked what they saw. Visit theirs back?'), href: `/u/${handle}` } });
     } else if (a.kind === 'comment') {
       const what = look.videoOf(a.memoryId) ?? t('your video');
       const said = a.text.length > 80 ? `${a.text.slice(0, 79).trimEnd()}…` : a.text;

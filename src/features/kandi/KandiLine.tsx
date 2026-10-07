@@ -2,14 +2,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { color, space, type } from '../../theme/tokens';
-import type { PatternId } from './kandi';
+import type { CharmId, PatternId } from './kandi';
 import { KandiBracelet } from './KandiBracelet';
 
 /**
  * Kandi hanging in a garden: a row of bracelets on a string, each with who
  * made it. Tapping one opens it (in your own garden).
  */
-export function KandiLine({ items, onOpen, title }: { items: { key: string; word: string; beads: PatternId; from?: string }[]; onOpen?: (key: string) => void; title?: string }) {
+export function KandiLine({ items, onOpen, title }: { items: { key: string; word: string; beads: PatternId; charm?: CharmId; from?: string }[]; onOpen?: (key: string) => void; title?: string }) {
   if (!items.length) return null;
   return (
     <View style={styles.root}>
@@ -27,7 +27,7 @@ export function KandiLine({ items, onOpen, title }: { items: { key: string; word
             accessibilityLabel={k.from ? t('Kandi spelling {word}, from @{handle}', { word: k.word, handle: k.from }) : t('Kandi spelling {word}', { word: k.word })}
             style={({ pressed }) => [styles.item, pressed && { opacity: 0.75 }]}
           >
-            <KandiBracelet word={k.word} beads={k.beads} size={96} />
+            <KandiBracelet word={k.word} beads={k.beads} charm={k.charm} size={96} />
             {k.from ? (
               <Text style={styles.from} numberOfLines={1}>
                 @{k.from}

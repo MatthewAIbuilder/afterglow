@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { bumpQuestEvent } from './dailyQuests';
 import * as Crypto from 'expo-crypto';
 import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { isOffline } from '../features/offline/status';
-import { cleanNote, cleanWord, isPattern, type Kandi, type KandiCard, type PatternId, type PublicKandi } from '../features/kandi/kandi';
+import { type CharmId, cleanNote, cleanWord, isCharm, isPattern, type Kandi, type KandiCard, type PatternId, type PublicKandi } from '../features/kandi/kandi';
 import { SPROUT_ID_LENGTH, sproutIdFrom } from '../features/sprouts/sprouts';
 import { socialErrorKind } from '../features/social/service';
 import { useSocial } from './social';
@@ -21,7 +22,7 @@ const REFUSED_MAX = 3;
 const RECEIVED_MAX = 100;
 
 /** Waiting to be sent: for someone (`to`), or given by code (`open`, `to` empty: whoever picks it up). */
-export type PendingKandi = { id: string; to: string; toName: string; open?: true; word: string; beads: PatternId; note?: string; at: number; tries: number; lastTry?: number; refused?: number };
+export type PendingKandi = { id: string; to: string; toName: string; open?: true; word: string; beads: PatternId; charm?: CharmId; note?: string; at: number; tries: number; lastTry?: number; refused?: number };
 
 /** A kandi code's id: 20 letters and digits, random. */
 function codeId(): string {
@@ -34,18 +35,25 @@ function codeId(): string {
 /** Kandi in your garden, with the giver's handle when known. */
 export type ReceivedKandi = Kandi & { fromHandle?: string; fromName?: string };
 
-type Stored = { outbox: PendingKandi[]; received: ReceivedKandi[] };
+/** `worn`: the kandi you show on your profile (its id). */
+type Stored = { outbox: PendingKandi[]; received: ReceivedKandi[]; worn?: string };
 const EMPTY: Stored = { outbox: [], received: [] };
 
 type Ctx = {
+  /** The phone's saved kandi has been read. */
+  hydrated: boolean;
   /** Waiting for signal. */
   outbox: PendingKandi[];
   /** In your garden, newest first. */
   received: ReceivedKandi[];
   /** Make kandi for someone: kept now, left in their garden once there's signal. */
-  give: (to: { uid: string; name: string }, word: string, beads: PatternId, note?: string) => boolean;
+  give: (to: { uid: string; name: string }, word: string, beads: PatternId, note?: string, charm?: CharmId) => boolean;
   /** Make kandi given by code: its card (for the QR) straight away; it reaches Afterglow once there's signal, and whoever scans it first picks it up. */
-  giveByCode: (word: string, beads: PatternId, note?: string) => KandiCard | undefined;
+  giveByCode: (word: string, beads: PatternId, note?: string, charm?: CharmId) => KandiCard | undefined;
+  /** The kandi you show on your profile, if any. */
+  worn?: ReceivedKandi;
+  /** Show this kandi on your profile (or none). */
+  wear: (id: string | undefined) => void;
   /** Take it out of your garden. */
   remove: (id: string) => Promise<boolean>;
   /** Read what's in your garden again. */
@@ -64,7 +72,7 @@ function clean(raw: unknown): Stored {
   const received = Array.isArray(o.received)
     ? o.received.filter((k): k is ReceivedKandi => !!k && typeof k === 'object' && typeof k.id === 'string' && typeof k.from === 'string' && !!cleanWord(k.word) && isPattern(k.beads)).slice(0, RECEIVED_MAX)
     : [];
-  return { outbox, received };
+  return { outbox, received, ...(typeof o.worn === 'string' ? { worn: o.worn } : {}) };
 }
 
 const KandiContext = createContext<Ctx | null>(null);
@@ -76,6 +84,7 @@ export function KandiProvider({ children }: { children: ReactNode }) {
   const account = social.user?.uid;
   const [stored, setStored] = useState<Stored>(EMPTY);
   const loaded = useRef(false);
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     AsyncStorage.getItem(KANDI_KEY)
       .then((raw) => {
@@ -83,11 +92,12 @@ export function KandiProvider({ children }: { children: ReactNode }) {
         try {
           s = raw ? clean(JSON.parse(raw)) : EMPTY;
         } catch {}
-        setStored((cur) => ({ outbox: [...s.outbox, ...cur.outbox.filter((k) => !s.outbox.some((x) => x.id === k.id))], received: cur.received.length ? cur.received : s.received }));
+        setStored((cur) => ({ outbox: [...s.outbox, ...cur.outbox.filter((k) => !s.outbox.some((x) => x.id === k.id))], received: cur.received.length ? cur.received : s.received, ...((cur.worn ?? s.worn) ? { worn: cur.worn ?? s.worn } : {}) }));
       })
       .catch(() => {})
       .finally(() => {
         loaded.current = true;
+        setHydrated(true);
       });
   }, []);
   useEffect(() => {
@@ -95,25 +105,27 @@ export function KandiProvider({ children }: { children: ReactNode }) {
   }, [stored]);
 
   const give = useCallback(
-    (to: { uid: string; name: string }, word: string, beads: PatternId, note?: string) => {
+    (to: { uid: string; name: string }, word: string, beads: PatternId, note?: string, charm?: CharmId) => {
       const w = cleanWord(word);
       if (!w || !isPattern(beads) || !account || to.uid === account) return false;
       const n = cleanNote(note);
-      const item: PendingKandi = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`, to: to.uid, toName: to.name, word: w, beads, ...(n ? { note: n } : {}), at: Date.now(), tries: 0 };
+      const item: PendingKandi = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`, to: to.uid, toName: to.name, word: w, beads, ...(isCharm(charm) ? { charm } : {}), ...(n ? { note: n } : {}), at: Date.now(), tries: 0 };
       setStored((s) => ({ ...s, outbox: [...s.outbox, item] }));
+      bumpQuestEvent('kandi');
       return true;
     },
     [account],
   );
 
   const giveByCode = useCallback(
-    (word: string, beads: PatternId, note?: string): KandiCard | undefined => {
+    (word: string, beads: PatternId, note?: string, charm?: CharmId): KandiCard | undefined => {
       const w = cleanWord(word);
       const handle = social.profile?.handle;
       if (!w || !isPattern(beads) || !account || !handle) return undefined;
       const n = cleanNote(note);
       const id = codeId();
-      setStored((s) => ({ ...s, outbox: [...s.outbox, { id, to: '', toName: '', open: true, word: w, beads, ...(n ? { note: n } : {}), at: Date.now(), tries: 0 }] }));
+      bumpQuestEvent('kandi');
+      setStored((s) => ({ ...s, outbox: [...s.outbox, { id, to: '', toName: '', open: true, word: w, beads, ...(isCharm(charm) ? { charm } : {}), ...(n ? { note: n } : {}), at: Date.now(), tries: 0 }] }));
       return { id, from: account, handle, word: w, beads };
     },
     [account, social.profile?.handle],
@@ -133,7 +145,7 @@ export function KandiProvider({ children }: { children: ReactNode }) {
       return () => clearTimeout(timer);
     }
     sending.current = true;
-    const note = next.note ? { note: next.note } : {};
+    const note = { ...(next.note ? { note: next.note } : {}), ...(next.charm ? { charm: next.charm } : {}) };
     void (next.open ? service.leaveOpenKandi({ id: next.id, word: next.word, beads: next.beads, ...note }) : service.giveKandi({ to: next.to, word: next.word, beads: next.beads, ...note }))
       .then(() => setStored((s) => ({ ...s, outbox: s.outbox.filter((x) => x.id !== next.id) })))
       .catch((e: unknown) => {
@@ -187,8 +199,17 @@ export function KandiProvider({ children }: { children: ReactNode }) {
     [service],
   );
 
-  const shown = useMemo(() => stored.received.map((k) => ({ word: k.word, beads: k.beads, ...(k.fromHandle ? { from: k.fromHandle } : {}) })), [stored.received]);
-  const value = useMemo<Ctx>(() => ({ outbox: stored.outbox, received: stored.received, give, giveByCode, remove, refresh, shown }), [stored, give, giveByCode, remove, refresh, shown]);
+  // What visitors see: the worn one first, marked.
+  const shown = useMemo(
+    () =>
+      [...stored.received]
+        .sort((a, b) => Number(b.id === stored.worn) - Number(a.id === stored.worn))
+        .map((k) => ({ word: k.word, beads: k.beads, ...(k.charm ? { charm: k.charm } : {}), ...(k.fromHandle ? { from: k.fromHandle } : {}), ...(k.id === stored.worn ? { worn: true as const } : {}) })),
+    [stored.received, stored.worn],
+  );
+  const worn = useMemo(() => stored.received.find((k) => k.id === stored.worn), [stored.received, stored.worn]);
+  const wear = useCallback((id: string | undefined) => setStored((s) => (id ? { ...s, worn: id } : { outbox: s.outbox, received: s.received })), []);
+  const value = useMemo<Ctx>(() => ({ hydrated, outbox: stored.outbox, received: stored.received, give, giveByCode, remove, refresh, shown, worn, wear }), [hydrated, stored, give, giveByCode, remove, refresh, shown, worn, wear]);
   return <KandiContext.Provider value={value}>{children}</KandiContext.Provider>;
 }
 

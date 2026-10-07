@@ -49,6 +49,7 @@ describe('gardens', () => {
     await flush();
     expect(app.getByText('@maya’s garden')).toBeTruthy();
     expect(app.getByText('2 sprouts and 1 artist collectible. Tap one to make it dance.')).toBeTruthy();
+    expect(app.queryByText(/In their sky/)).toBeNull();
     // Nothing to move; a tap dances (and opens nothing).
     await fireEvent.press(app.getByLabelText('PLUR sprout, In bloom.'));
     await settle(1000);
@@ -155,5 +156,205 @@ describe('gardens', () => {
     expect(late.queryByText('Put it in my garden')).toBeNull();
     expect(late.getByText(/isn’t on Afterglow yet, or it was taken back/)).toBeTruthy();
   });
-});
 
+  it('kandi with a charm and galaxy beads, and making one back from your garden', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    const sam = await person('sam', 'Sam');
+    const app = await renderApp(`/kandi-make?uid=${maya}&name=Maya&handle=maya`);
+    await flush();
+    await fireEvent.press(app.getByLabelText('Galaxy'));
+    await fireEvent.press(app.getByLabelText('Alien'));
+    await fireEvent.press(app.getByText('Leave it in Maya’s garden'));
+    await flush();
+    await settle(1000);
+    await flush();
+    const made = [...mockSocial.kandi.values()].find((k) => k.from === sam);
+    expect(made).toMatchObject({ to: maya, beads: 'galaxy', charm: 'alien' });
+    await app.unmount();
+
+    // Maya opens it in her garden and makes one back.
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const hers = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    await fireEvent.press(hers.getByLabelText('Kandi spelling PLUR, from @sam'));
+    await flush();
+    await fireEvent.press(hers.getByLabelText('Make kandi back for @sam'));
+    await flush();
+    expect(hers.getByText('Kandi for Sam')).toBeTruthy();
+  }, 20000);
+
+  it('wear kandi on your profile, and visitors see whose it is', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().giveKandi({ to: maya, word: 'BESTIES', beads: 'glow', charm: 'heart' });
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const app = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    await fireEvent.press(app.getByLabelText('Kandi spelling BESTIES, from @sam'));
+    await flush();
+    await fireEvent.press(app.getByText('Wear it on my profile'));
+    await flush();
+    expect(app.getByText('Wearing it on your profile · Take it off')).toBeTruthy();
+    await settle(5000);
+    await flush();
+    expect(mockSocial.gardens.get(maya)?.kandi[0]).toMatchObject({ word: 'BESTIES', worn: true, from: 'sam' });
+    await app.unmount();
+
+    await s().signOut();
+    await s().signIn('sam@example.com', 'password123');
+    const visit = await renderApp('/u/maya');
+    await flush();
+    expect(visit.getByText('Wearing kandi from @sam')).toBeTruthy();
+    // Their kandi stacked up an arm, opening their garden.
+    expect(visit.getByText('Their kandi')).toBeTruthy();
+    await fireEvent.press(visit.getByLabelText('Their kandi: 1 bracelet, made by @sam. Opens their garden.'));
+    await flush();
+    expect(visit.getByText('@maya’s garden')).toBeTruthy();
+  });
+
+  it('decorations they earned hang in their sky for visitors', async () => {
+    await person('maya', 'Maya Lin');
+    await s().publishGarden([{ k: 's', kind: 'moonlight', stage: 3 }], [], ['lights', 'moon', 'nonsense' as never]);
+    await s().signOut();
+    await person('sam', 'Sam');
+    const app = await renderApp('/u/maya');
+    await flush();
+    await fireEvent.press(app.getByTestId('visit-garden'));
+    await flush();
+    expect(app.getByText('In their sky: fairy lights, the moon')).toBeTruthy();
+  });
+
+  it('kandi you were given goes out as a story picture', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().giveKandi({ to: maya, word: 'RAIL', beads: 'galaxy', charm: 'alien', note: 'see you at the rail' });
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const app = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    await fireEvent.press(app.getByLabelText('Kandi spelling RAIL, from @sam'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Share this kandi as a picture'));
+    await flush();
+    expect(app.getByText('Kandi from @sam')).toBeTruthy();
+    expect(app.getAllByText('“see you at the rail”').length).toBeGreaterThan(0);
+    const Sharing = jest.requireMock<{ shareAsync: jest.Mock }>('expo-sharing');
+    Sharing.shareAsync.mockClear();
+    await fireEvent.press(app.getByLabelText('Share this picture'));
+    await flush();
+    expect(Sharing.shareAsync).toHaveBeenCalledWith(expect.stringMatching(/\.png$/), expect.objectContaining({ mimeType: 'image/png' }));
+    // Closing the picture goes back to the kandi.
+    await fireEvent.press(app.getAllByLabelText('Close').at(-1)!);
+    await flush();
+    expect(app.queryByText('Kandi from @sam')).toBeNull();
+    expect(app.getByText('Wear it on my profile')).toBeTruthy();
+  });
+
+  it('visitors see the cards someone pinned, and a tap opens one', async () => {
+    await person('maya', 'Maya Lin');
+    await s().publishGarden([
+      { k: 's', kind: 'plur', stage: 3 },
+      { k: 'a', artistId: 'subtronics', name: 'SUBTRONICS', tier: 2, pin: 1 },
+      { k: 'a', artistId: 'hedex', name: 'HEDEX', tier: 1 },
+    ]);
+    await s().signOut();
+    await person('sam', 'Sam');
+    const app = await renderApp('/u/maya');
+    await flush();
+    expect(app.getByText('Showcase')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('The Watcher, from SUBTRONICS. Opens the card.'));
+    await flush();
+    expect(app.getByText('@maya’s collectible')).toBeTruthy();
+    expect(app.getByText('Silver')).toBeTruthy();
+  });
+
+  it('a decoration you earn gets its moment once; ones you had before the update are simply there', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    for (const word of ['A', 'B', 'C', 'D', 'E']) await s().giveKandi({ to: maya, word, beads: 'neon' });
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    // Seen nothing yet on this phone: the lanterns are new.
+    await AsyncStorage.setItem('decorSeen.v1', JSON.stringify({ [maya]: [] }));
+    const app = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    expect(app.getByText('New in your garden’s sky')).toBeTruthy();
+    expect(app.getAllByText('Paper lanterns').length).toBeGreaterThan(0);
+    // It can go out as a picture first.
+    await fireEvent.press(app.getByLabelText('Share Paper lanterns as a picture'));
+    await flush();
+    expect(app.getByText('New in your garden’s sky, on Afterglow')).toBeTruthy();
+    await fireEvent.press(app.getAllByLabelText('Close').at(-1)!);
+    await flush();
+    await settle(500);
+    await fireEvent.press(app.getByText('Lovely'));
+    await flush();
+    expect(app.queryByText('New in your garden’s sky')).toBeNull();
+    expect(JSON.parse((await AsyncStorage.getItem('decorSeen.v1'))!)[maya]).toEqual(['lanterns']);
+  });
+
+  it('decorations already earned when you first look are not celebrated', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    for (const word of ['A', 'B', 'C', 'D', 'E']) await s().giveKandi({ to: maya, word, beads: 'neon' });
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    await AsyncStorage.setItem('kandi.v1', JSON.stringify({ outbox: [], received: ['A', 'B', 'C', 'D', 'E'].map((w, i) => ({ id: `k${i}`, word: w, beads: 'neon', from: 'x', fromHandle: 'sam', createdAt: new Date(2026, 9, 1).toISOString() })) }));
+    const app = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    expect(app.queryByText('New in your garden’s sky')).toBeNull();
+  });
+
+  it('visitors leave a glow (once, and can take it back); the garden’s owner sees who', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().publishGarden([{ k: 's', kind: 'plur', stage: 3 }]);
+    await s().signOut();
+    const sam = await person('sam', 'Sam');
+    const app = await renderApp('/u/maya');
+    await flush();
+    await fireEvent.press(app.getByTestId('visit-garden'));
+    await flush();
+    await fireEvent.press(app.getByLabelText('Leave a glow for @maya'));
+    await flush();
+    expect(app.getByText('You left a glow')).toBeTruthy();
+    expect([...(mockSocial.glows.get(maya)?.keys() ?? [])]).toEqual([sam]);
+    // Again takes it back, then once more leaves it.
+    await fireEvent.press(app.getByLabelText('You left a glow for @maya. Take it back.'));
+    await flush();
+    expect(mockSocial.glows.get(maya)?.size).toBe(0);
+    await fireEvent.press(app.getByLabelText('Leave a glow for @maya'));
+    await flush();
+    await app.unmount();
+
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const garden = await renderApp('/garden');
+    await flush();
+    expect(garden.getByText('✦ 1 glow from visitors')).toBeTruthy();
+    expect(garden.getByText('@sam')).toBeTruthy();
+    // Who glowed, with a way to visit theirs back.
+    await fireEvent.press(garden.getByText('✦ 1 glow from visitors'));
+    await flush();
+    expect(garden.getByText('Glows on your garden')).toBeTruthy();
+    await fireEvent.press(garden.getByLabelText('Visit @sam’s garden'));
+    await flush();
+    expect(garden.getByText('@sam’s garden')).toBeTruthy();
+  });
+});

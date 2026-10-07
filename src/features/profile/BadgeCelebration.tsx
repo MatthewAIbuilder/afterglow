@@ -22,13 +22,19 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { Sprout } from '../sprouts/Sprout';
 import { kindOf, type SproutKind } from '../sprouts/sprouts';
 import type { ArtistLook } from '../sprouts/artistLook';
-import { type Tier, TIER_LABEL, tierLine } from '../sprouts/artistSprouts';
+import { type Tier, TIER_LABEL, tierLabel, tierLine } from '../sprouts/artistSprouts';
+import { CardReveal, CollectibleCard } from '../sprouts/CollectibleCard';
+import { StoryPreview } from '../sprouts/StoryShare';
 import { pinAbout, pinLook, throwbackAbout, throwbackLook } from '../badges/badges';
 import { type PastEvent, pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
 import type { Milestone } from './milestones';
 import { Medal, medalColors } from './Milestones';
 import { t } from '../../i18n';
+import { DECOR, DECOR_COLORS, type DecorId } from '../sprouts/decor';
+import { DecorIcon } from '../sprouts/DecorSky';
+
+const decorOf = (id: DecorId) => DECOR.find((d) => d.id === id) ?? DECOR[0];
 
 export type Unlock =
   | { kind: 'pin'; festival: Festival }
@@ -37,7 +43,9 @@ export type Unlock =
   /** A sprout in your garden bloomed into a kind. */
   | { kind: 'sprout'; sprout: SproutKind; foundAt?: string }
   /** An artist's collectible, earned by filming them or levelled up. */
-  | { kind: 'artistSprout'; name: string; look: ArtistLook; tier: Tier; videos: number };
+  | { kind: 'artistSprout'; name: string; look: ArtistLook; tier: Tier; videos: number; shiny?: boolean }
+  /** A decoration for your garden's sky, earned by something you did. */
+  | { kind: 'decor'; id: DecorId };
 
 const RAYS = 18;
 const SPARKS = 26;
@@ -64,7 +72,7 @@ export function BadgeCelebration({ unlock, onDone, id }: { unlock: Unlock | unde
 
 /** What an unlock is, as a key. */
 const unlockKey = (u: Unlock) =>
-  u.kind === 'pin' ? `pin:${u.festival.id}` : u.kind === 'throwback' ? `past:${pastLabel(u.past)}` : u.kind === 'milestone' ? `m:${u.milestone.id}` : u.kind === 'artistSprout' ? `artist:${u.name}:${u.tier}` : `sprout:${u.sprout}:${u.foundAt ?? ''}`;
+  u.kind === 'pin' ? `pin:${u.festival.id}` : u.kind === 'throwback' ? `past:${pastLabel(u.past)}` : u.kind === 'milestone' ? `m:${u.milestone.id}` : u.kind === 'artistSprout' ? `artist:${u.name}:${u.tier}` : u.kind === 'decor' ? `decor:${u.id}` : `sprout:${u.sprout}:${u.foundAt ?? ''}`;
 
 /** A moment is ready to dismiss after this long (a double tap meant for the one before is ignored). */
 const ARM_MS = 400;
@@ -89,7 +97,9 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
             ? [kindOf(unlock.sprout).body[0], kindOf(unlock.sprout).accent]
             : unlock.kind === 'artistSprout'
               ? [unlock.look.palette.mid, unlock.look.accent]
-              : ['#A97CFF', '#FFB86B'];
+              : unlock.kind === 'decor'
+                ? [...DECOR_COLORS[unlock.id]]
+                : ['#A97CFF', '#FFB86B'];
   const colors = [c1, c2, '#FFE38A', '#FFFFFF'];
   const title =
     unlock.kind === 'pin'
@@ -100,7 +110,9 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           ? kindOf(unlock.sprout).name
           : unlock.kind === 'artistSprout'
             ? `${unlock.name} · ${unlock.look.name}`
-            : unlock.milestone.title;
+            : unlock.kind === 'decor'
+              ? decorOf(unlock.id).name
+              : unlock.milestone.title;
   const about =
     unlock.kind === 'pin'
       ? pinAbout(unlock.festival, true)
@@ -116,7 +128,42 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
                 ? t('{tier} now: you’ve filmed {artist} {n} times. {next}.', { tier: TIER_LABEL[unlock.tier], artist: unlock.name, n: unlock.videos, next: tierLine(unlock.videos) })
                 : t('{tier} now: you’ve filmed {artist} {n} times.', { tier: TIER_LABEL[unlock.tier], artist: unlock.name, n: unlock.videos })
               : t('{theme}, earned with your video of {artist}. Give one to someone, or film them again: {next}.', { theme: unlock.look.theme, artist: unlock.name, next: tierLine(unlock.videos) })
-            : unlock.milestone.about;
+            : unlock.kind === 'decor'
+              ? t('Earned: {how}. It hangs in your garden’s sky now, for you and everyone who visits.', { how: decorOf(unlock.id).how.toLowerCase() })
+              : unlock.milestone.about;
+
+  const kicker =
+    unlock.kind === 'milestone' && unlock.milestone.quest
+      ? t('Side quest complete')
+      : unlock.kind === 'throwback'
+        ? t('Throwback unlocked')
+        : unlock.kind === 'sprout'
+          ? unlock.foundAt
+            ? t('A wild sprout appeared')
+            : t('Your sprout bloomed')
+          : unlock.kind === 'artistSprout'
+            ? unlock.shiny && !unlock.tier
+              ? t('A shiny one! Artist collectible unlocked')
+              : unlock.tier
+                ? t('Collectible levelled up')
+                : t('Artist collectible unlocked')
+            : unlock.kind === 'decor'
+              ? t('New in your garden’s sky')
+              : t('Badge unlocked');
+  // Sharing it: the same thing, big, in a story-sized picture.
+  const [story, setStory] = useState(false);
+  const picture = (w: number) =>
+    look ? (
+      <EnamelPin look={look} size={Math.round(w * 0.62)} />
+    ) : unlock.kind === 'milestone' ? (
+      <Medal milestone={unlock.milestone} size={Math.round(w * 0.5)} />
+    ) : unlock.kind === 'sprout' ? (
+      <Sprout kind={unlock.sprout} stage={3} size={Math.round(w * 0.6)} still />
+    ) : unlock.kind === 'artistSprout' ? (
+      <CollectibleCard look={unlock.look} artistName={unlock.name} tier={unlock.tier} shiny={unlock.shiny} line={tierLabel({ tier: unlock.tier, videos: unlock.videos })} width={Math.round(w * 0.74)} still />
+    ) : unlock.kind === 'decor' ? (
+      <DecorIcon id={unlock.id} size={Math.round(w * 0.6)} />
+    ) : null;
 
   const pop = useSharedValue(reduce ? 1 : 0);
   const wobble = useSharedValue(0);
@@ -178,26 +225,17 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
             <Medal milestone={unlock.milestone} size={BADGE * 0.8} />
           ) : unlock.kind === 'sprout' ? (
             <Sprout kind={unlock.sprout} stage={3} size={BADGE} />
+          ) : unlock.kind === 'decor' ? (
+            <DecorIcon id={unlock.id} size={BADGE * 0.85} />
           ) : unlock.kind === 'artistSprout' ? (
-            <Sprout artist={unlock.look} tier={unlock.tier} stage={3} size={BADGE} />
+            // Its card, turning over (in its shiny colours when it is one).
+            <CardReveal look={unlock.look} artistName={unlock.name} tier={unlock.tier} shiny={unlock.shiny} line={tierLabel({ tier: unlock.tier, videos: unlock.videos })} width={Math.min(230, field - 80)} />
           ) : null}
         </Animated.View>
       </View>
 
       <Animated.View entering={reduce ? undefined : FadeInDown.delay(450).duration(420)} style={styles.words}>
-        <Text style={[styles.kicker, { color: '#FFE38A' }]}>{unlock.kind === 'milestone' && unlock.milestone.quest
-            ? t('Side quest complete')
-            : unlock.kind === 'throwback'
-              ? t('Throwback unlocked')
-              : unlock.kind === 'sprout'
-                ? unlock.foundAt
-                  ? t('A wild sprout appeared')
-                  : t('Your sprout bloomed')
-                : unlock.kind === 'artistSprout'
-                  ? unlock.tier
-                    ? t('Collectible levelled up')
-                    : t('Artist collectible unlocked')
-                  : t('Badge unlocked')}</Text>
+        <Text style={[styles.kicker, { color: '#FFE38A' }]}>{kicker}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>
@@ -212,9 +250,26 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           accessibilityLabel={t('Add {name} to your collection', { name: title })}
           style={({ pressed }) => [styles.button, { backgroundColor: c1 }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
         >
-          <Text style={styles.buttonText}>{unlock.kind === 'sprout' || unlock.kind === 'artistSprout' ? t('Lovely') : t('Add to collection')}</Text>
+          <Text style={styles.buttonText}>{unlock.kind === 'sprout' || unlock.kind === 'artistSprout' || unlock.kind === 'decor' ? t('Lovely') : t('Add to collection')}</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            haptic.tap();
+            setStory(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('Share {name} as a picture', { name: title })}
+          hitSlop={8}
+          style={({ pressed }) => [styles.shareLink, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={[styles.shareText, { color: c1 }]}>{t('Share it')}</Text>
         </Pressable>
       </Animated.View>
+      {story ? (
+        <StoryPreview title={title} tint={`${c2}66`} glow={c1} headline={title} sub={t('{what}, on Afterglow', { what: kicker })} onClose={() => setStory(false)}>
+          {picture}
+        </StoryPreview>
+      ) : null}
     </View>
   );
 }
@@ -281,4 +336,6 @@ const styles = StyleSheet.create({
   about: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.sm },
   button: { marginTop: space.xl, alignSelf: 'stretch', minHeight: 52, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xxl },
   buttonText: { ...type.headline, color: color.night },
+  shareLink: { marginTop: space.md, paddingVertical: space.xs, paddingHorizontal: space.lg },
+  shareText: { ...type.headline },
 });

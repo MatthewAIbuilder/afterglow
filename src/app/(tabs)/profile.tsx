@@ -20,6 +20,14 @@ import { groupFestivals } from '../../features/festivals/going';
 import { countdown } from '../../features/festivals/when';
 import { Highlights } from '../../features/profile/Highlights';
 import { GardenShelf } from '../../features/sprouts/GardenShelf';
+import { ShowcaseRow } from '../../features/sprouts/ShowcaseRow';
+import { KandiStack } from '../../features/kandi/KandiStack';
+import { ProfileStory } from '../../features/profile/ProfileStory';
+import { StoryPreview } from '../../features/sprouts/StoryShare';
+import { useSprouts } from '../../state/sprouts';
+import { useMyCollection } from '../../features/sprouts/useMyCollection';
+import { showActionSheet } from '../../lib/dialog';
+import { useMyShowcase } from '../../features/sprouts/useMyShowcase';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
 import { useDailyQuests } from '../../features/quests/useDailyQuests';
 import { CrewsList, SavedTab, VideosTab } from '../../features/profile/ProfileTabsContent';
@@ -65,6 +73,7 @@ import { localDay } from '../../features/artists/shows';
 import { useGoingShows } from '../../state/goingShows';
 import { color, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
+import { useKandi } from '../../state/kandi';
 import { datesLine } from '../../features/festivals/format';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 
@@ -90,6 +99,15 @@ export default function ProfileScreen() {
 }
 
 function FullProfile() {
+  // The kandi you wear on your profile, as visitors see it.
+  const { worn, shown: kandiShown } = useKandi();
+  const wornKandi = worn ? { word: worn.word, beads: worn.beads, ...(worn.charm ? { charm: worn.charm } : {}), ...(worn.fromHandle ? { from: worn.fromHandle } : {}) } : undefined;
+  // The collectible cards you pinned, shown above your garden.
+  const showcase = useMyShowcase();
+  const sprouts = useSprouts();
+  const myCollection = useMyCollection();
+  // Your profile as a story picture (from Share profile).
+  const [profileStory, setProfileStory] = useState(false);
   const quests = useDailyQuests();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
@@ -264,6 +282,7 @@ function FullProfile() {
         </View>
 
         <ProfileHeader
+          kandi={wornKandi}
           note={goingNote}
             socials={me?.socials}
           name={me?.displayName ?? t('You')}
@@ -298,7 +317,15 @@ function FullProfile() {
             <>
               <ProfileButton label={t('Edit profile')} onPress={() => router.push('/profile-edit')} />
               {runs ? <ProfileButton label={t('Studio')} a11y={t('Open the organizer studio')} onPress={() => router.push('/studio')} glow /> : null}
-              <ProfileButton label={t('Share profile')} onPress={() => void shareMessage(t('@{handle} on Afterglow: {url}', { handle: me.handle, url: `${WEB_URL}/u/${me.handle}` }))} />
+              <ProfileButton
+                label={t('Share profile')}
+                onPress={() =>
+                  showActionSheet({ title: t('Share your profile'), options: [t('Share a picture'), t('Share the link'), t('Cancel')], cancelButtonIndex: 2 }, (i) => {
+                    if (i === 0) setProfileStory(true);
+                    else if (i === 1) void shareMessage(t('@{handle} on Afterglow: {url}', { handle: me.handle, url: `${WEB_URL}/u/${me.handle}` }));
+                  })
+                }
+              />
             </>
           ) : social.availability.ok && social.ready ? (
             <ProfileButton label={social.user ? t('Finish your profile') : t('Create your profile')} onPress={signIn} glow />
@@ -324,6 +351,10 @@ function FullProfile() {
               hidden={shelves.hidden.has('festivals')}
               onToggle={() => shelves.toggle('festivals')}
             />
+
+            <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own canPin={showcase.canPin} collected={myCollection.ready && myCollection.book.total ? Math.floor((myCollection.book.have / myCollection.book.total) * 100) : undefined} />
+
+            <KandiStack items={kandiShown} own onOpen={() => router.push('/garden')} />
 
             <GardenShelf hidden={shelves.hidden.has('garden')} onToggle={() => shelves.toggle('garden')} />
           </>
@@ -379,6 +410,22 @@ function FullProfile() {
         )}
       </ScrollView>
       <BadgeCelebration unlock={b.unlock} onDone={b.finishUnlock} />
+      {profileStory && me ? (
+        <StoryPreview title={t('@{handle} on Afterglow', { handle: me.handle })} tint="#2A1A5E" glow="#B99CFF" bottomSpace={tabSpace} headline={t('Find me on Afterglow')} sub={`${WEB_URL.replace(/^https?:\/\//, '')}/u/${me.handle}`} onClose={() => setProfileStory(false)}>
+          {(w) => (
+            <ProfileStory
+              width={w}
+              name={me.displayName}
+              handle={me.handle}
+              avatarUrl={me.avatarUrl}
+              uid={social.user?.uid}
+              level={quests.ready ? quests.level : undefined}
+              cards={showcase.cards}
+              counts={{ collectibles: sprouts.artists.length, sprouts: sprouts.garden.filter((g) => !g.artist).length, kandi: kandiShown.length }}
+            />
+          )}
+        </StoryPreview>
+      ) : null}
     </View>
   );
 }

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Share } from 'react-native';
+import { Alert, Share } from 'react-native';
 import { findLink } from '../../features/finds/finds';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { renderApp } from './appRoutes';
@@ -68,6 +68,25 @@ describe('stickers', () => {
     // HQ's creature picker draws every creature, which takes a while when the whole suite runs at once.
   }, 20_000);
 
+  it('HQ makes the festival places kit in one go', async () => {
+    mockSocial.verified.add(SUPPORT);
+    await s().signUp(SUPPORT, 'password123');
+    const alert = jest.spyOn(Alert, 'alert');
+    const app = await renderApp('/admin');
+    await flush();
+    await fireEvent.press(app.getByText('Stickers'));
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Hunt name'), 'Lost Lands 2027');
+    await fireEvent.press(app.getByText('Make the festival places kit'));
+    await flush(20);
+    const [hunt] = [...mockSocial.hunts.values()];
+    expect(hunt.name).toBe('Lost Lands 2027');
+    expect(hunt.items.map((i) => i.creature)).toEqual(['gates', 'portapotty', 'refill', 'charger', 'caretent', 'foodtruck', 'lostfound', 'pickup', 'silentdisco', 'shuttle', 'hammock', 'mainstage', 'campfire', 'tent', 'merch']);
+    expect(hunt.items[1].name).toBe('Portal potty · Lost Lands 2027');
+    expect([...mockSocial.stickers.values()].every((st) => st.huntId === hunt.id)).toBe(true);
+    expect(alert.mock.calls[0].slice(0, 2)).toEqual(['The kit is ready', expect.stringContaining('15 stickers')]);
+  }, 20_000);
+
   it('opening a sticker’s code keeps it, lights it up and fills in its hunt; signing in sends it', async () => {
     seed();
     const app = await renderApp(link());
@@ -77,6 +96,12 @@ describe('stickers', () => {
     expect(app.getByText('Night Market 2027')).toBeTruthy();
     expect(app.getByText('1 of 2 found')).toBeTruthy();
     expect(app.getByText('Create a free account')).toBeTruthy();
+    // It goes out as a picture.
+    await fireEvent.press(app.getByLabelText('Share what you found as a picture'));
+    await flush();
+    expect(app.getByText('I found Ferris wheel · Night Market')).toBeTruthy();
+    await fireEvent.press(app.getAllByLabelText('Close').at(-1)!);
+    await flush();
     // Kept on the phone, then sent once you sign in.
     expect(JSON.parse((await AsyncStorage.getItem('finds.v1')) ?? '{}').finds).toEqual([expect.objectContaining({ code: 'ferris2027', state: 'found', sent: false })]);
     const u = await act(() => s().signUp('maya@example.com', 'password123'));
@@ -196,5 +221,15 @@ describe('stickers', () => {
     await fireEvent(app.getByTestId('camera-view'), 'barcodeScanned', { data: `https://afterglowmusic.app${link()}`, type: 'qr' });
     await flush();
     expect(app.getByText('YOU FOUND')).toBeTruthy();
+  });
+
+  it('a sticker caught off a totem’s screen finds a secret', async () => {
+    seed();
+    const app = await renderApp('/scan');
+    await flush();
+    await fireEvent(app.getByTestId('camera-view'), 'barcodeScanned', { data: `https://afterglowmusic.app${link()}&via=totem`, type: 'qr' });
+    await flush();
+    expect(app.getByText('YOU FOUND')).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('secrets.v1')) ?? '{}')).toHaveProperty('totem');
   });
 });

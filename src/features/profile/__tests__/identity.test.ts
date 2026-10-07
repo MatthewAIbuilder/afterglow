@@ -97,7 +97,7 @@ describe('milestones', () => {
   });
 
   it('sprouts earn their own: one in bloom, 10 given, all 7 kinds', () => {
-    const list = milestones({ been: 0, cities: 0, moments: 0, kept: 0, rated: 0, bass: 0, bloomed: 1, given: 4, kinds: 7 });
+    const list = milestones({ been: 0, cities: 0, moments: 0, kept: 0, rated: 0, bass: 0, bloomed: 1, given: 4, kinds: 8 });
     const by = (id: string) => list.find((m) => m.id === id)!;
     expect(by('green').earned).toBe(true);
     expect(by('gardener').earned).toBe(true);

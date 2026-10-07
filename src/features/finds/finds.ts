@@ -1,6 +1,6 @@
 import { WEB_URL } from '../../config/app';
 import { LOCALE, t } from '../../i18n';
-import { type ArtistLook, stickerLook } from '../sprouts/artistLook';
+import { type ArtistLook, shinyFor, shinyLook, stickerLook } from '../sprouts/artistLook';
 
 /**
  * Stickers: collectibles you find in the wild by scanning a code, pure.
@@ -99,11 +99,21 @@ export const cleanName = (raw: unknown, max = STICKER_NAME_MAX) => (typeof raw =
 /** A sticker's look, or the wisp when its creature isn't one this version knows. */
 export const lookOf = (creature: string): ArtistLook => stickerLook(creature) ?? stickerLook('wisp')!;
 
+/**
+ * Whether a sticker you found came out holographic: about one in twelve,
+ * decided by your account and the sticker's code, so it's the same on every
+ * phone and nobody can pick it. Never for a find not yet tied to an account.
+ */
+export const isHolo = (f: Pick<Find, 'code' | 'account' | 'state'>) => f.state === 'found' && !!f.account && shinyFor(f.account, `sticker:${f.code}`);
+
+/** A found sticker's look: in its holo colours when it's a holo one. */
+export const findLook = (f: Pick<Find, 'code' | 'account' | 'state' | 'creature'>): ArtistLook => (isHolo(f) ? shinyLook(lookOf(f.creature)) : lookOf(f.creature));
+
 /** What a code says: enough to show it with no signal. */
 export type FindCard = { code: string; creature: string; name: string };
 
-export function findLink(card: FindCard, base = WEB_URL): string {
-  return `${base.replace(/\/+$/, '')}/find/${card.code}?c=${encodeURIComponent(card.creature)}&n=${encodeURIComponent(cleanName(card.name))}`;
+export function findLink(card: FindCard, base = WEB_URL, via?: 'totem'): string {
+  return `${base.replace(/\/+$/, '')}/find/${card.code}?c=${encodeURIComponent(card.creature)}&n=${encodeURIComponent(cleanName(card.name))}${via ? `&via=${via}` : ''}`;
 }
 
 /** A card from a link's parts or `/find/[code]`'s params. An unknown creature or a missing name still reads (Afterglow's copy fills them in). */
@@ -112,6 +122,63 @@ export function findCardFrom(parts: { code?: unknown; c?: unknown; n?: unknown }
   const creature = typeof parts.c === 'string' && stickerLook(parts.c) ? parts.c : 'wisp';
   return { code: parts.code, creature, name: cleanName(parts.n) || 'A sticker' };
 }
+
+/** Where a place sticker you haven't found yet tends to be (for Your collection), if it's a place. */
+export function placeHint(creature: string): string | undefined {
+  const hints: Record<string, string> = {
+    portapotty: t('Look in the porta potties.'),
+    refill: t('Look by the water.'),
+    charger: t('Look where people charge their phones.'),
+    caretent: t('Look by the care tent.'),
+    foodtruck: t('Look by the food trucks.'),
+    lostfound: t('Ask at lost and found.'),
+    pickup: t('Look at the pick-up point.'),
+    silentdisco: t('Look at the silent disco.'),
+    shuttle: t('Look at the shuttle stop.'),
+    hammock: t('Look in the chill zone.'),
+    gates: t('Look at the gates on your way in.'),
+    merch: t('Look by the merch stand.'),
+    shower: t('Look by the showers.'),
+    mainstage: t('Look by the main stage.'),
+    campfire: t('Look by the campfire.'),
+  };
+  return hints[creature];
+}
+
+/** A word from the place a sticker was found, shown when it's yours (some places only). */
+export function placeLine(creature: string): string | undefined {
+  switch (creature) {
+    case 'portapotty':
+      return t('You found the portal. Step through, then wash your hands.');
+    case 'refill':
+      return t('While you’re here: fill your bottle and have a drink.');
+    case 'charger':
+      return t('Top up your phone, and yourself: a snack, some water.');
+    case 'hammock':
+      return t('Take five. The music will still be there.');
+    case 'shuttle':
+      return t('Know which bus gets you home tonight.');
+    case 'foodtruck':
+      return t('Eat something proper. Your feet will thank you at 3am.');
+    case 'caretent':
+      return t('Friendly people are here all night if you or a friend need anything.');
+    case 'lostfound':
+      return t('Lost something, or found something? This is where it comes back.');
+    case 'pickup':
+      return t('Remember this spot: it’s where your ride home finds you.');
+    case 'gates':
+      return t('Welcome in. Drink water, find your people, have the best time.');
+    case 'shower':
+      return t('Fresh as day one. Don’t forget your towel.');
+    case 'silentdisco':
+      return t('Try another channel. Everyone’s dancing to something different.');
+    default:
+      return undefined;
+  }
+}
+
+/** A sticker link scanned off a totem's screen (`findLink(…, 'totem')`). */
+export const fromTotemLink = (text: string) => /[?&]via=totem(?:[&#]|$)/.test(text.trim());
 
 /** A scanned code, if it's an Afterglow sticker (from any Afterglow address, or `afterglow://find/…`). */
 export function readFindLink(text: string): FindCard | undefined {

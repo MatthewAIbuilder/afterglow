@@ -7,13 +7,15 @@ import { OrgDjs, OrgEvents } from '../../features/organizers/OrgProfileParts';
 import { BadgesGrid } from '../../features/badges/BadgesGrid';
 import { useBadges } from '../../features/badges/useBadges';
 import { ProfileButton, ProfileHeader } from '../../features/profile/ProfileHeader';
+import { ShowcaseRow } from '../../features/sprouts/ShowcaseRow';
+import { KandiStack } from '../../features/kandi/KandiStack';
 import { publicOrbit } from '../../features/profile/identity';
 import { useProfileBackdrop } from '../../features/profile/useProfileBackdrop';
 import type { ProfileStat } from '../../features/profile/profileView';
 import { ProfileCover } from '../../components/ProfileCover';
 import { PageTitle } from '../../components/PageTitle';
 import { router, useLocalSearchParams } from 'expo-router';
-import type { PublicResident } from '../../features/sprouts/publicGarden';
+import { type PublicResident, showcaseOf } from '../../features/sprouts/publicGarden';
 import { Sprout } from '../../features/sprouts/Sprout';
 import { artistLook } from '../../features/sprouts/artistLook';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -51,6 +53,7 @@ import { showActionSheet } from '../../lib/dialog';
 import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { goBack } from '../../lib/nav';
 import { t, tn } from '../../i18n';
+import type { PublicKandi } from '../../features/kandi/kandi';
 
 /**
  * Someone's festival profile (or yours, as others see it): photo, name,
@@ -74,6 +77,9 @@ export default function PublicProfileScreen() {
   const [tagged, setTagged] = useState<SharedMemory[]>([]);
   // Their garden, as they show it: undefined while it loads (or couldn't), null when they don't show one.
   const [garden, setGarden] = useState<PublicResident[] | null | undefined>(undefined);
+  // The kandi they wear on their profile.
+  const [worn, setWorn] = useState<PublicKandi>();
+  const [kandiList, setKandiList] = useState<PublicKandi[]>([]);
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
   const [counts, setCounts] = useState<FollowCounts | undefined>();
@@ -102,7 +108,12 @@ export default function PublicProfileScreen() {
         .catch(() => {});
       social.service
         .gardenOf(p.uid)
-        .then((g) => live && setGarden(g?.residents ?? null))
+        .then((g) => {
+          if (!live) return;
+          setGarden(g?.residents ?? null);
+          setWorn(g?.kandi.find((k) => k.worn));
+          setKandiList(g?.kandi ?? []);
+        })
         .catch(() => {});
       // Videos they're tagged in and said yes to (a separate read: if it fails, their own still show).
       social.service
@@ -272,6 +283,7 @@ export default function PublicProfileScreen() {
       <>
         <View style={styles.headWrap}>
           <ProfileHeader
+            kandi={worn}
             socials={profile.socials}
             name={profile.displayName}
             initial
@@ -357,6 +369,16 @@ export default function PublicProfileScreen() {
             ))}
           </View>
         ) : null}
+        {/* The collectible cards they pinned. */}
+        {runs ? null : <ShowcaseRow cards={showcaseOf(garden ?? [])} handle={profile.handle} own={mine} />}
+        {/* Kandi they were given, stacked up an arm. */}
+        {runs ? null : (
+          <KandiStack
+            items={kandiList}
+            own={mine}
+            onOpen={() => (mine ? router.push('/garden') : router.push({ pathname: '/garden-visit', params: { uid: profile.uid, handle: profile.handle } }))}
+          />
+        )}
         {/* Their garden: a peek, and the way in. */}
         {runs ? null : garden?.length ? (
           <Pressable
@@ -374,7 +396,7 @@ export default function PublicProfileScreen() {
                 r.k === 's' ? (
                   <Sprout key={i} kind={r.kind} stage={r.stage} size={40} still />
                 ) : (
-                  <Sprout key={i} artist={artistLook(catalog.artist(r.artistId) ?? { id: r.artistId, name: r.name, sound: {} })} tier={r.tier} size={40} still />
+                  <Sprout key={i} artist={artistLook(catalog.artist(r.artistId) ?? { id: r.artistId, name: r.name, sound: {} })} tier={r.tier} shiny={!!r.shiny} size={40} still />
                 ),
               )}
             </View>

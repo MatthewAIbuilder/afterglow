@@ -4,8 +4,15 @@ import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, 
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 import { type ArtistLook, type Creature, hashOf, mix, type Palette } from './artistLook';
 import { DRAW, type Fills, star, V } from './creatures';
-import { blinkOf, paceOf, sine } from './motion';
+import { blinkOf, CLOCK_MS, paceOf, sine } from './motion';
 import type { Driven } from './Sprout';
+
+/** A spinning part turns once in this long (SPINS_PER_CLOCK times a garden loop). */
+const SPIN_MS = 6000;
+const SPINS_PER_CLOCK = Math.round(CLOCK_MS / SPIN_MS);
+
+/** One decimal, for tidy drawing numbers. */
+const r1 = (n: number) => Math.round(n * 10) / 10;
 
 /** Bronze, silver and gold, for the ring round a collectible's tile. */
 export const TIER_COLOR = ['', '#D08A4E', '#D6DDEA', '#FFD24A'] as const;
@@ -53,7 +60,7 @@ const ellipseD = (x: number, y: number, rx: number, ry: number) => `M${x - rx} $
  * is its ground) and keeps time by the garden's clock (`driven`).
  * Hidden from screen readers (the label around it says what it is).
  */
-export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FROM, locked, scene, driven }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean; scene?: boolean; driven?: Driven }) {
+export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FROM, locked, scene, driven, shiny = false }: { look: ArtistLook; size?: number; tier?: 0 | 1 | 2 | 3; still?: boolean; locked?: boolean; scene?: boolean; driven?: Driven; shiny?: boolean }) {
   // Ends with `_`, so a fill's name ends `_vs`, `_vh` … (creatures.tsx's `mirror` reads them).
   const uid = `c${useId().replace(/[^a-zA-Z0-9]/g, '')}_`;
   const p = locked ? LOCKED : look.palette;
@@ -82,6 +89,8 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
   const flick = useSharedValue(1);
   const blink = useSharedValue(1);
   const kick = useSharedValue(0);
+  const turn = useSharedValue(0);
+  const hasSpin = !!art.spin;
   // Each collectible keeps its own time, so a shelf of them never moves in step
   // (from its creature and colours, not its name, so the timing is the same in every language).
   const timeKey = `${look.creature}${p.mid}${p.accent}`;
@@ -118,7 +127,10 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       ),
     );
     blink.set(withRepeat(withSequence(withDelay(2600 + ((pace * 13) % 2200), withTiming(0.08, { duration: 90 })), withTiming(1, { duration: 130 })), -1, false));
+    if (hasSpin) turn.set(withRepeat(withTiming(1, { duration: SPIN_MS, easing: Easing.linear }), -1, false));
     return () => {
+      cancelAnimation(turn);
+      turn.set(0);
       cancelAnimation(bob);
       cancelAnimation(sway);
       cancelAnimation(flick);
@@ -131,7 +143,7 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
       blink.set(1);
       kick.set(0);
     };
-  }, [moving, hasClock, pace, bob, sway, flick, blink, kick]);
+  }, [moving, hasClock, hasSpin, pace, bob, sway, flick, blink, kick, turn]);
 
   const flap = !!art.flap;
   // In the scene the creature's wrapper does the floating.
@@ -144,6 +156,8 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
     const v = clock ? (running ? 1 - 0.16 * (0.5 + 0.5 * sine(clock.get(), 20, phase)) * (0.5 + 0.5 * sine(clock.get(), 33, phase + 0.3)) : 1) : flick.get();
     return { opacity: v, transform: [{ scale: 0.985 + v * 0.015 }] };
   });
+  // A spinning part turns all the way round: on the garden's clock, a whole number of turns a loop.
+  const spinStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${(clock ? (running ? (clock.get() * SPINS_PER_CLOCK) % 1 : 0) : turn.get()) * 360}deg` }] }));
   const blinkStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: clock ? (running ? blinkOf(clock.get(), blinkC, phase) : 1) : blink.get() }] }));
   const legL = useAnimatedStyle(() => {
     const up = lift ? lift.get() : 0;
@@ -236,6 +250,12 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
         <Stop offset="0.6" stopColor="#000000" stopOpacity={0.22} />
         <Stop offset="1" stopColor="#000000" stopOpacity={0} />
       </RadialGradient>
+      <LinearGradient id={`${uid}sh`} x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#FF8AD8" />
+        <Stop offset="0.3" stopColor="#8AB8FF" />
+        <Stop offset="0.6" stopColor="#8AFFD0" />
+        <Stop offset="1" stopColor="#FFE58A" />
+      </LinearGradient>
       <RadialGradient id={`${uid}g`} cx="50%" cy="50%" r="50%">
         <Stop offset="0" stopColor={p.glow} stopOpacity={locked ? 0.15 : 0.55} />
         <Stop offset="0.6" stopColor={p.glow} stopOpacity={locked ? 0.05 : 0.16} />
@@ -301,10 +321,65 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
           <Circle cx={74} cy={14 + (pace % 6)} r={0.7} fill="#FFFFFF" opacity={0.5} />
         </>
       )}
+      {/* Gold: soft rays of light behind it. */}
+      {tier === 3 && !locked
+        ? Array.from({ length: 12 }, (_, i) => {
+            const a = (i / 12) * Math.PI * 2 + 0.13;
+            const w = 0.09;
+            return <Path key={`ray${i}`} d={`M50 50 L${r1(50 + Math.cos(a - w) * 46)} ${r1(50 + Math.sin(a - w) * 46)} L${r1(50 + Math.cos(a + w) * 46)} ${r1(50 + Math.sin(a + w) * 46)}Z`} fill="#FFE9A0" opacity={0.07} />;
+          })
+        : null}
       <Circle cx={50} cy={50} r={47.5} fill="none" stroke={ring} strokeWidth={tier ? 2.6 : 1} opacity={tier ? 0.95 : 0.45} />
       {tier === 3 && !locked ? <Circle cx={50} cy={50} r={45.4} fill="none" stroke="#FFF3B0" strokeWidth={0.6} opacity={0.6} /> : null}
+      {/* A shiny one: a rainbow ring inside its level's, and gold sparkles. */}
+      {shiny && !locked ? (
+        <>
+          <Circle cx={50} cy={50} r={tier ? 44.6 : 47} fill="none" stroke={`url(#${uid}sh)`} strokeWidth={1.8} opacity={0.95} />
+          <Path d={star(22, 18, 3.2)} fill="#FFE58A" />
+          <Path d={star(80, 26, 2.2)} fill="#FFFFFF" opacity={0.9} />
+          <Path d={star(84, 70, 2.8)} fill="#FFE58A" />
+          <Path d={star(14, 64, 1.8)} fill="#FFFFFF" opacity={0.85} />
+        </>
+      ) : null}
     </>
   );
+  /* Its level, worn over everything (in the tile, not the scene): gold's laurel round the bottom and a star on top; silver's star. */
+  const marks =
+    scene || locked || tier < 2 ? null : (
+      <>
+        {/* Gold: a laurel round the bottom of its ring and a star on top. Silver: the star. */}
+        {tier === 3
+          ? [-1, 1].map((side) => {
+              // A branch from the bottom of the ring up each side: a stem, and leaves in pairs along it.
+              const at = (deg: number, r: number) => {
+                const a = (deg * Math.PI) / 180;
+                return [r1(50 + Math.cos(a) * r), r1(50 + Math.sin(a) * r)] as const;
+              };
+              const [sx, sy] = at(90 + side * 8, 43);
+              const [ex, ey] = at(90 + side * 78, 43);
+              return (
+                <G key={`laurel${side}`}>
+                  <Path d={`M${sx} ${sy} A43 43 0 0 ${side > 0 ? 1 : 0} ${ex} ${ey}`} stroke="#C9961E" strokeWidth={0.9} fill="none" />
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const deg = 90 + side * (16 + i * 13);
+                    const tangent = deg + 90;
+                    return [-1, 1].map((face) => {
+                      const [x, y] = at(deg, 43 + face * 2.2);
+                      return <Ellipse key={`${i}${face}`} cx={x} cy={y} rx={3.6 - i * 0.25} ry={1.5} fill={face > 0 ? '#FFD24A' : '#E8B42A'} stroke="#8A6410" strokeWidth={0.25} transform={`rotate(${r1(tangent + side * face * 34)} ${x} ${y})`} />;
+                    });
+                  })}
+                </G>
+              );
+            })
+          : null}
+        {tier >= 2 ? (
+          <G>
+            <Circle cx={50} cy={7.6} r={tier === 3 ? 5 : 4} fill="#0E0A1E" stroke={TIER_COLOR[tier]} strokeWidth={1} />
+            <Path d={star(50, 7.6, tier === 3 ? 3.6 : 2.8)} fill={tier === 3 ? '#FFE58A' : '#E6ECF6'} />
+          </G>
+        ) : null}
+      </>
+    );
   const box = { width: size, height: size, overflow: scene ? ('visible' as const) : ('hidden' as const) };
 
   // Still: every part in one picture, much lighter to draw than the moving layers.
@@ -320,9 +395,11 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
             {art.sway}
             {art.flickerOver ? null : art.flicker}
             {art.body}
+            {art.spin}
             {eyes?.el}
             {art.flickerOver ? art.flicker : null}
             {art.front}
+            {marks}
           </>,
         )}
       </View>
@@ -339,10 +416,12 @@ export function Collectible({ look, size = 80, tier = 0, still = size < MOVES_FR
         {art.sway ? around(art.sway, art.pivot ?? [50, 50], swayStyle, 'sway') : null}
         {art.flickerOver ? null : flicker}
         <View style={fill}>{layer(art.body)}</View>
+        {art.spin ? around(art.spin, art.spinAt ?? [50, 50], spinStyle, 'spin') : null}
         {eyes ? around(eyes.el, [eyes.box[0] + eyes.box[2] / 2, eyes.box[1] + eyes.box[3] / 2], blinkStyle, 'eyes') : null}
         {art.flickerOver ? flicker : null}
         {art.front ? <View style={fill}>{layer(art.front)}</View> : null}
       </Animated.View>
+      {marks ? <View style={fill}>{layer(marks)}</View> : null}
     </View>
   );
 }

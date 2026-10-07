@@ -15,7 +15,7 @@ describe('kandi', () => {
     const k = kandiFrom('k1', { from: 'a', to: 'b', word: 'plur', beads: 'neon', note: 'x'.repeat(200), createdAt: '2026-10-06T10:00:00.000Z' });
     expect(k).toMatchObject({ id: 'k1', word: 'PLUR', beads: 'neon' });
     expect(k?.note).toHaveLength(NOTE_MAX);
-    expect(kandiFrom('k2', { from: 'a', to: 'b', word: 'plur', beads: 'gold' })).toBeUndefined();
+    expect(kandiFrom('k2', { from: 'a', to: 'b', word: 'plur', beads: 'chrome' })).toBeUndefined();
     expect(kandiFrom('k3', { from: 'a', to: 'b', word: '~~', beads: 'neon' })).toBeUndefined();
   });
 
@@ -36,7 +36,7 @@ describe('kandi given by code', () => {
     expect(readKandiLink('https://afterglowmusic.app/sprout/abcdefghij2345678mnp?u=x&h=y&k=plur')).toBeUndefined();
     expect(readKandiLink('https://evil.example/kandi/abcdefghij2345678mnp?u=x&w=HI&b=neon')).toBeUndefined();
     expect(readKandiLink('https://afterglowmusic.app/kandi/short?u=x&w=HI&b=neon')).toBeUndefined();
-    expect(readKandiLink('https://afterglowmusic.app/kandi/abcdefghij2345678mnp?u=x&w=HI&b=gold')).toBeUndefined();
+    expect(readKandiLink('https://afterglowmusic.app/kandi/abcdefghij2345678mnp?u=x&w=HI&b=chrome')).toBeUndefined();
     expect(kandiCardFrom({ id: 'abcdefghij2345678mnp', u: 'x', h: 'Not A Handle!', w: 'hi', b: 'uv' })).toEqual({ id: 'abcdefghij2345678mnp', from: 'x', handle: '', word: 'HI', beads: 'uv' });
   });
   it('reads kandi nobody has picked up yet', () => {

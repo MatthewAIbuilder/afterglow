@@ -16,9 +16,13 @@ import { SOUND_COLOR, withAlpha } from '../sound-map/colors';
 import { type Favourite, feelingLine } from './identity';
 import { SoundOrbit } from './SoundOrbit';
 import { t } from '../../i18n';
+import type { PublicKandi } from '../kandi/kandi';
+import { KandiBracelet } from '../kandi/KandiBracelet';
 
 type Props = {
   name: string;
+  /** The kandi they show on their profile. */
+  kandi?: PublicKandi;
   /** Draw the name's first letter when there's no photo (a real profile); otherwise a person glyph. */
   initial?: boolean;
   /** Your bio, or a line saying what this page is before you have a profile. */
@@ -66,7 +70,7 @@ const ORBIT_H = 236;
  * round it), your name and bio, what you're feeling lately, the counts, your
  * sound as chips, and the buttons (passed as children).
  */
-export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable, level, onLevel, socials, face }: Props) {
+export function ProfileHeader({ kandi, name, initial, bio, avatarUrl, stats, onStat, sounds, onSounds, orbit, onOrbit, feeling, children, uid, handle, whose, note, tappable, level, onLevel, socials, face }: Props) {
   const standing = useStanding(uid);
   const ringed = !!ringOf(standing);
   // Your own level comes live from your quests; anyone else's from what their profile shows.
@@ -114,6 +118,12 @@ export function ProfileHeader({ name, initial, bio, avatarUrl, stats, onStat, so
         {name}
       </Text>
       {handle ? <Text style={styles.handle}>@{handle}</Text> : null}
+      {kandi ? (
+        <View style={styles.kandi} accessible accessibilityLabel={kandi.from ? t('Wearing kandi spelling {word}, from @{handle}', { word: kandi.word, handle: kandi.from }) : t('Wearing kandi spelling {word}', { word: kandi.word })}>
+          <KandiBracelet word={kandi.word} beads={kandi.beads} charm={kandi.charm} size={46} />
+          <Text style={styles.kandiText}>{kandi.from ? t('Wearing kandi from @{handle}', { handle: kandi.from }) : t('Wearing kandi')}</Text>
+        </View>
+      ) : null}
       <StandingCaption standing={standing} align="center" />
       {shownLevel && onLevel ? (
         <Pressable
@@ -260,6 +270,8 @@ const styles = StyleSheet.create({
   name: { ...type.title, color: color.moon, marginTop: -space.xs, textAlign: 'center' },
   bio: { ...type.body, color: color.moonDim, marginTop: 4, textAlign: 'center' },
   handle: { ...type.body, color: color.moonDim, marginTop: 2, textAlign: 'center' },
+  kandi: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginTop: space.xs, paddingLeft: space.xs, paddingRight: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  kandiText: { ...type.caption, color: color.moonDim },
   note: { ...type.caption, color: color.moonDim, marginTop: space.xs, textAlign: 'center' },
   feeling: {
     flexDirection: 'row',

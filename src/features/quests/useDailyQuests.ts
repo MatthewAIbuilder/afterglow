@@ -208,10 +208,11 @@ export function useQuestAvailability(): QuestAbility {
   const crowdClips = useCommunityClips('mix');
   const crowd = signedIn && crowdClips.length >= 2;
   const sprout = signedIn && !!social?.profile;
+  const friends = sprout && (social?.following.size ?? 0) > 0;
   const { hydrated: goingLoaded } = useGoing();
   const { loaded: crewsLoaded } = useCrews();
   const settled = goingLoaded && (!social?.availability.ok || social.ready) && (!signedIn || crewsLoaded);
-  return useMemo(() => ({ planning, enoughSets, crew, door, crowd, sprout, settled }), [planning, enoughSets, crew, door, crowd, sprout, settled]);
+  return useMemo(() => ({ planning, enoughSets, crew, door, crowd, sprout, friends, settled }), [planning, enoughSets, crew, door, crowd, sprout, friends, settled]);
 }
 
 /** Where a quest's "Go" takes you. */

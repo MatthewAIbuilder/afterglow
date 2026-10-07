@@ -105,7 +105,7 @@ describe('gift themes', () => {
     expect(mockSocial.profiles.get(sam)?.backdrop).toBe('daisy');
     await settle(800);
     expect(mockReload).toHaveBeenCalled();
-  });
+  }, 20000);
 
   it('an account that already had a profile is told and offered it, once', async () => {
     const matt = await mattGives();

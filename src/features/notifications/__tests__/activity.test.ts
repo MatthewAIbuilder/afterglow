@@ -50,4 +50,10 @@ describe('activity in the bell', () => {
     ];
     expect(activityNotices(items, look(['u1']))).toEqual([]);
   });
+
+  it('a glow on your garden says who, and opens their profile to visit theirs back', () => {
+    const got = activityNotices([{ kind: 'glow', id: 'me_u2', from: 'u2', createdAt: '2026-10-07T01:00' }], look());
+    expect(got).toEqual([expect.objectContaining({ id: 'glow:me_u2', kind: 'glow', title: '@bo left a glow on your garden', href: '/u/bo' })]);
+    expect(activityNotices([{ kind: 'glow', id: 'me_u2', from: 'u2', createdAt: '2026-10-07T01:00' }], look(['u2']))).toEqual([]);
+  });
 });

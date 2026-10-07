@@ -18,7 +18,8 @@ import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
 import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden';
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
-import { cleanNote, cleanPublicKandi, cleanWord, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
+import { cleanDecor } from '../../sprouts/decor';
+import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
@@ -1160,6 +1161,12 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const k = kandiFrom(d.id, d.data());
           if (k) items.push({ kind: 'kandi', id: k.id, from: k.from, word: k.word, createdAt: k.createdAt });
         }
+        // Glows on your garden (on their own too).
+        const glows = await getDocs(query(collection(db, 'gardens', user.uid, 'glows'), orderBy('at', 'desc'), limit(max))).catch(() => undefined);
+        for (const d of glows?.docs ?? []) {
+          const at = (d.data() as { at?: { toMillis?: () => number } }).at;
+          if (typeof at?.toMillis === 'function') items.push({ kind: 'glow', id: `${user.uid}_${d.id}`, from: d.id, createdAt: new Date(at.toMillis()).toISOString() });
+        }
         return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, max);
       }),
 
@@ -1317,7 +1324,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const snap = await getDocs(query(collection(fb().db, 'sprouts'), where('to', '==', user.uid), orderBy('claimedAt', 'desc'), limit(max)));
         return snap.docs.map((d) => sproutFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
       }),
-    publishGarden: (residents, kandi) =>
+    publishGarden: (residents, kandi, decor) =>
       guard(async () => {
         const user = me();
         const ref = doc(fb().db, 'gardens', user.uid);
@@ -1326,6 +1333,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await setDoc(ref, {
             residents: residents.slice(0, PUBLIC_GARDEN_MAX),
             ...(kandi?.length ? { kandi: kandi.slice(0, PUBLIC_KANDI_MAX) } : {}),
+            ...(decor?.length ? { decor: cleanDecor(decor) } : {}),
             updatedAt: serverTimestamp(),
           });
       }),
@@ -1333,8 +1341,31 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const d = await getDoc(doc(fb().db, 'gardens', uid));
         if (!d.exists()) return null;
-        const o = d.data() as { residents?: unknown; kandi?: unknown };
-        return { residents: cleanPublicGarden(o.residents), kandi: cleanPublicKandi(o.kandi) };
+        const o = d.data() as { residents?: unknown; kandi?: unknown; decor?: unknown };
+        return { residents: cleanPublicGarden(o.residents), kandi: cleanPublicKandi(o.kandi), decor: cleanDecor(o.decor) };
+      }),
+    glowGarden: (uid, on) =>
+      guard(async () => {
+        const user = me();
+        if (uid === user.uid) throw new SocialError('unknown');
+        const ref = doc(fb().db, 'gardens', uid, 'glows', user.uid);
+        if (!on) return void (await deleteDoc(ref));
+        if ((await getDoc(ref)).exists()) return;
+        await setDoc(ref, { at: serverTimestamp() });
+      }),
+    glowedGarden: (uid) =>
+      guard(async () => {
+        const user = me();
+        return (await getDoc(doc(fb().db, 'gardens', uid, 'glows', user.uid))).exists();
+      }),
+    gardenGlows: () =>
+      guard(async () => {
+        const user = me();
+        const snap = await getDocs(query(collection(fb().db, 'gardens', user.uid, 'glows'), orderBy('at', 'desc'), limit(100)));
+        return snap.docs.map((d) => {
+          const at = (d.data() as { at?: { toMillis?: () => number } }).at;
+          return { from: d.id, at: new Date(typeof at?.toMillis === 'function' ? at.toMillis() : Date.now()).toISOString() };
+        });
       }),
     saveGardenBackup: (data) =>
       guard(async () => {
@@ -1357,8 +1388,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const note = cleanNote(input.note);
         if (!word || !isPattern(input.beads) || input.to === user.uid) throw new SocialError('unknown');
         const ref = doc(collection(fb().db, 'kandi'));
-        await withTimeout(setDoc(ref, { from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
-        return { id: ref.id, from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() };
+        const charm = isCharm(input.charm) ? { charm: input.charm } : {};
+        await withTimeout(setDoc(ref, { from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), ...charm, createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
+        return { id: ref.id, from: user.uid, to: input.to, word, beads: input.beads, ...(note ? { note } : {}), ...charm, createdAt: now() };
       }),
     leaveOpenKandi: (input) =>
       guard(async () => {
@@ -1368,7 +1400,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!KANDI_ID.test(input.id) || !word || !isPattern(input.beads)) throw new SocialError('unknown');
         const ref = doc(fb().db, 'kandi', input.id);
         try {
-          await withTimeout(setDoc(ref, { from: user.uid, word, beads: input.beads, ...(note ? { note } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
+          await withTimeout(setDoc(ref, { from: user.uid, word, beads: input.beads, ...(note ? { note } : {}), ...(isCharm(input.charm) ? { charm: input.charm } : {}), createdAt: now() }), CHAT_SEND_TIMEOUT_MS);
         } catch (e) {
           // Sent before and the answer was lost: it's there and it's yours.
           if (asSocialError(e).kind !== 'network' && kandiFrom(input.id, (await getDoc(ref).catch(() => null))?.data())?.from === user.uid) return;

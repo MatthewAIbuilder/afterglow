@@ -20,6 +20,8 @@ import GardenScreen from '../garden';
 import GardenVisitScreen from '../garden-visit';
 import KandiMakeScreen from '../kandi-make';
 import KandiCodeScreen from '../kandi/[id]';
+import SharedCardScreen from '../card/[id]';
+import CollectionScreen from '../collection';
 import AddFriendScreen from '../add/[handle]';
 import AccountScreen from '../account';
 import CameraScreen from '../camera';
@@ -77,6 +79,7 @@ import TuneScreen from '../tune/[id]';
 import BadgeScreen from '../badge/[id]';
 import BadgeCardScreen from '../badge-card/[id]';
 import AdminScreen from '../admin';
+import TotemScreen from '../totem';
 import SwitchAccountScreen from '../switch-account';
 import SupportScreen from '../support';
 import OrgScreen from '../org/[id]';
@@ -108,6 +111,8 @@ export const APP_ROUTES = {
   'garden-visit': GardenVisitScreen,
   'kandi-make': KandiMakeScreen,
   'kandi/[id]': KandiCodeScreen,
+  'card/[id]': SharedCardScreen,
+  collection: CollectionScreen,
   'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,
   'festival/[id]': FestivalScreen,
@@ -157,6 +162,7 @@ export const APP_ROUTES = {
   'badge/[id]': BadgeScreen,
   'badge-card/[id]': BadgeCardScreen,
   admin: AdminScreen,
+  totem: TotemScreen,
   'switch-account': SwitchAccountScreen,
   support: SupportScreen,
   'org/[id]': OrgScreen,

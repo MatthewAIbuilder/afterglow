@@ -21,6 +21,8 @@ export type ArtistSprout = {
   /** When you first and last filmed them (ms). */
   firstAt: number;
   lastAt: number;
+  /** A rare shiny one (see `shinyFor`). */
+  shiny?: boolean;
 };
 
 export function tierFor(videos: number): Tier {

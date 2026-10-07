@@ -22,7 +22,7 @@ import { questDay } from '../quests/daily';
  *   kind are already grown.
  */
 
-export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise';
+export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise' | 'moonlight' | 'seeker';
 
 export type KindSpec = {
   id: SproutKind;
@@ -49,6 +49,8 @@ export const SPROUT_KINDS: readonly KindSpec[] = [
   { id: 'groove', name: t('Groove sprout'), short: t('Groove'), how: t('Grows from watching house and techno'), grows: t('watching house and techno'), about: t('Grown on four to the floor. Never stops moving.'), body: ['#8DEBD2', '#1F9C86'], accent: '#5BE3B5' },
   { id: 'spotlight', name: t('Spotlight sprout'), short: t('Spotlight'), how: t('Grows from filming your own videos'), grows: t('filming your own videos'), about: t('Grown by catching the moment.'), body: ['#B4F0A8', '#45A84F'], accent: '#FFD58A' },
   { id: 'sunrise', name: t('Sunrise sprout'), short: t('Sunrise'), how: t('Grows from filming at sunrise'), grows: t('filming at sunrise'), about: t('Grown by the ones still dancing when the sun comes up.'), body: ['#C2F0A0', '#4DA844'], accent: '#FF9F5A' },
+  { id: 'moonlight', name: t('Moonlight sprout'), short: t('Moonlight'), how: t('Grows from watching sets after midnight'), grows: t('watching sets after midnight'), about: t('Grown in the small hours, glowing softly by moonlight.'), body: ['#C8D8FF', '#5A7AD8'], accent: '#B8C8FF' },
+  { id: 'seeker', name: t('Seeker sprout'), short: t('Seeker'), how: t('Grows from finding stickers'), grows: t('finding stickers'), about: t('Grown by the ones who look behind every tent for one more sticker.'), body: ['#E2F2A8', '#8FB43C'], accent: '#FFC94A' },
 ];
 
 export const kindOf = (id: string): KindSpec => SPROUT_KINDS.find((k) => k.id === id) ?? SPROUT_KINDS[0];
@@ -181,7 +183,7 @@ export type Stage = 0 | 1 | 2 | 3;
 export const GROW_AT = [0, 6, 18, 36] as const;
 export const STAGE_NAMES = [t('Seed'), t('Sprout'), t('Leafy'), t('In bloom')] as const;
 /** Growth for each thing you do. */
-export const GROWTH = { watch: 1, film: 3, give: 4, festivalDay: 8 } as const;
+export const GROWTH = { watch: 1, film: 3, find: 3, give: 4, festivalDay: 8 } as const;
 
 /** Everything that grows sprouts, with when it happened. */
 export type Journey = {
@@ -193,6 +195,8 @@ export type Journey = {
   gave: readonly number[];
   /** Festival days you were at: the middle of each day (ms). */
   festivalDays: readonly number[];
+  /** Stickers you found: when you scanned each (ms). */
+  found?: readonly number[];
 };
 
 const HEAVY = new Set(['dubstep', 'riddim', 'trap', 'hip-hop']);
@@ -228,18 +232,21 @@ export function growthOf(journey: Journey, since: number, now: number): Growth {
     festivalDay: journey.festivalDays.filter(inWindow).length * GROWTH.festivalDay,
     give: journey.gave.filter(inWindow).length * GROWTH.give,
     film: filmed.length * GROWTH.film,
+    find: (journey.found ?? []).filter(inWindow).length * GROWTH.find,
     watch: watched.length * GROWTH.watch,
   };
-  const points = tracks.festivalDay + tracks.give + tracks.film + tracks.watch;
+  const points = tracks.festivalDay + tracks.give + tracks.film + tracks.find + tracks.watch;
   const stage = (GROW_AT.filter((g) => points >= g).length - 1) as Stage;
   const toNext = stage === 3 ? 1 : (points - GROW_AT[stage]) / (GROW_AT[stage + 1] - GROW_AT[stage]);
-  // Ties go in this order: festival days, giving, filming, watching.
-  const top = (['festivalDay', 'give', 'film', 'watch'] as const).reduce((a, b) => (tracks[b] > tracks[a] ? b : a));
+  // Ties go in this order: festival days, giving, filming, finding stickers, watching.
+  const top = (['festivalDay', 'give', 'film', 'find', 'watch'] as const).reduce((a, b) => (tracks[b] > tracks[a] ? b : a));
   let leaning: SproutKind = 'seedling';
   if (points > 0) {
     if (top === 'festivalDay') leaning = 'wanderer';
     else if (top === 'give') leaning = 'plur';
+    else if (top === 'find') leaning = 'seeker';
     else if (top === 'film') leaning = filmed.some((t) => { const h = new Date(t).getHours(); return h >= 5 && h < 8; }) ? 'sunrise' : 'spotlight';
+    else if (watched.filter((w) => new Date(w.at).getHours() < 5).length * 2 >= watched.length) leaning = 'moonlight';
     else {
       const counts: Record<string, number> = {};
       for (const w of watched) if (w.sound) counts[w.sound] = (counts[w.sound] ?? 0) + 1;
@@ -308,14 +315,16 @@ export type GardenSprout = {
  * that festival and night (the same for everyone there that night).
  */
 export const WILD_PREFIX = 'wild:';
+/** The kinds wild sprouts come in, kept as they were so a night's kind never changes when a new kind is added. */
+const WILD_KINDS: readonly SproutKind[] = ['plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight'];
 export function wildKind(nightId: string): SproutKind {
-  const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
+  const kinds = WILD_KINDS;
   let h = 2166136261;
   for (let i = 0; i < nightId.length; i++) {
     h ^= nightId.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return kinds[(h >>> 0) % kinds.length].id;
+  return kinds[(h >>> 0) % kinds.length];
 }
 
 /** The sprout everyone starts with. */

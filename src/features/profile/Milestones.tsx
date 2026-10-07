@@ -27,6 +27,16 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   giver: ['#9EF2C0', '#C2477E'],
   gardener: ['#C2F0A0', '#1F7F6E'],
   scout: ['#8FE3FF', '#5B3BC4'],
+  kandi: ['#FF9AD8', '#5BA8FF'],
+  lucky: ['#FFE58A', '#FF8AD8'],
+  hunter: ['#9AFFD8', '#2C7FB8'],
+  roamer: ['#FFE08A', '#2A7A5A'],
+  golden: ['#FFF1A8', '#B8860B'],
+  halfway: ['#B99CFF', '#2C9F8A'],
+  lit: ['#FFE9A8', '#C2477E'],
+  display: ['#FFE58A', '#5B3BC4'],
+  complete: ['#8AFFD0', '#2C7FB8'],
+  glowing: ['#FFE58A', '#FF8AD8'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -140,6 +150,94 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
           <Path d="M6.5 9 H13.5 M6.5 12.5 H11" {...p} />
           <Circle cx={16.5} cy={16} r={4.5} {...p} />
           <Path d="M16.5 13.8 V16 L18 17" {...p} />
+        </G>
+      );
+    case 'kandi':
+      // A bracelet of beads with a letter cube.
+      return (
+        <G>
+          {Array.from({ length: 10 }, (_, i) => {
+            const a = (i / 10) * Math.PI * 2;
+            return <Circle key={i} cx={12 + Math.cos(a) * 8.6} cy={11 + Math.sin(a) * 6.6} r={1.8} {...p} />;
+          })}
+          <Rect x={9.4} y={15.4} width={5.2} height={5.2} rx={1} {...p} />
+        </G>
+      );
+    case 'lucky':
+      // A sparkle with a smaller one.
+      return (
+        <G>
+          <Path d="M10 3 C10.5 8 13 10.5 18 11 C13 11.5 10.5 14 10 19 C9.5 14 7 11.5 2 11 C7 10.5 9.5 8 10 3 Z" {...p} />
+          <Path d="M18.5 14 C18.7 16 19.6 16.9 21.5 17 C19.6 17.2 18.7 18 18.5 20 C18.3 18 17.4 17.2 15.5 17 C17.4 16.9 18.3 16 18.5 14 Z" {...p} />
+        </G>
+      );
+    case 'hunter':
+      // A magnifier over a star.
+      return (
+        <G>
+          <Circle cx={10} cy={10} r={6} {...p} />
+          <Path d="M14.5 14.5 L20 20" {...p} />
+          <Path d="M10 7 L10.9 9 L13 9.2 L11.4 10.6 L11.9 12.8 L10 11.7 L8.1 12.8 L8.6 10.6 L7 9.2 L9.1 9 Z" {...p} strokeWidth={1.2} />
+        </G>
+      );
+    case 'roamer':
+      // A signpost pointing two ways.
+      return (
+        <G>
+          <Path d="M12 3 L12 21" {...p} />
+          <Path d="M12 5.5 L19 5.5 L21 7.75 L19 10 L12 10" {...p} />
+          <Path d="M12 12 L5 12 L3 14.25 L5 16.5 L12 16.5" {...p} />
+        </G>
+      );
+    case 'golden':
+      // A crown.
+      return (
+        <G>
+          <Path d="M4 17 L5 8 L9.5 12 L12 6 L14.5 12 L19 8 L20 17 Z" {...p} />
+          <Path d="M5 20 L19 20" {...p} />
+        </G>
+      );
+    case 'halfway':
+      // A circle half filled.
+      return (
+        <G>
+          <Circle cx={12} cy={12} r={8} {...p} />
+          <Path d="M12 4 A8 8 0 0 1 12 20 Z" fill={stroke} stroke={stroke} strokeWidth={1.8} strokeLinejoin="round" />
+        </G>
+      );
+    case 'lit':
+      // A string of lights.
+      return (
+        <G>
+          <Path d="M2 6 Q12 14 22 6" {...p} />
+          <Circle cx={6.5} cy={11.2} r={2.2} {...p} />
+          <Circle cx={12} cy={13.2} r={2.2} {...p} />
+          <Circle cx={17.5} cy={11.2} r={2.2} {...p} />
+        </G>
+      );
+    case 'display':
+      // Three cards, the middle one forward.
+      return (
+        <G>
+          <Rect x={2.5} y={7} width={7} height={10} rx={1.4} {...p} transform="rotate(-10 6 12)" />
+          <Rect x={14.5} y={7} width={7} height={10} rx={1.4} {...p} transform="rotate(10 18 12)" />
+          <Rect x={8} y={5} width={8} height={12} rx={1.6} {...p} />
+        </G>
+      );
+    case 'glowing':
+      // A four-pointed glow over a little hill.
+      return (
+        <G>
+          <Path d="M12 3 C12.6 7.6 14.4 9.4 19 10 C14.4 10.6 12.6 12.4 12 17 C11.4 12.4 9.6 10.6 5 10 C9.6 9.4 11.4 7.6 12 3 Z" {...p} />
+          <Path d="M3 21 Q12 16 21 21" {...p} />
+        </G>
+      );
+    case 'complete':
+      // A tick in a rounded square.
+      return (
+        <G>
+          <Rect x={4} y={4} width={16} height={16} rx={4} {...p} />
+          <Path d="M8 12.4 L11 15.2 L16.4 8.8" {...p} />
         </G>
       );
     case 'basshead':
