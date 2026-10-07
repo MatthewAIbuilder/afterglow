@@ -333,7 +333,7 @@ function FullProfile() {
               onToggle={() => shelves.toggle('festivals')}
             />
 
-            <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own />
+            <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own canPin={showcase.canPin} />
 
             <GardenShelf hidden={shelves.hidden.has('garden')} onToggle={() => shelves.toggle('garden')} />
           </>

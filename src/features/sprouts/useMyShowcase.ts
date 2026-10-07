@@ -10,7 +10,7 @@ import type { ShowcaseCard } from './ShowcaseRow';
  * Your showcase: the collectibles you've pinned that you still have, as
  * cards, and a way to pin or unpin one (`'full'` when three are pinned).
  */
-export function useMyShowcase(): { pinned: string[]; cards: ShowcaseCard[]; toggle: (artistId: string) => 'pinned' | 'unpinned' | 'full' } {
+export function useMyShowcase(): { pinned: string[]; cards: ShowcaseCard[]; canPin: boolean; toggle: (artistId: string) => 'pinned' | 'unpinned' | 'full' } {
   const account = useSocial().user?.uid ?? 'guest';
   const { artists } = useSprouts();
   const catalog = useCatalog();
@@ -35,5 +35,5 @@ export function useMyShowcase(): { pinned: string[]; cards: ShowcaseCard[]; togg
     },
     [pinned, save],
   );
-  return { pinned, cards, toggle };
+  return { pinned, cards, canPin: artists.length > 0, toggle };
 }

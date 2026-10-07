@@ -422,6 +422,8 @@ export const es_sprouts: Dictionary = {
   'them': 'esa persona',
   'Make kandi': 'Hacer kandi',
   'Make kandi for a friend': 'Hacer kandi para un amigo',
+  'Your collection ›': 'Tu colección ›',
+  'Pin up to three of your collectible cards here: open one in your garden and tap Pin to my profile.': 'Fija aquí hasta tres de tus cartas coleccionables: abre una en tu jardín y toca Fijar en mi perfil.',
   'Turn it back': 'Darle la vuelta otra vez',
   'Turn it over': 'Darle la vuelta',
   '{n} videos of {artist}': '{n} vídeos de {artist}',

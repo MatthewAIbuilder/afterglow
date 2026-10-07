@@ -19,17 +19,32 @@ const ROW_MAX = 600;
  * tilts, and anyone can see how to earn their own). Nothing when none are
  * pinned.
  */
-export function ShowcaseRow({ cards, handle, own }: { cards: readonly ShowcaseCard[]; handle?: string; own?: boolean }) {
+export function ShowcaseRow({ cards, handle, own, canPin }: { cards: readonly ShowcaseCard[]; handle?: string; own?: boolean; canPin?: boolean }) {
   const catalog = useCatalog();
   const { width: ww } = useWindowDimensions();
-  if (!cards.length) return null;
+  if (!cards.length && !(own && canPin)) return null;
   const inner = Math.min(ROW_MAX, ww) - 2 * space.xl;
   const w = Math.floor((inner - 2 * space.sm) / 3);
   return (
     <View style={styles.wrap}>
-      <Text style={styles.head} accessibilityRole="header">
-        {own ? t('Your showcase') : t('Showcase')}
-      </Text>
+      <View style={styles.headRow}>
+        <Text style={styles.head} accessibilityRole="header">
+          {own ? t('Your showcase') : t('Showcase')}
+        </Text>
+        {own ? (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push('/collection');
+            }}
+            accessibilityRole="link"
+            hitSlop={8}
+          >
+            <Text style={styles.link}>{t('Your collection ›')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      {!cards.length ? <Text style={styles.hint}>{t('Pin up to three of your collectible cards here: open one in your garden and tap Pin to my profile.')}</Text> : null}
       <View style={styles.row}>
         {cards.map((c) => {
           const look = artistLook(catalog.artist(c.artistId) ?? { id: c.artistId, name: c.name, sound: {} });
@@ -55,7 +70,10 @@ export function ShowcaseRow({ cards, handle, own }: { cards: readonly ShowcaseCa
 
 const styles = StyleSheet.create({
   wrap: { marginTop: space.lg, paddingHorizontal: space.xl, gap: space.sm },
+  headRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   head: { ...type.headline, color: color.moon },
+  link: { ...type.label, color: color.glow },
+  hint: { ...type.caption, color: color.moonDim },
   row: { flexDirection: 'row', gap: space.sm },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });
