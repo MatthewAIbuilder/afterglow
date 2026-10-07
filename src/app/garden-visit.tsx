@@ -10,7 +10,8 @@ import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
 import { artistLook } from '../features/sprouts/artistLook';
 import { GardenScene } from '../features/sprouts/GardenScene';
-import { gardenCounts, type PublicResident } from '../features/sprouts/publicGarden';
+import { gardenCounts, type PublicResident, showcaseOf } from '../features/sprouts/publicGarden';
+import { ShowcaseRow } from '../features/sprouts/ShowcaseRow';
 import type { PublicKandi } from '../features/kandi/kandi';
 import { visitResidents } from '../features/sprouts/visitGarden';
 import { DECOR, type DecorId } from '../features/sprouts/decor';
@@ -91,6 +92,12 @@ export default function GardenVisitScreen() {
             ) : null}
           </>
         )}
+        {/* The cards they pinned. */}
+        {garden?.length ? (
+          <View style={styles.showcase}>
+            <ShowcaseRow cards={showcaseOf(garden)} handle={handle} />
+          </View>
+        ) : null}
         <KandiLine items={kandi.map((k, i) => ({ key: String(i), word: k.word, beads: k.beads, charm: k.charm, from: k.from }))} />
         {signedIn && uid && uid !== social.user?.uid && visit !== null ? (
           <Pressable
@@ -114,6 +121,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.xl, gap: space.md, maxWidth: CONTENT_MAX, width: '100%', alignSelf: 'center' },
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.body, color: color.moonDim },
+  // The row brings its own side margin; the page already has one.
+  showcase: { marginHorizontal: -space.xl },
   sky: { ...type.caption, color: color.moonDim, textAlign: 'center' },
   kandi: { alignItems: 'center', paddingVertical: space.md, borderRadius: 999, backgroundColor: color.glowDeep, marginTop: space.md },
   kandiText: { ...type.headline, color: color.moon },
