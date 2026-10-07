@@ -1,10 +1,10 @@
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { haptic } from '../../lib/haptics';
-import { color, motion, raisedA } from '../../theme/tokens';
+import { GlassFill } from '../../components/LiquidGlass';
+import { color, motion } from '../../theme/tokens';
 import { QUEST_GOLD, QuestRing, SparkIcon } from './QuestRing';
 import { useDailyQuests } from './useDailyQuests';
 import { t } from '../../i18n';
@@ -49,7 +49,7 @@ export function QuestButton() {
       style={({ pressed }) => [pressed && { transform: [{ scale: 0.92 }] }]}
     >
       <Animated.View style={[styles.button, all && styles.lit, style]}>
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+        <GlassFill radius={SIZE / 2} interactive />
         <View style={styles.ring} pointerEvents="none">
           <QuestRing size={SIZE} stroke={2.5} parts={of} progress={q.ready ? q.doneToday / of : 0} done={all} track="rgba(243,240,255,0.16)" />
         </View>
@@ -69,7 +69,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: raisedA(0.4),
   },
   lit: { shadowColor: QUEST_GOLD, shadowOpacity: 0.6, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
   ring: { position: 'absolute', left: 0, top: 0 },

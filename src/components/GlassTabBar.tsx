@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { useSocial } from '../state/social';
 import { useMyOrg } from '../state/orgs';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +17,7 @@ import { haptic } from '../lib/haptics';
 import { color, motion, radius, space, type, glowA, raisedA } from '../theme/tokens';
 import { CommentIcon, DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
 import { HiddenToe } from '../features/toes/Toe';
+import { GlassFill } from './LiquidGlass';
 import { t } from '../i18n';
 
 const ICONS: Record<string, typeof DiscoverIcon> = {
@@ -57,7 +57,7 @@ export const useTabBarSpace = () => {
 /** The "Testing festival mode" banner's height, with its gap. */
 const TEST_BANNER_H = 36;
 
-/** A floating glass pill. Quiet until touched. */
+/** A floating Liquid Glass pill. Quiet until touched. */
 export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { active, leave, hydrated } = useFestivalMode();
@@ -103,8 +103,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       {/* A toe peeking over the top of the bar (one person's app only). */}
       <HiddenToe size={13} opacity={0.4} turn={-14} style={styles.peek} />
       <View style={styles.pill} onLayout={(e) => setPillW(e.nativeEvent.layout.width)}>
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, styles.tint]} />
+        <GlassFill radius={TAB_BAR_HEIGHT / 2} tint={0.45} />
         {/* One highlight that glides to the tab you pick. */}
         {pillW > 0 && slot >= 0 ? <Glider index={slot} width={(pillW - 12) / order.length} /> : null}
         {order.map((name) => {
@@ -306,10 +305,7 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: radius.pill,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
-  tint: { backgroundColor: raisedA(0.45) },
   item: {
     flex: 1,
     alignItems: 'center',

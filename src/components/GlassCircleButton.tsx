@@ -1,10 +1,9 @@
-import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { haptic } from '../lib/haptics';
-import { color, glowA, raisedA } from '../theme/tokens';
+import { GlassFill } from './LiquidGlass';
 
-/** Round glass button for back / close. */
+/** Round Liquid Glass button for back / close. */
 export function GlassCircleButton({
   onPress,
   onLongPress,
@@ -41,10 +40,10 @@ export function GlassCircleButton({
       accessibilityHint={hint}
       accessibilityState={selected === undefined ? undefined : { selected }}
       hitSlop={10}
-      style={({ pressed }) => [styles.button, selected && styles.on, pressed && { transform: [{ scale: 0.92 }] }]}
+      style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
     >
-      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-      {/* Its own layer, so the blur (positioned) never paints over the icon in a browser. */}
+      <GlassFill radius={20} lit={selected} interactive />
+      {/* Its own layer, so the glass (positioned) never paints over the icon in a browser. */}
       <View style={styles.content} pointerEvents="none">
         {children}
       </View>
@@ -53,7 +52,6 @@ export function GlassCircleButton({
 }
 
 const styles = StyleSheet.create({
-  on: { backgroundColor: glowA(0.32), borderColor: glowA(0.8), borderWidth: 1, shadowColor: color.glow, shadowOpacity: 0.6, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
   content: { alignItems: 'center', justifyContent: 'center' },
   button: {
     width: 40,
@@ -62,8 +60,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: raisedA(0.4),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
 });

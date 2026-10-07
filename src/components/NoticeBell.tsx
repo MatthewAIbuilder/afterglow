@@ -1,10 +1,10 @@
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { unreadCount } from '../features/notifications/inbox';
 import { haptic } from '../lib/haptics';
 import { useNotices } from '../state/notices';
 import { color, type } from '../theme/tokens';
+import { GlassFill } from './LiquidGlass';
 import { BellIcon } from './TabIcons';
 import { t } from '../i18n';
 
@@ -23,8 +23,8 @@ export function NoticeBell() {
       hitSlop={10}
       style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
     >
-      <BlurView intensity={40} tint="dark" style={[StyleSheet.absoluteFill, styles.round]} />
-      {/* Its own layer, so the blur never paints over the bell in a browser. */}
+      <GlassFill radius={20} interactive />
+      {/* Its own layer, so the glass never paints over the bell in a browser. */}
       <View pointerEvents="none">
         <BellIcon color={unread ? color.moon : color.moonDim} />
       </View>
@@ -44,10 +44,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
-  round: { borderRadius: 20, overflow: 'hidden' },
   badge: {
     position: 'absolute',
     top: -3,
