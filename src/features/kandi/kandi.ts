@@ -1,3 +1,4 @@
+import { WEB_URL } from '../../config/app';
 import { t } from '../../i18n';
 
 /**
@@ -11,7 +12,7 @@ export type Kandi = {
   id: string;
   /** Who made it. */
   from: string;
-  /** Who it's for. */
+  /** Who it's for ('' for kandi given by code that nobody has picked up yet). */
   to: string;
   /** The letter beads, upper case. */
   word: string;
@@ -24,6 +25,8 @@ export type Kandi = {
 };
 
 export type KandiInput = { to: string; word: string; beads: PatternId; note?: string };
+/** Kandi given by code (a QR to scan or a link): for whoever picks it up first. Its id is made on the phone, so the code shows straight away. */
+export type OpenKandiInput = { id: string; word: string; beads: PatternId; note?: string };
 
 /** At most this many letter beads. */
 export const WORD_MAX = 12;
@@ -68,9 +71,9 @@ export function kandiFrom(id: string, d: unknown): Kandi | undefined {
   if (!d || typeof d !== 'object') return undefined;
   const o = d as Record<string, unknown>;
   const word = cleanWord(o.word);
-  if (typeof o.from !== 'string' || typeof o.to !== 'string' || !word || !isPattern(o.beads)) return undefined;
+  if (typeof o.from !== 'string' || (o.to !== undefined && typeof o.to !== 'string') || !word || !isPattern(o.beads)) return undefined;
   const note = cleanNote(o.note);
-  return { id, from: o.from, to: o.to, word, beads: o.beads, createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(0).toISOString(), ...(note ? { note } : {}) };
+  return { id, from: o.from, to: typeof o.to === 'string' ? o.to : '', word, beads: o.beads, createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(0).toISOString(), ...(note ? { note } : {}) };
 }
 
 /** Kandi as visitors see it in a garden: the word, the beads and who made it (never the note). */
@@ -89,4 +92,44 @@ export function cleanPublicKandi(raw: unknown): PublicKandi[] {
     out.push({ word, beads: o.beads, ...(from ? { from } : {}) });
   }
   return out;
+}
+
+// ---- Kandi given by code --------------------------------------------------
+
+/** A kandi code's id: 20 letters and digits, made on the phone. */
+export const KANDI_ID = /^[a-z0-9]{20}$/;
+
+export type KandiCard = { id: string; from: string; handle: string; word: string; beads: PatternId };
+
+/** The link a kandi code carries: who made it and how it looks, so it shows before anything is read. */
+export function kandiLink(card: KandiCard, base = WEB_URL): string {
+  const q = `u=${encodeURIComponent(card.from)}&h=${encodeURIComponent(card.handle)}&w=${encodeURIComponent(card.word)}&b=${card.beads}`;
+  return `${base.replace(/\/+$/, '')}/kandi/${card.id}?${q}`;
+}
+
+/** A card from a link's parts, or the route params of `/kandi/[id]`. */
+export function kandiCardFrom(parts: { id?: unknown; u?: unknown; h?: unknown; w?: unknown; b?: unknown }): KandiCard | undefined {
+  const id = typeof parts.id === 'string' ? parts.id : '';
+  const from = typeof parts.u === 'string' ? parts.u : '';
+  const handle = typeof parts.h === 'string' ? parts.h.trim().toLowerCase().replace(/^@/, '') : '';
+  const word = cleanWord(parts.w);
+  if (!KANDI_ID.test(id) || !from || from.length > 128 || !word || !isPattern(parts.b)) return undefined;
+  return { id, from, handle: /^[a-z0-9._]{1,30}$/.test(handle) ? handle : '', word, beads: parts.b };
+}
+
+/** A scanned or pasted kandi link, or undefined when it isn't one. */
+export function readKandiLink(text: string): KandiCard | undefined {
+  const m = /^(?:https:\/\/(?:www\.)?(?:afterglowmusic\.app|afterglowmusic\.web\.app)|afterglow:\/)\/kandi\/([a-z0-9]+)\?([^#]*)$/i.exec(text.trim());
+  if (!m) return undefined;
+  const params: Record<string, string> = {};
+  for (const pair of m[2].split('&')) {
+    const i = pair.indexOf('=');
+    if (i <= 0) continue;
+    try {
+      params[pair.slice(0, i)] = decodeURIComponent(pair.slice(i + 1).replace(/\+/g, ' '));
+    } catch {
+      return undefined;
+    }
+  }
+  return kandiCardFrom({ id: m[1], u: params.u, h: params.h, w: params.w, b: params.b });
 }

@@ -101,4 +101,59 @@ describe('gardens', () => {
     expect(app.getByText('Kandi for Maya')).toBeTruthy();
     expect(app.getByText('Leave it in Maya’s garden')).toBeTruthy();
   });
+
+  it('kandi for anyone: search for them by name', async () => {
+    await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    const app = await renderApp('/kandi-make');
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Search for someone to make kandi for'), 'may');
+    await settle(400);
+    await flush();
+    await fireEvent.press(app.getByTestId('kandi-for-maya'));
+    await flush();
+    expect(app.getByText('Kandi for Maya')).toBeTruthy();
+  });
+
+  it('kandi given by code: a QR anyone scans, and the first to pick it up gets it, note and all', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    const sam = await person('sam', 'Sam');
+    const app = await renderApp('/kandi-make');
+    await flush();
+    await fireEvent.press(app.getByTestId('kandi-by-code'));
+    await flush();
+    expect(app.getByText('Kandi to give in person')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('A note with your kandi'), 'Found you at the rail');
+    await fireEvent.press(app.getByText('Make the code'));
+    await flush();
+    expect(app.getByText('Show them this code')).toBeTruthy();
+    await settle(1000);
+    await flush();
+    const made = [...mockSocial.kandi.values()].find((k) => k.from === sam);
+    expect(made?.to).toBe('');
+    await app.unmount();
+
+    // Maya scans it.
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const hers = await renderApp(`/kandi/${made!.id}?u=${sam}&h=sam&w=PLUR&b=rainbow`);
+    await flush();
+    await fireEvent.press(hers.getByText('Put it in my garden'));
+    await flush();
+    expect(hers.getByText('It’s in your garden')).toBeTruthy();
+    expect(hers.getByText('“Found you at the rail”')).toBeTruthy();
+    expect(mockSocial.kandi.get(made!.id)?.to).toBe(maya);
+    await hers.unmount();
+
+    // Too late for anyone else.
+    await s().signOut();
+    await person('kim', 'Kim');
+    const late = await renderApp(`/kandi/${made!.id}?u=${sam}&h=sam&w=PLUR&b=rainbow`);
+    await flush();
+    expect(late.queryByText('Put it in my garden')).toBeNull();
+    expect(late.getByText(/isn’t on Afterglow yet, or it was taken back/)).toBeTruthy();
+  });
 });
+
