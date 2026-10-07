@@ -9,6 +9,7 @@ import { isHolo } from '../finds/finds';
 import { artistLook } from './artistLook';
 import { collection } from './collection';
 import { useGardenDecor } from './useGardenDecor';
+import { useMyShowcase } from './useMyShowcase';
 
 /**
  * Your collection (collection.ts) from everything on the phone, which of it
@@ -40,7 +41,9 @@ export function useMyCollection() {
     [sprouts.collected, sprouts.artists, catalog, finds, kandi.received, decor],
   );
   const seenStore = useCollectionSeen(social.user?.uid ?? 'guest');
-  const ready = seenStore.ready && sprouts.hydrated && findsReady && kandi.hydrated;
+  // Decorations count pinned cards, so the showcase has to be read too.
+  const { ready: showcaseReady } = useMyShowcase();
+  const ready = seenStore.ready && sprouts.hydrated && findsReady && kandi.hydrated && showcaseReady;
   const haveKeys = useMemo(() => book.sets.flatMap((x) => x.items.filter((i) => i.have).map((i) => `${x.id}:${i.key}`)), [book]);
   const { seen, save } = seenStore;
   // Nothing is new the first time (nothing seen saved yet).

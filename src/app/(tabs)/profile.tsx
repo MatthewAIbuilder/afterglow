@@ -351,7 +351,7 @@ function FullProfile() {
               onToggle={() => shelves.toggle('festivals')}
             />
 
-            <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own canPin={showcase.canPin} collected={myCollection.book.total ? Math.round((myCollection.book.have / myCollection.book.total) * 100) : undefined} />
+            <ShowcaseRow cards={showcase.cards} handle={social.profile?.handle} own canPin={showcase.canPin} collected={myCollection.ready && myCollection.book.total ? Math.floor((myCollection.book.have / myCollection.book.total) * 100) : undefined} />
 
             <KandiStack items={kandiShown} own onOpen={() => router.push('/garden')} />
 

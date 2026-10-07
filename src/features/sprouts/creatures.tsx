@@ -3861,8 +3861,8 @@ const gorgon: Draw = (p, f) => {
       ),
     },
     flicker: sparkles(p.accent, [
-      [20, 88, 1.6],
-      [84, 86, 1.4],
+      [24, 84, 1.6],
+      [80, 82, 1.4],
     ]),
     flickerOver: true,
   };
@@ -3908,9 +3908,9 @@ const nightmare: Draw = (p, f) => ({
     el: <VEye x={66} y={36} r={3.2} f={f} />,
   },
   flicker: sparkles(p.accent, [
-    [12, 20, 1.8],
-    [90, 66, 1.4],
-    [86, 84, 1.2],
+    [18, 24, 1.8],
+    [88, 64, 1.4],
+    [80, 80, 1.2],
   ]),
   flickerOver: true,
 });
@@ -3953,9 +3953,9 @@ const gramophone: Draw = (p, f) => ({
     <G>
       {(
         [
-          [84, 14, 1],
-          [14, 40, 0.8],
-          [88, 52, 0.7],
+          [76, 20, 0.8],
+          [16, 42, 0.8],
+          [86, 54, 0.7],
         ] as const
       ).map(([x, y, s], i) => (
         <G key={i} transform={`translate(${x} ${y}) scale(${s})`}>
@@ -3996,10 +3996,10 @@ const trancestar: Draw = (p, f) => ({
     ),
   },
   flicker: sparkles(p.accent, [
-    [16, 18, 1.8],
-    [84, 16, 1.4],
-    [86, 84, 1.6],
-    [14, 82, 1.2],
+    [20, 22, 1.8],
+    [80, 20, 1.4],
+    [80, 80, 1.6],
+    [20, 78, 1.2],
   ]),
   flickerOver: true,
 });
@@ -4098,6 +4098,148 @@ const door: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** MARTIN GARRIX: the stampede from "Animals" — a little bull charging, head down, neon horns, dust flying. */
+const stampede: Draw = (p, f) => ({
+  ground: [50, 90, 32],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={54} rx={44} ry={36} fill={p.glow} opacity={0.14} />
+      {/* Dust behind it. */}
+      {[
+        [16, 80, 7],
+        [24, 72, 5],
+        [12, 68, 4],
+      ].map(([x, y, r]) => (
+        <Circle key={`${x}${y}`} cx={x} cy={y} r={r} fill={p.light} opacity={0.18} />
+      ))}
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Legs. */}
+      {[34, 44, 60, 70].map((x, i) => (
+        <V key={x} d={`M${x - 3} 70 L${x + 3} 70 L${x + (i % 2 ? 4 : 2)} 86 L${x - (i % 2 ? 0 : 2)} 86Z`} fill={p.deep} f={f} />
+      ))}
+      {/* Body and head, lowered to the right. */}
+      <V d="M24 54 C24 40 36 34 50 34 C60 34 66 38 70 42 C76 40 84 44 84 54 C84 64 78 70 70 70 L32 72 C26 70 24 62 24 54Z" fill={p.mid} f={f} gloss={[40, 40, 10, 4, -6]} />
+      <Path d="M24 52 C18 50 14 54 16 60" stroke={p.deep} strokeWidth={2} fill="none" strokeLinecap="round" />
+      {/* Muzzle and ring. */}
+      <VE cx={80} cy={60} rx={7} ry={5.4} fill={p.alt} f={f} gloss={false} />
+      <Circle cx={80} cy={64} r={3} fill="none" stroke={p.accent} strokeWidth={1.4} />
+      <Circle cx={78} cy={59} r={0.9} fill={p.deep} />
+      <Circle cx={82.4} cy={59} r={0.9} fill={p.deep} />
+      {/* Horns, lit. */}
+      <Path d="M66 40 C62 30 64 24 70 22 C68 28 70 34 72 38Z" fill={p.accent} />
+      <Path d="M78 42 C82 32 88 30 92 32 C88 34 84 38 82 44Z" fill={p.accent} />
+    </G>
+  ),
+  eyes: {
+    box: [66, 44, 14, 8],
+    el: (
+      <G>
+        <VEye x={70} y={48} r={2.6} f={f} />
+        <VEye x={77} y={47} r={2.4} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Glow x={68} y={23} r={1.6} color={p.accent} />
+      <Glow x={91} y={32} r={1.6} color={p.accent} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ACRAZE: a boombox with a face, its speakers for eyes, bass rings rolling out of it. */
+const boombox: Draw = (p, f) => ({
+  ground: [50, 86, 36],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={52} rx={44} ry={36} fill={p.glow} opacity={0.14} />
+      {[0, 1].map((i) => (
+        <G key={i} opacity={0.5 - i * 0.18}>
+          <Path d={`M${10 - i * 5} ${36 - i * 4} Q${4 - i * 5} 56 ${10 - i * 5} ${76 + i * 4}`} stroke={p.accent} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+          <Path d={`M${90 + i * 5} ${36 - i * 4} Q${96 + i * 5} 56 ${90 + i * 5} ${76 + i * 4}`} stroke={p.accent} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+        </G>
+      ))}
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The handle. */}
+      <Path d="M30 30 L30 22 Q30 18 34 18 L66 18 Q70 18 70 22 L70 30" stroke={p.altDeep} strokeWidth={3.4} fill="none" />
+      <V d="M14 34 Q14 28 20 28 L80 28 Q86 28 86 34 L86 74 Q86 80 80 80 L20 80 Q14 80 14 74Z" fill={p.mid} f={f} gloss={[22, 32, 12, 2, 0]} />
+      {/* Speakers. */}
+      {[32, 68].map((x) => (
+        <G key={x}>
+          <Circle cx={x} cy={58} r={14} fill={p.altDeep} />
+          <Circle cx={x} cy={58} r={10} fill={p.alt} />
+          <Circle cx={x} cy={58} r={5} fill={p.deep} />
+        </G>
+      ))}
+      {/* The tape deck and the grin under it. */}
+      <Path d="M40 34 L60 34 L60 44 L40 44Z" fill={p.deep} stroke={p.light} strokeWidth={0.6} />
+      <Path d="M44 66 Q50 72 56 66" stroke={p.deep} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+      <Circle cx={22} cy={36} r={1.8} fill={p.accent} />
+      <Circle cx={78} cy={36} r={1.8} fill={p.light} />
+    </G>
+  ),
+  eyes: {
+    box: [26, 50, 48, 16],
+    el: (
+      <G>
+        <VEye x={32} y={58} r={4.2} f={f} />
+        <VEye x={68} y={58} r={4.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.light, [
+    [50, 10, 1.6],
+    [12, 18, 1.2],
+    [88, 18, 1.2],
+  ]),
+  flickerOver: true,
+});
+
+/** MAU P: a tulip from Amsterdam, petals closed round its face, a canal-house sky behind. */
+const tulip: Draw = (p, f) => ({
+  ground: [50, 92, 20],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={46} rx={42} ry={38} fill={p.glow} opacity={0.14} />
+      {/* Canal houses on the skyline. */}
+      <Path d="M12 78 L12 62 L18 56 L24 62 L24 78Z M26 78 L26 58 L32 50 L38 58 L38 78Z M62 78 L62 56 L68 48 L74 56 L74 78Z M76 78 L76 62 L82 56 L88 62 L88 78Z" fill={p.altDeep} opacity={0.6} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Stem and leaves. */}
+      <Path d="M50 90 L50 62" stroke={p.alt} strokeWidth={3.4} strokeLinecap="round" />
+      <V d="M50 84 C40 80 34 70 34 60 C42 64 48 72 50 80Z" fill={p.alt} f={f} />
+      <V d="M50 80 C60 76 66 66 66 56 C58 60 52 68 50 76Z" fill={p.alt} f={f} />
+      {/* The bloom: three petals cupped round. */}
+      <V d="M30 30 C30 20 38 16 42 22 C46 16 54 16 58 22 C62 16 70 20 70 30 C70 50 62 62 50 62 C38 62 30 50 30 30Z" fill={p.mid} f={f} gloss={[38, 32, 4, 9, -12]} />
+      <Path d="M42 22 C44 34 46 46 50 62 C54 46 56 34 58 22" stroke={p.deep} strokeWidth={1} fill="none" opacity={0.5} />
+      <Path d="M44 50 Q50 54 56 50" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 36, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.5} y={40} r={2.8} f={f} />
+        <VEye x={55.5} y={40} r={2.8} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [20, 24, 1.6],
+    [82, 22, 1.4],
+  ]),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -4176,4 +4318,7 @@ export const DRAW: Record<Creature, Draw> = {
   trancestar,
   hedgehog,
   door,
+  stampede,
+  boombox,
+  tulip,
 };
