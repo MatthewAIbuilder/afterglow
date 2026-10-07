@@ -13,6 +13,7 @@ import { pinLook } from '../../features/badges/badges';
 import { EnamelPin } from '../../features/badges/EnamelPin';
 import { OrgEventRows } from '../../features/organizers/OrgCards';
 import { OrgLogo } from '../../features/organizers/OrgMark';
+import { MessageOrg } from '../../features/organizers/MessageOrg';
 import { orgListings } from '../../features/organizers/organizers';
 import { useCatalog } from '../../state/catalog';
 import { FollowButton } from '../../features/social/FollowButton';
@@ -87,6 +88,7 @@ export default function OrgScreen() {
           {org.uids[0] && org.handle ? (
             <View style={styles.links}>
               <FollowButton uid={org.uids[0]} handle={org.handle} />
+              <MessageOrg org={org} />
               <Pressable
                 onPress={() => {
                   haptic.select();

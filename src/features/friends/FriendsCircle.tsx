@@ -145,7 +145,7 @@ function OrbitReveal({ faces, line, onOpen }: { faces: Profile[]; line: string; 
         <View style={styles.faces}>
           {faces.map((p, i) => (
             <View key={p.uid} style={[styles.face, i > 0 && { marginLeft: -8 }]}>
-              <PersonAvatar name={p.displayName} url={p.avatarUrl} size={22} />
+              <PersonAvatar name={p.displayName} url={p.avatarUrl} size={22} uid={p.uid} />
             </View>
           ))}
         </View>

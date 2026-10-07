@@ -214,7 +214,7 @@ export default function CrewChatScreen() {
           const said = shared ? [shared.caption, t('Sent {thing}', { thing: shareNoun(shared.share) })].filter(Boolean).join('. ') : presetLabel(line.text);
           return (
             <View key={row.key} style={[styles.row, mine ? styles.rowMine : styles.rowTheirs, first && styles.runStart]}>
-              {!mine ? <View style={styles.avatarSlot}>{last ? <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={28} /> : null}</View> : null}
+              {!mine ? <View style={styles.avatarSlot}>{last ? <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={28} uid={line.uid} /> : null}</View> : null}
               <View style={[styles.bubbleCol, mine && { alignItems: 'flex-end' }]}>
                 {first && !mine ? <Text style={styles.name}>{nameOf(line.uid)}</Text> : null}
                 <Pressable
@@ -274,7 +274,7 @@ export default function CrewChatScreen() {
               accessibilityRole="button"
               accessibilityLabel={otherProfile ? t('{name}. Open their profile.', { name: otherProfile.displayName }) : t('Messages')}
             >
-              <PersonAvatar name={otherProfile?.displayName} url={otherProfile?.avatarUrl} size={34} />
+              <PersonAvatar name={otherProfile?.displayName} url={otherProfile?.avatarUrl} size={34} uid={otherProfile?.uid} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.title} numberOfLines={1}>
                   {otherProfile?.displayName ?? t('Messages')}

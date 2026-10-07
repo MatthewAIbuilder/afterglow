@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,7 +13,7 @@ import { t } from '../../i18n';
 import { localDay } from '../artists/shows';
 import { datesLine, formatTime } from '../festivals/format';
 import { OrgDot } from './OrgMark';
-import { activePromotions, datesText, eventAt, eventFestivalIdOf, isCounter, type Listing, type Org, type OrgCounter, type OrgEvent, type Promoted } from './organizers';
+import { activePromotions, datesText, eventAt, eventExtras, eventFestivalIdOf, isCounter, type Listing, type Org, type OrgCounter, type OrgEvent, type Promoted } from './organizers';
 import { countOrgOnce, useOrgView } from './useOrgView';
 
 const openOrg = (id: string) => {
@@ -85,7 +86,7 @@ function ListingRow({ org, l }: { org: Org; l: Listing }) {
       accessibilityLabel={t('{event} by {organizer}, {when}, {place}', { event: l.name, organizer: org.name, when, place: [l.venue, l.city].filter(Boolean).join(', ') })}
       style={({ pressed }) => [styles.eventRow, pressed && styles.pressed]}
     >
-      <OrgDot org={org} size={36} />
+      {l.poster ? <Image source={{ uri: l.poster }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : <OrgDot org={org} size={36} />}
       <View style={{ flex: 1 }}>
         <Text style={styles.eventName} numberOfLines={1}>
           {l.name}
@@ -93,6 +94,7 @@ function ListingRow({ org, l }: { org: Org; l: Listing }) {
         <Text style={styles.line} numberOfLines={1}>
           {[when, l.venue, l.city].filter(Boolean).join(' · ')}
         </Text>
+        {l.tba ? <Text style={styles.tba}>{t('Lineup TBA')}</Text> : null}
       </View>
       <ChevronIcon color={color.moonFaint} size={12} />
     </Pressable>
@@ -101,7 +103,7 @@ function ListingRow({ org, l }: { org: Org; l: Listing }) {
 
 /** One organizer's event as a row. */
 function EventRow({ org, event }: { org: Org; event: OrgEvent }) {
-  return <ListingRow org={org} l={{ key: event.id, name: event.name, date: event.date, ...(event.endDate ? { endDate: event.endDate } : {}), venue: event.venue, city: event.city, href: `/festival/${eventFestivalIdOf(org, event)}`, imported: false }} />;
+  return <ListingRow org={org} l={{ key: event.id, name: event.name, date: event.date, ...(event.endDate ? { endDate: event.endDate } : {}), venue: event.venue, city: event.city, href: `/festival/${eventFestivalIdOf(org, event)}`, imported: false, ...eventExtras(event) }} />;
 }
 
 /** On a festival's page: after parties organizers put on for it, while they're still to come. */
@@ -191,9 +193,42 @@ export function OrgEventRows({ org, listings }: { org: Org; listings: Listing[] 
   );
 }
 
+/**
+ * An organizer found by a search: its logo, name and what it puts on,
+ * opening its page. `onOpen` runs first (to remember the search).
+ */
+export function OrgResultRow({ org, onOpen }: { org: Org; onOpen?: () => void }) {
+  const what = [t('Event organizer'), org.tagline].filter(Boolean).join(' · ');
+  return (
+    <Pressable
+      onPress={() => {
+        onOpen?.();
+        openOrg(org.id);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={t('{organizer}, event organizer. Open their page', { organizer: org.name })}
+      style={({ pressed }) => [styles.foundRow, pressed && { opacity: 0.75 }]}
+    >
+      <OrgDot org={org} size={44} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name} numberOfLines={1}>
+          {org.name}
+        </Text>
+        <Text style={styles.line} numberOfLines={1}>
+          {org.handle ? `@${org.handle} · ${what}` : what}
+        </Text>
+      </View>
+      <ChevronIcon color={color.moonFaint} size={12} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   card: { gap: space.sm, padding: space.lg, marginHorizontal: space.xl, marginBottom: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  poster: { width: 36, height: 48, borderRadius: radius.sm, backgroundColor: color.glass },
+  tba: { ...type.caption, color: color.glow },
+  foundRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
   kicker: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1 },
   name: { ...type.headline, color: color.moon },
   line: { ...type.caption, color: color.moonDim },

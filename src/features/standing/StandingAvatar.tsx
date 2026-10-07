@@ -36,7 +36,7 @@ export function StandingAvatar({ name, url, size, uid, standing: given }: Props)
   }, [ring, reduce, turn]);
   const spin = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.get() * 360}deg` }] }));
 
-  if (!ring) return <PersonAvatar name={name} url={url} size={size} />;
+  if (!ring) return <PersonAvatar name={name} url={url} size={size} uid={uid} />;
   const thick = Math.max(2.5, Math.round(size * 0.045));
   const gap = Math.max(2, Math.round(size * 0.03));
   const outer = size + (thick + gap) * 2;
@@ -56,7 +56,7 @@ export function StandingAvatar({ name, url, size, uid, standing: given }: Props)
           <LinearGradient colors={RING[ring] as unknown as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         </Animated.View>
         <View style={[styles.gap, { width: size + gap * 2, height: size + gap * 2, borderRadius: (size + gap * 2) / 2 }]}>
-          <PersonAvatar name={name} url={url} size={size} />
+          <PersonAvatar name={name} url={url} size={size} uid={uid} />
         </View>
       </View>
     </View>

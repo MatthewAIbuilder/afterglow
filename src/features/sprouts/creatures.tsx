@@ -1787,15 +1787,14 @@ const lantern: Draw = (p, f) => ({
   ),
 });
 
-// Underground Alchemy's potion: a round flask with a cork, glowing liquid bubbling inside, and their mark (three circles in a triangle) on the glass.
+/** A four-point sparkle at (x, y), `r` from the middle to a point. */
+const sparkle = (x: number, y: number, r: number) =>
+  `M${x} ${y - r} Q${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y} Q${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r} Q${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y} Q${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r}Z`;
+
+// Underground Alchemy's potion: a round flask with a cork, glowing liquid bubbling inside, and sparkles in it, like their logo.
 const flask: Draw = (p, f) => {
   const bulb = 'M44.5 31 L55.5 31 L55.5 41.6 A20 20 0 1 1 44.5 41.6 Z';
   const liquid = 'M30.4 56 Q40 53 50 55.6 T69.6 56 A20 20 0 1 1 30.4 56 Z';
-  const mark: [number, number][] = [
-    [50, 66.4],
-    [46.2, 72.4],
-    [53.8, 72.4],
-  ];
   return {
     ground: [50, 81.5, 16],
     back: (
@@ -1829,11 +1828,8 @@ const flask: Draw = (p, f) => {
         ].map(([x, y, r], i) => (
           <Circle key={i} cx={x} cy={y} r={r} fill={p.light} opacity={0.75} />
         ))}
-        {/* The mark, glowing on the potion. */}
-        <Path d={`M${mark[0][0]} ${mark[0][1]} L${mark[1][0]} ${mark[1][1]} L${mark[2][0]} ${mark[2][1]} Z`} stroke={p.accent} strokeWidth={0.9} fill="none" strokeLinejoin="round" />
-        {mark.map(([x, y], i) => (
-          <Circle key={`m${i}`} cx={x} cy={y} r={1.5} fill={p.deep} stroke={p.accent} strokeWidth={0.8} />
-        ))}
+        {/* Sparkles in the potion, as in their logo. */}
+        <Path d={`${sparkle(50, 68, 4)} ${sparkle(44.5, 73.5, 2.6)} ${sparkle(56, 73, 2.2)}`} fill={p.accent} />
         {/* Glass edge, shine and the rim at the neck. */}
         <Path d={bulb} fill={f.hi} />
         <Path d={bulb} fill="none" stroke={p.light} strokeWidth={1.6} opacity={0.9} />

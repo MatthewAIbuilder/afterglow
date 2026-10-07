@@ -17,9 +17,12 @@ import { PlayIcon } from '../features/discover/icons';
 import { lineupClips } from '../features/festivals/links';
 import { matchesName } from '../features/festivals/search';
 import { SOUND_COLOR } from '../features/sound-map/colors';
-import { searchCatalog, searchesPeople, liveRecents, topArtists, type Recent } from '../features/search/universal';
+import { FESTIVALS_SHOWN, searchCatalog, searchesPeople, liveRecents, topArtists, type Recent } from '../features/search/universal';
 import type { Profile } from '../features/social/models';
 import { PersonRow } from '../features/social/PersonRow';
+import { OrgResultRow } from '../features/organizers/OrgCards';
+import { searchOrgs, withHosted } from '../features/organizers/organizers';
+import { useOrgs } from '../state/orgs';
 import { haptic } from '../lib/haptics';
 import { searchSecret } from '../features/secrets/secrets';
 import { revealSecret } from '../state/secrets';
@@ -60,7 +63,13 @@ export default function SearchScreen() {
   }, [secretWord]);
   const q = query.trim();
 
-  const found = useMemo(() => searchCatalog(q, catalog, taste), [q, catalog, taste]);
+  const orgs = useOrgs();
+  // Event organizers by name or @handle, and the events they host among the festivals.
+  const foundOrgs = useMemo(() => searchOrgs(orgs, q), [orgs, q]);
+  const found = useMemo(() => {
+    const f = searchCatalog(q, catalog, taste);
+    return f.peopleOnly ? f : { ...f, festivals: withHosted(f.festivals, catalog.festivals, foundOrgs, FESTIVALS_SHOWN * 2) };
+  }, [q, catalog, taste, foundOrgs]);
   // Sounds by name ("dub" finds Dubstep), the ones with clips.
   const sounds = useMemo(() => (q && !found.peopleOnly ? soundChoices(catalog.clips, catalog.artist, 1).filter((s) => matchesName(SOUND_LABEL[s.tag], q)) : []), [q, found, catalog]);
   // Start Discover from something found: its focus, back on the Discover tab.
@@ -131,7 +140,7 @@ export default function SearchScreen() {
     );
   };
 
-  const nothing = !!q && !sounds.length && !found.festivals.length && !found.artists.length && (!lookForPeople || (peopleNow && !shownPeople.length));
+  const nothing = !!q && !foundOrgs.length && !sounds.length && !found.festivals.length && !found.artists.length && (!lookForPeople || (peopleNow && !shownPeople.length));
 
   return (
     <View style={styles.root}>
@@ -152,6 +161,10 @@ export default function SearchScreen() {
       >
         {q ? (
           <>
+            {foundOrgs.length ? <Text style={styles.section}>{t('Organizers')}</Text> : null}
+            {foundOrgs.map((o) => (
+              <OrgResultRow key={o.id} org={o} onOpen={() => remember({ kind: 'organizer', id: o.id, label: o.name })} />
+            ))}
             {lookForPeople ? (
               <>
                 <Text style={styles.section}>{t('People')}</Text>
@@ -213,6 +226,7 @@ export default function SearchScreen() {
               remember(r);
               if (r.kind === 'festival') router.push(`/festival/${r.id}`);
               else if (r.kind === 'artist') router.push({ pathname: '/artist/[id]', params: { id: r.id } });
+              else if (r.kind === 'organizer') router.push({ pathname: '/org/[id]', params: { id: r.id } });
               else router.push({ pathname: '/u/[handle]', params: { handle: r.id } });
             }}
             onForget={forget}
@@ -232,7 +246,7 @@ export default function SearchScreen() {
   );
 }
 
-const KIND_LABEL: Record<Recent['kind'], string> = { festival: t('Festival'), artist: t('Artist'), person: t('Person') };
+const KIND_LABEL: Record<Recent['kind'], string> = { festival: t('Festival'), artist: t('Artist'), person: t('Person'), organizer: t('Organizer') };
 
 function Suggestions({
   recents,

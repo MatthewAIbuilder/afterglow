@@ -55,7 +55,7 @@ export function FriendQuickMenu({ friend, unread, next, onMessage, onClose }: Pr
         <Animated.View entering={reduce ? undefined : ZoomIn.springify().damping(18).stiffness(220)} style={styles.card} accessibilityViewIsModal>
           <View style={styles.head}>
             <View style={[styles.face, close && styles.faceClose]}>
-              <PersonAvatar name={friend.displayName} url={friend.avatarUrl} size={64} />
+              <PersonAvatar name={friend.displayName} url={friend.avatarUrl} size={64} uid={friend.uid} />
             </View>
             <Text style={styles.name} numberOfLines={1}>
               {friend.displayName}

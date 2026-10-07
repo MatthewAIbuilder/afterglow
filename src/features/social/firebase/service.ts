@@ -12,7 +12,7 @@ import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { FIND_GRACE_DAYS, GIFT_NOTE_MAX } from '../../finds/finds';
-import { cleanOrg, findsByCode, isCounter, isOrgId, ORG_FIELDS, orgToDoc, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX, utcDay } from '../../organizers/organizers';
+import { cleanOrg, cleanPostInput, findsByCode, isCounter, isOrgId, ORG_FIELDS, orgToDoc, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX, utcDay } from '../../organizers/organizers';
 import { nextPresence, presenceFromDoc } from '../../admin/presence';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { GIFT_THEME_IDS } from '../../themes/gifts';
@@ -20,7 +20,7 @@ import { cleanPublicGarden, PUBLIC_GARDEN_MAX } from '../../sprouts/publicGarden
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
 import { cleanNote, cleanPublicKandi, cleanWord, isPattern, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
-import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc } from './mapping';
+import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -1568,6 +1568,30 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         me();
         await updateDoc(doc(fb().db, 'orgs', orgId), { uids: on ? arrayUnion(uid) : arrayRemove(uid), updatedAt: serverTimestamp() });
       }),
+    setOrgImage: (orgId, kind, uri) =>
+      guard(async () => {
+        const user = me();
+        const field = kind === 'logo' ? 'logoUrl' : 'iconUrl';
+        if (!uri) {
+          await updateDoc(doc(fb().db, 'orgs', orgId), { [field]: deleteField(), updatedAt: serverTimestamp() });
+          return undefined;
+        }
+        const blob = await (await fetch(uri)).blob();
+        const type = /^image\/(png|jpeg|webp)$/.test(blob.type) ? blob.type : 'image/png';
+        const ext = type === 'image/jpeg' ? 'jpg' : type.slice(6);
+        // A new name each time, so phones never show an old picture from their cache.
+        const url = await upload(`orgs/${orgId}/${user.uid}/${kind}-${Date.now()}.${ext}`, blob, type);
+        await updateDoc(doc(fb().db, 'orgs', orgId), { [field]: url, updatedAt: serverTimestamp() });
+        return url;
+      }),
+    uploadOrgPoster: (orgId, uri) =>
+      guard(async () => {
+        const user = me();
+        const blob = await (await fetch(uri)).blob();
+        const type = /^image\/(png|jpeg|webp)$/.test(blob.type) ? blob.type : 'image/jpeg';
+        const ext = type === 'image/jpeg' ? 'jpg' : type.slice(6);
+        return upload(`orgs/${orgId}/${user.uid}/poster-${Date.now()}.${ext}`, blob, type);
+      }),
     setOrgHandle: (orgId, handle) =>
       guard(async () => {
         await updateDoc(doc(fb().db, 'orgs', orgId), { handle: handle ?? deleteField(), updatedAt: serverTimestamp() });
@@ -1611,6 +1635,27 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const snap = await getDocs(query(collection(fb().db, 'orgViews'), where('orgId', '==', orgId), where('day', '>=', '2026-01-01'), limit(5000)));
         return findsByCode(snap.docs.map((d) => orgDayFromDoc(d.data())).filter((x): x is NonNullable<typeof x> => !!x));
+      }),
+    postOrgUpdate: (orgId, raw) =>
+      guard(async () => {
+        const user = me();
+        const input = cleanPostInput(raw);
+        if (!input) throw new SocialError('unknown');
+        const ref_ = doc(collection(fb().db, 'orgPosts'));
+        await setDoc(ref_, { orgId, uid: user.uid, ...input, createdAt: serverTimestamp() });
+        return { id: ref_.id, orgId, uid: user.uid, ...input, createdAt: now() };
+      }),
+    orgPosts: (orgIds, max) =>
+      guard(async () => {
+        const ids = [...new Set(orgIds)].slice(0, 30);
+        if (!ids.length) return [];
+        const snap = await getDocs(query(collection(fb().db, 'orgPosts'), where('orgId', 'in', ids), orderBy('createdAt', 'desc'), limit(max)));
+        return snap.docs.map((d) => orgPostFromDoc(d.id, d.data())).filter((x): x is NonNullable<typeof x> => !!x);
+      }),
+    deleteOrgPost: (id) =>
+      guard(async () => {
+        me();
+        await deleteDoc(doc(fb().db, 'orgPosts', id));
       }),
     declineCrewInvite: (crewId) =>
       guard(async () => {
@@ -1818,15 +1863,15 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         await deleteDoc(doc(fb().db, ...room(crewId), 'chat', id));
       }),
-    openDirectChat: (uid) =>
+    openDirectChat: (uid, org) =>
       guard(async () => {
         const user = me();
         const members = [user.uid, uid].sort() as [string, string];
         const id = directRoom(user.uid, uid);
         const ref_ = doc(fb().db, ...room(id));
-        // Made the first time; the rules check you're friends both ways and not blocked.
+        // Made the first time; the rules check you're friends both ways (or one of you runs `org`) and not blocked.
         const there = await getDoc(ref_).catch(() => null);
-        if (!there?.exists()) await withTimeout(setDoc(ref_, { members, createdAt: serverTimestamp() }), CHAT_SEND_TIMEOUT_MS);
+        if (!there?.exists()) await withTimeout(setDoc(ref_, { members, createdAt: serverTimestamp(), ...(org ? { org } : {}) }), CHAT_SEND_TIMEOUT_MS);
         return id;
       }),
     watchDirectChats(listener, onError) {

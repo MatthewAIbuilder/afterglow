@@ -127,7 +127,7 @@ export function MessagesList({ skipCrews = [], directOnly = false }: { skipCrews
               {i > 0 ? <View style={styles.divider} /> : null}
               {r.kind === 'direct' ? (
                 <View style={[styles.personRing, unread ? styles.personRingNew : null]}>
-                  <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={AVATAR - 6} />
+                  <PersonAvatar name={p?.displayName} url={p?.avatarUrl} size={AVATAR - 6} uid={p?.uid} />
                 </View>
               ) : (
                 <CrewOrb name={r.crew.name} people={faces} total={Math.max(0, r.crew.members.length - 1)} size={AVATAR} />

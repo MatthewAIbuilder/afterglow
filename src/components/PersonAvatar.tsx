@@ -1,9 +1,18 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
+import { OrgDot } from '../features/organizers/OrgMark';
+import { orgOfAccount } from '../features/organizers/organizers';
+import { useOrgs } from '../state/orgs';
 import { color } from '../theme/tokens';
 
-/** Someone's profile photo, or the first letter of their name on the night's haze. */
-export function PersonAvatar({ name, url, size }: { name?: string; url?: string; size: number }) {
+/**
+ * Someone's profile photo, or the first letter of their name on the night's
+ * haze. Given `uid`, an event organizer's account shows the organizer's logo
+ * instead, the same as on its profile.
+ */
+export function PersonAvatar({ name, url, size, uid }: { name?: string; url?: string; size: number; uid?: string }) {
+  const org = orgOfAccount(useOrgs(), uid);
+  if (org) return <OrgDot org={org} size={size} />;
   return (
     <View style={[styles.circle, { width: size, height: size, borderRadius: size / 2 }]}>
       {url ? (

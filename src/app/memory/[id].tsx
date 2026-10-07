@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useSocial } from '../../state/social';
+import { OrgWatermark } from '../../features/organizers/OrgWatermark';
 import { EdgeGlow } from '../../components/EdgeGlow';
 import { showsGlow } from '../../features/standing/standing';
 import { useStanding } from '../../features/standing/useStanding';
@@ -118,6 +119,8 @@ function MemoryPage({ id, active }: { id: string; active: boolean }) {
       </Pressable>
       {/* How it looks once shared: the edge glow (unless you have Afterglow Plus). */}
       {showsGlow(mine) ? <EdgeGlow width={screen.width} height={screen.height} radius={44} inset={4} label active={!paused} /> : null}
+      {/* An event organizer's account: its logo, faintly, as on what it shares. */}
+      <OrgWatermark uid={social.user?.uid} style={{ top: insets.top + 64, right: space.lg }} />
       <LinearGradient colors={['rgba(3,2,10,0)', 'rgba(3,2,10,0.85)']} style={styles.scrim} pointerEvents="none" />
 
       <View style={[styles.close, { top: insets.top + space.sm }]}>

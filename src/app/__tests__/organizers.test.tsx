@@ -133,6 +133,40 @@ describe('organizers', () => {
     await app.unmount();
   });
 
+  it('an event can go up with its poster from the phone and its artists to be announced', async () => {
+    seed({ events: [] });
+    const app = await organizer();
+    await showTab(app, 'Events');
+    await fireEvent.press(app.getByText('Add an event'));
+    await fireEvent.changeText(app.getByLabelText('Name'), 'Halloween Ritual');
+    await fireEvent.changeText(app.getByLabelText('Night'), '2026-10-31');
+    await fireEvent.changeText(app.getByLabelText('Venue'), 'The Vault');
+    await fireEvent.changeText(app.getByLabelText('City'), 'Orlando, FL');
+    const picker = jest.requireMock<{ launchImageLibraryAsync: jest.Mock }>('expo-image-picker');
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///poster.jpg', width: 1080, height: 1350 }] }));
+    await fireEvent.press(app.getByText('Choose a poster from your phone'));
+    await flush();
+    expect(app.getByLabelText('Halloween Ritual’s poster')).toBeTruthy();
+    // No artists yet: it goes up as "to be announced".
+    answerAlerts('Publish');
+    await fireEvent.press(app.getByText('Publish'));
+    await flush();
+    const [event] = mockSocial.orgs.get(ORG)!.events;
+    expect(event).toMatchObject({ name: 'Halloween Ritual', published: true, lineup: [] });
+    expect(event.poster).toMatch(/^https:\/\/files\.example\/orgs\/underground-alchemy\/.+\/poster-/);
+
+    await act(async () => router.push(`/festival/${ORG}--halloween-ritual-10-31`));
+    await flush();
+    await fireEvent.press(app.getByRole('tab', { name: /^Lineup/ }));
+    await flush();
+    expect(app.getByText('Artists to be announced')).toBeTruthy();
+    // On its profile's list: its poster and "Lineup TBA".
+    await act(async () => router.push(`/org/${ORG}`));
+    await flush();
+    expect(app.getAllByText('Lineup TBA').length).toBeGreaterThan(0);
+    await app.unmount();
+  });
+
   it('drafts stay in the studio; a non-organizer and an unconfirmed email can’t open it', async () => {
     seed();
     await s().signUp('someone@example.com', 'password123');
@@ -155,7 +189,7 @@ describe('organizers', () => {
     seed();
     const app = await renderApp(`/org/${ORG}`);
     await flush();
-    expect(app.getByLabelText('Underground Alchemy')).toBeTruthy();
+    expect(app.getAllByLabelText('Underground Alchemy').length).toBeGreaterThan(0);
     expect(app.getByText('After parties till sunrise.')).toBeTruthy();
     expect(app.getByText('Transmutation')).toBeTruthy();
     expect(app.getByText('Their badge')).toBeTruthy();
@@ -166,6 +200,118 @@ describe('organizers', () => {
     await flush();
     expect(app.getByText('Deep, dark and hypnotic.')).toBeTruthy();
     expect(app.getByText('From Underground Alchemy')).toBeTruthy();
+    await app.unmount();
+  });
+
+  it('anyone finds it by name in Search, Festivals and Find people, with its logo on its account', async () => {
+    seed();
+    const u = await s().signUp('ugrnd@example.com', 'password123');
+    await s().saveProfile({ handle: 'undergroundalchemy', displayName: 'Underground Alchemy', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    mockSocial.orgs.set(ORG, { ...mockSocial.orgs.get(ORG)!, uids: [u.uid], handle: 'undergroundalchemy' });
+    await s().signOut();
+    await s().signUp('fan@example.com', 'password123');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+
+    const app = await renderApp('/search');
+    await flush();
+    // Any word of its name finds it (people search only by the start of a name).
+    await fireEvent.changeText(app.getByLabelText('Search Afterglow'), 'alchemy');
+    await settle(400);
+    await flush();
+    expect(app.getByText('Organizers')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Search Afterglow'), 'underground');
+    await settle(400);
+    await flush();
+    // Its account, in People, wears its logo instead of a photo.
+    expect(app.getByLabelText(/^Underground Alchemy, @undergroundalchemy/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Underground Alchemy, event organizer. Open their page'));
+    await flush();
+    expect(app.getByText('After parties till sunrise.')).toBeTruthy();
+
+    // On the Festivals tab its name finds it and the events it hosts.
+    await act(async () => router.push('/festivals'));
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Find an artist, festival or show'), 'underground');
+    await flush();
+    expect(app.getByLabelText('Underground Alchemy, event organizer. Open their page')).toBeTruthy();
+    expect(app.getAllByText('Transmutation').length).toBeGreaterThan(0);
+
+    // And in Find people.
+    await act(async () => router.push('/people'));
+    await flush();
+    await fireEvent.changeText(app.getByLabelText('Search people'), 'undergr');
+    await settle(400);
+    await flush();
+    expect(app.getAllByLabelText('Underground Alchemy, event organizer. Open their page').length).toBeGreaterThan(0);
+    expect(app.getAllByLabelText('Underground Alchemy').length).toBeGreaterThan(0);
+    await app.unmount();
+  });
+
+  it('videos its account posts carry its logo, faintly; everyone else’s don’t', async () => {
+    seed();
+    const u = await s().signUp('ugrnd@example.com', 'password123');
+    await s().saveProfile({ handle: 'undergroundalchemy', displayName: 'Underground Alchemy', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    mockSocial.orgs.set(ORG, { ...mockSocial.orgs.get(ORG)!, uids: [u.uid], handle: 'undergroundalchemy' });
+    const ours = await s().shareMemory({ memoryId: 'm1', videoUri: 'file:///m1.mov', festivalId: EVENT, capturedAt: '2026-11-15T01:30:00.000Z', durationSec: 30, width: 1080, height: 1920 });
+    await s().signOut();
+    await s().signUp('fan@example.com', 'password123');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    const theirs = await s().shareMemory({ memoryId: 'm2', videoUri: 'file:///m2.mov', festivalId: EVENT, capturedAt: '2026-11-15T02:00:00.000Z', durationSec: 30, width: 1080, height: 1920 });
+
+    const app = await renderApp(`/shared/${ours.id}`);
+    await flush();
+    expect(app.getByTestId('org-watermark', { includeHiddenElements: true })).toBeTruthy();
+    await act(async () => router.push(`/shared/${theirs.id}`));
+    await flush();
+    expect(app.queryAllByTestId('org-watermark', { includeHiddenElements: true })).toHaveLength(1);
+    await app.unmount();
+  });
+
+  it('anyone messages it without following; its Messages tab answers them and sends updates its followers get', async () => {
+    seed();
+    const u = await s().signUp('ugrnd@example.com', 'password123');
+    await s().saveProfile({ handle: 'undergroundalchemy', displayName: 'Underground Alchemy', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+    mockSocial.orgs.set(ORG, { ...mockSocial.orgs.get(ORG)!, uids: [u.uid], handle: 'undergroundalchemy' });
+    await s().signOut();
+    const fan = await s().signUp('fan@example.com', 'password123');
+    await s().saveProfile({ handle: 'fan', displayName: 'Fan', bio: '', showFestivals: false, showSound: false }, { festivals: [], sounds: [] });
+
+    // A fan who doesn't follow it messages it from its page.
+    let app = await renderApp(`/org/${ORG}`);
+    await flush();
+    await fireEvent.press(app.getByLabelText('Message Underground Alchemy'));
+    await flush();
+    const [dm] = [...mockSocial.dms.values()];
+    expect(dm).toMatchObject({ org: ORG, members: [fan.uid, u.uid].sort() });
+    // It follows the organizer, to get its updates.
+    await s().follow(u.uid);
+    await app.unmount();
+    await s().signOut();
+
+    // The organizer's Friends tab is Messages: its inbox, and an update to its followers with its event.
+    await s().signIn('ugrnd@example.com', 'password123');
+    app = await renderApp('/');
+    await flush();
+    await fireEvent.press(app.getByLabelText('View the app as everyone sees it'));
+    await flush();
+    await fireEvent.press(app.getByRole('tab', { name: /^Messages/ }));
+    await flush();
+    expect(app.getByText('Send an update to your followers')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Your update'), 'Doors at 11. See you down there.');
+    await fireEvent.press(app.getByLabelText('Add Transmutation'));
+    answerAlerts();
+    await fireEvent.press(app.getByText('Send to your followers'));
+    await flush();
+    expect([...mockSocial.orgPosts.values()]).toEqual([expect.objectContaining({ orgId: ORG, text: 'Doors at 11. See you down there.', festivalId: EVENT })]);
+    expect(app.getByText('Doors at 11. See you down there.')).toBeTruthy();
+    await app.unmount();
+    await s().signOut();
+
+    // Its follower sees it in their notifications.
+    await s().signIn('fan@example.com', 'password123');
+    app = await renderApp('/notifications');
+    await flush();
+    expect(app.getByText('Doors at 11. See you down there.')).toBeTruthy();
     await app.unmount();
   });
 
@@ -270,6 +416,8 @@ describe('organizers', () => {
     await flush();
     expect(app.getByText('From your events')).toBeTruthy();
     expect(app.queryByRole('tab', { name: /^My Sound/ })).toBeNull();
+    // The camera sits in the middle of its bar.
+    expect(app.getByLabelText('Film a video')).toBeTruthy();
     await act(async () => router.push('/profile'));
     await flush();
     // Its profile is the organizer's: its logo, its DJs and videos instead of a fan's sound.
@@ -277,6 +425,16 @@ describe('organizers', () => {
     expect(app.getAllByLabelText('Underground Alchemy').length).toBeGreaterThan(0);
     expect(app.getByRole('tab', { name: /^DJs/ })).toBeTruthy();
     expect(app.queryByText('Your artists')).toBeNull();
+    // Festivals shows only its own events, unless it asks for every festival.
+    await act(async () => router.push('/festivals'));
+    await flush();
+    expect(app.getByText('Your events')).toBeTruthy();
+    await fireEvent.press(app.getByText('See all festivals'));
+    await flush();
+    expect(app.getByText('Festivals & shows')).toBeTruthy();
+    await fireEvent.press(app.getByText('← Only your events'));
+    await flush();
+    expect(app.getByText('Add or edit events')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Back to your studio'));
     await flush();
     expect(app.getByRole('tab', { name: /^Events/ })).toBeTruthy();
@@ -303,6 +461,13 @@ describe('organizers', () => {
     expect(fan.getByText('Runs')).toBeTruthy();
     expect(fan.getByText('See their events')).toBeTruthy();
     expect(fan.getByText('Their DJs')).toBeTruthy();
+    // Who follows it, and whom it follows, are its own to see.
+    expect(fan.queryByLabelText(/followers/i)).toBeNull();
+    await act(async () => router.push({ pathname: '/follows/[handle]', params: { handle: 'undergroundalchemy' } }));
+    await flush();
+    expect(fan.getByText('@undergroundalchemy keeps who follows them private.')).toBeTruthy();
+    await act(async () => router.push('/u/undergroundalchemy'));
+    await flush();
     // Fans follow it.
     await fireEvent.press(fan.getByLabelText(/^Follow /));
     await flush();
@@ -354,5 +519,28 @@ describe('organizers', () => {
     // EDMTrain's own data is untouched.
     expect(mockSocial.patches.get('p1')!.file).toBe(JSON.stringify(file));
     await app.unmount();
+  });
+  it('the organizer changes its logo and icon in the studio, and can go back to the original', async () => {
+    seed();
+    const picker = jest.requireMock<{ launchImageLibraryAsync: jest.Mock }>('expo-image-picker');
+    const app = await organizer();
+    await showTab(app, 'Page');
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///new-logo.png', width: 1920, height: 600 }] }));
+    await fireEvent.press(app.getByText('Change logo'));
+    await flush();
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///new-icon.png', width: 600, height: 600 }] }));
+    await fireEvent.press(app.getByText('Change icon'));
+    await flush();
+    expect(mockSocial.orgs.get(ORG)).toMatchObject({ logoUrl: expect.stringContaining('/logo-'), iconUrl: expect.stringContaining('/icon-') });
+    answerAlerts('Go back');
+    await fireEvent.press(app.getByText('Go back to the original logo and icon'));
+    await flush();
+    expect(mockSocial.orgs.get(ORG)!.logoUrl).toBeUndefined();
+    expect(mockSocial.orgs.get(ORG)!.iconUrl).toBeUndefined();
+    // Someone else can't.
+    await app.unmount();
+    await s().signOut();
+    await s().signUp('someone@example.com', 'password123');
+    await expect(s().setOrgImage(ORG, 'logo', 'file:///x.png')).rejects.toThrow();
   });
 });

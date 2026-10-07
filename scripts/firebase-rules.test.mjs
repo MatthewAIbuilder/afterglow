@@ -1259,6 +1259,49 @@ await t('organizers: only HQ sets the @handle its accounts use', async () => {
   await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { handle: 'stolenhandle', updatedAt: serverTimestamp() }));
   await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { tagline: 'After hours', updatedAt: serverTimestamp() }));
 });
+await t('organizers: logos and icons upload into your own folder (pictures under 5 MB); only its team or HQ puts one on its page', async () => {
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+  await assertSucceeds(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000000.png'), png, { contentType: 'image/png' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidA/logo-1700000000001.png'), png, { contentType: 'image/png' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000002.png'), png, { contentType: 'video/mp4' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/anything.png'), png, { contentType: 'image/png' }));
+  // Event posters too, up to 10 MB (a logo stays under 5 MB).
+  const big = new Uint8Array(6 * 1024 * 1024);
+  await assertSucceeds(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/poster-1700000000003.jpg'), big, { contentType: 'image/jpeg' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000004.jpg'), big, { contentType: 'image/jpeg' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/banner-1700000000005.jpg'), png, { contentType: 'image/jpeg' }));
+  await assertSucceeds(getBytes(ref(anon.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000000.png')));
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { logoUrl: 'https://firebasestorage.googleapis.com/x/logo.png', iconUrl: 'https://firebasestorage.googleapis.com/x/icon.png', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(A.firestore(), 'orgs', 'underground-alchemy'), { logoUrl: 'https://evil.example/logo.png', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { iconUrl: 'x'.repeat(2001), updatedAt: serverTimestamp() }));
+});
+await t('organizers: anyone messages an organizer’s account without following; its team sends updates everyone signed in reads', async () => {
+  const L = env.authenticatedContext('uidLinked');
+  const B = env.authenticatedContext('uidB');
+  const org = 'underground-alchemy';
+  const msg = (uid) => ({ uid, text: 'Hi', atMs: Date.now(), sentAt: serverTimestamp() });
+  // Not friends: only a chat that names the organizer one of the two runs.
+  await assertFails(setDoc(doc(B.firestore(), 'dms', 'uidB_uidLinked'), { members: ['uidB', 'uidLinked'], createdAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(B.firestore(), 'dms', 'uidB_uidZed'), { members: ['uidB', 'uidZed'], createdAt: serverTimestamp(), org }));
+  await assertFails(setDoc(doc(B.firestore(), 'dms', 'uidB_uidLinked'), { members: ['uidB', 'uidLinked'], createdAt: serverTimestamp(), org: 'nobody' }));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'dms', 'uidB_uidLinked'), { members: ['uidB', 'uidLinked'], createdAt: serverTimestamp(), org }));
+  await assertSucceeds(setDoc(doc(B.firestore(), 'dms', 'uidB_uidLinked', 'chat', 'msg-b-0001'), msg('uidB')));
+  await assertSucceeds(setDoc(doc(L.firestore(), 'dms', 'uidB_uidLinked', 'chat', 'msg-l-0001'), msg('uidLinked')));
+  await assertFails(getDoc(doc(A.firestore(), 'dms', 'uidB_uidLinked', 'chat', 'msg-b-0001')));
+  // Updates: its team posts and takes back; anyone signed in reads; nobody else posts.
+  const post = (over = {}) => ({ orgId: org, uid: 'uidLinked', text: 'Doors at 11.', festivalId: 'underground-alchemy--transmutation-11-14', gift: 'abc123def', giftName: 'Thank you', createdAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(doc(L.firestore(), 'orgPosts', 'p1'), post()));
+  await assertFails(setDoc(doc(L.firestore(), 'orgPosts', 'p2'), post({ text: 'x'.repeat(281) })));
+  await assertFails(setDoc(doc(L.firestore(), 'orgPosts', 'p3'), post({ uid: 'uidB' })));
+  await assertFails(setDoc(doc(L.firestore(), 'orgPosts', 'p4'), post({ gift: 'Not A Code!' })));
+  await assertFails(setDoc(doc(B.firestore(), 'orgPosts', 'p5'), post({ uid: 'uidB' })));
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'orgPosts'), where('orgId', 'in', [org]), orderBy('createdAt', 'desc'), limit(20))));
+  await assertFails(getDocs(query(collection(anon.firestore(), 'orgPosts'), where('orgId', 'in', [org]))));
+  await assertFails(updateDoc(doc(L.firestore(), 'orgPosts', 'p1'), { text: 'Changed' }));
+  await assertFails(deleteDoc(doc(B.firestore(), 'orgPosts', 'p1')));
+  await assertSucceeds(deleteDoc(doc(L.firestore(), 'orgPosts', 'p1')));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

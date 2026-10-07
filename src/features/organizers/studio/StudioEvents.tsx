@@ -1,9 +1,13 @@
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { showAlert } from '../../../lib/dialog';
 import { haptic } from '../../../lib/haptics';
 import { useCatalog } from '../../../state/catalog';
+import { useSocial } from '../../../state/social';
+import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../social/service';
 import { useToday } from '../../../lib/useToday';
 import { localDay } from '../../artists/shows';
 import { color, radius, space, type } from '../../../theme/tokens';
@@ -138,6 +142,24 @@ function EventEditor({ org, start, isNew, save, done }: { org: Org; start: OrgEv
   const [afterQuery, setAfterQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof OrgEvent>(k: K, v: OrgEvent[K]) => setE((x) => ({ ...x, [k]: v }));
+  // A poster from the phone (or computer), uploaded to Afterglow and put on the event (saved with it).
+  const { service } = useSocial();
+  const [posterBusy, setPosterBusy] = useState(false);
+  const choosePoster = async () => {
+    if (posterBusy) return;
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 }).catch(() => undefined);
+    const uri = r && !r.canceled ? r.assets?.[0]?.uri : undefined;
+    if (!uri) return;
+    setPosterBusy(true);
+    try {
+      set('poster', await service.uploadOrgPoster(org.id, uri));
+      haptic.settle();
+    } catch (err) {
+      showAlert('Couldn’t upload that', SOCIAL_ERROR_COPY[socialErrorKind(err)]);
+    } finally {
+      setPosterBusy(false);
+    }
+  };
   const setActAt = (i: number, next: Partial<OrgAct>) => setE((x) => ({ ...x, lineup: x.lineup.map((a, j) => (j === i ? { ...a, ...next } : a)) }));
 
   // Afterglow's artists matching what's typed, to pick rather than retype.
@@ -217,7 +239,13 @@ function EventEditor({ org, start, isNew, save, done }: { org: Org; start: OrgEv
         <Field label="City" value={e.city} onChangeText={(v) => set('city', v)} placeholder="Like Orlando, FL" maxLength={EVENT_PLACE_MAX} />
         <Field label="About the night" value={e.about ?? ''} onChangeText={(v) => set('about', v || undefined)} placeholder="What to expect, dress code, age limit…" multiline maxLength={EVENT_ABOUT_MAX} />
         <Field label="Tickets link" value={e.tickets ?? ''} onChangeText={(v) => set('tickets', v.trim() || undefined)} placeholder="https://" autoCapitalize="none" keyboardType="url" />
-        <Field label="Flyer link" value={e.poster ?? ''} onChangeText={(v) => set('poster', v.trim() || undefined)} placeholder="https:// (a picture you have the rights to)" autoCapitalize="none" keyboardType="url" hint="Shown as the event’s poster." />
+      </Card>
+
+      <Card title="Poster" sub="Shown big on the event’s page and beside it in your lists. Use a picture you have the rights to.">
+        {e.poster ? <Image source={{ uri: e.poster }} style={posterStyle} contentFit="contain" accessibilityLabel={`${e.name || 'The event'}’s poster`} /> : null}
+        <Button kind="secondary" label={posterBusy ? 'Uploading…' : e.poster ? 'Choose another poster' : 'Choose a poster from your phone'} busy={posterBusy} onPress={() => void choosePoster()} />
+        {e.poster ? <Action label="Remove the poster" danger onPress={() => set('poster', undefined)} /> : null}
+        <Field label="Or a link to it" value={e.poster ?? ''} onChangeText={(v) => set('poster', v.trim() || undefined)} placeholder="https://" autoCapitalize="none" keyboardType="url" />
       </Card>
 
       <Card title="After party of" sub="Link it to a festival on Afterglow and it shows on that festival’s page, under After parties.">
@@ -248,7 +276,8 @@ function EventEditor({ org, start, isNew, save, done }: { org: Org; start: OrgEv
         )}
       </Card>
 
-      <Card title={`Lineup · ${e.lineup.length}`} sub="In billing order. Pick artists already on Afterglow when they come up, so the event shows on their pages. Set times are optional, on the 24-hour clock.">
+      <Card title={`Lineup · ${e.lineup.length}`} sub="In billing order. Pick artists already on Afterglow when they come up, so the event shows on their pages. Set times are optional, on the 24-hour clock. Not announced yet? Publish with no artists and it shows as “Artists to be announced”.">
+        <Chip label="More artists to be announced" on={!!e.tba} onPress={() => set('tba', e.tba ? undefined : true)} a11y={e.tba ? 'More artists to be announced: on. Turn off' : 'Say more artists are to be announced'} />
         {e.lineup.map((a, i) => (
           <View key={`${a.name}-${i}`} style={[studio.row, { flexWrap: 'wrap' }]}>
             <View style={{ flex: 1, minWidth: 140 }}>
@@ -289,3 +318,4 @@ function EventEditor({ org, start, isNew, save, done }: { org: Org; start: OrgEv
 
 const inputStyle = { ...type.body, color: color.moon, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.sm, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 0.5, borderColor: color.hairline };
 const timeStyle = { ...inputStyle, width: 64, textAlign: 'center' as const };
+const posterStyle = { width: '100%' as const, height: 260, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.04)' };

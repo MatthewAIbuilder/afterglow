@@ -30,8 +30,8 @@ export function searchCatalog(query: string, catalog: { artists: Artist[]; festi
 /** Whether a search is long enough to look for people. */
 export const searchesPeople = (query: string) => query.trim().replace(/^@+/, '').length >= PEOPLE_FROM;
 
-export type RecentKind = 'festival' | 'artist' | 'person';
-/** `id` is the festival or artist id, or the person's handle. `by`: the account that looked a person up. */
+export type RecentKind = 'festival' | 'artist' | 'person' | 'organizer';
+/** `id` is the festival, artist or organizer id, or the person's handle. `by`: the account that looked a person up. */
 export type Recent = { kind: RecentKind; id: string; label: string; by?: string };
 
 /** Recent searches kept. */
@@ -48,7 +48,7 @@ export function removeRecent(list: Recent[], item: Recent): Recent[] {
 /** Saved recents read back safely. */
 export function cleanRecents(raw: unknown): Recent[] {
   if (!Array.isArray(raw)) return [];
-  const kinds: RecentKind[] = ['festival', 'artist', 'person'];
+  const kinds: RecentKind[] = ['festival', 'artist', 'person', 'organizer'];
   return raw
     .filter((r): r is Recent => !!r && typeof r === 'object' && kinds.includes((r as Recent).kind) && typeof (r as Recent).id === 'string' && typeof (r as Recent).label === 'string')
     .map((r) => ({ kind: r.kind, id: r.id, label: r.label, ...(typeof r.by === 'string' ? { by: r.by } : {}) }))
@@ -58,7 +58,7 @@ export function cleanRecents(raw: unknown): Recent[] {
 /** What one account sees: festivals and artists are the phone's, people only the ones this account looked up. */
 export const recentsFor = (list: Recent[], uid: string | undefined): Recent[] => list.filter((r) => r.kind !== 'person' || (!!uid && r.by === uid));
 
-/** Recents still worth showing: festivals and artists that are still on Afterglow (people are checked when opened). */
+/** Recents still worth showing: festivals and artists that are still on Afterglow (people and organizers are checked when opened). */
 export function liveRecents(list: Recent[], has: { festival: (id: string) => boolean; artist: (id: string) => boolean }): Recent[] {
   return list.filter((r) => (r.kind === 'festival' ? has.festival(r.id) : r.kind === 'artist' ? has.artist(r.id) : true));
 }

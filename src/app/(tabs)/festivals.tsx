@@ -17,7 +17,11 @@ import { haptic } from '../../lib/haptics';
 import { groupFestivals } from '../../features/festivals/going';
 import { byMonth, bySoonest, festivalShelf, isMany, isOver } from '../../features/festivals/shelves';
 import { NextUpCard } from '../../features/festivals/NextUpCard';
-import { PromotedEvents } from '../../features/organizers/OrgCards';
+import { OrgFestivals } from '../../features/organizers/OrgFestivals';
+import { useMyOrg, useOrg, useOrgs } from '../../state/orgs';
+import { useSocial } from '../../state/social';
+import { OrgResultRow, PromotedEvents } from '../../features/organizers/OrgCards';
+import { searchOrgs, withHosted } from '../../features/organizers/organizers';
 import { FestivalWeekCard } from '../../features/festivalWeek/FestivalWeekCard';
 import { LineupReadyCard } from '../../features/plan/LineupReadyCard';
 import { readyFestival } from '../../features/plan/ready';
@@ -55,7 +59,19 @@ const MORE_PAGE = 20;
 /** Shows listed in search results. */
 const SHOWS_FOUND = 8;
 
-export default function FestivalsScreen() {
+/**
+ * An event organizer's account sees its own events here (its studio adds
+ * them), unless it asks to see every festival; everyone else, every festival.
+ */
+export default function FestivalsTab() {
+  const { user } = useSocial();
+  const org = useOrg(useMyOrg(user?.uid) ?? undefined);
+  const [all, setAll] = useState(false);
+  if (org && !all) return <OrgFestivals org={org} onShowAll={() => setAll(true)} />;
+  return <FestivalsScreen onlyOurs={org ? () => setAll(false) : undefined} />;
+}
+
+function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const { taste } = useTaste();
@@ -93,14 +109,20 @@ export default function FestivalsScreen() {
   // Find any artist or festival.
   const [query, setQuery] = useState('');
   const found = useMemo(() => searchArtists(catalog.artists, query), [catalog.artists, query]);
-  const foundFestivals = useMemo(() => searchFestivals(festivals, query), [festivals, query]);
+  // An event organizer's name finds it and the events it hosts.
+  const orgs = useOrgs();
+  const foundOrgs = useMemo(() => searchOrgs(orgs, query), [orgs, query]);
+  const foundFestivals = useMemo(() => withHosted(searchFestivals(festivals, query), festivals, foundOrgs), [festivals, query, foundOrgs]);
   // Club shows: a shelf picked for you (near you first once location is on), and found by search.
   const showTaste = useShowTaste();
   const todayKey = localDay(today);
   const showPicks = useMemo(() => showsForYou(catalog.shows, showTaste, { today: todayKey, here: nearby.here }), [catalog.shows, showTaste, todayKey, nearby.here]);
   const foundShows = useMemo(
-    () => rankShows(searchShows(upcomingShows(catalog.shows, todayKey), query, (id) => catalog.artist(id)?.name, SHOWS_FOUND), showTaste, nearby.here),
-    [catalog, todayKey, query, showTaste, nearby.here],
+    () => {
+      const upcoming = upcomingShows(catalog.shows, todayKey);
+      return rankShows(withHosted(searchShows(upcoming, query, (id) => catalog.artist(id)?.name, SHOWS_FOUND), upcoming, foundOrgs, SHOWS_FOUND), showTaste, nearby.here);
+    },
+    [catalog, todayKey, query, showTaste, nearby.here, foundOrgs],
   );
   const searching = query.trim().length > 0;
   // Rows on a timeline or square tiles, your choice.
@@ -165,6 +187,11 @@ export default function FestivalsScreen() {
           <Text style={styles.title} accessibilityRole="header">
             {t('Festivals & shows')}
           </Text>
+          {onlyOurs ? (
+            <Pressable onPress={onlyOurs} accessibilityRole="button" hitSlop={8} style={{ alignSelf: 'flex-start', marginTop: space.xs }}>
+              <Text style={{ ...type.label, color: color.glow }}>← Only your events</Text>
+            </Pressable>
+          ) : null}
           <View style={styles.searchWrap}>
             <SearchField
               value={query}
@@ -176,6 +203,10 @@ export default function FestivalsScreen() {
         </View>
         {searching ? (
           <View style={styles.results}>
+            {foundOrgs.length > 0 && <Text style={styles.resultsHead}>{t('Organizers')}</Text>}
+            {foundOrgs.map((o) => (
+              <OrgResultRow key={o.id} org={o} />
+            ))}
             {foundFestivals.length > 0 && <Text style={styles.resultsHead}>{t('Festivals')}</Text>}
             {foundFestivals.map((f) => (
               <FestivalRow key={f.id} festival={f} />
@@ -191,7 +222,7 @@ export default function FestivalsScreen() {
               </>
             )}
             {found.length > 0 && foundFestivals.length + foundShows.length > 0 && <Text style={styles.resultsHead}>{t('Artists')}</Text>}
-            {found.length === 0 && foundFestivals.length === 0 && foundShows.length === 0 ? (
+            {found.length === 0 && foundFestivals.length === 0 && foundShows.length === 0 && foundOrgs.length === 0 ? (
               <Text style={styles.noMatch}>{t('No festival, show or artist matches “{query}”.', { query: query.trim() })}</Text>
             ) : (
               found.map((a) => {

@@ -42,7 +42,7 @@ export function FollowGiver({ uid, handle, name }: { uid: string; handle: string
   const shownName = giver?.displayName ?? name ?? handle;
   return (
     <Animated.View entering={reduce ? undefined : FadeInDown.delay(250).duration(350)} style={styles.card} testID="follow-giver">
-      <PersonAvatar name={shownName} url={giver?.avatarUrl} size={48} />
+      <PersonAvatar name={shownName} url={giver?.avatarUrl} size={48} uid={uid} />
       <View style={styles.text}>
         <Text style={styles.title}>{justFollowed ? t('You follow {name} now', { name: firstName(shownName) }) : t('Follow {name}?', { name: firstName(shownName) })}</Text>
         <Text style={styles.body}>

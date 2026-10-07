@@ -81,7 +81,7 @@ export function TagPeople({ value, onChange }: { value: string[]; onChange: (uid
               accessibilityLabel={on ? t('{name}, @{handle}, tagged', { name: p.displayName, handle: p.handle }) : t('Tag {name}, @{handle}', { name: p.displayName, handle: p.handle })}
               style={({ pressed }) => [styles.row, on && styles.rowOn, pressed && { opacity: 0.75 }]}
             >
-              <PersonAvatar name={p.displayName} url={p.avatarUrl} size={34} />
+              <PersonAvatar name={p.displayName} url={p.avatarUrl} size={34} uid={p.uid} />
               <View style={styles.text}>
                 <Text style={styles.name} numberOfLines={1}>
                   {p.displayName}

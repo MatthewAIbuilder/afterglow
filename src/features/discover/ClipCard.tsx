@@ -59,6 +59,7 @@ import { useCommentCount } from '../social/useCommentCount';
 import { commentCaption } from '../social/copy';
 import { t } from '../../i18n';
 import { shownClipTitle } from '../community/clips';
+import { OrgWatermark } from '../organizers/OrgWatermark';
 
 type Props = {
   clip: Clip;
@@ -472,6 +473,8 @@ function ClipCardBase({ clip, note, festival, nameFestival = false, mustSee, wid
           />
         </View>
       </GestureDetector>
+      {/* A video an event organizer posted carries its logo, faintly. */}
+      {community ? <OrgWatermark uid={community.uid} size={18} style={{ top: space.sm, right: space.sm }} /> : null}
       </View>
     );
     const track = (

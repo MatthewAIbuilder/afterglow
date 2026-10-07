@@ -38,6 +38,12 @@ service cloud.firestore {
           && get(path('orgMembers', orgEmail())).data.orgId == orgId)
         || me() in get(path('orgs', orgId)).data.get('uids', []));
     }
+    // A 1-to-1 chat with an event organizer's account (`org` names the organizer, and one of the two runs it):
+    // anyone may message an organizer, no following needed.
+    function orgChat(d) {
+      return d.get('org', '') is string && d.get('org', '') != '' && exists(path('orgs', d.org))
+        && (d.members[0] in get(path('orgs', d.org)).data.get('uids', []) || d.members[1] in get(path('orgs', d.org)).data.get('uids', []));
+    }
     // An optional short text field: absent, or a string of at most `max` characters.
     function shortOrAbsent(data, field, max) { return !(field in data) || (data[field] is string && data[field].size() <= max); }
 
@@ -619,7 +625,7 @@ service cloud.firestore {
     // Event organizers' pages: anyone reads them (the website shows them signed out); HQ starts one; its
     // team (an email HQ added, confirmed) edits it, but never its promotions, which only HQ gives.
     function orgShape(d) {
-      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims', 'promoted', 'uids', 'handle', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims', 'promoted', 'uids', 'handle', 'iconUrl', 'updatedAt'])
         // The @handle its accounts' profiles use.
         && (!('handle' in d) || (d.handle is string && d.handle.matches('^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$')))
         && (!('uids' in d) || (d.uids is list && d.uids.size() <= 10))
@@ -627,7 +633,7 @@ service cloud.firestore {
         && (!('claims' in d) || (d.claims is list && d.claims.size() <= 60))
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
         && shortOrAbsent(d, 'tagline', 80) && shortOrAbsent(d, 'about', 600) && shortOrAbsent(d, 'website', 2000)
-        && shortOrAbsent(d, 'instagram', 30) && shortOrAbsent(d, 'mark', 20) && shortOrAbsent(d, 'logoUrl', 2000) && shortOrAbsent(d, 'color', 7)
+        && shortOrAbsent(d, 'instagram', 30) && shortOrAbsent(d, 'mark', 20) && shortOrAbsent(d, 'logoUrl', 2000) && shortOrAbsent(d, 'iconUrl', 2000) && shortOrAbsent(d, 'color', 7)
         && d.events is list && d.events.size() <= 40
         && d.artists is map && d.artists.size() <= 120
         && d.promoted is map && d.promoted.size() <= 40
@@ -678,6 +684,22 @@ service cloud.firestore {
       return day is string && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && int(day.split('-')[0]) == request.time.year() && int(day.split('-')[1]) == request.time.month() && int(day.split('-')[2]) == request.time.day();
     }
+    // An event organizer's updates to its followers (features/organizers): its team posts and removes
+    // them; anyone signed in reads them (followers see them in their notifications). An update can name
+    // one of its events and one of its gift stickers.
+    match /orgPosts/{id} {
+      allow read: if signedIn();
+      allow create: if isOrgMember(request.resource.data.orgId)
+        && request.resource.data.keys().hasOnly(['orgId', 'uid', 'text', 'festivalId', 'gift', 'giftName', 'createdAt'])
+        && request.resource.data.uid == me()
+        && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 280
+        && (!('festivalId' in request.resource.data) || (request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 120))
+        && (!('gift' in request.resource.data) || (request.resource.data.gift is string && request.resource.data.gift.matches('^[a-z0-9]{6,24}$')))
+        && (!('giftName' in request.resource.data) || (request.resource.data.giftName is string && request.resource.data.giftName.size() <= 60))
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin() || isOrgMember(resource.data.orgId);
+    }
     match /orgViews/{id} {
       allow read: if isAdmin() || isOrgMember(resource.data.orgId);
       allow create: if signedIn()
@@ -692,8 +714,8 @@ service cloud.firestore {
         && request.resource.data.n == resource.data.n + 1;
     }
 
-    // 1-to-1 chats: `dms/<a>_<b>` (the two uids in order) between two people who follow each other,
-    // started by either of them unless one blocked the other. Only the two of them read it. Messages and
+    // 1-to-1 chats: `dms/<a>_<b>` (the two uids in order) between two people who follow each other, or
+    // with an event organizer's account (see orgChat), started by either of them unless one blocked the other. Only the two of them read it. Messages and
     // read receipts are like a crew chat's; writing needs you to still be friends both ways and not blocked.
     // The support account can read any message (the rules can't tell a reported one apart); it reads one
     // only when handling a report or a safety issue (said in the privacy policy), and can remove it.
@@ -702,13 +724,13 @@ service cloud.firestore {
       allow get: if signedIn() && me() in id.split('_');
       allow list: if signedIn() && me() in resource.data.members;
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['members', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['members', 'createdAt', 'org'])
         && request.resource.data.members is list && request.resource.data.members.size() == 2
         && me() in request.resource.data.members
         && request.resource.data.members[0] < request.resource.data.members[1]
         && id == request.resource.data.members[0] + '_' + request.resource.data.members[1]
         && request.resource.data.createdAt == request.time
-        && friendsBothWays(request.resource.data.members[0], request.resource.data.members[1])
+        && (friendsBothWays(request.resource.data.members[0], request.resource.data.members[1]) || orgChat(request.resource.data))
         && !hasBlocked(request.resource.data.members[0], request.resource.data.members[1])
         && !hasBlocked(request.resource.data.members[1], request.resource.data.members[0]);
       allow update, delete: if false;
@@ -723,7 +745,7 @@ service cloud.firestore {
       match /chat/{messageId} {
         allow read: if (signedIn() && me() in get(path('dms', id)).data.members) || isAdmin();
         allow create: if signedIn() && me() in get(path('dms', id)).data.members
-          && friendsBothWays(get(path('dms', id)).data.members[0], get(path('dms', id)).data.members[1])
+          && (friendsBothWays(get(path('dms', id)).data.members[0], get(path('dms', id)).data.members[1]) || orgChat(get(path('dms', id)).data))
           && !hasBlocked(get(path('dms', id)).data.members[0] == me() ? get(path('dms', id)).data.members[1] : get(path('dms', id)).data.members[0], me())
           && messageId.matches('^[A-Za-z0-9_-]{6,64}$')
           && request.resource.data.keys().hasOnly(['uid', 'text', 'atMs', 'sentAt'])

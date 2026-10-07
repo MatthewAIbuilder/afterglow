@@ -28,6 +28,8 @@ import {
   withOrgs,
   handleFor,
   orgProfileInput,
+  searchOrgs,
+  withHosted,
   orgDjs,
   importedCandidates,
   orgListings,
@@ -260,5 +262,23 @@ describe('organizers', () => {
     expect(djs[0]).toMatchObject({ artistId: 'subtronics', events: 2, upcoming: 2, next: '2026-11-06', sound: 'dubstep' });
     expect(djs.map((d) => d.artistId)).toEqual(expect.arrayContaining(['night-chemist', 'levity']));
     expect(djs.some((d) => d.artistId === 'someone')).toBe(false);
+  });
+
+  it('finds organizers by name, @handle or Instagram, and the events they host', () => {
+    const ua: Org = { ...orgFromStarter(ORG_STARTERS[0]), handle: 'undergroundalchemy' };
+    const other: Org = { ...orgFromStarter(ORG_STARTERS[0]), id: 'other', name: 'Bass Nation', instagram: 'bassnation', handle: undefined };
+    const orgs = [other, ua];
+    expect(searchOrgs(orgs, 'alchemy')).toEqual([ua]);
+    expect(searchOrgs(orgs, 'UNDERGROUND')).toEqual([ua]);
+    expect(searchOrgs(orgs, '@undergroundalch')).toEqual([ua]);
+    expect(searchOrgs(orgs, 'underground.alchemy')).toEqual([ua]);
+    expect(searchOrgs(orgs, 'bass')).toEqual([other]);
+    expect(searchOrgs(orgs, 'a')).toEqual([]);
+    expect(searchOrgs(orgs, 'nothing like it')).toEqual([]);
+    const festivals = [{ id: 'a' }, { id: 'b', organizer: ua.id }, { id: 'c', organizer: 'other' }];
+    expect(withHosted([festivals[0]], festivals, [ua]).map((f) => f.id)).toEqual(['a', 'b']);
+    expect(withHosted([festivals[1]], festivals, [ua]).map((f) => f.id)).toEqual(['b']);
+    expect(withHosted([festivals[0]], festivals, []).map((f) => f.id)).toEqual(['a']);
+    expect(withHosted([festivals[0]], festivals, [ua], 1).map((f) => f.id)).toEqual(['a']);
   });
 });

@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useOrgs } from '../../state/orgs';
+import { useMyOrg, useOrgs } from '../../state/orgs';
 import { orgOfAccount } from '../../features/organizers/organizers';
 import { OrgProfileCard } from '../../features/organizers/OrgProfileCard';
 import { OrgDot } from '../../features/organizers/OrgMark';
@@ -123,6 +123,9 @@ export default function PublicProfileScreen() {
 
   const mine = !!profile && profile.uid === social.user?.uid;
   const runs = orgOfAccount(useOrgs(), profile?.uid);
+  // A chat with an organizer's account (theirs, or yours if you run one) needs no following.
+  const myOrg = useMyOrg(social.user?.uid);
+  const chatOrg = runs?.id ?? myOrg ?? undefined;
   const blocked = !!profile && social.blocked.has(profile.uid);
 
   // What you have in common: from what they show and what your phone knows (nothing of yours is sent).
@@ -278,7 +281,8 @@ export default function PublicProfileScreen() {
             avatarUrl={profile.avatarUrl}
             bio={profile.bio || undefined}
             note={goingLine(going) || undefined}
-            stats={runs ? stats.filter((st) => st.key === 'followers' || st.key === 'following' || st.key === 'moments') : stats}
+            // An event organizer's followers and following are its own business: only it sees them.
+            stats={runs ? stats.filter((st) => st.key === 'moments' || (mine && (st.key === 'followers' || st.key === 'following'))) : stats}
             face={runs ? <OrgDot org={runs} size={94} /> : undefined}
             tappable={['followers', 'following', 'festivals', 'moments', 'badges']}
             onStat={(key) => {
@@ -301,12 +305,12 @@ export default function PublicProfileScreen() {
                   handle={profile.handle}
                   onChange={(on) => setCounts((c) => (c ? { ...c, followers: Math.max(0, c.followers + (on ? 1 : -1)) } : c))}
                 />
-                {/* Message a friend (made the first time; only friends both ways). */}
-                {social.following.has(profile.uid) ? (
+                {/* Message a friend (made the first time; only friends both ways), or an event organizer (anyone may). */}
+                {social.following.has(profile.uid) || chatOrg ? (
                   <Pressable
                     onPress={() => {
                       haptic.tap();
-                      void openChatWith(chat.openDirect, profile.uid, (profile.displayName.trim().split(/\s+/)[0] || profile.displayName));
+                      void openChatWith((u) => chat.openDirect(u, chatOrg), profile.uid, (profile.displayName.trim().split(/\s+/)[0] || profile.displayName));
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={t('Message {name}', { name: profile.displayName })}

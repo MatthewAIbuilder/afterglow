@@ -1,6 +1,9 @@
 import type { Artist, CatalogSnapshot, Festival, SetTime, Show, SoundTag } from '../../data/models';
 import { SOUND_TAGS } from '../../data/models';
 import type { OrgStarter } from '../../config/organizers';
+import { matchesName, nameRank, normalize } from '../festivals/search';
+import type { Notice } from '../notifications/inbox';
+import { t } from '../../i18n';
 
 /**
  * Event organizers, pure: an organizer's page (who they are, their events and
@@ -44,9 +47,11 @@ export type OrgEvent = {
   /** "Orlando, FL". */
   city: string;
   about?: string;
-  /** Tickets and a flyer or poster (https). */
+  /** Tickets and a flyer or poster (https; a poster can be uploaded from the studio). */
   tickets?: string;
   poster?: string;
+  /** More artists are still to be announced (with no lineup yet: all of them). */
+  tba?: boolean;
   /** The festival on Afterglow it's the after party of (its id). */
   afterOf?: string;
   lineup: OrgAct[];
@@ -84,8 +89,10 @@ export type Org = {
   instagram?: string;
   /** A logo the app draws. */
   mark?: OrgMark;
-  /** A logo picture (https), when there's no drawn one. */
+  /** A logo it uploaded (https): the wide wordmark. Wins over the one shipped with the app and the drawn one. */
   logoUrl?: string;
+  /** A square icon it uploaded (https), for round places (its profile face). */
+  iconUrl?: string;
   /** The brand's colour ("#E9E6F2"). */
   color?: string;
   events: OrgEvent[];
@@ -251,6 +258,7 @@ export function cleanEvent(raw: unknown): OrgEvent | undefined {
     about: text(r.about, EVENT_ABOUT_MAX) || undefined,
     tickets: httpsLink(r.tickets),
     poster: httpsLink(r.poster),
+    tba: r.tba === true ? true : undefined,
     afterOf: typeof r.afterOf === 'string' && /^[A-Za-z0-9_.-]{1,64}$/.test(r.afterOf) ? r.afterOf : undefined,
     lineup,
     published: r.published === true,
@@ -304,6 +312,7 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
     instagram: cleanInstagram(r.instagram),
     mark: r.mark === 'alchemy' ? ('alchemy' as const) : undefined,
     logoUrl: httpsLink(r.logoUrl),
+    iconUrl: httpsLink(r.iconUrl),
     color: cleanColor(r.color),
     events,
     artists,
@@ -316,7 +325,7 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
 }
 
 /** The fields an organizer's page is saved with (besides `promoted` and `updatedAt`). */
-export const ORG_FIELDS = ['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims'] as const;
+export const ORG_FIELDS = ['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'iconUrl', 'color', 'events', 'artists', 'claims'] as const;
 
 /** What an organizer saves (everything but `promoted`, `uids` and `handle`, which only HQ sets, and the time). */
 export function orgToDoc(org: Org): Record<string, unknown> {
@@ -437,6 +446,7 @@ export function eventToFestival(org: Org, e: OrgEvent, index: ArtistIndex): { fe
     ...(sets.length ? { sets } : {}),
     ...(Object.keys(links).length ? { links } : {}),
     ...(e.poster ? { posterImageUrl: e.poster } : {}),
+    ...(e.tba || !lineup.length ? { lineupTba: true } : {}),
   };
   return { festival, acts: acts.map(({ id, name, isNew }) => ({ id, name, isNew })) };
 }
@@ -524,7 +534,11 @@ export function withOrgs(base: CatalogSnapshot, orgs: readonly Org[]): CatalogSn
 // ---- Imported events (EDMTrain) --------------------------------------------
 
 /** One line on an organizer's page: its own event, or an imported one it claimed. */
-export type Listing = { key: string; name: string; date: string; endDate?: string; venue: string; city: string; href: string; imported: boolean };
+/** `poster`: its poster picture; `tba`: artists still to be announced. */
+export type Listing = { key: string; name: string; date: string; endDate?: string; venue: string; city: string; href: string; imported: boolean; poster?: string; tba?: boolean };
+
+/** An event's poster and whether its artists are still to be announced, for a listing. */
+export const eventExtras = (e: OrgEvent) => ({ ...(e.poster ? { poster: e.poster } : {}), ...(e.tba || !e.lineup.length ? { tba: true } : {}) });
 
 /** "Venue, Orlando, FL" -> venue "Venue", city "Orlando, FL"; a place with no comma is the city. */
 export function splitPlace(location: string): { venue: string; city: string } {
@@ -539,7 +553,7 @@ export function importedListing(id: string, look: Lookups): Listing | undefined 
   const f = look.festival(id);
   if (f?.startDate) {
     const { venue, city } = splitPlace(f.location);
-    return { key: `f:${id}`, name: f.name, date: f.startDate, ...(f.endDate && f.endDate !== f.startDate ? { endDate: f.endDate } : {}), venue, city, href: `/festival/${id}`, imported: true };
+    return { key: `f:${id}`, name: f.name, date: f.startDate, ...(f.endDate && f.endDate !== f.startDate ? { endDate: f.endDate } : {}), venue, city, href: `/festival/${id}`, imported: true, ...(f.posterImageUrl ? { poster: f.posterImageUrl } : {}) };
   }
   const s = look.show(id);
   if (s) return { key: `s:${id}`, name: s.name ?? s.venue, date: s.date, venue: s.name ? s.venue : '', city: s.location, href: `/show/${id}`, imported: true };
@@ -551,7 +565,7 @@ export function orgListings(org: Org, look: Lookups, today: string): { upcoming:
   const copied = new Set(org.events.filter((e) => e.published && e.from).map((e) => e.from!));
   const own: Listing[] = org.events
     .filter((e) => e.published)
-    .map((e) => ({ key: `e:${e.id}`, name: e.name, date: e.date, ...(e.endDate ? { endDate: e.endDate } : {}), venue: e.venue, city: e.city, href: `/festival/${eventFestivalIdOf(org, e)}`, imported: false }));
+    .map((e) => ({ key: `e:${e.id}`, name: e.name, date: e.date, ...(e.endDate ? { endDate: e.endDate } : {}), venue: e.venue, city: e.city, href: `/festival/${eventFestivalIdOf(org, e)}`, imported: false, ...eventExtras(e) }));
   const claimed = org.claims.filter((c) => !copied.has(c)).flatMap((c) => importedListing(c, look) ?? []);
   const all = [...own, ...claimed];
   const last = (l: Listing) => l.endDate ?? l.date;
@@ -679,6 +693,74 @@ export function orgDjs(org: Org, look: Pick<Lookups, 'festival' | 'show'>, artis
 
 /** The organizer an account runs, by account (HQ linked it, or it linked itself). */
 export const orgOfAccount = (orgs: readonly Org[], uid: string | undefined): Org | undefined => (uid ? orgs.find((o) => o.uids.includes(uid)) : undefined);
+
+/**
+ * Organizers whose name, @handle or Instagram matches a search ("under",
+ * "alchemy", "@undergroundalchemy"), best first: names that start with it,
+ * then words that do, then the rest. Nothing for an empty search. Pure.
+ */
+export function searchOrgs(orgs: readonly Org[], query: string, max = 3): Org[] {
+  const raw = query.trim();
+  const plain = raw.replace(/^@+/, '');
+  if (plain.length < 2) return [];
+  const q = normalize(plain);
+  const handles = (o: Org) => [o.handle, o.instagram].filter((x): x is string => !!x);
+  return orgs
+    .map((o, i) => {
+      if (!raw.startsWith('@') && matchesName(o.name, plain)) return { o, i, r: nameRank(o.name, q) };
+      const h = handles(o).filter((x) => matchesName(x, plain));
+      return { o, i, r: h.length ? 3 + Math.min(...h.map((x) => nameRank(x, q))) : -1 };
+    })
+    .filter((x) => x.r >= 0)
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .slice(0, max)
+    .map((x) => x.o);
+}
+
+/**
+ * A search's festivals or shows with the found organizers' own events added
+ * after them (each once), so typing an organizer's name finds what it hosts.
+ */
+export function withHosted<T extends { id: string; organizer?: string }>(found: readonly T[], all: readonly T[], orgs: readonly Org[], max = Infinity): T[] {
+  if (!orgs.length) return [...found];
+  const ids = new Set(orgs.map((o) => o.id));
+  const seen = new Set(found.map((x) => x.id));
+  return [...found, ...all.filter((x) => x.organizer && ids.has(x.organizer) && !seen.has(x.id))].slice(0, Math.max(max, found.length));
+}
+
+// ---- Updates to followers ---------------------------------------------------
+
+/** An update is at most this long. */
+export const POST_TEXT_MAX = 280;
+/** What an organizer sends its followers: a few words, maybe an event of its and a gift (one of its gift stickers, by code). */
+export type OrgPostInput = { text: string; festivalId?: string; gift?: string; giftName?: string };
+export type OrgPost = OrgPostInput & { id: string; orgId: string; uid: string; createdAt: string };
+
+/** An update ready to send: trimmed and capped; nothing when there are no words. */
+export function cleanPostInput(input: OrgPostInput): OrgPostInput | undefined {
+  const text = input.text.trim().slice(0, POST_TEXT_MAX);
+  if (!text) return undefined;
+  const festivalId = input.festivalId?.trim().slice(0, 120);
+  const gift = input.gift && /^[a-z0-9]{6,24}$/.test(input.gift) ? input.gift : undefined;
+  const giftName = gift ? input.giftName?.trim().slice(0, 60) : undefined;
+  return { text, ...(festivalId ? { festivalId } : {}), ...(gift ? { gift } : {}), ...(giftName ? { giftName } : {}) };
+}
+
+/** The organizers whose accounts you follow (their updates reach you). */
+export const followedOrgs = (orgs: readonly Org[], following: ReadonlySet<string>): Org[] => orgs.filter((o) => o.uids.some((u) => following.has(u)));
+
+/** Where an update opens: its gift to collect, else its event, else the organizer's page. */
+export const postHref = (p: Pick<OrgPost, 'orgId' | 'festivalId' | 'gift'>) => (p.gift ? `/find/${p.gift}` : p.festivalId ? `/festival/${p.festivalId}` : `/org/${p.orgId}`);
+
+/** Updates from organizers you follow, for the bell: who it's from (or that it's a gift from them) and what they said. */
+export function orgPostNotices(posts: readonly OrgPost[], orgs: readonly Org[]): Notice[] {
+  return posts.flatMap((p) => {
+    const org = orgs.find((o) => o.id === p.orgId);
+    if (!org) return [];
+    const at = Date.parse(p.createdAt);
+    return [{ id: `org:${p.id}`, kind: 'org' as const, title: p.gift ? t('A gift from {organizer}', { organizer: org.name }) : org.name, body: p.text, href: postHref(p), ...(Number.isFinite(at) ? { at } : {}) }];
+  });
+}
 
 // ---- Promotion --------------------------------------------------------------
 

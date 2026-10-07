@@ -114,6 +114,16 @@ without an app update.
    "A gift from Underground Alchemy" and The Alchemist joins your collection.
 8. **Print stickers.** Collectibles → Stickers and QR codes. Print from the
    website on a computer (like HQ's stickers, see `stickers.md`).
+9. **Its own app.** In the studio tap **View the app**. Festivals shows only
+   its events (**See all festivals** for the rest), the middle button is the
+   camera (its videos carry a faint logo in the corner), and Friends is
+   **Messages**: its inbox (anyone can message an organizer, no following
+   needed) and **Send an update to your followers**, with an event or a gift
+   attached. On another account that follows it, the update shows under the
+   bell.
+10. **Posters and TBA.** In an event, **Choose a poster from your phone**. Not
+    sure of the lineup yet? Publish with no artists (it says "Artists to be
+    announced"), or tap **More artists to be announced** once some are in.
 
 HQ can also open any organizer's studio from Organizers → **Open its studio**,
 to set things up for them.

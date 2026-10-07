@@ -80,7 +80,7 @@ export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onP
             hitSlop={6}
             style={({ pressed }) => [styles.outer, pressed && styles.pressed]}
           >
-            <PersonAvatar name={p.displayName} url={p.avatarUrl} size={OUTER - 3} />
+            <PersonAvatar name={p.displayName} url={p.avatarUrl} size={OUTER - 3} uid={p.uid} />
           </Pressable>
         </Moon>
       ))}
@@ -101,7 +101,7 @@ export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onP
               style={({ pressed }) => [styles.innerWrap, pressed && styles.pressed]}
             >
               <View style={[styles.inner, unread ? styles.innerUnread : null]}>
-                <PersonAvatar name={p.displayName} url={p.avatarUrl} size={INNER - 6} />
+                <PersonAvatar name={p.displayName} url={p.avatarUrl} size={INNER - 6} uid={p.uid} />
               </View>
               {unread ? <View style={styles.dot} /> : null}
               <Text style={styles.name} numberOfLines={1}>
@@ -113,7 +113,7 @@ export function FriendsOrbit({ me, friends, close, unreadFrom, nextFestival, onP
       })}
       {/* You, in the middle. */}
       <View style={[styles.me, { left: cx - ME / 2, top: cy - ME / 2 }]} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <PersonAvatar name={me.displayName} url={me.avatarUrl} size={ME - 8} />
+        <PersonAvatar name={me.displayName} url={me.avatarUrl} size={ME - 8} uid={me.uid} />
       </View>
     </View>
   );

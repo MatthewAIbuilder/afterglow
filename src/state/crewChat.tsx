@@ -73,8 +73,8 @@ type Ctx = {
   sendNow: () => void;
   /** Your 1-to-1 chats (rooms the functions above take, like a crew's id). */
   directChats: DirectChat[];
-  /** Open (or start) the 1-to-1 chat with a friend who follows you back; its room id. */
-  openDirect: (uid: string) => Promise<string>;
+  /** Open (or start) the 1-to-1 chat with a friend who follows you back, or with an organizer's account (`org`); its room id. */
+  openDirect: (uid: string, org?: string) => Promise<string>;
   /** When each crewmate last read this chat (uid -> ISO, server time). */
   readsFor: (crewId: string) => Record<string, string>;
   /** Has this crew's chat been read from the server yet (or is there no signal to read it with)? */
@@ -144,10 +144,10 @@ export function CrewChatProvider({ children }: { children: ReactNode }) {
     );
   }, [ready, service, uid]);
   const directChats = useMemo(() => (direct.uid === uid ? direct.chats : []), [direct, uid]);
-  const openDirect = useCallback(async (other: string) => {
+  const openDirect = useCallback(async (other: string, org?: string) => {
     let id: string;
     try {
-      id = await service.openDirectChat(other);
+      id = await service.openDirectChat(other, org);
     } catch (e) {
       // Refused although you do follow each other: the database isn't ready for messages yet (its rules need an
       // update), so it's not on them to follow you back.

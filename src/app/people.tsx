@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
@@ -7,6 +7,9 @@ import { SearchField } from '../components/SearchField';
 import { ChevronIcon } from '../components/TabIcons';
 import type { Profile } from '../features/social/models';
 import { PersonRow } from '../features/social/PersonRow';
+import { OrgResultRow } from '../features/organizers/OrgCards';
+import { searchOrgs } from '../features/organizers/organizers';
+import { useOrgs } from '../state/orgs';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { useSocial } from '../state/social';
 import { color, space, type } from '../theme/tokens';
@@ -42,6 +45,9 @@ export default function PeopleScreen() {
   const problem = current?.problem;
 
   const shown = (results ?? []).filter((p) => !social.blocked.has(p.uid) && p.uid !== social.user?.uid);
+  // Event organizers too (their page, with Follow on their account).
+  const orgs = useOrgs();
+  const foundOrgs = useMemo(() => searchOrgs(orgs, q), [orgs, q]);
 
   return (
     <View style={styles.root}>
@@ -53,7 +59,10 @@ export default function PeopleScreen() {
         <SearchField value={query} onChange={setQuery} placeholder={t('Name or @handle')} label={t('Search people')} autoFocus />
         {problem ? <Text style={styles.quiet}>{problem}</Text> : null}
         {searchable && !current ? <ActivityIndicator color={color.glow} /> : null}
-        {results && !shown.length ? <Text style={styles.quiet}>{t('No one matches “{query}”.', { query: query.trim() })}</Text> : null}
+        {foundOrgs.map((o) => (
+          <OrgResultRow key={o.id} org={o} />
+        ))}
+        {results && !shown.length && !foundOrgs.length ? <Text style={styles.quiet}>{t('No one matches “{query}”.', { query: query.trim() })}</Text> : null}
         {shown.map((p) => (
           <PersonRow key={p.uid} profile={p} follow />
         ))}

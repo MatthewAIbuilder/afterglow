@@ -366,49 +366,30 @@ function Scene({ theme, ink }: { theme: PinTheme; ink: Ink }) {
         </G>
       );
     case 'alchemy': {
-      // Underground Alchemy's mark: an "A" of three circles joined in a triangle, inside a transmutation circle, over the strata underground.
-      const top = { x: CX, y: CY - 20 };
-      const left = { x: CX - 15.5, y: CY + 7 };
-      const right = { x: CX + 15.5, y: CY + 7 };
-      const r = 4.6;
-      const edge = (a: { x: number; y: number }, b: { x: number; y: number }) => {
-        const len = Math.hypot(b.x - a.x, b.y - a.y);
-        const ux = (b.x - a.x) / len;
-        const uy = (b.y - a.y) / len;
-        return `M ${(a.x + ux * r).toFixed(2)} ${(a.y + uy * r).toFixed(2)} L ${(b.x - ux * r).toFixed(2)} ${(b.y - uy * r).toFixed(2)}`;
-      };
-      const lines = [edge(top, left), edge(top, right), edge(left, right)].join(' ');
+      // Underground Alchemy's mark: its flask in raised metal, enamel potion inside with sparkles, over the strata underground.
+      const flask = `M ${CX - 6} ${CY - 25} L ${CX + 6} ${CY - 25} Q ${CX + 8} ${CY - 25} ${CX + 8} ${CY - 23} Q ${CX + 8} ${CY - 21.5} ${CX + 6} ${CY - 21.5} L ${CX + 4.5} ${CY - 21.5} L ${CX + 4.5} ${CY - 10} Q ${CX + 4.5} ${CY - 8} ${CX + 6} ${CY - 6} L ${CX + 17} ${CY + 9} Q ${CX + 20} ${CY + 14} ${CX + 15} ${CY + 15.5} L ${CX - 15} ${CY + 15.5} Q ${CX - 20} ${CY + 14} ${CX - 17} ${CY + 9} L ${CX - 6} ${CY - 6} Q ${CX - 4.5} ${CY - 8} ${CX - 4.5} ${CY - 10} L ${CX - 4.5} ${CY - 21.5} L ${CX - 6} ${CY - 21.5} Q ${CX - 8} ${CY - 21.5} ${CX - 8} ${CY - 23} Q ${CX - 8} ${CY - 25} ${CX - 6} ${CY - 25} Z`;
+      const potion = `M ${CX - 12.5} ${CY + 6} L ${CX + 12.5} ${CY + 6} L ${CX + 15.5} ${CY + 10.5} Q ${CX + 17} ${CY + 13} ${CX + 14} ${CY + 13} L ${CX - 14} ${CY + 13} Q ${CX - 17} ${CY + 13} ${CX - 15.5} ${CY + 10.5} Z`;
+      const spark = (x: number, y: number, r: number) =>
+        `M ${x} ${y - r} Q ${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y} Q ${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r} Q ${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y} Q ${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r} Z`;
       return (
         <G>
           {back}
           <Glitter seed={seed} n={26} height={RS * 1.1} />
-          {/* The transmutation circle: two thin rings and the four elements' ticks. */}
-          <Circle cx={CX} cy={CY - 4} r={25} fill="none" stroke={metal} strokeWidth={0.5} opacity={0.55} />
-          <Circle cx={CX} cy={CY - 4} r={22.4} fill="none" stroke={metal} strokeWidth={0.4} opacity={0.4} strokeDasharray="1.2 2.2" />
-          {[0, 90, 180, 270].map((deg) => {
-            const a = ((deg - 90) * Math.PI) / 180;
-            return <Circle key={deg} cx={CX + Math.cos(a) * 25} cy={CY - 4 + Math.sin(a) * 25} r={1.1} fill={metal} />;
-          })}
           {/* The strata underground, a seam of glow running through them. */}
-          <Path d={`M 20 ${CY + 17} Q 40 ${CY + 13} 60 ${CY + 17} T 100 ${CY + 16} L 100 120 L 20 120 Z`} fill={p.ground} />
-          <Path d={`M 20 ${CY + 17} Q 40 ${CY + 13} 60 ${CY + 17} T 100 ${CY + 16}`} stroke={metal} strokeWidth={0.8} fill="none" />
-          <Path d={`M 20 ${CY + 23} Q 38 ${CY + 20.5} 56 ${CY + 23} T 100 ${CY + 22.5}`} stroke={p.accent2} strokeWidth={1.3} fill="none" opacity={0.9} />
-          <Path d={`M 20 ${CY + 28} Q 44 ${CY + 25.5} 64 ${CY + 28} T 100 ${CY + 27.5}`} stroke={metal} strokeWidth={0.6} fill="none" opacity={0.7} />
-          {/* A soft glow behind the mark. */}
-          <Circle cx={CX} cy={CY - 4} r={17} fill={p.accent2} opacity={0.16} />
-          <Circle cx={CX} cy={CY - 4} r={10} fill={p.accent2} opacity={0.14} />
-          {/* The mark: raised metal lines and rings, each ring filled with enamel. */}
-          <Path d={lines} stroke="#000000" strokeWidth={3.6} opacity={0.35} strokeLinecap="round" transform="translate(0.5 0.8)" />
-          <Path d={lines} stroke={metal} strokeWidth={2.6} strokeLinecap="round" />
-          <Path d={lines} stroke={p.accent} strokeWidth={0.8} strokeLinecap="round" opacity={0.6} />
-          {[top, left, right].map((c, i) => (
-            <G key={i}>
-              <Circle cx={c.x} cy={c.y} r={r + 0.9} fill="#000000" opacity={0.3} transform="translate(0.5 0.8)" />
-              <Circle cx={c.x} cy={c.y} r={r} fill={p.accent2} stroke={metal} strokeWidth={1.7} />
-              <Circle cx={c.x} cy={c.y} r={r * 0.42} fill={p.accent} opacity={0.9} />
-              <Circle cx={c.x - 1.4} cy={c.y - 1.5} r={0.9} fill="#FFFFFF" opacity={0.85} />
-            </G>
-          ))}
+          <Path d={`M 20 ${CY + 19} Q 40 ${CY + 15} 60 ${CY + 19} T 100 ${CY + 18} L 100 120 L 20 120 Z`} fill={p.ground} />
+          <Path d={`M 20 ${CY + 19} Q 40 ${CY + 15} 60 ${CY + 19} T 100 ${CY + 18}`} stroke={metal} strokeWidth={0.8} fill="none" />
+          <Path d={`M 20 ${CY + 25} Q 38 ${CY + 22.5} 56 ${CY + 25} T 100 ${CY + 24.5}`} stroke={p.accent2} strokeWidth={1.3} fill="none" opacity={0.9} />
+          {/* A soft glow behind the flask. */}
+          <Circle cx={CX} cy={CY - 2} r={20} fill={p.accent2} opacity={0.14} />
+          {/* The flask: glass in the sky's enamel, the potion in the accent, raised metal outline. */}
+          <Path d={flask} fill={p.accent2} opacity={0.18} />
+          <Path d={potion} fill={p.accent2} stroke={metal} strokeWidth={0.6} />
+          <Path d={flask} stroke="#000000" strokeWidth={3.4} opacity={0.3} fill="none" strokeLinejoin="round" transform="translate(0.5 0.8)" />
+          <Path d={flask} stroke={metal} strokeWidth={2.4} fill="none" strokeLinejoin="round" />
+          <Path d={`M ${CX - 2.6} ${CY - 19} L ${CX - 2.6} ${CY - 9}`} stroke={p.accent} strokeWidth={0.9} strokeLinecap="round" opacity={0.7} />
+          {/* Sparkles: in the flask and beside it, as in its logo. */}
+          <Path d={`${spark(CX + 2, CY - 1, 3.6)} ${spark(CX - 4, CY + 3.5, 2.6)} ${spark(CX + 6.5, CY + 3.5, 2.2)}`} fill={p.accent} />
+          <Path d={`${spark(CX - 19, CY - 15, 2.2)} ${spark(CX - 22, CY - 4, 1.6)} ${spark(CX + 20, CY - 12, 1.8)}`} fill={metal} />
         </G>
       );
     }
