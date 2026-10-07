@@ -304,7 +304,12 @@ describe('sprouts', () => {
     await person('maya', 'Maya');
     const app = await renderApp('/together');
     await flush();
-    await fireEvent.press(app.getByLabelText('Give someone a sprout'));
+    // The Sprout button opens your garden, with its buttons to give a sprout or make kandi.
+    await fireEvent.press(app.getByLabelText('Your garden: give a sprout or kandi'));
+    await flush();
+    expect(app.getByText('Give a sprout')).toBeTruthy();
+    expect(app.getByLabelText('Make kandi for a friend')).toBeTruthy();
+    await fireEvent.press(app.getByText('Give a sprout'));
     await flush();
     expect(app.getByText('Show the code')).toBeTruthy();
   });

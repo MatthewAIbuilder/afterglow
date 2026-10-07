@@ -158,6 +158,17 @@ export default function GardenScreen() {
             >
               <Text style={styles.primaryText}>{t('Give a sprout')}</Text>
             </Pressable>
+            <Pressable
+              onPress={() => {
+                haptic.tap();
+                router.push('/kandi-make');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Make kandi for a friend')}
+              style={({ pressed }) => [styles.kandi, pressed && styles.pressed]}
+            >
+              <Text style={styles.primaryText}>{t('Make kandi')}</Text>
+            </Pressable>
             {Platform.OS !== 'web' ? (
               <Pressable
                 onPress={() => {
@@ -384,10 +395,11 @@ const styles = StyleSheet.create({
   hint: { ...type.caption, color: color.moonFaint },
   seedCard: { padding: space.lg, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(110,231,160,0.08)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,231,160,0.35)' },
   seeds: { ...type.label, color: SPROUT_GREEN },
-  buttons: { flexDirection: 'row', gap: space.sm },
-  primary: { flex: 1, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: '#1E8F4A' },
+  buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  kandi: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
+  primary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: '#1E8F4A' },
   primaryText: { ...type.headline, color: color.moon },
-  secondary: { flex: 1, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   secondaryText: { ...type.headline, color: color.moon },
   section: { gap: space.sm, marginTop: space.md },
   waitRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: radius.md, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,184,107,0.6)' },
