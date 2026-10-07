@@ -96,7 +96,8 @@ export function kandiFrom(id: string, d: unknown): Kandi | undefined {
 }
 
 /** Kandi as visitors see it in a garden: the word, the beads and who made it (never the note). */
-export type PublicKandi = { word: string; beads: PatternId; from?: string; charm?: CharmId };
+/** Kandi as visitors see it in a garden; `worn` is the one shown on its owner's profile. */
+export type PublicKandi = { word: string; beads: PatternId; from?: string; charm?: CharmId; worn?: true };
 export const PUBLIC_KANDI_MAX = 40;
 
 export function cleanPublicKandi(raw: unknown): PublicKandi[] {
@@ -108,7 +109,7 @@ export function cleanPublicKandi(raw: unknown): PublicKandi[] {
     const word = cleanWord(o.word);
     if (!word || !isPattern(o.beads)) continue;
     const from = typeof o.from === 'string' && /^[a-z0-9._]{1,30}$/.test(o.from) ? o.from : undefined;
-    out.push({ word, beads: o.beads, ...(from ? { from } : {}), ...(isCharm(o.charm) ? { charm: o.charm } : {}) });
+    out.push({ word, beads: o.beads, ...(from ? { from } : {}), ...(isCharm(o.charm) ? { charm: o.charm } : {}), ...(o.worn === true ? { worn: true as const } : {}) });
   }
   return out;
 }

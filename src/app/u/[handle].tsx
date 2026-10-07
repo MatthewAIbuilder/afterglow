@@ -51,6 +51,7 @@ import { showActionSheet } from '../../lib/dialog';
 import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { goBack } from '../../lib/nav';
 import { t, tn } from '../../i18n';
+import type { PublicKandi } from '../../features/kandi/kandi';
 
 /**
  * Someone's festival profile (or yours, as others see it): photo, name,
@@ -74,6 +75,8 @@ export default function PublicProfileScreen() {
   const [tagged, setTagged] = useState<SharedMemory[]>([]);
   // Their garden, as they show it: undefined while it loads (or couldn't), null when they don't show one.
   const [garden, setGarden] = useState<PublicResident[] | null | undefined>(undefined);
+  // The kandi they wear on their profile.
+  const [worn, setWorn] = useState<PublicKandi>();
   const [problem, setProblem] = useState<string | undefined>();
   const [memoriesFailed, setMemoriesFailed] = useState(false);
   const [counts, setCounts] = useState<FollowCounts | undefined>();
@@ -102,7 +105,11 @@ export default function PublicProfileScreen() {
         .catch(() => {});
       social.service
         .gardenOf(p.uid)
-        .then((g) => live && setGarden(g?.residents ?? null))
+        .then((g) => {
+          if (!live) return;
+          setGarden(g?.residents ?? null);
+          setWorn(g?.kandi.find((k) => k.worn));
+        })
         .catch(() => {});
       // Videos they're tagged in and said yes to (a separate read: if it fails, their own still show).
       social.service
@@ -272,6 +279,7 @@ export default function PublicProfileScreen() {
       <>
         <View style={styles.headWrap}>
           <ProfileHeader
+            kandi={worn}
             socials={profile.socials}
             name={profile.displayName}
             initial

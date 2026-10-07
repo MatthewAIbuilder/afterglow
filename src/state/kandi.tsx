@@ -34,7 +34,8 @@ function codeId(): string {
 /** Kandi in your garden, with the giver's handle when known. */
 export type ReceivedKandi = Kandi & { fromHandle?: string; fromName?: string };
 
-type Stored = { outbox: PendingKandi[]; received: ReceivedKandi[] };
+/** `worn`: the kandi you show on your profile (its id). */
+type Stored = { outbox: PendingKandi[]; received: ReceivedKandi[]; worn?: string };
 const EMPTY: Stored = { outbox: [], received: [] };
 
 type Ctx = {
@@ -46,6 +47,10 @@ type Ctx = {
   give: (to: { uid: string; name: string }, word: string, beads: PatternId, note?: string, charm?: CharmId) => boolean;
   /** Make kandi given by code: its card (for the QR) straight away; it reaches Afterglow once there's signal, and whoever scans it first picks it up. */
   giveByCode: (word: string, beads: PatternId, note?: string, charm?: CharmId) => KandiCard | undefined;
+  /** The kandi you show on your profile, if any. */
+  worn?: ReceivedKandi;
+  /** Show this kandi on your profile (or none). */
+  wear: (id: string | undefined) => void;
   /** Take it out of your garden. */
   remove: (id: string) => Promise<boolean>;
   /** Read what's in your garden again. */
@@ -64,7 +69,7 @@ function clean(raw: unknown): Stored {
   const received = Array.isArray(o.received)
     ? o.received.filter((k): k is ReceivedKandi => !!k && typeof k === 'object' && typeof k.id === 'string' && typeof k.from === 'string' && !!cleanWord(k.word) && isPattern(k.beads)).slice(0, RECEIVED_MAX)
     : [];
-  return { outbox, received };
+  return { outbox, received, ...(typeof o.worn === 'string' ? { worn: o.worn } : {}) };
 }
 
 const KandiContext = createContext<Ctx | null>(null);
@@ -83,7 +88,7 @@ export function KandiProvider({ children }: { children: ReactNode }) {
         try {
           s = raw ? clean(JSON.parse(raw)) : EMPTY;
         } catch {}
-        setStored((cur) => ({ outbox: [...s.outbox, ...cur.outbox.filter((k) => !s.outbox.some((x) => x.id === k.id))], received: cur.received.length ? cur.received : s.received }));
+        setStored((cur) => ({ outbox: [...s.outbox, ...cur.outbox.filter((k) => !s.outbox.some((x) => x.id === k.id))], received: cur.received.length ? cur.received : s.received, ...((cur.worn ?? s.worn) ? { worn: cur.worn ?? s.worn } : {}) }));
       })
       .catch(() => {})
       .finally(() => {
@@ -187,8 +192,17 @@ export function KandiProvider({ children }: { children: ReactNode }) {
     [service],
   );
 
-  const shown = useMemo(() => stored.received.map((k) => ({ word: k.word, beads: k.beads, ...(k.charm ? { charm: k.charm } : {}), ...(k.fromHandle ? { from: k.fromHandle } : {}) })), [stored.received]);
-  const value = useMemo<Ctx>(() => ({ outbox: stored.outbox, received: stored.received, give, giveByCode, remove, refresh, shown }), [stored, give, giveByCode, remove, refresh, shown]);
+  // What visitors see: the worn one first, marked.
+  const shown = useMemo(
+    () =>
+      [...stored.received]
+        .sort((a, b) => Number(b.id === stored.worn) - Number(a.id === stored.worn))
+        .map((k) => ({ word: k.word, beads: k.beads, ...(k.charm ? { charm: k.charm } : {}), ...(k.fromHandle ? { from: k.fromHandle } : {}), ...(k.id === stored.worn ? { worn: true as const } : {}) })),
+    [stored.received, stored.worn],
+  );
+  const worn = useMemo(() => stored.received.find((k) => k.id === stored.worn), [stored.received, stored.worn]);
+  const wear = useCallback((id: string | undefined) => setStored((s) => (id ? { ...s, worn: id } : { outbox: s.outbox, received: s.received })), []);
+  const value = useMemo<Ctx>(() => ({ outbox: stored.outbox, received: stored.received, give, giveByCode, remove, refresh, shown, worn, wear }), [stored, give, giveByCode, remove, refresh, shown, worn, wear]);
   return <KandiContext.Provider value={value}>{children}</KandiContext.Provider>;
 }
 

@@ -296,7 +296,7 @@ export default function GardenScreen() {
           </View>
         ) : null}
       </ScrollView>
-      <KandiSheet kandi={openKandi} onClose={() => setOpenKandi(undefined)} onRemove={(id) => void kandi.remove(id).then((ok) => ok && setOpenKandi(undefined))} />
+      <KandiSheet kandi={openKandi} worn={!!openKandi && kandi.worn?.id === openKandi.id} onWear={(on) => kandi.wear(on ? openKandi?.id : undefined)} onClose={() => setOpenKandi(undefined)} onRemove={(id) => void kandi.remove(id).then((ok) => ok && setOpenKandi(undefined))} />
       <SproutSheet sprout={open} onClose={() => setOpen(undefined)} />
       <ArtistSproutSheet open={openArtist} canGive={sprouts.ready} onClose={() => setOpenArtist(undefined)} />
       {/* A sprout that bloomed since you last looked gets its moment, one at a time. */}
@@ -320,7 +320,7 @@ export default function GardenScreen() {
   );
 }
 
-function KandiSheet({ kandi: k, onClose, onRemove }: { kandi?: ReceivedKandi; onClose: () => void; onRemove: (id: string) => void }) {
+function KandiSheet({ kandi: k, worn, onWear, onClose, onRemove }: { kandi?: ReceivedKandi; worn: boolean; onWear: (on: boolean) => void; onClose: () => void; onRemove: (id: string) => void }) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={!!k} transparent animationType="fade" onRequestClose={onClose}>
@@ -332,6 +332,17 @@ function KandiSheet({ kandi: k, onClose, onRemove }: { kandi?: ReceivedKandi; on
               {k.fromHandle ? t('from {name}', { name: `@${k.fromHandle}` }) : t('from someone')} · {day(Date.parse(k.createdAt))}
             </Text>
             {k.note ? <Text style={styles.note}>“{k.note}”</Text> : null}
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                onWear(!worn);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: worn }}
+              style={({ pressed }) => [styles.secondary, styles.sheetClose, worn && styles.wearing, pressed && styles.pressed]}
+            >
+              <Text style={styles.secondaryText}>{worn ? t('Wearing it on your profile · Take it off') : t('Wear it on my profile')}</Text>
+            </Pressable>
             {k.fromHandle ? (
               <Pressable
                 onPress={() => {
@@ -431,6 +442,7 @@ const styles = StyleSheet.create({
   seedCard: { padding: space.lg, gap: space.md, borderRadius: radius.lg, backgroundColor: 'rgba(110,231,160,0.08)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,231,160,0.35)' },
   seeds: { ...type.label, color: SPROUT_GREEN },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  wearing: { backgroundColor: glowA(0.18), borderColor: glowA(0.55) },
   collection: { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: glowA(0.16), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
   collectionText: { ...type.label, color: color.moon },
   collectionArrow: { ...type.headline, color: color.glow, lineHeight: 18 },

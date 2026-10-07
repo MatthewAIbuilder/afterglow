@@ -185,5 +185,33 @@ describe('gardens', () => {
     await flush();
     expect(hers.getByText('Kandi for Sam')).toBeTruthy();
   });
+
+  it('wear kandi on your profile, and visitors see whose it is', async () => {
+    const maya = await person('maya', 'Maya Lin');
+    await s().signOut();
+    await person('sam', 'Sam');
+    await s().giveKandi({ to: maya, word: 'BESTIES', beads: 'glow', charm: 'heart' });
+    await s().signOut();
+    await s().signIn('maya@example.com', 'password123');
+    const app = await renderApp('/garden');
+    await flush();
+    await settle(1000);
+    await flush();
+    await fireEvent.press(app.getByLabelText('Kandi spelling BESTIES, from @sam'));
+    await flush();
+    await fireEvent.press(app.getByText('Wear it on my profile'));
+    await flush();
+    expect(app.getByText('Wearing it on your profile · Take it off')).toBeTruthy();
+    await settle(5000);
+    await flush();
+    expect(mockSocial.gardens.get(maya)?.kandi[0]).toMatchObject({ word: 'BESTIES', worn: true, from: 'sam' });
+    await app.unmount();
+
+    await s().signOut();
+    await s().signIn('sam@example.com', 'password123');
+    const visit = await renderApp('/u/maya');
+    await flush();
+    expect(visit.getByText('Wearing kandi from @sam')).toBeTruthy();
+  });
 });
 

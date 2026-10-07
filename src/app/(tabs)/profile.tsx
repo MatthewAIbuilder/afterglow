@@ -66,6 +66,7 @@ import { localDay } from '../../features/artists/shows';
 import { useGoingShows } from '../../state/goingShows';
 import { color, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
+import { useKandi } from '../../state/kandi';
 import { datesLine } from '../../features/festivals/format';
 
 /** How far the cover photo reaches below the safe area. */
@@ -90,6 +91,9 @@ export default function ProfileScreen() {
 }
 
 function FullProfile() {
+  // The kandi you wear on your profile, as visitors see it.
+  const { worn } = useKandi();
+  const wornKandi = worn ? { word: worn.word, beads: worn.beads, ...(worn.charm ? { charm: worn.charm } : {}), ...(worn.fromHandle ? { from: worn.fromHandle } : {}) } : undefined;
   const quests = useDailyQuests();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
@@ -263,6 +267,7 @@ function FullProfile() {
         </View>
 
         <ProfileHeader
+          kandi={wornKandi}
           note={goingNote}
             socials={me?.socials}
           name={me?.displayName ?? t('You')}
