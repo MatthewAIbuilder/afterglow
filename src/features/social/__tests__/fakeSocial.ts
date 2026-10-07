@@ -1303,6 +1303,16 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       if (!o) throw new SocialError('not-found');
       orgs.set(orgId, { ...o, uids: on ? [...new Set([...o.uids, uid])] : o.uids.filter((x) => x !== uid) });
     },
+    async setOrgImage(orgId, kind, uri) {
+      needOrg(orgId);
+      const o = orgs.get(orgId);
+      if (!o) throw new SocialError('not-found');
+      const field = kind === 'logo' ? 'logoUrl' : 'iconUrl';
+      const { [field]: _old, ...rest } = o;
+      const url = uri ? `https://files.example/orgs/${orgId}/${kind}-${++n}.png` : undefined;
+      orgs.set(orgId, { ...rest, ...(url ? { [field]: url } : {}) } as Org);
+      return url;
+    },
     async setOrgHandle(orgId, handle) {
       needAdmin();
       const o = orgs.get(orgId);

@@ -51,6 +51,15 @@ and comes back if he unpublishes or deletes his copy.
 
 ## Logos
 
+- **`logo-official.png` is the official logo** (the user sent it on
+  2026-10-07: the flask with sparkles beside UNDERGROUND ALCHEMY, white on
+  clear). The app shows it everywhere (`assets/organizers/underground-alchemy-logo.png`,
+  with a square flask icon cut from it, `...-icon.png`; `src/features/organizers/brandAssets.ts`).
+  His badges and the drawn fallback show the flask too. He can upload a new
+  logo and icon himself: Studio → Page → Logo and icon (his uploads win; "Go
+  back to the original" returns to this one).
+- The two below came earlier and are kept only for reference.
+
 - `logo-triangle.jpg`: the logo the user sent first (UNDERGROUND over an "A"
   made of three rings in a triangle, then LCHEMY). The app draws this mark
   itself (`AlchemyMark` and `OrgLogo` in `src/features/organizers/OrgMark.tsx`)

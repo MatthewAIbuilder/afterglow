@@ -1259,6 +1259,18 @@ await t('organizers: only HQ sets the @handle its accounts use', async () => {
   await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { handle: 'stolenhandle', updatedAt: serverTimestamp() }));
   await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { tagline: 'After hours', updatedAt: serverTimestamp() }));
 });
+await t('organizers: logos and icons upload into your own folder (pictures under 5 MB); only its team or HQ puts one on its page', async () => {
+  const O = env.authenticatedContext('uidOrg', { email: 'afterglowmusic.support+alchemy@gmail.com', email_verified: true });
+  const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+  await assertSucceeds(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000000.png'), png, { contentType: 'image/png' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidA/logo-1700000000001.png'), png, { contentType: 'image/png' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000002.png'), png, { contentType: 'video/mp4' }));
+  await assertFails(uploadBytes(ref(O.storage(), 'orgs/underground-alchemy/uidOrg/anything.png'), png, { contentType: 'image/png' }));
+  await assertSucceeds(getBytes(ref(anon.storage(), 'orgs/underground-alchemy/uidOrg/logo-1700000000000.png')));
+  await assertSucceeds(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { logoUrl: 'https://firebasestorage.googleapis.com/x/logo.png', iconUrl: 'https://firebasestorage.googleapis.com/x/icon.png', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(A.firestore(), 'orgs', 'underground-alchemy'), { logoUrl: 'https://evil.example/logo.png', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(O.firestore(), 'orgs', 'underground-alchemy'), { iconUrl: 'x'.repeat(2001), updatedAt: serverTimestamp() }));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

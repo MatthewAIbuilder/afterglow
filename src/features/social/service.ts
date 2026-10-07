@@ -382,6 +382,12 @@ export interface SocialService {
    * someone signed in with an organizer's (confirmed) email only for their own.
    */
   setOrgAccount(orgId: string, uid: string, on: boolean): Promise<void>;
+  /**
+   * Upload the organizer's logo (wide) or icon (square) from a picked image,
+   * or take it away (null) to go back to the one shipped with the app. Its
+   * team or HQ. Resolves with the new link.
+   */
+  setOrgImage(orgId: string, kind: 'logo' | 'icon', uri: string | null): Promise<string | undefined>;
   /** HQ: the @handle (and name) the organizer's accounts' profiles use, or none (null). */
   setOrgHandle(orgId: string, handle: string | null): Promise<void>;
   /** HQ: who may sign in to an organizer's studio (emails), and adding or taking one away (null). */

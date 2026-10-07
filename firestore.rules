@@ -619,7 +619,7 @@ service cloud.firestore {
     // Event organizers' pages: anyone reads them (the website shows them signed out); HQ starts one; its
     // team (an email HQ added, confirmed) edits it, but never its promotions, which only HQ gives.
     function orgShape(d) {
-      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims', 'promoted', 'uids', 'handle', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims', 'promoted', 'uids', 'handle', 'iconUrl', 'updatedAt'])
         // The @handle its accounts' profiles use.
         && (!('handle' in d) || (d.handle is string && d.handle.matches('^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$')))
         && (!('uids' in d) || (d.uids is list && d.uids.size() <= 10))
@@ -627,7 +627,7 @@ service cloud.firestore {
         && (!('claims' in d) || (d.claims is list && d.claims.size() <= 60))
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
         && shortOrAbsent(d, 'tagline', 80) && shortOrAbsent(d, 'about', 600) && shortOrAbsent(d, 'website', 2000)
-        && shortOrAbsent(d, 'instagram', 30) && shortOrAbsent(d, 'mark', 20) && shortOrAbsent(d, 'logoUrl', 2000) && shortOrAbsent(d, 'color', 7)
+        && shortOrAbsent(d, 'instagram', 30) && shortOrAbsent(d, 'mark', 20) && shortOrAbsent(d, 'logoUrl', 2000) && shortOrAbsent(d, 'iconUrl', 2000) && shortOrAbsent(d, 'color', 7)
         && d.events is list && d.events.size() <= 40
         && d.artists is map && d.artists.size() <= 120
         && d.promoted is map && d.promoted.size() <= 40

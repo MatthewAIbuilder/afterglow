@@ -1568,6 +1568,22 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         me();
         await updateDoc(doc(fb().db, 'orgs', orgId), { uids: on ? arrayUnion(uid) : arrayRemove(uid), updatedAt: serverTimestamp() });
       }),
+    setOrgImage: (orgId, kind, uri) =>
+      guard(async () => {
+        const user = me();
+        const field = kind === 'logo' ? 'logoUrl' : 'iconUrl';
+        if (!uri) {
+          await updateDoc(doc(fb().db, 'orgs', orgId), { [field]: deleteField(), updatedAt: serverTimestamp() });
+          return undefined;
+        }
+        const blob = await (await fetch(uri)).blob();
+        const type = /^image\/(png|jpeg|webp)$/.test(blob.type) ? blob.type : 'image/png';
+        const ext = type === 'image/jpeg' ? 'jpg' : type.slice(6);
+        // A new name each time, so phones never show an old picture from their cache.
+        const url = await upload(`orgs/${orgId}/${user.uid}/${kind}-${Date.now()}.${ext}`, blob, type);
+        await updateDoc(doc(fb().db, 'orgs', orgId), { [field]: url, updatedAt: serverTimestamp() });
+        return url;
+      }),
     setOrgHandle: (orgId, handle) =>
       guard(async () => {
         await updateDoc(doc(fb().db, 'orgs', orgId), { handle: handle ?? deleteField(), updatedAt: serverTimestamp() });

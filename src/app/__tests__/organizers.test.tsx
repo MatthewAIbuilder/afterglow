@@ -155,7 +155,7 @@ describe('organizers', () => {
     seed();
     const app = await renderApp(`/org/${ORG}`);
     await flush();
-    expect(app.getByLabelText('Underground Alchemy')).toBeTruthy();
+    expect(app.getAllByLabelText('Underground Alchemy').length).toBeGreaterThan(0);
     expect(app.getByText('After parties till sunrise.')).toBeTruthy();
     expect(app.getByText('Transmutation')).toBeTruthy();
     expect(app.getByText('Their badge')).toBeTruthy();
@@ -354,5 +354,28 @@ describe('organizers', () => {
     // EDMTrain's own data is untouched.
     expect(mockSocial.patches.get('p1')!.file).toBe(JSON.stringify(file));
     await app.unmount();
+  });
+  it('the organizer changes its logo and icon in the studio, and can go back to the original', async () => {
+    seed();
+    const picker = jest.requireMock<{ launchImageLibraryAsync: jest.Mock }>('expo-image-picker');
+    const app = await organizer();
+    await showTab(app, 'Page');
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///new-logo.png', width: 1920, height: 600 }] }));
+    await fireEvent.press(app.getByText('Change logo'));
+    await flush();
+    picker.launchImageLibraryAsync.mockImplementationOnce(async () => ({ canceled: false, assets: [{ uri: 'file:///new-icon.png', width: 600, height: 600 }] }));
+    await fireEvent.press(app.getByText('Change icon'));
+    await flush();
+    expect(mockSocial.orgs.get(ORG)).toMatchObject({ logoUrl: expect.stringContaining('/logo-'), iconUrl: expect.stringContaining('/icon-') });
+    answerAlerts('Go back');
+    await fireEvent.press(app.getByText('Go back to the original logo and icon'));
+    await flush();
+    expect(mockSocial.orgs.get(ORG)!.logoUrl).toBeUndefined();
+    expect(mockSocial.orgs.get(ORG)!.iconUrl).toBeUndefined();
+    // Someone else can't.
+    await app.unmount();
+    await s().signOut();
+    await s().signUp('someone@example.com', 'password123');
+    await expect(s().setOrgImage(ORG, 'logo', 'file:///x.png')).rejects.toThrow();
   });
 });

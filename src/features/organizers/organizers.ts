@@ -84,8 +84,10 @@ export type Org = {
   instagram?: string;
   /** A logo the app draws. */
   mark?: OrgMark;
-  /** A logo picture (https), when there's no drawn one. */
+  /** A logo it uploaded (https): the wide wordmark. Wins over the one shipped with the app and the drawn one. */
   logoUrl?: string;
+  /** A square icon it uploaded (https), for round places (its profile face). */
+  iconUrl?: string;
   /** The brand's colour ("#E9E6F2"). */
   color?: string;
   events: OrgEvent[];
@@ -304,6 +306,7 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
     instagram: cleanInstagram(r.instagram),
     mark: r.mark === 'alchemy' ? ('alchemy' as const) : undefined,
     logoUrl: httpsLink(r.logoUrl),
+    iconUrl: httpsLink(r.iconUrl),
     color: cleanColor(r.color),
     events,
     artists,
@@ -316,7 +319,7 @@ export function cleanOrg(id: string, raw: unknown): Org | null {
 }
 
 /** The fields an organizer's page is saved with (besides `promoted` and `updatedAt`). */
-export const ORG_FIELDS = ['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'color', 'events', 'artists', 'claims'] as const;
+export const ORG_FIELDS = ['name', 'tagline', 'about', 'website', 'instagram', 'mark', 'logoUrl', 'iconUrl', 'color', 'events', 'artists', 'claims'] as const;
 
 /** What an organizer saves (everything but `promoted`, `uids` and `handle`, which only HQ sets, and the time). */
 export function orgToDoc(org: Org): Record<string, unknown> {
