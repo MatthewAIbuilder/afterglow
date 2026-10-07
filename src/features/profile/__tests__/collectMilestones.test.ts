@@ -12,4 +12,12 @@ describe('collecting milestones', () => {
     for (const id of ['kandi', 'lucky', 'hunter', 'golden', 'halfway']) expect(by(all, id).earned).toBe(true);
     expect(by(milestones({ ...base, collected: 23 }), 'halfway').current).toBe(23);
   });
+
+  it('decorations, a full showcase and a completed set', () => {
+    const none = milestones(base);
+    for (const id of ['lit', 'display', 'complete']) expect(by(none, id).earned).toBe(false);
+    expect(by(milestones({ ...base, decor: 2, pinned: 2 }), 'display').current).toBe(2);
+    const all = milestones({ ...base, decor: 3, pinned: 3, completeSets: 1 });
+    for (const id of ['lit', 'display', 'complete']) expect(by(all, id).earned).toBe(true);
+  });
 });

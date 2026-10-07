@@ -5,7 +5,7 @@ import { t } from '../../i18n';
  * Milestone badges: a few quiet markers of your festival life, next to the
  * festival pins. Worked out on the phone from what you've done. Pure.
  */
-export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon' | 'green' | 'giver' | 'gardener' | 'scout' | 'kandi' | 'lucky' | 'hunter' | 'golden' | 'halfway';
+export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon' | 'green' | 'giver' | 'gardener' | 'scout' | 'kandi' | 'lucky' | 'hunter' | 'golden' | 'halfway' | 'lit' | 'display' | 'complete';
 
 export type Milestone = {
   id: MilestoneId | QuestId;
@@ -58,6 +58,12 @@ export type MilestoneInput = {
   gold?: number;
   /** How much of Your collection you have, in percent. */
   collected?: number;
+  /** Decorations in your garden's sky. */
+  decor?: number;
+  /** Cards pinned to your showcase. */
+  pinned?: number;
+  /** Sets in Your collection you've completed. */
+  completeSets?: number;
 };
 
 type Spec = { id: MilestoneId; title: string; how: string; about: string; target: number; value: (i: MilestoneInput) => number };
@@ -83,6 +89,9 @@ const SPECS: Spec[] = [
   { id: 'hunter', title: t('Sticker hunter'), how: t('Find 5 stickers'), about: t('For finding five Afterglow stickers out in the wild and scanning them.'), target: 5, value: (i) => i.stickers ?? 0 },
   { id: 'golden', title: t('Gold standard'), how: t('Film an artist 10 times'), about: t('For filming the same artist ten times: their collectible turned gold.'), target: 1, value: (i) => i.gold ?? 0 },
   { id: 'halfway', title: t('Halfway there'), how: t('Collect half of everything'), about: t('For collecting half of everything in Your collection: sprouts, collectibles, stickers and kandi.'), target: 50, value: (i) => i.collected ?? 0 },
+  { id: 'lit', title: t('Under the lights'), how: t('Earn 3 garden decorations'), about: t('For three decorations in your garden’s sky, each earned by something you did: giving, festival days, luck, kandi, filming.'), target: 3, value: (i) => i.decor ?? 0 },
+  { id: 'display', title: t('On display'), how: t('Pin 3 cards to your profile'), about: t('For a full showcase: three of your collectible cards pinned to your profile for everyone visiting to see.'), target: 3, value: (i) => i.pinned ?? 0 },
+  { id: 'complete', title: t('Set complete'), how: t('Complete a set in Your collection'), about: t('For completing a whole set in Your collection: every one of them, nothing left in silhouette.'), target: 1, value: (i) => i.completeSets ?? 0 },
   { id: 'ten', title: t('10 festivals'), how: t('Go to 10 festivals'), about: t('For going to 10 festivals. A proper festival life.'), target: 10, value: (i) => i.been },
 ];
 

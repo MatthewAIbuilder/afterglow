@@ -31,6 +31,8 @@ import { useFinds } from '../../state/finds';
 import { useKandi } from '../../state/kandi';
 import { collection } from '../sprouts/collection';
 import { artistLook } from '../sprouts/artistLook';
+import { useGardenDecor } from '../sprouts/useGardenDecor';
+import { useMyShowcase } from '../sprouts/useMyShowcase';
 
 /**
  * Everything your badges need, in one place, for the Profile tab and the
@@ -72,6 +74,8 @@ export function useProfileBadges() {
   // Collecting: kandi, shinies, stickers, gold, and how much of Your collection you have.
   const { finds } = useFinds();
   const kandi = useKandi();
+  const decor = useGardenDecor();
+  const showcase = useMyShowcase();
   const found = useMemo(() => new Set(finds.filter((f) => f.state === 'found').map((f) => f.creature)), [finds]);
   const book = useMemo(
     () =>
@@ -85,8 +89,9 @@ export function useProfileBadges() {
         },
         stickers: found,
         kandi: kandi.received,
+        decor,
       }),
-    [sprouts.collected, sprouts.artists, catalog, found, kandi.received],
+    [sprouts.collected, sprouts.artists, catalog, found, kandi.received, decor],
   );
   const marks = useMemo(
     () =>
@@ -113,8 +118,11 @@ export function useProfileBadges() {
         stickers: finds.filter((f) => f.state === 'found').length,
         gold: sprouts.artists.filter((a) => a.tier === 3).length,
         collected: book.total ? Math.floor((book.have / book.total) * 100) : 0,
+        decor: decor.length,
+        pinned: showcase.pinned.length,
+        completeSets: book.sets.filter((x) => x.total > 0 && x.have === x.total).length,
       }),
-    [book, kandi.received.length, finds, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
+    [decor.length, showcase.pinned.length, book, kandi.received.length, finds, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();

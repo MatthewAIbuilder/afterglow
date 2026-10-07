@@ -32,6 +32,9 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   hunter: ['#9AFFD8', '#2C7FB8'],
   golden: ['#FFF1A8', '#B8860B'],
   halfway: ['#B99CFF', '#2C9F8A'],
+  lit: ['#FFE9A8', '#C2477E'],
+  display: ['#FFE58A', '#5B3BC4'],
+  complete: ['#8AFFD0', '#2C7FB8'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -189,6 +192,33 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
         <G>
           <Circle cx={12} cy={12} r={8} {...p} />
           <Path d="M12 4 A8 8 0 0 1 12 20 Z" fill={stroke} stroke={stroke} strokeWidth={1.8} strokeLinejoin="round" />
+        </G>
+      );
+    case 'lit':
+      // A string of lights.
+      return (
+        <G>
+          <Path d="M2 6 Q12 14 22 6" {...p} />
+          <Circle cx={6.5} cy={11.2} r={2.2} {...p} />
+          <Circle cx={12} cy={13.2} r={2.2} {...p} />
+          <Circle cx={17.5} cy={11.2} r={2.2} {...p} />
+        </G>
+      );
+    case 'display':
+      // Three cards, the middle one forward.
+      return (
+        <G>
+          <Rect x={2.5} y={7} width={7} height={10} rx={1.4} {...p} transform="rotate(-10 6 12)" />
+          <Rect x={14.5} y={7} width={7} height={10} rx={1.4} {...p} transform="rotate(10 18 12)" />
+          <Rect x={8} y={5} width={8} height={12} rx={1.6} {...p} />
+        </G>
+      );
+    case 'complete':
+      // A tick in a rounded square.
+      return (
+        <G>
+          <Rect x={4} y={4} width={16} height={16} rx={4} {...p} />
+          <Path d="M8 12.4 L11 15.2 L16.4 8.8" {...p} />
         </G>
       );
     case 'basshead':
