@@ -79,6 +79,12 @@ describe('artist sprouts', () => {
     await fireEvent.press(app.getByLabelText('Pin this card to your profile'));
     await flush();
     expect(app.getByText('★ In your showcase')).toBeTruthy();
+    // The card turns over to your story with them.
+    await fireEvent.press(app.getByText('Turn it over'));
+    await flush();
+    expect(app.getByLabelText('3 videos of SUBTRONICS. First filmed Sep 20, 2026. 3 more videos of them for silver')).toBeTruthy();
+    await fireEvent.press(app.getByText('Turn it back'));
+    await flush();
     await settle(5000);
     await flush();
     expect(mockSocial.gardens.get(maya)?.residents.find((r) => r.k === 'a')).toMatchObject({ artistId: 'subtronics', pin: 1 });

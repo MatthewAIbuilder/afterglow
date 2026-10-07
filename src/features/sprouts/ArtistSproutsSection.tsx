@@ -9,7 +9,7 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { artistLook, foldName, SIGNATURE_NAMES } from './artistLook';
 import { type ArtistSprout, artistGardenLine, tierLabel, tierLine } from './artistSprouts';
 import { Sprout } from './Sprout';
-import { CollectibleCard } from './CollectibleCard';
+import { CardStatsBack, CollectibleCard, FlipCard } from './CollectibleCard';
 import { cardLink } from './cards';
 import { shareMessage } from '../../lib/share';
 import { useSocial } from '../../state/social';
@@ -78,10 +78,17 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
   const s = open?.sprout;
   const look = a ? artistLook(a) : undefined;
   const [story, setStory] = useState(false);
+  // Your own card turns over to show your story with the artist.
+  const [turned, setTurned] = useState(false);
+  const turn = () => {
+    haptic.select();
+    setTurned((v) => !v);
+  };
   const showcase = useMyShowcase();
   const pinned = !!a && showcase.pinned.includes(a.id);
   const close = () => {
     setStory(false);
+    setTurned(false);
     onClose();
   };
   // The card, as tall as the screen allows.
@@ -92,9 +99,18 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
         {a && look ? (
           <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + space.xl, maxHeight: height - insets.top }]} onPress={() => {}} accessible={false}>
             <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-            <HoloTilt width={cardWidth} height={Math.round(cardWidth * 1.4)} shiny={!!s?.shiny}>
-              <CollectibleCard look={look} artistName={a.name} tier={s?.tier ?? 0} shiny={!!s?.shiny} owner={handle && (s || open?.given) ? `@${handle}` : undefined} line={s ? tierLabel(s) : undefined} width={cardWidth} />
+            <HoloTilt width={cardWidth} height={Math.round(cardWidth * 1.4)} shiny={!!s?.shiny} onTap={s ? turn : undefined}>
+              <FlipCard
+                flipped={!!s && turned}
+                front={<CollectibleCard look={look} artistName={a.name} tier={s?.tier ?? 0} shiny={!!s?.shiny} owner={handle && (s || open?.given) ? `@${handle}` : undefined} line={s ? tierLabel(s) : undefined} width={cardWidth} />}
+                back={s ? <CardStatsBack look={look} artistName={a.name} tier={s.tier} shiny={!!s.shiny} videos={s.videos} firstAt={s.firstAt ? day(s.firstAt) : undefined} width={cardWidth} /> : null}
+              />
             </HoloTilt>
+            {s ? (
+              <Pressable onPress={turn} accessibilityRole="button" hitSlop={8}>
+                <Text style={styles.turn}>{turned ? t('Turn it back') : t('Turn it over')}</Text>
+              </Pressable>
+            ) : null}
             {s ? (
               <>
                 <Text style={styles.label}>{tierLabel(s)}</Text>
@@ -208,6 +224,7 @@ const styles = StyleSheet.create({
   label: { ...type.label, color: color.moon },
   body: { ...type.body, color: color.moonDim, textAlign: 'center' },
   sheetScroll: { alignItems: 'center', gap: space.sm },
+  turn: { ...type.caption, color: color.moonFaint, textDecorationLine: 'underline' },
   pin: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, borderWidth: 1, borderColor: color.hairline, marginTop: space.xs },
   pinOn: { borderColor: '#FFE58A', backgroundColor: 'rgba(255,229,138,0.12)' },
   pinText: { ...type.label, color: color.moonDim },

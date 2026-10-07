@@ -12,9 +12,9 @@ const LEAN = 11;
  * Hold a card and it tilts towards your finger, the light on its foil
  * following (on the website the mouse does it, no click needed). Springs
  * back flat when you let go. A shiny one catches the light in colours.
- * Still with reduced motion.
+ * Still with reduced motion. `onTap` (a quick tap) turns it over, say.
  */
-export function HoloTilt({ width, height, shiny, children }: { width: number; height: number; shiny?: boolean; children: ReactNode }) {
+export function HoloTilt({ width, height, shiny, onTap, children }: { width: number; height: number; shiny?: boolean; onTap?: () => void; children: ReactNode }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const reduce = useReducedMotion();
   const x = useSharedValue(0.5);
@@ -49,6 +49,11 @@ export function HoloTilt({ width, height, shiny, children }: { width: number; he
     .onUpdate((e) => to(e.x, e.y))
     .onFinalize(rest);
 
+  const tap = Gesture.Tap()
+    .runOnJS(true)
+    .enabled(!!onTap)
+    .onEnd(() => onTap?.());
+
   const tilt = useAnimatedStyle(() => ({
     transform: [{ perspective: 900 }, { rotateY: `${(x.get() - 0.5) * 2 * LEAN}deg` }, { rotateX: `${(0.5 - y.get()) * 2 * LEAN}deg` }, { scale: 1 + lit.get() * 0.02 }],
   }));
@@ -57,9 +62,14 @@ export function HoloTilt({ width, height, shiny, children }: { width: number; he
     transform: [{ translateX: x.get() * width - glare / 2 }, { translateY: y.get() * height - glare / 2 }],
   }));
 
-  if (reduce) return <View style={{ width, height }}>{children}</View>;
+  if (reduce)
+    return (
+      <GestureDetector gesture={tap}>
+        <View style={{ width, height }}>{children}</View>
+      </GestureDetector>
+    );
   return (
-    <GestureDetector gesture={Gesture.Simultaneous(pan, hover)}>
+    <GestureDetector gesture={Gesture.Simultaneous(pan, hover, tap)}>
       <Animated.View style={[{ width, height }, tilt]}>
         {children}
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: width * 0.08, overflow: 'hidden' }]}>

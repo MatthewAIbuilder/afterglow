@@ -1,11 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { t } from '../../i18n';
 import { color, radius, space, type } from '../../theme/tokens';
 import { type ArtistLook, foldName, shinyLook, SIGNATURE_NAMES } from './artistLook';
-import { type Tier, TIER_LABEL } from './artistSprouts';
+import { type Tier, TIER_AT, TIER_LABEL, tierLine } from './artistSprouts';
+import { SHINY_ODDS } from './artistLook';
 import { Collectible, TIER_COLOR } from './Collectible';
 import { Sprout } from './Sprout';
 import { kindOf, SPROUT_KINDS, type SproutKind } from './sprouts';
@@ -149,6 +150,20 @@ const styles = StyleSheet.create({
   how: { textTransform: 'none', letterSpacing: 0 },
   sweep: { position: 'absolute', left: 0, width: 90 },
   innerMini: { padding: 6, gap: 0 },
+  backInner: { justifyContent: 'center' },
+  backArtist: { ...type.label, color: color.moon, letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 2 },
+  backBig: { fontWeight: '800', fontVariant: ['tabular-nums'], marginTop: space.md },
+  backLabel: { ...type.label, color: color.moonDim, textTransform: 'uppercase', letterSpacing: 1.4 },
+  backLine: { ...type.caption, color: color.moonDim, textAlign: 'center', marginTop: space.xs },
+  backShiny: { ...type.label, color: '#FFE58A', marginTop: space.sm },
+  backHint: { ...type.caption, color: color.moonFaint, marginTop: 'auto' },
+  track: { alignSelf: 'stretch', height: 14, justifyContent: 'center', marginHorizontal: space.md },
+  trackLine: { position: 'absolute', left: 0, right: 0, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.12)' },
+  trackFill: { position: 'absolute', left: 0, height: 3, borderRadius: 2 },
+  trackDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, borderRadius: 6, borderWidth: 2 },
+  trackNames: { alignSelf: 'stretch', height: 16, marginHorizontal: space.md, marginTop: 4 },
+  trackName: { ...type.caption, fontWeight: '700', position: 'absolute', width: 64, marginLeft: -32, textAlign: 'center' },
+  trackNameEnd: { marginLeft: -52, textAlign: 'right', width: 60 },
   topMini: { marginBottom: 4, minHeight: 14 },
   numMini: { fontSize: 9, lineHeight: 12, letterSpacing: 0.4 },
   badgeMini: { fontSize: 8, lineHeight: 12, paddingHorizontal: 4, paddingVertical: 0, borderWidth: 0 },
@@ -237,6 +252,79 @@ export function SproutCard({ kind, from, line, width = 260, still }: { kind: Spr
           </View>
         </View>
       </LinearGradient>
+    </View>
+  );
+}
+
+/**
+ * A card's back, for one you have: your story with the artist. How many
+ * videos of them you've filmed, since when, the level track (bronze, silver,
+ * gold) with how far to the next, and the odds when it's shiny.
+ */
+export function CardStatsBack({ look, artistName, tier = 0, shiny = false, videos, firstAt, width = 280 }: { look: ArtistLook; artistName: string; tier?: Tier; shiny?: boolean; videos: number; firstAt?: string; width?: number }) {
+  const height = Math.round(width * 1.4);
+  const k = width / 280;
+  const p = (shiny ? shinyLook(look) : look).palette;
+  const num = cardNumber(artistName);
+  // Progress along the track: each level's mark at its share of the way to gold.
+  const gold = TIER_AT[3];
+  const along = Math.min(1, videos / gold);
+  return (
+    <View style={{ width, height }} accessible accessibilityRole="image" accessibilityLabel={[t('{n} videos of {artist}', { n: videos, artist: artistName }), firstAt ? t('First filmed {date}', { date: firstAt }) : undefined, tierLine(videos)].filter(Boolean).join('. ')}>
+      <LinearGradient colors={shiny ? [...SHINY_FRAME] : [...FRAME[tier]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.frame, { borderRadius: width * 0.08 }]}>
+        <View style={[styles.inner, styles.backInner, { borderRadius: width * 0.07 }]}>
+          <LinearGradient colors={[color.night, p.deep]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+          <Text style={[styles.num, { color: p.light }]}>{num ? `No. ${String(num.n).padStart(2, '0')} · ${look.name}` : look.name}</Text>
+          <Text style={[styles.backArtist, { fontSize: 13 * k }]} numberOfLines={1}>
+            {artistName}
+          </Text>
+          <Text style={[styles.backBig, { color: look.accent, fontSize: 64 * k, lineHeight: 72 * k }]}>{videos}</Text>
+          <Text style={[styles.backLabel, { fontSize: 13 * k }]}>{videos === 1 ? t('video filmed') : t('videos filmed')}</Text>
+          {firstAt ? <Text style={[styles.backLine, { fontSize: 12 * k }]}>{t('First filmed {date}', { date: firstAt })}</Text> : null}
+          {/* The level track. */}
+          <View style={[styles.track, { marginTop: space.lg * k }]}>
+            <View style={styles.trackLine} />
+            <View style={[styles.trackFill, { width: `${along * 100}%`, backgroundColor: TIER_COLOR[Math.max(1, tier) as 1 | 2 | 3] }]} />
+            {([1, 2, 3] as const).map((lv) => (
+              <View key={lv} style={[styles.trackDot, { left: `${(TIER_AT[lv] / gold) * 100}%`, borderColor: TIER_COLOR[lv], backgroundColor: tier >= lv ? TIER_COLOR[lv] : color.night }]} />
+            ))}
+          </View>
+          <View style={styles.trackNames}>
+            {([1, 2, 3] as const).map((lv) => (
+              <Text key={lv} numberOfLines={1} style={[styles.trackName, { left: `${(TIER_AT[lv] / gold) * 100}%`, color: tier >= lv ? TIER_COLOR[lv] : color.moonFaint, fontSize: 10 * Math.max(k, 0.85) }, lv === 3 && styles.trackNameEnd]}>
+                {TIER_LABEL[lv]}
+              </Text>
+            ))}
+          </View>
+          <Text style={[styles.backLine, { fontSize: 12 * k, marginTop: space.sm }]}>{tierLine(videos)}</Text>
+          {shiny ? <Text style={[styles.backShiny, { fontSize: 12 * k }]}>{t('✦ Shiny: about one in {n}', { n: SHINY_ODDS })}</Text> : null}
+          <Text style={[styles.backHint, { fontSize: 10 * Math.max(k, 0.9) }]}>{t('Tap to turn it back')}</Text>
+        </View>
+      </LinearGradient>
+    </View>
+  );
+}
+
+/**
+ * Two faces of a card, turning over when `flipped` changes (a squeeze and
+ * open, like the reveal). Straight over with reduced motion.
+ */
+export function FlipCard({ flipped, front, back }: { flipped: boolean; front: ReactNode; back: ReactNode }) {
+  const reduce = useReducedMotion();
+  const turn = useSharedValue(flipped ? 1 : 0);
+  useEffect(() => {
+    turn.set(reduce ? (flipped ? 1 : 0) : withTiming(flipped ? 1 : 0, { duration: 460, easing: Easing.inOut(Easing.cubic) }));
+  }, [flipped, reduce, turn]);
+  const frontStyle = useAnimatedStyle(() => ({ opacity: turn.get() < 0.5 ? 1 : 0, transform: [{ scaleX: Math.max(0.02, Math.abs(1 - turn.get() * 2)) }] }));
+  const backStyle = useAnimatedStyle(() => ({ opacity: turn.get() >= 0.5 ? 1 : 0, transform: [{ scaleX: Math.max(0.02, Math.abs(1 - turn.get() * 2)) }] }));
+  return (
+    <View>
+      <Animated.View style={frontStyle} pointerEvents={flipped ? 'none' : 'auto'} accessibilityElementsHidden={flipped} importantForAccessibility={flipped ? 'no-hide-descendants' : 'auto'}>
+        {front}
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, backStyle]} pointerEvents={flipped ? 'auto' : 'none'} accessibilityElementsHidden={!flipped} importantForAccessibility={flipped ? 'auto' : 'no-hide-descendants'}>
+        {back}
+      </Animated.View>
     </View>
   );
 }
