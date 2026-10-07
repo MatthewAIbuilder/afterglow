@@ -92,6 +92,11 @@ export type Creature =
   | 'stampede'
   | 'boombox'
   | 'tulip'
+  | 'spaceman'
+  | 'toucan'
+  | 'hero'
+  | 'gumbo'
+  | 'balloon'
   | 'portapotty'
   | 'refill'
   | 'charger'
@@ -157,6 +162,11 @@ const SIGNATURES: Record<string, Spec> = {
   martingarrix: { creature: 'stampede', palette: P('#FFF0E0', '#5A4A6A', '#1E1828', '#8A7A9A', '#3A2E48', '#FF4FD0', '#B8A8FF'), name: t('The Stampede'), theme: t('A little bull charging, head down, horns lit') },
   acraze: { creature: 'boombox', palette: P('#F2F2FF', '#5A6AFF', '#1A1A4A', '#B8C0FF', '#2A2A6A', '#FFE36B', '#7F8AFF'), name: t('The Boombox'), theme: t('A boombox with bass rolling out of it') },
   maup: { creature: 'tulip', palette: P('#FFF0F0', '#FF5A6A', '#8A1A2A', '#4AA85A', '#2A4A6A', '#FFE58A', '#FF8A9A'), name: t('The Tulip'), theme: t('A tulip from Amsterdam, canal houses behind it') },
+  hardwell: { creature: 'spaceman', palette: P('#FFFFFF', '#E2E6EE', '#5A6278', '#2A3A8A', '#0E1230', '#FF4A5A', '#7FB8FF'), name: t('The Spaceman'), theme: t('A little astronaut floating among the stars') },
+  alok: { creature: 'toucan', palette: P('#FFFFFF', '#23232E', '#0A0A12', '#FF8A1E', '#D8321A', '#FFE34A', '#4ADFB0'), name: t('The Toucan'), theme: t('A toucan with a beak in sunset colours') },
+  alesso: { creature: 'hero', palette: P('#FFF4E0', '#3A7BFF', '#16308A', '#FF3A5A', '#8A1030', '#FFD36E', '#7FA8FF'), name: t('The Hero'), theme: t('A little hero in a mask, cape in the wind') },
+  boogiet: { creature: 'gumbo', palette: P('#FFF0D8', '#3A3A44', '#16161C', '#C8642A', '#E8402A', '#FFC94A', '#FF8A3D'), name: t('The Gumbo pot'), theme: t('A pot of gumbo bubbling, a crawfish peeking out') },
+  adventureclub: { creature: 'balloon', palette: P('#FFFFFF', '#FF5A7A', '#8A1A3A', '#5BC8FF', '#B07A3A', '#FFE36B', '#FF8AB0'), name: t('The Balloon'), theme: t('A hot-air balloon drifting off on an adventure') },
   slander: { creature: 'trooper', palette: P('#A8F4FF', '#3E6E86', '#14263A', '#D9A33A', '#7A5212', '#FF9A2E', '#5FE6FF'), name: t('The Trooper'), theme: t('An armoured trooper bursting out of hyperspace') },
   spacelaces: { creature: 'astronaut', palette: P('#F2F8FF', '#C4D6EA', '#5A6E8C', '#2D4F8A', '#0E1A3A', '#7FD3FF', '#7FC8FF'), name: t('The Astronaut'), theme: t('A little astronaut lost in space') },
   alisonwonderland: { creature: 'rabbit', palette: P('#FFFFFF', '#F2E6F2', '#B98AB0', '#FFC2E0', '#FF85C8', '#FFD24A', '#FF9AD5'), name: t('The White Rabbit'), theme: t('A white rabbit, always late') },

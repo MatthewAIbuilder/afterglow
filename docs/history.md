@@ -579,7 +579,7 @@ Do not start the next milestone unless asked.
   - *Tonight*: a Kandi button beside Sprout.
   - *Eight more hand-made collectibles*: SKRILLEX's Scary monster, RÜFÜS DU SOL's Desert sun, KASKADE's Sunset wave, DAVID GUETTA's Titanium heart, MEDUZA's Gorgon, NGHTMRE's Night mare, VINTAGE CULTURE's Gramophone, ARMIN VAN BUUREN's Trance star (`creatures.tsx`, `SIGNATURES`).
   - *Fixes from a review*: glows from people you blocked don't show or count (`useGardenGlows`); Leave a glow only shows with a profile; cards tilt on a sideways drag only, so pages still scroll (`HoloTilt` `activeOffsetX`/`failOffsetY`); `setShowcase`/`setDecorSeen` wait for the stored file before writing; the first-time seeding of seen decorations waits for kandi (`useKandi().hydrated`), finds and the showcase; Moonlight is the last sprout kind, so the other kinds' card numbers didn't move.
-  - *More hand-made collectibles*: HEDEX's Hedgehog, KNOCK2's Door, MARTIN GARRIX's Stampede, ACRAZE's Boombox and MAU P's Tulip.
+  - *More hand-made collectibles*: HEDEX's Hedgehog, KNOCK2's Door, MARTIN GARRIX's Stampede, ACRAZE's Boombox and MAU P's Tulip. Later: HARDWELL's Spaceman, ALOK's Toucan, ALESSO's Hero, BOOGIE T's Gumbo pot and ADVENTURE CLUB's Balloon.
   - *Your collectible in Discover* (`ClipCard.tsx`): a clip of an artist whose collectible you have shows it small under their name, with its level.
   - *Visiting a garden* shows the cards its owner pinned (`garden-visit.tsx`).
   - *A shared card turns over* (`card/[id].tsx`): the link carries the video count, so friends can turn your card to its back too.

@@ -3603,6 +3603,240 @@ const mixtape: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** A five-pointed star path round (x, y). */
+const star5 = (x: number, y: number, r: number, inner = r * 0.45) =>
+  `${Array.from({ length: 10 }, (_, i) => {
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    const rr = i % 2 ? inner : r;
+    return `${i ? 'L' : 'M'}${r1(x + Math.cos(a) * rr)} ${r1(y + Math.sin(a) * rr)}`;
+  }).join(' ')}Z`;
+
+/** HARDWELL: the Spaceman — a little astronaut, stars in its visor, a ringed planet behind. */
+const spaceman: Draw = (p, f) => ({
+  ground: [50, 94, 22],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      {/* A ringed planet. */}
+      <Circle cx={80} cy={20} r={7} fill={p.alt} />
+      <Ellipse cx={80} cy={20} rx={12} ry={3} fill="none" stroke={p.glow} strokeWidth={1.2} transform="rotate(-20 80 20)" />
+      {/* The backpack. */}
+      <V d="M26 58 Q26 54 30 54 L70 54 Q74 54 74 58 L74 82 L26 82Z" fill={p.deep} f={f} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Arms, the suit and its chest panel. */}
+      <V d="M33 62 Q22 66 22 78 Q24 82 28 80 Q28 70 35 68Z" fill={p.mid} f={f} />
+      <V d="M67 62 Q78 66 78 78 Q76 82 72 80 Q72 70 65 68Z" fill={p.mid} f={f} />
+      <V d="M32 90 L32 64 Q32 56 42 56 L58 56 Q68 56 68 64 L68 90 Q68 92 66 92 L34 92 Q32 92 32 90Z" fill={p.mid} f={f} gloss={[38, 64, 3, 8, 0]} />
+      <Path d="M41 66 Q41 64 43 64 L57 64 Q59 64 59 66 L59 75 Q59 77 57 77 L43 77 Q41 77 41 75Z" fill={p.deep} />
+      <Circle cx={45} cy={70.5} r={1.6} fill={p.accent} />
+      <Circle cx={50} cy={70.5} r={1.6} fill={p.glow} />
+      <Circle cx={55} cy={70.5} r={1.6} fill={p.light} />
+      <Path d="M32 83 L68 83" stroke={p.alt} strokeWidth={3} />
+      {/* The helmet, its antenna and the visor. */}
+      <Path d="M64 20 L71 11" stroke={p.deep} strokeWidth={1.4} strokeLinecap="round" />
+      <VE cx={50} cy={36} rx={23} ry={22} fill={p.light} f={f} />
+      <V d="M32 37 C32 25 40 21 50 21 C60 21 68 25 68 37 C68 48 60 52 50 52 C40 52 32 48 32 37Z" fill={p.altDeep} f={f} gloss={[41, 27, 6, 2, -20]} />
+      <Path d="M37 31 Q42 24.5 50 23.4" stroke={p.glow} strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.7} />
+      <Circle cx={60} cy={28} r={0.7} fill={p.light} />
+      <Circle cx={38} cy={46} r={0.6} fill={p.light} />
+      <Path d="M45 44 Q50 47.6 55 44" stroke={p.glow} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 33, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.5} y={37} r={3} f={f} />
+        <VEye x={55.5} y={37} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Glow x={71} y={10} r={1.6} color={p.accent} />
+      {sparkles(p.light, [
+        [12, 22, 2],
+        [16, 62, 1.5],
+        [88, 52, 1.8],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ALOK: the Toucan — a toucan side on, its big beak in sunset colours, palm leaves behind. */
+const toucan: Draw = (p, f) => ({
+  ground: [46, 93, 22],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      <Path d="M8 34 C20 20 36 18 44 24 C34 26 22 32 8 34Z M10 46 C18 38 28 36 34 40 C26 42 18 44 10 46Z" fill={p.glow} opacity={0.3} />
+      <Path d="M92 66 C84 56 74 54 66 58 C74 60 84 64 92 66Z" fill={p.glow} opacity={0.3} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* Tail, body, its bright throat and wing. */}
+      <V d="M40 80 L34 94 Q38 96 44 92 L48 82Z" fill={p.mid} f={f} />
+      <V d="M34 82 C26 66 28 46 42 38 C56 32 68 42 68 58 C68 74 60 86 48 88 C42 88 37 86 34 82Z" fill={p.mid} f={f} gloss={[42, 48, 4, 8, -20]} />
+      <V d="M40 42 C48 38 56 42 57 50 C56 58 48 62 41 58 C37 54 36 46 40 42Z" fill={p.accent} f={f} />
+      <V d="M50 52 C62 54 68 66 64 82 C56 78 50 68 50 52Z" fill={p.deep} f={f} />
+      <Path d="M44 88 L42 93 M50 88 L52 93" stroke={p.alt} strokeWidth={1.6} strokeLinecap="round" />
+      {/* The head, the ring round its eye, and the beak. */}
+      <VE cx={44} cy={32} rx={14} ry={13} fill={p.mid} f={f} />
+      <Circle cx={48} cy={30} r={5.4} fill={p.glow} />
+      <V d="M55 24 C67 16 84 18 92 31 C89 38 76 40 58 39 C54 35 53 28 55 24Z" fill={p.alt} f={f} gloss={[68, 23, 8, 1.6, 8]} />
+      <Path d="M84 22 C88 25 91 28 92 31 C89 34 86 36 83 37 C85 32 85 27 84 22Z" fill={p.altDeep} />
+      <Path d="M57 33 C69 35 81 34 92 31" stroke={p.altDeep} strokeWidth={1} fill="none" opacity={0.6} />
+      <Path d="M60 21.6 C69 18 78 19 84 22" stroke={p.accent} strokeWidth={1.2} fill="none" strokeLinecap="round" opacity={0.7} />
+    </G>
+  ),
+  eyes: { box: [44, 26, 8, 8], el: <VEye x={48} y={30} r={3.2} f={f} /> },
+  flicker: sparkles(p.accent, [
+    [16, 12, 2],
+    [86, 70, 1.6],
+    [18, 72, 1.4],
+  ]),
+  flickerOver: true,
+});
+
+/** ALESSO: the Hero — a little hero in a mask, hands on hips, cape in the wind, a star on its chest. */
+const hero: Draw = (p, f) => ({
+  ground: [50, 93, 22],
+  back: <Ellipse cx={50} cy={50} rx={42} ry={40} fill={p.glow} opacity={0.15} />,
+  pivot: [50, 52],
+  sway: <V d="M36 52 C30 64 24 80 18 90 C32 88 44 90 50 86 C56 90 68 88 82 90 C76 80 70 64 64 52Z" fill={p.alt} f={f} />,
+  body: (
+    <G>
+      {/* Legs and boots. */}
+      <V d="M40 78 L40 90 Q40 92 42 92 L47 92 L47 78Z" fill={p.deep} f={f} />
+      <V d="M53 78 L53 92 L58 92 Q60 92 60 90 L60 78Z" fill={p.deep} f={f} />
+      {/* Arms bent to the hips, the suit, belt and star. */}
+      <Path d="M38 57 Q31 62 34 68 M62 57 Q69 62 66 68" stroke={p.mid} strokeWidth={5} fill="none" strokeLinecap="round" />
+      <V d="M36 56 Q36 50 42 50 L58 50 Q64 50 64 56 L62 80 L38 80Z" fill={p.mid} f={f} gloss={[42, 56, 3, 6, 0]} />
+      <VE cx={34} cy={68} rx={3.4} ry={3.4} fill={p.light} f={f} />
+      <VE cx={66} cy={68} rx={3.4} ry={3.4} fill={p.light} f={f} />
+      <Path d="M38.4 73 L61.6 73" stroke={p.accent} strokeWidth={2.4} />
+      <Path d={star5(50, 61.5, 6)} fill={p.accent} />
+      {/* Head, hair and mask. */}
+      <VE cx={50} cy={36} rx={13} ry={13} fill={p.light} f={f} />
+      <V d="M37 33 C37 22 44 20 50 20 C58 20 64 24 63 33 C58 27 52 26 46 28 C42 29 39 31 37 33Z" fill={p.deep} f={f} />
+      <Path d="M37.6 33 Q44 29 50 33 Q56 29 62.4 33 Q62.4 39 56 39 Q52 39 50 36.4 Q48 39 44 39 Q37.6 39 37.6 33Z" fill={p.altDeep} />
+      <Path d="M46 43 Q50 46 54 43" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 31, 20, 7],
+    el: (
+      <G>
+        <VEye x={44.5} y={34.6} r={2.3} f={f} />
+        <VEye x={55.5} y={34.6} r={2.3} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [16, 24, 2],
+    [84, 20, 1.8],
+    [86, 66, 1.5],
+  ]),
+  flickerOver: true,
+});
+
+/** BOOGIE T: the Gumbo pot — a pot of gumbo bubbling away, a crawfish peeking over the rim. */
+const gumbo: Draw = (p, f) => ({
+  ground: [50, 92, 32],
+  back: <Ellipse cx={50} cy={56} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The crawfish, claws up over the rim. */}
+      <V d="M50 50 C44 42 41 34 45 29 C47 33 49 35 51 35 C49 31 51 27 55 26 C55 33 54 40 54 50Z" fill={p.altDeep} f={f} />
+      <Path d="M62 44 Q66 30 75 22 M58 44 Q60 32 65 23" stroke={p.altDeep} strokeWidth={1} fill="none" strokeLinecap="round" />
+      <VE cx={61} cy={48} rx={8} ry={6} fill={p.altDeep} f={f} />
+      <Circle cx={58.6} cy={46} r={1} fill={INK} />
+      <Circle cx={63.4} cy={46} r={1} fill={INK} />
+      {/* Handles, the pot and its rim, the gumbo. */}
+      <Path d="M21 58 Q12 58 12 64 Q12 70 21 70 M79 58 Q88 58 88 64 Q88 70 79 70" stroke={p.mid} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <V d="M20 52 L80 52 L76 82 Q74 90 64 90 L36 90 Q26 90 24 82Z" fill={p.mid} f={f} gloss={[28, 62, 3, 9, 0]} />
+      <VE cx={50} cy={52} rx={32} ry={6} fill={p.mid} f={f} gloss={false} />
+      <Ellipse cx={50} cy={52} rx={28} ry={4.2} fill={p.alt} />
+      <Circle cx={34} cy={51.4} r={1.6} fill={p.accent} opacity={0.85} />
+      <Circle cx={42} cy={53} r={1.1} fill={p.accent} opacity={0.85} />
+      <Circle cx={70} cy={52} r={1.3} fill={p.accent} opacity={0.85} />
+      <Circle cx={36} cy={74} r={2.4} fill={p.alt} opacity={0.4} />
+      <Circle cx={64} cy={74} r={2.4} fill={p.alt} opacity={0.4} />
+      <Path d="M45 76 Q50 80 55 76" stroke={p.light} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [37, 64, 26, 8],
+    el: (
+      <G>
+        <VEye x={42} y={68} r={3.2} f={f} />
+        <VEye x={58} y={68} r={3.2} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Steam, and a bubble popping. */}
+      <Path d="M30 44 Q26 36 31 30 Q36 24 32 16 M40 42 Q37 36 41 31" stroke={p.light} strokeWidth={1.8} fill="none" strokeLinecap="round" opacity={0.55} />
+      <Glow x={36} y={47} r={1.3} color={p.accent} />
+      {sparkles(p.accent, [
+        [86, 30, 1.8],
+        [14, 84, 1.4],
+      ])}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ADVENTURE CLUB: the Balloon — a hot-air balloon with a smile, its basket ready, drifting past clouds. */
+const balloon: Draw = (p, f) => ({
+  ground: [50, 96, 16],
+  back: (
+    <G>
+      <Ellipse cx={50} cy={44} rx={42} ry={40} fill={p.glow} opacity={0.14} />
+      {/* Clouds drifting by. */}
+      <Path d="M8 70 Q8 64 14 64 Q16 58 22 60 Q28 58 28 64 Q32 66 30 70Z" fill={p.light} opacity={0.22} />
+      <Path d="M70 84 Q70 80 74 80 Q76 76 80 78 Q86 76 86 80 Q90 82 88 84Z" fill={p.light} opacity={0.18} />
+    </G>
+  ),
+  body: (
+    <G>
+      {/* The envelope and its stripes. */}
+      <V d="M50 8 C72 8 84 24 84 40 C84 56 70 66 60 72 L40 72 C30 66 16 56 16 40 C16 24 28 8 50 8Z" fill={p.mid} f={f} gloss={[32, 22, 6, 9, -30]} />
+      <Path d="M50 8 C41 20 39 50 44 72 L56 72 C61 50 59 20 50 8Z" fill={p.alt} opacity={0.95} />
+      <Path d="M27 17 C19 32 22 55 34 68 L38 70 C30 54 29 34 33 13Z M73 17 C81 32 78 55 66 68 L62 70 C70 54 71 34 67 13Z" fill={p.alt} opacity={0.95} />
+      <Path d="M40 72 L60 72" stroke={p.accent} strokeWidth={3} strokeLinecap="round" />
+      {/* Ropes and the basket. */}
+      <Path d="M41.6 73 L43.6 82 M58.4 73 L56.4 82" stroke={p.light} strokeWidth={0.8} />
+      <V d="M40 82 L60 82 L58 92 Q58 94 56 94 L44 94 Q42 94 42 92Z" fill={p.altDeep} f={f} />
+      <Path d="M41 86 L59 86 M41.6 89.6 L58.4 89.6 M46 82 L46.6 94 M54 82 L53.4 94" stroke={p.deep} strokeWidth={0.6} opacity={0.4} />
+      <Circle cx={37} cy={50} r={2.6} fill={p.light} opacity={0.35} />
+      <Circle cx={63} cy={50} r={2.6} fill={p.light} opacity={0.35} />
+      <Path d="M45 51 Q50 55 55 51" stroke={p.deep} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [39, 40, 22, 8],
+    el: (
+      <G>
+        <VEye x={43.5} y={44} r={3} f={f} />
+        <VEye x={56.5} y={44} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [12, 20, 2],
+    [88, 30, 1.6],
+    [90, 62, 1.4],
+  ]),
+  flickerOver: true,
+});
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -4570,4 +4804,9 @@ export const DRAW: Record<Creature, Draw> = {
   refill,
   charger,
   fan,
+  spaceman,
+  toucan,
+  hero,
+  gumbo,
+  balloon,
 };
