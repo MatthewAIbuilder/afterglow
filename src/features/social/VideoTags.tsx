@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   cardTitle: { ...type.headline, color: color.moon },
   cardBody: { ...type.caption, color: color.moonDim },
   buttons: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
-  button: { paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.1)' },
+  button: { paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   yes: { backgroundColor: color.glow },
   buttonText: { ...type.label, color: color.moon },
   yesText: { color: color.night },

@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   where: { ...type.headline, color: color.moonDim },
   by: { ...type.label, color: color.glow, marginTop: space.xs },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.lg },
-  action: { paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  action: { paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   actionText: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
   like: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   liked: { backgroundColor: glowA(0.22), borderColor: glowA(0.5) },
