@@ -454,6 +454,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   handleRow: { flexDirection: 'row', alignItems: 'center' },
   at: { ...type.headline, color: color.moonDim, position: 'absolute', left: space.lg, zIndex: 1 },

@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   guidelines: { gap: space.xs, padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass },
   guideTitle: { ...type.label, color: color.moon, marginBottom: space.xs },

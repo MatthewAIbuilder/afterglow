@@ -199,6 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   tileReady: { borderWidth: 1.5, borderColor: GOLD, backgroundColor: 'rgba(255,213,138,0.10)', shadowColor: GOLD, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
   tileOpen: { backgroundColor: glowA(0.14), borderColor: glowA(0.45) },

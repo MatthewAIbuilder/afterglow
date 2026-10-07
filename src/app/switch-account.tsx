@@ -14,6 +14,7 @@ import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /**
  * Switch account: the accounts saved on this phone, one tap to move between
@@ -259,11 +260,11 @@ export default function SwitchAccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   content: { padding: space.xl, gap: space.sm },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginBottom: space.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   rowOn: { borderColor: glowA(0.55), backgroundColor: glowA(0.1) },
   rowTitle: { ...type.headline, color: color.moon },
   rowDetail: { ...type.caption, color: color.moonDim },
@@ -279,11 +280,11 @@ const styles = StyleSheet.create({
   formButtons: { flexDirection: 'row', gap: space.sm, justifyContent: 'flex-end' },
   primary: { paddingHorizontal: space.lg, minHeight: 44, minWidth: 96, justifyContent: 'center', alignItems: 'center', borderRadius: radius.pill, backgroundColor: color.glow },
   primaryText: { ...type.headline, color: color.night },
-  secondary: { paddingHorizontal: space.lg, minHeight: 44, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { paddingHorizontal: space.lg, minHeight: 44, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },
   dim: { opacity: 0.5 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  card: { marginTop: space.sm, padding: space.lg, gap: 2, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { marginTop: space.sm, padding: space.lg, gap: 2, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   cardTitle: { ...type.headline, color: color.moon },
   cardButton: { alignSelf: 'flex-start' },
   note: { ...type.caption, color: color.glow, textAlign: 'center' },

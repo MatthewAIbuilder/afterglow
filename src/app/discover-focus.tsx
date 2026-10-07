@@ -32,6 +32,7 @@ import { color, radius, space, type, glowA, glowDeepA, nightA } from '../theme/t
 import { goBack } from '../lib/nav';
 import { t, tn } from '../i18n';
 import { SheetClose } from '../components/SheetClose';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /**
  * What Discover shows, a sheet over Discover: Tonight (on a festival night)
@@ -463,7 +464,7 @@ function Tile({ title, detail, label, selected, onPress, art, wide }: { title: s
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   content: { paddingHorizontal: space.xl, paddingTop: space.xxl },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.xs },
@@ -480,6 +481,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   stationOn: { backgroundColor: glowA(0.18), borderColor: glowA(0.6) },
   stationText: { flexShrink: 1 },
@@ -493,6 +495,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   artistName: { ...type.headline, color: color.moon },
   soundsLike: { color: color.moonDim },
@@ -511,6 +514,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   tileHalf: { flex: 1, minHeight: 132 },
   tileWide: { flexDirection: 'row', alignItems: 'center', marginTop: space.lg },
@@ -534,6 +538,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   soundDot: { width: 8, height: 8, borderRadius: 4, shadowOpacity: 0.9, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
   soundText: { ...type.label, color: color.moonDim },
@@ -550,6 +555,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   festivalName: { ...type.headline, color: color.moon },
   selected: { borderColor: glowA(0.75), borderWidth: 1.5 },
@@ -565,7 +571,7 @@ const styles = StyleSheet.create({
   waitingWhen: { ...type.caption, color: color.moonFaint, fontVariant: ['tabular-nums'] },
   waitingNote: { ...type.caption, color: color.moonFaint },
   hint: { ...type.caption, color: color.moonFaint, marginTop: space.lg },
-  group: { borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
+  group: { borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, overflow: 'hidden' },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: color.hairline, marginLeft: space.lg },
   switchTitle: { ...type.headline, color: color.moon },

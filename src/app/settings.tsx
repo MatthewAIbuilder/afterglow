@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   title: { ...type.largeTitle, color: color.moon, marginBottom: space.md },
   group: { marginTop: space.xl },
   groupTitle: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: space.sm, marginLeft: space.xs },
-  card: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

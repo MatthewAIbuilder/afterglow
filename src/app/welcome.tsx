@@ -318,6 +318,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   festivalOn: { backgroundColor: glowA(0.14), borderColor: glowA(0.5) },
   festivalName: { ...type.headline, color: color.moon },

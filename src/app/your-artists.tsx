@@ -393,6 +393,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   tagGlow: { backgroundColor: glowA(0.14), borderColor: glowA(0.4) },
   tagText: { ...type.caption, fontSize: 11, lineHeight: 14, color: color.moonDim },

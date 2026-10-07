@@ -81,6 +81,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   small: { paddingHorizontal: space.md, paddingVertical: space.xs + 2 },
   chipOn: { backgroundColor: glowA(0.2), borderColor: glowA(0.55) },

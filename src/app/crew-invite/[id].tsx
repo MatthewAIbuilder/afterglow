@@ -200,10 +200,10 @@ const styles = StyleSheet.create({
   status: { ...type.label, color: color.moonDim },
   invite: { minWidth: 76, minHeight: 34, paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: color.glow, alignItems: 'center', justifyContent: 'center' },
   inviteText: { ...type.label, color: color.night },
-  empty: { gap: space.sm, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  empty: { gap: space.sm, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   emptyTitle: { ...type.headline, color: color.moon },
   ghost: { alignSelf: 'flex-start', minHeight: 40, paddingHorizontal: space.lg, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', justifyContent: 'center', marginTop: space.xs },
   ghostText: { ...type.label, color: color.moon },
-  link: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  link: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   pressed: { opacity: 0.8 },
 });

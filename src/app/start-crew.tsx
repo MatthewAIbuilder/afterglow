@@ -21,6 +21,7 @@ import { color, radius, space, type } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { datesLine } from '../features/festivals/format';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /** At most this many festivals are listed while searching. */
 const LIST_MAX = 20;
@@ -115,12 +116,12 @@ export default function StartCrewScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.md },
   quiet: { ...type.body, color: color.moonDim },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   name: { ...type.headline, color: color.moon },
   detail: { ...type.caption, color: color.moonDim, marginTop: 2 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

@@ -265,7 +265,7 @@ function RequestCard({ r, org, busy, run }: { r: OrgRequest; org: Org | undefine
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: space.lg, gap: space.md },
   lead: { ...type.body, color: color.moonDim },
-  card: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  card: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   h3: { ...type.headline, color: color.moon },
   body: { ...type.caption, color: color.moonDim },
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow, marginTop: space.xs },
   primarySmall: { alignItems: 'center', paddingVertical: space.sm, paddingHorizontal: space.lg, borderRadius: radius.pill, backgroundColor: color.glow },
   primaryText: { ...type.headline, color: color.night },
-  secondary: { alignItems: 'center', paddingVertical: space.sm, paddingHorizontal: space.lg, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { alignItems: 'center', paddingVertical: space.sm, paddingHorizontal: space.lg, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.label, color: color.moon },
   danger: { ...type.caption, color: color.coral },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   amber: { color: '#FFB86B' },
   primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
   primaryText: { ...type.headline, color: color.moon },
-  secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },
   link: { ...type.label, color: color.moonFaint, textAlign: 'center' },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

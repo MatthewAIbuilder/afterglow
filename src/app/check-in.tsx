@@ -22,6 +22,7 @@ import { color, radius, space, type, glowA } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /** Crew names as one line: "Bass crew and Day ones". */
 const crewNames = (crews: readonly { name: string }[]) => crews.map((c) => c.name).join(` ${t('and')} `);
@@ -297,7 +298,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   pad: { paddingHorizontal: space.xl },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.sm },
@@ -311,6 +312,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   chipOn: { backgroundColor: glowA(0.2), borderColor: glowA(0.55) },
   chipText: { ...type.label, color: color.moonDim },
@@ -341,6 +343,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   sendButton: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },
   primary: { marginTop: space.xl, alignSelf: 'stretch', alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep },

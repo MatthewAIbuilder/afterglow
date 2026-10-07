@@ -576,12 +576,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   cards: { gap: space.sm, marginTop: space.sm },
-  nextShow: { alignSelf: 'stretch', marginTop: space.lg, paddingVertical: space.md, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, alignItems: 'center', gap: 2 },
+  nextShow: { alignSelf: 'stretch', marginTop: space.lg, paddingVertical: space.md, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, alignItems: 'center', gap: 2 },
   nextShowGoing: { borderColor: glowA(0.55), backgroundColor: glowA(0.10) },
   nextKicker: { ...type.caption, fontSize: 10, letterSpacing: 1.5, fontWeight: '700', color: color.glow },
   nextName: { ...type.headline, color: color.moon },
   nextLine: { ...type.caption, color: color.moonDim },
-  story: { padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, gap: 6 },
+  story: { padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, gap: 6 },
   storyLine: { ...type.body, color: color.moonDim },
   guess: { ...type.caption, color: color.moonDim, marginTop: space.sm },
   tourLink: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.md },
@@ -620,6 +620,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   listenText: { ...type.label, color: color.moon },
   section: { marginTop: space.xxl, paddingHorizontal: space.xl },

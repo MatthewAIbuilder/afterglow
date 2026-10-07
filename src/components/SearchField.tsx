@@ -1,9 +1,10 @@
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { color, radius, space, type } from '../theme/tokens';
+import { GlassFill } from './LiquidGlass';
 import { CloseIcon, SearchIcon } from './TabIcons';
 import { t } from '../i18n';
 
-/** A glass search field with a clear button. `label` is what screen readers hear. */
+/** A Liquid Glass search field with a clear button. `label` is what screen readers hear. */
 export function SearchField({
   value,
   onChange,
@@ -22,6 +23,7 @@ export function SearchField({
 }) {
   return (
     <View style={styles.search}>
+      <GlassFill radius={radius.md} tint={0.3} />
       <SearchIcon color={color.moonFaint} />
       <TextInput
         value={value}
@@ -57,9 +59,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: color.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
   },
   // In a browser the field you're in shows the site's soft focus glow (public/index.html).
   input: { ...type.body, flex: 1, color: color.moon, paddingVertical: 0 },

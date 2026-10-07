@@ -13,6 +13,7 @@ import { useWeekends } from '../state/weekends';
 import { color, space, type } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /**
  * Your sound as a breakdown: how much of your taste is each sound, from the
@@ -63,7 +64,7 @@ export default function YourSoundScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   content: { paddingHorizontal: space.xl, paddingTop: space.xxl },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.xs },

@@ -12,6 +12,7 @@ import { shareMessage } from '../lib/share';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /**
  * Request a festival that isn't in the app yet: its name and, if you have
@@ -132,7 +133,7 @@ export default function RequestScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   content: { paddingHorizontal: space.xl, paddingTop: space.xxl },
   title: { ...type.title, color: color.moon },
   body: { ...type.body, color: color.moonDim, marginTop: space.xs },
@@ -146,6 +147,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   button: {
     alignSelf: 'stretch',

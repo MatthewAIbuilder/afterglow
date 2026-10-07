@@ -361,7 +361,7 @@ function Refresh({ onPress, loading }: { onPress: () => void; loading: boolean }
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: space.lg, gap: space.md },
-  seg: { flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  seg: { flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   segSmall: { alignSelf: 'center', minWidth: 260 },
   segItem: { flexGrow: 1, flexBasis: 0, minHeight: 34, paddingHorizontal: space.sm, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
   segOn: { backgroundColor: glowA(0.28) },
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   activeNoteTitle: { ...type.label, color: color.moon },
   activeNoteBody: { ...type.caption, color: color.moonDim },
   sectionNote: { ...type.caption, color: color.moonDim },
-  table: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, paddingVertical: space.xs },
+  table: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, paddingVertical: space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.md, paddingVertical: space.sm },
   rowName: { ...type.label, color: color.moon },
   meter: { height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)', marginTop: 5, overflow: 'hidden' },

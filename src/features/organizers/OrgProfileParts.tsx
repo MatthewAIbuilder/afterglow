@@ -96,7 +96,7 @@ export function OrgEvents({ org, own }: { org: Org; own: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  list: { marginHorizontal: space.lg, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  list: { marginHorizontal: space.lg, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
   name: { ...type.headline, color: color.moon },
   line: { ...type.caption, color: color.moonDim },

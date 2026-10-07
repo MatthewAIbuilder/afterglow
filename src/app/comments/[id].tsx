@@ -21,6 +21,7 @@ import { useClipPool } from '../../state/community';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
+import { SHEET_BACKGROUND } from '../../components/LiquidGlass';
 
 /** At most this many comments on a shared video are read. */
 const COMMENTS_SHOWN = 200;
@@ -257,7 +258,7 @@ export default function CommentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   // Room on the right for the close button.
   head: { paddingLeft: space.xl, paddingRight: space.xl + space.xxxl, paddingTop: space.xl, paddingBottom: space.md, gap: space.xs },
   title: { ...type.title, color: color.moon },

@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   primary: { backgroundColor: color.glowDeep, borderColor: color.glowDeep, marginTop: space.md },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

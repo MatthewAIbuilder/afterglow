@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   wrap: { gap: space.xs },
   status: { ...type.caption, color: color.moonDim, paddingHorizontal: space.lg },
   row: { gap: space.sm, paddingHorizontal: space.lg, alignItems: 'center' },
-  chip: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  chip: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   glowChip: { backgroundColor: glowA(0.22), borderColor: glowA(0.55), shadowColor: color.glow, shadowOpacity: 0.45, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   chipText: { ...type.label, color: color.moon },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: glowA(0.14), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45) },

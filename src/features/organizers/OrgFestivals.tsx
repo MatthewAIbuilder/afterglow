@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   head: { alignItems: 'center', gap: space.sm, paddingHorizontal: space.xl },
   title: { ...type.largeTitle, color: color.moon },
   row: { flexDirection: 'row', gap: space.sm, marginHorizontal: space.lg },
-  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   glow: { backgroundColor: glowA(0.2), borderColor: glowA(0.5) },
   buttonText: { ...type.label, color: color.moon },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

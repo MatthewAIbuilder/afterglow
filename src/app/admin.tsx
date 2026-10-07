@@ -160,6 +160,6 @@ const styles = StyleSheet.create({
   verifyRow: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' },
   primary: { paddingHorizontal: space.lg, minHeight: 46, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glow },
   primaryText: { ...type.headline, color: color.night },
-  secondary: { paddingHorizontal: space.lg, minHeight: 46, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  secondary: { paddingHorizontal: space.lg, minHeight: 46, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },
 });

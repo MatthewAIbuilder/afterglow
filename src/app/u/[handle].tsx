@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   more: { ...type.caption, color: color.moon, letterSpacing: 1 },
   headWrap: { marginHorizontal: -space.xl },
   follow: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: space.sm },
-  message: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  message: { paddingHorizontal: space.lg, paddingVertical: space.sm + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   messageText: { ...type.headline, color: color.moon },
   badges: { marginHorizontal: -space.lg, marginTop: space.sm },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, marginTop: space.xxl, marginBottom: space.md },

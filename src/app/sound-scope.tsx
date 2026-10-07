@@ -19,6 +19,7 @@ import { color, radius, space, type, glowA } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { datesLine } from '../features/festivals/format';
 import { t } from '../i18n';
+import { SHEET_BACKGROUND } from '../components/LiquidGlass';
 
 /**
  * Which lineup My Sound shows: everyone, or one festival (the ones you're
@@ -116,7 +117,7 @@ export default function SoundScopeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.nightRaised },
+  root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
   content: { paddingHorizontal: space.xl, paddingTop: space.xxl },
   title: { ...type.title, color: color.moon },
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: space.xl },
@@ -134,6 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   selected: { backgroundColor: glowA(0.16), borderColor: glowA(0.45) },
   pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },

@@ -17,8 +17,9 @@ const palette = PALETTES[THEME_ID];
 export const color = {
   night: palette.night, // app background
   nightRaised: palette.nightRaised, // sheets, raised surfaces (under blur)
-  glass: 'rgba(255,255,255,0.06)',
+  glass: glassOf(0.06), // cards and rows: clear glass holding a breath of the theme's glow
   hairline: 'rgba(255,255,255,0.10)',
+  rim: 'rgba(255,255,255,0.2)', // the lit top edge of glass, where the light lands
 
   moon: '#F3F0FF', // primary text
   moonDim: 'rgba(243,240,255,0.62)', // secondary text
@@ -40,6 +41,13 @@ export const nightA = (alpha: number) => rgbaOf(palette.night, alpha);
 export const raisedA = (alpha: number) => rgbaOf(palette.nightRaised, alpha);
 /** A fixed colour token (amber, coral) at an opacity. */
 export const tintA = (hex: string, alpha: number) => rgbaOf(hex, alpha);
+
+/** White glass leaning 15% toward the theme's glow, at an opacity: Aurora's cards hold a little green, Lava's a little warmth. */
+function glassOf(alpha: number): string {
+  const n = parseInt(palette.glow.slice(1, 7), 16);
+  const lean = (c: number) => Math.round(255 + (c - 255) * 0.15);
+  return `rgba(${lean((n >> 16) & 255)},${lean((n >> 8) & 255)},${lean(n & 255)},${alpha})`;
+}
 
 function startingTheme(): ThemeId {
   const id = readStoredTheme();

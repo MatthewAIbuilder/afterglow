@@ -503,7 +503,7 @@ const mineNote = (festivalName?: string) => (
 );
 
 const styles = StyleSheet.create({
-  rulesCard: { padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, gap: 4 },
+  rulesCard: { padding: space.md, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, gap: 4 },
   rulesTitle: { ...type.label, color: color.moon, marginBottom: 2 },
   rule: { ...type.caption, color: color.moonDim, lineHeight: 17 },
   endAll: { alignSelf: 'center', paddingVertical: space.sm },
@@ -535,6 +535,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
+    borderTopColor: color.rim,
   },
   editRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.md },
   quietButton: { paddingHorizontal: space.lg, paddingVertical: space.sm },
@@ -551,7 +552,7 @@ const styles = StyleSheet.create({
   },
   inviteRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },
   primaryText: { ...type.headline, color: color.moon },
-  memberCard: { gap: space.sm, padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  memberCard: { gap: space.sm, padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   memberHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   memberName: { ...type.headline, color: color.moon, flex: 1 },
   ownerTag: { ...type.caption, color: color.moonFaint, fontWeight: '400' },

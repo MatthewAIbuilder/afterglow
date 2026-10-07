@@ -166,7 +166,7 @@ export function MessagesList({ skipCrews = [], directOnly = false }: { skipCrews
 const AVATAR = 52;
 
 const styles = StyleSheet.create({
-  list: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, overflow: 'hidden' },
+  list: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, paddingHorizontal: space.md },
   divider: { position: 'absolute', top: 0, right: 0, left: AVATAR + space.md * 2, height: StyleSheet.hairlineWidth, backgroundColor: color.hairline },
   text: { flex: 1, gap: 2 },
