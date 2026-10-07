@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import { color, motion, space, type } from '../../theme/tokens';
+import { color, motion, nightA, space, type } from '../../theme/tokens';
 import { GlassFill } from '../../components/LiquidGlass';
 import { CommentIcon } from '../../components/TabIcons';
 import { HeartIcon, SaveIcon, ThumbDownIcon } from './icons';
