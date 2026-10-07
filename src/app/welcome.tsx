@@ -26,6 +26,7 @@ import { useLoves } from '../state/useLoves';
 import { useWelcomed } from '../state/welcome';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { t } from '../i18n';
+import { FadeMask } from '../components/FadeMask';
 
 type Step = 'hello' | 'going' | 'waiting' | 'taste';
 const STEPS: Step[] = ['hello', 'going', 'waiting', 'taste'];
@@ -135,6 +136,8 @@ export default function WelcomeScreen() {
             </View>
           </ScrollView>
         ) : step === 'going' ? (
+          // The list melts away above the button instead of stopping at a line.
+          <FadeMask bottom={0.94} style={styles.fill}>
           <ScrollView
             contentContainerStyle={styles.scroll}
             showsVerticalScrollIndicator={false}
@@ -202,12 +205,15 @@ export default function WelcomeScreen() {
               })}
             </View>
           </ScrollView>
+          </FadeMask>
         ) : step === 'waiting' ? (
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>{t('Here’s what’s waiting')}</Text>
-            <Text style={styles.sub}>{waitingLine}</Text>
-            <Waiting />
-          </ScrollView>
+          <FadeMask bottom={0.94} style={styles.fill}>
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+              <Text style={styles.title}>{t('Here’s what’s waiting')}</Text>
+              <Text style={styles.sub}>{waitingLine}</Text>
+              <Waiting />
+            </ScrollView>
+          </FadeMask>
         ) : picked ? (
           <View style={styles.center}>
             <Text style={styles.title}>{t('Tell us what you love')}</Text>
@@ -291,6 +297,7 @@ function Secondary({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   root: { flex: 1, backgroundColor: color.night },
   top: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: space.xl },
   skip: { ...type.label, color: color.moonDim },
@@ -304,7 +311,7 @@ const styles = StyleSheet.create({
   promise: { flexDirection: 'row', alignItems: 'center', gap: space.md, maxWidth: '100%' },
   promiseDot: { width: 8, height: 8, borderRadius: 4, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
   promiseText: { ...type.label, color: color.moon, flexShrink: 1 },
-  scroll: { paddingHorizontal: space.xl, paddingTop: space.xxl, paddingBottom: space.xl },
+  scroll: { paddingHorizontal: space.xl, paddingTop: space.xxl, paddingBottom: space.xxxl },
   title: { ...type.largeTitle, color: color.moon, textAlign: 'center' },
   sub: { ...type.body, color: color.moonDim, marginTop: space.sm, textAlign: 'center' },
   list: { marginTop: space.xl, gap: space.md },
