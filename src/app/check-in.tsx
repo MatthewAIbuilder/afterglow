@@ -18,7 +18,7 @@ import { useCrews } from '../state/crews';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { usePlan } from '../state/plan';
 import { useTaste } from '../state/taste';
-import { color, radius, space, type, glowA, accentEdge } from '../theme/tokens';
+import { color, radius, space, type, glowA, accentEdge, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
@@ -134,7 +134,7 @@ export default function CheckInScreen() {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <PageTitle title={t('Check in')} />
-      <ScrollView contentContainerStyle={{ paddingTop: space.xl, paddingBottom: insets.bottom + space.xl }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: space.xl, paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled">
         <Text style={[styles.title, styles.pad]}>{t('Check in with your crew')}</Text>
         <Text style={[styles.body, styles.pad]}>
           {crews.length === 1

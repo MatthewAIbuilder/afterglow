@@ -21,7 +21,7 @@ import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
 import { useTaste } from '../state/taste';
-import { color, radius, space, type, glowA, nightA } from '../theme/tokens';
+import { color, radius, space, type, glowA, nightA, pageColumn } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { t } from '../i18n';
 import type { CropShape } from '../features/profile/crop';
@@ -232,7 +232,7 @@ export default function ProfileEditScreen() {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={styles.pad}>
           <Text style={styles.title} accessibilityRole="header">
             {p ? t('Your profile') : t('Create your profile')}

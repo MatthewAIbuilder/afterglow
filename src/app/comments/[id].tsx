@@ -19,7 +19,7 @@ import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
 import { useSocial } from '../../state/social';
-import { color, radius, space, type, accentEdge } from '../../theme/tokens';
+import { color, radius, space, type, accentEdge, pageColumn } from '../../theme/tokens';
 import { t } from '../../i18n';
 import { SHEET_BACKGROUND } from '../../components/LiquidGlass';
 
@@ -175,7 +175,7 @@ export default function CommentsScreen() {
           </Text>
         ) : null}
       </View>
-      <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[pageColumn, styles.list]} keyboardShouldPersistTaps="handled">
         {!social.user ? <Text style={styles.quiet}>{t('Sign in to read and write comments.')}</Text> : null}
         {social.user && list === undefined && !failed ? <ActivityIndicator color={color.glow} /> : null}
         {!onClip && video === null ? <Text style={styles.quiet}>{t('This video isn’t available any more.')}</Text> : null}
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   more: { ...type.label, color: color.moonFaint, letterSpacing: 1 },
   moreRow: { alignSelf: 'center', paddingVertical: space.sm },
   moreText: { ...type.label, color: color.glow },
-  compose: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline },
+  compose: { ...pageColumn, flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline },
   input: { flex: 1, ...type.body, color: color.moon, maxHeight: 120, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.md, backgroundColor: color.glass },
   send: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge },
   sendText: { ...type.headline, color: color.moon },

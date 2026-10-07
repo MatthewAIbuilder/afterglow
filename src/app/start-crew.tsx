@@ -17,7 +17,7 @@ import { useCatalog } from '../state/catalog';
 import { useCrews } from '../state/crews';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
-import { color, radius, space, type } from '../theme/tokens';
+import { color, radius, space, type, pageColumn } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { datesLine } from '../features/festivals/format';
 import { t } from '../i18n';
@@ -94,7 +94,7 @@ export default function StartCrewScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.root} contentContainerStyle={{ padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.root} contentContainerStyle={[pageColumn, { padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>{t('Start a crew')}</Text>
         <Text style={styles.body}>{t('Pick the festival. Then name your crew and invite your friends, up to 12 of you. Crews are invite only, with their own chat: starting one means agreeing to the crew chat rules in the community guidelines.')}</Text>
         {yours.length ? (
