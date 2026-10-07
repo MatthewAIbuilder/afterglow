@@ -13,7 +13,7 @@ import { useNow } from '../lib/useNow';
 import { VERSION_LINE } from '../lib/version';
 import { useSocial } from '../state/social';
 import { useMySupport } from '../state/supportSeen';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { t } from '../i18n';
 
 /** The topics as this screen shows them (the key is what's sent; HQ keeps its own English words). */
@@ -78,7 +78,7 @@ export default function SupportScreen() {
       <PageTitle title={t('Contact support')} />
       <NightSky />
       <PageActions />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>{t('Contact support')}</Text>
         <Text style={styles.body}>{t('A question, something broken, an idea, a festival we should add: tell us. A real person reads every message and replies here.')}</Text>
 

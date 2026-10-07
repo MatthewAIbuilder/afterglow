@@ -11,7 +11,7 @@ import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { forgetAccount, useSavedAccounts } from '../state/savedAccounts';
 import { useSocial } from '../state/social';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
 import { SHEET_BACKGROUND } from '../components/LiquidGlass';
@@ -154,7 +154,7 @@ export default function SwitchAccountScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.root} contentContainerStyle={[pageColumn, styles.content, { paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.title} accessibilityRole="header">
           {t('Switch account')}
         </Text>

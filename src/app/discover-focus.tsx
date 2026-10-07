@@ -28,7 +28,7 @@ import { useCatalog } from '../state/catalog';
 import { useCommunity } from '../state/community';
 import { useGoing } from '../state/going';
 import { useSocial } from '../state/social';
-import { color, radius, space, type, glowA, glowDeepA, nightA } from '../theme/tokens';
+import { color, radius, space, type, glowA, glowDeepA, nightA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t, tn } from '../i18n';
 import { SheetClose } from '../components/SheetClose';
@@ -142,7 +142,7 @@ export default function DiscoverFocusScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
+      <ScrollView style={styles.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[pageColumn, styles.content, { paddingBottom: insets.bottom + space.xl }]}>
         <Text style={styles.title}>{t('What to discover')}</Text>
         <Text style={styles.body}>{t('Everything at once, one sound, or one festival’s lineup.')}</Text>
         <View style={styles.searchBar}>

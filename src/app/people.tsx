@@ -12,7 +12,7 @@ import { searchOrgs } from '../features/organizers/organizers';
 import { useOrgs } from '../state/orgs';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
 import { useSocial } from '../state/social';
-import { color, space, type } from '../theme/tokens';
+import { color, space, type, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
 
@@ -52,7 +52,7 @@ export default function PeopleScreen() {
   return (
     <View style={styles.root}>
       <NightSky />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={styles.title} accessibilityRole="header">
           {t('Find people')}
         </Text>

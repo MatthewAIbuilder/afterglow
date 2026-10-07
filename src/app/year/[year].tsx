@@ -11,7 +11,7 @@ import { yearText } from '../../features/recap/year';
 import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
-import { color, radius, space, type } from '../../theme/tokens';
+import { color, radius, space, type, pageColumn } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
 import { EmptyState } from '../../components/EmptyState';
@@ -40,7 +40,7 @@ export default function YearScreen() {
           <CloseIcon color={color.moon} />
         </GlassCircleButton>
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
+      <ScrollView contentContainerStyle={[pageColumn, styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
         {card ? (
           <>
             <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>

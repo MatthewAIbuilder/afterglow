@@ -15,7 +15,7 @@ import { haptic } from '../lib/haptics';
 import { useToday } from '../lib/useToday';
 import { useCatalog } from '../state/catalog';
 import { useGoing } from '../state/going';
-import { color, radius, space, type, glowA } from '../theme/tokens';
+import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { SheetClose } from '../components/SheetClose';
 import { datesLine } from '../features/festivals/format';
 import { t } from '../i18n';
@@ -86,7 +86,7 @@ export default function SoundScopeScreen() {
         style={styles.root}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
+        contentContainerStyle={[pageColumn, styles.content, { paddingBottom: insets.bottom + space.xl }]}>
         <Text style={styles.title}>{t('Show my sound for')}</Text>
         <View style={styles.list}>
           {row(EVERYONE, t('Everyone'), t('Every artist the app knows'), !current, t('Your sound across every artist'))}

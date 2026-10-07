@@ -17,7 +17,7 @@ import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useClipPool } from '../state/community';
 import { useReactions } from '../state/reactions';
-import { color, radius, space, type, nightA } from '../theme/tokens';
+import { color, radius, space, type, nightA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { shownClipTitle } from '../features/community/clips';
 import { t, tc } from '../i18n';
@@ -40,7 +40,7 @@ export default function YourClipsScreen() {
     <View style={styles.root}>
       <NightSky />
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }}
+        contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.pad}>
