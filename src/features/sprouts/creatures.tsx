@@ -6266,6 +6266,177 @@ const icecream: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** JOSH BAKER: the Loaf — a fresh loaf in a chef's hat, warm from the oven. */
+const loaf: Draw = (p, f) => ({
+  ground: [50, 88, 34],
+  back: <Ellipse cx={50} cy={56} rx={42} ry={36} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      <V d="M16 80 C14 60 26 48 50 48 C74 48 86 60 84 80 Q84 86 78 86 L22 86 Q16 86 16 80Z" fill={p.mid} f={f} gloss={[30, 56, 8, 2.4, -10]} />
+      <Path d="M30 54 Q34 60 32 66 M46 50 Q50 56 48 62 M62 50 Q66 56 64 62" stroke={p.deep} strokeWidth={1.6} fill="none" opacity={0.5} strokeLinecap="round" />
+      {/* The chef's hat. */}
+      <V d="M34 46 L34 38 C26 38 24 26 34 24 C36 14 50 12 54 20 C62 14 74 20 70 30 C76 34 72 40 66 38 L66 46Z" fill={p.light} f={f} gloss={[42, 22, 4, 2, -20]} />
+      <Path d="M34 42 L66 42" stroke={p.deep} strokeWidth={0.8} opacity={0.3} />
+      <Circle cx={38} cy={72} r={2.4} fill={p.accent} opacity={0.4} />
+      <Circle cx={62} cy={72} r={2.4} fill={p.accent} opacity={0.4} />
+      <Path d="M46 73 Q50 76 54 73" stroke={p.deep} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 61, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.4} y={65} r={2.6} f={f} />
+        <VEye x={55.6} y={65} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {/* Warm from the oven. */}
+      <Path d="M22 40 Q18 34 22 28 M80 44 Q84 38 80 32" stroke={p.light} strokeWidth={1.6} fill="none" strokeLinecap="round" opacity={0.5} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** CHEF BOYARBEATZ: the Saucepan — a saucepan in headphones, sauce bubbling, a wooden spoon in it. */
+const saucepan: Draw = (p, f) => ({
+  ground: [50, 90, 32],
+  back: <Ellipse cx={50} cy={56} rx={42} ry={36} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* The spoon and the handle. */}
+      <Path d="M60 52 L74 22" stroke={p.alt} strokeWidth={3} strokeLinecap="round" />
+      <VE cx={75.4} cy={19} rx={3.4} ry={5} fill={p.alt} f={f} turn={25} gloss={false} />
+      <Path d="M80 62 L89 59.6" stroke={p.deep} strokeWidth={4} strokeLinecap="round" />
+      {/* The pan and the sauce. */}
+      <V d="M18 56 L82 56 L78 82 Q76 88 68 88 L32 88 Q24 88 22 82Z" fill={p.mid} f={f} gloss={[26, 62, 3, 8, 0]} />
+      <VE cx={50} cy={56} rx={32} ry={5} fill={p.mid} f={f} gloss={false} />
+      <Ellipse cx={50} cy={56} rx={28} ry={3.6} fill={p.altDeep} />
+      <Circle cx={40} cy={55.4} r={1.4} fill={p.accent} opacity={0.8} />
+      <Circle cx={58} cy={56.2} r={1} fill={p.accent} opacity={0.8} />
+      {/* Headphones over its rim. */}
+      <Path d="M20 64 C20 36 80 36 80 64" stroke={p.deep} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+      <VE cx={20} cy={68} rx={5} ry={7} fill={p.accent} f={f} />
+      <VE cx={80} cy={68} rx={5} ry={7} fill={p.accent} f={f} />
+      <Circle cx={38} cy={76} r={2.2} fill={p.altDeep} opacity={0.35} />
+      <Circle cx={62} cy={76} r={2.2} fill={p.altDeep} opacity={0.35} />
+      <Path d="M46 77 Q50 80 54 77" stroke={p.light} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 65, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.4} y={69} r={2.6} f={f} />
+        <VEye x={55.6} y={69} r={2.6} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      <Path d="M36 48 Q32 42 36 36 M48 46 Q44 40 48 34" stroke={p.light} strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.5} />
+      <Glow x={40} y={55} r={1} color={p.accent} />
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** SKULL MACHINE: the Skull bot — a friendly robot skull, bolts in its jaw, lights for eyes. */
+const robotskull: Draw = (p, f) => ({
+  ground: [50, 90, 22],
+  back: <Ellipse cx={50} cy={52} rx={40} ry={38} fill={p.glow} opacity={0.16} />,
+  body: (
+    <G>
+      {/* The antenna, the dome and the jaw. */}
+      <Path d="M50 18 L50 10" stroke={p.mid} strokeWidth={1.6} />
+      <V d="M24 50 C24 30 36 18 50 18 C64 18 76 30 76 50 C76 58 72 62 68 64 L32 64 C28 62 24 58 24 50Z" fill={p.mid} f={f} gloss={[36, 28, 6, 3, -20]} />
+      <V d="M32 64 L68 64 L66 78 Q65 82 60 82 L40 82 Q35 82 34 78Z" fill={p.mid} f={f} />
+      {[40, 46, 54, 60].map((x) => (
+        <Path key={x} d={`M${x} 66 L${x} 80`} stroke={p.deep} strokeWidth={1.2} opacity={0.6} />
+      ))}
+      {/* Eye sockets and the nose. */}
+      <Circle cx={39} cy={46} r={8} fill={p.deep} />
+      <Circle cx={61} cy={46} r={8} fill={p.deep} />
+      <Path d="M48 56 L50 52 L52 56Z" fill={p.deep} />
+      {[
+        [26, 52],
+        [74, 52],
+        [35, 70],
+        [65, 70],
+      ].map(([x, y]) => (
+        <Circle key={`${x}${y}`} cx={x} cy={y} r={1.3} fill={p.light} opacity={0.8} />
+      ))}
+    </G>
+  ),
+  eyes: {
+    box: [33, 42, 34, 8],
+    el: (
+      <G>
+        <VEye x={39} y={46} r={3.4} f={f} iris={p.accent} />
+        <VEye x={61} y={46} r={3.4} f={f} iris={p.accent} />
+      </G>
+    ),
+  },
+  flicker: <Glow x={50} y={9} r={1.8} color={p.accent} />,
+  flickerOver: true,
+});
+
+/** DISCO LINES: the Conga — three little mirror balls dancing in a line. */
+const conga: Draw = (p, f) => {
+  const ball = (x: number, y: number, r: number, k: string) => (
+    <G key={k}>
+      <VE cx={x} cy={y} rx={r} ry={r} fill={p.mid} f={f} />
+      {Array.from({ length: 4 }, (_, i) => (
+        <Path key={i} d={`M${x - r * 0.9} ${y - r * 0.6 + i * r * 0.4} L${x + r * 0.9} ${y - r * 0.6 + i * r * 0.4}`} stroke={p.deep} strokeWidth={0.5} opacity={0.4} />
+      ))}
+      <Path d={`M${x} ${y - r} L${x} ${y + r} M${x - r * 0.5} ${y - r * 0.86} L${x - r * 0.5} ${y + r * 0.86} M${x + r * 0.5} ${y - r * 0.86} L${x + r * 0.5} ${y + r * 0.86}`} stroke={p.deep} strokeWidth={0.5} opacity={0.4} />
+      <Circle cx={x - r * 0.4} cy={y - r * 0.4} r={r * 0.18} fill={p.light} />
+    </G>
+  );
+  return {
+    ground: [50, 88, 38],
+    back: <Ellipse cx={50} cy={54} rx={42} ry={36} fill={p.glow} opacity={0.16} />,
+    body: (
+      <G>
+        {/* Little legs mid-step. */}
+        <Path d="M16 80 L14 88 M24 80 L27 88 M44 82 L42 90 M54 82 L57 90 M74 80 L72 88 M82 80 L85 88" stroke={p.alt} strokeWidth={2} strokeLinecap="round" />
+        {ball(20, 68, 12, 'a')}
+        {ball(80, 68, 12, 'c')}
+        {ball(50, 64, 17, 'b')}
+        <Circle cx={43} cy={70} r={1.8} fill={p.accent} opacity={0.5} />
+        <Circle cx={57} cy={70} r={1.8} fill={p.accent} opacity={0.5} />
+        <Path d="M47 71 Q50 73.6 53 71" stroke={p.deep} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+      </G>
+    ),
+    eyes: {
+      box: [42, 60, 16, 7],
+      el: (
+        <G>
+          <VEye x={45.6} y={63.6} r={2.4} f={f} />
+          <VEye x={54.4} y={63.6} r={2.4} f={f} />
+        </G>
+      ),
+    },
+    flicker: (
+      <G>
+        {/* Light thrown off them. */}
+        {[
+          [18, 36],
+          [34, 28],
+          [50, 22],
+          [66, 28],
+          [82, 36],
+        ].map(([x, y], i) => (
+          <Path key={i} d={`M${x} ${y} L${x} ${y - 6}`} stroke={i % 2 ? p.accent : p.light} strokeWidth={1.4} strokeLinecap="round" />
+        ))}
+      </G>
+    ),
+    flickerOver: true,
+  };
+};
+
 /** A sticker for the water station: a drop of water under a tap, sloshing, with drops still falling. */
 const refill: Draw = (p, f) => ({
   ground: [50, 90, 28],
@@ -7239,6 +7410,10 @@ export const DRAW: Record<Creature, Draw> = {
   gumbo,
   balloon,
   peeker,
+  loaf,
+  saucepan,
+  robotskull,
+  conga,
   speedo,
   pegasus,
   raccoon,
