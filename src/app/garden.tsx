@@ -16,7 +16,7 @@ import { type ArtistSprout, TIER_AT, tierLabel, toNextTier } from '../features/s
 import { TIER_COLOR } from '../features/sprouts/Collectible';
 import { GardenScene, type SceneResident } from '../features/sprouts/GardenScene';
 import { FindsSection } from '../features/finds/FindsSection';
-import { artistLook, shinyLook } from '../features/sprouts/artistLook';
+import { artistLook } from '../features/sprouts/artistLook';
 import { useCatalog } from '../state/catalog';
 import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
 import { LOCALE, t } from '../i18n';
@@ -307,7 +307,7 @@ export default function GardenScreen() {
             : bloom
               ? { kind: 'sprout', sprout: bloom.kind, foundAt: bloom.foundAt }
               : fresh && freshArtist
-                ? { kind: 'artistSprout', name: freshArtist.name, look: fresh.shiny ? shinyLook(artistLook(freshArtist)) : artistLook(freshArtist), tier: fresh.tier, videos: fresh.videos }
+                ? { kind: 'artistSprout', name: freshArtist.name, look: artistLook(freshArtist), tier: fresh.tier, videos: fresh.videos, shiny: !!fresh.shiny }
                 : undefined
         }
         onDone={() => {

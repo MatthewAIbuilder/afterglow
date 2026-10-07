@@ -22,7 +22,8 @@ import { color, radius, space, type } from '../../theme/tokens';
 import { Sprout } from '../sprouts/Sprout';
 import { kindOf, type SproutKind } from '../sprouts/sprouts';
 import type { ArtistLook } from '../sprouts/artistLook';
-import { type Tier, TIER_LABEL, tierLine } from '../sprouts/artistSprouts';
+import { type Tier, TIER_LABEL, tierLabel, tierLine } from '../sprouts/artistSprouts';
+import { CardReveal } from '../sprouts/CollectibleCard';
 import { pinAbout, pinLook, throwbackAbout, throwbackLook } from '../badges/badges';
 import { type PastEvent, pastLabel } from '../memories/past';
 import { EnamelPin } from '../badges/EnamelPin';
@@ -37,7 +38,7 @@ export type Unlock =
   /** A sprout in your garden bloomed into a kind. */
   | { kind: 'sprout'; sprout: SproutKind; foundAt?: string }
   /** An artist's collectible, earned by filming them or levelled up. */
-  | { kind: 'artistSprout'; name: string; look: ArtistLook; tier: Tier; videos: number };
+  | { kind: 'artistSprout'; name: string; look: ArtistLook; tier: Tier; videos: number; shiny?: boolean };
 
 const RAYS = 18;
 const SPARKS = 26;
@@ -179,7 +180,8 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
           ) : unlock.kind === 'sprout' ? (
             <Sprout kind={unlock.sprout} stage={3} size={BADGE} />
           ) : unlock.kind === 'artistSprout' ? (
-            <Sprout artist={unlock.look} tier={unlock.tier} stage={3} size={BADGE} />
+            // Its card, turning over (in its shiny colours when it is one).
+            <CardReveal look={unlock.look} artistName={unlock.name} tier={unlock.tier} shiny={unlock.shiny} line={tierLabel({ tier: unlock.tier, videos: unlock.videos })} width={Math.min(230, field - 80)} />
           ) : null}
         </Animated.View>
       </View>
@@ -194,9 +196,11 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
                   ? t('A wild sprout appeared')
                   : t('Your sprout bloomed')
                 : unlock.kind === 'artistSprout'
-                  ? unlock.tier
-                    ? t('Collectible levelled up')
-                    : t('Artist collectible unlocked')
+                  ? unlock.shiny && !unlock.tier
+                    ? t('A shiny one! Artist collectible unlocked')
+                    : unlock.tier
+                      ? t('Collectible levelled up')
+                      : t('Artist collectible unlocked')
                   : t('Badge unlocked')}</Text>
         <Text style={styles.title} accessibilityRole="header">
           {title}

@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { t } from '../../i18n';
@@ -130,4 +130,45 @@ const styles = StyleSheet.create({
   footText: { ...type.caption, color: color.moonDim, flex: 1 },
   mark: { ...type.caption },
   sweep: { position: 'absolute', left: 0, width: 90 },
+  back: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  backRing: { position: 'absolute', borderWidth: 2, borderColor: 'rgba(185,156,255,0.55)' },
+  backMark: { color: '#E8DCFF', textShadowColor: '#B99CFF', textShadowRadius: 18 },
+  backWord: { position: 'absolute', bottom: '14%', color: 'rgba(232,220,255,0.7)', letterSpacing: 4, fontWeight: '700' },
 });
+
+/**
+ * A card's back: night, a ring of light and Afterglow's spark, the same on
+ * every card (what you see before it turns over).
+ */
+export function CardBack({ width = 280 }: { width?: number }) {
+  const height = Math.round(width * 1.4);
+  return (
+    <LinearGradient colors={['#B99CFF', '#5A3EB0', '#FF8AD8']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.frame, { width, height, borderRadius: width * 0.08 }]}>
+      <LinearGradient colors={['#1A1240', '#0B0814']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={[styles.back, { borderRadius: width * 0.07 }]}>
+        <View style={[styles.backRing, { width: width * 0.5, height: width * 0.5, borderRadius: width * 0.25 }]} />
+        <Text style={[styles.backMark, { fontSize: width * 0.16 }]}>✦</Text>
+        <Text style={[styles.backWord, { fontSize: 12 * (width / 280) }]}>AFTERGLOW</Text>
+      </LinearGradient>
+    </LinearGradient>
+  );
+}
+
+/**
+ * Earning a collectible: its card arrives face down and turns over (a quick
+ * squeeze and open, the same on every phone and in the browser). Straight
+ * to the front with reduced motion.
+ */
+export function CardReveal(props: Parameters<typeof CollectibleCard>[0]) {
+  const reduce = useReducedMotion();
+  const turn = useSharedValue(reduce ? 1 : 0);
+  const [front, setFront] = useState(reduce);
+  useEffect(() => {
+    if (reduce) return;
+    turn.set(withDelay(650, withTiming(1, { duration: 520, easing: Easing.inOut(Easing.cubic) })));
+    const timer = setTimeout(() => setFront(true), 650 + 260);
+    return () => clearTimeout(timer);
+  }, [reduce, turn]);
+  // Squeeze to nothing at the halfway mark, then open on the other side.
+  const style = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(0.02, Math.abs(1 - turn.get() * 2)) }] }));
+  return <Animated.View style={style}>{front ? <CollectibleCard {...props} /> : <CardBack width={props.width} />}</Animated.View>;
+}
