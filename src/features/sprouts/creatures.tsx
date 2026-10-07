@@ -3915,6 +3915,95 @@ const nightmare: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** VINTAGE CULTURE: a gramophone with a face in its horn's bell, a record spinning, notes floating up. */
+const gramophone: Draw = (p, f) => ({
+  ground: [50, 92, 30],
+  back: <Ellipse cx={50} cy={50} rx={44} ry={40} fill={p.glow} opacity={0.14} />,
+  body: (
+    <G>
+      {/* The box and its record. */}
+      <V d="M20 74 L80 74 L78 90 L22 90Z" fill={p.alt} f={f} gloss={[30, 78, 8, 2, 0]} />
+      <Path d="M22 80 L78 80" stroke={p.altDeep} strokeWidth={0.8} opacity={0.6} />
+      <Ellipse cx={42} cy={72} rx={18} ry={4.6} fill={p.deep} />
+      <Ellipse cx={42} cy={72} rx={12} ry={3} fill="none" stroke={p.light} strokeWidth={0.4} opacity={0.5} />
+      <Ellipse cx={42} cy={72} rx={4} ry={1.2} fill={p.accent} />
+      {/* The arm up to the horn. */}
+      <Path d="M62 74 L62 60 Q62 54 56 50" stroke={p.accent} strokeWidth={3} fill="none" strokeLinecap="round" />
+      {/* The horn: a cone flaring out to a bell that opens towards you, its face inside. */}
+      <V d="M58 50 L52 54 L26 36 L50 12Z" fill={p.mid} f={f} />
+      <G transform="rotate(-24 38 25)">
+        <VE cx={38} cy={25} rx={24} ry={17} fill={p.mid} f={f} gloss={false} />
+        <Ellipse cx={38} cy={25} rx={24} ry={17} fill="none" stroke={p.light} strokeWidth={1.2} opacity={0.7} />
+        <Ellipse cx={38} cy={26} rx={19} ry={12.6} fill={p.deep} />
+        <Ellipse cx={38} cy={27} rx={14} ry={8.6} fill={p.altDeep} opacity={0.7} />
+        <Path d="M33 31 Q38 34.6 43 31" stroke={p.light} strokeWidth={1.4} fill="none" strokeLinecap="round" />
+      </G>
+    </G>
+  ),
+  eyes: {
+    box: [28, 18, 20, 10],
+    el: (
+      <G>
+        <VEye x={32} y={26} r={3} f={f} />
+        <VEye x={42} y={22} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: (
+    <G>
+      {(
+        [
+          [84, 14, 1],
+          [14, 40, 0.8],
+          [88, 52, 0.7],
+        ] as const
+      ).map(([x, y, s], i) => (
+        <G key={i} transform={`translate(${x} ${y}) scale(${s})`}>
+          <Path d="M0 0 L0 -8 L6 -10 L6 -2" stroke={p.accent} strokeWidth={1.4} fill="none" strokeLinejoin="round" />
+          <Ellipse cx={-1.6} cy={0.4} rx={2} ry={1.5} fill={p.accent} />
+          <Ellipse cx={4.4} cy={-1.6} rx={2} ry={1.5} fill={p.accent} />
+        </G>
+      ))}
+    </G>
+  ),
+  flickerOver: true,
+});
+
+/** ARMIN VAN BUUREN: a trance star, a bright eight-pointed star with rings of light pulsing out from it. */
+const trancestar: Draw = (p, f) => ({
+  ground: null,
+  back: (
+    <G>
+      {[40, 32, 24].map((r, i) => (
+        <Circle key={r} cx={50} cy={50} r={r} fill="none" stroke={i % 2 ? p.alt : p.glow} strokeWidth={1.2} opacity={0.35 + i * 0.1} />
+      ))}
+    </G>
+  ),
+  body: (
+    <G>
+      <V d="M50 12 L57 38 L77 23 L62 43 L88 50 L62 57 L77 77 L57 62 L50 88 L43 62 L23 77 L38 57 L12 50 L38 43 L23 23 L43 38Z" fill={p.mid} f={f} gloss={[44, 30, 6, 6, 0]} />
+      <Path d="M50 22 L54 40 L68 32 L60 46 L78 50 L60 54 L68 68 L54 60 L50 78 L46 60 L32 68 L40 54 L22 50 L40 46 L32 32 L46 40Z" fill={p.light} opacity={0.35} />
+      <Path d="M44 58 Q50 62 56 58" stroke={p.deep} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    </G>
+  ),
+  eyes: {
+    box: [40, 44, 20, 8],
+    el: (
+      <G>
+        <VEye x={44.5} y={48} r={3} f={f} />
+        <VEye x={55.5} y={48} r={3} f={f} />
+      </G>
+    ),
+  },
+  flicker: sparkles(p.accent, [
+    [16, 18, 1.8],
+    [84, 16, 1.4],
+    [86, 84, 1.6],
+    [14, 82, 1.2],
+  ]),
+  flickerOver: true,
+});
+
 export const DRAW: Record<Creature, Draw> = {
   eye,
   phoenix,
@@ -3989,4 +4078,6 @@ export const DRAW: Record<Creature, Draw> = {
   titaniumheart,
   gorgon,
   nightmare,
+  gramophone,
+  trancestar,
 };
