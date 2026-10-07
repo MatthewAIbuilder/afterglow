@@ -17,6 +17,7 @@ import { CalendarPill } from '../../features/calendar/CalendarPill';
 import { showEvent } from '../../features/calendar/events';
 import { distanceLabel } from '../../features/festivals/near';
 import { ShowDateBlock, useShowTaste } from '../../features/festivals/ShowCards';
+import { festivalLight } from '../../features/festivals/light';
 import { rankShow } from '../../features/festivals/showsForYou';
 import { artistSignals, whyLine } from '../../features/taste/why';
 import { haptic } from '../../lib/haptics';
@@ -89,7 +90,7 @@ export default function ShowScreen() {
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.heroTop}>
-            <ShowDateBlock date={show.date} big />
+            <ShowDateBlock date={show.date} light={festivalLight(show.id)} big />
             <View style={styles.heroWhen}>
               <View style={styles.tag}>
                 <Text style={styles.tagText}>{tc('event', 'Show')}</Text>

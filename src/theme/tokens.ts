@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { DEFAULT_THEME, isThemeId, PALETTES, rgbaOf, type ThemeId } from './palettes';
+import { DEFAULT_THEME, isThemeId, PALETTES, rgbaOf, SPECTRUM, type ThemeId } from './palettes';
 import { readStoredTheme } from './storedTheme';
 
 /**
@@ -33,6 +33,9 @@ export const color = {
   amber: '#FFB86B', // a quiet heads-up (something you'd miss), never an alarm
   coral: '#FF8A8A', // care that needs a hand: soft, never a siren
 };
+
+/** The six festival lights (rose, tangerine, gold, mint, sky, violet): each festival and show has one (`features/festivals/light.ts`). */
+export const spectrum = SPECTRUM;
 
 /** The accent, the deeper accent, the night and raised surfaces at an opacity, in the theme's colours. */
 export const glowA = (alpha: number) => rgbaOf(palette.glow, alpha);
