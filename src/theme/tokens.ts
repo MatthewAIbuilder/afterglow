@@ -13,10 +13,6 @@ import { readStoredTheme } from './storedTheme';
 /** The theme the app wears this time it runs (chosen on Settings → App theme; a new one applies on restart). */
 export const THEME_ID: ThemeId = startingTheme();
 const palette = PALETTES[THEME_ID];
-/** The Pride theme: the rainbow runs all through the app (the sky, the tab bar, celebrations), not just one glow. */
-export const PRIDE = THEME_ID === 'pride';
-/** The rainbow flag's six colours, red to violet. */
-export const rainbow = RAINBOW;
 
 export const color = {
   night: palette.night, // app background
@@ -40,6 +36,11 @@ export const color = {
 
 /** The six festival lights (rose, tangerine, gold, mint, sky, violet): each festival and show has one (`features/festivals/light.ts`). */
 export const spectrum = SPECTRUM;
+
+/** The Pride theme: the rainbow runs all through the app (the sky, the tab bar, celebrations), not just one glow. */
+export const PRIDE = THEME_ID === 'pride';
+/** The rainbow flag's six colours, red to violet. */
+export const rainbow = RAINBOW;
 
 /** The accent, the deeper accent, the night and raised surfaces at an opacity, in the theme's colours. */
 export const glowA = (alpha: number) => rgbaOf(palette.glow, alpha);
