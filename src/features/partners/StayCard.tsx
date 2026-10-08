@@ -3,7 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { LANGUAGE, LOCALE, t, tn } from '../../i18n';
-import { PARTNER_NOTE, stayDates, stayLinkOf, stayMapUrl, type StayExtra, type StayTrip } from './partners';
+import { PARTNER_NOTE, stayDates, stayLinkOf, stayMapUrl, thingsToDoLink, townOf, type StayExtra, type StayTrip } from './partners';
 import { StayMap } from './StayMap';
 
 /** The map's height: Stay22 asks for at least 450 so its list and filters fit. */
@@ -15,18 +15,24 @@ const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(LOCALE,
  * "Where to stay" for a festival or a show: the nights (in the day it starts,
  * out the day after it ends, or a night either side), and Stay22's live list
  * or map of places near the venue with prices, right on the page. Choosing a
- * place opens the booking site. Says Afterglow may earn a commission.
+ * place opens the booking site. With a crew going, it searches for the whole
+ * crew at first (bigger places), or just you. A trip of more than one night
+ * also links to things to do in town. Says Afterglow may earn a commission.
  * Nothing when there's nowhere to point at.
  */
-export function StayCard({ trip, name }: { trip: StayTrip & { links?: { stay?: string } }; name: string }) {
-  const [extra, setExtra] = useState<StayExtra>({});
+export function StayCard({ trip, name, crew }: { trip: StayTrip & { links?: { stay?: string } }; name: string; crew?: { size: number } }) {
+  const [nights, setExtra] = useState<StayExtra>({});
   const [view, setView] = useState<'listview' | 'map'>('listview');
+  const hasCrew = !!crew && crew.size > 1;
+  const [forCrew, setForCrew] = useState(true);
+  const extra: StayExtra = { ...nights, ...(hasCrew && forCrew ? { adults: crew.size } : {}) };
   const map = stayMapUrl(trip, { extra, view, accent: color.glow, language: LANGUAGE });
   const all = stayLinkOf(trip, undefined, extra);
+  const todo = thingsToDoLink(trip);
   if (!map || !all) return null;
   const d = stayDates(trip, extra);
   const place = trip.location?.split(',')[0]?.trim() || name;
-  const toggle = (key: keyof StayExtra) => {
+  const toggle = (key: 'early' | 'late') => {
     haptic.select();
     setExtra((e) => ({ ...e, [key]: !e[key] }));
   };
@@ -52,6 +58,8 @@ export function StayCard({ trip, name }: { trip: StayTrip & { links?: { stay?: s
         {chip(t('Map'), view === 'map', () => (haptic.select(), setView('map')), t('Show places to stay on a map'))}
         {d ? chip(t('Arrive a day early'), !!extra.early, () => toggle('early'), t('Arrive a day early')) : null}
         {d ? chip(t('Stay a night longer'), !!extra.late, () => toggle('late'), t('Stay a night longer')) : null}
+        {hasCrew ? chip(t('Your crew of {n}', { n: crew.size }), forCrew, () => (haptic.select(), setForCrew(true)), t('Places for your crew of {n}', { n: crew.size })) : null}
+        {hasCrew ? chip(t('Just me'), !forCrew, () => (haptic.select(), setForCrew(false)), t('Places for just you')) : null}
       </View>
       <StayMap key={map} url={map} height={MAP_HEIGHT} label={t('Places to stay near {festival}, with prices', { festival: name })} />
       <Pressable
@@ -65,6 +73,20 @@ export function StayCard({ trip, name }: { trip: StayTrip & { links?: { stay?: s
       >
         <Text style={styles.allText}>{t('See all places to stay ↗')}</Text>
       </Pressable>
+      {todo ? (
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            Linking.openURL(todo).catch(() => {});
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('Things to do in {town} while you’re there. Opens in your browser.', { town: townOf(trip.location) })}
+          style={({ pressed }) => [styles.todo, pressed && styles.pressed]}
+        >
+          <Text style={styles.todoTitle}>{t('Things to do in {town} ↗', { town: townOf(trip.location).split(',')[0] })}</Text>
+          <Text style={styles.todoLine}>{t('Tours and day trips around your nights')}</Text>
+        </Pressable>
+      ) : null}
       <Text style={styles.note}>{PARTNER_NOTE}</Text>
     </View>
   );
@@ -104,6 +126,9 @@ const styles = StyleSheet.create({
     borderColor: glowA(0.4),
   },
   allText: { ...type.label, color: color.moon },
+  todo: { marginTop: space.sm, paddingTop: space.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.hairline, gap: 2 },
+  todoTitle: { ...type.label, color: color.moon },
+  todoLine: { ...type.caption, color: color.moonDim },
   note: { ...type.caption, color: color.moonFaint },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
 });

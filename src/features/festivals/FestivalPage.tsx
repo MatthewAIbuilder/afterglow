@@ -91,7 +91,9 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
   const { ratings } = useRatings();
   // Acts added to this lineup lately (a catalogue update), marked "Just added".
   const added = useLineupNews().justAdded(festival.id);
-  const { crewStarsFor } = useCrews();
+  const { crewStarsFor, crews } = useCrews();
+  // Your biggest crew going here: places to stay are searched for all of you.
+  const crewHere = crews.filter((c) => c.festivalId === festival.id).sort((a, b) => b.members.length - a.members.length)[0];
   const { isFollowing } = useFollowedArtists();
   const today = useToday();
 
@@ -309,7 +311,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
               {/* Tickets and the festival's own site, when the catalogue has them. */}
               <OfficialLinks festival={whole} over={soon === t('Over')} />
               {/* Where to stay: live places near the venue for its nights, with prices. */}
-              {soon !== t('Over') ? <StayCard trip={whole} name={festival.name} /> : null}
+              {soon !== t('Over') ? <StayCard trip={whole} name={festival.name} crew={crewHere ? { size: crewHere.members.length } : undefined} /> : null}
               {/* Once you're going: the days (your weekend) into your calendar, and your checklist. */}
               {isGoing(whole.id) && soon !== t('Over') ? (
                 <View style={styles.infoPills}>

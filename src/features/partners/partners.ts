@@ -45,8 +45,11 @@ export type StayTrip = {
   endDate?: string;
 };
 
-/** Extra nights around it: arriving the day before, leaving a day later. */
-export type StayExtra = { early?: boolean; late?: boolean };
+/** Extra nights around it (arriving the day before, leaving a day later), and how many are staying (a crew). */
+export type StayExtra = { early?: boolean; late?: boolean; adults?: number };
+
+/** Stay22 searches for at most this many guests at once. */
+export const STAY_ADULTS_MAX = 16;
 
 /** A show as a trip: one night at the venue. */
 export const showTrip = (show: Pick<Show, "id" | "date" | "venue" | "location" | "place">): StayTrip => ({
@@ -84,8 +87,28 @@ function stayQuery(trip: StayTrip, aid: string, extra: StayExtra): URLSearchPara
     q.set("checkin", d.checkin);
     q.set("checkout", d.checkout);
   }
+  if (extra.adults && extra.adults > 1) q.set("adults", String(Math.min(Math.round(extra.adults), STAY_ADULTS_MAX)));
   q.set("campaign", trip.id.slice(0, 60));
   return q;
+}
+
+/** The town from a location: "Tinker Field, Orlando, FL" -> "Orlando, FL"; shorter ones as they are. */
+export function townOf(location: string | undefined): string {
+  const parts = (location ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  return (parts.length >= 3 ? parts.slice(-2) : parts).join(", ");
+}
+
+/**
+ * Things to do while you're there (tours and day trips, through Stay22 on
+ * GetYourGuide) in the festival's town for its nights: only for a trip of
+ * more than one night, where there's time for it. Pure.
+ */
+export function thingsToDoLink(trip: StayTrip, aid: string = STAY22_AID): string | undefined {
+  const d = stayDates(trip);
+  const town = townOf(trip.location);
+  if (!aid || !d || d.nights < 2 || !town) return undefined;
+  const q = new URLSearchParams({ aid, address: town, checkin: d.checkin, checkout: d.checkout, campaign: `${trip.id}-todo`.slice(0, 60) });
+  return `https://www.stay22.com/allez/getyourguide?${q.toString()}`;
 }
 
 /**
@@ -100,7 +123,7 @@ export function stayLinkOf(
   aid: string = STAY22_AID,
   extra: StayExtra = {},
 ): string | undefined {
-  if (trip.links?.stay && !extra.early && !extra.late) return trip.links.stay;
+  if (trip.links?.stay && !extra.early && !extra.late && !(extra.adults && extra.adults > 1)) return trip.links.stay;
   const q = stayQuery(trip, aid, extra);
   return q ? `https://www.stay22.com/allez/roam?${q.toString()}` : undefined;
 }
