@@ -11,7 +11,7 @@ works fully. There are no placeholders and no "coming soon" text.
 
 | Where | What appears | What turns it on |
 | --- | --- | --- |
-| Festival page, Info tab | "Places to stay ↗" beside Get tickets / Official site | a `stay` link on that festival in `catalogue/afterglow.json` |
+| Festival page, Info tab | "Places to stay ↗" beside Get tickets / Official site | automatic for every upcoming festival with a location: a Stay22 link made from `STAY22_AID` in `src/config/partners.ts` (`afterglow`), the venue and the dates; a `stay` link on the festival in `catalogue/afterglow.json` wins |
 | Get ready → Before you go | "Places to stay nearby ↗" under "Sort travel" | the same `stay` link |
 | Festival page and Get ready | the note "Afterglow may earn a commission… It doesn’t change your price." | a `stay` link, or `"ticketsPartner": true` beside `tickets` |
 | Get ready → Pack | "Shop ↗" under an item, then Amazon's required sentence ("As an Amazon Associate, Afterglow earns from qualifying purchases.") or a general note | a link for that item in `src/config/partners.ts` (`SHOP_LINKS`) |
@@ -52,7 +52,9 @@ Paste any of these into a session. Claude adds them and checks them:
 3. Have a bank account or PayPal ready for payouts.
 4. Every program asks for your website: use **https://afterglowmusic.app**. Describe Afterglow as "a free app for planning music festivals: lineups, set times, and a personal festival schedule."
 
-### 2. Places to stay: Stay22 (best fit, start here)
+### 2. Places to stay: Stay22 (done: the app makes the links)
+
+Since 2026-10-08 Afterglow's Stay22 id (`afterglow`) is in `src/config/partners.ts`, and every upcoming festival gets its own link automatically: `https://www.stay22.com/allez/roam?aid=afterglow&lat=…&lng=…&address=…&checkin=<first day>&checkout=<day after the last>&campaign=<festival id>`. Stay22 picks the booking site. Bookings show in the Stay22 dashboard (hub.stay22.com) under Transactions, with the festival id as the campaign. The steps below are only needed for a hand-made link.
 
 Stay22 builds a link that shows hotels and rentals around an address for set dates, and pays a commission on bookings. It's free and made for event sites.
 

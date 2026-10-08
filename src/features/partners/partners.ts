@@ -1,4 +1,5 @@
 import type { Festival } from "../../data/models";
+import { STAY22_AID } from "../../config/partners";
 import { t } from "../../i18n";
 
 /**
@@ -31,6 +32,39 @@ export function isAmazonLink(url: string): boolean {
   return host === "amzn.to" || /(^|\.)amazon\.[a-z.]+$/.test(host);
 }
 
+const DAY = 86_400_000;
+const isDay = (d: unknown): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
+const nextDay = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) + DAY).toISOString().slice(0, 10);
+
+/**
+ * Where to stay for a festival: the catalogue's own link, or else one made
+ * for Stay22 from the venue (its coordinates and/or the location words) and
+ * the dates: check in the day it starts, check out the day after it ends.
+ * Stay22 picks the booking site; `campaign` says which festival it was for.
+ * Nothing without an affiliate id or anywhere to point at. Pure.
+ */
+export function stayLinkOf(
+  festival: Pick<Festival, "id" | "location" | "place" | "startDate" | "endDate" | "links">,
+  aid: string = STAY22_AID,
+): string | undefined {
+  if (festival.links?.stay) return festival.links.stay;
+  const address = festival.location?.trim();
+  if (!aid || (!address && !festival.place)) return undefined;
+  const q = new URLSearchParams({ aid });
+  if (festival.place) {
+    q.set("lat", String(festival.place.lat));
+    q.set("lng", String(festival.place.lon));
+  }
+  if (address) q.set("address", address);
+  if (isDay(festival.startDate)) {
+    const last = isDay(festival.endDate) && festival.endDate >= festival.startDate ? festival.endDate : festival.startDate;
+    q.set("checkin", festival.startDate);
+    q.set("checkout", nextDay(last));
+  }
+  q.set("campaign", festival.id.slice(0, 60));
+  return `https://www.stay22.com/allez/roam?${q.toString()}`;
+}
+
 /** The festival's links that earn a commission, while it isn't over. */
 export function partnerLinks(
   festival: Festival,
@@ -40,7 +74,7 @@ export function partnerLinks(
   const l = festival.links;
   return {
     ...(l?.tickets && l.ticketsPartner ? { tickets: l.tickets } : {}),
-    ...(l?.stay ? { stay: l.stay } : {}),
+    ...(stayLinkOf(festival) ? { stay: stayLinkOf(festival) } : {}),
   };
 }
 
@@ -75,7 +109,7 @@ export function hasPartnerLinks(
   return (
     Object.keys(cleanShopLinks(shop)).length > 0 ||
     festivals.some(
-      (f) => !!(f.links?.stay || (f.links?.tickets && f.links.ticketsPartner)),
+      (f) => !!(stayLinkOf(f) || (f.links?.tickets && f.links.ticketsPartner)),
     )
   );
 }

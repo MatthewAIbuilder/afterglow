@@ -1,6 +1,6 @@
 import type { Festival } from '../../data/models';
 import { t } from '../../i18n';
-import { PARTNER_NOTE, shopNotes } from '../partners/partners';
+import { PARTNER_NOTE, shopNotes, stayLinkOf } from '../partners/partners';
 
 /**
  * Getting ready for a festival you're going to: what the app can see you've
@@ -73,7 +73,7 @@ export function prepChecklist(i: PrepInput): PrepSection[] {
       id: 'travel',
       label: multiDay ? t('Sort travel and a place to stay') : t('Sort how you’re getting there and back'),
       done: tick('travel'),
-      ...(i.festival.links?.stay ? { link: { url: i.festival.links.stay, label: t('Places to stay nearby') } } : {}),
+      ...(stayLinkOf(i.festival) ? { link: { url: stayLinkOf(i.festival)!, label: t('Places to stay nearby') } } : {}),
     },
   ];
   const pack: PrepItem[] = PACK.map((p) => {

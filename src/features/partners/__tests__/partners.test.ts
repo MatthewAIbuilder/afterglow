@@ -3,7 +3,7 @@ import { parseCatalogFile } from '../../../data/file';
 import type { Festival } from '../../../data/models';
 import { legalDocument, PARTNER_PRIVACY, PARTNER_TERMS } from '../../legal/documents';
 import { prepChecklist, sectionNotes } from '../../prep/checklist';
-import { AMAZON_NOTE, cleanShopLinks, earnsFrom, hasPartnerLinks, isAmazonLink, isTapFestivalId, PARTNER_NOTE, partnerLinks, SHOP_NOTE, shopLinksFor, shopNotes } from '../partners';
+import { AMAZON_NOTE, cleanShopLinks, earnsFrom, hasPartnerLinks, isAmazonLink, isTapFestivalId, PARTNER_NOTE, partnerLinks, SHOP_NOTE, shopLinksFor, shopNotes, stayLinkOf } from '../partners';
 import { countTicketTapOnce } from '../ticketTaps';
 
 const fest = (links?: Festival['links']) =>
@@ -133,5 +133,33 @@ describe('Get tickets taps', () => {
     expect(isTapFestivalId('underground-alchemy--transmutation-11-14')).toBe(true);
     expect(isTapFestivalId('a/b')).toBe(false);
     expect(isTapFestivalId('')).toBe(false);
+  });
+});
+
+describe('places to stay, made for every festival', () => {
+  const base = { id: 'edc-orlando-26', location: 'Tinker Field, Orlando, FL', startDate: '2026-11-06', endDate: '2026-11-08' };
+
+  it('a Stay22 link from the venue and dates: in the day it starts, out the day after it ends', () => {
+    const url = new URL(stayLinkOf({ ...base, place: { lat: 28.53, lon: -81.4 } }, 'afterglow')!);
+    expect(url.origin + url.pathname).toBe('https://www.stay22.com/allez/roam');
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      aid: 'afterglow',
+      lat: '28.53',
+      lng: '-81.4',
+      address: 'Tinker Field, Orlando, FL',
+      checkin: '2026-11-06',
+      checkout: '2026-11-09',
+      campaign: 'edc-orlando-26',
+    });
+  });
+
+  it('one night, no dates, the catalogue’s own link, or nothing', () => {
+    const one = new URL(stayLinkOf({ ...base, endDate: undefined }, 'afterglow')!);
+    expect([one.searchParams.get('checkin'), one.searchParams.get('checkout')]).toEqual(['2026-11-06', '2026-11-07']);
+    const undated = new URL(stayLinkOf({ id: 'f', location: 'Somewhere' }, 'afterglow')!);
+    expect(undated.searchParams.has('checkin')).toBe(false);
+    expect(stayLinkOf({ ...base, links: { stay: 'https://stay.example.com' } }, 'afterglow')).toBe('https://stay.example.com');
+    expect(stayLinkOf(base, '')).toBeUndefined();
+    expect(stayLinkOf({ id: 'f', location: ' ' }, 'afterglow')).toBeUndefined();
   });
 });
