@@ -7,6 +7,10 @@ export const es_profileLogic: Dictionary = {
   '{theme} comes with Afterglow Plus. Preview every theme here; Afterglow and Aurora are free.':
     '{theme} viene con Afterglow Plus. Prueba aquí todos los temas; Afterglow y Aurora son gratis.',
   'Couldn’t change the theme': 'No se pudo cambiar el tema',
+  'Couldn’t change the look': 'No se pudo cambiar el aspecto',
+  'Liquid Glass': 'Liquid Glass',
+  'Glassy buttons, bars and sheets that catch the light. Free with every theme. Afterglow starts again in the new look.':
+    'Botones, barras y paneles de cristal que atrapan la luz. Gratis con cualquier tema. Afterglow se reinicia con el nuevo aspecto.',
   'Made just for you': 'Hecho solo para ti',
   'A GIFT': 'UN REGALO',
   "{theme}: a look for your whole Afterglow, and nobody else's. Put it on, or keep looking.":

@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { DEFAULT_THEME, isThemeId, PALETTES, rgbaOf, SPECTRUM, type ThemeId } from './palettes';
-import { readStoredTheme } from './storedTheme';
+import { readStoredGlass, readStoredTheme } from './storedTheme';
 
 /**
  * Design tokens. Every screen pulls from here so the look stays consistent
@@ -13,13 +13,15 @@ import { readStoredTheme } from './storedTheme';
 /** The theme the app wears this time it runs (chosen on Settings → App theme; a new one applies on restart). */
 export const THEME_ID: ThemeId = startingTheme();
 const palette = PALETTES[THEME_ID];
+/** Liquid Glass (a free switch on Settings → App theme, off unless chosen; like the theme, it applies on restart). Off: the plain frosted look. */
+export const GLASS: boolean = readStoredGlass();
 
 export const color = {
   night: palette.night, // app background
   nightRaised: palette.nightRaised, // sheets, raised surfaces (under blur)
-  glass: glassOf(0.06), // cards and rows: clear glass holding a breath of the theme's glow
+  glass: GLASS ? glassOf(0.06) : 'rgba(255,255,255,0.06)', // cards and rows (with Liquid Glass: holding a breath of the theme's glow)
   hairline: 'rgba(255,255,255,0.10)',
-  rim: 'rgba(255,255,255,0.2)', // the lit top edge of glass, where the light lands
+  rim: GLASS ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.10)', // a card's top edge: lit with Liquid Glass, else just the hairline
 
   moon: '#F3F0FF', // primary text
   moonDim: 'rgba(243,240,255,0.62)', // secondary text
@@ -42,8 +44,8 @@ export const glowA = (alpha: number) => rgbaOf(palette.glow, alpha);
 export const glowDeepA = (alpha: number) => rgbaOf(palette.glowDeep, alpha);
 export const nightA = (alpha: number) => rgbaOf(palette.night, alpha);
 export const raisedA = (alpha: number) => rgbaOf(palette.nightRaised, alpha);
-/** A solid accent button as tinted glass: light caught along its top edge, a soft glow around the rest. */
-export const accentEdge = { borderWidth: 1, borderColor: glowA(0.35), borderTopColor: 'rgba(255,255,255,0.3)' };
+/** With Liquid Glass, a solid accent button as tinted glass: light caught along its top edge, a soft glow around the rest. */
+export const accentEdge: { borderWidth?: number; borderColor?: string; borderTopColor?: string } = GLASS ? { borderWidth: 1, borderColor: glowA(0.35), borderTopColor: 'rgba(255,255,255,0.3)' } : {};
 /** A page's content on a wide screen (the website): a centred column, like Settings. Phones are narrower, so it changes nothing there. */
 export const pageColumn = { alignSelf: 'center', width: '100%', maxWidth: 640 } as const;
 /** A fixed colour token (amber, coral) at an opacity. */

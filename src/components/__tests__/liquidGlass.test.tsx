@@ -3,6 +3,9 @@ import { act, fireEvent, render } from '@testing-library/react-native';
 import { AccessibilityInfo, Text } from 'react-native';
 import { GlassCircleButton as Button } from '../GlassCircleButton';
 
+// Liquid Glass switched on (App theme page): read as the app starts.
+jest.mock('../../theme/storedTheme', () => ({ readStoredTheme: () => undefined, writeStoredTheme: () => true, readStoredGlass: () => true, writeStoredGlass: () => true }));
+
 // Reduce transparency, as the phone reports it (listened to once, the first time glass is drawn).
 const changes: ((on: boolean) => void)[] = [];
 jest.spyOn(AccessibilityInfo, 'addEventListener').mockImplementation(((event: string, handler: (on: boolean) => void) => {
