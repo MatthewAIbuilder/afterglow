@@ -3,30 +3,30 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { LANGUAGE, LOCALE, t, tn } from '../../i18n';
-import { PARTNER_NOTE, stayDates, stayLinkOf, stayMapUrl, thingsToDoLink, townOf, type StayExtra, type StayTrip } from './partners';
+import { PARTNER_NOTE, stayDates, stayLinkOf, stayMapUrl, thingsToDoLink, townOf, type StayExtra, type StayKind, type StayTrip } from './partners';
 import { StayMap } from './StayMap';
 
-/** The map's height: Stay22 asks for at least 450 so its list and filters fit. */
-const MAP_HEIGHT = 460;
+/** The map's height: Stay22 asks for at least 450; a little more shows more of the map. */
+const MAP_HEIGHT = 520;
 
 const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 /**
  * "Where to stay" for a festival or a show: the nights (in the day it starts,
- * out the day after it ends, or a night either side), and Stay22's live list
- * or map of places near the venue with prices, right on the page. Choosing a
- * place opens the booking site. With a crew going, it searches for the whole
+ * out the day after it ends, or a night either side), and Stay22's live map
+ * of places near the venue with prices (all, or only hotels or homes), right
+ * on the page. Choosing a place opens the booking site. With a crew going, it searches for the whole
  * crew at first (bigger places), or just you. A trip of more than one night
  * also links to things to do in town. Says Afterglow may earn a commission.
  * Nothing when there's nowhere to point at.
  */
 export function StayCard({ trip, name, crew }: { trip: StayTrip & { links?: { stay?: string } }; name: string; crew?: { size: number } }) {
   const [nights, setExtra] = useState<StayExtra>({});
-  const [view, setView] = useState<'listview' | 'map'>('listview');
+  const [kind, setKind] = useState<StayKind>('all');
   const hasCrew = !!crew && crew.size > 1;
   const [forCrew, setForCrew] = useState(true);
   const extra: StayExtra = { ...nights, ...(hasCrew && forCrew ? { adults: crew.size } : {}) };
-  const map = stayMapUrl(trip, { extra, view, accent: color.glow, language: LANGUAGE });
+  const map = stayMapUrl(trip, { extra, kind, accent: color.glow, language: LANGUAGE });
   const all = stayLinkOf(trip, undefined, extra);
   const todo = thingsToDoLink(trip);
   if (!map || !all) return null;
@@ -54,8 +54,11 @@ export function StayCard({ trip, name, crew }: { trip: StayTrip & { links?: { st
       <Text style={styles.title}>{d ? tn(d.nights, 'One night near {place}', '{n} nights near {place}', { place }) : t('Places near {place}', { place })}</Text>
       {d ? <Text style={styles.dates}>{t('Check in {in}, check out {out}', { in: day(d.checkin), out: day(d.checkout) })}</Text> : null}
       <View style={styles.chips}>
-        {chip(t('List'), view === 'listview', () => (haptic.select(), setView('listview')), t('Show places to stay as a list'))}
-        {chip(t('Map'), view === 'map', () => (haptic.select(), setView('map')), t('Show places to stay on a map'))}
+        {chip(t('All places'), kind === 'all', () => (haptic.select(), setKind('all')), t('Show all places to stay'))}
+        {chip(t('Hotels'), kind === 'hotels', () => (haptic.select(), setKind('hotels')), t('Show only hotels'))}
+        {chip(t('Homes'), kind === 'homes', () => (haptic.select(), setKind('homes')), t('Show only homes and rentals'))}
+      </View>
+      <View style={styles.chips}>
         {d ? chip(t('Arrive a day early'), !!extra.early, () => toggle('early'), t('Arrive a day early')) : null}
         {d ? chip(t('Stay a night longer'), !!extra.late, () => toggle('late'), t('Stay a night longer')) : null}
         {hasCrew ? chip(t('Your crew of {n}', { n: crew.size }), forCrew, () => (haptic.select(), setForCrew(true)), t('Places for your crew of {n}', { n: crew.size })) : null}
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
   kicker: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
   title: { ...type.headline, color: color.moon },
   dates: { ...type.label, color: color.moonDim },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginVertical: space.xs },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xs },
   chip: {
     paddingHorizontal: space.md,
     paddingVertical: 6,

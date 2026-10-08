@@ -33,12 +33,15 @@ describe('where to stay', () => {
     expect(app.getByText(/^3 nights near /)).toBeTruthy();
     const map = () => app.getByTestId('stay-map').props as { source: { uri: string }; onShouldStartLoadWithRequest: (r: { url: string; isTopFrame?: boolean }) => boolean };
     expect(map().source.uri.startsWith('https://www.stay22.com/embed/gm?')).toBe(true);
-    expect(query(map().source.uri)).toMatchObject({ aid: 'afterglow', checkin: '2026-11-06', checkout: '2026-11-09', viewmode: 'listview', mapstyle: 'dark', campaign: 'edc-orlando-26' });
+    expect(query(map().source.uri)).toMatchObject({ aid: 'afterglow', checkin: '2026-11-06', checkout: '2026-11-09', viewmode: 'map', mapstyle: 'dark', hideshare: 'true', campaign: 'edc-orlando-26' });
 
     await fireEvent.press(app.getByLabelText('Arrive a day early'));
-    await fireEvent.press(app.getByLabelText('Show places to stay on a map'));
+    await fireEvent.press(app.getByLabelText('Show only homes and rentals'));
     expect(app.getByText(/^4 nights near /)).toBeTruthy();
-    expect(query(map().source.uri)).toMatchObject({ checkin: '2026-11-05', checkout: '2026-11-09', viewmode: 'map' });
+    expect(query(map().source.uri)).toMatchObject({ checkin: '2026-11-05', checkout: '2026-11-09', disablehotels: 'true' });
+    await fireEvent.press(app.getByLabelText('Show only hotels'));
+    expect(query(map().source.uri)).toMatchObject({ disablerentals: 'true' });
+    expect(query(map().source.uri).disablehotels).toBeUndefined();
 
     // Stay22's own pages stay in the card; a booking opens in the browser.
     expect(map().onShouldStartLoadWithRequest({ url: 'https://www.stay22.com/embed/gm?x=1' })).toBe(true);

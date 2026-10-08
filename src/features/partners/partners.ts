@@ -128,18 +128,25 @@ export function stayLinkOf(
   return q ? `https://www.stay22.com/allez/roam?${q.toString()}` : undefined;
 }
 
+/** Which places to show: everything, only hotels, or only homes (rentals). */
+export type StayKind = "all" | "hotels" | "homes";
+
 /**
  * Stay22's live map of places to stay around the venue for those nights,
- * with prices (an embed), as a list or a map, in Afterglow's colours. Pure.
+ * with prices (an embed): a dark map at first (or a list), all places or
+ * only hotels or homes, in Afterglow's colours, without its share button. Pure.
  */
 export function stayMapUrl(
   trip: StayTrip,
-  opts: { aid?: string; extra?: StayExtra; view?: "listview" | "map"; accent?: string; language?: string } = {},
+  opts: { aid?: string; extra?: StayExtra; view?: "listview" | "map"; kind?: StayKind; accent?: string; language?: string } = {},
 ): string | undefined {
   const q = stayQuery(trip, opts.aid ?? STAY22_AID, opts.extra ?? {});
   if (!q) return undefined;
   q.set("mapstyle", "dark");
-  q.set("viewmode", opts.view ?? "listview");
+  q.set("viewmode", opts.view ?? "map");
+  if (opts.kind === "hotels") q.set("disablerentals", "true");
+  if (opts.kind === "homes") q.set("disablehotels", "true");
+  q.set("hideshare", "true");
   if (opts.accent && /^#?[0-9a-f]{6}$/i.test(opts.accent)) q.set("maincolor", opts.accent.replace("#", ""));
   if (opts.language) q.set("lang", opts.language);
   return `https://www.stay22.com/embed/gm?${q.toString()}`;
