@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   pass: { backgroundColor: color.glass, borderColor: color.hairline },
   love: { backgroundColor: glowA(0.2), borderColor: glowA(0.45) },
   loveStrong: { backgroundColor: glowA(0.34), borderColor: glowA(0.6) },
-  wide: { flex: 0, alignSelf: 'stretch' },
+  wide: { flex: -1, alignSelf: 'stretch' }, // -1, not 0: a browser reads `flex: 0` as zero height
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   choiceText: { ...type.headline, color: color.moonDim },
   unsure: { marginTop: space.lg, paddingVertical: space.sm },
