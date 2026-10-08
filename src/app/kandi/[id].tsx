@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfettiBurst } from '../../components/ConfettiBurst';
 import { NightSky } from '../../components/NightSky';
@@ -72,6 +72,10 @@ export default function KandiCodeScreen() {
   const beads = k?.beads ?? card?.beads ?? 'rainbow';
   const from = card?.handle ? `@${card.handle}` : undefined;
   const signedIn = !!me && !!social.profile;
+  // Firebase restores the sign-in after the page opens (slower on the website): until it and the
+  // profile are known, don't ask someone who's already signed in to make a profile.
+  const checking = !social.ready || (!!me && social.profileStatus === 'loading');
+  const profileFailed = !!me && !social.profile && social.profileStatus === 'failed';
 
   return (
     <View style={styles.root}>
@@ -87,14 +91,40 @@ export default function KandiCodeScreen() {
           <KandiBracelet word={word} beads={beads} charm={k?.charm} size={240} label={t('A kandi bracelet spelling {word}', { word })} />
           {state.at === 'got' && state.now ? <ConfettiBurst spread={160} /> : null}
         </View>
-        {!signedIn ? (
+        {checking ? (
+          <ActivityIndicator color={color.moonDim} style={styles.spinner} accessibilityLabel={t('Loading')} />
+        ) : profileFailed ? (
           <>
-            <Text style={styles.body}>{t('Make your Afterglow profile to pick it up. It goes in your garden, with a note only you read.')}</Text>
-            <Pressable onPress={() => router.push(social.user ? '/profile-edit' : '/account')} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-              <Text style={styles.primaryText}>{social.user ? t('Finish your profile') : t('Create your profile')}</Text>
+            <Text style={styles.body}>{SOCIAL_ERROR_COPY.network}</Text>
+            <Pressable onPress={() => social.reloadProfile()} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+              <Text style={styles.primaryText}>{t('Try again')}</Text>
             </Pressable>
-            <Text style={styles.hint}>{t('Then open this link or scan the code again.')}</Text>
           </>
+        ) : !signedIn ? (
+          social.user ? (
+            <>
+              <Text style={styles.body}>{t('Finish your Afterglow profile to pick it up. It goes in your garden, with a note only you read.')}</Text>
+              <Pressable onPress={() => router.push('/profile-edit')} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+                <Text style={styles.primaryText}>{t('Finish your profile')}</Text>
+              </Pressable>
+              <Text style={styles.hint}>{t('Then you come back here to pick it up.')}</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.body}>
+                {Platform.OS === 'web'
+                  ? t('Sign in to pick it up. It goes in your garden, with a note only you read. The website keeps its own sign-in, so use the same email as in the app.')
+                  : t('Sign in to pick it up. It goes in your garden, with a note only you read.')}
+              </Text>
+              <Pressable onPress={() => router.push({ pathname: '/account', params: { mode: 'signin' } })} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+                <Text style={styles.primaryText}>{t('Sign in')}</Text>
+              </Pressable>
+              <Pressable onPress={() => router.push('/account')} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+                <Text style={styles.primaryText}>{t('New here? Create your profile')}</Text>
+              </Pressable>
+              <Text style={styles.hint}>{t('Then you come back here to pick it up.')}</Text>
+            </>
+          )
         ) : state.at === 'loading' ? null : state.at === 'open' ? (
           <Pressable onPress={() => void pickUp()} disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}>
             <Text style={styles.primaryText}>{t('Put it in my garden')}</Text>
@@ -136,6 +166,7 @@ const styles = StyleSheet.create({
   from: { ...type.headline, color: color.moonDim, marginTop: -space.sm },
   preview: { alignItems: 'center' },
   body: { ...type.body, color: color.moonDim },
+  spinner: { marginTop: space.lg },
   hint: { ...type.caption, color: color.moonFaint, textAlign: 'center' },
   note: { ...type.title, color: color.moon, textAlign: 'center' },
   primary: { alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glowDeep, ...accentEdge, marginTop: space.sm },

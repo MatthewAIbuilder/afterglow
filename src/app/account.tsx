@@ -23,9 +23,10 @@ import { t } from '../i18n';
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const social = useSocial();
-  // Switch account's "Create a new account" passes the email already typed there.
-  const params = useLocalSearchParams<{ email?: string }>();
-  const [mode, setMode] = useState<'create' | 'signin'>('create');
+  // Switch account's "Create a new account" passes the email already typed there;
+  // pages that ask people to sign in (a kandi link) open it on "Sign in".
+  const params = useLocalSearchParams<{ email?: string; mode?: string }>();
+  const [mode, setMode] = useState<'create' | 'signin'>(params.mode === 'signin' ? 'signin' : 'create');
   const [email, setEmail] = useState(typeof params.email === 'string' ? params.email : '');
   const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
