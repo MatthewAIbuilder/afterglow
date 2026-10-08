@@ -10,23 +10,28 @@ import { CrowdVideos } from '../../features/festivals/CrowdVideos';
 import { eventPath, isShowEvent } from '../../features/festivalMode/showEvent';
 import { useEventLookup } from '../../features/festivalMode/useEvent';
 import { haptic } from '../../lib/haptics';
+import { useCatalog } from '../../state/catalog';
 import { goBack } from '../../lib/nav';
 import { color, glowA, radius, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
 
 /**
- * Every video people filmed at a festival or a one-night show, opened by
- * tapping where a crowd video was filmed in Discover: the place, when and
- * where it is, a way to its full page, and the videos night by night
- * (throwbacks from earlier years of the same festival too).
+ * Every video from a festival or a one-night show, opened by tapping where a
+ * video was filmed in Discover: the place, when and where it is, a way to its
+ * full page, its sets on YouTube and SoundCloud (played in Discover), and the
+ * crowd's videos night by night (throwbacks from earlier years of the same
+ * festival too).
  */
 export default function PlaceVideosScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const event = useEventLookup()(id);
+  const catalog = useCatalog();
   if (!event) return <Missing title={t('Festival not found')} line={t('This festival isn’t on Afterglow any more, or the link isn’t quite right.')} />;
   const show = isShowEvent(event);
   const about = [event.dates, event.location].filter(Boolean).join(' · ');
+  // Sets from there on YouTube or SoundCloud: Discover plays them, focused on the festival.
+  const sets = catalog.clips.filter((c) => c.festivalId === event.id).length;
 
   return (
     <View style={styles.root}>
@@ -39,17 +44,33 @@ export default function PlaceVideosScreen() {
             {event.name}
           </Text>
           {about ? <Text style={styles.about}>{about}</Text> : null}
-          <Pressable
-            onPress={() => {
-              haptic.select();
-              router.push(eventPath(event));
-            }}
-            accessibilityRole="link"
-            style={({ pressed }) => [styles.page, pressed && { opacity: 0.7 }]}
-          >
-            <Text style={styles.pageText}>{show ? t('Show page') : t('Festival page')}</Text>
-            <ChevronIcon color={color.glow} direction="right" size={12} />
-          </Pressable>
+          <View style={styles.links}>
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push(eventPath(event));
+              }}
+              accessibilityRole="link"
+              style={({ pressed }) => [styles.page, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.pageText}>{show ? t('Show page') : t('Festival page')}</Text>
+              <ChevronIcon color={color.glow} direction="right" size={12} />
+            </Pressable>
+            {sets ? (
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  router.navigate({ pathname: '/', params: { festival: event.id } });
+                }}
+                accessibilityRole="link"
+                accessibilityLabel={t('Watch the {n} sets from here in Discover', { n: sets })}
+                style={({ pressed }) => [styles.page, pressed && { opacity: 0.7 }]}
+              >
+                <Text style={styles.pageText}>{t('Watch the sets · {n}', { n: sets })}</Text>
+                <ChevronIcon color={color.glow} direction="right" size={12} />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
         <CrowdVideos festival={event} />
       </ScrollView>
@@ -69,12 +90,11 @@ const styles = StyleSheet.create({
   kicker: { ...type.label, color: color.glow, letterSpacing: 1.2 },
   title: { ...type.largeTitle, color: color.moon },
   about: { ...type.body, color: color.moonDim },
+  links: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
   page: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     gap: space.xs,
-    marginTop: space.sm,
     paddingHorizontal: space.md,
     paddingVertical: space.xs + 2,
     borderRadius: radius.pill,

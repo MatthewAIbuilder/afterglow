@@ -110,7 +110,8 @@ describe('starting discovery from anything', () => {
     await fireEvent.press(app.getByLabelText('Discover Solstice 2026'));
     await settle();
     await settle();
-    expect(app.getByText('Solstice 2026')).toBeTruthy();
+    // The header, and the clip's card leading with its festival.
+    expect(app.getAllByText('Solstice 2026').length).toBeGreaterThan(0);
   });
 
   it('from the artist page: More like this', async () => {

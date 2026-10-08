@@ -348,13 +348,16 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   const context = ticket ? festival : undefined;
   const own = catalog.festival(clip.festivalId);
   const ownSet = own && setFor(own, artist.id);
-  // A crowd video's title is just where it was filmed (no "From the crowd" or "Throwback"), so no line repeats it.
+  // Every card leads with where it was filmed, then the artist, then where they play next. A crowd video's place is
+  // its festival, show or throwback (no "From the crowd"); a YouTube or SoundCloud set's is its festival on Afterglow,
+  // or else its own title ("Live at Red Rocks 2025").
   const title = community
     ? crowdPlace(clip.title, own?.name)
-    : shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title);
-  const meta = community ? '' : own && ownSet ? describeSet(own, ownSet) : (own?.name ?? '');
-  // A crowd video leads with where it was filmed; when that's a festival or show on Afterglow, it opens every video tagged there.
-  const place = community && title ? lookupEvent(clip.festivalId) : undefined;
+    : (own?.name ?? shownClipTitle(players.length > 1 ? titleWithoutPartners(clip.title, players.slice(1).map((a) => a.name)) : clip.title));
+  // Their set there (day, time, stage) when there's no ticket to show; the festival's name is already the title.
+  const meta = community ? '' : own && ownSet ? describeSet(own, ownSet) : '';
+  // When the place is a festival or show on Afterglow, it opens every video from there.
+  const place = title ? lookupEvent(clip.festivalId) : undefined;
   const placeTitle = (lines?: number) =>
     title ? (
       place ? (
@@ -578,13 +581,8 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
     const info = (
       <>
         {upNextPill}
-        {community ? placeTitle(tall ? 1 : undefined) : null}
+        {placeTitle(tall ? 1 : undefined)}
         {artistButton}
-        {title && !community ? (
-          <Text style={styles.title} numberOfLines={tall ? 1 : undefined}>
-            {title}
-          </Text>
-        ) : null}
         {community ? null : metaLine(!!tall)}
         {community ? (
           // Who filmed it is their photo on the rail; the menu sits beside where they play.
@@ -796,9 +794,8 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
 
       <View style={[styles.info, { bottom: bottomSpace + space.lg }]} pointerEvents="box-none">
         {upNextPill}
-        {community ? placeTitle() : null}
+        {placeTitle()}
         {artistButton}
-        {title && !community ? <Text style={styles.title}>{title}</Text> : null}
         {metaLine(false)}
         {media?.provider === 'video' && videoFailed && <Text style={styles.noticeText}>{t('This video isn’t available right now.')}</Text>}
         {media?.provider === 'soundcloud' && videoFailed && (
@@ -854,8 +851,9 @@ const styles = StyleSheet.create({
   },
   burst: { position: 'absolute', width: BURST, height: BURST },
   info: { position: 'absolute', left: space.xl, right: 96 },
-  artistRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
-  artistText: { marginLeft: space.md, flex: 1 },
+  // Kept inside the column, so a long "why" line never runs under the buttons beside it.
+  artistRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', maxWidth: '100%' },
+  artistText: { marginLeft: space.md, flex: 1, flexShrink: 1 },
   name: { ...type.headline, color: color.moon, ...shadow },
   b2b: { color: color.moonDim, fontWeight: '400' },
   match: { ...type.label, color: color.glow, fontVariant: ['tabular-nums'], marginTop: 1, ...shadow },
