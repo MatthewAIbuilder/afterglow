@@ -3,7 +3,7 @@ import { parseCatalogFile } from '../../../data/file';
 import type { Festival } from '../../../data/models';
 import { legalDocument, PARTNER_PRIVACY, PARTNER_TERMS } from '../../legal/documents';
 import { prepChecklist, sectionNotes } from '../../prep/checklist';
-import { AMAZON_NOTE, cleanShopLinks, earnsFrom, hasPartnerLinks, isAmazonLink, isTapFestivalId, PARTNER_NOTE, partnerLinks, SHOP_NOTE, isStay22Page, shopLinksFor, shopNotes, showTrip, stayDates, stayLinkOf, stayMapUrl } from '../partners';
+import { AMAZON_NOTE, cleanShopLinks, earnsFrom, hasPartnerLinks, isAmazonLink, isTapFestivalId, PARTNER_NOTE, partnerLinks, SHOP_NOTE, isStay22Page, shopLinksFor, thingsToDoLink, townOf, shopNotes, showTrip, stayDates, stayLinkOf, stayMapUrl } from '../partners';
 import { countTicketTapOnce } from '../ticketTaps';
 
 const fest = (links?: Festival['links']) =>
@@ -192,5 +192,26 @@ describe('the stays map', () => {
     expect(isStay22Page('https://stay22.com/x')).toBe(true);
     expect(isStay22Page('https://notstay22.com/x')).toBe(false);
     expect(isStay22Page('https://www.booking.com/x')).toBe(false);
+  });
+});
+
+describe('crews and things to do', () => {
+  const trip = { id: 'edc-orlando-26', location: 'Tinker Field, Orlando, FL', startDate: '2026-11-06', endDate: '2026-11-08' };
+
+  it('searches for the whole crew (up to Stay22’s limit), never for one', () => {
+    expect(new URL(stayMapUrl(trip, { aid: 'afterglow', extra: { adults: 6 } })!).searchParams.get('adults')).toBe('6');
+    expect(new URL(stayMapUrl(trip, { aid: 'afterglow', extra: { adults: 40 } })!).searchParams.get('adults')).toBe('16');
+    expect(new URL(stayMapUrl(trip, { aid: 'afterglow', extra: { adults: 1 } })!).searchParams.has('adults')).toBe(false);
+    expect(stayLinkOf({ ...trip, links: { stay: 'https://stay.example.com' } }, 'afterglow', { adults: 4 })).toMatch(/adults=4/);
+  });
+
+  it('things to do in town, for a trip of more than one night', () => {
+    expect(townOf('Tinker Field, Orlando, FL')).toBe('Orlando, FL');
+    expect(townOf('Orlando, FL')).toBe('Orlando, FL');
+    const q = Object.fromEntries(new URL(thingsToDoLink(trip, 'afterglow')!).searchParams);
+    expect(thingsToDoLink(trip, 'afterglow')!.startsWith('https://www.stay22.com/allez/getyourguide?')).toBe(true);
+    expect(q).toEqual({ aid: 'afterglow', address: 'Orlando, FL', checkin: '2026-11-06', checkout: '2026-11-09', campaign: 'edc-orlando-26-todo' });
+    expect(thingsToDoLink({ ...trip, endDate: '2026-11-06' }, 'afterglow')).toBeUndefined();
+    expect(thingsToDoLink({ id: 'x', location: 'Here' }, 'afterglow')).toBeUndefined();
   });
 });

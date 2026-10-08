@@ -355,4 +355,11 @@ export const es_festivalPage: Dictionary = {
   'Places to stay near {festival}, with prices': 'Alojamiento cerca de {festival}, con precios',
   'See all places to stay near {festival}. Opens in your browser.': 'Ver todo el alojamiento cerca de {festival}. Se abre en tu navegador.',
   'See all places to stay ↗': 'Ver todo el alojamiento ↗',
+  'Your crew of {n}': 'Tu grupo de {n}',
+  'Places for your crew of {n}': 'Alojamiento para tu grupo de {n}',
+  'Just me': 'Solo yo',
+  'Places for just you': 'Alojamiento solo para ti',
+  'Things to do in {town} while you’re there. Opens in your browser.': 'Qué hacer en {town} mientras estás allí. Se abre en tu navegador.',
+  'Things to do in {town} ↗': 'Qué hacer en {town} ↗',
+  'Tours and day trips around your nights': 'Tours y excursiones para tus días allí',
 };
