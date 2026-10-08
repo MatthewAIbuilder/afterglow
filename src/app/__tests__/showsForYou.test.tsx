@@ -85,6 +85,16 @@ describe('shows for you', () => {
     open.mockRestore();
   });
 
+  it('a show suggests places to stay near the venue that night', async () => {
+    const app = await renderApp('/show/edm-2');
+    await flush();
+    expect(app.getByText('One night near Club Two')).toBeTruthy();
+    const uri = (app.getByTestId('stay-map').props as { source: { uri: string } }).source.uri;
+    const q = new URL(uri).searchParams;
+    expect([q.get('address'), q.get('campaign'), q.get('checkin')?.length]).toEqual(['Club Two, Denver, CO', 'edm-2', 10]);
+    await app.unmount();
+  });
+
   it('“I’m going” on a show puts it in your plans on Profile, apart from your festivals', async () => {
     const app = await renderApp('/show/edm-2');
     await flush();

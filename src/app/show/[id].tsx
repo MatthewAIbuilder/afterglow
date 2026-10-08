@@ -21,6 +21,8 @@ import { festivalLight } from '../../features/festivals/light';
 import { rankShow } from '../../features/festivals/showsForYou';
 import { artistSignals, whyLine } from '../../features/taste/why';
 import { haptic } from '../../lib/haptics';
+import { StayCard } from '../../features/partners/StayCard';
+import { showTrip } from '../../features/partners/partners';
 import { shareMessage } from '../../lib/share';
 import { useToday } from '../../lib/useToday';
 import { useCatalog } from '../../state/catalog';
@@ -147,6 +149,12 @@ export default function ShowScreen() {
             </View>
           )}
         </View>
+        {/* Travelling for it: places to stay near the venue that night. */}
+        {over ? null : (
+          <View style={styles.stay}>
+            <StayCard trip={showTrip(show)} name={title} />
+          </View>
+        )}
         {/* Claimed by an event organizer on Afterglow: who's hosting it. */}
         <HostedBy show={show} />
 
@@ -183,6 +191,7 @@ function why(artist: Artist, clips: Parameters<typeof artistSignals>[1], reactio
 }
 
 const styles = StyleSheet.create({
+  stay: { paddingHorizontal: space.xl },
   root: { flex: 1, backgroundColor: color.night },
   hero: { paddingHorizontal: space.xl },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
