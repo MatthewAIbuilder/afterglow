@@ -3,7 +3,7 @@ import { parseCatalogFile } from '../../../data/file';
 import type { Festival } from '../../../data/models';
 import { legalDocument, PARTNER_PRIVACY, PARTNER_TERMS } from '../../legal/documents';
 import { prepChecklist, sectionNotes } from '../../prep/checklist';
-import { AMAZON_NOTE, cleanShopLinks, earnsFrom, hasPartnerLinks, isAmazonLink, isTapFestivalId, PARTNER_NOTE, partnerLinks, SHOP_NOTE, shopLinksFor, shopNotes, stayLinkOf } from '../partners';
+import { AMAZON_NOTE, cleanShopLinks, earnsFrom, hasPartnerLinks, isAmazonLink, isTapFestivalId, PARTNER_NOTE, partnerLinks, SHOP_NOTE, isStay22Page, shopLinksFor, shopNotes, showTrip, stayDates, stayLinkOf, stayMapUrl } from '../partners';
 import { countTicketTapOnce } from '../ticketTaps';
 
 const fest = (links?: Festival['links']) =>
@@ -161,5 +161,36 @@ describe('places to stay, made for every festival', () => {
     expect(stayLinkOf({ ...base, links: { stay: 'https://stay.example.com' } }, 'afterglow')).toBe('https://stay.example.com');
     expect(stayLinkOf(base, '')).toBeUndefined();
     expect(stayLinkOf({ id: 'f', location: ' ' }, 'afterglow')).toBeUndefined();
+  });
+});
+
+describe('the stays map', () => {
+  const trip = { id: 'hijinx-festival-2026', location: 'Pennsylvania Convention Center, Philadelphia, PA', startDate: '2026-12-30', endDate: '2026-12-31' };
+
+  it('nights, with a night either side on request', () => {
+    expect(stayDates(trip)).toEqual({ checkin: '2026-12-30', checkout: '2027-01-01', nights: 2 });
+    expect(stayDates(trip, { early: true, late: true })).toEqual({ checkin: '2026-12-29', checkout: '2027-01-02', nights: 4 });
+    expect(stayDates({ id: 'x', location: 'Here' })).toBeUndefined();
+  });
+
+  it('Stay22’s embed, dark, in our colour, as a list or a map', () => {
+    const q = Object.fromEntries(new URL(stayMapUrl(trip, { aid: 'afterglow', view: 'map', accent: '#8B7CFF', language: 'es' })!).searchParams);
+    expect(q).toMatchObject({ aid: 'afterglow', checkin: '2026-12-30', checkout: '2027-01-01', mapstyle: 'dark', viewmode: 'map', maincolor: '8B7CFF', lang: 'es', campaign: 'hijinx-festival-2026' });
+    expect(stayMapUrl(trip, { aid: '' })).toBeUndefined();
+    expect(new URL(stayMapUrl(trip, { aid: 'afterglow', accent: 'rgba(1,2,3,1)' })!).searchParams.has('maincolor')).toBe(false);
+  });
+
+  it('a show is one night at its venue; a catalogue link gives way to extra nights', () => {
+    expect(showTrip({ id: 'edm-1', date: '2026-11-14', venue: 'The Vault', location: 'Orlando, FL' })).toEqual({ id: 'edm-1', location: 'The Vault, Orlando, FL', startDate: '2026-11-14', endDate: '2026-11-14' });
+    const own = { ...trip, links: { stay: 'https://stay.example.com' } };
+    expect(stayLinkOf(own, 'afterglow')).toBe('https://stay.example.com');
+    expect(stayLinkOf(own, 'afterglow', { early: true })).toMatch(/^https:\/\/www\.stay22\.com\/allez\/roam\?/);
+  });
+
+  it('knows Stay22’s own pages', () => {
+    expect(isStay22Page('https://www.stay22.com/embed/gm')).toBe(true);
+    expect(isStay22Page('https://stay22.com/x')).toBe(true);
+    expect(isStay22Page('https://notstay22.com/x')).toBe(false);
+    expect(isStay22Page('https://www.booking.com/x')).toBe(false);
   });
 });

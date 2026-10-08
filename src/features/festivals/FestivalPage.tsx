@@ -35,6 +35,7 @@ import { starsShort } from '../crews/together';
 import { useFollowedArtists } from '../../state/followedArtists';
 import { useCrews } from '../../state/crews';
 import { OfficialLinks } from './OfficialLinks';
+import { StayCard } from '../partners/StayCard';
 import { GetReadyCard } from '../prep/GetReadyCard';
 import { FestivalWeekCard } from '../festivalWeek/FestivalWeekCard';
 import { TryFestivalMode } from '../festivalMode/FestivalModeCard';
@@ -307,6 +308,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
             <View style={styles.pad}>
               {/* Tickets and the festival's own site, when the catalogue has them. */}
               <OfficialLinks festival={whole} over={soon === t('Over')} />
+              {/* Where to stay: live places near the venue for its nights, with prices. */}
+              {soon !== t('Over') ? <StayCard trip={whole} name={festival.name} /> : null}
               {/* Once you're going: the days (your weekend) into your calendar, and your checklist. */}
               {isGoing(whole.id) && soon !== t('Over') ? (
                 <View style={styles.infoPills}>
