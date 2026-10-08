@@ -15,6 +15,8 @@ import { goBack } from '../../lib/nav';
 import { useMemories } from '../../state/memories';
 import { color, radius, space, type } from '../../theme/tokens';
 import { useMemoryPicker } from '../memories/useAddMemory';
+import { useVideoDrafts } from '../memories/useVideoDrafts';
+import { saveDraft } from '../memories/webDrafts';
 import { FlipIcon, PhotosIcon } from './icons';
 import { elapsedLabel, IDLE, MIN_RECORD_MS, RECORD_MAX_SEC, recordButton, type RecordState } from './record';
 import { RecordButton } from './RecordButton';
@@ -62,6 +64,7 @@ export function WebCamera({ chip, filming, fallback }: Props) {
   const [saving, setSaving] = useState(false);
   const recording = rec.phase === 'recording';
   const leaving = useRef(false);
+  const drafts = useVideoDrafts();
 
   // The camera (and the microphone, when allowed), started again when you flip it.
   useEffect(() => {
@@ -134,17 +137,24 @@ export function WebCamera({ chip, filming, fallback }: Props) {
       haptic.settle();
       setSaving(true);
       const v = preview.current;
-      // A link to the recording in this page: the tagging sheet shows it, and sharing uploads it.
-      setDraft({
-        uri: URL.createObjectURL(blob),
-        source: 'camera',
-        durationSec: Math.max(1, Math.round(Math.min(length, RECORD_MAX_SEC * 1000) / 1000)),
-        ...(v?.videoWidth && v.videoHeight ? { width: v.videoWidth, height: v.videoHeight } : {}),
-        bytes: blob.size,
-        moment: { when: new Date(began) },
-        keptBySharing: true,
+      const durationSec = Math.max(1, Math.round(Math.min(length, RECORD_MAX_SEC * 1000) / 1000));
+      const size = v?.videoWidth && v.videoHeight ? { width: v.videoWidth, height: v.videoHeight } : {};
+      // Kept in this browser's drafts first, so going back or closing the page never loses it.
+      void saveDraft(blob, { durationSec, ...size, at: began, ...(filming ? { params: filming } : {}) }).then((draftId) => {
+        if (leaving.current) return;
+        // A link to the recording in this page: the tagging sheet shows it, and sharing uploads it.
+        setDraft({
+          uri: URL.createObjectURL(blob),
+          source: 'camera',
+          durationSec,
+          ...size,
+          bytes: blob.size,
+          moment: { when: new Date(began) },
+          keptBySharing: true,
+          ...(draftId ? { draftId } : {}),
+        });
+        router.replace(filming ? { pathname: '/memory-tag', params: filming } : '/memory-tag');
       });
-      router.replace(filming ? { pathname: '/memory-tag', params: filming } : '/memory-tag');
     },
     [setDraft, filming],
   );
@@ -215,7 +225,24 @@ export function WebCamera({ chip, filming, fallback }: Props) {
         <LinearGradient colors={['rgba(5,4,14,0)', 'rgba(5,4,14,0.85)']} style={[styles.fadeBottom, { height: insets.bottom + 220 }]} pointerEvents="none" />
 
         <View style={[styles.top, { top: insets.top + space.sm }]}>
-          <View style={styles.spacer} />
+          {drafts?.length && !recording ? (
+            // Videos filmed here and not shared yet.
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push('/drafts');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Drafts, {n}', { n: drafts.length })}
+              hitSlop={8}
+              style={({ pressed }) => [styles.drafts, pressed && styles.pressed]}
+            >
+              <GlassFill radius={radius.pill} tint={0.45} />
+              <Text style={styles.draftsText}>{t('Drafts · {n}', { n: drafts.length })}</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.spacer} />
+          )}
           <View style={styles.chip}>
             <GlassFill radius={radius.pill} tint={0.45} />
             {recording ? (
@@ -312,6 +339,8 @@ const styles = StyleSheet.create({
   fadeBottom: { position: 'absolute', bottom: 0, left: 0, right: 0 },
   top: { position: 'absolute', left: space.lg, right: space.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   spacer: { width: 40 },
+  drafts: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill },
+  draftsText: { ...type.label, color: color.moon },
   chip: { flexShrink: 1, paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill },
   chipText: { ...type.label, color: color.moon },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

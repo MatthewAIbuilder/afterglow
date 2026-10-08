@@ -26,6 +26,7 @@ import { TagPeople } from '../features/social/TagPeople';
 import { VideoPreview } from '../features/memories/VideoPreview';
 import { loudnessOf } from '../features/memories/loudness';
 import { CLIP_SUGGESTED, clipMaxFor, needsTrim, suggestWindow, type ClipWindow } from '../features/memories/trim';
+import { removeDraft, saveVideoToPhone } from '../features/memories/webDrafts';
 import { type PastEvent, pastLabel } from '../features/memories/past';
 import { throwbackSharesLine } from '../features/memories/throwbackLimit';
 import { useThrowbackShares } from '../features/memories/useThrowbackShares';
@@ -62,6 +63,9 @@ const OLD_VIDEO_MS = 30 * 24 * 3600_000;
 /** Festivals shown as choices before searching, and search results shown. */
 const FESTIVAL_CHIPS = 5;
 const FESTIVAL_RESULTS = 8;
+
+/** A video just filmed (or chosen on the website) can be trimmed when it's longer than this. */
+const TRIM_FROM_SEC = 5;
 
 export default function MemoryTagScreen() {
   // `shared`: a video you already shared (on the website, the only copy is the shared one): its tags change there.
@@ -237,8 +241,11 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const draftBytes = draft?.bytes;
   const clipMax = clipMaxFor(draftLength, draftBytes);
   const [clip, setClip] = useState<ClipWindow | undefined>(() =>
-    draftLength && needsTrim(draftLength, draftBytes) ? suggestWindow(draftLength, undefined, Math.min(CLIP_SUGGESTED, clipMax), clipMax) : undefined,
+    draftLength && needsTrim(draftLength, draftBytes) ? suggestWindow(draftLength, undefined, Math.min(CLIP_SUGGESTED, clipMax), clipMax) : fresh ? existing?.clip : undefined,
   );
+  // A video you can trim here: a new one on the website, or one you just filmed (any longer than a few seconds).
+  const trimLength = draft ? (webPost || draft.source === 'camera' ? draftLength : undefined) : fresh ? existing?.durationSec : undefined;
+  const canTrim = !!trimLength && trimLength > TRIM_FROM_SEC;
   const touchedClip = useRef(false);
   const draftUri = draft?.uri;
   useEffect(() => {
@@ -265,7 +272,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     artistId: chosenArtist,
     withArtistIds: chosenList.length > 1 ? chosenList.slice(1) : undefined,
     artistName: chosenArtist && !onAfterglow.has(chosenArtist) ? named[chosenArtist] : undefined,
-    ...(draft ? { clip } : {}),
+    ...(draft || fresh ? { clip } : {}),
     people: people.length ? people : undefined,
   };
 
@@ -317,8 +324,15 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const [crewChoice, setCrewChoice] = useState<boolean | undefined>();
   const crewOn = crewsHere.length > 0 && (crewChoice ?? !retagging);
   // With no signal it waits on the phone and goes by itself (Memories says "Waiting for signal"): no alert for that.
+  const draftId = draft?.draftId;
   const shareIt = (m: Parameters<typeof social.share>[0]) =>
-    void social.share(m).catch((e) => {
+    void social
+      .share(m)
+      // Shared to Discover: it's kept there, so its draft goes.
+      .then((r) => {
+        if (r === 'shared' && draftId) void removeDraft(draftId);
+      })
+      .catch((e) => {
       const kind = socialErrorKind(e);
       // The throwback limit's own words already say where it is.
       showAlert(
@@ -417,7 +431,40 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   };
 
   const cancel = () => {
-    if (fresh || draft?.source === 'camera') {
+    // Filmed just now and already kept (in your Memories in the app, in Drafts on the website): ask whether to keep it.
+    if ((fresh && existing) || draftId) {
+      showAlert(
+        t('Keep this video?'),
+        draftId
+          ? t('It’s in Drafts on this browser. Finish it and share it from there any time.')
+          : t('It’s in your Memories, not tagged yet. Tag it and share it from there any time.'),
+        [
+          { text: t('Keep editing'), style: 'cancel' },
+          {
+            text: t('Delete video'),
+            style: 'destructive',
+            onPress: () => {
+              leaving.current = true;
+              if (draftId) {
+                void removeDraft(draftId);
+                mem.setDraft(undefined);
+              } else if (existing) void mem.remove(existing.id);
+              goBack();
+            },
+          },
+          {
+            text: draftId ? t('Keep in drafts') : t('Keep in Memories'),
+            onPress: () => {
+              leaving.current = true;
+              if (draftId) mem.setDraft(undefined);
+              goBack();
+            },
+          },
+        ],
+      );
+      return;
+    }
+    if (draft?.source === 'camera') {
       showAlert(t('Discard this video?'), t('You just recorded it. Discarding deletes it from your Memories, and it isn’t saved anywhere else.'), [
         { text: t('Keep editing'), style: 'cancel' },
         {
@@ -476,15 +523,31 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xxl }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={styles.videoWrap}>
-          {videoUri ? <VideoPreview uri={videoUri} clip={draft ? clip : existing?.clip} style={[styles.video, { height: videoH, width: Math.min(videoH * aspect, 340) }]} /> : null}
+          {videoUri ? <VideoPreview uri={videoUri} clip={draft || fresh ? clip : existing?.clip} style={[styles.video, { height: videoH, width: Math.min(videoH * aspect, 340) }]} /> : null}
           {whenWhere ? <Text style={styles.when}>{whenWhere}</Text> : null}
+          {/* Filmed with the website's camera: a copy to keep in Photos (the app saves its recordings there by itself). */}
+          {draft?.draftId && videoUri ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                void saveVideoToPhone(videoUri, 'Afterglow.mp4').then((r) => {
+                  if (r === 'failed') showAlert(t('Couldn’t save it'), t('Try again, or share it to Discover to keep it.'));
+                });
+              }}
+              accessibilityRole="button"
+              hitSlop={8}
+              style={({ pressed }) => [styles.savePhone, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.savePhoneText}>{t('Save to phone')}</Text>
+            </Pressable>
+          ) : null}
         </View>
-        {/* On the website (on the phone, the iPhone's own picker trims). */}
-        {draft && webPost && draftLength && draftLength > 10 ? (
+        {/* A video chosen on the website, or one just filmed (the iPhone's own picker trims what you choose in the app). */}
+        {canTrim && trimLength ? (
           <>
-            <Text style={styles.section}>{needsTrim(draftLength, draftBytes) ? t('Trim') : t('Trim (optional)')}</Text>
+            <Text style={styles.section}>{needsTrim(trimLength, draftBytes) ? t('Trim') : t('Trim (optional)')}</Text>
             <TrimBar
-              durationSec={draftLength}
+              durationSec={trimLength}
               bytes={draftBytes}
               value={clip}
               onChange={(w) => {
@@ -852,6 +915,8 @@ function ArtistChoice({ guess, night, on, likely, onPress }: { guess: ArtistGues
 }
 
 const styles = StyleSheet.create({
+  savePhone: { alignSelf: 'center', marginTop: space.sm, paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  savePhoneText: { ...type.label, color: color.moon },
   root: { flex: 1, backgroundColor: color.nightRaised },
   bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, paddingBottom: space.md },
   barTitle: { ...type.headline, color: color.moon },

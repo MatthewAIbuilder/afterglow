@@ -31,6 +31,8 @@ export type PickedVideo = {
   keptBySharing?: boolean;
   /** The file's size, from the website's chooser (a big one can share a shorter part). */
   bytes?: number;
+  /** Filmed with the website's camera and kept in this browser's drafts (`webDrafts`) until it's shared or deleted. */
+  draftId?: string;
 };
 
 export type PickResult =

@@ -34,7 +34,8 @@ type Ctx = {
   /** Whether a memory was deleted since the app opened (an upload finishing late checks this). */
   wasRemoved: (id: string) => boolean;
   uriOf: (name: string) => string;
-  saveToPhotos: (id: string) => Promise<boolean>;
+  /** A memory (or its id) into Photos. A memory just kept can be passed whole, before the list has caught up. */
+  saveToPhotos: (memory: string | Memory) => Promise<boolean>;
   /** The website: videos last only while the page is open (nothing is saved), so they're kept by sharing them. */
   sessionOnly: boolean;
 };
@@ -189,8 +190,8 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
     [files],
   );
   const saveToPhotos = useCallback(
-    async (id: string) => {
-      const m = memoriesRef.current.find((x) => x.id === id);
+    async (memory: string | Memory) => {
+      const m = typeof memory === 'string' ? memoriesRef.current.find((x) => x.id === memory) : memory;
       return m ? files.saveToPhotos(m.file) : false;
     },
     [files],

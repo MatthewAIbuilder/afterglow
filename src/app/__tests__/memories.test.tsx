@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as MediaLibrary from 'expo-media-library';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -134,10 +135,9 @@ describe('adding a memory from Discover', () => {
     expect(m.artistId).toBeUndefined();
   });
 
-  it('cancelling a video you just recorded asks first, then keeps nothing', async () => {
-    // Record a video: the camera opens; hold the button for a couple of seconds.
+  /** Record a video from Discover (hold the button for a couple of seconds), then Cancel on the tagging sheet. */
+  async function recordThenCancel() {
     jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(0));
-    const alert = answerAlerts('Discard');
     const app = await renderApp('/');
     await flush();
     await act(async () => holdClip());
@@ -149,7 +149,39 @@ describe('adding a memory from Discover', () => {
     await flush();
     await fireEvent.press(app.getByLabelText('Cancel'));
     await flush();
-    expect(alert).toHaveBeenCalledWith('Discard this video?', expect.any(String), expect.any(Array));
+    return app;
+  }
+
+  it('a video you just recorded is saved to Photos too, and cancelling asks whether to keep it', async () => {
+    const create = MediaLibrary.Asset.create as unknown as jest.Mock;
+    create.mockClear();
+    const alert = answerAlerts('Keep in Memories');
+    await recordThenCancel();
+    expect(alert).toHaveBeenCalledWith('Keep this video?', expect.any(String), expect.any(Array));
+    // Kept, untagged, to finish later.
+    const kept = await saved();
+    expect(kept).toHaveLength(1);
+    expect(kept[0].festivalId).toBeUndefined();
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('a video you just filmed can be trimmed before you save or share it', async () => {
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementationOnce((_o, cb) => cb(0));
+    const app = await renderApp('/');
+    await flush();
+    await act(async () => holdClip());
+    await flush();
+    await fireEvent(app.getByLabelText('Record a video'), 'pressIn');
+    await settle(7000);
+    await fireEvent(app.getByLabelText('Stop recording'), 'pressOut');
+    await flush();
+    expect(app.getByText('Trim (optional)')).toBeTruthy();
+    expect(app.getByLabelText('The part that plays')).toBeTruthy();
+  });
+
+  it('or deletes it, when you say so', async () => {
+    answerAlerts('Delete video');
+    await recordThenCancel();
     expect(await saved()).toEqual([]);
   });
 
