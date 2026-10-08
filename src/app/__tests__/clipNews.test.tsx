@@ -35,7 +35,8 @@ describe('new sets news', () => {
     await flush();
     // Back in Discover, on that clip.
     expect(app.queryByText(/live sets? from/)).toBeNull();
-    expect(app.getAllByText(loved.title).length).toBeGreaterThan(0);
+    // Its card leads with where it was filmed: the festival on Afterglow, or the set's own title.
+    expect(app.getAllByText(builtInCatalog.festival(loved.festivalId)?.name ?? loved.title).length).toBeGreaterThan(0);
   });
 
   it('a first look is quiet', async () => {

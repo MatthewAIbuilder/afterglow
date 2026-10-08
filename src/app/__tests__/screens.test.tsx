@@ -890,7 +890,8 @@ describe('Discover', () => {
     await act(async () => router.push('/?clip=c1'));
     await settle();
     await settle();
-    expect(app.getByText('Solstice 2026')).toBeTruthy();
+    // The header, and the clip's card leading with its festival.
+    expect(app.getAllByText('Solstice 2026').length).toBeGreaterThan(0);
   });
 
   it('ends the feed with where to go next', async () => {

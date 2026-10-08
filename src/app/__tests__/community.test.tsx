@@ -115,6 +115,17 @@ describe('community clips in Discover', () => {
     expect(app.getByText('Festival page')).toBeTruthy();
   });
 
+  it('YouTube sets lead with their festival too, which opens its videos and its sets', async () => {
+    const app = await renderApp('/?festival=solstice-26');
+    await flush();
+    const place = app.getAllByLabelText('Solstice 2026. Opens every video filmed there.');
+    expect(place.length).toBeGreaterThan(0);
+    await fireEvent.press(place[0]);
+    await flush();
+    expect(app.getByText('VIDEOS FROM THE CROWD')).toBeTruthy();
+    expect(app.getByLabelText(/^Watch the \d+ sets from here in Discover$/)).toBeTruthy();
+  });
+
   it('every clip shows where the artist plays next as a ticket to the festival', async () => {
     const app = await renderApp('/?festival=solstice-26');
     await flush();

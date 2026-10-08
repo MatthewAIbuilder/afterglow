@@ -168,6 +168,8 @@ export const es_discover: Dictionary = {
   'VIDEOS FROM THE CROWD': 'VIDEOS DEL PÚBLICO',
   'Show page': 'Página del show',
   'Festival page': 'Página del festival',
+  'Watch the {n} sets from here in Discover': 'Ver los {n} sets de aquí en Descubrir',
+  'Watch the sets · {n}': 'Ver los sets · {n}',
   '{place}. Opens every video filmed there.': '{place}. Abre todos los videos grabados ahí.',
   'Sign in on your profile to see videos people shared from the festival.': 'Inicia sesión en tu perfil para ver los videos que la gente compartió del festival.',
   'Videos people shared from the festival, beside the official clips.': 'Videos que la gente compartió del festival, junto a los clips oficiales.',
