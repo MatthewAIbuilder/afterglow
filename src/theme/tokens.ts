@@ -39,6 +39,11 @@ export const color = {
 /** The six festival lights (rose, tangerine, gold, mint, sky, violet): each festival and show has one (`features/festivals/light.ts`). */
 export const spectrum = SPECTRUM;
 
+/** The Pride theme: the rainbow runs all through the app (the sky, the tab bar, celebrations), not just one glow. */
+export const PRIDE = THEME_ID === 'pride';
+/** The rainbow flag's six colours, red to violet. */
+export { RAINBOW as rainbow } from './palettes';
+
 /** The accent, the deeper accent, the night and raised surfaces at an opacity, in the theme's colours. */
 export const glowA = (alpha: number) => rgbaOf(palette.glow, alpha);
 export const glowDeepA = (alpha: number) => rgbaOf(palette.glowDeep, alpha);

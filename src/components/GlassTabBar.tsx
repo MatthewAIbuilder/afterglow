@@ -14,7 +14,7 @@ import { useCrewUpdates } from '../state/crewUpdates';
 import { markCareTipDone, useCareTip } from '../state/careTip';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '../lib/haptics';
-import { color, motion, radius, space, type, glowA, raisedA } from '../theme/tokens';
+import { color, motion, PRIDE, radius, rainbow, space, type, glowA, raisedA, tintA } from '../theme/tokens';
 import { CommentIcon, DiscoverIcon, FestivalsIcon, LineupIcon, PeopleIcon, ProfileIcon, SoundIcon } from './TabIcons';
 import { HiddenToe } from '../features/toes/Toe';
 import { GlassFill } from './LiquidGlass';
@@ -105,9 +105,11 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       <HiddenToe size={13} opacity={0.4} turn={-14} style={styles.peek} />
       <View style={styles.pill} onLayout={(e) => setPillW(e.nativeEvent.layout.width)}>
         <GlassFill radius={TAB_BAR_HEIGHT / 2} tint={0.45} />
+        {/* Pride: a thread of the rainbow along the top of the bar. */}
+        {PRIDE ? <LinearGradient pointerEvents="none" colors={rainbow} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.prideLine} /> : null}
         {/* One highlight that glides to the tab you pick. */}
-        {pillW > 0 && slot >= 0 ? <Glider index={slot} width={(pillW - 12) / order.length} /> : null}
-        {order.map((name) => {
+        {pillW > 0 && slot >= 0 ? <Glider index={slot} width={(pillW - 12) / order.length} tint={PRIDE ? prideTab(slot) : undefined} /> : null}
+        {order.map((name, place) => {
           if (name === CAMERA) return active ? <CameraTab key={CAMERA} hold={hold} burst={burst} /> : <OrgCameraTab key={CAMERA} />;
           const i = state.routes.findIndex((r) => r.name === name);
           const route = state.routes[i];
@@ -150,7 +152,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
               style={styles.item}
             >
               <Bounce on={focused}>
-                <Icon color={focused ? color.glow : tint} size={24} />
+                <Icon color={focused ? (PRIDE ? prideTab(place) : color.glow) : tint} size={24} />
                 {news ? <View style={styles.newsDot} /> : null}
               </Bounce>
               <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
@@ -166,14 +168,17 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
 }
 
 /** The highlight behind the chosen tab, gliding from one to the next. */
-function Glider({ index, width }: { index: number; width: number }) {
+/** Pride: each tab glows its own colour of the flag when chosen (red, orange, yellow, blue, violet). */
+const prideTab = (place: number) => rainbow[[0, 1, 2, 4, 5][place] ?? place % rainbow.length];
+
+function Glider({ index, width, tint }: { index: number; width: number; tint?: string }) {
   const reduce = useReducedMotion();
   const x = useSharedValue(index * width);
   useEffect(() => {
     x.set(reduce ? index * width : withSpring(index * width, motion.snappy));
   }, [index, width, x, reduce]);
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
-  return <Animated.View pointerEvents="none" style={[styles.glider, { width }, style]} />;
+  return <Animated.View pointerEvents="none" style={[styles.glider, { width }, tint && { backgroundColor: tintA(tint, 0.16), borderColor: tintA(tint, 0.3) }, style]} />;
 }
 
 /** The chosen tab's icon gives a little hop. */
@@ -315,6 +320,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   // A lens of lit glass: the glow, light along its top edge.
+  prideLine: { position: 'absolute', top: 0, left: 22, right: 22, height: 2, borderRadius: 1, opacity: 0.85 },
   glider: { position: 'absolute', top: 6, bottom: 6, left: 6, borderRadius: radius.pill, backgroundColor: glowA(0.14), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.22), borderTopColor: color.rim },
   label: { ...type.caption, fontSize: 11 },
   newsDot: { position: 'absolute', top: -1, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: color.glow, borderWidth: 1.5, borderColor: color.night },

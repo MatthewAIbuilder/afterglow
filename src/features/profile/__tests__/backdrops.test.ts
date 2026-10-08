@@ -12,7 +12,7 @@ describe('profile backgrounds', () => {
     const everyone = backdropChoices('someone');
     expect(everyone.length).toBeGreaterThanOrEqual(10);
     expect(everyone.some((b) => b.only)).toBe(false);
-    expect(everyone.filter((b) => !b.plus).map((b) => b.id)).toEqual(['aurora', 'starfield', 'nebula']);
+    expect(everyone.filter((b) => !b.plus).map((b) => b.id)).toEqual(['aurora', 'pride', 'starfield', 'nebula']);
     expect(new Set(BACKDROPS.map((b) => b.id)).size).toBe(BACKDROPS.length);
   });
 
