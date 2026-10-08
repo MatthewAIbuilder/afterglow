@@ -13,6 +13,8 @@ import { CloseIcon } from '../components/TabIcons';
 import { CameraIcon, FlipIcon, PhotosIcon, TorchIcon } from '../features/camera/icons';
 import { elapsedLabel, filmingAt, IDLE, MIN_RECORD_MS, RECORD_MAX_SEC, recordButton, type RecordState } from '../features/camera/record';
 import { RecordButton } from '../features/camera/RecordButton';
+import { WebCamera } from '../features/camera/WebCamera';
+import type { CameraProblem } from '../features/camera/webRecorder';
 import { recordedVideo } from '../features/memories/device';
 import { useMemoryPicker } from '../features/memories/useAddMemory';
 import { haptic } from '../lib/haptics';
@@ -42,8 +44,26 @@ function useFilming(): Record<string, string> | undefined {
 }
 
 export default function CameraScreen() {
-  if (Platform.OS === 'web') return <ChooseOnWeb />;
+  if (Platform.OS === 'web') return <CameraOnWeb />;
   return <Camera />;
+}
+
+/** In a browser: the phone's camera through the page, or choosing a video when the browser can't film. */
+function CameraOnWeb() {
+  const filming = useFilming();
+  const filmingName = useCatalog().artist(filming?.artist ?? '')?.name;
+  const { festivals } = useCatalog();
+  const { going } = useGoing();
+  const [now] = useState(() => new Date());
+  const tonight = useTonight();
+  const at = filmingAt(festivals, going, now) ?? (tonight && isShowEvent(tonight.festival) ? tonight.festival.name : undefined);
+  return (
+    <WebCamera
+      chip={at ? t('Filming at {festival}', { festival: at }) : filmingName ? t('Filming {artist}', { artist: filmingName }) : t('New memory')}
+      filming={filming}
+      fallback={(problem) => <ChooseOnWeb problem={problem} />}
+    />
+  );
 }
 
 function Camera() {
@@ -313,12 +333,12 @@ function Camera() {
 }
 
 /**
- * In a browser: filming with Afterglow's camera needs the app, but you can
- * post a video you already have (or take one with the phone's own camera).
- * The browser's chooser opens from the tap on Choose a video; then the same
- * tagging sheet as the app.
+ * In a browser that can't film (no camera, no MP4 recorder, or the camera not
+ * allowed): post a video you already have (or take one with the phone's own
+ * camera). The browser's chooser opens from the tap on Choose a video; then
+ * the same tagging sheet as the app.
  */
-function ChooseOnWeb() {
+function ChooseOnWeb({ problem }: { problem: CameraProblem | 'no-recorder' }) {
   const insets = useSafeAreaInsets();
   const pick = useMemoryPicker();
   const filming = useFilming();
@@ -346,7 +366,13 @@ function ChooseOnWeb() {
       <Pressable onPress={() => goBack()} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.webBack, pressed && styles.pressed]}>
         <Text style={styles.webBackText}>{t('Not now')}</Text>
       </Pressable>
-      <Text style={styles.webNote}>{t('Filming with Afterglow’s own camera is in the app.')}</Text>
+      <Text style={styles.webNote}>
+        {problem === 'denied'
+          ? t('The camera isn’t allowed for this website. To film here, allow it in your browser’s settings for afterglowmusic.app, then come back.')
+          : problem === 'no-recorder'
+            ? t('This browser can’t film videos Afterglow can share. Safari on an iPhone can, and so does the Afterglow app.')
+            : t('The camera couldn’t start here. You can still choose a video, or film in the Afterglow app.')}
+      </Text>
     </View>
   );
 }

@@ -254,8 +254,8 @@ export function DiscoverFeed() {
     ready && count > 0 && activeIndex < count
       ? (currentHint(hintsDone) ?? (!tipsKnown ? undefined : careTip ? CARE_HINT : questTip && !hereFestival ? QUESTS_HINT : undefined))
       : undefined;
-  // Filming (and the camera button) is in the phone app, so the website doesn't teach it.
-  const hint = next === 'hold' && Platform.OS === 'web' ? undefined : next;
+  // Swiping right films on the website too (its camera works in the browser).
+  const hint = next;
   // Press and hold a clip to add your own video: the third tip is done the first time you do.
   const addMemory = useAddMemory();
   const onHold = useCallback(() => {
@@ -278,7 +278,6 @@ export function DiscoverFeed() {
   const swipeToCamera = useMemo(
     () =>
       Gesture.Pan()
-        .enabled(Platform.OS !== 'web')
         .withTestId('swipe-to-camera')
         .activeOffsetX(18)
         .failOffsetX(-12)
@@ -415,7 +414,8 @@ export function DiscoverFeed() {
   const storiesSpace = (storiesOn ? STORIES_H : 0) + tonightSpace;
 
   return (
-    <GestureDetector gesture={swipeToCamera}>
+    // In a browser the page keeps scrolling the feed up and down; only a sideways drag is ours.
+    <GestureDetector gesture={swipeToCamera} touchAction="pan-y">
     <View style={[styles.root, { width, alignSelf: 'center' }]}>
       {/* Swiping right: the camera's edge peeks in on the left, glowing as you near the point that opens it. */}
       <Animated.View style={[styles.cameraEdge, edgeStyle]} pointerEvents="none">
@@ -565,21 +565,23 @@ export function DiscoverFeed() {
           <View style={styles.headerEnd}>
             {/* Today's quests: a ring that fills as you go. */}
             {!hereFestival ? <QuestButton /> : null}
-            {/* Film your own video (or swipe right). The camera needs the phone app. */}
+            {/* Film your own video (or swipe right). The website keeps its header to three: swiping right opens the camera there. */}
             {Platform.OS !== 'web' ? (
               <GlassCircleButton
+                size={HEADER_BUTTON}
                 label={t('Open the camera to film a memory')}
                 hint={t('Hold to open Look after yourself')}
                 onPress={openCamera}
                 onLongPress={openCare}
                 longPressLabel={t('Look after yourself')}
               >
-                <CameraIcon color={color.moon} size={18} />
+                <CameraIcon color={color.moon} size={16} />
               </GlassCircleButton>
             ) : null}
             {/* Following at a tap: videos from people you follow, and back to what you were on. */}
             {social.user && !hereFestival ? (
               <GlassCircleButton
+                size={HEADER_BUTTON}
                 label={t('Following: videos from people you follow')}
                 hint={followingFocus ? backHint(beforeFollowing) : t('Tap to watch videos from people you follow')}
                 selected={followingFocus}
@@ -588,12 +590,12 @@ export function DiscoverFeed() {
                   setActiveIndex(0);
                 }}
               >
-                <PeopleIcon color={color.moon} size={18} />
+                <PeopleIcon color={color.moon} size={16} />
               </GlassCircleButton>
             ) : null}
             {/* Search everything: people, artists, festivals. */}
-            <GlassCircleButton label={t('Search artists, festivals and people')} onPress={() => router.push('/search')}>
-              <SearchIcon color={color.moon} size={17} />
+            <GlassCircleButton size={HEADER_BUTTON} label={t('Search artists, festivals and people')} onPress={() => router.push('/search')}>
+              <SearchIcon color={color.moon} size={15} />
             </GlassCircleButton>
           </View>
         </View>
@@ -638,6 +640,9 @@ function useBackHint() {
 const FEED_MAX_WIDTH = 520;
 /** Roughly the header row's height, for the tip under it. */
 const HEADER_HEIGHT = 48;
+
+/** Discover's round header buttons: a touch smaller than elsewhere, so the video has the room. */
+const HEADER_BUTTON = 36;
 
 const styles = StyleSheet.create({
   stories: { position: 'absolute', left: 0, right: 0 },

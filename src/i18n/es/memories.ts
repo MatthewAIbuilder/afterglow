@@ -167,7 +167,11 @@ export const es_memories: Dictionary = {
   'Choose a video from your Photos or Files, or take one, up to ten minutes long. Trim it to the best part, tag who was playing and share it to Discover.':
     'Elige un video de tus Fotos o Archivos, o graba uno, de hasta diez minutos. Recórtalo a la mejor parte, etiqueta quién tocaba y compártelo en Descubrir.',
   'Choose a video': 'Elegir un video',
-  'Filming with Afterglow’s own camera is in the app.': 'Grabar con la cámara de Afterglow es en la app.',
+  'What the camera sees': 'Lo que ve la cámara',
+  'Starting the camera…': 'Encendiendo la cámara…',
+  'The camera isn’t allowed for this website. To film here, allow it in your browser’s settings for afterglowmusic.app, then come back.': 'La cámara no está permitida para este sitio. Para grabar aquí, permítela en los ajustes de tu navegador para afterglowmusic.app y vuelve.',
+  'This browser can’t film videos Afterglow can share. Safari on an iPhone can, and so does the Afterglow app.': 'Este navegador no puede grabar videos que Afterglow pueda compartir. Safari en un iPhone sí puede, y la app de Afterglow también.',
+  'The camera couldn’t start here. You can still choose a video, or film in the Afterglow app.': 'La cámara no pudo encenderse aquí. Aún puedes elegir un video o grabar en la app de Afterglow.',
   '{clips}, shared to Discover.': '{clips}, compartidos en Descubrir.',
   '{clips} from {n} festival, shared to Discover.': '{clips} de {n} festival, compartidos en Descubrir.',
   '{clips} from {n} festivals, shared to Discover.': '{clips} de {n} festivales, compartidos en Descubrir.',
