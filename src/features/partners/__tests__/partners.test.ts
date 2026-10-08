@@ -175,7 +175,7 @@ describe('the stays map', () => {
 
   it('Stay22’s embed, dark, in our colour, as a list or a map', () => {
     const q = Object.fromEntries(new URL(stayMapUrl(trip, { aid: 'afterglow', view: 'map', accent: '#8B7CFF', language: 'es' })!).searchParams);
-    expect(q).toMatchObject({ aid: 'afterglow', checkin: '2026-12-30', checkout: '2027-01-01', mapstyle: 'dark', viewmode: 'map', maincolor: '8B7CFF', lang: 'es', campaign: 'hijinx-festival-2026' });
+    expect(q).toMatchObject({ aid: 'afterglow', checkin: '2026-12-30', checkout: '2027-01-01', mapstyle: 'dark', viewmode: 'map', hideshare: 'true', maincolor: '8B7CFF', lang: 'es', campaign: 'hijinx-festival-2026' });
     expect(stayMapUrl(trip, { aid: '' })).toBeUndefined();
     expect(new URL(stayMapUrl(trip, { aid: 'afterglow', accent: 'rgba(1,2,3,1)' })!).searchParams.has('maincolor')).toBe(false);
   });
