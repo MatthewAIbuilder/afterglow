@@ -67,6 +67,29 @@ describe('kandi', () => {
     expect(mockSocial.gardens.get(maya)?.kandi).toEqual([{ word: 'BESTIES', beads: 'uv', from: 'sam' }]);
   }, 20000);
 
+  it('a kandi link opened signed out (the website) offers sign in, then comes back to pick it up', async () => {
+    const sam = await person('sam', 'Sam');
+    await s().leaveOpenKandi({ id: 'abcdefghij0123456789', word: 'PLUR', beads: 'rainbow', note: 'From the rail' });
+    await s().signOut();
+    await person('maya', 'Maya Lin');
+    await s().signOut();
+    const app = await renderApp(`/kandi/abcdefghij0123456789?u=${sam}&h=sam&w=PLUR&b=rainbow`);
+    await flush();
+    expect(app.queryByText('Put it in my garden')).toBeNull();
+    expect(app.getByText('New here? Create your profile')).toBeTruthy();
+    await fireEvent.press(app.getByText('Sign in'));
+    await flush();
+    expect(app.getByText('Welcome back')).toBeTruthy();
+    await fireEvent.changeText(app.getByLabelText('Email'), 'maya@example.com');
+    await fireEvent.changeText(app.getByLabelText('Password'), 'password123');
+    await fireEvent.press(app.getAllByText('Sign in').at(-1)!);
+    await flush(20);
+    await fireEvent.press(app.getByText('Put it in my garden'));
+    await flush();
+    expect(app.getByText('It’s in your garden')).toBeTruthy();
+    expect(app.getByText('“From the rail”')).toBeTruthy();
+  }, 20000);
+
   it('with no signal it waits on the phone and goes once there is', async () => {
     const maya = await person('maya', 'Maya Lin');
     await s().signOut();
