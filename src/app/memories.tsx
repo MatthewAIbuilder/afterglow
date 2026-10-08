@@ -10,6 +10,7 @@ import { whereWhen } from '../features/festivals/format';
 import { MemoryTile } from '../features/memories/MemoryTile';
 import { clipCount, memoryLine, organizeMemories, UNTAGGED, type MemorySection } from '../features/memories/organize';
 import { useAddMemory } from '../features/memories/useAddMemory';
+import { useVideoDrafts } from '../features/memories/useVideoDrafts';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { useMoments } from '../features/memories/useMoments';
@@ -36,6 +37,8 @@ export default function MemoriesScreen() {
   const lookup = useMemo(() => ({ festival: catalog.festival, artist: catalog.artist }), [catalog]);
   const sections = useMemo(() => organizeMemories(memories, lookup), [memories, lookup]);
   const festivals = sections.filter((s) => s.festival || s.past).length;
+  // On the website: videos filmed with its camera and not shared yet.
+  const drafts = useVideoDrafts();
 
   return (
     <View style={styles.root}>
@@ -58,6 +61,20 @@ export default function MemoriesScreen() {
                   : t('{clips}. Private to you.', { clips: clipCount(memories.length) })
                 : t('Your own videos from the sets you were at, kept on this phone.')}
           </Text>
+          {drafts?.length ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push('/drafts');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Drafts, {n}', { n: drafts.length })}
+              style={({ pressed }) => [styles.draftsRow, pressed && styles.pressed]}
+            >
+              <Text style={styles.draftsText}>{tn(drafts.length, '{n} draft waiting to be shared', '{n} drafts waiting to be shared')}</Text>
+              <ChevronIcon color={color.glow} direction="right" size={12} />
+            </Pressable>
+          ) : null}
         </View>
 
         {!memories.length ? (
@@ -177,6 +194,8 @@ function Section({ section, uriOf, lookup }: { section: MemorySection; uriOf: (n
 }
 
 const styles = StyleSheet.create({
+  draftsRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: space.xs, marginTop: space.md, paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill, backgroundColor: glowA(0.14), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.45) },
+  draftsText: { ...type.label, color: color.moon },
   root: { flex: 1, backgroundColor: color.night },
   pad: { paddingHorizontal: space.xl },
   back: { position: 'absolute', left: space.lg },

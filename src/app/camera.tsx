@@ -81,7 +81,7 @@ function Camera() {
   const [elapsed, setElapsed] = useState(0);
   const [hint, setHint] = useState<string | undefined>();
   const recording = rec.phase === 'recording';
-  const { setDraft, keepNow } = useMemories();
+  const { setDraft, keepNow, saveToPhotos } = useMemories();
   // Keeping the clip you just filmed (reading where you are, copying the file): the button waits meanwhile.
   const [saving, setSaving] = useState(false);
   const pick = useMemoryPicker();
@@ -123,6 +123,8 @@ function Camera() {
         const video = await recordedVideo(uri, length / 1000);
         // Kept straight away, untagged, so closing the app never loses it; the tagging sheet then tags it.
         const kept = await keepNow(video);
+        // And a copy in Photos, like the phone's own camera (best effort: the first time asks to add to Photos).
+        if (kept) void saveToPhotos(kept).catch(() => false);
         // Gone back meanwhile: it's in your Memories (with a Tag badge), but don't open anything over where you are now.
         if (leaving.current) return;
         if (kept) router.replace({ pathname: '/memory-tag', params: { id: kept.id, fresh: '1', ...filming } });
@@ -135,7 +137,7 @@ function Camera() {
         if (!leaving.current) setSaving(false);
       }
     },
-    [setDraft, keepNow, filming],
+    [setDraft, keepNow, saveToPhotos, filming],
   );
 
   const start = useCallback(
