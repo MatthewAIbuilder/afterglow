@@ -3,7 +3,7 @@ import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'ex
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { color, glowA, glowDeepA, raisedA, tintA } from '../theme/tokens';
+import { color, GLASS, glowA, glowDeepA, raisedA, tintA } from '../theme/tokens';
 
 /**
  * Liquid Glass: the material of everything that floats over the app (the tab
@@ -12,6 +12,10 @@ import { color, glowA, glowDeepA, raisedA, tintA } from '../theme/tokens';
  * (older iPhones, Android, the website) a close copy: frosted blur, a lit
  * rim along the top, and the theme's glow gathering at the bottom edge.
  * With Reduce transparency on, a calm solid surface instead.
+ *
+ * Liquid Glass is a choice (a free switch on the App theme page), off unless
+ * picked: then the plain frosted surface the app always had (a blur, a night
+ * tint and a hairline edge).
  *
  * Drawn as the first child of its parent, filling it with the parent's
  * corner `radius`, so whatever the parent holds sits on top.
@@ -35,6 +39,14 @@ export function GlassFill({ radius, lit, tint = 0.4, hue, deep, frost = true }: 
   const light = (alpha: number) => (hue ? tintA(hue, alpha) : glowA(alpha));
   if (solid) {
     return <View pointerEvents="none" testID="glass-solid" style={[StyleSheet.absoluteFill, shape, { backgroundColor: raisedA(0.96) }, lit && { backgroundColor: hue ? tintA(hue, 0.5) : glowDeepA(0.9) }]} />;
+  }
+  if (!GLASS) {
+    return (
+      <View pointerEvents="none" testID="glass-off" style={[StyleSheet.absoluteFill, shape, styles.clip, styles.plainEdge, hue && { borderColor: tintA(hue, 0.45) }, lit && { borderColor: light(0.8) }]}>
+        {frost ? <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> : null}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: lit ? light(deep ? 0.22 : 0.3) : raisedA(deep ? Math.max(tint, 0.6) : tint) }]} />
+      </View>
+    );
   }
   if (nativeGlass()) {
     return (
@@ -81,7 +93,7 @@ export function nativeGlass(): boolean {
  * On iOS 26 the system draws those sheets in Liquid Glass when the page lets
  * it show through: a half-clear night keeps the words easy to read on it.
  */
-export const SHEET_BACKGROUND = nativeGlass() ? raisedA(0.55) : color.nightRaised;
+export const SHEET_BACKGROUND = GLASS && nativeGlass() ? raisedA(0.55) : color.nightRaised;
 
 // Reduce transparency (iPhone Settings → Accessibility → Display & Text Size), followed as it changes.
 let reduce = false;
@@ -109,5 +121,6 @@ const useReduceTransparency = () => useSyncExternalStore(subscribe, () => reduce
 
 const styles = StyleSheet.create({
   clip: { overflow: 'hidden' },
+  plainEdge: { borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
   rim: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderTopColor: 'rgba(255,255,255,0.28)' },
 });

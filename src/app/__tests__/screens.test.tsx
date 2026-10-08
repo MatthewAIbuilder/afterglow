@@ -1022,7 +1022,7 @@ describe('Profile tab', () => {
     // The round shortcut, and its card in your festival passport.
     expect(app.getByLabelText(/^Austin City Limits 2026, Weekend 2 · /)).toBeTruthy();
     expect(app.getByLabelText('Planning, 1')).toBeTruthy();
-    expect(app.getByLabelText(/^Austin City Limits 2026, .*, Austin\. In \d+ days/)).toBeTruthy();
+    expect(app.getByLabelText(/^Austin City Limits 2026, .*, Austin\. (In \d+ days|Tomorrow|Today)/)).toBeTruthy();
   });
 });
 
