@@ -4,9 +4,13 @@ import type { Dictionary } from '../translate';
 export const es_profileLogic: Dictionary = {
   // App theme
   'Part of Afterglow Plus': 'Parte de Afterglow Plus',
-  '{theme} comes with Afterglow Plus. Preview every theme here; Afterglow and Aurora are free.':
-    '{theme} viene con Afterglow Plus. Prueba aquí todos los temas; Afterglow y Aurora son gratis.',
+  '{theme} comes with Afterglow Plus. Preview every theme here; Afterglow, Aurora and Pride are free.':
+    '{theme} viene con Afterglow Plus. Prueba aquí todos los temas; Afterglow, Aurora y Pride son gratis.',
   'Couldn’t change the theme': 'No se pudo cambiar el tema',
+  'Couldn’t change the look': 'No se pudo cambiar el aspecto',
+  'Liquid Glass': 'Liquid Glass',
+  'Glassy buttons, bars and sheets that catch the light. Free with every theme. Afterglow starts again in the new look.':
+    'Botones, barras y paneles de cristal que atrapan la luz. Gratis con cualquier tema. Afterglow se reinicia con el nuevo aspecto.',
   'Made just for you': 'Hecho solo para ti',
   'A GIFT': 'UN REGALO',
   "{theme}: a look for your whole Afterglow, and nobody else's. Put it on, or keep looking.":
@@ -162,6 +166,7 @@ export const es_profileLogic: Dictionary = {
   // Profile backgrounds
   Aurora: 'Aurora',
   'Northern lights rippling across the sky': 'Auroras boreales ondeando en el cielo',
+  'A rainbow flag waving, hearts of every colour rising': 'Una bandera arcoíris ondeando y corazones de todos los colores subiendo',
   Starfield: 'Campo de estrellas',
   'Twinkling stars and the odd shooting star': 'Estrellas que titilan y alguna estrella fugaz',
   Nebula: 'Nebulosa',
@@ -193,6 +198,7 @@ export const es_profileLogic: Dictionary = {
   // Theme descriptions (theme names stay as they are)
   'The original: violet festival light at night': 'El original: luz violeta de festival de noche',
   'Northern-lights green on a deep blue night': 'Verde de aurora boreal en una noche azul profundo',
+  'Every colour of the rainbow, all through the app': 'Todos los colores del arcoíris, por toda la app',
   'Silver light, cool and calm': 'Luz plateada, fresca y tranquila',
   'Pink starlight on deep space': 'Luz de estrellas rosa en el espacio profundo',
   'Electric lime for the front row': 'Lima eléctrico para la primera fila',

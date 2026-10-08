@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
-import { color } from '../theme/tokens';
+import { color, PRIDE, rainbow } from '../theme/tokens';
 
-const COLORS = [color.glow, '#FF7EB6', '#FFB86B', '#6FC3FF', '#7CF2C8', '#FFD36E'];
+// Pride: every colour of the flag.
+const COLORS: readonly string[] = PRIDE ? rainbow : [color.glow, '#FF7EB6', '#FFB86B', '#6FC3FF', '#7CF2C8', '#FFD36E'];
 const PIECES = 24;
 
 /** The same little scatter every time, so nothing flickers between renders. */

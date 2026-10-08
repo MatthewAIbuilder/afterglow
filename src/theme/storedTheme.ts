@@ -29,3 +29,27 @@ export function writeStoredTheme(id: string): boolean {
     return false;
   }
 }
+
+/** Whether Liquid Glass is on (App theme page; off unless chosen), kept the same way so it's known before any screen draws. */
+const GLASS_NAME = 'glass.json';
+
+export function readStoredGlass(): boolean {
+  try {
+    const f = new File(Paths.document, GLASS_NAME);
+    if (!f.exists) return false;
+    return (JSON.parse(f.textSync()) as { on?: unknown }).on === true;
+  } catch {
+    return false;
+  }
+}
+
+export function writeStoredGlass(on: boolean): boolean {
+  try {
+    const f = new File(Paths.document, GLASS_NAME);
+    if (!f.exists) f.create();
+    f.write(JSON.stringify({ on }));
+    return true;
+  } catch {
+    return false;
+  }
+}

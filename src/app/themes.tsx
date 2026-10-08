@@ -17,8 +17,8 @@ import { reloadApp } from '../lib/reload';
 import { useSocial } from '../state/social';
 import { useSprouts } from '../state/sprouts';
 import { PALETTES, type ThemeId } from '../theme/palettes';
-import { writeStoredTheme } from '../theme/storedTheme';
-import { color, radius, space, THEME_ID, type } from '../theme/tokens';
+import { writeStoredGlass, writeStoredTheme } from '../theme/storedTheme';
+import { color, GLASS, radius, space, THEME_ID, type } from '../theme/tokens';
 import { BottomFade } from '../components/BottomFade';
 
 /** How long the new theme's colours fill the screen before Afterglow starts again in them. */
@@ -67,6 +67,18 @@ export default function ThemesScreen() {
   const tileW = Math.floor((inner - space.md * (cols - 1)) / cols);
   const tileH = Math.round(tileW * 0.78);
 
+  // Liquid Glass: free with every theme, off unless chosen; like a theme, it goes on as Afterglow starts again.
+  const [glassOn, setGlassOn] = useState(GLASS);
+  const switchGlass = (on: boolean) => {
+    if (!writeStoredGlass(on)) {
+      showAlert(t('Couldn’t change the look'), t('Try again in a moment.'));
+      return;
+    }
+    haptic.settle();
+    setGlassOn(on);
+    setTimeout(() => void reloadApp(t('Liquid Glass')), reduce ? 50 : 400);
+  };
+
   const pick = (id: ThemeId) => {
     haptic.select();
     setPicked(id);
@@ -75,7 +87,7 @@ export default function ThemesScreen() {
   const wear = async () => {
     if (!changed || swapping) return;
     if (locked) {
-      showAlert(t('Part of Afterglow Plus'), t('{theme} comes with Afterglow Plus. Preview every theme here; Afterglow and Aurora are free.', { theme: theme.name }));
+      showAlert(t('Part of Afterglow Plus'), t('{theme} comes with Afterglow Plus. Preview every theme here; Afterglow, Aurora and Pride are free.', { theme: theme.name }));
       return;
     }
     if (!writeStoredTheme(picked)) {
@@ -167,6 +179,14 @@ export default function ThemesScreen() {
           })}
         </View>
 
+        <View style={styles.glassRow}>
+          <View style={styles.glassText}>
+            <Text style={styles.glassTitle}>{t('Liquid Glass')}</Text>
+            <Text style={styles.glassAbout}>{t('Glassy buttons, bars and sheets that catch the light. Free with every theme. Afterglow starts again in the new look.')}</Text>
+          </View>
+          <Switch value={glassOn} onValueChange={switchGlass} accessibilityLabel={t('Liquid Glass')} trackColor={{ true: color.glowDeep, false: 'rgba(255,255,255,0.15)' }} />
+        </View>
+
         <Pressable onPress={() => router.push('/backdrop')} accessibilityRole="button" style={styles.rowLink}>
           <Text style={styles.link}>{t('Just your profile background ›')}</Text>
         </Pressable>
@@ -235,6 +255,10 @@ const styles = StyleSheet.create({
   tileLabelOn: { color: color.moon },
   tileDetail: { ...type.caption, color: color.moonFaint, marginBottom: space.sm },
   rowLink: { marginTop: space.lg, paddingVertical: space.sm },
+  glassRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xl, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
+  glassText: { flex: 1, gap: 2 },
+  glassTitle: { ...type.headline, color: color.moon },
+  glassAbout: { ...type.caption, color: color.moonDim },
   link: { ...type.label, color: color.glow },
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.md, alignItems: 'center' },
   matchRow: { alignSelf: 'stretch', maxWidth: 600, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.sm },

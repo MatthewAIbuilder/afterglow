@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { act, fireEvent } from '@testing-library/react-native';
 import { fakeSocial } from '../../features/social/__tests__/fakeSocial';
 import { forgetStandings } from '../../features/standing/useStanding';
-import { readStoredTheme } from '../../theme/storedTheme';
+import { readStoredGlass, readStoredTheme, writeStoredGlass } from '../../theme/storedTheme';
 import { renderApp } from './appRoutes';
 
 /**
@@ -55,6 +55,19 @@ describe('app themes', () => {
     expect(app.getByText('Putting on Aurora…')).toBeTruthy();
     await settle(800);
     expect(mockReload).toHaveBeenCalled();
+  });
+
+  it('Liquid Glass is a free switch, off by default: turning it on is saved and Afterglow starts again', async () => {
+    writeStoredGlass(false);
+    const app = await renderApp('/themes');
+    await flush();
+    const toggle = app.getByLabelText('Liquid Glass');
+    expect(toggle.props.value).toBe(false);
+    await fireEvent(toggle, 'valueChange', true);
+    expect(readStoredGlass()).toBe(true);
+    await settle(500);
+    expect(mockReload).toHaveBeenCalled();
+    writeStoredGlass(false);
   });
 
   it('Plus themes can be previewed but need Plus', async () => {

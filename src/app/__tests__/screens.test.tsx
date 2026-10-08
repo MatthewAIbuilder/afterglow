@@ -890,7 +890,8 @@ describe('Discover', () => {
     await act(async () => router.push('/?clip=c1'));
     await settle();
     await settle();
-    expect(app.getByText('Solstice 2026')).toBeTruthy();
+    // The header, and the clip's card leading with its festival.
+    expect(app.getAllByText('Solstice 2026').length).toBeGreaterThan(0);
   });
 
   it('ends the feed with where to go next', async () => {
@@ -1022,8 +1023,7 @@ describe('Profile tab', () => {
     // The round shortcut, and its card in your festival passport.
     expect(app.getByLabelText(/^Austin City Limits 2026, Weekend 2 · /)).toBeTruthy();
     expect(app.getByLabelText('Planning, 1')).toBeTruthy();
-    // With its countdown, whatever today is ("In 38 days", "Weekend 2 tomorrow", "Happening now"…).
-    expect(app.getByLabelText(/^Austin City Limits 2026, .*, Austin\. (In \d+ (days|months?)|Tomorrow|Weekend \d (tomorrow|in \d+ days)|Happening now|Over)/)).toBeTruthy();
+    expect(app.getByLabelText(/^Austin City Limits 2026, .*, Austin\. (In \d+ days|Tomorrow|Today)/)).toBeTruthy();
   });
 });
 

@@ -10,6 +10,7 @@ import { t } from '../../i18n';
 
 export type BackdropId =
   | 'aurora'
+  | 'pride'
   | 'starfield'
   | 'nebula'
   | 'lasers'
@@ -50,6 +51,7 @@ export const TOE_BEACH_FRIENDS: readonly string[] = TOE_FRIENDS;
 
 export const BACKDROPS: readonly Backdrop[] = [
   { id: 'aurora', name: t('Aurora'), about: t('Northern lights rippling across the sky'), plus: false },
+  { id: 'pride', name: t('Pride'), about: t('A rainbow flag waving, hearts of every colour rising'), plus: false },
   { id: 'starfield', name: t('Starfield'), about: t('Twinkling stars and the odd shooting star'), plus: false },
   { id: 'nebula', name: t('Nebula'), about: t('Clouds of colour drifting through space'), plus: false },
   { id: 'lasers', name: t('Laser show'), about: t('Beams sweeping from both sides of the stage'), plus: true },

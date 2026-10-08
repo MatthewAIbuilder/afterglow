@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { PALETTES, rgbaOf, type ThemeId } from '../../theme/palettes';
+import { PALETTES, PRIDE_LIGHTS, RAINBOW, rgbaOf, type ThemeId } from '../../theme/palettes';
 import { AnimatedBackdrop } from '../profile/AnimatedBackdrop';
 import { themeOf } from './themes';
 import { t } from '../../i18n';
@@ -29,11 +29,20 @@ export function ThemeSky({ id, width, height }: { id: ThemeId; width: number; he
           <Stop offset="0" stopColor={p.stage} stopOpacity="0.16" />
           <Stop offset="1" stopColor={p.stage} stopOpacity="0" />
         </RadialGradient>
+        {id === 'pride'
+          ? PRIDE_LIGHTS.map((l, i) => (
+              <RadialGradient key={i} id={`p${i}${g}`} cx={`${l.x * 100}%`} cy={`${l.y * 100}%`} rx={`${l.rx * 100}%`} ry={`${l.ry * 100}%`}>
+                <Stop offset="0" stopColor={RAINBOW[i]} stopOpacity="0.32" />
+                <Stop offset="1" stopColor={RAINBOW[i]} stopOpacity="0" />
+              </RadialGradient>
+            ))
+          : null}
       </Defs>
       <Rect width={width} height={height} fill={p.night} />
       <Rect width={width} height={height} fill={`url(#h${g})`} />
       <Rect width={width} height={height} fill={`url(#d${g})`} />
       <Rect width={width} height={height} fill={`url(#s${g})`} />
+      {id === 'pride' ? PRIDE_LIGHTS.map((_, i) => <Rect key={i} width={width} height={height} fill={`url(#p${i}${g})`} />) : null}
     </Svg>
   );
 }
@@ -78,7 +87,11 @@ export function ThemePreview({ id, width, still }: { id: ThemeId; width: number;
           <Text style={{ color: p.glow, fontSize: 10 * s, fontWeight: '700' }}>96%</Text>
         </View>
         <View style={[styles.track, { marginTop: 9 * s, height: 4 * s, borderRadius: 2 * s }]}>
-          <View style={{ width: '64%', height: '100%', borderRadius: 2 * s, backgroundColor: p.glow }} />
+          {id === 'pride' ? (
+            <LinearGradient colors={RAINBOW} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width: '64%', height: '100%', borderRadius: 2 * s }} />
+          ) : (
+            <View style={{ width: '64%', height: '100%', borderRadius: 2 * s, backgroundColor: p.glow }} />
+          )}
         </View>
       </View>
       <View style={[styles.button, { marginHorizontal: 14 * s, marginTop: 10 * s, height: 26 * s, borderRadius: 13 * s, backgroundColor: p.glowDeep }]}>
@@ -87,7 +100,7 @@ export function ThemePreview({ id, width, still }: { id: ThemeId; width: number;
       <View style={[styles.tabs, { left: 12 * s, right: 12 * s, bottom: 10 * s, height: 30 * s, borderRadius: 15 * s, backgroundColor: rgbaOf(p.nightRaised, 0.9), borderColor: 'rgba(255,255,255,0.1)' }]}>
         {[0, 1, 2, 3, 4].map((i) => (
           <View key={i} style={[styles.tab, i === 0 && { backgroundColor: rgbaOf(p.glow, 0.18), borderRadius: 11 * s }]}>
-            <View style={{ width: 8 * s, height: 8 * s, borderRadius: 4 * s, backgroundColor: i === 0 ? p.glow : MOON_DIM }} />
+            <View style={{ width: 8 * s, height: 8 * s, borderRadius: 4 * s, backgroundColor: id === 'pride' ? RAINBOW[i] : i === 0 ? p.glow : MOON_DIM }} />
           </View>
         ))}
       </View>
@@ -104,7 +117,11 @@ export function ThemeSwatch({ id, width, height }: { id: ThemeId; width: number;
       <View style={[styles.swatchGlow, { backgroundColor: p.glow, shadowColor: p.glow, top: height * 0.22, left: width * 0.14 }]} />
       <View style={[styles.swatchLine, { top: height * 0.24, left: width * 0.14 + 26, width: width * 0.4, backgroundColor: 'rgba(243,240,255,0.85)' }]} />
       <View style={[styles.swatchLine, { top: height * 0.24 + 9, left: width * 0.14 + 26, width: width * 0.26, backgroundColor: 'rgba(243,240,255,0.45)' }]} />
-      <View style={[styles.swatchButton, { backgroundColor: p.glowDeep, bottom: height * 0.16, left: width * 0.14, right: width * 0.14 }]} />
+      {id === 'pride' ? (
+        <LinearGradient colors={RAINBOW} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.swatchButton, { bottom: height * 0.16, left: width * 0.14, right: width * 0.14 }]} />
+      ) : (
+        <View style={[styles.swatchButton, { backgroundColor: p.glowDeep, bottom: height * 0.16, left: width * 0.14, right: width * 0.14 }]} />
+      )}
     </View>
   );
 }
