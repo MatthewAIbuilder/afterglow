@@ -20,6 +20,8 @@ export type Gift = {
   festivalId?: string;
   /** A gift theme that comes with it (only the developer gives these). */
   theme?: ThemeId;
+  /** A hat passed on: the one from your garden it is (it leaves your garden while this gift stands). */
+  via?: string;
   /** When you gave it (phone time). */
   at: number;
   /** It's reached Afterglow. */
@@ -68,8 +70,11 @@ export function giftTried(g: Gift, refused: boolean, now: number): Gift {
   return r >= GIFT_REFUSED_MAX ? { ...next, failed: true } : next;
 }
 
-/** Gifts that use up a seed: given, not taken back, not given up. */
-export const seedGifts = (gifts: readonly Gift[]) => gifts.filter((g) => !g.takenBack && !g.failed);
+/** Gifts that use up a seed: given, not taken back, not given up (hats never use one). */
+export const seedGifts = (gifts: readonly Gift[]) => gifts.filter((g) => !g.takenBack && !g.failed && !kindOf(g.kind).seed);
+
+/** The hats in your garden that are on their way to someone (not taken back or given up), so they're no longer yours. */
+export const passingOn = (gifts: readonly Gift[]) => new Set(gifts.flatMap((g) => (g.via && !g.takenBack && !g.failed ? [g.via] : [])));
 
 const due = (x: { tries: number; lastTry?: number }, now: number) => !x.lastTry || now - x.lastTry >= retryDelay(x.tries);
 
@@ -96,7 +101,8 @@ export function queueClaim(claims: readonly Claim[], card: SproutCard, account: 
 /** Tidy: scans that never turned up become `gone`; old finished ones and old unsent gifts are forgotten. */
 export function tidy(gifts: readonly Gift[], claims: readonly Claim[], now: number): { gifts: Gift[]; claims: Claim[] } {
   return {
-    gifts: gifts.filter((g) => now - g.at < GIFT_KEEP_MS || g.claimedBy).slice(0, GIFTS_MAX),
+    // A hat passed on stays until someone has it, so it can still be taken back.
+    gifts: gifts.filter((g) => now - g.at < GIFT_KEEP_MS || g.claimedBy || (g.via && !g.takenBack && !g.failed)).slice(0, GIFTS_MAX),
     claims: claims
       .map((c) => (c.state === 'waiting' && now - c.at > CLAIM_KEEP_MS ? { ...c, state: 'gone' as const, doneAt: now } : c))
       .filter((c) => c.state === 'waiting' || !c.doneAt || now - c.doneAt < 7 * 24 * 3_600_000),
@@ -118,6 +124,7 @@ export function cleanGifts(raw: unknown): Gift[] {
       ...(typeof g.note === 'string' && g.note ? { note: g.note.slice(0, SPROUT_NOTE_MAX) } : {}),
       ...(typeof g.festivalId === 'string' ? { festivalId: g.festivalId } : {}),
       ...(isGiftTheme(g.theme) ? { theme: g.theme } : {}),
+      ...(isSproutId(g.via) ? { via: g.via } : {}),
       ...(typeof g.account === 'string' ? { account: g.account } : {}),
       ...(g.claimedBy && typeof g.claimedBy.uid === 'string' ? { claimedBy: g.claimedBy } : {}),
       ...(typeof g.claimedAt === 'number' ? { claimedAt: g.claimedAt } : {}),
@@ -179,7 +186,9 @@ export function bloomNotices(blooms: readonly { id: string; kind: SproutKind; at
     // One per kind, the newest: a second sprout blooming into the same kind isn't news.
     .filter((b, i, all) => all.findIndex((x) => x.kind === b.kind) === i)
     .map((b) => {
-      const name = kindOf(b.kind).name;
+      const spec = kindOf(b.kind);
+      const name = spec.name;
+      if (spec.grown) return { id: `bloom:${b.id}`, at: b.at, kind: 'sprout' as const, title: t('Your {name} is fully grown', { name: name.toLowerCase() }), body: spec.grown, href: '/garden' };
       return { id: `bloom:${b.id}`, at: b.at, kind: 'sprout' as const, title: t('Your sprout bloomed into a {name}', { name }), body: t('You can give {name}s now.', { name }), href: '/garden' };
     });
 }

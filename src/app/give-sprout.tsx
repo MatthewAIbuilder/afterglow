@@ -14,7 +14,7 @@ import { Sprout } from '../features/sprouts/Sprout';
 import { SproutOf } from '../features/sprouts/SproutOf';
 import { artistLook } from '../features/sprouts/artistLook';
 import { tierLabel } from '../features/sprouts/artistSprouts';
-import { kindOf, seedsLine, SPROUT_NOTE_MAX, type SproutArtist, type SproutCard, type SproutKind, sproutLink, sproutName } from '../features/sprouts/sprouts';
+import { giftStage, keptKinds, kindOf, seedsLine, SPROUT_NOTE_MAX, type SproutArtist, type SproutCard, type SproutKind, sproutLink, sproutName } from '../features/sprouts/sprouts';
 import { canGiveThemes, GIFT_THEME_IDS } from '../features/themes/gifts';
 import { ThemeSwatch } from '../features/themes/ThemePreview';
 import { themeOf } from '../features/themes/themes';
@@ -86,7 +86,9 @@ export default function GiveSproutScreen() {
           : r.problem === 'loading'
             ? t('One moment, your garden is still loading.')
             : r.problem === 'not-yours'
-              ? t('Film this artist’s set to earn their collectible first.')
+              ? chosen
+                ? t('Film this artist’s set to earn their collectible first.')
+                : t('Grow your gnome all the way first, then you can pass it on.')
               : t('Make your profile to give sprouts.'),
       );
       return;
@@ -126,6 +128,8 @@ export default function GiveSproutScreen() {
   }, [picked, gift, online]);
 
   const k = kindOf(kind);
+  const hat = !!k.seed && !chosen;
+  const noSeeds = sprouts.seeds === 0 && !hat;
   const blocked = !social.availability.ok || !social.user || !social.profile;
 
   return (
@@ -210,9 +214,14 @@ export default function GiveSproutScreen() {
                 </>
               ) : (
                 <>
-                  <Sprout kind={kind} stage={kind === 'seedling' ? 2 : 3} size={150} />
+                  <Sprout kind={kind} stage={giftStage(kind)} size={150} />
                   <Text style={styles.heroName}>{k.name}</Text>
                   <Text style={styles.body}>{k.about}</Text>
+                  {k.seed ? (
+                    <Text style={styles.body}>
+                      {keptKinds(social.user?.uid).includes(kind) ? t('You can give as many as you like, and they don’t use seeds.') : t('Your grown gnome leaves your garden, and they get a new hat to grow.')}
+                    </Text>
+                  ) : null}
                 </>
               )}
             </View>
@@ -231,7 +240,7 @@ export default function GiveSproutScreen() {
                     accessibilityLabel={kindOf(id).name}
                     style={[styles.kind, !chosen && id === kind && styles.kindOn]}
                   >
-                    <Sprout kind={id} stage={id === 'seedling' ? 2 : 3} size={44} still />
+                    <Sprout kind={id} stage={giftStage(id)} size={44} still />
                     <Text style={styles.kindName} numberOfLines={1}>
                       {kindOf(id).short}
                     </Text>
@@ -323,14 +332,15 @@ export default function GiveSproutScreen() {
               accessibilityLabel={t('A note with your sprout')}
               style={styles.input}
             />
-            <Text style={[styles.seeds, sprouts.seeds === 0 && styles.wait]}>{seedsLine(sprouts.seeds, sprouts.festivalDay)}</Text>
+            {/* A hat uses no seed. */}
+            {hat ? null : <Text style={[styles.seeds, sprouts.seeds === 0 && styles.wait]}>{seedsLine(sprouts.seeds, sprouts.festivalDay)}</Text>}
             {problem ? <Text style={styles.wait}>{problem}</Text> : null}
             <Pressable
               onPress={show}
-              disabled={sprouts.seeds === 0}
+              disabled={noSeeds}
               accessibilityRole="button"
-              accessibilityState={{ disabled: sprouts.seeds === 0 }}
-              style={({ pressed }) => [styles.primary, sprouts.seeds === 0 && styles.disabled, pressed && styles.pressed]}
+              accessibilityState={{ disabled: noSeeds }}
+              style={({ pressed }) => [styles.primary, noSeeds && styles.disabled, pressed && styles.pressed]}
             >
               <Text style={styles.primaryText}>{t('Show the code')}</Text>
             </Pressable>

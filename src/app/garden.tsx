@@ -26,7 +26,7 @@ import { GardenScene, type SceneResident } from '../features/sprouts/GardenScene
 import { FindsSection } from '../features/finds/FindsSection';
 import { artistLook } from '../features/sprouts/artistLook';
 import { useCatalog } from '../state/catalog';
-import { gardenLine, GROW_TIPS, growthLine, KEPT_SPROUT_IDS, kindListed, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
+import { gardenLine, GROW_TIPS, growthLine, KEPT_SPROUT_IDS, kindListed, kindOf, seedsLine, SPROUT_KINDS, sproutName, stageName, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
 import { LOCALE, t, tn } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
@@ -60,7 +60,9 @@ const fromLine = (s: GardenView) => {
   const who = giverOf(s);
   return who !== undefined ? t('from {name}', { name: who }) : t('from someone');
 };
-const nameOf = (s: GardenView) => (s.shown === 'seedling' ? t('Sprout') : kindOf(s.shown).name);
+const nameOf = (s: GardenView) => (s.shown === 'seedling' ? t('Sprout') : kindOf(s.shown).stages ? stageName(s.shown, s.stage) : kindOf(s.shown).name);
+/** Grows from what you do: a plain sprout, or a hat. */
+const growing = (s: GardenView) => s.kind === 'seedling' || !!kindOf(s.kind).seed;
 
 /**
  * Your garden: every sprout you've been given (and your first one), growing
@@ -124,7 +126,7 @@ export default function GardenScreen() {
     ...plain.map((s) => ({
       id: s.id,
       name: kindOf(s.shown).short,
-      label: t('{name}, {from}. {growth}.', { name: nameOf(s), from: fromLine(s), growth: s.shown === 'seedling' && s.growth ? growthLine(s.growth) : STAGE_NAMES[s.stage] }),
+      label: t('{name}, {from}. {growth}.', { name: nameOf(s), from: fromLine(s), growth: (s.shown === 'seedling' || (kindOf(s.shown).stages && s.stage < 3)) && s.growth ? growthLine(s.growth, s.shown) : stageName(s.shown, s.stage) }),
       size: STAGE_SIZE[s.stage],
       bar: s.stage < 3 && s.growth ? { at: (s.stage + s.growth.toNext) / 3, color: SPROUT_GREEN } : undefined,
       fresh: sprouts.newBlooms.some((b) => b.id === s.id) || (s.id !== STARTER_ID && s.at > now - FRESH_MS),
@@ -499,13 +501,13 @@ function SproutSheet({ sprout, onClose: close }: { sprout?: GardenView; onClose:
             )}
             {s.note ? <Text style={styles.note}>“{s.note}”</Text> : null}
             {s.shown !== 'seedling' && s.stage < 3 ? <Text style={styles.body}>{kindOf(s.shown).about}</Text> : null}
-            {s.kind === 'seedling' && s.growth && s.stage < 3 ? (
+            {growing(s) && s.growth && s.stage < 3 ? (
               <>
                 <View style={[styles.bar, styles.barWide]}>
                   <View style={[styles.barFill, { width: `${Math.round(((s.stage + s.growth.toNext) / 3) * 100)}%` }]} />
                 </View>
-                <Text style={styles.growLine}>{growthLine(s.growth)}</Text>
-                {s.growth.leaning !== 'seedling' && s.stage >= 1 ? <Text style={styles.body}>{t('Growing into a {sprout}.', { sprout: kindOf(s.growth.leaning).name })}</Text> : null}
+                <Text style={styles.growLine}>{growthLine(s.growth, s.kind)}</Text>
+                {s.kind === 'seedling' && s.growth.leaning !== 'seedling' && s.stage >= 1 ? <Text style={styles.body}>{t('Growing into a {sprout}.', { sprout: kindOf(s.growth.leaning).name })}</Text> : null}
                 {GROW_TIPS.map((tip) => (
                   <Text key={tip} style={styles.tip}>
                     · {tip}
@@ -514,6 +516,8 @@ function SproutSheet({ sprout, onClose: close }: { sprout?: GardenView; onClose:
               </>
             ) : s.kind === 'seedling' ? (
               <Text style={styles.body}>{t('In bloom. You can give {name}s now.', { name: kindOf(s.shown).name })}</Text>
+            ) : kindOf(s.kind).grown && s.stage === 3 ? (
+              <Text style={styles.body}>{KEPT_SPROUT_IDS.includes(s.id) ? t('Fully grown. This one stays in your garden, and you can give as many hats as you like.') : kindOf(s.kind).grown}</Text>
             ) : null}
             {bloomed ? (
               <Pressable

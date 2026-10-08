@@ -4,6 +4,7 @@ import Animated, { cancelAnimation, Easing, type SharedValue, useAnimatedStyle, 
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { type ArtistLook, shinyLook } from './artistLook';
 import { Collectible, MOVES_FROM } from './Collectible';
+import { GnomeHat } from './Gnome';
 import { blinkOf, CLOCK_MS, glanceOf, type Pace, paceOf, sine } from './motion';
 import { kindOf, type SproutKind, type Stage } from './sprouts';
 
@@ -119,17 +120,19 @@ export type SproutProps = {
  * then leafy, then in bloom: each kind with its own face, leaves, colours
  * and what it wears (PLUR a heart and kandi, Bass headphones, Melody a
  * flower crown, Groove sunglasses, Spotlight a halo of light, Sunrise a
- * rising sun, Wanderer a star and a bandana, Groove a record and a chain, Gnome a
- * pointed hat and a beard). Bloomed sprouts glow softly and sparkle.
+ * rising sun, Wanderer a star and a bandana, Groove a record and a chain). Bloomed sprouts glow softly and sparkle.
  * Sways gently, blinks and swings its little feet unless motion is reduced
  * or `still` (small ones are still unless `still={false}`); a still one is
  * one picture. Hidden from screen readers (the label around it says what it is).
  *
  * An artist's passes `artist` (their look, from `artistLook`) and is drawn as
- * their collectible instead (Collectible.tsx), with `tier` for its level.
+ * their collectible instead (Collectible.tsx), with `tier` for its level. A
+ * gnome hat is drawn as it grows into a gnome (Gnome.tsx).
  */
 export function Sprout({ artist, tier, shiny, ...props }: SproutProps) {
-  return artist ? <Collectible look={shiny ? shinyLook(artist) : artist} shiny={shiny} tier={tier} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} /> : <Plant {...props} />;
+  if (artist) return <Collectible look={shiny ? shinyLook(artist) : artist} shiny={shiny} tier={tier} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} />;
+  if (props.kind === 'gnome') return <GnomeHat stage={props.stage} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} />;
+  return <Plant {...props} />;
 }
 
 function Plant({ kind = 'seedling', stage = 3, size = 80, still = size < MOVES_FROM, locked, scene, driven }: Omit<SproutProps, 'artist' | 'tier' | 'shiny'>) {
@@ -558,14 +561,6 @@ function Wear({ kind, x, y, rx, ry, color, grey, id }: { kind: SproutKind; x: nu
           <Circle cx={x + rx * 0.67} cy={y + ry * 0.42} r={0.9} fill={t('#FFFFFF')} opacity={0.9} />
         </G>
       );
-    case 'gnome':
-      // A fluffy white beard under its smile.
-      return (
-        <G>
-          <Vy d={`M${x - rx * 0.66} ${y + ry * 0.3} Q${x - rx * 0.7} ${y + ry * 1.05} ${x} ${y + ry * 1.18} Q${x + rx * 0.7} ${y + ry * 1.05} ${x + rx * 0.66} ${y + ry * 0.3} Q${x + rx * 0.33} ${y + ry * 0.5} ${x} ${y + ry * 0.44} Q${x - rx * 0.33} ${y + ry * 0.5} ${x - rx * 0.66} ${y + ry * 0.3} Z`} fill={t('#FFFFFF')} id={id} />
-          <Path d={`M${x - rx * 0.28} ${y + ry * 0.66} q1 3 0 6 M${x + rx * 0.28} ${y + ry * 0.66} q-1 3 0 6`} stroke={t('#D9D2C4')} strokeWidth={0.9} fill="none" strokeLinecap="round" />
-        </G>
-      );
     case 'groove':
       // A gold chain.
       return <Path d={`M${x - rx * 0.6} ${y + ry * 0.32} Q${x} ${y + ry * 0.75} ${x + rx * 0.6} ${y + ry * 0.32}`} stroke={t('#FFD58A')} strokeWidth={1.6} strokeDasharray="1.6 1.2" fill="none" strokeLinecap="round" />;
@@ -687,17 +682,6 @@ function Bloom({ kind, x, y, color, grey, id }: { kind: SproutKind; x: number; y
           <Path d={`M${x - 2.6} ${cy + 5.2} L${x - 1} ${cy - 0.8} L${x + 1} ${cy + 0.8} Z`} fill={t('#22305C')} />
           <Circle cx={x} cy={cy} r={1} fill={color} />
           <Spot x={x - 4} y={cy - 4.2} rx={2.2} ry={1.1} id={id} />
-        </G>
-      );
-    case 'gnome':
-      // A tall pointed gnome hat, its tip flopping over, with a gold star.
-      return (
-        <G>
-          <Vy d={`M${x - 10} ${cy + 7} Q${x - 6} ${cy - 8} ${x + 4} ${cy - 17} Q${x + 9} ${cy - 19} ${x + 9} ${cy - 14} Q${x + 7} ${cy - 2} ${x + 10} ${cy + 7} Q${x} ${cy + 10} ${x - 10} ${cy + 7} Z`} fill={color} id={id} />
-          <Path d={`M${x - 10} ${cy + 7} Q${x} ${cy + 10} ${x + 10} ${cy + 7}`} stroke={t('#FFFFFF')} strokeWidth={2.2} fill="none" strokeLinecap="round" opacity={0.9} />
-          <Vy d={circleD(x + 9, cy - 15.5, 2.2)} fill={t('#FFFFFF')} id={id} />
-          <Path d={starPath(x - 1, cy - 1, 2.6, 1.1)} fill={t('#FFC95A')} />
-          <Spot x={x - 4} y={cy - 3} rx={1.8} ry={1} id={id} />
         </G>
       );
     case 'moonlight':
