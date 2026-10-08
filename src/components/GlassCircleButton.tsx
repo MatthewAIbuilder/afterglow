@@ -11,6 +11,7 @@ export function GlassCircleButton({
   label,
   hint,
   selected,
+  size = 40,
   children,
 }: {
   onPress: () => void;
@@ -21,6 +22,8 @@ export function GlassCircleButton({
   hint?: string;
   /** A toggle that's on: it glows, and screen readers hear it as selected. */
   selected?: boolean;
+  /** Across, in points (40; Discover's header uses a smaller one). */
+  size?: number;
   children: ReactNode;
 }) {
   return (
@@ -40,9 +43,9 @@ export function GlassCircleButton({
       accessibilityHint={hint}
       accessibilityState={selected === undefined ? undefined : { selected }}
       hitSlop={10}
-      style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.92 }] }]}
+      style={({ pressed }) => [styles.button, size !== 40 && { width: size, height: size, borderRadius: size / 2 }, pressed && { transform: [{ scale: 0.92 }] }]}
     >
-      <GlassFill radius={20} lit={selected} />
+      <GlassFill radius={size / 2} lit={selected} />
       {/* Its own layer, so the glass (positioned) never paints over the icon in a browser. */}
       <View style={styles.content} pointerEvents="none">
         {children}

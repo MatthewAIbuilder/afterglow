@@ -9,7 +9,8 @@ import { QUEST_GOLD, QuestRing, SparkIcon } from './QuestRing';
 import { useDailyQuests } from './useDailyQuests';
 import { t } from '../../i18n';
 
-const SIZE = 40;
+/** A little smaller than other round buttons: it sits in Discover's header. */
+const SIZE = 36;
 
 /**
  * Today's quests at a glance: a glass button whose ring fills a third for
@@ -54,7 +55,7 @@ export function QuestButton() {
           <QuestRing size={SIZE} stroke={2.5} parts={of} progress={q.ready ? q.doneToday / of : 0} done={all} track="rgba(243,240,255,0.16)" />
         </View>
         <View pointerEvents="none">
-          <SparkIcon size={17} fill={all ? QUEST_GOLD : color.moon} />
+          <SparkIcon size={15} fill={all ? QUEST_GOLD : color.moon} />
         </View>
       </Animated.View>
     </Pressable>

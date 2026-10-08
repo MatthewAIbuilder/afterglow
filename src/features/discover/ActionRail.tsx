@@ -34,26 +34,29 @@ export function ActionRail({ liked, saved, onLike, onSave, onSkip, filmer, comme
     <View style={[styles.rail, horizontal && styles.row]}>
       {filmer ? <FilmerButton filmer={filmer} /> : null}
       <RailButton label={liked ? t('Liked') : t('Like')} active={liked} onPress={onLike}>
-        <HeartIcon color={liked ? color.glow : color.moon} filled={liked} />
+        <HeartIcon color={liked ? color.glow : color.moon} filled={liked} size={ICON} />
       </RailButton>
       {comments ? (
         <RailButton label={comments.label} caption={comments.caption} active={false} onPress={comments.onPress}>
-          <CommentIcon color={color.moon} size={27} />
+          <CommentIcon color={color.moon} size={ICON - 3} />
         </RailButton>
       ) : null}
       {onSave ? (
         <RailButton label={saved ? t('Saved') : t('Save')} active={saved} onPress={onSave}>
-          <SaveIcon color={saved ? color.glow : color.moon} filled={saved} />
+          <SaveIcon color={saved ? color.glow : color.moon} filled={saved} size={ICON} />
         </RailButton>
       ) : null}
       <RailButton label={t('Not for me')} active={false} onPress={onSkip} nudge>
-        <ThumbDownIcon color={color.moon} />
+        <ThumbDownIcon color={color.moon} size={ICON - 2} />
       </RailButton>
     </View>
   );
 }
 
-const FACE = 44;
+/** The round buttons, and the icons in them (kept small, so the video has the room). */
+const BUTTON = 44;
+const ICON = 25;
+const FACE = 40;
 
 /**
  * The person who filmed it, like TikTok: their photo above the buttons, with
@@ -146,7 +149,7 @@ function RailButton({
       <View>
         {burst ? <Burst key={burst} /> : null}
         <Animated.View style={[styles.icon, style]}>
-          <GlassFill radius={25} tint={0.3} frost={false} />
+          <GlassFill radius={BUTTON / 2} tint={0.3} frost={false} />
           {/* Its own layer, so the glass (positioned) never paints over the icon in a browser. */}
           <View pointerEvents="none">{children}</View>
         </Animated.View>
@@ -185,20 +188,20 @@ function Spark({ i, t }: { i: number; t: SharedValue<number> }) {
 }
 
 const styles = StyleSheet.create({
-  burst: { position: 'absolute', left: 0, top: 0, width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
-  ring: { position: 'absolute', width: 50, height: 50, borderRadius: 25, borderWidth: 2, borderColor: color.glow },
+  burst: { position: 'absolute', left: 0, top: 0, width: BUTTON, height: BUTTON, alignItems: 'center', justifyContent: 'center' },
+  ring: { position: 'absolute', width: BUTTON, height: BUTTON, borderRadius: BUTTON / 2, borderWidth: 2, borderColor: color.glow },
   spark: { position: 'absolute', width: 5, height: 5, borderRadius: 2.5 },
-  rail: { alignItems: 'center', gap: space.xl },
+  rail: { alignItems: 'center', gap: space.lg },
   row: { flexDirection: 'row', justifyContent: 'center', gap: space.xxxl },
   button: { alignItems: 'center' },
   icon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: BUTTON,
+    height: BUTTON,
+    borderRadius: BUTTON / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  face: { alignItems: 'center', justifyContent: 'center', minWidth: 50, minHeight: 50 },
+  face: { alignItems: 'center', justifyContent: 'center', minWidth: BUTTON, minHeight: BUTTON },
   plainRing: { padding: 1.5, borderRadius: FACE / 2 + 1.5, borderWidth: 1.5, borderColor: color.moon, backgroundColor: nightA(0.35) },
   label: { ...type.caption, color: color.moon, marginTop: 5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 6 },
   // A long @ is cut short rather than pushing the rail wider.
