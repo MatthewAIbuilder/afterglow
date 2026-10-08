@@ -9,13 +9,14 @@ import type { Artist, Clip, Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA, accentEdge } from '../../theme/tokens';
 import { CameraIcon } from '../camera/icons';
-import { HeartIcon, PlayIcon } from '../discover/icons';
+import { HeartIcon } from '../discover/icons';
 import { posterUrl } from '../discover/youtube';
 import type { Memory } from '../memories/models';
 import { clipLength, memoryLine } from '../memories/organize';
 import { onServer } from '../memories/webVideo';
-import { festivalMark } from './profileView';
 import { MomentFilters } from './MomentFilters';
+import { MomentTile } from './MomentTile';
+import { momentCaption } from '../memories/momentCaption';
 import { applyMomentFilter, artistChoices, placeChoices, type MomentFilter } from './momentFilter';
 import { t, tn } from '../../i18n';
 
@@ -120,56 +121,26 @@ export function VideosTab({
         )}
         {shown.map((m) => {
           const untagged = !m.festivalId && !m.past && !m.artistId;
-          const [from, to] = artistColors(m.artistId ?? m.id);
-          const length = clipLength(m.durationSec);
-          const artist = m.artistId ? lookup.artist(m.artistId)?.name : undefined;
-          // A throwback reads "EDC ’24", with a little rewind mark.
-          const where = m.past ? `↺ ${festivalMark(m.past.name)} ’${String(m.past.year).slice(2)}` : [m.festivalId ? festivalMark(lookup.festival(m.festivalId)?.name ?? '') : undefined, m.night].filter(Boolean).join(' · ');
           return (
-            <Pressable
+            <MomentTile
               key={m.id}
+              width={tile}
+              height={tileHeight(tile)}
+              thumb={m.thumb ? (onServer(m) ? m.thumb : uriOf(m.thumb)) : undefined}
+              seed={m.artistId ?? m.id}
+              caption={momentCaption(m, lookup)}
+              length={clipLength(m.durationSec)}
+              untagged={untagged}
+              onlyYou={canFilm && !m.sharedId}
               onPress={() => {
-                haptic.select();
                 // A video on the server (shared from the website) opens as the shared video.
                 // Swipe up and down through the rest, in the order shown, like Discover.
                 if (onServer(m) && m.sharedId) router.push({ pathname: '/shared/[id]', params: { id: m.sharedId, ids: sharedIds } });
                 else if (untagged) router.push({ pathname: '/memory-tag', params: { id: m.id } });
                 else router.push({ pathname: '/memory/[id]', params: { id: m.id, ids: localIds } });
               }}
-              accessibilityRole="button"
-              accessibilityLabel={untagged ? t('Untagged video. Tag it') : m.sharedId ? t('Video: {line}, shared', { line: memoryLine(m, lookup) }) : t('Video: {line}', { line: memoryLine(m, lookup) })}
-              style={({ pressed }) => [styles.tile, { width: tile, height: tileHeight(tile) }, pressed && { opacity: 0.8 }]}
-            >
-              <LinearGradient colors={[to, from]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />
-              {m.thumb ? <Image source={{ uri: onServer(m) ? m.thumb : uriOf(m.thumb) }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} /> : null}
-              <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(3,2,10,0.65)']} style={styles.scrim} pointerEvents="none" />
-              {length ? (
-                <View style={styles.length}>
-                  <PlayIcon color={color.moon} size={8} />
-                  <Text style={styles.lengthText}>{length}</Text>
-                </View>
-              ) : null}
-              {artist || where ? (
-                <View style={styles.momentLabel} pointerEvents="none">
-                  {artist ? (
-                    <Text style={styles.momentArtist} numberOfLines={1}>
-                      {artist}
-                    </Text>
-                  ) : null}
-                  {where ? (
-                    <Text style={styles.momentWhere} numberOfLines={1}>
-                      {where}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
-              {m.sharedId ? <View style={styles.sharedDot} /> : null}
-              {untagged ? (
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>{t('Tag')}</Text>
-                </View>
-              ) : null}
-            </Pressable>
+              label={untagged ? t('Untagged video. Tag it') : m.sharedId ? t('Video: {line}, shared', { line: memoryLine(m, lookup) }) : t('Video: {line}', { line: memoryLine(m, lookup) })}
+            />
           );
         })}
       </View>
@@ -287,16 +258,8 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
   tile: { overflow: 'hidden', backgroundColor: color.nightRaised },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
-  length: { position: 'absolute', right: space.sm, top: space.sm, flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, backgroundColor: 'rgba(3,2,10,0.55)' },
-  momentLabel: { position: 'absolute', left: space.sm, right: space.sm, bottom: space.sm },
-  momentArtist: { ...type.caption, color: color.moon, fontWeight: '700' },
-  momentWhere: { ...type.caption, fontSize: 11, color: color.moonDim },
-  lengthText: { ...type.caption, color: color.moon, fontVariant: ['tabular-nums'] },
-  sharedDot: { position: 'absolute', left: space.sm, top: space.sm + 2, width: 7, height: 7, borderRadius: 4, backgroundColor: color.glow },
-  tag: { position: 'absolute', left: space.sm, top: space.sm, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: glowA(0.85) },
-  tagText: { ...type.caption, color: color.moon },
   newTile: { alignItems: 'center', justifyContent: 'center', gap: space.xs, backgroundColor: color.glass },
-  newPlus: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: color.hairline },
+  newPlus: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: glowA(0.55), backgroundColor: glowA(0.14) },
   newText: { ...type.caption, color: color.moonDim },
   clipArtist: { ...type.caption, color: color.moon, position: 'absolute', left: space.sm, right: space.sm, bottom: space.sm },
   byFestival: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4, paddingHorizontal: space.xl, paddingVertical: space.sm },
