@@ -15,3 +15,10 @@ export const SHOP_LINKS: Readonly<Record<string, string>> = {};
  * it's true, Amazon shop links show on the website only. See docs/money.md.
  */
 export const AMAZON_APP_APPROVED = false;
+
+/**
+ * Afterglow's Stay22 affiliate id ("aid", from the user on 2026-10-08). With
+ * it, every upcoming festival gets a "Places to stay" link made from its
+ * venue and dates (a link set in the catalogue wins). Empty turns them off.
+ */
+export const STAY22_AID = 'afterglow';

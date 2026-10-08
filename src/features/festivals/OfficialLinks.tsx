@@ -1,7 +1,7 @@
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { earnsFrom, PARTNER_NOTE } from '../partners/partners';
+import { earnsFrom, PARTNER_NOTE, stayLinkOf } from '../partners/partners';
 import { countTicketTapOnce } from '../partners/ticketTaps';
 import { useSocialMaybe } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
@@ -17,7 +17,7 @@ import { t } from '../../i18n';
 export function OfficialLinks({ festival, over }: { festival: Festival; over: boolean }) {
   const tickets = over ? undefined : festival.links?.tickets;
   const website = festival.links?.website;
-  const stay = over ? undefined : festival.links?.stay;
+  const stay = over ? undefined : stayLinkOf(festival);
   const social = useSocialMaybe();
   if (!tickets && !website && !stay) return null;
   const open = (url: string) => {
