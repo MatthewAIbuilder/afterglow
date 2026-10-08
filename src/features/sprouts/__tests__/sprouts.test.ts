@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
+import { GNOME_FRIENDS } from '../../profile/backdrops';
 import { bloomNotices, sproutNotices, wildNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, GIFT_REFUSED_MAX, giftsToSend, giftTried, nextDue, queueClaim, retryDelay, seedGifts, tidy, type Gift } from '../outbox';
 import {
   cleanBloomed,
@@ -10,6 +11,10 @@ import {
   givableKinds,
   growthLine,
   growthOf,
+  keptKinds,
+  keptSprouts,
+  kindListed,
+  kindOf,
   newlyBloomed,
   readSproutLink,
   seedsLeft,
@@ -192,5 +197,31 @@ describe('the bell', () => {
     expect(kinds.size).toBeGreaterThan(3);
     const list = wildNotices([{ id: 'wild:x:2026-10-19', kind: 'bass', from: '', at: at(10, 19), foundAt: 'Cove' }], at(10, 20));
     expect(list[0].title).toBe('A wild Bass sprout appeared at Cove');
+  });
+  it('gnome sprouts belong to their keeper: theirs grows into one, only they give them', () => {
+    const keeper = GNOME_FRIENDS[0];
+    expect(keptKinds(keeper)).toEqual(['gnome']);
+    expect(keptKinds('someone')).toEqual([]);
+    expect(keptSprouts('someone', at(1, 1))).toEqual([]);
+    // Planted when it shipped (or when the keeper started, if later).
+    const [own] = keptSprouts(keeper, at(1, 1));
+    expect(own).toMatchObject({ id: 'kept-gnome', kind: 'seedling', grows: 'gnome', at: kindOf('gnome').plantedAt });
+    expect(keptSprouts(keeper, at(12, 1))[0].at).toBe(at(12, 1));
+    // It grows like any sprout, but always into a gnome.
+    const start = at(10, 10);
+    const sprouts = [{ ...own, at: start }];
+    const j: Journey = { ...none, festivalDays: [at(10, 11), at(10, 12), at(10, 13), at(10, 14), at(10, 15)] };
+    expect(garden(sprouts, none, {}, at(10, 11))[0]).toMatchObject({ shown: 'seedling', stage: 0 });
+    const grown = garden(sprouts, j, {}, at(10, 16));
+    expect(grown[0]).toMatchObject({ shown: 'gnome', stage: 3 });
+    expect(newlyBloomed(grown, {})).toEqual({ 'kept-gnome': 'gnome' });
+    // The keeper gives them from the start; nobody else can, even with one bloomed or given to them.
+    expect(givableKinds([], {}, keeper)).toEqual(['seedling', 'gnome']);
+    expect(givableKinds(grown, { x: 'gnome' }, 'someone')).toEqual(['seedling']);
+    // Listed among the kinds to collect only for someone who has one, or keeps them.
+    expect(kindListed(kindOf('gnome'), new Set())).toBe(false);
+    expect(kindListed(kindOf('gnome'), new Set(['gnome']))).toBe(true);
+    expect(kindListed(kindOf('gnome'), new Set(), keeper)).toBe(true);
+    expect(kindListed(kindOf('plur'), new Set())).toBe(true);
   });
 });

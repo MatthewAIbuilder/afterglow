@@ -20,6 +20,8 @@ import {
   type GardenSprout,
   type GardenView,
   givableKinds,
+  KEPT_SPROUT_IDS,
+  keptSprouts,
   isKind,
   type Journey,
   newlyBloomed,
@@ -218,7 +220,7 @@ const maxShown = (a: Record<string, number> = {}, b: Record<string, number> = {}
 /** What of a saved garden goes in an account's private copy: its own sprouts and gifts (sent ones: unsent ones are still on their way), plus this phone's wild finds and first sprout. */
 export function backupFor(s: Stored, account: string): string | undefined {
   const garden = s.garden.filter((g) => g.account === account);
-  const ids = new Set([...garden.map((g) => g.id), ...(s.wild ?? []).map((w) => w.id), STARTER_ID]);
+  const ids = new Set([...garden.map((g) => g.id), ...(s.wild ?? []).map((w) => w.id), STARTER_ID, ...KEPT_SPROUT_IDS]);
   const pick = <T,>(o: Record<string, T> | undefined) => (o ? Object.fromEntries(Object.entries(o).filter(([k]) => ids.has(k))) : undefined);
   return backupText({
     garden,
@@ -683,7 +685,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const sprouts = useMemo<GardenSprout[]>(() => {
     const mine = account ? stored.garden.filter((g) => g.account === account) : [];
     const starter: GardenSprout[] = stored.starterAt ? [{ id: STARTER_ID, kind: 'seedling', from: '', name: 'Afterglow', at: stored.starterAt }] : [];
-    return [...mine, ...(stored.wild ?? []), ...starter];
+    // A keeper's own sprout of each kind only they grow (the gnome sprout).
+    const kept = stored.starterAt ? keptSprouts(account, stored.starterAt) : [];
+    return [...mine, ...(stored.wild ?? []), ...kept, ...starter];
   }, [stored.garden, stored.starterAt, stored.wild, account]);
   // A wild sprout on each festival night you're at (once loaded, so one's never found twice).
   const wildId = tonight && here ? `${WILD_PREFIX}${tonightKey(tonight.festival.id, tonight.at)}` : undefined;
@@ -703,7 +707,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       setStored((s) => ({ ...s, bloomed: { ...fresh, ...s.bloomed }, bloomedAt: { ...Object.fromEntries(Object.keys(fresh).map((id) => [id, at])), ...s.bloomedAt } })),
     );
   }, [garden, stored.bloomed]);
-  const givable = useMemo(() => givableKinds(garden, stored.bloomed), [garden, stored.bloomed]);
+  const givable = useMemo(() => givableKinds(garden, stored.bloomed, account), [garden, stored.bloomed, account]);
   const blooms = useMemo(
     () => garden.flatMap((g) => (stored.bloomed[g.id] && stored.bloomedAt?.[g.id] ? [{ id: g.id, kind: stored.bloomed[g.id], at: stored.bloomedAt[g.id] }] : [])),
     [garden, stored.bloomed, stored.bloomedAt],

@@ -51,8 +51,9 @@ await t('at most 6 favourite artists, and a background is a style name', async (
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'https://x.test/a.gif' })));
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { showArtists: 'yes' })));
 });
-await t('the panda garden, frog pond and toe beach are only for the profiles made for them', async () => {
+await t('the panda garden, frog pond, toe beach and gnome garden are only for the profiles made for them', async () => {
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'panda' })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'gnome' })));
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'frog' })));
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'toes' })));
   await assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'none' })));
@@ -824,6 +825,11 @@ await t('sprouts: given as yourself, picked up once, by anyone else not blocked,
   await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'cccccccccccccccccccc'), sprout({ kind: 'golden' })));
   await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'dddddddddddddddddddd'), sprout({ to: 'uidB' })));
   await assertFails(setDoc(doc(anon.firestore(), 'sprouts', 'eeeeeeeeeeeeeeeeeeee'), sprout()));
+  // Gnome sprouts come only from their keeper.
+  await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'gggggggggggggggggggg'), sprout({ kind: 'gnome' })));
+  const GRACE = '8EEXIUNCQghOnejeAOygGMSl6Bp1';
+  await env.withSecurityRulesDisabled(async (ctx) => setDoc(doc(ctx.firestore(), 'profiles', GRACE), profile('gnomekeeper')));
+  await assertSucceeds(setDoc(doc(env.authenticatedContext(GRACE).firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), sprout({ from: GRACE, kind: 'gnome' })));
   // Sending again is refused (it's already there).
   await assertFails(setDoc(doc(A.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv'), sprout()));
   await assertSucceeds(getDoc(doc(B.firestore(), 'sprouts', 'abcdefghijkmnpqrstuv')));

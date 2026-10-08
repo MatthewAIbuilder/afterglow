@@ -4,6 +4,7 @@ import type { Festival } from '../../data/models';
 import { runsOf } from '../festivals/when';
 import { t, tn } from '../../i18n';
 import { questDay } from '../quests/daily';
+import { GNOME_FRIENDS } from '../profile/backdrops';
 
 /**
  * Sprouts: little green collectibles you give people at festivals (a rave
@@ -20,9 +21,13 @@ import { questDay } from '../quests/daily';
  *   full bloom it becomes a kind, decided by what grew it most, and from
  *   then on you can give sprouts of that kind too. Sprouts that arrive as a
  *   kind are already grown.
+ * - Kept kinds: a few kinds belong to one gardener (`keepers`). Only they
+ *   grow one (a sprout of their own that always blooms into it) and give
+ *   them; everyone else can only be given one, and doesn't see the kind
+ *   until they have it.
  */
 
-export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise' | 'moonlight' | 'seeker';
+export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise' | 'moonlight' | 'seeker' | 'gnome';
 
 export type KindSpec = {
   id: SproutKind;
@@ -38,6 +43,10 @@ export type KindSpec = {
   /** Body tint and the accent on top. */
   body: [string, string];
   accent: string;
+  /** Only these accounts grow and give it (the database checks the same); others can only be given one. */
+  keepers?: readonly string[];
+  /** When a keeper's own one was planted (ms): it grows from then. */
+  plantedAt?: number;
 };
 
 export const SPROUT_KINDS: readonly KindSpec[] = [
@@ -51,10 +60,28 @@ export const SPROUT_KINDS: readonly KindSpec[] = [
   { id: 'sunrise', name: t('Sunrise sprout'), short: t('Sunrise'), how: t('Grows from filming at sunrise'), grows: t('filming at sunrise'), about: t('Grown by the ones still dancing when the sun comes up.'), body: ['#C2F0A0', '#4DA844'], accent: '#FF9F5A' },
   { id: 'moonlight', name: t('Moonlight sprout'), short: t('Moonlight'), how: t('Grows from watching sets after midnight'), grows: t('watching sets after midnight'), about: t('Grown in the small hours, glowing softly by moonlight.'), body: ['#C8D8FF', '#5A7AD8'], accent: '#B8C8FF' },
   { id: 'seeker', name: t('Seeker sprout'), short: t('Seeker'), how: t('Grows from finding stickers'), grows: t('finding stickers'), about: t('Grown by the ones who look behind every tent for one more sticker.'), body: ['#E2F2A8', '#8FB43C'], accent: '#FFC94A' },
+  { id: 'gnome', name: t('Gnome sprout'), short: t('Gnome'), how: t('Only a gnome keeper grows these'), grows: t('a gnome keeper’s garden'), about: t('A little gnome in a pointed red hat and a fluffy beard. Only one gardener grows these, so every one is special.'), body: ['#D8F2B8', '#3F7F2C'], accent: '#E8463A', keepers: GNOME_FRIENDS, plantedAt: Date.UTC(2026, 9, 8, 12) },
 ];
 
 export const kindOf = (id: string): KindSpec => SPROUT_KINDS.find((k) => k.id === id) ?? SPROUT_KINDS[0];
 export const isKind = (k: unknown): k is SproutKind => typeof k === 'string' && SPROUT_KINDS.some((s) => s.id === k);
+
+/** The kinds only this account grows and gives. */
+export const keptKinds = (uid: string | undefined): SproutKind[] => (uid ? SPROUT_KINDS.filter((k) => k.keepers?.includes(uid)).map((k) => k.id) : []);
+/** A keeper's own sprout of a kept kind, in their garden. */
+export const keptSproutId = (kind: SproutKind) => `kept-${kind}`;
+/** Every keeper's own sprout id (kept with the garden like the first sprout). */
+export const KEPT_SPROUT_IDS: readonly string[] = SPROUT_KINDS.filter((k) => k.keepers).map((k) => keptSproutId(k.id));
+/**
+ * A keeper's own sprouts: one for each kind they keep, a plain sprout that
+ * always blooms into it, growing from when it was planted (or from when they
+ * started, if that was later).
+ */
+export function keptSprouts(uid: string | undefined, starterAt: number): GardenSprout[] {
+  return keptKinds(uid).map((kind) => ({ id: keptSproutId(kind), kind: 'seedling' as const, grows: kind, from: '', name: 'Afterglow', at: Math.max(starterAt, kindOf(kind).plantedAt ?? 0) }));
+}
+/** Whether a kind shows in lists of kinds to collect: every kind, but a kept one only once you have it or keep it. */
+export const kindListed = (k: KindSpec, have: ReadonlySet<SproutKind>, uid?: string) => !k.keepers || have.has(k.id) || (!!uid && k.keepers.includes(uid));
 
 /** Seeds to give each day (days turn over at 4 AM, like quests), and on a festival day you're at. */
 export const SEEDS_PER_DAY = 5;
@@ -307,6 +334,8 @@ export type GardenSprout = {
   themeShown?: true;
   /** Its page (with the offer to follow whoever gave it) has been shown since it arrived. */
   followAsked?: true;
+  /** A plain sprout that always blooms into this kind (a keeper's own, `keptSprouts`). */
+  grows?: SproutKind;
 };
 
 /**
@@ -343,7 +372,8 @@ export function garden(sprouts: readonly GardenSprout[], journey: Journey, bloom
     .map((s) => {
       // Given sprouts arrive grown, an artist's included.
       if (s.kind !== 'seedling' || s.artist) return { ...s, shown: s.kind, stage: 3 as Stage };
-      const growth = growthOf(journey, s.at, now);
+      const grown = growthOf(journey, s.at, now);
+      const growth = s.grows ? { ...grown, leaning: s.grows } : grown;
       const shown = bloomed[s.id] ?? (growth.stage === 3 ? growth.leaning : 'seedling');
       return { ...s, growth, shown, stage: bloomed[s.id] ? 3 : growth.stage };
     });
@@ -356,11 +386,11 @@ export function newlyBloomed(view: readonly GardenView[], bloomed: Readonly<Reco
   return out;
 }
 
-/** Kinds you can give: plain sprouts always, plus every kind you've grown. */
-export function givableKinds(view: readonly GardenView[], bloomed: Readonly<Record<string, SproutKind>>): SproutKind[] {
-  const grown = new Set(Object.values(bloomed));
+/** Kinds you can give: plain sprouts always, every kind you've grown, and the kinds you keep (from the start). A kept kind only by its keepers. */
+export function givableKinds(view: readonly GardenView[], bloomed: Readonly<Record<string, SproutKind>>, uid?: string): SproutKind[] {
+  const grown = new Set<SproutKind>([...Object.values(bloomed), ...keptKinds(uid)]);
   for (const s of view) if (s.kind === 'seedling' && s.stage === 3 && s.shown !== 'seedling') grown.add(s.shown);
-  return SPROUT_KINDS.map((k) => k.id).filter((k) => k === 'seedling' || grown.has(k));
+  return SPROUT_KINDS.filter((k) => !k.keepers || (!!uid && k.keepers.includes(uid))).map((k) => k.id).filter((k) => k === 'seedling' || grown.has(k));
 }
 
 /** Kinds you've collected (received or grown), for the collection row. */

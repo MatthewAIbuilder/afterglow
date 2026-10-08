@@ -985,4 +985,12 @@ export const es_sprouts: Dictionary = {
   'Candy': 'Caramelo',
   '@{handle} left you kandi: “{word}”': '@{handle} te dejó kandi: «{word}»',
   'It’s hanging in your garden. Open it to read their note.': 'Cuelga en tu jardín. Ábrela para leer su nota.',
+  'Gnome sprout': 'Brote gnomo',
+  'Gnome': 'Gnomo',
+  'Only a gnome keeper grows these': 'Solo quien cuida los gnomos los hace crecer',
+  'a gnome keeper’s garden': 'el jardín de quien cuida los gnomos',
+  'A little gnome in a pointed red hat and a fluffy beard. Only one gardener grows these, so every one is special.': 'Un pequeño gnomo con gorro rojo puntiagudo y barba esponjosa. Solo una persona los hace crecer, así que cada uno es especial.',
+  'Only you grow these': 'Solo tú los haces crecer',
+  'The Garden gnome': 'El Gnomo de jardín',
+  'A garden gnome keeping watch over the sprouts': 'Un gnomo de jardín que vigila los brotes',
 };

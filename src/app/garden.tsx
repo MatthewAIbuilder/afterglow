@@ -26,7 +26,7 @@ import { GardenScene, type SceneResident } from '../features/sprouts/GardenScene
 import { FindsSection } from '../features/finds/FindsSection';
 import { artistLook } from '../features/sprouts/artistLook';
 import { useCatalog } from '../state/catalog';
-import { gardenLine, GROW_TIPS, growthLine, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
+import { gardenLine, GROW_TIPS, growthLine, KEPT_SPROUT_IDS, kindListed, kindOf, seedsLine, SPROUT_KINDS, sproutName, STAGE_NAMES, STARTER_ID, type GardenView } from '../features/sprouts/sprouts';
 import { LOCALE, t, tn } from '../i18n';
 import { haptic } from '../lib/haptics';
 import { useNow } from '../lib/useNow';
@@ -55,6 +55,7 @@ const day = (at: number) => new Date(at).toLocaleDateString(LOCALE, { month: 'sh
 const giverOf = (s: GardenView) => s.name ?? (s.handle ? `@${s.handle}` : undefined);
 const fromLine = (s: GardenView) => {
   if (s.id === STARTER_ID) return t('Your first sprout');
+  if (KEPT_SPROUT_IDS.includes(s.id)) return t('Only you grow these');
   if (s.foundAt) return t('Found at {place}', { place: s.foundAt });
   const who = giverOf(s);
   return who !== undefined ? t('from {name}', { name: who }) : t('from someone');
@@ -114,7 +115,7 @@ export default function GardenScreen() {
   const freshDecor = bloom || fresh || !seenDecor || !decorInputsReady ? undefined : decor.find((d) => !seenDecor.includes(d));
   const plain = sprouts.garden.filter((g) => !g.artist);
   const givenArtists: GivenArtistSprout[] = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: g.id === STARTER_ID || g.foundAt ? fromLine(g) : (giverOf(g) ?? t('someone')), at: g.at }] : []));
-  const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling');
+  const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling' && kindListed(k, sprouts.collected, social.user?.uid));
   const collected = kinds.filter((k) => sprouts.collected.has(k.id)).length;
   const artistOf = (a: { id: string; name: string }): Artist => catalog.artist(a.id) ?? ({ id: a.id, name: a.name, sound: {} } as Artist);
 

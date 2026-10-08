@@ -38,6 +38,7 @@ export const THEME_IDS = [
   'frog',
   'toes',
   'daisy',
+  'gnome',
 ] as const;
 
 export type ThemeId = (typeof THEME_IDS)[number];
@@ -60,6 +61,8 @@ export const PALETTES: Record<ThemeId, Palette> = {
   frog: { night: '#04130C', nightRaised: '#0A1F15', glow: '#7CE38B', glowDeep: '#2A8C42', haze: '#12452A', dusk: '#0E3236', stage: '#D9FF6B' },
   toes: { night: '#160C17', nightRaised: '#221322', glow: '#FFB38A', glowDeep: '#C25A40', haze: '#4A1E3A', dusk: '#2A1A50', stage: '#FF9EC7' },
   pride: { night: '#0B0816', nightRaised: '#16112A', glow: '#FF6FB5', glowDeep: '#C2338F', haze: '#5A1E8C', dusk: '#0F4A7A', stage: '#FFD93B' },
+  // Gnome garden: a mossy night, toadstool red, lantern gold.
+  gnome: { night: '#0A120C', nightRaised: '#131D15', glow: '#FF6B5A', glowDeep: '#B8332A', haze: '#2A3A1E', dusk: '#1A2A3A', stage: '#FFC95A' },
   daisy: { night: '#0E0620', nightRaised: '#190B31', glow: '#FF6AD5', glowDeep: '#B5289E', haze: '#4E1A86', dusk: '#123A8C', stage: '#FFE14D' },
 };
 

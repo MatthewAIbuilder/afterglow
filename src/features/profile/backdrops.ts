@@ -3,7 +3,7 @@
  * Each is drawn in code (no images), loops seamlessly, and stays still with
  * reduced motion. A few are free; the rest come with Afterglow Plus. A few
  * are made for one person each (the panda garden, the frog pond, the toe
- * beach) and nobody else can choose them. Pure.
+ * beach, the gnome garden) and nobody else can choose them. Pure.
  */
 import { TOE_FRIENDS } from '../toes/toes';
 import { t } from '../../i18n';
@@ -25,7 +25,8 @@ export type BackdropId =
   | 'panda'
   | 'frog'
   | 'toes'
-  | 'daisy';
+  | 'daisy'
+  | 'gnome';
 
 export type Backdrop = {
   id: BackdropId;
@@ -42,6 +43,9 @@ export type Backdrop = {
 
 /** Whose profile gets the panda garden (their Afterglow account). */
 export const PANDA_FRIENDS: readonly string[] = ['8EEXIUNCQghOnejeAOygGMSl6Bp1'];
+
+/** Whose profile gets the gnome garden (the same account as the panda garden). */
+export const GNOME_FRIENDS: readonly string[] = ['8EEXIUNCQghOnejeAOygGMSl6Bp1'];
 
 /** Whose profile gets the frog pond. */
 export const FROG_FRIENDS: readonly string[] = ['6i9w14pQcdR05jYEUvPmadkQ6NZ2'];
@@ -67,6 +71,7 @@ export const BACKDROPS: readonly Backdrop[] = [
   { id: 'frog', name: t('Frog pond'), about: t('Made just for you: frogs on lily pads, fireflies and a green glow'), plus: false, only: FROG_FRIENDS },
   { id: 'daisy', name: t('Neon daisy'), about: t('A gift: giant neon daisies turning under carnival lights'), plus: false, gift: true },
   { id: 'toes', name: t('Toe beach'), about: t('Made just for you: footprints in the sand, wiggling toes and a sunset'), plus: false, only: TOE_BEACH_FRIENDS },
+  { id: 'gnome', name: t('Gnome garden'), about: t('Made just for you: gnomes among the toadstools, lanterns and fireflies'), plus: false, only: GNOME_FRIENDS },
 ];
 
 const BY_ID = new Map(BACKDROPS.map((b) => [b.id, b]));
@@ -88,8 +93,8 @@ export function canUse(b: Backdrop, uid: string | undefined, plus: boolean, gift
   return !b.plus || plus;
 }
 
-/** A special background made for this account, if there is one. */
-export const madeFor = (uid: string | undefined) => BACKDROPS.find((b) => b.only && uid && b.only.includes(uid));
+/** A special background made for this account, if there is one (the newest, for someone with more than one). */
+export const madeFor = (uid: string | undefined) => [...BACKDROPS].reverse().find((b) => b.only && uid && b.only.includes(uid));
 
 /**
  * What the top of a profile shows. The chosen background when the owner may

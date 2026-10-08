@@ -39,6 +39,7 @@ const PERIOD: Record<BackdropId, number> = {
   toes: 14_000,
   daisy: 24_000,
   pride: 12_000,
+  gnome: 18_000,
 };
 
 export function AnimatedBackdrop({ id, width, height, still }: { id: BackdropId; width: number; height: number; still?: boolean }) {
@@ -980,6 +981,133 @@ function FrogPond({ t, w, h }: SceneProps) {
   );
 }
 
+/** A garden gnome: tall red hat, round nose, white beard, little blue coat and boots. */
+function Gnome({ size, hat = '#E8463A', coat = '#3D6FD0', wink }: { size: number; hat?: string; coat?: string; wink?: boolean }) {
+  const s = size / 100;
+  return (
+    <Svg width={size} height={size * 1.6}>
+      {/* Boots and coat. */}
+      <Ellipse cx={36 * s} cy={154 * s} rx={13 * s} ry={6 * s} fill="#4A2E1E" />
+      <Ellipse cx={64 * s} cy={154 * s} rx={13 * s} ry={6 * s} fill="#4A2E1E" />
+      <Path d={`M ${22 * s} ${150 * s} Q ${20 * s} ${108 * s} ${50 * s} ${100 * s} Q ${80 * s} ${108 * s} ${78 * s} ${150 * s} Z`} fill={coat} />
+      <Rect x={22 * s} y={128 * s} width={56 * s} height={7 * s} fill="#4A2E1E" />
+      <Rect x={45 * s} y={127 * s} width={10 * s} height={9 * s} rx={1.5 * s} fill="#FFC95A" />
+      {/* Face. */}
+      <Ellipse cx={50 * s} cy={86 * s} rx={22 * s} ry={18 * s} fill="#FFD9C2" />
+      {/* Beard, down over the coat. */}
+      <Path d={`M ${28 * s} ${86 * s} Q ${26 * s} ${132 * s} ${50 * s} ${140 * s} Q ${74 * s} ${132 * s} ${72 * s} ${86 * s} Q ${62 * s} ${98 * s} ${50 * s} ${96 * s} Q ${38 * s} ${98 * s} ${28 * s} ${86 * s} Z`} fill="#F6F2EA" />
+      <Path d={`M ${40 * s} ${112 * s} q ${3 * s} ${8 * s} 0 ${16 * s} M ${60 * s} ${112 * s} q ${-3 * s} ${8 * s} 0 ${16 * s}`} stroke="#D9D2C4" strokeWidth={1.4 * s} fill="none" strokeLinecap="round" />
+      {/* Eyes, cheeks and the round nose. */}
+      {wink ? (
+        <Path d={`M ${37 * s} ${82 * s} q ${4 * s} ${-3 * s} ${8 * s} 0`} stroke="#2A1A14" strokeWidth={2 * s} fill="none" strokeLinecap="round" />
+      ) : (
+        <Circle cx={41 * s} cy={82 * s} r={2.6 * s} fill="#2A1A14" />
+      )}
+      <Circle cx={59 * s} cy={82 * s} r={2.6 * s} fill="#2A1A14" />
+      <Ellipse cx={34 * s} cy={91 * s} rx={5 * s} ry={3 * s} fill="#FF8A80" opacity={0.6} />
+      <Ellipse cx={66 * s} cy={91 * s} rx={5 * s} ry={3 * s} fill="#FF8A80" opacity={0.6} />
+      <Circle cx={50 * s} cy={91 * s} r={7 * s} fill="#FFB49A" />
+      <Circle cx={47.5 * s} cy={88.5 * s} r={2 * s} fill="#FFFFFF" opacity={0.6} />
+      {/* The tall pointed hat, its tip flopping over. */}
+      <Path d={`M ${22 * s} ${78 * s} Q ${30 * s} ${30 * s} ${58 * s} ${4 * s} Q ${66 * s} ${0} ${64 * s} ${10 * s} Q ${70 * s} ${44 * s} ${78 * s} ${78 * s} Q ${50 * s} ${86 * s} ${22 * s} ${78 * s} Z`} fill={hat} />
+      <Path d={`M ${30 * s} ${70 * s} Q ${36 * s} ${40 * s} ${54 * s} ${18 * s}`} stroke="#FFFFFF" strokeWidth={3 * s} opacity={0.22} fill="none" strokeLinecap="round" />
+      <Path d={`M ${22 * s} ${78 * s} Q ${50 * s} ${86 * s} ${78 * s} ${78 * s}`} stroke="#00000033" strokeWidth={2 * s} fill="none" />
+    </Svg>
+  );
+}
+
+/** A toadstool: a red cap with white spots on a pale stem. */
+function Toadstool({ size, cap = '#E8463A' }: { size: number; cap?: string }) {
+  const s = size / 100;
+  return (
+    <Svg width={size} height={size}>
+      <Path d={`M ${38 * s} ${50 * s} Q ${34 * s} ${80 * s} ${32 * s} ${98 * s} L ${68 * s} ${98 * s} Q ${66 * s} ${80 * s} ${62 * s} ${50 * s} Z`} fill="#F4EBDA" />
+      <Path d={`M ${4 * s} ${54 * s} Q ${8 * s} ${8 * s} ${50 * s} ${6 * s} Q ${92 * s} ${8 * s} ${96 * s} ${54 * s} Q ${50 * s} ${62 * s} ${4 * s} ${54 * s} Z`} fill={cap} />
+      <Path d={`M ${16 * s} ${36 * s} Q ${26 * s} ${16 * s} ${46 * s} ${13 * s}`} stroke="#FFFFFF" strokeWidth={3 * s} opacity={0.25} fill="none" strokeLinecap="round" />
+      {[
+        [28, 30, 6],
+        [52, 20, 7],
+        [72, 34, 5.5],
+        [44, 42, 4.5],
+        [84, 48, 3.5],
+        [16, 48, 3.5],
+      ].map(([x, y, r], i) => (
+        <Ellipse key={i} cx={x * s} cy={y * s} rx={r * s} ry={r * 0.8 * s} fill="#FFF8EE" />
+      ))}
+    </Svg>
+  );
+}
+
+/** A little iron lantern with a warm flame. */
+function Lantern({ size }: { size: number }) {
+  const s = size / 100;
+  return (
+    <Svg width={size} height={size * 1.4}>
+      <Path d={`M ${50 * s} ${0} L ${50 * s} ${12 * s}`} stroke="#2A2A30" strokeWidth={3 * s} />
+      <Path d={`M ${30 * s} ${24 * s} L ${50 * s} ${12 * s} L ${70 * s} ${24 * s} Z`} fill="#2A2A30" />
+      <Rect x={30 * s} y={24 * s} width={40 * s} height={60 * s} rx={4 * s} fill="#FFC95A" opacity={0.9} />
+      <Ellipse cx={50 * s} cy={60 * s} rx={9 * s} ry={15 * s} fill="#FFF3C4" />
+      <Path d={`M ${30 * s} ${24 * s} L ${30 * s} ${84 * s} M ${70 * s} ${24 * s} L ${70 * s} ${84 * s} M ${50 * s} ${24 * s} L ${50 * s} ${84 * s}`} stroke="#2A2A30" strokeWidth={2.5 * s} />
+      <Rect x={26 * s} y={84 * s} width={48 * s} height={8 * s} rx={3 * s} fill="#2A2A30" />
+    </Svg>
+  );
+}
+
+function GnomeGarden({ t, w, h }: SceneProps) {
+  const flies = useMemo(() => {
+    const r = seeded(31);
+    return Array.from({ length: 18 }, () => ({ x: r() * w, s: 2 + r() * 2, k: 1 + Math.floor(r() * 2), p: r(), sway: 10 + r() * 22 }));
+  }, [w]);
+  const ground = h * 0.78;
+  const g = Math.min(64, h * 0.24);
+  return (
+    <>
+      <Sky colors={['#0b1a24', '#12261c', '#1a2e18', '#0A120C']} locations={[0, 0.45, 0.75, 1]} />
+      <Stars t={t} w={w} h={h * 0.5} n={24} seed={19} color="#FFF4D6" />
+      {/* A big soft moon and a mossy glow along the ground. */}
+      <Osc t={t} at={{ left: w * 0.58, top: -h * 0.14 }} scale={[0.04, 1, 0]} opacity={0.8}>
+        <Glow size={h * 0.7} color="#FFE3A0" />
+      </Osc>
+      <Osc t={t} at={{ left: -w * 0.15, top: ground - h * 0.3, width: w * 1.3 }} opacity={0.45}>
+        <Glow size={w * 1.3} color="#5FAE4E" squash={0.35} />
+      </Osc>
+      <View style={[styles.abs, { left: 0, right: 0, top: ground, bottom: 0 }]}>
+        <LinearGradient colors={['#2C4A22', '#1A2E16', '#0A120C']} style={StyleSheet.absoluteFill} />
+      </View>
+      {/* Toadstools along the ground, breathing a little. */}
+      {[
+        { x: w * 0.02, s: g * 0.9, p: 0, cap: '#E8463A' },
+        { x: w * 0.3, s: g * 0.55, p: 0.4, cap: '#FF7A45' },
+        { x: w * 0.62, s: g * 0.6, p: 0.7, cap: '#E8463A' },
+        { x: w - g * 1.1, s: g * 1.05, p: 0.2, cap: '#C93A5A' },
+      ].map((m, i) => (
+        <Osc key={`m${i}`} t={t} at={{ left: m.x, top: ground - m.s * 0.92 }} scale={[0.03, 2, m.p]}>
+          <Toadstool size={m.s} cap={m.cap} />
+        </Osc>
+      ))}
+      {/* A lantern swinging gently from above, its light pulsing. */}
+      <Osc t={t} at={{ left: w * 0.47 - 30, top: h * 0.08, width: 60, height: 60 }} flicker={[0.15, 3, 0]}>
+        <Glow size={60} color="#FFC95A" />
+      </Osc>
+      <Osc t={t} at={{ left: w * 0.47 - 9, top: h * 0.08 + 12 }} rotate={[5, 1, 0]}>
+        <Lantern size={18} />
+      </Osc>
+      {/* Two gnomes: one rocking happily on the left, a smaller one peeking and winking on the right. */}
+      <Osc t={t} at={{ left: w * 0.12, top: ground - g * 1.55 }} rotate={[3, 1, 0]} y={[2, 2, 0.25]}>
+        <Gnome size={g} />
+      </Osc>
+      <Osc t={t} at={{ left: w * 0.72, top: ground - g * 0.75 * 1.5 }} x={[4, 1, 0.5]} rotate={[5, 1, 0.5]}>
+        <Gnome size={g * 0.75} hat="#C93A5A" coat="#4E9A5D" wink />
+      </Osc>
+      {flies.map((f, i) => (
+        <Travel key={i} t={t} at={{ left: f.x, top: h }} dx={0} dy={-h} k={f.k} phase={f.p} sway={[f.sway, 3, f.p]} peak={0.9}>
+          <Spark size={f.s} color="#FFE07A" />
+        </Travel>
+      ))}
+    </>
+  );
+}
+
 /** The sole of a foot (the hidden toes' own outline), without its toes. */
 const SOLE =
   'M7.2 9.6c-1.6 1.6-2.2 4.4-1.9 7.2.3 2.6 1.1 4.6 1.3 6.6.2 2 1.6 3.6 3.6 3.6s3.4-1.4 3.6-3.4c.2-1.8.8-3.2 2-4.8 1.6-2.2 2.8-4.4 2.4-6.6-.4-2.2-2.4-3.4-5-3.6-2.4-.2-4.6.2-6 1z';
@@ -1156,6 +1284,7 @@ const SCENES: Record<BackdropId, (p: SceneProps) => React.ReactElement> = {
   toes: ToeBeach,
   daisy: Daisy,
   pride: Pride,
+  gnome: GnomeGarden,
 };
 
 const styles = StyleSheet.create({
