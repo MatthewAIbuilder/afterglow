@@ -1,11 +1,12 @@
 import { SocialLinks } from '../../components/SocialIcons';
 import type { Socials } from '../social/socials';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { ProfileIcon } from '../../components/TabIcons';
 import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import { haptic } from '../../lib/haptics';
-import { color, radius, space, type, glowA } from '../../theme/tokens';
+import { color, PRIDE, radius, rainbow, space, type, glowA } from '../../theme/tokens';
 import { type ProfileStat, shortCount } from './profileView';
 import { StandingAvatar, StandingCaption } from '../standing/StandingAvatar';
 import { SparkIcon } from '../quests/QuestRing';
@@ -84,15 +85,17 @@ export function ProfileHeader({ kandi, name, initial, bio, avatarUrl, stats, onS
   ) : ringed ? (
     <StandingAvatar standing={standing} name={name} url={avatarUrl} size={AVATAR - 10} />
   ) : (
-    <View style={styles.avatar}>
-      {avatarUrl ? (
-        <Image source={{ uri: avatarUrl }} style={styles.avatarImage} contentFit="cover" transition={200} />
-      ) : initial ? (
-        <Text style={styles.initial}>{name.slice(0, 1).toUpperCase()}</Text>
-      ) : (
-        <ProfileIcon color={color.moonDim} size={40} />
-      )}
-    </View>
+    <PrideRing>
+      <View style={[styles.avatar, PRIDE && styles.avatarInRing]}>
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.avatarImage} contentFit="cover" transition={200} />
+        ) : initial ? (
+          <Text style={styles.initial}>{name.slice(0, 1).toUpperCase()}</Text>
+        ) : (
+          <ProfileIcon color={color.moonDim} size={40} />
+        )}
+      </View>
+    </PrideRing>
   );
   const artistNames = orbit.map((o) => o.artist.name).join(', ');
   const orbitLabel = `${
@@ -234,7 +237,21 @@ export function ProfileButton({ label, onPress, glow, a11y, flex = true }: { lab
 
 const AVATAR = 104;
 
+/** The Pride theme: the profile picture sits in a ring of the rainbow. Otherwise just the picture. */
+function PrideRing({ children }: { children: React.ReactNode }) {
+  if (!PRIDE) return <>{children}</>;
+  return (
+    <View style={styles.prideRing}>
+      <LinearGradient colors={rainbow} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, styles.prideRingFill]} />
+      {children}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  prideRing: { width: AVATAR + 8, height: AVATAR + 8, borderRadius: (AVATAR + 8) / 2, alignItems: 'center', justifyContent: 'center', shadowColor: color.glow, shadowOpacity: 0.6, shadowRadius: 18, shadowOffset: { width: 0, height: 0 } },
+  prideRingFill: { borderRadius: (AVATAR + 8) / 2 },
+  avatarInRing: { borderColor: color.night, borderWidth: 3, shadowOpacity: 0 },
   level: {
     flexDirection: 'row',
     alignItems: 'center',

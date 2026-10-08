@@ -75,7 +75,7 @@ export default function ThemesScreen() {
   const wear = async () => {
     if (!changed || swapping) return;
     if (locked) {
-      showAlert(t('Part of Afterglow Plus'), t('{theme} comes with Afterglow Plus. Preview every theme here; Afterglow and Aurora are free.', { theme: theme.name }));
+      showAlert(t('Part of Afterglow Plus'), t('{theme} comes with Afterglow Plus. Preview every theme here; Afterglow, Aurora and Pride are free.', { theme: theme.name }));
       return;
     }
     if (!writeStoredTheme(picked)) {

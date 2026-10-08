@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { DEFAULT_THEME, isThemeId, PALETTES, rgbaOf, SPECTRUM, type ThemeId } from './palettes';
+import { DEFAULT_THEME, isThemeId, PALETTES, RAINBOW, rgbaOf, SPECTRUM, type ThemeId } from './palettes';
 import { readStoredTheme } from './storedTheme';
 
 /**
@@ -13,6 +13,10 @@ import { readStoredTheme } from './storedTheme';
 /** The theme the app wears this time it runs (chosen on Settings → App theme; a new one applies on restart). */
 export const THEME_ID: ThemeId = startingTheme();
 const palette = PALETTES[THEME_ID];
+/** The Pride theme: the rainbow runs all through the app (the sky, the tab bar, celebrations), not just one glow. */
+export const PRIDE = THEME_ID === 'pride';
+/** The rainbow flag's six colours, red to violet. */
+export const rainbow = RAINBOW;
 
 export const color = {
   night: palette.night, // app background

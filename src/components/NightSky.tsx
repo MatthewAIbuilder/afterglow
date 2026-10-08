@@ -2,13 +2,15 @@ import { StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { toeConstellation } from '../features/toes/toes';
 import { useToes } from '../features/toes/useToes';
-import { color, spectrum } from '../theme/tokens';
+import { PRIDE_LIGHTS } from '../theme/palettes';
+import { color, PRIDE, rainbow, spectrum } from '../theme/tokens';
 
 /**
  * The shared backdrop: a night sky lit by distant stage lights.
  * Three soft pools of light, kept low so content always leads. `festive`
  * (the Festivals tab) adds three more in the festival lights, gold, mint and
- * rose, still faint: a festival seen from the car park.
+ * rose, still faint: a festival seen from the car park. The Pride theme
+ * hangs an arc of the rainbow's six lights over every page.
  */
 export function NightSky({ festive }: { festive?: boolean } = {}) {
   const { width, height } = useWindowDimensions();
@@ -46,6 +48,14 @@ export function NightSky({ festive }: { festive?: boolean } = {}) {
             </RadialGradient>
           </>
         ) : null}
+        {PRIDE
+          ? PRIDE_LIGHTS.map((l, i) => (
+              <RadialGradient key={i} id={`pride${i}`} cx={`${l.x * 100}%`} cy={`${l.y * 100}%`} rx={`${l.rx * 100}%`} ry={`${l.ry * 100}%`}>
+                <Stop offset="0" stopColor={rainbow[i]} stopOpacity="0.24" />
+                <Stop offset="1" stopColor={rainbow[i]} stopOpacity="0" />
+              </RadialGradient>
+            ))
+          : null}
       </Defs>
       <Rect width="100%" height="100%" fill={color.night} />
       <Rect width="100%" height="100%" fill="url(#haze)" />
@@ -58,6 +68,7 @@ export function NightSky({ festive }: { festive?: boolean } = {}) {
           <Rect width="100%" height="100%" fill="url(#rose)" />
         </>
       ) : null}
+      {PRIDE ? PRIDE_LIGHTS.map((_, i) => <Rect key={`p${i}`} width="100%" height="100%" fill={`url(#pride${i})`} />) : null}
       {prints.map((p, i) => [...p.toes, ...p.sole].map((st, j) => <Circle key={`${i}-${j}`} cx={st.x} cy={st.y} r={st.r} fill="#F3F0FF" fillOpacity={j < 5 ? 0.13 : 0.1} />))}
     </Svg>
   );

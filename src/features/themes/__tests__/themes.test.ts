@@ -44,9 +44,9 @@ describe('app themes', () => {
     expect(isThemeId('glitter')).toBe(false);
   });
 
-  it('two are free, the rest need Plus', () => {
+  it('three are free (Afterglow, Aurora and Pride), the rest need Plus', () => {
     const everyone = themeChoices('someone');
-    expect(everyone.filter((t) => !t.plus).map((t) => t.id)).toEqual(['afterglow', 'aurora']);
+    expect(everyone.filter((t) => !t.plus).map((t) => t.id)).toEqual(['afterglow', 'aurora', 'pride']);
     expect(everyone.length).toBeGreaterThanOrEqual(10);
     const lava = themeOf('lava');
     expect(canUseTheme(lava, 'u', false)).toBe(false);

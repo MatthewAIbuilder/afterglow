@@ -3,6 +3,7 @@ import { useEffect, useId, useMemo } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, { cancelAnimation, Easing, type SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Ellipse, G, Line, Path, RadialGradient, Rect, Stop, LinearGradient as SvgGradient } from 'react-native-svg';
+import { PROGRESS, RAINBOW } from '../../theme/palettes';
 import type { BackdropId } from './backdrops';
 
 /**
@@ -37,6 +38,7 @@ const PERIOD: Record<BackdropId, number> = {
   frog: 16_000,
   toes: 14_000,
   daisy: 24_000,
+  pride: 12_000,
 };
 
 export function AnimatedBackdrop({ id, width, height, still }: { id: BackdropId; width: number; height: number; still?: boolean }) {
@@ -563,6 +565,82 @@ function Daisy({ t, w, h }: SceneProps) {
   );
 }
 
+/** A heart, drawn to fill a square. */
+function HeartShape({ size, color: c }: { size: number; color: string }) {
+  const s = size;
+  const d = `M ${s / 2} ${s * 0.9} C ${s * 0.12} ${s * 0.6} 0 ${s * 0.36} ${s * 0.12} ${s * 0.18} C ${s * 0.24} ${s * 0.02} ${s * 0.44} ${s * 0.06} ${s / 2} ${s * 0.24} C ${s * 0.56} ${s * 0.06} ${s * 0.76} ${s * 0.02} ${s * 0.88} ${s * 0.18} C ${s} ${s * 0.36} ${s * 0.88} ${s * 0.6} ${s / 2} ${s * 0.9} Z`;
+  return (
+    <Svg width={s} height={s}>
+      <Path d={d} fill={c} />
+    </Svg>
+  );
+}
+
+/** One stripe of the waving flag: a long wave that slides one wavelength per loop, so it never jumps. */
+function FlagStripe({ t, w, wl, amp, top, band, c }: { t: SharedValue<number>; w: number; wl: number; amp: number; top: number; band: number; c: string }) {
+  const width = w + wl * 2;
+  const d = useMemo(() => {
+    let path = `M 0 ${amp + amp * Math.sin(0)}`;
+    for (let x = 8; x <= width; x += 8) path += ` L ${x} ${amp + amp * Math.sin((TAU * x) / wl)}`;
+    return path;
+  }, [width, wl, amp]);
+  const style = useAnimatedStyle(() => ({ transform: [{ translateX: -frac(t.get()) * wl }] }));
+  return (
+    <Animated.View style={[styles.abs, { left: 0, top: top - band / 2 }, style]}>
+      <Svg width={width} height={amp * 2 + band}>
+        <Path d={d} stroke={c} strokeWidth={band + 0.6} fill="none" transform={`translate(0 ${band / 2})`} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** Pride (free): a rainbow flag waving across the night, a soft rainbow arc, hearts of every colour rising and sparkles. */
+function Pride({ t, w, h }: SceneProps) {
+  const band = Math.max(5, h * 0.05);
+  const wl = Math.max(160, w * 0.7);
+  const amp = band * 0.9;
+  const flagTop = h * 0.36;
+  const arcR = Math.max(w * 0.62, h * 0.9);
+  const arcW = arcR * 0.06;
+  const hearts = useMemo(() => {
+    const r = seeded(61);
+    const colours = [...RAINBOW, ...PROGRESS.slice(0, 3)];
+    return Array.from({ length: 16 }, (_, i) => ({ x: r() * w, s: 8 + r() * 12, k: 1 + Math.floor(r() * 2), p: r(), sway: 8 + r() * 18, c: colours[i % colours.length] }));
+  }, [w]);
+  return (
+    <>
+      <Sky colors={['#160a2a', '#1f0e38', '#0B0816']} />
+      <Osc t={t} at={{ left: -w * 0.25, top: -h * 0.3, width: w }} opacity={0.45} scale={[0.08, 1, 0]}>
+        <Glow size={w} color="#FF6FB5" squash={0.8} />
+      </Osc>
+      <Osc t={t} at={{ left: w * 0.4, top: h * 0.1, width: w }} opacity={0.35} scale={[0.1, 1, 0.5]}>
+        <Glow size={w} color="#3B9BFF" squash={0.8} />
+      </Osc>
+      {/* A rainbow arc rising from the bottom, breathing. */}
+      <Osc t={t} at={{ left: w / 2 - arcR, top: h * 1.02 - arcR, width: arcR * 2, height: arcR }} opacity={0.38} scale={[0.02, 1, 0.25]}>
+        <Svg width={arcR * 2} height={arcR}>
+          {RAINBOW.map((c, i) => {
+            const r = arcR - arcW * (i + 0.5);
+            return <Path key={c} d={`M ${arcR - r} ${arcR} A ${r} ${r} 0 0 1 ${arcR + r} ${arcR}`} stroke={c} strokeWidth={arcW + 0.5} fill="none" />;
+          })}
+        </Svg>
+      </Osc>
+      <Stars t={t} w={w} h={h} n={22} seed={41} />
+      {/* The flag, waving: six stripes riding the same wave. */}
+      <View style={[styles.abs, { left: 0, top: 0, width: w, height: h, opacity: 0.92 }]}>
+        {RAINBOW.map((c, i) => (
+          <FlagStripe key={c} t={t} w={w} wl={wl} amp={amp} top={flagTop + i * band} band={band} c={c} />
+        ))}
+      </View>
+      {hearts.map((p, i) => (
+        <Travel key={i} t={t} at={{ left: p.x, top: h }} dx={0} dy={-h - 30} k={p.k} phase={p.p} sway={[p.sway, 2, p.p]} turn={20} peak={0.9}>
+          <HeartShape size={p.s} color={p.c} />
+        </Travel>
+      ))}
+    </>
+  );
+}
+
 function Bass({ t, w, h }: SceneProps) {
   const d = Math.max(w, h) * 1.5;
   const cx = w / 2;
@@ -1077,6 +1155,7 @@ const SCENES: Record<BackdropId, (p: SceneProps) => React.ReactElement> = {
   frog: FrogPond,
   toes: ToeBeach,
   daisy: Daisy,
+  pride: Pride,
 };
 
 const styles = StyleSheet.create({

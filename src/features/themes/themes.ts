@@ -4,8 +4,8 @@ import { t } from '../../i18n';
 
 /**
  * App themes: a whole new look for Afterglow (the night, the glow, the
- * lights in the sky), each with a profile background to match. Afterglow and
- * Aurora are free; the rest come with Afterglow Plus; three are made for one
+ * lights in the sky), each with a profile background to match. Afterglow,
+ * Aurora and Pride are free; the rest come with Afterglow Plus; three are made for one
  * person each. Pure.
  */
 export type AppTheme = {
@@ -24,6 +24,7 @@ export type AppTheme = {
 export const THEMES: readonly AppTheme[] = [
   { id: 'afterglow', name: 'Afterglow', about: t('The original: violet festival light at night'), plus: false },
   { id: 'aurora', name: 'Aurora', about: t('Northern-lights green on a deep blue night'), plus: false, backdrop: 'aurora' },
+  { id: 'pride', name: 'Pride', about: t('Every colour of the rainbow, all through the app'), plus: false, backdrop: 'pride' },
   { id: 'moonlight', name: 'Moonlight', about: t('Silver light, cool and calm'), plus: true, backdrop: 'starfield' },
   { id: 'nebula', name: 'Nebula', about: t('Pink starlight on deep space'), plus: true, backdrop: 'nebula' },
   { id: 'laser', name: 'Laser', about: t('Electric lime for the front row'), plus: true, backdrop: 'lasers' },
