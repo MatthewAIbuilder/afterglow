@@ -14,7 +14,7 @@ const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(LOCALE,
 /**
  * "Where to stay" for a festival or a show: the nights (in the day it starts,
  * out the day after it ends, or a night either side), and Stay22's live map
- * of places near the venue with prices (all, or only hotels or homes), right
+ * (or list) of places near the venue with prices (all, or only hotels or homes), right
  * on the page. Choosing a place opens the booking site. With a crew going, it searches for the whole
  * crew at first (bigger places), or just you. A trip of more than one night
  * also links to things to do in town. Says Afterglow may earn a commission.
@@ -23,10 +23,11 @@ const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(LOCALE,
 export function StayCard({ trip, name, crew }: { trip: StayTrip & { links?: { stay?: string } }; name: string; crew?: { size: number } }) {
   const [nights, setExtra] = useState<StayExtra>({});
   const [kind, setKind] = useState<StayKind>('all');
+  const [view, setView] = useState<'map' | 'listview'>('map');
   const hasCrew = !!crew && crew.size > 1;
   const [forCrew, setForCrew] = useState(true);
   const extra: StayExtra = { ...nights, ...(hasCrew && forCrew ? { adults: crew.size } : {}) };
-  const map = stayMapUrl(trip, { extra, kind, accent: color.glow, language: LANGUAGE });
+  const map = stayMapUrl(trip, { extra, kind, view, accent: color.glow, language: LANGUAGE });
   const all = stayLinkOf(trip, undefined, extra);
   const todo = thingsToDoLink(trip);
   if (!map || !all) return null;
@@ -50,7 +51,31 @@ export function StayCard({ trip, name, crew }: { trip: StayTrip & { links?: { st
   );
   return (
     <View style={styles.card}>
-      <Text style={styles.kicker}>{t('Where to stay')}</Text>
+      <View style={styles.head}>
+        <Text style={styles.kicker}>{t('Where to stay')}</Text>
+        <View style={styles.views} accessibilityRole="tablist">
+          {(['map', 'listview'] as const).map((v) => {
+            const on = view === v;
+            return (
+              <Pressable
+                key={v}
+                onPress={() => {
+                  if (on) return;
+                  haptic.select();
+                  setView(v);
+                }}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={v === 'map' ? t('Show places to stay on a map') : t('Show places to stay as a list')}
+                hitSlop={6}
+                style={[styles.viewBtn, on && styles.viewOn]}
+              >
+                <Text style={[styles.viewText, on && { color: color.moon }]}>{v === 'map' ? t('Map') : t('List')}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
       <Text style={styles.title}>{d ? tn(d.nights, 'One night near {place}', '{n} nights near {place}', { place }) : t('Places near {place}', { place })}</Text>
       {d ? <Text style={styles.dates}>{t('Check in {in}, check out {out}', { in: day(d.checkin), out: day(d.checkout) })}</Text> : null}
       <View style={styles.chips}>
@@ -105,7 +130,12 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
     gap: space.sm,
   },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   kicker: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
+  views: { flexDirection: 'row', padding: 2, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  viewBtn: { paddingHorizontal: space.md, paddingVertical: 4, borderRadius: radius.pill },
+  viewOn: { backgroundColor: glowA(0.18) },
+  viewText: { ...type.caption, color: color.moonDim },
   title: { ...type.headline, color: color.moon },
   dates: { ...type.label, color: color.moonDim },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xs },

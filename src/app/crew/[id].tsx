@@ -13,6 +13,7 @@ import { CrewRouteSection } from '../../features/crews/CrewRouteSection';
 import { CrewLatest } from '../../features/crews/CrewLatest';
 import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
 import { CrewChatCard } from '../../features/crews/CrewChatCard';
+import { CrewStayCard } from '../../features/crews/CrewStayCard';
 import { CHAT_RULES } from '../../features/crews/chat';
 import { useWeekends } from '../../state/weekends';
 import { useCrewPage } from '../../features/crews/useCrewPage';
@@ -435,6 +436,7 @@ function Member({
       {!others.length ? <Text style={styles.note}>{t('Crews are invite only. Invite friends in the app or send them the invite link, up to {n} people.', { n: CREW_MAX })}</Text> : null}
 
       <CrewChatCard crew={crew} nameOf={who} />
+      {festival ? <CrewStayCard crew={crew} event={festival} /> : null}
 
       {/* Where everyone last was, while the festival is on or coming up. */}
       <CrewLatest crew={crew} nameOf={who} />

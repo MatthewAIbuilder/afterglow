@@ -158,6 +158,7 @@ export default function RootLayout() {
         <Stack.Screen name="whats-new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="secrets" />
         <Stack.Screen name="prep/[id]" />
+        <Stack.Screen name="stay/[id]" />
         <Stack.Screen name="your-artists" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="care" />

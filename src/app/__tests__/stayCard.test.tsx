@@ -39,6 +39,8 @@ describe('where to stay', () => {
     await fireEvent.press(app.getByLabelText('Show only homes and rentals'));
     expect(app.getByText(/^4 nights near /)).toBeTruthy();
     expect(query(map().source.uri)).toMatchObject({ checkin: '2026-11-05', checkout: '2026-11-09', disablehotels: 'true' });
+    await fireEvent.press(app.getByLabelText('Show places to stay as a list'));
+    expect(query(map().source.uri)).toMatchObject({ viewmode: 'listview', disablehotels: 'true' });
     await fireEvent.press(app.getByLabelText('Show only hotels'));
     expect(query(map().source.uri)).toMatchObject({ disablerentals: 'true' });
     expect(query(map().source.uri).disablehotels).toBeUndefined();

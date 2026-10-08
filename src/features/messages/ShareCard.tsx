@@ -14,6 +14,7 @@ import { posterUrl } from '../discover/youtube';
 import { whereWhen } from '../festivals/format';
 import type { Profile } from '../social/models';
 import { shareRoute, type ChatShare } from './shares';
+import { useEventLookup } from '../festivalMode/useEvent';
 import { t } from '../../i18n';
 
 export const SHARE_CARD_WIDTH = 236;
@@ -21,12 +22,14 @@ export const SHARE_CARD_WIDTH = 236;
 type Shown = { kicker: string; title: string; subtitle?: string; art: React.ReactNode; faces?: Artist[] };
 
 /**
- * Something sent from the app, as a card in a chat: what it is, its name
+ * Something sent from the app (a festival, artist, live set, profile or
+ * places to stay), as a card in a chat: what it is, its name
  * and one line, with its picture. Tap to open it. Things no longer in the
  * catalogue say so instead of opening nothing.
  */
 export function ShareCard({ share }: { share: ChatShare }) {
   const { festival, artist, clip } = useCatalog();
+  const eventOf = useEventLookup();
   const social = useSocial();
   const handle = share.kind === 'profile' ? share.handle : undefined;
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
@@ -77,6 +80,17 @@ export function ShareCard({ share }: { share: ChatShare }) {
             ) : (
               <ArtistAvatar artist={a} size={56} />
             ),
+        };
+      }
+      case 'stay': {
+        const f = eventOf(share.id);
+        if (!f) return undefined;
+        const place = f.location?.split(',')[0]?.trim() || f.name;
+        return {
+          kicker: t('Places to stay'),
+          title: f.name,
+          subtitle: share.guests ? t('For {n} of you · near {place}', { n: share.guests, place }) : t('Near {place}', { place }),
+          art: <Glow letter={f.name} />,
         };
       }
       case 'profile':

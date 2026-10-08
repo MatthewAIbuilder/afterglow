@@ -12,13 +12,24 @@ export type ChatShare =
   | { kind: 'festival'; id: string; picks?: string[] }
   | { kind: 'artist'; id: string }
   | { kind: 'clip'; id: string }
-  | { kind: 'profile'; handle: string };
+  | { kind: 'profile'; handle: string }
+  /** Places to stay for a festival or a show (`show:<id>`), for this many people (a crew). */
+  | { kind: 'stay'; id: string; guests?: number };
+
+/** Guests a stay link carries, at most (Stay22's limit). */
+export const STAY_GUESTS_MAX = 16;
 
 /** Must-sees carried in a link, at most. */
 export const SHARE_PICKS_MAX = 5;
 
 const ID = '[A-Za-z0-9_-]{1,80}';
 const HANDLE = '[A-Za-z0-9_.]{1,40}';
+/** A festival id, or a show's event id (`show:edm-123`). */
+const EVENT_ID = '[A-Za-z0-9_:-]{1,90}';
+const guestsOf = (n: unknown): number | undefined => {
+  const g = typeof n === 'number' ? n : Number(n);
+  return Number.isInteger(g) && g >= 2 ? Math.min(g, STAY_GUESTS_MAX) : undefined;
+};
 
 /** The link for a share on the website (which opens the app's page there). */
 export function shareLink(share: ChatShare, webUrl: string): string {
@@ -33,6 +44,10 @@ export function shareLink(share: ChatShare, webUrl: string): string {
       return `${webUrl}/?clip=${share.id}`;
     case 'profile':
       return `${webUrl}/u/${share.handle}`;
+    case 'stay': {
+      const g = guestsOf(share.guests);
+      return `${webUrl}/stay/${share.id}${g ? `?guests=${g}` : ''}`;
+    }
   }
 }
 
@@ -62,6 +77,11 @@ function fromPath(path: string): ChatShare | undefined {
   if (m) return { kind: 'clip', id: m[1] };
   m = new RegExp(`^/u/(${HANDLE})/?$`).exec(path);
   if (m) return { kind: 'profile', handle: m[1] };
+  m = new RegExp(`^/stay/(${EVENT_ID})/?(?:\\?guests=(\\d{1,2}))?$`).exec(path);
+  if (m) {
+    const g = guestsOf(m[2]);
+    return g ? { kind: 'stay', id: m[1], guests: g } : { kind: 'stay', id: m[1] };
+  }
   return undefined;
 }
 
@@ -84,6 +104,8 @@ export function shareNoun(share: ChatShare): string {
       return t('a live set');
     case 'profile':
       return t('a profile');
+    case 'stay':
+      return t('places to stay');
   }
 }
 
@@ -98,14 +120,19 @@ export function shareRoute(share: ChatShare) {
       return { pathname: '/' as const, params: { clip: share.id } };
     case 'profile':
       return { pathname: '/u/[handle]' as const, params: { handle: share.handle } };
+    case 'stay': {
+      const g = guestsOf(share.guests);
+      return { pathname: '/stay/[id]' as const, params: g ? { id: share.id, guests: String(g) } : { id: share.id } };
+    }
   }
 }
 
 /** A share as route params for the "Send to" sheet, and back. */
-export type ShareParams = { kind?: string; id?: string; picks?: string; handle?: string };
+export type ShareParams = { kind?: string; id?: string; picks?: string; handle?: string; guests?: string };
 
 export function shareParams(share: ChatShare): ShareParams {
   if (share.kind === 'profile') return { kind: share.kind, handle: share.handle };
+  if (share.kind === 'stay') return guestsOf(share.guests) ? { kind: share.kind, id: share.id, guests: String(guestsOf(share.guests)) } : { kind: share.kind, id: share.id };
   if (share.kind === 'festival' && share.picks?.length) return { kind: share.kind, id: share.id, picks: share.picks.slice(0, SHARE_PICKS_MAX).join(',') };
   return { kind: share.kind, id: share.id };
 }
@@ -123,6 +150,11 @@ export function shareFromParams(p: ShareParams): ChatShare | undefined {
       return ok(p.id, ID) ? { kind: p.kind, id: p.id } : undefined;
     case 'profile':
       return ok(p.handle, HANDLE) ? { kind: 'profile', handle: p.handle } : undefined;
+    case 'stay': {
+      if (!ok(p.id, EVENT_ID)) return undefined;
+      const g = guestsOf(p.guests);
+      return g ? { kind: 'stay', id: p.id, guests: g } : { kind: 'stay', id: p.id };
+    }
     default:
       return undefined;
   }
