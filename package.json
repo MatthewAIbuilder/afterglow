@@ -86,7 +86,9 @@
     "test": "jest",
     "lint": "expo lint",
     "device": "npx eas-cli@latest device:create",
-    "build:dev": "npx eas-cli@latest build --profile development --platform ios"
+    "build:dev": "npx eas-cli@latest build --profile development --platform ios",
+    "build:ios": "npx eas-cli@latest build --profile production --platform ios --auto-submit",
+    "build:android-link": "npx eas-cli@latest build --profile preview --platform android"
   },
   "private": true,
   "jest": {
