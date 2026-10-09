@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { useMyOrg, useOrgs } from '../../state/orgs';
 import { orgOfAccount } from '../../features/organizers/organizers';
 import { OrgProfileCard } from '../../features/organizers/OrgProfileCard';
@@ -25,6 +24,9 @@ import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { NightSky } from '../../components/NightSky';
 import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
 import { clipLength } from '../../features/memories/organize';
+import { b2bLine } from '../../features/memories/b2b';
+import { momentCaption } from '../../features/memories/momentCaption';
+import { MomentTile } from '../../features/profile/MomentTile';
 import { followersLabel, followingLabel, goingLine } from '../../features/social/copy';
 import { inCommon } from '../../features/social/common';
 import { matchLine, tasteMatch } from '../../features/social/match';
@@ -189,25 +191,20 @@ export default function PublicProfileScreen() {
   // A tile opens the video to swipe through the rest of its grid, like Discover.
   const tile = (list: readonly SharedMemory[]) => (m: SharedMemory) => tileOf(m, list);
   const tileOf = (m: SharedMemory, list: readonly SharedMemory[]) => {
-    const artist = m.artistId ? catalog.artist(m.artistId) : undefined;
+    const caption = momentCaption(m, catalog);
     return (
-      <Pressable
+      <MomentTile
         key={m.id}
+        width={tileW}
+        height={Math.round((tileW * 4) / 3)}
+        rounded
+        thumb={m.thumbUrl}
+        seed={m.artistId ?? m.id}
+        caption={caption}
+        length={clipLength(m.durationSec)}
         onPress={() => router.push({ pathname: '/shared/[id]', params: { id: m.id, ids: list.map((x) => x.id).join(',') } })}
-        accessibilityRole="button"
-        accessibilityLabel={artist ? t('Video of {artist}', { artist: artist.name }) : t('Video')}
-        style={({ pressed }) => [styles.tile, { width: tileW, height: Math.round((tileW * 16) / 9) }, pressed && styles.pressed]}
-      >
-        {m.thumbUrl ? <Image source={{ uri: m.thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
-        <View style={styles.tileInfo}>
-          {artist ? (
-            <Text style={styles.tileName} numberOfLines={1}>
-              {artist.name}
-            </Text>
-          ) : null}
-          {clipLength(m.durationSec) ? <Text style={styles.tileLen}>{clipLength(m.durationSec)}</Text> : null}
-        </View>
-      </Pressable>
+        label={caption.artists.length ? t('Video of {artist}', { artist: b2bLine(caption.artists) }) : t('Video')}
+      />
     );
   };
   const going = profile?.festivals.map((id) => catalog.festival(id)?.name).filter((n): n is string => !!n) ?? [];
@@ -536,10 +533,6 @@ const styles = StyleSheet.create({
   commonDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: color.glow, marginTop: 8 },
   commonText: { ...type.body, color: color.moon, flex: 1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  tile: { borderRadius: radius.sm, overflow: 'hidden', backgroundColor: color.nightRaised },
-  tileInfo: { position: 'absolute', left: space.xs, right: space.xs, bottom: space.xs },
-  tileName: { ...type.caption, color: color.moon, fontWeight: '700' },
-  tileLen: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   body: { ...type.body, color: color.moonDim, textAlign: 'center', marginTop: space.lg },
   center: { alignItems: 'center', gap: space.md },
   invite: { alignItems: 'center', gap: space.md, marginTop: space.xxl, alignSelf: 'center', width: '100%', maxWidth: 520 },
@@ -552,5 +545,4 @@ const styles = StyleSheet.create({
   signInTitle: { ...type.title, color: color.moon, textAlign: 'center' },
   signInButton: { marginTop: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow },
   signInText: { ...type.headline, color: color.night },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
 });
