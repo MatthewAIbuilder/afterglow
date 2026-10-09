@@ -1016,6 +1016,8 @@ describe('Profile tab', () => {
   it('shows your sound as chips and the festivals you are going to, with your weekend', async () => {
     await AsyncStorage.setItem('going.v1', JSON.stringify(['acl-26']));
     await AsyncStorage.setItem('weekends.v1', JSON.stringify({ 'acl-26': 2 }));
+    // A fixed "today" before ACL (once your weekend starts, Profile turns into festival mode).
+    jest.useFakeTimers({ now: new Date(2026, 8, 29, 12) });
     const app = await renderApp('/profile');
     await settle();
     expect(app.getByLabelText(/^Your sound: .+ percent/)).toBeTruthy();
