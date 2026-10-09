@@ -37,7 +37,7 @@ The totem turns a tablet into a glowing Afterglow screen for a festival. It show
 
 - **Between pop-ups**:
   - The logo, the name, your line, "Next one in 3:08" with a grey shape of what's coming, and how many have been claimed since the totem started.
-  - A small code in the corner that opens Afterglow.
+  - A big code that opens Afterglow, with "Open Afterglow" under it: in the bottom right corner when the tablet lies sideways, under everything when it stands up. It hides during a pop-up so there is only one code to scan.
 - **During a pop-up**:
   - "FREE COLLECTIBLE · SCAN TO CLAIM", the sticker's creature moving, its name and a big code.
   - The countdown, and "Claimed by N people". When someone scans it, "Just claimed!" appears with confetti.
