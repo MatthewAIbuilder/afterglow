@@ -290,15 +290,24 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
   }, [controls]);
   const landscape = width > height;
   const short = Math.min(width, height);
-  const mark = Math.round(short * (landscape ? 0.5 : 0.62));
+  const mark = Math.round(short * (landscape ? 0.46 : 0.5));
   const name = org ? org.name : 'Afterglow';
+  // The code for Afterglow itself, big enough to scan from a few steps away: in the
+  // corner when the screen lies sideways (the middle keeps clear of it), under everything when it stands up.
+  const appCodeSize = Math.round(short * (landscape ? 0.24 : 0.22));
+  const appCode = (
+    <View style={[styles.appCode, { opacity: popup ? 0 : 1 }]} pointerEvents="none">
+      <FriendQR value={WEB_URL} size={appCodeSize} theme="glow" />
+      <Text style={[styles.appCodeText, { fontSize: Math.round(short * 0.024) }]}>{t('Open Afterglow')}</Text>
+    </View>
+  );
   return (
     <View style={styles.show}>
       <KeepOn />
       <PageTitle title={name} />
       <NightSky />
       <Pressable style={StyleSheet.absoluteFill} onPress={() => setControls(Date.now())} accessibilityRole="button" accessibilityLabel={t('Show the controls')}>
-        <View style={[styles.stage, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.xl }]}>
+        <View style={[styles.stage, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.xl }, landscape && { paddingHorizontal: appCodeSize + space.lg * 2 }]}>
           {org ? <OrgLogo org={org} width={Math.round(short * 0.7)} /> : <TotemOrb size={mark} />}
           <Text style={[styles.word, { fontSize: Math.round(short * 0.085), letterSpacing: short * 0.02 }]} numberOfLines={1} adjustsFontSizeToFit>
             {name.toUpperCase()}
@@ -318,18 +327,11 @@ function TotemShow({ settings, stickers, start, onStop }: { settings: TotemSetti
             </View>
           ) : null}
           <Text style={[styles.site, { fontSize: Math.round(short * 0.022) }]}>{WEB_URL.replace(/^https?:\/\//, '')}</Text>
+          {landscape ? null : appCode}
         </View>
       </Pressable>
 
-      {/* In the corner: a code for Afterglow itself, for anyone passing. */}
-      {!popup ? (
-        <View style={[styles.appCode, { bottom: insets.bottom + space.lg }]} pointerEvents="none">
-          <View style={styles.appCodeQr}>
-            <FriendQR value={WEB_URL} size={Math.round(short * 0.13)} theme="glow" />
-          </View>
-          <Text style={styles.appCodeText}>{t('Open Afterglow')}</Text>
-        </View>
-      ) : null}
+      {landscape ? <View style={[styles.appCorner, { bottom: insets.bottom + space.lg, right: insets.right + space.lg }]} pointerEvents="none">{appCode}</View> : null}
 
       {popup && sticker ? (
         <Animated.View key={`${popup.code}${popup.index}`} entering={reduce ? undefined : FadeIn.duration(500)} exiting={reduce ? undefined : FadeOut.duration(400)} style={styles.popScrim} pointerEvents="box-none">
@@ -448,9 +450,9 @@ const styles = StyleSheet.create({
   next: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingLeft: space.sm, paddingRight: space.xl, paddingVertical: space.sm, borderRadius: radius.pill, borderWidth: 1, borderColor: 'rgba(255,229,138,0.35)', backgroundColor: 'rgba(255,229,138,0.06)' },
   nextKicker: { color: GOLD, fontWeight: '700', letterSpacing: 2 },
   nextTime: { color: color.moon, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  appCode: { position: 'absolute', right: space.lg, alignItems: 'center', gap: space.xs, opacity: 0.9 },
-  appCodeQr: { padding: 4, borderRadius: radius.md, backgroundColor: '#FBF9FF' },
-  appCodeText: { ...type.caption, color: color.moonDim },
+  appCorner: { position: 'absolute' },
+  appCode: { alignItems: 'center', gap: space.xs },
+  appCodeText: { color: color.moon, fontWeight: '700', letterSpacing: 1, textAlign: 'center' },
   site: { color: color.moonFaint, letterSpacing: 2, textAlign: 'center' },
   popScrim: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(5,4,10,0.72)', alignItems: 'center', justifyContent: 'center' },
   popCard: { borderRadius: radius.lg * 1.5, padding: space.xl, gap: space.lg, alignItems: 'center', backgroundColor: 'rgba(24,18,44,0.96)', borderWidth: 2, borderColor: GOLD, shadowColor: GOLD, shadowOpacity: 0.6, shadowRadius: 40, shadowOffset: { width: 0, height: 0 } },
