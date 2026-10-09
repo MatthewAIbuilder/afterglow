@@ -23,6 +23,7 @@ import { ChevronIcon, PeopleIcon, SearchIcon } from '../../components/TabIcons';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { QuestButton } from '../quests/QuestButton';
 import { haptic } from '../../lib/haptics';
+import { PAGED, pagedListStyle, pageSnapStyle } from '../../lib/paging';
 import type { Clip, Festival } from '../../data/models';
 import { isCommunityClip } from '../community/clips';
 import { useCatalog, useCatalogSettled } from '../../state/catalog';
@@ -436,6 +437,7 @@ export function DiscoverFeed() {
           // In your mix, each clip is shown against a festival you're going to where the artist plays, if any.
           const context = wide ? mixContext(item.clip, catalog.festivals, going) : festival;
           return (
+            <View style={pageSnapStyle}>
             <ClipCard
               clip={item.clip}
               note={reasonNote(item.reason, catalog.artist)}
@@ -454,15 +456,19 @@ export function DiscoverFeed() {
               onHold={onHold}
               topExtra={storiesSpace}
             />
+            </View>
           );
         }}
         ListFooterComponent={
           hasEnd ? (
-            <FeedEnd festival={festival} following={followingFocus} soundLabel={soundLabel} station={seed?.name} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
+            <View style={pageSnapStyle}>
+              <FeedEnd festival={festival} following={followingFocus} soundLabel={soundLabel} station={seed?.name} width={width} height={height} bottomSpace={tabSpace} onRestart={() => scrollToPage(0, true)} />
+            </View>
           ) : null
         }
         getItemLayout={(_d, index) => ({ length: height, offset: height * index, index })}
-        pagingEnabled
+        {...PAGED}
+        style={pagedListStyle}
         snapToInterval={height}
         snapToAlignment="start"
         decelerationRate="fast"

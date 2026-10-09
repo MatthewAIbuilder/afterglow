@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { FlatList, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { PAGED, pagedListStyle, pageSnapStyle } from '../lib/paging';
 import { color } from '../theme/tokens';
 
 /** At most this many pages in one swipe-through (a link carries their ids). */
@@ -33,11 +34,11 @@ export function VerticalPager({ ids, start, renderPage }: { ids: string[]; start
   );
   return (
     <FlatList
-      style={styles.root}
+      style={[styles.root, pagedListStyle]}
       testID="pager"
       data={ids}
       keyExtractor={(x) => x}
-      pagingEnabled
+      {...PAGED}
       decelerationRate="fast"
       snapToInterval={height}
       showsVerticalScrollIndicator={false}
@@ -48,7 +49,7 @@ export function VerticalPager({ ids, start, renderPage }: { ids: string[]; start
       initialNumToRender={1}
       maxToRenderPerBatch={2}
       windowSize={3}
-      renderItem={({ item, index: i }) => <View style={{ height }}>{renderPage(item, i === index)}</View>}
+      renderItem={({ item, index: i }) => <View style={[{ height }, pageSnapStyle]}>{renderPage(item, i === index)}</View>}
     />
   );
 }
