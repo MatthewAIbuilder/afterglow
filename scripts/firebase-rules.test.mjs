@@ -51,8 +51,9 @@ await t('at most 6 favourite artists, and a background is a style name', async (
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'https://x.test/a.gif' })));
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { showArtists: 'yes' })));
 });
-await t('the panda garden, frog pond and toe beach are only for the profiles made for them', async () => {
+await t('the panda garden, frog pond, toe beach and gnome garden are only for the profiles made for them', async () => {
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'panda' })));
+  await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'gnome' })));
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'frog' })));
   await assertFails(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'toes' })));
   await assertSucceeds(setDoc(doc(A.firestore(), 'profiles', 'uidA'), profile('maya', { backdrop: 'none' })));
@@ -846,6 +847,79 @@ await t('sprouts: given as yourself, picked up once, by anyone else not blocked,
   // Too old to pick up.
   await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), { from: 'uidA', kind: 'seedling', createdAt: new Date(Date.now() - 31 * 86400_000) }));
   await assertFails(updateDoc(doc(B.firestore(), 'sprouts', 'hhhhhhhhhhhhhhhhhhhh'), { to: 'uidB', claimedAt: serverTimestamp() }));
+});
+await t('gnome hats: from their keeper as many as they like, or passed on once by whoever has one, and taken back', async () => {
+  const GRACE = '8EEXIUNCQghOnejeAOygGMSl6Bp1';
+  const KEEPER = env.authenticatedContext(GRACE), P = env.authenticatedContext('uidP'), Q = env.authenticatedContext('uidQ');
+  const hat = (from, over = {}) => ({ from, kind: 'gnome', createdAt: serverTimestamp(), ...over });
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'profiles', GRACE), profile('gnomekeeper'));
+    await setDoc(doc(db, 'profiles', 'uidP'), profile('pia'));
+    await setDoc(doc(db, 'profiles', 'uidQ'), profile('quinn'));
+  });
+  // Nobody else makes one from nothing; the keeper makes as many as they like.
+  await assertFails(setDoc(doc(P.firestore(), 'sprouts', 'gnomehat000000000000'), hat('uidP')));
+  await assertSucceeds(setDoc(doc(KEEPER.firestore(), 'sprouts', 'gnomehat000000000001'), hat(GRACE)));
+  await assertSucceeds(setDoc(doc(KEEPER.firestore(), 'sprouts', 'gnomehat000000000002'), hat(GRACE)));
+  await assertSucceeds(updateDoc(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { to: 'uidP', claimedAt: serverTimestamp() }));
+  // Another kind can't say it's passed on.
+  await assertFails(setDoc(doc(P.firestore(), 'sprouts', 'gnomehat000000000009'), { from: 'uidP', kind: 'plur', via: 'gnomehat000000000001', createdAt: serverTimestamp() }));
+  // Passing on: the new one and yours marked, together; not alone, and not someone else's.
+  await assertFails(setDoc(doc(P.firestore(), 'sprouts', 'gnomehat000000000003'), hat('uidP', { via: 'gnomehat000000000001' })));
+  await assertFails(updateDoc(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: 'gnomehat000000000003' }));
+  const passQ = writeBatch(Q.firestore());
+  passQ.set(doc(Q.firestore(), 'sprouts', 'gnomehat000000000004'), hat('uidQ', { via: 'gnomehat000000000001' }));
+  passQ.update(doc(Q.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: 'gnomehat000000000004' });
+  await assertFails(passQ.commit());
+  const pass = writeBatch(P.firestore());
+  pass.set(doc(P.firestore(), 'sprouts', 'gnomehat000000000003'), hat('uidP', { via: 'gnomehat000000000001' }));
+  pass.update(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: 'gnomehat000000000003' });
+  await assertSucceeds(pass.commit());
+  // Only once.
+  const again = writeBatch(P.firestore());
+  again.set(doc(P.firestore(), 'sprouts', 'gnomehat000000000005'), hat('uidP', { via: 'gnomehat000000000001' }));
+  again.update(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: 'gnomehat000000000005' });
+  await assertFails(again.commit());
+  // Taken back before anyone has it: yours again (but not while the one on its way is still there).
+  await assertFails(updateDoc(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: deleteField() }));
+  const back = writeBatch(P.firestore());
+  back.delete(doc(P.firestore(), 'sprouts', 'gnomehat000000000003'));
+  back.update(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: deleteField() });
+  await assertSucceeds(back.commit());
+  // Passed on again, and picked up: the next person has it (as a new hat).
+  const pass2 = writeBatch(P.firestore());
+  pass2.set(doc(P.firestore(), 'sprouts', 'gnomehat000000000006'), hat('uidP', { via: 'gnomehat000000000001' }));
+  pass2.update(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: 'gnomehat000000000006' });
+  await assertSucceeds(pass2.commit());
+  await assertSucceeds(updateDoc(doc(Q.firestore(), 'sprouts', 'gnomehat000000000006'), { to: 'uidQ', claimedAt: serverTimestamp() }));
+  const late = writeBatch(P.firestore());
+  late.delete(doc(P.firestore(), 'sprouts', 'gnomehat000000000006'));
+  late.update(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: deleteField() });
+  await assertFails(late.commit());
+});
+await t('any sprout given to you can be given on once, as the same kind and artist', async () => {
+  const R = env.authenticatedContext('uidR'), S2 = env.authenticatedContext('uidS');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'profiles', 'uidR'), profile('rae'));
+    await setDoc(doc(db, 'profiles', 'uidS'), profile('sol'));
+    await setDoc(doc(db, 'sprouts', 'givenon000000000001'), { from: 'uidS', kind: 'plur', to: 'uidR', createdAt: new Date(), claimedAt: new Date() });
+    await setDoc(doc(db, 'sprouts', 'givenon000000000002'), { from: 'uidS', kind: 'seedling', artistId: 'a1', artistName: 'One', to: 'uidR', createdAt: new Date(), claimedAt: new Date() });
+  });
+  const on = (ctx, id, via, data) => {
+    const b = writeBatch(ctx.firestore());
+    b.set(doc(ctx.firestore(), 'sprouts', id), { from: ctx === R ? 'uidR' : 'uidS', createdAt: serverTimestamp(), via, ...data });
+    b.update(doc(ctx.firestore(), 'sprouts', via), { passedOn: id });
+    return b.commit();
+  };
+  // Not as another kind, or another artist, or by someone it wasn't given to.
+  await assertFails(on(R, 'givenon000000000003', 'givenon000000000001', { kind: 'bass' }));
+  await assertFails(on(R, 'givenon000000000003', 'givenon000000000002', { kind: 'seedling', artistId: 'a2', artistName: 'Two' }));
+  await assertFails(on(S2, 'givenon000000000003', 'givenon000000000001', { kind: 'plur' }));
+  await assertSucceeds(on(R, 'givenon000000000003', 'givenon000000000001', { kind: 'plur' }));
+  await assertFails(on(R, 'givenon000000000004', 'givenon000000000001', { kind: 'plur' }));
+  await assertSucceeds(on(R, 'givenon000000000005', 'givenon000000000002', { kind: 'seedling', artistId: 'a1', artistName: 'One' }));
 });
 await t('gift themes: only @matt.raves sends one with a sprout; whoever picks it up gets the grant and its background', async () => {
   const M = env.authenticatedContext('uidM'), N = env.authenticatedContext('uidN'), O = env.authenticatedContext('uidO');

@@ -141,8 +141,8 @@ export function unclaimed(earned: readonly string[], claimed: ReadonlySet<string
   return earned.filter((k, i) => !claimed.has(k) && earned.indexOf(k) === i);
 }
 
-/** Stored claims, cleaned: strings only, at most 500. */
+/** Stored claims, cleaned: strings only, at most 500. Every kind of claim key (pins, milestones, throwbacks) is kept, so a claimed badge never asks again. */
 export function cleanClaims(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
-  return raw.filter((k): k is string => typeof k === 'string' && /^(pin|ms):[\w-]{1,80}$/.test(k)).slice(-500);
+  return raw.filter((k): k is string => typeof k === 'string' && /^(pin|ms|past):[^\s]{1,160}$/.test(k)).slice(-500);
 }

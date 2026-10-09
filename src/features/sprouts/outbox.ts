@@ -20,6 +20,10 @@ export type Gift = {
   festivalId?: string;
   /** A gift theme that comes with it (only the developer gives these). */
   theme?: ThemeId;
+  /** Given from your garden: the sprout it is there (it leaves your garden while this gift stands, for good once picked up). */
+  via?: string;
+  /** `via` is only on this phone (your first sprout, a wild one, a keeper's own): Afterglow isn't told. */
+  local?: true;
   /** When you gave it (phone time). */
   at: number;
   /** It's reached Afterglow. */
@@ -68,8 +72,20 @@ export function giftTried(g: Gift, refused: boolean, now: number): Gift {
   return r >= GIFT_REFUSED_MAX ? { ...next, failed: true } : next;
 }
 
-/** Gifts that use up a seed: given, not taken back, not given up. */
-export const seedGifts = (gifts: readonly Gift[]) => gifts.filter((g) => !g.takenBack && !g.failed);
+/** A gift still standing: not taken back, not given up. */
+const live = (g: Gift) => !g.takenBack && !g.failed;
+/** Gifts that use up a seed: new plain sprouts (anything given from your garden, or a hat, uses none). */
+export const seedGifts = (gifts: readonly Gift[]) => gifts.filter((g) => live(g) && !g.via && !g.artist && !kindOf(g.kind).seed);
+
+/** What in your garden is on its way to someone, so it's no longer yours (back if taken back or given up). */
+export const passingOn = (gifts: readonly Gift[]) => new Set(gifts.flatMap((g) => (g.via && live(g) ? [g.via] : [])));
+
+/** Your own artist collectibles given away: when, per artist (the latest). Videos filmed after that earn it again. */
+export function artistsGivenAt(gifts: readonly Gift[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const g of gifts) if (g.artist && !g.via && live(g)) out[g.artist.id] = Math.max(out[g.artist.id] ?? 0, g.at);
+  return out;
+}
 
 const due = (x: { tries: number; lastTry?: number }, now: number) => !x.lastTry || now - x.lastTry >= retryDelay(x.tries);
 
@@ -96,7 +112,8 @@ export function queueClaim(claims: readonly Claim[], card: SproutCard, account: 
 /** Tidy: scans that never turned up become `gone`; old finished ones and old unsent gifts are forgotten. */
 export function tidy(gifts: readonly Gift[], claims: readonly Claim[], now: number): { gifts: Gift[]; claims: Claim[] } {
   return {
-    gifts: gifts.filter((g) => now - g.at < GIFT_KEEP_MS || g.claimedBy).slice(0, GIFTS_MAX),
+    // Something given from your garden stays until someone has it, so it can still be taken back.
+    gifts: gifts.filter((g) => now - g.at < GIFT_KEEP_MS || g.claimedBy || (g.via && live(g))).slice(0, GIFTS_MAX),
     claims: claims
       .map((c) => (c.state === 'waiting' && now - c.at > CLAIM_KEEP_MS ? { ...c, state: 'gone' as const, doneAt: now } : c))
       .filter((c) => c.state === 'waiting' || !c.doneAt || now - c.doneAt < 7 * 24 * 3_600_000),
@@ -118,6 +135,7 @@ export function cleanGifts(raw: unknown): Gift[] {
       ...(typeof g.note === 'string' && g.note ? { note: g.note.slice(0, SPROUT_NOTE_MAX) } : {}),
       ...(typeof g.festivalId === 'string' ? { festivalId: g.festivalId } : {}),
       ...(isGiftTheme(g.theme) ? { theme: g.theme } : {}),
+      ...(typeof g.via === 'string' && /^[A-Za-z0-9:_.-]{1,120}$/.test(g.via) ? { via: g.via, ...(g.local === true ? { local: true as const } : {}) } : {}),
       ...(typeof g.account === 'string' ? { account: g.account } : {}),
       ...(g.claimedBy && typeof g.claimedBy.uid === 'string' ? { claimedBy: g.claimedBy } : {}),
       ...(typeof g.claimedAt === 'number' ? { claimedAt: g.claimedAt } : {}),
@@ -179,8 +197,10 @@ export function bloomNotices(blooms: readonly { id: string; kind: SproutKind; at
     // One per kind, the newest: a second sprout blooming into the same kind isn't news.
     .filter((b, i, all) => all.findIndex((x) => x.kind === b.kind) === i)
     .map((b) => {
-      const name = kindOf(b.kind).name;
-      return { id: `bloom:${b.id}`, at: b.at, kind: 'sprout' as const, title: t('Your sprout bloomed into a {name}', { name }), body: t('You can give {name}s now.', { name }), href: '/garden' };
+      const spec = kindOf(b.kind);
+      const name = spec.name;
+      if (spec.grown) return { id: `bloom:${b.id}`, at: b.at, kind: 'sprout' as const, title: t('Your {name} is fully grown', { name: name.toLowerCase() }), body: spec.grown, href: '/garden' };
+      return { id: `bloom:${b.id}`, at: b.at, kind: 'sprout' as const, title: t('Your sprout bloomed into a {name}', { name }), body: t('You can give it away now: it moves to their garden.'), href: '/garden' };
     });
 }
 

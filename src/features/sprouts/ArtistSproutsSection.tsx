@@ -165,7 +165,7 @@ export function ArtistSproutSheet({ open, canGive, onClose }: { open?: { artist:
                   <Text style={styles.secondaryText}>{t('Share picture')}</Text>
                 </Pressable>
               ) : null}
-              {s && canGive ? (
+              {(s || open?.given) && canGive ? (
                 <Pressable
                   onPress={() => {
                     haptic.tap();

@@ -8,7 +8,7 @@ import { isOffline } from '../features/offline/status';
 import { t } from '../i18n';
 import { socialErrorKind } from '../features/social/service';
 import type { Sprout, SharedMemory } from '../features/social/models';
-import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, GIFT_REFUSED_MAX, giftsToSend, giftsToTakeBack, giftTried, nextDue, queueClaim, seedGifts, tidy } from '../features/sprouts/outbox';
+import { type Claim, claimsToSend, cleanClaims, cleanGifts, type Gift, GIFT_REFUSED_MAX, giftsToSend, giftsToTakeBack, artistsGivenAt, giftTried, nextDue, passingOn, queueClaim, seedGifts, tidy } from '../features/sprouts/outbox';
 import {
   cleanBloomed,
   cleanSproutArtist,
@@ -20,6 +20,11 @@ import {
   type GardenSprout,
   type GardenView,
   givableKinds,
+  KEPT_SPROUT_IDS,
+  keptKinds,
+  keptSprouts,
+  isReceived,
+  toPass,
   isKind,
   type Journey,
   newlyBloomed,
@@ -43,7 +48,7 @@ import { bumpQuestEvent } from './dailyQuests';
 import { useGoing } from './going';
 import { useMemories } from './memories';
 import { shinyFor } from '../features/sprouts/artistLook';
-import { artistSprouts, type ArtistSprout, cleanShown, newArtistSprouts, shownMark, withPosted } from '../features/sprouts/artistSprouts';
+import { artistSprouts, type ArtistSprout, cleanShown, newArtistSprouts, shownMark, sinceGiven, withPosted } from '../features/sprouts/artistSprouts';
 import { useSeen } from './seen';
 import { useFinds } from './finds';
 import { useSocial } from './social';
@@ -80,6 +85,10 @@ export type Stored = {
   goingSince?: Record<string, number>;
   /** Your garden isn't shown on your profile (it is unless you say). */
   gardenHidden?: true;
+  /** Given away and picked up, so gone from the garden for good: `account:sproutId`. */
+  gone?: string[];
+  /** Your own artist collectibles given away and picked up: `account:artistId` → when given (filming them again earns it back). */
+  artistGone?: Record<string, number>;
 };
 
 type Ctx = {
@@ -139,6 +148,19 @@ const BACKUP_SETTLE_MS = 5000;
 /** Celebrations already shown, kept at least as long as the wild sprouts and blooms they're for. */
 const SHOWN_MAX = 2000;
 const EMPTY: Stored = { gifts: [], claims: [], garden: [], bloomed: {} };
+/** Things given away kept in `gone`, at most. */
+const GONE_MAX = 2000;
+
+/** A hat in `account`'s garden marked passed on (it's left the garden) or not (it's back). */
+const withPassed = (s: Stored, account: string, id: string, on: boolean): Stored => ({
+  ...s,
+  garden: s.garden.map((g) => {
+    if (g.id !== id || g.account !== account || !!g.passed === on) return g;
+    if (on) return { ...g, passed: true as const };
+    const { passed: _, ...rest } = g;
+    return rest;
+  }),
+});
 
 function randomId(): string {
   try {
@@ -180,6 +202,8 @@ function clean(raw: unknown): Stored {
     ...(typeof o.starterAt === 'number' ? { starterAt: o.starterAt } : {}),
     ...(o.goingSince && typeof o.goingSince === 'object' ? { goingSince: cleanTimes(o.goingSince, true) } : {}),
     ...(o.gardenHidden === true ? { gardenHidden: true as const } : {}),
+    ...(Array.isArray(o.gone) ? { gone: o.gone.filter((x): x is string => typeof x === 'string' && x.length <= 300).slice(-GONE_MAX) } : {}),
+    ...(o.artistGone && typeof o.artistGone === 'object' ? { artistGone: cleanTimes(o.artistGone) } : {}),
     wild: Array.isArray(o.wild)
       ? o.wild.filter((g): g is GardenSprout => !!g && typeof g === 'object' && typeof g.id === 'string' && g.id.startsWith(WILD_PREFIX) && isKind(g.kind) && typeof g.at === 'number').slice(-500)
       : [],
@@ -205,6 +229,8 @@ export function mergeStored(cur: Stored, s: Stored): Stored {
     ...(starts.length ? { starterAt: Math.min(...starts) } : {}),
     ...(s.goingSince || cur.goingSince ? { goingSince: { ...cur.goingSince, ...s.goingSince } } : {}),
     ...(s.gardenHidden || cur.gardenHidden ? { gardenHidden: true as const } : {}),
+    ...(s.gone || cur.gone ? { gone: [...new Set([...(s.gone ?? []), ...(cur.gone ?? [])])].slice(-GONE_MAX) } : {}),
+    ...(s.artistGone || cur.artistGone ? { artistGone: maxShown(s.artistGone, cur.artistGone) } : {}),
     wild: [...(s.wild ?? []), ...(cur.wild ?? []).filter((w) => !(s.wild ?? []).some((x) => x.id === w.id))],
   };
 }
@@ -218,7 +244,7 @@ const maxShown = (a: Record<string, number> = {}, b: Record<string, number> = {}
 /** What of a saved garden goes in an account's private copy: its own sprouts and gifts (sent ones: unsent ones are still on their way), plus this phone's wild finds and first sprout. */
 export function backupFor(s: Stored, account: string): string | undefined {
   const garden = s.garden.filter((g) => g.account === account);
-  const ids = new Set([...garden.map((g) => g.id), ...(s.wild ?? []).map((w) => w.id), STARTER_ID]);
+  const ids = new Set([...garden.map((g) => g.id), ...(s.wild ?? []).map((w) => w.id), STARTER_ID, ...KEPT_SPROUT_IDS]);
   const pick = <T,>(o: Record<string, T> | undefined) => (o ? Object.fromEntries(Object.entries(o).filter(([k]) => ids.has(k))) : undefined);
   return backupText({
     garden,
@@ -229,6 +255,8 @@ export function backupFor(s: Stored, account: string): string | undefined {
     artistShown: s.artistShown,
     starterAt: s.starterAt,
     wild: s.wild,
+    gone: (s.gone ?? []).filter((x) => x.startsWith(`${account}:`)),
+    artistGone: Object.fromEntries(Object.entries(s.artistGone ?? {}).filter(([k]) => k.startsWith(`${account}:`))),
   });
 }
 
@@ -286,6 +314,8 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const storedRef = useRef(stored);
   // Artist sprouts you've earned, for `give` (filled once the list is worked out below).
   const artistsRef = useRef<ArtistSprout[]>([]);
+  // Your garden as it is now, for `give` (a hat to pass on).
+  const gardenRef = useRef<GardenView[]>([]);
   const accountRef = useRef(account);
   useEffect(() => {
     storedRef.current = stored;
@@ -396,6 +426,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
             ...(g.festivalId ? { festivalId: g.festivalId } : {}),
             ...(g.artist ? { artistId: g.artist.id, artistName: g.artist.name } : {}),
             ...(g.theme ? { theme: g.theme } : {}),
+            ...(g.via && !g.local ? { via: g.via } : {}),
           }),
           TRY_TIMEOUT_MS,
         );
@@ -473,8 +504,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     async (g: Gift) => {
       inFlight.current.add(g.id);
       try {
-        await timeout(social.service.takeBackSprout(g.id), TRY_TIMEOUT_MS);
-        setStored((s) => ({ ...s, gifts: s.gifts.filter((x) => x.id !== g.id) }));
+        await timeout(social.service.takeBackSprout(g.id, g.local ? undefined : g.via), TRY_TIMEOUT_MS);
+        // Taken back: it's yours again.
+        setStored((s) => ({ ...(g.via && !g.local && g.account ? withPassed(s, g.account, g.via, false) : s), gifts: s.gifts.filter((x) => x.id !== g.id) }));
       } catch (e) {
         if (socialErrorKind(e) === 'sprout-taken') {
           // Someone picked it up first: it stays given.
@@ -545,7 +577,10 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       if (!was || was.claimedBy) return;
       const who = await whoIs(s.to);
       setStored((st) => ({
-        ...st,
+        // Picked up: it has left your garden for good (your own artist collectible until you film them again).
+        ...(was.via && was.account ? withPassed(st, was.account, was.via, true) : st),
+        ...(was.via && was.account ? { gone: [...new Set([...(st.gone ?? []), `${was.account}:${was.via}`])].slice(-GONE_MAX) } : {}),
+        ...(was.artist && !was.via && was.account ? { artistGone: { ...st.artistGone, [`${was.account}:${was.artist.id}`]: Math.max(st.artistGone?.[`${was.account}:${was.artist.id}`] ?? 0, was.at) } } : {}),
         gifts: st.gifts.map((g) => (g.id === s.id && !g.claimedBy ? { ...g, sent: true, takenBack: undefined, claimedBy: { uid: s.to!, ...who }, claimedAt: s.claimedAt ? Date.parse(s.claimedAt) : Date.now() } : g)),
       }));
       if (AppState.currentState !== 'active') void notifyNow(`sprout-given:${s.id}`, who.name != null ? t('{name} picked up your sprout', { name: who.name }) : t('Someone picked up your sprout'), t('It’s growing in their garden now.'), '/garden');
@@ -564,7 +599,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       const who = await whoIs(s.from);
       addToGarden({ id: s.id, kind: isKind(s.kind) ? s.kind : 'seedling', from: s.from, handle: who.handle ?? '', name: who.name ?? who.handle ?? 'Someone' }, s, me, s.claimedAt ? Date.parse(s.claimedAt) : Date.now());
     }
-  }, [account, social.availability.ok, social.service, noteClaimed, whoIs, addToGarden]);
+    // Afterglow says which have been given away (and which are back, taken back from another phone).
+    if (got.length) setStored((st) => got.reduce((acc, h) => withPassed(acc, me, h.id, !!h.passedOn), st));
+  }, [account, social.availability.ok, social.service, noteClaimed, whoIs, addToGarden, setStored]);
   useEffect(() => {
     if (hydrated && account && online) void Promise.resolve().then(refresh);
   }, [hydrated, account, online, refresh, back]);
@@ -600,17 +637,43 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     (kind: SproutKind, note?: string, artist?: SproutArtist, theme?: ThemeId): GiveResult => {
       if (!social.user) return { problem: 'signed-out' };
       if (!social.profile) return { problem: 'needs-profile' };
-      // Only artists you've filmed, and only an artist the database will take.
+      // Only an artist the database will take.
       const cleanArtist = artist ? cleanSproutArtist(artist) : undefined;
-      if (artist && (!cleanArtist || !artistsRef.current.some((a) => a.artistId === artist.id))) return { problem: 'not-yours' };
+      if (artist && !cleanArtist) return { problem: 'not-yours' };
       // Seeds are counted from what's saved, so not before it's loaded.
       if (!loaded.current) return { problem: 'loading' };
       const t = Date.now();
-      const mine = seedGifts(storedRef.current.gifts.filter((g) => g.account === social.user!.uid)).map((g) => g.at);
-      if (seedsLeft(mine, t, festivalDay) <= 0) return { problem: 'no-seeds' };
+      const me = social.user.uid;
+      const mineGifts = storedRef.current.gifts.filter((g) => g.account === me);
+      // Giving moves it: what from your garden it is (not something already on its way).
+      const onItsWay = passingOn(mineGifts);
+      const pick = (k: SproutKind, artistId?: string) => {
+        const s = toPass(
+          gardenRef.current.filter((g) => !onItsWay.has(g.id)),
+          k,
+          artistId,
+        );
+        return s ? { via: s.id, ...(isReceived(s) ? {} : { local: true as const }) } : undefined;
+      };
+      let from: { via: string; local?: true } | undefined;
+      if (cleanArtist) {
+        // Your own (filmed, and not given away since), else one you were given.
+        const earned = artistsRef.current.find((a) => a.artistId === cleanArtist.id);
+        const own = !!earned && earned.lastAt > (artistsGivenAt(mineGifts)[cleanArtist.id] ?? -1);
+        if (!own) {
+          from = pick('seedling', cleanArtist.id);
+          if (!from) return { problem: 'not-yours' };
+        }
+      } else if (kind !== 'seedling' && !keptKinds(me).includes(kind)) {
+        from = pick(kind);
+        if (!from) return { problem: 'not-yours' };
+      }
+      // Only new plain sprouts use a seed.
+      const fresh = kind === 'seedling' && !cleanArtist;
+      if (fresh && seedsLeft(seedGifts(mineGifts).map((g) => g.at), t, festivalDay) <= 0) return { problem: 'no-seeds' };
       const id = randomId();
       const words = note ? cleanSproutNote(note) : '';
-      const gift: Gift = { id, kind, ...(cleanArtist ? { artist: cleanArtist } : {}), ...(theme && isGiftTheme(theme) && canGiveThemes(social.profile.handle) ? { theme } : {}), at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
+      const gift: Gift = { id, kind, ...(from ?? {}), ...(cleanArtist ? { artist: cleanArtist } : {}), ...(theme && isGiftTheme(theme) && canGiveThemes(social.profile.handle) ? { theme } : {}), at: t, sent: false, tries: 0, account: social.user.uid, ...(words ? { note: words } : {}), ...(tonight ? { festivalId: tonight.festival.id } : {}) };
       storedRef.current = { ...storedRef.current, gifts: [gift, ...storedRef.current.gifts] };
       setStored((s) => ({ ...s, gifts: [gift, ...s.gifts] }));
       bumpQuestEvent('sprout');
@@ -681,10 +744,16 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   }, [seen, catalog, memories, gifts, going, now, goingSince, finds]);
 
   const sprouts = useMemo<GardenSprout[]>(() => {
-    const mine = account ? stored.garden.filter((g) => g.account === account) : [];
+    // Given away: gone from the garden (while on its way, and for good once picked up).
+    const passing = passingOn(stored.gifts.filter((g) => g.account === account));
+    const gone = new Set((stored.gone ?? []).filter((x) => x.startsWith(`${account}:`)).map((x) => x.slice(`${account}:`.length)));
+    const here = (g: GardenSprout) => !passing.has(g.id) && !gone.has(g.id);
+    const mine = account ? stored.garden.filter((g) => g.account === account && !g.passed) : [];
     const starter: GardenSprout[] = stored.starterAt ? [{ id: STARTER_ID, kind: 'seedling', from: '', name: 'Afterglow', at: stored.starterAt }] : [];
-    return [...mine, ...(stored.wild ?? []), ...starter];
-  }, [stored.garden, stored.starterAt, stored.wild, account]);
+    // A keeper's own hat (the gnome's).
+    const kept = stored.starterAt ? keptSprouts(account, stored.starterAt) : [];
+    return [...mine, ...(stored.wild ?? []), ...kept, ...starter].filter(here);
+  }, [stored.garden, stored.gifts, stored.gone, stored.starterAt, stored.wild, account]);
   // A wild sprout on each festival night you're at (once loaded, so one's never found twice).
   const wildId = tonight && here ? `${WILD_PREFIX}${tonightKey(tonight.festival.id, tonight.at)}` : undefined;
   const wildName = tonight?.festival.name;
@@ -694,6 +763,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     void Promise.resolve().then(() => setStored((s) => ((s.wild ?? []).some((w) => w.id === wildId) ? s : { ...s, wild: [...(s.wild ?? []), found] })));
   }, [hydrated, wildId, wildName, stored.wild, setStored]);
   const garden = useMemo(() => gardenOf(sprouts, journey, stored.bloomed, now), [sprouts, journey, stored.bloomed, now]);
+  useEffect(() => {
+    gardenRef.current = garden;
+  }, [garden]);
   // Remember what each plain sprout bloomed into, so it stays that kind.
   useEffect(() => {
     const fresh = newlyBloomed(garden, stored.bloomed);
@@ -703,7 +775,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       setStored((s) => ({ ...s, bloomed: { ...fresh, ...s.bloomed }, bloomedAt: { ...Object.fromEntries(Object.keys(fresh).map((id) => [id, at])), ...s.bloomedAt } })),
     );
   }, [garden, stored.bloomed]);
-  const givable = useMemo(() => givableKinds(garden, stored.bloomed), [garden, stored.bloomed]);
+  const givable = useMemo(() => givableKinds(garden, account), [garden, account]);
   const blooms = useMemo(
     () => garden.flatMap((g) => (stored.bloomed[g.id] && stored.bloomedAt?.[g.id] ? [{ id: g.id, kind: stored.bloomed[g.id], at: stored.bloomedAt[g.id] }] : [])),
     [garden, stored.bloomed, stored.bloomedAt],
@@ -737,12 +809,20 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       live = false;
     };
   }, [account, online, social.availability.ok, social.service, back]);
+  // Your own collectibles given away, per artist: only videos after that count (filming them again earns it back).
+  const artistGiven = useMemo(() => {
+    const out: Record<string, number> = { ...artistsGivenAt(gifts) };
+    for (const [k, at] of Object.entries(stored.artistGone ?? {})) if (account && k.startsWith(`${account}:`)) out[k.slice(account.length + 1)] = Math.max(out[k.slice(account.length + 1)] ?? 0, at);
+    return out;
+  }, [gifts, stored.artistGone, account]);
   const artists = useMemo(() => {
     const known = (id: string) => !!catalog.artist(id);
-    const list = withPosted(artistSprouts(memories, known), posted && posted.account === account ? posted.list : [], known);
+    const list = withPosted(artistSprouts(sinceGiven(memories, artistGiven), known), sinceGiven(posted && posted.account === account ? posted.list : [], artistGiven), known)
+      // Back to back with an artist in a video you posted counts too: not one filmed before you gave theirs away.
+      .filter((a) => a.lastAt > (artistGiven[a.artistId] ?? -1));
     // A rare few are shiny: decided by your account and the artist, the same on every phone.
     return account ? list.map((a) => (shinyFor(account, a.artistId) ? { ...a, shiny: true } : a)) : list;
-  }, [memories, catalog, posted, account]);
+  }, [memories, catalog, posted, account, artistGiven]);
   useEffect(() => {
     artistsRef.current = artists;
   }, [artists]);

@@ -72,6 +72,14 @@ export function artistSprouts(memories: readonly { artistId?: string; capturedAt
   return [...by.values()].map((s) => ({ ...s, tier: tierFor(s.videos) })).sort((a, b) => b.videos - a.videos || b.lastAt - a.lastAt);
 }
 
+/** Only what counts since you last gave each artist's collectible away (filming them again earns it back). */
+export function sinceGiven<M extends { artistId?: string; capturedAt: string }>(memories: readonly M[], givenAt: Readonly<Record<string, number>>): M[] {
+  return memories.filter((m) => {
+    const given = m.artistId ? givenAt[m.artistId] : undefined;
+    return given === undefined || Date.parse(m.capturedAt) > given;
+  });
+}
+
 /**
  * What's new since you last looked: an artist sprout you haven't seen, or one
  * that reached a higher level. `shown` keeps, per artist, the level last

@@ -1293,19 +1293,24 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       guard(async () => {
         const user = me();
         const ref = doc(fb().db, 'sprouts', input.id);
+        const data = {
+          from: user.uid,
+          kind: input.kind,
+          ...(input.note ? { note: input.note.slice(0, 60) } : {}),
+          ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+          ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName.slice(0, 60) } : {}),
+          ...(input.theme ? { theme: input.theme } : {}),
+          ...(input.via ? { via: input.via } : {}),
+          createdAt: serverTimestamp(),
+        };
         try {
-          await withTimeout(
-            setDoc(ref, {
-              from: user.uid,
-              kind: input.kind,
-              ...(input.note ? { note: input.note.slice(0, 60) } : {}),
-              ...(input.festivalId ? { festivalId: input.festivalId } : {}),
-              ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName.slice(0, 60) } : {}),
-              ...(input.theme ? { theme: input.theme } : {}),
-              createdAt: serverTimestamp(),
-            }),
-            CHAT_SEND_TIMEOUT_MS,
-          );
+          if (input.via) {
+            // A hat passed on: the new one and yours marked passed on, together (the rules check both).
+            const b = writeBatch(fb().db);
+            b.set(ref, data);
+            b.update(doc(fb().db, 'sprouts', input.via), { passedOn: input.id });
+            await withTimeout(b.commit(), CHAT_SEND_TIMEOUT_MS);
+          } else await withTimeout(setDoc(ref, data), CHAT_SEND_TIMEOUT_MS);
         } catch (e) {
           // Sent before and the answer was lost: writing again is refused, and it's already there.
           if (e instanceof SocialError && e.kind === 'network') throw e;
@@ -1493,13 +1498,19 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           throw e;
         }
       }),
-    takeBackSprout: (id) =>
+    takeBackSprout: (id, via) =>
       guard(async () => {
         const user = me();
         const ref = doc(fb().db, 'sprouts', id);
         try {
           // Writes from this phone go in order, so a give still waiting for signal lands before this.
-          await deleteDoc(ref);
+          if (via) {
+            // A hat passed on: it's yours again once the one on its way is gone.
+            const b = writeBatch(fb().db);
+            b.delete(ref);
+            b.update(doc(fb().db, 'sprouts', via), { passedOn: deleteField() });
+            await b.commit();
+          } else await deleteDoc(ref);
         } catch (e) {
           const s = sproutFromDoc(id, (await getDoc(ref)).data());
           if (!s) return;

@@ -71,7 +71,7 @@ export const es_profile: Dictionary = {
 
   // The unlock moment
   '{about} Found at {place}: every festival night brings a new one.': '{about} Encontrado en {place}: cada noche de festival trae uno nuevo.',
-  '{about} You can give {name}s now.': '{about} Ya puedes regalar brotes de tipo {name}.',
+  '{about} You can give it away now: it moves to their garden.': '{about} Ya puedes regalarlo: pasa a su jardín.',
   '{tier} now: you’ve filmed {artist} {n} times. {next}.': 'Ahora {tier}: has grabado a {artist} {n} veces. {next}.',
   '{tier} now: you’ve filmed {artist} {n} times.': 'Ahora {tier}: has grabado a {artist} {n} veces.',
   '{theme}, earned with your video of {artist}. Give one to someone, or film them again: {next}.':

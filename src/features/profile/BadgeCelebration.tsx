@@ -20,7 +20,7 @@ import type { Festival } from '../../data/models';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type } from '../../theme/tokens';
 import { Sprout } from '../sprouts/Sprout';
-import { kindOf, type SproutKind } from '../sprouts/sprouts';
+import { grownName, kindOf, type SproutKind } from '../sprouts/sprouts';
 import type { ArtistLook } from '../sprouts/artistLook';
 import { type Tier, TIER_LABEL, tierLabel, tierLine } from '../sprouts/artistSprouts';
 import { CardReveal, CollectibleCard } from '../sprouts/CollectibleCard';
@@ -107,7 +107,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
       : unlock.kind === 'throwback'
         ? pastLabel(unlock.past)
         : unlock.kind === 'sprout'
-          ? kindOf(unlock.sprout).name
+          ? grownName(unlock.sprout)
           : unlock.kind === 'artistSprout'
             ? `${unlock.name} · ${unlock.look.name}`
             : unlock.kind === 'decor'
@@ -121,7 +121,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
         : unlock.kind === 'sprout'
           ? unlock.foundAt
             ? t('{about} Found at {place}: every festival night brings a new one.', { about: kindOf(unlock.sprout).about, place: unlock.foundAt })
-            : t('{about} You can give {name}s now.', { about: kindOf(unlock.sprout).about, name: kindOf(unlock.sprout).name })
+            : (kindOf(unlock.sprout).grown ?? t('{about} You can give it away now: it moves to their garden.', { about: kindOf(unlock.sprout).about }))
           : unlock.kind === 'artistSprout'
             ? unlock.tier
               ? unlock.tier < 3

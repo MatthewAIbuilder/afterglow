@@ -4,6 +4,7 @@ import Animated, { cancelAnimation, Easing, type SharedValue, useAnimatedStyle, 
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { type ArtistLook, shinyLook } from './artistLook';
 import { Collectible, MOVES_FROM } from './Collectible';
+import { GnomeHat } from './Gnome';
 import { blinkOf, CLOCK_MS, glanceOf, type Pace, paceOf, sine } from './motion';
 import { kindOf, type SproutKind, type Stage } from './sprouts';
 
@@ -28,6 +29,7 @@ const LOOKS: Record<SproutKind, Look> = {
   sunrise: { body: ['#F2F2B0', '#C3D96A', '#7A9C34'], leaf: ['#E2EE9C', '#7E9E36'], face: 'sleepy', leafShape: 'pointed' },
   moonlight: { body: ['#E0E6FF', '#9AAEF2', '#4A5AB8'], leaf: ['#C8D4FF', '#5464C0'], face: 'bliss', leafShape: 'petal' },
   seeker: { body: ['#ECF6BE', '#B4D25E', '#6A8A26'], leaf: ['#DCEFA0', '#6E8E2C'], face: 'sparkle', leafShape: 'pointed' },
+  gnome: { body: ['#D8F2B8', '#8CC860', '#3F7F2C'], leaf: ['#B8E08C', '#3F7A30'], face: 'joy', leafShape: 'round' },
 };
 const GREY: Look = { body: ['#7C7A92', '#5A5870', '#3A3850'], leaf: ['#7A7890', '#4A4860'], face: 'smile', leafShape: 'round' };
 const INK = '#0E2A1A';
@@ -124,10 +126,13 @@ export type SproutProps = {
  * one picture. Hidden from screen readers (the label around it says what it is).
  *
  * An artist's passes `artist` (their look, from `artistLook`) and is drawn as
- * their collectible instead (Collectible.tsx), with `tier` for its level.
+ * their collectible instead (Collectible.tsx), with `tier` for its level. A
+ * gnome hat is drawn as it grows into a gnome (Gnome.tsx).
  */
 export function Sprout({ artist, tier, shiny, ...props }: SproutProps) {
-  return artist ? <Collectible look={shiny ? shinyLook(artist) : artist} shiny={shiny} tier={tier} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} /> : <Plant {...props} />;
+  if (artist) return <Collectible look={shiny ? shinyLook(artist) : artist} shiny={shiny} tier={tier} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} />;
+  if (props.kind === 'gnome') return <GnomeHat stage={props.stage} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} />;
+  return <Plant {...props} />;
 }
 
 function Plant({ kind = 'seedling', stage = 3, size = 80, still = size < MOVES_FROM, locked, scene, driven }: Omit<SproutProps, 'artist' | 'tier' | 'shiny'>) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { bloomNotices, sproutNotices, wildNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, GIFT_REFUSED_MAX, giftsToSend, giftTried, nextDue, queueClaim, retryDelay, seedGifts, tidy, type Gift } from '../outbox';
+import { GNOME_FRIENDS } from '../../profile/backdrops';
+import { bloomNotices, sproutNotices, wildNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, GIFT_REFUSED_MAX, giftsToSend, giftTried, nextDue, passingOn, queueClaim, retryDelay, seedGifts, tidy, type Gift } from '../outbox';
 import {
   cleanBloomed,
   festivalDaysOf,
@@ -10,7 +11,17 @@ import {
   givableKinds,
   growthLine,
   growthOf,
+  keptKinds,
+  keptSprouts,
+  kindListed,
+  kindOf,
   newlyBloomed,
+  giftStage,
+  grownName,
+  isReceived,
+  passable,
+  toPass,
+  stageName,
   readSproutLink,
   seedsLeft,
   seedsLine,
@@ -109,8 +120,13 @@ describe('growing', () => {
       ['a', 'wanderer', 3],
     ]);
     expect(newlyBloomed(view, {})).toEqual({ a: 'wanderer' });
-    // A received kind isn't yours to give until you grow it.
-    expect(givableKinds(view, {})).toEqual(['seedling', 'wanderer']);
+    // Every grown kind in your garden can be given away (giving moves it), the one you were given first.
+    expect(givableKinds(view)).toEqual(['seedling', 'wanderer', 'bass']);
+    expect(passable(view).map((s) => s.id)).toEqual(['b', 'a']);
+    expect(toPass(view, 'wanderer')?.id).toBe('a');
+    expect(toPass(view, 'plur')).toBeUndefined();
+    expect(isReceived(view[0])).toBe(true);
+    expect(isReceived({ ...view[1], id: 'starter' })).toBe(false);
     // Remembered, it stays that kind whatever comes next.
     const later = garden(sprouts, { ...j, gave: Array(40).fill(at(10, 8)) }, { a: 'wanderer' }, at(10, 9));
     expect(later.find((s) => s.id === 'a')?.shown).toBe('wanderer');
@@ -181,7 +197,7 @@ describe('the bell', () => {
   it('says when one of your sprouts bloomed', () => {
     const now = at(10, 20);
     const list = bloomNotices([{ id: 'a', kind: 'wanderer', at: at(10, 19) }, { id: 'b', kind: 'plur', at: at(9, 1) }], now);
-    expect(list.map((n) => [n.id, n.title, n.body])).toEqual([['bloom:a', 'Your sprout bloomed into a Wanderer sprout', 'You can give Wanderer sprouts now.']]);
+    expect(list.map((n) => [n.id, n.title, n.body])).toEqual([['bloom:a', 'Your sprout bloomed into a Wanderer sprout', 'You can give it away now: it moves to their garden.']]);
   });
 
   it('a wild sprout: a grown kind picked by the festival and night, and bell news', () => {
@@ -192,5 +208,55 @@ describe('the bell', () => {
     expect(kinds.size).toBeGreaterThan(3);
     const list = wildNotices([{ id: 'wild:x:2026-10-19', kind: 'bass', from: '', at: at(10, 19), foundAt: 'Cove' }], at(10, 20));
     expect(list[0].title).toBe('A wild Bass sprout appeared at Cove');
+  });
+  it('gnome hats: arrive as a hat, grow into a gnome, and only a grown one someone gave you can be passed on', () => {
+    const keeper = GNOME_FRIENDS[0];
+    expect(keptKinds(keeper)).toEqual(['gnome']);
+    expect(keptKinds('someone')).toEqual([]);
+    expect(keptSprouts('someone', at(1, 1))).toEqual([]);
+    // The keeper's own hat, planted when it shipped (or when they started, if later).
+    const [own] = keptSprouts(keeper, at(1, 1));
+    expect(own).toMatchObject({ id: 'kept-gnome', kind: 'gnome', at: kindOf('gnome').plantedAt });
+    expect(keptSprouts(keeper, at(12, 1))[0].at).toBe(at(12, 1));
+    // A hat someone gave you grows from when it arrived, always into a gnome.
+    const given = { id: 'hat1', kind: 'gnome' as const, from: keeper, name: 'Grace', at: at(10, 10) };
+    expect(garden([given], none, {}, at(10, 11))[0]).toMatchObject({ shown: 'gnome', stage: 0 });
+    expect(stageName('gnome', 0)).toBe('Gnome hat');
+    expect(growthLine(garden([given], none, {}, at(10, 11))[0].growth!, 'gnome')).toBe('Gnome hat · 6 more growth to peeking out');
+    const j: Journey = { ...none, festivalDays: [at(10, 11), at(10, 12), at(10, 13), at(10, 14), at(10, 15)] };
+    const grown = garden([given], j, {}, at(10, 16));
+    expect(grown[0]).toMatchObject({ shown: 'gnome', stage: 3 });
+    expect(newlyBloomed(grown, {})).toEqual({ hat1: 'gnome' });
+    // Remembered grown, it stays grown.
+    expect(garden([given], none, { hat1: 'gnome' }, at(10, 16))[0].stage).toBe(3);
+    // Not until it's grown can it be passed on; the keeper gives them any time; their own one never goes.
+    expect(passable(garden([given], none, {}, at(10, 11)))).toEqual([]);
+    expect(passable(grown).map((s) => s.id)).toEqual(['hat1']);
+    expect(givableKinds(garden([given], none, {}, at(10, 11)), 'someone')).toEqual(['seedling']);
+    expect(givableKinds(grown, 'someone')).toEqual(['seedling', 'gnome']);
+    expect(givableKinds([], keeper)).toEqual(['seedling', 'gnome']);
+    const ownGrown = garden([own], j, {}, at(12, 1));
+    expect(ownGrown[0].stage).toBe(3);
+    expect(passable(ownGrown)).toEqual([]);
+    // How it looks given: a hat.
+    expect(giftStage('gnome')).toBe(0);
+    expect(giftStage('seedling')).toBe(2);
+    expect(giftStage('plur')).toBe(3);
+    expect(grownName('gnome')).toBe('Gnome');
+    // Listed among the kinds to collect only for someone who has one, or keeps them.
+    expect(kindListed(kindOf('gnome'), new Set())).toBe(false);
+    expect(kindListed(kindOf('gnome'), new Set(['gnome']))).toBe(true);
+    expect(kindListed(kindOf('gnome'), new Set(), keeper)).toBe(true);
+    expect(kindListed(kindOf('plur'), new Set())).toBe(true);
+  });
+  it('a hat on its way to someone has left your garden, uses no seed, and is kept until someone has it', () => {
+    const hat: Gift = { id: 'passaaaaaaaaaaaaaaaa', kind: 'gnome', via: 'hat1aaaaaaaaaaaaaaaa', at: at(10, 1), sent: true, tries: 0 };
+    const plain: Gift = { id: 'plainaaaaaaaaaaaaaaa', kind: 'seedling', at: at(10, 1), sent: true, tries: 0 };
+    expect([...passingOn([hat, plain])]).toEqual(['hat1aaaaaaaaaaaaaaaa']);
+    expect([...passingOn([{ ...hat, takenBack: true }, { ...hat, id: 'xaaaaaaaaaaaaaaaaaaa', failed: true }])]).toEqual([]);
+    expect(seedGifts([hat, plain]).map((g) => g.id)).toEqual([plain.id]);
+    // Long after: a plain one is let go, the hat stays so it can still be taken back.
+    expect(tidy([hat, plain], [], at(12, 30)).gifts.map((g) => g.id)).toEqual([hat.id]);
+    expect(cleanGifts([hat, { ...plain, via: 'not an id!' }])).toEqual([hat, plain]);
   });
 });

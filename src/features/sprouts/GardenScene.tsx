@@ -212,6 +212,8 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
   const bobC = pace.bob;
   const phase = pace.phase;
   const legs = pace.wanders;
+  // A grown gnome hops about instead of walking.
+  const hops = 'kind' in r.look && r.look.kind === 'gnome' && r.look.stage === 3;
   // How far it strolls from its spot (it always comes back), staying inside the meadow.
   const reachX = colWidth * WANDER_X;
   const reachY = size * WANDER_Y * 2;
@@ -296,8 +298,8 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
     // Walking: little hops in step, leaning the way it's going.
     const w = running ? wander(t, legs, phase) : { x: 0, y: 0, walking: 0 };
     const ahead = running ? wander((t + 0.002) % 1, legs, phase).x - w.x : 0;
-    const step = running ? Math.abs(sine(t, 60, phase)) * w.walking * (1 - up) : 0;
-    const lean = Math.sign(ahead) * w.walking * 6 * (1 - up);
+    const step = running ? Math.abs(sine(t, hops ? 24 : 60, phase)) * w.walking * (1 - up) * (hops ? 4 : 1) : 0;
+    const lean = Math.sign(ahead) * w.walking * (hops ? 10 : 6) * (1 - up);
     const d = dance.get();
     // Up and back down twice while turning all the way round.
     const hop = Math.abs(Math.sin(d * Math.PI * 2));

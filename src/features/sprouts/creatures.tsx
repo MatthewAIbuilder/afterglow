@@ -5065,6 +5065,50 @@ const shower: Draw = (p, f) => ({
   flickerOver: true,
 });
 
+/** A sticker of a garden gnome: a tall red hat, a round nose, a fluffy beard, a little blue coat. */
+const gnome: Draw = (p, f) => ({
+  ground: [50, 92, 22],
+  back: <Ellipse cx={50} cy={54} rx={42} ry={38} fill={p.glow} opacity={0.15} />,
+  body: (
+    <G>
+      {/* Boots and coat, with a belt and a gold buckle. */}
+      <VE cx={41} cy={89} rx={7} ry={3.6} fill="#4A2E1E" f={f} gloss={false} />
+      <VE cx={59} cy={89} rx={7} ry={3.6} fill="#4A2E1E" f={f} gloss={false} />
+      <V d="M31 88 Q29 66 50 61 Q71 66 69 88 Z" fill={p.altDeep} f={f} gloss={[38, 70, 3, 6, 0]} />
+      <Path d="M32 79 L68 79" stroke="#4A2E1E" strokeWidth={3.2} />
+      <Path d="M47.4 77 L52.6 77 L52.6 81 L47.4 81Z" fill={p.accent} />
+      {/* The face, and the tall hat over it, its tip flopping over, a gold star on it. */}
+      <VE cx={50} cy={50} rx={15} ry={11.5} fill={p.light} f={f} />
+      <V d="M33 42 Q37 19 55 5 Q61 2 61 8 Q62 25 67 42 Q50 47 33 42 Z" fill={p.mid} f={f} gloss={[44, 25, 3, 9, -20]} />
+      <Path d="M33 42 Q50 47 67 42" stroke={p.deep} strokeWidth={1.4} fill="none" opacity={0.6} />
+      <Path d={sparkle(52, 27, 3.6)} fill={p.accent} />
+      {/* The beard, down over the coat. */}
+      <V d="M35.4 50 Q34 76 50 82 Q66 76 64.6 50 Q58 58 50 57 Q42 58 35.4 50 Z" fill={p.alt} f={f} gloss={[42, 62, 3, 6, 0]} />
+      <Path d="M43 65 q2 5 0 10 M57 65 q-2 5 0 10 M50 68 q1 4 0 8" stroke="#D9D2C4" strokeWidth={1.1} fill="none" strokeLinecap="round" />
+      {/* Rosy cheeks and the round nose. */}
+      <Ellipse cx={39.5} cy={54} rx={3.4} ry={2} fill="#FF8A80" opacity={0.55} />
+      <Ellipse cx={60.5} cy={54} rx={3.4} ry={2} fill="#FF8A80" opacity={0.55} />
+      <VE cx={50} cy={54.5} rx={4.6} ry={4.2} fill="#FFB49A" f={f} />
+    </G>
+  ),
+  eyes: {
+    box: [41, 44, 18, 8],
+    el: (
+      <G>
+        <VEye x={44.6} y={48} r={2.2} f={f} />
+        <VEye x={55.4} y={48} r={2.2} f={f} />
+      </G>
+    ),
+  },
+  front: (
+    <G>
+      <Glow x={22} y={40} r={1.3} color={p.accent} />
+      <Glow x={79} y={30} r={1.1} color={p.accent} />
+      <Glow x={80} y={72} r={1.2} color={p.accent} />
+    </G>
+  ),
+});
+
 /** SIPPY: the Sippy cup — a toddler's sippy cup full of something glowing, wobbling with the bass. */
 const sippycup: Draw = (p, f) => ({
   ground: [50, 92, 22],
@@ -8133,6 +8177,7 @@ export const DRAW: Record<Creature, Draw> = {
   rail,
   sunrise,
   lantern,
+  gnome,
   confetti,
   frog,
   flask,
