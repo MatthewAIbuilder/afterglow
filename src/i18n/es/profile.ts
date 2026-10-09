@@ -164,6 +164,7 @@ export const es_profile: Dictionary = {
   'Your videos by festival, night and set': 'Tus videos por festival, noche y set',
   'By festival': 'Por festival',
   'Untagged video. Tag it': 'Video sin etiquetar. Etiquétalo',
+  'Only you': 'Solo tú',
   'Video: {line}, shared': 'Video: {line}, compartido',
   'Video: {line}': 'Video: {line}',
   Tag: 'Etiquetar',

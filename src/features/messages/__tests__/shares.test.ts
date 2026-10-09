@@ -75,3 +75,19 @@ describe('who "Send to" offers', () => {
     expect(later.map((r) => r.key)).toEqual(['p:b']);
   });
 });
+
+describe('places to stay in a chat', () => {
+  const web = 'https://afterglowmusic.app';
+
+  it('travels as the stays page link, for a festival or a show, with how many', () => {
+    expect(shareLink({ kind: 'stay', id: 'edc-orlando-26', guests: 6 }, web)).toBe(`${web}/stay/edc-orlando-26?guests=6`);
+    expect(shareLink({ kind: 'stay', id: 'show:edm-1' }, web)).toBe(`${web}/stay/show:edm-1`);
+    expect(parseShare(`Need a place?\n${web}/stay/edc-orlando-26?guests=6`, web)).toEqual({ share: { kind: 'stay', id: 'edc-orlando-26', guests: 6 }, caption: 'Need a place?' });
+    expect(parseShare(`${web}/stay/show:edm-1`, web)?.share).toEqual({ kind: 'stay', id: 'show:edm-1' });
+    // One person, or too many: no count, or Stay22's most.
+    expect(shareLink({ kind: 'stay', id: 'f', guests: 1 }, web)).toBe(`${web}/stay/f`);
+    expect(shareLink({ kind: 'stay', id: 'f', guests: 40 }, web)).toBe(`${web}/stay/f?guests=16`);
+    expect(shareRoute({ kind: 'stay', id: 'f', guests: 3 })).toEqual({ pathname: '/stay/[id]', params: { id: 'f', guests: '3' } });
+    expect(shareFromParams(shareParams({ kind: 'stay', id: 'show:edm-1', guests: 5 }))).toEqual({ kind: 'stay', id: 'show:edm-1', guests: 5 });
+  });
+});

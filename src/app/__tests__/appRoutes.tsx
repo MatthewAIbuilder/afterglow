@@ -57,6 +57,7 @@ import QuestsScreen from '../quests';
 import SecretsScreen from '../secrets';
 import WhatsNewScreen from '../whats-new';
 import PrepScreen from '../prep/[id]';
+import StayScreen from '../stay/[id]';
 import YourArtistsScreen from '../your-artists';
 import SettingsScreen from '../settings';
 import CareScreen from '../care';
@@ -139,6 +140,7 @@ export const APP_ROUTES = {
   secrets: SecretsScreen,
   'whats-new': WhatsNewScreen,
   'prep/[id]': PrepScreen,
+  'stay/[id]': StayScreen,
   'your-artists': YourArtistsScreen,
   settings: SettingsScreen,
   care: CareScreen,

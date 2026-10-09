@@ -229,6 +229,8 @@ function systemShare(share: ChatShare, catalog: Catalog): [string, string?] {
     }
     case 'profile':
       return [t('@{handle} on {app}: {link}', { handle: share.handle, app: APP_NAME, link })];
+    case 'stay':
+      return [t('Places to stay on {app}: {link}', { app: APP_NAME, link })];
   }
 }
 
